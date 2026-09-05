@@ -21,11 +21,12 @@
 #endif
 
 #include "../list_special.h"
-#include "../retroarch.h"
-#include "../runloop.h"
 #include "../verbosity.h"
 
 #include "ui_companion_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 static ui_companion_driver_t ui_companion_null = {
    NULL, /* init */
@@ -38,6 +39,9 @@ static ui_companion_driver_t ui_companion_null = {
    NULL, /* get_main_window */
    NULL, /* log_msg */
    NULL, /* is_active */
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    NULL, /* browser_window */
    NULL, /* msg_window */
    NULL, /* window */
@@ -49,8 +53,11 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
 #endif
-#if defined(OSX)
+#if TARGET_OS_OSX
    &ui_companion_cocoa,
+#endif
+#if TARGET_OS_IPHONE
+   &ui_companion_cocoatouch,
 #endif
    &ui_companion_null,
    NULL
@@ -128,25 +135,28 @@ void ui_companion_driver_toggle(
 #endif
 }
 
-void ui_companion_driver_init_first(void)
+void ui_companion_driver_init_first(
+      bool desktop_menu_enable,
+      bool ui_companion_toggle,
+      unsigned ui_companion_start_on_boot
+      )
 {
    uico_driver_state_t *uico_st        = &uico_driver_st;
-   settings_t *settings                = config_get_ptr();
 #ifdef HAVE_QT
-   bool desktop_menu_enable            = settings->bools.desktop_menu_enable;
-   bool ui_companion_toggle            = settings->bools.ui_companion_toggle;
-
+   /* Defer Qt companion (WIMP) initialization until the desktop menu
+    * is actually toggled on. Constructing QApplication at startup
+    * (which happens here only when desktop_menu_enable is set) aborts
+    * the process on headless / KMS / Wayland-only systems with no
+    * usable Qt platform plugin, as QApplication calls qFatal()
+    * internally on platform-plugin init failure. This matches the
+    * pre-1.21 behaviour for both Qt5 and Qt6. */
    if (desktop_menu_enable && ui_companion_toggle)
    {
       uico_st->qt_data                 = ui_companion_qt.init();
-      uico_st->flags                  |= UICO_ST_FLAG_QT_IS_INITED;
+      if (uico_st->qt_data)
+         uico_st->flags               |= UICO_ST_FLAG_QT_IS_INITED;
    }
-#else
-   bool desktop_menu_enable            = false;
-   bool ui_companion_toggle            = false;
 #endif
-   unsigned ui_companion_start_on_boot =
-      settings->bools.ui_companion_start_on_boot;
    uico_st->drv                        = (ui_companion_driver_t*)ui_companion_drivers[0];
 
    if (!uico_st->drv)

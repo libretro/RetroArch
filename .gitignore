@@ -4,6 +4,8 @@
 *.exe
 *.bmpobj
 *.binobj
+*.shbin
+*.shbin.s
 *.so
 *.so.*
 *.dll
@@ -14,6 +16,11 @@
 *.swp
 *.cache
 *.gcda
+# clang --analyze drops a .plist report per translation unit into the
+# working directory. Anchored to the repository root so the tracked
+# Info.plist / ExportOptions.plist files under pkg/apple are unaffected.
+/*.plist
+*.lcbk
 *.gcno
 .tmp
 .tmp.c
@@ -92,10 +99,14 @@ saves
 screenshots
 autoconfig
 config
-database
+/database
 overlays
 playlists
 states
+cheats
+thumbnails
+docs/html
+system
 shaders/shaders_cg
 shaders/shaders_glsl
 shaders/shaders_slang
@@ -134,6 +145,7 @@ wiiu/wut/elf2rpl/elf2rpl
 
 # CLion
 /cmake-build-debug/
+.run
 
 # Android
 /pkg/android/phoenix/obj/
@@ -142,10 +154,12 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/bin/
 /pkg/android/phoenix/gen/
 /pkg/android/phoenix/local.properties
-/pkg/android/phoenix/gradle.properties
 /pkg/android/phoenix/.gradle
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
+/pkg/android/phoenix-legacy/.project
+/pkg/android/phoenix-jelly-bean/**/.gradle/
+/pkg/android/phoenix-jelly-bean/.cxx/
 
 # Cloned by libretro-fetch.sh
 /media/assets/
@@ -154,6 +168,7 @@ wiiu/wut/elf2rpl/elf2rpl
 /media/shaders_cg/
 /media/libretrodb/
 
+compile_commands.json
 pkg/apple/iOS/build/
 pkg/apple/build/
 ui/drivers/qt/moc_*
@@ -189,6 +204,8 @@ retroarch.js
 retroarch.js.mem
 *.bc
 *.wasm
+*.wasm.map
+obj-emscripten/
 
 # only ignore .js files in the repo root
 /*.js
@@ -206,6 +223,10 @@ retroarch_switch.nso
 *_irx.c
 
 # Wayland
+gfx/common/wayland/fractional-scale-v1.c
+gfx/common/wayland/fractional-scale-v1.h
+gfx/common/wayland/viewporter.c
+gfx/common/wayland/viewporter.h
 gfx/common/wayland/idle-inhibit-unstable-v1.c
 gfx/common/wayland/idle-inhibit-unstable-v1.h
 gfx/common/wayland/xdg-shell-unstable-v6.c
@@ -216,13 +237,43 @@ gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
 gfx/common/wayland/pointer-constraints-unstable-v1.c
 gfx/common/wayland/pointer-constraints-unstable-v1.h
+gfx/common/wayland/presentation-time.h
+gfx/common/wayland/presentation-time.c
 gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
 gfx/common/wayland/viewporter.c
 gfx/common/wayland/viewporter.h
+gfx/common/wayland/cursor-shape-v1.h
+gfx/common/wayland/cursor-shape-v1.c
+gfx/common/wayland/tablet-unstable-v2.h
+gfx/common/wayland/tablet-unstable-v2.c
+gfx/common/wayland/content-type-v1.h
+gfx/common/wayland/content-type-v1.c
+gfx/common/wayland/single-pixel-buffer-v1.h
+gfx/common/wayland/single-pixel-buffer-v1.c
+gfx/common/wayland/xdg-toplevel-icon-v1.h
+gfx/common/wayland/xdg-toplevel-icon-v1.c
+gfx/common/wayland/xdg-toplevel-tag-v1.h
+gfx/common/wayland/xdg-toplevel-tag-v1.c
+gfx/common/wayland/webos-foreign.c
+gfx/common/wayland/webos-foreign.h
+gfx/common/wayland/webos-input-manager.c
+gfx/common/wayland/webos-input-manager.h
+gfx/common/wayland/webos-shell.c
+gfx/common/wayland/webos-shell.h
+gfx/common/wayland/webos-surface-group.c
+gfx/common/wayland/webos-surface-group.h
+gfx/common/wayland/tearing-control-v1.h
+gfx/common/wayland/tearing-control-v1.c
+
+# samples/: built harness executables and objects. Each directory's
+# test is <dir>_test; nothing built there is source.
+samples/**/*_test
+samples/**/*.o
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
+libretro-common/samples/audio/audio_mixer_loop/audio_mixer_loop_test
 
 # DINGUX
 *.opk
@@ -238,3 +289,21 @@ param.sfo
 
 # Visual Studio Code
 .vscode/
+
+# Clazy
+*.clazy.yaml
+
+# PSL1GHT
+*.SELF
+EBOOT.BIN
+pkg/psl1ght/*.pkg
+modern_alpha_blend_fpo.h
+modern_alpha_blend_vpo.h
+modern_opaque_fpo.h
+modern_opaque_vpo.h
+gfx/drivers/rsx_shaders/modern_alpha_blend.fpo
+gfx/drivers/rsx_shaders/modern_alpha_blend.vpo
+gfx/drivers/rsx_shaders/modern_opaque.fpo
+gfx/drivers/rsx_shaders/modern_opaque.vpo
+pkg/psl1ght/pkg/USRDIR/shaders_cg/
+!pkg/psl1ght/pkg/USRDIR/system/

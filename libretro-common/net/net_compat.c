@@ -128,28 +128,29 @@ struct hostent *gethostbyname(const char *name)
 
    XNetDnsLookup(name, event, &dns);
    if (!dns)
-      goto done;
+   {
+      WSACloseEvent(event);
+      return NULL;
+   }
 
    WaitForSingleObject((HANDLE)event, INFINITE);
 
-   if (dns->iStatus)
-      goto done;
+   if (!dns->iStatus)
+   {
+      memcpy(&addr, dns->aina, sizeof(addr));
 
-   memcpy(&addr, dns->aina, sizeof(addr));
+      he.h_name      = NULL;
+      he.h_aliases   = NULL;
+      he.h_addrtype  = AF_INET;
+      he.h_length    = sizeof(addr);
+      he.h_addr_list = &he.h_addr;
+      he.h_addr      = (char*)&addr;
 
-   he.h_name      = NULL;
-   he.h_aliases   = NULL;
-   he.h_addrtype  = AF_INET;
-   he.h_length    = sizeof(addr);
-   he.h_addr_list = &he.h_addr;
-   he.h_addr      = (char*)&addr;
+      ret = &he;
+   }
 
-   ret = &he;
-
-done:
    WSACloseEvent(event);
-   if (dns)
-      XNetDnsRelease(dns);
+   XNetDnsRelease(dns);
 
    return ret;
 }
@@ -389,7 +390,7 @@ bool addr_6to4(struct sockaddr_storage *addr)
 {
 #ifdef HAVE_INET6
    /* ::ffff:a.b.c.d */
-   static const uint16_t preffix[] = {0,0,0,0,0,0xffff};
+   static const uint16_t prefix[] = {0,0,0,0,0,0xffff};
    uint32_t address;
    uint16_t port;
    struct sockaddr_in6 *addr6 = (struct sockaddr_in6*)addr;
@@ -402,14 +403,14 @@ bool addr_6to4(struct sockaddr_storage *addr)
          return true;
       case AF_INET6:
          /* Is the address provided an IPv4? */
-         if (!memcmp(&addr6->sin6_addr, preffix, sizeof(preffix)))
+         if (!memcmp(&addr6->sin6_addr, prefix, sizeof(prefix)))
             break;
       default:
          /* We don't know how to handle this. */
          return false;
    }
 
-   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(preffix),
+   memcpy(&address, ((uint8_t*)&addr6->sin6_addr) + sizeof(prefix),
       sizeof(address));
    port = addr6->sin6_port;
 

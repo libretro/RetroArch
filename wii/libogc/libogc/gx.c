@@ -290,7 +290,8 @@ static void __GX_Abort()
 static void __GX_SaveFifo()
 {
 	s32 rdwt_dst;
-	u32 level,val;
+	u32 val;
+	u32 level = 0;
 	struct __gxfifo *cpufifo = (struct __gxfifo*)&_cpufifo;
 	struct __gxfifo *gpfifo = (struct __gxfifo*)&_gpfifo;
 
@@ -322,7 +323,7 @@ static void __GX_SaveFifo()
 
 static void __GX_CleanGPFifo()
 {
-	u32 level;
+	u32 level = 0;
 	struct __gxfifo *gpfifo = (struct __gxfifo*)&_gpfifo;
 	struct __gxfifo *cpufifo = (struct __gxfifo*)&_cpufifo;
 
@@ -1246,7 +1247,7 @@ void GX_InitFifoLimits(GXFifoObj *fifo,u32 hiwatermark,u32 lowatermark)
 
 void GX_InitFifoPtrs(GXFifoObj *fifo,void *rd_ptr,void *wt_ptr)
 {
-	u32 level;
+	u32 level = 0;
 	s32 rdwt_dst;
 	struct __gxfifo *ptr = (struct __gxfifo*)fifo;
 
@@ -1271,7 +1272,7 @@ void GX_GetFifoPtrs(GXFifoObj *fifo,void **rd_ptr,void **wt_ptr)
 
 void GX_SetCPUFifo(GXFifoObj *fifo)
 {
-	u32 level;
+	u32 level = 0;
 	struct __gxfifo *ptr = (struct __gxfifo*)fifo;
 	struct __gxfifo *cpufifo = (struct __gxfifo*)&_cpufifo;
 
@@ -1354,7 +1355,7 @@ void GX_GetCPUFifo(GXFifoObj *fifo)
 
 void GX_SetGPFifo(GXFifoObj *fifo)
 {
-	u32 level;
+	u32 level = 0;
 	struct __gxfifo *ptr = (struct __gxfifo*)fifo;
 	struct __gxfifo *gpfifo = (struct __gxfifo*)&_gpfifo;
 
@@ -1492,7 +1493,7 @@ lwp_t GX_GetCurrentGXThread()
 
 lwp_t GX_SetCurrentGXThread()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	lwp_t ret = _gxcurrentlwp;
@@ -1504,7 +1505,7 @@ lwp_t GX_SetCurrentGXThread()
 
 volatile void* GX_RedirectWriteGatherPipe(void *ptr)
 {
-	u32 level;
+	u32 level = 0;
 	struct __gxfifo *cpufifo = (struct __gxfifo*)&_cpufifo;
 
 	_CPU_ISR_Disable(level);
@@ -1530,7 +1531,7 @@ volatile void* GX_RedirectWriteGatherPipe(void *ptr)
 
 void GX_RestoreWriteGatherPipe()
 {
-	u32 level;
+	u32 level = 0;
 	struct __gxfifo *cpufifo = (struct __gxfifo*)&_cpufifo;
 
 	_CPU_ISR_Disable(level);
@@ -1642,7 +1643,7 @@ u16 GX_GetDrawSync()
 
 void GX_SetDrawDone()
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	GX_LOAD_BP_REG(0x45000002); // set draw done!
 	GX_Flush();
@@ -1652,7 +1653,7 @@ void GX_SetDrawDone()
 
 void GX_WaitDrawDone()
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	while(!_gxfinished)
 		LWP_ThreadSleep(_gxwaitfinish);
@@ -1661,7 +1662,7 @@ void GX_WaitDrawDone()
 
 void GX_DrawDone()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	GX_LOAD_BP_REG(0x45000002); // set draw done!
@@ -1677,7 +1678,7 @@ void GX_DrawDone()
 
 GXDrawDoneCallback GX_SetDrawDoneCallback(GXDrawDoneCallback cb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	GXDrawDoneCallback ret = drawDoneCB;
@@ -1688,7 +1689,7 @@ GXDrawDoneCallback GX_SetDrawDoneCallback(GXDrawDoneCallback cb)
 
 GXDrawSyncCallback GX_SetDrawSyncCallback(GXDrawSyncCallback cb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	GXDrawSyncCallback ret = tokenCB;
@@ -1699,7 +1700,7 @@ GXDrawSyncCallback GX_SetDrawSyncCallback(GXDrawSyncCallback cb)
 
 GXBreakPtCallback GX_SetBreakPtCallback(GXBreakPtCallback cb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	GXBreakPtCallback ret = breakPtCB;
@@ -2130,7 +2131,7 @@ void GX_BeginDispList(void *list,u32 size)
 
 u32 GX_EndDispList()
 {
-	u32 level;
+	u32 level = 0;
 	u8 wrap = 0;
 
 	GX_GetCPUFifo(&_gx_dl_fifoobj);
@@ -3617,7 +3618,7 @@ void GX_SetTexCoordBias(u8 texcoord,u8 s_enable,u8 t_enable)
 
 GXTexRegionCallback GX_SetTexRegionCallback(GXTexRegionCallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	GXTexRegionCallback ret;
 
 	_CPU_ISR_Disable(level);
@@ -3630,7 +3631,7 @@ GXTexRegionCallback GX_SetTexRegionCallback(GXTexRegionCallback cb)
 
 GXTlutRegionCallback GX_SetTlutRegionCallback(GXTlutRegionCallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	GXTlutRegionCallback ret;
 
 	_CPU_ISR_Disable(level);

@@ -29,7 +29,6 @@
 #define BUFFER_COUNT 3
 #endif
 
-
 #define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
 
@@ -73,63 +72,111 @@ static size_t switch_audio_buffer_size(void *data)
 #endif
 }
 
-static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
+/* Makes swa->current_buffer the next released buffer, waiting for one
+ * to be played out when block is set. Returns 1 with a buffer in hand,
+ * 0 when none was available and block was not set, -1 on error. The
+ * buffer stays current across calls until a write fills and appends
+ * it, so a wait that acquires one hands it to the write that follows. */
+/* Bound on a wait for the service to release a buffer: one wait, in
+ * nanoseconds, and how many before the write is skipped. */
+#define SWITCH_AUDIO_WAIT_NS   100000000ULL
+#define SWITCH_AUDIO_WAIT_LAPS 8
+
+static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
 {
-   size_t to_write     = size;
-	switch_audio_t *swa = (switch_audio_t*) data;
+   uint32_t num;
+
+   if (swa->current_buffer)
+      return 1;
+
+   if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
+   {
+      RARCH_ERR("[Switch audio] Failed to get released buffer.\n");
+      return -1;
+   }
+
+   if (num < 1)
+      swa->current_buffer = NULL;
+
+   if (!swa->current_buffer)
+   {
+      /* The service releases a buffer as it finishes playing one; a
+       * service that has stopped - the device change, the console on
+       * its way to sleep - releases none, and this waited for it with
+       * no end. Each wait is bounded and the loop is capped; with no
+       * buffer in hand after that, the write is skipped this call. */
+      int laps = SWITCH_AUDIO_WAIT_LAPS;
+
+      if (!block)
+         return 0;
+
+      while (!swa->current_buffer)
+      {
+#ifndef HAVE_LIBNX
+         uint32_t handle_idx = 0;
+#endif
+         num                 = 0;
+
+#ifdef HAVE_LIBNX
+         if (audoutWaitPlayFinish(&swa->current_buffer, &num,
+                  SWITCH_AUDIO_WAIT_NS) != 0)
+            swa->current_buffer = NULL;
+#else
+         svcWaitSynchronization(&handle_idx, &swa->event, 1, SWITCH_AUDIO_WAIT_NS);
+         svcResetSignal(swa->event);
+
+         if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
+            return -1;
+#endif
+         if (!swa->current_buffer && --laps < 0)
+            return 0;
+      }
+   }
+
+   swa->current_buffer->data_size = 0;
+   return 1;
+}
+
+/* Waits until a buffer is in hand and returns the room left in it; a
+ * buffer's whole capacity is at least a frame of audio, so this always
+ * makes progress whatever len is. Returns 0 on error. */
+static size_t switch_audio_wait_writable(void *data, size_t len)
+{
+   switch_audio_t *swa = (switch_audio_t*)data;
+
+   (void)len;
+   if (!swa)
+      return 0;
+   if (switch_audio_acquire_buffer(swa, true) <= 0)
+      return 0;
+   return switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
+}
+
+static ssize_t switch_audio_write(void *data, const void *s, size_t len)
+{
+   size_t _len = len;
+	switch_audio_t *swa = (switch_audio_t*)data;
 
    if (!swa)
       return -1;
 
-	if (!swa->current_buffer)
    {
-      uint32_t num;
-      if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
-      {
-         RARCH_ERR("[Audio]: Failed to get released buffer?\n");
+      int r = switch_audio_acquire_buffer(swa, swa->blocking);
+      if (r < 0)
          return -1;
-      }
-
-      if (num < 1)
-         swa->current_buffer = NULL;
-
-      if (!swa->current_buffer)
-      {
-         /* no buffer, nonblocking... */
-         if (!swa->blocking)
-            return 0;
-
-         while (!swa->current_buffer)
-         {
-#ifndef HAVE_LIBNX
-            uint32_t handle_idx = 0;
-#endif
-            num                 = 0;
-
-#ifdef HAVE_LIBNX
-            if (audoutWaitPlayFinish(&swa->current_buffer, &num, UINT64_MAX) != 0) { }
-#else
-            svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
-            svcResetSignal(swa->event);
-
-            if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
-               return -1;
-#endif
-         }
-      }
-
-      swa->current_buffer->data_size = 0;
+      if (r == 0)
+         return 0;
    }
 
-	if (to_write > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
-		to_write = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
+	if (_len > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
+		_len = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
 
 #ifndef HAVE_LIBNX
-   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, buf, to_write);
+   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, s, _len);
 #else
-   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, buf, to_write);
+   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, s, _len);
 #endif
-	swa->current_buffer->data_size   += to_write;
+	swa->current_buffer->data_size   += _len;
 	swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
 
 	if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
@@ -141,7 +188,7 @@ static ssize_t switch_audio_write(void *data, const void *buf, size_t size)
 
 	swa->last_append = svcGetSystemTick();
 
-	return to_write;
+	return _len;
 }
 
 static bool switch_audio_stop(void *data)
@@ -181,13 +228,14 @@ static bool switch_audio_start(void *data, bool is_shutdown)
 static bool switch_audio_alive(void *data)
 {
    switch_audio_t *swa = (switch_audio_t*) data;
-   if (!swa)
-      return false;
-   return !swa->is_paused;
+   return (swa && !swa->is_paused);
 }
 
 static void switch_audio_free(void *data)
 {
+#ifdef HAVE_LIBNX
+   int i;
+#endif
    switch_audio_t *swa = (switch_audio_t*) data;
 
    if (!swa)
@@ -198,8 +246,6 @@ static void switch_audio_free(void *data)
       audoutStopAudioOut();
 
    audoutExit();
-
-   int i;
    for (i = 0; i < BUFFER_COUNT; i++)
       free(swa->buffers[i].buffer);
 #else
@@ -209,10 +255,9 @@ static void switch_audio_free(void *data)
    free(swa);
 }
 
-static bool switch_audio_use_float(void *data)
-{
-   return false; /* force INT16 */
-}
+/* audout is PCM_INT16 only; init checks for exactly that format and
+ * refuses anything else. Float is not something this service offers. */
+static bool switch_audio_use_float(void *data) { return false; }
 
 static size_t switch_audio_write_avail(void *data)
 {
@@ -259,7 +304,7 @@ static void *switch_audio_init(const char *device,
 
    if (num_names != 1)
    {
-      RARCH_ERR("got back more than one AudioOut\n");
+      RARCH_ERR("[Switch audio] Got back more than one AudioOut.\n");
       goto fail_audio_ipc;
    }
 
@@ -268,21 +313,21 @@ static void *switch_audio_init(const char *device,
 
    if (swa->output.sample_rate != SAMPLE_RATE)
    {
-      RARCH_ERR("expected sample rate of %d, got sample rate of %d\n",
+      RARCH_ERR("[Switch audio] Expected sample rate of %d, got sample rate of %d.\n",
             SAMPLE_RATE, swa->output.sample_rate);
       goto fail_audio_output;
    }
 
    if (swa->output.num_channels != NUM_CHANNELS)
    {
-      RARCH_ERR("expected %d channels, got %d\n", NUM_CHANNELS,
+      RARCH_ERR("[Switch audio] Expected %d channels, got %d.\n", NUM_CHANNELS,
             swa->output.num_channels);
       goto fail_audio_output;
    }
 
    if (swa->output.sample_format != PCM_INT16)
    {
-      RARCH_ERR("expected PCM_INT16, got %d\n", swa->output.sample_format);
+      RARCH_ERR("[Switch audio] Expected PCM_INT16, got %d.\n", swa->output.sample_format);
       goto fail_audio_output;
    }
 
@@ -331,7 +376,7 @@ static void *switch_audio_init(const char *device,
    swa->blocking       = block_frames;
    swa->is_paused      = true;
 
-   RARCH_LOG("[Audio]: Audio initialized\n");
+   RARCH_LOG("[Switch audio] Audio initialized.\n");
 
    return swa;
 
@@ -366,4 +411,6 @@ audio_driver_t audio_switch = {
    NULL, /* device_list_free */
    switch_audio_write_avail,
    switch_audio_buffer_size, /* buffer_size */
+   NULL, /* write_raw */
+   switch_audio_wait_writable
 };

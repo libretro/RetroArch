@@ -1793,7 +1793,8 @@ static u32 __VISendI2CData(u8 addr,void *val,u32 len)
 {
 	u8 c;
 	s32 i,j;
-	u32 level,ret;
+	u32 ret;
+	u32 level = 0;
 
 	if(i2cIdentFirst==0) {
 		__viCheckI2C();
@@ -2182,7 +2183,8 @@ void* VIDEO_GetCurrentFramebuffer()
 
 void VIDEO_Init()
 {
-	u32 level,vimode = 0;
+	u32 vimode = 0;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -2267,7 +2269,8 @@ void VIDEO_Init()
 void VIDEO_Configure(GXRModeObj *rmode)
 {
 	u16 dcr;
-	u32 nonint,vimode,level;
+	u32 nonint, vimode;
+	u32 level = 0;
 	const struct _timing *curtiming;
 	_CPU_ISR_Disable(level);
 	nonint = (rmode->viTVMode&0x0003);
@@ -2328,7 +2331,7 @@ void VIDEO_Configure(GXRModeObj *rmode)
 
 void VIDEO_WaitVSync(void)
 {
-	u32 level;
+	u32 level = 0;
 	u32 retcnt;
 
 	_CPU_ISR_Disable(level);
@@ -2341,7 +2344,7 @@ void VIDEO_WaitVSync(void)
 
 void VIDEO_SetFramebuffer(void *fb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	fbSet = 1;
@@ -2365,7 +2368,7 @@ void VIDEO_SetFramebuffer(void *fb)
 
 void VIDEO_SetNextFramebuffer(void *fb)
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	fbSet = 1;
 	HorVer.bufAddr = fb;
@@ -2375,7 +2378,7 @@ void VIDEO_SetNextFramebuffer(void *fb)
 
 void VIDEO_SetNextRightFramebuffer(void *fb)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	fbSet = 1;
@@ -2386,7 +2389,7 @@ void VIDEO_SetNextRightFramebuffer(void *fb)
 
 void VIDEO_Flush()
 {
-	u32 level;
+	u32 level = 0;
 	u32 val;
 	u64 mask;
 
@@ -2408,7 +2411,7 @@ void VIDEO_Flush()
 
 void VIDEO_SetBlack(bool black)
 {
-	u32 level;
+	u32 level = 0;
 	const struct _timing *curtiming;
 
 	_CPU_ISR_Disable(level);
@@ -2420,7 +2423,8 @@ void VIDEO_SetBlack(bool black)
 
 u32 VIDEO_GetNextField()
 {
-	u32 level,nextfield;
+	u32 nextfield;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	nextfield = __getCurrentFieldEvenOdd()^1;		//we've to swap the result because it shows us only the current field,so we've the next field either even or odd
@@ -2432,7 +2436,7 @@ u32 VIDEO_GetNextField()
 u32 VIDEO_GetCurrentTvMode()
 {
 	u32 mode;
-	u32 level;
+	u32 level = 0;
 	u32 tv;
 
 	_CPU_ISR_Disable(level);
@@ -2535,7 +2539,8 @@ GXRModeObj *rmode = NULL;
 
 u32 VIDEO_GetCurrentLine()
 {
-	u32 level,curr_hl = 0;
+	u32 curr_hl = 0;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	curr_hl = __getCurrentHalfLine();

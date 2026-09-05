@@ -26,6 +26,7 @@
 #include <compat/strl.h>
 #include <queues/fifo_queue.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
 
 #include "../connect/joypad_connection.h"
 #include "../input_defines.h"
@@ -63,11 +64,11 @@ struct libusb_adapter
    int endpoint_in_max_size;
    int endpoint_out_max_size;
 
-   uint8_t manufacturer_name[255];
-   uint8_t name[255];
+   uint8_t manufacturer_name[NAME_MAX_LENGTH];
+   uint8_t name[NAME_MAX_LENGTH];
    uint8_t data[2048];
 
-   int slot;
+   int32_t slot;
 
    sthread_t *thread;
    slock_t *send_control_lock;
@@ -88,26 +89,26 @@ static void adapter_thread(void *data)
 
    while (!adapter->quitting)
    {
-      size_t send_command_size;
       int tmp;
+      size_t _len;
       int report_number;
       int size = 0;
 
       slock_lock(adapter->send_control_lock);
       if (FIFO_READ_AVAIL(adapter->send_control_buffer)
-            >= sizeof(send_command_size))
+            >= sizeof(_len))
       {
          fifo_read(adapter->send_control_buffer,
-               &send_command_size, sizeof(send_command_size));
+               &_len, sizeof(_len));
 
          if (FIFO_READ_AVAIL(adapter->send_control_buffer)
-               >= sizeof(send_command_size))
+               >= sizeof(_len))
          {
             fifo_read(adapter->send_control_buffer,
-                  send_command_buf, send_command_size);
+                  send_command_buf, _len);
             libusb_interrupt_transfer(adapter->handle,
                   adapter->endpoint_out, send_command_buf,
-                  send_command_size, &tmp, 1000);
+                  _len, &tmp, 1000);
          }
       }
       slock_unlock(adapter->send_control_lock);
@@ -123,7 +124,7 @@ static void adapter_thread(void *data)
 }
 
 static void libusb_hid_device_send_control(void *data,
-      uint8_t* data_buf, size_t size)
+      uint8_t *s, size_t len)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
 
@@ -132,14 +133,14 @@ static void libusb_hid_device_send_control(void *data,
 
    slock_lock(adapter->send_control_lock);
 
-   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= size + sizeof(size))
+   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= len + sizeof(len))
    {
-      fifo_write(adapter->send_control_buffer, &size, sizeof(size));
-      fifo_write(adapter->send_control_buffer, data_buf, size);
+      fifo_write(adapter->send_control_buffer, &len, sizeof(len));
+      fifo_write(adapter->send_control_buffer, s, len);
    }
    else
    {
-      RARCH_WARN("adapter write buffer is full, cannot write send control\n");
+      RARCH_WARN("[libusb] Adapter write buffer is full, cannot write send control.\n");
    }
    slock_unlock(adapter->send_control_lock);
 }
@@ -150,7 +151,7 @@ static void libusb_hid_device_add_autodetect(unsigned idx,
 {
    input_autoconfigure_connect(
          device_name,
-         NULL,
+         NULL, NULL,
          "hid",
          idx,
          dev_vid,
@@ -169,7 +170,7 @@ static void libusb_get_description(struct libusb_device *device,
 
    if (desc_ret != 0)
    {
-      RARCH_ERR("Error %d getting libusb config descriptor\n", desc_ret);
+      RARCH_ERR("[libusb] Error %d getting libusb config descriptor.\n", desc_ret);
       return;
    }
 
@@ -239,7 +240,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    if (!hid)
    {
       free(adapter);
-      RARCH_ERR("Allocation of adapter failed.\n");
+      RARCH_ERR("[libusb] Allocation of adapter failed.\n");
       return -1;
    }
 
@@ -247,7 +248,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      RARCH_ERR("Error getting device descriptor.\n");
+      RARCH_ERR("[libusb] Error getting device descriptor.\n");
       goto error;
    }
 
@@ -257,7 +258,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (adapter->endpoint_in == 0)
    {
-      RARCH_ERR("Could not find HID config for device.\n");
+      RARCH_ERR("[libusb] Could not find HID config for device.\n");
       goto error;
    }
 
@@ -265,7 +266,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      RARCH_ERR("Error opening device 0x%p (VID/PID: %04x:%04x).\n",
+      RARCH_ERR("[libusb] Error opening device 0x%p (VID/PID: %04x:%04x).\n",
             (void*)adapter->device, desc.idVendor, desc.idProduct);
       goto error;
    }
@@ -276,7 +277,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
             desc.iManufacturer, adapter->manufacturer_name,
             sizeof(adapter->manufacturer_name));
 #if 0
-      RARCH_ERR(" Adapter Manufacturer name: %s\n",
+      RARCH_ERR("[libusb] Adapter manufacturer name: %s\n",
             adapter->manufacturer_name);
 #endif
    }
@@ -287,13 +288,13 @@ static int add_adapter(void *data, struct libusb_device *dev)
             desc.iProduct, adapter->name,
             sizeof(adapter->name));
 #if 0
-      RARCH_ERR(" Adapter name: %s\n", adapter->name);
+      RARCH_ERR("[libusb] Adapter name: %s\n", adapter->name);
 #endif
    }
 
    device_name   = (const char*)adapter->name;
 
-   if (string_is_empty((const char*)adapter->name))
+   if ((!(const char*)adapter->name || !*(const char*)adapter->name))
       goto error;
 
    adapter->send_control_lock = slock_new();
@@ -301,7 +302,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!adapter->send_control_lock || !adapter->send_control_buffer)
    {
-      RARCH_ERR("Error creating send control buffer.\n");
+      RARCH_ERR("[libusb] Error creating send control buffer.\n");
       goto error;
    }
 
@@ -314,17 +315,17 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!pad_connection_has_interface(hid->slots, adapter->slot))
    {
-      RARCH_ERR("Interface not found (%s) (VID/PID: %04x:%04x).\n",
+      RARCH_ERR("[libusb] Interface not found (%s) (VID/PID: %04x:%04x).\n",
          adapter->name, desc.idVendor, desc.idProduct);
       goto error;
    }
 
-   RARCH_LOG("Interface found: [%s].\n", adapter->name);
+   RARCH_LOG("[libusb] Interface found: \"%s\".\n", adapter->name);
 
    if (libusb_kernel_driver_active(adapter->handle, 0) == 1
          && libusb_detach_kernel_driver(adapter->handle, 0))
    {
-      RARCH_ERR("Error detaching handle 0x%p from kernel.\n", adapter->handle);
+      RARCH_ERR("[libusb] Error detaching handle 0x%p from kernel.\n", adapter->handle);
       goto error;
    }
 
@@ -332,11 +333,11 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (rc != LIBUSB_SUCCESS)
    {
-      RARCH_ERR("Error claiming interface %d .\n", adapter->interface_number);
+      RARCH_ERR("[libusb] Error claiming interface %d.\n", adapter->interface_number);
       goto error;
    }
 
-   RARCH_LOG("Device 0x%p attached (VID/PID: %04x:%04x).\n",
+   RARCH_LOG("[libusb] Device 0x%p attached (VID/PID: %04x:%04x).\n",
          adapter->device, desc.idVendor, desc.idProduct);
 
    libusb_hid_device_add_autodetect(adapter->slot,
@@ -347,7 +348,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    if (!adapter->thread)
    {
-      RARCH_ERR("Error initializing adapter thread.\n");
+      RARCH_ERR("[libusb] Error initializing adapter thread.\n");
       goto error;
    }
 
@@ -420,7 +421,7 @@ static int libusb_hid_hotplug_callback(struct libusb_context *ctx,
          remove_adapter(hid, dev);
          break;
       default:
-         RARCH_WARN("Unhandled event: %d\n", event);
+         RARCH_WARN("[libusb] Unhandled event: %d\n", event);
          break;
    }
 
@@ -523,11 +524,11 @@ static int16_t libusb_hid_joypad_state(
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       if (
-               (uint16_t)joykey != NO_BTN 
+               (uint16_t)joykey != NO_BTN
             && libusb_hid_joypad_button(data, port_idx, (uint16_t)joykey))
          ret |= ( 1 << i);
       else if (joyaxis != AXIS_NONE &&
-            ((float)abs(libusb_hid_joypad_axis(data, port_idx, joyaxis)) 
+            ((float)abs(libusb_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
@@ -541,7 +542,7 @@ static void libusb_hid_free(const void *data)
 
    while (adapters.next)
       if (remove_adapter(hid, adapters.next->device) == -1)
-         RARCH_ERR("could not remove device %p\n",
+         RARCH_ERR("[libusb] Could not remove device %p.\n",
                adapters.next->device);
 
    if (hid->poll_thread)
@@ -652,7 +653,7 @@ static void *libusb_hid_init(void)
 
    if (!hid->poll_thread)
    {
-      RARCH_ERR("Error creating polling thread");
+      RARCH_ERR("[libusb] Error creating polling thread.");
       goto error;
    }
 

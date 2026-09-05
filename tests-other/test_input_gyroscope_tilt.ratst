@@ -1,0 +1,14 @@
+[
+{ "action": 15, "param_num": 10, "frame": 330 },
+{ "action": 15, "param_num": 40  },
+{ "action": 15, "param_num": 60  },
+{ "action": 15, "param_num": 90  },
+{ "action": 15, "param_num": 110 },
+{ "action": 15, "param_num": 140 },
+{ "action": 15, "param_num": 160 },
+{ "action": 15, "param_num": 190 },
+{ "action": 1, "param_num": 27 },
+{ "action": 2, "param_num": 27 },
+{ "action": 1, "param_num": 27 },
+{ "action": 2, "param_num": 27}
+]

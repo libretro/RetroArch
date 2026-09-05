@@ -21,7 +21,12 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
-#include <string/stdstring.h>
+#include <memalign.h>
+
+#ifdef _3DS
+#include <3ds/types.h>
+#include <3ds/allocator/linear.h> /* linearMemAlign() */
+#endif
 
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
@@ -30,6 +35,34 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+
+#include <retro_assert.h>
+
+/* cond_cmd multiplexes two predicates over wake-one signals, which is
+ * only correct while at most one thread waits on it. See the note on
+ * cond_cmd in video_thread_wrapper.h. Every wait on cond_cmd must be
+ * bracketed by these; thr->lock is held across the wait, so the counter
+ * needs no atomics. */
+#ifdef DEBUG
+#define VIDEO_THREAD_CMD_WAIT_ENTER(thr) \
+   do { \
+      uintptr_t self_ = sthread_get_current_thread_id(); \
+      retro_assert(   (thr)->cond_cmd_waiters == 0 \
+                   || (thr)->cond_cmd_waiter  == self_); \
+      (thr)->cond_cmd_waiter = self_; \
+      (thr)->cond_cmd_waiters++; \
+   } while (0)
+#else
+/* Release builds pay nothing; the fields exist unconditionally only so
+ * that the struct layout does not vary with the build type. */
+#define VIDEO_THREAD_CMD_WAIT_ENTER(thr) do { } while (0)
+#endif
+#ifdef DEBUG
+#define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) \
+   do { (thr)->cond_cmd_waiters--; } while (0)
+#else
+#define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) do { } while (0)
+#endif
 
 static void *video_thread_init_never_call(const video_info_t *video,
       input_driver_t **input, void **input_data)
@@ -72,13 +105,62 @@ static void video_thread_send_packet(thread_video_t *thr,
 
 }
 
+/* As video_thread_send_packet(), but drops the packet and reports
+ * failure if the worker is no longer alive.  thr->alive is written by
+ * video_thread_loop() under thr->lock, so the test has to happen with
+ * that lock held; doing it here reuses the critical section this
+ * function enters anyway rather than taking a second one. */
+static bool video_thread_send_packet_if_alive(thread_video_t *thr,
+      const thread_packet_t *pkt)
+{
+   slock_lock(thr->lock);
+
+   if (!thr->alive)
+   {
+      slock_unlock(thr->lock);
+      return false;
+   }
+
+   thr->cmd_data  = *pkt;
+
+   thr->send_cmd  = pkt->type;
+   thr->reply_cmd = CMD_VIDEO_NONE;
+
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+
+   return true;
+}
+
+/* One condvar-wait iteration that lets a main-thread waiter drain the
+ * cocoa main-thread trampoline, so work the worker marshals back via
+ * cocoa_main_thread_sync() runs and the handshake does not deadlock (the
+ * worker blocks on the main thread while the main thread blocks on the
+ * reply).  Returns true if it fully handled this wait iteration; false if
+ * the caller should perform a plain blocking scond_wait().  A no-op
+ * returning false on non-Apple platforms. */
+static bool video_thread_pump_wait(scond_t *cond, slock_t *lock)
+{
+#ifdef __APPLE__
+   bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
+   return cocoa_main_thread_cond_wait_pump(cond, lock);
+#else
+   (void)cond;
+   (void)lock;
+   return false;
+#endif
+}
+
 /* user -> thread */
 static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
+   VIDEO_THREAD_CMD_WAIT_ENTER(thr);
    while (pkt->type != thr->reply_cmd)
-      scond_wait(thr->cond_cmd, thr->lock);
+      if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
+         scond_wait(thr->cond_cmd, thr->lock);
+   VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
@@ -150,6 +232,15 @@ static bool video_thread_handle_packet(
                   thr->input, thr->input_data);
             if (thr->driver_data && thr->driver->viewport_info)
                thr->driver->viewport_info(thr->driver_data, &thr->vp);
+            /* Drivers that have handed the OSD font lifecycle up get
+             * it created here rather than in video_driver.c, because
+             * this runs on the video thread that owns the graphics
+             * context. Unmigrated drivers still do it themselves,
+             * also from here, inside their own init(). */
+            if (     thr->driver_data
+                  && thr->driver->font_backend)
+               font_driver_init_osd(thr->driver_data, &thr->info,
+                     true, thr->driver->font_backend);
          }
          else
             thr->driver_data = NULL;
@@ -158,6 +249,11 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_FREE:
+         /* Before the driver goes: the font owns GPU objects created
+          * against it, and this is the thread they belong to. */
+         if (     thr->driver
+               && thr->driver->font_backend)
+            font_driver_free_osd_for(thr->driver_data);
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;
@@ -334,7 +430,7 @@ static bool video_thread_handle_packet(
                pkt.data.font_init.video_data,
                pkt.data.font_init.font_path,
                pkt.data.font_init.font_size,
-               pkt.data.font_init.api,
+               pkt.data.font_init.backend,
                pkt.data.font_init.is_threaded
             );
          video_thread_reply(thr, &pkt);
@@ -342,8 +438,20 @@ static bool video_thread_handle_packet(
 
       case CMD_CUSTOM_COMMAND:
          if (pkt.data.custom_command.method)
+         {
+            /* The user thread is blocked in video_thread_wait_reply for
+             * the whole of this call. On some platforms that waiter is a
+             * higher-priority (e.g. main/UI) thread while this worker runs
+             * at a lower scheduling class, so the wait is a priority
+             * inversion; slock/scond do not propagate priority. Lift this
+             * thread for the duration of the synchronous work (no-op where
+             * unsupported), covering the heavy GPU uploads the custom
+             * command path carries (texture/font resource commands). */
+            void *qos_override = sthread_priority_override_begin();
             pkt.data.custom_command.return_value =
                pkt.data.custom_command.method(pkt.data.custom_command.data);
+            sthread_priority_override_end(qos_override);
+         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -363,16 +471,16 @@ static bool video_thread_handle_packet(
          /* Never reply on no command. Possible deadlock if
           * thread sends command right after frame update. */
          break;
-         
-      case CMD_POKE_SET_HDR_MAX_NITS:
-         if (thr->driver_data && thr->poke && thr->poke->set_hdr_max_nits)
-            thr->poke->set_hdr_max_nits(
+
+      case CMD_POKE_SET_HDR_MENU_NITS:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_menu_nits)
+            thr->poke->set_hdr_menu_nits(
                thr->driver_data,
-               pkt.data.hdr.max_nits
+               pkt.data.hdr.menu_nits
             );
          video_thread_reply(thr, &pkt);
          break;
-         
+
       case CMD_POKE_SET_HDR_PAPER_WHITE_NITS:
          if (thr->driver_data &&
                thr->poke && thr->poke->set_hdr_paper_white_nits)
@@ -382,22 +490,30 @@ static bool video_thread_handle_packet(
             );
          video_thread_reply(thr, &pkt);
          break;
-         
-      case CMD_POKE_SET_HDR_CONTRAST:
-         if (thr->driver_data && thr->poke && thr->poke->set_hdr_contrast)
-            thr->poke->set_hdr_contrast(
-               thr->driver_data,
-               pkt.data.hdr.contrast
-            );
-         video_thread_reply(thr, &pkt);
-         break;
-         
+
       case CMD_POKE_SET_HDR_EXPAND_GAMUT:
          if (thr->driver_data && thr->poke && thr->poke->set_hdr_expand_gamut)
             thr->poke->set_hdr_expand_gamut(
                thr->driver_data,
                pkt.data.hdr.expand_gamut
             );
+
+      case CMD_POKE_SET_HDR_SCANLINES:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_scanlines)
+            thr->poke->set_hdr_scanlines(
+               thr->driver_data,
+               pkt.data.hdr.scanlines
+            );
+         video_thread_reply(thr, &pkt);
+         break;
+
+      case CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT:
+         if (thr->driver_data && thr->poke && thr->poke->set_hdr_subpixel_layout)
+            thr->poke->set_hdr_subpixel_layout(
+               thr->driver_data,
+               pkt.data.hdr.subpixel_layout
+            );
+
          video_thread_reply(thr, &pkt);
          break;
 
@@ -414,6 +530,8 @@ static void video_thread_loop(void *data)
    thread_packet_t pkt;
    bool updated;
    thread_video_t *thr = (thread_video_t*)data;
+
+   sthread_setname("ra-video");
 
    for (;;)
    {
@@ -438,6 +556,9 @@ static void video_thread_loop(void *data)
          bool               alive = false;
          bool               focus = false;
          bool        has_windowed = false;
+         /* True unless the context says otherwise, so a driver without
+          * the hook keeps pacing exactly as it did. */
+         bool         presentable = true;
 
          vp.x                     = 0;
          vp.y                     = 0;
@@ -457,9 +578,19 @@ static void video_thread_loop(void *data)
                video_frame_info_t video_info;
                bool               ret;
 
-               /* TODO/FIXME - not thread-safe - should get 
-                * rid of this */
-               video_driver_build_info(&video_info);
+               /* Built by video_driver_frame() on the main thread and
+                * carried across with the frame data.  Do not call
+                * video_driver_build_info() here: it reads video_driver_st
+                * and runloop_state while the main thread writes them. */
+               video_info = thr->frame.video_info;
+
+               /* video_driver_build_info() resolves userdata from
+                * video_driver_st, and video_thread_free() clears
+                * thread_wrapper_active before this thread
+                * stops, so a frame built inside that window would carry
+                * the thread_video_t wrapper instead of the real driver
+                * data.  This thread knows its own. */
+               video_info.userdata = thr->driver_data;
 
                ret = thr->driver->frame(thr->driver_data,
                   thr->frame.buffer, thr->frame.width, thr->frame.height,
@@ -477,6 +608,10 @@ static void video_thread_loop(void *data)
                      focus = thr->driver->focus(thr->driver_data);
                   if (thr->driver->has_windowed)
                      has_windowed = thr->driver->has_windowed(thr->driver_data);
+                  /* Direct: this is the video thread, which owns the
+                   * context, and the dispatching call would read back
+                   * the value published here on the previous frame. */
+                  presentable = video_context_driver_presentable_direct();
                }
             }
             else
@@ -491,8 +626,14 @@ static void video_thread_loop(void *data)
          slock_lock(thr->lock);
          thr->alive         = alive;
          thr->focus         = focus;
+         thr->presentable   = presentable;
          thr->has_windowed  = has_windowed;
          thr->vp            = vp;
+         /* Statistics. The viewport maths ran on this thread during
+          * thr->driver->frame() above, so publish the result rather
+          * than letting the main thread read video_driver_st. */
+         thr->scale_width   = video_state_get_ptr()->scale_width;
+         thr->scale_height  = video_state_get_ptr()->scale_height;
          thr->frame.updated = false;
          scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);
@@ -508,7 +649,7 @@ static bool video_thread_alive(void *data)
 
    if (!thr)
       return false;
-   
+
    runloop_flags       = runloop_get_flags();
 
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
@@ -604,6 +745,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       retro_time_t target            = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
+      VIDEO_THREAD_CMD_WAIT_ENTER(thr);
       while (thr->frame.updated)
       {
          retro_time_t current = cpu_features_get_time_usec();
@@ -615,6 +757,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          if (!scond_wait_timeout(thr->cond_cmd, thr->lock, delta))
             break;
       }
+      VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
    }
 
    /* Drop frame if updated flag is still set, as thread is
@@ -625,6 +768,18 @@ static bool video_thread_frame(void *data, const void *frame_,
       uint8_t       *dst   = thr->frame.buffer;
       unsigned copy_stride = width *
          (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      /* The buffer holds the maximum geometry the core declared at init.
+       * A core is free to hand over a bigger frame than that, so publish
+       * only the rows that fit: the worker renders thr->frame.height out
+       * of this same buffer, so an unclamped height would be read past
+       * the end of the allocation whether or not anything was copied
+       * into it. A stride too wide for a single row yields zero. */
+      unsigned rows        = copy_stride
+         ? (unsigned)(thr->frame.buffer_size / copy_stride)
+         : 0;
+
+      if (height > rows)
+         height            = rows;
 
       if (src)
       {
@@ -639,6 +794,13 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.count   = frame_count;
       thr->frame.pitch   = copy_stride;
 
+      /* Hand the caller's video_frame_info_t across with the frame data.
+       * It was built by video_driver_frame() on this thread; rebuilding
+       * it on the worker races the main thread's writes to
+       * video_driver_st and runloop_state. */
+      if (video_info)
+         thr->frame.video_info = *video_info;
+
       if (msg)
          strlcpy(thr->frame.msg, msg, sizeof(thr->frame.msg));
       else
@@ -649,10 +811,20 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_MENU
       if (thr->texture.enable)
       {
+         /* Unbounded wait that may run on the main thread; the worker can
+          * marshal main-thread-only work (e.g. Vulkan swapchain recreation
+          * on resize) via cocoa_main_thread_sync() before clearing
+          * frame.updated, so drain the trampoline while waiting. The timed
+          * frame-pacing wait above needs no such treatment: it breaks after
+          * at most one frame period and the main runloop then drains common
+          * modes. */
+         VIDEO_THREAD_CMD_WAIT_ENTER(thr);
          do
          {
-            scond_wait(thr->cond_cmd, thr->lock);
+            if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
+               scond_wait(thr->cond_cmd, thr->lock);
          } while (thr->frame.updated);
+         VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
       }
 #endif
       thr->hit_count++;
@@ -700,13 +872,18 @@ static bool video_thread_init(thread_video_t *thr,
       max_size              *= info.rgb32 ?
          sizeof(uint32_t) : sizeof(uint16_t);
 
+      /* The main thread copies every core frame in here and the video
+       * thread reads it back for upload; a cache-line start keeps both
+       * copies on aligned rows for the usual pitches. */
 #ifdef _3DS
       thr->frame.buffer      = linearMemAlign(max_size, 0x80);
 #else
-      thr->frame.buffer      = (uint8_t*)malloc(max_size);
+      thr->frame.buffer      = (uint8_t*)memalign_alloc(64, max_size);
 #endif
       if (!thr->frame.buffer)
          return false;
+
+      thr->frame.buffer_size = max_size;
 
       memset(thr->frame.buffer, 0x80, max_size);
    }
@@ -839,11 +1016,18 @@ static void video_thread_free(void *data)
             thr->driver->free(thr->driver_data);
       }
 
+      /* After the join, not before it: the video thread reads this
+       * from inside driver frame callbacks, so clearing it while that
+       * thread still runs is a write racing those reads - and it
+       * briefly tells the rest of the frontend the wrapper is gone
+       * while its thread is still presenting. */
+      video_state_get_ptr()->thread_wrapper_active = false;
+
       free(thr->texture.frame);
 #ifdef _3DS
       linearFree(thr->frame.buffer);
 #else
-      free(thr->frame.buffer);
+      memalign_free(thr->frame.buffer);
 #endif
       free(thr->alpha_mod);
 
@@ -856,6 +1040,14 @@ static void video_thread_free(void *data)
       RARCH_LOG(
          "Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
          thr->hit_count, thr->miss_count);
+
+      /* video_init_thread() pointed the video state at the vtable
+       * embedded in this struct. Point it back at the wrapped driver's
+       * static vtable before the struct goes away, so a later
+       * video_driver_free_internal() reading current_video sees a live
+       * driver, as it does without threading. */
+      if (video_state_get_ptr()->current_video == &thr->video_thread)
+         video_state_get_ptr()->current_video = (video_driver_t*)thr->driver;
 
       free(thr);
    }
@@ -1018,15 +1210,15 @@ static void thread_set_filtering(void *data,
    }
 }
 
-static void thread_set_hdr_max_nits(void *data, float max_nits)
+static void thread_set_hdr_menu_nits(void *data, float menu_nits)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr)
    {
       thread_packet_t pkt;
-      pkt.type              = CMD_POKE_SET_HDR_MAX_NITS;
-      pkt.data.hdr.max_nits = max_nits;
+      pkt.type               = CMD_POKE_SET_HDR_MENU_NITS;
+      pkt.data.hdr.menu_nits = menu_nits;
 
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
@@ -1046,21 +1238,7 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
    }
 }
 
-static void thread_set_hdr_contrast(void *data, float contrast)
-{
-   thread_video_t *thr = (thread_video_t*)data;
-
-   if (thr)
-   {
-      thread_packet_t pkt;
-      pkt.type              = CMD_POKE_SET_HDR_CONTRAST;
-      pkt.data.hdr.contrast = contrast;
-
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
-   }
-}
-
-static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
+static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -1073,6 +1251,35 @@ static void thread_set_hdr_expand_gamut(void *data, bool expand_gamut)
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
+
+static void thread_set_hdr_scanlines(void *data, bool hdr_scanlines)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type                = CMD_POKE_SET_HDR_SCANLINES;
+      pkt.data.hdr.scanlines  = hdr_scanlines;
+
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
+static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_layout)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
+      pkt.data.hdr.subpixel_layout    = hdr_subpixel_layout;
+
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
 
 static void thread_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
@@ -1134,7 +1341,10 @@ static void thread_set_texture_frame(void *data, const void *frame,
       void *tmp_frame = realloc(thr->texture.frame, required);
 
       if (!tmp_frame)
-         goto end;
+      {
+         slock_unlock(thr->frame.lock);
+         return;
+      }
 
       thr->texture.frame     = tmp_frame;
       thr->texture.frame_cap = required;
@@ -1148,7 +1358,6 @@ static void thread_set_texture_frame(void *data, const void *frame,
    thr->texture.alpha         = alpha;
    thr->texture.frame_updated = true;
 
-end:
    slock_unlock(thr->frame.lock);
 }
 
@@ -1166,14 +1375,15 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void thread_set_osd_msg(void *data,
-      const char *msg, const struct font_params *params, void *font)
+      const char *msg, size_t msg_len,
+      const struct font_params *params, void *font)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    /* TODO : find a way to determine if the calling
     * thread is the driver thread or not. */
    if (thr && thr->driver_data && thr->poke && thr->poke->set_osd_msg)
-      thr->poke->set_osd_msg(thr->driver_data, msg, params, font);
+      thr->poke->set_osd_msg(thr->driver_data, msg, msg_len, params, font);
 }
 
 static void thread_show_mouse(void *data, bool state)
@@ -1221,7 +1431,17 @@ static void thread_unload_texture(void *data,
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr && thr->driver_data && thr->poke && thr->poke->unload_texture)
+   {
+      /* Releasing a GPU texture while the video thread is mid-frame can
+       * free something the in-flight frame still references -- the AI
+       * service overlay is drawn straight from
+       * dispgfx_widget_t::ai_service_overlay_texture after a plain
+       * ai_service_overlay_state test, with no handshake.  Drain any
+       * pending frame first; no-op when this is the video thread or
+       * when the wrapper is not running. */
+      video_thread_wait_idle();
       thr->poke->unload_texture(thr->driver_data, threaded, id);
+   }
 }
 
 static void thread_apply_state_changes(void *data)
@@ -1258,6 +1478,36 @@ static uint32_t thread_get_flags(void *data)
    return 0;
 }
 
+static bool thread_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->supports_texture_format)
+      return thr->poke->supports_texture_format(thr->driver_data, fmt);
+   return false;
+}
+
+/* Forward the compressed upload with 'threaded' passed through, exactly as
+ * thread_load_texture does. The underlying driver decides whether to marshal
+ * the GPU work onto the video thread; the descriptor stays alive because
+ * video_thread_texture_handle is synchronous. */
+static uintptr_t thread_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->load_texture_compressed)
+      return thr->poke->load_texture_compressed(thr->driver_data,
+         tc, threaded, filter_type);
+   return 0;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -1280,10 +1530,13 @@ static const video_poke_interface_t thread_poke = {
    thread_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   thread_set_hdr_max_nits,
+   thread_set_hdr_menu_nits,
    thread_set_hdr_paper_white_nits,
-   thread_set_hdr_contrast,
-   thread_set_hdr_expand_gamut
+   thread_set_hdr_expand_gamut,
+   thread_set_hdr_scanlines,
+   thread_set_hdr_subpixel_layout,
+   thread_supports_texture_format,
+   thread_load_texture_compressed
 };
 
 static void video_thread_get_poke_interface(void *data,
@@ -1335,6 +1588,8 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    video_thread_wrapper_gfx_widgets_enabled
 #endif
@@ -1393,17 +1648,49 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
    thr->driver = drv;
    *out_driver = &thr->video_thread;
    *out_data   = thr;
-   return video_thread_init(thr, info, input, input_data);
+
+   /* Mark the wrapper active before running the underlying driver's
+    * init(): that init() runs on the worker thread and may query
+    * video_driver_get_ident() (e.g. via the context driver's get_flags
+    * for shader-backend detection).  current_video already points at the
+    * thread wrapper here, so without the flag set get_ident() would
+    * resolve to "Thread wrapper" instead of the wrapped driver ("glcore"),
+    * causing shader-backend detection to fail. */
+   video_state_get_ptr()->thread_wrapper_active = true;
+   if (!video_thread_init(thr, info, input, input_data))
+   {
+      /* video_thread is a member of thr, not a static vtable, so leaving
+       * it published hands the caller freed memory once thr goes.
+       * Restore drv and NULL the data, as the non-threaded failure path
+       * does.  Free via video_thread_free(): init can fail after the
+       * worker thread and the frame buffer already exist. */
+      video_thread_free(thr);
+      *out_driver = drv;
+      *out_data   = NULL;
+      return false;
+   }
+
+   return true;
 }
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float video_font_size,
-      enum font_driver_render_api api, custom_font_command_method_t func,
+      const font_renderer_t *backend, custom_font_command_method_t func,
       bool is_threaded)
 {
    thread_packet_t pkt;
    video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr      = (thread_video_t*)video_st->data;
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  During
+    * driver reinit, is_threaded may already reflect the new
+    * configuration while video_st->data still points to the
+    * previous (possibly non-threaded) driver's private state. */
+   if (!video_st->thread_wrapper_active)
+      return false;
+
+   thr = (thread_video_t*)video_st->data;
 
    if (!thr)
       return false;
@@ -1416,27 +1703,102 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.font_path   = font_path;
    pkt.data.font_init.font_size   = video_font_size;
    pkt.data.font_init.is_threaded = is_threaded;
-   pkt.data.font_init.api         = api;
+   pkt.data.font_init.backend         = backend;
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 
    return pkt.data.font_init.return_value;
 }
 
-unsigned video_thread_texture_load(void *data, custom_command_method_t func)
+uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 {
    thread_packet_t pkt;
    video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr      = (thread_video_t*)video_st->data;
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  During
+    * driver reinit, callers' "threaded" flags may already reflect
+    * the new configuration while video_st->data still points to
+    * the previous driver's private state.  Fall back to calling
+    * func directly (same contract as the "already on video
+    * thread" branch below). */
+   if (!video_st->thread_wrapper_active)
+      return func(data);
+
+   thr = (thread_video_t*)video_st->data;
 
    if (!thr)
       return 0;
+
+   /* if we're already on the video thread, just call the function, otherwise
+    * we may deadlock with ourself waiting for the packet to be processed. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return func(data);
 
    pkt.type                       = CMD_CUSTOM_COMMAND;
    pkt.data.custom_command.method = func;
    pkt.data.custom_command.data   = data;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   /* Aliveness is tested inside the send, under the lock it already
+    * takes.  Reading thr->alive here instead would race the worker's
+    * write in video_thread_loop(). */
+   if (!video_thread_send_packet_if_alive(thr, &pkt))
+      return func(data);
+
+   video_thread_wait_reply(thr, &pkt);
 
    return pkt.data.custom_command.return_value;
+}
+
+/* Waits until the video thread has finished processing any
+ * pending frame and is idle, waiting on its command condition
+ * variable.  After this returns, it is safe to free GPU-backed
+ * resources (textures, fonts) owned by the menu driver — no
+ * frame can be in-flight referencing them.
+ *
+ * Must be called from the main thread.  No-op if the video
+ * thread is not running or if called from the video thread
+ * itself (would deadlock). */
+bool video_thread_presentable(void)
+{
+   bool ret;
+   thread_video_t *thr;
+   if (!video_driver_thread_wrapper_active())
+      return true;
+   if (!(thr = (thread_video_t*)video_driver_get_ptr()))
+      return true;
+   slock_lock(thr->lock);
+   ret = thr->presentable;
+   slock_unlock(thr->lock);
+   return ret;
+}
+
+void video_thread_wait_idle(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+
+   /* Only safe to interpret video_st->data as a thread_video_t*
+    * when the threaded video wrapper is actually active.  With
+    * non-threaded video, video_st->data points to the raw
+    * driver's private state. */
+   if (!video_st->thread_wrapper_active)
+      return;
+
+   thr = (thread_video_t*)video_st->data;
+
+   if (!thr || !thr->thread)
+      return;
+
+   /* Avoid self-deadlock if called from the video thread. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return;
+
+   slock_lock(thr->lock);
+   VIDEO_THREAD_CMD_WAIT_ENTER(thr);
+   while (thr->frame.updated)
+      scond_wait(thr->cond_cmd, thr->lock);
+   VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
+   slock_unlock(thr->lock);
 }

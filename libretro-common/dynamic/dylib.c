@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <dynamic/dylib.h>
 #include <encodings/utf.h>
+#include <string/stdstring.h>
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 
 #if defined(ORBIS)
 #include <orbis/libkernel.h>
@@ -37,34 +40,27 @@
 #else
 #if !defined(ORBIS)
 #include <dlfcn.h>
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
 #endif
 #endif
-
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
 #endif
 
 #ifdef _WIN32
-static char last_dyn_error[512];
+static char last_dyn_err[512];
 
-static void set_dl_error(void)
+static void set_dl_err(void)
 {
    DWORD err = GetLastError();
-
-   if (FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS |
-            FORMAT_MESSAGE_FROM_SYSTEM,
-            NULL,
-            err,
+   if (FormatMessage(
+              FORMAT_MESSAGE_IGNORE_INSERTS
+            | FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL, err,
             MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT),
-            last_dyn_error,
-            sizeof(last_dyn_error) - 1,
+            last_dyn_err, sizeof(last_dyn_err) - 1,
             NULL) == 0)
-      snprintf(last_dyn_error, sizeof(last_dyn_error) - 1,
+      snprintf(last_dyn_err, sizeof(last_dyn_err) - 1,
             "unknown error %lu", err);
 }
 #endif
@@ -93,7 +89,7 @@ dylib_t dylib_load(const char *path)
    relative_path_abbrev[0] = '\0';
 
    if (!path_is_absolute(path))
-      RARCH_WARN("Relative path in dylib_load! This is likely an attempt to load a system library that will fail\n");
+      RARCH_WARN("Relative path in dylib_load! This is likely an attempt to load a system library that will fail.\n");
 
    fill_pathname_abbreviate_special(relative_path_abbrev, path, sizeof(relative_path_abbrev));
 
@@ -106,6 +102,17 @@ dylib_t dylib_load(const char *path)
    path_wide = utf8_to_utf16_string_alloc(relative_path);
    lib       = LoadPackagedLibrary(path_wide, 0);
    free(path_wide);
+#elif defined(LEGACY_WIN32_RUNTIME)
+   dylib_t lib        = NULL;
+
+   if (win32_needs_local_encoding())
+      lib             = LoadLibraryA(path);
+   else
+   {
+      wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+      lib             = LoadLibraryW(path_wide);
+      free(path_wide);
+   }
 #elif defined(LEGACY_WIN32)
    dylib_t lib        = LoadLibrary(path);
 #else
@@ -120,13 +127,29 @@ dylib_t dylib_load(const char *path)
 
    if (!lib)
    {
-      set_dl_error();
+      set_dl_err();
       return NULL;
    }
-   last_dyn_error[0] = 0;
+   last_dyn_err[0] = 0;
 #elif defined(ORBIS)
    int res;
    dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
+#elif TARGET_OS_IPHONE || TARGET_OS_OSX
+    dylib_t lib;
+    static const char fw_suffix[] = ".framework";
+    if (string_ends_with(path, fw_suffix))
+    {
+        char fw_path[PATH_MAX_LENGTH];
+        const char *fw_name = path_basename(path);
+        size_t _len         = strlcpy(fw_path, path, sizeof(fw_path));
+        _len += strlcpy_lit(fw_path + _len, "/", sizeof(fw_path) - _len);
+        /* Assume every framework binary is named for the framework. Not always
+         * a great assumption but correct enough for our uses. */
+        strlcpy(fw_path + _len, fw_name, strlen(fw_name) - STRLEN_CONST(fw_suffix) + 1);
+        lib = dlopen(fw_path, RTLD_LAZY | RTLD_LOCAL);
+    }
+    else
+        lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #endif
@@ -136,8 +159,8 @@ dylib_t dylib_load(const char *path)
 char *dylib_error(void)
 {
 #ifdef _WIN32
-   if (last_dyn_error[0])
-      return last_dyn_error;
+   if (last_dyn_err[0])
+      return last_dyn_err;
    return NULL;
 #else
    return (char*)dlerror();
@@ -164,10 +187,10 @@ function_t dylib_proc(dylib_t lib, const char *proc)
    }
    if (!(sym = (function_t)GetProcAddress(mod, proc)))
    {
-      set_dl_error();
+      set_dl_err();
       return NULL;
    }
-   last_dyn_error[0] = 0;
+   last_dyn_err[0] = 0;
 #elif defined(ORBIS)
    void *ptr_sym = NULL;
    sym = NULL;
@@ -210,8 +233,8 @@ void dylib_close(dylib_t lib)
 {
 #ifdef _WIN32
    if (!FreeLibrary((HMODULE)lib))
-      set_dl_error();
-   last_dyn_error[0] = 0;
+      set_dl_err();
+   last_dyn_err[0] = 0;
 #elif defined(ORBIS)
    int res;
    sceKernelStopUnloadModule((SceKernelModule)lib, 0, NULL, 0, NULL, &res);

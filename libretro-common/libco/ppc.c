@@ -51,6 +51,14 @@ or are directly to function */
 	#endif
 #endif
 
+/* Whether the code should be inline asm stored in .text, or the original
+array buffer */
+#ifndef LIBCO_STATIC_TEXT
+   #if defined(WIIU)
+      #define LIBCO_STATIC_TEXT 1
+   #endif
+#endif
+
 #ifdef LIBCO_PPC_ASM
 
 	#ifdef __cplusplus
@@ -60,6 +68,225 @@ or are directly to function */
 	/* Swap code is in ppc.S */
 	void co_swap_asm(cothread_t, cothread_t);
 	#define CO_SWAP_ASM(x, y) co_swap_asm(x, y)
+
+#elif LIBCO_STATIC_TEXT
+
+asm(
+	".globl libco_ppc_code\n"
+	"libco_ppc_code:\n"
+#if LIBCO_PPC64
+	"mfcr    %r8\n"
+	"std     %r1,40(%r4)\n"
+	"mflr    %r9\n"
+	"std     %r14,72(%r4)\n"
+	"std     %r15,80(%r4)\n"
+	"std     %r16,88(%r4)\n"
+	"std     %r17,96(%r4)\n"
+	"std     %r18,104(%r4)\n"
+	"std     %r19,112(%r4)\n"
+	"std     %r20,120(%r4)\n"
+	"std     %r21,128(%r4)\n"
+	"std     %r22,136(%r4)\n"
+	"std     %r23,144(%r4)\n"
+	"std     %r24,152(%r4)\n"
+	"std     %r25,160(%r4)\n"
+	"std     %r26,168(%r4)\n"
+	"std     %r27,176(%r4)\n"
+	"std     %r28,184(%r4)\n"
+	"std     %r29,192(%r4)\n"
+	"std     %r30,200(%r4)\n"
+	"std     %r31,208(%r4)\n"
+	"std     %r9,32(%r4)\n"
+	"ld      %r7,32(%r3)\n"
+	"ld      %r1,40(%r3)\n"
+	"bl      1f\n"
+	"trap\n"
+	"1:stw     %r8,48(%r4)\n"
+	"lwz     %r6,48(%r3)\n"
+	"mtctr   %r7\n"
+	"ld      %r14,72(%r3)\n"
+	"ld      %r15,80(%r3)\n"
+	"ld      %r16,88(%r3)\n"
+	"ld      %r17,96(%r3)\n"
+	"ld      %r18,104(%r3)\n"
+	"ld      %r19,112(%r3)\n"
+	"ld      %r20,120(%r3)\n"
+	"ld      %r21,128(%r3)\n"
+	"ld      %r22,136(%r3)\n"
+	"ld      %r23,144(%r3)\n"
+	"ld      %r24,152(%r3)\n"
+	"ld      %r25,160(%r3)\n"
+	"ld      %r26,168(%r3)\n"
+	"ld      %r27,176(%r3)\n"
+	"ld      %r28,184(%r3)\n"
+	"ld      %r29,192(%r3)\n"
+	"ld      %r30,200(%r3)\n"
+	"ld      %r31,208(%r3)\n"
+	"mtcr    %r6\n"
+#else
+	"mfcr    %r8\n"
+	"stw     %r1,40(%r4)\n"
+	"mflr    %r9\n"
+	"stw     %r13,60(%r4)\n"
+	"stw     %r14,64(%r4)\n"
+	"stw     %r15,68(%r4)\n"
+	"stw     %r16,72(%r4)\n"
+	"stw     %r17,76(%r4)\n"
+	"stw     %r18,80(%r4)\n"
+	"stw     %r19,84(%r4)\n"
+	"stw     %r20,88(%r4)\n"
+	"stw     %r21,92(%r4)\n"
+	"stw     %r22,96(%r4)\n"
+	"stw     %r23,100(%r4)\n"
+	"stw     %r24,104(%r4)\n"
+	"stw     %r25,108(%r4)\n"
+	"stw     %r26,112(%r4)\n"
+	"stw     %r27,116(%r4)\n"
+	"stw     %r28,120(%r4)\n"
+	"stw     %r29,124(%r4)\n"
+	"stw     %r30,128(%r4)\n"
+	"stw     %r31,132(%r4)\n"
+	"stw     %r9,32(%r4)\n"
+	"lwz     %r7,32(%r3)\n"
+	"lwz     %r1,40(%r3)\n"
+	"bl      1f\n"
+	"trap\n"
+	"1:stw     %r8,48(%r4)\n"
+	"lwz     %r6,48(%r3)\n"
+	"mtctr   %r7\n"
+	"lwz     %r13,60(%r3)\n"
+	"lwz     %r14,64(%r3)\n"
+	"lwz     %r15,68(%r3)\n"
+	"lwz     %r16,72(%r3)\n"
+	"lwz     %r17,76(%r3)\n"
+	"lwz     %r18,80(%r3)\n"
+	"lwz     %r19,84(%r3)\n"
+	"lwz     %r20,88(%r3)\n"
+	"lwz     %r21,92(%r3)\n"
+	"lwz     %r22,96(%r3)\n"
+	"lwz     %r23,100(%r3)\n"
+	"lwz     %r24,104(%r3)\n"
+	"lwz     %r25,108(%r3)\n"
+	"lwz     %r26,112(%r3)\n"
+	"lwz     %r27,116(%r3)\n"
+	"lwz     %r28,120(%r3)\n"
+	"lwz     %r29,124(%r3)\n"
+	"lwz     %r30,128(%r3)\n"
+	"lwz     %r31,132(%r3)\n"
+	"mtcr    %r6\n"
+#endif
+
+#ifndef LIBCO_PPC_NOFP
+	"stfd    %f14,224(%r4)\n"
+	"stfd    %f15,232(%r4)\n"
+	"stfd    %f16,240(%r4)\n"
+	"stfd    %f17,248(%r4)\n"
+	"stfd    %f18,256(%r4)\n"
+	"stfd    %f19,264(%r4)\n"
+	"stfd    %f20,272(%r4)\n"
+	"stfd    %f21,280(%r4)\n"
+	"stfd    %f22,288(%r4)\n"
+	"stfd    %f23,296(%r4)\n"
+	"stfd    %f24,304(%r4)\n"
+	"stfd    %f25,312(%r4)\n"
+	"stfd    %f26,320(%r4)\n"
+	"stfd    %f27,328(%r4)\n"
+	"stfd    %f28,336(%r4)\n"
+	"stfd    %f29,344(%r4)\n"
+	"stfd    %f30,352(%r4)\n"
+	"stfd    %f31,360(%r4)\n"
+	"lfd     %f14,224(%r3)\n"
+	"lfd     %f15,232(%r3)\n"
+	"lfd     %f16,240(%r3)\n"
+	"lfd     %f17,248(%r3)\n"
+	"lfd     %f18,256(%r3)\n"
+	"lfd     %f19,264(%r3)\n"
+	"lfd     %f20,272(%r3)\n"
+	"lfd     %f21,280(%r3)\n"
+	"lfd     %f22,288(%r3)\n"
+	"lfd     %f23,296(%r3)\n"
+	"lfd     %f24,304(%r3)\n"
+	"lfd     %f25,312(%r3)\n"
+	"lfd     %f26,320(%r3)\n"
+	"lfd     %f27,328(%r3)\n"
+	"lfd     %f28,336(%r3)\n"
+	"lfd     %f29,344(%r3)\n"
+	"lfd     %f30,352(%r3)\n"
+	"lfd     %f31,360(%r3)\n"
+#endif
+
+#ifdef __ALTIVEC__
+	"mfvrsave %r5\n"
+	"addi    %r8,%r4,384\n"
+	"addi    %r9,%r4,400\n"
+	"andi.   %r0,%r5,4095\n"
+	"stw     %r5,52(%r4)\n"
+	"beq-    2\n"
+	"stvx    %v20,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"stvx    %v21,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"stvx    %v22,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"stvx    %v23,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"stvx    %v24,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"stvx    %v25,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"stvx    %v26,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"stvx    %v27,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"stvx    %v28,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"stvx    %v29,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"stvx    %v30,%r0,%r8\n"
+	"stvx    %v31,%r0,%r9\n"
+	"2:lwz     %r5,52(%r3)\n"
+	"addi    %r8,%r3,384\n"
+	"addi    %r9,%r3,400\n"
+	"andi.   %r0,%r5,4095\n"
+	"mtvrsave %r5\n"
+	"beqctr  \n"
+	"lvx     %v20,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"lvx     %v21,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"lvx     %v22,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"lvx     %v23,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"lvx     %v24,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"lvx     %v25,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"lvx     %v26,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"lvx     %v27,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"lvx     %v28,%r0,%r8\n"
+	"addi    %r8,%r8,32\n"
+	"lvx     %v29,%r0,%r9\n"
+	"addi    %r9,%r9,32\n"
+	"lvx     %v30,%r0,%r8\n"
+	"lvx     %v31,%r0,%r9\n"
+#endif
+	"bctr"
+);
+
+extern void libco_ppc_code(cothread_t, cothread_t);
+
+#if LIBCO_PPCDESC
+/* Function call goes through indirect descriptor */
+#define CO_SWAP_ASM(x, y) \
+			((void (*)(cothread_t, cothread_t)) (uintptr_t) x)(x, y)
+#else
+/* Function call goes directly to code */
+#define CO_SWAP_ASM(x, y) \
+			libco_ppc_code(x, y)
+#endif
 
 #else
 
@@ -364,7 +591,7 @@ void co_delete(cothread_t t)
 
 static void co_init_(void)
 {
-#if LIBCO_MPROTECT
+#if LIBCO_MPROTECT && !LIBCO_STATIC_TEXT
    /* TODO: pre- and post-pad PPC code so that this doesn't make other
       data executable and writable */
    long page_size = sysconf(_SC_PAGESIZE);

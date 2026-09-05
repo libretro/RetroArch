@@ -25,6 +25,7 @@
 #include <lists/string_list.h>
 
 #include <libretro.h>
+#include "../gfx/video_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -58,20 +59,6 @@ enum frontend_architecture
    FRONTEND_ARCH_TILE
 };
 
-/* different platforms may only support some of these types */
-enum path_change_type
-{
-   PATH_CHANGE_TYPE_MODIFIED = (1 << 0),
-   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED = (1 << 1),
-   PATH_CHANGE_TYPE_FILE_MOVED = (1 << 2),
-   PATH_CHANGE_TYPE_FILE_DELETED = (1 << 3)
-};
-
-typedef struct path_change_data
-{
-   void *data;
-} path_change_data_t;
-
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -88,14 +75,11 @@ typedef struct frontend_ctx_driver
    bool (*set_fork)(enum frontend_fork fork_mode);
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
-   void (*get_os)(char *, size_t, int *major, int *minor);
-   int  (*get_rating)(void);
+   size_t (*get_os)(char *, size_t, int *major, int *minor);
    void (*content_loaded)(void);
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
    int  (*parse_drive_list)(void*, bool);
-   uint64_t (*get_total_mem)(void);
-   uint64_t (*get_free_mem)(void);
    void (*install_signal_handler)(void);
    int (*get_signal_handler_state)(void);
    void (*set_signal_handler_state)(int value);
@@ -105,8 +89,6 @@ typedef struct frontend_ctx_driver
    void (*get_lakka_version)(char *, size_t);
    /* TODO/FIXME: Need to implement some sort of startup brightness setting. */
    void (*set_screen_brightness)(int);
-   void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
-   bool (*check_for_path_changes)(path_change_data_t *change_data);
    void (*set_sustained_performance_mode)(bool on);
    const char* (*get_cpu_model_name)(void);
    enum retro_language (*get_user_language)(void);
@@ -114,6 +96,8 @@ typedef struct frontend_ctx_driver
    bool (*accessibility_speak)(int speed,
          const char* speak_text, int priority);
    bool (*set_gamemode)(bool on);
+
+   enum rarch_display_type (*get_display_type)(void);
 
    const char *ident;
 
@@ -162,8 +146,7 @@ void frontend_driver_free(void);
 
 enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 
-const void *frontend_driver_get_cpu_architecture_str(
-      char *frontend_architecture, size_t size);
+const void *frontend_driver_get_cpu_architecture_str(char *s, size_t len);
 
 bool frontend_driver_has_get_video_driver_func(void);
 
@@ -177,13 +160,11 @@ void frontend_driver_exitspawn(char *s, size_t len, char *args);
 
 bool frontend_driver_has_fork(void);
 
-bool frontend_driver_get_core_extension(char *s, size_t len);
+size_t frontend_driver_get_core_extension(char *s, size_t len);
 
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
-uint64_t frontend_driver_get_total_memory(void);
 
-uint64_t frontend_driver_get_free_memory(void);
 
 void frontend_driver_install_signal_handler(void);
 
@@ -201,11 +182,8 @@ void frontend_driver_set_screen_brightness(int value);
 
 bool frontend_driver_can_set_screen_brightness(void);
 
-bool frontend_driver_can_watch_for_changes(void);
 
-void frontend_driver_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data);
 
-bool frontend_driver_check_for_path_changes(path_change_data_t *change_data);
 
 void frontend_driver_set_sustained_performance_mode(bool on);
 

@@ -1,18 +1,18 @@
 buildscript {
   repositories {
     google()
-    jcenter()
+    mavenCentral()
   }
 
   dependencies {
-    classpath 'com.android.tools.build:gradle:4.1.0'
+    classpath 'com.android.tools.build:gradle:9.1.0'
   }
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     Properties props = new Properties()
@@ -25,22 +25,38 @@ allprojects {
 apply plugin: 'com.android.application'
 
 android {
-  compileSdkVersion 30
-  buildToolsVersion "30.0.3"
-  ndkVersion "22.0.7026061"
+  namespace "com.retroarch"
+
+  compileSdkVersion 36
+  buildToolsVersion "36.0.0"
+
+  buildFeatures {
+    buildConfig true
+    resValues true
+  }
+
+  ndkVersion "29.0.14206865"
 
   flavorDimensions "variant"
 
   defaultConfig {
-    minSdkVersion 16
+    minSdkVersion 21
+    targetSdkVersion 36
     externalNativeBuild {
       ndkBuild {
         arguments "-j${Runtime.runtime.availableProcessors()}"
       }
     }
-    targetSdkVersion 28
-    versionCode System.currentTimeSeconds().toInteger()
+    versionCode = (System.currentTimeMillis() / 1000).toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
+  }
+
+  android {
+    packagingOptions {
+      jniLibs {
+        useLegacyPackaging = true
+      }
+    }
   }
 
   productFlavors {
@@ -72,7 +88,7 @@ android {
     }
     playStoreNormal {
       minSdkVersion 21
-      targetSdkVersion 30
+      targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -80,10 +96,20 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
+      }
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+        }
+      }
     }
     playStorePlus {
       minSdkVersion 26
-      targetSdkVersion 30
+      targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
 
@@ -92,6 +118,16 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
+      }
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+        }
+      }
     }
   }
 
@@ -99,7 +135,7 @@ android {
     main {
       manifest.srcFile 'AndroidManifest.xml'
       assets.srcDirs = ['assets']
-      java.srcDirs = ['src', '../phoenix-common/src']
+      java.srcDirs = ['src', '../phoenix-common/src', '../../../libretro-common/vfs/saf/src']
       jniLibs.srcDir '../phoenix-common/libs'
       jni.srcDirs = []
       res.srcDirs = ['res', '../phoenix-common/res']
@@ -153,11 +189,23 @@ android {
   }
 }
 
-def playCore = 'com.google.android.play:core:1.8.0'
+def playFeatureDelivery = 'com.google.android.play:feature-delivery:2.1.0'
+def playAssetDelivery = 'com.google.android.play:asset-delivery:2.2.2'
 
 dependencies {
-  playStoreNormalImplementation playCore
-  playStorePlusImplementation playCore
+  playStoreNormalImplementation playFeatureDelivery
+  playStoreNormalImplementation playAssetDelivery
+  playStorePlusImplementation playFeatureDelivery
+  playStorePlusImplementation playAssetDelivery
+}
+
+dependencies {
+  constraints {
+    playStoreNormalImplementation 'androidx.activity:activity:1.10.1'
+    playStoreNormalImplementation 'androidx.fragment:fragment:1.8.6'
+    playStorePlusImplementation 'androidx.activity:activity:1.10.1'
+    playStorePlusImplementation 'androidx.fragment:fragment:1.8.6'
+  }
 }
 
 def dynamicFeatures = file("dynamic_features.gradle")
@@ -168,22 +216,22 @@ if(dynamicFeatures.exists()) {
 int getPlayStoreVersionCode() {
   def baseVersion = getManifestAttribute("versionCode").toInteger()
   def baseTime = 1609632000
-  def halfWeek = 302400
-  def increment = (System.currentTimeSeconds() - baseTime) / halfWeek
+  def oneDay = 86400
+  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / oneDay
 
   return baseVersion + increment
 }
 
 String getPlayStoreVersionName() {
   def versionName = getManifestAttribute("versionName")
-  return "$versionName (${new Date().format("yyyy-MM-dd")})"
+  return "$versionName (${new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date())})"
 }
 
 String getManifestAttribute(String attribute) {
-  def manifest = new XmlParser().parse("${project.projectDir}/AndroidManifest.xml")
-  return manifest.attributes().find {
-    ((String) it.key).contains(attribute)
-  }.value
+  def manifestFile = file("${project.projectDir}/AndroidManifest.xml")
+  def text = manifestFile.text
+  def matcher = text =~ /android:${attribute}="([^"]+)"/
+  return matcher.find() ? matcher.group(1) : "1"
 }
 
 tasks.register("outputVersionCode") {

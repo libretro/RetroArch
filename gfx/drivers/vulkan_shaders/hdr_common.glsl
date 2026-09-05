@@ -1,0 +1,157 @@
+layout(std140, set = 0, binding = 0) uniform UBO
+{
+   mat4 MVP;
+   vec4 SourceSize;
+   vec4 OutputSize;
+   float BrightnessNits;
+   uint SubpixelLayout;
+   float Scanlines;
+   uint ExpandGamut;
+   float InverseTonemap;
+   float HDR10;
+   uint HDRMode;
+} global;
+
+/* Tonemapping: conversion from HDR to SDR (and vice-versa) */
+const float kMaxNitsFor2084   = 10000.0;
+const float kscRGBWhiteNits   = 80.0;
+const float kEpsilon          = 0.0001;
+
+/* Rec BT.709 luma coefficients - https://en.wikipedia.org/wiki/Luma_(video) */
+const vec3 k709LumaCoeff = vec3(0.2126f, 0.7152f, 0.0722f);
+/* Expanded Rec BT.709 luma coefficients - obtained by linear transformation + normalization */
+const vec3 kExpanded709LumaCoeff = vec3(0.215796f, 0.702694f, 0.120968f);
+
+vec3 InverseTonemap(const vec3 sdr_linear, const float max_nits, const float paper_white_nits)
+{
+   float input_val = max(sdr_linear.r, max(sdr_linear.g, sdr_linear.b));
+
+   if (input_val < kEpsilon) return sdr_linear;
+
+   float peak_ratio = max_nits / paper_white_nits;
+
+   float numerator = input_val;
+   float denominator = 1.0 - input_val * (1.0 - (1.0 / peak_ratio));
+   float tonemapped_val = numerator / max(denominator, kEpsilon);
+
+   return sdr_linear * (tonemapped_val / input_val);
+}
+
+vec3 Tonemap(const vec3 hdr_linear, const float max_nits, const float paper_white_nits)
+{
+    float input_val = max(hdr_linear.r, max(hdr_linear.g, hdr_linear.b));
+
+    if (input_val < kEpsilon) return hdr_linear;
+
+    float peak_ratio = max_nits / paper_white_nits;
+
+    float k = 1.0 - (1.0 / peak_ratio);
+
+    return hdr_linear / (1.0 + input_val * k);
+}
+
+/* Colorspace conversions */
+
+/* Color rotation matrix to rotate Rec.709 color primaries into Rec.2020 */
+const mat3 k709to2020 = mat3 (
+   0.6274040f, 0.3292820f, 0.0433136f,
+   0.0690970f, 0.9195400f, 0.0113612f,
+   0.0163916f, 0.0880132f, 0.8955950f);
+
+/* Color rotation matrix to rotate Rec.2020 color primaries into Rec.709 */
+const mat3 k2020to709 = mat3 (
+   1.6604910f, -0.5876411f, -0.0728499f,
+   -0.1245505f, 1.1328999f, -0.0083494f,
+   -0.0181508f, -0.1005789f, 1.1187297f);
+
+/* Color rotation matrix to rotate DCI-P3 color primaries into Rec.2020 */
+const mat3 kP3to2020 = mat3 (
+    0.753833f,  0.198597f,  0.047570f,
+    0.045744f,  0.941777f,  0.012479f,
+   -0.001210f,  0.017602f,  0.983609f);
+
+/* Color rotation matrix to rotate Rec.2020 color primaries into DCI-P3 */
+const mat3 k2020toP3 = mat3 (
+    1.343578f, -0.282180f, -0.061399f,
+   -0.065297f,  1.075788f, -0.010490f,
+    0.002822f, -0.019598f,  1.016777f);
+
+/* Color rotation matrix to rotate Rec.709 color primaries into DCI-P3 (= k709to2020 * k2020toP3) */
+const mat3 k709toP3 = mat3 (
+    0.8215873f,  0.1763479f,  0.0020641f,
+    0.0328261f,  0.9695096f, -0.0023367f,
+    0.0188038f,  0.0725063f,  0.9086907f);
+
+/* START Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
+/* Rotation matrix describing a custom color space which is bigger than Rec.709, but a little smaller than P3-D65.
+ * This enhances colors, especially in the SDR range, by being a little more saturated. This can be used instead
+ * of from709to2020.
+ */
+const mat3 kExpanded709to2020 = mat3 (
+    0.6274040f,  0.3292820f, 0.0433136f,
+    0.0457456f,  0.941777f,  0.0124772f,
+   -0.00121055f, 0.0176041f, 0.983607f);
+
+/* Rotation matrix from Rec. 2020 color primaries into the custom expanded Rec.709 colorspace described above. */
+const mat3 k2020toExpanded709 = mat3 (
+    1.63535f,    -0.57057f, -0.0647755f,
+   -0.0794803f,   1.0898f,  -0.0103244f,
+    0.00343516f, -0.020207f, 1.01677f);
+
+/* Color rotation matrix to rotate Rec.709 color primaries into the expanded Rec.709 colorspace (= k709to2020 * k2020toExpanded709) */
+const mat3 k709toExpanded709 = mat3 (
+    1.0000025f, -0.0000016f, -0.0000001f,
+    0.0399515f,  0.9624604f, -0.0024178f,
+    0.0228872f,  0.0684669f,  0.9086437f);
+
+vec3 LinearToST2084(vec3 normalizedLinearValue)
+{
+   vec3 ST2084 = pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), vec3(0.1593017578f))), vec3(78.84375f));
+   return ST2084;  /* Don't clamp between [0..1], so we can still perform operations on scene values higher than 10,000 nits */
+}
+
+vec3 ST2084ToLinear(vec3 ST2084)
+{
+   vec3 normalizedLinear = pow(abs(max(pow(abs(ST2084), vec3(1.0f / 78.84375f)) - 0.8359375f, 0.0f) / (18.8515625f - 18.6875f * pow(abs(ST2084), vec3(1.0f / 78.84375f)))), vec3(1.0f / 0.1593017578f));
+   return normalizedLinear;
+}
+/* END Converted from (Copyright (c) Microsoft Corporation - Licensed under the MIT License.)  https://github.com/microsoft/Xbox-ATG-Samples/tree/master/Kits/ATGTK/HDR */
+
+/* Per spec, the max nits for ST.2084 is 10,000 nits. We need to establish what the value of 1.0f means
+ * by normalizing the values using the defined nits for paper white. According to SDR specs, paper white
+ * is 80 nits, but that is paper white in a cinema with a dark environment, and is perceived as grey on
+ * a display in office and living room environments. This value should be tuned according to the nits
+ * that the consumer perceives as white in his living room, e.g. 200 nits. As reference, PC monitors is
+ * normally in the range 200-300 nits, SDR TVs 150-250 nits.
+ */
+
+/*  Calc the value that the HDR scene has to use to output a certain brightness */
+vec3 CalcHDRSceneValue(vec3 nits)
+{
+    return nits * kMaxNitsFor2084 / global.BrightnessNits;
+}
+
+/* Converts a non-linear HDR10 value in the BT. 2020 colorspace to a linear HDR value in the Rec. 709 colorspace */
+vec3 HDR10ToLinear(vec3 hdr10)
+{
+   vec3 normalizedLinear = ST2084ToLinear(hdr10);
+   vec3 rec2020 = CalcHDRSceneValue(normalizedLinear);
+
+   vec3 hdr = rec2020 * k2020to709;
+   if (global.ExpandGamut == 1u)
+   {
+      hdr   = rec2020 * k2020toExpanded709;
+   }
+
+   return hdr;
+}
+
+/* Converts a non-linear HDR10 PQ value in the BT. 2020 colorspace to scRGB linear.
+ * scRGB uses Rec.709 primaries with 1.0 = 80 nits.
+ * HDR10 PQ: 1.0 normalised linear = 10,000 nits, so scalar = 10000/80 = 125. */
+vec3 HDR10ToscRGB(vec3 hdr10Color)
+{
+   vec3 linear10k = ST2084ToLinear(hdr10Color);
+   vec3 linear709 = linear10k * k2020to709;
+   return linear709 * (kMaxNitsFor2084 / kscRGBWhiteNits);
+}

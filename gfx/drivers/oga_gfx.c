@@ -18,10 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <rga/RgaApi.h>
-#include <rga/RockchipRgaMacro.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <drm/drm_fourcc.h>
@@ -103,7 +105,7 @@ typedef struct oga_video
 
 static bool oga_create_display(oga_video_t* vid)
 {
-   int i, ret;
+   int i;
    drmModeConnector *connector;
    drmModeModeInfo *mode;
    drmModeEncoder *encoder;
@@ -112,7 +114,7 @@ static bool oga_create_display(oga_video_t* vid)
    vid->fd = open("/dev/dri/card0", O_RDWR);
    if (vid->fd < 0)
    {
-      RARCH_ERR("open /dev/dri/card0 failed.\n");
+      RARCH_ERR("Open /dev/dri/card0 failed.\n");
       return false;
    }
 
@@ -141,7 +143,7 @@ static bool oga_create_display(oga_video_t* vid)
 
    vid->connector_id = connector->connector_id;
 
-   /* Find prefered mode */
+   /* Find preferred mode */
    for (i = 0; i < connector->count_modes; i++)
    {
       drmModeModeInfo *current_mode = &connector->modes[i];
@@ -175,7 +177,7 @@ static bool oga_create_display(oga_video_t* vid)
 
    if (!encoder)
    {
-      RARCH_ERR("could not find encoder!\n");
+      RARCH_ERR("Could not find encoder.\n");
       goto err_03;
    }
 
@@ -207,7 +209,7 @@ static oga_surface_t* oga_create_surface(int display_fd,
       calloc(1, sizeof(oga_surface_t));
    if (!surface)
    {
-      RARCH_ERR("Error allocating surface\n");
+      RARCH_ERR("Error allocating surface.\n");
       return NULL;
    }
 
@@ -238,7 +240,7 @@ static oga_surface_t* oga_create_surface(int display_fd,
    surface->map = mmap(NULL, args.size, PROT_READ | PROT_WRITE, MAP_SHARED, surface->prime_fd, 0);
    if (surface->map == MAP_FAILED)
    {
-      RARCH_LOG("mmap failed.\n");
+      RARCH_ERR("mmap failed.\n");
       return NULL;
    }
 
@@ -274,7 +276,7 @@ static oga_framebuf_t* oga_create_framebuf(oga_surface_t* surface)
 
    if (!framebuf)
    {
-      RARCH_ERR("Error allocating framebuf\n");
+      RARCH_ERR("Error allocating framebuf.\n");
       return NULL;
    }
 
@@ -318,11 +320,10 @@ static void oga_free(void *data)
    if (!vid)
       return;
 
-   if (vid->font)
-   {
+   if (vid->font_driver && vid->font)
       vid->font_driver->free(vid->font);
-      vid->font_driver = NULL;
-   }
+   vid->font_driver = NULL;
+   vid->font        = NULL;
 
    for (i = 0; i < NUM_PAGES; ++i)
       oga_destroy_framebuf(vid->pages[i]);
@@ -346,8 +347,6 @@ static void *oga_init(const video_info_t *video,
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    struct retro_game_geometry  *geom    = &av_info->geometry;
-   int aw                               = ALIGN(geom->base_width, 32);
-   int ah                               = ALIGN(geom->base_height, 32);
 
    frontend_driver_install_signal_handler();
 
@@ -367,13 +366,13 @@ static void *oga_init(const video_info_t *video,
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
    {
-      RARCH_ERR("Error allocating vid\n");
+      RARCH_ERR("Error allocating vid.\n");
       return NULL;
    }
 
    if (!oga_create_display(vid))
    {
-      RARCH_ERR("Error initializing drm\n");
+      RARCH_ERR("Error initializing drm.\n");
       return NULL;
    }
 
@@ -399,11 +398,25 @@ static void *oga_init(const video_info_t *video,
    vid->msg_surface   = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
    vid->last_msg[0]   = 0;
 
-   /* bitmap only for now */
    if (settings->bools.video_font_enable)
    {
-      vid->font_driver = &bitmap_font_renderer;
-      vid->font        = vid->font_driver->init("", settings->floats.video_font_size);
+      /* Through font_renderer_create_default(), as every other driver
+       * does: it resolves the path, reads the file and picks a
+       * backend.  Reaching for &stb_font_renderer and calling its
+       * init() by hand meant this driver had to track that function's
+       * signature, and it stopped doing so - the call passed three
+       * arguments to a five-argument prototype and had not compiled
+       * for some time.  A NULL path still ends at stb's built-in
+       * glyphs when no font file is configured or found, which is the
+       * behaviour that was wanted here. */
+      if (!font_renderer_create_default(&vid->font_driver, &vid->font,
+               *settings->paths.path_font ? settings->paths.path_font : NULL,
+               (unsigned)settings->floats.video_font_size,
+               FONT_ATLAS_FORMAT_A8))
+      {
+         vid->font_driver = NULL;
+         vid->font        = NULL;
+      }
    }
 
    for (i = 0; i < NUM_PAGES; ++i)
@@ -481,11 +494,11 @@ static bool render_msg(oga_video_t* vid, const char* msg)
          atlas->width  + g->atlas_offset_x;
       dest   = fb + dest_y * dest_stride + dest_x;
 
-      for (y = 0; y < g->height; y++)
+      for (y = 0; y < (int)g->height; y++)
       {
-         for (x = 0; x < g->advance_x; x++)
+         for (x = 0; x < (int)g->advance_x; x++)
          {
-            uint32_t px = (x < g->width) ? *(source++) : 0x00;
+            uint32_t px = (x < (int)g->width) ? *(source++) : 0x00;
             *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px;
          }
          dest   += dest_stride - g->advance_x;
@@ -640,11 +653,10 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
     * in an 8888 format. */
    unsigned int src_pitch        = width * 2;
    unsigned int dst_pitch        = width * 4;
-   unsigned int dst_width        = width;
-   uint32_t line[dst_width];
    char *frame_output;
 
-   if (vid->menu_surface->width != width || vid->menu_surface->height != height)
+   if (     vid->menu_surface->width  != (int)width
+         || vid->menu_surface->height != (int)height)
    {
       oga_destroy_surface(vid->menu_surface);
       vid->menu_surface = oga_create_surface(vid->fd, width, height,
@@ -656,17 +668,20 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    for (i = 0; i < height; i++)
    {
+      const uint16_t *src_row = (const uint16_t*)frame + (src_pitch / 2 * i);
+      uint32_t *dst_row       = (uint32_t*)(void*)
+         (frame_output + (dst_pitch * i));
+
       for (j = 0; j < src_pitch / 2; j++)
       {
-         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
+         uint16_t src_pix = src_row[j];
          /* The hex AND is for keeping only the part
           * we need for each component. */
          uint32_t R       = (src_pix << 8) & 0x00FF0000;
          uint32_t G       = (src_pix << 4) & 0x0000FF00;
          uint32_t B       = (src_pix << 0) & 0x000000FF;
-         line[j]          = (0x00 | R | G | B);
+         dst_row[j]       = (0x00 | R | G | B);
       }
-      memcpy(frame_output + (dst_pitch * i), (char*)line, dst_pitch);
    }
 }
 
@@ -761,10 +776,11 @@ video_poke_interface_t oga_poke_interface = {
    NULL, /* get_current_shader */
    oga_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void oga_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -793,6 +809,8 @@ video_driver_t video_oga = {
 #endif
    oga_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

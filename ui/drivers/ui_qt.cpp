@@ -14,13 +14,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
 #include <QApplication>
 #include <QAbstractEventDispatcher>
 #include <QtWidgets>
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QString>
-#include <QDesktopWidget>
 #include <QtGlobal>
 #include <QCloseEvent>
 #include <QResizeEvent>
@@ -43,12 +43,8 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QtConcurrentRun>
 
 #include "ui_qt.h"
-#include "qt/gridview.h"
-#include "qt/ui_qt_load_core_window.h"
-#include "qt/qt_dialogs.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -56,6 +52,7 @@ extern "C" {
 
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <streams/file_stream.h>
 #include <retro_timers.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
@@ -89,6 +86,11 @@ extern "C" {
 #include "../../AUTHORS.h"
 #ifdef HAVE_GIT_VERSION
 #include "../../version_git.h"
+#endif
+
+#ifdef HAVE_WAYLAND
+#include "../../gfx/common/wayland_common.h"
+#include <compat/strl.h>
 #endif
 
 #ifndef CXX_BUILD
@@ -127,8 +129,55 @@ enum core_selection
 static AppHandler *app_handler;
 static ui_application_qt_t ui_application;
 
+static QPixmap pixmapFromPathRA(const QString &path)
+{
+   QImage img = ThumbnailLoader::loadImageRA(path);
+   if (!img.isNull())
+      return QPixmap::fromImage(img);
+   return QPixmap(path);
+}
+
+/* Give btn a default action whose text comes from the localization
+ * tables, then size btn to fit. The action is parented to btn so
+ * Qt cleans it up automatically; the explicit parent is needed
+ * because QAction's default-NULL-parent overload only exists from
+ * Qt 5.7 onwards. */
+static void qt_button_set_action_label(QToolButton *btn,
+      enum msg_hash_enums label)
+{
+   btn->setDefaultAction(new QAction(msg_hash_to_str(label), btn));
+   btn->setFixedSize(btn->sizeHint());
+}
+
+/* Add dock to win in the area stored as the dock's "default_area"
+ * dynamic property. The property is set elsewhere with a
+ * Qt::DockWidgetArea value; this just unpacks and routes it.
+ * Wraps a static_cast<Qt::DockWidgetArea>(... toInt()) idiom that
+ * otherwise repeats verbatim at every dock-attach site. */
+static void qt_dock_add_to(QMainWindow *win, QDockWidget *dock)
+{
+   win->addDockWidget(static_cast<Qt::DockWidgetArea>(
+            dock->property("default_area").toInt()), dock);
+}
+
+/* Configure the four standard pieces of a QDockWidget in one call:
+ * the QObject name (for QSettings save/restore), the default
+ * docking area (read back later by qt_dock_add_to), the localized
+ * menu text shown in the View menu, and the widget the dock
+ * displays. Replaces a four-line setObjectName / setProperty /
+ * setProperty / setWidget block that recurs at every dock site. */
+static void qt_dock_configure(QDockWidget *dock,
+      const char *object_name, Qt::DockWidgetArea default_area,
+      enum msg_hash_enums menu_text, QWidget *widget)
+{
+   dock->setObjectName(object_name);
+   dock->setProperty("default_area", default_area);
+   dock->setProperty("menu_text", msg_hash_to_str(menu_text));
+   dock->setWidget(widget);
+}
+
 /* %1 is a placeholder for palette(highlight) or the equivalent chosen by the user */
-static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
+static const QString qt_theme_default_stylesheet = QString(R"(
    QPushButton[flat="true"] {
       min-height:20px;
       min-width:80px;
@@ -162,7 +211,7 @@ static const QString qt_theme_default_stylesheet = QStringLiteral(R"(
    } */
 )");
 
-static const QString qt_theme_dark_stylesheet = QStringLiteral(R"(
+static const QString qt_theme_dark_stylesheet = QString(R"(
    QWidget {
       color:white;
       background-color:rgb(53,53,53);
@@ -1033,12 +1082,271 @@ static double exp_scale(double input_val, double mid_val, double max_val)
    return ret;
 }
 
-TreeView::TreeView(QWidget *parent) : QTreeView(parent) { }
-
-void TreeView::columnCountChanged(int oldCount, int newCount)
+/* Status codes carried in string_list_elem_attr.i for the
+ * core-info value list returned by qt_core_info_collect(). */
+enum qt_core_info_row_status
 {
-   QTreeView::columnCountChanged(oldCount, newCount);
+   QT_CORE_INFO_ROW_NORMAL = 0,
+   /* Firmware section: header rows with a key but empty value. */
+   QT_CORE_INFO_ROW_FIRMWARE_NOTE,
+   /* Firmware status rows that should render in green. */
+   QT_CORE_INFO_ROW_FIRMWARE_PRESENT,
+   /* Firmware status rows that should render in red. */
+   QT_CORE_INFO_ROW_FIRMWARE_MISSING,
+   /* Notes: no key, free-form value. */
+   QT_CORE_INFO_ROW_NOTE_NO_KEY
+};
+
+/* Append a single (key, value) row.  status applies to value->attr.i. */
+static void qt_core_info_append_row(
+      struct string_list *keys,
+      struct string_list *values,
+      const char *key, const char *value,
+      enum qt_core_info_row_status status)
+{
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   string_list_append(keys, key ? key : "", attr);
+   attr.i = (int)status;
+   string_list_append(values, value ? value : "", attr);
 }
+
+/* Append a row whose key is "<msg_hash>:" and whose value is plain. */
+static void qt_core_info_append_kv(
+      struct string_list *keys,
+      struct string_list *values,
+      enum msg_hash_enums label_enum, const char *value)
+{
+   char key[256];
+   size_t _len = strlcpy(key, msg_hash_to_str(label_enum), sizeof(key));
+   strlcpy_lit(key + _len, ":", sizeof(key) - _len);
+   qt_core_info_append_row(keys, values, key, value,
+         QT_CORE_INFO_ROW_NORMAL);
+}
+
+/* Append a row built from a list of strings joined by ", ". */
+static void qt_core_info_append_joined(
+      struct string_list *keys,
+      struct string_list *values,
+      enum msg_hash_enums label_enum,
+      const struct string_list *src)
+{
+   char buf[NAME_MAX_LENGTH * 4];
+   size_t i, _len = 0;
+   buf[0] = '\0';
+   for (i = 0; i < src->size; i++)
+   {
+      _len += strlcpy(buf + _len, src->elems[i].data, sizeof(buf) - _len);
+      if (i < src->size - 1)
+         _len += strlcpy_lit(buf + _len, ", ", sizeof(buf) - _len);
+   }
+   qt_core_info_append_kv(keys, values, label_enum, buf);
+}
+
+/* Collect a list of human-readable rows describing the currently-selected
+ * core. Output: two parallel string_lists. values->elems[i].attr.i holds
+ * a qt_core_info_row_status for that row.
+ *
+ * Returns false if no core is selected or its info isn't loaded; in that
+ * case a single row with the "no info available" message is appended. */
+static bool qt_core_info_collect(
+      const char *current_core_path,
+      struct string_list *keys,
+      struct string_list *values)
+{
+   size_t i;
+   core_info_t *core_info = NULL;
+
+   core_info_find(current_core_path, &core_info);
+
+   if (    !current_core_path
+        || !*current_core_path
+        || !core_info
+        || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
+   {
+      qt_core_info_append_row(keys, values,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
+            "", QT_CORE_INFO_ROW_NORMAL);
+      return false;
+   }
+
+   if (core_info->core_name)
+      qt_core_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME, core_info->core_name);
+   if (core_info->display_name)
+      qt_core_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL, core_info->display_name);
+   if (core_info->systemname)
+      qt_core_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME, core_info->systemname);
+   if (core_info->system_manufacturer)
+      qt_core_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+            core_info->system_manufacturer);
+
+   if (core_info->categories_list)
+      qt_core_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+            core_info->categories_list);
+   if (core_info->authors_list)
+      qt_core_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+            core_info->authors_list);
+   if (core_info->permissions_list)
+      qt_core_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+            core_info->permissions_list);
+   if (core_info->licenses_list)
+      qt_core_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+            core_info->licenses_list);
+   if (core_info->supported_extensions_list)
+      qt_core_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+            core_info->supported_extensions_list);
+
+   if (core_info->firmware_count > 0)
+   {
+      char tmp_path[PATH_MAX_LENGTH];
+      core_info_ctx_firmware_t firmware_info;
+      bool update_missing_firmware    = false;
+      settings_t *settings            = config_get_ptr();
+      uint8_t flags                   = content_get_flags();
+      bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
+      bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
+
+      firmware_info.path              = core_info->path;
+
+      if (systemfiles_in_content_dir && content_is_inited)
+      {
+         fill_pathname_basedir(tmp_path,
+               path_get(RARCH_PATH_CONTENT),
+               sizeof(tmp_path));
+         if (!*tmp_path)
+            firmware_info.directory.system = settings->paths.directory_system;
+         else
+         {
+            size_t _len = strlen(tmp_path);
+            if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
+                  && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[_len - 1] = '\0';
+            firmware_info.directory.system = tmp_path;
+         }
+      }
+      else
+         firmware_info.directory.system = settings->paths.directory_system;
+
+      update_missing_firmware = core_info_list_update_missing_firmware(&firmware_info);
+
+      if (update_missing_firmware)
+      {
+         char firmware_label[256];
+         char tmp[PATH_MAX_LENGTH];
+         size_t _len = strlcpy(firmware_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
+               sizeof(firmware_label));
+         strlcpy_lit(firmware_label + _len, ":",
+               sizeof(firmware_label) - _len);
+
+         qt_core_info_append_row(keys, values,
+               firmware_label, "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         if (systemfiles_in_content_dir)
+            qt_core_info_append_row(keys, values,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
+                  "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
+               firmware_info.directory.system);
+         qt_core_info_append_row(keys, values,
+               tmp, "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         for (i = 0; i < core_info->firmware_count; i++)
+         {
+            char lbl_txt[256];
+            const char *val_txt          = NULL;
+            bool missing                 = false;
+            enum qt_core_info_row_status status;
+            size_t lbl_len               = 0;
+
+            if (!core_info->firmware[i].desc)
+               continue;
+
+            lbl_len = strlcpy_lit(lbl_txt, "(!) ", sizeof(lbl_txt));
+
+            if (core_info->firmware[i].missing)
+            {
+               missing = true;
+               if (core_info->firmware[i].optional)
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL),
+                        sizeof(lbl_txt) - lbl_len);
+               else
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED),
+                        sizeof(lbl_txt) - lbl_len);
+            }
+            else
+            {
+               if (core_info->firmware[i].optional)
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL),
+                        sizeof(lbl_txt) - lbl_len);
+               else
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED),
+                        sizeof(lbl_txt) - lbl_len);
+            }
+
+            val_txt = core_info->firmware[i].desc
+                  ? core_info->firmware[i].desc
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
+            status  = missing
+                  ? QT_CORE_INFO_ROW_FIRMWARE_MISSING
+                  : QT_CORE_INFO_ROW_FIRMWARE_PRESENT;
+            qt_core_info_append_row(keys, values,
+                  lbl_txt, val_txt, status);
+         }
+      }
+   }
+
+   if (core_info->notes && core_info->note_list)
+   {
+      for (i = 0; i < core_info->note_list->size; i++)
+         qt_core_info_append_row(keys, values,
+               "", core_info->note_list->elems[i].data,
+               QT_CORE_INFO_ROW_NOTE_NO_KEY);
+   }
+
+   return true;
+}
+
+/* Thumbnail widgets are addressed by a flat 0..3 index. The index order
+ * (boxart, title, screenshot, logo) matches the four QObject names set
+ * up in ui_companion_qt_init() and is *not* the same as ThumbnailType
+ * enum order (which has SCREENSHOT before TITLE_SCREEN). */
+static const char * const qt_thumbnail_widget_names[4] = {
+   "thumbnail", "thumbnail2", "thumbnail3", "thumbnail4"
+};
+
+static const char * const qt_thumbnail_subdirs[4] = {
+   THUMBNAIL_BOXART, THUMBNAIL_TITLE, THUMBNAIL_SCREENSHOT, THUMBNAIL_LOGO
+};
+
+static int qt_thumbnail_type_to_widget_idx(ThumbnailType t)
+{
+   switch (t)
+   {
+      case THUMBNAIL_TYPE_BOXART:       return 0;
+      case THUMBNAIL_TYPE_TITLE_SCREEN: return 1;
+      case THUMBNAIL_TYPE_SCREENSHOT:   return 2;
+      case THUMBNAIL_TYPE_LOGO:         return 3;
+   }
+   return 0;
+}
+
+TreeView::TreeView(QWidget *parent) : QTreeView(parent) { }
 
 void TreeView::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
 {
@@ -1058,16 +1366,13 @@ bool TableView::isEditorOpen()
 
 ListWidget::ListWidget(QWidget *parent) : QListWidget(parent) { }
 
-bool ListWidget::isEditorOpen()
-{
-   return (state() == QAbstractItemView::EditingState);
-}
-
 void ListWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   int key = event->key();
+   if (     key == Qt::Key_Return
+         || key == Qt::Key_Enter)
       emit enterPressed();
-   else if (event->key() == Qt::Key_Delete)
+   else if (key == Qt::Key_Delete)
       emit deletePressed();
 
    QListWidget::keyPressEvent(event);
@@ -1110,20 +1415,34 @@ void LogTextEdit::appendMessage(const QString& text)
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
-/* Only accept indexes from current path. https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together */
+/* Only accept indexes from current path.
+ * https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together
+ *
+ * The root index is cached because this method is invoked once per
+ * (row, parent) pair the proxy considers - which can be tens of
+ * thousands per directory load on a populous tree - while the
+ * QFileSystemModel root path changes only when the user navigates.
+ * Resolving the root path to an index via sm->index(...) walks the
+ * model on every call without the cache. */
 bool FileSystemProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
-   QFileSystemModel  *sm = qobject_cast<QFileSystemModel*>(sourceModel());
-   QModelIndex rootIndex = sm->index(sm->rootPath());
+   QFileSystemModel *sm     = qobject_cast<QFileSystemModel*>(sourceModel());
+   const QString currentRoot = sm->rootPath();
 
-   if (sourceParent == rootIndex)
+   if (currentRoot != m_cachedRootPath)
+   {
+      m_cachedRootPath  = currentRoot;
+      m_cachedRootIndex = sm->index(currentRoot);
+   }
+
+   if (sourceParent == m_cachedRootIndex)
       return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
    return true;
 }
 
+/* sort the source (QFileSystemModel to keep directories before files) */
 void FileSystemProxyModel::sort(int column, Qt::SortOrder order)
 {
-   /* sort the source (QFileSystemModel to keep directories before files) */
    sourceModel()->sort(column, order);
 }
 
@@ -1153,9 +1472,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_stopPushButton(new QToolButton(this))
    ,m_browserAndPlaylistTabWidget(new QTabWidget(this))
    ,m_pendingRun(false)
-   ,m_thumbnailPixmap(NULL)
-   ,m_thumbnailPixmap2(NULL)
-   ,m_thumbnailPixmap3(NULL)
    ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -1179,7 +1495,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailType(THUMBNAIL_TYPE_BOXART)
    ,m_gridProgressBar(NULL)
    ,m_gridProgressWidget(NULL)
-   ,m_currentGridHash()
    ,m_currentGridWidget(NULL)
    ,m_allPlaylistsListMaxCount(0)
    ,m_allPlaylistsGridMaxCount(0)
@@ -1187,24 +1502,16 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusMessageElapsedTimer()
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   ,m_shaderParamsDialog(new ShaderParamsDialog())
+   ,m_shaderParamsDialog(new ShaderParamsDialog(this))
 #endif
 #endif
-   ,m_coreOptionsDialog(new CoreOptionsDialog())
-   ,m_networkManager(new QNetworkAccessManager(this))
-   ,m_updateProgressDialog(new QProgressDialog())
-   ,m_updateFile()
-   ,m_updateReply()
-   ,m_thumbnailDownloadProgressDialog(new QProgressDialog())
-   ,m_thumbnailDownloadFile()
-   ,m_thumbnailDownloadReply()
+   ,m_coreOptionsDialog(new CoreOptionsDialog(this))
+   ,m_currentHttpTask(NULL)
+   ,m_updateProgressDialog(new QProgressDialog(this))
+   ,m_thumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingThumbnailDownloadTypes()
-   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog())
-   ,m_thumbnailPackDownloadFile()
-   ,m_thumbnailPackDownloadReply()
-   ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog())
-   ,m_playlistThumbnailDownloadFile()
-   ,m_playlistThumbnailDownloadReply()
+   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog(this))
+   ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingPlaylistThumbnails()
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
@@ -1213,35 +1520,34 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_thumbnailTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   ,m_searchRegularExpression()
+#else
    ,m_searchRegExp()
+#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
 {
    settings_t                   *settings = config_get_ptr();
-   const char *path_dir_playlist          = settings->paths.directory_playlist;
    const char *path_dir_assets            = settings->paths.directory_assets;
-   const char *path_dir_menu_content      = settings->paths.directory_menu_content;
-   QDir playlistDir(path_dir_playlist);
    QString                      configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
-   QToolButton   *searchResetButton       = NULL;
-   QHBoxLayout   *zoomLayout              = new QHBoxLayout();
-   QLabel   *zoomLabel                    = new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), m_zoomWidget);
-   QPushButton   *thumbnailTypePushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE), m_zoomWidget);
-   QMenu               *thumbnailTypeMenu = new QMenu(thumbnailTypePushButton);
-   QAction     *thumbnailTypeBoxartAction = NULL;
-   QAction *thumbnailTypeScreenshotAction = NULL;
-   QAction *thumbnailTypeTitleAction      = NULL;
-   QPushButton *viewTypePushButton        = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
-   QMenu                    *viewTypeMenu = new QMenu(viewTypePushButton);
-   QAction           *viewTypeIconsAction = NULL;
-   QAction            *viewTypeListAction = NULL;
-   QHBoxLayout        *gridProgressLayout = new QHBoxLayout();
-   QLabel              *gridProgressLabel = NULL;
-   QHBoxLayout          *gridFooterLayout = NULL;
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
+   qRegisterMetaType<PlaylistEntry>("PlaylistEntry");
+
+   memset(m_thumbnailPixmaps, 0, sizeof(m_thumbnailPixmaps));
+
+   /* Background loader for the file-browser preview pane. Decoding
+    * happens off the UI thread; results arrive on the imageLoaded
+    * signal and are filtered by m_pendingPreviewPath so that rapid
+    * selection changes don't flicker stale images in. */
+   m_previewLoader = new ThumbnailLoader(this);
+   connect(m_previewLoader,
+         SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)), this,
+         SLOT(onPreviewImageLoaded(QImage,QPersistentModelIndex,QString)));
+   m_previewLoader->start();
 
    /* Cancel all progress dialogs immediately since
     * they show as soon as they're constructed. */
@@ -1250,52 +1556,10 @@ MainWindow::MainWindow(QWidget *parent) :
    m_thumbnailPackDownloadProgressDialog->cancel();
    m_playlistThumbnailDownloadProgressDialog->cancel();
 
-   m_gridProgressWidget                   = new QWidget();
-   gridProgressLabel                      = new QLabel(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS),
-         m_gridProgressWidget);
-
-   thumbnailTypePushButton->setObjectName("thumbnailTypePushButton");
-   thumbnailTypePushButton->setFlat(true);
-
-   thumbnailTypeBoxartAction              = thumbnailTypeMenu->addAction(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
-   thumbnailTypeScreenshotAction          = thumbnailTypeMenu->addAction(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
-   thumbnailTypeTitleAction               = thumbnailTypeMenu->addAction(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
-
-   thumbnailTypePushButton->setMenu(thumbnailTypeMenu);
-
-   viewTypePushButton->setObjectName("viewTypePushButton");
-   viewTypePushButton->setFlat(true);
-
-   viewTypeIconsAction                    = viewTypeMenu->addAction(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
-   viewTypeListAction                     = viewTypeMenu->addAction(
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
-
-   viewTypePushButton->setMenu(viewTypeMenu);
-
-   gridProgressLabel->setObjectName("gridProgressLabel");
-
-   m_gridProgressBar                      = new QProgressBar(
-         m_gridProgressWidget);
-
-   m_gridProgressBar->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
-
-   zoomLabel->setObjectName("zoomLabel");
-
-   m_zoomSlider                           = new QSlider(
-         Qt::Horizontal, m_zoomWidget);
-
-   m_zoomSlider->setMinimum(0);
-   m_zoomSlider->setMaximum(100);
-   m_zoomSlider->setValue(50);
-   m_zoomSlider->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
-
-   m_lastZoomSliderValue = m_zoomSlider->value();
-
+   /* m_playlistViewsAndFooter holds the playlist/grid views on top
+    * and the footer toolbar (zoom, view-type, thumbnail-type) on
+    * the bottom. Set up its layout, add the views, then call
+    * setupPlaylistFooter() to build and attach the toolbar. */
    m_playlistViewsAndFooter->setLayout(new QVBoxLayout());
 
    m_gridView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -1309,9 +1573,142 @@ MainWindow::MainWindow(QWidget *parent) :
    m_playlistViewsAndFooter->layout()->setAlignment(Qt::AlignCenter);
    m_playlistViewsAndFooter->layout()->setContentsMargins(0, 0, 0, 0);
 
+   setupPlaylistFooter();
+
+   setupModels();
+
+   m_logWidget->setObjectName("logWidget");
+
+   m_folderIcon     = QIcon(QString(path_dir_assets) + GENERIC_FOLDER_ICON);
+   m_defaultStyle   = QApplication::style();
+   m_defaultPalette = QApplication::palette();
+
+   /* ViewOptionsDialog needs m_settings set before it's constructed */
+   m_settings            = new QSettings(configDir
+         + QString("/retroarch_qt.cfg"), QSettings::IniFormat, this);
+   m_viewOptionsDialog   = new ViewOptionsDialog(this, 0);
+   m_playlistEntryDialog = new PlaylistEntryDialog(this, 0);
+
+   /* default NULL parameter for parent wasn't added until 5.7 */
+   qt_button_set_action_label(m_startCorePushButton, MENU_ENUM_LABEL_VALUE_START_CORE);
+   qt_button_set_action_label(m_runPushButton,       MENU_ENUM_LABEL_VALUE_RUN);
+   qt_button_set_action_label(m_stopPushButton,      MENU_ENUM_LABEL_VALUE_QT_STOP);
+   qt_button_set_action_label(m_coreInfoPushButton,  MENU_ENUM_LABEL_VALUE_QT_INFO);
+
+   setupFileSystemBrowser();
+
+   reloadPlaylists();
+
+   setupDockWidgets();
+
+   m_dirTree->setContextMenuPolicy(Qt::CustomContextMenu);
+   m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+   setupSignalConnections();
+
+   m_timer->start(TIMER_MSEC);
+
+   statusBar()->addPermanentWidget(m_statusLabel);
+
+   setCurrentCoreLabel();
+   setCoreActions();
+
+   /* Both of these are necessary to get the folder to scroll
+    * to the top of the view */
+   qApp->processEvents();
+   QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
+
+   m_searchLineEdit->setFocus();
+   m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
+
+   m_statusMessageElapsedTimer.start();
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+   resizeDocks(QList<QDockWidget*>() << m_searchDock,
+         QList<int>() << 1, Qt::Vertical);
+#endif
+}
+
+/* Build the footer toolbar - zoom slider, view-type and thumbnail-
+ * type push buttons, items count label, and the always-hidden grid
+ * progress widget - and attach it under the playlist views. Owns
+ * all its widget locals so they don't pollute the constructor.
+ * Mutates several MainWindow members (m_gridProgressWidget,
+ * m_gridProgressBar, m_zoomSlider, m_lastZoomSliderValue) and
+ * appends to m_playlistViewsAndFooter's layout, which the caller
+ * is expected to have created. */
+void MainWindow::setupPlaylistFooter()
+{
+   QHBoxLayout *zoomLayout              = new QHBoxLayout();
+   QLabel      *zoomLabel               = new QLabel(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM), m_zoomWidget);
+   QPushButton *thumbnailTypePushButton = new QPushButton(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE),
+         m_zoomWidget);
+   QMenu       *thumbnailTypeMenu       = new QMenu(thumbnailTypePushButton);
+   QPushButton *viewTypePushButton      = new QPushButton(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW), m_zoomWidget);
+   QMenu       *viewTypeMenu            = new QMenu(viewTypePushButton);
+   QHBoxLayout *gridProgressLayout      = new QHBoxLayout();
+   QHBoxLayout *gridFooterLayout        = NULL;
+   QLabel      *gridProgressLabel       = NULL;
+
+   m_gridProgressWidget = new QWidget();
+   gridProgressLabel    = new QLabel(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PROGRESS),
+         m_gridProgressWidget);
+
+   thumbnailTypePushButton->setObjectName("thumbnailTypePushButton");
+   thumbnailTypePushButton->setFlat(true);
+
+   connect(thumbnailTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART)),
+         SIGNAL(triggered()), this, SLOT(onBoxartThumbnailClicked()));
+   connect(thumbnailTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT)),
+         SIGNAL(triggered()), this, SLOT(onScreenshotThumbnailClicked()));
+   connect(thumbnailTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN)),
+         SIGNAL(triggered()), this, SLOT(onTitleThumbnailClicked()));
+   connect(thumbnailTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO)),
+         SIGNAL(triggered()), this, SLOT(onLogoThumbnailClicked()));
+
+   thumbnailTypePushButton->setMenu(thumbnailTypeMenu);
+
+   viewTypePushButton->setObjectName("viewTypePushButton");
+   viewTypePushButton->setFlat(true);
+
+   connect(viewTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS)),
+         SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
+   connect(viewTypeMenu->addAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST)),
+         SIGNAL(triggered()), this, SLOT(onListViewClicked()));
+
+   viewTypePushButton->setMenu(viewTypeMenu);
+
+   gridProgressLabel->setObjectName("gridProgressLabel");
+
+   m_gridProgressBar = new QProgressBar(m_gridProgressWidget);
+   m_gridProgressBar->setSizePolicy(
+         QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
+   zoomLabel->setObjectName("zoomLabel");
+
+   m_zoomSlider = new QSlider(Qt::Horizontal, m_zoomWidget);
+   m_zoomSlider->setMinimum(0);
+   m_zoomSlider->setMaximum(100);
+   m_zoomSlider->setValue(50);
+   m_zoomSlider->setSizePolicy(
+         QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred));
+
+   m_lastZoomSliderValue = m_zoomSlider->value();
+
    m_gridProgressWidget->setLayout(gridProgressLayout);
    gridProgressLayout->setContentsMargins(0, 0, 0, 0);
-   gridProgressLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridProgressLayout->addSpacerItem(new QSpacerItem(
+            0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    gridProgressLayout->addWidget(gridProgressLabel);
    gridProgressLayout->addWidget(m_gridProgressBar);
 
@@ -1326,18 +1723,27 @@ MainWindow::MainWindow(QWidget *parent) :
 
    gridFooterLayout = new QHBoxLayout();
    gridFooterLayout->addWidget(m_itemsCountLabel);
-   gridFooterLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
+   gridFooterLayout->addSpacerItem(new QSpacerItem(
+            0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
    gridFooterLayout->addWidget(m_gridProgressWidget);
    gridFooterLayout->addWidget(m_zoomWidget);
    gridFooterLayout->addWidget(thumbnailTypePushButton);
    gridFooterLayout->addWidget(viewTypePushButton);
 
-   static_cast<QVBoxLayout*>(m_playlistViewsAndFooter->layout())->addLayout(gridFooterLayout);
+   static_cast<QVBoxLayout*>(m_playlistViewsAndFooter->layout())
+      ->addLayout(gridFooterLayout);
 
    m_gridProgressWidget->hide();
+}
 
-   m_playlistModel = new PlaylistModel(this);
-   m_proxyModel    = new QSortFilterProxyModel(this);
+/* Configure the playlist + filesystem proxy models and the table /
+ * file-table / grid views that consume them. The init list creates
+ * the views; this fills in their behaviour (sort, selection, etc.)
+ * and hooks them up to their models. */
+void MainWindow::setupModels()
+{
+   m_playlistModel  = new PlaylistModel(this);
+   m_proxyModel     = new QSortFilterProxyModel(this);
    m_proxyModel->setSourceModel(m_playlistModel);
    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
 
@@ -1351,7 +1757,8 @@ MainWindow::MainWindow(QWidget *parent) :
    m_tableView->verticalHeader()->setVisible(false);
    m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
    m_tableView->setSelectionMode(QAbstractItemView::SingleSelection);
-   m_tableView->setEditTriggers(QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
+   m_tableView->setEditTriggers(
+         QAbstractItemView::SelectedClicked | QAbstractItemView::EditKeyPressed);
    m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
    m_tableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
    m_tableView->horizontalHeader()->setStretchLastSection(true);
@@ -1370,48 +1777,24 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
-
    m_gridView->setSelectionModel(m_tableView->selectionModel());
+}
 
-   m_logWidget->setObjectName("logWidget");
+/* Configure the QFileSystemModels and the directory tree view used
+ * by the file browser. Sets entry filters (respecting the user's
+ * "show hidden files" preference), points both models at the root
+ * of the filesystem, and hides the size/type/date columns on the
+ * tree so only names are shown. */
+void MainWindow::setupFileSystemBrowser()
+{
+   const bool show_hidden = m_settings->value("show_hidden_files", true).toBool();
+   const QDir::Filters hidden_filters = show_hidden
+      ? (QDir::Hidden | QDir::System)
+      : static_cast<QDir::Filter>(0);
 
-   m_folderIcon     = QIcon(QString(path_dir_assets) + GENERIC_FOLDER_ICON);
-   m_imageFormats   = QVector<QByteArray>::fromList(QImageReader::supportedImageFormats());
-   m_defaultStyle   = QApplication::style();
-   m_defaultPalette = QApplication::palette();
-
-   /* ViewOptionsDialog needs m_settings set before it's constructed */
-   m_settings            = new QSettings(configDir + "/retroarch_qt.cfg", QSettings::IniFormat, this);
-   m_viewOptionsDialog   = new ViewOptionsDialog(this, 0);
-   m_playlistEntryDialog = new PlaylistEntryDialog(this, 0);
-
-   /* default NULL parameter for parent wasn't added until 5.7 */
-   m_startCorePushButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_CORE), m_startCorePushButton));
-   m_startCorePushButton->setFixedSize(m_startCorePushButton->sizeHint());
-
-   m_runPushButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN), m_runPushButton));
-   m_runPushButton->setFixedSize(m_runPushButton->sizeHint());
-
-   m_stopPushButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_STOP), m_stopPushButton));
-   m_stopPushButton->setFixedSize(m_stopPushButton->sizeHint());
-
-   m_coreInfoPushButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_INFO), m_coreInfoPushButton));
-   m_coreInfoPushButton->setFixedSize(m_coreInfoPushButton->sizeHint());
-
-   searchResetButton = new QToolButton(m_searchWidget);
-   searchResetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), searchResetButton));
-   searchResetButton->setFixedSize(searchResetButton->sizeHint());
-
-   connect(searchResetButton, SIGNAL(clicked()), this, SLOT(onSearchResetClicked()));
-
-   m_dirModel->setFilter(QDir::NoDotAndDotDot |
-                         QDir::AllDirs |
-                         QDir::Drives |
-                         (m_settings->value("show_hidden_files", true).toBool() ? (QDir::Hidden | QDir::System) : static_cast<QDir::Filter>(0)));
-
-   m_fileModel->setFilter(QDir::NoDot |
-                          QDir::AllEntries |
-                          (m_settings->value("show_hidden_files", true).toBool() ? (QDir::Hidden | QDir::System) : static_cast<QDir::Filter>(0)));
+   m_dirModel->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Drives
+         | hidden_filters);
+   m_fileModel->setFilter(QDir::NoDot | QDir::AllEntries | hidden_filters);
 
 #if defined(Q_OS_WIN)
    m_dirModel->setRootPath("");
@@ -1429,165 +1812,187 @@ MainWindow::MainWindow(QWidget *parent) :
 
    if (m_dirModel->columnCount() > 3)
    {
-      /* size */
-      m_dirTree->hideColumn(1);
-      /* type */
-      m_dirTree->hideColumn(2);
-      /* date modified */
-      m_dirTree->hideColumn(3);
+      m_dirTree->hideColumn(1);  /* size */
+      m_dirTree->hideColumn(2);  /* type */
+      m_dirTree->hideColumn(3);  /* date modified */
    }
+}
 
-   reloadPlaylists();
+/* Build the search / core-info / log dock widgets and their
+ * contents, register them with the main window, and hide the log
+ * dock so it stays out of the way until the user opens it. Pulled
+ * out of the constructor for readability. */
+void MainWindow::setupDockWidgets()
+{
+   QToolButton *searchResetButton = new QToolButton(m_searchWidget);
+   qt_button_set_action_label(searchResetButton,
+         MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR);
+   connect(searchResetButton, SIGNAL(clicked()), this,
+         SLOT(onSearchResetClicked()));
 
    m_searchWidget->setLayout(new QHBoxLayout());
    m_searchWidget->layout()->addWidget(m_searchLineEdit);
    m_searchWidget->layout()->addWidget(searchResetButton);
 
-   m_searchDock->setObjectName("searchDock");
-   m_searchDock->setProperty("default_area", Qt::LeftDockWidgetArea);
-   m_searchDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH));
-   m_searchDock->setWidget(m_searchWidget);
+   qt_dock_configure(m_searchDock, "searchDock", Qt::LeftDockWidgetArea,
+         MENU_ENUM_LABEL_VALUE_SEARCH, m_searchWidget);
    m_searchDock->setFixedHeight(m_searchDock->minimumSizeHint().height());
 
-   addDockWidget(static_cast<Qt::DockWidgetArea>(m_searchDock->property("default_area").toInt()), m_searchDock);
+   qt_dock_add_to(this, m_searchDock);
 
    m_coreInfoLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
    m_coreInfoLabel->setTextFormat(Qt::RichText);
    m_coreInfoLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
    m_coreInfoLabel->setOpenExternalLinks(true);
 
-   m_coreInfoDock->setObjectName("coreInfoDock");
-   m_coreInfoDock->setProperty("default_area", Qt::RightDockWidgetArea);
-   m_coreInfoDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO));
-   m_coreInfoDock->setWidget(m_coreInfoWidget);
+   qt_dock_configure(m_coreInfoDock, "coreInfoDock", Qt::RightDockWidgetArea,
+         MENU_ENUM_LABEL_VALUE_QT_CORE_INFO, m_coreInfoWidget);
 
-   addDockWidget(static_cast<Qt::DockWidgetArea>(m_coreInfoDock->property("default_area").toInt()), m_coreInfoDock);
+   qt_dock_add_to(this, m_coreInfoDock);
 
    m_logWidget->setLayout(new QVBoxLayout());
    m_logWidget->layout()->addWidget(m_logTextEdit);
    m_logWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
-   m_logDock->setObjectName("logDock");
-   m_logDock->setProperty("default_area", Qt::BottomDockWidgetArea);
-   m_logDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG));
-   m_logDock->setWidget(m_logWidget);
+   qt_dock_configure(m_logDock, "logDock", Qt::BottomDockWidgetArea,
+         MENU_ENUM_LABEL_VALUE_QT_LOG, m_logWidget);
 
-   addDockWidget(static_cast<Qt::DockWidgetArea>(m_logDock->property("default_area").toInt()), m_logDock);
+   qt_dock_add_to(this, m_logDock);
 
-   /* Hide the log by default. If user has saved their dock positions with the log visible,
-    * then this hide() call will be reversed later by restoreState().
-    * FIXME: If user unchecks "save dock positions", the log will not be unhidden even if
-    * it was previously saved in the config.
-    */
+   /* Hide the log by default. If user has saved their dock positions
+    * with the log visible, then this hide() call will be reversed
+    * later by restoreState().
+    *
+    * FIXME: If user unchecks "save dock positions", the log will
+    * not be unhidden even if it was previously saved in the config. */
    m_logDock->hide();
+}
 
-   m_dirTree->setContextMenuPolicy(Qt::CustomContextMenu);
-   m_listWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+/* Wire up signal/slot connections for the main window's child
+ * widgets and self-emitted signals. Pulled out of the constructor
+ * to keep that body readable. All connections operate on already-
+ * constructed members of MainWindow; no parameters needed. */
+void MainWindow::setupSignalConnections()
+{
+   settings_t *settings              = config_get_ptr();
+   const char *path_dir_menu_content = settings->paths.directory_menu_content;
 
-   connect(m_searchLineEdit, SIGNAL(returnPressed()), this, SLOT(onSearchEnterPressed()));
-   connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this, SLOT(onSearchLineEditEdited(const QString&)));
+   connect(m_searchLineEdit, SIGNAL(returnPressed()), this,
+         SLOT(onSearchEnterPressed()));
+   connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this,
+         SLOT(onSearchLineEditEdited(const QString&)));
    connect(m_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
-   connect(m_loadCoreWindow, SIGNAL(coreLoaded()), this, SLOT(onCoreLoaded()));
-   connect(m_loadCoreWindow, SIGNAL(windowClosed()), this, SLOT(onCoreLoadWindowClosed()));
-   connect(m_listWidget, SIGNAL(currentItemChanged(QListWidgetItem*, QListWidgetItem*)), this, SLOT(onCurrentListItemChanged(QListWidgetItem*, QListWidgetItem*)));
-   connect(m_startCorePushButton, SIGNAL(clicked()), this, SLOT(onStartCoreClicked()));
-   connect(m_coreInfoPushButton, SIGNAL(clicked()), m_coreInfoDialog, SLOT(showCoreInfo()));
+   connect(m_loadCoreWindow, SIGNAL(coreLoaded()), this,
+         SLOT(onCoreLoaded()));
+   connect(m_loadCoreWindow, SIGNAL(windowClosed()), this,
+         SLOT(onCoreLoadWindowClosed()));
+   connect(m_listWidget, SIGNAL(currentItemChanged(QListWidgetItem*,
+               QListWidgetItem*)), this,
+         SLOT(onCurrentListItemChanged(QListWidgetItem*, QListWidgetItem*)));
+   connect(m_startCorePushButton, SIGNAL(clicked()), this,
+         SLOT(onStartCoreClicked()));
+   connect(m_coreInfoPushButton, SIGNAL(clicked()), m_coreInfoDialog,
+         SLOT(showCoreInfo()));
    connect(m_runPushButton, SIGNAL(clicked()), this, SLOT(onRunClicked()));
    connect(m_stopPushButton, SIGNAL(clicked()), this, SLOT(onStopClicked()));
-   connect(m_dirTree, SIGNAL(itemsSelected(QModelIndexList)), this, SLOT(onTreeViewItemsSelected(QModelIndexList)));
-   connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
-   connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
-   connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onLaunchWithComboBoxIndexChanged(int)));
-   connect(m_zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(onZoomValueChanged(int)));
-   connect(thumbnailTypeBoxartAction, SIGNAL(triggered()), this, SLOT(onBoxartThumbnailClicked()));
-   connect(thumbnailTypeScreenshotAction, SIGNAL(triggered()), this, SLOT(onScreenshotThumbnailClicked()));
-   connect(thumbnailTypeTitleAction, SIGNAL(triggered()), this, SLOT(onTitleThumbnailClicked()));
-   connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
-   connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
-   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
-   connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileBrowserTableDirLoaded(const QString&)));
+   connect(m_dirTree, SIGNAL(itemsSelected(QModelIndexList)), this,
+         SLOT(onTreeViewItemsSelected(QModelIndexList)));
+   connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this,
+         SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
+   connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this,
+         SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
+   connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this,
+         SLOT(onLaunchWithComboBoxIndexChanged(int)));
+   connect(m_zoomSlider, SIGNAL(valueChanged(int)), this,
+         SLOT(onZoomValueChanged(int)));
+   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileSystemDirLoaded(const QString&)));
+   connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileBrowserTableDirLoaded(const QString&)));
 
    m_dirTree->setCurrentIndex(m_dirModel->index(path_dir_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
    m_dirTree->expand(m_dirTree->currentIndex());
 
    /* must use queued connection */
-   connect(this, SIGNAL(scrollToDownloads(QString)), this, SLOT(onDownloadScroll(QString)), Qt::QueuedConnection);
-   connect(this, SIGNAL(scrollToDownloadsAgain(QString)), this, SLOT(onDownloadScrollAgain(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(scrollToDownloads(QString)), this,
+         SLOT(onDownloadScroll(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(scrollToDownloadsAgain(QString)), this,
+         SLOT(onDownloadScrollAgain(QString)), Qt::QueuedConnection);
 
-   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
-   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onPlaylistThumbnailDownloadCanceled()));
+   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         m_playlistThumbnailDownloadProgressDialog, SLOT(cancel()));
+   connect(m_playlistThumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         this, SLOT(onPlaylistThumbnailDownloadCanceled()));
 
-   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailDownloadProgressDialog, SLOT(cancel()));
-   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailDownloadCanceled()));
+   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         m_thumbnailDownloadProgressDialog, SLOT(cancel()));
+   connect(m_thumbnailDownloadProgressDialog, SIGNAL(canceled()),
+         this, SLOT(onThumbnailDownloadCanceled()));
 
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), m_thumbnailPackDownloadProgressDialog, SLOT(cancel()));
-   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()), this, SLOT(onThumbnailPackDownloadCanceled()));
+   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()),
+         m_thumbnailPackDownloadProgressDialog, SLOT(cancel()));
+   connect(m_thumbnailPackDownloadProgressDialog, SIGNAL(canceled()),
+         this, SLOT(onThumbnailPackDownloadCanceled()));
 
    connect(this, SIGNAL(itemChanged()), this, SLOT(onItemChanged()));
-   connect(this, SIGNAL(gotThumbnailDownload(QString,QString)), this, SLOT(onDownloadThumbnail(QString,QString)));
 
    m_thumbnailTimer->setSingleShot(true);
    connect(m_thumbnailTimer, SIGNAL(timeout()), this, SLOT(updateVisibleItems()));
-   connect(this, SIGNAL(updateThumbnails()), this, SLOT(updateVisibleItems()));
 
    /* TODO: Handle scroll and resize differently. */
-   connect(m_gridView, SIGNAL(visibleItemsChangedMaybe()), this, SLOT(startTimer()));
+   connect(m_gridView, SIGNAL(visibleItemsChangedMaybe()),
+         this, SLOT(startTimer()));
 
-   connect(m_tableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onCurrentItemChanged(const QModelIndex&)));
-   connect(m_fileTableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onCurrentFileChanged(const QModelIndex&)));
+   connect(m_tableView->selectionModel(),
+         SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
+         SLOT(onCurrentItemChanged(const QModelIndex&)));
+   connect(m_fileTableView->selectionModel(),
+         SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this,
+         SLOT(onCurrentFileChanged(const QModelIndex&)));
 
-   connect(m_gridView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
-   connect(m_tableView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
-   connect(m_fileTableView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onFileDoubleClicked(const QModelIndex&)));
+   connect(m_gridView, SIGNAL(doubleClicked(const QModelIndex&)), this,
+         SLOT(onContentItemDoubleClicked(const QModelIndex&)));
+   connect(m_tableView, SIGNAL(doubleClicked(const QModelIndex&)), this,
+         SLOT(onContentItemDoubleClicked(const QModelIndex&)));
+   connect(m_fileTableView, SIGNAL(doubleClicked(const QModelIndex&)), this,
+         SLOT(onFileDoubleClicked(const QModelIndex&)));
 
-   connect(m_playlistModel, SIGNAL(dataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)), this, SLOT(onCurrentTableItemDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>&)));
+   connect(m_playlistModel, SIGNAL(dataChanged(const QModelIndex&,
+               const QModelIndex&, const QVector<int>&)), this,
+         SLOT(onCurrentTableItemDataChanged(const QModelIndex&,
+               const QModelIndex&, const QVector<int>&)));
 
-   /* make sure these use an auto connection so it will be queued if called from a different thread (some facilities in RA log messages from other threads) */
-   connect(this, SIGNAL(gotLogMessage(const QString&)), this, SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
-   connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)), this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)), Qt::AutoConnection);
-   connect(this, SIGNAL(gotReloadPlaylists()), this, SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
+   /* Make sure these use an auto connection so it will be queued if
+    * called from a different thread (some facilities in RA log
+    * messages from other threads) */
+   connect(this, SIGNAL(gotLogMessage(const QString&)), this,
+         SLOT(onGotLogMessage(const QString&)), Qt::AutoConnection);
+   connect(this, SIGNAL(gotStatusMessage(QString,unsigned,unsigned,bool)),
+         this, SLOT(onGotStatusMessage(QString,unsigned,unsigned,bool)),
+         Qt::AutoConnection);
+   connect(this, SIGNAL(gotReloadPlaylists()), this,
+         SLOT(onGotReloadPlaylists()), Qt::AutoConnection);
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   connect(this, SIGNAL(gotReloadShaderParams()), this, SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
+   connect(this, SIGNAL(gotReloadShaderParams()), this,
+         SLOT(onGotReloadShaderParams()), Qt::AutoConnection);
 #endif
 #endif
-   connect(this, SIGNAL(gotReloadCoreOptions()), this, SLOT(onGotReloadCoreOptions()), Qt::AutoConnection);
 
-   /* these are always queued */
-   connect(this, SIGNAL(showErrorMessageDeferred(QString)), this, SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
-   connect(this, SIGNAL(showInfoMessageDeferred(QString)), this, SLOT(onShowInfoMessage(QString)), Qt::QueuedConnection);
-   connect(this, SIGNAL(extractArchiveDeferred(QString,QString,QString,retro_task_callback_t)), this, SLOT(onExtractArchive(QString,QString,QString,retro_task_callback_t)), Qt::QueuedConnection);
-
-   m_timer->start(TIMER_MSEC);
-
-   statusBar()->addPermanentWidget(m_statusLabel);
-
-   setCurrentCoreLabel();
-   setCoreActions();
-
-   /* both of these are necessary to get the folder to scroll to the top of the view */
-   qApp->processEvents();
-   QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
-
-   m_searchLineEdit->setFocus();
-   m_loadCoreWindow->setWindowModality(Qt::ApplicationModal);
-
-   m_statusMessageElapsedTimer.start();
-
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-   resizeDocks(QList<QDockWidget*>() << m_searchDock, QList<int>() << 1, Qt::Vertical);
-#endif
+   /* These are always queued */
+   connect(this, SIGNAL(showErrorMessageDeferred(QString)), this,
+         SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
+   connect(this, SIGNAL(showInfoMessageDeferred(QString)), this,
+         SLOT(onShowInfoMessage(QString)), Qt::QueuedConnection);
 }
 
 MainWindow::~MainWindow()
 {
-   if (m_thumbnailPixmap)
-      delete m_thumbnailPixmap;
-   if (m_thumbnailPixmap2)
-      delete m_thumbnailPixmap2;
-   if (m_thumbnailPixmap3)
-      delete m_thumbnailPixmap3;
+   size_t i;
+   for (i = 0; i < 4; i++)
+      if (m_thumbnailPixmaps[i])
+         delete m_thumbnailPixmaps[i];
    if (m_proxyFileModel)
       delete m_proxyFileModel;
 }
@@ -1605,14 +2010,15 @@ void MainWindow::startTimer()
 
 void MainWindow::updateVisibleItems()
 {
-   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS && m_viewType == VIEW_TYPE_ICONS)
+   if (     m_currentBrowser == BROWSER_TYPE_PLAYLISTS
+         && m_viewType       == VIEW_TYPE_ICONS)
    {
       size_t i;
       QVector<QModelIndex> indexes = m_gridView->visibleIndexes();
-      size_t size                  = indexes.size();
-
-      for (i = 0; i < size; i++)
-         m_playlistModel->loadThumbnail(m_proxyModel->mapToSource(indexes.at(i)));
+      size_t _len                  = indexes.size();
+      for (i = 0; i < _len; i++)
+         m_playlistModel->loadThumbnail(
+               m_proxyModel->mapToSource(indexes.at(i)));
    }
 }
 
@@ -1648,9 +2054,9 @@ QVector<QPair<QString, QString> > MainWindow::getPlaylists()
 {
    size_t i;
    QVector<QPair<QString, QString> > playlists;
-   size_t size  = m_listWidget->count();
+   size_t _len  = m_listWidget->count();
 
-   for (i = 0; i < size; i++)
+   for (i = 0; i < _len; i++)
    {
       QString label, path;
       QPair<QString, QString> pair;
@@ -1711,6 +2117,11 @@ void MainWindow::onTitleThumbnailClicked()
    setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
 }
 
+void MainWindow::onLogoThumbnailClicked()
+{
+   setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
+}
+
 void MainWindow::setIconViewZoom(int zoom_val)
 {
    m_zoomSlider->setValue(zoom_val);
@@ -1719,44 +2130,45 @@ void MainWindow::setIconViewZoom(int zoom_val)
 void MainWindow::onZoomValueChanged(int zoom_val)
 {
    int new_size = 0;
-
    if (zoom_val < 50)
-      new_size               = exp_scale(
-            lerp(0, 49, 25, 49, zoom_val) / 50.0, 102, 256);
+      new_size  = exp_scale(lerp(0, 49, 25, 49, zoom_val)
+		/ 50.0, 102, 256);
    else
-      new_size               = exp_scale(zoom_val / 100.0, 256, 1024);
-
+      new_size  = exp_scale(zoom_val / 100.0, 256, 1024);
    m_gridView->setGridSize(new_size);
-
-   m_lastZoomSliderValue     = zoom_val;
+   m_lastZoomSliderValue = zoom_val;
 }
 
 void MainWindow::showWelcomeScreen()
 {
    bool dont_ask             = false;
    bool answer               = false;
-   const QString welcome_txt = QStringLiteral(""
+
+   if (!m_settings->value("show_welcome_screen", true).toBool())
+      return;
+
+   const QString welcome_txt = QString(""
       "Welcome to the RetroArch Desktop Menu!<br>\n"
       "<br>\n"
-      "Many settings and actions are currently only available in the familiar Big Picture menu, "
-      "but this Desktop Menu should be functional for launching content and managing playlists.<br>\n"
+      "The Desktop Menu provides a Qt-based WIMP (windows, icons, menus, pointer) interface "
+	  "that's functional for launching content and managing playlists.<br>\n"
       "<br>\n"
-      "Some useful hotkeys for interacting with the Big Picture menu include:\n"
+      "Settings can be configured via &ldquo;View -> Settings...&rdquo; in Desktop Mode window, "
+	  "or &ldquo;Main Menu -> Settings&rdquo; in the 10-foot user interface (aka big picture mode) window"
+	  "— both access the same settings. But many actions only function in the 10-foot UI, including "
+	  "these default hotkey assignments:\n"
       "<ul>\n"
-      "<li>F1  - Bring up the Big Picture menu</li>\n"
+      "<li>F1  - Switches the current display between menu and content</li>\n"
       "<li>F5  - Bring the Desktop Menu back if closed</li>\n"
-      "<li>F   - Switch between fullscreen and windowed modes</li>\n"
+      "<li>F   - Switch between fullscreen and windowed display modes</li>\n"
       "<li>Esc - Exit RetroArch</li>\n"
       "</ul>\n"
       "\n"
       "For more hotkeys and their assignments, see:<br>\n"
-      "Settings -> Input -> Hotkeys<br>\n"
+      "View -> Settings... -> Input -> Hotkeys [tab]<br>\n"
       "<br>\n"
       "Documentation for RetroArch, libretro and cores:<br>\n"
       "<a href=\"https://docs.libretro.com/\">https://docs.libretro.com/</a>");
-
-   if (!m_settings->value("show_welcome_screen", true).toBool())
-      return;
 
    answer = showMessageBox(welcome_txt,
          MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal,
@@ -1773,55 +2185,57 @@ const QString& MainWindow::customThemeString() const
 
 bool MainWindow::setCustomThemeFile(QString filePath)
 {
+   QByteArray pathArray;
+   const char *path_data;
+   void   *buf  = NULL;
+   int64_t len  = 0;
+
    if (filePath.isEmpty())
    {
-      QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK));
+      QMessageBox::critical(this,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK));
       return false;
    }
 
-   QFile file(filePath);
+   pathArray = filePath.toUtf8();
+   path_data = pathArray.constData();
 
-   if (file.exists())
+   if (!filestream_exists(path_data))
    {
-      bool opened = file.open(QIODevice::ReadOnly);
-
-      if (!opened)
-      {
-         QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED));
-         return false;
-      }
-
-      {
-         QByteArray fileArray = file.readAll();
-         QString fileStr      = QString::fromUtf8(fileArray);
-
-         file.close();
-
-         if (fileStr.isEmpty())
-         {
-            QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY));
-            return false;
-         }
-
-         setCustomThemeString(fileStr);
-      }
-   }
-   else
-   {
-      QMessageBox::critical(this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST));
+      QMessageBox::critical(this,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST));
       return false;
    }
 
+   if (!filestream_read_file(path_data, &buf, &len))
+   {
+      QMessageBox::critical(this,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED));
+      return false;
+   }
+
+   if (len <= 0)
+   {
+      free(buf);
+      QMessageBox::critical(this,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY));
+      return false;
+   }
+
+   setCustomThemeString(QString::fromUtf8(static_cast<const char*>(buf),
+            static_cast<int>(len)));
+   free(buf);
    return true;
 }
 
-void MainWindow::setCustomThemeString(QString qss)
-{
-   m_customThemeString = qss;
-}
+void MainWindow::setCustomThemeString(QString qss) { m_customThemeString = qss;}
 
 bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
-      Qt::WindowModality modality, bool showDontAsk, bool *dont_ask)
+      Qt::WindowModality modality, bool show_dont_ask, bool *dont_ask)
 {
    QCheckBox *checkbox               = NULL;
    QPointer<QMessageBox> msg_box_ptr = new QMessageBox(this);
@@ -1831,9 +2245,10 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
    msg_box->setTextFormat(Qt::RichText);
    msg_box->setTextInteractionFlags(Qt::TextBrowserInteraction);
 
-   if (showDontAsk)
+   if (show_dont_ask)
    {
-      checkbox = new QCheckBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msg_box);
+      checkbox = new QCheckBox(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN), msg_box);
       /* QMessageBox::setCheckBox() is available since 5.2 */
       msg_box->setCheckBox(checkbox);
    }
@@ -1842,24 +2257,29 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
    {
       case MSGBOX_TYPE_INFO:
          msg_box->setIcon(QMessageBox::Information);
-         msg_box->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_INFORMATION));
+         msg_box->setWindowTitle(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_INFORMATION));
          break;
       case MSGBOX_TYPE_WARNING:
          msg_box->setIcon(QMessageBox::Warning);
-         msg_box->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_WARNING));
+         msg_box->setWindowTitle(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_WARNING));
          break;
       case MSGBOX_TYPE_ERROR:
          msg_box->setIcon(QMessageBox::Critical);
-         msg_box->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ERROR));
+         msg_box->setWindowTitle(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_ERROR));
          break;
       case MSGBOX_TYPE_QUESTION_YESNO:
          msg_box->setIcon(QMessageBox::Question);
-         msg_box->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_QUESTION));
+         msg_box->setWindowTitle(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_QUESTION));
          msg_box->setStandardButtons(QMessageBox::Yes | QMessageBox::No);
          break;
       case MSGBOX_TYPE_QUESTION_OKCANCEL:
          msg_box->setIcon(QMessageBox::Question);
-         msg_box->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_QUESTION));
+         msg_box->setWindowTitle(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_QUESTION));
          msg_box->setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
          break;
       default:
@@ -1872,9 +2292,10 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
    if (!msg_box_ptr)
       return true;
 
+   int key = msg_box->result();
    if (
-            msg_box->result() != QMessageBox::Ok
-         && msg_box->result() != QMessageBox::Yes)
+            key != QMessageBox::Ok
+         && key != QMessageBox::Yes)
       return false;
 
    if (checkbox && dont_ask)
@@ -1886,27 +2307,27 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 {
 #ifdef HAVE_LIBRETRODB
-   QDir dir;
-   QByteArray dirArray;
    QPointer<QAction> action;
    QList<QAction*> actions;
    QScopedPointer<QAction> scanAction;
    QString currentDirString      = QDir::toNativeSeparators(
          m_dirModel->filePath(m_dirTree->currentIndex()));
    settings_t *settings          = config_get_ptr();
-   const char *fullpath          = NULL;
    const char *path_dir_playlist = settings->paths.directory_playlist;
    const char *path_content_db   = settings->paths.path_content_database;
+   QByteArray dirArray;
+   const char *fullpath          = NULL;
 
    if (currentDirString.isEmpty())
       return;
 
-   dir                           = currentDirString;
+   dirArray = currentDirString.toUtf8();
+   fullpath = dirArray.constData();
 
-   if (!dir.exists())
+   if (!path_is_directory(fullpath))
       return;
 
-   /* default NULL parameter for parent wasn't added until 5.7 */
+   /* Default NULL parameter for parent wasn't added until 5.7 */
    scanAction.reset(new QAction(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY), 0));
 
@@ -1914,9 +2335,6 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 
    if (!(action = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree)))
       return;
-
-   dirArray                      = currentDirString.toUtf8();
-   fullpath                      = dirArray.constData();
 
    task_push_dbscan(
          path_dir_playlist,
@@ -1952,7 +2370,7 @@ void MainWindow::onGotStatusMessage(
             msec_duration   = (duration / screen->refreshRate()) * 1000;
          if (msec_duration <= 0)
             msec_duration   = 1000;
-         msg_duration       = qMax(msec_duration, STATUS_MSG_THROTTLE_MSEC);
+         msg_duration       = ((msec_duration) > (STATUS_MSG_THROTTLE_MSEC) ? (msec_duration) : (STATUS_MSG_THROTTLE_MSEC));
          m_statusMessageElapsedTimer.restart();
          status->showMessage(msg, msg_duration);
       }
@@ -1974,9 +2392,7 @@ void MainWindow::onShaderParamsClicked()
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    if (!m_shaderParamsDialog)
       return;
-
    m_shaderParamsDialog->show();
-
    onGotReloadShaderParams();
 #endif
 #endif
@@ -2016,10 +2432,8 @@ void MainWindow::appendLogMessage(const QString &msg)
 void MainWindow::onGotLogMessage(const QString &msg)
 {
    QString newMsg = msg;
-
-   if (newMsg.at(newMsg.size() - 1) == '\n')
+   if (!newMsg.isEmpty() && newMsg.at(newMsg.size() - 1) == '\n')
       newMsg.chop(1);
-
    m_logTextEdit->appendMessage(newMsg);
 }
 
@@ -2029,8 +2443,10 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
    QString core_info_txt;
    QVector<QHash<QString, QString> >
       infoList                  = getCoreInfo();
-   QVariantMap          coreMap = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
+   QVariantMap          coreMap = m_launchWithComboBox->currentData(
+         Qt::UserRole).value<QVariantMap>();
+   core_selection coreSelection = static_cast<core_selection>(
+         coreMap.value("core_selection").toInt());
 
    if (infoList.count() == 0)
       return;
@@ -2049,13 +2465,13 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
       if (!value.isEmpty())
       {
          if (!key.isEmpty())
-            core_info_txt                += " ";
+            core_info_txt                += QString(" ");
 
          core_info_txt                   += value;
       }
 
       if (i < infoList.count() - 1)
-         core_info_txt                   += "<br>\n";
+         core_info_txt                   += QString("<br>\n");
    }
 
    m_coreInfoLabel->setText(core_info_txt);
@@ -2069,37 +2485,31 @@ void MainWindow::onLaunchWithComboBoxIndexChanged(int)
 
 MainWindow::Theme MainWindow::getThemeFromString(QString themeString)
 {
-   if (themeString == "default")
+   if (themeString == QLatin1String("default"))
       return THEME_SYSTEM_DEFAULT;
-   else if (themeString == "dark")
+   else if (themeString == QLatin1String("dark"))
       return THEME_DARK;
-   else if (themeString == "custom")
+   else if (themeString == QLatin1String("custom"))
       return THEME_CUSTOM;
-
    return THEME_SYSTEM_DEFAULT;
 }
 
-QString MainWindow::getThemeString(Theme theme)
+const char *MainWindow::getThemeString(Theme theme)
 {
    switch (theme)
    {
-      case THEME_SYSTEM_DEFAULT:
-         return "default";
       case THEME_DARK:
          return "dark";
       case THEME_CUSTOM:
          return "custom";
+      case THEME_SYSTEM_DEFAULT:
       default:
          break;
    }
-
    return "default";
 }
 
-MainWindow::Theme MainWindow::theme()
-{
-   return m_currentTheme;
-}
+MainWindow::Theme MainWindow::theme() { return m_currentTheme; }
 
 void MainWindow::setTheme(Theme theme)
 {
@@ -2110,10 +2520,14 @@ void MainWindow::setTheme(Theme theme)
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(m_settings->value("highlight_color", "palette(highlight)").toString()));
+         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
+                  m_settings->value("highlight_color",
+                     "palette(highlight)").toString()));
          break;
       case THEME_DARK:
-         qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(m_settings->value("highlight_color", "palette(highlight)").toString()));
+         qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
+                  m_settings->value("highlight_color",
+                     "palette(highlight)").toString()));
          break;
       case THEME_CUSTOM:
          qApp->setStyleSheet(m_customThemeString);
@@ -2143,25 +2557,28 @@ void MainWindow::changeThumbnailType(ThumbnailType type)
 
 QString MainWindow::changeThumbnail(const QImage &image, QString type)
 {
-   QHash<QString, QString> hash = getCurrentContentHash();
-   QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]) + "/" + type;
-   QString thumbPath            = dirString + "/" + m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+   PlaylistEntry entry          = getCurrentContentEntry();
+   QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(
+                                      entry.dbName)
+                                + QString("/") + type;
+   QString thumbPath            = m_playlistModel->getSanitizedThumbnailName(
+                                      dirString + QString("/"),
+                                      entry.labelNoExt);
    QByteArray   dirArray        = QDir::toNativeSeparators(dirString).toUtf8();
    const char   *dirData        = dirArray.constData();
    QByteArray thumbArray        = QDir::toNativeSeparators(thumbPath).toUtf8();
    const char *thumbData        = thumbArray.constData();
    int quality                  = -1;
-   QDir dir(dirString);
    QImage scaledImage(image);
 
-   if (!dir.exists())
+   if (!path_is_directory(dirData))
    {
-      if (!dir.mkpath("."))
+      if (!path_mkdir(dirData))
       {
-         RARCH_ERR("[Qt]: Could not create directory: %s\n", dirData);
+         RARCH_ERR("[Qt] Could not create directory: \"%s\".\n", dirData);
          return QString();
       }
-      RARCH_LOG("[Qt]: Created directory: %s\n", dirData);
+      RARCH_LOG("[Qt] Created directory: \"%s\".\n", dirData);
    }
 
    if (m_settings->contains("thumbnail_max_size"))
@@ -2169,7 +2586,8 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
       int size = m_settings->value("thumbnail_max_size", 0).toInt();
 
       if (size != 0 && (image.height() > size ||  image.width() > size))
-         scaledImage = image.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+         scaledImage = image.scaled(size, size,
+               Qt::KeepAspectRatio, Qt::SmoothTransformation);
    }
 
    if (m_settings->contains("thumbnail_quality"))
@@ -2177,342 +2595,85 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
 
    if (scaledImage.save(thumbPath, "png", quality))
    {
-      RARCH_LOG("[Qt]: Saved image: %s\n", thumbData);
+      RARCH_LOG("[Qt] Saved image: \"%s\".\n", thumbData);
       m_playlistModel->reloadThumbnailPath(thumbPath);
       updateVisibleItems();
 
       return thumbPath;
    }
 
-   RARCH_ERR("[Qt]: Could not save image: %s\n", thumbData);
+   RARCH_ERR("[Qt] Could not save image: \"%s\".\n", thumbData);
    return QString();
 }
 
 void MainWindow::onThumbnailDropped(const QImage &image,
       ThumbnailType thumbnailType)
 {
-   switch (thumbnailType)
-   {
-      case THUMBNAIL_TYPE_BOXART:
-      {
-         QString path = changeThumbnail(image, THUMBNAIL_BOXART);
+   int idx          = qt_thumbnail_type_to_widget_idx(thumbnailType);
+   QString path     = changeThumbnail(image, qt_thumbnail_subdirs[idx]);
+   QPixmap *new_pix = NULL;
 
-         if (path.isNull())
-            return;
+   if (path.isNull())
+      return;
 
-         if (m_thumbnailPixmap)
-            delete m_thumbnailPixmap;
+   if (m_thumbnailPixmaps[idx])
+      delete m_thumbnailPixmaps[idx];
 
-         m_thumbnailPixmap = new QPixmap(path);
+   new_pix                  = new QPixmap(pixmapFromPathRA(path));
+   m_thumbnailPixmaps[idx]  = new_pix;
 
-         onResizeThumbnailOne(*m_thumbnailPixmap, true);
-         break;
-      }
-
-      case THUMBNAIL_TYPE_TITLE_SCREEN:
-      {
-         QString path = changeThumbnail(image, THUMBNAIL_TITLE);
-
-         if (path.isNull())
-            return;
-
-         if (m_thumbnailPixmap2)
-            delete m_thumbnailPixmap2;
-
-         m_thumbnailPixmap2 = new QPixmap(path);
-
-         onResizeThumbnailTwo(*m_thumbnailPixmap2, true);
-         break;
-      }
-
-      case THUMBNAIL_TYPE_SCREENSHOT:
-      {
-         QString path = changeThumbnail(image, THUMBNAIL_SCREENSHOT);
-
-         if (path.isNull())
-            return;
-
-         if (m_thumbnailPixmap3)
-            delete m_thumbnailPixmap3;
-
-         m_thumbnailPixmap3 = new QPixmap(path);
-
-         onResizeThumbnailThree(*m_thumbnailPixmap3, true);
-         break;
-      }
-   }
+   setThumbnail(qt_thumbnail_widget_names[idx], *new_pix, true);
 }
 
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
 {
    size_t i;
    QVector<QHash<QString, QString> > infoList;
-   runloop_state_t *runloop_st         = runloop_state_get_ptr();
-   QHash<QString, QString> currentCore = getSelectedCore();
-   core_info_t *core_info              = NULL;
-   QByteArray currentCorePathArray     = currentCore["core_path"].toUtf8();
+   QByteArray currentCorePathArray     = getSelectedCorePath().toUtf8();
    const char *current_core_path_data  = currentCorePathArray.constData();
+   struct string_list *keys            = string_list_new();
+   struct string_list *values          = string_list_new();
 
-   /* Search for current core */
-   core_info_find(current_core_path_data, &core_info);
-
-   if (     currentCore["core_path"].isEmpty()
-         || !core_info
-         || !core_info->has_info)
+   if (!keys || !values)
    {
-      QHash<QString, QString> hash;
-
-      hash["key"]   = msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE);
-      hash["value"] = "";
-
-      infoList.append(hash);
-
+      string_list_free(keys);
+      string_list_free(values);
       return infoList;
    }
 
-   if (core_info->core_name)
+   qt_core_info_collect(current_core_path_data, keys, values);
+
+   for (i = 0; i < keys->size; i++)
    {
       QHash<QString, QString> hash;
+      enum qt_core_info_row_status status =
+         (enum qt_core_info_row_status)values->elems[i].attr.i;
 
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME)) + ":";
-      hash["value"] = core_info->core_name;
+      hash["key"]   = keys->elems[i].data;
+      hash["value"] = values->elems[i].data;
 
-      infoList.append(hash);
-   }
-
-   if (core_info->display_name)
-   {
-      QHash<QString, QString> hash;
-
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL)) + ":";
-      hash["value"] = core_info->display_name;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->systemname)
-   {
-      QHash<QString, QString> hash;
-
-      hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME)) + ":";
-      hash["value"] = core_info->systemname;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->system_manufacturer)
-   {
-      QHash<QString, QString> hash;
-
-      hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER)) + ":";
-      hash["value"] = core_info->system_manufacturer;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->categories_list)
-   {
-      QHash<QString, QString> hash;
-      QString categories;
-
-      for (i = 0; i < core_info->categories_list->size; i++)
+      if (    status == QT_CORE_INFO_ROW_FIRMWARE_PRESENT
+           || status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
       {
-         categories += core_info->categories_list->elems[i].data;
+         const char *css_color  = (status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
+            ? "#ff0000" : "#00af00";
+         const char *style_rgb  = (status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
+            ? "color: #ff0000" : "color: rgb(0, 175, 0)";
+         QString style          = QString("font-weight: bold; ") + style_rgb;
 
-         if (i < core_info->categories_list->size - 1)
-            categories += ", ";
+         hash["label_style"]    = style;
+         hash["value_style"]    = style;
+         hash["html_key"]       = QString("<b><font color=\"") + css_color
+            + "\">" + hash["key"]   + "</font></b>";
+         hash["html_value"]     = QString("<b><font color=\"") + css_color
+            + "\">" + hash["value"] + "</font></b>";
       }
 
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES)) + ":";
-      hash["value"] = categories;
-
       infoList.append(hash);
    }
 
-   if (core_info->authors_list)
-   {
-      QHash<QString, QString> hash;
-      QString authors;
-
-      for (i = 0; i < core_info->authors_list->size; i++)
-      {
-         authors += core_info->authors_list->elems[i].data;
-
-         if (i < core_info->authors_list->size - 1)
-            authors += ", ";
-      }
-
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS)) + ":";
-      hash["value"] = authors;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->permissions_list)
-   {
-      QHash<QString, QString> hash;
-      QString permissions;
-
-      for (i = 0; i < core_info->permissions_list->size; i++)
-      {
-         permissions += core_info->permissions_list->elems[i].data;
-
-         if (i < core_info->permissions_list->size - 1)
-            permissions += ", ";
-      }
-
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS)) + ":";
-      hash["value"] = permissions;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->licenses_list)
-   {
-      QHash<QString, QString> hash;
-      QString licenses;
-
-      for (i = 0; i < core_info->licenses_list->size; i++)
-      {
-         licenses += core_info->licenses_list->elems[i].data;
-
-         if (i < core_info->licenses_list->size - 1)
-            licenses += ", ";
-      }
-
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES)) + ":";
-      hash["value"] = licenses;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->supported_extensions_list)
-   {
-      QHash<QString, QString> hash;
-      QString supported_extensions;
-
-      for (i = 0; i < core_info->supported_extensions_list->size; i++)
-      {
-         supported_extensions += core_info->supported_extensions_list->elems[i].data;
-
-         if (i < core_info->supported_extensions_list->size - 1)
-            supported_extensions += ", ";
-      }
-
-      hash["key"]   = QString(
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS)) + ":";
-      hash["value"] = supported_extensions;
-
-      infoList.append(hash);
-   }
-
-   if (core_info->firmware_count > 0)
-   {
-      core_info_ctx_firmware_t firmware_info;
-      bool update_missing_firmware   = false;
-      bool set_missing_firmware      = false;
-      settings_t *settings           = config_get_ptr();
-
-      firmware_info.path             = core_info->path;
-      firmware_info.directory.system = settings->paths.directory_system;
-
-      update_missing_firmware        = core_info_list_update_missing_firmware(&firmware_info, &set_missing_firmware);
-
-      if (set_missing_firmware)
-         runloop_st->missing_bios    = true;
-      else
-         runloop_st->missing_bios    = false;
-
-      if (update_missing_firmware)
-      {
-         QHash<QString, QString> hash;
-
-         hash["key"]   = QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE)) + ":";
-         hash["value"] = "";
-
-         infoList.append(hash);
-
-         /* FIXME: This looks hacky and probably
-          * needs to be improved for good translation support. */
-
-         for (i = 0; i < core_info->firmware_count; i++)
-         {
-            if (core_info->firmware[i].desc)
-            {
-               QString val_txt;
-               QHash<QString, QString> hash;
-               QString lbl_txt        = "(!) ";
-               bool missing           = false;
-
-               if (core_info->firmware[i].missing)
-               {
-                  missing             = true;
-                  if (core_info->firmware[i].optional)
-                     lbl_txt         += msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL);
-                  else
-                     lbl_txt         += msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED);
-               }
-               else
-                  if (core_info->firmware[i].optional)
-                     lbl_txt         += msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL);
-                  else
-                     lbl_txt         += msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
-
-               if (core_info->firmware[i].desc)
-                  val_txt             = core_info->firmware[i].desc;
-               else
-                  val_txt             = msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
-
-               hash["key"]            = lbl_txt;
-               hash["value"]          = val_txt;
-
-               if (missing)
-               {
-                  QString style       = "font-weight: bold; color: #ff0000";
-                  hash["label_style"] = style;
-                  hash["value_style"] = style;
-                  hash["html_key"]    = "<b><font color=\"#ff0000\">" + hash["key"] + "</font></b>";
-                  hash["html_value"]  = "<b><font color=\"#ff0000\">" + hash["value"] + "</font></b>";
-               }
-               else
-               {
-                  QString style       = "font-weight: bold; color: rgb(0, 175, 0)";
-                  hash["label_style"] = style;
-                  hash["value_style"] = style;
-                  hash["html_key"]    = "<b><font color=\"#00af00\">" + hash["key"] + "</font></b>";
-                  hash["html_value"]  = "<b><font color=\"#00af00\">" + hash["value"] + "</font></b>";
-               }
-
-               infoList.append(hash);
-            }
-         }
-      }
-   }
-
-   if (core_info->notes)
-   {
-      for (i = 0; i < core_info->note_list->size; i++)
-      {
-         QHash<QString, QString> hash;
-
-         hash["key"]   = "";
-         hash["value"] = core_info->note_list->elems[i].data;
-
-         infoList.append(hash);
-      }
-   }
+   string_list_free(keys);
+   string_list_free(values);
 
    return infoList;
 }
@@ -2523,10 +2684,7 @@ void MainWindow::onSearchResetClicked()
    onSearchEnterPressed();
 }
 
-QToolButton* MainWindow::coreInfoPushButton()
-{
-   return m_coreInfoPushButton;
-}
+QToolButton* MainWindow::coreInfoPushButton() { return m_coreInfoPushButton; }
 
 void MainWindow::onTreeViewItemsSelected(QModelIndexList selectedIndexes)
 {
@@ -2543,11 +2701,10 @@ void MainWindow::onTreeViewItemsSelected(QModelIndexList selectedIndexes)
 void MainWindow::onFileDoubleClicked(const QModelIndex &proxyIndex)
 {
    const QModelIndex index = m_proxyFileModel->mapToSource(proxyIndex);
-
    if (m_fileModel->isDir(index))
       m_dirTree->setCurrentIndex(m_dirModel->index(m_fileModel->filePath(index)));
    else
-      loadContent(getFileContentHash(index));
+      loadContent(getFileContentEntry(index));
 }
 
 void MainWindow::selectBrowserDir(QString path)
@@ -2565,9 +2722,17 @@ void MainWindow::selectBrowserDir(QString path)
          /* the directory is filtered out. Remove the filter for a moment.
           * FIXME: Find a way to not have to do this
           * (not filtering dirs is one). */
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
+#else
          m_proxyFileModel->setFilterRegExp(QRegExp());
+#endif
          m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
+#else
          m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
       }
    }
    setCoreActions();
@@ -2581,13 +2746,14 @@ QTabWidget* MainWindow::browserAndPlaylistTabWidget()
 void MainWindow::onDropWidgetEnterPressed()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
-   /* entry is being renamed, ignore this enter press */
+   /* Entry is being renamed, ignore this enter press */
    if (m_tableView->isPersistentEditorOpen(m_tableView->currentIndex()))
-#else
-   /* we can only check if any editor at all is open */
-   if (m_tableView->isEditorOpen())
-#endif
       return;
+#else
+   /* We can only check if any editor at all is open */
+   if (m_tableView->isEditorOpen())
+      return;
+#endif
    onRunClicked();
 }
 
@@ -2600,27 +2766,27 @@ QModelIndex MainWindow::getCurrentContentIndex()
    return QModelIndex();
 }
 
-QHash<QString, QString> MainWindow::getCurrentContentHash()
+PlaylistEntry MainWindow::getCurrentContentEntry()
 {
-   return getCurrentContentIndex().data(PlaylistModel::HASH).value<QHash<QString, QString> >();
+   return getCurrentContentIndex().data(PlaylistModel::ENTRY).value<PlaylistEntry>();
 }
 
-QHash<QString, QString> MainWindow::getFileContentHash(const QModelIndex &index)
+PlaylistEntry MainWindow::getFileContentEntry(const QModelIndex &index)
 {
-   QHash<QString, QString> hash;
+   PlaylistEntry entry;
    QFileInfo fileInfo  = m_fileModel->fileInfo(index);
 
-   hash["path"]        = QDir::toNativeSeparators(m_fileModel->filePath(index));
-   hash["label"]       = hash["path"];
-   hash["label_noext"] = fileInfo.completeBaseName();
-   hash["db_name"]     = fileInfo.dir().dirName();
+   entry.path          = QDir::toNativeSeparators(m_fileModel->filePath(index));
+   entry.label         = entry.path;
+   entry.labelNoExt    = fileInfo.completeBaseName();
+   entry.dbName        = fileInfo.dir().dirName();
 
-   return hash;
+   return entry;
 }
 
 void MainWindow::onContentItemDoubleClicked(const QModelIndex &index)
 {
-   Q_UNUSED(index);
+   (void)(index);
    onRunClicked();
 }
 
@@ -2636,62 +2802,63 @@ void MainWindow::onStartCoreClicked()
    path_clear(RARCH_PATH_BASENAME);
 
    if (!task_push_start_current_core(&content_info))
-      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 }
 
-QHash<QString, QString> MainWindow::getSelectedCore()
+/* Resolve which core path the user has currently selected, given the
+ * UI's combo-box mode and the currently-highlighted content row. The
+ * result is the empty string if no core can be resolved (e.g. unknown
+ * mode, no current item, or no default core for the playlist). */
+QString MainWindow::getSelectedCorePath()
 {
-   QHash<QString, QString> coreHash;
-   QHash<QString, QString> contentHash;
-   QVariantMap coreMap          = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
+   PlaylistEntry entry;
+   QVariantMap coreMap          = m_launchWithComboBox->currentData(
+         Qt::UserRole).value<QVariantMap>();
+   core_selection coreSelection = static_cast<core_selection>(
+         coreMap.value("core_selection").toInt());
    ViewType viewType            = getCurrentViewType();
 
-   if (viewType == VIEW_TYPE_LIST)
-      contentHash = m_tableView->currentIndex().data(PlaylistModel::HASH).value<QHash<QString, QString> >();
-   else if (viewType == VIEW_TYPE_ICONS)
-      contentHash = m_gridView->currentIndex().data(PlaylistModel::HASH).value<QHash<QString, QString> >();
+   /* The content row only matters for the two playlist branches —
+    * CORE_SELECTION_CURRENT just hands back whatever core is loaded.
+    * Original behaviour: an "other" view type (e.g. while transitioning)
+    * returned an empty entry from all three branches. */
+   if (viewType == VIEW_TYPE_LIST || viewType == VIEW_TYPE_ICONS)
+      entry = getCurrentContentIndex().data(PlaylistModel::ENTRY)
+            .value<PlaylistEntry>();
    else
-      return coreHash;
+      return QString();
 
-   switch(coreSelection)
+   switch (coreSelection)
    {
       case CORE_SELECTION_CURRENT:
-         coreHash["core_path"] = path_get(RARCH_PATH_CORE);
-         break;
+         return QString::fromUtf8(path_get(RARCH_PATH_CORE));
       case CORE_SELECTION_PLAYLIST_SAVED:
-         if (     contentHash.isEmpty()
-               || contentHash["core_path"].isEmpty())
-            break;
-
-         coreHash["core_path"] = contentHash["core_path"];
+         if (!entry.corePath.isEmpty())
+            return entry.corePath;
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
-      {
-         QString plName;
-         QString defaultCorePath;
+         {
+            QString plName;
+            QString defaultCorePath;
 
-         if (contentHash.isEmpty())
+            plName = entry.plName.isEmpty()
+                  ? entry.dbName : entry.plName;
+
+            if (plName.isEmpty())
+               break;
+
+            defaultCorePath = getPlaylistDefaultCore(plName);
+
+            if (!defaultCorePath.isEmpty())
+               return defaultCorePath;
             break;
-
-         plName = contentHash["pl_name"].isEmpty()
-                ? contentHash["db_name"]
-                : contentHash["pl_name"];
-
-         if (plName.isEmpty())
-            break;
-
-         defaultCorePath = getPlaylistDefaultCore(plName);
-
-         if (!defaultCorePath.isEmpty())
-            coreHash["core_path"] = defaultCorePath;
-         break;
-      }
+         }
       default:
          break;
    }
 
-   return coreHash;
+   return QString();
 }
 
 /* the hash typically has the following keys:
@@ -2699,11 +2866,13 @@ path - absolute path to the content file
 core_path - absolute path to the core, or "DETECT" to ask the user
 db_name - the display name of the rdb database this content is from
 label - the display name of the content, usually comes from the database
-crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum (e.g. ABCDEF12) followed by "|crc"
-core_name - the display name of the core, or "DETECT" if unknown
-label_noext - the display name of the content that is guaranteed not to contain a file extension
+crc32 - an upper-case, 8 byte string representation of the hex CRC32 checksum
+(e.g. ABCDEF12) followed by "|crc"
+core_name   - The display name of the core, or "DETECT" if unknown
+label_noext - The display name of the content that is guaranteed not
+              to contain a file extension
 */
-void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
+void MainWindow::loadContent(const PlaylistEntry &entry)
 {
    content_ctx_info_t content_info;
    QByteArray corePathArray;
@@ -2721,8 +2890,10 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 #ifdef HAVE_MENU
    struct menu_state *menu_st   = menu_state_get_ptr();
 #endif
-   QVariantMap coreMap          = m_launchWithComboBox->currentData(Qt::UserRole).value<QVariantMap>();
-   core_selection coreSelection = static_cast<core_selection>(coreMap.value("core_selection").toInt());
+   QVariantMap coreMap          = m_launchWithComboBox->currentData(
+         Qt::UserRole).value<QVariantMap>();
+   core_selection coreSelection = static_cast<core_selection>(
+         coreMap.value("core_selection").toInt());
    core_info_t *coreInfo        = NULL;
 
    content_db_name_full[0]      = '\0';
@@ -2734,18 +2905,14 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    {
       QStringList extensionFilters;
 
-      if (contentHash.contains("path"))
+      if (!entry.path.isEmpty())
       {
-         int last_index       = contentHash["path"].lastIndexOf('.');
-         QByteArray pathArray = contentHash["path"].toUtf8();
+         QByteArray pathArray = entry.path.toUtf8();
          const char *pathData = pathArray.constData();
+         const char *ext      = path_get_extension(pathData);
 
-         if (last_index >= 0)
-         {
-            QString ext_str = contentHash["path"].mid(last_index + 1);
-            if (!ext_str.isEmpty())
-               extensionFilters.append(ext_str.toLower());
-         }
+         if (ext && *ext)
+            extensionFilters.append(QString(ext).toLower());
 
          if (path_is_compressed_file(pathData))
          {
@@ -2758,7 +2925,7 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
                   size_t i;
                   for (i = 0; i < list->size; i++)
                   {
-                     const char *filePath = list->elems[i].data;
+                     const char *filePath  = list->elems[i].data;
                      const char *extension = path_get_extension(filePath);
 
                      if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
@@ -2781,26 +2948,26 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
    {
       case CORE_SELECTION_CURRENT:
          corePathArray     = path_get(RARCH_PATH_CORE);
-         contentPathArray  = contentHash["path"].toUtf8();
-         contentLabelArray = contentHash["label_noext"].toUtf8();
+         contentPathArray  = entry.path.toUtf8();
+         contentLabelArray = entry.labelNoExt.toUtf8();
          break;
       case CORE_SELECTION_PLAYLIST_SAVED:
-         corePathArray     = contentHash["core_path"].toUtf8();
-         contentPathArray  = contentHash["path"].toUtf8();
-         contentLabelArray = contentHash["label_noext"].toUtf8();
+         corePathArray     = entry.corePath.toUtf8();
+         contentPathArray  = entry.path.toUtf8();
+         contentLabelArray = entry.labelNoExt.toUtf8();
          break;
       case CORE_SELECTION_PLAYLIST_DEFAULT:
       {
-         QString plName = contentHash["pl_name"].isEmpty() ?
-               contentHash["db_name"] : contentHash["pl_name"];
+         QString plName = entry.plName.isEmpty()
+               ? entry.dbName : entry.plName;
 
          QString defaultCorePath = getPlaylistDefaultCore(plName);
 
          if (!defaultCorePath.isEmpty())
          {
             corePathArray     = defaultCorePath.toUtf8();
-            contentPathArray  = contentHash["path"].toUtf8();
-            contentLabelArray = contentHash["label_noext"].toUtf8();
+            contentPathArray  = entry.path.toUtf8();
+            contentLabelArray = entry.labelNoExt.toUtf8();
          }
 
          break;
@@ -2809,19 +2976,19 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
          return;
    }
 
-   contentDbNameArray                  = contentHash["db_name"].toUtf8();
-   contentCrc32Array                   = contentHash["crc32"].toUtf8();
+   contentDbNameArray         = entry.dbName.toUtf8();
+   contentCrc32Array          = entry.crc32.toUtf8();
 
-   core_path                           = corePathArray.constData();
-   content_path                        = contentPathArray.constData();
-   content_label                       = contentLabelArray.constData();
-   content_db_name                     = contentDbNameArray.constData();
-   content_crc32                       = contentCrc32Array.constData();
+   core_path                  = corePathArray.constData();
+   content_path               = contentPathArray.constData();
+   content_label              = contentLabelArray.constData();
+   content_db_name            = contentDbNameArray.constData();
+   content_crc32              = contentCrc32Array.constData();
 
    /* Search for specified core - ensures path
     * is 'sanitised' */
    if (    core_info_find(core_path, &coreInfo)
-       && !string_is_empty(coreInfo->path))
+       && (coreInfo->path && *coreInfo->path))
       core_path = coreInfo->path;
 
    /* If a core is currently running, the following
@@ -2830,24 +2997,13 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
     * in turn free the pointer referenced by coreInfo->path.
     * This will invalidate core_path, so we have to cache
     * its current value here. */
-   if (!string_is_empty(core_path))
+   if (core_path && *core_path)
       strlcpy(core_path_cached, core_path, sizeof(core_path_cached));
 
    /* Add lpl extension to db_name, if required */
-   if (!string_is_empty(content_db_name))
-   {
-      size_t _len     = strlcpy(content_db_name_full, content_db_name,
-             sizeof(content_db_name_full));
-      const char *ext = path_get_extension(content_db_name_full);
-
-      if (      string_is_empty(ext)
-            || !string_is_equal_noncase(ext,
-                FILE_PATH_LPL_EXTENSION_NO_DOT))
-         strlcpy(
-               content_db_name_full         + _len,
-               FILE_PATH_LPL_EXTENSION,
-               sizeof(content_db_name_full) - _len);
-   }
+   if (content_db_name && *content_db_name)
+      fill_pathname(content_db_name_full, content_db_name,
+            ".lpl", sizeof(content_db_name_full));
 
    content_info.argc                   = 0;
    content_info.argv                   = NULL;
@@ -2880,21 +3036,21 @@ void MainWindow::loadContent(const QHash<QString, QString> &contentHash)
 
 void MainWindow::onRunClicked()
 {
-   QHash<QString, QString> contentHash;
+   PlaylistEntry entry;
 
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_FILES:
-         contentHash = getFileContentHash(
+         entry = getFileContentEntry(
                m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
          break;
       case BROWSER_TYPE_PLAYLISTS:
-         contentHash = getCurrentContentHash();
+         entry = getCurrentContentEntry();
          break;
    }
 
-   if (!contentHash.isEmpty())
-      loadContent(contentHash);
+   if (!entry.path.isEmpty())
+      loadContent(entry);
 }
 
 PlaylistEntryDialog* MainWindow::playlistEntryDialog()
@@ -2902,22 +3058,19 @@ PlaylistEntryDialog* MainWindow::playlistEntryDialog()
    return m_playlistEntryDialog;
 }
 
-ViewOptionsDialog* MainWindow::viewOptionsDialog()
-{
-   return m_viewOptionsDialog;
-}
+ViewOptionsDialog* MainWindow::viewOptionsDialog() {return m_viewOptionsDialog;}
 
 void MainWindow::setCoreActions()
 {
    QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   ViewType                    viewType = getCurrentViewType();
-   QHash<QString, QString>         hash = getCurrentContentHash();
+   PlaylistEntry                  entry = getCurrentContentEntry();
    QString      currentPlaylistFileName = QString();
    rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
 
    m_launchWithComboBox->clear();
 
-   if (sys_info->load_no_content) /* Is contentless core? */
+   /* Is contentless core? */
+   if (sys_info->load_no_content)
       m_startCorePushButton->show();
    else
       m_startCorePushButton->hide();
@@ -2931,48 +3084,42 @@ void MainWindow::setCoreActions()
       comboBoxMap["core_name"]      = m_currentCore;
       comboBoxMap["core_path"]      = path_get(RARCH_PATH_CORE);
       comboBoxMap["core_selection"] = CORE_SELECTION_CURRENT;
-      m_launchWithComboBox->addItem(m_currentCore, QVariant::fromValue(comboBoxMap));
+      m_launchWithComboBox->addItem(m_currentCore,
+            QVariant::fromValue(comboBoxMap));
    }
 
    if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
    {
-      if (!hash.isEmpty())
+      const QString &coreName = entry.coreName;
+
+      if (!coreName.isEmpty() && coreName != QLatin1String("DETECT"))
       {
-         QString coreName = hash["core_name"];
-
-         if (coreName.isEmpty())
-            coreName = "<n/a>";
-         else
+         if (m_launchWithComboBox->findText(coreName) == -1)
          {
-            const char *detect_str = "DETECT";
+            int i;
+            bool found_existing = false;
 
-            if (coreName != detect_str)
+            for (i = 0; i < m_launchWithComboBox->count(); i++)
             {
-               if (m_launchWithComboBox->findText(coreName) == -1)
+               QVariantMap map = m_launchWithComboBox->itemData(
+                     i, Qt::UserRole).toMap();
+
+               if (     map.value("core_path").toString() == entry.corePath
+                     || map.value("core_name").toString() == coreName)
                {
-                  int i;
-                  bool found_existing = false;
-
-                  for (i = 0; i < m_launchWithComboBox->count(); i++)
-                  {
-                     QVariantMap map = m_launchWithComboBox->itemData(i, Qt::UserRole).toMap();
-
-                     if (map.value("core_path").toString() == hash["core_path"] || map.value("core_name").toString() == coreName)
-                     {
-                        found_existing = true;
-                        break;
-                     }
-                  }
-
-                  if (!found_existing)
-                  {
-                     QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"]      = coreName;
-                     comboBoxMap["core_path"]      = hash["core_path"];
-                     comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_SAVED;
-                     m_launchWithComboBox->addItem(coreName, QVariant::fromValue(comboBoxMap));
-                  }
+                  found_existing = true;
+                  break;
                }
+            }
+
+            if (!found_existing)
+            {
+               QVariantMap comboBoxMap;
+               comboBoxMap["core_name"]      = coreName;
+               comboBoxMap["core_path"]      = entry.corePath;
+               comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_SAVED;
+               m_launchWithComboBox->addItem(coreName,
+                     QVariant::fromValue(comboBoxMap));
             }
          }
       }
@@ -2981,8 +3128,8 @@ void MainWindow::setCoreActions()
    switch(m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-         currentPlaylistFileName = hash["pl_name"].isEmpty() ?
-               hash["db_name"] : hash["pl_name"];
+         currentPlaylistFileName = entry.plName.isEmpty()
+               ? entry.dbName : entry.plName;
          break;
       case BROWSER_TYPE_FILES:
          currentPlaylistFileName = m_fileModel->rootDirectory().dirName();
@@ -3003,7 +3150,8 @@ void MainWindow::setCoreActions()
 
          if (currentPlaylistItem)
          {
-            currentPlaylistItemDataString   = currentPlaylistItem->data(Qt::UserRole).toString();
+            currentPlaylistItemDataString   = currentPlaylistItem->data(
+                  Qt::UserRole).toString();
             allPlaylists                    = (
                   currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
          }
@@ -3014,11 +3162,9 @@ void MainWindow::setCoreActions()
 
             if (allPlaylists)
             {
-               QFileInfo info;
                QListWidgetItem *listItem = m_listWidget->item(row);
-               QString    listItemString = listItem->data(Qt::UserRole).toString();
-
-               info.setFile(listItemString);
+               QString    listItemString = listItem->data(
+                     Qt::UserRole).toString();
 
                if (listItemString == ALL_PLAYLISTS_TOKEN)
                   continue;
@@ -3041,7 +3187,8 @@ void MainWindow::setCoreActions()
                         map.value("core_path").toString().toUtf8();
                      const char *core_path_data = CorePathArray.constData();
 
-                     if (string_starts_with(path_basename(core_path_data),
+                     if (
+                              string_starts_with(path_basename(core_path_data),
                               coreInfo->core_file_id.str)
                            || map.value("core_name").toString() == coreInfo->core_name
                            || map.value("core_name").toString() == coreInfo->display_name)
@@ -3054,10 +3201,14 @@ void MainWindow::setCoreActions()
                   if (!found_existing)
                   {
                      QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"] = coreInfo->core_name;
-                     comboBoxMap["core_path"] = coreInfo->path;
-                     comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_DEFAULT;
-                     m_launchWithComboBox->addItem(coreInfo->core_name, QVariant::fromValue(comboBoxMap));
+                     comboBoxMap["core_name"]      = QVariant::fromValue(
+                           QString(coreInfo->core_name));
+                     comboBoxMap["core_path"]      = QVariant::fromValue(
+                           QString(coreInfo->path));
+                     comboBoxMap["core_selection"] =
+                        CORE_SELECTION_PLAYLIST_DEFAULT;
+                     m_launchWithComboBox->addItem(coreInfo->core_name,
+                           QVariant::fromValue(comboBoxMap));
                   }
                }
             }
@@ -3071,29 +3222,31 @@ void MainWindow::setCoreActions()
    {
       QVariantMap comboBoxMap;
       comboBoxMap["core_selection"] = CORE_SELECTION_ASK;
-      m_launchWithComboBox->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK), QVariant::fromValue(comboBoxMap));
+      m_launchWithComboBox->addItem(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK),
+            QVariant::fromValue(comboBoxMap));
       m_launchWithComboBox->insertSeparator(m_launchWithComboBox->count());
       comboBoxMap["core_selection"] = CORE_SELECTION_LOAD_CORE;
-      m_launchWithComboBox->addItem(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE)) + "...", QVariant::fromValue(comboBoxMap));
+      m_launchWithComboBox->addItem(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE))
+                + QString("..."),
+            QVariant::fromValue(comboBoxMap));
    }
 }
 
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
-   if (m_browserAndPlaylistTabWidget->tabText(index) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
+   QString str = m_browserAndPlaylistTabWidget->tabText(index);
+   if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
    {
       m_currentBrowser = BROWSER_TYPE_FILES;
-
       m_centralWidget->setCurrentWidget(m_fileTableView);
-
       onCurrentFileChanged(m_fileTableView->currentIndex());
    }
-   else if (m_browserAndPlaylistTabWidget->tabText(index) == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
+   else if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
       m_currentBrowser = BROWSER_TYPE_PLAYLISTS;
-
       m_centralWidget->setCurrentWidget(m_playlistViewsAndFooter);
-
       onCurrentItemChanged(m_tableView->currentIndex());
    }
 
@@ -3102,31 +3255,16 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    setCoreActions();
 }
 
-QToolButton* MainWindow::runPushButton()
-{
-   return m_runPushButton;
-}
-
-QToolButton* MainWindow::stopPushButton()
-{
-   return m_stopPushButton;
-}
-
-QToolButton* MainWindow::startCorePushButton()
-{
-   return m_startCorePushButton;
-}
-
-QComboBox* MainWindow::launchWithComboBox()
-{
-   return m_launchWithComboBox;
-}
+QToolButton* MainWindow::runPushButton()  { return m_runPushButton; }
+QToolButton* MainWindow::stopPushButton() { return m_stopPushButton; }
+QToolButton* MainWindow::startCorePushButton() { return m_startCorePushButton;}
+QComboBox* MainWindow::launchWithComboBox() { return m_launchWithComboBox; }
 
 void MainWindow::onSearchLineEditEdited(const QString &text)
 {
    int i;
-   QVector<unsigned> textHiraToKata;
-   QVector<unsigned> textKataToHira;
+   QVector<char32_t> textHiraToKata;
+   QVector<char32_t> textKataToHira;
    QVector<unsigned> textUnicode = text.toUcs4();
    bool found_hiragana = false;
    bool found_katakana = false;
@@ -3152,22 +3290,53 @@ void MainWindow::onSearchLineEditEdited(const QString &text)
       }
    }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+   if (!found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text,
+            QRegularExpression::CaseInsensitiveOption);
+   else if (found_hiragana && !found_katakana)
+      m_searchRegularExpression = QRegularExpression(text
+            + QString("|")
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size()),
+            QRegularExpression::CaseInsensitiveOption);
+   else if (!found_hiragana && found_katakana)
+      m_searchRegularExpression = QRegularExpression(text
+            + QString("|")
+            + QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()),
+            QRegularExpression::CaseInsensitiveOption);
+   else
+      m_searchRegularExpression = QRegularExpression(text
+            + QString("|")
+            + QString::fromUcs4(textHiraToKata.constData(),
+               textHiraToKata.size())
+            + QString("|")
+            + QString::fromUcs4(textKataToHira.constData(),
+               textKataToHira.size()),
+            QRegularExpression::CaseInsensitiveOption);
+#else
    if (!found_hiragana && !found_katakana)
       m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
    else if (found_hiragana && !found_katakana)
-      m_searchRegExp = QRegExp(text + "|"
+      m_searchRegExp = QRegExp(text
+            + QString("|")
             + QString::fromUcs4(textHiraToKata.constData(),
                textHiraToKata.size()), Qt::CaseInsensitive);
    else if (!found_hiragana && found_katakana)
-      m_searchRegExp = QRegExp(text + "|"
+      m_searchRegExp = QRegExp(text
+            + QString("|")
             + QString::fromUcs4(textKataToHira.constData(),
                textKataToHira.size()), Qt::CaseInsensitive);
    else
-      m_searchRegExp = QRegExp(text + "|"
+      m_searchRegExp = QRegExp(text
+            + QString("|")
             + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()) + "|" +
-            QString::fromUcs4(textKataToHira.constData(),
+               textHiraToKata.size())
+            + QString("|")
+            + QString::fromUcs4(textKataToHira.constData(),
                textKataToHira.size()), Qt::CaseInsensitive);
+#endif
 
    applySearch();
 }
@@ -3177,23 +3346,39 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (     m_proxyModel->filterRegularExpression()
+               != m_searchRegularExpression)
+         {
+            m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
+            updateItemsCount();
+         }
+#else
          if (m_proxyModel->filterRegExp() != m_searchRegExp)
          {
             m_proxyModel->setFilterRegExp(m_searchRegExp);
             updateItemsCount();
          }
+#endif
          break;
       case BROWSER_TYPE_FILES:
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         if (     m_proxyFileModel->filterRegularExpression()
+               != m_searchRegularExpression)
+            m_proxyFileModel->setFilterRegularExpression(
+                  m_searchRegularExpression);
+#else
          if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
             m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+#endif
          break;
    }
 }
 
 void MainWindow::onViewClosedDocksAboutToShow()
 {
+   int i;
    QList<QDockWidget*> dockWidgets;
-   int i               = 0;
    QMenu         *menu = qobject_cast<QMenu*>(sender());
    bool found          = false;
 
@@ -3236,46 +3421,37 @@ void MainWindow::onShowHiddenDockWidgetAction()
    if (!action)
       return;
 
-   if (!(dock = findChild<QDockWidget*>(action->property("dock_name").toString())))
+   if (!(dock = findChild<QDockWidget*>(action->property(
+                  "dock_name").toString())))
       return;
 
    if (!dock->isVisible())
    {
-      addDockWidget(static_cast<Qt::DockWidgetArea>(
-               dock->property("default_area").toInt()), dock);
+      qt_dock_add_to(this, dock);
       dock->setVisible(true);
       dock->setFloating(false);
    }
 }
 
-QWidget* MainWindow::searchWidget()
-{
-   return m_searchWidget;
-}
-
-QLineEdit* MainWindow::searchLineEdit()
-{
-   return m_searchLineEdit;
-}
-
+QLineEdit* MainWindow::searchLineEdit() { return m_searchLineEdit; }
 void MainWindow::onSearchEnterPressed()
 {
    onSearchLineEditEdited(m_searchLineEdit->text());
 }
 
-void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft,
+      const QModelIndex &bottomRight, const QVector<int> &roles)
 {
-   QHash<QString, QString> hash;
+   PlaylistEntry entry;
 
    if (!roles.contains(Qt::EditRole))
       return;
-
    if (topLeft != bottomRight)
       return;
 
-   hash = topLeft.data(PlaylistModel::HASH).value<QHash<QString, QString>>();
+   entry = topLeft.data(PlaylistModel::ENTRY).value<PlaylistEntry>();
 
-   updateCurrentPlaylistEntry(hash);
+   updateCurrentPlaylistEntry(entry);
 
    onCurrentItemChanged(topLeft);
 }
@@ -3287,140 +3463,188 @@ void MainWindow::onCurrentListItemDataChanged(QListWidgetItem *item)
 
 void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 {
-   QString oldPath;
-   QString newPath;
-   QString extension;
+   char old_path[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH];
+   char old_basedir[PATH_MAX_LENGTH];
+   char dir_playlist[PATH_MAX_LENGTH];
+   char old_name_buf[PATH_MAX_LENGTH];
+   const char *ext               = NULL;
    QString oldName;
-   QFile file;
-   QFileInfo info;
-   QFileInfo playlistInfo;
-   QString playlistPath;
+   QString newPath;
    settings_t *settings          = config_get_ptr();
    const char *path_dir_playlist = settings->paths.directory_playlist;
-   QDir playlistDir(path_dir_playlist);
 
    if (!item)
       return;
 
-   playlistPath                  = item->data(Qt::UserRole).toString();
-   playlistInfo                  = playlistPath;
-   oldName                       = playlistInfo.completeBaseName();
+   strlcpy(old_path,
+         item->data(Qt::UserRole).toString().toUtf8().constData(),
+         sizeof(old_path));
 
-   /* Don't just compare strings in case there are
-    * case differences on Windows that should be ignored. */
-   /* special playlists like history etc. can't have an association */
-   if (QDir(playlistInfo.absoluteDir()) != QDir(playlistDir))
+   /* completeBaseName(): strip directory and extension */
+   fill_pathname(old_name_buf, path_basename(old_path), "",
+         sizeof(old_name_buf));
+   oldName = QString::fromUtf8(old_name_buf);
+
+   /* Compare the playlist's directory with path_dir_playlist
+    * case-insensitively to match Qt's QDir == QDir behaviour
+    * on Windows. */
+   strlcpy(old_basedir, old_path, sizeof(old_basedir));
+   path_basedir(old_basedir);
+   strlcpy(dir_playlist, path_dir_playlist, sizeof(dir_playlist));
+   fill_pathname_slash(dir_playlist, sizeof(dir_playlist));
+
+   if (!string_is_equal_case_insensitive(old_basedir, dir_playlist))
    {
-      /* Special playlists shouldn't be editable already,
-       * but just in case, set the old name back and
-       * early return if they rename it */
+      /* Special playlists (history etc.) can't have an association.
+       * Set the old name back if user tried to rename one. */
       item->setText(oldName);
       return;
    }
 
    /* Block this signal because setData() would trigger
     * an infinite loop here */
-   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+   disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)),
+         this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 
-   oldPath   = item->data(Qt::UserRole).toString();
+   /* Build new path: basedir + newName + "." + extension */
+   ext = path_get_extension(old_path);
+   {
+      QByteArray newNameUtf8 = newName.toUtf8();
+      size_t _len = strlcpy(new_path, old_basedir, sizeof(new_path));
+      _len += strlcpy(new_path + _len, newNameUtf8.constData(),
+            sizeof(new_path) - _len);
+      if (ext && *ext)
+      {
+         _len += strlcpy_lit(new_path + _len, ".", sizeof(new_path) - _len);
+         strlcpy(new_path + _len, ext, sizeof(new_path) - _len);
+      }
+   }
 
-   file.setFileName(oldPath);
-   info      = file;
-
-   extension = info.suffix();
-
-   newPath   = info.absolutePath();
-
-   /* absolutePath() will always use / even on Windows */
-   if (newPath.at(newPath.count() - 1) != '/')
-      /* add trailing slash if the path doesn't have one */
-      newPath += '/';
-
-   newPath += newName + "." + extension;
-
+   newPath = QString::fromUtf8(new_path);
    item->setData(Qt::UserRole, newPath);
 
-   if (!file.rename(newPath))
+   if (filestream_rename(old_path, new_path) != 0)
    {
-      RARCH_ERR("[Qt]: Could not rename playlist.\n");
+      RARCH_ERR("[Qt] Could not rename playlist.\n");
       item->setText(oldName);
    }
 
-   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
+   connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)),
+         this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 }
 
 void MainWindow::onCurrentItemChanged(const QModelIndex &index)
 {
-   onCurrentItemChanged(index.data(PlaylistModel::HASH).value<QHash<QString, QString>>());
+   onCurrentItemChanged(index.data(
+            PlaylistModel::ENTRY).value<PlaylistEntry>());
 }
 
 void MainWindow::onCurrentFileChanged(const QModelIndex &index)
 {
-   onCurrentItemChanged(getFileContentHash(m_proxyFileModel->mapToSource(index)));
+   onCurrentItemChanged(getFileContentEntry(
+            m_proxyFileModel->mapToSource(index)));
 }
 
-void MainWindow::onCurrentItemChanged(const QHash<QString, QString> &hash)
+void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
 {
-   QString    path = hash["path"];
-   bool acceptDrop = false;
+   size_t i;
+   const QString &path = entry.path;
+   bool acceptDrop     = false;
 
-   if (m_thumbnailPixmap)
-      delete m_thumbnailPixmap;
-   if (m_thumbnailPixmap2)
-      delete m_thumbnailPixmap2;
-   if (m_thumbnailPixmap3)
-      delete m_thumbnailPixmap3;
+   for (i = 0; i < 4; i++)
+   {
+      if (m_thumbnailPixmaps[i])
+         delete m_thumbnailPixmaps[i];
+      m_thumbnailPixmaps[i] = NULL;
+   }
 
    if (m_playlistModel->isSupportedImage(path))
    {
-      /* use thumbnail widgets to show regular image files */
-      m_thumbnailPixmap = new QPixmap(path);
-      m_thumbnailPixmap2 = new QPixmap(*m_thumbnailPixmap);
-      m_thumbnailPixmap3 = new QPixmap(*m_thumbnailPixmap);
+      /* Use thumbnail widgets to show regular image files. These can
+       * be very large (multi-GiB ARGB32 bitmaps after decoding a
+       * high-resolution PNG), so do the decode on the loader thread
+       * and update the panes when it arrives. Until then the panes
+       * show blank, which also clears any image left from a previous
+       * selection. */
+      QPixmap blank;
+
+      m_pendingPreviewPath = path;
+
+      for (i = 0; i < 4; i++)
+         setThumbnail(qt_thumbnail_widget_names[i], blank, false);
+
+      m_previewLoader->request(QModelIndex(), path);
+
+      setCoreActions();
+      return;
    }
    else
    {
-      QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(hash["db_name"]);
-      QString thumbnailName = m_playlistModel->getSanitizedThumbnailName(hash["label_noext"]);
+      QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(
+            entry.dbName);
 
-      m_thumbnailPixmap     = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_BOXART + "/" + thumbnailName);
-      m_thumbnailPixmap2    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_TITLE + "/" + thumbnailName);
-      m_thumbnailPixmap3    = new QPixmap(thumbnailsDir + "/" + THUMBNAIL_SCREENSHOT + "/" + thumbnailName);
+      /* Clear any pending file-browser preview request: this code
+       * path serves the playlist views, not the file browser, so a
+       * preview result arriving now would be unwanted. */
+      m_pendingPreviewPath = QString();
+
+      for (i = 0; i < 4; i++)
+      {
+         QString name = m_playlistModel->getSanitizedThumbnailName(
+               thumbnailsDir + QString("/")
+               + qt_thumbnail_subdirs[i] + QString("/"),
+               entry.labelNoExt);
+         m_thumbnailPixmaps[i] = new QPixmap(pixmapFromPathRA(name));
+      }
 
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())
          acceptDrop = true;
    }
 
-   onResizeThumbnailOne(*m_thumbnailPixmap, acceptDrop);
-   onResizeThumbnailTwo(*m_thumbnailPixmap2, acceptDrop);
-   onResizeThumbnailThree(*m_thumbnailPixmap3, acceptDrop);
+   for (i = 0; i < 4; i++)
+      setThumbnail(qt_thumbnail_widget_names[i],
+            *m_thumbnailPixmaps[i], acceptDrop);
 
    setCoreActions();
+}
+
+void MainWindow::onPreviewImageLoaded(const QImage image,
+      const QPersistentModelIndex & /* index */, const QString &path)
+{
+   size_t i;
+
+   /* Drop stale results: if the user moved selection while we were
+    * decoding, the path we just got back isn't what's currently
+    * showing. */
+   if (path != m_pendingPreviewPath)
+      return;
+   if (image.isNull())
+      return;
+
+   for (i = 0; i < 4; i++)
+   {
+      if (m_thumbnailPixmaps[i])
+         delete m_thumbnailPixmaps[i];
+      m_thumbnailPixmaps[i] = NULL;
+   }
+
+   m_thumbnailPixmaps[0] = new QPixmap(QPixmap::fromImage(image));
+   for (i = 1; i < 4; i++)
+      m_thumbnailPixmaps[i] = new QPixmap(*m_thumbnailPixmaps[0]);
+
+   for (i = 0; i < 4; i++)
+      setThumbnail(qt_thumbnail_widget_names[i],
+            *m_thumbnailPixmaps[i], false);
 }
 
 void MainWindow::setThumbnail(QString widgetName,
       QPixmap &pixmap, bool acceptDrop)
 {
    ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>(widgetName);
-
    if (thumbnail)
       thumbnail->setPixmap(pixmap, acceptDrop);
-}
-
-void MainWindow::onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop)
-{
-   setThumbnail("thumbnail", pixmap, acceptDrop);
-}
-
-void MainWindow::onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop)
-{
-   setThumbnail("thumbnail2", pixmap, acceptDrop);
-}
-
-void MainWindow::onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop)
-{
-   setThumbnail("thumbnail3", pixmap, acceptDrop);
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)
@@ -3450,67 +3674,34 @@ void MainWindow::setCurrentThumbnailType(ThumbnailType thumbnailType)
    m_gridView->viewport()->update();
 }
 
-MainWindow::ViewType MainWindow::getCurrentViewType()
-{
-   return m_viewType;
-}
-
-ThumbnailType MainWindow::getCurrentThumbnailType()
-{
-   return m_thumbnailType;
-}
+MainWindow::ViewType MainWindow::getCurrentViewType() { return m_viewType; }
+ThumbnailType MainWindow::getCurrentThumbnailType()   { return m_thumbnailType;}
 
 void MainWindow::onCurrentListItemChanged(
       QListWidgetItem *current, QListWidgetItem *previous)
 {
-   Q_UNUSED(current)
-   Q_UNUSED(previous)
+   (void)(current);
+   (void)(previous);
 
    initContentTableWidget();
 
    setCoreActions();
 }
 
-TableView* MainWindow::contentTableView()
-{
-   return m_tableView;
-}
-
-QTableView* MainWindow::fileTableView()
-{
-   return m_fileTableView;
-}
-
-QStackedWidget* MainWindow::centralWidget()
-{
-   return m_centralWidget;
-}
-
-FileDropWidget* MainWindow::playlistViews()
-{
-   return m_playlistViews;
-}
-
-QWidget* MainWindow::playlistViewsAndFooter()
-{
-   return m_playlistViewsAndFooter;
-}
-
-GridView* MainWindow::contentGridView()
-{
-   return m_gridView;
-}
+QTableView* MainWindow::fileTableView()       { return m_fileTableView; }
+QStackedWidget* MainWindow::centralWidget()   { return m_centralWidget; }
+FileDropWidget* MainWindow::playlistViews()   { return m_playlistViews; }
+QWidget* MainWindow::playlistViewsAndFooter() {return m_playlistViewsAndFooter;}
 
 void MainWindow::onBrowserDownloadsClicked()
 {
-   settings_t *settings = config_get_ptr();
-   QDir dir(settings->paths.directory_core_assets);
-   QString path = dir.absolutePath();
    QModelIndex index;
+   QDir dir(config_get_ptr()->paths.directory_core_assets);
+   QString path           = dir.absolutePath();
 
    m_pendingDirScrollPath = path;
 
-   index = m_dirModel->index(path);
+   index                  = m_dirModel->index(path);
 
    m_dirTree->setCurrentIndex(index);
 
@@ -3547,26 +3738,20 @@ void MainWindow::onBrowserUpClicked()
 
 void MainWindow::onBrowserStartClicked()
 {
-   settings_t *settings = config_get_ptr();
-
    m_dirTree->setCurrentIndex(
-         m_dirModel->index(settings->paths.directory_menu_content));
+         m_dirModel->index(config_get_ptr()->paths.directory_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
 }
 
-ListWidget* MainWindow::playlistListWidget()
-{
-   return m_listWidget;
-}
-
-TreeView* MainWindow::dirTreeView()
-{
-   return m_dirTree;
-}
+ListWidget* MainWindow::playlistListWidget() { return m_listWidget; }
+TreeView* MainWindow::dirTreeView() { return m_dirTree; }
 
 void MainWindow::onTimeout()
 {
    uint8_t flags = content_get_flags();
+
+   /* Pump the task queue to process pending HTTP transfers etc. */
+   task_queue_check();
 
    if (flags & CONTENT_ST_FLAG_IS_INITED)
    {
@@ -3610,15 +3795,18 @@ void MainWindow::setCurrentCoreLabel()
       )
    {
       m_currentCore           = no_core_str;
-      m_currentCoreVersion    = "";
+      m_currentCoreVersion    = QLatin1String("");
       update                  = true;
    }
    else
    {
-      if (m_currentCore != libraryName && !libraryName.isEmpty())
+      if (      m_currentCore != libraryName
+            && !libraryName.isEmpty())
       {
          m_currentCore        = sysinfo->library_name;
-         m_currentCoreVersion = (string_is_empty(sysinfo->library_version) ? "" : sysinfo->library_version);
+         m_currentCoreVersion = 
+		 ((!sysinfo->library_version || !*sysinfo->library_version)
+               ? "" : sysinfo->library_version);
          update = true;
       }
    }
@@ -3626,7 +3814,11 @@ void MainWindow::setCurrentCoreLabel()
    if (update)
    {
       QAction *unloadCoreAction = findChild<QAction*>("unloadCoreAction");
-      QString text              = QString(PACKAGE_VERSION) + " - " + m_currentCore + " " + m_currentCoreVersion;
+      QString text              = QString(PACKAGE_VERSION)
+         + QString(" - ")
+         + m_currentCore
+         + QString(" ")
+         + m_currentCoreVersion;
       m_statusLabel->setText(text);
       m_loadCoreWindow->setStatusLabel(text);
       setCoreActions();
@@ -3703,7 +3895,9 @@ void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
 {
    m_loadCoreWindow->show();
    m_loadCoreWindow->resize(width() / 2, height());
-   m_loadCoreWindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, m_loadCoreWindow->size(), geometry()));
+   m_loadCoreWindow->setGeometry(QStyle::alignedRect(
+            Qt::LeftToRight, Qt::AlignCenter, m_loadCoreWindow->size(),
+            geometry()));
    m_loadCoreWindow->initCoreList(extensionFilters);
 }
 
@@ -3714,8 +3908,6 @@ void MainWindow::initContentTableWidget()
 
    if (!item)
       return;
-
-   m_currentGridHash.clear();
 
    if (m_currentGridWidget)
    {
@@ -3769,49 +3961,42 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
    QMainWindow::keyPressEvent(event);
 }
 
-QSettings* MainWindow::settings()
+QSettings* MainWindow::settings() { return m_settings; }
+
+const char *MainWindow::getCurrentViewTypeString()
 {
-   return m_settings;
+   if (m_viewType == VIEW_TYPE_ICONS)
+      return "icons";
+   return "list";
 }
 
-QString MainWindow::getCurrentViewTypeString()
-{
-   switch (m_viewType)
-   {
-      case VIEW_TYPE_ICONS:
-         return QStringLiteral("icons");
-      case VIEW_TYPE_LIST:
-      default:
-         break;
-   }
-
-   return QStringLiteral("list");
-}
-
-QString MainWindow::getCurrentThumbnailTypeString()
+const char *MainWindow::getCurrentThumbnailTypeString()
 {
    switch (m_thumbnailType)
    {
       case THUMBNAIL_TYPE_SCREENSHOT:
-         return QStringLiteral("screenshot");
+         return "screenshot";
       case THUMBNAIL_TYPE_TITLE_SCREEN:
-         return QStringLiteral("title");
+         return "title";
+      case THUMBNAIL_TYPE_LOGO:
+         return "logo";
       case THUMBNAIL_TYPE_BOXART:
       default:
-         return QStringLiteral("boxart");
+         break;
    }
-
-   return QStringLiteral("list");
+   return "boxart";
 }
 
 ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
 {
-   if (thumbnailType == "boxart")
+   if (thumbnailType == QLatin1String("boxart"))
       return THUMBNAIL_TYPE_BOXART;
-   else if (thumbnailType == "screenshot")
+   else if (thumbnailType == QLatin1String("screenshot"))
       return THUMBNAIL_TYPE_SCREENSHOT;
-   else if (thumbnailType == "title")
+   else if (thumbnailType == QLatin1String("title"))
       return THUMBNAIL_TYPE_TITLE_SCREEN;
+   else if (thumbnailType == QLatin1String("logo"))
+      return THUMBNAIL_TYPE_LOGO;
 
    return THUMBNAIL_TYPE_BOXART;
 }
@@ -3852,7 +4037,7 @@ void MainWindow::onContributorsClicked()
    dialog->layout()->addWidget(buttonBox);
 
    textEdit->setReadOnly(true);
-   textEdit->setHtml(QString("<pre>") + retroarch_contributors_list + "</pre>");
+   textEdit->setHtml(QString("<pre>") + retroarch_contributors_list + QString("</pre>"));
 
    dialog->resize(480, 640);
    dialog->exec();
@@ -3862,19 +4047,31 @@ void MainWindow::showAbout()
 {
    QScopedPointer<QDialog> dialog(new QDialog());
    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QString text = QString("RetroArch ") + PACKAGE_VERSION +
-         "<br><br>" + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
-         "<br><br>" + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
+   QString text = QString("RetroArch ")
+      + QString(PACKAGE_VERSION)
+      + QString("<br><br>")
+      + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
+         "<br><br>"
+      + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
 #ifdef HAVE_GIT_VERSION
-         "<br><br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION) + ": " + retroarch_git_version +
+         "<br><br>"
+      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
+      + QString(": ")
+      + retroarch_git_version
 #endif
-         "<br>" + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE) + ": " + __DATE__;
+      + QString("<br>")
+      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
+      + QString(": ")
+      + __DATE__;
    QLabel *label = new QLabel(text, dialog.data());
    QPixmap pix = getInvader();
    QLabel *pixLabel = new QLabel(dialog.data());
-   QPushButton *contributorsPushButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS), dialog.data());
+   QPushButton *contributorsPushButton = new QPushButton(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS),
+         dialog.data());
 
-   connect(contributorsPushButton, SIGNAL(clicked()), this, SLOT(onContributorsClicked()));
+   connect(contributorsPushButton, SIGNAL(clicked()), this,
+         SLOT(onContributorsClicked()));
    connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
    connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
 
@@ -3886,14 +4083,16 @@ void MainWindow::showAbout()
    pixLabel->setAlignment(Qt::AlignCenter);
    pixLabel->setPixmap(pix);
 
-   dialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
+   dialog->setWindowTitle(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
    dialog->setLayout(new QVBoxLayout());
 
    dialog->layout()->addWidget(pixLabel);
    dialog->layout()->addWidget(label);
    dialog->layout()->addWidget(contributorsPushButton);
 
-   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
+   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum,
+            QSizePolicy::Expanding));
    dialog->layout()->addWidget(buttonBox);
 
    dialog->exec();
@@ -3906,60 +4105,79 @@ void MainWindow::showDocs()
 
 void MainWindow::onShowErrorMessage(QString msg)
 {
-   showMessageBox(msg, MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+   showMessageBox(msg, MainWindow::MSGBOX_TYPE_ERROR,
+         Qt::ApplicationModal, false);
 }
 
 void MainWindow::onShowInfoMessage(QString msg)
 {
-   showMessageBox(msg, MainWindow::MSGBOX_TYPE_INFO, Qt::ApplicationModal, false);
+   showMessageBox(msg, MainWindow::MSGBOX_TYPE_INFO,
+         Qt::ApplicationModal, false);
 }
 
-int MainWindow::onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb)
+int MainWindow::onExtractArchive(QString path, QString extractionDir,
+      QString tempExtension, retro_task_callback_t cb)
 {
    size_t i;
    file_archive_transfer_t state;
    struct archive_extract_userdata userdata;
    QByteArray pathArray          = path.toUtf8();
    QByteArray dirArray           = extractionDir.toUtf8();
+   QByteArray tmpExtArray        = tempExtension.toUtf8();
    const char *file              = pathArray.constData();
    const char *dir               = dirArray.constData();
+   const char *temp_ext          = tmpExtArray.constData();
    struct string_list *file_list = file_archive_get_file_list(file, NULL);
    retro_task_t *decompress_task = NULL;
 
    if (!file_list || file_list->size == 0)
    {
-      showMessageBox("Error: Archive is empty.", MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-      RARCH_ERR("[Qt]: Downloaded archive is empty?\n");
+      showMessageBox("Error: Archive is empty.",
+            MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+      RARCH_ERR("[Qt] Downloaded archive is empty?\n");
       return -1;
    }
 
    for (i = 0; i < file_list->size; i++)
    {
-      QFile fileObj(file_list->elems[i].data);
+      const char *target_file = file_list->elems[i].data;
 
-      if (fileObj.exists())
+      if (!filestream_exists(target_file))
+         continue;
+
+      if (filestream_delete(target_file) == 0)
+         continue;
+
+      /* If we cannot delete the existing file to update it,
+       * rename it out of the way for later cleanup. */
       {
-         if (!fileObj.remove())
+         char temp_path[PATH_MAX_LENGTH];
+         size_t _len = strlcpy(temp_path, target_file, sizeof(temp_path));
+         strlcpy(temp_path + _len, temp_ext, sizeof(temp_path) - _len);
+
+         if (filestream_exists(temp_path))
          {
-            /* if we cannot delete the existing file to update it, rename it for now and delete later */
-            QFile fileTemp(fileObj.fileName() + tempExtension);
-
-            if (fileTemp.exists())
+            if (filestream_delete(temp_path) != 0)
             {
-               if (!fileTemp.remove())
-               {
-                  showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-                  RARCH_ERR("[Qt]: Could not delete file: %s\n", file_list->elems[i].data);
-                  return -1;
-               }
-            }
-
-            if (!fileObj.rename(fileTemp.fileName()))
-            {
-               showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-               RARCH_ERR("[Qt]: Could not rename file: %s\n", file_list->elems[i].data);
+               showMessageBox(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE),
+                     MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+               RARCH_ERR("[Qt] Could not delete file: \"%s\".\n",
+                     target_file);
+               string_list_free(file_list);
                return -1;
             }
+         }
+
+         if (filestream_rename(target_file, temp_path) != 0)
+         {
+            showMessageBox(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE),
+                  MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
+            RARCH_ERR("[Qt] Could not rename file: \"%s\".\n",
+                  target_file);
+            string_list_free(file_list);
+            return -1;
          }
       }
    }
@@ -3977,7 +4195,8 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    m_updateProgressDialog->setAutoClose(true);
    m_updateProgressDialog->setAutoReset(true);
    m_updateProgressDialog->setValue(0);
-   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_EXTRACTING)) + "...");
+   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_EXTRACTING))
+         + QString("..."));
    m_updateProgressDialog->setCancelButtonText(QString());
    m_updateProgressDialog->show();
 
@@ -3991,17 +4210,6 @@ int MainWindow::onExtractArchive(QString path, QString extractionDir, QString te
    }
 
    return 1;
-}
-
-QString MainWindow::getScrubbedString(QString str)
-{
-   const QString chars("&*/:`\"<>?\\|");
-   int i;
-
-   for (i = 0; i < chars.count(); i++)
-      str.replace(chars.at(i), '_');
-
-   return str;
 }
 
 static void* ui_window_qt_init(void)
@@ -4054,7 +4262,8 @@ static ui_window_t ui_window_qt = {
    "qt"
 };
 
-static enum ui_msg_window_response ui_msg_window_qt_response(ui_msg_window_state *state, QMessageBox::StandardButtons response)
+static enum ui_msg_window_response ui_msg_window_qt_response(
+      ui_msg_window_state *state, QMessageBox::StandardButtons response)
 {
 	switch (response)
    {
@@ -4109,25 +4318,32 @@ static enum ui_msg_window_response
 ui_msg_window_qt_error(ui_msg_window_state *state)
 {
    QFlags<QMessageBox::StandardButton> flags = ui_msg_window_qt_buttons(state);
-   return ui_msg_window_qt_response(state, QMessageBox::critical((QWidget*)state->window, state->title, state->text, flags));
+   return ui_msg_window_qt_response(state, QMessageBox::critical(
+            (QWidget*)state->window, state->title, state->text, flags));
 }
 
-static enum ui_msg_window_response ui_msg_window_qt_information(ui_msg_window_state *state)
+static enum ui_msg_window_response ui_msg_window_qt_information(
+      ui_msg_window_state *state)
 {
    QFlags<QMessageBox::StandardButton> flags = ui_msg_window_qt_buttons(state);
-   return ui_msg_window_qt_response(state, QMessageBox::information((QWidget*)state->window, state->title, state->text, flags));
+   return ui_msg_window_qt_response(state, QMessageBox::information(
+            (QWidget*)state->window, state->title, state->text, flags));
 }
 
-static enum ui_msg_window_response ui_msg_window_qt_question(ui_msg_window_state *state)
+static enum ui_msg_window_response ui_msg_window_qt_question(
+      ui_msg_window_state *state)
 {
    QFlags<QMessageBox::StandardButton> flags = ui_msg_window_qt_buttons(state);
-   return ui_msg_window_qt_response(state, QMessageBox::question((QWidget*)state->window, state->title, state->text, flags));
+   return ui_msg_window_qt_response(state, QMessageBox::question(
+            (QWidget*)state->window, state->title, state->text, flags));
 }
 
-static enum ui_msg_window_response ui_msg_window_qt_warning(ui_msg_window_state *state)
+static enum ui_msg_window_response ui_msg_window_qt_warning(
+      ui_msg_window_state *state)
 {
    QFlags<QMessageBox::StandardButton> flags = ui_msg_window_qt_buttons(state);
-   return ui_msg_window_qt_response(state, QMessageBox::warning((QWidget*)state->window, state->title, state->text, flags));
+   return ui_msg_window_qt_response(state, QMessageBox::warning(
+            (QWidget*)state->window, state->title, state->text, flags));
 }
 
 static ui_msg_window_t ui_msg_window_qt = {
@@ -4163,7 +4379,7 @@ static void* ui_application_qt_initialize(void)
 
    app_handler             = new AppHandler();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)) && (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    /* HiDpi supported since Qt 5.6 */
    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -4175,19 +4391,32 @@ static void* ui_application_qt_initialize(void)
    ui_application.app->setOrganizationName("libretro");
    ui_application.app->setApplicationName("RetroArch");
    ui_application.app->setApplicationVersion(PACKAGE_VERSION);
-   ui_application.app->connect(ui_application.app, SIGNAL(lastWindowClosed()),
-         app_handler, SLOT(onLastWindowClosed()));
 
 #ifdef Q_OS_UNIX
    setlocale(LC_NUMERIC, "C");
+#ifdef HAVE_WAYLAND
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
+   /* This needs to match the name of the .desktop file in order for
+    * Windows to be correctly associated on Wayland */
+   ui_application.app->setDesktopFileName(WAYLAND_APP_ID);
+#endif
+#endif
 #endif
    {
-      /* Can't declare the pixmap at the top, because: "QPixmap: Must construct a QGuiApplication before a QPixmap" */
-      QImage iconImage(16, 16, QImage::Format_ARGB32);
       QPixmap iconPixmap;
-      unsigned char *bits = iconImage.bits();
+      /* Can't declare the pixmap at the top, because:
+       * "QPixmap: Must construct a QGuiApplication before a QPixmap" */
+      QImage iconImage(16, 16, QImage::Format_ARGB32);
+      int y;
 
-      memcpy(bits, retroarch_qt_icon_data, 16 * 16 * sizeof(unsigned));
+      /* Copy per scanline rather than one flat memcpy: QImage may pad
+       * each row to a larger bytesPerLine() than width * 4, so a single
+       * 16*16*4 copy into bits() is only correct as long as there is no
+       * padding. Per-row copies via scanLine() are safe regardless. */
+      for (y = 0; y < 16; y++)
+         memcpy(iconImage.scanLine(y),
+               retroarch_qt_icon_data + (y * 16),
+               16 * sizeof(unsigned));
 
       iconPixmap = QPixmap::fromImage(iconImage);
 
@@ -4199,9 +4428,11 @@ static void* ui_application_qt_initialize(void)
 
 static void ui_application_qt_process_events(void)
 {
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
    if (dispatcher && dispatcher->hasPendingEvents())
-      QApplication::processEvents();
+#endif
+   QApplication::processEvents();
 }
 
 static void ui_application_qt_quit(void)
@@ -4230,13 +4461,8 @@ static ui_application_t ui_application_qt = {
 
 
 AppHandler::AppHandler(QObject *parent) :
-   QObject(parent)
-{
-}
-
-AppHandler::~AppHandler()
-{
-}
+   QObject(parent) { }
+AppHandler::~AppHandler() { }
 
 void AppHandler::exit()
 {
@@ -4246,19 +4472,20 @@ void AppHandler::exit()
       qApp->closeAllWindows();
 }
 
-void AppHandler::onLastWindowClosed() { }
-
 typedef struct ui_companion_qt
 {
    ui_application_qt_t *app;
    ui_window_qt_t *window;
 } ui_companion_qt_t;
 
+ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }
+
 ThumbnailWidget::ThumbnailWidget(ThumbnailType type, QWidget *parent) :
    QStackedWidget(parent)
    ,m_thumbnailType(type)
    ,m_thumbnailLabel(new ThumbnailLabel(this))
-   ,m_dropIndicator(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE), this))
+   ,m_dropIndicator(new QLabel(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE), this))
 {
    m_dropIndicator->setObjectName("dropIndicator");
    m_dropIndicator->setAlignment(Qt::AlignCenter);
@@ -4309,8 +4536,13 @@ void ThumbnailWidget::dropEvent(QDropEvent *event)
          emit(filesDropped(image, m_thumbnailType));
       else
       {
-         const char *string_data = QDir::toNativeSeparators(imageString).toUtf8().constData();
-         RARCH_ERR("[Qt]: Could not read image: %s\n", string_data);
+         /* Keep the QByteArray alive for the duration of the log call:
+          * calling constData() on a temporary QByteArray leaves a
+          * dangling pointer once the full expression ends. */
+         QByteArray stringArray = QDir::toNativeSeparators(
+               imageString).toUtf8();
+         RARCH_ERR("[Qt] Could not read image: \"%s\".\n",
+               stringArray.constData());
       }
    }
 }
@@ -4360,7 +4592,8 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
      QStyle::PE_Widget, &o, &p, this);
    p.end();
 
-   if (!m_pixmap || m_pixmap->isNull())
+   if (    !m_pixmap
+         || m_pixmap->isNull())
    {
       if (m_pixmap)
          delete m_pixmap;
@@ -4370,18 +4603,18 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
 
    if (w > 0 && h > 0 && m_pixmap && !m_pixmap->isNull())
    {
-      int newHeight = (m_pixmap->height() / static_cast<float>(m_pixmap->width())) * width();
-      QPixmap pixmapScaled = *m_pixmap;
       QPixmap pixmap;
       QPainter pScale;
-      int pw = 0;
-      int ph = 0;
-      unsigned *buf = new unsigned[w * h];
+      int pw               = 0;
+      int ph               = 0;
+      int newHeight        = (m_pixmap->height()
+                           / static_cast<float>(m_pixmap->width())) * width();
+      QPixmap pixmapScaled = *m_pixmap;
 
       if (newHeight > h)
          pixmapScaled = pixmapScaled.scaledToHeight(h, Qt::SmoothTransformation);
       else
-         pixmapScaled = pixmapScaled.scaledToWidth(w, Qt::SmoothTransformation);
+         pixmapScaled = pixmapScaled.scaledToWidth(w,  Qt::SmoothTransformation);
 
       pw = pixmapScaled.width();
       ph = pixmapScaled.height();
@@ -4390,7 +4623,8 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
       pixmap.fill(QColor(0, 0, 0, 0));
 
       pScale.begin(&pixmap);
-      pScale.drawPixmap(QRect((w - pw) / 2, (h - ph) / 2, pw, ph), pixmapScaled, pixmapScaled.rect());
+      pScale.drawPixmap(QRect((w - pw) / 2, (h - ph) / 2, pw, ph),
+            pixmapScaled, pixmapScaled.rect());
       pScale.end();
 
       if (!pixmap.isNull())
@@ -4399,16 +4633,9 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
          p.drawPixmap(rect(), pixmap, pixmap.rect());
          p.end();
       }
-
-      delete []buf;
    }
    else
       QWidget::paintEvent(event);
-}
-
-void ThumbnailLabel::resizeEvent(QResizeEvent *event)
-{
-   QWidget::resizeEvent(event);
 }
 
 static void ui_companion_qt_deinit(void *data)
@@ -4424,158 +4651,120 @@ static void ui_companion_qt_deinit(void *data)
    free(handle);
 }
 
-static void* ui_companion_qt_init(void)
+/* ---------------------------------------------------------------- */
+/* Helpers split out of ui_companion_qt_init() for readability.      */
+/* No functional changes from the original monolithic flow.          */
+/* ---------------------------------------------------------------- */
+
+static void qt_companion_build_menubar(MainWindow *mainwindow)
 {
-   int i = 0;
-   QString initialPlaylist;
-   QRect desktopRect;
-   ui_companion_qt_t               *handle = (ui_companion_qt_t*)
-      calloc(1, sizeof(*handle));
-   MainWindow                  *mainwindow = NULL;
-   QHBoxLayout   *browserButtonsHBoxLayout = NULL;
-   QVBoxLayout                     *layout = NULL;
-   QVBoxLayout     *launchWithWidgetLayout = NULL;
-   QHBoxLayout         *coreComboBoxLayout = NULL;
-   QMenuBar                          *menu = NULL;
-   QDesktopWidget                 *desktop = NULL;
-   QMenu                         *fileMenu = NULL;
-   QMenu                         *editMenu = NULL;
-   QMenu                         *viewMenu = NULL;
-   QMenu              *viewClosedDocksMenu = NULL;
-   QMenu                         *helpMenu = NULL;
-   QDockWidget              *thumbnailDock = NULL;
-   QDockWidget             *thumbnail2Dock = NULL;
-   QDockWidget             *thumbnail3Dock = NULL;
-   QDockWidget  *browserAndPlaylistTabDock = NULL;
-   QDockWidget          *coreSelectionDock = NULL;
-   QTabWidget *browserAndPlaylistTabWidget = NULL;
-   QStackedWidget           *centralWidget = NULL;
-   QStackedWidget                  *widget = NULL;
-   QFrame                   *browserWidget = NULL;
-   QFrame                  *playlistWidget = NULL;
-   QWidget            *coreSelectionWidget = NULL;
-   QWidget               *launchWithWidget = NULL;
-   ThumbnailWidget        *thumbnailWidget = NULL;
-   ThumbnailWidget       *thumbnail2Widget = NULL;
-   ThumbnailWidget       *thumbnail3Widget = NULL;
-   QPushButton     *browserDownloadsButton = NULL;
-   QPushButton            *browserUpButton = NULL;
-   QPushButton         *browserStartButton = NULL;
-   ThumbnailLabel               *thumbnail = NULL;
-   ThumbnailLabel              *thumbnail2 = NULL;
-   ThumbnailLabel              *thumbnail3 = NULL;
-   QAction               *editSearchAction = NULL;
-   QAction                 *loadCoreAction = NULL;
-   QAction               *unloadCoreAction = NULL;
-   QAction                     *exitAction = NULL;
-   QComboBox           *launchWithComboBox = NULL;
-   QSettings                    *qsettings = NULL;
-   QListWidget                 *listWidget = NULL;
-   bool                      foundPlaylist = false;
+   QMenuBar *menu     = mainwindow->menuBar();
+   QMenu *fileMenu    = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
+   QMenu *editMenu;
+   QMenu *viewMenu;
+   QMenu *viewClosedDocksMenu;
+   QMenu *helpMenu;
+   QAction *loadCoreAction;
+   QAction *unloadCoreAction;
+   QAction *exitAction;
+   QAction *editSearchAction;
 
-   if (!handle)
-      return NULL;
-
-   handle->app     = static_cast<ui_application_qt_t*>
-      (ui_application_qt.initialize());
-   handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
-
-   desktop         = qApp->desktop();
-   desktopRect     = desktop->availableGeometry();
-
-   mainwindow      = handle->window->qtWindow;
-
-   qsettings       = mainwindow->settings();
-
-   initialPlaylist = qsettings->value("initial_playlist", mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
-
-   mainwindow->resize(qMin(desktopRect.width(), INITIAL_WIDTH), qMin(desktopRect.height(), INITIAL_HEIGHT));
-   mainwindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, mainwindow->size(), desktopRect));
-
-   mainwindow->setWindowTitle("RetroArch");
-   mainwindow->setDockOptions(QMainWindow::AnimatedDocks | QMainWindow::AllowNestedDocks | QMainWindow::AllowTabbedDocks | GROUPED_DRAGGING);
-
-   listWidget      = mainwindow->playlistListWidget();
-
-   widget          = mainwindow->playlistViews();
-   widget->setContextMenuPolicy(Qt::CustomContextMenu);
-
-   QObject::connect(widget, SIGNAL(filesDropped(QStringList)), mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
-   QObject::connect(widget, SIGNAL(enterPressed()), mainwindow, SLOT(onDropWidgetEnterPressed()));
-   QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
-   QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
-
-   centralWidget = mainwindow->centralWidget();
-
-   centralWidget->addWidget(mainwindow->playlistViewsAndFooter());
-   centralWidget->addWidget(mainwindow->fileTableView());
-
-   mainwindow->setCentralWidget(centralWidget);
-
-   menu = mainwindow->menuBar();
-
-   fileMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
-
-   loadCoreAction = fileMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE), mainwindow, SLOT(onLoadCoreClicked()));
+   loadCoreAction = fileMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE), mainwindow,
+         SLOT(onLoadCoreClicked()));
    loadCoreAction->setShortcut(QKeySequence("Ctrl+L"));
 
-   unloadCoreAction = fileMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE), mainwindow, SLOT(onUnloadCoreMenuAction()));
+   unloadCoreAction = fileMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE), mainwindow,
+         SLOT(onUnloadCoreMenuAction()));
    unloadCoreAction->setObjectName("unloadCoreAction");
    unloadCoreAction->setEnabled(false);
    unloadCoreAction->setShortcut(QKeySequence("Ctrl+U"));
 
-   exitAction = fileMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT), mainwindow, SLOT(close()));
+   exitAction = fileMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT), mainwindow,
+         SLOT(close()));
    exitAction->setShortcut(QKeySequence::Quit);
 
    editMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT));
-   editSearchAction = editMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), mainwindow->searchLineEdit(), SLOT(setFocus()));
+   editSearchAction = editMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH),
+         mainwindow->searchLineEdit(), SLOT(setFocus()));
    editSearchAction->setShortcut(QKeySequence::Find);
 
-   viewMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW));
-   viewClosedDocksMenu = viewMenu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS));
+   viewMenu = menu->addMenu(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW));
+   viewClosedDocksMenu = viewMenu->addMenu(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS));
    viewClosedDocksMenu->setObjectName("viewClosedDocksMenu");
 
-   QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow, SLOT(onViewClosedDocksAboutToShow()));
+   QObject::connect(viewClosedDocksMenu, SIGNAL(aboutToShow()), mainwindow,
+         SLOT(onViewClosedDocksAboutToShow()));
 
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), mainwindow, SLOT(onCoreOptionsClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS),
+         mainwindow, SLOT(onCoreOptionsClicked()));
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), mainwindow, SLOT(onShaderParamsClicked()));
+   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),
+         mainwindow, SLOT(onShaderParamsClicked()));
 #endif
 #endif
 
    viewMenu->addSeparator();
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow, SLOT(onIconViewClicked()));
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST), mainwindow, SLOT(onListViewClicked()));
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS), mainwindow,
+            SLOT(onIconViewClicked()));
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST), mainwindow,
+            SLOT(onListViewClicked()));
    viewMenu->addSeparator();
-   viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), mainwindow->viewOptionsDialog(), SLOT(showDialog()));
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
+            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
 
-   helpMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
-   helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)), mainwindow, SLOT(showDocs()));
-   helpMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT)) + "...", mainwindow, SLOT(showAbout()));
-   helpMenu->addAction("About Qt...", qApp, SLOT(aboutQt()));
+   helpMenu = menu->addMenu(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
+   helpMenu->addAction(QString(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)),
+               mainwindow, SLOT(showDocs()));
+   helpMenu->addAction(QString(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
+              + QString("..."), mainwindow, SLOT(showAbout()));
+   helpMenu->addAction(QString("About Qt..."), qApp, SLOT(aboutQt()));
+}
 
-   playlistWidget = new QFrame();
+/* Build the playlist + file-browser tab dock. Returns the dock so the
+ * caller can splitDockWidget() the core-selection dock against it. */
+static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
+{
+   QFrame *playlistWidget               = new QFrame();
+   QFrame *browserWidget                = new QFrame();
+   QPushButton *browserDownloadsButton  = new QPushButton(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
+   QPushButton *browserUpButton         = new QPushButton(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP));
+   QPushButton *browserStartButton      = new QPushButton(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_FAVORITES));
+   QHBoxLayout *browserButtonsHBoxLayout = new QHBoxLayout();
+   QTabWidget *browserAndPlaylistTabWidget = mainwindow->browserAndPlaylistTabWidget();
+   QDockWidget *browserAndPlaylistTabDock;
+
    playlistWidget->setLayout(new QVBoxLayout());
    playlistWidget->setObjectName("playlistWidget");
    playlistWidget->layout()->setContentsMargins(0, 0, 0, 0);
-
    playlistWidget->layout()->addWidget(mainwindow->playlistListWidget());
 
-   browserWidget = new QFrame();
    browserWidget->setLayout(new QVBoxLayout());
    browserWidget->setObjectName("browserWidget");
    browserWidget->layout()->setContentsMargins(0, 0, 0, 0);
 
-   browserDownloadsButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
-   browserUpButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP));
-   browserStartButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES));
+   QObject::connect(browserDownloadsButton, SIGNAL(clicked()), mainwindow,
+         SLOT(onBrowserDownloadsClicked()));
+   QObject::connect(browserUpButton, SIGNAL(clicked()), mainwindow,
+         SLOT(onBrowserUpClicked()));
+   QObject::connect(browserStartButton, SIGNAL(clicked()), mainwindow,
+         SLOT(onBrowserStartClicked()));
 
-   QObject::connect(browserDownloadsButton, SIGNAL(clicked()), mainwindow, SLOT(onBrowserDownloadsClicked()));
-   QObject::connect(browserUpButton, SIGNAL(clicked()), mainwindow, SLOT(onBrowserUpClicked()));
-   QObject::connect(browserStartButton, SIGNAL(clicked()), mainwindow, SLOT(onBrowserStartClicked()));
-
-   browserButtonsHBoxLayout = new QHBoxLayout();
    browserButtonsHBoxLayout->addWidget(browserUpButton);
    browserButtonsHBoxLayout->addWidget(browserStartButton);
    browserButtonsHBoxLayout->addWidget(browserDownloadsButton);
@@ -4583,85 +4772,100 @@ static void* ui_companion_qt_init(void)
    qobject_cast<QVBoxLayout*>(browserWidget->layout())->addLayout(browserButtonsHBoxLayout);
    browserWidget->layout()->addWidget(mainwindow->dirTreeView());
 
-   browserAndPlaylistTabWidget = mainwindow->browserAndPlaylistTabWidget();
    browserAndPlaylistTabWidget->setObjectName("browserAndPlaylistTabWidget");
 
-   /* Several functions depend on the same tab title strings here, so if you change these, make sure to change those too
-    * setCoreActions()
-    * onTabWidgetIndexChanged()
-    * onCurrentListItemChanged()
-    */
-   browserAndPlaylistTabWidget->addTab(playlistWidget, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS));
-   browserAndPlaylistTabWidget->addTab(browserWidget, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER));
+   /* Several functions depend on the same tab title strings here,
+    * so if you change these, make sure to change those too:
+    *   setCoreActions()
+    *   onTabWidgetIndexChanged()
+    *   onCurrentListItemChanged() */
+   browserAndPlaylistTabWidget->addTab(playlistWidget,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS));
+   browserAndPlaylistTabWidget->addTab(browserWidget,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER));
 
-   browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), mainwindow);
-   browserAndPlaylistTabDock->setObjectName("browserAndPlaylistTabDock");
-   browserAndPlaylistTabDock->setProperty("default_area", Qt::LeftDockWidgetArea);
-   browserAndPlaylistTabDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER));
-   browserAndPlaylistTabDock->setWidget(browserAndPlaylistTabWidget);
+   browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), mainwindow);
+   qt_dock_configure(browserAndPlaylistTabDock,
+         "browserAndPlaylistTabDock", Qt::LeftDockWidgetArea,
+         MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+         browserAndPlaylistTabWidget);
 
-   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(browserAndPlaylistTabDock->property("default_area").toInt()), browserAndPlaylistTabDock);
+   qt_dock_add_to(mainwindow, browserAndPlaylistTabDock);
 
-   browserButtonsHBoxLayout->addItem(new QSpacerItem(browserAndPlaylistTabWidget->tabBar()->width(), 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+   browserButtonsHBoxLayout->addItem(new QSpacerItem(
+            browserAndPlaylistTabWidget->tabBar()->width(),
+            20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
-   thumbnailWidget = new ThumbnailWidget(THUMBNAIL_TYPE_BOXART);
-   thumbnailWidget->setObjectName("thumbnail");
+   return browserAndPlaylistTabDock;
+}
 
-   thumbnail2Widget = new ThumbnailWidget(THUMBNAIL_TYPE_TITLE_SCREEN);
-   thumbnail2Widget->setObjectName("thumbnail2");
+/* Build the four boxart/title/screenshot/logo thumbnail docks.
+ * The four docks are tabbed against the first one. */
+static void qt_companion_build_thumbnail_docks(MainWindow *mainwindow)
+{
+   /* Maps widget index -> ThumbnailType + display label hash + dock obj name. */
+   static const ThumbnailType types[4] = {
+      THUMBNAIL_TYPE_BOXART, THUMBNAIL_TYPE_TITLE_SCREEN,
+      THUMBNAIL_TYPE_SCREENSHOT, THUMBNAIL_TYPE_LOGO
+   };
+   static const msg_hash_enums labels[4] = {
+      MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+      MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+      MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+      MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO
+   };
+   static const char * const dock_obj_names[4] = {
+      "thumbnailDock", "thumbnail2Dock", "thumbnail3Dock", "thumbnail4Dock"
+   };
+   QDockWidget *docks[4];
+   int i;
 
-   thumbnail3Widget = new ThumbnailWidget(THUMBNAIL_TYPE_SCREENSHOT);
-   thumbnail3Widget->setObjectName("thumbnail3");
+   for (i = 0; i < 4; i++)
+   {
+      ThumbnailWidget *tw = new ThumbnailWidget(types[i]);
+      tw->setObjectName(qt_thumbnail_widget_names[i]);
 
-   QObject::connect(thumbnailWidget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
-   QObject::connect(thumbnail2Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
-   QObject::connect(thumbnail3Widget, SIGNAL(filesDropped(const QImage&, ThumbnailType)), mainwindow, SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
+      QObject::connect(tw, SIGNAL(filesDropped(const QImage&,
+                  ThumbnailType)), mainwindow,
+                  SLOT(onThumbnailDropped(const QImage&, ThumbnailType)));
 
-   thumbnailDock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), mainwindow);
-   thumbnailDock->setObjectName("thumbnailDock");
-   thumbnailDock->setProperty("default_area", Qt::RightDockWidgetArea);
-   thumbnailDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
-   thumbnailDock->setWidget(thumbnailWidget);
+      docks[i] = new QDockWidget(msg_hash_to_str(labels[i]), mainwindow);
+      qt_dock_configure(docks[i], dock_obj_names[i],
+            Qt::RightDockWidgetArea, labels[i], tw);
 
-   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnailDock->property("default_area").toInt()), thumbnailDock);
+      qt_dock_add_to(mainwindow, docks[i]);
+   }
 
-   thumbnail2Dock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN), mainwindow);
-   thumbnail2Dock->setObjectName("thumbnail2Dock");
-   thumbnail2Dock->setProperty("default_area", Qt::RightDockWidgetArea);
-   thumbnail2Dock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
-   thumbnail2Dock->setWidget(thumbnail2Widget);
+   for (i = 1; i < 4; i++)
+      mainwindow->tabifyDockWidget(docks[0], docks[i]);
 
-   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail2Dock->property("default_area").toInt()), thumbnail2Dock);
+   /* When tabifying the dock widgets, the last tab added is selected
+    * by default, so we re-select the first tab here. */
+   docks[0]->raise();
+}
 
-   thumbnail3Dock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT), mainwindow);
-   thumbnail3Dock->setObjectName("thumbnail3Dock");
-   thumbnail3Dock->setProperty("default_area", Qt::RightDockWidgetArea);
-   thumbnail3Dock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
-   thumbnail3Dock->setWidget(thumbnail3Widget);
+/* Build the core-selection dock (combo box + run/stop/start buttons)
+ * and split it vertically against the existing browser/playlist dock. */
+static void qt_companion_build_core_selection_dock(MainWindow *mainwindow,
+      QDockWidget *browserAndPlaylistTabDock)
+{
+   QWidget *coreSelectionWidget    = new QWidget();
+   QVBoxLayout *launchWithLayout   = new QVBoxLayout();
+   QWidget *launchWithWidget       = new QWidget();
+   QHBoxLayout *coreComboBoxLayout = new QHBoxLayout();
+   QComboBox *launchWithComboBox   = mainwindow->launchWithComboBox();
+   QDockWidget *coreSelectionDock;
 
-   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(thumbnail3Dock->property("default_area").toInt()), thumbnail3Dock);
-
-   mainwindow->tabifyDockWidget(thumbnailDock, thumbnail2Dock);
-   mainwindow->tabifyDockWidget(thumbnailDock, thumbnail3Dock);
-
-   /* when tabifying the dock widgets, the last tab added is selected by default, so we need to re-select the first tab */
-   thumbnailDock->raise();
-
-   coreSelectionWidget = new QWidget();
    coreSelectionWidget->setLayout(new QVBoxLayout());
+   launchWithWidget->setLayout(launchWithLayout);
 
-   launchWithComboBox = mainwindow->launchWithComboBox();
-
-   launchWithWidgetLayout = new QVBoxLayout();
-
-   launchWithWidget = new QWidget();
-   launchWithWidget->setLayout(launchWithWidgetLayout);
-
-   coreComboBoxLayout = new QHBoxLayout();
-
-   mainwindow->runPushButton()->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
-   mainwindow->stopPushButton()->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
-   mainwindow->startCorePushButton()->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
+   mainwindow->runPushButton()->setSizePolicy(
+         QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
+   mainwindow->stopPushButton()->setSizePolicy(
+         QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
+   mainwindow->startCorePushButton()->setSizePolicy(
+         QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding));
 
    coreComboBoxLayout->addWidget(launchWithComboBox);
    coreComboBoxLayout->addWidget(mainwindow->startCorePushButton());
@@ -4673,68 +4877,81 @@ static void* ui_companion_qt_init(void)
 
    coreComboBoxLayout->setStretchFactor(launchWithComboBox, 1);
 
-   launchWithWidgetLayout->addLayout(coreComboBoxLayout);
+   launchWithLayout->addLayout(coreComboBoxLayout);
 
    coreSelectionWidget->layout()->addWidget(launchWithWidget);
+   coreSelectionWidget->layout()->addItem(new QSpacerItem(20,
+            mainwindow->browserAndPlaylistTabWidget()->height(),
+            QSizePolicy::Minimum, QSizePolicy::Expanding));
 
-   coreSelectionWidget->layout()->addItem(new QSpacerItem(20, browserAndPlaylistTabWidget->height(), QSizePolicy::Minimum, QSizePolicy::Expanding));
-
-   coreSelectionDock = new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE), mainwindow);
-   coreSelectionDock->setObjectName("coreSelectionDock");
-   coreSelectionDock->setProperty("default_area", Qt::LeftDockWidgetArea);
-   coreSelectionDock->setProperty("menu_text", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE));
-   coreSelectionDock->setWidget(coreSelectionWidget);
+   coreSelectionDock = new QDockWidget(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_CORE), mainwindow);
+   qt_dock_configure(coreSelectionDock, "coreSelectionDock",
+         Qt::LeftDockWidgetArea, MENU_ENUM_LABEL_VALUE_QT_CORE,
+         coreSelectionWidget);
    coreSelectionDock->setFixedHeight(coreSelectionDock->minimumSizeHint().height());
 
-   mainwindow->addDockWidget(static_cast<Qt::DockWidgetArea>(coreSelectionDock->property("default_area").toInt()), coreSelectionDock);
+   qt_dock_add_to(mainwindow, coreSelectionDock);
 
    mainwindow->splitDockWidget(browserAndPlaylistTabDock, coreSelectionDock, Qt::Vertical);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-   mainwindow->resizeDocks(QList<QDockWidget*>() << coreSelectionDock, QList<int>() << 1, Qt::Vertical);
+   mainwindow->resizeDocks(QList<QDockWidget*>() << coreSelectionDock,
+         QList<int>() << 1, Qt::Vertical);
 #endif
+}
 
+/* Restore persistent state (limits, geometry, theme, view type, last tab). */
+static void qt_companion_restore_settings(MainWindow *mainwindow,
+      QSettings *qsettings)
+{
    if (qsettings->contains("all_playlists_list_max_count"))
-      mainwindow->setAllPlaylistsListMaxCount(qsettings->value("all_playlists_list_max_count", 0).toInt());
+      mainwindow->setAllPlaylistsListMaxCount(qsettings->value(
+               "all_playlists_list_max_count", 0).toInt());
 
    if (qsettings->contains("all_playlists_grid_max_count"))
-      mainwindow->setAllPlaylistsGridMaxCount(qsettings->value("all_playlists_grid_max_count", 5000).toInt());
+      mainwindow->setAllPlaylistsGridMaxCount(qsettings->value(
+               "all_playlists_grid_max_count", 5000).toInt());
 
    if (qsettings->contains("thumbnail_cache_limit"))
-      mainwindow->setThumbnailCacheLimit(qsettings->value("thumbnail_cache_limit", 500).toInt());
+      mainwindow->setThumbnailCacheLimit(qsettings->value(
+               "thumbnail_cache_limit", 500).toInt());
    else
       mainwindow->setThumbnailCacheLimit(500);
 
    if (qsettings->contains("geometry"))
       if (qsettings->contains("save_geometry"))
-         mainwindow->restoreGeometry(qsettings->value("geometry").toByteArray());
+         mainwindow->restoreGeometry(qsettings->value(
+                  "geometry").toByteArray());
 
    if (qsettings->contains("options_dialog_geometry"))
-      mainwindow->viewOptionsDialog()->restoreGeometry(qsettings->value("options_dialog_geometry").toByteArray());
+      mainwindow->viewOptionsDialog()->restoreGeometry(
+            qsettings->value("options_dialog_geometry").toByteArray());
 
    if (qsettings->contains("save_dock_positions"))
       if (qsettings->contains("dock_positions"))
-         mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
+         mainwindow->restoreState(qsettings->value(
+                  "dock_positions").toByteArray());
 
    if (qsettings->contains("file_browser_table_headers"))
-      mainwindow->fileTableView()->horizontalHeader()->restoreState(qsettings->value("file_browser_table_headers").toByteArray());
+      mainwindow->fileTableView()->horizontalHeader()->restoreState(
+            qsettings->value("file_browser_table_headers").toByteArray());
    else
       mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
 
    if (qsettings->contains("icon_view_zoom"))
-      mainwindow->setIconViewZoom(qsettings->value("icon_view_zoom", 50).toInt());
+      mainwindow->setIconViewZoom(qsettings->value(
+               "icon_view_zoom", 50).toInt());
 
    if (qsettings->contains("theme"))
    {
-      QString themeStr = qsettings->value("theme").toString();
+      QString themeStr        = qsettings->value("theme").toString();
       MainWindow::Theme theme = mainwindow->getThemeFromString(themeStr);
 
-      if (qsettings->contains("custom_theme") && theme == MainWindow::THEME_CUSTOM)
-      {
-         QString customThemeFilePath = qsettings->value("custom_theme").toString();
-
-         mainwindow->setCustomThemeFile(customThemeFilePath);
-      }
+      if (     qsettings->contains("custom_theme")
+            && theme == MainWindow::THEME_CUSTOM)
+         mainwindow->setCustomThemeFile(
+               qsettings->value("custom_theme").toString());
 
       mainwindow->setTheme(theme);
    }
@@ -4745,9 +4962,7 @@ static void* ui_companion_qt_init(void)
    {
       QString viewType = qsettings->value("view_type", "list").toString();
 
-      if (viewType == "list")
-         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-      else if (viewType == "icons")
+      if (viewType == QLatin1String("icons"))
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
       else
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
@@ -4757,29 +4972,144 @@ static void* ui_companion_qt_init(void)
 
    if (qsettings->contains("icon_view_thumbnail_type"))
    {
-      QString thumbnailType = qsettings->value("icon_view_thumbnail_type", "boxart").toString();
+      QString thumbnailType = qsettings->value("icon_view_thumbnail_type",
+            "boxart").toString();
 
-      if (thumbnailType == "boxart")
-         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
-      else if (thumbnailType == "screenshot")
+      if (thumbnailType == QLatin1String("screenshot"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
-      else if (thumbnailType == "title")
+      else if (thumbnailType == QLatin1String("title"))
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
+      else if (thumbnailType == QLatin1String("logo"))
+         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
    }
+}
 
-   /* We make sure to hook up the tab widget callback only after the tabs themselves have been added,
-    * but before changing to a specific one, to avoid the callback firing before the view type is set.
-    */
-   QObject::connect(browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)), mainwindow, SLOT(onTabWidgetIndexChanged(int)));
+/* Set the initial playlist row to match the user's saved choice; if not
+ * found, fall back to the first non-hidden row. */
+static void qt_companion_select_initial_playlist(QListWidget *listWidget,
+      const QString &initialPlaylist)
+{
+   int i;
+   bool found = false;
 
-   /* setting the last tab must come after setting the view type */
+   for (i = 0; i < listWidget->count(); i++)
+   {
+      QListWidgetItem *item = listWidget->item(i);
+      QString path;
+
+      if (!item)
+         continue;
+
+      path = item->data(Qt::UserRole).toString();
+
+      if (path == initialPlaylist)
+      {
+         found = true;
+         listWidget->setRowHidden(i, false);
+         listWidget->setCurrentRow(i);
+         break;
+      }
+   }
+
+   if (found)
+      return;
+
+   /* Couldn't find the user's initial playlist, just find anything. */
+   for (i = 0; i < listWidget->count(); i++)
+   {
+      if (!listWidget->isRowHidden(i))
+      {
+         listWidget->setCurrentRow(i);
+         break;
+      }
+   }
+}
+
+static void* ui_companion_qt_init(void)
+{
+   QString initialPlaylist;
+   QRect desktopRect;
+   ui_companion_qt_t *handle               = (ui_companion_qt_t*)
+      calloc(1, sizeof(*handle));
+   MainWindow *mainwindow                  = NULL;
+   QScreen *screen                         = NULL;
+   QStackedWidget *centralWidget           = NULL;
+   QStackedWidget *widget                  = NULL;
+   QTabWidget *browserAndPlaylistTabWidget = NULL;
+   QDockWidget *browserAndPlaylistTabDock  = NULL;
+   QSettings *qsettings                    = NULL;
+   QListWidget *listWidget                 = NULL;
+
+   if (!handle)
+      return NULL;
+
+   handle->app     = static_cast<ui_application_qt_t*>
+      (ui_application_qt.initialize());
+   handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
+
+   screen          = qApp->primaryScreen();
+   if (screen)
+      desktopRect  = screen->availableGeometry();
+
+   mainwindow      = handle->window->qtWindow;
+   qsettings       = mainwindow->settings();
+
+   initialPlaylist = qsettings->value("initial_playlist",
+         mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
+
+   mainwindow->resize(((desktopRect.width()) < (INITIAL_WIDTH) ? (desktopRect.width()) : (INITIAL_WIDTH)),
+         ((desktopRect.height()) < (INITIAL_HEIGHT) ? (desktopRect.height()) : (INITIAL_HEIGHT)));
+   mainwindow->setGeometry(QStyle::alignedRect(Qt::LeftToRight,
+            Qt::AlignCenter, mainwindow->size(), desktopRect));
+
+   mainwindow->setWindowTitle("RetroArch");
+   mainwindow->setDockOptions(QMainWindow::AnimatedDocks
+                            | QMainWindow::AllowNestedDocks
+                            | QMainWindow::AllowTabbedDocks
+                            | GROUPED_DRAGGING);
+
+   listWidget = mainwindow->playlistListWidget();
+   widget     = mainwindow->playlistViews();
+   widget->setContextMenuPolicy(Qt::CustomContextMenu);
+
+   QObject::connect(widget, SIGNAL(filesDropped(QStringList)),
+         mainwindow, SLOT(onPlaylistFilesDropped(QStringList)));
+   QObject::connect(widget, SIGNAL(enterPressed()), mainwindow,
+         SLOT(onDropWidgetEnterPressed()));
+   QObject::connect(widget, SIGNAL(deletePressed()), mainwindow,
+         SLOT(deleteCurrentPlaylistItem()));
+   QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)),
+         mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
+
+   centralWidget = mainwindow->centralWidget();
+   centralWidget->addWidget(mainwindow->playlistViewsAndFooter());
+   centralWidget->addWidget(mainwindow->fileTableView());
+   mainwindow->setCentralWidget(centralWidget);
+
+   qt_companion_build_menubar(mainwindow);
+   browserAndPlaylistTabDock = qt_companion_build_browser_dock(mainwindow);
+   qt_companion_build_thumbnail_docks(mainwindow);
+   qt_companion_build_core_selection_dock(mainwindow,
+         browserAndPlaylistTabDock);
+   qt_companion_restore_settings(mainwindow, qsettings);
+
+   browserAndPlaylistTabWidget = mainwindow->browserAndPlaylistTabWidget();
+
+   /* We make sure to hook up the tab widget callback only after the tabs
+    * themselves have been added, but before changing to a specific one,
+    * to avoid the callback firing before the view type is set. */
+   QObject::connect(browserAndPlaylistTabWidget, SIGNAL(currentChanged(int)),
+         mainwindow, SLOT(onTabWidgetIndexChanged(int)));
+
+   /* Setting the last tab must come after setting the view type. */
    if (qsettings->contains("save_last_tab"))
    {
       int lastTabIndex = qsettings->value("last_tab", 0).toInt();
 
-      if (lastTabIndex >= 0 && browserAndPlaylistTabWidget->count() > lastTabIndex)
+      if (     lastTabIndex >= 0
+            && browserAndPlaylistTabWidget->count() > lastTabIndex)
       {
          browserAndPlaylistTabWidget->setCurrentIndex(lastTabIndex);
          mainwindow->onTabWidgetIndexChanged(lastTabIndex);
@@ -4791,39 +5121,7 @@ static void* ui_companion_qt_init(void)
       mainwindow->onTabWidgetIndexChanged(0);
    }
 
-   /* the initial playlist that is selected is based on the user's setting (initialPlaylist) */
-   for (i = 0; listWidget->count() && i < listWidget->count(); i++)
-   {
-      QString path;
-      QListWidgetItem *item = listWidget->item(i);
-
-      if (!item)
-         continue;
-
-      path = item->data(Qt::UserRole).toString();
-
-      if (path == initialPlaylist)
-      {
-         foundPlaylist = true;
-         listWidget->setRowHidden(i, false);
-         listWidget->setCurrentRow(i);
-         break;
-      }
-   }
-
-   /* couldn't find the user's initial playlist, just find anything */
-   if (!foundPlaylist)
-   {
-      for (i = 0; listWidget->count() && i < listWidget->count(); i++)
-      {
-         /* select the first non-hidden row */
-         if (!listWidget->isRowHidden(i))
-         {
-            listWidget->setCurrentRow(i);
-            break;
-         }
-      }
-   }
+   qt_companion_select_initial_playlist(listWidget, initialPlaylist);
 
    mainwindow->initContentTableWidget();
 
@@ -4838,7 +5136,8 @@ static void ui_companion_qt_toggle(void *data, bool force)
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
    bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
+   bool mouse_grabbed          = (input_state_get_ptr()->flags
+         & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
 
    if (ui_companion_toggle || force)
    {
@@ -4875,10 +5174,12 @@ static void ui_companion_qt_toggle(void *data, bool force)
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
+   ui_window_qt_t *win_handle = NULL;
 
    if (!handle)
       return;
+
+   win_handle = (ui_window_qt_t*)handle->window;
 
    switch (cmd)
    {
@@ -4886,7 +5187,7 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
       case CMD_EVENT_SHADER_PRESET_LOADED:
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         RARCH_LOG("[Qt]: Reloading shader parameters.\n");
+         RARCH_LOG("[Qt] Reloading shader parameters.\n");
          win_handle->qtWindow->deferReloadShaderParams();
 #endif
 #endif
@@ -4940,6 +5241,9 @@ ui_companion_driver_t ui_companion_qt = {
    NULL,
    ui_companion_qt_log_msg,
    ui_companion_qt_is_active,
+   NULL, /* get_app_icons */
+   NULL, /* set_app_icon */
+   NULL, /* get_app_icon_texture */
    &ui_browser_window_qt,
    &ui_msg_window_qt,
    &ui_window_qt,
@@ -4947,40 +5251,17 @@ ui_companion_driver_t ui_companion_qt = {
    "qt",
 };
 
-QStringList string_split_to_qt(QString str, char delim)
-{
-   int at;
-   QStringList list = QStringList();
-
-   for (at = 0;;)
-   {
-      /* Find next split */
-      int spl = str.indexOf(delim, at);
-
-      /* Store split into list of extensions */
-      list << str.mid(at, (spl < 0 ? -1 : spl - at));
-
-      /* No more splits */
-      if (spl < 0)
-         break;
-
-      at = spl + 1;
-   }
-
-   return list;
-}
-
 #define CORE_NAME_COLUMN    0
 #define CORE_VERSION_COLUMN 1
 
 LoadCoreTableWidget::LoadCoreTableWidget(QWidget *parent) :
-   QTableWidget(parent)
-{
-}
+   QTableWidget(parent) { }
 
 void LoadCoreTableWidget::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+   int key = event->key();
+   if (   key == Qt::Key_Return
+       || key == Qt::Key_Enter)
    {
       event->accept();
       emit enterPressed();
@@ -4996,11 +5277,14 @@ LoadCoreWindow::LoadCoreWindow(QWidget *parent) :
    ,m_statusLabel(new QLabel())
 {
    QHBoxLayout             *hbox = new QHBoxLayout();
-   QPushButton *customCoreButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
+   QPushButton *customCoreButton = new QPushButton(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
 
-   connect(customCoreButton, SIGNAL(clicked()), this, SLOT(onLoadCustomCoreClicked()));
+   connect(customCoreButton, SIGNAL(clicked()), this,
+         SLOT(onLoadCustomCoreClicked()));
    connect(m_table, SIGNAL(enterPressed()), this, SLOT(onCoreEnterPressed()));
-   connect(m_table, SIGNAL(cellDoubleClicked(int,int)), this, SLOT(onCellDoubleClicked(int,int)));
+   connect(m_table, SIGNAL(cellDoubleClicked(int,int)), this,
+         SLOT(onCellDoubleClicked(int,int)));
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
 
@@ -5021,13 +5305,13 @@ LoadCoreWindow::LoadCoreWindow(QWidget *parent) :
 void LoadCoreWindow::closeEvent(QCloseEvent *event)
 {
    emit windowClosed();
-
    QWidget::closeEvent(event);
 }
 
 void LoadCoreWindow::keyPressEvent(QKeyEvent *event)
 {
-   if (event->key() == Qt::Key_Escape)
+   int key = event->key();
+   if (key == Qt::Key_Escape)
    {
       event->accept();
       close();
@@ -5048,13 +5332,18 @@ void LoadCoreWindow::onCellDoubleClicked(int, int)
 
 void LoadCoreWindow::loadCore(const char *path)
 {
-   QProgressDialog progress(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE), QString(), 0, 0, this);
-   progress.setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
+   QProgressDialog progress(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE), QString(), 0, 0, this);
+   progress.setWindowTitle(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
    progress.setMinimumDuration(0);
    progress.setValue(progress.minimum());
    progress.show();
 
-   /* Because core loading will block, we need to go ahead and process pending events that would allow the progress dialog to fully show its contents before actually starting the core loading process. Must call processEvents() twice. */
+   /* Because core loading will block, we need to go ahead and
+    * process pending events that would allow the progress dialog
+    * to fully show its contents before actually starting the
+    * core loading process. Must call processEvents() twice. */
    qApp->processEvents();
    qApp->processEvents();
 
@@ -5068,7 +5357,8 @@ void LoadCoreWindow::loadCore(const char *path)
 
    if (!command_event(CMD_EVENT_LOAD_CORE, NULL))
    {
-      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR), msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));
+      QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
+            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));
       return;
    }
 
@@ -5080,36 +5370,26 @@ void LoadCoreWindow::loadCore(const char *path)
 
 void LoadCoreWindow::onCoreEnterPressed()
 {
-   QByteArray pathArray;
-   const char               *pathData = NULL;
    QTableWidgetItem *selectedCoreItem =
       m_table->item(m_table->currentRow(), CORE_NAME_COLUMN);
    QVariantHash                  hash = selectedCoreItem->data(
          Qt::UserRole).toHash();
    QString                       path = hash["path"].toString();
 
-   pathArray.append(path);
-   pathData                           = pathArray.constData();
-
-   loadCore(pathData);
+   loadCore(path.toUtf8().constData());
 }
 
 void LoadCoreWindow::onLoadCustomCoreClicked()
 {
-   size_t _len;
    QString path;
    QByteArray pathArray;
-   char core_ext[16];
    char filters[128];
    const char *pathData          = NULL;
    settings_t *settings          = config_get_ptr();
    const char *path_dir_libretro = settings->paths.directory_libretro;
-
-   frontend_driver_get_core_extension(core_ext, sizeof(core_ext));
-
-   _len  = strlcpy(filters, "Cores (*.", sizeof(filters));
-   _len += strlcpy(filters + _len, core_ext,     sizeof(filters) - _len);
-   strlcpy(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
+   size_t _len  = strlcpy_lit(filters, "Cores (*.", sizeof(filters));
+   _len += frontend_driver_get_core_extension(filters + _len, sizeof(filters) - _len);
+   strlcpy_lit(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
 
    path                          = QFileDialog::getOpenFileName(
          this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),
@@ -5118,7 +5398,7 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    if (path.isEmpty())
       return;
 
-   pathArray.append(path);
+   pathArray.append(path.toUtf8());
    pathData                      = pathArray.constData();
 
    loadCore(pathData);
@@ -5130,7 +5410,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    unsigned i;
    QStringList horizontal_header_labels;
    core_info_list_t *cores = NULL;
-   QDesktopWidget *desktop = qApp->desktop();
+   QScreen *desktop = qApp->primaryScreen();
    QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
@@ -5159,13 +5439,13 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
          QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
          const char               *name = core->display_name;
 
-         if (string_is_empty(name))
+         if (!name || !*name)
             name                        = path_basename(core->path);
 
          name_item                      = new QTableWidgetItem(name);
 
-         hash["path"]                   = core->path;
-         hash["extensions"]             = string_split_to_qt(QString(core->supported_extensions), '|');
+         hash["path"]                   = QByteArray(core->path);
+         hash["extensions"]             = QString(core->supported_extensions).split('|');
 
          name_item->setData(Qt::UserRole, hash);
          name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
@@ -5214,8 +5494,7 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
 
       if (rowsToHide.size() != m_table->rowCount())
       {
-         int i = 0;
-
+         int i;
          for (i = 0; i < rowsToHide.count() && rowsToHide.count() > 0; i++)
          {
             const int &row = rowsToHide.at(i);
@@ -5230,5 +5509,9 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    m_table->selectRow(0);
    m_table->setAlternatingRowColors(true);
 
-   resize(qMin(desktopRect.width(), contentsMargins().left() + m_table->horizontalHeader()->length() + contentsMargins().right()), height());
+   resize(((desktopRect.width()) < (contentsMargins().left()
+            + m_table->horizontalHeader()->length()
+            + contentsMargins().right()) ? (desktopRect.width()) : (contentsMargins().left()
+            + m_table->horizontalHeader()->length()
+            + contentsMargins().right())), height());
 }

@@ -30,6 +30,9 @@ struct panning_data
 {
    float left[2];
    float right[2];
+   /* Q16 fixed-point mirror of left/right, for the int16 path. */
+   int32_t left_i[2];
+   int32_t right_i[2];
 };
 
 static void panning_free(void *data)
@@ -53,6 +56,39 @@ static void panning_process(void *data, struct dspfilter_output *output,
       float right = out[1];
       out[0]      = left * pan->left[0]  + right * pan->left[1];
       out[1]      = left * pan->right[0] + right * pan->right[1];
+   }
+}
+
+/* Deterministic int16 path: same 2x2 mix as panning_process() but in Q16
+ * fixed point (int64 accumulate, round-half-away-from-zero, saturate). */
+static void panning_process_i16(void *data,
+      struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   unsigned i;
+   struct panning_data *pan = (struct panning_data*)data;
+   int16_t *out;
+
+   output->samples          = input->samples;
+   output->frames           = input->frames;
+   out                      = output->samples;
+
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      int32_t left  = out[0];
+      int32_t right = out[1];
+      int64_t l     = (int64_t)left * pan->left_i[0]
+                    + (int64_t)right * pan->left_i[1];
+      int64_t r     = (int64_t)left * pan->right_i[0]
+                    + (int64_t)right * pan->right_i[1];
+      l = (l >= 0) ? ((l + 32768) >> 16) : -(((-l) + 32768) >> 16);
+      r = (r >= 0) ? ((r + 32768) >> 16) : -(((-r) + 32768) >> 16);
+      if      (l >  32767) l =  32767;
+      else if (l < -32768) l = -32768;
+      if      (r >  32767) r =  32767;
+      else if (r < -32768) r = -32768;
+      out[0] = (int16_t)l;
+      out[1] = (int16_t)r;
    }
 }
 
@@ -81,6 +117,11 @@ static void *panning_init(const struct dspfilter_info *info,
    memcpy(pan->right, (num_right == 2) ?
          right : default_right, sizeof(pan->right));
 
+   pan->left_i[0]  = (int32_t)floor((double)pan->left[0]  * 65536.0 + 0.5);
+   pan->left_i[1]  = (int32_t)floor((double)pan->left[1]  * 65536.0 + 0.5);
+   pan->right_i[0] = (int32_t)floor((double)pan->right[0] * 65536.0 + 0.5);
+   pan->right_i[1] = (int32_t)floor((double)pan->right[1] * 65536.0 + 0.5);
+
    config->free(left);
    config->free(right);
 
@@ -95,6 +136,8 @@ static const struct dspfilter_implementation panning = {
    DSPFILTER_API_VERSION,
    "Panning",
    "panning",
+
+   panning_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

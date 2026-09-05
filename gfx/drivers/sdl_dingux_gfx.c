@@ -24,6 +24,7 @@
 
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
+#include <memcpy_nt.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
@@ -38,7 +39,7 @@
 #include "../../dingux/dingux_utils.h"
 
 #include "../../verbosity.h"
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../bitmapfont.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #if defined(DINGUX_BETA)
@@ -133,7 +134,7 @@ static void sdl_dingux_blit_text16(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -216,7 +217,7 @@ static void sdl_dingux_blit_text32(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -271,9 +272,9 @@ static void sdl_dingux_blit_text32(
    }
 }
 
-static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
+static void sdl_dingux_blit_video_mode_err_msg(sdl_dingux_video_t *vid)
 {
-   const char *error_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
+   const char *err_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
    char display_mode[64];
 
    display_mode[0] = '\0';
@@ -292,7 +293,7 @@ static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
    {
       sdl_dingux_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_dingux_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -302,7 +303,7 @@ static void sdl_dingux_blit_video_mode_error_msg(sdl_dingux_video_t *vid)
    {
       sdl_dingux_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_dingux_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -349,7 +350,7 @@ static void sdl_dingux_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_drv_name))
+   if (!input_drv_name || !*input_drv_name)
       return;
 
    if (string_is_equal(input_drv_name, "sdl_dingux"))
@@ -472,7 +473,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (hw_refresh_rate == 0.0f)
    {
-      RARCH_ERR("[SDL1]: Failed to set video refresh rate\n");
+      RARCH_ERR("[SDL1] Failed to set video refresh rate.\n");
       goto error;
    }
 
@@ -489,7 +490,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -520,7 +521,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
        || vid->osd_font->glyph_max <
             (SDL_DINGUX_NUM_FONT_GLYPHS - 1))
    {
-      RARCH_ERR("[SDL1]: Failed to init OSD font\n");
+      RARCH_ERR("[SDL1] Failed to init OSD font.\n");
       goto error;
    }
 
@@ -638,7 +639,7 @@ static void sdl_dingux_set_output(
    /* Check whether selected display mode is valid */
    if (unlikely(!vid->screen))
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
 
       /* We must have a valid SDL surface
        * > Use known good fallback display mode
@@ -653,7 +654,7 @@ static void sdl_dingux_set_output(
             surface_flags);
 
       if (unlikely(!vid->screen))
-         RARCH_ERR("[SDL1]: Critical - Failed to init fallback SDL surface: %s\n", SDL_GetError());
+         RARCH_ERR("[SDL1] Critical - Failed to init fallback SDL surface: %s.\n", SDL_GetError());
 
       vid->mode_valid = false;
    }
@@ -692,28 +693,27 @@ static void sdl_dingux_blit_frame16(sdl_dingux_video_t *vid,
          (vid->frame_padding_y * dst_pitch));
 
    /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
+    * same pitch, perform fast copy of raw pixel data.
+    * Streaming stores: the surface is written once here and next
+    * touched by the display engine, and on these SoCs (256 KB L2 or
+    * less) letting the copy allocate ~150 KB of lines evicts the
+    * core's working set every frame.  memcpy_nt also skips the
+    * read-for-ownership DRAM read of every destination line. */
    if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
+      memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
-      /* Otherwise copy pixel data line-by-line */
-
-      /* 16 bit - divide pitch by 2 */
-      uint16_t in_stride  = (uint16_t)(src_pitch >> 1);
-      uint16_t out_stride = (uint16_t)(dst_pitch >> 1);
-      size_t y;
+      /* Otherwise copy the padded rectangle line by line.  Still
+       * streaming: a single line is far below memcpy_nt's threshold,
+       * so memcpy_nt per line would degrade to memcpy and reintroduce
+       * exactly the eviction the fast path above avoids. */
 
       /* If SDL surface has horizontal padding,
        * shift output image to the right */
       out_ptr += vid->frame_padding_x;
 
-      for (y = 0; y < height; y++)
-      {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint16_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
-      }
+      memcpy_nt_2d(out_ptr, dst_pitch, in_ptr, src_pitch,
+            width * sizeof(uint16_t), height);
    }
 }
 
@@ -727,28 +727,21 @@ static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
          (vid->frame_padding_y * dst_pitch));
 
    /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
+    * same pitch, perform fast copy of raw pixel data.
+    * Streaming stores; see the 16-bit path above. */
    if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
+      memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
-      /* Otherwise copy pixel data line-by-line */
-
-      /* 32 bit - divide pitch by 4 */
-      uint32_t in_stride  = (uint32_t)(src_pitch >> 2);
-      uint32_t out_stride = (uint32_t)(dst_pitch >> 2);
-      size_t y;
+      /* Otherwise copy the padded rectangle line by line; see the
+       * 16-bit path above for why this is not memcpy_nt per line. */
 
       /* If SDL surface has horizontal padding,
        * shift output image to the right */
       out_ptr += vid->frame_padding_x;
 
-      for (y = 0; y < height; y++)
-      {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint32_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
-      }
+      memcpy_nt_2d(out_ptr, dst_pitch, in_ptr, src_pitch,
+            width * sizeof(uint32_t), height);
    }
 }
 
@@ -822,7 +815,7 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
       /* If current display mode is invalid,
        * just display an error message */
       else
-         sdl_dingux_blit_video_mode_error_msg(vid);
+         sdl_dingux_blit_video_mode_err_msg(vid);
 
       vid->was_in_menu = false;
    }
@@ -1086,10 +1079,11 @@ static const video_poke_interface_t sdl_dingux_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void sdl_dingux_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -1124,6 +1118,8 @@ video_driver_t video_sdl_dingux = {
 #endif
    sdl_dingux_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

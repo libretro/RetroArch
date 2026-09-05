@@ -35,131 +35,6 @@
 
 RETRO_BEGIN_DECLS
 
-#define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
-   glBindTexture(GL_TEXTURE_2D, id); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter); \
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter)
-
-#if defined(HAVE_PSGL)
-#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
-#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
-#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
-#elif (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
-#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
-#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
-#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
-#else
-#define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER
-#define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE
-#define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0
-#endif
-
-#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1) || defined(HAVE_OPENGLES_3_2)
-#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
-#if defined(HAVE_OPENGLES2)
-#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
-#else
-#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8
-#endif
-#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
-#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
-#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
-#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_EXT
-#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_EXT
-#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
-#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_EXT
-#elif defined(HAVE_PSGL)
-#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_OES
-#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_SCE
-#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_OES
-#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT_OES
-#else
-#define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER
-#define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8
-#define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
-#define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
-#endif
-
-#if (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
-#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
-#elif defined(HAVE_PSGL)
-#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_OES
-#else
-#define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE
-#endif
-
-#if defined(HAVE_PSGL)
-#define glGenerateMipmap glGenerateMipmapOES
-#endif
-
-#if defined(__APPLE__) || defined(HAVE_PSGL)
-#ifndef GL_RGBA32F
-#define GL_RGBA32F GL_RGBA32F_ARB
-#endif
-#endif
-
-#if defined(HAVE_PSGL)
-#define RARCH_GL_INTERNAL_FORMAT32 GL_ARGB_SCE
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB5 /* TODO: Verify if this is really 565 or just 555. */
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
-#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
-#define RARCH_GL_FORMAT16 GL_RGB5
-#elif defined(HAVE_OPENGLES)
-/* Imgtec/SGX headers have this missing. */
-#ifndef GL_BGRA_EXT
-#define GL_BGRA_EXT 0x80E1
-#endif
-#ifndef GL_BGRA8_EXT
-#define GL_BGRA8_EXT 0x93A1
-#endif
-#ifdef IOS
-/* Stupid Apple */
-#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
-#else
-#define RARCH_GL_INTERNAL_FORMAT32 GL_BGRA_EXT
-#endif
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGB
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA_EXT
-#define RARCH_GL_TEXTURE_TYPE16 GL_RGB
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_BYTE
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_SHORT_5_6_5
-#else
-/* On desktop, we always use 32-bit. */
-#define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA8
-#define RARCH_GL_INTERNAL_FORMAT16 GL_RGBA8
-#define RARCH_GL_TEXTURE_TYPE32 GL_BGRA
-#define RARCH_GL_TEXTURE_TYPE16 GL_BGRA
-#define RARCH_GL_FORMAT32 GL_UNSIGNED_INT_8_8_8_8_REV
-#define RARCH_GL_FORMAT16 GL_UNSIGNED_INT_8_8_8_8_REV
-
-/* GL_RGB565 internal format isn't in desktop GL
- * until 4.1 core (ARB_ES2_compatibility).
- * Check for this. */
-#ifndef GL_RGB565
-#define GL_RGB565 0x8D62
-#endif
-#define RARCH_GL_INTERNAL_FORMAT16_565 GL_RGB565
-#define RARCH_GL_TEXTURE_TYPE16_565 GL_RGB
-#define RARCH_GL_FORMAT16_565 GL_UNSIGNED_SHORT_5_6_5
-#endif
-
-#if defined(HAVE_OPENGLES2) /* TODO: Figure out exactly what. */
-#define NO_GL_CLAMP_TO_BORDER
-#endif
-
-#if defined(HAVE_OPENGLES)
-#ifndef GL_UNPACK_ROW_LENGTH
-#define GL_UNPACK_ROW_LENGTH  0x0CF2
-#endif
-
-#ifndef GL_SRGB_ALPHA_EXT
-#define GL_SRGB_ALPHA_EXT 0x8C42
-#endif
-#endif
-
 typedef struct gl2 gl2_t;
 
 enum gl2_flags
@@ -185,7 +60,8 @@ enum gl2_flags
    GL2_FLAG_OVERLAY_FULLSCREEN     = (1 << 18),
    GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
    GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
-   GL2_FLAG_NONE                   = (1 << 21)
+   GL2_FLAG_NONE                   = (1 << 21),
+   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22)
 };
 
 struct gl2
@@ -227,8 +103,8 @@ struct gl2
    unsigned textures;
    unsigned fbo_feedback_pass;
    unsigned rotation;
-   unsigned vp_out_width;
-   unsigned vp_out_height;
+   unsigned out_vp_width;
+   unsigned out_vp_height;
    unsigned tex_w;
    unsigned tex_h;
    unsigned base_size; /* 2 or 4 */
@@ -256,6 +132,31 @@ struct gl2
 
    char device_str[128];
    bool pbo_readback_valid[4];
+   /* scRGB (FP16) default framebuffer support (Windows/WGL HDR):
+    * everything renders into this SDR offscreen and one GLSL 1.20
+    * pass encodes it into the FP16 backbuffer at end of frame.
+    * All zero / inactive on SDR contexts. */
+   struct
+   {
+      GLuint fbo;
+      GLuint tex;
+      GLuint program;
+      GLint  loc_tex;
+      GLint  loc_nits;
+      GLint  loc_expand;
+      unsigned width;
+      unsigned height;
+      /* Separate layer for the SDR UI when the content is PQ: one
+       * encode cannot treat some pixels as Rec.2020 PQ and others as
+       * gamma. Mirrors the glcore driver's ui_fbo/ui_tex. */
+      GLuint   ui_fbo;
+      GLuint   ui_tex;
+      GLint    loc_ui_tex;
+      GLint    loc_mode;
+      GLint    loc_ui_nits;
+      bool   active;
+   } scrgb;
+
 };
 
 bool gl2_load_luts(

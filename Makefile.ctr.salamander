@@ -6,7 +6,7 @@ CONSOLE_LOG             = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
-USE_CTRULIB_2          ?= 0
+USE_CTRULIB_2 ?= $(if $(shell grep -sl gspPresentBuffer $(or $(CTRULIB),$(DEVKITPRO)/libctru)/include/3ds/services/gspgpu.h),1,0)
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -31,6 +31,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/rstrtod.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \
@@ -38,6 +39,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/compat/compat_strl.o \
 		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \
@@ -83,12 +85,7 @@ LIBDIRS := -L. -L$(CTRULIB)/lib
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
-CFLAGS	+=	-mword-relocations \
-			-fomit-frame-pointer -ffast-math \
-         -Werror=implicit-function-declaration \
-			$(ARCH)
-
-#CFLAGS	+= -Wall
+CFLAGS	+=	-mword-relocations -fomit-frame-pointer $(ARCH)
 CFLAGS	+=	-DARM11 -D_3DS
 
 ifeq ($(strip $(USE_CTRULIB_2)),1)
@@ -105,17 +102,18 @@ ifeq ($(CONSOLE_LOG), 1)
    CFLAGS	+= -DCONSOLE_LOG
 endif
 
-CFLAGS += -I. -Ideps/7zip -Ideps/stb -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
+CFLAGS += -I. -Ilibretro-common/include
 
 #CFLAGS += -DRARCH_INTERNAL
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	:=	-g $(ARCH) -O3
 LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-CFLAGS   += -std=gnu99 -ffast-math
+CFLAGS   += -std=gnu99
 
 LIBS	:= -lctru -lm
 

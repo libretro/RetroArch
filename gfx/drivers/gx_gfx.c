@@ -34,12 +34,12 @@
 #endif
 
 #ifdef HW_RVL
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 
 #include <defines/gx_defines.h>
 
-#include "../drivers_font_renderer/bitmap.h"
+#include "../bitmapfont.h"
 #include "../../configuration.h"
 #include "../../driver.h"
 
@@ -73,6 +73,9 @@
 	); \
   }
 #endif
+
+void VIDEO_SetTrapFilter(bool enable);
+void VIDEO_SetGamma(int gamma);
 
 enum
 {
@@ -175,9 +178,17 @@ static struct
    GXTexObj obj;
 } g_tex;
 
+/* GX_TF_RGB5A3 stores 16 bpp in 4x4 tiles; convert_texture16
+ * writes two pixels per uint32_t store, so the buffer needs
+ * (max_width * max_height) / 2 uint32_t entries. The largest
+ * RGUI surface gx_set_video_mode hands to convert_texture16
+ * is 560 x 240 (RGUI_ASPECT_RATIO_21_9 cases). The previous
+ * 240*212 sizing overflowed by ~64 KB on 21:9. */
+#define GX_MENU_TEX_MAX_WIDTH  560
+#define GX_MENU_TEX_MAX_HEIGHT 240
 static struct
 {
-   uint32_t data[240 * 212];
+   uint32_t data[(GX_MENU_TEX_MAX_WIDTH * GX_MENU_TEX_MAX_HEIGHT) / 2];
    GXTexObj obj;
 } menu_tex ATTRIBUTE_ALIGN(32);
 
@@ -197,28 +208,30 @@ static size_t display_list_size        = 0;
 
 static GXRModeObj gx_mode;
 
-float verts[16] ATTRIBUTE_ALIGN(32)     = {
+/* All three vertex/colour arrays below are read-only after init.
+ * Move them to .rodata and give them internal linkage. */
+static const float verts[16] ATTRIBUTE_ALIGN(32) = {
    -1,  1, -0.5,
     1,  1, -0.5,
    -1, -1, -0.5,
     1, -1, -0.5,
 };
 
-float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
+static const float vertex_ptr[8] ATTRIBUTE_ALIGN(32) = {
    0, 0,
    1, 0,
    0, 1,
    1, 1,
 };
 
-u8 color_ptr[16] ATTRIBUTE_ALIGN(32)    = {
+static const u8 color_ptr[16] ATTRIBUTE_ALIGN(32) = {
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
    0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-unsigned menu_gx_resolutions[][2] = {
+static const unsigned menu_gx_resolutions[][2] = {
    { 0, 0 }, /* Let the system choose its preferred resolution, for NTSC is 640x480 */
    { 512, 192 },
    { 598, 200 },
@@ -582,7 +595,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_Flush();
    VIDEO_WaitVSync();
 
-   RARCH_LOG("[GX]: Resolution: %dx%d (%s)\n", gx_mode.fbWidth,
+   RARCH_LOG("[GX] Resolution: %dx%d (%s).\n", gx_mode.fbWidth,
          gx_mode.efbHeight, (gx_mode.viTVMode & 3) == VI_INTERLACE
          ? "interlaced" : "progressive");
 
@@ -654,7 +667,6 @@ static void setup_video_mode(gx_video_t *gx)
 static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
       unsigned g_filter)
 {
-   size_t fb_pitch;
    unsigned fb_width, fb_height;
    GXTexObj *fb_ptr   	   = (GXTexObj*)&g_tex.obj;
    GXTexObj *menu_ptr 	   = (GXTexObj*)&menu_tex.obj;
@@ -668,7 +680,6 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
 
    fb_width                = p_disp->framebuf_width;
    fb_height               = p_disp->framebuf_height;
-   fb_pitch                = p_disp->framebuf_pitch;
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32)
@@ -713,9 +724,12 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-   GX_SetArray(GX_VA_POS, verts, 3 * sizeof(float));
-   GX_SetArray(GX_VA_TEX0, vertex_ptr, 2 * sizeof(float));
-   GX_SetArray(GX_VA_CLR0, color_ptr, 4 * sizeof(u8));
+   /* GX_SetArray takes void* rather than const void*; the arrays are
+    * read-only from our side, the GP just streams them, so the cast
+    * is well-defined. */
+   GX_SetArray(GX_VA_POS,  (void*)verts,      3 * sizeof(float));
+   GX_SetArray(GX_VA_TEX0, (void*)vertex_ptr, 2 * sizeof(float));
+   GX_SetArray(GX_VA_CLR0, (void*)color_ptr,  4 * sizeof(u8));
 
    GX_SetNumTexGens(1);
    GX_SetNumChans(1);
@@ -730,7 +744,7 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
 
    if (gx->scale != video->input_scale || gx->rgb32 != video->rgb32)
    {
-      RARCH_LOG("[GX]: Reallocate texture.\n");
+      RARCH_LOG("[GX] Reallocate texture.\n");
       free(g_tex.data);
       g_tex.data = memalign(32,
             RARCH_SCALE_BASE * RARCH_SCALE_BASE * video->input_scale *
@@ -739,13 +753,13 @@ static void init_vtx(gx_video_t *gx, const video_info_t *video,
 
       if (!g_tex.data)
       {
-         RARCH_ERR("[GX]: Error allocating video texture\n");
+         RARCH_ERR("[GX] Error allocating video texture.\n");
          exit(1);
       }
    }
 
-   DCFlushRange(g_tex.data, (g_tex.width *
-         g_tex.height * video->rgb32) ? 4 : 2);
+   DCFlushRange(g_tex.data, g_tex.width * g_tex.height *
+            (video->rgb32 ? 4 : 2));
 
    gx->rgb32 = video->rgb32;
    gx->scale = video->input_scale;
@@ -992,7 +1006,6 @@ static void gx_resize(gx_video_t *gx,
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    const global_t           *global = global_get_ptr();
-   settings_t             *settings = config_get_ptr();
    unsigned width                   = gx->vp.full_width;
    unsigned height                  = gx->vp.full_height;
 
@@ -1013,58 +1026,23 @@ static void gx_resize(gx_video_t *gx,
    /* Ignore this for custom resolutions */
    if (gx->keep_aspect && gx_mode.efbHeight >= 192)
    {
+#ifdef HW_RVL
+      float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
+         4.0 / 3.0 : 16.0 / 9.0;
+#else
+      float device_aspect = 4.0 / 3.0;
+#endif
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
          desired_aspect    = 1.0;
       if (     (gx->orientation == ORIENTATION_VERTICAL)
             || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
          desired_aspect    = 1.0 / desired_aspect;
-
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-
-         if (!custom_vp->width || !custom_vp->height)
-         {
-            custom_vp->x      = 0;
-            custom_vp->y      = 0;
-            custom_vp->width  = gx->vp.full_width;
-            custom_vp->height = gx->vp.full_height;
-         }
-
-         x      = custom_vp->x;
-         y      = custom_vp->y;
-         width  = custom_vp->width;
-         height = custom_vp->height;
-      }
-      else
-      {
-         float delta;
-#ifdef HW_RVL
-         float device_aspect = CONF_GetAspectRatio() == CONF_ASPECT_4_3 ?
-            4.0 / 3.0 : 16.0 / 9.0;
-#else
-         float device_aspect = 4.0 / 3.0;
-#endif
-         if (fabs(device_aspect - desired_aspect) < 0.0001)
-         {
-            /* If the aspect ratios of screen and desired aspect ratio
-             * are sufficiently equal (floating point stuff),
-             * assume they are actually equal. */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-            x     = (unsigned)(width * (0.5 - delta));
-            width = (unsigned)(2.0 * width * delta);
-         }
-         else
-         {
-            delta  = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-            y      = (unsigned)(height * (0.5 - delta));
-            height = (unsigned)(2.0 * height * delta);
-         }
-      }
+      video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
+      x      = gx->vp.x;
+      y      = gx->vp.y;
+      width  = gx->vp.width;
+      height = gx->vp.height;
    }
 
    /* Overscan correction */
@@ -1160,26 +1138,26 @@ static void gx_resize(gx_video_t *gx,
 static void gx_blit_line(gx_video_t *gx,
       unsigned x, unsigned y, const char *message)
 {
-   unsigned width, height, h;
-   bool double_width = false;
-   const GXColor b   = { 0x00, 0x00, 0x00, 0xFF };
-   const GXColor w   = { 0xFF, 0xFF, 0xFF, 0xFF };
-
+   /* Null-check before any deref through gx, so the const
+    * initialisers below are safe. */
    if (!gx || !*message)
       return;
-
-   double_width = gx_mode.fbWidth > 400;
-   width        = (double_width ? 2 : 1);
-   height       = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
-
-   for (h = 0; h < height; h++)
    {
-      GX_PokeARGB(x, y + h, b);
-      if (double_width)
-         GX_PokeARGB(x + 1, y + h, b);
-   }
+      const GXColor  b            = { 0x00, 0x00, 0x00, 0xFF };
+      const GXColor  w            = { 0xFF, 0xFF, 0xFF, 0xFF };
+      const bool     double_width = gx_mode.fbWidth > 400;
+      const unsigned width        = double_width ? 2 : 1;
+      const unsigned height       = FONT_HEIGHT * (gx->double_strike ? 1 : 2);
+      unsigned       h;
 
-   x += (double_width ? 2 : 1);
+      for (h = 0; h < height; h++)
+      {
+         GX_PokeARGB(x, y + h, b);
+         if (double_width)
+            GX_PokeARGB(x + 1, y + h, b);
+      }
+
+      x += width;
 
    while (*message)
    {
@@ -1224,8 +1202,9 @@ static void gx_blit_line(gx_video_t *gx,
             GX_PokeARGB(x + (FONT_WIDTH * width) + 1, y + h, b);
       }
 
-      x += FONT_WIDTH_STRIDE * (double_width ? 2 : 1);
+      x += FONT_WIDTH_STRIDE * width;
       message++;
+   }
    }
 }
 
@@ -1347,10 +1326,11 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void gx_get_poke_interface(void *data,
@@ -1553,9 +1533,9 @@ static void gx_get_overlay_interface(void *data,
 
 static void gx_free(void *data)
 {
-#ifdef HAVE_OVERLAY
    gx_video_t *gx = (gx_video_t*)data;
 
+#ifdef HAVE_OVERLAY
    gx_free_overlay(gx);
 #endif
 
@@ -1568,7 +1548,35 @@ static void gx_free(void *data)
 
    if (g_video_cond)
       OSCloseThreadQueue(g_video_cond);
+   /* OSCond is lwpq_t, an unsigned handle rather than a pointer.  Zero
+    * is what the static starts as and what the test above reads as
+    * closed, so that is the value to put back - not libogc's
+    * LWP_TQUEUE_NULL, which is 0xffffffff and would make the test above
+    * try to close the queue a second time. */
    g_video_cond = 0;
+
+   /* g_tex.data is allocated in init_vtx via memalign(32, ...) and was
+    * previously leaked on every gx_free / re-init pair. */
+   if (g_tex.data)
+   {
+      free(g_tex.data);
+      g_tex.data = NULL;
+   }
+
+   /* Both XFB framebuffers were allocated in setup_video_mode through
+    * memalign + MEM_K0_TO_K1. free() needs the cached alias. */
+   if (gx)
+   {
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         if (gx->framebuf[i])
+         {
+            free(MEM_K1_TO_K0(gx->framebuf[i]));
+            gx->framebuf[i] = NULL;
+         }
+      }
+   }
 
    free(data);
 }
@@ -1660,9 +1668,13 @@ static bool gx_frame(void *data, const void *frame,
             fb_width,
             fb_height,
             fb_pitch);
+      /* Flush exactly the bytes we wrote: rows * bytes_per_row.
+       * Pre-patch used fb_width * fb_pitch, conflating width and
+       * height and flushing fb_width^2 * 2 bytes, which overshot
+       * by hundreds of KB on 21:9 menus. */
       DCFlushRange(
             menu_tex.data,
-            fb_width * fb_pitch);
+            fb_height * fb_pitch);
    }
 
 #ifdef HAVE_MENU
@@ -1766,6 +1778,8 @@ video_driver_t video_gx = {
 #endif
    gx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

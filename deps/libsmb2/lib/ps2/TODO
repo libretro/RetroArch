@@ -1,0 +1,6 @@
+TODO:
+* Tweak libsmb2 to make the irx smaller
+* Add a keeaplive devctl that will try to smb2_echo() all
+  connected shares.
+* Setting up the logging and getting the network to work only works
+  half the time. Do we need to re-try a few times?

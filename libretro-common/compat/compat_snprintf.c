@@ -35,12 +35,12 @@
 
 static int c89_vscprintf_retro__(const char *fmt, va_list pargs)
 {
-   int retval;
+   int _len;
    va_list argcopy;
    va_copy(argcopy, pargs);
-   retval = vsnprintf(NULL, 0, fmt, argcopy);
+   _len = vsnprintf(NULL, 0, fmt, argcopy);
    va_end(argcopy);
-   return retval;
+   return _len;
 }
 #endif
 
@@ -48,36 +48,30 @@ static int c89_vscprintf_retro__(const char *fmt, va_list pargs)
 
 int c99_vsnprintf_retro__(char *s, size_t len, const char *fmt, va_list ap)
 {
-   int count = -1;
-
+   int _len = -1;
    if (len != 0)
    {
 #if (_MSC_VER <= 1310)
-      count = _vsnprintf(s, len - 1, fmt, ap);
+      _len = _vsnprintf(s, len - 1, fmt, ap);
 #else
-      count = _vsnprintf_s(s, len, len - 1, fmt, ap);
+      _len = _vsnprintf_s(s, len, len - 1, fmt, ap);
 #endif
    }
-
-   if (count == -1)
-       count = _vscprintf(fmt, ap);
-
+   if (_len == -1)
+       _len = _vscprintf(fmt, ap);
    /* there was no room for a NULL, so truncate the last character */
-   if (count == len && len)
+   if (_len == len && len)
       s[len - 1] = '\0';
-
-   return count;
+   return _len;
 }
 
 int c99_snprintf_retro__(char *s, size_t len, const char *fmt, ...)
 {
-   int count;
+   int _len;
    va_list ap;
-
    va_start(ap, fmt);
-   count = c99_vsnprintf_retro__(s, len, fmt, ap);
+   _len = c99_vsnprintf_retro__(s, len, fmt, ap);
    va_end(ap);
-
-   return count;
+   return _len;
 }
 #endif

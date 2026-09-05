@@ -29,15 +29,6 @@
 #include <file/nbio.h>
 #include <encodings/utf.h>
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
@@ -50,12 +41,17 @@
 #endif
 #endif
 
+/* Default chunk size for non-blocking I/O iterations (bytes).
+ * Callers may override per-handle via nbio_set_chunk_size(). */
+#define NBIO_DEFAULT_CHUNK_SIZE 65536
+
 struct nbio_stdio_t
 {
    FILE* f;
    void* data;
    size_t progress;
    size_t len;
+   size_t chunk_size;
    /*
     * possible values:
     * NBIO_READ, NBIO_WRITE - obvious
@@ -66,10 +62,11 @@ struct nbio_stdio_t
    signed char mode;
 };
 
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
-static const char    *stdio_modes[] = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
-#else
-static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static const char    *stdio_modes[]  = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
+#endif
+#if defined(_WIN32) && (!defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME))
+static const wchar_t *stdio_modes_w[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
 static int64_t fseek_wrap(FILE *f, int64_t offset, int origin)
@@ -101,11 +98,24 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    void *buf                   = NULL;
    struct nbio_stdio_t* handle = NULL;
    int64_t len                 = 0;
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   FILE* f;
+
+   if (win32_needs_local_encoding())
+      f                        = fopen(filename, stdio_modes[mode]);
+   else
+   {
+      wchar_t *filename_wide   = utf8_to_utf16_string_alloc(filename);
+      f                        = _wfopen(filename_wide, stdio_modes_w[mode]);
+
+      if (filename_wide)
+         free(filename_wide);
+   }
+#elif !defined(_WIN32) || defined(LEGACY_WIN32)
    FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
    wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
-   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes_w[mode]);
 
    if (filename_wide)
       free(filename_wide);
@@ -113,12 +123,15 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    if (!f)
       return NULL;
 
-   handle                = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
+   handle = (struct nbio_stdio_t*)malloc(sizeof(struct nbio_stdio_t));
 
    if (!handle)
-      goto error;
+   {
+      fclose(f);
+      return NULL;
+   }
 
-   handle->f             = f;
+   handle->f = f;
 
    switch (mode)
    {
@@ -143,20 +156,19 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
 #endif
 
    if (len && !buf)
-      goto error;
+   {
+      free(handle);
+      fclose(f);
+      return NULL;
+   }
 
    handle->data          = buf;
    handle->len           = len;
    handle->progress      = handle->len;
+   handle->chunk_size    = NBIO_DEFAULT_CHUNK_SIZE;
    handle->op            = -2;
 
    return handle;
-
-error:
-   if (handle)
-      free(handle);
-   fclose(f);
-   return NULL;
 }
 
 static void nbio_stdio_begin_read(void *data)
@@ -190,11 +202,13 @@ static void nbio_stdio_begin_write(void *data)
 
 static bool nbio_stdio_iterate(void *data)
 {
-   size_t amount               = 65536;
+   size_t amount               = 0;
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
 
    if (!handle)
       return false;
+
+   amount = handle->chunk_size;
 
    if (amount > handle->len - handle->progress)
       amount = handle->len - handle->progress;
@@ -202,14 +216,34 @@ static bool nbio_stdio_iterate(void *data)
    switch (handle->op)
    {
       case NBIO_READ:
+      {
+         size_t got;
          if (handle->mode == BIO_READ)
          {
             amount = handle->len;
-            fread((char*)handle->data, 1, amount, handle->f);
+            got    = fread((char*)handle->data, 1, amount, handle->f);
          }
          else
-            fread((char*)handle->data + handle->progress, 1, amount, handle->f);
+            got    = fread((char*)handle->data + handle->progress,
+                  1, amount, handle->f);
+         if (got != amount)
+         {
+            /* I/O error, or the file shrank underneath us: freeze
+             * progress at the bytes actually delivered and end the
+             * operation.  The transfer count used to be ignored and
+             * progress advanced regardless, silently presenting
+             * unwritten buffer memory as file content - worse now
+             * that the partial-read video decoders consume bytes as
+             * progress claims them.  A finished-but-short state
+             * (get_progress reporting no operation in flight with
+             * progress < len) is the failure signal; a deliberate
+             * cancel is distinct, as it reports progress == len. */
+            handle->progress += got;
+            handle->op        = -1;
+            return true;
+         }
          break;
+      }
       case NBIO_WRITE:
          if (handle->mode == BIO_WRITE)
          {
@@ -220,7 +254,19 @@ static bool nbio_stdio_iterate(void *data)
                return false;
          }
          else
-            fwrite((char*)handle->data + handle->progress, 1, amount, handle->f);
+         {
+            size_t put = fwrite((char*)handle->data + handle->progress,
+                  1, amount, handle->f);
+            if (put != amount)
+            {
+               /* Same treatment for a short write (disk full, etc.):
+                * an honest progress and a terminated operation
+                * instead of a claim of completion. */
+               handle->progress += put;
+               handle->op        = -1;
+               return true;
+            }
+         }
          break;
    }
 
@@ -243,14 +289,19 @@ static void nbio_stdio_resize(void *data, size_t len)
    if (len < handle->len)
       abort();
 
+   /* Attempt the realloc BEFORE committing the new length.  If it
+    * fails, the old pointer and its old size are still valid; the
+    * caller can retry or abandon.  Pre-patch we wrote handle->len
+    * = len first, then on realloc failure the handle claimed it
+    * owned a larger buffer than it actually did -- subsequent
+    * fread/fwrite iterate up to handle->len and walk off the end. */
+   if (!(new_data = realloc(handle->data, len)))
+      return;
+
+   handle->data     = new_data;
    handle->len      = len;
    handle->progress = len;
    handle->op       = -1;
-
-   new_data         = realloc(handle->data, handle->len);
-
-   if (new_data)
-      handle->data  = new_data;
 }
 
 static void *nbio_stdio_get_ptr(void *data, size_t* len)
@@ -260,7 +311,17 @@ static void *nbio_stdio_get_ptr(void *data, size_t* len)
       return NULL;
    if (len)
       *len = handle->len;
-   if (handle->op == -1)
+   /* The buffer is allocated once at open and never moves, so during a
+    * READ it is safe to hand out: the leading get_progress() bytes are
+    * valid, the rest merely unread - which is exactly what the
+    * partial-read video still decoders consume (task_image sets their
+    * byte wall from the progress).  Returning NULL here mid-read made
+    * the early decode - and adoption of a still-reading handle - fail
+    * with a NULL buffer.  Write-class operations keep the old
+    * conservative NULL: their buffer may be resized. */
+   if (     handle->op == -1
+         || handle->op == NBIO_READ
+         || handle->op == BIO_READ)
       return handle->data;
    return NULL;
 }
@@ -290,6 +351,72 @@ static void nbio_stdio_free(void *data)
    free(handle);
 }
 
+static void nbio_stdio_set_chunk_size(void *data, size_t chunk_size)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle)
+      return;
+   handle->chunk_size = (chunk_size > 0) ? chunk_size : NBIO_DEFAULT_CHUNK_SIZE;
+}
+
+static int nbio_stdio_get_fd(void *data)
+{
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (handle && handle->f)
+      return fileno(handle->f);
+#endif
+   return -1;
+}
+
+static bool nbio_stdio_get_progress(void *data,
+      size_t *completed, size_t *total)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle)
+   {
+      if (completed) *completed = 0;
+      if (total)     *total     = 0;
+      return false;
+   }
+   if (completed) *completed = handle->progress;
+   if (total)     *total     = handle->len;
+   return (handle->op >= 0);
+}
+
+static void *nbio_stdio_load_entire(void *data, size_t *len)
+{
+   struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
+   if (!handle || !handle->f)
+      return NULL;
+
+   fseek_wrap(handle->f, 0, SEEK_SET);
+
+   /* Single fread of the entire file */
+   if (handle->len > 0)
+   {
+      size_t got = fread((char*)handle->data, 1, handle->len, handle->f);
+      if (got != handle->len)
+      {
+         /* Report the failure instead of claiming a full buffer; the
+          * dispatch layer's caller falls back to begin_read + iterate
+          * (begin_read rewinds), where a genuinely unreadable file
+          * fails again with a frozen progress and the task layer
+          * cancels cleanly. */
+         handle->progress = got;
+         handle->op       = -1;
+         return NULL;
+      }
+   }
+
+   handle->progress = handle->len;
+   handle->op       = -1;
+
+   if (len)
+      *len = handle->len;
+   return handle->data;
+}
+
 nbio_intf_t nbio_stdio = {
    nbio_stdio_open,
    nbio_stdio_begin_read,
@@ -299,5 +426,9 @@ nbio_intf_t nbio_stdio = {
    nbio_stdio_get_ptr,
    nbio_stdio_cancel,
    nbio_stdio_free,
+   nbio_stdio_set_chunk_size,
+   nbio_stdio_get_fd,
+   nbio_stdio_get_progress,
+   nbio_stdio_load_entire,
    "nbio_stdio",
 };

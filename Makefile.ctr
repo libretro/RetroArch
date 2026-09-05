@@ -3,14 +3,14 @@ LIBRETRO =
 
 DEBUG                   = 0
 CONSOLE_LOG             = 0
-GRIFFIN_BUILD           = 1
-HAVE_STATIC_DUMMY ?= 0
+GRIFFIN_BUILD           = 0
+HAVE_STATIC_DUMMY      ?= 0
 WHOLE_ARCHIVE_LINK      = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
 LIBCTRU_NO_DEPRECATION  = 1
-USE_CTRULIB_2          ?= 0
+USE_CTRULIB_2 ?= $(if $(shell grep -sl gspPresentBuffer $(or $(CTRULIB),$(DEVKITPRO)/libctru)/include/3ds/services/gspgpu.h),1,0)
 LOAD_WITHOUT_CORE_INFO ?= 0
 
 APP_TITLE            = RetroArch 3DS
@@ -30,7 +30,6 @@ APP_USE_SVCHAX       = 0
 include pkg/ctr/Makefile.cores
 
 OBJ :=
-OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
 OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
@@ -54,7 +53,7 @@ DEFINES :=
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_RGUI -DHAVE_XMB -DHAVE_LIBRETRODB -DHAVE_CC_RESAMPLER
-	DEFINES += -DHAVE_ZLIB -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA
+	DEFINES += -DHAVE_7ZIP -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA
 	DEFINES += -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES
 	DEFINES += -DHAVE_UPDATE_CORE_INFO
 	#DEFINES += -DHAVE_UPDATE_ASSETS
@@ -68,18 +67,23 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	#DEFINES += -DHAVE_SOCKET_LEGACY
 	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
+	CFLAGS += -I. \
+		-Ideps \
+		-Ideps/mbedtls \
+		-Ideps/rcheevos/include \
+		-Ilibretro-common/include
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1
 	HAVE_RTGA = 1
 	HAVE_RPNG = 1
+	HAVE_RWEBP = 1
+	HAVE_RDDS = 1
 	HAVE_RJPEG = 1
 	HAVE_RBMP = 1
 	HAVE_MENU = 1
 	HAVE_RGUI = 1
-	HAVE_ZLIB = 1
 	HAVE_7ZIP = 1
-	HAVE_BUILTINZLIB = 1
 	HAVE_LIBRETRODB = 1
 	HAVE_XMB = 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
@@ -89,21 +93,22 @@ else
 	HAVE_REWIND = 1
 	HAVE_AUDIOMIXER = 1
 	HAVE_RWAV = 1
-	#HAVE_NETWORKING = 1
-	#HAVE_IFINFO = 1
-	#HAVE_CHEEVOS = 1
-	#HAVE_SOCKET_LEGACY = 1
+	HAVE_CHEATS = 1
+	HAVE_VIDEO_FILTER = 1
+	HAVE_DSP_FILTER = 1
+	HAVE_CONFIGFILE = 1
+	HAVE_OVERLAY = 1
+	HAVE_GFX_WIDGETS = 1
+	HAVE_NETWORKING = 1
+	HAVE_IFINFO = 1
+	HAVE_CHEEVOS = 1
 	HAVE_THREADS = 1
-	#HAVE_SSL = 1
-	#HAVE_BUILTINMBEDTLS = 1
+	HAVE_BUILTINMBEDTLS = 1
 	HAVE_CORE_INFO_CACHE = 1
+	HAVE_CLOUDSYNC = 1
 
 	include Makefile.common
-	CFLAGS += $(DEF_FLAGS)
-	BLACKLIST :=
-	BLACKLIST += input/input_overlay.o
-	BLACKLIST += tasks/task_overlay.o
-	OBJ := $(filter-out $(BLACKLIST),$(OBJ))
+	CFLAGS += $(DEF_FLAGS) -I. $(INCLUDE_DIRS)
 endif
 
 ifeq ($(strip $(DEVKITPRO)),)
@@ -133,6 +138,17 @@ ifeq ($(strip $(DEVKITTOOLS)),)
 	endif
 endif
 
+CTR_PICASSO := $(firstword $(wildcard $(DEVKITTOOLS)/bin/picasso $(DEVKITTOOLS)/bin/picasso.exe))
+CTR_BIN2S   := $(firstword $(wildcard $(DEVKITTOOLS)/bin/bin2s $(DEVKITTOOLS)/bin/bin2s.exe))
+
+ifeq ($(words $(CTR_PICASSO) $(CTR_BIN2S)),2)
+OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
+else
+$(info CTR: picasso/bin2s unavailable, using prebuilt gfx/drivers/ctr_shaders/ctr_sprite_shbin.S)
+$(info CTR: run 'make -f Makefile.ctr ctr-shaders' on a complete devkitPro install after editing any .vsh/.gsh)
+OBJ += gfx/drivers/ctr_shaders/ctr_sprite_shbin.o
+endif
+
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
 APP_DESCRIPTION   := $(shell echo "$(APP_DESCRIPTION)" | cut -c1-256)
 APP_AUTHOR        := $(shell echo "$(APP_AUTHOR)" | cut -c1-128)
@@ -153,12 +169,7 @@ LIBDIRS := -L. -L$(CTRULIB)/lib
 
 ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -marm -mfpu=vfp -mtp=soft
 
-CFLAGS	+= -mword-relocations \
-	   -fomit-frame-pointer -ffast-math \
-	   -Werror=implicit-function-declaration \
-	   $(ARCH)
-
-#CFLAGS	+= -Wall
+CFLAGS	+= -mword-relocations $(ARCH)
 CFLAGS	+= -DARM11 -D_3DS
 
 ifeq ($(strip $(USE_CTRULIB_2)),1)
@@ -168,7 +179,7 @@ endif
 ifeq ($(DEBUG), 1)
    CFLAGS	+= -O0 -g
 else
-   CFLAGS	+= -O3
+   CFLAGS	+= -fomit-frame-pointer -O3
 endif
 
 ifeq ($(CONSOLE_LOG), 1)
@@ -184,25 +195,20 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
    WHOLE_END := -Wl,--no-whole-archive
 endif
 
-CFLAGS += -I. \
-	  -Ideps \
-	  -Ideps/7zip \
-	  -Ideps/stb \
-	  -Ideps/rcheevos/include \
-	  -Ilibretro-common/include \
-	  -Ilibretro-common/include/compat/zlib
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE
-CFLAGS += -DHAVE_DSP_FILTER
-CFLAGS += -DHAVE_VIDEO_FILTER
 CFLAGS += -DHAVE_FILTERS_BUILTIN $(DEFINES)
-CFLAGS += -DHAVE_CHEATS
+CFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO
 
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CFLAGS += -Werror=implicit-function-declaration
 
 ASFLAGS	 := -g $(ARCH) -O3
 LDFLAGS  += -specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
-CFLAGS   += -std=gnu99 -ffast-math
+CFLAGS   += -std=gnu99
+
+CFLAGS   += -ffunction-sections -fdata-sections
+LDFLAGS  += -Wl,--gc-sections
 
 LIB_CORE      :=
 LIB_CORE_FULL :=
@@ -222,6 +228,10 @@ else
 	LIBS	+= -lctru
 endif
 
+ifneq ($(V),1)
+	Q := @
+endif
+
 ifeq ($(BUILD_3DSX), 1)
 	TARGET_3DSX := $(TARGET).3dsx $(TARGET).smdh
 endif
@@ -234,16 +244,7 @@ ifeq ($(BUILD_CIA), 1)
 	TARGET_CIA := $(TARGET).cia
 endif
 
-.PHONY: $(BUILD) clean all
-
-all: $(TARGET)
-
-$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
-$(TARGET).3dsx: $(TARGET).elf
-$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
-
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
-
 CC      := $(PREFIX)gcc
 CXX     := $(PREFIX)g++
 AS      := $(PREFIX)as
@@ -277,30 +278,76 @@ else
 	MAKEROM = $(CTRMAKEROM)
 endif
 
+.PHONY: $(BUILD) clean all
+
+all: $(TARGET)
+
+define INFO
+AR: $(AR)
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
+
+$(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
+$(TARGET).3dsx: $(TARGET).elf
+$(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
+
+.PHONY: ctr-shaders
+ctr-shaders:
+	@set -e; \
+	d=gfx/drivers/ctr_shaders; \
+	trap 'rm -f $$d/ctr_sprite.shbin $$d/ctr_sprite_shbin.S.tmp' EXIT; \
+	$(CTR_PICASSO) $$d/ctr_sprite.vsh $$d/ctr_sprite.gsh -o $$d/ctr_sprite.shbin; \
+	$(CTR_BIN2S) $$d/ctr_sprite.shbin > $$d/ctr_sprite_shbin.S.tmp; \
+	mv $$d/ctr_sprite_shbin.S.tmp $$d/ctr_sprite_shbin.S
+
 %.o: %.vsh %.gsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
+	$(CTR_PICASSO) $^ -o $*.shbin
+	$(CTR_BIN2S) $*.shbin > $*.shbin.s
+	$(PREFIX)as -o $@ $*.shbin.s
+	rm $*.shbin $*.shbin.s
 
 %.o: %.vsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
+	$(CTR_PICASSO) $^ -o $*.shbin
+	$(CTR_BIN2S) $*.shbin > $*.shbin.s
+	$(PREFIX)as -o $@ $*.shbin.s
+	rm $*.shbin $*.shbin.s
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
 
 %.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS)
 
 %.o: %.s
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.o: %.S
-	$(CC) -c -o $@ $< $(ASFLAGS)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS)
 
 %.a:
-	$(AR) -rc $@ $^
+	@$(if $(Q), $(shell echo echo AR $<),)
+	$(Q)$(AR) -rc $@ $^
 
 %.vsh:
 
@@ -316,7 +363,8 @@ endif
 	$(DEVKITTOOLS)/bin/3dsxtool $< $@ $(_3DSXFLAGS)
 
 $(TARGET).elf: ctr/3dsx_custom_crt0.o
-	$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(LDFLAGS) $(OBJ) $(LIBDIRS) $(LIBS) -o $@
 	$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(TARGET).bnr: $(TARGET).elf $(APP_BANNER) $(APP_AUDIO)
@@ -332,15 +380,17 @@ $(TARGET).cia: $(TARGET).elf $(TARGET).bnr $(TARGET).icn $(APP_RSF)
 	$(MAKEROM) -f cia -o $@ $(MAKEROM_ARGS_COMMON) -DAPP_ENCRYPTED=false
 
 clean:
-	rm -f $(OBJ)
-	rm -f $(TARGET).3dsx
-	rm -f $(TARGET).elf
-	rm -f $(TARGET).3ds
-	rm -f $(TARGET).cia
-	rm -f $(TARGET).smdh
-	rm -f $(TARGET).bnr
-	rm -f $(TARGET).icn
-	rm -f ctr/ctr_config_*.o
-	rm -f ctr/3dsx_custom_crt0.o
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(OBJ)
+	$(Q)rm -f $(TARGET).3dsx
+	$(Q)rm -f $(TARGET).elf
+	$(Q)rm -f $(TARGET).3ds
+	$(Q)rm -f $(TARGET).cia
+	$(Q)rm -f $(TARGET).smdh
+	$(Q)rm -f $(TARGET).bnr
+	$(Q)rm -f $(TARGET).icn
+	$(Q)rm -f ctr/ctr_config_*.o
+	$(Q)rm -f ctr/3dsx_custom_crt0.o
+	$(Q)rm -f gfx/drivers/ctr_shaders/*.shbin gfx/drivers/ctr_shaders/*.shbin.s
 
 .PHONY: clean

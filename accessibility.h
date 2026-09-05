@@ -82,6 +82,20 @@ bool is_narrator_running(bool accessibility_enable);
 */
 bool run_translation_service(settings_t *settings, bool paused);
 
+/**
+ * config_get_ai_service_backend_options:
+ *
+ * Get available AI service backends separated by '|'.
+ **/
+const char *config_get_ai_service_backend_options(void);
+
+/**
+ * config_get_default_ai_service_backend:
+ *
+ * Get the default AI service backend identifier.
+ **/
+const char *config_get_default_ai_service_backend(void);
+
 bool accessibility_speak_priority(
       bool accessibility_enable,
       unsigned accessibility_narrator_speech_speed,

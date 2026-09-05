@@ -23,7 +23,10 @@
 #ifndef __RARCH_CDFS_H
 #define __RARCH_CDFS_H
 
+#include <stddef.h>
+
 #include <streams/interface_stream.h>
+#include <retro_miscellaneous.h>
 
 RETRO_BEGIN_DECLS
 
@@ -74,6 +77,57 @@ void cdfs_seek_sector(cdfs_file_t* file, unsigned int sector);
 uint32_t cdfs_get_num_sectors(cdfs_file_t* file);
 
 uint32_t cdfs_get_first_sector(cdfs_file_t* file);
+
+/* --- Pure API: no path or VFS I/O ------------------------------------- */
+
+/* Wraps an already-open, seekable stream (file, memory, CHD, custom)
+ * holding a single track's data and returns a track handle for use with
+ * cdfs_open_file.  The track takes ownership of the stream: it is
+ * closed and freed by cdfs_close_track, and also on failure of this
+ * call (except when stream is NULL, in which case NULL is returned and
+ * there is nothing to own).
+ *
+ * first_sector_offset is the byte offset of the track's first sector
+ * within the stream; first_sector_index is that sector's absolute
+ * index on the disc (both 0 for a plain single-track image).
+ *
+ * The sector layout is probed from the ISO-9660 volume descriptor at
+ * sector 16, assuming raw 2352-byte sectors.  If the probe fails
+ * (e.g. a cooked 2048-byte image), stream_sector_size is left 0 and
+ * the caller must fill in stream_sector_size / stream_sector_header_size
+ * itself (the path adapters below derive them from the file size or
+ * the cue sheet). */
+cdfs_track_t* cdfs_track_from_stream(
+      intfstream_t* stream,
+      unsigned first_sector_offset,
+      unsigned first_sector_index);
+
+/* Result of parsing one track out of a cue sheet held in memory. */
+typedef struct cdfs_cue_info
+{
+   /* Name from the FILE line, verbatim (usually relative to the cue's
+    * directory - resolution against the cue path is the caller's job). */
+   char bin_name[PATH_MAX_LENGTH];
+   unsigned track_index;          /* track number actually selected      */
+   unsigned sector_size;          /* from MODEx/nnnn, 0 if not stated    */
+   unsigned first_sector_offset;  /* byte offset of INDEX 01 in the bin  */
+   unsigned first_sector_index;   /* absolute sector index of INDEX 01   */
+} cdfs_cue_info_t;
+
+/* Parses a cue sheet from a memory buffer (need not be NUL-terminated)
+ * and locates data track @track_index (0 = first data track).  Performs
+ * no I/O and no path resolution.  Returns true and fills *out when the
+ * track is found; the caller then opens out->bin_name (resolved against
+ * the cue's location) and passes the stream to cdfs_track_from_stream
+ * with out->first_sector_offset / out->first_sector_index.
+ *
+ * NOTE: first_sector_index is only valid when all tracks live in the
+ * same BIN file; a cue sheet does not store how many sectors earlier
+ * BIN files contain.  This affects cdfs_get_first_sector only. */
+bool cdfs_parse_cue(const char *cue_text, size_t len,
+      unsigned track_index, cdfs_cue_info_t *out);
+
+/* --- Path adapters: open by filename, then wrap ------------------------ */
 
 /* opens the specified track in a CD or virtual CD file - the resulting stream should be passed to
  * cdfs_open_file to get access to a file within the CD.

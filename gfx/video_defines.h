@@ -66,6 +66,25 @@ enum aspect_ratio
    ASPECT_RATIO_END
 };
 
+enum video_scale_integer_axis
+{
+   VIDEO_SCALE_INTEGER_AXIS_Y = 0,
+   VIDEO_SCALE_INTEGER_AXIS_Y_X,
+   VIDEO_SCALE_INTEGER_AXIS_Y_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_X,
+   VIDEO_SCALE_INTEGER_AXIS_XHALF,
+   VIDEO_SCALE_INTEGER_AXIS_LAST
+};
+
+enum video_scale_integer_scaling
+{
+   VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE = 0,
+   VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   VIDEO_SCALE_INTEGER_SCALING_SMART,
+   VIDEO_SCALE_INTEGER_SCALING_LAST
+};
+
 enum rotation
 {
    ORIENTATION_NORMAL = 0,
@@ -83,6 +102,15 @@ enum video_rotation_type
    VIDEO_ROTATION_270_DEG
 };
 
+/* How hard to push for exclusive fullscreen where the platform lets the
+ * application decide (VK_EXT_full_screen_exclusive on Windows Vulkan). */
+enum video_fse_negotiation
+{
+   VIDEO_FSE_RELAXED = 0, /* hint only; the driver may decline */
+   VIDEO_FSE_FORCED,      /* take it explicitly and hold it    */
+   VIDEO_FSE_LAST
+};
+
 enum autoswitch_refresh_rate
 {
    AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,
@@ -90,6 +118,16 @@ enum autoswitch_refresh_rate
    AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    AUTOSWITCH_REFRESH_RATE_OFF,
    AUTOSWITCH_REFRESH_RATE_LAST
+};
+
+enum time_show_type
+{
+   TIME_SHOW_OFF = 0,
+   TIME_SHOW_HM,
+   TIME_SHOW_HMS,
+   TIME_SHOW_HM_AMPM,
+   TIME_SHOW_HMS_AMPM,
+   TIME_SHOW_LAST
 };
 
 enum rarch_display_type
@@ -105,31 +143,6 @@ enum rarch_display_type
    RARCH_DISPLAY_KMS
 };
 
-enum font_driver_render_api
-{
-   FONT_DRIVER_RENDER_DONT_CARE,
-   FONT_DRIVER_RENDER_OPENGL_API,
-   FONT_DRIVER_RENDER_OPENGL_CORE_API,
-   FONT_DRIVER_RENDER_OPENGL1_API,
-   FONT_DRIVER_RENDER_D3D8_API,
-   FONT_DRIVER_RENDER_D3D9_API,
-   FONT_DRIVER_RENDER_D3D10_API,
-   FONT_DRIVER_RENDER_D3D11_API,
-   FONT_DRIVER_RENDER_D3D12_API,
-   FONT_DRIVER_RENDER_PS2,
-   FONT_DRIVER_RENDER_VITA2D,
-   FONT_DRIVER_RENDER_CTR,
-   FONT_DRIVER_RENDER_WIIU,
-   FONT_DRIVER_RENDER_VULKAN_API,
-   FONT_DRIVER_RENDER_METAL_API,
-   FONT_DRIVER_RENDER_CACA,
-   FONT_DRIVER_RENDER_SIXEL,
-   FONT_DRIVER_RENDER_NETWORK_VIDEO,
-   FONT_DRIVER_RENDER_GDI,
-   FONT_DRIVER_RENDER_VGA,
-   FONT_DRIVER_RENDER_SWITCH,
-   FONT_DRIVER_RENDER_RSX
-};
 
 enum text_alignment
 {
@@ -180,11 +193,6 @@ typedef struct gfx_ctx_flags
    uint32_t flags;
 } gfx_ctx_flags_t;
 
-struct Size2D
-{
-   unsigned width, height;
-};
-
 enum gfx_ctx_api
 {
    GFX_CTX_NONE = 0,
@@ -228,7 +236,17 @@ enum display_flags
    GFX_CTX_FLAGS_SHADERS_SLANG,
    GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED,
    GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED,
-   GFX_CTX_FLAGS_CRT_SWITCHRES
+   GFX_CTX_FLAGS_CRT_SWITCHRES,
+   GFX_CTX_FLAGS_SUBFRAME_SHADERS,
+   GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS,
+   /* Set by a video driver that can present a native XRGB2101010 (10-bit
+    * per channel) source frame without the frontend down-converting it to
+    * XRGB8888 first. */
+   GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
+   /* Set by a context driver whose default framebuffer is FP16 scRGB
+    * (linear, 1.0 = 80 nits): the video driver must encode SDR content
+    * for HDR output itself (paper-white scaling etc.). */
+   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER
 };
 
 enum shader_uniform_type
@@ -278,11 +296,32 @@ struct font_glyph
    int advance_y;
 };
 
+/* Coverage bit depth of a font atlas. A8 is the default; A16 is
+ * produced when a higher-precision atlas was requested (HDR output)
+ * and the renderer supports it, with samples stored as native-endian
+ * uint16_t in 'buffer'. Consumers must check 'format' before
+ * interpreting the buffer or sizing uploads. */
+enum font_atlas_format
+{
+   FONT_ATLAS_FORMAT_A8 = 0,
+   FONT_ATLAS_FORMAT_A16
+};
+
 struct font_atlas
 {
-   uint8_t *buffer; /* Alpha channel. */
+   uint8_t *buffer; /* Coverage samples; layout per 'format'. */
    unsigned width;
    unsigned height;
+   /* Dirty region in pixels, covering every glyph cell updated since
+    * the consumer last cleared the dirty flag; x1/y1 are exclusive
+    * and the values are only meaningful while dirty is set.
+    * Consumers may upload just this region (or any superset of it,
+    * such as the full-width row band) instead of the whole atlas. */
+   unsigned dirty_x0;
+   unsigned dirty_y0;
+   unsigned dirty_x1;
+   unsigned dirty_y1;
+   enum font_atlas_format format;
    bool dirty;
 };
 
@@ -294,6 +333,21 @@ struct font_params
 
    /* ABGR. Use the macros. */
    uint32_t color;
+
+   /* Optional full-precision colour. When non-NULL it points to 4 floats
+    * (R, G, B, A, each 0..1) that take precedence over the 8-bit 'color'
+    * above, letting a caller drive text at more than 8 bits per channel on a
+    * deep-colour (e.g. 10-bit) framebuffer. NULL means "use 'color'".
+    *
+    * Only honoured by font backends that opt in; the rest ignore it and use
+    * 'color', so it is always safe to leave set or unset. Because most
+    * font_params are built field by field, a producer that wants to use this
+    * MUST set it explicitly (to NULL or to a valid array) - do not assume it
+    * is zero-initialised. It is only ever read by backends fed from the
+    * central builders that initialise it (the menu text path and the OSD
+    * stat params), so an uninitialised value at other sites is never
+    * dereferenced. */
+   const float *color_hp;
 
    float x;
    float y;

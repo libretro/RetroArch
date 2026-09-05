@@ -131,9 +131,16 @@ s32 IOS_GetPreferredVersion()
 #ifdef DEBUG_IOS
 	printf(" %d titles on card:\n",count);
 #endif
+	/* Defensive: ES_GetNumTitles comes from IOS and is bounded in
+	 * practice, but feed the alloc through an overflow check rather
+	 * than trusting the multiplication. */
+	if(count > (((u32)-1)/sizeof(u64)))
+		return -1;
 	titles = iosAlloc(__ios_hid, sizeof(u64)*count);
 	if(!titles) {
+#ifdef DEBUG_IOS
 		printf(" iosAlloc titles failed\n");
+#endif
 		return -1;
 	}
 	res = ES_GetTitles(titles, count);
@@ -163,7 +170,9 @@ s32 IOS_GetPreferredVersion()
 		if (ES_GetStoredTMDSize(titles[i], &tmd_size) < 0)
 			continue;
 
-		if (tmd_size < 0 || tmd_size > 4096)
+		/* tmd_size is u32; the `< 0` half of the pre-patch check
+		 * was unreachable. */
+		if (tmd_size > 4096)
 			continue;
 
 		if(ES_GetStoredTMD(titles[i], (signed_blob *)tmdbuffer, tmd_size) < 0)
@@ -172,7 +181,10 @@ s32 IOS_GetPreferredVersion()
 		if (!tmdbuffer[1] && !tmdbuffer[2])
 			continue;
 
-		if((((s32)b) > ((s32)ver) && ver != 58) || b == 58) ver = b;
+		/* b and ver are both in [IOS_MIN_VERSION, IOS_MAX_VERSION] -
+		 * the pre-patch (s32) casts were no-ops. IOS58 wins ties. */
+		if ((b > ver && ver != 58) || b == 58)
+			ver = b;
 	}
 #ifdef DEBUG_IOS
 	printf(" Preferred verson: %d\n",ver);

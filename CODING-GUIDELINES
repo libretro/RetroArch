@@ -8,7 +8,7 @@ For POD-types, try to order structs as follows (first to last):
 
    * long double     (8 bytes, 16 bytes [64bit x86], 12 bytes [32bit x86])
    * double          (8 bytes)
-   * int64_t         (8 bytes,         8 bytes [32bit ARM], 
+   * int64_t         (8 bytes,         8 bytes [32bit ARM],
                       4 bytes [32bit x86])
    * uint64_t        (4 bytes [32bit], 8 bytes [32bit ARM], 8 bytes [64bit])
    * pointer         (4 bytes [32bit], 8 bytes [64bit] [1])
@@ -18,7 +18,7 @@ For POD-types, try to order structs as follows (first to last):
    * ssize_t         (4 bytes [32bit], 8 bytes [64bit])
    * size_t          (4 bytes [32bit], 8 bytes [64bit])
    * jmp_buf         (4 bytes)
-   * long            (4 bytes [64bit Win], 8 bytes [64bit non-Win], 
+   * long            (4 bytes [64bit Win], 8 bytes [64bit non-Win],
                       4 bytes [32bit])
    * int32_t         (4 bytes)
    * unsigned        (4 bytes)
@@ -42,19 +42,19 @@ For POD-types, try to order structs as follows (first to last):
       bool old_format;
       bool compress;
       bool fuzzy_archive_match;
-      bool autofix_paths;   
+      bool autofix_paths;
       char path[PATH_MAX_LENGTH];
-      char base_content_directory[PATH_MAX_LENGTH];
+      char base_content_directory[DIR_MAX_LENGTH];
    } playlist_config_t;
 
-size_t has the biggest alignment here, so 'struct playlist_config_t' 
+size_t has the biggest alignment here, so 'struct playlist_config_t'
 inside a struct should come before or after size_t.
 
 *** BEST PRACTICES ***
 
-* If we have pointers and size variable pairs, it's best to 
-interleave them to increase the probability they go in the 
-same cacheline. It also makes the code more readable, that 
+* If we have pointers and size variable pairs, it's best to
+interleave them to increase the probability they go in the
+same cacheline. It also makes the code more readable, that
 these two variables are connected.
 
 Example:
@@ -70,33 +70,151 @@ Example:
 Stack size
 ----------
 
-You have to assume that stack size is going to be limited in 
-RetroArch. Some game consoles (and other embedded systems) 
-might have a default stack size as low as 128Kb or less. 
-Be conservative with stack size but don't try to put very 
-small structs on heap either [to avoid memory fragmentation 
-among other things]. A balancing act here is necessary.
+You have to assume that stack size is going to be limited in
+RetroArch. These are the thread stacks the tree creates today:
 
-Be mindful that heap allocations are slow compared to stack.
+   * GEKKO (Wii/GC)    8 KiB   STACKSIZE, rthreads/rthreads.c
+   * 3DS              32 KiB   STACKSIZE, rthreads/rthreads.c
+   * PSP              32 KiB   STACKSIZE, rthreads/rthreads.c
+   * Vita             64 KiB   STACKSIZE, rthreads/rthreads.c
+   * WiiU            128 KiB   STACKSIZE, rthreads/rthreads.c
+   * Switch          128 KiB   STACKSIZE, rthreads/rthreads.c
+   * PS2              32 KiB   STACKSIZE, rthreads/rthreads.c
+   * Vita             64 KiB   rthreads.c, 0x10000
+   * Apple             2 MiB   rthreads.c, raised from a 512 KiB default
+   * Windows           1 MiB   reserved by default, committed lazily
+
+8 KiB on GEKKO is the floor, and it is the number to design
+against.
+
+Which thread your code runs on is not something you get to assume.
+Anything reachable from a task handler can end up on one of these:
+retro_task_regular_gather() runs handlers on the main thread, but
+with a threaded task queue the same handler runs on a worker.
+
+*** THE BUDGET ***
+
+- 4 KiB is the ceiling for a single stack frame anywhere in the
+  tree.
+- 2 KiB is the ceiling for anything under libretro-common, and it
+  is enforced. tools/stack_budget.py measures every shipped .c
+  there with -fstack-usage and fails the build over it; it runs in
+  CI as part of Linux-libretro-common-tests.yml. Read the header
+  of that script before adding an entry to its allowlist - an
+  entry there is debt, not an exemption.
+
+Neither number is a per-function allowance to spend. A frame does
+not run alone, it runs on top of everything that called it. Ten
+1.5 KiB frames in a row pass every per-frame check ever written
+and still overflow an 8 KiB stack, which is why the budget sits so
+far below the smallest stack.
+
+*** WHY 4 KIB ***
+
+- Small-stack targets. See the table above. A 16 KiB local buffer
+  is twice the whole GEKKO stack, and nothing warns about it: the
+  code builds everywhere and overflows only on a target most
+  contributors cannot build, at whatever moment it first runs on a
+  worker. config_file_write() carried a 16 KiB stdio buffer as a
+  local on a path reached from input_autoconfigure_connect_handler
+  - a task handler - and nothing noticed for years.
+
+- Stack probes on Windows. 4 KiB is the page size, and Windows
+  commits thread stacks lazily: one guard page sits below the
+  committed region, and touching it is what makes the OS commit
+  another page and move the guard down. A frame that moves the
+  stack pointer past the guard page without touching it faults
+  outside the guard page, which the OS treats as a plain access
+  violation rather than a request to grow the stack - the process
+  dies. Compilers avoid that by emitting a probe: MSVC's default
+  is /Gs4096 on x86, x64, ARM and ARM64, so any function needing
+  more than one page of locals gets a call to __chkstk (or
+  ___chkstk_ms under mingw-w64, which uses the same threshold)
+  that walks the frame page by page in order. So crossing 4 KiB
+  turns a single subtract into an out-of-line loop at every entry
+  to that function, and commits every page it touches for the life
+  of the thread. GCC's -fstack-clash-protection does the same
+  thing on Linux, and the kernel-side reason is the same.
+
+- Recursion and reentrancy. A frame you can afford once is a frame
+  you cannot afford at depth 40. Anything recursive - directory
+  walks, archive nesting, parsers - should carry its state in a
+  heap-allocated context and bound its depth explicitly, not lean
+  on the stack to hold the recursion for it.
+
+*** IN PRACTICE ***
+
+- Measure rather than guess. For one file:
+
+     gcc -O2 -DPSP -fstack-usage -c foo.c -Ilibretro-common/include
+
+  and read foo.su. Or point the script at a file or a directory:
+  tools/stack_budget.py libretro-common/formats/. -DPSP matters,
+  because PATH_MAX_LENGTH is 512 on those targets and 2048
+  elsewhere - a host-shaped measurement overstates every function
+  holding a path buffer. Adding -Wstack-usage=4096 to a local
+  build turns the ceiling into a warning while you work.
+
+  Frame size is a property of an ABI, not of the source; the same
+  function measures 16 to 192 bytes larger under mingw-w64 than
+  under SysV. Do not compare an absolute number against one taken
+  from a different target triple.
+
+- Per-frame is necessary and not sufficient. tools/stack_chain.py
+  sums frames along the call graph from a set of roots (task
+  handlers being the roots that matter) and reports the deepest
+  chain. It is a screening tool rather than a verdict, which is
+  why it is not in CI - read its header for what it cannot see.
+
+- Path buffers are the usual culprit. On desktop PATH_MAX_LENGTH
+  is 2048, so two of them in one frame is already over the
+  ceiling. Use DIR_MAX_LENGTH (1024) and NAME_MAX_LENGTH (128)
+  when that is what the buffer actually holds, and reuse one
+  buffer rather than carrying a second.
+
+- No VLAs and no alloca(). VLAs are not C89 (see below); alloca()
+  additionally makes the frame unbounded at compile time, and
+  -fstack-usage can only report such a frame as dynamic, so it
+  drops out of every check above.
+
+- When a frame is too large, the question is not "can this
+  overflow today" but "does this need to be on the stack at all".
+  The answer is usually no, and the fix is usually one of: move
+  the buffer to the heap, or move it into a state object that is
+  already allocated once per stream/session, or shrink it. Real
+  examples, all done rather than argued about:
+
+     vh_build                    16784 -> 400  scratch to the heap
+     config_file_write           16432 ->  48  stdio buffer to heap
+     chd_read_header_core_file   57504 ->  32  chd_file to the heap
+     rd_gen_lengths              12768 -> 352  scratch into the struct
+     sha1_calculate               4304 -> 224  mapped view, else heap
+
+- None of this means small structs belong on the heap. Heap
+  allocations are slow compared to the stack, and scattering tiny
+  ones fragments memory - which matters most on exactly the
+  platforms with the small stacks. A balancing act is necessary:
+  a few hundred bytes of locals is fine and idiomatic, a kilobyte
+  wants a reason, and 4 KiB is where the decision is made for you.
 
 Functions
 ---------
-- Avoid doing small getter/setter functions. We want a function 
-to justify its function call overhead by doing a significant 
-body of work. Small one-line getter/setter functions for what 
-is predominantly C-style structs is not useful, plus it leads 
-to people thinking this function is more complex than it 
-actually is, thus obfuscating the sourcecode instead of it 
+- Avoid doing small getter/setter functions. We want a function
+to justify its function call overhead by doing a significant
+body of work. Small one-line getter/setter functions for what
+is predominantly C-style structs is not useful, plus it leads
+to people thinking this function is more complex than it
+actually is, thus obfuscating the sourcecode instead of it
 being easier to read.
 
-If you can find examples in the codebase that violate this 
+If you can find examples in the codebase that violate this
 guideline, do not hesitate to point them out to us.
 
 Variable declaration
 --------------------
 For C source files, we have to insist you stick to the following:
 
-- Declare variables either at the start of a function or the start 
+- Declare variables either at the start of a function or the start
    of a code block, depending on the scope they need.
 - Do not do initial for loop declarations. Refer to the bulletpoint above:
    either declare them at the start of the function, or at the start
@@ -111,10 +229,55 @@ VLA (Variable Length Array)
 Do not use VLAs (Variable Length Array) in C source files. These are not
 C89-compliant.
 
+Main thread and task handlers
+-----------------------------
+The UI and the main thread must never block. When Threaded Tasks is
+disabled - which it is on several platforms, and which users turn off
+deliberately - task handlers run on the same thread that drives the
+frame loop, so anything a handler does between returns is a frame the
+UI cannot paint.
+
+- Do not call task_queue_wait() from code reachable while the menu is
+  visible or a core is running. Cancel the work and guard against a
+  stale completion, or move what follows the wait into the task's own
+  callback. A last-resort safety net is acceptable only where an
+  invariant genuinely requires it (a worker must not call into a core
+  that is about to be unloaded, for instance), and then it must be
+  bounded and commented.
+
+- Never pass a NULL condition to task_queue_wait(). It does not mean
+  "wait for my task": both queue implementations read it as "until the
+  queue is empty", so the caller ends up waiting out every unrelated
+  task in flight - a content scan, a core download. Pass a condition
+  that describes your own work.
+
+- A handler that processes a collection must consult the shared
+  per-frame I/O window (task_nbio_slice_open /
+  task_nbio_slice_within_budget / task_nbio_slice_close) between
+  items, and must always complete at least one item per invocation so
+  an exhausted window cannot stall it. Do NOT chunk by a count derived
+  from the workload - "half the entries", "a quarter of the files" -
+  because that is not pacing: a bigger job simply produces bigger
+  chunks and the same number of invocations.
+
+- Putting work on a background thread is not a substitute for pacing
+  it. The threaded queue is optional; the budget is what protects the
+  frame loop in the configuration that has no worker.
+
+Debug builds report handlers that overrun a frame - see
+task_queue_set_slow_handler_cb() - which is the cheapest way to find
+out whether a handler you are adding respects any of this.
+
+Commit message density
+----------------------
+Keep commit message short and appropriate for the size of the change. One or two
+paragraphs appropriately sized based on the size of the change. Only explain how the 
+code works moving forward, not how it worked historically. Latter rule should also apply to code comments.
+
 Miscellaneous
 -------------
-- Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line, 
-  indented to the same level as the control statement. 
+- Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line,
+  indented to the same level as the control statement.
   Statements within the braces are indented to the next level.
 - A single statement block must not include brackets (unless the block uses a macro that expands into multiple lines)
 - If possible, avoid 'while (true)' and use 'for (;;)' instead

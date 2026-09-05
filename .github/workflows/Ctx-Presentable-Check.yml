@@ -1,0 +1,42 @@
+name: CI Context presentable() contract
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ctx-presentable-check:
+    name: gfx_ctx_driver_t presentable() consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: a correct driver is clean, a presentable()
+          # casting another driver's context type is flagged, and one
+          # that is defined but never wired into the vtable is flagged.
+          python3 tools/ctx_presentable_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # Each context driver is compiled by one platform's CI, so a
+          # presentable() that casts the wrong driver's type, or that is
+          # never wired in, is invisible to every other job. This is the
+          # check that sees all of them at once.
+          python3 tools/ctx_presentable_check.py

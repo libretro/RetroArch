@@ -29,20 +29,33 @@
 #include "../../../config.h"
 #endif
 
-#ifndef HAVE_STRCASESTR
-
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-/* Avoid possible naming collisions during link
- * since we prefer to use the actual name. */
-#define strcasestr(haystack, needle) strcasestr_retro__(haystack, needle)
-
-char *strcasestr(const char *haystack, const char *needle);
+/**
+ * Case-insensitive substring search.
+ *
+ * Called by its own name rather than shadowing strcasestr, and used
+ * unconditionally rather than only where the C library lacks one.  The
+ * library's version is not reliably the better choice: glibc's measured
+ * some fifty times slower than this on a representative search, and the
+ * handheld targets that set HAVE_STRCASESTR are the slowest machines
+ * RetroArch runs on and the least likely to have a good implementation.
+ * Using one function everywhere also means one set of semantics, rather
+ * than case folding that varies with the platform's locale.
+ *
+ * Folds ASCII only, which is what the callers mean - extensions, driver
+ * names, search terms - and matches the behaviour of the C library
+ * versions it replaces for every input that is not undefined.
+ *
+ * @param haystack String to search in.
+ * @param needle   String to search for.
+ * @return Pointer to the first occurrence within \c haystack,
+ *         or NULL if there is none.
+ */
+char *compat_strcasestr(const char *haystack, const char *needle);
 
 RETRO_END_DECLS
-
-#endif
 
 #endif

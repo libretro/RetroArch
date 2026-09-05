@@ -117,16 +117,13 @@ loopif_init(struct netif *netif)
 
   netif->name[0] = 'l';
   netif->name[1] = 'o';
-#if 0 /** TODO: I think this should be enabled, or not? Leon */
-  netif->input = loopif_input;
-#endif
   netif->output = loopif_output;
 
- tb.tv_sec = 0;
- tb.tv_nsec = 10*TB_NSPERMS;
- loopif_ticks = __lwp_wd_calc_ticks(&tb);
+  tb.tv_sec = 0;
+  tb.tv_nsec = 10*TB_NSPERMS;
+  loopif_ticks = __lwp_wd_calc_ticks(&tb);
 
- return ERR_OK;
+  return ERR_OK;
 }
 
 #endif /* LWIP_HAVE_LOOPIF */

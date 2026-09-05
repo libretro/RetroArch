@@ -1,0 +1,50 @@
+name: CI Overlapping-buffer copies
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  overlap-copy-check:
+    name: Overlapping dst/src in copy calls
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: exact-alias strlcpy and overlapping memcpy
+          # element shifts are flagged, memmove is not, unguarded
+          # param->param copy helpers called with aliased buffers are
+          # flagged while alias-guarded helpers are not, the
+          # allowlist suppresses audited same-base copies but can
+          # never suppress an exact alias, and stale allowlist
+          # entries are reported.
+          python3 tools/overlap_copy_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # strlcpy resolves to the fortified __strlcpy_chk on macOS,
+          # which aborts on ANY dst/src overlap (bd79aee: typing into
+          # the OSK crashed with EXC_BREAKPOINT), and overlapping
+          # memcpy is UB everywhere (e942ee2: leaderboard element
+          # shift). The portable strlcpy fallback tolerates aliasing
+          # on Linux/Windows, so nothing else in CI can catch this
+          # class before it ships to Mac users. Audited-intentional
+          # same-buffer copies live in tools/overlap_copy_allow.list.
+          python3 tools/overlap_copy_check.py

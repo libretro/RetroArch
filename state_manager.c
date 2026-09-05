@@ -63,35 +63,71 @@
 
 #if __SSE2__
 #include <emmintrin.h>
+/* An AVX2 scanner doubles the bytes compared per iteration. It is selected at
+ * runtime, and is only built where the compiler can emit an AVX2 function
+ * without raising the baseline ISA for the whole file. */
+#if (defined(__GNUC__) || defined(__clang__)) && (defined(__i386__) || defined(__x86_64__))
+#include <immintrin.h>
+#include <features/features_cpu.h>
+#define STATE_MANAGER_HAVE_AVX2_SCAN 1
+#endif
 #endif
 
-/* Format per frame (pseudocode): */
-#if 0
-size nextstart;
-repeat {
-   uint16 numchanged; /* everything is counted in units of uint16 */
-   if (numchanged)
-   {
-      uint16 numunchanged; /* skip these before handling numchanged */
-      uint16[numchanged] changeddata;
-   }
-   else
-   {
-      uint32 numunchanged;
-      if (!numunchanged)
-         break;
-   }
-}
-size thisstart;
-#endif
+/* Tail padding on each block, in bytes. Must be >= the widest vector load
+ * find_change() can issue (32 for AVX2); 64 leaves room for a wider scanner
+ * without having to revisit the allocation. */
+#define STATE_MANAGER_SCAN_PAD 64
 
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+__attribute__((target("avx2")))
+static size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
+{
+   const __m256i *a256 = (const __m256i*)a;
+   const __m256i *b256 = (const __m256i*)b;
+
+   for (;;)
+   {
+      __m256i v0    = _mm256_loadu_si256(a256);
+      __m256i v1    = _mm256_loadu_si256(b256);
+      __m256i c     = _mm256_cmpeq_epi8(v0, v1);
+      uint32_t mask = (uint32_t)_mm256_movemask_epi8(c);
+
+      if (mask != 0xffffffffu)
+      {
+         /* Offset is a multiple of 32 and the tzcnt is 0..31, so the OR is
+          * an add, exactly as in the SSE2 form. */
+         size_t ret = (((uint8_t*)a256 - (uint8_t*)a) |
+               (compat_ctz(~mask)));
+
+         return (ret >> 1);
+      }
+
+      a256++;
+      b256++;
+   }
+}
+
+static int state_manager_use_avx2(void)
+{
+   static int cached = -1;
+   if (cached < 0)
+      cached = (cpu_features_get() & RETRO_SIMD_AVX2) ? 1 : 0;
+   return cached;
+}
+#endif
+
 static size_t find_change(const uint16_t *a, const uint16_t *b)
 {
 #if __SSE2__
    const __m128i *a128 = (const __m128i*)a;
    const __m128i *b128 = (const __m128i*)b;
+
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+   if (state_manager_use_avx2())
+      return find_change_avx2(a, b);
+#endif
 
    for (;;)
    {
@@ -168,11 +204,36 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
       const uint32_t *a_big = (const uint32_t*)a;
       const uint32_t *b_big = (const uint32_t*)b;
 
+#if __SSE2__
+      /* Four words per iteration. The granularity stays 32-bit -- the lane
+       * mask is per word, so this stops at exactly the word the scalar loop
+       * would, which the compressed output depends on. */
+      for (;;)
+      {
+         __m128i v0 = _mm_loadu_si128((const __m128i*)a_big);
+         __m128i v1 = _mm_loadu_si128((const __m128i*)b_big);
+         int mask   = _mm_movemask_ps(_mm_castsi128_ps(
+                  _mm_cmpeq_epi32(v0, v1)));
+
+         if (mask)
+         {
+            unsigned lane = (unsigned)compat_ctz((unsigned)mask);
+
+            a_big += lane;
+            b_big += lane;
+            break;
+         }
+
+         a_big += 4;
+         b_big += 4;
+      }
+#else
       while (*a_big != *b_big)
       {
          a_big++;
          b_big++;
       }
+#endif
       a = (const uint16_t*)a_big;
       b = (const uint16_t*)b_big;
 
@@ -200,37 +261,7 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
 }
 
 /*
- * See state_manager_raw_compress for information about this.
- * When you're done with it, send it to free().
- */
-static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
-{
-   size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-   uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
-
-   if (!ret)
-      return NULL;
-
-   /* Force in a different byte at the end, so we don't need to check
-    * bounds in the innermost loop (it's expensive).
-    *
-    * There is also a large amount of data that's the same, to stop
-    * the other scan.
-    *
-    * There is also some padding at the end. This is so we don't
-    * read outside the buffer end if we're reading in large blocks;
-    *
-    * It doesn't make any difference to us, but sacrificing 16 bytes to get
-    * Valgrind happy is worth it. */
-   ret[len16/sizeof(uint16_t) + 3] = uniq;
-
-   return ret;
-}
-
-/*
  * Takes two savestates and creates a patch that turns 'src' into 'dst'.
- * Both 'src' and 'dst' must be returned from state_manager_raw_alloc(),
- * with the same 'len', and different 'uniq'.
  *
  * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
  * Returns the number of bytes actually written to 'patch'.
@@ -270,7 +301,7 @@ static size_t state_manager_raw_compress(const void *src,
          continue;
       }
 
-      changed         = find_same(old16, new16);
+      changed = find_same(old16, new16);
       if (changed > UINT16_MAX)
          changed = UINT16_MAX;
 
@@ -301,8 +332,7 @@ static size_t state_manager_raw_compress(const void *src,
  * If the given arguments do not match a previous call to
  * state_manager_raw_compress(), anything at all can happen.
  */
-static void state_manager_raw_decompress(const void *patch,
-      size_t patchlen, void *data, size_t datalen)
+static void state_manager_raw_decompress(const void *patch, void *data)
 {
    uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
@@ -382,10 +412,16 @@ static void state_manager_free(state_manager_t *state)
 
    if (state->data)
       free(state->data);
-   if (state->thisblock)
-      free(state->thisblock);
-   if (state->nextblock)
-      free(state->nextblock);
+   /* thisblock and nextblock share a single allocation;
+    * after pointer swaps, either could point to the base.
+    * Free whichever has the lower address. */
+   if (state->thisblock || state->nextblock)
+   {
+      uint8_t *base = state->thisblock;
+      if (state->nextblock && (!base || state->nextblock < base))
+         base = state->nextblock;
+      free(base);
+   }
 #if STRICT_BUF_SIZE
    if (state->debugblock)
       free(state->debugblock);
@@ -399,9 +435,8 @@ static void state_manager_free(state_manager_t *state)
 static state_manager_t *state_manager_new(
       size_t state_size, size_t buffer_size)
 {
-   size_t max_comp_size, block_size;
-   uint8_t *next_block    = NULL;
-   uint8_t *this_block    = NULL;
+   size_t max_comp_size, block_size, alloc_size, single_block_alloc;
+   uint8_t *block_buf     = NULL;
    uint8_t *state_data    = NULL;
    state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
 
@@ -416,17 +451,35 @@ static state_manager_t *state_manager_new(
    if (!state_data)
       goto error;
 
-   this_block         = (uint8_t*)state_manager_raw_alloc(state_size, 0);
-   next_block         = (uint8_t*)state_manager_raw_alloc(state_size, 1);
+   /* Combine thisblock and nextblock into a single allocation.
+    * Each block needs: block_size rounded to uint16_t alignment, plus the
+    * four sentinel uint16_t, plus STATE_MANAGER_SCAN_PAD.
+    *
+    * find_change() deliberately scans past the end of the logical data --
+    * the caller bounds the result afterwards -- and terminates only on the
+    * sentinel at byte block_size + 6. The final vector load may therefore
+    * begin at that sentinel and read a full vector beyond it, so the tail
+    * padding must be at least the widest load find_change can issue.
+    * Keep the two in step: widening the scanner means widening this. */
+   single_block_alloc = block_size + sizeof(uint16_t) * 4
+      + STATE_MANAGER_SCAN_PAD;
+   alloc_size         = single_block_alloc * 2;
+   block_buf          = (uint8_t*)calloc(alloc_size, 1);
 
-   if (!this_block || !next_block)
+   if (!block_buf)
       goto error;
+
+   /* Set up sentinel bytes.
+    * thisblock gets uniq=0 (already zero from calloc).
+    * nextblock gets uniq=1. */
+   ((uint16_t*)block_buf)[block_size / sizeof(uint16_t) + 3] = 0;
+   ((uint16_t*)(block_buf + single_block_alloc))[block_size / sizeof(uint16_t) + 3] = 1;
 
    state->blocksize   = block_size;
    state->maxcompsize = max_comp_size;
    state->data        = state_data;
-   state->thisblock   = this_block;
-   state->nextblock   = next_block;
+   state->thisblock   = block_buf;
+   state->nextblock   = block_buf + single_block_alloc;
    state->capacity    = buffer_size;
 
    state->head        = state->data + sizeof(size_t);
@@ -442,7 +495,8 @@ static state_manager_t *state_manager_new(
 error:
    if (state_data)
       free(state_data);
-   state_manager_free(state);
+   if (block_buf)
+      free(block_buf);
    free(state);
 
    return NULL;
@@ -473,8 +527,7 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
    compressed                   = state->data + start + sizeof(size_t);
    out                          = state->thisblock;
 
-   state_manager_raw_decompress(compressed,
-         state->maxcompsize, out, state->blocksize);
+   state_manager_raw_decompress(compressed, out);
 
    state->entries--;
    return true;
@@ -512,11 +565,13 @@ static void state_manager_push_do(state_manager_t *state)
 
    if (state->thisblock_valid)
    {
-      const uint8_t *oldb, *newb;
       uint8_t *compressed;
+      const uint8_t *oldb, *newb;
       size_t headpos, tailpos, remaining;
-      if (state->capacity < sizeof(size_t) + state->maxcompsize) {
-         RARCH_ERR("State capacity insufficient\n");
+      if (state->capacity < sizeof(size_t) + state->maxcompsize)
+      {
+         RARCH_ERR("[Rewind] %s.\n",
+               msg_hash_to_str(MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT));
          return;
       }
 
@@ -561,24 +616,6 @@ recheckcapacity:;
    state->entries++;
 }
 
-#if 0
-static void state_manager_capacity(state_manager_t *state,
-      unsigned *entries, size_t *bytes, bool *full)
-{
-   size_t headpos   = state->head - state->data;
-   size_t tailpos   = state->tail - state->data;
-   size_t remaining = (tailpos + state->capacity -
-         sizeof(size_t) - headpos - 1) % state->capacity + 1;
-
-   if (entries)
-      *entries      = state->entries;
-   if (bytes)
-      *bytes        = state->capacity-remaining;
-   if (full)
-      *full         = remaining <= state->maxcompsize * 2;
-}
-#endif
-
 void state_manager_event_init(
       struct state_manager_rewind_state *rewind_st,
       unsigned rewind_buffer_size)
@@ -597,7 +634,6 @@ void state_manager_event_init(
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                                     );
-   rewind_st->flags             |= STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED;
 
    /* We cannot initialise the rewind buffer
     * unless the core info struct for the current
@@ -607,15 +643,19 @@ void state_manager_event_init(
    if (!core_info_get_current_core(&core_info) || !core_info)
       return;
 
+   rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED;
+
    if (!core_info_current_supports_rewind())
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_REWIND_UNSUPPORTED));
+      RARCH_ERR("[Rewind] %s.\n",
+            msg_hash_to_str(MSG_REWIND_UNSUPPORTED));
       return;
    }
 
    if (audio_driver_has_callback())
    {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
+      RARCH_ERR("[Rewind] %s.\n",
+            msg_hash_to_str(MSG_REWIND_INIT_FAILED_THREADED_AUDIO));
       return;
    }
 
@@ -623,12 +663,12 @@ void state_manager_event_init(
 
    if (!rewind_st->size)
    {
-      RARCH_ERR("%s.\n",
+      RARCH_ERR("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;
    }
 
-   RARCH_LOG("%s: %u MB\n",
+   RARCH_LOG("[Rewind] %s: %u MB\n",
          msg_hash_to_str(MSG_REWIND_INIT),
          (unsigned)(rewind_buffer_size / 1000000));
 
@@ -636,7 +676,8 @@ void state_manager_event_init(
          rewind_buffer_size);
 
    if (!rewind_st->state)
-      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
+      RARCH_WARN("[Rewind] %s.\n",
+            msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(rewind_st->state, &state);
 
@@ -654,7 +695,7 @@ void state_manager_event_deinit(
    if (!rewind_st)
       return;
 
-   restore_callbacks = 
+   restore_callbacks =
             (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
          && (rewind_st->state)
          && (current_core);
@@ -665,14 +706,14 @@ void state_manager_event_deinit(
       free(rewind_st->state);
    }
 
-   rewind_st->state              = NULL;
-   rewind_st->size               = 0;
-   rewind_st->flags             &= ~(
-                                   STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
-                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
-                                 | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
-                                 | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
-                                    );
+   rewind_st->state  = NULL;
+   rewind_st->size   = 0;
+   rewind_st->flags &= ~(
+                          STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
+                        | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
+                        | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
+                        | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
+                        );
 
    /* Restore regular (non-rewind) core audio
     * callbacks if required */
@@ -716,13 +757,15 @@ bool state_manager_check_rewind(
 
    if (!rewind_st->state)
    {
-      if ((pressed 
-          && (!(rewind_st->flags 
+      if ((pressed
+          && (!(rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED)))
           && !core_info_current_supports_rewind())
-         runloop_msg_queue_push(msg_hash_to_str(MSG_REWIND_UNSUPPORTED),
-               1, 100, false, NULL,
+      {
+         const char *_msg = msg_hash_to_str(MSG_REWIND_UNSUPPORTED);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
 
       if (pressed)
          rewind_st->flags |=  STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED;
@@ -770,7 +813,17 @@ bool state_manager_check_rewind(
       }
       else
       {
-         content_deserialize_state(buf, rewind_st->size);
+#ifdef HAVE_BSV_MOVIE
+         input_driver_state_t *input_st = input_state_get_ptr();
+         /* Don't end reversing during playback or recording */
+         if(BSV_MOVIE_IS_PLAYBACK_ON() || BSV_MOVIE_IS_RECORDING())
+         {
+            rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
+            bsv_movie_frame_rewind();
+         }
+         else
+#endif
+            content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_NETWORKING
          /* Tell netplay we're done */
@@ -816,16 +869,16 @@ bool state_manager_check_rewind(
    {
       if (current_core->retro_set_audio_sample)
          current_core->retro_set_audio_sample(
-               (rewind_st->flags 
+               (rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_rewind 
+               ? audio_driver_sample_rewind
                : audio_driver_sample);
 
       if (current_core->retro_set_audio_sample_batch)
          current_core->retro_set_audio_sample_batch(
-               (  rewind_st->flags 
+               (  rewind_st->flags
                 & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED)
-               ? audio_driver_sample_batch_rewind 
+               ? audio_driver_sample_batch_rewind
                : audio_driver_sample_batch);
    }
 

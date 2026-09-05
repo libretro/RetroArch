@@ -37,6 +37,7 @@
 #define DECL_AXIS(axis, bind) "input_" #axis "_axis = " #bind "\n"
 #define DECL_AXIS_EX(axis, bind, name) "input_" #axis "_axis = " #bind "\ninput_" #axis "_axis_label = \"" name "\"\n"
 #define DECL_MENU(btn) "input_menu_toggle_btn = " #btn "\n"
+#define DECL_MENU_EX(btn, name) "input_menu_toggle_btn = " #btn "\ninput_menu_toggle_btn_label = \"" name "\"\n"
 #define DECL_AUTOCONF_DEVICE(device, driver, binds) "input_device = \"" device "\"\ninput_driver = \"" driver "\"\n" binds
 #define DECL_AUTOCONF_PID(pid, vid, driver, binds) "input_product_id = " #pid "\ninput_vendor_id = " #vid "\ninput_driver = \"" driver "\"\n" binds
 
@@ -65,6 +66,63 @@ DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
+
+#ifdef WEBOS
+/* Switch Pro on webOS — working physical remap. */
+#define SWITCH_PRO_SDL2_BINDS \
+DECL_BTN(a, 0) \
+DECL_BTN(b, 1) \
+DECL_BTN(x, 2) \
+DECL_BTN(y, 3) \
+DECL_BTN(select, 9) \
+DECL_BTN(start, 10) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 5) \
+DECL_BTN(r, 6) \
+DECL_BTN(l2, 7) \
+DECL_BTN(r2, 8) \
+DECL_BTN(l3, 12) \
+DECL_BTN(r3, 13) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3) \
+DECL_MENU(11)
+#endif
+
+#define SDL3_DEFAULT_BINDS \
+DECL_BTN_EX(a,           1, "Right Face Button")   /* SDL_GAMEPAD_BUTTON_EAST           */ \
+DECL_BTN_EX(b,           0, "Bottom Face Button")  /* SDL_GAMEPAD_BUTTON_SOUTH          */ \
+DECL_BTN_EX(x,           3, "Top Face Button")     /* SDL_GAMEPAD_BUTTON_NORTH          */ \
+DECL_BTN_EX(y,           2, "Left Face Button")    /* SDL_GAMEPAD_BUTTON_WEST           */ \
+DECL_BTN_EX(select,      4, "Back")                /* SDL_GAMEPAD_BUTTON_BACK           */ \
+DECL_BTN_EX(start,       6, "Start")               /* SDL_GAMEPAD_BUTTON_START          */ \
+DECL_BTN_EX(up,         11, "D-Pad Up")            /* SDL_GAMEPAD_BUTTON_DPAD_UP        */ \
+DECL_BTN_EX(down,       12, "D-Pad Down")          /* SDL_GAMEPAD_BUTTON_DPAD_DOWN      */ \
+DECL_BTN_EX(left,       13, "D-Pad Left")          /* SDL_GAMEPAD_BUTTON_DPAD_LEFT      */ \
+DECL_BTN_EX(right,      14, "D-Pad Right")         /* SDL_GAMEPAD_BUTTON_DPAD_RIGHT     */ \
+DECL_BTN_EX(l,           9, "Left Shoulder")       /* SDL_GAMEPAD_BUTTON_LEFT_SHOULDER  */ \
+DECL_BTN_EX(r,          10, "Right Shoulder")      /* SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER */ \
+DECL_AXIS_EX(l2,        +4, "Left Trigger")        /* SDL_GAMEPAD_AXIS_LEFT_TRIGGER     */ \
+DECL_AXIS_EX(r2,        +5, "Right Trigger")       /* SDL_GAMEPAD_AXIS_RIGHT_TRIGGER    */ \
+DECL_BTN_EX(l3,          7, "Left Stick")          /* SDL_GAMEPAD_BUTTON_LEFT_STICK     */ \
+DECL_BTN_EX(r3,          8, "Right Stick")         /* SDL_GAMEPAD_BUTTON_RIGHT_STICK    */ \
+DECL_AXIS_EX(l_x_plus,  +0, "Left Thumbstick X+")  /* SDL_GAMEPAD_AXIS_LEFTX            */ \
+DECL_AXIS_EX(l_x_minus, -0, "Left Thumbstick X-")  /* SDL_GAMEPAD_AXIS_LEFTX            */ \
+DECL_AXIS_EX(l_y_plus,  +1, "Left Thumbstick Y+")  /* SDL_GAMEPAD_AXIS_LEFTY            */ \
+DECL_AXIS_EX(l_y_minus, -1, "Left Thumbstick Y-")  /* SDL_GAMEPAD_AXIS_LEFTY            */ \
+DECL_AXIS_EX(r_x_plus,  +2, "Right Thumbstick X+") /* SDL_GAMEPAD_AXIS_RIGHTX           */ \
+DECL_AXIS_EX(r_x_minus, -2, "Right Thumbstick X-") /* SDL_GAMEPAD_AXIS_RIGHTX           */ \
+DECL_AXIS_EX(r_y_plus,  -3, "Right Thumbstick Y+") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
+DECL_AXIS_EX(r_y_minus, +3, "Right Thumbstick Y-") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
+DECL_MENU_EX(5, "Guide")                           /* SDL_GAMEPAD_BUTTON_GUIDE          */
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
 #define DINGUX_SDL_DEFAULT_BINDS \
@@ -278,30 +336,6 @@ DECL_AXIS_EX(r_x_plus,  +2, "C Stick Right") \
 DECL_AXIS_EX(r_x_minus, -2, "C Stick Left") \
 DECL_AXIS_EX(r_y_plus,  +3, "C Stick Down") \
 DECL_AXIS_EX(r_y_minus, -3, "C Stick Up")
-
-#define DOSINPUT_DEFAULT_BINDS \
-DECL_BTN(a, 8) \
-DECL_BTN(b, 0) \
-DECL_BTN(x, 9) \
-DECL_BTN(y, 1) \
-DECL_BTN(start, 3) \
-DECL_BTN(select, 2) \
-DECL_BTN(up, 4) \
-DECL_BTN(down, 5) \
-DECL_BTN(left, 6) \
-DECL_BTN(right, 7) \
-DECL_BTN(l, 10) \
-DECL_BTN(r, 11) \
-DECL_BTN(l2, 12) \
-DECL_BTN(r2, 13) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
 
 #ifdef WIIU
 
@@ -716,8 +750,6 @@ DECL_BTN(l, 10) \
 DECL_BTN(r, 11) \
 DECL_BTN(start, 3) \
 DECL_BTN(select, 2) \
-DECL_BTN(l2, 12) \
-DECL_BTN(r2, 13) \
 DECL_BTN(l3, 14) \
 DECL_BTN(r3, 15) \
 DECL_AXIS(l_x_plus,  +0) \
@@ -727,7 +759,9 @@ DECL_AXIS(l_y_minus, +1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_minus, +3) \
+DECL_AXIS(l2, +4) \
+DECL_AXIS(r2, +5)
 
 const char* const input_builtin_autoconfs[] =
 {
@@ -743,6 +777,14 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
+#ifdef WEBOS
+   DECL_AUTOCONF_PID(0x2009, 0x057e, "sdl2", SWITCH_PRO_SDL2_BINDS),
+   DECL_AUTOCONF_PID(0x200e, 0x057e, "sdl2", SWITCH_PRO_SDL2_BINDS),
+   DECL_AUTOCONF_DEVICE("Nintendo Switch Pro Controller", "sdl2", SWITCH_PRO_SDL2_BINDS),
+#endif
+#endif
+#ifdef HAVE_SDL3
+   DECL_AUTOCONF_DEVICE("Gamepad", "sdl3", SDL3_DEFAULT_BINDS),
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
@@ -771,9 +813,6 @@ const char* const input_builtin_autoconfs[] =
 #ifdef _3DS
    DECL_AUTOCONF_DEVICE("3DS Controller", "ctr", CTRINPUT_DEFAULT_BINDS),
 #endif
-#ifdef DJGPP
-   DECL_AUTOCONF_DEVICE("DOS Controller", "dos", DOSINPUT_DEFAULT_BINDS),
-#endif
 #ifdef GEKKO
    DECL_AUTOCONF_DEVICE("GameCube Controller", "gx", GXINPUT_GAMECUBE_DEFAULT_BINDS),
 #ifdef HW_RVL
@@ -799,7 +838,7 @@ const char* const input_builtin_autoconfs[] =
 #if defined(__SWITCH__) || defined(SWITCH)
    DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
 #endif
 #if HAVE_MFI

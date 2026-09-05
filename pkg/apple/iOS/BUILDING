@@ -1,4 +1,4 @@
-The following instructions will only work if building from OS X, using latest XCode with fake signing enabled.
+The following instructions will only work if building from OS X, using latest Xcode with fake signing enabled.
 
 To build RetroArch:
     Open $(root)/ios/RetroArch.xcodeproj, change build type to iOSDevice then choose Product->Build For->Archiving.

@@ -29,11 +29,18 @@
 #include <boolean.h>
 
 #include <lists/string_list.h>
+#include <lists/dir_list.h>
 #include <formats/logiqx_dat.h>
 
 #include "playlist.h"
 
 RETRO_BEGIN_DECLS
+
+enum manual_content_scan_method
+{
+   MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC = 0,
+   MANUAL_CONTENT_SCAN_METHOD_CUSTOM
+};
 
 /* Defines all possible system name types
  * > Use content directory name
@@ -43,7 +50,26 @@ enum manual_content_scan_system_name_type
 {
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR = 0,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
+};
+
+/* Defines types of matching content to databases */
+enum manual_content_scan_db_usage
+{
+   MANUAL_CONTENT_SCAN_USE_DB_STRICT = 0,
+   MANUAL_CONTENT_SCAN_USE_DB_LOOSE,
+   MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT,
+   MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE,
+   MANUAL_CONTENT_SCAN_USE_DB_NONE
+};
+
+/* Defines database selection types */
+enum manual_content_scan_db_selection
+{
+   MANUAL_CONTENT_SCAN_SELECT_DB_AUTO = 0,
+   MANUAL_CONTENT_SCAN_SELECT_DB_AUTO_FIRST_MATCH,
+   MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC
 };
 
 /* Defines all possible core name types
@@ -82,11 +108,11 @@ enum manual_content_scan_playlist_refresh_status
  * for a manual content scan task */
 typedef struct
 {
+   char core_name[NAME_MAX_LENGTH];
+   char system_name[NAME_MAX_LENGTH];
+   char database_name[NAME_MAX_LENGTH];
+   char content_dir[DIR_MAX_LENGTH];
    char playlist_file[PATH_MAX_LENGTH];
-   char content_dir[PATH_MAX_LENGTH];
-   char system_name[PATH_MAX_LENGTH];
-   char database_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
    char core_path[PATH_MAX_LENGTH];
    char file_exts[PATH_MAX_LENGTH];
    char dat_file_path[PATH_MAX_LENGTH];
@@ -97,6 +123,10 @@ typedef struct
    bool filter_dat_content;
    bool overwrite_playlist;
    bool validate_entries;
+   bool omit_db_reference;
+   bool target_is_single_determined_playlist;
+   enum manual_content_scan_db_usage db_usage;
+   enum manual_content_scan_db_selection db_selection;
 } manual_content_scan_task_config_t;
 
 /*****************/
@@ -112,6 +142,13 @@ typedef struct
 /* Returns a pointer to the internal
  * 'content_dir' string */
 char *manual_content_scan_get_content_dir_ptr(void);
+
+unsigned manual_content_scan_get_scan_method_enum(void);
+unsigned manual_content_scan_get_scan_use_db_enum(void);
+unsigned manual_content_scan_get_scan_db_select_enum(void);
+
+char   *manual_content_scan_get_scan_db_select_custom_ptr(void);
+size_t *manual_content_scan_get_scan_db_select_custom_size(void);
 
 /* Returns a pointer to the internal
  * 'system_name_custom' string */
@@ -129,6 +166,10 @@ char *manual_content_scan_get_file_exts_custom_ptr(void);
  * 'file_exts_custom' string */
 size_t manual_content_scan_get_file_exts_custom_size(void);
 
+/* Returns custom extensions,
+ * falling back to core-supported extensions */
+const char *manual_content_scan_get_file_exts(void);
+
 /* Returns a pointer to the internal
  * 'dat_file_path' string */
 char *manual_content_scan_get_dat_file_path_ptr(void);
@@ -141,6 +182,8 @@ size_t manual_content_scan_get_dat_file_path_size(void);
  * 'search_recursively' bool */
 bool *manual_content_scan_get_search_recursively_ptr(void);
 
+bool *manual_content_scan_get_scan_single_file_ptr(void);
+bool *manual_content_scan_get_omit_db_ref_ptr(void);
 /* Returns a pointer to the internal
  * 'search_archives' bool */
 bool *manual_content_scan_get_search_archives_ptr(void);
@@ -180,6 +223,16 @@ enum manual_content_scan_dat_file_path_status
  * Returns true if content directory is valid. */
 bool manual_content_scan_set_menu_content_dir(const char *content_dir);
 
+bool manual_content_scan_set_menu_scan_method(
+      enum manual_content_scan_method method);
+
+bool manual_content_scan_set_menu_scan_use_db(
+      enum manual_content_scan_db_usage usage);
+
+bool manual_content_scan_set_menu_scan_db_select(
+      enum manual_content_scan_db_selection select,
+      const char *db_name);
+
 /* Sets system name for the next manual scan
  * operation.
  * Returns true if system name is valid.
@@ -218,18 +271,28 @@ enum manual_content_scan_playlist_refresh_status
  * Returns true if content directory is valid. */
 bool manual_content_scan_get_menu_content_dir(const char **content_dir);
 
+bool manual_content_scan_get_menu_scan_method(const char **scan_method);
+bool manual_content_scan_get_menu_scan_use_db(const char **scan_use_db);
+bool manual_content_scan_get_menu_scan_db_select(const char **scan_db_select);
+
 /* Fetches system name for the next manual scan operation.
  * Returns true if system name is valid.
  * NOTE: This corresponds to the 'System Name' value
  * displayed in menus - this is not identical to the
  * actual system name used when generating the playlist */
 bool manual_content_scan_get_menu_system_name(const char **system_name);
+unsigned manual_content_scan_get_menu_system_name_type(void);
 
 /* Fetches core name for the next manual scan operation.
  * Returns true if core name is valid. */
 bool manual_content_scan_get_menu_core_name(const char **core_name);
 
 /* Menu utility functions */
+
+struct string_list *manual_content_scan_get_menu_scan_method_list(void);
+struct string_list *manual_content_scan_get_menu_scan_use_db_list(void);
+struct string_list *manual_content_scan_get_menu_scan_db_select_list(
+               const char *path_content_database, bool show_hidden_files);
 
 /* Creates a list of all possible 'system name' menu
  * strings, for use in 'menu_displaylist' drop-down
@@ -259,6 +322,16 @@ bool manual_content_scan_get_task_config(
       const char *path_dir_playlist
       );
 
+/* Performs rudimentary validation of a Logiqx XML DAT
+ * file path: extension whitelist (.dat / .xml,
+ * case-insensitive), existence, size > 0, with the
+ * size optionally returned for free-memory checks.
+ * The parser itself (logiqx_dat.c) is path-agnostic
+ * and performs no validation or I/O; every consumer
+ * of a DAT path goes through this one predicate. */
+bool manual_content_scan_dat_path_is_valid(const char *path,
+      uint64_t *file_size);
+
 /* Creates a list of all valid content in the specified
  * content directory
  * > Returns NULL in the event of failure
@@ -266,12 +339,39 @@ bool manual_content_scan_get_task_config(
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config);
 
+/* Resumable counterpart of
+ * manual_content_scan_get_content_list(): creates
+ * @*list and, when the content dir is a directory, a
+ * dir_list_iter_t in @*iter that fills it under the
+ * caller's budget via dir_list_iter_step().  The same
+ * extension / compressed-file policy is applied.  A
+ * content dir that is a plain file fills the list here
+ * and leaves *iter NULL.  When the walk completes the
+ * caller owes the list the same treatment the blocking
+ * getter applied: reject it when empty, then
+ * dir_list_sort(list, true).
+ * > Returns false (leaving *list / *iter NULL) if
+ *   config is invalid or the directory cannot be
+ *   opened */
+bool manual_content_scan_content_list_iter_new(
+      manual_content_scan_task_config_t *task_config,
+      struct string_list **list, dir_list_iter_t **iter);
+
 /* Adds specified content to playlist, if not already
  * present */
 void manual_content_scan_add_content_to_playlist(
       manual_content_scan_task_config_t *task_config,
       playlist_t *playlist, const char *content_path,
       int content_type, logiqx_dat_t *dat_file);
+
+bool manual_content_scan_get_playlist_content_label(
+      const char *content_path, logiqx_dat_t *dat_file,
+      bool filter_dat_content,
+      char *s, size_t len);
+bool manual_content_scan_get_playlist_content_path(
+      manual_content_scan_task_config_t *task_config,
+      const char *content_path, int content_type,
+      char *s, size_t len);
 
 RETRO_END_DECLS
 

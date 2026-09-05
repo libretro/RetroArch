@@ -59,6 +59,11 @@ struct retro_dsp_filter
 
    struct retro_dsp_instance *instances;
    unsigned num_instances;
+
+   /* Whether every instance in the chain can process int16, folded once at
+    * creation. audio_driver_mixer_use_s16() asks on every flush and the
+    * answer cannot change until the chain is rebuilt. */
+   bool supports_i16;
 };
 
 static const struct dspfilter_implementation *find_implementation(
@@ -130,26 +135,46 @@ static bool create_filter_graph(retro_dsp_filter_t *dsp, float sample_rate)
          return false;
    }
 
+   /* Fold the chain's int16 capability once, here. */
+   dsp->supports_i16 = (filters > 0);
+   for (i = 0; i < filters; i++)
+   {
+      const struct dspfilter_implementation *impl = dsp->instances[i].impl;
+      if (impl->api_version < 2 || !impl->process_i16)
+      {
+         dsp->supports_i16 = false;
+         break;
+      }
+   }
+
    return true;
 }
 
 #if defined(HAVE_FILTERS_BUILTIN)
-extern const struct dspfilter_implementation *panning_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
-extern const struct dspfilter_implementation *iir_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
-extern const struct dspfilter_implementation *echo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
-extern const struct dspfilter_implementation *phaser_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
-extern const struct dspfilter_implementation *wahwah_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
-extern const struct dspfilter_implementation *eq_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *chorus_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *delta_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *echo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *eq_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *iir_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *panning_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *phaser_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *reverb_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *tremolo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *vibrato_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *wahwah_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 
 static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
-   panning_dspfilter_get_implementation,
-   iir_dspfilter_get_implementation,
-   echo_dspfilter_get_implementation,
-   phaser_dspfilter_get_implementation,
-   wahwah_dspfilter_get_implementation,
-   eq_dspfilter_get_implementation,
    chorus_dspfilter_get_implementation,
+   delta_dspfilter_get_implementation,
+   echo_dspfilter_get_implementation,
+   eq_dspfilter_get_implementation,
+   iir_dspfilter_get_implementation,
+   panning_dspfilter_get_implementation,
+   phaser_dspfilter_get_implementation,
+   reverb_dspfilter_get_implementation,
+   tremolo_dspfilter_get_implementation,
+   vibrato_dspfilter_get_implementation,
+   wahwah_dspfilter_get_implementation,
 };
 
 static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
@@ -206,7 +231,12 @@ static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
          continue;
       }
 
-      if (impl->api_version != DSPFILTER_API_VERSION)
+      /* Accept any supported ABI version. v1 plugins are float-only; v2 adds
+       * the optional process_i16 entry point. process_i16 is only ever read
+       * after an api_version >= 2 check, so a v1 plugin's shorter struct is
+       * never over-read. */
+      if (     impl->api_version < 1
+            || impl->api_version > DSPFILTER_API_VERSION)
       {
          dylib_close(lib);
          continue;
@@ -316,6 +346,33 @@ void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
       input.samples = output.samples;
       input.frames  = output.frames;
       dsp->instances[i].impl->process(
+            dsp->instances[i].impl_data, &output, &input);
+   }
+
+   data->output        = output.samples;
+   data->output_frames = output.frames;
+}
+
+bool retro_dsp_filter_supports_int16(retro_dsp_filter_t *dsp)
+{
+   return dsp && dsp->supports_i16;
+}
+
+void retro_dsp_filter_process_int16(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data_int16 *data)
+{
+   unsigned i;
+   struct dspfilter_output_i16 output = {0};
+   struct dspfilter_input_i16  input  = {0};
+
+   output.samples = data->input;
+   output.frames  = data->input_frames;
+
+   for (i = 0; i < dsp->num_instances; i++)
+   {
+      input.samples = output.samples;
+      input.frames  = output.frames;
+      dsp->instances[i].impl->process_i16(
             dsp->instances[i].impl_data, &output, &input);
    }
 

@@ -50,6 +50,10 @@ EOF
 	print_help_option "--host=HOST"              "Cross-compile with HOST-gcc instead of gcc"
 	print_help_option "--help"                   "Show this help"
 
+	printf %s\\n '' 'Default for custom toggle options can be yes, no, or auto.'
+	print_help_option 'Disable option is shown:' 'Default is yes'
+	print_help_option 'Enable option is shown:'  'Default is no'
+	print_help_option 'Both options are shown:'  'Default is auto (included if the necessary library is present)'
 	printf %s\\n '' 'Custom options:'
 
 	while read -r VAR _ COMMENT; do
@@ -88,7 +92,19 @@ parse_input() # Parse stuff :V
 	CONFIG_OPTS=''
 	config_opts='./configure'
 
-	while read -r VAR _; do
+	while read -r VAR _ || [ -n "$VAR" ]; do
+		# Skip blank lines and comment-only lines.  Only HAVE_* or
+		# bare-name=VALUE assignments are meaningful here; anything
+		# else (like "# comment") would produce a broken eval such
+		# as 'USER_#=auto'.
+		#
+		# The `|| [ -n "$VAR" ]` lets us process the final line even
+		# when config.params.sh has no trailing newline; otherwise
+		# `read` returns non-zero at EOF and the loop body is skipped,
+		# silently dropping whichever option happens to be last.
+		case "$VAR" in
+			''|'#'*) continue ;;
+		esac
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="${OPTS} $NEWVAR"

@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -29,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <errno.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
@@ -122,7 +124,7 @@ static float mode_vrefresh(drmModeModeInfo *mode)
 
 static void dump_mode(drmModeModeInfo *mode, int index)
 {
-   RARCH_DBG("Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
+   RARCH_DBG("[KMS] Mode details:  #%i %s %.2f %d %d %d %d %d %d %d %d %d\n",
       index,
       mode->name,
       mode_vrefresh(mode),
@@ -365,7 +367,7 @@ bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
       modeInfo->vrefresh    = video_st->crt_switch_st.vrefresh;
       modeInfo->type        = DRM_MODE_TYPE_USERDEF;
 
-      snprintf(modeInfo->name, 45, "RetroArch_CRT-%dx%d@%.02f%s"
+      snprintf(modeInfo->name, DRM_DISPLAY_MODE_LEN, "RetroArch_CRT-%dx%d@%.02f%s"
             , video_st->crt_switch_st.hdisplay
             , video_st->crt_switch_st.vdisplay
             , mode_vrefresh(modeInfo)
@@ -385,20 +387,57 @@ static bool gfx_ctx_drm_load_mode(drmModeModeInfoPtr modeInfo)
    settings_t *settings     = config_get_ptr();
    char *crt_switch_timings = settings->arrays.crt_switch_timings;
 
-   if (modeInfo && !string_is_empty(crt_switch_timings))
+   if (modeInfo && crt_switch_timings && *crt_switch_timings)
    {
       hdmi_timings_t timings;
-      int ret = sscanf(crt_switch_timings, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
-                   &timings.h_active_pixels, &timings.h_sync_polarity, &timings.h_front_porch,
-                   &timings.h_sync_pulse, &timings.h_back_porch,
-                   &timings.v_active_lines, &timings.v_sync_polarity, &timings.v_front_porch,
-                   &timings.v_sync_pulse, &timings.v_back_porch,
-                   &timings.v_sync_offset_a, &timings.v_sync_offset_b, &timings.pixel_rep, &timings.frame_rate,
-                   &timings.interlaced, &timings.pixel_freq, &timings.aspect_ratio);
-      if (ret != 17)
+      int *timings_fields[17];
+      int i;
+      char *p = crt_switch_timings;
+      char *endptr;
+
+      timings_fields[0]  = &timings.h_active_pixels;
+      timings_fields[1]  = &timings.h_sync_polarity;
+      timings_fields[2]  = &timings.h_front_porch;
+      timings_fields[3]  = &timings.h_sync_pulse;
+      timings_fields[4]  = &timings.h_back_porch;
+      timings_fields[5]  = &timings.v_active_lines;
+      timings_fields[6]  = &timings.v_sync_polarity;
+      timings_fields[7]  = &timings.v_front_porch;
+      timings_fields[8]  = &timings.v_sync_pulse;
+      timings_fields[9]  = &timings.v_back_porch;
+      timings_fields[10] = &timings.v_sync_offset_a;
+      timings_fields[11] = &timings.v_sync_offset_b;
+      timings_fields[12] = &timings.pixel_rep;
+      timings_fields[13] = &timings.frame_rate;
+      timings_fields[14] = &timings.interlaced;
+      timings_fields[15] = &timings.pixel_freq;
+      timings_fields[16] = &timings.aspect_ratio;
+
+      for (i = 0; i < 17; i++)
       {
-         RARCH_ERR("[DRM]: malformed mode requested: %s\n", crt_switch_timings);
-         return false;
+         long val;
+
+         /* Skip whitespace */
+         while (*p == ' ' || *p == '\t')
+            p++;
+
+         if (*p == '\0')
+         {
+            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
+            return false;
+         }
+
+         endptr = NULL;
+         val    = strtol(p, &endptr, 10);
+
+         if (endptr == p)
+         {
+            RARCH_ERR("[KMS] Malformed mode requested: %s.\n", crt_switch_timings);
+            return false;
+         }
+
+         *timings_fields[i] = (int)val;
+         p = endptr;
       }
 
       memset(modeInfo, 0, sizeof(drmModeModeInfo));
@@ -450,7 +489,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    stride = gbm_bo_get_stride(bo);
    handle = gbm_bo_get_handle(bo).u32;
 
-   RARCH_LOG("[KMS]: New FB: %ux%u (stride: %u).\n",
+   RARCH_LOG("[KMS] New FB: %ux%u (stride: %u).\n",
          width, height, stride);
 
    ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
@@ -462,7 +501,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    return fb;
 
 error:
-   RARCH_ERR("[KMS]: Failed to create FB.\n");
+   RARCH_ERR("[KMS] Failed to create FB.\n");
    free(fb);
    return NULL;
 }
@@ -473,7 +512,7 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
    drm->interval           = interval;
 
    if (interval > 1)
-      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+      RARCH_WARN("[KMS] Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
@@ -488,24 +527,6 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
-#if 0
-   static unsigned first_page_flip;
-   static unsigned last_page_flip;
-
-   if (!first_page_flip)
-      first_page_flip = frame;
-
-   if (last_page_flip)
-   {
-      unsigned missed = frame - last_page_flip - 1;
-      if (missed)
-         RARCH_LOG("[KMS]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
-               missed, frame - first_page_flip, frame);
-   }
-
-   last_page_flip = frame;
-#endif
-
    *(bool*)data = false;
 }
 
@@ -540,18 +561,65 @@ static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
 
 static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 {
-   struct drm_fb *fb = NULL;
+   struct drm_fb *fb     = NULL;
+   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
 
-   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
-   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
+   if (!next_bo)
+   {
+      RARCH_DBG(
+            "[KMS] gbm_surface_lock_front_buffer failed: "
+            "surface=%p size=%ux%u errno=%d (%s).\n",
+            (void *)drm->gbm_surface,
+            drm->fb_width,
+            drm->fb_height,
+            errno,
+            strerror(errno));
+      return false;
+   }
+
+   drm->next_bo = next_bo;
+   fb           = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
 
    if (!fb)
-      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
+      fb        = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
+
+   if (!fb)
+   {
+      /* No framebuffer could be associated with the buffer object;
+       * release it and drop the frame rather than dereferencing NULL. */
+      RARCH_ERR("[KMS] Failed to obtain a framebuffer for the buffer object.\n");
+      gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+      drm->next_bo = NULL;
+      return false;
+   }
 
    if (switch_mode)
    {
-      RARCH_DBG("[KMS]: modeswitch detected, creating the new CRTC\n");
-      drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      int ret;
+      RARCH_DBG("[KMS] modeswitch detected, creating the new CRTC.\n");
+      ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      if (ret != 0)
+      {
+         RARCH_ERR(
+               "[KMS] drmModeSetCrtc failed for %ux%u%s: "
+               "ret=%d errno=%d (%s), clock=%u flags=0x%x\n",
+               g_drm_mode->hdisplay,
+               g_drm_mode->vdisplay,
+               (g_drm_mode->flags & DRM_MODE_FLAG_INTERLACE) ? "i" : "p",
+               ret,
+               errno,
+               strerror(errno),
+               g_drm_mode->clock,
+               g_drm_mode->flags);
+
+         gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+         drm->next_bo = NULL;
+
+         /* Keep running on the previous valid mode.
+          * A later frame may provide a better geometry/mode. */
+         switch_mode = false;
+         return false;
+      }
       switch_mode = false;
    }
 
@@ -572,15 +640,14 @@ static void gfx_ctx_drm_swap_buffers(void *data)
    /* Recreate the surface */
    if (switch_mode)
    {
-      RARCH_DBG("[KMS]: modeswitch detected, doing GBM and EGL stuff\n");
+      RARCH_DBG("[KMS] modeswitch detected, doing GBM and EGL stuff.\n");
       if (drm->gbm_surface)
       {
          if (drm->bo)
             gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
          if (drm->next_bo)
-            gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
-         egl_ctx_data_t *egl = &drm->egl;
-         eglDestroySurface(egl->dpy, egl->surf);
+            gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+         egl_destroy_surface(&drm->egl);
 
          gbm_surface_destroy(drm->gbm_surface);
       }
@@ -592,7 +659,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
       if (!drm->gbm_surface)
-         RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+         RARCH_ERR("[KMS] Couldn't create GBM surface.\n");
 
       /* Creates an EGL surface and make it current */
       egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
@@ -724,7 +791,7 @@ nextgpu:
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
    {
-      RARCH_ERR("[KMS]: Couldn't find a suitable DRM device.\n");
+      RARCH_ERR("[KMS] Couldn't find a suitable DRM device.\n");
       goto error;
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
@@ -732,7 +799,7 @@ nextgpu:
    drm->fd    = open(gpu, O_RDWR);
    if (drm->fd < 0)
    {
-      RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
+      RARCH_WARN("[KMS] Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
@@ -781,7 +848,7 @@ nextgpu:
 
    if (!drm->gbm_dev)
    {
-      RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
+      RARCH_WARN("[KMS] Couldn't create GBM device.\n");
       goto nextgpu;
    }
 
@@ -796,7 +863,7 @@ nextgpu:
    g_drm_fd                       = fd;
 
    video_driver_display_type_set(RARCH_DISPLAY_KMS);
-   
+
    return drm;
 
 error:
@@ -817,6 +884,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    float refresh_mod;
    int i, ret                      = 0;
    struct drm_fb *fb               = NULL;
+   struct gbm_bo *bo               = NULL;
    gfx_ctx_drm_data_t *drm         = (gfx_ctx_drm_data_t*)data;
    settings_t *settings            = config_get_ptr();
    unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
@@ -836,7 +904,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
     * which is not appropriate. */
    if (gfx_ctx_drm_get_mode_from_video_state(&gfx_ctx_crt_switch_mode))
    {
-      RARCH_DBG("[KMS]: New mode detected: %dx%d\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
+      RARCH_DBG("[KMS] New mode detected: %dx%d.\n", gfx_ctx_crt_switch_mode.hdisplay, gfx_ctx_crt_switch_mode.vdisplay);
       g_drm_mode     = &gfx_ctx_crt_switch_mode;
       drm->fb_width  = gfx_ctx_crt_switch_mode.hdisplay;
       drm->fb_height = gfx_ctx_crt_switch_mode.vdisplay;
@@ -846,7 +914,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    }
    if ((width == 0 && height == 0) || !fullscreen)
    {
-      RARCH_WARN("[KMS]: Falling back to mode 0 (default)\n");
+      RARCH_WARN("[KMS] Falling back to mode 0 (default).\n");
       g_drm_mode     = &g_drm_connector->modes[0];
    }
    else
@@ -854,7 +922,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       /* check if custom HDMI timings were asked */
       if (gfx_ctx_crt_switch_mode.vdisplay > 0)
       {
-         RARCH_LOG("[DRM]: custom mode requested: %s\n", gfx_ctx_crt_switch_mode.name);
+         RARCH_LOG("[KMS] Custom mode requested: %s.\n", gfx_ctx_crt_switch_mode.name);
          g_drm_mode  = &gfx_ctx_crt_switch_mode;
       }
       else
@@ -893,7 +961,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    if (!g_drm_mode)
    {
-      RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n",
+      RARCH_ERR("[KMS] Did not find suitable video mode for %ux%u.\n",
             width, height);
       goto error;
    }
@@ -911,7 +979,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
    if (!drm->gbm_surface)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't create GBM surface.\n");
+      RARCH_ERR("[KMS] Couldn't create GBM surface.\n");
       goto error;
    }
 
@@ -920,7 +988,10 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
 #endif
 
-   drm->bo   = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   if (!bo)
+      goto error;
+   drm->bo   = bo;
 
    if (!(fb = (struct drm_fb*)gbm_bo_get_user_data(drm->bo)))
       fb     = drm_fb_get_from_bo(drm->bo);
@@ -933,7 +1004,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
 error:
    gfx_ctx_drm_destroy_resources(drm);
-   RARCH_ERR("[KMS]: Error when switching mode.\n");
+   RARCH_ERR("[KMS] Error when switching mode.\n");
 
    if (drm)
       free(drm);
@@ -956,15 +1027,15 @@ static void gfx_ctx_drm_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_X11
    settings_t *settings = config_get_ptr();
 
-   /* We cannot use the X11 input driver for DRM/KMS */
-   if (string_is_equal(settings->arrays.input_driver, "x"))
+   /* We cannot use the X11 input driver for DRM/KMS, and udev may be restricted */
+   if (   string_is_equal(settings->arrays.input_driver, "x")
+       || string_is_equal(settings->arrays.input_driver, "udev"))
    {
 #ifdef HAVE_UDEV
       {
-         /* Try to set it to udev instead */
+         /* Try to set it to udev */
          void *udev = input_driver_init_wrap(&input_udev, joypad_name);
          if (udev)
          {
@@ -976,7 +1047,7 @@ static void gfx_ctx_drm_input_driver(void *data,
 #endif
 #if defined(__linux__) && !defined(ANDROID)
       {
-         /* Try to set it to linuxraw instead */
+         /* Try to set it to linuxraw if not available or failed to initialize */
          void *linuxraw = input_driver_init_wrap(&input_linuxraw, joypad_name);
          if (linuxraw)
          {
@@ -987,7 +1058,6 @@ static void gfx_ctx_drm_input_driver(void *data,
       }
 #endif
    }
-#endif
 
    *input      = NULL;
    *input_data = NULL;
@@ -1069,7 +1139,11 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
 #endif
    }
    else
+   {
+#ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
+   }
 
    BIT32_SET(flags, GFX_CTX_FLAGS_CRT_SWITCHRES);
 
@@ -1083,6 +1157,26 @@ static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
       drm->core_hw_context_enable = true;
 }
 
+static bool gfx_ctx_drm_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   return egl_create_surface(&drm->egl, (EGLNativeWindowType)drm->gbm_surface);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_drm_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   return egl_destroy_surface(&drm->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -1091,7 +1185,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_swap_interval,
    gfx_ctx_drm_set_video_mode,
    gfx_ctx_drm_get_video_size,
-   drm_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    gfx_ctx_drm_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -1118,5 +1212,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_set_flags,
    gfx_ctx_drm_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_drm_create_surface,
+   gfx_ctx_drm_destroy_surface
 };

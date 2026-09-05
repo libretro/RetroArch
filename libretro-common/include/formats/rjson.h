@@ -61,13 +61,9 @@ enum rjson_option
  * Should return > 0 and <= len on success, 0 on file end and < 0 on error. */
 typedef int (*rjson_io_t)(void* buf, int len, void *user_data);
 typedef struct rjson rjson_t;
-struct intfstream_internal;
-struct RFILE;
 
 /* Create a new parser instance from various sources */
-rjson_t *rjson_open_stream(struct intfstream_internal *stream);
-rjson_t *rjson_open_rfile(struct RFILE *rfile);
-rjson_t *rjson_open_buffer(const void *buffer, size_t size);
+rjson_t *rjson_open_buffer(const void *buffer, size_t len);
 rjson_t *rjson_open_string(const char *string, size_t len);
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size);
 
@@ -106,7 +102,7 @@ const char *rjson_get_error(rjson_t *json);
 void rjson_set_error(rjson_t *json, const char* error);
 
 /* Functions to get the current position in the source stream as well as */
-/* a bit of source json arround the current position for additional detail
+/* a bit of source json around the current position for additional detail
  * when parsing has failed with RJSON_ERROR.
  * Intended to be used with printf style formatting like:
  * printf("Invalid JSON at line %d, column %d - %s - Source: ...%.*s...\n",
@@ -127,7 +123,7 @@ bool rjson_check_context(rjson_t *json, unsigned int depth, ...);
 unsigned int rjson_get_context_depth(rjson_t *json);
 
 /* Return the current parsing context, that is, RJSON_OBJECT if we are inside
- * an object, RJSON_ARRAY if we are inside an array, and RJSON_DONE or 
+ * an object, RJSON_ARRAY if we are inside an array, and RJSON_DONE or
  * RJSON_ERROR if we are not yet/anymore in either. */
 enum rjson_type rjson_get_context_type(rjson_t *json);
 
@@ -183,8 +179,6 @@ typedef int (*rjsonwriter_io_t)(const void* buf, int len, void *user_data);
 typedef struct rjsonwriter rjsonwriter_t;
 
 /* Create a new writer instance to various targets */
-rjsonwriter_t *rjsonwriter_open_stream(struct intfstream_internal *stream);
-rjsonwriter_t *rjsonwriter_open_rfile(struct RFILE *rfile);
 rjsonwriter_t *rjsonwriter_open_memory(void);
 rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
 

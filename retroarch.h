@@ -59,7 +59,7 @@
 
 #define RETRO_ENVIRONMENT_POLL_TYPE_OVERRIDE (4 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
                                             /* unsigned * --
-                                            * Tells the frontend to override the poll type behavior. 
+                                            * Tells the frontend to override the poll type behavior.
                                             * Allows the frontend to influence the polling behavior of the
                                             * frontend.
                                             *
@@ -71,6 +71,11 @@
                                             * 3 - Late
                                             */
 
+#define RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO (5 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* bool * --
+                                            * If true, disables the save state save/load undo feature to conserve memory.
+                                            */
+
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
       | DRIVER_MICROPHONE_MASK \
@@ -79,7 +84,6 @@
       | DRIVER_CAMERA_MASK \
       | DRIVER_LOCATION_MASK \
       | DRIVER_MENU_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
       | DRIVER_BLUETOOTH_MASK \
       | DRIVER_WIFI_MASK \
       | DRIVER_LED_MASK \
@@ -104,12 +108,15 @@ enum rarch_state_flags
    RARCH_FLAGS_BPS_PREF                     = (1 << 11),
    RARCH_FLAGS_IPS_PREF                     = (1 << 12),
    RARCH_FLAGS_BLOCK_CONFIG_READ            = (1 << 13),
-   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14)
+   RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14),
+   RARCH_FLAGS_HAS_SET_XDELTA_PREF          = (1 << 15),
+   RARCH_FLAGS_XDELTA_PREF                  = (1 << 16),
+   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
 
-int retroarch_get_capabilities(enum rarch_capabilities type,
+size_t retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
 void retroarch_override_setting_set(enum rarch_override_setting enum_idx, void *data);
@@ -182,7 +189,7 @@ const char* config_get_microphone_driver_options(void);
 unsigned int retroarch_get_core_requested_rotation(void);
 
 /*
-   Returns final rotation including both user chosen video rotation 
+   Returns final rotation including both user chosen video rotation
    and core requested rotation if allowed by video_allow_rotate
 */
 unsigned int retroarch_get_rotation(void);
@@ -192,7 +199,7 @@ void retroarch_init_task_queue(void);
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
-void core_options_reset(void);
+void core_options_reset(const char *label);
 void core_options_flush(void);
 
 /**
@@ -204,7 +211,9 @@ void core_options_flush(void);
  **/
 void retroarch_fail(int error_code, const char *error);
 
-uint16_t retroarch_get_flags(void);
+bool should_quit_on_close(void);
+
+uint32_t retroarch_get_flags(void);
 
 RETRO_END_DECLS
 

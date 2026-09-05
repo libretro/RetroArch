@@ -30,7 +30,7 @@
 asm(
     DECL_ARMMODE("convert_s16_float_asm")
     DECL_ARMMODE("_convert_s16_float_asm")
-    "# convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain)\n"
+    "# convert_s16_float_asm(float *s, const int16_t *in, size_t len, const float *gain)\n"
     "   # Hacky way to get a constant of 2^-15.\n"
     "   # Might be faster to just load a constant from memory.\n"
     "   # It's just done once however ...\n"

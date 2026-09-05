@@ -87,8 +87,8 @@ enum cheat_rumble_type
 struct item_cheat
 {
    /* Clock value for when rumbling should stop */
-   retro_time_t rumble_primary_end_time; 
-   retro_time_t rumble_secondary_end_time; 
+   retro_time_t rumble_primary_end_time;
+   retro_time_t rumble_secondary_end_time;
 
    char *desc;
    char *code;
@@ -128,7 +128,7 @@ struct item_cheat
    unsigned int rumble_prev_value;
    unsigned int rumble_initialized;
    /* 0-15 for specific port, anything else means "all ports" */
-   unsigned int rumble_port; 
+   unsigned int rumble_port;
    unsigned int rumble_primary_strength; /* 0-65535 */
    unsigned int rumble_primary_duration; /* in milliseconds */
    unsigned int rumble_secondary_strength; /* 0-65535 */
@@ -141,7 +141,7 @@ struct item_cheat
     * repeat_add_to_address - every iteration of repeat_count will have this amount added to item_cheat.address
     *
     * Note that repeat_add_to_address represents the number of "memory_search_size" blocks to add to
-    * item_cheat.address.  If memory_seach_size is 16-bits and repeat_add_to_address is 2, then item_cheat.address
+    * item_cheat.address.  If memory_search_size is 16-bits and repeat_add_to_address is 2, then item_cheat.address
     * will be increased by 4 bytes 2*(16-bits) for every iteration.
     *
     * This is a cheating structure used for codes like unlocking all levels, giving yourself 1 of every item,etc.
@@ -164,7 +164,6 @@ struct cheat_manager
    uint8_t *matches;
    uint8_t **memory_buf_list;
    unsigned *memory_size_list;
-   unsigned int delete_state;
    unsigned int loading_cheat_size;
    unsigned int loading_cheat_offset;
    unsigned ptr;
@@ -182,10 +181,15 @@ struct cheat_manager
    unsigned num_matches;
    unsigned browse_address;
    char working_desc[CHEAT_DESC_SCRATCH_SIZE];
-   char working_code[CHEAT_CODE_SCRATCH_SIZE];
-   bool  big_endian;
-   bool  memory_initialized;
-   bool  memory_search_initialized;
+   /* Sixteen kilobytes of cheat-editor scratch; allocated on first
+    * use and deliberately never freed: menu rows bind its address
+    * and outlive any one content session, exactly as they did the
+    * old static array. cheat_manager_working_code_ensure() must run
+    * before any use. */
+   char *working_code;
+   bool big_endian;
+   bool memory_initialized;
+   bool memory_search_initialized;
 };
 
 typedef struct cheat_manager cheat_manager_t;
@@ -215,13 +219,14 @@ void cheat_manager_index_next(void);
 
 void cheat_manager_index_prev(void);
 
-void cheat_manager_toggle(void);
+void cheat_manager_toggle(bool notification_show_cheats_applied);
 
-void cheat_manager_apply_cheats(void);
+void cheat_manager_apply_cheats(bool notification_show_cheats_applied);
 
 void cheat_manager_update(cheat_manager_t *handle, unsigned handle_idx);
 
 void cheat_manager_toggle_index(bool apply_cheats_after_toggle,
+      bool notification_show_cheats_applied,
       unsigned i);
 
 unsigned cheat_manager_get_buf_size(void);
@@ -238,6 +243,8 @@ void cheat_manager_alloc_if_empty(void);
 
 bool cheat_manager_copy_idx_to_working(unsigned idx);
 
+bool cheat_manager_working_code_ensure(void);
+
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 
 void cheat_manager_load_game_specific_cheats(const char *path_cheat_database);
@@ -247,6 +254,12 @@ void cheat_manager_save_game_specific_cheats(const char *path_cheat_database);
 int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int cheat_manager_search_exact(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+int cheat_manager_search_exact_input(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+int cheat_manager_search_eqplus_input(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+int cheat_manager_search_eqminus_input(rarch_setting_t *setting, size_t idx, bool wraparound);
 
 int cheat_manager_search_lt(rarch_setting_t *setting, size_t idx, bool wraparound);
 

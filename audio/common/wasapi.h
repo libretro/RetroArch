@@ -17,22 +17,14 @@
 /**
  * Contains WASAPI-specific support functions that are used
  * by the WASAPI audio and microphone drivers.
- *
  */
 
 #ifndef RETROARCH_COMMON_WASAPI_H
 #define RETROARCH_COMMON_WASAPI_H
 
-#include "../common/mmdevice_common_inline.h"
-#include "boolean.h"
-
-/* Get automatic buffer size from client buffer instead of device period */
-#define USE_CLIENT_BUFFER
-
-const char *hresult_name(HRESULT hr);
-const char* wasapi_error(DWORD error);
-IMMDevice *wasapi_init_device(const char *id, EDataFlow data_flow);
-IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
-                                 bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels);
+/* Shared buffer size replacement placeholders */
+#define WASAPI_SH_BUFFER_AUDIO_LATENCY 0
+#define WASAPI_SH_BUFFER_DEVICE_PERIOD 32
+#define WASAPI_SH_BUFFER_CLIENT_BUFFER 64
 
 #endif /* RETROARCH_COMMON_WASAPI_H */

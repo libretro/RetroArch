@@ -17,7 +17,7 @@
 #define __ANGLE_COMMON_H
 
 #ifdef HAVE_GBM
-/* presense or absense of this include makes egl.h change NativeWindowType between gbm_device* and _XDisplay* */
+/* presence or absence of this include makes egl.h change NativeWindowType between gbm_device* and _XDisplay* */
 #include <gbm.h>
 #endif
 #include <EGL/egl.h>

@@ -25,7 +25,16 @@
 
 #include "font_driver.h"
 
-#define TICKER_SPACER_DEFAULT "   |   "
+#define TICKER_SPACER_DEFAULT "  |  "
+#define TICKER_SPEED          333333
+
+/* Pixel ticker nominally increases by one after each
+ * TICKER_PIXEL_PERIOD ms (actual increase depends upon
+ * ticker speed setting and display resolution)
+ *
+ * Formula is: (1.0f / 60.0f) * 1000.0f
+ * */
+#define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
 #define ANIM_IS_ACTIVE(_p) (((_p)->flags & (GFX_ANIM_FLAG_IS_ACTIVE)) || ((_p)->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 
@@ -122,6 +131,13 @@ typedef struct gfx_animation_ctx_ticker
    char *s;
    const char *str;
    const char *spacer;
+   /* Size of the buffer @s points at, in BYTES.  Must be set; a
+    * ticker with s_len == 0 is rejected rather than guessed at.
+    * Distinct from @len below, and the distinction matters: one
+    * glyph of CJK or emoji is three or four bytes, so a string that
+    * fits @len glyphs can be several times @s_len bytes long. */
+   size_t s_len;
+   /* Width of the field to fit the string into, in GLYPHS. */
    size_t len;
    enum gfx_animation_ticker_type type_enum;
    bool selected;
@@ -133,7 +149,7 @@ typedef struct gfx_animation_ctx_ticker_smooth
    const char *src_str;
    const char *spacer;
    char *dst_str;
-   unsigned *dst_str_width; /* May be set to NULL 
+   unsigned *dst_str_width; /* May be set to NULL
                                (RGUI + XMB do not require this info) */
    unsigned *x_offset;
    font_data_t *font;
@@ -200,8 +216,14 @@ struct tween
    tween_cb    cb;
    void        *userdata;
    uintptr_t   tag;
+   /* Timestamp (us) of the update frame on which the tween
+    * became live. Zero means 'not yet started' - the field is
+    * lazily initialised on the tween's first update frame
+    * (gfx_animation timestamps use zero as a sentinel, and
+    * the monotonic microsecond clock never legitimately
+    * returns it) */
+   retro_time_t start_time;
    float       duration;
-   float       running_since;
    float       initial_value;
    float       target_value;
    float       *subject;
@@ -241,10 +263,6 @@ bool gfx_animation_update(
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker);
 
 bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker);
-
-bool gfx_animation_line_ticker(gfx_animation_ctx_line_ticker_t *line_ticker);
-
-bool gfx_animation_line_ticker_smooth(gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
 

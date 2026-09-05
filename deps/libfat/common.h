@@ -65,10 +65,6 @@
 #if   defined (__wiiu__)
    #define DEFAULT_CACHE_PAGES 512
    #define DEFAULT_SECTORS_PAGE 128
-#if 0
-#define USE_LWP_LOCK
-#define USE_RTC_TIME
-#endif
 #elif   defined (__wii__)
    #define DEFAULT_CACHE_PAGES 4
    #define DEFAULT_SECTORS_PAGE 64

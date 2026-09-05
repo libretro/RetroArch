@@ -121,7 +121,8 @@ static int stub_read_bin(
         void * s,
         uint32_t len,
         void * data
-){
+)
+{
 	stub_state_pre_print(data);
 	printf("b'%s'", (char*)s);
 	stub_state_post_print(data);
@@ -186,9 +187,9 @@ static struct rmsgpack_read_callbacks stub_callbacks = {
 int main(void)
 {
    struct stub_state state;
-   RFILE *fd = filestream_open("test.msgpack",
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   intfstream_t *fd = intfstream_open_file("test.msgpack",
+                                           RETRO_VFS_FILE_ACCESS_READ,
+                                           RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    state.i        = 0;
    state.stack[0] = 0;
@@ -196,7 +197,7 @@ int main(void)
    rmsgpack_read(fd, &stub_callbacks, &state);
 
    printf("Test succeeded.\n");
-   filestream_close(fd);
+   intfstream_close(fd);
 
    return 0;
 }

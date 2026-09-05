@@ -42,7 +42,6 @@
 
 #include <encodings/utf.h>
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_DBUS
 #include "dbus_common.h"
@@ -74,7 +73,12 @@ Colormap g_x11_cmap;
 static XF86VidModeModeInfo desktop_mode;
 #endif
 static bool xdg_screensaver_available       = true;
-static bool g_x11_has_focus                 = false;
+/* Whether the window is mapped - the compositor or WM has it on
+ * screen. Written only by MapNotify and UnmapNotify below, and once at
+ * input-context creation; nothing to do with keyboard focus, which
+ * x11_has_focus() asks the server for. The old name said focus and
+ * misled a reader into thinking an unfocused window cleared it. */
+static bool g_x11_mapped                    = false;
 static bool g_x11_true_full                 = false;
 static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
@@ -141,6 +145,22 @@ void x11_set_net_wm_fullscreen(Display *dpy, Window win)
          &xev);
 }
 
+/* Set the fullscreen state on the window before it is shown.
+ * On GNOME + X11 (Mutter), fullscreen works properly when the
+ * window carries the fullscreen hint as it is being mapped */
+void x11_set_net_wm_fullscreen_hint(Display *dpy, Window win)
+{
+   Atom states[1]             = {0};
+
+   XA_NET_WM_STATE            = XInternAtom(dpy, "_NET_WM_STATE", False);
+   XA_NET_WM_STATE_FULLSCREEN = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+   states[0]                  = XA_NET_WM_STATE_FULLSCREEN;
+
+   XChangeProperty(dpy, win, XA_NET_WM_STATE, XA_ATOM, 32,
+         PropModeReplace, (const unsigned char*)states,
+         sizeof(states) / sizeof(*states));
+}
+
 /* Try to be nice to tiling WMs if possible. */
 
 void x11_move_window(Display *dpy, Window win, int x, int y,
@@ -191,7 +211,7 @@ static void x11_set_window_pid(Display *dpy, Window win)
         return;
 
     if (gethostname(hostname, scret + 1) == -1)
-        RARCH_WARN("Failed to get hostname.\n");
+        RARCH_WARN("[X11] Failed to get hostname.\n");
     else
         XChangeProperty(dpy, win, XA_WM_CLIENT_MACHINE, XA_STRING, 8,
             PropModeReplace, (unsigned char *)hostname, strlen(hostname));
@@ -204,6 +224,64 @@ void x11_set_window_attr(Display *dpy, Window win)
    x11_set_window_pid(dpy, win);
 }
 
+#ifdef HAVE_XSCRNSAVER
+#include <X11/extensions/scrnsaver.h>
+static bool xss_screensaver_inhibit(Display *dpy, bool enable)
+{
+    int dummy, min, maj;
+    /* Guard against being called with a NULL Display.  This
+     * happens with the SDL2 video driver under HAVE_X11 +
+     * HAVE_XSCRNSAVER builds without HAVE_DBUS: SDL2's
+     * sdl2_set_handles() in gfx/common/sdl2_common.c sets the
+     * display *type* to RARCH_DISPLAY_X11 (so the gate in
+     * x11_suspend_screensaver passes) and routes the SDL-owned
+     * X Display through video_driver_display_set(), but the
+     * file-scope g_x11_dpy here stays at its initial NULL --
+     * it's only assigned in the xvideo / GL / X11-direct init
+     * paths.  libX11's XQueryExtension() then SEGVs at a tiny
+     * offset off the NULL display pointer.  Most desktop builds
+     * never hit this because HAVE_DBUS is on and
+     * dbus_suspend_screensaver() short-circuits before this
+     * line; surfaced by the ASan+UBSan CI workflow's headless
+     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
+     * apt-installed but libXss is. */
+    if (!dpy)
+       return false;
+    if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
+            || !XScreenSaverQueryVersion(dpy, &maj, &min)
+            || (maj < 1)
+            || (maj == 1 && min < 1))
+            return false;
+    XScreenSaverSuspend(dpy, enable);
+    XResetScreenSaver(dpy);
+    return true;
+}
+#else
+static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
+#endif
+
+/* Probe once for xdg-screensaver and its xset backend dependency.
+ * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
+ * (common on minimal installs / containers / some WMs without
+ * x11-xserver-utils), invoking xdg-screensaver spams stderr with
+ * "xset: not found" and "Illegal number" without us ever knowing why.
+ * Check up front so we can silently no-op instead. */
+static bool xdg_screensaver_probe(void)
+{
+   /* Both are needed: xdg-screensaver itself, and xset which it execs.
+    * `command -v` is a POSIX shell builtin so this works under /bin/sh
+    * on every platform that has system(). Redirecting both streams
+    * keeps the probe silent. */
+   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+                "command -v xset >/dev/null 2>&1");
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+   return true;
+}
+
 static void xdg_screensaver_inhibit(Window wnd)
 {
    int  ret;
@@ -213,7 +291,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 
    title[0] = '\0';
 
-   RARCH_LOG("[X11]: Suspending screensaver (X11, xdg-screensaver).\n");
+   RARCH_LOG("[X11] Suspending screensaver (X11, xdg-screensaver).\n");
 
    if (g_x11_dpy && g_x11_win)
    {
@@ -223,23 +301,50 @@ static void xdg_screensaver_inhibit(Window wnd)
        * the same, as if there's no title at all. */
       size_t title_len = video_driver_get_window_title(title, sizeof(title));
       if (title_len == 0)
-         title_len = strlcpy(title, " ", sizeof(title));
+         title_len = strlcpy_lit(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*) title, title_len);
+
+#ifdef X_HAVE_UTF8_STRING
+      /* Also set the EWMH _NET_WM_NAME (UTF8_STRING). Without this, a
+       * title containing non-Latin-1 characters set via the legacy
+       * WM_NAME above is rendered garbled by EWMH-aware window managers,
+       * and this code path (which runs on screensaver inhibit, i.e. on
+       * window creation and game open/close transitions) would otherwise
+       * leave a stale legacy-only title behind. Purely additive: if the
+       * atoms are unavailable, WM_NAME remains the sole fallback. */
+      {
+         Atom XA_NET_WM_NAME      = XInternAtom(g_x11_dpy, "_NET_WM_NAME",      False);
+         Atom XA_NET_WM_ICON_NAME = XInternAtom(g_x11_dpy, "_NET_WM_ICON_NAME", False);
+         Atom XA_UTF8_STRING      = XInternAtom(g_x11_dpy, "UTF8_STRING",       False);
+
+         if (XA_UTF8_STRING)
+         {
+            if (XA_NET_WM_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, title_len);
+            if (XA_NET_WM_ICON_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, title_len);
+         }
+      }
+#endif
    }
 
-   _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
+   _len = strlcpy_lit(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
    snprintf(cmd + _len, sizeof(cmd) - _len, "%x", (int)wnd);
 
    if ((ret = system(cmd)) == -1)
    {
       xdg_screensaver_available = false;
-      RARCH_WARN("Failed to launch xdg-screensaver.\n");
+      RARCH_WARN("[X11] Failed to launch xdg-screensaver.\n");
    }
    else if (WEXITSTATUS(ret))
    {
       xdg_screensaver_available = false;
-      RARCH_WARN("Could not suspend screen saver.\n");
+      RARCH_WARN("[X11] Could not suspend screensaver.\n");
    }
 }
 
@@ -253,9 +358,22 @@ bool x11_suspend_screensaver(void *data, bool enable)
     if (dbus_suspend_screensaver(enable))
        return true;
 #endif
-    if (enable)
+    if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
+    {
        if (xdg_screensaver_available)
+       {
+          static bool probed = false;
+          if (!probed)
+          {
+             xdg_screensaver_available = xdg_screensaver_probe();
+             probed = true;
+          }
+          if (!xdg_screensaver_available)
+             return true;
           xdg_screensaver_inhibit(wnd);
+          return xdg_screensaver_available;
+       }
+    }
     return true;
 }
 
@@ -384,10 +502,17 @@ static void x11_init_keyboard_lut(void)
       if (x11_keysym_rlut)
          free(x11_keysym_rlut);
 
-      x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned));
-
-      for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
-         x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
+      /* NULL-check the calloc: the populate loop below dereferences
+       * x11_keysym_rlut[map->sym] unconditionally, so an OOM here
+       * would segfault.  The reader (x11_keysym_lookup, line ~493)
+       * guards with 'if (x11_keysym_rlut && sym < size)', so leaving
+       * the pointer NULL on failure cleanly disables the rlut path
+       * without further damage. */
+      if (!(x11_keysym_rlut = (unsigned*)calloc(++x11_keysym_rlut_size, sizeof(unsigned))))
+         x11_keysym_rlut_size = 0;
+      else
+         for (map = map_start; map->rk != RETROK_UNKNOWN; map++)
+            x11_keysym_rlut[map->sym] = (enum retro_key)map->rk;
    }
    else
       x11_keysym_rlut_size = 0;
@@ -423,18 +548,18 @@ static bool x11_create_input_context(Display *dpy,
    x11_destroy_input_context(xim, xic);
    x11_init_keyboard_lut();
 
-   g_x11_has_focus = true;
+   g_x11_mapped = true;
 
    if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
-      RARCH_ERR("[X11]: Failed to open input method.\n");
+      RARCH_ERR("[X11] Failed to open input method.\n");
       return false;
    }
 
    if (!(*xic = XCreateIC(*xim, XNInputStyle,
          XIMPreeditNothing | XIMStatusNothing, XNClientWindow, win, NULL)))
    {
-      RARCH_ERR("[X11]: Failed to create input context.\n");
+      RARCH_ERR("[X11] Failed to create input context.\n");
       return false;
    }
 
@@ -442,48 +567,6 @@ static bool x11_create_input_context(Display *dpy,
    return true;
 }
 
-bool x11_get_metrics(void *data,
-      enum display_metric_types type, float *value)
-{
-   unsigned screen_no      = 0;
-   Display *dpy            = NULL;
-
-   switch (type)
-   {
-      case DISPLAY_METRIC_PIXEL_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidth(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_PIXEL_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeight(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_WIDTH:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayWidthMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_MM_HEIGHT:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = (float)DisplayHeightMM(dpy, screen_no);
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_DPI:
-         dpy    = (Display*)XOpenDisplay(NULL);
-         *value = ((((float)DisplayWidth  (dpy, screen_no)) * 25.4)
-               /  (  (float)DisplayWidthMM(dpy, screen_no)));
-         XCloseDisplay(dpy);
-         break;
-      case DISPLAY_METRIC_NONE:
-      default:
-         *value = 0;
-         return false;
-   }
-
-   return true;
-}
 
 static enum retro_key x11_translate_keysym_to_rk(unsigned sym)
 {
@@ -571,6 +654,8 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
       mod |= RETROKMOD_ALT;
    if (state & Mod2Mask)
       mod |= RETROKMOD_NUMLOCK;
+   if (state & Mod3Mask)
+      mod |= RETROKMOD_SCROLLOCK;
    if (state & Mod4Mask)
       mod |= RETROKMOD_META;
 
@@ -612,12 +697,12 @@ bool x11_alive(void *data)
 
          case MapNotify:
             if (event.xmap.window == g_x11_win)
-               g_x11_has_focus = true;
+               g_x11_mapped = true;
             break;
 
          case UnmapNotify:
             if (event.xunmap.window == g_x11_win)
-               g_x11_has_focus = false;
+               g_x11_mapped = false;
             break;
 
          case ConfigureNotify:
@@ -629,11 +714,6 @@ bool x11_alive(void *data)
             switch (event.xbutton.button)
             {
                case 1: /* Left click */
-#if 0
-                  RARCH_LOG("Click occurred : [%d, %d]\n",
-                        event.xbutton.x_root,
-                        event.xbutton.y_root);
-#endif
                   break;
                case 2: /* Grabbed  */
                        /* Middle click */
@@ -645,6 +725,8 @@ bool x11_alive(void *data)
                case 5: /* Scroll down */
                case 6: /* Scroll wheel left */
                case 7: /* Scroll wheel right */
+               case 8: /* Mouse button 4 */
+               case 9: /* Mouse button 5 */
                   x_input_poll_wheel(&event.xbutton, true);
                   break;
             }
@@ -659,6 +741,13 @@ bool x11_alive(void *data)
             break;
 
          case ButtonRelease:
+            switch (event.xbutton.button)
+            {
+               case 8: /* Mouse button 4 - not handled as click */
+               case 9: /* Mouse button 5 - not handled as click */
+                  x_input_poll_wheel(&event.xbutton, true);
+                  break;
+            }
             break;
 
          case KeyRelease:
@@ -741,7 +830,18 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
 
 bool x11_has_focus_internal(void *data)
 {
-   return g_x11_has_focus;
+   return g_x11_mapped;
+}
+
+/* Nothing to present to while the window is unmapped - minimised, on
+ * another workspace, or withdrawn. The X server discards the drawing
+ * and neither glXSwapBuffers nor a Vulkan present blocks, so with the
+ * display as the only pacing the loop would spin. Unfocused is not
+ * unmapped and is deliberately not tested here: a visible window that
+ * happens not to have the keyboard must keep running at full rate. */
+bool x11_presentable(void *data)
+{
+   return g_x11_mapped;
 }
 
 bool x11_has_focus(void *data)
@@ -751,7 +851,7 @@ bool x11_has_focus(void *data)
 
    XGetInputFocus(g_x11_dpy, &win, &rev);
 
-   return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
+   return (win == g_x11_win && g_x11_mapped) || g_x11_true_full;
 }
 
 bool x11_connect(void)
@@ -775,13 +875,46 @@ bool x11_connect(void)
 
 void x11_update_title(void *data)
 {
-   size_t len;
+   size_t _len;
    char title[128];
-   title[0] = '\0';
-   len      = video_driver_get_window_title(title, sizeof(title));
+   title[0]  = '\0';
+   _len      = video_driver_get_window_title(title, sizeof(title));
    if (title[0])
+   {
+      /* Legacy ICCCM property. Kept for window managers that do not
+       * understand EWMH. The encoding of WM_NAME is nominally STRING
+       * (Latin-1), but RetroArch's title may contain UTF-8; this is
+       * preserved as-is to avoid changing long-standing behaviour for
+       * old clients, which is exactly what they receive today. */
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
-            8, PropModeReplace, (const unsigned char*)title, len);
+            8, PropModeReplace, (const unsigned char*)title, _len);
+
+#ifdef X_HAVE_UTF8_STRING
+      /* EWMH properties. Window managers that implement EWMH prefer
+       * _NET_WM_NAME (UTF8_STRING) over WM_NAME, so non-Latin-1 titles
+       * (e.g. Japanese ROM names) render correctly. This is purely
+       * additive: the atoms are interned at runtime and, if either is
+       * unavailable, the legacy WM_NAME above is the sole fallback, so
+       * older clients are never broken. */
+      {
+         Atom XA_NET_WM_NAME      = XInternAtom(g_x11_dpy, "_NET_WM_NAME",      False);
+         Atom XA_NET_WM_ICON_NAME = XInternAtom(g_x11_dpy, "_NET_WM_ICON_NAME", False);
+         Atom XA_UTF8_STRING      = XInternAtom(g_x11_dpy, "UTF8_STRING",       False);
+
+         if (XA_UTF8_STRING)
+         {
+            if (XA_NET_WM_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, _len);
+            if (XA_NET_WM_ICON_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, _len);
+         }
+      }
+#endif
+   }
 }
 
 bool x11_input_ctx_new(bool true_full)
@@ -848,20 +981,32 @@ static bool x11_check_atom_supported(Display *dpy, Atom atom)
    Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
    Atom type;
    int format;
-   unsigned long nitems;
-   unsigned long bytes_after;
-   Atom *prop;
+   unsigned long nitems      = 0;
+   unsigned long bytes_after = 0;
+   Atom *prop                = NULL;
    int i;
 
    if (XA_NET_SUPPORTED == None)
       return false;
 
-   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
-         0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems,
-         &bytes_after, (unsigned char **) &prop);
-
-   if (!prop || type != XA_ATOM)
+   /* On failure XGetWindowProperty() leaves the return parameters
+    * undefined, so prop has to start NULL and the status has to be
+    * tested -- reading an uninitialised pointer is the one outcome
+    * the NULL test below cannot catch.  x11_get_wm_name() a few lines
+    * down already does both. */
+   if (XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
+         0, UINT_MAX, False, XA_ATOM, &type, &format, &nitems,
+         &bytes_after, (unsigned char **)&prop) != Success)
       return false;
+
+   if (!prop)
+      return false;
+
+   if (type != XA_ATOM)
+   {
+      XFree(prop);
+      return false;
+   }
 
    for (i = 0; i < (int)nitems; i++)
    {
@@ -914,6 +1059,15 @@ char *x11_get_wm_name(Display *dpy)
                                &propdata) == Success &&
 		   propdata))
 	   return NULL;
+
+   /* A _NET_SUPPORTING_WM_CHECK that exists but carries nothing still
+    * yields a non-NULL propdata; reading element zero of it is out of
+    * bounds. */
+   if (nitems < 1)
+   {
+      XFree(propdata);
+      return NULL;
+   }
 
    window = ((Window *) propdata)[0];
 

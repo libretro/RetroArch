@@ -8,3 +8,4 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 DEVELOPMENT_TEAM=UK699V5ZS8
+MACOSX_DEPLOYMENT_TARGET=10.13

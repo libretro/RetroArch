@@ -41,6 +41,17 @@
 #include <android/sensor.h>
 
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+
+/* struct android_app below embeds retro_atomic_int_t, which is
+ * atomic_int under C and std::atomic<int> under C++. If this header were
+ * ever pulled into a C++ translation unit the struct layout would differ
+ * between that TU and the C ones, silently. Nothing includes it from C++
+ * today (griffin.c pulls platform_unix.c and android_input.c into a C
+ * TU); fail the build rather than let that change go unnoticed. */
+#if defined(__cplusplus)
+#error "platform_unix.h is C-only under ANDROID: struct android_app carries retro_atomic_int_t, whose layout differs between C and C++."
+#endif
 
 #include "../../config.def.h"
 
@@ -65,6 +76,9 @@ struct android_poll_source
    void (*process)(struct android_app* app, struct android_poll_source* source);
 };
 
+#define PLAT_ANDROID_PERM_RESOLVED (1 << 0)
+#define PLAT_ANDROID_PERM_GRANTED  (1 << 1)
+
 struct android_app
 {
    /* The application can place a pointer to its own state object
@@ -86,14 +100,10 @@ struct android_app
    /* The current configuration the app is running in. */
    AConfiguration *config;
 
-   /* This is the last instance's saved state, as provided at creation time.
-    * It is NULL if there was no state.  You can use this as you need; the
-    * memory will remain around until you call android_app_exec_cmd() for
-    * APP_CMD_RESUME, at which point it will be freed and savedState set to NULL.
-    * These variables should only be changed when processing a APP_CMD_SAVE_STATE,
-    * at which point they will be initialized to NULL and you can malloc your
-    * state and place the information here.  In that case the memory will be
-    * freed for you later.
+   /* The last instance's saved state, as provided at creation time, or
+    * NULL if there was none. RetroArch never produces a saved state of
+    * its own - onSaveInstanceState() returns nothing - so this is only
+    * ever the create-time blob, held until it is freed on teardown.
     */
    void* savedState;
    size_t savedStateSize;
@@ -125,19 +135,58 @@ struct android_app
    int msgread;
    int msgwrite;
 
+   /* Startup storage-permission gate.  Written from the Java UI
+    * thread via permissionsResolved() under 'mutex'; read by the
+    * native thread in frontend_unix_init before any filesystem-
+    * dependent startup work runs. */
+   unsigned permission_state;
+
+   /* Completion counters for the lifecycle commands a Java callback
+    * blocks on: APP_CMD_INIT_WINDOW, APP_CMD_TERM_WINDOW and
+    * APP_CMD_INPUT_CHANGED.  The UI thread takes a ticket from
+    * 'cmd_seq' for every such command it posts and waits for
+    * 'done_seq' to reach it; the app thread advances 'done_seq' once
+    * it has finished acting on one.  Both are written only under
+    * 'mutex', and both are compared wrap-safely rather than for
+    * equality, so neither needs to be atomic or reset.
+    *
+    * A waiter must key on these rather than on the window or input
+    * queue handle it asked for: the framework reuses those addresses,
+    * so a handle comparison can already hold when the command is still
+    * queued and lets the callback return while the app thread is about
+    * to tear the surface down behind it. */
+   unsigned cmd_seq;
+   unsigned done_seq;
+
+   /* Set (under 'mutex') by the app thread as it leaves
+    * android_app_entry(). From then on nothing consumes the command
+    * pipe, so no acknowledgement can ever arrive: waiters treat the
+    * flag as a standing acknowledgement of everything instead of
+    * blocking the UI thread forever. A normal quit never sets it -
+    * frontend_android_shutdown() exits the process inside
+    * rarch_main() - so it marks early-failure returns and the
+    * framework-destroy unwind. */
+   int app_thread_exited;
+
    sthread_t *thread;
 
    struct android_poll_source cmdPollSource;
    struct android_poll_source inputPollSource;
 
    int running;
-   int stateSaved;
    int destroyed;
+
+   /* Set by android_app_free() before it asks the app thread to shut
+    * down, so android_app_destroy() knows the activity is already being
+    * torn down by the framework and must not call finish() on it. */
+   int destroy_from_framework;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
 
    /*  Below are "private" implementation of RA code. */
-   bool unfocused;
+   /* Written by the app thread on APP_CMD_GAINED_FOCUS/LOST_FOCUS, read
+    * by the video thread in dispserv_android.c without the mutex. */
+   retro_atomic_int_t unfocused;
    unsigned accelerometer_event_rate;
    unsigned gyroscope_event_rate;
    ASensorManager *sensorManager;
@@ -145,6 +194,11 @@ struct android_app
    const ASensor* accelerometerSensor;
    const ASensor* gyroscopeSensor;
    uint64_t sensor_state_mask;
+   unsigned detected_screen_rotation;
+   float    gravity_accum_x;
+   float    gravity_accum_y;
+   unsigned gravity_sample_count;
+   bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
@@ -162,12 +216,19 @@ struct android_app
    jmethodID getPendingIntentDownloadsLocation;
    jmethodID getPendingIntentScreenshotsLocation;
    jmethodID isAndroidTV;
+   jmethodID getRefreshRate;
+   jmethodID getDisplayModes;
+   jmethodID getCurrentDisplayModeId;
+   jmethodID setDisplayModeId;
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
+   jmethodID setWindowSettings;
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
+   jmethodID doVibrateJoypad;
+   jmethodID doVibrateUSB;
    jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
@@ -178,16 +239,39 @@ struct android_app
 
    jmethodID getVolumeCount;
    jmethodID getVolumePath;
+   jmethodID inputGrabMouse;
 
+   jmethodID isScreenReaderEnabled;
+   jmethodID accessibilitySpeak;
+
+   jmethodID showKeyboard;
+   jmethodID hideKeyboard;
+
+   /* Written by the Android UI thread in onContentRectChanged(), read by
+    * the video thread in the context drivers, with no lock on either
+    * side. Publication is ordered: the dimensions are stored first, then
+    * @changed with a release store, and the reader acquires @changed
+    * before consuming them.
+    *
+    * The atomic type makes this struct C-only; see the __cplusplus
+    * guard at the top of the ANDROID block. */
    struct
    {
-      unsigned width, height;
-      bool changed;
+      retro_atomic_int_t width, height;
+      retro_atomic_int_t changed;
    } content_rect;
    uint16_t rumble_last_strength_strong[MAX_USERS];
    uint16_t rumble_last_strength_weak[MAX_USERS];
    uint16_t rumble_last_strength[MAX_USERS];
    int id[MAX_USERS];
+
+   bool is_play_store_build;
+
+#ifdef HAVE_SAF
+   jmethodID requestOpenDocumentTree;
+   jmethodID getPersistedSafTrees;
+   bool have_saf;
+#endif
 };
 
 enum
@@ -270,8 +354,10 @@ enum
    APP_CMD_RESUME,
 
    /**
-    * Command from main thread: the app should generate a new saved state
-    * for itself, to restore from later if needed.
+    * Unused. Upstream glue sends this to ask the app thread to produce a
+    * saved state; RetroArch has no such state, so onSaveInstanceState()
+    * returns without a round trip and nothing writes this command. Kept
+    * so the enumerators below retain their values.
     */
    APP_CMD_SAVE_STATE,
 
@@ -294,74 +380,176 @@ enum
    APP_CMD_REINIT_DONE
 };
 
+/* Every macro below is wrapped in do/while(0). Without it the trailing
+ * JNI_EXCEPTION escapes any unbraced guard at the call site, so
+ *
+ *    if (env != NULL)
+ *       CALL_BOOLEAN_METHOD(env, ...);
+ *
+ * expanded to a guarded call followed by an *unguarded* exception check
+ * that dereferences env regardless - a null dereference on exactly the
+ * path the guard existed to protect. */
 #define JNI_EXCEPTION(env) \
-   if ((*env)->ExceptionOccurred(env)) \
-   { \
-      (*env)->ExceptionDescribe(env); \
-      (*env)->ExceptionClear(env); \
-   }
+   do { \
+      if ((*env)->ExceptionOccurred(env)) \
+      { \
+         (*env)->ExceptionDescribe(env); \
+         (*env)->ExceptionClear(env); \
+      } \
+   } while (0)
 
 #define FIND_CLASS(env, var, classname) \
-   var = (*env)->FindClass(env, classname); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->FindClass(env, classname); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_OBJECT_CLASS(env, var, clazz_obj) \
-   var = (*env)->GetObjectClass(env, clazz_obj); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetObjectClass(env, clazz_obj); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_FIELD_ID(env, var, clazz, fieldName, fieldDescriptor) \
-   var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
-   var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_STATIC_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
-   var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_STATIC_METHOD(env, var, clazz, methodId) \
-   var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_STATIC_METHOD_PARAM(env, var, clazz, methodId, ...) \
-   var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
-   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_VOID_METHOD(env, clazz_obj, methodId) \
-   (*env)->CallVoidMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      (*env)->CallVoidMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_VOID_METHOD_PARAM(env, clazz_obj, methodId, ...) \
-   (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
+
+#define CALL_BOOLEAN_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   do { \
+      var = (*env)->CallBooleanMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_INT_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
+
+#define CALL_INT_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
+   do { \
+      var = (*env)->CallIntMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
+
+#define CALL_FLOAT_METHOD(env, var, clazz_obj, methodId) \
+   do { \
+      var = (*env)->CallFloatMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 extern JNIEnv *jni_thread_getenv(void);
 
-void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+/* Re-assert a chosen display mode and window frame rate after a new
+ * ANativeWindow appears.  Both are window state and are lost when the
+ * app goes to the background; without this a mode chosen by the user
+ * silently reverts on the next resume. */
+void android_display_server_reapply_mode(void);
+
+/* Performs the pause-time save of SRAM and config requested by
+ * APP_CMD_PAUSE, if one is outstanding. Called from the runloop, which is
+ * the nearest point outside the core: the command that requests it is read
+ * by the input driver's poll, and a core reaches that poll from inside
+ * retro_run(). No-op when nothing is pending. */
+void android_input_flush_pending_state(void);
+
+bool android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+
+#ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
+/* Runs a named shell script from the app's private data directory, if one
+ * is present. Build with -DHAVE_ANDROID_LIFECYCLE_HOOKS to enable; see
+ * android_run_lifecycle_hook() for what the hooks may and may not do. */
+void android_run_lifecycle_hook(struct android_app *android_app,
+      const char *name);
+#endif
 
 extern struct android_app *g_android;
+
+void frontend_android_get_name(char *s, size_t len);
+
+void frontend_android_get_manufacturer_model(char *s, size_t len);
+
+void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel);
+
+void frontend_android_get_version_sdk(int32_t *sdk);
+
+bool is_screen_reader_enabled(void);
+
+/* Pushes the live values of the window-affecting settings to the
+ * activity, so the Java side never reads them from the config file. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+
+#ifdef HAVE_SAF
+struct retro_vfs_authorized_locations;
+
+void android_show_saf_tree_picker(void);
+bool android_get_vfs_authorized_locations(
+      struct retro_vfs_authorized_locations *locations);
+#endif
+
 #endif
 
 #endif

@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -134,7 +136,7 @@ void gfx_widget_set_progress_message(
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(message))
+   if (!message || !*message)
       return;
 
    /* If widget is currently active, ignore new
@@ -334,6 +336,12 @@ static void gfx_widget_progress_message_free(void)
 
 /* Widget definition */
 
+static bool gfx_widget_progress_message_visible(void)
+{
+   gfx_widget_progress_message_state_t *state = &p_w_progress_message_st;
+   return state->active;
+}
+
 const gfx_widget_t gfx_widget_progress_message = {
    NULL, /* init */
    gfx_widget_progress_message_free,
@@ -341,5 +349,6 @@ const gfx_widget_t gfx_widget_progress_message = {
    NULL, /* context_destroy */
    gfx_widget_progress_message_layout,
    NULL, /* iterate */
-   gfx_widget_progress_message_frame
+   gfx_widget_progress_message_frame,
+   gfx_widget_progress_message_visible
 };

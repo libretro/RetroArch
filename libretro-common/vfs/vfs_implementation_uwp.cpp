@@ -20,18 +20,16 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include <retro_environment.h>
-
 #include <ppl.h>
 #include <ppltasks.h>
 #include <stdio.h>
+#include <string.h>
 #include <wrl.h>
 #include <wrl/implements.h>
 #include <robuffer.h>
-#include <collection.h>
 #include <functional>
 #include <fileapifromapp.h>
-#include <AclAPI.h>
+#include <aclapi.h>
 #include <sddl.h>
 #include <io.h>
 #include <fcntl.h>
@@ -46,18 +44,21 @@
 #include <vfs/vfs_implementation.h>
 #include <libretro.h>
 #include <encodings/utf.h>
+#include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
-#include <string/stdstring.h>
 #include <retro_environment.h>
-#include <uwp/uwp_async.h>
 #include <uwp/std_filesystem_compat.h>
+
+#ifdef HAVE_SMBCLIENT
+#include "vfs_implementation_smb.h"
+#endif
 
 namespace
 {
-   /* UWP deals with paths containing / instead of 
+   /* UWP deals with paths containing / instead of
     * \ way worse than normal Windows */
-   /* and RetroArch may sometimes mix them 
+   /* and RetroArch may sometimes mix them
     * (e.g. on archive extraction) */
    static void windowsize_path(wchar_t* path)
    {
@@ -73,31 +74,17 @@ namespace
    }
 }
 
-#ifdef VFS_FRONTEND
-struct retro_vfs_file_handle
-#else
-struct libretro_vfs_implementation_file
-#endif
-{
-    int64_t size;
-    uint64_t mappos;
-    uint64_t mapsize;
-    FILE* fp;
-    HANDLE fh;
-    char* buf;
-    char* orig_path;
-    uint8_t* mapped;
-    int fd;
-    unsigned hints;
-    enum vfs_scheme scheme;
-};
-
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file* stream)
 {
     if (!stream)
         return -1;
+
+#ifdef HAVE_SMBCLIENT
+    if (stream->scheme == VFS_SCHEME_SMB)
+        retro_vfs_file_close_smb(stream);
+#endif
 
     if (stream->fp)
         fclose(stream->fp);
@@ -117,6 +104,11 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file* stream)
 
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file* stream)
 {
+#ifdef HAVE_SMBCLIENT
+    if (stream->scheme == VFS_SCHEME_SMB)
+        return retro_vfs_file_error_smb(stream);
+#endif
+
     return ferror(stream->fp);
 }
 
@@ -140,11 +132,14 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file* stream)
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+    {
+#ifdef HAVE_SMBCLIENT
+        if (stream->scheme == VFS_SCHEME_SMB)
+           return retro_vfs_file_tell_smb(stream);
+#endif
         return _ftelli64(stream->fp);
-    if (lseek(stream->fd, 0, SEEK_CUR) < 0)
-        return -1;
-
-    return 0;
+    }
+    return lseek(stream->fd, 0, SEEK_CUR);
 }
 
 int64_t retro_vfs_file_seek_internal(
@@ -155,11 +150,14 @@ int64_t retro_vfs_file_seek_internal(
         return -1;
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+    {
+#ifdef HAVE_SMBCLIENT
+        if (stream->scheme == VFS_SCHEME_SMB)
+            return retro_vfs_file_seek_smb(stream, offset, whence);
+#endif
         return _fseeki64(stream->fp, offset, whence);
-    if (lseek(stream->fd, (off_t)offset, whence) < 0)
-        return -1;
-
-    return 0;
+    }
+    return lseek(stream->fd, (off_t)offset, whence) == -1 ? -1 : 0;
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file* stream,
@@ -171,25 +169,51 @@ int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file* stream,
 int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file* stream,
     void* s, uint64_t len)
 {
-    if (!stream || (!stream->fp && stream->fh == INVALID_HANDLE_VALUE) || !s)
-      return -1;
+    if (!stream)
+        return -1;
 
-   if (stream->fh != INVALID_HANDLE_VALUE)
-   {
-      DWORD _bytes_read;
-      ReadFile(stream->fh, (char*)s, len, &_bytes_read, NULL);
-      return (int64_t)_bytes_read;
-   }
+#ifdef HAVE_SMBCLIENT
+    if (stream->scheme == VFS_SCHEME_SMB)
+        return retro_vfs_file_read_smb(stream, s, len);
+#endif
+
+    if ((!stream->fp && stream->fh == INVALID_HANDLE_VALUE) || !s)
+        return -1;
+
+    if (stream->fh != INVALID_HANDLE_VALUE)
+    {
+        DWORD _bytes_read;
+        ReadFile(stream->fh, (char*)s, len, &_bytes_read, NULL);
+        return (int64_t)_bytes_read;
+    }
 
     if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
-       return fread(s, 1, (size_t)len, stream->fp);
+        return fread(s, 1, (size_t)len, stream->fp);
     return read(stream->fd, s, (size_t)len);
 }
 
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file* stream, const void* s, uint64_t len)
 {
-    if (!stream || (!stream->fp && stream->fh == INVALID_HANDLE_VALUE) || !s)
+    if (!stream)
+        return -1;
+
+#ifdef HAVE_SMBCLIENT
+    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0 &&
+        stream->scheme == VFS_SCHEME_SMB)
+    {
+        int64_t pos = 0;
+        ssize_t ret = -1;
+
+        pos = retro_vfs_file_tell_smb(stream);
+        ret = retro_vfs_file_write_smb(stream, s, len);
+        if (ret != -1 && pos + ret > stream->size)
+            stream->size = pos + ret;
+        return ret;
+    }
+#endif
+
+    if ((!stream->fp && stream->fh == INVALID_HANDLE_VALUE) || !s)
         return -1;
 
     if (stream->fh != INVALID_HANDLE_VALUE)
@@ -214,7 +238,7 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file* stream)
 
 int retro_vfs_file_remove_impl(const char *path)
 {
-   BOOL result;
+   BOOL ret;
    wchar_t *path_wide;
 
    if (!path || !*path)
@@ -224,9 +248,9 @@ int retro_vfs_file_remove_impl(const char *path)
    windowsize_path(path_wide);
 
    /* Try Win32 first, this should work in AppData */
-   result = DeleteFileFromAppW(path_wide);
+   ret = DeleteFileFromAppW(path_wide);
    free(path_wide);
-   if (result)
+   if (ret)
       return 0;
 
    return -1;
@@ -260,6 +284,9 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     stream->mapsize   = 0;
     stream->mapped    = NULL;
     stream->scheme    = VFS_SCHEME_NONE;
+#ifdef HAVE_SMBCLIENT
+    stream->smb_fh    = 0;
+#endif
 
 #ifdef VFS_FRONTEND
    if (     path
@@ -274,6 +301,20 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
          && path[8] == '/'
          && path[9] == '/')
          path             += sizeof("vfsonly://")-1;
+#endif
+
+#ifdef HAVE_SMBCLIENT
+   if (     path
+         && path[0] == 's'
+         && path[1] == 'm'
+         && path[2] == 'b'
+         && path[3] == ':'
+         && path[4] == '/'
+         && path[5] == '/'
+         && path[6] != '\0')
+   {
+        stream->scheme    = VFS_SCHEME_SMB;
+   }
 #endif
 
     path_wide    = utf8_to_utf16_string_alloc(path);
@@ -336,16 +377,26 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
     if (mode == RETRO_VFS_FILE_ACCESS_READ)
         creationDisposition = OPEN_EXISTING;
     else
-        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0 
+        creationDisposition = (mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) != 0
            ? OPEN_ALWAYS
            : CREATE_ALWAYS;
+
+#ifdef HAVE_SMBCLIENT
+    if (stream->scheme == VFS_SCHEME_SMB)
+    {
+        if (!retro_vfs_file_open_smb(stream, path, mode, hints))
+            goto error;
+
+        return stream;
+    }
+#endif
 
     if ((file_handle = CreateFile2FromAppW(path_wstring.data(), desireAccess,
                 FILE_SHARE_READ, creationDisposition, NULL)) == INVALID_HANDLE_VALUE)
        goto error;
 
     stream->fh      = file_handle;
-    if ((stream->fd = _open_osfhandle((uint64)stream->fh, flags)) == -1)
+    if ((stream->fd = _open_osfhandle((uintptr_t)stream->fh, flags)) == -1)
         goto error;
 
     {
@@ -358,22 +409,25 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
 
     /* Regarding setvbuf:
         *
-        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
-        *
-        * If the size argument is not zero but buf is NULL,
-        * a buffer of the given size will be allocated immediately, and
-        * released on close. This is an extension to ANSI C.
-        *
-        * Since C89 does not support specifying a NULL buffer
-        * with a non-zero size, we create and track our own buffer for it.
+        * A NULL buffer with a non-zero size asks the C library to
+        * allocate one of that size and release it with the stream.
+        * That is an extension to ANSI C, which is why this used to
+        * supply a buffer of its own instead; it is honoured by every
+        * runtime this backend is built against, and unlike the
+        * portable VFS this one targets a single known runtime.
         */
-        /* TODO: this is only useful for a few platforms,
-        * find which and add ifdef */
     if (stream->scheme != VFS_SCHEME_CDROM)
     {
-        stream->buf = (char*)calloc(1, 0x4000);
+        /* NULL, so the C runtime allocates and owns the buffer: it is
+         * then released with the stream and there is nothing to track
+         * here.  Kept in step with retro_vfs_file_open_impl(), where
+         * ownership also decides whether Apple's fread() may use its
+         * large-read fast path - not a concern on this backend, but
+         * two implementations of the same VFS differing in how they
+         * buffer is a trap for whoever reads one and edits the
+         * other. */
         if (stream->fp)
-            setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+            setvbuf(stream->fp, NULL, _IOFBF, 0x4000);
     }
 
     retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
@@ -390,7 +444,7 @@ error:
     return NULL;
 }
 
-static int uwp_mkdir_impl(std::experimental::filesystem::path dir)
+static int uwp_mkdir_impl(std::filesystem::path dir)
 {
     /*I feel like this should create the directory recursively but the existing implementation does not so this update won't
      *I put in the work but I just commented out the stuff you would need */
@@ -434,9 +488,9 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
-/* The first run paramater is used to avoid error checking 
+/* The first run parameter is used to avoid error checking
  * when doing recursion.
- * Unlike the initial implementation, this can move folders 
+ * Unlike the initial implementation, this can move folders
  * even empty ones when you want to move a directory structure.
  *
  * This will fail even if a single file cannot be moved.
@@ -460,8 +514,8 @@ static int uwp_move_path(
                  GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (     lpFileInfo.dwFileAttributes 
-                  != INVALID_FILE_ATTRIBUTES 
+            if (     lpFileInfo.dwFileAttributes
+                  != INVALID_FILE_ATTRIBUTES
                   && lpFileInfo.dwFileAttributes != 0)
             {
                /* Parent path doesn't exist, so we gotta create it  */
@@ -474,19 +528,19 @@ static int uwp_move_path(
         if (GetFileAttributesExFromAppW(old_path.wstring().c_str(), GetFileExInfoStandard, &lpFileInfo))
         {
             /* Check that the files attributes are not null or empty */
-            if (     lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES 
+            if (     lpFileInfo.dwFileAttributes != INVALID_FILE_ATTRIBUTES
                   && lpFileInfo.dwFileAttributes != 0)
             {
                 /* Check if source path is a dir */
                 if (lpFileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
-                   int result;
+                   int ret;
                    /* create the target dir */
                    CreateDirectoryFromAppW(new_path.wstring().c_str(), NULL);
                    /* Call move function again but with first run disabled in
                     * order to move the folder */
-                   if ((result = uwp_move_path(old_path, new_path, false)) != 0)
-                      return result;
+                   if ((ret = uwp_move_path(old_path, new_path, false)) != 0)
+                      return ret;
                 }
                 else
                 {
@@ -502,7 +556,10 @@ static int uwp_move_path(
                               && targetfileinfo.dwFileAttributes != 0
                               && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
                         {
-                            if (DeleteFileFromAppW(new_path.wstring().c_str()))
+                            /* DeleteFileFromAppW returns nonzero on
+                             * success; MoveFileFromAppW cannot replace
+                             * an existing destination. */
+                            if (!DeleteFileFromAppW(new_path.wstring().c_str()))
                                 return -1;
                         }
                     }
@@ -514,7 +571,11 @@ static int uwp_move_path(
                     uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
                 }
             }
+            else
+                return -1; /* source attributes unusable */
         }
+        else
+            return -1; /* source does not exist */
 
     }
     else
@@ -534,14 +595,14 @@ static int uwp_move_path(
           bool fail = false;
           do
           {
-             if (     wcscmp(findDataResult.cFileName, L".")  != 0 
+             if (     wcscmp(findDataResult.cFileName, L".")  != 0
                    && wcscmp(findDataResult.cFileName, L"..") != 0)
              {
                 std::filesystem::path temp_old = old_path;
                 std::filesystem::path temp_new = new_path;
                 temp_old /= findDataResult.cFileName;
                 temp_new /= findDataResult.cFileName;
-                if (    findDataResult.dwFileAttributes 
+                if (    findDataResult.dwFileAttributes
                       & FILE_ATTRIBUTE_DIRECTORY)
                 {
                    CreateDirectoryFromAppW(temp_new.wstring().c_str(), NULL);
@@ -561,10 +622,11 @@ static int uwp_move_path(
                                (targetfileinfo.dwFileAttributes !=
                                 INVALID_FILE_ATTRIBUTES)
                             && (targetfileinfo.dwFileAttributes != 0)
-                            && (!(targetfileinfo.dwFileAttributes 
+                            && (!(targetfileinfo.dwFileAttributes
                                   & FILE_ATTRIBUTE_DIRECTORY)))
                       {
-                         if (DeleteFileFromAppW(temp_new.wstring().c_str()))
+                         /* Nonzero is success. */
+                         if (!DeleteFileFromAppW(temp_new.wstring().c_str()))
                             fail = true;
                       }
                    }
@@ -572,7 +634,7 @@ static int uwp_move_path(
                    if (!MoveFileFromAppW(temp_old.wstring().c_str(),
                             temp_new.wstring().c_str()))
                       fail = true;
-                   /* Set ACL - this step sucks or at least used to 
+                   /* Set ACL - this step sucks or at least used to
                     * before I made a whole function
                     * Don't know if we actually "need" to set the ACL
                     * though */
@@ -589,13 +651,17 @@ static int uwp_move_path(
     return 0;
 }
 
-/* C doesn't support default arguments so we wrap it up in a shell to enable 
+/* C doesn't support default arguments so we wrap it up in a shell to enable
  * us to use default arguments.
  * Default arguments mean that we can do better recursion */
 int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
 {
+    /* A self-rename is a no-op; it must not reach the replace logic,
+     * which would delete the destination - and the source with it. */
+    if (old_path && new_path && strcmp(old_path, new_path) == 0)
+        return 0;
     return uwp_move_path(std::filesystem::path(old_path),
-          std::filesystem::path(old_path), true);
+          std::filesystem::path(new_path), true);
 }
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
@@ -606,7 +672,61 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
-int retro_vfs_stat_impl(const char *path, int32_t *size)
+int64_t retro_vfs_file_get_sparse_granularity_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   /* No sparse support here, so no granularity to report; see
+    * retro_vfs_file_punch_hole_impl below. 0 is the documented "unknown"
+    * answer and callers must not read it as "no alignment needed".
+    *
+    * Defined rather than omitted because this backend REPLACES
+    * vfs_implementation.c on UWP: a missing definition is a link error at
+    * the end of a long MSVC build, not a fallback. */
+   (void)stream;
+   return 0;
+}
+
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int64_t len)
+{
+   /* UWP cannot punch holes. FSCTL_SET_ZERO_DATA is issued through
+    * DeviceIoControl, which is not in the app container's API surface,
+    * and this backend's handle comes from a StorageFile rather than
+    * being one a filesystem control code can be sent to.
+    *
+    * -1 is the documented "not available" answer: filestream_punch_hole
+    * is a capability, so callers write zeroes instead and lose the space
+    * saving and nothing else. Defined here rather than omitted because
+    * this backend REPLACES vfs_implementation.c on UWP, so a missing
+    * definition is a link error at the end of a long MSVC build. */
+   (void)stream;
+   (void)offset;
+   (void)len;
+   return -1;
+}
+
+const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
+      libretro_vfs_implementation_file *stream, int64_t *len)
+{
+   /* This backend never maps a file: retro_vfs_file_open_impl() above
+    * nulls 'mapped' and clears
+    * RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS unconditionally.  NULL
+    * is the documented answer for "no mapping here", and every caller
+    * must already handle it - the hint is advisory on every backend -
+    * so there is nothing to implement beyond saying so.
+    *
+    * It has to be said out loud rather than omitted, though:
+    * filestream_get_mapped_ptr() calls this whenever no frontend VFS
+    * is installed, and this file replaces vfs_implementation.c
+    * wholesale on UWP, so leaving it out is a link error rather than
+    * a fallback. */
+   (void)stream;
+   if (len)
+      *len = 0;
+   return NULL;
+}
+
+int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    wchar_t *path_wide;
    _WIN32_FILE_ATTRIBUTE_DATA attribdata;
@@ -634,13 +754,28 @@ int retro_vfs_stat_impl(const char *path, int32_t *size)
                }
            }
            free(path_wide);
-           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) 
-              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY 
+           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY
               : RETRO_VFS_STAT_IS_VALID;
        }
    }
    free(path_wide);
    return 0;
+}
+
+int retro_vfs_stat_impl(const char *path, int32_t *size)
+{
+   int64_t size64 = 0;
+   int ret = retro_vfs_stat_64_impl(path, size ? &size64 : NULL);
+
+   /* if a file is larger than 2 GB, size64 will hold the correct value
+    * but the cast to int32_t will truncate it.
+    * new code should migrate to retro_vfs_stat_64_t
+   */
+   if (size)
+      *size = (int32_t)size64;
+
+   return ret;
 }
 
 #ifdef VFS_FRONTEND
@@ -654,13 +789,17 @@ struct libretro_vfs_implementation_dir
     HANDLE directory;
     bool next;
     char path[PATH_MAX_LENGTH];
+#ifdef HAVE_SMBCLIENT
+    smb_dir_handle* smb_handle;
+    char smb_path[PATH_MAX_LENGTH];
+#endif
 };
 
 libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
     const char* name, bool include_hidden)
 {
+    size_t _len;
     char path_buf[1024];
-    size_t copied      = 0;
     wchar_t* path_wide = NULL;
     libretro_vfs_implementation_dir* rdir;
 
@@ -674,14 +813,31 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
 
     rdir->orig_path = strdup(name);
 
-    copied          = strlcpy(path_buf, name, sizeof(path_buf));
+    _len = strlcpy(path_buf, name, sizeof(path_buf));
+
+#ifdef HAVE_SMBCLIENT
+    if (name[0]=='s' && name[1]=='m' && name[2]=='b' &&
+        name[3]==':' && name[4]=='/' && name[5]=='/' && name[6] != '\0')
+    {
+        smb_dir_handle *dh = retro_vfs_opendir_smb(name, include_hidden);
+        if (!dh || !dh->dir)
+        {
+            free(rdir->orig_path);
+            free(rdir);
+            return NULL;
+        }
+        rdir->smb_handle = dh;
+        rdir->smb_path[0] = '\0';
+        return rdir;
+    }
+#endif
 
     /* Non-NT platforms don't like extra slashes in the path */
-    if (path_buf[copied - 1] != '\\')
-        path_buf[copied++] = '\\';
+    if (path_buf[_len - 1] != '\\')
+        path_buf[_len++]   = '\\';
 
-    path_buf[copied]       = '*';
-    path_buf[copied + 1]   = '\0';
+    path_buf[_len]         = '*';
+    path_buf[_len + 1]     = '\0';
 
     path_wide              = utf8_to_utf16_string_alloc(path_buf);
     rdir->directory        = FindFirstFileExFromAppW(
@@ -705,6 +861,23 @@ libretro_vfs_implementation_dir* retro_vfs_opendir_impl(
 
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir* rdir)
 {
+#ifdef HAVE_SMBCLIENT
+    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
+    {
+        struct smbc_dirent *de = retro_vfs_readdir_smb(rdir->smb_handle);
+        if (!de)
+            return false;
+
+        strlcpy(rdir->smb_path, de->name, sizeof(rdir->smb_path));
+       return true;
+    }
+    /* If we opened an SMB path but failed, do not fall through to native readdir */
+    if (rdir->orig_path &&
+        rdir->orig_path[0] == 's' && rdir->orig_path[1] == 'm' && rdir->orig_path[2] == 'b' &&
+        rdir->orig_path[3] == ':' && rdir->orig_path[4] == '/' && rdir->orig_path[5] == '/')
+        return false;
+#endif
+
     if (rdir->next)
         return (FindNextFileW(rdir->directory, &rdir->entry) != 0);
 
@@ -714,6 +887,10 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir* rdir)
 
 const char* retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir* rdir)
 {
+#ifdef HAVE_SMBCLIENT
+    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
+       return rdir->smb_path;
+#endif
     char* name = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
     memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
     strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
@@ -724,6 +901,22 @@ const char* retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir* rdir
 
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir* rdir)
 {
+#ifdef HAVE_SMBCLIENT
+    if (rdir && rdir->smb_handle && rdir->smb_handle->dir != 0)
+    {
+       char full[PATH_MAX_LENGTH];
+       const char *name = retro_vfs_dirent_get_name_impl(rdir);
+
+       if (!name)
+          return false;
+
+       fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
+       int64_t sz = 0;
+       int st = retro_vfs_stat_smb(full, &sz);
+
+       return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+    }
+#endif
     const WIN32_FIND_DATA* entry = (const WIN32_FIND_DATA*)&rdir->entry;
     return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 }
@@ -733,7 +926,15 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)
     if (!rdir)
         return -1;
 
-    if (rdir->directory != INVALID_HANDLE_VALUE)
+#ifdef HAVE_SMBCLIENT
+    if (rdir->smb_handle && rdir->smb_handle->dir != 0)
+    {
+        retro_vfs_closedir_smb(rdir->smb_handle);
+        rdir->smb_handle = NULL;
+    }
+#endif
+
+    if (rdir->directory && rdir->directory != INVALID_HANDLE_VALUE)
         FindClose(rdir->directory);
 
     if (rdir->orig_path)

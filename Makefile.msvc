@@ -16,7 +16,6 @@ HAVE_VIDEO_FILTER        := 1
 HAVE_SCREENSHOTS         := 1
 HAVE_REWIND              := 1
 HAVE_AUDIOMIXER          := 1
-HAVE_D3DX                := 1
 HAVE_D3D8                := 0
 HAVE_D3D9                := 1
 HAVE_D3D10               := 1
@@ -25,23 +24,23 @@ HAVE_D3D12               := 1
 HAVE_CG                  := 1
 HAVE_OPENGL              := 1
 HAVE_OPENGL1             := 1
-HAVE_GFX_WIDGETS			 := 1
+HAVE_GFX_WIDGETS         := 1
 HAVE_VULKAN              := 1
 HAVE_XAUDIO              := 1
 HAVE_XINPUT              := 1
-HAVE_WASAPI              := 0
+HAVE_WASAPI              := 1
 HAVE_THREAD_STORAGE      := 1
 HAVE_WINMM               := 1
 
 HAVE_RPNG                := 1
-HAVE_ZLIB                := 1
+HAVE_RWEBP               := 1
+HAVE_RDDS                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_MENU                := 1
 HAVE_RGUI                := 1
 HAVE_XMB                 := 1
 HAVE_MATERIALUI          := 1
-HAVE_STB_FONT            := 1
 HAVE_THREADS             := 1
 HAVE_LIBRETRODB          := 1
 HAVE_COMMAND             := 1
@@ -51,7 +50,6 @@ HAVE_DYLIB               := 1
 HAVE_DYNAMIC             := 1
 HAVE_DINPUT              := 1
 HAVE_MENU_COMMON         := 1
-HAVE_BUILTINZLIB         := 1
 
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
@@ -71,16 +69,10 @@ HAVE_CORE_INFO_CACHE     := 1
 
 ifeq ($(HAVE_D3D8), 1)
    D3D8_LIBS := -ld3d8
-   ifeq ($(HAVE_D3DX), 1)
-      D3DX8_LIBS := -ld3dx8
-   endif
 endif
 
 ifeq ($(HAVE_D3D9), 1)
    D3D9_LIBS := -ld3d9
-   ifeq ($(HAVE_D3DX), 1)
-      D3DX9_LIBS := -ld3dx9
-   endif
 endif
 
 include Makefile.common

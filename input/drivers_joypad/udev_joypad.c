@@ -62,22 +62,38 @@
    (((1UL << ((nr) % (sizeof(long) * CHAR_BIT))) & ((addr)[(nr) / (sizeof(long) * CHAR_BIT)])) != 0)
 #define NBITS(x) ((((x) - 1) / (sizeof(long) * CHAR_BIT)) + 1)
 
+#ifndef INPUT_PROP_ACCELEROMETER
+#define INPUT_PROP_ACCELEROMETER 0x06
+#endif
+
+#define SENSOR_AXES 6 /* ABS_X..ABS_RZ on sensor node, maps 1:1 to RETRO_SENSOR_* 0-5 */
+#define DEG_TO_RAD_F 0.017453293f
+
 struct udev_joypad
 {
-   dev_t device;  /* TODO/FIXME - unsure of alignment */
-   struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
-
+   /* Everything the per-frame poll and the per-query button and axis
+    * reads touch comes first, so a connected pad's live state sits in
+    * the leading two cache lines of its slot: the descriptor, the
+    * button bitmask, the hats, the axes and the trigger-range flags.
+    * The absinfo table is next (read on every axis event), and the
+    * identification strings, the keycode maps and the sensor state -
+    * touched at hotplug and on the rare sensor read - trail behind. */
+   int fd;
    uint64_t buttons;
+   int8_t hats[NUM_HATS][2];
+   int16_t axes[NUM_AXES];
+   /* Deal with analog triggers that report -32767 to 32767 */
+   bool neg_trigger[NUM_AXES];
+
+   struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
+   dev_t device;  /* TODO/FIXME - unsure of alignment */
 
    char *path;
 
-   int fd;
    int num_effects;
    int effects[2]; /* [0] - strong, [1] - weak  */
    int32_t vid;
    int32_t pid;
-   int16_t axes[NUM_AXES];
-   int8_t hats[NUM_HATS][2];
    /* Maps keycodes -> button/axes */
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
@@ -86,9 +102,19 @@ struct udev_joypad
    unsigned rumble_gain;
 
    char ident[NAME_MAX_LENGTH];
+   char phys[NAME_MAX_LENGTH];
    bool has_set_ff[2];
-   /* Deal with analog triggers that report -32767 to 32767 */
-   bool neg_trigger[NUM_AXES];
+
+   /* Sensor (IMU) support: sibling evdev node for accelerometer/gyroscope */
+   int sensor_fd;
+   char *sensor_path;
+   struct input_absinfo sensor_absinfo[SENSOR_AXES];
+   float sensor_data[SENSOR_AXES]; /* indexed by RETRO_SENSOR_* ID */
+   bool sensor_accel_enabled;
+   bool sensor_gyro_enabled;
+   bool sensor_has_accel; /* sensor node has ABS_X/Y/Z or ABS_RX/RY/RZ */
+   bool sensor_has_gyro;  /* sensor node has ABS_RX/RY/RZ */
+   bool sensor_accel_on_rxyz_codes; /* wiimote: accel is reported on ABS_RX/RY/RZ instead of ABS_X/Y/Z. */
 };
 
 struct joypad_udev_entry
@@ -101,6 +127,19 @@ struct joypad_udev_entry
 static struct udev *udev_joypad_fd             = NULL;
 static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];
+/* One bit per slot with an open descriptor, kept in step with fd by
+ * udev_pad_set_fd(); the poll walks only these instead of reading fd
+ * out of all MAX_USERS slots - a cache line apiece - every frame. */
+static uint32_t udev_pads_active;
+
+static void udev_pad_set_fd(unsigned p, int fd)
+{
+   udev_pads[p].fd = fd;
+   if (fd >= 0)
+      udev_pads_active |=  (1u << p);
+   else
+      udev_pads_active &= ~(1u << p);
+}
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
 {
@@ -116,8 +155,7 @@ static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int va
 
 static int udev_find_vacant_pad(void)
 {
-   unsigned i;
-
+   int i;
    for (i = 0; i < MAX_USERS; i++)
       if (udev_pads[i].fd < 0)
          return i;
@@ -171,7 +209,7 @@ static bool udev_set_rumble_gain(unsigned i, unsigned gain)
 
    if (write(pad->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
    {
-      RARCH_ERR("[udev]: Failed to set rumble gain on pad #%u.\n", i);
+      RARCH_ERR("[udev] Failed to set rumble gain on pad #%u.\n", i);
       return false;
    }
 
@@ -180,6 +218,249 @@ static bool udev_set_rumble_gain(unsigned i, unsigned gain)
    return true;
 }
 #endif
+
+static void udev_open_sensor_node(struct udev_joypad *pad,
+      const char *devnode, unsigned p)
+{
+   unsigned long propbit[NBITS(INPUT_PROP_MAX)] = {0};
+   unsigned long absbit[NBITS(ABS_MAX)]         = {0};
+   int fd = open(devnode, O_RDONLY | O_NONBLOCK);
+
+   if (fd < 0)
+      return;
+
+   ioctl(fd, EVIOCGPROP(sizeof(propbit)), propbit);
+
+   if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(absbit)), absbit) >= 0)
+   {
+      int a;
+      bool has_xyz  = test_bit(ABS_X,  absbit)
+                   && test_bit(ABS_Y,  absbit)
+                   && test_bit(ABS_Z,  absbit);
+      bool has_rxyz = test_bit(ABS_RX, absbit)
+                   && test_bit(ABS_RY, absbit)
+                   && test_bit(ABS_RZ, absbit);
+
+      if (!has_xyz && !has_rxyz)
+      {
+         /* Node has no usable sensor axes at all — skip it. */
+         close(fd);
+         return;
+      }
+
+      /* Standard layout: ABS_X/Y/Z = accel, ABS_RX/Y/Z = gyro.
+       * Wiimote layout:  ABS_RX/Y/Z = accel only (no gyro, no ABS_X/Y/Z). */
+      if (!has_xyz && has_rxyz)
+      {
+         /* Rotational-axis accelerometer (Wiimote).
+          * Read absinfo from ABS_RX/Y/Z into sensor_absinfo 0/1/2 */
+         pad->sensor_accel_on_rxyz_codes = true;
+         pad->sensor_has_accel           = true;
+         pad->sensor_has_gyro            = false;
+
+         if (ioctl(fd, EVIOCGABS(ABS_RX), &pad->sensor_absinfo[0]) < 0)
+            memset(&pad->sensor_absinfo[0], 0, sizeof(pad->sensor_absinfo[0]));
+         if (ioctl(fd, EVIOCGABS(ABS_RY), &pad->sensor_absinfo[1]) < 0)
+            memset(&pad->sensor_absinfo[1], 0, sizeof(pad->sensor_absinfo[1]));
+         if (ioctl(fd, EVIOCGABS(ABS_RZ), &pad->sensor_absinfo[2]) < 0)
+            memset(&pad->sensor_absinfo[2], 0, sizeof(pad->sensor_absinfo[2]));
+
+         if (pad->sensor_absinfo[0].resolution == 0)
+            pad->sensor_absinfo[0].resolution = 88;
+         if (pad->sensor_absinfo[1].resolution == 0)
+            pad->sensor_absinfo[1].resolution = 88;
+         if (pad->sensor_absinfo[2].resolution == 0)
+            pad->sensor_absinfo[2].resolution = 88;
+      }
+      else
+      {
+         /* Standard layout. */
+         pad->sensor_accel_on_rxyz_codes = false;
+         pad->sensor_has_accel           = has_xyz;
+         pad->sensor_has_gyro            = has_rxyz;
+
+         for (a = 0; a < SENSOR_AXES; a++)
+         {
+            if (test_bit(a, absbit))
+               ioctl(fd, EVIOCGABS(a), &pad->sensor_absinfo[a]);
+         }
+      }
+   }
+   else
+   {
+      /* Could not read ABS capabilities — not a sensor. */
+      close(fd);
+      return;
+   }
+
+   pad->sensor_fd   = fd;
+   pad->sensor_path = strdup(devnode);
+
+   RARCH_LOG("[udev] Pad #%u: found sensor at %s "
+         "(accel=%s%s, gyro=%s).\n",
+         p, devnode,
+         pad->sensor_has_accel ? "yes" : "no",
+         pad->sensor_accel_on_rxyz_codes ? "[RX/RY/RZ]" : "",
+         pad->sensor_has_gyro  ? "yes" : "no");
+}
+
+static void udev_find_sensor_sibling(struct udev_device *gamepad_dev,
+      unsigned p)
+{
+   struct udev_enumerate *enumerate  = NULL;
+   struct udev_list_entry *devs      = NULL;
+   struct udev_list_entry *item      = NULL;
+   struct udev_device *hid_parent    = NULL;
+   const char *parent_syspath        = NULL;
+   struct udev_joypad *pad           = &udev_pads[p];
+
+   hid_parent = udev_device_get_parent_with_subsystem_devtype(
+         gamepad_dev, "hid", NULL);
+   if (!hid_parent)
+   {
+      RARCH_DBG("[udev] Pad #%u: no HID parent found for sensor search.\n", p);
+      return;
+   }
+
+   parent_syspath = udev_device_get_syspath(hid_parent);
+   if (!parent_syspath)
+      return;
+
+   RARCH_DBG("[udev] Pad #%u: searching for sensor sibling under %s\n",
+         p, parent_syspath);
+
+   enumerate = udev_enumerate_new(udev_joypad_fd);
+   if (!enumerate)
+      return;
+
+   udev_enumerate_add_match_property(enumerate,
+         "ID_INPUT_ACCELEROMETER", "1");
+   udev_enumerate_add_match_subsystem(enumerate, "input");
+   udev_enumerate_scan_devices(enumerate);
+   devs = udev_enumerate_get_list_entry(enumerate);
+
+   if (!devs)
+      RARCH_DBG("[udev] Pad #%u: no ID_INPUT_ACCELEROMETER devices found.\n", p);
+
+   udev_list_entry_foreach(item, devs)
+   {
+      const char *name = udev_list_entry_get_name(item);
+      struct udev_device *dev = udev_device_new_from_syspath(
+            udev_joypad_fd, name);
+      const char *devnode;
+      struct udev_device *candidate_parent;
+      const char *candidate_syspath;
+
+      if (!dev)
+         continue;
+
+      devnode = udev_device_get_devnode(dev);
+      if (!devnode)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      candidate_parent = udev_device_get_parent_with_subsystem_devtype(
+            dev, "hid", NULL);
+      if (!candidate_parent)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      candidate_syspath = udev_device_get_syspath(candidate_parent);
+      if (  !candidate_syspath
+         || !string_is_equal(parent_syspath, candidate_syspath))
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      /* Found sibling sensor node */
+      udev_open_sensor_node(pad, devnode, p);
+      udev_device_unref(dev);
+      break;
+   }
+
+   udev_enumerate_unref(enumerate);
+
+   /* Fallback for devices like hid-wiimote whose accelerometer input node
+    * is not tagged with ID_INPUT_ACCELEROMETER=1 by udev */
+   if (pad->sensor_fd >= 0)
+      return; /* primary scan already found it */
+
+   RARCH_DBG("[udev] Pad #%u: no ID_INPUT_ACCELEROMETER device found, "
+         "trying fallback scan under %s\n", p, parent_syspath);
+
+   enumerate = udev_enumerate_new(udev_joypad_fd);
+   if (!enumerate)
+      return;
+
+   udev_enumerate_add_match_subsystem(enumerate, "input");
+   udev_enumerate_scan_devices(enumerate);
+   devs = udev_enumerate_get_list_entry(enumerate);
+
+   udev_list_entry_foreach(item, devs)
+   {
+      const char *name         = udev_list_entry_get_name(item);
+      struct udev_device *dev;
+      const char *devnode;
+      struct udev_device *candidate_parent;
+      const char *candidate_syspath;
+
+      /* Only look at eventNN nodes, not jsNN or the input parent itself */
+      if (!strstr(name, "/event"))
+         continue;
+
+      dev = udev_device_new_from_syspath(udev_joypad_fd, name);
+      if (!dev)
+         continue;
+
+      devnode = udev_device_get_devnode(dev);
+      if (!devnode)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      /* Must share the same HID parent as the joypad */
+      candidate_parent = udev_device_get_parent_with_subsystem_devtype(
+            dev, "hid", NULL);
+      if (!candidate_parent)
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      candidate_syspath = udev_device_get_syspath(candidate_parent);
+      if (  !candidate_syspath
+         || !string_is_equal(parent_syspath, candidate_syspath))
+      {
+         udev_device_unref(dev);
+         continue;
+      }
+
+      /* Skip the joypad's own event node */
+      {
+         struct stat st;
+         if (stat(devnode, &st) == 0 && st.st_rdev == pad->device)
+         {
+            udev_device_unref(dev);
+            continue;
+         }
+      }
+
+      /* udev_open_sensor_node rejects nodes with no usable ABS axes */
+      udev_open_sensor_node(pad, devnode, p);
+      udev_device_unref(dev);
+
+      if (pad->sensor_fd >= 0)
+         break;
+   }
+
+   udev_enumerate_unref(enumerate);
+}
 
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
@@ -196,8 +477,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    unsigned long absbit[NBITS(ABS_MAX)] = {0};
    unsigned long ffbit[NBITS(FF_MAX)]   = {0};
    const char *device_name              = input_config_get_device_name(p);
+   size_t physlen                       = 0;
 
-   if (string_is_empty(device_name))
+   if (!device_name || !*device_name)
       pad->ident[0] = '\0';
    else
       strlcpy(pad->ident, device_name, sizeof(pad->ident));
@@ -213,6 +495,13 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
+   if (ioctl(fd, EVIOCGPHYS(sizeof(pad->phys)), pad->phys) < 0)
+      pad->phys[0] = '\0';  /* Clear if unavailable */
+   else
+      physlen = strlen(pad->phys);
+
+   if (ioctl(fd, EVIOCGUNIQ(sizeof(pad->phys)-physlen), pad->phys+physlen) < 0)
+       pad->phys[physlen] = '\0';  /* Clear if unavailable */
 
    if (fstat(fd, &st) < 0)
       return -1;
@@ -261,7 +550,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                by testing if the axis initial value is negative, allowing for
                for some slop (1300 =~ 4%) in an axis centred around 0.
                The actual work is done in udev_joypad_axis.
-               All bets are off if you're sitting on it. Reinitailise it by unpluging
+               All bets are off if you're sitting on it. Reinitialise it by unpluging
                and plugging back in. */
             if (udev_compute_axis(abs, abs->value) < -1300)
               pad->neg_trigger[i] = true;
@@ -271,14 +560,18 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    }
 
    pad->device = st.st_rdev;
-   pad->fd     = fd;
+   udev_pad_set_fd(p, fd);
    pad->path   = strdup(path);
 
-   if (!string_is_empty(pad->ident))
+   /* Look for a sibling sensor (IMU) evdev node under the same HID parent */
+   udev_find_sensor_sibling(dev, p);
+
+   if (*pad->ident)
    {
       input_autoconfigure_connect(
                pad->ident,
                NULL,
+               pad->phys,
                udev_joypad.ident,
                p,
                pad->vid,
@@ -291,12 +584,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    if (ioctl(fd, EVIOCGBIT(EV_FF, sizeof(ffbit)), ffbit) >= 0)
    {
       if (test_bit(FF_RUMBLE, ffbit))
-         RARCH_LOG("[udev]: Pad #%u (%s) supports force feedback.\n",
+         RARCH_LOG("[udev] Pad #%u (%s) supports force feedback.\n",
                p, path);
 
       if (ioctl(fd, EVIOCGEFFECTS, &pad->num_effects) >= 0)
          RARCH_LOG(
-               "[udev]: Pad #%u (%s) supports %d force feedback effects.\n",
+               "[udev] Pad #%u (%s) supports %d force feedback effects.\n",
                p, path, pad->num_effects);
    }
 
@@ -316,9 +609,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
 static void udev_check_device(struct udev_device *dev, const char *path)
 {
+   int i;
    int ret;
    int pad, fd;
-   unsigned i;
    struct stat st;
 
    if (stat(path, &st) < 0)
@@ -329,7 +622,7 @@ static void udev_check_device(struct udev_device *dev, const char *path)
       if (st.st_rdev == udev_pads[i].device)
       {
          RARCH_LOG(
-               "[udev]: Device ID %u is already plugged.\n",
+               "[udev] Device ID %u is already plugged.\n",
                (unsigned)st.st_rdev);
          return;
       }
@@ -343,7 +636,7 @@ static void udev_check_device(struct udev_device *dev, const char *path)
 
    if (udev_add_pad(dev, pad, fd, path) == -1)
    {
-      RARCH_ERR("[udev]: Failed to add pad: %s.\n", path);
+      RARCH_ERR("[udev] Failed to add pad: %s.\n", path);
       close(fd);
    }
 }
@@ -352,25 +645,30 @@ static void udev_free_pad(unsigned pad)
 {
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
+   if (udev_pads[pad].sensor_fd >= 0)
+      close(udev_pads[pad].sensor_fd);
 
    if (udev_pads[pad].path)
       free(udev_pads[pad].path);
+   if (udev_pads[pad].sensor_path)
+      free(udev_pads[pad].sensor_path);
    udev_pads[pad].path = NULL;
-   if (!string_is_empty(udev_pads[pad].ident))
+   if (*udev_pads[pad].ident)
       udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
-   udev_pads[pad].fd    = -1;
+   udev_pad_set_fd(pad, -1);
+   udev_pads[pad].sensor_fd = -1;
 }
 
 static void udev_joypad_remove_device(const char *path)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (     !string_is_empty(udev_pads[i].path)
+      if (     (udev_pads[i].path && *udev_pads[i].path)
             &&  string_is_equal(udev_pads[i].path, path))
       {
          input_autoconfigure_disconnect(i, udev_pads[i].ident);
@@ -380,9 +678,80 @@ static void udev_joypad_remove_device(const char *path)
    }
 }
 
+static void udev_hotplug_sensor_add(struct udev_device *sensor_dev,
+      const char *sensor_path)
+{
+   int i;
+   struct udev_device *sensor_parent;
+   const char *sensor_parent_syspath;
+
+   sensor_parent = udev_device_get_parent_with_subsystem_devtype(
+         sensor_dev, "hid", NULL);
+   if (!sensor_parent)
+      return;
+   sensor_parent_syspath = udev_device_get_syspath(sensor_parent);
+   if (!sensor_parent_syspath)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      struct udev_device *pad_dev, *pad_parent;
+      const char *pad_parent_syspath;
+      struct udev_joypad *pad = &udev_pads[i];
+
+      if (pad->fd < 0 || pad->sensor_fd >= 0)
+         continue;
+
+      pad_dev = udev_device_new_from_devnum(
+            udev_joypad_fd, 'c', pad->device);
+      if (!pad_dev)
+         continue;
+
+      pad_parent = udev_device_get_parent_with_subsystem_devtype(
+            pad_dev, "hid", NULL);
+      if (pad_parent)
+      {
+         pad_parent_syspath = udev_device_get_syspath(pad_parent);
+         if (  pad_parent_syspath
+            && string_is_equal(sensor_parent_syspath, pad_parent_syspath))
+         {
+            udev_device_unref(pad_dev);
+            udev_open_sensor_node(pad, sensor_path, i);
+            return;
+         }
+      }
+      udev_device_unref(pad_dev);
+   }
+}
+
+static void udev_hotplug_sensor_remove(const char *path)
+{
+   int i;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      struct udev_joypad *pad = &udev_pads[i];
+      if (  pad->sensor_fd >= 0
+         && pad->sensor_path
+         && string_is_equal(pad->sensor_path, path))
+      {
+         close(pad->sensor_fd);
+         pad->sensor_fd = -1;
+         free(pad->sensor_path);
+         pad->sensor_path          = NULL;
+         pad->sensor_accel_enabled = false;
+         pad->sensor_gyro_enabled  = false;
+         pad->sensor_has_accel     = false;
+         pad->sensor_has_gyro      = false;
+         pad->sensor_accel_on_rxyz_codes = false;
+         RARCH_LOG("[udev] Pad #%u: sensor removed.\n", i);
+         break;
+      }
+   }
+}
+
 static void udev_joypad_destroy(void)
 {
-   unsigned i;
+   int i;
 
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
@@ -442,7 +811,7 @@ static bool udev_set_rumble(unsigned i,
 
          if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
          {
-            RARCH_ERR("Failed to set rumble effect on pad #%u.\n", i);
+            RARCH_ERR("[udev] Failed to set rumble effect on pad #%u.\n", i);
             return false;
          }
 
@@ -463,7 +832,7 @@ static bool udev_set_rumble(unsigned i,
 
          if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
          {
-            RARCH_ERR("[udev]: Failed to play rumble effect #%u on pad #%u.\n",
+            RARCH_ERR("[udev] Failed to play rumble effect #%u on pad #%u.\n",
                   effect, i);
             return false;
          }
@@ -506,6 +875,25 @@ static void udev_joypad_poll(void)
             /* Hotplug removal */
             else if (string_is_equal(action, "remove"))
                udev_joypad_remove_device(devnode);
+            /* Device change */
+            else if  (string_is_equal(action, "change"))
+            {
+               udev_joypad_remove_device(devnode);
+               udev_check_device(dev, devnode);
+            }
+         }
+         else if (devnode)
+         {
+            /* Check for sensor node hotplug */
+            const char *accel_val = udev_device_get_property_value(
+                  dev, "ID_INPUT_ACCELEROMETER");
+            if (accel_val && string_is_equal(accel_val, "1"))
+            {
+               if (string_is_equal(action, "add"))
+                  udev_hotplug_sensor_add(dev, devnode);
+               else if (string_is_equal(action, "remove"))
+                  udev_hotplug_sensor_remove(devnode);
+            }
          }
 
          udev_device_unref(dev);
@@ -514,17 +902,18 @@ static void udev_joypad_poll(void)
 
    for (p = 0; p < MAX_USERS; p++)
    {
-      int i, len;
+      int i;
+      ssize_t _len;
       struct input_event events[32];
       struct udev_joypad *pad = &udev_pads[p];
 
-      if (pad->fd < 0)
+      if (!(udev_pads_active & (1u << p)))
          continue;
 
-      while ((len = read(pad->fd, events, sizeof(events))) > 0)
+      while ((_len = read(pad->fd, events, sizeof(events))) > 0)
       {
-         len /= sizeof(*events);
-         for (i = 0; i < len; i++)
+         _len /= sizeof(*events);
+         for (i = 0; i < _len; i++)
          {
             uint16_t type = events[i].type;
             uint16_t code = events[i].code;
@@ -574,12 +963,68 @@ static void udev_joypad_poll(void)
             }
          }
       }
+
+      /* Read sensor events from sibling IMU node */
+      if (  pad->sensor_fd >= 0
+         && (pad->sensor_accel_enabled || pad->sensor_gyro_enabled))
+      {
+         struct input_event sevents[32];
+         ssize_t slen;
+         while ((slen = read(pad->sensor_fd, sevents, sizeof(sevents))) > 0)
+         {
+            int si;
+            slen /= sizeof(*sevents);
+            for (si = 0; si < slen; si++)
+            {
+               uint16_t code;
+               int res;
+
+               if (sevents[si].type != EV_ABS)
+                  continue;
+
+               code = sevents[si].code;
+
+               /* Wiimote / rotational-axis accel:
+                * ABS_RX(3)->ACCEL_X(0), ABS_RY(4)->ACCEL_Y(1), ABS_RZ(5)->ACCEL_Z(2).
+                * Remap so sensor_data is indexed by RETRO_SENSOR_* IDs. */
+               if (pad->sensor_accel_on_rxyz_codes)
+               {
+                  if (code == ABS_RX)      code = 0;
+                  else if (code == ABS_RY) code = 1;
+                  else if (code == ABS_RZ) code = 2;
+                  else continue; /* no other axes expected on this node */
+               }
+               else if (code >= SENSOR_AXES)
+                  continue;
+
+               /* Normalise raw value to SI units.
+                * resolution field = units per g (accel) or units per deg/s (gyro).
+                * When resolution == 0 (hid-wiimote doesn't set it), fall back to
+                * using absinfo.maximum as the full-scale value so that
+                * sensor_data ends up in g (± 1.0 at maximum deflection). */
+               res = pad->sensor_absinfo[code].resolution;
+               if (res > 0)
+                  pad->sensor_data[code] =
+                        (float)sevents[si].value / (float)res;
+               else
+               {
+                  int maxval = pad->sensor_absinfo[code].maximum;
+                  if (maxval > 0)
+                     pad->sensor_data[code] =
+                           (float)sevents[si].value / (float)maxval;
+                  else
+                     pad->sensor_data[sevents[si].code] =
+                           (float)sevents[si].value;
+               }
+            }
+         }
+      }
    }
 }
 
 static void *udev_joypad_init(void *data)
 {
-   unsigned i;
+   int i;
    unsigned sorted_count = 0;
    struct udev_list_entry *devs     = NULL;
    struct udev_list_entry *item     = NULL;
@@ -587,7 +1032,10 @@ static void *udev_joypad_init(void *data)
    struct joypad_udev_entry sorted[MAX_USERS];
 
    for (i = 0; i < MAX_USERS; i++)
-      udev_pads[i].fd = -1;
+   {
+      udev_pad_set_fd(i, -1);
+      udev_pads[i].sensor_fd = -1;
+   }
 
    if (!(udev_joypad_fd = udev_new()))
       return NULL;
@@ -606,7 +1054,7 @@ static void *udev_joypad_init(void *data)
    udev_enumerate_add_match_subsystem(enumerate, "input");
    udev_enumerate_scan_devices(enumerate);
    if (!(devs = udev_enumerate_get_list_entry(enumerate)))
-      RARCH_DBG("[udev]: Couldn't open any joypads. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      RARCH_DBG("[udev] Couldn't open any joypads. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
 
    udev_list_entry_foreach(item, devs)
    {
@@ -615,9 +1063,9 @@ static void *udev_joypad_init(void *data)
       const char      *devnode = udev_device_get_devnode(dev);
 #if defined(DEBUG)
       struct udev_list_entry *list_entry = NULL;
-      RARCH_DBG("udev_joypad_init entry name=%s devnode=%s\n", name, devnode);
+      RARCH_DBG("[udev] udev_joypad_init entry name=%s devnode=%s\n", name, devnode);
       udev_list_entry_foreach(list_entry, udev_device_get_properties_list_entry(dev))
-         RARCH_DBG("udev_joypad_init property %s=%s\n",
+         RARCH_DBG("[udev] udev_joypad_init property %s=%s\n",
                        udev_list_entry_get_name(list_entry),
                        udev_list_entry_get_value(list_entry));
 #endif
@@ -738,7 +1186,7 @@ static int16_t udev_joypad_state(
 
    if (port_idx < MAX_USERS)
    {
-      unsigned i;
+      int i;
       const struct udev_joypad *pad     = (const struct udev_joypad*)
          &udev_pads[port_idx];
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
@@ -770,10 +1218,81 @@ static bool udev_joypad_query_pad(unsigned pad)
 
 static const char *udev_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || string_is_empty(udev_pads[pad].ident))
+   if (pad >= MAX_USERS || !*udev_pads[pad].ident)
       return NULL;
-
    return udev_pads[pad].ident;
+}
+
+static bool udev_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   struct udev_joypad *pad;
+
+   if (port >= MAX_USERS)
+      return false;
+
+   pad = &udev_pads[port];
+
+   if (pad->sensor_fd < 0)
+      return false;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         if (!pad->sensor_has_accel)
+            return false;
+         pad->sensor_accel_enabled = true;
+         return true;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         pad->sensor_accel_enabled = false;
+         return true;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         if (!pad->sensor_has_gyro)
+            return false;
+         pad->sensor_gyro_enabled = true;
+         return true;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         pad->sensor_gyro_enabled = false;
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool udev_get_sensor_input(unsigned port,
+      unsigned id, float *value)
+{
+   const struct udev_joypad *pad;
+
+   if (port >= MAX_USERS)
+      return false;
+
+   pad = &udev_pads[port];
+
+   if (pad->sensor_fd < 0)
+      return false;
+
+   if (id > RETRO_SENSOR_GYROSCOPE_Z)
+      return false;
+
+   /* Check if the requested sensor type is enabled */
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
+   {
+      if (!pad->sensor_accel_enabled)
+         return false;
+      /* Accelerometer: resolution is units/g, so sensor_data is already in g */
+      *value = pad->sensor_data[id];
+   }
+   else
+   {
+      if (!pad->sensor_gyro_enabled)
+         return false;
+      /* Gyroscope: resolution is units/(deg/s), convert to rad/s */
+      *value = pad->sensor_data[id] * DEG_TO_RAD_F;
+   }
+
+   return true;
 }
 
 input_device_driver_t udev_joypad = {
@@ -789,8 +1308,10 @@ input_device_driver_t udev_joypad = {
 #ifndef HAVE_LAKKA_SWITCH
    udev_set_rumble_gain,
 #else
-   NULL,
+   NULL, /* set_rumble_gain */
 #endif
+   udev_set_sensor_state,
+   udev_get_sensor_input,
    udev_joypad_name,
    "udev",
 };

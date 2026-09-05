@@ -35,6 +35,7 @@
 
 #elif !defined(VITA) && !defined(GEKKO)
 #if defined(WANT_IFADDRS)
+#include <net/if.h>
 #include <compat/ifaddrs.h>
 #elif !defined(HAVE_LIBNX) && !defined(_3DS)
 #include <ifaddrs.h>
@@ -45,18 +46,19 @@
 #endif
 
 #include <net/net_ifinfo.h>
+#include <compat/strl.h>
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Microsoft docs recommend doing it this way. */
    char buf[512];
-   ULONG result;
+   ULONG ret;
    PIP_ADAPTER_ADDRESSES addr;
    struct net_ifinfo_entry *entry;
    size_t                interfaces = 0;
    ULONG                 flags      = GAA_FLAG_SKIP_ANYCAST
-                                    | GAA_FLAG_SKIP_MULTICAST 
+                                    | GAA_FLAG_SKIP_MULTICAST
                                     | GAA_FLAG_SKIP_DNS_SERVER;
    ULONG                 len        = 15 * 1024;
    PIP_ADAPTER_ADDRESSES addresses  = (PIP_ADAPTER_ADDRESSES)calloc(1, len);
@@ -66,8 +68,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    if (!addresses)
       goto failure;
 
-   result = GetAdaptersAddresses(AF_UNSPEC, flags, NULL, addresses, &len);
-   if (result == ERROR_BUFFER_OVERFLOW)
+   ret = GetAdaptersAddresses(AF_UNSPEC, flags, NULL, addresses, &len);
+   if (ret == ERROR_BUFFER_OVERFLOW)
    {
       PIP_ADAPTER_ADDRESSES new_addresses =
          (PIP_ADAPTER_ADDRESSES)realloc(addresses, len);
@@ -77,11 +79,11 @@ bool net_ifinfo_new(net_ifinfo_t *list)
          memset(new_addresses, 0, len);
 
          addresses = new_addresses;
-         result    = GetAdaptersAddresses(AF_UNSPEC, flags, NULL,
+         ret       = GetAdaptersAddresses(AF_UNSPEC, flags, NULL,
             addresses, &len);
       }
    }
-   if (result != ERROR_SUCCESS)
+   if (ret != ERROR_SUCCESS)
       goto failure;
 
    /* Count the number of valid interfaces first. */
@@ -167,13 +169,13 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
    if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
    {
-      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
+      strlcpy_lit(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
       strlcpy(list->entries[1].host, info.ip_address,
          sizeof(list->entries[1].host));
       list->size++;
@@ -188,8 +190,8 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
 #if defined(HAVE_LIBNX)
@@ -228,36 +230,53 @@ failure:
    struct net_ifinfo_entry *entry;
    size_t         interfaces = 0;
    struct ifaddrs *addresses = NULL;
+   bool           require_up = true;
 
    list->entries             = NULL;
 
    if (getifaddrs(&addresses) || !addresses)
       goto failure;
 
-   /* Count the number of valid interfaces first. */
-   addr                      = addresses;
-
-   do
+   /* Count the number of valid interfaces first.
+    *
+    * Reading the interface flags is a privileged operation on some
+    * platforms. Where it is refused every entry reports no flags at
+    * all, which is indistinguishable from every interface being down;
+    * take a second look without the flag test rather than report that
+    * the machine has no network at all. An address only reaches us
+    * here because it is configured on an interface. */
+   for (;;)
    {
-      if (!addr->ifa_addr)
-         continue;
+      addr       = addresses;
+      interfaces = 0;
+
+      do
+      {
+         if (!addr->ifa_addr)
+            continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
-         continue;
+         if (require_up && !(addr->ifa_flags & IFF_UP))
+            continue;
 #endif
 
-      switch (addr->ifa_addr->sa_family)
-      {
-         case AF_INET:
+         switch (addr->ifa_addr->sa_family)
+         {
+            case AF_INET:
 #ifdef HAVE_INET6
-         case AF_INET6:
+            case AF_INET6:
 #endif
-            interfaces++;
-            break;
-         default:
-            break;
-      }
-   } while ((addr = addr->ifa_next));
+               interfaces++;
+               break;
+            default:
+               break;
+         }
+      } while ((addr = addr->ifa_next));
+
+      if (interfaces || !require_up)
+         break;
+
+      require_up = false;
+   }
 
    if (!interfaces)
       goto failure;
@@ -279,7 +298,7 @@ failure:
       if (!addr->ifa_addr)
          continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
+      if (require_up && !(addr->ifa_flags & IFF_UP))
          continue;
 #endif
 
@@ -332,8 +351,6 @@ void net_ifinfo_free(net_ifinfo_t *list)
 
 bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
 {
-   bool ret = false;
-
 /* TODO/FIXME: Implement for other platforms, if necessary. */
 #if defined(_WIN32) && !defined(_XBOX)
    if (!ipv6)
@@ -365,12 +382,12 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
 
          if (addresses)
          {
-            ULONG flags  = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
-               GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_FRIENDLY_NAME;
-            ULONG result = GetAdaptersAddresses(AF_INET, flags, NULL,
+            ULONG flags  = GAA_FLAG_SKIP_ANYCAST    | GAA_FLAG_SKIP_MULTICAST
+                         | GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_SKIP_FRIENDLY_NAME;
+            ULONG ret    = GetAdaptersAddresses(AF_INET, flags, NULL,
                addresses, &len);
 
-            if (result == ERROR_BUFFER_OVERFLOW)
+            if (ret == ERROR_BUFFER_OVERFLOW)
             {
                PIP_ADAPTER_ADDRESSES new_addresses =
                   (PIP_ADAPTER_ADDRESSES)realloc(addresses, len);
@@ -380,13 +397,14 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
                   memset(new_addresses, 0, len);
 
                   addresses = new_addresses;
-                  result    = GetAdaptersAddresses(AF_INET, flags, NULL,
+                  ret       = GetAdaptersAddresses(AF_INET, flags, NULL,
                      addresses, &len);
                }
             }
 
-            if (result == NO_ERROR)
+            if (ret == NO_ERROR)
             {
+               bool found = false;
                PIP_ADAPTER_ADDRESSES addr = addresses;
 
                do
@@ -402,12 +420,13 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
                         memcpy(src, &addr_unicast->sin_addr,
                            sizeof(addr_unicast->sin_addr));
 
-                        ret = true;
+                        found = true;
                      }
 
                      break;
                   }
                } while ((addr = addr->Next));
+               return found;
             }
 
             free(addresses);
@@ -415,6 +434,5 @@ bool net_ifinfo_best(const char *dst, void *src, bool ipv6)
       }
    }
 #endif
-
-   return ret;
+   return false;
 }

@@ -3,7 +3,7 @@
 If you are a developer who wishes to contribute to the development of _RetroArch_; or if you have
 found a bug and wish to submit a minor patch and/or bug report, please read this document.
 
-Active discussions happen on our [Discord](https://discordapp.com/invite/27Xxm2h), mostly within
+Active discussions happen on our [Discord](https://discord.gg/C4amCeV), mostly within
 the _Programming_ channel category. We value discussions that happen in real time around
 these contributions.
 
@@ -14,25 +14,39 @@ If there are any issues, we are willing to have discussions about it.
 
 ## Submitting Bug Reports
 
-Bug reports in _RetroArch_ may fall into one of two categories:
+Bug reports for _RetroArch_ may fall into a few categories:
 
  * _RetroArch_ itself, the user interface and API around all of the various cores.
- * Individual _Core_, of which interact with _RetroArch_.
+ * Individual _Core_, that interacts with _RetroArch_.
+ * Supplementary data provided within _RetroArch_, such as controller autoconfigs, databases,
+   thumbnails...
+ * The [documentation set](https://docs.libretro.com/)
 
 When submitting a bug report, ensure that the report is submitted to the correct repository.
-For _RetroArch_ itself, it is done by reporting a bug within the
-[RetroArch](https://github.com/libretro/RetroArch) repository. For other cores, please use
-the search function within the [libretro Organization](https://github.com/libretro) on
-GitHub. Issues that are specific to a core and not _RetroArch_ are likely to be closed very
-quickly. If an issue is suspected with _RetroArch_, please make sure to test with multiple
-cores to be sure that is is not isolated.
+ * For _RetroArch_ itself, submit an issue to the [RetroArch](https://github.com/libretro/RetroArch)
+   repository. Please read and fill the issue template.
+ * For other cores, please use the search function within the [libretro Organization](https://github.com/libretro)
+   on GitHub. Issues that are specific to a core and not _RetroArch_ are likely to be closed
+   very quickly. If an issue is suspected with _RetroArch_, please make sure to test with
+    multiple cores to be sure that is is not isolated.
+ * For database content, submit an issue to
+   [libretro-database repo](https://github.com/libretro/libretro-database) or ask in the
+   _database_ channel on Discord.
+ * For controller autoconfigs, submit an issue to
+   [retroarch-joypad-autoconfig repo](https://github.com/libretro/retroarch-joypad-autoconfig)
+ * For actual thumbnail images, submit an issue to
+   [libretro-thumbnails](https://github.com/libretro-thumbnails/libretro-thumbnails) repo
+   or ask in the _database_ channel on Discord.
+ * For documentation, submit an issue to [libretro-docs](https://github.com/libretro/libretro-docs)
+   repo or ask in the _documentation_ channel.
+ * For translations, please see [here](https://docs.libretro.com/development/retroarch/new-translations-crowdin/).
 
 If the issue occurs during runtime, please paste the verbose log output:
 
- * If using the _Pheonix_ interface, the log will be in _File_ -> _Show Log_.
  * If using the main interface, enable verbose logging with _Settings_ -> _Logging_ ->
    _Logging Verbosity_. Ensure both _Log to File_ and _Timestamp log Files_ is enabled.
- * Otherwise, run _RetroArch_ with the verbose (`-v`) flag.
+   Set frontend log level to _0 (Debug)_.
+ * Or run _RetroArch_ with the verbose (`-v`) flag and get the log from the console.
 
 If the error happens during compilation and/or building, paste the output of `./configure`
 and `make` accordingly. If using an IDE, please paste any of the errors and log output.
@@ -50,7 +64,7 @@ may be merged in when it is fully approved. The final approval of merge requests
 discretion of the project.
 
 If you want to develop a larger feature or make broad changes, please do join our
-[Discord](https://discordapp.com/invite/27Xxm2h) server to discuss. The discussion is
+[Discord](https://discord.gg/C4amCeV) server to discuss. The discussion is
 necessary to prevent the possibility of major work being done which will not be accepted at all.
 
 ## libretro API

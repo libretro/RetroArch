@@ -42,6 +42,22 @@ typedef struct sdl2_tex
    bool rgb32;
 } sdl2_tex_t;
 
+#ifdef HAVE_OVERLAY
+/* On-screen input overlay entry. Defined at file scope (not inside
+ * _sdl2_video) so the tag resolves to the same type in both C and C++;
+ * see the note at the 'overlays' member below. */
+struct sdl2_overlay
+{
+   SDL_Texture *tex;
+   unsigned  tex_w;
+   unsigned  tex_h;
+   float     tex_coords[4];
+   float     vert_coords[4];
+   float     alpha_mod;
+   bool      fullscreen;
+};
+#endif
+
 typedef struct _sdl2_video
 {
    double rotation;
@@ -64,6 +80,30 @@ typedef struct _sdl2_video
    uint8_t font_b;
 
    uint8_t flags;
+
+#ifdef HAVE_OVERLAY
+   /* On-screen input overlay state.  Each entry holds an SDL_Texture
+    * uploaded as ARGB8888 (matching the supports_rgba=false byte
+    * layout RetroArch hands us in load()) and rendered via
+    * SDL_RenderCopy with per-texture alpha modulation each frame.
+    *
+    * vert_coords / tex_coords are 4-float (x, y, w, h) tuples in
+    * 0..1 normalised space.  vertex_geom flips y to (1.0f - y) and
+    * negates h, matching d3d8 / gl / d3d9_common; vertex_geom
+    * comments document the rationale - we undo the flip at render
+    * time in sdl2_overlays_render.
+    *
+    * Note: struct sdl2_overlay is defined at file scope (above this
+    * typedef) rather than inline here. Defining a struct inside
+    * another struct's body scopes the tag to the enclosing type in
+    * C++ (sdl2_video::sdl2_overlay), so under CXX_BUILD a file-scope
+    * 'struct sdl2_overlay *' in sdl2_gfx.c would refer to a different,
+    * incomplete type. A top-level definition keeps a single shared
+    * type in both C and C++. */
+   struct sdl2_overlay *overlays;
+   unsigned overlays_size;
+   bool overlays_enabled;
+#endif
 } sdl2_video_t;
 
 void sdl2_set_handles(void *data, enum rarch_display_type 

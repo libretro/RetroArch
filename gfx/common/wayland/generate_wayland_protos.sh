@@ -31,6 +31,14 @@ while [ $# -gt 0 ]; do
 done
 
 WAYSCAN="$(exists wayland-scanner || :)"
+
+if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
+   if [ -z "${STAGING_DIR:-}" ]; then
+      die 1 "Error: WEBOS=1 but STAGING_DIR not set"
+   fi
+   WAYSCAN="$STAGING_DIR/../../bin/wayland-scanner"
+fi
+
 PKGCONFIG="$(exists pkg-config || :)"
 
 [ "${WAYSCAN}" ] || die 1 "Error: No wayscan in ($PATH)"
@@ -38,7 +46,7 @@ PKGCONFIG="$(exists pkg-config || :)"
 WAYLAND_PROTOS=''
 
 if [ "$PROTOS" != 'no' -a "$PKGCONFIG" ]; then
-   WAYLAND_PROTOS="$($PKGCONFIG wayland-protocols --variable=pkgdatadir)"
+   WAYLAND_PROTOS="$($PKGCONFIG wayland-protocols --variable=pkgdatadir 2>/dev/null || true)"
 fi
 
 if [ -z "${WAYLAND_PROTOS}" ]; then
@@ -61,10 +69,31 @@ generate_source () {
    "$WAYSCAN" $CODEGEN "$PROTO_FILE" "./$PROTO_NAME.c"
 }
 
+generate_source 'stable/presentation-time' 'presentation-time'
 generate_source 'stable/viewporter' 'viewporter'
 generate_source 'stable/xdg-shell' 'xdg-shell'
 generate_source 'unstable/xdg-decoration' 'xdg-decoration-unstable-v1'
 generate_source 'unstable/idle-inhibit' 'idle-inhibit-unstable-v1'
 generate_source 'unstable/pointer-constraints' 'pointer-constraints-unstable-v1'
 generate_source 'unstable/relative-pointer' 'relative-pointer-unstable-v1'
+generate_source 'staging/fractional-scale' 'fractional-scale-v1'
+generate_source 'staging/cursor-shape' 'cursor-shape-v1'
+# tablet-unstable-v1 is required by cursor-shape-v1
+generate_source 'unstable/tablet' 'tablet-unstable-v2'
+generate_source 'staging/content-type' 'content-type-v1'
+generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
+generate_source 'staging/tearing-control' 'tearing-control-v1'
+generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
+generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
 
+if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
+   if [ -z "${STAGING_DIR:-}" ]; then
+      die 1 "Error: WEBOS=1 but STAGING_DIR not set"
+   fi
+   WAYLAND_PROTOS="$STAGING_DIR/usr/share"
+
+   generate_source 'wayland-webos' 'webos-shell'
+   generate_source 'wayland-webos' 'webos-foreign'
+   generate_source 'wayland-webos' 'webos-surface-group'
+   generate_source 'wayland-webos' 'webos-input-manager'
+fi

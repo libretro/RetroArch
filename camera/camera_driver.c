@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include <libretro.h>
+#include <string/stdstring.h>
 
 #include "../configuration.h"
 #include "../driver.h"
@@ -25,6 +26,16 @@
 #include "../verbosity.h"
 
 #include "camera_driver.h"
+
+#if defined(HAVE_FFMPEG) && defined(HAVE_AVFORMAT) && defined(HAVE_AVCODEC) && \
+   defined(HAVE_AVDEVICE) && defined(HAVE_AVUTIL) && defined(HAVE_SWSCALE)
+/* FFMPEG consists of several libraries, and the camera driver needs most of them.
+ * The camera driver uses APIs introduced in avformat 58 (ffmpeg 4.0). */
+#include <libavformat/version.h>
+#if LIBAVFORMAT_VERSION_MAJOR >= 58
+#define HAVE_FFMPEG_CAMERA
+#endif
+#endif
 
 static void *nullcamera_init(const char *device, uint64_t caps,
       unsigned width, unsigned height) { return (void*)-1; }
@@ -48,11 +59,20 @@ const camera_driver_t *camera_drivers[] = {
 #ifdef HAVE_V4L2
    &camera_v4l2,
 #endif
-#ifdef EMSCRIPTEN
+#if defined(HAVE_PIPEWIRE) && defined(HAVE_PIPEWIRE_STABLE)
+   &camera_pipewire,
+#endif
+#ifdef __EMSCRIPTEN__
    &camera_rwebcam,
 #endif
 #ifdef ANDROID
    &camera_android,
+#endif
+#ifdef HAVE_AVF
+   &camera_avfoundation,
+#endif
+#ifdef HAVE_FFMPEG_CAMERA
+   &camera_ffmpeg,
 #endif
    &camera_null,
    NULL,
@@ -93,7 +113,9 @@ bool driver_camera_start(void)
          return camera_st->driver->start(camera_st->data);
 
       runloop_msg_queue_push(
-            "Camera is explicitly disabled.\n", 1, 180, false,
+            "Camera is explicitly disabled.\n",
+            STRLEN_CONST("Camera is explicitly disabled.\n"),
+            1, 180, false,
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return true;
@@ -112,7 +134,7 @@ bool camera_driver_find_driver(const char *prefix,
       bool verbosity_enabled)
 {
    settings_t *settings         = config_get_ptr();
-   camera_driver_state_t 
+   camera_driver_state_t
       *camera_st                = &camera_driver_st;
    int i                        = (int)driver_find_index(
          "camera_driver",

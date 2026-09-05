@@ -97,6 +97,7 @@ public:
 	int v_shift_correct() { return m_ds.gs.v_shift_correct; }
 	int pixel_precision() { return m_ds.gs.pixel_precision; }
 	int interlace_force_even() { return m_ds.gs.interlace_force_even; }
+	int scale_proportional() { return m_ds.gs.scale_proportional; }
 
 	// getters (modeline result)
 	bool got_mode() { return (m_selected_mode != nullptr); }
@@ -134,7 +135,7 @@ public:
 	void set_current_mode(modeline *mode) { m_current_mode = mode; }
 
 	// setters (display_manager)
-	void set_monitor(const char *preset) { set_preset(preset); }
+	void set_monitor(const char *preset) { strncpy(m_ds.monitor, preset, sizeof(m_ds.monitor)-1); set_preset(preset); }
 	void set_modeline(const char *modeline) { strncpy(m_ds.user_modeline, modeline, sizeof(m_ds.user_modeline)-1); }
 	void set_crt_range(int i, const char *range) { strncpy(m_ds.crt_range[i], range, sizeof(m_ds.crt_range[i])-1); }
 	void set_lcd_range(const char *range) { strncpy(m_ds.lcd_range, range, sizeof(m_ds.lcd_range)-1); }
@@ -161,6 +162,7 @@ public:
 	void set_v_shift_correct(int value) { m_ds.gs.v_shift_correct = value; }
 	void set_pixel_precision(int value) { m_ds.gs.pixel_precision = value; }
 	void set_interlace_force_even(int value) { m_ds.gs.interlace_force_even = value; }
+	void set_scale_proportional(int value) { m_ds.gs.scale_proportional = value; }
 
 	// setters (custom_video backend)
 	void set_screen_compositing(bool value) { m_ds.vs.screen_compositing = value; }

@@ -34,13 +34,28 @@ RETRO_BEGIN_DECLS
 /* TODO/FIXME: Move all generic time handling functions
  * to this file */
 
-/* Must be called before using rtime_localtime() */
+/**
+ * Must be called before using \c rtime_localtime().
+ * May be called multiple times without ill effects,
+ * but must only be called from the main thread.
+ */
 void rtime_init(void);
 
-/* Must be called upon program termination */
+/**
+ * Must be called upon program or core termination.
+ * May be called multiple times without ill effects,
+ * but must only be called from the main thread.
+ */
 void rtime_deinit(void);
 
-/* Thread-safe wrapper for localtime() */
+/**
+ * Thread-safe wrapper around standard \c localtime(),
+ * which by itself is not guaranteed to be thread-safe.
+ * @param timep Pointer to a time_t object to convert.
+ * @param result Pointer to a tm object to store the result in.
+ * @return \c result.
+ * @see https://en.cppreference.com/w/c/chrono/localtime
+ */
 struct tm *rtime_localtime(const time_t *timep, struct tm *result);
 
 RETRO_END_DECLS

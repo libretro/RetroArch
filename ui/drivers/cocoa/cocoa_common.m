@@ -16,26 +16,101 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+#include <dispatch/dispatch.h>
+#include <CoreFoundation/CoreFoundation.h>
+
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
+#include <compat/apple_compat.h>
+#include <string/stdstring.h>
+#include <defines/cocoa_defines.h>
 
 #include "cocoa_common.h"
 #include "apple_platform.h"
 #include "../ui_cocoa.h"
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
+#include "RetroArchPlaylistManager.h"
+#endif
 
 #ifdef HAVE_COCOATOUCH
-#import "../../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
+#import "../../pkg/apple/WebServer/GCDWebUploader/GCDWebUploader.h"
 #import "WebServer.h"
-#ifdef HAVE_IOS_SWIFT
-#import "RetroArch-Swift.h"
+#if TARGET_OS_TV
+#import <TVServices/TVServices.h>
+#import <CommonCrypto/CommonDigest.h>
+#import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
+#endif
+#if TARGET_OS_IOS
+#import <MobileCoreServices/MobileCoreServices.h>
 #endif
 #endif
 
-#include "../../../configuration.h"
-#include "../../../paths.h"
-#include "../../../retroarch.h"
-#include "../../../verbosity.h"
+#include "../../configuration.h"
+#include "../../content.h"
+#include "../../core_info.h"
+#include "../../defaults.h"
+#include "../../frontend/frontend.h"
+#include "../../file_path_special.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_displaylist.h"
+#endif
+
+#include "../../paths.h"
+#include "../../retroarch.h"
+#include "../../tasks/task_content.h"
+#include "../../verbosity.h"
 
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
+
+#ifdef HAVE_MIST
+#include "../../steam/steam.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
+#endif
+
+#if TARGET_OS_IPHONE
+#import <UIKit/UIAccessibility.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+   return UIAccessibilityIsVoiceOverRunning();
+}
+#elif TARGET_OS_OSX
+#import <AppKit/AppKit.h>
+extern bool RAIsVoiceOverRunning(void)
+{
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
+   /* @available is clang-only (Xcode 7+).  GCC 4.0 rejects the
+    * '@' as a stray token.  isVoiceOverEnabled on NSWorkspace is
+    * 10.13+ anyway, so on older SDKs we skip this block entirely
+    * and fall through to the return below. */
+   if (@available(macOS 10.13, *))
+      return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
+#endif
+   return false;
+}
+#endif
+
+#if TARGET_OS_OSX
+/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.  On the
+ * 10.5 Leopard SDK the CGDirectDisplay + kCGDisplayRefreshRate
+ * symbols come in through <ApplicationServices/ApplicationServices.h>.
+ * RARCH_HAS_CGDISPLAYMODE_API (defined in cocoa_common.h) selects
+ * between the 10.6+ CGDisplayMode API and the 10.5 CFDictionaryRef
+ * path inside cocoa_get_refresh_rate below. */
+#if defined(MAC_OS_X_VERSION_10_8) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
+#import <CoreGraphics/CoreGraphics.h>
+#else
+#import <ApplicationServices/ApplicationServices.h>
+#endif
+#endif /* OSX */
 
 #if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
@@ -47,22 +122,109 @@ static CocoaView* g_instance;
 
 #ifdef HAVE_COCOATOUCH
 void *glkitview_init(void);
+void cocoa_file_load_with_detect_core(const char *filename);
 
-@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
-#ifdef HAVE_IOS_TOUCHMOUSE
-,EmulatorTouchMouseHandlerDelegate
+@interface CocoaView()<GCDWebUploaderDelegate, GCDWebDAVServerDelegate, UIGestureRecognizerDelegate
+#if TARGET_OS_IOS
+,UIDocumentPickerDelegate
 #endif
 >
 @end
 #endif
 
+static CFRunLoopObserverRef iterate_observer;
+
+static void rarch_draw_observer(CFRunLoopObserverRef observer,
+    CFRunLoopActivity activity, void *info)
+{
+   int ret = runloop_iterate();
+
+   if (ret == -1)
+   {
+#ifdef HAVE_QT
+      application->quit();
+#endif
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+   task_queue_check();
+
+#ifdef HAVE_MIST
+   steam_poll();
+#endif
+
+#if !TARGET_OS_TV && !TARGET_OS_OSX
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
+#endif
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+#if TARGET_OS_IOS
+   else
+      rarch_stop_draw_observer();
+#endif
+}
+
+void rarch_start_draw_observer(void)
+{
+   if (iterate_observer && CFRunLoopObserverIsValid(iterate_observer))
+       return;
+
+   RARCH_LOG("[NS] starting draw observer\n");
+   if (iterate_observer != NULL)
+      CFRelease(iterate_observer);
+   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
+                                              true, 0, rarch_draw_observer, 0);
+   CFRunLoopAddObserver(CFRunLoopGetMain(), iterate_observer, kCFRunLoopCommonModes);
+}
+
+void rarch_stop_draw_observer(void)
+{
+    if (!iterate_observer || !CFRunLoopObserverIsValid(iterate_observer))
+        return;
+    RARCH_LOG("[NS] stopping draw observer\n");
+    CFRunLoopObserverInvalidate(iterate_observer);
+    CFRelease(iterate_observer);
+    iterate_observer = NULL;
+}
+
 @implementation CocoaView
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #ifdef HAVE_COCOA_METAL
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
 - (void)scrollWheel:(NSEvent *)theEvent { }
+#endif
+
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+-(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
+{
+#if TARGET_OS_IPHONE
+   if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
+      return;
+
+   int ret = runloop_iterate();
+
+   task_queue_check();
+
+   if (ret == -1)
+   {
+      main_exit(NULL);
+      exit(0);
+      return;
+   }
+
+#if !TARGET_OS_TV
+   if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
+   {
+      /* Fast-forward: observer handles all iterations */
+      rarch_start_draw_observer();
+      CFRunLoopWakeUp(CFRunLoopGetMain());
+   }
+#endif
+#endif
+}
 #endif
 
 + (CocoaView*)get
@@ -70,31 +232,78 @@ void *glkitview_init(void);
    CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
    if (!view)
    {
+      /* +new returns +1 owned by the caller.  Autorelease before
+       * handing to nsview_set_ptr, which takes its own retain for
+       * the process-lifetime g_instance slot.  Net result: the
+       * returned pointer obeys the Cocoa +0 "get" convention on
+       * both the first call (where we allocate) and every
+       * subsequent call (where we just read g_instance) - so
+       * callers do not have to guess the retain count.
+       *
+       * RARCH_AUTORELEASE is a statement-only macro (expands to
+       * ((void)0) under ARC and [x autorelease] under MRR), so it
+       * must be called on its own line after the assignment rather
+       * than wrapping the rvalue.  Under ARC the ((void)0) is a
+       * no-op and the strong local's end-of-scope release balances
+       * +new's +1 after g_instance's storeStrong has taken its
+       * own retain; under MRR the explicit autorelease does the
+       * same balancing once the pool drains. */
       view = [CocoaView new];
+      RARCH_AUTORELEASE(view);
       nsview_set_ptr(view);
+#if TARGET_OS_IPHONE
+      view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
+      {
+         float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            [view.displayLink setPreferredFrameRateRange:
+               CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
+         else
+            view.displayLink.preferredFramesPerSecond = hz;
+#else
+         view.displayLink.preferredFramesPerSecond = hz;
+#endif
+      }
+      [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+      if (@available(macOS 14.0, *))
+      {
+         CGDirectDisplayID did = CGMainDisplayID();
+         CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
+         float hz = (float)CGDisplayModeGetRefreshRate(mode);
+         CGDisplayModeRelease(mode);
+         if (hz <= 0.0f)
+            hz = 60.0f;
+         view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
+         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+      }
+#endif
    }
    return view;
 }
+
+#if TARGET_OS_OSX
+/* The main-thread half of ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title
+{
+   [[self window] setTitle:title];
+}
+#endif
 
 - (id)init
 {
    self = [super init];
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
    [self registerForDraggedTypes:array];
-#endif
 
-#if defined(HAVE_COCOA)
-   ui_window_cocoa_t cocoa_view;
-   cocoa_view.data = (CocoaView*)self;
-#endif
-
-#if defined(OSX)
-    video_driver_display_type_set(RARCH_DISPLAY_OSX);
-    video_driver_display_set(0);
-    video_driver_display_userdata_set((uintptr_t)self);
+   video_driver_display_type_set(RARCH_DISPLAY_OSX);
+   video_driver_display_set(0);
+   video_driver_display_userdata_set((uintptr_t)self);
 #endif
 
 #if TARGET_OS_TV
@@ -105,7 +314,7 @@ void *glkitview_init(void);
     */
    self.controllerUserInteractionEnabled = YES;
 #endif
-  
+
 #if TARGET_OS_IOS
   self.shouldLockCurrentInterfaceOrientation = NO;
 #endif
@@ -131,87 +340,114 @@ void *glkitview_init(void);
     return true;
 }
 
+- (bool)isSiri:(GCController *)controller
+{
+    return (controller.microGamepad && !controller.extendedGamepad && [@"Remote" isEqualToString:controller.vendorName]);
+}
+
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
-    NSArray<GCController*>* controllers = [GCController controllers];
-    if ([controllers count] == 1)
-        return !controllers[0].extendedGamepad;
-
     /* Are these presses that controllers send? */
     if (@available(tvOS 14.3, *))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
 
-    bool microPress = false;
-    bool extendedPress = false;
-    for (GCController *controller in [GCController controllers]) {
-        if (controller.extendedGamepad)
-        {
-            if (type == UIPressTypeUpArrow)
-                extendedPress |= controller.extendedGamepad.dpad.up.pressed
-                              || controller.extendedGamepad.leftThumbstick.up.pressed
-                              || controller.extendedGamepad.rightThumbstick.up.pressed;
-            else if (type == UIPressTypeDownArrow)
-                extendedPress |= controller.extendedGamepad.dpad.down.pressed
-                              || controller.extendedGamepad.leftThumbstick.down.pressed
-                              || controller.extendedGamepad.rightThumbstick.down.pressed;
-            else if (type == UIPressTypeLeftArrow)
-                extendedPress |= controller.extendedGamepad.dpad.left.pressed
-                              || controller.extendedGamepad.leftThumbstick.left.pressed
-                              || controller.extendedGamepad.rightThumbstick.left.pressed;
-            else if (type == UIPressTypeRightArrow)
-                extendedPress |= controller.extendedGamepad.dpad.right.pressed
-                              || controller.extendedGamepad.leftThumbstick.right.pressed
-                              || controller.extendedGamepad.rightThumbstick.right.pressed;
-            else if (type == UIPressTypeSelect)
-                extendedPress |= controller.extendedGamepad.buttonA.pressed;
-            else if (type == UIPressTypeMenu)
-                extendedPress |= controller.extendedGamepad.buttonB.pressed;
-            else if (type == UIPressTypePlayPause)
-                extendedPress |= controller.extendedGamepad.buttonX.pressed;
+    NSArray<GCController*>* controllers = [GCController controllers];
 
-        }
-        else if (controller.microGamepad)
-        {
-            if (type == UIPressTypeSelect)
-                microPress |= controller.microGamepad.buttonA.pressed;
-            else if (type == UIPressTypePlayPause)
-                microPress |= controller.microGamepad.buttonX.pressed;
-            else if (@available(tvOS 13, *)) {
-                if (type == UIPressTypeMenu)
-                    extendedPress |= controller.microGamepad.buttonMenu.pressed ||
-                    controller.microGamepad.buttonMenu.isPressed;
-            }
-        }
+    bool foundSiri = false;
+    bool nonSiriPress = false;
+    for (GCController *controller in controllers)
+    {
+       if ([self isSiri:controller])
+       {
+          foundSiri = true;
+          if (type == UIPressTypeSelect)
+             return controller.microGamepad.buttonA.pressed;
+          else if (type == UIPressTypePlayPause)
+             return controller.microGamepad.buttonX.pressed;
+       }
+       else if (controller.extendedGamepad)
+       {
+          if (type == UIPressTypeUpArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.up.pressed
+                || controller.extendedGamepad.leftThumbstick.up.pressed
+                || controller.extendedGamepad.rightThumbstick.up.pressed;
+          else if (type == UIPressTypeDownArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.down.pressed
+                || controller.extendedGamepad.leftThumbstick.down.pressed
+                || controller.extendedGamepad.rightThumbstick.down.pressed;
+          else if (type == UIPressTypeLeftArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.left.pressed
+                || controller.extendedGamepad.leftShoulder.pressed
+                || controller.extendedGamepad.leftTrigger.pressed
+                || controller.extendedGamepad.leftThumbstick.left.pressed
+                || controller.extendedGamepad.rightThumbstick.left.pressed;
+          else if (type == UIPressTypeRightArrow)
+             nonSiriPress |= controller.extendedGamepad.dpad.right.pressed
+                || controller.extendedGamepad.rightShoulder.pressed
+                || controller.extendedGamepad.rightTrigger.pressed
+                || controller.extendedGamepad.leftThumbstick.right.pressed
+                || controller.extendedGamepad.rightThumbstick.right.pressed;
+          else if (type == UIPressTypeSelect)
+             nonSiriPress |= controller.extendedGamepad.buttonA.pressed;
+          else if (type == UIPressTypeMenu)
+             nonSiriPress |= controller.extendedGamepad.buttonB.pressed;
+          else if (type == UIPressTypePlayPause)
+             nonSiriPress |= controller.extendedGamepad.buttonX.pressed;
+       }
+       else
+       {
+          /* we have a remote that is not extended. some of these remotes send
+           * spurious presses. the only way to get them to work properly is to
+           * make the siri remote work improperly. */
+          nonSiriPress = true;
+       }
     }
 
-    return microPress || !extendedPress;
+    if (!foundSiri || [controllers count] == 1)
+        return foundSiri;
+
+    return !nonSiriPress;
 }
 
+/* The remote's buttons, as a keyboard event.
+ *
+ * This built an NSDictionary of NSNumber keys to NSArrays of NSNumbers
+ * inside dispatch_once, and then hashed a boxed press type against it
+ * on every press. The mapping is seven compile-time constant pairs; a
+ * switch is the whole of it, with no dictionary to build, nothing to
+ * box per press, no once and no block.
+ *
+ * The two page keys were added under if (@available(tvOS 14.3, *)),
+ * which was guarding the wrong thing: the constants have to exist at
+ * compile time either way - they did, unconditionally, in the block -
+ * and a press type the running system never sends simply never
+ * arrives, so a case for it costs nothing. */
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
 {
-    static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        map = @{
-            @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
-            @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
-            @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
-            @(UIPressTypeRightArrow): @[ @(RETROK_RIGHT),    @( 0 ) ],
+    unsigned keycode  = 0;
+    unsigned character = 0;
 
-            @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
-            @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
-            @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
+    switch (type)
+    {
+        case UIPressTypeUpArrow:    keycode = RETROK_UP;    break;
+        case UIPressTypeDownArrow:  keycode = RETROK_DOWN;  break;
+        case UIPressTypeLeftArrow:  keycode = RETROK_LEFT;  break;
+        case UIPressTypeRightArrow: keycode = RETROK_RIGHT; break;
 
-            @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-            @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-        };
-    });
-    NSArray<NSNumber*>* keyvals = map[@(type)];
-    if (!keyvals)
-        return;
-    apple_direct_input_keyboard_event(down, keyvals[0].intValue,
-                                      keyvals[1].intValue, 0, RETRO_DEVICE_KEYBOARD);
+        case UIPressTypeSelect:     keycode = RETROK_z; character = 'z'; break;
+        case UIPressTypeMenu:       keycode = RETROK_x; character = 'x'; break;
+        case UIPressTypePlayPause:  keycode = RETROK_s; character = 's'; break;
+
+        case UIPressTypePageUp:     keycode = RETROK_PAGEUP;   break;
+        case UIPressTypePageDown:   keycode = RETROK_PAGEDOWN; break;
+
+        default:
+            return;
+    }
+
+    apple_direct_input_keyboard_event(down, keycode, character, 0,
+                                      RETRO_DEVICE_KEYBOARD);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses
@@ -219,23 +455,29 @@ void *glkitview_init(void);
 {
     for (UIPress *press in presses)
     {
+        bool has_key = false;
+        if (@available(tvOS 14, *))
+            has_key = !![press key];
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
             [super pressesBegan:presses withEvent:event];
-        else if ([self didMicroGamepadPress:press.type])
+        else if (!has_key && [self didMicroGamepadPress:press.type])
             [self sendKeyForPress:press.type down:true];
+        else if (has_key)
+            [super pressesBegan:[NSSet setWithObject:press] withEvent:event];
     }
 }
 
 -(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
 {
-    for (UIPress *press in presses) {
-        if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
-            [self sendKeyForPress:press.type down:false];
-        else
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+    for (UIPress *press in presses)
+    {
+       if (press.type == UIPressTypeSelect || press.type == UIPressTypePlayPause)
+          [self sendKeyForPress:press.type down:false];
+       else
+          dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
                 [[CocoaView get] sendKeyForPress:press.type down:false];
-            });
+                });
     }
 }
 
@@ -277,7 +519,51 @@ void *glkitview_init(void);
 }
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_IOS
+
+#pragma mark UIDocumentPickerViewController
+
+-(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url
+{
+   NSFileManager *manager = [NSFileManager defaultManager];
+   NSString     *filename = (NSString*)url.path.lastPathComponent;
+   NSError         *error = nil;
+   settings_t *settings   = config_get_ptr();
+   char fullpath[PATH_MAX_LENGTH] = {0};
+   fill_pathname_join_special(fullpath, settings->paths.directory_core_assets, [filename UTF8String], sizeof(fullpath));
+   NSString  *destination = [NSString stringWithUTF8String:fullpath];
+   NSString *documentsDir = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+   /* Copy file to documents directory if it's not already
+    * inside Documents directory */
+   if (![[url path] containsString:documentsDir])
+      if (![manager fileExistsAtPath:destination])
+         [manager copyItemAtPath:[url path] toPath:destination error:&error];
+   if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
+      action_scan_file(fullpath, NULL, 0, 0);
+   else
+   {
+      cocoa_file_load_with_detect_core(fullpath);
+   }
+}
+
+-(void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller
+{
+}
+
+-(void)showDocumentPicker
+{
+   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc]
+                                                     initWithDocumentTypes:@[(NSString *)kUTTypeDirectory,
+                                                                             (NSString *)kUTTypeItem]
+                                                     inMode:UIDocumentPickerModeImport];
+   documentPicker.delegate = self;
+   documentPicker.modalPresentationStyle = UIModalPresentationFormSheet;
+   [self presentViewController:documentPicker animated:YES completion:nil];
+}
+
+#endif
+
+#if TARGET_OS_OSX
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -285,6 +571,15 @@ void *glkitview_init(void);
 #if defined(HAVE_OPENGL)
    void cocoa_gl_gfx_ctx_update(void);
    cocoa_gl_gfx_ctx_update();
+#endif
+#if defined(HAVE_VULKAN)
+   /* Main thread: refresh the Vulkan ctx published backing size so a
+    * threaded-video worker observes the resize. No-op when Vulkan is not
+    * the active driver (value goes unread). */
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
 #endif
 }
 
@@ -331,29 +626,9 @@ void *glkitview_init(void);
     });
 }
 
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
 -(void)toggleCustomKeyboardUsingSwipe:(id)sender {
-    UISwipeGestureRecognizer *gestureRecognizer = (UISwipeGestureRecognizer*)sender;
-    [self.keyboardController.view setHidden:gestureRecognizer.direction == UISwipeGestureRecognizerDirectionDown];
-    [self updateOverlayAndFocus];
-}
-
--(void)toggleCustomKeyboard {
-    [self.keyboardController.view setHidden:!self.keyboardController.view.isHidden];
-    [self updateOverlayAndFocus];
-}
-#endif
-
--(void) updateOverlayAndFocus
-{
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    int cmdData = self.keyboardController.view.isHidden ? 0 : 1;
+    enum input_game_focus_cmd_type cmdData = GAME_FOCUS_CMD_TOGGLE;
     command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &cmdData);
-    if (self.keyboardController.view.isHidden)
-        command_event(CMD_EVENT_OVERLAY_INIT, NULL);
-    else
-        command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
-#endif
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
@@ -372,13 +647,49 @@ void *glkitview_init(void);
 -(void)adjustViewFrameForSafeArea
 {
    /* This is for adjusting the view frame to account for
-    * the notch in iPhone X phones */
+    * the notch in iPhone X phones. In multitasking mode,
+    * we should only adjust within the current view bounds,
+    * not force full screen dimensions. */
    if (@available(iOS 11, *))
    {
-      RAScreen *screen                   = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
-      CGRect screenSize                  = [screen bounds];
-      UIEdgeInsets inset                 = [[UIApplication sharedApplication] delegate].window.safeAreaInsets;
+      /* Early return if core systems aren't initialized yet */
+      settings_t *settings = config_get_ptr();
+      if (!settings)
+         return;
+
+      /* Check if we're in multitasking mode (Split View or Slide Over)
+       * by comparing our view size to the full screen size */
+      RAScreen *screen     = (BRIDGE RAScreen*)cocoa_screen_get_chosen();
+      if (!screen)
+         return;
+
+      CGRect screenSize    = [screen bounds];
+
+      if (ios_running_on_ipad())
+      {
+         CGRect currentBounds = self.view.bounds;
+         bool isMultitasking  = (currentBounds.size.width < screenSize.size.width ||
+                                 currentBounds.size.height < screenSize.size.height);
+
+         /* In multitasking mode, don't override the frame - let iOS handle it */
+         if (isMultitasking)
+            return;
+      }
+
+      if (settings->bools.video_notch_write_over_enable)
+      {
+         self.view.frame = screenSize;
+         return;
+      }
+
+      /* Only apply safe area adjustments when in full screen mode */
+      UIWindow *window     = [[UIApplication sharedApplication] delegate].window;
+      if (!window)
+         return;
+
+      UIEdgeInsets inset   = window.safeAreaInsets;
       UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+
       switch (orientation)
       {
          case UIInterfaceOrientationPortrait:
@@ -409,66 +720,59 @@ void *glkitview_init(void);
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-   [self.view bringSubviewToFront:self.keyboardController.view];
+#if defined(HAVE_OPENGL)
+   /* Runs on the main thread; refresh the published backing size so a
+    * threaded-video worker observes orientation/safe-area changes. Safe
+    * to call when GL is not the active driver (value goes unread). */
+   {
+      void cocoa_gl_gfx_ctx_publish_size(void);
+      cocoa_gl_gfx_ctx_publish_size();
+   }
 #endif
-#if HAVE_IOS_SWIFT
-    [self.view bringSubviewToFront:self.helperBarView];
+#if defined(HAVE_VULKAN)
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
 #endif
 }
 
 /* NOTE: This version runs on iOS6+. */
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-  if (@available(iOS 16, *)) {
-    if (self.shouldLockCurrentInterfaceOrientation) {
+  if (@available(iOS 16, *))
+  {
+    if (self.shouldLockCurrentInterfaceOrientation)
       return 1 << self.lockInterfaceOrientation;
-    } else {
-      return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
-    }
-  } else {
-    return (UIInterfaceOrientationMask)apple_frontend_settings.orientation_flags;
+    return UIInterfaceOrientationMaskAll;
   }
+  return UIInterfaceOrientationMaskAll;
 }
 
 /* NOTE: This does not run on iOS 16+ */
--(BOOL)shouldAutorotate {
-  if (self.shouldLockCurrentInterfaceOrientation) {
+-(BOOL)shouldAutorotate
+{
+  if (self.shouldLockCurrentInterfaceOrientation)
     return NO;
-  }
   return YES;
 }
 
 /* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-   unsigned orientation_flags = apple_frontend_settings.orientation_flags;
-
-   switch (interfaceOrientation)
-   {
-      case UIInterfaceOrientationPortrait:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortrait);
-      case UIInterfaceOrientationPortraitUpsideDown:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskPortraitUpsideDown);
-      case UIInterfaceOrientationLandscapeLeft:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeLeft);
-      case UIInterfaceOrientationLandscapeRight:
-         return (orientation_flags
-               & UIInterfaceOrientationMaskLandscapeRight);
-
-      default:
-         break;
-   }
-
-   return (orientation_flags
-            & UIInterfaceOrientationMaskAll);
+   return YES;
 }
 #endif
 
 #ifdef HAVE_COCOATOUCH
+
+-(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
+{
+   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
+   if (!apple)
+      return NO;
+   return apple->mouse_grabbed;
+}
 
 #pragma mark - UIViewController Lifecycle
 
@@ -488,11 +792,6 @@ void *glkitview_init(void);
     swipe.delegate                  = self;
     swipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     [self.view addGestureRecognizer:swipe];
-#ifdef HAVE_IOS_TOUCHMOUSE
-    [self setupMouseSupport];
-#endif
-#ifdef HAVE_IOS_CUSTOMKEYBOARD
-    [self setupEmulatorKeyboard];
     UISwipeGestureRecognizer *showKeyboardSwipe = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(toggleCustomKeyboardUsingSwipe:)];
     showKeyboardSwipe.numberOfTouchesRequired   = 3;
     showKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionUp;
@@ -503,10 +802,6 @@ void *glkitview_init(void);
     hideKeyboardSwipe.direction                 = UISwipeGestureRecognizerDirectionDown;
     hideKeyboardSwipe.delegate                  = self;
     [self.view addGestureRecognizer:hideKeyboardSwipe];
-#endif
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
-    [self setupHelperBar];
-#endif
 #elif TARGET_OS_TV
     UISwipeGestureRecognizer *siriSwipeUp    = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(handleSiriSwipe:)];
     siriSwipeUp.direction                    = UISwipeGestureRecognizerDirectionUp;
@@ -543,54 +838,12 @@ void *glkitview_init(void);
 -(void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-#if TARGET_OS_TV
-    [[WebServer sharedInstance] startUploader];
+#if !TARGET_OS_SIMULATOR
+    [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
+    [WebServer sharedInstance].webDAVServer.delegate = self;
 #endif
 }
-
-#if TARGET_OS_IOS && HAVE_IOS_TOUCHMOUSE
-
-#pragma mark EmulatorTouchMouseHandlerDelegate
-
--(void)handleMouseClickWithIsLeftClick:(BOOL)isLeftClick isPressed:(BOOL)isPressed
-{
-    cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-    if (!apple)
-        return;
-    NSUInteger buttonIndex = isLeftClick ? 0 : 1;
-    if (isPressed)
-        apple->mouse_buttons |= (1 << buttonIndex);
-    else
-        apple->mouse_buttons &= ~(1 << buttonIndex);
-}
-
--(void)handleMouseMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->mouse_rel_x = (int16_t)x;
-   apple->mouse_rel_y = (int16_t)y;
-   /* use location position to track pointer */
-   if (@available(iOS 13.4, *))
-   {
-      apple->window_pos_x = 0;
-      apple->window_pos_y = 0;
-   }
-}
-
--(void)handlePointerMoveWithX:(CGFloat)x y:(CGFloat)y
-{
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
-   if (!apple)
-      return;
-   apple->window_pos_x = (int16_t)x;
-   apple->window_pos_y = (int16_t)y;
-}
-
-#endif
 
 #pragma mark GCDWebServerDelegate
 - (void)webServerDidCompleteBonjourRegistration:(GCDWebServer*)server
@@ -603,40 +856,75 @@ void *glkitview_init(void);
     if (server.bonjourServerURL != nil)
         [servers appendString:[NSString stringWithFormat:@"%@",server.bonjourServerURL]];
 
-#if TARGET_OS_TV || TARGET_OS_IOS
+#if TARGET_OS_TV && !TARGET_OS_IOS
     settings_t *settings = config_get_ptr();
     if (!settings->bools.gcdwebserver_alert)
         return;
 
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    /* Once per run. dispatch_once is the wrong shape for that even
+     * where it works: it is a barrier for publishing an initialisation
+     * to other threads, and this is UIKit on the main thread showing an
+     * alert. A flag says what is meant. The blocks below stay - they
+     * are UIAlertAction handlers, which the API requires, not GCD. */
+    static bool shown;
+    if (!shown)
+    {
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
-#if TARGET_OS_TV
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
         [alert addAction:[UIAlertAction actionWithTitle:@"Don't Show Again"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                rarch_start_draw_observer();
+                struct menu_state *menu_st = menu_state_get_ptr();
+                menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;
                 configuration_set_bool(settings, settings->bools.gcdwebserver_alert, false);
         }]];
-#elif TARGET_OS_IOS
+#if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
-            [[WebServer sharedInstance] stopUploader];
+            [[WebServer sharedInstance] webDAVServer].delegate = nil;
+            [[WebServer sharedInstance] stopServers];
+           struct menu_state *menu_st = menu_state_get_ptr();
+           menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
         }]];
 #endif
         [self presentViewController:alert animated:YES completion:^{
-            rarch_stop_draw_observer();
+            struct menu_state *menu_st = menu_state_get_ptr();
+            menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
-    });
+        shown = true;
+    }
 #endif
+}
+
+#pragma mark GCDWebDAVServerDelegate
+- (void)davServer:(GCDWebDAVServer*)server didUploadFileAtPath:(NSString*)path
+{
+    /* Delete AppleDouble and .DS_Store files created by macOS */
+    NSString *filename = [path lastPathComponent];
+    if ([filename hasPrefix:@"._"] || [filename isEqualToString:@".DS_Store"])
+        [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
 #endif
 
 @end
+
+#if TARGET_OS_IOS
+void ios_show_file_sheet(void)
+{
+   [[CocoaView get] showDocumentPicker];
+}
+#endif
+
+#if TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
+void osx_show_file_sheet(void)
+{
+   [apple_platform openDocument:nil];
+}
+#endif
 
 void *cocoa_screen_get_chosen(void)
 {
@@ -648,32 +936,157 @@ void *cocoa_screen_get_chosen(void)
 
     monitor_index        = settings->uints.video_monitor_index;
 
-    if (monitor_index >= screens.count)
+    if (monitor_index >= [screens count])
         return (BRIDGE void*)screens;
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
+/* Main-thread trampoline for threaded video.
+ *
+ * AppKit/UIKit calls (context/view attachment, window surgery, NSCursor,
+ * ...) are main-thread-only, but with threaded video the underlying
+ * driver's init/set_video_mode/destroy run on the video worker thread.
+ * cocoa_main_thread_sync() runs func(userdata) on the main thread and
+ * blocks the caller until it completes; when already on the main thread
+ * it simply calls straight through, so the non-threaded path is
+ * unchanged.
+ *
+ * The block is scheduled in BOTH kCFRunLoopCommonModes and a private
+ * runloop mode:
+ *  - common modes drain it whenever the main loop is running normally
+ *    (e.g. show_mouse from the worker mid-session);
+ *  - the private mode is pumped by video_thread_wait_reply() in
+ *    gfx/video_thread_wrapper.c while the main thread is blocked
+ *    waiting on the worker's command reply (CMD_INIT etc.).  Pumping
+ *    only the private mode there guarantees no observers/timers/sources
+ *    from other modes (in particular the RetroArch draw observer) run
+ *    reentrantly under the wait.
+ * The mode string literal below must stay in sync with the one in
+ * video_thread_wrapper.c. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
+{
+   dispatch_semaphore_t done;
+   CFRunLoopRef main_loop;
+   CFArrayRef modes;
+   const void *mode_entries[2];
+
+   if (sthread_is_main_thread())
+   {
+      func(userdata);
+      return;
+   }
+
+   done            = dispatch_semaphore_create(0);
+   main_loop       = CFRunLoopGetMain();
+   mode_entries[0] = kCFRunLoopCommonModes;
+   mode_entries[1] = CFSTR("com.libretro.RetroArch.MainThreadTrampoline");
+   modes           = CFArrayCreate(kCFAllocatorDefault, mode_entries, 2,
+         &kCFTypeArrayCallBacks);
+
+   CFRunLoopPerformBlock(main_loop, modes, ^{
+      func(userdata);
+      dispatch_semaphore_signal(done);
+   });
+   CFRunLoopWakeUp(main_loop);
+
+   /* Wait for completion.  Waiting forever (with periodic diagnostics)
+    * is deliberate: falling back to running func() on this thread after
+    * a timeout would risk double-execution once the main thread finally
+    * drains the block, which is far worse than a loggable stall. */
+   while (dispatch_semaphore_wait(done,
+            dispatch_time(DISPATCH_TIME_NOW, (int64_t)5 * NSEC_PER_SEC)))
+      RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled blocks.\n");
+
+   CFRelease(modes);
+#if OS_OBJECT_USE_OBJC
+   RARCH_RELEASE(done);
+#else
+   dispatch_release(done);
+#endif
+}
+
+/* One condvar-wait iteration for a caller that may be the main thread and
+ * must let the worker's cocoa_main_thread_sync() blocks drain.  On the main
+ * thread: a bounded timed wait, pumping the private trampoline runloop mode
+ * on timeout so those marshaled blocks run (otherwise the worker blocks
+ * waiting for the main thread while the main thread blocks on the reply ->
+ * deadlock).  Off the main thread: returns false so the caller performs a
+ * plain blocking scond_wait().  Pumping ONLY the private mode keeps draw
+ * observers, timers and input sources from running reentrantly under the
+ * wait.  'lock' is held on entry and on return.  Shares the trampoline mode
+ * string with cocoa_main_thread_sync() above -- single source of truth. */
+bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
+bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
+{
+   if (!sthread_is_main_thread())
+      return false;
+   if (!scond_wait_timeout(cond, lock, 1000))
+   {
+      slock_unlock(lock);
+      CFRunLoopRunInMode(
+            CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+            0.001, false);
+      slock_lock(lock);
+   }
+   return true;
+}
+
+#if TARGET_OS_OSX
+static void cocoa_show_mouse_mainthread_show(void *userdata)
+{
+   [NSCursor unhide];
+}
+
+static void cocoa_show_mouse_mainthread_hide(void *userdata)
+{
+   [NSCursor hide];
+}
+#endif
+
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
-    return ([[UIApplication sharedApplication] applicationState]
-            == UIApplicationStateActive);
+    /* if we are running, we are foregrounded */
+    return true;
 #else
-    return [NSApp isActive];
+    /* -[NSApplication isActive] is AppKit and main-thread-only, but with
+     * threaded video this is queried from the video worker thread every
+     * frame.  Main thread: query live and publish; worker thread: read
+     * the last published value lock-free.  Encoding: 0 = never published
+     * (treated as focused, matching the safe iOS behaviour), 1 = not
+     * focused, 2 = focused.
+     * KNOWN LIMITATION (threaded video): if nothing on the main thread
+     * calls this, the cache stays at 0 and focus reads as always-true,
+     * i.e. pause-on-focus-loss may not trigger.  Proper fix is
+     * publishing from NSApplication did-become/resign-active
+     * notifications; kept out of this validation patch. */
+    static retro_atomic_size_t focus_state;
+    if (sthread_is_main_thread())
+    {
+       size_t v = [NSApp isActive] ? 2 : 1;
+       retro_atomic_store_release_size(&focus_state, v);
+       return (v == 2);
+    }
+    return (retro_atomic_load_acquire_size(&focus_state) != 1);
 #endif
 }
 
 void cocoa_show_mouse(void *data, bool state)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
+    /* NSCursor is AppKit and must be driven from the main thread; with
+     * threaded video this can be reached from the video worker thread,
+     * so route it through the trampoline (direct call when already on
+     * the main thread). */
     if (state)
-        [NSCursor unhide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_show, NULL);
     else
-        [NSCursor hide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_hide, NULL);
 #endif
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #if MAC_OS_X_VERSION_10_7
 /* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
 float cocoa_screen_get_backing_scale_factor(void)
@@ -731,13 +1144,184 @@ float cocoa_screen_get_native_scale(void)
             ret              = screen.scale;
     }
 
+#if TARGET_OS_TV
+    if (ret < 1.0f)
+       ret = 1.0f;
+#endif
     return ret;
 }
 #endif
 
+/* ---------------------------------------------------------------------
+ * Shared display-info helpers - consolidated from:
+ *   gfx/drivers_context/cocoa_gl_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers_context/cocoa_vk_ctx.m : *_get_refresh_rate,
+ *                                         *_get_video_output_size
+ *   gfx/drivers/metal.m                : metal_get_refresh_rate,
+ *                                         metal_get_video_output_size
+ * Those vtable hooks now each contain a one-line thunk that calls
+ * into these two helpers so there is a single implementation per
+ * Apple platform.  See cocoa_common.h for why all three vtables
+ * still need a registered function.
+ * --------------------------------------------------------------------- */
+
+float cocoa_get_refresh_rate(void)
+{
+#if TARGET_OS_OSX
+#ifdef RARCH_HAS_CGDISPLAYMODE_API
+   /* macOS 10.6+: CGDisplayMode API. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CGDisplayModeRef  mode    = CGDisplayCopyDisplayMode(main_id);
+   float             rate    = 0.0f;
+   if (mode)
+   {
+      rate = (float)CGDisplayModeGetRefreshRate(mode);
+      CFRelease(mode);
+   }
+   /* CGDisplayModeGetRefreshRate returns 0 on most built-in LCDs;
+    * hand the caller a sane fallback instead of 0 Hz. */
+   return (rate > 0.0f) ? rate : 60.0f;
+#else
+   /* macOS 10.5 Leopard: CGDisplayCopyDisplayMode doesn't exist.
+    * CGDisplayCurrentMode returns a borrowed CFDictionaryRef
+    * (do NOT CFRelease) carrying kCGDisplayRefreshRate.  Deprecated
+    * in 10.6 but the only option on the 10.5 SDK. */
+   CGDirectDisplayID main_id = CGMainDisplayID();
+   CFDictionaryRef   mode    = CGDisplayCurrentMode(main_id);
+   double            rate    = 0.0;
+   if (mode)
+   {
+      CFNumberRef n = (CFNumberRef)CFDictionaryGetValue(
+            mode, kCGDisplayRefreshRate);
+      if (n)
+         CFNumberGetValue(n, kCFNumberDoubleType, &rate);
+   }
+   return (rate > 0.0) ? (float)rate : 60.0f;
+#endif
+#else /* iOS / tvOS */
+   /* Prefer the panel's own capability over the CADisplayLink's
+    * preferred rate.
+    *
+    * apple_display_server_init() stamps
+    * settings->floats.video_refresh_rate onto the display link at
+    * startup, so reading that link back here closes a feedback
+    * loop: "Set Display-Reported Refresh Rate" only ever echoes the
+    * value the user already has configured, and a ProMotion panel
+    * reports 60 Hz forever because 60 is DEFAULT_REFRESH_RATE.
+    *
+    * maximumFramesPerSecond is the iOS/tvOS analogue of the
+    * CGDisplayModeGetRefreshRate() query the macOS branch above
+    * makes - a property of the display, not of our own timer.
+    *
+    * It only exists on iOS 10.3 / tvOS 10.2, and it is known to
+    * answer 0 on some simulators, so this is an extra rung on top
+    * of the ladder rather than a replacement for it.  Every path
+    * below stays reachable and unchanged: 10.0 - 10.2 still gets
+    * preferredFramesPerSecond, pre-10.0 still gets frameInterval,
+    * and a 0 answer here still falls through to them. */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
+   {
+      NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
+      if (max_fps > 0)
+         return (float)max_fps;
+   }
+#endif
+   {
+      CADisplayLink *dl = [CocoaView get].displayLink;
+      if (dl)
+      {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            return dl.preferredFrameRateRange.preferred;
+#endif
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
+         if (@available(iOS 10.0, tvOS 10.0, *))
+            return dl.preferredFramesPerSecond;
+#endif
+         /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+          * the number of screen refreshes between callbacks, so
+          * convert to Hz assuming a 60 Hz panel (accurate for every
+          * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+         {
+            NSInteger fi = dl.frameInterval;
+            return 60.0f / (float)(fi > 0 ? fi : 1);
+         }
+#pragma clang diagnostic pop
+      }
+   }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
+      return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
+   return 60.0f;
+#endif
+}
+
+void cocoa_get_video_output_size(unsigned *width, unsigned *height,
+      char *desc, size_t desc_len)
+{
+#if TARGET_OS_IPHONE
+   UIScreen *screen = [UIScreen mainScreen];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
+   if (@available(iOS 8.0, tvOS 9.0, *))
+   {
+      /* nativeBounds is physical pixels, orientation-independent. */
+      CGRect b = screen.nativeBounds;
+      *width   = (unsigned)b.size.width;
+      *height  = (unsigned)b.size.height;
+   }
+   else
+#endif
+   {
+      /* iOS 6/7: no nativeBounds.  UIScreen.bounds is in points and
+       * fixed to portrait orientation pre-iOS-8.  Every iOS 6/7-era
+       * device has an integer scale (1x or 2x), so bounds * scale
+       * gives exact physical pixels. */
+      CGRect  b = screen.bounds;
+      CGFloat s = screen.scale; /* UIScreen.scale is iOS 4+ */
+      *width    = (unsigned)(b.size.width  * s);
+      *height   = (unsigned)(b.size.height * s);
+   }
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_native_scale is already iOS-6 safe: it
+       * uses respondsToSelector:@selector(nativeScale) and falls
+       * back to UIScreen.scale when nativeScale is unavailable. */
+      float s = cocoa_screen_get_native_scale();
+      if (s >= 3.0f)
+         strlcpy_lit(desc, "Super Retina", desc_len);
+      else if (s >= 2.0f)
+         strlcpy_lit(desc, "Retina", desc_len);
+      else
+         strlcpy_lit(desc, "Standard", desc_len);
+   }
+#else
+   /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
+   CGDirectDisplayID d = CGMainDisplayID();
+   *width  = (unsigned)CGDisplayPixelsWide(d);
+   *height = (unsigned)CGDisplayPixelsHigh(d);
+
+   if (desc && desc_len > 0)
+   {
+      /* cocoa_screen_get_backing_scale_factor is 10.5-safe: its
+       * pre-10.7 branch returns 1.0f unconditionally. */
+      float s = cocoa_screen_get_backing_scale_factor();
+      if (s >= 2.0f)
+         strlcpy_lit(desc, "Retina", desc_len);
+      else
+         strlcpy_lit(desc, "Standard", desc_len);
+   }
+#endif
+}
+
 void *nsview_get_ptr(void)
 {
-#if defined(OSX)
+#if TARGET_OS_OSX
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -745,7 +1329,30 @@ void *nsview_get_ptr(void)
     return (BRIDGE void *)g_instance;
 }
 
-void nsview_set_ptr(CocoaView *p) { g_instance = p; }
+void nsview_set_ptr(CocoaView *p)
+{
+   /* g_instance is the process-lifetime strong reference to the
+    * CocoaView singleton.  Under MRR we must explicitly retain the
+    * new value and release the old one so g_instance owns a
+    * balanced +1 across reassignments.  In practice there is only
+    * one caller (+[CocoaView get] on its first-time path), but the
+    * invariant matters: callers treat [CocoaView get] as a +0 "get"
+    * accessor, and that only holds if g_instance is the one keeping
+    * the view alive.  Under ARC RARCH_RETAIN and RARCH_RELEASE are
+    * no-ops; the static __strong pointer does retain/release via
+    * objc_storeStrong when assigned.
+    *
+    * The (void) cast on RARCH_RETAIN silences -Wunused-value under
+    * ARC, where the macro expands to the bare expression (p); under
+    * MRR it expands to [p retain], where the discarded return value
+    * is conventional and warning-free. */
+   if (g_instance != p)
+   {
+      (void)RARCH_RETAIN(p);
+      RARCH_RELEASE(g_instance);
+      g_instance = p;
+   }
+}
 
 CocoaView *cocoaview_get(void)
 {
@@ -759,7 +1366,7 @@ CocoaView *cocoaview_get(void)
 #endif
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value)
@@ -858,12 +1465,20 @@ bool cocoa_get_metrics(
 config_file_t *open_userdefaults_config_file(void)
 {
    config_file_t *conf = NULL;
-   NSString *backup = [NSUserDefaults.standardUserDefaults stringForKey:@FILE_PATH_MAIN_CONFIG];
-   if ([backup length] >= 0)
+   NSString *backup = [[NSUserDefaults standardUserDefaults] stringForKey:@FILE_PATH_MAIN_CONFIG];
+   if ([backup length] > 0)
    {
-      char *str = strdup(backup.UTF8String);
-      conf = config_file_new_from_string(str, path_get(RARCH_PATH_CONFIG));
-      free(str);
+      /* config_file_new_from_string() takes (char*) and mutates it in
+       * place.  -[NSString UTF8String] returns an Apple-owned buffer
+       * that is not writable, so we must strdup() first and free
+       * after. */
+      char *backup_copy = strdup([backup UTF8String]);
+      if (backup_copy)
+      {
+         conf = config_file_new_from_string(backup_copy, path_get(RARCH_PATH_CONFIG));
+         config_set_int(conf, "bundle_assets_extract_last_version", 0);
+         free(backup_copy);
+      }
    }
    return conf;
 }
@@ -874,5 +1489,570 @@ void write_userdefaults_config_file(void)
                                               encoding:NSUTF8StringEncoding
                                                  error:nil];
    if (conf)
-      [NSUserDefaults.standardUserDefaults setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
+      [[NSUserDefaults standardUserDefaults] setObject:conf forKey:@FILE_PATH_MAIN_CONFIG];
 }
+
+#if TARGET_OS_TV
+#define TOPSHELF_BLUR_SIZE 24.0
+#define TOPSHELF_MISS_TTL  (7 * 24 * 60 * 60)
+
+static const struct { const char *name; CGFloat w, h; } topshelf_shapes[] = {
+   { "square", 500, 500 },
+   { "poster", 334, 500 },
+   { "hdtv",   890, 500 },
+};
+
+static unsigned topshelfShapeForSize(CGSize size)
+{
+   CGFloat ratio = size.width / size.height;
+   if (ratio < 0.85)
+      return 1;
+   if (ratio > 1.6)
+      return 2;
+   return 0;
+}
+
+static NSURL *topshelfGroupCacheDir(void)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   NSURL *group = [fm containerURLForSecurityApplicationGroupIdentifier:kRetroArchAppGroup];
+   NSURL *dir;
+   if (!group)
+      return nil;
+   /* On device, only Library/Caches inside the group container is writable */
+   dir = [group URLByAppendingPathComponent:@"Library/Caches/TopShelf" isDirectory:YES];
+   if (![fm createDirectoryAtURL:dir withIntermediateDirectories:YES attributes:nil error:nil])
+      return nil;
+   return dir;
+}
+
+static NSString *topshelfCacheHash(NSString *remote)
+{
+   int i;
+   unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+   const char *cstr = [remote UTF8String];
+   NSMutableString *name = [NSMutableString stringWithCapacity:2 * CC_SHA256_DIGEST_LENGTH];
+   CC_SHA256(cstr, (CC_LONG)strlen(cstr), digest);
+   for (i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
+      [name appendFormat:@"%02x", digest[i]];
+   return name;
+}
+
+static NSString *topshelfCacheFileName(NSString *hash, unsigned shape)
+{
+   return [NSString stringWithFormat:@"%@_%s.png", hash, topshelf_shapes[shape].name];
+}
+
+/* Percent-encode: pre-tvOS-17 NSURL rejects raw spaces in URL strings */
+static NSString *topshelfRemoteURL(const char *db_name, const char *img_name, const char *type)
+{
+   NSCharacterSet *cs = [NSCharacterSet URLPathAllowedCharacterSet];
+   NSString *db = [[NSString stringWithUTF8String:db_name] stringByAddingPercentEncodingWithAllowedCharacters:cs];
+   NSString *img = [[NSString stringWithUTF8String:img_name] stringByAddingPercentEncodingWithAllowedCharacters:cs];
+   return [NSString stringWithFormat:@"https://thumbnails.libretro.com/%@/%s/%@", db, type, img];
+}
+
+static NSURL *topshelfMissFile(NSURL *cacheDir, NSString *hash, NSString *tag)
+{
+   return [cacheDir URLByAppendingPathComponent:[NSString stringWithFormat:@"%@_%@.miss", hash, tag]];
+}
+
+static BOOL topshelfMissFresh(NSURL *cacheDir, NSString *hash, NSString *tag)
+{
+   NSURL *file = topshelfMissFile(cacheDir, hash, tag);
+   NSDate *mtime = [[NSFileManager defaultManager] attributesOfItemAtPath:[file path] error:nil][NSFileModificationDate];
+   return mtime && -[mtime timeIntervalSinceNow] < TOPSHELF_MISS_TTL;
+}
+
+static NSData *topshelfFetch(NSString *urlString, BOOL *notFound)
+{
+   NSURL *url = [NSURL URLWithString:urlString];
+   dispatch_semaphore_t sem;
+   __block NSData *result = nil;
+   __block BOOL nf = NO;
+   if (!url)
+      return nil;
+   sem = dispatch_semaphore_create(0);
+   [[[NSURLSession sharedSession] dataTaskWithURL:url
+                                completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+      NSHTTPURLResponse *http = ([response isKindOfClass:[NSHTTPURLResponse class]]) ? (NSHTTPURLResponse *)response : nil;
+      if (!error && (!http || [http statusCode] == 200))
+         result = data;
+      else if (http && [http statusCode] == 404)
+         nf = YES;
+      dispatch_semaphore_signal(sem);
+   }] resume];
+   dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+   *notFound = nf;
+   return result;
+}
+
+static UIImage *topshelfPlaceholderImage(NSString *title)
+{
+   CGSize canvas = CGSizeMake(topshelf_shapes[0].w, topshelf_shapes[0].h);
+   UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat preferredFormat];
+   UIGraphicsImageRenderer *renderer;
+   fmt.opaque = YES;
+   fmt.scale = 1.0;
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:canvas format:fmt];
+   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [[UIColor colorWithWhite:0.15 alpha:1.0] setFill];
+      [ctx fillRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      if ([title length])
+      {
+         NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
+         ps.alignment = NSTextAlignmentCenter;
+         NSDictionary *attrs = @{ NSFontAttributeName: [UIFont boldSystemFontOfSize:44],
+                                  NSForegroundColorAttributeName: [UIColor colorWithWhite:0.85 alpha:1.0],
+                                  NSParagraphStyleAttributeName: ps };
+         CGRect box = CGRectInset(CGRectMake(0, 0, canvas.width, canvas.height), 40, 40);
+         CGRect needed = [title boundingRectWithSize:box.size
+                                             options:NSStringDrawingUsesLineFragmentOrigin
+                                          attributes:attrs
+                                             context:nil];
+         [title drawInRect:CGRectMake(box.origin.x, (canvas.height - needed.size.height) / 2,
+                                      box.size.width, needed.size.height)
+            withAttributes:attrs];
+      }
+   }];
+}
+
+static UIImage *topshelfCompositeImage(UIImage *src, CGSize canvas)
+{
+   CGSize tiny = CGSizeMake(TOPSHELF_BLUR_SIZE, TOPSHELF_BLUR_SIZE);
+   UIGraphicsImageRendererFormat *fmt;
+   UIGraphicsImageRenderer *renderer;
+   UIImage *blurred;
+   CGFloat scale;
+   CGRect rect;
+
+   fmt = [UIGraphicsImageRendererFormat preferredFormat];
+   fmt.opaque = YES;
+   fmt.scale = 1.0;
+
+   /* Cheap blur: aspect-fill a tiny buffer, let the upscale smear it */
+   scale = fmax(tiny.width / src.size.width, tiny.height / src.size.height);
+   rect = CGRectMake((tiny.width - src.size.width * scale) / 2,
+                     (tiny.height - src.size.height * scale) / 2,
+                     src.size.width * scale, src.size.height * scale);
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:tiny format:fmt];
+   blurred = [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [src drawInRect:rect];
+   }];
+
+   scale = fmin(canvas.width / src.size.width, canvas.height / src.size.height);
+   rect = CGRectMake((canvas.width - src.size.width * scale) / 2,
+                     (canvas.height - src.size.height * scale) / 2,
+                     src.size.width * scale, src.size.height * scale);
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:canvas format:fmt];
+   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [blurred drawInRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      [[UIColor colorWithWhite:0.0 alpha:0.2] setFill];
+      [ctx fillRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      [src drawInRect:rect];
+   }];
+}
+
+static NSString *topshelfWriteComposite(NSData *data, NSURL *cacheDir, NSString *hash, NSString **shapeName)
+{
+   @autoreleasepool {
+      UIImage *src = data ? [UIImage imageWithData:data] : nil;
+      if (!src || src.size.width < 1 || src.size.height < 1)
+         return nil;
+      unsigned shape = topshelfShapeForSize(src.size);
+      UIImage *composited = topshelfCompositeImage(src,
+            CGSizeMake(topshelf_shapes[shape].w, topshelf_shapes[shape].h));
+      NSData *png = composited ? UIImagePNGRepresentation(composited) : nil;
+      NSString *name = topshelfCacheFileName(hash, shape);
+      if (!png || ![png writeToURL:[cacheDir URLByAppendingPathComponent:name] atomically:YES])
+         return nil;
+      *shapeName = [NSString stringWithUTF8String:topshelf_shapes[shape].name];
+      return name;
+   }
+}
+
+static void topshelfPruneCache(NSURL *cacheDir, NSSet *hashes)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   for (NSURL *file in [fm contentsOfDirectoryAtURL:cacheDir includingPropertiesForKeys:nil options:0 error:nil])
+   {
+      BOOL live = NO;
+      NSString *name = [file lastPathComponent];
+      for (NSString *hash in hashes)
+         if ([name hasPrefix:hash])
+         {
+            live = YES;
+            break;
+         }
+      if (!live)
+         [fm removeItemAtURL:file error:nil];
+   }
+}
+
+static void topshelfSetPlayAction(NSMutableDictionary *dict, const struct playlist_entry *entry)
+{
+   NSURLComponents *play = [[NSURLComponents alloc] initWithString:@"retroarch://topshelf"];
+   [play setQueryItems:@[
+      [[NSURLQueryItem alloc] initWithName:@"path" value:[NSString stringWithUTF8String:entry->path]],
+      [[NSURLQueryItem alloc] initWithName:@"core_path" value:[NSString stringWithUTF8String:entry->core_path]],
+   ]];
+   dict[@"play"] = [play string];
+}
+
+static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gfx_thumbnail_path_data_t *path_data,
+                                          const char *dir_thumbnails, NSURL *cacheDir,
+                                          NSMutableArray *pending, NSMutableSet *hashes)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   const char *db_name = NULL, *img_name = NULL;
+   NSString *remote = nil;
+   NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
+      @"id": [NSString stringWithUTF8String:entry->path],
+      @"title": [NSString stringWithUTF8String:
+                             ((!entry->label || !*entry->label) ? path_basename(entry->path) : entry->label)],
+   }];
+   topshelfSetPlayAction(dict, entry);
+   if (path_data->content_db_name[0] && path_data->content_img[0])
+   {
+      db_name = path_data->content_db_name;
+      img_name = path_data->content_img;
+      remote = topshelfRemoteURL(db_name, img_name, "Named_Boxarts");
+      dict[@"img"] = remote;
+   }
+   if (cacheDir)
+   {
+      unsigned shape;
+      NSString *hash = topshelfCacheHash(remote ? remote : @(entry->path));
+      NSString *phName = [hash stringByAppendingString:@"_placeholder.png"];
+      NSMutableArray *candidates = [NSMutableArray array];
+      [hashes addObject:hash];
+      for (shape = 0; shape < sizeof(topshelf_shapes) / sizeof(topshelf_shapes[0]); shape++)
+      {
+         NSString *name = topshelfCacheFileName(hash, shape);
+         if ([fm fileExistsAtPath:[[cacheDir URLByAppendingPathComponent:name] path]])
+         {
+            dict[@"imgfile"] = name;
+            dict[@"shape"] = @(topshelf_shapes[shape].name);
+            return dict;
+         }
+      }
+      if (db_name)
+      {
+         if (dir_thumbnails && *dir_thumbnails)
+         {
+            NSString *local = [NSString stringWithFormat:@"%s/%s/Named_Boxarts/%s",
+                               dir_thumbnails, db_name, img_name];
+            if ([fm fileExistsAtPath:local])
+               [candidates addObject:@{ @"local": local }];
+         }
+         if (!topshelfMissFresh(cacheDir, hash, @"boxart"))
+            [candidates addObject:@{ @"remote": remote, @"miss": @"boxart" }];
+         if (dir_thumbnails && *dir_thumbnails)
+         {
+            NSString *local = [NSString stringWithFormat:@"%s/%s/Named_Titles/%s",
+                               dir_thumbnails, db_name, img_name];
+            if ([fm fileExistsAtPath:local])
+               [candidates addObject:@{ @"local": local }];
+         }
+         if (!topshelfMissFresh(cacheDir, hash, @"title"))
+            [candidates addObject:@{ @"remote": topshelfRemoteURL(db_name, img_name, "Named_Titles"),
+                                     @"miss": @"title" }];
+      }
+      if ([fm fileExistsAtPath:[[cacheDir URLByAppendingPathComponent:phName] path]])
+      {
+         dict[@"imgfile"] = phName;
+         dict[@"shape"] = @"square";
+         if (![candidates count])
+            return dict;
+      }
+      [pending addObject:@{ @"item": dict, @"hash": hash, @"title": dict[@"title"],
+                            @"candidates": candidates }];
+   }
+   return dict;
+}
+
+
+static void topshelfProcessPending(NSArray *pending, NSDictionary *contentDict, NSSet *hashes,
+                                   NSUserDefaults *ud, NSURL *cacheDir, void (^completion)(void))
+{
+   dispatch_group_t group = dispatch_group_create();
+   dispatch_queue_t patchq = dispatch_queue_create("com.libretro.RetroArch.topshelf", DISPATCH_QUEUE_SERIAL);
+   __block BOOL updated = NO;
+
+   for (NSDictionary *work in pending)
+   {
+      dispatch_group_enter(group);
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+         NSData *data = nil;
+         NSString *hash = work[@"hash"];
+         NSString *name = nil, *shape = nil;
+         for (NSDictionary *cand in work[@"candidates"])
+         {
+            NSString *local = cand[@"local"];
+            if (local)
+               data = [NSData dataWithContentsOfFile:local];
+            else
+            {
+               BOOL notFound = NO;
+               data = topshelfFetch(cand[@"remote"], &notFound);
+               if (notFound)
+                  [[NSData data] writeToURL:topshelfMissFile(cacheDir, hash, cand[@"miss"]) atomically:YES];
+            }
+            if (data)
+               break;
+         }
+         if (data)
+            name = topshelfWriteComposite(data, cacheDir, hash, &shape);
+         if (!name)
+         {
+            NSURL *file;
+            name = [hash stringByAppendingString:@"_placeholder.png"];
+            shape = @"square";
+            file = [cacheDir URLByAppendingPathComponent:name];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:[file path]])
+            {
+               @autoreleasepool {
+                  UIImage *ph = topshelfPlaceholderImage(work[@"title"]);
+                  NSData *png = ph ? UIImagePNGRepresentation(ph) : nil;
+                  if (!png || ![png writeToURL:file atomically:YES])
+                     name = nil;
+               }
+            }
+         }
+         if (name)
+            dispatch_sync(patchq, ^{
+               NSMutableDictionary *item = work[@"item"];
+               if (![name isEqualToString:item[@"imgfile"]])
+               {
+                  item[@"imgfile"] = name;
+                  item[@"shape"] = shape;
+                  updated = YES;
+               }
+            });
+         dispatch_group_leave(group);
+      });
+   }
+
+   dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+      if (updated)
+      {
+         [ud setObject:contentDict forKey:@"topshelf"];
+         [TVTopShelfContentProvider topShelfContentDidChange];
+      }
+      topshelfPruneCache(cacheDir, hashes);
+      if (completion)
+         completion();
+   });
+}
+
+void update_topshelf(void)
+{
+   if (@available(tvOS 13.0, *))
+   {
+      NSUserDefaults *ud = [[NSUserDefaults alloc] initWithSuiteName:kRetroArchAppGroup];
+      if (!ud)
+         return;
+
+      NSMutableDictionary *contentDict = [NSMutableDictionary dictionaryWithCapacity:2];
+      const struct playlist_entry *entry;
+      gfx_thumbnail_path_data_t *thumbnail_path_data = gfx_thumbnail_path_init();
+      NSURL *cacheDir = topshelfGroupCacheDir();
+      NSMutableArray *pending = [NSMutableArray array];
+      NSMutableSet *hashes = [NSMutableSet set];
+
+      settings_t *settings       = config_get_ptr();
+      bool history_list_enable   = settings->bools.history_list_enable;
+      const char *dir_thumbnails = settings->paths.directory_thumbnails;
+      if (history_list_enable && playlist_size(g_defaults.content_history) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_history)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_history); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_history, i);
+            playlist_get_index(g_defaults.content_history, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data, dir_thumbnails, cacheDir, pending, hashes)];
+         }
+         contentDict[key] = array;
+      }
+
+      if (playlist_size(g_defaults.content_favorites) > 0)
+      {
+         NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_favorites)];
+         NSString *key = [NSString stringWithUTF8String:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)];
+         for (size_t i = 0; i < 5 && i < playlist_size(g_defaults.content_favorites); i++)
+         {
+            gfx_thumbnail_path_reset(thumbnail_path_data);
+            gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_favorites, i);
+            playlist_get_index(g_defaults.content_favorites, i, &entry);
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data, dir_thumbnails, cacheDir, pending, hashes)];
+         }
+         contentDict[key] = array;
+      }
+      free(thumbnail_path_data);
+
+      [ud setObject:contentDict forKey:@"topshelf"];
+      [TVTopShelfContentProvider topShelfContentDidChange];
+
+      if ([pending count] && cacheDir)
+      {
+         __block UIBackgroundTaskIdentifier bgtask =
+            [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+               [[UIApplication sharedApplication] endBackgroundTask:bgtask];
+               bgtask = UIBackgroundTaskInvalid;
+            }];
+         topshelfProcessPending(pending, contentDict, hashes, ud, cacheDir, ^{
+            if (bgtask != UIBackgroundTaskInvalid)
+            {
+               [[UIApplication sharedApplication] endBackgroundTask:bgtask];
+               bgtask = UIBackgroundTaskInvalid;
+            }
+         });
+      }
+      else if (cacheDir)
+         topshelfPruneCache(cacheDir, hashes);
+   }
+}
+#endif
+
+void cocoa_file_load_with_detect_core(const char *filename)
+{
+   /* largely copied from file_load_with_detect_core() in menu_cbs_ok.c */
+   core_info_list_t *list = NULL;
+   const core_info_t *info = NULL;
+   size_t supported = 0;
+
+   if (path_is_compressed_file(filename))
+   {
+      generic_action_ok_displaylist_push(filename, NULL,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+            FILE_TYPE_CARCHIVE, 0, 0, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE);
+      return;
+   }
+
+   core_info_get_list(&list);
+   core_info_list_get_supported_cores(list, filename, &info, &supported);
+   if (supported > 1)
+   {
+      struct menu_state *menu_st          = menu_state_get_ptr();
+      menu_handle_t *menu                 = menu_st->driver_data;
+      strlcpy(menu->deferred_path, filename, sizeof(menu->deferred_path));
+      strlcpy(menu->detect_content_path, filename, sizeof(menu->detect_content_path));
+      generic_action_ok_displaylist_push(filename, NULL, NULL, FILE_TYPE_NONE, 0, 0, ACTION_OK_DL_DEFERRED_CORE_LIST);
+   }
+   else if (supported == 1)
+   {
+      content_ctx_info_t content_info;
+
+      content_info.argc        = 0;
+      content_info.argv        = NULL;
+      content_info.args        = NULL;
+      content_info.environ_get = NULL;
+
+      task_push_load_content_with_new_core_from_menu(
+               info->path, filename,
+               &content_info,
+               CORE_TYPE_PLAIN,
+               NULL, NULL);
+   }
+}
+
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
+bool cocoa_launch_game_by_filename(NSString *filename)
+{
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info = NULL;
+   size_t list_size = 0;
+   char full_path[PATH_MAX_LENGTH] = {0};
+   content_ctx_info_t content_info = { 0 };
+
+   RARCH_LOG("Launching game by filename: %s\n", [filename UTF8String]);
+
+   /* Strategy 1: Try to find game in playlists first (existing behavior) */
+   RetroArchPlaylistGame *game = [RetroArchPlaylistManager findGameByFilename:filename];
+
+   if (game && game.corePath && game.fullPath) {
+      char core_path[PATH_MAX_LENGTH] = {0};
+
+      RARCH_LOG("Found game '%s' in playlist with core '%s'\n",
+                [game.fullPath UTF8String], [game.corePath UTF8String]);
+
+      fill_pathname_expand_special(core_path, [game.corePath UTF8String], sizeof(core_path));
+      fill_pathname_expand_special(full_path, [game.fullPath UTF8String], sizeof(full_path));
+
+      bool success = task_push_load_content_with_new_core_from_companion_ui(core_path, full_path,
+                                                                            NULL, NULL, NULL,
+                                                                            &content_info, NULL, NULL);
+      if (success) {
+         RARCH_LOG("Successfully launched playlist game '%s'\n", [filename UTF8String]);
+         return YES;
+      } else {
+         RARCH_WARN("Failed to launch playlist game '%s'\n", [filename UTF8String]);
+         return NO;
+      }
+   }
+
+   /* Strategy 2: Fallback to automatic core detection for non-playlist content */
+   RARCH_LOG("Game '%s' not found in playlists, trying automatic core detection\n", [filename UTF8String]);
+
+   fill_pathname_expand_special(full_path, [filename UTF8String], sizeof(full_path));
+   if (!path_is_valid(full_path)) {
+      RARCH_WARN("Could not find file '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found file at path: %s\n", full_path);
+
+   /* Get list of compatible cores for this content file */
+   core_info_get_list(&core_info_list);
+   if (!core_info_list) {
+      RARCH_WARN("No core info list available\n");
+      return NO;
+   }
+
+   core_info_list_get_supported_cores(core_info_list, full_path, &core_info, &list_size);
+
+   if (list_size == 0) {
+      RARCH_WARN("No compatible cores found for '%s'\n", full_path);
+      return NO;
+   }
+
+   RARCH_LOG("Found %zu compatible core(s) for '%s'\n", list_size, full_path);
+
+   path_set(RARCH_PATH_CONTENT, full_path);
+
+   /* Strategy 2a: Check if current core supports this content */
+   if (!path_is_empty(RARCH_PATH_CORE))
+   {
+      size_t i;
+      const char *current_core = path_get(RARCH_PATH_CORE);
+      for (i = 0; i < list_size; i++)
+      {
+         const core_info_t *info = &core_info[i];
+         if (string_is_equal(current_core, info->path))
+         {
+            RARCH_LOG("Current core '%s' supports this content, using it\n", info->display_name);
+            return task_push_load_content_with_current_core_from_companion_ui(
+                  NULL, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+         }
+      }
+   }
+
+   /* Strategy 2b: If only one compatible core, use it automatically */
+   if (list_size == 1)
+   {
+      const core_info_t *info = &core_info[0];
+      RARCH_LOG("Only one compatible core found: '%s', using it automatically\n", info->display_name);
+      return task_push_load_content_with_new_core_from_companion_ui(
+         info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
+   }
+
+   /* Strategy 2c: Multiple cores available - use the first one
+    * In a future implementation, this could present a user choice dialog */
+   const core_info_t *info = &core_info[0];
+   RARCH_LOG("Multiple cores available, automatically selecting first: '%s'\n", info->display_name);
+   return task_push_load_content_with_new_core_from_companion_ui(
+      info->path, full_path, NULL, NULL, NULL, &content_info, NULL, NULL);
+}
+#endif /* HAVE_RETROARCH_PLAYLIST_MANAGER */

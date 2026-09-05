@@ -676,13 +676,13 @@ bool xrandr_timing::add_mode(modeline *mode)
 		// remove unlinked modeline
 		if (mode->platform_data)
 		{
-			log_error("XRANDR: <%d> (add_mode) [ERROR] remove mode [%04lx]\n", m_id, mode->platform_data);
+			log_error("XRANDR: <%d> (add_mode) [ERROR] remove mode [%04llx]\n", m_id, (unsigned long long)mode->platform_data);
 			XRRDestroyMode(m_pdisplay, mode->platform_data);
 			mode->platform_data = 0;
 		}
 	}
 	else
-		log_verbose("XRANDR: <%d> (add_mode) mode %04lx %dx%d refresh %.6f added\n", m_id, mode->platform_data, mode->hactive, mode->vactive, mode->vfreq);
+		log_verbose("XRANDR: <%d> (add_mode) mode %04llx %dx%d refresh %.6f added\n", m_id, (unsigned long long)mode->platform_data, mode->hactive, mode->vactive, mode->vfreq);
 
 	return ms_xerrors == 0;
 }

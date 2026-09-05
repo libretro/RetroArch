@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <memcpy_nt.h>
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_video.h>
@@ -39,7 +40,7 @@
 #include "../../dingux/dingux_utils.h"
 
 #include "../../verbosity.h"
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../bitmapfont.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #if defined(DINGUX_BETA)
@@ -121,16 +122,13 @@ static void sdl_rs90_scale_frame16_integer(sdl_rs90_video_t *vid,
    uint16_t *out_ptr = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
          out_stride * vid->frame_padding_y;
 
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint16_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
+   /* Streaming stores: the surface is written once here and next
+    * touched by the display engine, so allocating the whole padded
+    * rectangle into the cache every frame evicts the core's working
+    * set for nothing.  Not memcpy_nt per line - one scanline is well
+    * under its threshold and would fall back to memcpy. */
+   memcpy_nt_2d(out_ptr, vid->screen->pitch, in_ptr, src_pitch,
+         vid->frame_width * sizeof(uint16_t), vid->frame_height);
 }
 
 static void sdl_rs90_scale_frame32_integer(sdl_rs90_video_t *vid,
@@ -147,16 +145,9 @@ static void sdl_rs90_scale_frame32_integer(sdl_rs90_video_t *vid,
    uint32_t *out_ptr = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
          out_stride * vid->frame_padding_y;
 
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint32_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
+   /* Streaming stores; see the 16-bit path above. */
+   memcpy_nt_2d(out_ptr, vid->screen->pitch, in_ptr, src_pitch,
+         vid->frame_width * sizeof(uint32_t), vid->frame_height);
 }
 
 /* Approximate nearest-neighbour scaling using
@@ -531,7 +522,7 @@ static void sdl_rs90_blit_text16(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -614,7 +605,7 @@ static void sdl_rs90_blit_text32(
          screen_height - vid->frame_padding_y)
       return;
 
-   while (!string_is_empty(str))
+   while (str && *str)
    {
       /* Check for out of bounds x coordinates */
       if (x_pos + FONT_WIDTH_STRIDE + 1 >=
@@ -669,9 +660,9 @@ static void sdl_rs90_blit_text32(
    }
 }
 
-static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
+static void sdl_rs90_blit_video_mode_err_msg(sdl_rs90_video_t *vid)
 {
-   const char *error_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
+   const char *err_msg = msg_hash_to_str(MSG_UNSUPPORTED_VIDEO_MODE);
    char display_mode[64];
 
    display_mode[0] = '\0';
@@ -690,7 +681,7 @@ static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
    {
       sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_rs90_blit_text32(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -700,7 +691,7 @@ static void sdl_rs90_blit_video_mode_error_msg(sdl_rs90_video_t *vid)
    {
       sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE,
-            error_msg);
+            err_msg);
 
       sdl_rs90_blit_text16(vid,
             FONT_WIDTH_STRIDE, FONT_WIDTH_STRIDE + FONT_HEIGHT_STRIDE,
@@ -734,7 +725,7 @@ static void sdl_rs90_input_driver_init(
 
    /* If input driver name is empty, cannot
     * initialise anything... */
-   if (string_is_empty(input_drv_name))
+   if (!input_drv_name || !*input_drv_name)
       return;
 
    if (string_is_equal(input_drv_name, "sdl_dingux"))
@@ -848,7 +839,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    if (hw_refresh_rate == 0.0f)
    {
-      RARCH_ERR("[SDL1]: Failed to set video refresh rate\n");
+      RARCH_ERR("[SDL1] Failed to set video refresh rate.\n");
       goto error;
    }
 
@@ -875,7 +866,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -909,7 +900,7 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
        vid->osd_font->glyph_max <
             (SDL_RS90_NUM_FONT_GLYPHS - 1))
    {
-      RARCH_ERR("[SDL1]: Failed to init OSD font\n");
+      RARCH_ERR("[SDL1] Failed to init OSD font.\n");
       goto error;
    }
 
@@ -1009,7 +1000,7 @@ static void sdl_rs90_set_output(
    /* Check whether selected display mode is valid */
    if (unlikely(!vid->screen))
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL1] Failed to init SDL surface: %s.\n", SDL_GetError());
       vid->mode_valid = false;
    }
    else
@@ -1044,7 +1035,7 @@ static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
     * GBA content */
    if (src_pitch == vid->screen->pitch &&
        height == SDL_RS90_HEIGHT)
-      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+      memcpy_nt(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
       vid->scale_frame16(vid, src, width, height, src_pitch);
 }
@@ -1059,7 +1050,7 @@ static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
     * GBA content */
    if ((src_pitch == vid->screen->pitch) &&
        (height == SDL_RS90_HEIGHT))
-      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+      memcpy_nt(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
       vid->scale_frame32(vid, src, width, height, src_pitch);
 }
@@ -1079,7 +1070,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
     * - Menu is inactive and input 'content' frame
     *   data is NULL (may happen when e.g. a running
     *   core skips a frame) */
-   if (unlikely(!vid))
+   if (unlikely(!vid || (!frame && !vid->menu_active)))
       return true;
 
    /* If fast forward is currently active, we may
@@ -1137,7 +1128,7 @@ static bool sdl_rs90_gfx_frame(void *data, const void *frame,
       /* If current display mode is invalid,
        * just display an error message */
       else
-         sdl_rs90_blit_video_mode_error_msg(vid);
+         sdl_rs90_blit_video_mode_err_msg(vid);
 
       vid->was_in_menu = false;
    }
@@ -1410,10 +1401,11 @@ static const video_poke_interface_t sdl_rs90_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void sdl_rs90_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -1448,6 +1440,8 @@ video_driver_t video_sdl_rs90 = {
 #endif
    sdl_rs90_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

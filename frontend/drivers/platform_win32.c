@@ -25,6 +25,11 @@
 #include <process.h>
 #endif
 
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+#include <winreg.h>
+#include <winerror.h>
+#endif
+
 #include <boolean.h>
 #include <compat/strl.h>
 #include <dynamic/dylib.h>
@@ -48,9 +53,16 @@
 #include "../../paths.h"
 #include "../../msg_hash.h"
 #include "../../verbosity.h"
+#include "../../msg_hash_lbl_str.h"
 #include "../../ui/drivers/ui_win32.h"
+#include "../../gfx/common/win32_common.h"
 
 #include "platform_win32.h"
+
+/* Only needed for MSVC 2005/2010 */
+#ifdef _MSC_VER
+#pragma comment(lib, "advapi32.lib")
+#endif
 
 #ifdef HAVE_SAPI
 #define COBJMACROS
@@ -256,37 +268,103 @@ static void gfx_set_dwm(void)
 
    if (!composition_enable)
    {
-      RARCH_ERR("Did not find DwmEnableComposition ...\n");
+      RARCH_ERR("Did not find DwmEnableComposition.\n");
       return;
    }
 
    ret = composition_enable(!disable_composition);
    if (FAILED(ret))
-      RARCH_ERR("Failed to set composition state ...\n");
+      RARCH_ERR("Failed to set composition state.\n");
    if (disable_composition)
       g_plat_win32_flags |= PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED;
 }
 
-static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
+/* Windows OS detection.
+ *
+ * Registry helper. Use RegOpenKeyExA and RegQueryValueExA for wide
+ * toolchain support, by reading registry strings without newer APIs.
+ * Always NUL-terminate the output buffer for safe string use. */
+static bool win32_reg_get_string_value(
+      HKEY root, const char *subkey, const char *value_name,
+      char *out, size_t out_size)
 {
-   size_t _len            = 0;
-   char build_str[11]     = {0};
-   bool server            = false;
-   const char *arch       = "";
+   HKEY  hKey = NULL;
+   DWORD type = 0;
+   DWORD size = 0;
+   LONG  rc   = 0;
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   if (!out || out_size == 0)
+      return false;
+
+   out[0] = '\0';
+
+   rc = RegOpenKeyExA(root, subkey, 0, KEY_QUERY_VALUE, &hKey);
+   if (rc != ERROR_SUCCESS)
+      return false;
+
+   size = (DWORD)out_size;
+
+   rc = RegQueryValueExA(hKey, value_name, NULL, &type, (LPBYTE)out, &size);
+   RegCloseKey(hKey);
+
+   if (rc == ERROR_SUCCESS && (type == REG_SZ || type == REG_EXPAND_SZ) && out[0] != '\0')
+   {
+      out[out_size - 1] = '\0';
+      return true;
+   }
+
+   out[0] = '\0';
+   return false;
+}
+
+/* Some Windows releases cannot be identified by NT or build number alone.
+ * XP x64, Server 2003, and 2003 R2 - All are NT 5.2 and build number 3790.
+ * Vista, 7, Server 2008, and 2008 R2 - Overlapping NT 6.0/6.1 and/or build.
+ * Because of this, these OSes need extra checks: read the Windows registry 
+ * ProductType: "WinNT" is client (XP x64/Vista/7), otherwise it's server. */
+static bool win32_is_server_from_registry(void)
+{
+   static int cached = -1;
+
+   if (cached < 0)
+   {
+      char product_type[32] = {0};
+
+      cached = 0;
+
+      if (win32_reg_get_string_value(HKEY_LOCAL_MACHINE,
+            "SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+            "ProductType", product_type, sizeof(product_type)))
+      {
+         if (!string_is_equal(product_type, "WinNT"))
+            cached = 1;
+      }
+   }
+
+   return cached == 1;
+}
+
+static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
+{
+   size_t _len              = 0;
+   char build_str[16]       = {0};
+   bool server              = false;
+   const char *arch         = "";
+
+#if 1
    /* Windows 2000 and later */
-   SYSTEM_INFO si         = {{0}};
-   OSVERSIONINFOEX vi     = {0};
+   SYSTEM_INFO si           = {{0}};
+   OSVERSIONINFOEX vi       = {0};
+   bool have_version        = false;
+
+   /* Feature version (Windows 10+) */
+   char display_version[64] = {0};
+   char release_id[32]      = {0};
+
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+   vi.szCSDVersion[0]     = '\0';
 
    GetSystemInfo(&si);
-
-   /* Available from NT 3.5 and Win95 */
-   GetVersionEx((OSVERSIONINFO*)&vi);
-
-   server = vi.wProductType != VER_NT_WORKSTATION;
-
    switch (si.wProcessorArchitecture)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
@@ -301,6 +379,48 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
       default:
          break;
    }
+
+   /* Prefer 'RtlGetVersion' over 'GetVersionEx' (unaffected by manifest).
+    * Windows 8.1 onwards will intentionally report an older OS version with
+    * GetVersionEx if the application does not declare support for the OS
+    * in the manifest, which can vary by toolchain/compiler. So instead use 
+    * RtlGetVersion, available from NT 5.0 (Windows 2000+). GetVersionEx is
+    * used solely on Win9x/pre-NT 5.0, and retained as a fallback on 5.0+ */
+   {
+      typedef LONG (WINAPI *RtlGetVersionFn)(OSVERSIONINFOEXW*);
+      HMODULE ntdll_handle        = GetModuleHandleA("ntdll.dll");
+      RtlGetVersionFn rtl_version = ntdll_handle ?
+            (RtlGetVersionFn)GetProcAddress(ntdll_handle, "RtlGetVersion") : NULL;
+
+      if (rtl_version)
+      {
+         OSVERSIONINFOEXW vi_w;
+         memset(&vi_w, 0, sizeof(vi_w));
+         vi_w.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
+
+         if (rtl_version(&vi_w) == 0)
+         {
+            vi.dwMajorVersion = vi_w.dwMajorVersion;
+            vi.dwMinorVersion = vi_w.dwMinorVersion;
+            vi.dwBuildNumber  = vi_w.dwBuildNumber;
+            vi.dwPlatformId   = vi_w.dwPlatformId;
+            vi.wProductType   = vi_w.wProductType;
+            vi.wSuiteMask     = vi_w.wSuiteMask;
+
+            if (vi_w.szCSDVersion[0])
+               WideCharToMultiByte(CP_UTF8, 0, vi_w.szCSDVersion, -1,
+                     vi.szCSDVersion, sizeof(vi.szCSDVersion), NULL, NULL);
+
+            have_version = true;
+         }
+      }
+   }
+
+   if (!have_version)
+      GetVersionEx((OSVERSIONINFO*)&vi);
+
+   server = (vi.wProductType != VER_NT_WORKSTATION);
+
 #else
    OSVERSIONINFO vi = {0};
    vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -310,142 +430,227 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 #endif
 
    if (major)
-      *major = vi.dwMajorVersion;
-
+      *major = (int)vi.dwMajorVersion;
    if (minor)
-      *minor = vi.dwMinorVersion;
+      *minor = (int)vi.dwMinorVersion;
 
    if (vi.dwMajorVersion == 4 && vi.dwMinorVersion == 0)
-      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
+      snprintf(build_str, sizeof(build_str), "%lu",
+            (DWORD)(LOWORD(vi.dwBuildNumber))); /* Windows 95 build number is in the low-order word only */
    else
-      snprintf(build_str, sizeof(build_str), "%lu", vi.dwBuildNumber);
+      snprintf(build_str, sizeof(build_str), "%lu", (DWORD)vi.dwBuildNumber);
 
+   /* Read Windows 10/11/Server feature version (e.g. "25H2") from registry.
+    * Used solely for display; not relied upon for version detection. Note:
+    * Windows Insider Preview builds may show channel labels (e.g. "Dev") */
+   if (vi.dwMajorVersion >= 10)
+   {
+      const char win_ver_reg_key[] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+
+      if (!win32_reg_get_string_value(HKEY_LOCAL_MACHINE, win_ver_reg_key,
+            "DisplayVersion", display_version, sizeof(display_version)))
+         display_version[0] = '\0';
+
+      /* ReleaseId is for older Win10 versions (e.g. 1511, 1607) */
+      if (!win32_reg_get_string_value(HKEY_LOCAL_MACHINE, win_ver_reg_key,
+            "ReleaseId", release_id, sizeof(release_id)))
+         release_id[0] = '\0';
+
+      /* The first Win10 release doesn't provide DisplayVersion/ReleaseId,
+       * so use build number to insert version label */
+      if (!server && vi.dwMajorVersion == 10 && vi.dwBuildNumber == 10240
+            && !*display_version && !*release_id)
+         strlcpy_lit(release_id, "1507", sizeof(release_id));
+   }
+
+   /* Detect Windows version from build number, NT version, or platform ID.
+    * Windows 10, 11, and modern Windows Server all report NT 10.0, so each
+    * is identified by using build numbers. Older NT-based Windows versions
+    * mostly have unique major/minor versions; a few share versions between
+    * client/server and require extra checks (e.g. ProductType, SM_SERVERR2).
+    * Non-NT Windows (95/98/ME) are identified via the platform ID. */
    switch (vi.dwMajorVersion)
    {
       case 10:
-         if (atoi(build_str) >= 21996)
-            _len = strlcpy(s, "Windows 11", len);
-         else if (server)
-            _len = strlcpy(s, "Windows Server 2016", len);
+         if (server)
+         {
+            if (vi.dwBuildNumber >= 26040)
+               _len = strlcpy_lit(s, "Windows Server 2025", len);
+            else if (vi.dwBuildNumber >= 20201)
+               _len = strlcpy_lit(s, "Windows Server 2022", len);
+            else if (vi.dwBuildNumber >= 17623)
+               _len = strlcpy_lit(s, "Windows Server 2019", len);
+            /* Early Server 2016 preview builds shared build numbers with
+             * Windows 10 previews, so 10074 is used as a safe cutoff here */
+            else if (vi.dwBuildNumber >= 10074)
+               _len = strlcpy_lit(s, "Windows Server 2016", len);
+            else
+               _len = snprintf(s, len, "Windows Server NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
+         }
          else
-            _len = strlcpy(s, "Windows 10", len);
+         {
+            /* Detect Windows 11 starting from an early leaked preview build */
+            if (vi.dwBuildNumber >= 21996)
+               _len = strlcpy_lit(s, "Windows 11", len);
+            /* Detect Windows 10 from the first NT 10.0-based preview build */
+            else if (vi.dwBuildNumber >= 9888)
+               _len = strlcpy_lit(s, "Windows 10", len);
+            else
+               _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
+         }
          break;
+
       case 6:
          switch (vi.dwMinorVersion)
          {
             case 3:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 8.1", len);
+               _len = strlcpy(s, server ? "Windows Server 2012 R2" : "Windows 8.1", len);
                break;
             case 2:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2012", len);
-               else
-                  _len = strlcpy(s, "Windows 8", len);
+               _len = strlcpy(s, server ? "Windows Server 2012" : "Windows 8", len);
                break;
             case 1:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008 R2", len);
-               else
-                  _len = strlcpy(s, "Windows 7", len);
+               {
+                  bool is_server = server;
+                  if (!is_server)
+                     is_server = win32_is_server_from_registry();
+                  _len = strlcpy(s, is_server ? "Windows Server 2008 R2" : "Windows 7", len);
+               }
                break;
             case 0:
-               if (server)
-                  _len = strlcpy(s, "Windows Server 2008", len);
-               else
-                  _len = strlcpy(s, "Windows Vista", len);
+               {
+                  bool is_server = server;
+                  if (!is_server)
+                     is_server = win32_is_server_from_registry();
+                  _len = strlcpy(s, is_server ? "Windows Server 2008" : "Windows Vista", len);
+               }
                break;
             default:
+               _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
                break;
          }
          break;
+
       case 5:
          switch (vi.dwMinorVersion)
          {
             case 2:
-               if (server)
+               if (server || win32_is_server_from_registry())
                {
-                  _len = strlcpy(s, "Windows Server 2003", len);
+                  _len = strlcpy_lit(s, "Windows Server 2003", len);
                   if (GetSystemMetrics(SM_SERVERR2))
-                     _len += strlcpy(s + _len, " R2", len - _len);
+                     _len += strlcpy_lit(s + _len, " R2", len - _len);
                }
                else
                {
-                  /* Yes, XP Pro x64 is a higher version number than XP x86 */
-                  if (string_is_equal(arch, "x64"))
-                     _len = strlcpy(s, "Windows XP", len);
+                  /* XP "x64 Edition" is NT 5.2 (XP is 5.1) and only ever had one
+                   * edition, making it safe to use the full product name here */
+                  _len = strlcpy_lit(s, "Windows XP Professional x64 Edition", len);
                }
                break;
             case 1:
-               _len = strlcpy(s, "Windows XP", len);
+               _len = strlcpy_lit(s, "Windows XP", len);
                break;
             case 0:
-               _len = strlcpy(s, "Windows 2000", len);
+               _len = strlcpy_lit(s, "Windows 2000", len);
+               break;
+            default:
+               _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                     (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
                break;
          }
          break;
+
       case 4:
          switch (vi.dwMinorVersion)
          {
             case 0:
                if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  _len = strlcpy(s, "Windows 95", len);
+                  _len = strlcpy_lit(s, "Windows 95", len);
                else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  _len = strlcpy(s, "Windows NT 4.0", len);
+                  _len = strlcpy_lit(s, "Windows NT 4.0", len);
                else
-                  _len = strlcpy(s, "Unknown", len);
+                  _len = strlcpy_lit(s, "Unknown", len);
                break;
             case 90:
-               _len = strlcpy(s, "Windows ME", len);
+               /* Apparently it's not "ME". Official naming always uses "Me" */
+               _len = strlcpy_lit(s, "Windows Me", len);
                break;
             case 10:
-               _len = strlcpy(s, "Windows 98", len);
+            {
+               DWORD win98_build;
+               win98_build = (DWORD)(LOWORD(vi.dwBuildNumber));
+               _len = strlcpy_lit(s, "Windows 98", len);
+               /* 98/98 SE are both Win9x 4.10, so detect SE by build number */
+               if (win98_build >= 2222)
+                  _len += strlcpy_lit(s + _len, " Second Edition", len - _len);
+               break;
+            }
+            default:
+               if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+                  _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+                        (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
+               else
+                  _len = snprintf(s, len, "Windows 9x version %lu.%lu",
+                        (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
                break;
          }
          break;
+
       default:
-         _len = snprintf(s, len, "Windows %i.%i", *major, *minor);
+         /* Fallback for completely unknown or future Windows versions */
+         _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
+               (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
          break;
    }
 
-   if (!string_is_empty(arch))
+/* OS display formatting */
+   if (vi.dwMajorVersion >= 10)
    {
-      _len += strlcpy(s + _len, " ",  len - _len);
+      if (*display_version)
+      {
+         _len += strlcpy_lit(s + _len, " (", len - _len);
+         _len += strlcpy(s + _len, display_version, len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
+      }
+      else if (*release_id)
+      {
+         _len += strlcpy_lit(s + _len, " (", len - _len);
+         _len += strlcpy(s + _len, release_id, len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
+      }
+   }
+   /* Hide x86/x64 for XP x64 ("x64" is already shown in the OS name) 
+   * and OSes older than XP x86, since they are all x86 only */
+   if ((arch && *arch)
+         &&  (vi.dwMajorVersion > 5 ||
+             (vi.dwMajorVersion == 5 && vi.dwMinorVersion >= 1))
+         && !(vi.dwMajorVersion == 5 && vi.dwMinorVersion == 2))
+   {
+      _len += strlcpy_lit(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy_lit(s + _len, " - Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
-   if (!string_is_empty(vi.szCSDVersion))
+   if (*vi.szCSDVersion)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
+
+   return _len;
 }
 
 static void frontend_win32_init(void *data)
 {
-   typedef BOOL (WINAPI *isProcessDPIAwareProc)();
-   typedef BOOL (WINAPI *setProcessDPIAwareProc)();
-#ifdef HAVE_DYLIB
-   HMODULE handle                         =
-      GetModuleHandle("User32.dll");
-   isProcessDPIAwareProc  isDPIAwareProc  =
-      (isProcessDPIAwareProc)dylib_proc(handle, "IsProcessDPIAware");
-   setProcessDPIAwareProc setDPIAwareProc =
-      (setProcessDPIAwareProc)dylib_proc(handle, "SetProcessDPIAware");
-#else
-   isProcessDPIAwareProc  isDPIAwareProc  = IsProcessDPIAware;
-   setProcessDPIAwareProc setDPIAwareProc = SetProcessDPIAware;
-#endif
-
-   if (isDPIAwareProc)
-      if (!isDPIAwareProc())
-         if (setDPIAwareProc)
-            setDPIAwareProc();
+   /* Initializes DPI awareness, accelerator table, and
+    * prepares programmatic resources (replaces .rc file). */
+   win32_resources_init();
 }
 
 
@@ -453,7 +658,7 @@ static void frontend_win32_init(void *data)
 static void init_nvda(void)
 {
 #ifdef HAVE_DYLIB
-   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA) 
+   if (     (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_NVDA)
          && !nvda_lib)
    {
       if ((nvda_lib = dylib_load("nvdaControllerClient64.dll")))
@@ -551,7 +756,7 @@ static int frontend_win32_parse_drive_list(void *data, bool load_content)
       if (drives & (1 << i))
          menu_entries_append(list,
                drive,
-               msg_hash_to_str(MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR),
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
@@ -565,24 +770,51 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 {
    const char *tmp_dir = getenv("TMP");
    const char *libretro_directory = getenv("LIBRETRO_DIRECTORY");
-   if (!string_is_empty(tmp_dir))
+   const char *libretro_assets_directory = getenv("LIBRETRO_ASSETS_DIRECTORY");
+   const char* libretro_autoconfig_directory = getenv("LIBRETRO_AUTOCONFIG_DIRECTORY");
+   const char* libretro_cheats_directory = getenv("LIBRETRO_CHEATS_DIRECTORY");
+   const char* libretro_database_directory = getenv("LIBRETRO_DATABASE_DIRECTORY");
+   const char* libretro_system_directory = getenv("LIBRETRO_SYSTEM_DIRECTORY");
+   const char* libretro_video_filter_directory = getenv("LIBRETRO_VIDEO_FILTER_DIRECTORY");
+   const char* libretro_video_shader_directory = getenv("LIBRETRO_VIDEO_SHADER_DIRECTORY");
+   if (tmp_dir && *tmp_dir)
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CACHE],
          tmp_dir, sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    gfx_set_dwm();
 
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_ASSETS],
-      ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   if (libretro_assets_directory && *libretro_assets_directory)
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_ASSETS], libretro_assets_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+   else
+       fill_pathname_expand_special(
+	   g_defaults.dirs[DEFAULT_DIR_ASSETS],
+	   ":\\assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER],
       ":\\filters\\audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
-      ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-      ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
-      ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   if (libretro_video_filter_directory && *libretro_video_filter_directory)
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+	       libretro_video_filter_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER],
+           ":\\filters\\video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+   if (libretro_cheats_directory && *libretro_cheats_directory)
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+	       libretro_cheats_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+           ":\\cheats", sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+   if (libretro_database_directory && *libretro_database_directory)
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+	       libretro_database_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_DATABASE],
+           ":\\database\\rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
-      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+      ":\\playlists", sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG],
       ":\\config\\record", sizeof(g_defaults.dirs[DEFAULT_DIR_RECORD_CONFIG]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_RECORD_OUTPUT],
@@ -599,18 +831,32 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\overlays", sizeof(g_defaults.dirs[DEFAULT_DIR_OVERLAY]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY],
       ":\\overlays\\keyboards", sizeof(g_defaults.dirs[DEFAULT_DIR_OSK_OVERLAY]));
-   if (!string_is_empty(libretro_directory))
+   if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
    else
       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE],
             ":\\cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
-      ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
-      ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
-      ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   if (libretro_directory && *libretro_directory)
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+           ":\\info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   if (libretro_autoconfig_directory && *libretro_autoconfig_directory)
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+	      libretro_autoconfig_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+             ":\\autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+   if (libretro_video_filter_directory && *libretro_video_filter_directory)
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
+	      libretro_video_shader_directory,
+	      sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SHADER],
+             ":\\shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS],
       ":\\downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SCREENSHOT],
@@ -619,47 +865,18 @@ static void frontend_win32_env_get(int *argc, char *argv[],
       ":\\saves", sizeof(g_defaults.dirs[DEFAULT_DIR_SRAM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SAVESTATE],
       ":\\states", sizeof(g_defaults.dirs[DEFAULT_DIR_SAVESTATE]));
-   fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
-      ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   if (libretro_system_directory && *libretro_system_directory)
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+	       libretro_system_directory,
+	       sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+   else
+       fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_SYSTEM],
+             ":\\system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
    fill_pathname_expand_special(g_defaults.dirs[DEFAULT_DIR_LOGS],
       ":\\logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
-#endif
-}
-
-static uint64_t frontend_win32_get_total_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullTotalPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwTotalPhys;
-#endif
-}
-
-static uint64_t frontend_win32_get_free_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullAvailPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwAvailPhys;
 #endif
 }
 
@@ -751,25 +968,20 @@ static void frontend_win32_respawn(char *s, size_t len, char *args)
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
    char executable_path[PATH_MAX_LENGTH] = {0};
-   char executable_args[PATH_MAX_LENGTH] = {0};
 
    if (win32_fork_mode != FRONTEND_FORK_RESTART)
       return;
 
-   fill_pathname_application_path(executable_path,
-         sizeof(executable_path));
+   GetModuleFileName(NULL, executable_path, PATH_MAX_LENGTH);
    path_set(RARCH_PATH_CORE, executable_path);
-
-   /* Remove executable path from arguments given to CreateProcess */
-   snprintf(executable_args, sizeof(executable_args), "%s", strstr(args, ".exe") + 4);
 
    memset(&si, 0, sizeof(si));
    si.cb = sizeof(si);
    memset(&pi, 0, sizeof(pi));
 
-   if (!CreateProcess(executable_path, executable_args,
+   if (!CreateProcess(executable_path, GetCommandLine(),
          NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
-      RARCH_ERR("Failed to restart RetroArch\n");
+      RARCH_ERR("Failed to restart RetroArch.\n");
 }
 
 static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
@@ -793,71 +1005,6 @@ static bool frontend_win32_set_fork(enum frontend_fork fork_mode)
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
-static const char *accessibility_win_language_id(const char* language)
-{
-   if (string_is_equal(language,"en"))
-      return "409";
-   else if (string_is_equal(language,"it"))
-      return "410";
-   else if (string_is_equal(language,"sv"))
-      return "041d";
-   else if (string_is_equal(language,"fr"))
-      return "040c";
-   else if (string_is_equal(language,"de"))
-      return "407";
-   else if (string_is_equal(language,"he"))
-      return "040d";
-   else if (string_is_equal(language,"id"))
-      return "421";
-   else if (string_is_equal(language,"es"))
-      return "040a";
-   else if (string_is_equal(language,"nl"))
-      return "413";
-   else if (string_is_equal(language,"ro"))
-      return "418";
-   else if (string_is_equal(language,"pt_pt"))
-      return "816";
-   else if (string_is_equal(language,"pt_bt") || string_is_equal(language,"pt"))
-      return "416";
-   else if (string_is_equal(language,"th"))
-      return "041e";
-   else if (string_is_equal(language,"ja"))
-      return "411";
-   else if (string_is_equal(language,"sk"))
-      return "041b";
-   else if (string_is_equal(language,"hi"))
-      return "439";
-   else if (string_is_equal(language,"ar"))
-      return "401";
-   else if (string_is_equal(language,"hu"))
-      return "040e";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
-      return "804";
-   else if (string_is_equal(language,"el"))
-      return "408";
-   else if (string_is_equal(language,"ru"))
-      return "419";
-   else if (string_is_equal(language,"nb"))
-      return "414";
-   else if (string_is_equal(language,"da"))
-      return "406";
-   else if (string_is_equal(language,"fi"))
-      return "040b";
-   else if (string_is_equal(language,"zh_hk"))
-      return "0c04";
-   else if (string_is_equal(language,"zh_cn"))
-      return "804";
-   else if (string_is_equal(language,"tr"))
-      return "041f";
-   else if (string_is_equal(language,"ko"))
-      return "412";
-   else if (string_is_equal(language,"pl"))
-      return "415";
-   else if (string_is_equal(language,"cs")) 
-      return "405";
-   return "";
-}
-
 static const char *accessibility_win_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -896,13 +1043,15 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Naayf Desktop";
    else if (string_is_equal(language,"hu"))
       return "Microsoft Szabolcs Desktop";
-   else if (string_is_equal(language,"zh_tw") || string_is_equal(language,"zh"))
+   else if (string_is_equal(language, "zh_tw")
+            || string_is_equal(language,"zh-TW")
+            || string_is_equal(language,"zh"))
       return "Microsoft Zhiwei Desktop";
    else if (string_is_equal(language,"el"))
       return "Microsoft Stefanos Desktop";
    else if (string_is_equal(language,"ru"))
       return "Microsoft Pavel Desktop";
-   else if (string_is_equal(language,"nb"))
+   else if (string_is_equal(language,"no") || string_is_equal(language,"nb"))
       return "Microsoft Jon Desktop";
    else if (string_is_equal(language,"da"))
       return "Microsoft Helle Desktop";
@@ -910,7 +1059,7 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heidi Desktop";
    else if (string_is_equal(language,"zh_hk"))
       return "Microsoft Danny Desktop";
-   else if (string_is_equal(language,"zh_cn"))
+   else if (string_is_equal(language,"zh_cn") || string_is_equal(language,"zh-CN"))
       return "Microsoft Kangkang Desktop";
    else if (string_is_equal(language,"tr"))
       return "Microsoft Tolga Desktop";
@@ -918,8 +1067,24 @@ static const char *accessibility_win_language_code(const char* language)
       return "Microsoft Heami Desktop";
    else if (string_is_equal(language,"pl"))
       return "Microsoft Adam Desktop";
-   else if (string_is_equal(language,"cs")) 
+   else if (string_is_equal(language,"cs"))
       return "Microsoft Jakub Desktop";
+   else if (string_is_equal(language,"vi"))
+      return "Microsoft An Desktop";
+   else if (string_is_equal(language,"hr"))
+      return "Microsoft Matej Desktop";
+   else if (string_is_equal(language,"bg"))
+      return "Microsoft Ivan Desktop";
+   else if (string_is_equal(language,"ms"))
+      return "Microsoft Rizwan Desktop";
+   else if (string_is_equal(language,"sl"))
+      return "Microsoft Lado Desktop";
+   else if (string_is_equal(language,"ta"))
+      return "Microsoft Valluvar Desktop";
+   else if (string_is_equal(language,"en_gb"))
+      return "Microsoft George Desktop";
+   else if (string_is_equal(language,"ca") || string_is_equal(language,"ca_ES@valencia"))
+      return "Microsoft Herena Desktop";
    return "";
 }
 
@@ -948,12 +1113,12 @@ static bool create_win32_process(char* cmd, const char * input)
       size_t input_len = strlen(input);
       if (!CreatePipe(&rd, &wr, NULL, input_len))
          return false;
-      
+
       SetHandleInformation(rd, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
-      
+
       WriteFile(wr, input, input_len, &dummy, NULL);
       CloseHandle(wr);
-      
+
       si.dwFlags    |= STARTF_USESTDHANDLES;
       si.hStdInput   = rd;
       si.hStdOutput  = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -988,12 +1153,12 @@ static bool is_narrator_running_windows(void)
    {
       long res = nvdaController_testIfRunning_func();
 
-      if (res != 0) 
+      if (res != 0)
       {
          /* The running nvda service wasn't found, so revert
             back to the powershell method
          */
-         RARCH_ERR("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA.\n");
          g_plat_win32_flags |=  PLAT_WIN32_FLAG_USE_POWERSHELL;
          g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
          return false;
@@ -1022,10 +1187,7 @@ static bool accessibility_speak_windows(int speed,
    char cmd[512];
    const char *voice      = get_user_language_iso639_1(true);
    const char *language   = accessibility_win_language_code(voice);
-   const char *langid     = accessibility_win_language_id(voice);
-   bool res               = false;
-   const char* speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
-   size_t nbytes_cmd      = 0;
+   const char *speeds[10] = {"-10", "-7.5", "-5", "-2.5", "0", "2", "4", "6", "8", "10"};
    if (speed < 1)
       speed               = 1;
    else if (speed > 10)
@@ -1039,11 +1201,11 @@ static bool accessibility_speak_windows(int speed,
 #ifdef HAVE_NVDA
    init_nvda();
 #endif
-   
+
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
-      const char * template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
-      const char * template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
+      const char *template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; try { $synth.SelectVoice(\\\"%s\\\") } catch { }; $synth.Rate = %s; $synth.Speak($input);\"";
+      const char *template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
       if (language && language[0] != '\0')
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
       else
@@ -1061,12 +1223,15 @@ static bool accessibility_speak_windows(int speed,
       wchar_t        *wc = utf8_to_utf16_string_alloc(speak_text);
       long res           = nvdaController_testIfRunning_func();
 
-      if (!wc || res != 0) 
+      if (!wc || res != 0)
       {
-         RARCH_ERR("Error communicating with NVDA\n");
+         RARCH_ERR("Error communicating with NVDA.\n");
+         /* Fallback on powershell immediately and retry */
+         g_plat_win32_flags &= ~PLAT_WIN32_FLAG_USE_NVDA;
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_USE_POWERSHELL;
          if (wc)
             free(wc);
-         return false;
+         return accessibility_speak_windows(speed, speak_text, priority);
       }
 
       nvdaController_cancelSpeech_func();
@@ -1112,6 +1277,11 @@ static bool accessibility_speak_windows(int speed,
 }
 #endif
 
+static enum rarch_display_type frontend_win32_get_display_type(void)
+{
+   return RARCH_DISPLAY_WIN32;
+}
+
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_env_get,         /* env_get   */
    frontend_win32_init,            /* init      */
@@ -1131,13 +1301,10 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                           /* shutdown                  */
    NULL,                           /* get_name                  */
    frontend_win32_get_os,
-   NULL,                           /* get_rating                */
    NULL,                           /* content_loaded            */
    frontend_win32_get_arch,        /* get_architecture          */
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
-   frontend_win32_get_total_mem,
-   frontend_win32_get_free_mem,
    NULL,                            /* install_signal_handler   */
    NULL,                            /* get_sighandler_state     */
    NULL,                            /* set_sighandler_state     */
@@ -1146,8 +1313,9 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_detach_console,   /* detach_console           */
    NULL,                            /* get_lakka_version        */
    NULL,                            /* set_screen_brightness    */
-   NULL,                            /* watch_path_for_changes   */
-   NULL,                            /* check_for_path_changes   */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#else
+#endif
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
    frontend_win32_get_user_language,
@@ -1159,6 +1327,38 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* accessibility_speak */
 #endif
    NULL,                            /* set_gamemode        */
+   frontend_win32_get_display_type,
    "win32",                         /* ident               */
    NULL                             /* get_video_driver    */
 };
+
+/* Windows GUI-subsystem entry point.
+ *
+ * RetroArch links as a GUI-subsystem app (-mwindows) so no console
+ * window appears. The C runtime startup that this pulls in calls
+ * WinMain rather than main on some toolchains (notably MSYS2's
+ * mingw-w64, via crtexewin.o). RetroArch's actual entry is main()
+ * (in retroarch.c, or ui_qt.cpp for Qt builds); that WinMain used to
+ * be supplied by SDL's shim library (libSDL2main), but RetroArch now
+ * sets SDL_MAIN_HANDLED and does not link -lSDL*main, so we provide
+ * the one-line bridge ourselves here.
+ *
+ * This lives in platform_win32.c because it is compiled exactly once
+ * for every Win32 desktop build regardless of which file owns main()
+ * and regardless of whether SDL is enabled. main() always has C
+ * linkage (the language gives it that specially), so no extern "C"
+ * dance is needed even under CXX_BUILD. */
+#if !defined(_XBOX) && !defined(__WINRT__)
+#include <stdlib.h> /* __argc, __argv */
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+      LPSTR lpCmdLine, int nShowCmd)
+{
+   int main(int argc, char *argv[]);
+   (void)hInstance;
+   (void)hPrevInstance;
+   (void)lpCmdLine;
+   (void)nShowCmd;
+   return main(__argc, __argv);
+}
+#endif

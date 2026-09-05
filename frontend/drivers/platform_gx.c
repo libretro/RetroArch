@@ -58,7 +58,7 @@
 #include "../../menu/menu_entries.h"
 
 #if defined(HW_RVL)
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 #endif
 
@@ -141,11 +141,11 @@ static void gx_devthread(void *a)
          {
             if (!gx_devices[i].interface->isInserted())
             {
-               size_t _len;
+               /* Device names ("sd", "usb") are <= 3 chars,
+                * so 8 bytes is comfortably large for "<name>:\0". */
                char n[8];
+               snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
                gx_devices[i].mounted = false;
-               _len = strlcpy(n, gx_devices[i].name, sizeof(n));
-               strlcpy(n + _len, ":", sizeof(n) - _len);
                fatUnmount(n);
             }
          }
@@ -176,7 +176,19 @@ static void frontend_gx_get_env(int *argc, char *argv[],
 #endif
 
 #ifdef HW_DOL
-   chdir("carda:/retroarch");
+   /* If the loader provided a usable argv[0] (e.g. Swiss),
+    * fatInitDefault() has already chdir()'d to the directory
+    * RetroArch was launched from, and the defaults derived from
+    * getcwd() below must be rooted there. Only fall back to a
+    * fixed location when no launch path is available, preferring
+    * the Serial Port 2 SD adapter mount ("sd": SD2SP2 and
+    * similar devices) over an SD Gecko in slot A, mirroring
+    * libfat's own device priority. */
+   if (*argc < 1 || !argv || !argv[0] || !strstr(argv[0], ":/"))
+   {
+      if (chdir("sd:/retroarch") != 0)
+         chdir("carda:/retroarch");
+   }
 #endif
 
    getcwd(g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -204,8 +216,8 @@ static void frontend_gx_get_env(int *argc, char *argv[],
       }
    }
 #ifdef HW_RVL
-   else if (*argc > 2 &&
-         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
+   else if (*argc > 2
+         && (argv[1] && *argv[1]) && (argv[2] && *argv[2]))
    {
 #ifdef HAVE_NETWORKING
       /* If the process was forked for netplay purposes,
@@ -219,7 +231,7 @@ static void frontend_gx_get_env(int *argc, char *argv[],
          if (     string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1"))
                || string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
          {
-            size_t _len = strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
+            size_t _len = strlcpy_lit(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE]       + _len,
                   argv[0] + 4,
@@ -252,8 +264,8 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    }
 #endif
 #else
-   if (*argc > 2 && argv &&
-         !string_is_empty(argv[1]) && !string_is_empty(argv[2]))
+   if (*argc > 2 && argv
+         && (argv[1] && *argv[1]) && (argv[2] && *argv[2]))
       fill_pathname_join(gx_rom_path, argv[1], argv[2], sizeof(gx_rom_path));
    else
       *gx_rom_path = '\0';
@@ -316,12 +328,16 @@ static void frontend_gx_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS],
       g_defaults.dirs[DEFAULT_DIR_PORT], "logs",
       sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
-      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
-      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
+   /* MENU_CONFIG must be filled BEFORE REMAP since the latter
+    * derives its root from the former. Pre-patch had these two
+    * statements in the opposite order, producing a REMAP path
+    * rooted at the empty / stale MENU_CONFIG value. */
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG],
       g_defaults.dirs[DEFAULT_DIR_PORT], "config",
       sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP],
+      g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
+      sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");
@@ -395,6 +411,17 @@ static void frontend_gx_deinit(void *data)
    slock_unlock(gx_device_cond_mutex);
    scond_signal(gx_device_cond);
    sthread_join(gx_device_thread);
+
+   /* Release the sync primitives allocated in frontend_gx_init.
+    * Without this, a frontend re-init (e.g. CMD_EVENT_QUIT followed
+    * by relaunch) leaks one mutex+cond+mutex triple every cycle. */
+   slock_free(gx_device_mutex);
+   slock_free(gx_device_cond_mutex);
+   scond_free(gx_device_cond);
+   gx_device_mutex      = NULL;
+   gx_device_cond_mutex = NULL;
+   gx_device_cond       = NULL;
+   gx_device_thread     = NULL;
 #endif
 }
 
@@ -409,10 +436,11 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
 {
    bool should_load_game = false;
 #if defined(IS_SALAMANDER)
-   if (!string_is_empty(gx_rom_path))
+   /* gx_rom_path is an array, so the null-check folded away cleanly. */
+   if (*gx_rom_path)
       should_load_game = true;
 #elif defined(HW_RVL)
-   char salamander_basename[PATH_MAX_LENGTH];
+   char salamander_basename[NAME_MAX_LENGTH];
 
    if (gx_fork_mode == FRONTEND_FORK_NONE)
       return;
@@ -426,8 +454,8 @@ static void frontend_gx_exitspawn(char *s, size_t len, char *args)
          /* fall-through */
       case FRONTEND_FORK_RESTART:
          {
+            char salamander_name[NAME_MAX_LENGTH];
             char new_path[PATH_MAX_LENGTH];
-            char salamander_name[PATH_MAX_LENGTH];
 
             if (frontend_driver_get_salamander_basename(salamander_name,
                      sizeof(salamander_name)))
@@ -463,12 +491,16 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
     * active core path is set here. */
-   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1 && strrchr(argv[0], '/'))
+   if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1)
    {
-      char path[PATH_MAX_LENGTH] = {0};
-      strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      if (path_is_valid(path))
-         path_set(RARCH_PATH_CORE, path);
+      char *last_slash = strrchr(argv[0], '/');
+      if (last_slash)
+      {
+         char path[PATH_MAX_LENGTH];
+         strlcpy(path, last_slash + 1, sizeof(path));
+         if (path_is_valid(path))
+            path_set(RARCH_PATH_CORE, path);
+      }
    }
 #endif
 }
@@ -479,8 +511,6 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         gx_fork_mode  = fork_mode;
-         break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
          gx_fork_mode  = fork_mode;
          break;
@@ -496,15 +526,6 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    return true;
 }
 #endif
-
-static int frontend_gx_get_rating(void)
-{
-#ifdef HW_RVL
-   return 8;
-#else
-   return 6;
-#endif
-}
 
 static enum frontend_architecture frontend_gx_get_arch(void)
 {
@@ -526,6 +547,16 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
    menu_entries_append(list,
          "usb:/",
+         msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#elif defined(EXTERNAL_LIBOGC)
+   /* Modern libfat mounts a Serial Port 2 SD adapter
+    * (SD2SP2 and similar devices) as "sd" on GameCube.
+    * The internal (vendored) libogc has no SP2 driver,
+    * hence the EXTERNAL_LIBOGC guard. */
+   menu_entries_append(list,
+         "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
@@ -552,24 +583,6 @@ static void frontend_gx_shutdown(bool unused)
 #endif
 }
 
-static uint64_t frontend_gx_get_total_mem(void)
-{
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   return SYSMEM1_SIZE + gx_mem2_total();
-#else
-   return SYSMEM1_SIZE;
-#endif
-}
-
-static uint64_t frontend_gx_get_free_mem(void)
-{
-   uint64_t total = SYSMEM1_SIZE - (SYSMEM1_SIZE - SYS_GetArena1Size());
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   total += (gx_mem2_total() - gx_mem2_used());
-#endif
-   return total;
-}
-
 frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_env,             /* get_env */
    frontend_gx_init,
@@ -585,13 +598,10 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_shutdown,            /* shutdown */
    NULL,                            /* get_name */
    NULL,                            /* get_os */
-   frontend_gx_get_rating,          /* get_rating */
    NULL,                            /* load_content */
    frontend_gx_get_arch,            /* get_architecture */
    NULL,                            /* get_powerstate */
    frontend_gx_parse_drive_list,    /* parse_drive_list */
-   frontend_gx_get_total_mem,       /* get_total_mem */
-   frontend_gx_get_free_mem,        /* get_free_mem */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
@@ -600,14 +610,13 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    NULL,                            /* get_cpu_model_name  */
    NULL,                            /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
    NULL,                            /* set_gamemode        */
+   NULL, /* get_display_type */
    "gx",                            /* ident               */
    NULL                             /* get_video_driver    */
 };

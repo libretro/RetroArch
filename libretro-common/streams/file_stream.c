@@ -25,6 +25,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,18 +38,137 @@
 #include <compat/msvc.h>
 #endif
 
-#include <string/stdstring.h>
+#include <retro_miscellaneous.h>
+#include <file/file_path.h>
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
+#include <string/rstrtod.h>
 
 #define VFS_ERROR_RETURN_VALUE -1
+
+/* Size of the per-handle sequential lookahead buffer filled by
+ * filestream_gets()/filestream_getc().  Large enough that the
+ * per-call cost of crossing the VFS interface (which for a core
+ * running under a frontend-supplied VFS is an indirect call across
+ * the libretro ABI) amortizes to nothing, small enough to be an
+ * acceptable lazy per-handle heap cost on memory-constrained
+ * platforms.  Handles that never touch gets/getc never allocate it.
+ * Overridable for platforms that want a different trade-off. */
+#ifndef FILESTREAM_RBUF_LEN
+#define FILESTREAM_RBUF_LEN 16384
+#endif
+
+/* Allocation seam for that buffer: a refused allocation is one of the
+ * two ways filestream_rbuf_fill() gives up and nothing else can reach
+ * it, so samples/file/vfs/filestream_rbuf_fault_test overrides this
+ * from its Makefile.  Undefined everywhere else, RetroArch included,
+ * it is malloc() and no symbol or branch is added.  #undef'd after its
+ * only use below so it cannot leak through a unity build. */
+#ifndef FILESTREAM_RBUF_MALLOC
+#define FILESTREAM_RBUF_MALLOC(len) malloc(len)
+#endif
+
+/* Largest single read filestream_read_file() will ask for.  Every
+ * backend it can reach expresses a count in something at least this
+ * wide - the narrowest is Windows' _read(), an unsigned int returning
+ * int - so a request of this size can be satisfied in full and a
+ * short return means what it says rather than "too big to ask for".
+ * Whole-file reads above it just take another turn of the loop. */
+#ifndef FILESTREAM_BULK_READ_MAX
+#define FILESTREAM_BULK_READ_MAX ((int64_t)64 * 1024 * 1024)
+#endif
+
+/* Largest whole-file read filestream_read_file() will attempt.
+ *
+ * Relying on malloc() to refuse an absurd request is not enough: a
+ * directory opens like a file on Linux through both fopen() and
+ * open(), and seeking to its end reports INT64_MAX, so a caller that
+ * hands this function a path that turns out to be a directory asks
+ * the allocator for 8 EiB.  Ordinarily that just fails and the call
+ * returns an error, but under AddressSanitizer an allocation past its
+ * ceiling is fatal - the process aborts rather than returning NULL,
+ * so every sanitizer build inherits a crash from a path that merely
+ * needed to fail.
+ *
+ * A ceiling refuses it without a syscall, and refuses any other
+ * backend that reports a size which cannot be one.  The value is far
+ * above anything read whole - the largest are ROMs and disc images,
+ * and a machine able to hold one of these in a single heap buffer is
+ * not what this function is sized for - and far below the sanitizer
+ * threshold, so the failure is a clean one.  On 32-bit hosts the
+ * address space binds first and this never applies. */
+#ifndef FILESTREAM_READ_FILE_MAX
+#define FILESTREAM_READ_FILE_MAX ((uint64_t)64 * 1024 * 1024 * 1024)
+#endif
 
 struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
-	bool error_flag;
+   bool err_flag;
+   /* Set once filestream_rbuf_fill() has seen this handle's tell()
+    * fail, so it stops asking: unlatched, the fallback pays a failed
+    * tell() per byte on top of the one-byte read, which is more work
+    * than the unbuffered code the lookahead replaced.
+    *
+    * Not set for the other way fill() gives up, a failed allocation.
+    * That one is usually a moment rather than a property, and it is
+    * likeliest on the memory-constrained targets the lookahead exists
+    * for; fill() steps the request down instead.
+    *
+    * Cleared by a successful seek because tell() fails for two
+    * unrelated reasons.  A backend with no tell callback - pipe,
+    * FIFO, socket - cannot be seeked either, so its latch never
+    * clears.  But retro_vfs_fp_tell64() falls through to ftell()
+    * where none of RETRO_VFS_HAVE_FSEEKI64 / RETRO_VFS_HAVE_FPOS64 /
+    * HAVE_64BIT_OFFSETS is set, and that fails past LONG_MAX; there
+    * the failure is a property of where the handle is, and seeking
+    * back fixes it.  Clearing wrongly costs one failed tell() per
+    * seek, since the latch re-arms on the first failure and not per
+    * byte; never clearing costs per-byte reads without bound. */
+   bool rbuf_no_tell;
+   /* Sequential read lookahead.  Only filestream_rbuf_fill() ever
+    * puts bytes here, and only filestream_gets()/filestream_getc()
+    * trigger a fill; every other operation on the handle either
+    * serves from it (read, tell) or discards it (seek, write,
+    * truncate, flush) so the logical stream position stays exact.
+    *
+    * Invariants while rbuf_len != 0:
+    *   - rbuf_pos <= rbuf_len
+    *   - the underlying handle sits at rbuf_file_off + rbuf_len
+    *   - the logical position is   rbuf_file_off + rbuf_pos
+    * rbuf_len == 0 means inactive: the underlying position is the
+    * logical position, as before this buffer existed.
+    *
+    * Note that code holding the raw handle from
+    * filestream_get_vfs_handle() bypasses this layer; the in-tree
+    * callers of that function (cdrom, disc tasks) never mix it with
+    * gets/getc on the same RFILE, and out-of-tree code that does
+    * was already bypassing RFILE state (err_flag) anyway. */
+   uint8_t *rbuf;
+   size_t rbuf_cap;
+   size_t rbuf_len;
+   size_t rbuf_pos;
+   int64_t rbuf_file_off;
+   /* C89 7.9.5.3: on an update stream, output followed by input (or
+    * input followed by output, short of EOF) requires an intervening
+    * file positioning or flush call.  Backends over stdio really do
+    * misbehave without it - reads after writes return stale bytes.
+    * Track the last data direction and interpose a no-op seek on
+    * transitions, at this layer so every VFS backend is covered. */
+   signed char last_io;
 };
+
+#define FILESTREAM_LAST_IO_NONE  0
+#define FILESTREAM_LAST_IO_READ  1
+#define FILESTREAM_LAST_IO_WRITE 2
+
+static int64_t filestream_raw_read(RFILE *stream, void *s, int64_t len);
+static int64_t filestream_raw_seek(RFILE *stream,
+      int64_t offset, int seek_position);
+static int64_t filestream_raw_tell(RFILE *stream);
+static void filestream_rbuf_discard(RFILE *stream);
+static int filestream_rbuf_fill(RFILE *stream);
 
 static retro_vfs_get_path_t filestream_get_path_cb = NULL;
 static retro_vfs_open_t filestream_open_cb         = NULL;
@@ -81,7 +204,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_rename_cb   = NULL;
 
    if (
-             (vfs_info->required_interface_version < 
+             (vfs_info->required_interface_version <
              FILESTREAM_REQUIRED_VFS_VERSION)
          || !vfs_iface)
       return;
@@ -107,8 +230,7 @@ bool filestream_exists(const char *path)
 
    if (!path || !*path)
       return false;
-   if (!(dummy = filestream_open(
-         path,
+   if (!(dummy = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
@@ -131,14 +253,49 @@ int64_t filestream_get_size(RFILE *stream)
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
+}
+
+int64_t filestream_get_sparse_granularity(RFILE *stream)
+{
+   if (!stream)
+      return 0;
+
+   /* Same reasoning as filestream_punch_hole: only the built-in
+    * implementation has a descriptor to ask about. */
+   if (filestream_open_cb != NULL)
+      return 0;
+
+   return retro_vfs_file_get_sparse_granularity_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
+}
+
+int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len)
+{
+   if (!stream)
+      return -1;
+
+   /* Only the built-in implementation can do this: a frontend-supplied
+    * VFS handle need not be a file, and the interface exposes no
+    * descriptor to punch through. Reporting -1 lets the caller fall back
+    * to writing zeroes. */
+   if (filestream_open_cb != NULL)
+      return -1;
+
+   return retro_vfs_file_punch_hole_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, offset, len);
 }
 
 int64_t filestream_truncate(RFILE *stream, int64_t length)
 {
    int64_t output;
+
+   /* The lookahead may hold bytes past the new length; drop it and
+    * restore the underlying position first. */
+   if (stream)
+      filestream_rbuf_discard(stream);
 
    if (filestream_truncate_cb)
       output = filestream_truncate_cb(stream->hfile, length);
@@ -147,24 +304,113 @@ int64_t filestream_truncate(RFILE *stream, int64_t length)
             (libretro_vfs_implementation_file*)stream->hfile, length);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
 
-/**
- * filestream_open:
- * @path               : path to file
- * @mode               : file mode to use when opening (read/write)
- * @hints              :
+/* Drop the lookahead, rewinding the underlying handle over any bytes
+ * read ahead but not yet consumed, so the underlying position becomes
+ * the logical position again.  Must run before anything that hands the
+ * underlying position to the VFS directly (write, truncate, flush).
  *
- * Opens a file for reading or writing, depending on the requested mode.
- * @return A pointer to an RFILE if opened successfully, otherwise NULL.
- **/
+ * If the rewind itself fails the handle is one that cannot seek, in
+ * which case interleaving buffered reads with writes was never going
+ * to be coherent on it; err_flag is set by the failed raw seek. */
+static void filestream_rbuf_discard(RFILE *stream)
+{
+   if (stream->rbuf_len != 0)
+   {
+      size_t unconsumed = stream->rbuf_len - stream->rbuf_pos;
+      if (unconsumed != 0)
+         filestream_raw_seek(stream, -(int64_t)unconsumed,
+               RETRO_VFS_SEEK_POSITION_CURRENT);
+      stream->rbuf_pos = 0;
+      stream->rbuf_len = 0;
+   }
+}
+
+/* Refill the lookahead from the current underlying position.
+ * Returns 1 with at least one byte buffered, 0 at end of file or on a
+ * read error (the raw read has set err_flag for the latter, matching
+ * what the old one-byte filestream_read() did), or -1 when no buffer
+ * could be allocated or the handle cannot report a position - in both
+ * of those cases the caller falls back to the unbuffered byte path,
+ * which behaves exactly as this function did before the lookahead
+ * existed.
+ *
+ * The two -1 arms are not interchangeable; see rbuf_no_tell in struct
+ * RFILE for why one of them is remembered and the other is not. */
+static int filestream_rbuf_fill(RFILE *stream)
+{
+   int64_t off;
+   int64_t got;
+
+   /* Asked once, answered for the life of the handle. */
+   if (stream->rbuf_no_tell)
+      return -1;
+
+   if (!stream->rbuf)
+   {
+      size_t cap;
+
+      /* Step down rather than give up: 16 KiB, then 4, then 1.  A
+       * handle that gets the smallest is still a buffered handle.
+       * Runs only after the allocator has refused the nominal size,
+       * which is unchanged.  Whatever is granted is kept for the life
+       * of the handle - there is no path back up to 16 KiB once a
+       * smaller buffer exists, and none is worth the bookkeeping when
+       * the worst case is still a thousandth of the VFS traffic the
+       * byte path would cost.  The cap != 0 term keeps the loop off
+       * malloc(0) for an override small enough that the floor divides
+       * to zero. */
+      for (cap = FILESTREAM_RBUF_LEN;
+            cap != 0 && cap >= FILESTREAM_RBUF_LEN / 16; cap >>= 2)
+      {
+         if ((stream->rbuf = (uint8_t*)FILESTREAM_RBUF_MALLOC(cap)))
+         {
+            stream->rbuf_cap = cap;
+            break;
+         }
+      }
+
+      if (!stream->rbuf)
+         return -1;
+   }
+
+   if ((off = filestream_raw_tell(stream)) < 0)
+   {
+      /* Nothing will pass through the buffer until a seek clears the
+       * latch, so hand it back rather than hold 16 KiB per pipe or
+       * socket for the life of the handle.  rbuf_len is necessarily 0
+       * here - a span only exists after a fill that succeeded - so
+       * there is nothing to discard. */
+      free(stream->rbuf);
+      stream->rbuf         = NULL;
+      stream->rbuf_cap     = 0;
+      stream->rbuf_no_tell = true;
+      return -1;
+   }
+
+   if ((got = filestream_raw_read(stream, stream->rbuf,
+               (int64_t)stream->rbuf_cap)) <= 0)
+      return 0;
+
+   stream->rbuf_file_off = off;
+   stream->rbuf_pos      = 0;
+   stream->rbuf_len      = (size_t)got;
+   return 1;
+}
+
+#undef FILESTREAM_RBUF_MALLOC
+
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {
    struct retro_vfs_file_handle  *fp = NULL;
-   RFILE* output                     = NULL;
+   RFILE* output                     = (RFILE*)malloc(sizeof(RFILE));
+
+   if (!output)
+      return NULL;
 
    if (filestream_open_cb)
       fp = (struct retro_vfs_file_handle*)
@@ -174,34 +420,137 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
          retro_vfs_file_open_impl(path, mode, hints);
 
    if (!fp)
+   {
+      free(output);
       return NULL;
+   }
 
-   output             = (RFILE*)malloc(sizeof(RFILE));
-   output->error_flag = false;
-   output->hfile      = fp;
+   output->err_flag      = false;
+   output->rbuf_no_tell  = false;
+   output->hfile         = fp;
+   output->rbuf          = NULL;
+   output->rbuf_cap      = 0;
+   output->rbuf_len      = 0;
+   output->rbuf_pos      = 0;
+   output->rbuf_file_off = 0;
+   output->last_io       = FILESTREAM_LAST_IO_NONE;
    return output;
 }
 
 char* filestream_gets(RFILE *stream, char *s, size_t len)
 {
-   int c   = 0;
-   char *p = s;
-   if (!stream)
+   size_t done    = 0;
+   size_t want;
+   bool   hit_end = false;
+
+   /* len == 0 leaves no room even for the terminator; the previous
+    * implementation decremented the size_t straight past zero and
+    * wrote unbounded output.  fgets() with n <= 0 returns NULL on
+    * every libc worth matching, so do that. */
+   if (!stream || len == 0)
       return NULL;
 
    /* get max bytes or up to a newline */
+   want = len - 1;
 
-   for (len--; len > 0; len--)
+   /* Zero-copy path: when the handle carries a file mapping
+    * (RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS, or a frontend
+    * mapped-ptr callback), find the line bound with memchr() over the
+    * mapping and copy exactly the bytes returned.  Only taken with an
+    * empty lookahead so the two never both hold stream position. */
+   if (want != 0 && stream->rbuf_pos == stream->rbuf_len)
    {
-      if ((c = filestream_getc(stream)) == EOF)
-         break;
-      *p++ = c;
-      if (c == '\n')
+      int64_t map_len    = 0;
+      const uint8_t *map = filestream_get_mapped_ptr(stream, &map_len);
+      if (map)
+      {
+         int64_t pos = filestream_tell(stream);
+         if (pos >= 0)
+         {
+            size_t n = 0;
+            if (pos < map_len)
+            {
+               const uint8_t *nl;
+               uint64_t avail = (uint64_t)(map_len - pos);
+               n = want;
+               if ((uint64_t)n > avail)
+                  n = (size_t)avail;
+               if ((nl = (const uint8_t*)memchr(map + pos, '\n', n)))
+                  n = (size_t)(nl - (map + pos)) + 1;
+               memcpy(s, map + pos, n);
+               if (n != 0)
+                  filestream_seek(stream, pos + (int64_t)n,
+                        RETRO_VFS_SEEK_POSITION_START);
+            }
+            s[n] = '\0';
+            if (n == 0)
+               return NULL;
+            return s;
+         }
+         /* Position unknown; the buffered path below reads
+          * sequentially and does not need it. */
+      }
+   }
+
+   while (done < want)
+   {
+      const uint8_t *span;
+      const uint8_t *nl;
+      size_t take;
+      bool newline = false;
+
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         int filled = filestream_rbuf_fill(stream);
+         if (filled == 0)
+         {
+            hit_end = true;
+            break;
+         }
+         if (filled < 0)
+         {
+            /* No lookahead available on this handle; degrade to the
+             * historical byte loop for the remainder. */
+            int c = 0;
+            while (done < want)
+            {
+               if ((c = filestream_getc(stream)) == EOF)
+               {
+                  hit_end = true;
+                  break;
+               }
+               s[done++] = (char)c;
+               if (c == '\n')
+                  break;
+            }
+            break;
+         }
+      }
+
+      span = stream->rbuf + stream->rbuf_pos;
+      take = stream->rbuf_len - stream->rbuf_pos;
+      if (take > want - done)
+         take = want - done;
+      if ((nl = (const uint8_t*)memchr(span, '\n', take)))
+      {
+         take    = (size_t)(nl - span) + 1;
+         newline = true;
+      }
+      memcpy(s + done, span, take);
+      done             += take;
+      stream->rbuf_pos += take;
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      if (newline)
          break;
    }
-   *p = 0;
 
-   if (p == s && c == EOF)
+   s[done] = '\0';
+
+   if (done == 0 && hit_end)
       return NULL;
    return (s);
 }
@@ -209,144 +558,872 @@ char* filestream_gets(RFILE *stream, char *s, size_t len)
 int filestream_getc(RFILE *stream)
 {
    char c = 0;
-   if (stream && filestream_read(stream, &c, 1) == 1)
+   int filled;
+
+   if (!stream)
+      return EOF;
+
+   if (stream->rbuf_pos < stream->rbuf_len)
+   {
+      int out = (int)stream->rbuf[stream->rbuf_pos++];
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      return out;
+   }
+
+   if ((filled = filestream_rbuf_fill(stream)) > 0)
+   {
+      int out = (int)stream->rbuf[stream->rbuf_pos++];
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      return out;
+   }
+   if (filled == 0)
+      return EOF;
+
+   /* No lookahead on this handle; historical one-byte read. */
+   if (filestream_raw_read(stream, &c, 1) == 1)
       return (int)(unsigned char)c;
    return EOF;
 }
 
-int filestream_vscanf(RFILE *stream, const char* format, va_list *args)
+/* ---- internal scanf engine ----------------------------------------
+ *
+ * The previous implementation walked the format string and for each
+ * %-spec built a per-conversion sub-format string (e.g. "%d%n") and
+ * invoked sscanf() for every specifier. sscanf on most libcs runs
+ * strlen() over the entire remaining input on every call to compute
+ * the internal FILE-stream length, and glibc additionally allocates
+ * transient state per call. For input parsed one conversion at a
+ * time this is the dominant cost.
+ *
+ * The native engine below scans every supported conversion in place
+ * with no sscanf call anywhere in the path:
+ *
+ *   %d %i %u %o %x %X      - via fs_scan_int (custom digit loop)
+ *   %f %e %g %a (+caps)    - via fs_scan_float (uses strtod, which
+ *                            unlike sscanf does not strlen the buffer
+ *                            or allocate per-call state)
+ *   %p                     - via fs_scan_pointer (hex parse)
+ *   %s %c %[..]            - via fs_scan_str/char/set (byte loop)
+ *   %ls %lc %l[..]         - via fs_scan_wide (UTF-8 decoding via
+ *                            libretro-common's utf8_walk; no
+ *                            mbrtowc dependency)
+ *   %n                     - direct write of chars-consumed-so-far
+ *   %%                     - literal match
+ *
+ * with the full grammar: '*' assignment suppression, decimal width,
+ * and length modifiers hh / h / l / ll / z / j / t / L (plus the
+ * MSVC-only I / I32 / I64 size prefixes that some legacy core code
+ * still uses). */
+
+#define FS_LM_NONE  0
+#define FS_LM_HH    1
+#define FS_LM_H     2
+#define FS_LM_L     3
+#define FS_LM_LL    4
+#define FS_LM_J     5
+#define FS_LM_Z     6
+#define FS_LM_T     7
+#define FS_LM_BIG_L 8
+
+typedef struct
 {
-   char buf[4096];
-   char subfmt[64];
-   va_list args_copy;
-   const char *bufiter  = buf;
-   int        ret       = 0;
-   int64_t startpos     = filestream_tell(stream);
-   int64_t maxlen       = filestream_read(stream, buf, sizeof(buf)-1);
+   int  width;       /* 0 means unbounded */
+   int  length_mod;  /* FS_LM_* */
+   char specifier;   /* d i u o x X c s [ n % f e g a F E G A p */
+   bool suppress;    /* %* */
+   /* For '[' specifiers: bounds of the scanset (after '[' or '[^',
+    * up to but not including ']'). */
+   const char *set_start;
+   const char *set_end;
+   bool        set_negate;
+} fs_scan_spec_t;
+
+/* Parse one conversion specifier starting at `fmt` (which points
+ * just past '%'). Returns updated fmt position, or NULL if the
+ * specifier is malformed. */
+static const char *fs_parse_spec(const char *fmt, fs_scan_spec_t *sp)
+{
+   sp->width      = 0;
+   sp->length_mod = FS_LM_NONE;
+   sp->specifier  = '\0';
+   sp->suppress   = false;
+   sp->set_start  = NULL;
+   sp->set_end    = NULL;
+   sp->set_negate = false;
+
+   if (*fmt == '*')
+   {
+      sp->suppress = true;
+      fmt++;
+   }
+   while (*fmt >= '0' && *fmt <= '9')
+   {
+      sp->width = sp->width * 10 + (*fmt - '0');
+      fmt++;
+   }
+   switch (*fmt)
+   {
+      case 'h':
+         if (fmt[1] == 'h') { sp->length_mod = FS_LM_HH; fmt += 2; }
+         else               { sp->length_mod = FS_LM_H;  fmt += 1; }
+         break;
+      case 'l':
+         if (fmt[1] == 'l') { sp->length_mod = FS_LM_LL; fmt += 2; }
+         else               { sp->length_mod = FS_LM_L;  fmt += 1; }
+         break;
+      case 'j': sp->length_mod = FS_LM_J;     fmt++; break;
+      case 'z': sp->length_mod = FS_LM_Z;     fmt++; break;
+      case 't': sp->length_mod = FS_LM_T;     fmt++; break;
+      case 'L': sp->length_mod = FS_LM_BIG_L; fmt++; break;
+      /* MSVC-style "I" size prefix: I64 -> __int64 (==int64_t), I32
+       * -> 32-bit (==int), I alone -> ptrdiff_t / size_t.  This is a
+       * Microsoft extension some libretro core authors use on
+       * older MSVC toolchains that predate full C99 %lld support. */
+      case 'I':
+         if (fmt[1] == '6' && fmt[2] == '4')
+            { sp->length_mod = FS_LM_LL;   fmt += 3; }
+         else if (fmt[1] == '3' && fmt[2] == '2')
+            { sp->length_mod = FS_LM_NONE; fmt += 3; }
+         else
+            { sp->length_mod = FS_LM_Z;    fmt += 1; }
+         break;
+      default: break;
+   }
+   if (!*fmt)
+      return NULL;
+   sp->specifier = *fmt++;
+   if (sp->specifier == '[')
+   {
+      if (*fmt == '^')
+      {
+         sp->set_negate = true;
+         fmt++;
+      }
+      sp->set_start = fmt;
+      /* literal ']' as first scanset char is part of the set */
+      if (*fmt == ']')
+         fmt++;
+      while (*fmt && *fmt != ']')
+         fmt++;
+      if (*fmt != ']')
+         return NULL;
+      sp->set_end = fmt;
+      fmt++;
+   }
+   return fmt;
+}
+
+static void fs_store_int(const fs_scan_spec_t *sp, va_list *args,
+      int64_t v, bool is_signed)
+{
+   if (is_signed)
+   {
+      switch (sp->length_mod)
+      {
+         case FS_LM_HH: *va_arg(*args, signed char*) = (signed char)v; break;
+         case FS_LM_H:  *va_arg(*args, short*)       = (short)v;       break;
+         case FS_LM_L:  *va_arg(*args, long*)        = (long)v;        break;
+         case FS_LM_LL: *va_arg(*args, int64_t*)     = (int64_t)v;     break;
+         case FS_LM_Z:  *va_arg(*args, size_t*)      = (size_t)v;      break;
+         case FS_LM_J:  *va_arg(*args, intmax_t*)    = (intmax_t)v;    break;
+         case FS_LM_T:  *va_arg(*args, ptrdiff_t*)   = (ptrdiff_t)v;   break;
+         default:       *va_arg(*args, int*)         = (int)v;         break;
+      }
+   }
+   else
+   {
+      uint64_t uv = (uint64_t)v;
+      switch (sp->length_mod)
+      {
+         case FS_LM_HH: *va_arg(*args, unsigned char*)      = (unsigned char)uv;      break;
+         case FS_LM_H:  *va_arg(*args, unsigned short*)     = (unsigned short)uv;     break;
+         case FS_LM_L:  *va_arg(*args, unsigned long*)      = (unsigned long)uv;      break;
+         case FS_LM_LL: *va_arg(*args, uint64_t*)           = (uint64_t)uv;           break;
+         case FS_LM_Z:  *va_arg(*args, size_t*)             = (size_t)uv;             break;
+         case FS_LM_J:  *va_arg(*args, uintmax_t*)          = (uintmax_t)uv;          break;
+         case FS_LM_T:  *va_arg(*args, size_t*)             = (size_t)uv;             break;
+         default:       *va_arg(*args, unsigned int*)       = (unsigned int)uv;       break;
+      }
+   }
+}
+
+/* Scan one integer conversion. `base` is 0 for %i (auto-detect),
+ * else the explicit base (8/10/16). Returns chars consumed, or
+ * -1 on parse failure. On success, advances *pp.
+ *
+ * Width handling: a width of 0 from sp->width means "unlimited" — we
+ * normalize that to INT_MAX up front so every subsequent comparison
+ * is a single check (no special-casing of "<= 0 means unbounded"
+ * which broke when width was legitimately consumed down to 0 by
+ * the sign/0x prefix). */
+static int fs_scan_int(const char **pp, const fs_scan_spec_t *sp,
+      int base, bool is_signed, va_list *args)
+{
+   const char        *start  = *pp;
+   const char        *p      = start;
+   const char        *digit_start;
+   uint64_t acc    = 0;
+   int                neg    = 0;
+   int                width  = sp->width > 0 ? sp->width : INT_MAX;
+   int                digits = 0;
+
+   /* skip leading whitespace */
+   while (isspace((unsigned char)*p))
+      p++;
+
+   /* optional sign */
+   if ((*p == '+' || *p == '-') && width > 0)
+   {
+      if (*p == '-')
+         neg = 1;
+      p++;
+      width--;
+   }
+
+   /* base autodetect / optional 0x prefix.
+    * Note: sscanf's "%x" / "%i" treat "0x" with no following hex
+    * digit as a successful match of the value 0, consuming the
+    * "0x" (2 chars). We mirror that by counting the leading "0"
+    * as our first digit when we commit to base 16 via "0x". */
+   if (base == 0)
+   {
+      if (*p == '0')
+      {
+         if ((p[1] == 'x' || p[1] == 'X') && width >= 2)
+         {
+            base    = 16;
+            acc     = 0;
+            digits  = 1;          /* the "0" counts as a digit */
+            p      += 2;
+            width  -= 2;
+         }
+         else
+            base = 8;
+      }
+      else
+         base = 10;
+   }
+   else if (base == 16)
+   {
+      if (*p == '0' && (p[1] == 'x' || p[1] == 'X') && width >= 2)
+      {
+         acc     = 0;
+         digits  = 1;             /* the "0" counts as a digit */
+         p      += 2;
+         width  -= 2;
+      }
+   }
+
+   digit_start = p;
+   while (*p && (p - digit_start) < width)
+   {
+      unsigned char c = (unsigned char)*p;
+      int           d;
+      if      (c >= '0' && c <= '9') d = c - '0';
+      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+      else                           break;
+      if (d >= base)
+         break;
+      acc = acc * (uint64_t)base + (uint64_t)d;
+      p++;
+      digits++;
+   }
+
+   if (digits == 0)
+      return -1;
+
+   if (!sp->suppress)
+   {
+      int64_t sv = neg
+         ? -(int64_t)acc
+         :  (int64_t)acc;
+      fs_store_int(sp, args, sv, is_signed);
+   }
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %s — skip leading ws, copy non-ws up to width (default unbounded).
+ * Always NUL-terminates output. Fails only on no chars matched. */
+static int fs_scan_str(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   char       *out   = NULL;
+   int         n     = 0;
+   int         width = sp->width;
+
+   while (isspace((unsigned char)*p))
+      p++;
+
+   if (!sp->suppress)
+      out = va_arg(*args, char*);
+
+   while (*p && !isspace((unsigned char)*p) && (width <= 0 || n < width))
+   {
+      if (out) out[n] = *p;
+      n++;
+      p++;
+   }
+   if (n == 0)
+      return -1;
+   if (out) out[n] = '\0';
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %c — read exactly width chars (default 1). Does NOT skip
+ * whitespace. Does NOT NUL-terminate. Fails if fewer than width
+ * chars available. */
+static int fs_scan_char(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *p     = *pp;
+   int         width = sp->width > 0 ? sp->width : 1;
+   int         i;
+   char       *out   = sp->suppress ? NULL : va_arg(*args, char*);
+
+   for (i = 0; i < width; i++)
+   {
+      if (!p[i])
+         return -1;
+      if (out)
+         out[i] = p[i];
+   }
+   *pp = p + width;
+   return width;
+}
+
+/* Test scanset membership. `set` points just after '[' (or after
+ * '[^' if negated); `end` points at the closing ']'. */
+static bool fs_scanset_match(const char *set, const char *end,
+      bool negate, unsigned char c)
+{
+   const char *p      = set;
+   bool        in_set = false;
+   /* literal ']' as first char is part of the set */
+   if (p < end && *p == ']')
+   {
+      if (c == ']') in_set = true;
+      p++;
+   }
+   while (p < end)
+   {
+      if (p + 2 < end && p[1] == '-' && p[2] != ']')
+      {
+         unsigned char lo = (unsigned char)p[0];
+         unsigned char hi = (unsigned char)p[2];
+         if (lo > hi) { unsigned char t = lo; lo = hi; hi = t; }
+         if (c >= lo && c <= hi) in_set = true;
+         p += 3;
+      }
+      else
+      {
+         if ((unsigned char)*p == c) in_set = true;
+         p++;
+      }
+   }
+   return negate ? !in_set : in_set;
+}
+
+/* %[..] — does NOT skip leading whitespace. */
+static int fs_scan_set(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   char       *out   = sp->suppress ? NULL : va_arg(*args, char*);
+   int         n     = 0;
+   int         width = sp->width;
+
+   while (*p && (width <= 0 || n < width)
+         && fs_scanset_match(sp->set_start, sp->set_end,
+               sp->set_negate, (unsigned char)*p))
+   {
+      if (out) out[n] = *p;
+      n++;
+      p++;
+   }
+   if (n == 0)
+      return -1;
+   if (out) out[n] = '\0';
+   *pp = p;
+   return n;
+}
+
+/* %n — store chars-consumed-so-far into the destination of the
+ * appropriate width. Suppressed %n is a no-op. */
+static void fs_store_n(const fs_scan_spec_t *sp, va_list *args, int n)
+{
+   if (sp->suppress)
+      return;
+   switch (sp->length_mod)
+   {
+      case FS_LM_HH: *va_arg(*args, signed char*) = (signed char)n; break;
+      case FS_LM_H:  *va_arg(*args, short*)       = (short)n;       break;
+      case FS_LM_L:  *va_arg(*args, long*)        = (long)n;        break;
+      case FS_LM_LL: *va_arg(*args, int64_t*)   = (int64_t)n;   break;
+      case FS_LM_Z:  *va_arg(*args, size_t*)      = (size_t)n;      break;
+      case FS_LM_J:  *va_arg(*args, intmax_t*)    = (intmax_t)n;    break;
+      case FS_LM_T:  *va_arg(*args, ptrdiff_t*)   = (ptrdiff_t)n;   break;
+      default:       *va_arg(*args, int*)         = n;              break;
+   }
+}
+
+/* Decides whether the engine can serve a (specifier, length_mod)
+ * combination at all. All standard combinations are now handled
+ * natively (no sscanf calls remain). Returns false only for an
+ * unrecognized specifier or an out-of-spec length modifier
+ * (e.g. %hf, %jc), in which case the dispatch breaks the parse
+ * loop the same way the prior engine did on malformed input. */
+static bool fs_native_handles(char specifier, int length_mod)
+{
+   switch (specifier)
+   {
+      case 'd': case 'i': case 'u': case 'o': case 'x': case 'X':
+         /* Integers: every standard length modifier is supported.
+          * The MSVC "I" prefix maps to LL/NONE/Z in fs_parse_spec. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_HH
+             || length_mod == FS_LM_H
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_LL
+             || length_mod == FS_LM_Z
+             || length_mod == FS_LM_J
+             || length_mod == FS_LM_T;
+      case 'f': case 'e': case 'g': case 'a':
+      case 'F': case 'E': case 'G': case 'A':
+         /* Floats: NONE -> float, L -> double, BIG_L -> long double. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_BIG_L;
+      case 's': case 'c': case '[':
+         /* Strings/chars/scansets: NONE writes char, L writes wchar_t. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_L;
+      case 'p':
+         return length_mod == FS_LM_NONE;
+      case 'n':
+         /* All standard int length mods are handled by fs_store_n. */
+         return length_mod == FS_LM_NONE
+             || length_mod == FS_LM_HH
+             || length_mod == FS_LM_H
+             || length_mod == FS_LM_L
+             || length_mod == FS_LM_LL
+             || length_mod == FS_LM_Z
+             || length_mod == FS_LM_J
+             || length_mod == FS_LM_T;
+      default:
+         return false;
+   }
+}
+
+/* Scan a floating-point conversion.  Handles %f / %e / %g / %a and
+ * their capitalized siblings.  Uses rstrtod() — which is C89 and,
+ * unlike sscanf, does not run strlen() across the rest of the
+ * buffer or allocate any per-call FILE-stream state.  Width is
+ * honored by copying at most `width` non-whitespace bytes into a
+ * stack scratch buffer, NUL-terminating, and letting strtod parse
+ * that.  For %Lf, strtod's double result is cast to long double:
+ * on platforms where long double is wider than double (notably
+ * x86 with 80-bit extended), this loses precision relative to a
+ * hypothetical strtold call — but strtold is C99 and not available
+ * in strict MSVC C89, and %Lf via filestream_scanf is essentially
+ * unused, so we accept the trade. */
+static int fs_scan_float(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char  *start = *pp;
+   const char  *p     = start;
+   char        *endp;
+   double       val;
+   ptrdiff_t    advance;
+
+   while (isspace((unsigned char)*p))
+      p++;
+   if (!*p)
+      return -1;
+
+   if (sp->width > 0)
+   {
+      char  tmp[64];
+      int   w     = sp->width;
+      int   i;
+      if (w >= (int)sizeof(tmp))
+         w = (int)sizeof(tmp) - 1;
+      for (i = 0; i < w && p[i] && !isspace((unsigned char)p[i]); i++)
+         tmp[i] = p[i];
+      tmp[i] = '\0';
+      val = rstrtod(tmp, &endp);
+      if (endp == tmp)
+         return -1;
+      advance = endp - tmp;
+   }
+   else
+   {
+      val = rstrtod(p, &endp);
+      if (endp == p)
+         return -1;
+      advance = endp - p;
+   }
+   p += advance;
+
+   if (!sp->suppress)
+   {
+      switch (sp->length_mod)
+      {
+         case FS_LM_NONE:  *va_arg(*args, float*)       = (float)val;       break;
+         case FS_LM_L:     *va_arg(*args, double*)      = val;              break;
+         case FS_LM_BIG_L: *va_arg(*args, long double*) = (long double)val; break;
+         default: return -1;
+      }
+   }
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* %p — implementation-defined per C99, but the de-facto format
+ * everywhere (glibc, musl, BSD, MSVC's CRT for the common case)
+ * is hex digits with an optional "0x"/"0X" prefix, optionally
+ * preceded by whitespace.  Parse that, store as void*. */
+static int fs_scan_pointer(const char **pp, const fs_scan_spec_t *sp,
+      va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   const char *digit_start;
+   uint64_t    acc    = 0;
+   int         width  = sp->width > 0 ? sp->width : INT_MAX;
+   int         digits = 0;
+
+   while (isspace((unsigned char)*p))
+      p++;
+
+   if (*p == '0' && (p[1] == 'x' || p[1] == 'X') && width >= 2)
+   {
+      p     += 2;
+      width -= 2;
+   }
+   digit_start = p;
+   while (*p && (p - digit_start) < width)
+   {
+      unsigned char c = (unsigned char)*p;
+      int           d;
+      if      (c >= '0' && c <= '9') d = c - '0';
+      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+      else                           break;
+      acc = (acc << 4) | (uint64_t)d;
+      p++;
+      digits++;
+   }
+   if (digits == 0)
+      return -1;
+   if (!sp->suppress)
+      *va_arg(*args, void**) = (void*)(uintptr_t)acc;
+   *pp = p;
+   return (int)(p - start);
+}
+
+/* Wide-character scanset membership.  Set elements in the format
+ * string are encoded as bytes; we promote each to wchar_t by zero
+ * extension via unsigned char.  This is exact for ASCII set chars
+ * (the typical case) and is the same convention glibc uses for
+ * wide scansets with ASCII format strings. */
+static bool fs_wscanset_match(const char *set, const char *end,
+      bool negate, wchar_t c)
+{
+   const char *p      = set;
+   bool        in_set = false;
+   if (p < end && *p == ']')
+   {
+      if (c == (wchar_t)']') in_set = true;
+      p++;
+   }
+   while (p < end)
+   {
+      if (p + 2 < end && p[1] == '-' && p[2] != ']')
+      {
+         wchar_t lo = (wchar_t)(unsigned char)p[0];
+         wchar_t hi = (wchar_t)(unsigned char)p[2];
+         if (lo > hi) { wchar_t t = lo; lo = hi; hi = t; }
+         if (c >= lo && c <= hi) in_set = true;
+         p += 3;
+      }
+      else
+      {
+         if ((wchar_t)(unsigned char)*p == c) in_set = true;
+         p++;
+      }
+   }
+   return negate ? !in_set : in_set;
+}
+
+/* Wide-char scanf primitive.  `mode` selects the variant:
+ *   's' — skip ws, read non-ws wide chars until ws/width/end; NUL-terminate
+ *   'c' — read exactly width wide chars (default 1); no ws skip; no NUL
+ *   '[' — read wide chars while scanset matches; NUL-terminate
+ *
+ * Multibyte input is decoded as UTF-8 via libretro-common's stateless
+ * utf8_walk(); this avoids any dependency on the host libc's
+ * mbrtowc/mbstate_t (absent in DJGPP and other older toolchains) and
+ * gives the same behavior across platforms. The lead byte's UTF-8
+ * width is checked against the buffer's NUL boundary before walking
+ * so truncated input never reads past the terminator. */
+static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
+      char mode, va_list *args)
+{
+   const char *start = *pp;
+   const char *p     = start;
+   wchar_t    *out;
+   int         n     = 0;
+   int         width = sp->width;
+   int         max_n;
+
+   if (mode == 's')
+   {
+      while (isspace((unsigned char)*p))
+         p++;
+      max_n = (width > 0) ? width : INT_MAX;
+   }
+   else if (mode == 'c')
+      max_n = (width > 0) ? width : 1;
+   else /* '[' */
+      max_n = (width > 0) ? width : INT_MAX;
+
+   out = sp->suppress ? NULL : va_arg(*args, wchar_t*);
+
+   while (n < max_n)
+   {
+      const char   *before;
+      unsigned char lead;
+      int           needed;
+      int           k;
+      uint32_t      cp;
+
+      if (!*p)
+         break;
+      if (mode == 's' && isspace((unsigned char)*p))
+         break;
+
+      /* Bounds-check the UTF-8 sequence width against the NUL
+       * boundary before letting utf8_walk advance past it. */
+      lead = (unsigned char)*p;
+      if      (lead < 0x80) needed = 1;
+      else if (lead < 0xC0) return -1;  /* stray continuation byte */
+      else if (lead < 0xE0) needed = 2;
+      else if (lead < 0xF0) needed = 3;
+      else                  needed = 4;
+      for (k = 1; k < needed; k++)
+         if (!p[k])
+            return -1;
+
+      before = p;
+      cp     = utf8_walk(&p);
+
+      if (mode == '[' && !fs_wscanset_match(sp->set_start, sp->set_end,
+               sp->set_negate, (wchar_t)cp))
+      {
+         p = before;  /* codepoint rejected — do not consume */
+         break;
+      }
+      if (out)
+         out[n] = (wchar_t)cp;
+      n++;
+   }
+
+   /* %lc must read exactly max_n wide chars; falling short is failure. */
+   if (mode == 'c' && n < max_n)
+      return -1;
+   /* %ls / %l[ must match at least one wide char. */
+   if (mode != 'c' && n == 0)
+      return -1;
+   /* %ls and %l[ NUL-terminate; %lc does not. */
+   if (mode != 'c' && out)
+      out[n] = 0;
+
+   *pp = p;
+   return (int)(p - start);
+}
+
+int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
+{
+   /* The scan window is heap rather than a local: at char buf[4096]
+    * this was a 4368-byte frame, over half of the 8 KiB a GEKKO
+    * thread gets (the GEKKO STACKSIZE in rthreads.c).  Shrinking it
+    * instead would have been the cheaper change and the wrong one -
+    * the window is how far a single conversion may reach, so a
+    * smaller one fails differently on long input rather than merely
+    * more slowly.  One allocation per call is nothing beside the read
+    * this function already performs. */
+   char       *buf       = (char*)malloc(FILESTREAM_SCANF_WINDOW);
+   va_list     args_copy;
+   const char *bufiter;
+   const char *fmt      = format;
+   int         ret      = 0;
+   int64_t     startpos;
+   int64_t     maxlen;
+
+   if (!buf)
+      return EOF;
+
+   startpos = filestream_tell(stream);
+   maxlen   = filestream_read(stream, buf, FILESTREAM_SCANF_WINDOW - 1);
 
    if (maxlen <= 0)
+   {
+      free(buf);
       return EOF;
+   }
 
    buf[maxlen] = '\0';
 
-   /* Have to copy the input va_list here
-    * > Calling va_arg() on 'args' directly would
-    *   cause the va_list to have an indeterminate value
-    *   in the function calling filestream_vscanf(),
-    *   leading to unexpected behaviour */
 #ifdef __va_copy
    __va_copy(args_copy, *args);
 #else
    va_copy(args_copy, *args);
 #endif
 
-   while (*format)
+   bufiter = buf;
+
+   while (*fmt && *bufiter)
    {
-      if (*format == '%')
+      if (*fmt == '%')
       {
-         int sublen;
-         char* subfmtiter = subfmt;
-         bool asterisk    = false;
+         fs_scan_spec_t  sp;
+         const char     *fmt_next;
+         int             consumed = -1;
 
-         *subfmtiter++    = *format++; /* '%' */
+         fmt++;  /* past '%' */
 
-         /* %[*][width][length]specifier */
-
-         if (*format == '*')
+         /* literal %% */
+         if (*fmt == '%')
          {
-            asterisk      = true;
-            *subfmtiter++ = *format++;
+            if (*bufiter != '%')
+               break;
+            bufiter++;
+            fmt++;
+            continue;
          }
 
-         while (ISDIGIT((unsigned char)*format))
-            *subfmtiter++ = *format++; /* width */
+         fmt_next = fs_parse_spec(fmt, &sp);
+         if (!fmt_next)
+            break;  /* malformed spec — stop, matching prior behavior */
 
-         /* length */
-         if (*format == 'h' || *format == 'l')
+         if (!fs_native_handles(sp.specifier, sp.length_mod))
+            break;  /* unsupported combination — stop, matching prior behavior */
+
+         switch (sp.specifier)
          {
-            if (format[1] == format[0])
-               *subfmtiter++ = *format++;
-            *subfmtiter++    = *format++;
-         }
-         else if (
-               *format == 'j' || 
-               *format == 'z' || 
-               *format == 't' || 
-               *format == 'L')
-         {
-            *subfmtiter++ = *format++;
-         }
-
-         /* specifier - always a single character (except ]) */
-         if (*format == '[')
-         {
-            while (*format != ']')
-               *subfmtiter++ = *format++;
-            *subfmtiter++    = *format++;
-         }
-         else
-            *subfmtiter++    = *format++;
-
-         *subfmtiter++       = '%';
-         *subfmtiter++       = 'n';
-         *subfmtiter++       = '\0';
-
-         if (sizeof(void*) != sizeof(long*))
-            abort(); /* all pointers must have the same size */
-
-         if (asterisk)
-         {
-            int v = sscanf(bufiter, subfmt, &sublen);
-            if (v == EOF)
-               return EOF;
-            if (v != 0)
+            case 'd':
+               consumed = fs_scan_int(&bufiter, &sp, 10, true,  &args_copy); break;
+            case 'i':
+               consumed = fs_scan_int(&bufiter, &sp,  0, true,  &args_copy); break;
+            case 'u':
+               consumed = fs_scan_int(&bufiter, &sp, 10, false, &args_copy); break;
+            case 'o':
+               consumed = fs_scan_int(&bufiter, &sp,  8, false, &args_copy); break;
+            case 'x':
+            case 'X':
+               consumed = fs_scan_int(&bufiter, &sp, 16, false, &args_copy); break;
+            case 'f': case 'e': case 'g': case 'a':
+            case 'F': case 'E': case 'G': case 'A':
+               consumed = fs_scan_float(&bufiter, &sp, &args_copy); break;
+            case 'p':
+               consumed = fs_scan_pointer(&bufiter, &sp, &args_copy); break;
+            case 's':
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, 's', &args_copy);
+               else
+                  consumed = fs_scan_str(&bufiter, &sp, &args_copy);
+               break;
+            case 'c':
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, 'c', &args_copy);
+               else
+                  consumed = fs_scan_char(&bufiter, &sp, &args_copy);
+               break;
+            case '[':
+               if (sp.length_mod == FS_LM_L)
+                  consumed = fs_scan_wide(&bufiter, &sp, '[', &args_copy);
+               else
+                  consumed = fs_scan_set(&bufiter, &sp, &args_copy);
+               break;
+            case 'n':
+               fs_store_n(&sp, &args_copy, (int)(bufiter - buf));
+               consumed = 0;  /* succeeds, consumes no input */
+               break;
+            default:
+               /* Unreachable: fs_native_handles returned false for
+                * anything not in this switch. */
+               consumed = -1;
                break;
          }
-         else
-         {
-            int v = sscanf(bufiter, subfmt, va_arg(args_copy, void*), &sublen);
-            if (v == EOF)
-               return EOF;
-            if (v != 1)
-               break;
-         }
 
-         ret++;
-         bufiter += sublen;
+         if (consumed < 0)
+            break;
+
+         /* %n doesn't count toward the return value; nor do
+          * assignment-suppressed conversions. */
+         if (!sp.suppress && sp.specifier != 'n')
+            ret++;
+
+         /* Suppressed conversion that consumed nothing — bail,
+          * matching the prior "sublen == 0" guard. */
+         if (sp.suppress && sp.specifier != 'n' && consumed == 0)
+            break;
+
+         fmt = fmt_next;
       }
-      else if (isspace((unsigned char)*format))
+      else if (isspace((unsigned char)*fmt))
       {
          while (isspace((unsigned char)*bufiter))
             bufiter++;
-         format++;
+         while (isspace((unsigned char)*fmt))
+            fmt++;
       }
       else
       {
-         if (*bufiter != *format)
+         if (*bufiter != *fmt)
             break;
          bufiter++;
-         format++;
+         fmt++;
       }
    }
 
    va_end(args_copy);
+
+   /* Seek before the free: the new position is derived from how far
+    * bufiter walked into buf. */
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
 
+   free(buf);
    return ret;
 }
 
 int filestream_scanf(RFILE *stream, const char* format, ...)
 {
-   int result;
+   int ret;
    va_list vl;
    va_start(vl, format);
-   result = filestream_vscanf(stream, format, &vl);
+   ret = filestream_vscanf(stream, format, &vl);
    va_end(vl);
-   return result;
+   return ret;
 }
 
-int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
+static int64_t filestream_raw_seek(RFILE *stream,
+      int64_t offset, int seek_position)
 {
    int64_t output;
 
@@ -358,9 +1435,55 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
             offset, seek_position);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
+   else
+      /* A successful positioning call satisfies the update-stream
+       * transition rule in both directions. */
+      stream->last_io = FILESTREAM_LAST_IO_NONE;
 
    return output;
+}
+
+int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
+{
+   int64_t plain;
+
+   if (stream && stream->rbuf_len != 0)
+   {
+      int64_t output;
+      int64_t adjusted = offset;
+
+      /* The underlying handle sits past the logical position by the
+       * unconsumed lookahead; a relative seek must be taken from the
+       * logical position. */
+      if (seek_position == RETRO_VFS_SEEK_POSITION_CURRENT)
+         adjusted -= (int64_t)(stream->rbuf_len - stream->rbuf_pos);
+
+      output = filestream_raw_seek(stream, adjusted, seek_position);
+
+      /* Every successful seek drops the lookahead rather than trying
+       * to serve targets inside it: matching stdio, where fseek()
+       * discards the read buffer, keeps rewind-and-reread of
+       * synthetic files (procfs/sysfs pollers) returning fresh
+       * bytes instead of cached ones.  On failure the underlying
+       * position is unchanged, so the lookahead is still valid and
+       * the logical position observably does not move. */
+      if (output != VFS_ERROR_RETURN_VALUE)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      return output;
+   }
+
+   /* The latch clears here and only here: it cannot be set while a
+    * span exists, so a latched handle always has rbuf_len == 0 and
+    * always takes this path.  A clear in the branch above would be
+    * unreachable. */
+   plain = filestream_raw_seek(stream, offset, seek_position);
+   if (plain != VFS_ERROR_RETURN_VALUE)
+      stream->rbuf_no_tell = false;
+   return plain;
 }
 
 int filestream_eof(RFILE *stream)
@@ -368,20 +1491,29 @@ int filestream_eof(RFILE *stream)
    return filestream_tell(stream) == filestream_get_size(stream) ? EOF : 0;
 }
 
-int64_t filestream_tell(RFILE *stream)
+static int64_t filestream_raw_tell(RFILE *stream)
 {
    int64_t output;
 
-   if (filestream_size_cb)
+   if (filestream_tell_cb)
       output = filestream_tell_cb(stream->hfile);
    else
       output = retro_vfs_file_tell_impl(
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
+}
+
+int64_t filestream_tell(RFILE *stream)
+{
+   /* While the lookahead is active the logical position is tracked
+    * here, a fill-time snapshot plus consumed bytes; no VFS call. */
+   if (stream && stream->rbuf_len != 0)
+      return stream->rbuf_file_off + (int64_t)stream->rbuf_pos;
+   return filestream_raw_tell(stream);
 }
 
 void filestream_rewind(RFILE *stream)
@@ -389,12 +1521,20 @@ void filestream_rewind(RFILE *stream)
    if (!stream)
       return;
    filestream_seek(stream, 0L, RETRO_VFS_SEEK_POSITION_START);
-   stream->error_flag = false;
+   stream->err_flag = false;
 }
 
-int64_t filestream_read(RFILE *stream, void *s, int64_t len)
+static int64_t filestream_raw_read(RFILE *stream, void *s, int64_t len)
 {
    int64_t output;
+
+   /* Update-stream rule: input directly after output needs a
+    * positioning call between them, or stdio-backed VFS paths hand
+    * back stale bytes.  A zero-byte relative seek is the cheapest
+    * legal one. */
+   if (stream->last_io == FILESTREAM_LAST_IO_WRITE)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_READ;
 
    if (filestream_read_cb)
       output = filestream_read_cb(stream->hfile, s, len);
@@ -403,14 +1543,49 @@ int64_t filestream_read(RFILE *stream, void *s, int64_t len)
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
+}
+
+int64_t filestream_read(RFILE *stream, void *s, int64_t len)
+{
+   if (stream && stream->rbuf_pos < stream->rbuf_len && len > 0)
+   {
+      int64_t rest;
+      size_t drained = stream->rbuf_len - stream->rbuf_pos;
+
+      if ((uint64_t)len < (uint64_t)drained)
+         drained = (size_t)len;
+      memcpy(s, stream->rbuf + stream->rbuf_pos, drained);
+      stream->rbuf_pos += drained;
+      if (stream->rbuf_pos == stream->rbuf_len)
+      {
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
+      }
+      if ((int64_t)drained == len)
+         return len;
+
+      /* err_flag is set by the raw read on failure; having already
+       * moved bytes to the caller, report the short count the way a
+       * partially satisfied stdio read would. */
+      if ((rest = filestream_raw_read(stream,
+                  (uint8_t*)s + drained, len - (int64_t)drained)) < 0)
+         return (int64_t)drained;
+      return (int64_t)drained + rest;
+   }
+   return filestream_raw_read(stream, s, len);
 }
 
 int filestream_flush(RFILE *stream)
 {
    int output;
+
+   /* Match stdio fflush() on an update stream: synchronize the
+    * underlying position with the logical one. */
+   if (stream)
+      filestream_rbuf_discard(stream);
 
    if (filestream_flush_cb)
       output = filestream_flush_cb(stream->hfile);
@@ -419,7 +1594,10 @@ int filestream_flush(RFILE *stream)
             (libretro_vfs_implementation_file*)stream->hfile);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
+   else if (stream)
+      /* A flush also satisfies the update-stream transition rule. */
+      stream->last_io = FILESTREAM_LAST_IO_NONE;
 
    return output;
 }
@@ -440,6 +1618,77 @@ int filestream_rename(const char *old_path, const char *new_path)
    return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
+int filestream_copy(const char *src, const char *dst)
+{
+   char buf[256] = {0};
+   int64_t n     = 0;
+   int ret       = 0;
+   char path_dst[PATH_MAX_LENGTH] = {0};
+
+   RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fp_src || !fp_dst)
+      ret = -1;
+
+   if (ret < 0)
+      goto close;
+
+   snprintf(path_dst, sizeof(path_dst), "%s", dst);
+   path_basedir(path_dst);
+
+   if (!path_is_directory(path_dst))
+      path_mkdir(path_dst);
+
+   while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0 && ret == 0)
+   {
+      if (filestream_write(fp_dst, buf, n) != n)
+         ret = -1;
+   }
+
+close:
+   if (fp_src)
+      filestream_close(fp_src);
+   if (fp_dst)
+      filestream_close(fp_dst);
+   return ret;
+}
+
+int filestream_cmp(const char *src, const char *dst)
+{
+   int ret           = 0;
+   RFILE *fp_src     = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   RFILE *fp_dst     = filestream_open(dst, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fp_src || !fp_dst || filestream_get_size(fp_src) != filestream_get_size(fp_dst))
+      ret = -1;
+
+   if (ret >= 0)
+   {
+      char buf_src[256] = {0};
+      char buf_dst[256] = {0};
+      while ((filestream_read(fp_src, buf_src, sizeof(buf_src))) > 0 && ret == 0)
+      {
+         filestream_read(fp_dst, buf_dst, sizeof(buf_dst));
+         ret = memcmp(buf_src, buf_dst, sizeof(buf_src));
+      }
+   }
+
+   if (fp_src)
+   {
+      filestream_close(fp_src);
+      fp_src = NULL;
+   }
+   if (fp_dst)
+   {
+      filestream_close(fp_dst);
+      fp_dst = NULL;
+   }
+   return ret;
+}
+
 const char* filestream_get_path(RFILE *stream)
 {
    if (filestream_get_path_cb)
@@ -449,9 +1698,137 @@ const char* filestream_get_path(RFILE *stream)
          (libretro_vfs_implementation_file*)stream->hfile);
 }
 
+bool filestream_matches_buf(const char *path, const void *data, size_t len)
+{
+   const uint8_t *mem     = (const uint8_t*)data;
+   const uint8_t *map     = NULL;
+   int64_t        map_len = 0;
+   bool           match   = false;
+   RFILE         *file;
+
+   if (!path || !*path || (len && !data))
+      return false;
+
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      return false;
+
+   /* The cheap answer, before a byte moves.  Callers that slurped the
+    * file to memcmp it were paying a full-size allocation and a
+    * full-file read to learn this, and learning it last. */
+   if (filestream_get_size(file) != (int64_t)len)
+      goto done;
+
+   if ((map = filestream_get_mapped_ptr(file, &map_len)))
+   {
+      /* A view that does not span the file would compare the wrong
+       * bytes; fall through to the copying path rather than guess. */
+      if (map_len == (int64_t)len)
+      {
+         match = (len == 0) || (memcmp(map, mem, len) == 0);
+         goto done;
+      }
+      if (filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START) != 0)
+         goto done;
+   }
+
+   {
+      /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
+       * thread stack in the tree rather than by throughput.  GEKKO
+       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS and PSP
+       * 32 KiB and Vita 64 KiB - and this is libretro-common API, so
+       * a caller on a spawned thread is not hypothetical.  The 8 KiB
+       * floor is GEKKO's.
+       *
+       * Bigger reads are faster, and at or above the VFS's own 64 KiB
+       * stdio buffer they skip it entirely: measured on the unchanged
+       * case, which reads every byte, 1 KiB against 4 KiB against
+       * 64 KiB is 1753 / 1432 / 1153 us on an 8 MiB file.  The
+       * platforms paying that are the ones with no memory mapping -
+       * the mapped branch above copies nothing - which are the same
+       * ones with the 8 KiB stacks, and this runs when a save is
+       * written rather than in a frame. */
+      uint8_t window[FILESTREAM_MATCHES_BUF_WINDOW];
+      size_t  off = 0;
+
+      match = true;
+      while (off < len)
+      {
+         int64_t got;
+         size_t  want = len - off;
+
+         if (want > sizeof(window))
+            want = sizeof(window);
+
+         if ((got = filestream_read(file, window, (int64_t)want))
+               != (int64_t)want)
+         {
+            match = false;
+            break;
+         }
+         /* Stop at the first difference: the caller asked a yes/no
+          * question and a 'no' is final. */
+         if (memcmp(window, mem + off, (size_t)got) != 0)
+         {
+            match = false;
+            break;
+         }
+         off += (size_t)got;
+      }
+   }
+
+done:
+   if (filestream_close(file) != 0)
+      free(file);
+   return match;
+}
+
+/* Optional extension: a VFS provider that CAN expose a mapping for
+ * some of its handles (a local-first hybrid, say) registers this and
+ * answers per handle; NULL from the callback means unmapped, same as
+ * everywhere else. Without a registration, an installed VFS keeps the
+ * conservative answer below. */
+static filestream_mapped_ptr_cb_t filestream_mapped_ptr_cb;
+
+void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb)
+{
+   filestream_mapped_ptr_cb = cb;
+}
+
+const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+   if (!stream)
+      return NULL;
+   if (filestream_read_cb)
+   {
+      if (filestream_mapped_ptr_cb)
+         return filestream_mapped_ptr_cb(stream->hfile, len);
+      /* A frontend- or core-supplied VFS is driven entirely through
+       * the callbacks and has no mapping this side of them. */
+      return NULL;
+   }
+   return retro_vfs_file_get_mapped_ptr_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
 {
    int64_t output;
+
+   /* Reads may have run ahead of the logical position; put the
+    * underlying handle back on it before writing through it.  The
+    * discard's rewind doubles as the read-to-write transition seek;
+    * when there is nothing to discard, interpose one (update-stream
+    * rule, mirror of the one in filestream_raw_read). */
+   if (stream)
+   {
+      filestream_rbuf_discard(stream);
+      if (stream->last_io == FILESTREAM_LAST_IO_READ)
+         filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+      stream->last_io = FILESTREAM_LAST_IO_WRITE;
+   }
 
    if (filestream_write_cb)
       output = filestream_write_cb(stream->hfile, s, len);
@@ -460,7 +1837,7 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
             (libretro_vfs_implementation_file*)stream->hfile, s, len);
 
    if (output == VFS_ERROR_RETURN_VALUE)
-      stream->error_flag = true;
+      stream->err_flag = true;
 
    return output;
 }
@@ -470,38 +1847,36 @@ int filestream_putc(RFILE *stream, int c)
    char c_char = (char)c;
    if (!stream)
       return EOF;
-   return filestream_write(stream, &c_char, 1) == 1 
-      ? (int)(unsigned char)c 
+   return filestream_write(stream, &c_char, 1) == 1
+      ? (int)(unsigned char)c
       : EOF;
 }
 
 int filestream_vprintf(RFILE *stream, const char* format, va_list args)
 {
    static char buffer[8 * 1024];
-   int64_t num_chars = vsnprintf(buffer, sizeof(buffer),
+   int _len = vsnprintf(buffer, sizeof(buffer),
          format, args);
-
-   if (num_chars < 0)
+   if (_len < 0)
       return -1;
-   else if (num_chars == 0)
+   else if (_len == 0)
       return 0;
-
-   return (int)filestream_write(stream, buffer, num_chars);
+   return (int)filestream_write(stream, buffer, _len);
 }
 
 int filestream_printf(RFILE *stream, const char* format, ...)
 {
    va_list vl;
-   int result;
+   int ret;
    va_start(vl, format);
-   result = filestream_vprintf(stream, format, vl);
+   ret = filestream_vprintf(stream, format, vl);
    va_end(vl);
-   return result;
+   return ret;
 }
 
 int filestream_error(RFILE *stream)
 {
-   return (stream && stream->error_flag);
+   return (stream && stream->err_flag);
 }
 
 int filestream_close(RFILE *stream)
@@ -516,30 +1891,98 @@ int filestream_close(RFILE *stream)
             (libretro_vfs_implementation_file*)fp);
 
    if (output == 0)
+   {
+      free(stream->rbuf);
       free(stream);
+   }
 
    return output;
 }
 
-/**
- * filestream_read_file:
- * @path             : path to file.
- * @buf              : buffer to allocate and read the contents of the
- *                     file into. Needs to be freed manually.
- * @len              : optional output integer containing bytes read.
+/* Read an already-open stream to EOF, growing the buffer as it goes.
  *
- * Read the contents of a file into @buf.
+ * For the path below that sizes its allocation from
+ * filestream_get_size(), a file reporting zero bytes yields a zero-
+ * byte read - so procfs, whose entries all stat as size 0, came back
+ * as an empty string *and a success return*.  Callers cannot tell
+ * that from a genuinely empty file, and did not: the /proc/apm
+ * battery probe, the /proc/modules sg check in cdrom.c and the
+ * dingux /proc/jz/battery reader all silently saw nothing.  (Which
+ * is also why mem_stats.c reads /proc/meminfo through a raw open()
+ * and read() rather than this helper.)
  *
- * @return Non-zero on success.
+ * A stat size is a hint, not a contract - synthetic filesystems have
+ * no length until they are read, and a growing file's is stale the
+ * moment it is taken - so when there is no usable hint, read until
+ * the stream says stop.  Returns bytes read, or -1.
  */
+static int64_t filestream_read_file_to_eof(RFILE *file, void **buf)
+{
+   /* One page holds essentially every procfs entry this is used for,
+    * so the doubling below rarely runs at all. */
+   size_t   cap  = 4096;
+   size_t   used = 0;
+   char    *data = (char*)malloc(cap);
+
+   if (!data)
+      return -1;
+
+   for (;;)
+   {
+      int64_t got;
+
+      /* Keep a spare byte for the NUL, and grow before reading so a
+       * read is never issued with zero space. */
+      if (used + 1 >= cap)
+      {
+         char  *tmp;
+         size_t want = cap * 2;
+
+         /* Refuse a doubling that would wrap, rather than allocating
+          * a smaller buffer than the offsets below assume. */
+         if (want < cap)
+         {
+            free(data);
+            return -1;
+         }
+         if (!(tmp = (char*)realloc(data, want)))
+         {
+            free(data);
+            return -1;
+         }
+         data = tmp;
+         cap  = want;
+      }
+
+      if ((got = filestream_read(file, data + used,
+                  (int64_t)(cap - used - 1))) < 0)
+      {
+         free(data);
+         return -1;
+      }
+      if (got == 0)
+         break;
+
+      used += (size_t)got;
+   }
+
+   data[used] = '\0';
+   *buf       = data;
+   return (int64_t)used;
+}
+
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
    int64_t ret              = 0;
    int64_t content_buf_size = 0;
    void *content_buf        = NULL;
+   /* This function is the definition of a bulk sequential read: open,
+    * take the whole file in one go, close.  Saying so lets the VFS
+    * skip a read buffer that cannot be reused - the bytes are already
+    * going straight into storage the caller keeps. */
    RFILE *file              = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
 
    if (!file)
    {
@@ -550,13 +1993,106 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
 
-   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
-      goto error;
-   if ((int64_t)(uint64_t)(content_buf_size + 1) != (content_buf_size + 1))
+   /* No usable size hint: read to EOF instead of trusting the zero.
+    * See filestream_read_file_to_eof() above.
+    *
+    * A zero here is one of three things: a genuinely empty file, a
+    * stream whose length is not known in advance (procfs and the
+    * like), or a directory - which opens and seeks like a file on
+    * every platform checked and then yields nothing.  Only the last
+    * is an error, and nothing about the bytes distinguishes it from
+    * the first, so it costs one stat.  Paid only on this branch: a
+    * file with a size never reaches it, which is every read on the
+    * paths that matter for throughput. */
+   if (content_buf_size == 0)
+   {
+      if (path_is_directory(path))
+         goto error;
+
+      if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
+         goto error;
+
+      if (filestream_close(file) != 0)
+         free(file);
+
+      *buf = content_buf;
+      if (len)
+         *len = ret;
+      return 1;
+   }
+
+   /* Reject sizes that would not survive the cast to size_t for
+    * the malloc below.  Pre-patch the only check here was a
+    * tautological '(int64_t)(uint64_t)X != X' (which is false
+    * for any positive int64_t), and on 32-bit hosts any file
+    * larger than ~4 GiB silently truncated through (size_t),
+    * the malloc was undersized, and the filestream_read below
+    * overran it.
+    *
+    * The '+ 1' for the terminator is done in the unsigned domain and
+    * only after the bound is known to hold.  It used to sit inside
+    * the malloc argument as '(size_t)(content_buf_size + 1)', where
+    * the addition happens in int64_t first: a size of INT64_MAX
+    * overflows there, which is undefined behaviour rather than a
+    * large number.  That is not hypothetical - opening a directory
+    * succeeds on Linux through both fopen() and open(), and seeking
+    * to its end reports exactly INT64_MAX, so any caller that hands
+    * this function a path that turns out to be a directory reaches
+    * it.  See FILESTREAM_READ_FILE_MAX above for why such a size is
+    * refused here rather than left for malloc() to decline. */
+   if (     content_buf_size < 0
+         || (uint64_t)content_buf_size >= (uint64_t)((size_t)-1)
+         || (uint64_t)content_buf_size >  FILESTREAM_READ_FILE_MAX)
       goto error;
 
-   if ((ret = filestream_read(file, content_buf, (int64_t)content_buf_size)) <
-         0)
+   if (!(content_buf = malloc((size_t)content_buf_size + 1)))
+      goto error;
+
+   /* Read in a loop rather than trusting a single call to satisfy the
+    * whole request.  A read is permitted to come up short and try
+    * again: fread() loops internally so the buffered path always did
+    * return the full count, but a descriptor-backed one - which is
+    * what the hint above now selects - hands back whatever read(2)
+    * gave it, and a frontend-supplied VFS may do anything at all.
+    * The single call this replaces then returned a buffer holding
+    * fewer bytes than the file, with nothing to distinguish it from a
+    * complete read of a shorter file.
+    *
+    * Requests are capped so no single read exceeds what a platform's
+    * count argument can express: read(2) takes a size_t on POSIX but
+    * _read() takes an unsigned int on Windows and returns int, so a
+    * >2 GiB request there fails outright instead of coming up short.
+    *
+    * A genuinely short *file* - one truncated between the size query
+    * and the read - still succeeds with the byte count it had, which
+    * is what this function has always done. */
+   while (ret < content_buf_size)
+   {
+      int64_t want = content_buf_size - ret;
+      int64_t got;
+
+      if (want > FILESTREAM_BULK_READ_MAX)
+         want = FILESTREAM_BULK_READ_MAX;
+
+      if ((got = filestream_read(file, (uint8_t*)content_buf + ret, want)) < 0)
+         goto error;
+      if (got == 0)
+         break;
+
+      ret += got;
+   }
+
+   /* The size said there were bytes and not one arrived.  That is not
+    * a file that shrank - a shrunk file still hands over what it has,
+    * which the loop above accepts - it is a stream that cannot be
+    * read at all.  A directory is exactly that shape wherever the
+    * platform lets one through: Linux reports INT64_MAX from lseek
+    * and is turned away by the ceiling above, but Darwin's buffered
+    * path reports a small plausible length and then reads zero
+    * bytes, and treating that as success handed back an empty buffer
+    * indistinguishable from an empty file.  Same call, same
+    * arguments, a different answer per platform. */
+   if (ret == 0)
       goto error;
 
    if (filestream_close(file) != 0)
@@ -584,22 +2120,16 @@ error:
    return 0;
 }
 
-/**
- * filestream_write_file:
- * @path             : path to file.
- * @data             : contents to write to the file.
- * @size             : size of the contents.
- *
- * Writes data to a file.
- *
- * @return true on success, otherwise false.
- **/
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
    int64_t ret   = 0;
+   /* Everything this stream will ever write is in 'data' already, so
+    * ask for the descriptor path where one exists: one write for the
+    * whole buffer instead of a copy through a stdio buffer and a
+    * flush at close. */
    RFILE *file   = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!file)
       return false;
    ret = filestream_write(file, data, size);
@@ -608,48 +2138,120 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    return (ret == size);
 }
 
-/**
- * filestream_getline:
- *
- * Returned pointer must be freed by the caller.
- **/
+bool filestream_write_file_atomic(const char *path,
+      const void *data, int64_t size)
+{
+   int64_t  ret       = 0;
+   size_t   path_len  = 0;
+   char    *temp_path = NULL;
+   RFILE   *file      = NULL;
+
+   if (!path || !*path)
+      return false;
+
+   path_len  = strlen(path);
+   temp_path = (char*)malloc(path_len + sizeof(".tmp"));
+   if (!temp_path)
+      return false;
+   memcpy(temp_path, path, path_len);
+   memcpy(temp_path + path_len, ".tmp", sizeof(".tmp"));
+
+   file = filestream_open(temp_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+   if (!file)
+   {
+      free(temp_path);
+      return false;
+   }
+
+   ret = filestream_write(file, data, size);
+
+   /* A buffered write reports a full disk at close, not at write,
+    * so both have to agree before the rename goes ahead. */
+   if (filestream_close(file) != 0)
+   {
+      free(file);
+      filestream_delete(temp_path);
+      free(temp_path);
+      return false;
+   }
+
+   if (ret != size)
+   {
+      filestream_delete(temp_path);
+      free(temp_path);
+      return false;
+   }
+
+   if (filestream_rename(temp_path, path) == 0)
+   {
+      free(temp_path);
+      return true;
+   }
+
+   /* POSIX rename replaces the destination; the Win32 one refuses an
+    * existing destination, so it needs the target gone first. */
+   filestream_delete(path);
+   if (filestream_rename(temp_path, path) == 0)
+   {
+      free(temp_path);
+      return true;
+   }
+
+   filestream_delete(temp_path);
+   free(temp_path);
+   return false;
+}
+
 char *filestream_getline(RFILE *stream)
 {
-   char *newline_tmp  = NULL;
-   size_t cur_size    = 8;
+   char  *newline     = NULL;
+   char  *newline_tmp = NULL;
+   size_t cur_size    = 256;
    size_t idx         = 0;
-   int in             = 0;
-   char *newline      = (char*)malloc(9);
+   int    in;
 
-   if (!stream || !newline)
+   if (!stream)
+      return NULL;
+
+   newline = (char*)malloc(cur_size + 1);
+   if (!newline)
+      return NULL;
+
+   in = filestream_getc(stream);
+   if (in == EOF)
    {
-      if (newline)
-         free(newline);
+      free(newline);
       return NULL;
    }
 
-   in = filestream_getc(stream);
-
    while (in != EOF && in != '\n')
    {
+      newline[idx++] = (char)in;
       if (idx == cur_size)
       {
-         cur_size    *= 2;
-
-         if (!(newline_tmp = (char*)realloc(newline, cur_size + 1)))
+         cur_size   *= 2;
+         newline_tmp = (char*)realloc(newline, cur_size + 1);
+         if (!newline_tmp)
          {
             free(newline);
             return NULL;
          }
-
-         newline     = newline_tmp;
+         newline = newline_tmp;
       }
-
-      newline[idx++] = in;
-      in             = filestream_getc(stream);
+      in = filestream_getc(stream);
    }
 
-   newline[idx]      = '\0';
+   /* Shrink to fit if we overallocated significantly */
+   if (cur_size > idx + 64)
+   {
+      newline_tmp = (char*)realloc(newline, idx + 1);
+      if (newline_tmp)
+         newline = newline_tmp;
+   }
+
+   newline[idx] = '\0';
    return newline;
 }
 

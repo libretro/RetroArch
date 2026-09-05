@@ -57,25 +57,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum wildcard_type
-{
-   RARCH_WILDCARD_CONTENT_DIR = 0,
-   RARCH_WILDCARD_CORE, 
-   RARCH_WILDCARD_GAME, 
-   RARCH_WILDCARD_VIDEO_DRIVER,
-   RARCH_WILDCARD_VIDEO_USER_ROTATION,
-   RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION,
-   RARCH_WILDCARD_CORE_REQUESTED_ROTATION,
-   RARCH_WILDCARD_VIDEO_FINAL_ROTATION,
-   RARCH_WILDCARD_SCREEN_ORIENTATION,
-   RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_CORE_ASPECT_ORIENTATION,
-   RARCH_WILDCARD_PRESET_DIR,
-   RARCH_WILDCARD_PRESET,
-   RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT,
-   RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT
-};
-
 enum rarch_shader_type
 {
    RARCH_SHADER_NONE = 0,
@@ -104,10 +85,11 @@ enum
 enum video_shader_flags
 {
    SHDR_FLAG_MODERN    = (1 << 0), /* Only used for XML shaders. */
-   /* Indicative of whether shader was modified - 
+   /* Indicative of whether shader was modified -
     * for instance from the menus */
    SHDR_FLAG_MODIFIED  = (1 << 1),
-   SHDR_FLAG_DISABLED  = (1 << 2)
+   SHDR_FLAG_DISABLED  = (1 << 2),
+   SHDR_FLAG_TEMPORARY = (1 << 3)
 };
 
 enum gfx_wrap_type
@@ -123,9 +105,10 @@ enum gfx_wrap_type
 
 enum gfx_fbo_scale_flags
 {
-   FBO_SCALE_FLAG_FP_FBO   = (1 << 0),
-   FBO_SCALE_FLAG_SRGB_FBO = (1 << 1),
-   FBO_SCALE_FLAG_VALID    = (1 << 2)
+   FBO_SCALE_FLAG_FP_FBO    = (1 << 0),
+   FBO_SCALE_FLAG_SRGB_FBO  = (1 << 1),
+   FBO_SCALE_FLAG_VALID     = (1 << 2),
+   FBO_SCALE_FLAG_RGB10_FBO = (1 << 3)
 };
 
 struct gfx_fbo_scale
@@ -173,7 +156,7 @@ struct video_shader_pass
          char *vertex; /* Dynamically allocated. Must be free'd. */
          char *fragment; /* Dynamically allocated. Must be free'd. */
       } string;
-      char path[PATH_MAX_LENGTH];
+      char path[NAME_MAX_LENGTH*2];
    } source;
    char alias[64];
    bool mipmap;
@@ -185,7 +168,7 @@ struct video_shader_lut
    unsigned filter;
    enum gfx_wrap_type wrap;
    char id[64];
-   char path[PATH_MAX_LENGTH];
+   char path[NAME_MAX_LENGTH*2];
    bool mipmap;
 };
 
@@ -213,16 +196,10 @@ struct video_shader
    /* Path to the root preset */
    char path[PATH_MAX_LENGTH];
 
-   /* Path to the original preset loaded, if this is a preset 
-    * with the #reference directive, then this will be different 
+   /* Path to the original preset loaded, if this is a preset
+    * with the #reference directive, then this will be different
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
-};
-
-struct wildcard_token
-{
-   enum wildcard_type token_id;
-   char token_name[64];
 };
 
 /**
@@ -266,14 +243,12 @@ bool video_shader_load_preset_into_shader(const char *path, struct video_shader 
  * Writes a preset to disk. Can be written as a simple preset (With the #reference directive in it) or a full preset.
  **/
 bool video_shader_write_preset(const char *path,
-      const struct video_shader *shader, 
+      const struct video_shader *shader,
       bool reference);
 
 enum rarch_shader_type video_shader_get_type_from_ext(const char *ext, bool *is_preset);
 
-bool video_shader_is_supported(enum rarch_shader_type type);
-
-bool video_shader_any_supported(void);
+enum display_flags video_shader_type_to_flag(enum rarch_shader_type type);
 
 bool video_shader_check_for_changes(void);
 
@@ -302,7 +277,6 @@ void video_shader_dir_check_shader(
       bool pressed_prev);
 
 bool video_shader_combine_preset_and_apply(
-      settings_t *settings,
       enum rarch_shader_type type,
       struct video_shader *menu_shader,
       const char *preset_path,
@@ -317,7 +291,7 @@ bool video_shader_apply_shader(
 
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
-void video_shader_toggle(settings_t *settings);
+void video_shader_toggle(settings_t *settings, bool write);
 
 RETRO_END_DECLS
 

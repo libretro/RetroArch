@@ -35,6 +35,7 @@
 #define CUSTOM_BINDS_U32_COUNT ((RARCH_CUSTOM_BIND_LIST_END - 1) / 32 + 1)
 
 #define OVERLAY_MAX_TOUCH 16
+#define OVERLAY_LIGHTGUN_TRIG_MAX_DELAY 15
 
 RETRO_BEGIN_DECLS
 
@@ -118,7 +119,8 @@ enum INPUT_OVERLAY_FLAGS
    INPUT_OVERLAY_ENABLE  = (1 << 0),
    INPUT_OVERLAY_ALIVE   = (1 << 1),
    INPUT_OVERLAY_BLOCKED = (1 << 2),
-   INPUT_OVERLAY_IS_OSK  = (1 << 3)
+   INPUT_OVERLAY_IS_OSK  = (1 << 3),
+   INPUT_OVERLAY_GAMEPAD_HIDDEN = (1 << 4)
 };
 
 enum OVERLAY_FLAGS
@@ -128,7 +130,9 @@ enum OVERLAY_FLAGS
    OVERLAY_BLOCK_X_SEPARATION = (1 << 2),
    OVERLAY_BLOCK_Y_SEPARATION = (1 << 3),
    OVERLAY_AUTO_X_SEPARATION  = (1 << 4),
-   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5)
+   OVERLAY_AUTO_Y_SEPARATION  = (1 << 5),
+   OVERLAY_HAS_VIEWPORT       = (1 << 6),
+   OVERLAY_VIEWPORT_FILL      = (1 << 7)
 };
 
 enum OVERLAY_DESC_FLAGS
@@ -138,6 +142,34 @@ enum OVERLAY_DESC_FLAGS
    OVERLAY_DESC_EXCLUSIVE           = (1 << 1),
    /* Similar, but only applies after range_mod takes effect */
    OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2)
+};
+
+enum overlay_lightgun_action
+{
+   OVERLAY_LIGHTGUN_ACTION_NONE = 0,
+   OVERLAY_LIGHTGUN_ACTION_TRIGGER,
+   OVERLAY_LIGHTGUN_ACTION_RELOAD,
+   OVERLAY_LIGHTGUN_ACTION_AUX_A,
+   OVERLAY_LIGHTGUN_ACTION_AUX_B,
+   OVERLAY_LIGHTGUN_ACTION_AUX_C,
+   OVERLAY_LIGHTGUN_ACTION_START,
+   OVERLAY_LIGHTGUN_ACTION_SELECT,
+   OVERLAY_LIGHTGUN_ACTION_DPAD_UP,
+   OVERLAY_LIGHTGUN_ACTION_DPAD_DOWN,
+   OVERLAY_LIGHTGUN_ACTION_DPAD_LEFT,
+   OVERLAY_LIGHTGUN_ACTION_DPAD_RIGHT,
+
+   OVERLAY_LIGHTGUN_ACTION_END
+};
+
+enum overlay_mouse_button
+{
+   OVERLAY_MOUSE_BTN_NONE = 0,
+   OVERLAY_MOUSE_BTN_LMB,
+   OVERLAY_MOUSE_BTN_RMB,
+   OVERLAY_MOUSE_BTN_MMB,
+
+   OVERLAY_MOUSE_BTN_END
 };
 
 /* Overlay driver acts as a medium between input drivers
@@ -241,7 +273,6 @@ struct overlay
 
    unsigned load_images_size;
    unsigned id;
-   unsigned pos_increment;
 
    size_t size;
    size_t pos;
@@ -250,6 +281,15 @@ struct overlay
    float x, y, w, h;
    float center_x, center_y;
    float aspect_ratio;
+
+   /* Viewport override - normalized coordinates (0.0-1.0) */
+   struct
+   {
+      float x;
+      float y;
+      float w;
+      float h;
+   } viewport;
 
    struct
    {
@@ -285,6 +325,7 @@ struct overlay
    char name[64];
 
    uint8_t flags;
+    bool viewport_override_logged;
 };
 
 typedef struct input_overlay_state
@@ -304,6 +345,47 @@ typedef struct input_overlay_state
    int touch_count;
 } input_overlay_state_t;
 
+typedef struct input_overlay_mouse_state
+{
+   float scale_x;
+   float scale_y;
+
+   int16_t prev_screen_x;
+   int16_t prev_screen_y;
+
+   /* Bits 0-2 used for LMB, RMB, MMB */
+   uint8_t click;
+   uint8_t hold;
+} input_overlay_mouse_state_t;
+
+/* Non-hitbox input state for pointer, mouse, and lightgun */
+typedef struct input_overlay_pointer_state
+{
+   /* Input pointers that missed every hitbox */
+   struct
+   {
+      int16_t x;
+      int16_t y;
+   } ptr[OVERLAY_MAX_TOUCH];
+   unsigned count;
+
+   /* Main pointer, full screen */
+   int16_t screen_x;
+   int16_t screen_y;
+
+   struct input_overlay_lightgun_state
+   {
+      /* Input ID based on pointer count */
+      unsigned multitouch_id;
+   } lightgun;
+
+   input_overlay_mouse_state_t mouse;
+
+   /* Mask of requested devices
+    * to avoid unnecessary polling */
+   uint8_t device_mask;
+} input_overlay_pointer_state_t;
+
 struct input_overlay
 {
    struct overlay *overlays;
@@ -312,7 +394,10 @@ struct input_overlay
    void *iface_data;
    const video_overlay_interface_t *iface;
    input_overlay_state_t overlay_state;
+   input_overlay_pointer_state_t pointer_state;
+   struct texture_image **images;
 
+   size_t num_images;
    size_t index;
    size_t size;
 
@@ -363,6 +448,7 @@ typedef struct
    char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
+   struct string_list *image_list;
    size_t size;
    uint16_t overlay_types;
    uint8_t flags;
@@ -384,6 +470,15 @@ void input_overlay_auto_rotate_(
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity);
+
+/**
+ * input_overlay_next_move_touch_masks
+ * @ol : Overlay handle.
+ * 
+ * Finds similar descs in the next overlay (i.e. same location and type)
+ * and moves touch masks from active overlay to next.
+ */
+void input_overlay_next_move_touch_masks(input_overlay_t *ol);
 
 /**
  * input_overlay_set_scale_factor:

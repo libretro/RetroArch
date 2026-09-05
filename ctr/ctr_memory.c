@@ -40,7 +40,7 @@ void ctr_free_pages(u32 pages)
    u32 linear_free_pages;
    u32 stack_free, stack_usage, stack_free_pages;
 
-   if(!pages)
+   if (!pages)
       return;
 
    linear_free_pages    = ctr_get_linear_free() >> 12;
@@ -54,31 +54,31 @@ void ctr_free_pages(u32 pages)
 #endif
 
    stack_free           = ctr_get_stack_free();
-   stack_usage          = __stacksize__ > stack_free 
+   stack_usage          = __stacksize__ > stack_free
       ? __stacksize__ - stack_free
       : 0;
 
-   stack_free           = stack_free > __stack_size_extra 
-      ? __stack_size_extra 
+   stack_free           = stack_free > __stack_size_extra
+      ? __stack_size_extra
       : stack_free;
 
    stack_free_pages     = stack_free >> 12;
 
-   if(linear_free_pages + (stack_free_pages - (stack_usage >> 12)) > pages)
+   if (linear_free_pages + (stack_free_pages - (stack_usage >> 12)) > pages)
    {
       stack_free_pages -= (stack_usage >> 12);
       stack_free_pages  = stack_free_pages > pages ? pages : stack_free_pages;
       linear_free_pages = pages - stack_free_pages;
    }
-   else if(linear_free_pages + stack_free_pages > pages)
+   else if (linear_free_pages + stack_free_pages > pages)
       stack_free_pages = pages - linear_free_pages;
    else
       return;
 
-   if(linear_free_pages)
+   if (linear_free_pages)
       ctr_linear_free_pages(linear_free_pages);
 
-   if(stack_free_pages)
+   if (stack_free_pages)
    {
       u32 tmp;
       svcControlMemory(&tmp, __stack_bottom,

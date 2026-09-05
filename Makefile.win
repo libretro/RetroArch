@@ -34,14 +34,13 @@ HAVE_WINMM = 1
 
 HAVE_SDL      := 0
 HAVE_SDL2     := 0
+HAVE_SDL3     := 0
 HAVE_RSOUND   := 0
 
-HAVE_STB_FONT := 1
 HAVE_FREETYPE := 1
 HAVE_FFMPEG   := 0
 
 HAVE_CG       := 1
-HAVE_ZLIB     := 1
 HAVE_CC_RESAMPLER := 1
 
 ifeq ($(HAVE_CG), 1)
@@ -64,18 +63,17 @@ SDL2_LIBS        := -lSDL2
 SDL2_CFLAGS      := -ISDL2 -DHAVE_SDL2
 endif
 
+ifeq ($(HAVE_SDL3), 1)
+SDL3_LIBS        := -lSDL3
+SDL3_CFLAGS      := -ISDL3 -DHAVE_SDL3
+endif
+
 ifeq ($(HAVE_D3D8), 1)
 D3D8_LIBS        := -ld3d8
-ifeq ($(HAVE_D3DX), 1)
-D3DX8_LIBS       := -ld3dx8
-endif
 endif
 
 ifeq ($(HAVE_D3D9), 1)
 D3D9_LIBS        := -ld3d9
-ifeq ($(HAVE_D3DX), 1)
-D3DX9_LIBS       := -ld3dx9
-endif
 endif
 
 ifeq ($(HAVE_RSOUND), 1)
@@ -89,6 +87,7 @@ AVUTIL_LIBS      := -lavutil
 SWSCALE_LIBS     := -lswscale
 AVFORMAT_LIBS    := -lavformat
 SWRESAMPLE_LIBS  := -lswresample
+AVDEVICE_LIBS    := -lavdevice
 FFMPEG_LIBS      := -lws2_32 -lz
 endif
 
@@ -98,7 +97,7 @@ OS               := Win32
 OBJ              :=
 LIBS             := -lm
 DEFINES			  :=
-DEFINES          += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
+DEFINES          += -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
 LDFLAGS          := -L. -static-libgcc
 
 include Makefile.common
@@ -131,8 +130,8 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
    CXXFLAGS += -O0 -g
 else
-   CFLAGS += -O3 -ffast-math
-   CXXFLAGS += -O3 -ffast-math
+   CFLAGS += -O3
+   CXXFLAGS += -O3
 endif
 
 CFLAGS += $(DEF_FLAGS) -Wall -Wno-unused-result -Wno-unused-variable -I. -Ideps
@@ -169,7 +168,7 @@ $(OBJDIR)/%.o: %.cpp | $(dir $@)
 $(OBJDIR)/%.o: %.rc $(HEADERS)
 	@-mkdir -p $(dir $@) || mkdir $(subst /,\,$(dir $@)) || echo .
 	@$(if $(Q), $(shell echo echo WINDRES $<),)
-	$(Q)$(WINDRES) -o $@ $<
+	$(Q)$(WINDRES) $(DEFINES) -o $@ $<
 
 clean:
 	rm -rf $(OBJDIR)

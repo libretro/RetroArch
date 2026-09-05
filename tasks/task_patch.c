@@ -20,11 +20,14 @@
 /* TODO/FIXME - turn this into actual task */
 
 #include <stdint.h>
+#include <limits.h>
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include <compat/msvc.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -35,6 +38,11 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../configuration.h"
+#include "patch_stream.h"
+
+#ifdef HAVE_XDELTA
+#include <encodings/encoding_vcdiff.h>
+#endif
 
 enum bps_mode
 {
@@ -57,7 +65,8 @@ enum patch_error
    PATCH_TARGET_INVALID,
    PATCH_SOURCE_CHECKSUM_INVALID,
    PATCH_TARGET_CHECKSUM_INVALID,
-   PATCH_PATCH_CHECKSUM_INVALID
+   PATCH_PATCH_CHECKSUM_INVALID,
+   PATCH_PATCH_UNSUPPORTED
 };
 
 struct bps_data
@@ -74,7 +83,6 @@ struct bps_data
    size_t source_relative_offset;
    size_t target_relative_offset;
    size_t output_offset;
-   uint32_t modify_checksum;
    uint32_t source_checksum;
    uint32_t target_checksum;
 };
@@ -90,7 +98,6 @@ struct ups_data
    unsigned patch_offset;
    unsigned source_offset;
    unsigned target_offset;
-   unsigned patch_checksum;
    unsigned source_checksum;
    unsigned target_checksum;
 };
@@ -98,35 +105,67 @@ struct ups_data
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
       const uint8_t*, uint64_t, uint8_t**, uint64_t*);
 
-static uint8_t bps_read(struct bps_data *bps)
+/* BPS and UPS both close with a CRC-32 of the patch file's own bytes,
+ * little endian, in the last four.  It depends on nothing but the
+ * patch, which is already whole in memory, so it can be settled before
+ * anything the patch merely *claims* is acted on.  That matters because
+ * the declared target length is attacker-controlled and is turned into
+ * a malloc long before either applier reaches its trailer: a 20-byte
+ * file can ask for the whole 4 GiB a UPS length field can name.
+ * Checking here costs one fold over a file measured in kilobytes and
+ * throws out anything that is not a patch at all before it can name a
+ * size.  Both appliers still verify it again in place at the end - this
+ * is a gate, not a replacement. */
+static bool patch_self_checksum_ok(const uint8_t *patch, uint64_t patch_len)
 {
-   uint8_t data         = bps->modify_data[bps->modify_offset++];
-   bps->modify_checksum = ~(encoding_crc32(
-         ~bps->modify_checksum, &data, 1));
-   return data;
+   uint32_t want = 0;
+   unsigned i;
+
+   if (patch_len < 4)
+      return false;
+   for (i = 0; i < 4; i++)
+      want |= (uint32_t)patch[patch_len - 4 + i] << (i * 8);
+   return encoding_crc32(0, patch, (size_t)(patch_len - 4)) == want;
 }
 
-static uint64_t bps_decode(struct bps_data *bps)
+static uint8_t bps_read(struct bps_data *bps)
+{
+   /* Reads past the end yield zeroes rather than walking off the
+    * buffer. The rolling per-byte checksum that used to live here is
+    * gone - the patch bytes are one contiguous span, so the modify
+    * checksum is folded in one call at the point it is compared. */
+   if (bps->modify_offset < bps->modify_length)
+      return bps->modify_data[bps->modify_offset++];
+   bps->modify_offset++;
+   return 0x00;
+}
+
+static bool bps_decode(struct bps_data *bps, uint64_t *out)
 {
    uint64_t data = 0, shift = 1;
 
    for (;;)
    {
-      uint8_t x  = bps_read(bps);
+      uint8_t x;
+
+      if (bps->modify_offset >= bps->modify_length)
+         return false;
+      x = bps->modify_data[bps->modify_offset++];
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - data) / shift)
+         return false;
       data      += (x & 0x7f) * shift;
       if (x & 0x80)
-         break;
+      {
+         *out = data;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift    <<= 7;
+      if (data > UINT64_MAX - shift)
+         return false;
       data      += shift;
    }
-
-   return data;
-}
-
-static void bps_write(struct bps_data *bps, uint8_t data)
-{
-   bps->target_data[bps->output_offset++] = data;
-   bps->target_checksum = ~(encoding_crc32(~bps->target_checksum, &data, 1));
 }
 
 static enum patch_error bps_apply_patch(
@@ -147,6 +186,9 @@ static enum patch_error bps_apply_patch(
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
 
+   if (!patch_self_checksum_ok(modify_data, modify_length))
+      return PATCH_PATCH_CHECKSUM_INVALID;
+
    bps.modify_data            = modify_data;
    bps.source_data            = source_data;
    bps.target_data            = *target_data;
@@ -156,22 +198,55 @@ static enum patch_error bps_apply_patch(
    bps.modify_offset          = 0;
    bps.source_offset          = 0;
    bps.target_offset          = 0;
-   bps.modify_checksum        = ~0;
    bps.source_checksum        = 0;
-   bps.target_checksum        = ~0;
+   bps.target_checksum        = 0;
    bps.source_relative_offset = 0;
    bps.target_relative_offset = 0;
    bps.output_offset          = 0;
 
-   if (  (bps_read(&bps) != 'B') ||
-         (bps_read(&bps) != 'P') ||
-         (bps_read(&bps) != 'S') ||
-         (bps_read(&bps) != '1'))
+   if (     (bps_read(&bps) != 'B')
+         || (bps_read(&bps) != 'P')
+         || (bps_read(&bps) != 'S')
+         || (bps_read(&bps) != '1'))
       return PATCH_PATCH_INVALID_HEADER;
 
-   modify_source_size  = bps_decode(&bps);
-   modify_target_size  = bps_decode(&bps);
-   modify_markup_size  = bps_decode(&bps);
+   {
+      uint64_t raw_source;
+      uint64_t raw_target;
+      uint64_t raw_markup;
+
+      if (   !bps_decode(&bps, &raw_source)
+          || !bps_decode(&bps, &raw_target)
+          || !bps_decode(&bps, &raw_markup))
+         return PATCH_PATCH_INVALID;
+
+      /* All three sizes are decoded from attacker-controlled
+       * variable-length integers in the patch file with no
+       * inherent upper bound (each can reach UINT64_MAX).
+       * Three separate sanity checks are required before they
+       * are assigned into size_t locals, where (on 32-bit
+       * targets) values above SIZE_MAX would silently truncate:
+       *  - markup_size is consumed via bps_read below; if it
+       *    exceeds the remaining bytes in modify_data, those
+       *    reads run off the end of the patch buffer.
+       *  - target_size on a 32-bit host would truncate at the
+       *    assignment, producing a smaller-than-expected
+       *    allocation while bps.target_length stays at the raw
+       *    uint64.  Subsequent target_data[output_offset++]
+       *    writes OOB by the truncated delta.  Reject anything
+       *    that won't fit in size_t outright; malloc would have
+       *    failed anyway. */
+      if (raw_markup > modify_length - bps.modify_offset)
+         return PATCH_PATCH_INVALID;
+      if (raw_target > (uint64_t)SIZE_MAX)
+         return PATCH_TARGET_ALLOC_FAILED;
+      if (raw_source > (uint64_t)SIZE_MAX)
+         return PATCH_SOURCE_TOO_SMALL;
+
+      modify_source_size = (size_t)raw_source;
+      modify_target_size = (size_t)raw_target;
+      modify_markup_size = (size_t)raw_markup;
+   }
 
    for (i = 0; i < modify_markup_size; i++)
       bps_read(&bps);
@@ -194,45 +269,151 @@ static enum patch_error bps_apply_patch(
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
-      size_t length = bps_decode(&bps);
-      unsigned mode = length & 3;
+      uint64_t decoded_len;
+      size_t _len;
+      unsigned mode;
 
-      length = (length >> 2) + 1;
+      if (!bps_decode(&bps, &decoded_len))
+         return PATCH_PATCH_INVALID;
+      _len = (size_t)decoded_len;
+      mode = _len & 3;
+
+      _len          = (_len >> 2) + 1;
+
+      /* Every action mode below performs target_data[output_
+       * offset++] = ... up to _len times.  Pre-this-patch
+       * none of the modes checked output_offset against
+       * bps.target_length, so a malicious .bps could write
+       * arbitrary attacker-chosen bytes past the malloc'd
+       * target_data buffer (heap-buffer-overflow WRITE).
+       * Bound _len against the remaining target capacity
+       * once at the top so each mode below stays in
+       * bounds. */
+      if (   bps.output_offset >= bps.target_length
+          || _len              >  bps.target_length - bps.output_offset)
+         return PATCH_TARGET_INVALID;
 
       switch (mode)
       {
          case SOURCE_READ:
-            while (length--)
-               bps_write(&bps, bps.source_data[bps.output_offset]);
+            /* SOURCE_READ reads from source_data[output_offset]
+             * for the same output_offset range, so the same
+             * bound applies to source_data too. */
+            if (bps.output_offset + _len > bps.source_length)
+               return PATCH_SOURCE_INVALID;
+            memcpy(bps.target_data + bps.output_offset,
+                   bps.source_data + bps.output_offset, _len);
+            bps.output_offset += _len;
             break;
 
          case TARGET_READ:
-            while (length--)
-               bps_write(&bps, bps_read(&bps));
+            /* TARGET_READ reads _len bytes from modify_data via
+             * bps_read.  The action loop's outer guard only
+             * confirms there is at least one command's worth
+             * of bytes (modify_offset < modify_length - 12);
+             * a long _len plus the 12-byte trailer can read
+             * past modify_length. */
+            if (bps.modify_offset + _len > bps.modify_length - 12)
+               return PATCH_PATCH_INVALID;
+            memcpy(bps.target_data + bps.output_offset,
+                   bps.modify_data + bps.modify_offset, _len);
+            bps.output_offset += _len;
+            bps.modify_offset += _len;
             break;
 
          case SOURCE_COPY:
          case TARGET_COPY:
          {
-            int    offset = (int)bps_decode(&bps);
-            bool negative = offset & 1;
+            uint64_t decoded_offset;
+            uint64_t distance;
+            bool     negative;
 
-            offset >>= 1;
+            if (!bps_decode(&bps, &decoded_offset))
+               return PATCH_PATCH_INVALID;
 
-            if (negative)
-               offset = -offset;
+            /* The seek is sign-magnitude inside the varint itself -
+             * "number negative | (abs(offset) << 1)" - so it has to
+             * stay unsigned all the way to the cursor.  Routing it
+             * through int did two things wrong.  It truncated any
+             * magnitude at 2^31, and, before that, (int)(uint64) is
+             * implementation-defined once the value passes INT_MAX:
+             * on a two's-complement compiler a magnitude of 2^30
+             * became a negative int whose arithmetic >>1 handed back
+             * the magnitude with the sign flipped, so a copy 1 GiB
+             * into a disc image seeked backwards instead of forwards
+             * and the patch failed its target checksum.  The format
+             * itself has no size ceiling, and neither does the
+             * decoder, so neither should this. */
+            negative = (decoded_offset & 1) ? true : false;
+            distance = decoded_offset >> 1;
+
+            /* size_t is the cursor type; on a 32-bit host a distance
+             * wider than that cannot be represented, let alone be in
+             * bounds. */
+            if (distance > (uint64_t)SIZE_MAX)
+               return (mode == SOURCE_COPY) ? PATCH_SOURCE_INVALID
+                                            : PATCH_TARGET_INVALID;
 
             if (mode == SOURCE_COPY)
             {
-               bps.source_offset += offset;
-               while (length--)
-                  bps_write(&bps, bps.source_data[bps.source_offset++]);
+               /* Apply the seek without ever leaving the buffer:
+                * source_offset <= source_length holds on entry, so
+                * both arms below are computed in-range rather than
+                * wrapped and caught afterwards. */
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.source_offset)
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.source_length
+                           - bps.source_offset))
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset += (size_t)distance;
+               }
+               if (_len > bps.source_length - bps.source_offset)
+                  return PATCH_SOURCE_INVALID;
+               memcpy(bps.target_data + bps.output_offset,
+                      bps.source_data + bps.source_offset, _len);
+               bps.output_offset += _len;
+               bps.source_offset += _len;
             }
             else
             {
-               bps.target_offset += offset;
-               while (length--)
-                  bps_write(&bps, bps.target_data[bps.target_offset++]);
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.target_offset)
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.target_length
+                           - bps.target_offset))
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset += (size_t)distance;
+               }
+               if (_len > bps.target_length - bps.target_offset)
+                  return PATCH_TARGET_INVALID;
+               /* TARGET_COPY may deliberately overlap its own output
+                * (an LZ-style repeating run), which memcpy cannot
+                * express; only non-overlapping spans take the bulk
+                * path. */
+               if (bps.output_offset - bps.target_offset >= _len)
+               {
+                  memcpy(bps.target_data + bps.output_offset,
+                         bps.target_data + bps.target_offset, _len);
+                  bps.output_offset += _len;
+                  bps.target_offset += _len;
+               }
+               else
+               {
+                  while (_len--)
+                     bps.target_data[bps.output_offset++] =
+                           bps.target_data[bps.target_offset++];
+               }
                break;
             }
             break;
@@ -241,17 +422,27 @@ static enum patch_error bps_apply_patch(
    }
 
    for (i = 0; i < 32; i += 8)
-      modify_source_checksum |= bps_read(&bps) << i;
+      modify_source_checksum |= (uint32_t)bps_read(&bps) << i;
    for (i = 0; i < 32; i += 8)
-      modify_target_checksum |= bps_read(&bps) << i;
+      modify_target_checksum |= (uint32_t)bps_read(&bps) << i;
 
-   checksum = ~bps.modify_checksum;
+   /* The modify and target checksums are plain CRC-32s of byte
+    * spans that sit whole in memory - the patch bytes consumed so
+    * far and the target bytes emitted so far - so each is one fold
+    * here instead of a one-byte fold per byte moved, the same shape
+    * the source checksum below has always had.  The reader yields
+    * zeroes without advancing into the fold past modify_length, so
+    * the folded span is clamped the same way. */
+   checksum = encoding_crc32(0, bps.modify_data,
+         (bps.modify_offset < bps.modify_length)
+               ? bps.modify_offset : bps.modify_length);
    for (i = 0; i < 32; i += 8)
-      modify_modify_checksum |= bps_read(&bps) << i;
+      modify_modify_checksum |= (uint32_t)bps_read(&bps) << i;
 
    bps.source_checksum = encoding_crc32(0,
          bps.source_data, bps.source_length);
-   bps.target_checksum = ~bps.target_checksum;
+   bps.target_checksum = encoding_crc32(0,
+         bps.target_data, bps.output_offset);
 
    if (bps.source_checksum != modify_source_checksum)
       return PATCH_SOURCE_CHECKSUM_INVALID;
@@ -267,59 +458,87 @@ static enum patch_error bps_apply_patch(
    return PATCH_SUCCESS;
 }
 
+/* The rolling per-byte checksums that used to live in these readers
+ * are gone: every UPS checksum covers a byte span that sits whole in
+ * memory, so each is folded in one call at the point it is compared.
+ * The readers keep their exact bounds behaviour - reads past the end
+ * yield zeroes, the patch and source cursors only advance in bounds,
+ * and the target cursor counts on past the end while writes stop. */
 static uint8_t ups_patch_read(struct ups_data *data)
 {
    if (data && data->patch_offset < data->patch_length)
-   {
-      uint8_t n = data->patch_data[data->patch_offset++];
-      data->patch_checksum =
-         ~(encoding_crc32(~data->patch_checksum, &n, 1));
-      return n;
-   }
+      return data->patch_data[data->patch_offset++];
    return 0x00;
 }
 
 static uint8_t ups_source_read(struct ups_data *data)
 {
    if (data && data->source_offset < data->source_length)
-   {
-      uint8_t n = data->source_data[data->source_offset++];
-      data->source_checksum =
-         ~(encoding_crc32(~data->source_checksum, &n, 1));
-      return n;
-   }
+      return data->source_data[data->source_offset++];
    return 0x00;
 }
 
 static void ups_target_write(struct ups_data *data, uint8_t n)
 {
-
-   if (data && data->target_offset < data->target_length)
-   {
+   if (data->target_offset < data->target_length)
       data->target_data[data->target_offset] = n;
-      data->target_checksum =
-         ~(encoding_crc32(~data->target_checksum, &n, 1));
-   }
-
-   if (data)
-      data->target_offset++;
+   data->target_offset++;
 }
 
-static uint64_t ups_decode(struct ups_data *data)
+/* Copy n bytes source -> target in bulk with the byte loop's exact
+ * cursor semantics: the source cursor stops at source_length and
+ * yields zeroes, the target cursor counts all n on while only
+ * in-bounds bytes land.  This replaces the one-call-per-byte walks
+ * for the skip runs and the end-of-patch drains, which cover the
+ * whole unchanged remainder of the file. */
+static void ups_copy_run(struct ups_data *data, size_t n)
+{
+   size_t s_take = 0, t_room = 0, m;
+   if (data->source_offset < data->source_length)
+      s_take = data->source_length - data->source_offset;
+   if (s_take > n)
+      s_take = n;
+   if (data->target_offset < data->target_length)
+      t_room = data->target_length - data->target_offset;
+   if (t_room > n)
+      t_room = n;
+   m = (s_take < t_room) ? s_take : t_room;
+   memcpy(data->target_data + data->target_offset,
+          data->source_data + data->source_offset, m);
+   if (t_room > s_take)
+      memset(data->target_data + data->target_offset + s_take,
+             0, t_room - s_take);
+   data->source_offset += (unsigned)s_take;
+   data->target_offset += (unsigned)n;
+}
+
+static bool ups_decode(struct ups_data *data, uint64_t *out)
 {
    uint64_t offset = 0, shift = 1;
 
    for (;;)
    {
-      uint8_t x = ups_patch_read(data);
+      uint8_t x;
+
+      if (data->patch_offset >= data->patch_length)
+         return false;
+      x = data->patch_data[data->patch_offset++];
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - offset) / shift)
+         return false;
       offset   += (x & 0x7f) * shift;
 
       if (x & 0x80)
-         break;
+      {
+         *out = offset;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift <<= 7;
+      if (offset > UINT64_MAX - shift)
+         return false;
       offset += shift;
    }
-   return offset;
 }
 
 static enum patch_error ups_apply_patch(
@@ -329,6 +548,8 @@ static enum patch_error ups_apply_patch(
 {
    size_t i;
    struct ups_data data;
+   uint64_t decoded_source_length;
+   uint64_t decoded_target_length;
    unsigned source_read_length;
    unsigned target_read_length;
    uint32_t patch_result_checksum = 0;
@@ -345,23 +566,30 @@ static enum patch_error ups_apply_patch(
    data.patch_offset    = 0;
    data.source_offset   = 0;
    data.target_offset   = 0;
-   data.patch_checksum  = ~0;
-   data.source_checksum = ~0;
-   data.target_checksum = ~0;
+   data.source_checksum = 0;
+   data.target_checksum = 0;
 
    if (data.patch_length < 18)
       return PATCH_PATCH_INVALID;
 
    if (
-         (ups_patch_read(&data) != 'U') ||
-         (ups_patch_read(&data) != 'P') ||
-         (ups_patch_read(&data) != 'S') ||
-         (ups_patch_read(&data) != '1')
+            (ups_patch_read(&data) != 'U')
+         || (ups_patch_read(&data) != 'P')
+         || (ups_patch_read(&data) != 'S')
+         || (ups_patch_read(&data) != '1')
       )
       return PATCH_PATCH_INVALID;
 
-   source_read_length = (unsigned)ups_decode(&data);
-   target_read_length = (unsigned)ups_decode(&data);
+   if (!patch_self_checksum_ok(patchdata, patchlength))
+      return PATCH_PATCH_CHECKSUM_INVALID;
+
+   if (   !ups_decode(&data, &decoded_source_length)
+       || !ups_decode(&data, &decoded_target_length)
+       || decoded_source_length > UINT_MAX
+       || decoded_target_length > UINT_MAX)
+      return PATCH_PATCH_INVALID;
+   source_read_length = (unsigned)decoded_source_length;
+   target_read_length = (unsigned)decoded_target_length;
 
    if (     (data.source_length != source_read_length)
          && (data.source_length != target_read_length))
@@ -381,12 +609,16 @@ static enum patch_error ups_apply_patch(
    }
 
    data.target_length = (unsigned)*targetlength;
-   
+
    while (data.patch_offset < data.patch_length - 12)
    {
-      unsigned length = (unsigned)ups_decode(&data);
-      while (length--)
-         ups_target_write(&data, ups_source_read(&data));
+      uint64_t decoded_len;
+      unsigned __len;
+
+      if (!ups_decode(&data, &decoded_len) || decoded_len > UINT_MAX)
+         return PATCH_PATCH_INVALID;
+      __len = (unsigned)decoded_len;
+      ups_copy_run(&data, __len);
 
       for (;;)
       {
@@ -397,22 +629,26 @@ static enum patch_error ups_apply_patch(
       }
    }
 
-   while (data.source_offset < data.source_length)
-      ups_target_write(&data, ups_source_read(&data));
-   while (data.target_offset < data.target_length)
-      ups_target_write(&data, ups_source_read(&data));
+   if (data.source_offset < data.source_length)
+      ups_copy_run(&data, data.source_length - data.source_offset);
+   if (data.target_offset < data.target_length)
+      ups_copy_run(&data, data.target_length - data.target_offset);
 
    for (i = 0; i < 4; i++)
-      source_read_checksum |= ups_patch_read(&data) << (i * 8);
+      source_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
    for (i = 0; i < 4; i++)
-      target_read_checksum |= ups_patch_read(&data) << (i * 8);
+      target_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
 
-   patch_result_checksum = ~data.patch_checksum;
-   data.source_checksum  = ~data.source_checksum;
-   data.target_checksum  = ~data.target_checksum;
+   patch_result_checksum = encoding_crc32(0,
+         data.patch_data, data.patch_offset);
+   data.source_checksum  = encoding_crc32(0,
+         data.source_data, data.source_offset);
+   data.target_checksum  = encoding_crc32(0, data.target_data,
+         (data.target_offset < data.target_length)
+               ? data.target_offset : data.target_length);
 
    for (i = 0; i < 4; i++)
-      patch_read_checksum |= ups_patch_read(&data) << (i * 8);
+      patch_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
 
    if (patch_result_checksum != patch_read_checksum)
       return PATCH_PATCH_INVALID;
@@ -437,19 +673,41 @@ static enum patch_error ups_apply_patch(
    return PATCH_SOURCE_INVALID;
 }
 
+/* Scans the record stream and allocates the target buffer.
+ *
+ * Two lengths come out of this, and conflating them is what made a
+ * truncating patch overrun its own allocation:
+ *
+ * @targetlength is what the patched content ends up being - the record
+ * span, or the size named by the truncation extension when there is one.
+ *
+ * @alloclength is how much memory the applier is allowed to touch.  It
+ * covers the whole source (which is copied in wholesale) and every
+ * record end (records may legally sit past the truncation point; the
+ * bytes are written and then dropped), so it can exceed @targetlength.
+ *
+ * The buffer is zeroed rather than merely reserved: a patch that grows
+ * the content need not write every byte it adds, and the gap between
+ * the source and the first record beyond it would otherwise be whatever
+ * the heap last held.  The streaming applier in tasks/patch_stream.c
+ * zero-fills the same gap, so this also keeps the two paths agreeing on
+ * the output. */
 static enum patch_error ips_alloc_targetdata(
       const uint8_t *patchdata, uint64_t patchlen,
       uint64_t sourcelength,
-      uint8_t **targetdata, uint64_t *targetlength)
+      uint8_t **targetdata, uint64_t *targetlength,
+      uint64_t *alloclength)
 {
    uint8_t *prov_alloc;
    uint32_t offset = 5;
+   uint64_t memlen = sourcelength;
    *targetlength   = sourcelength;
+   *alloclength    = sourcelength;
 
    for (;;)
    {
       uint32_t address;
-      unsigned length;
+      size_t _len;
 
       if (offset > patchlen - 3)
          break;
@@ -462,7 +720,9 @@ static enum patch_error ips_alloc_targetdata(
       {
          if (offset == patchlen)
          {
-            prov_alloc     = (uint8_t*)malloc((size_t)*targetlength);
+            *targetlength  = memlen;
+            *alloclength   = memlen;
+            prov_alloc     = (uint8_t*)calloc(1, (size_t) * alloclength);
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
             free(*targetdata);
@@ -475,7 +735,8 @@ static enum patch_error ips_alloc_targetdata(
             size          |= patchdata[offset++] << 8;
             size          |= patchdata[offset++] << 0;
             *targetlength  = size;
-            prov_alloc     = (uint8_t*)malloc((size_t)*targetlength);
+            *alloclength   = (memlen > (uint64_t)size) ? memlen : (uint64_t)size;
+            prov_alloc     = (uint8_t*)calloc(1, (size_t) * alloclength);
 
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
@@ -488,15 +749,15 @@ static enum patch_error ips_alloc_targetdata(
       if (offset > patchlen - 2)
          break;
 
-      length  = patchdata[offset++] << 8;
-      length |= patchdata[offset++] << 0;
+      _len  = patchdata[offset++] << 8;
+      _len |= patchdata[offset++] << 0;
 
-      if (length) /* Copy */
+      if (_len) /* Copy */
       {
-         if (offset > patchlen - length)
+         if ((uint64_t)_len > patchlen - offset)
             break;
 
-         while (length--)
+         while (_len--)
          {
             address++;
             offset++;
@@ -507,20 +768,20 @@ static enum patch_error ips_alloc_targetdata(
          if (offset > patchlen - 3)
             break;
 
-         length  = patchdata[offset++] << 8;
-         length |= patchdata[offset++] << 0;
+         _len  = patchdata[offset++] << 8;
+         _len |= patchdata[offset++] << 0;
 
-         if (length == 0) /* Illegal */
+         if (_len == 0) /* Illegal */
             break;
 
-         while (length--)
+         while (_len--)
             address++;
 
          offset++;
       }
 
-      if (address > *targetlength)
-         *targetlength = address;
+      if (address > memlen)
+         memlen = address;
    }
 
    return PATCH_PATCH_INVALID;
@@ -532,26 +793,33 @@ static enum patch_error ips_apply_patch(
       uint8_t **targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
+   uint64_t alloclength         = 0;
+   uint64_t copylength          = 0;
    enum patch_error error_patch = PATCH_UNKNOWN;
-   if (  patchlen      < 8   ||
-         patchdata[0] != 'P' ||
-         patchdata[1] != 'A' ||
-         patchdata[2] != 'T' ||
-         patchdata[3] != 'C' ||
-         patchdata[4] != 'H')
+   if (     patchlen      < 8
+         || patchdata[0] != 'P'
+         || patchdata[1] != 'A'
+         || patchdata[2] != 'T'
+         || patchdata[3] != 'C'
+         || patchdata[4] != 'H')
       return PATCH_PATCH_INVALID;
-   
+
    if ((error_patch = ips_alloc_targetdata(
                patchdata, patchlen, sourcelength,
-               targetdata, targetlength)) != PATCH_SUCCESS)
+               targetdata, targetlength, &alloclength)) != PATCH_SUCCESS)
       return error_patch;
 
-   memcpy(*targetdata, sourcedata, (size_t)sourcelength);
+   /* ips_alloc_targetdata never reports less than the source, so this
+    * clamp does not bite today; it is here so that the copy stays tied
+    * to the size of the buffer rather than to a separate variable that
+    * a later change could let drift apart from it again. */
+   copylength = (sourcelength < alloclength) ? sourcelength : alloclength;
+   memcpy(*targetdata, sourcedata, (size_t)copylength);
 
    for (;;)
    {
       uint32_t address;
-      unsigned length;
+      size_t _len;
 
       if (offset > patchlen - 3)
          break;
@@ -566,28 +834,21 @@ static enum patch_error ips_apply_patch(
             return PATCH_SUCCESS;
 
          if (offset == patchlen - 3)
-         {
-#if 0
-            uint32_t size  = patchdata[offset++] << 16;
-            size          |= patchdata[offset++] << 8;
-            size          |= patchdata[offset++] << 0;
-#endif
             return PATCH_SUCCESS;
-         }
       }
 
       if (offset > patchlen - 2)
          break;
 
-      length  = patchdata[offset++] << 8;
-      length |= patchdata[offset++] << 0;
+      _len  = patchdata[offset++] << 8;
+      _len |= patchdata[offset++] << 0;
 
-      if (length) /* Copy */
+      if (_len) /* Copy */
       {
-         if (offset > patchlen - length)
+         if ((uint64_t)_len > patchlen - offset)
             break;
 
-         while (length--)
+         while (_len--)
             (*targetdata)[address++] = patchdata[offset++];
       }
       else /* RLE */
@@ -595,13 +856,13 @@ static enum patch_error ips_apply_patch(
          if (offset > patchlen - 3)
             break;
 
-         length  = patchdata[offset++] << 8;
-         length |= patchdata[offset++] << 0;
+         _len  = patchdata[offset++] << 8;
+         _len |= patchdata[offset++] << 0;
 
-         if (length == 0) /* Illegal */
+         if (_len == 0) /* Illegal */
             break;
 
-         while (length--)
+         while (_len--)
             (*targetdata)[address++] = patchdata[offset];
 
          offset++;
@@ -611,20 +872,43 @@ static enum patch_error ips_apply_patch(
    return PATCH_PATCH_INVALID;
 }
 
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+/* .xdelta patches are VCDIFF (RFC 3284); the decoder lives in
+ * libretro-common and this is only the shape adapter. */
+static enum patch_error xdelta_apply_patch(
+        const uint8_t *patchdata, uint64_t patchlen,
+        const uint8_t *sourcedata, uint64_t sourcelength,
+        uint8_t **targetdata, uint64_t *targetlength)
+{
+   uint8_t *out = NULL;
+   size_t   len = 0;
+
+   if (      patchlen     > (uint64_t)((size_t)-1)
+         ||  sourcelength > (uint64_t)((size_t)-1))
+      return PATCH_PATCH_INVALID;
+
+   if (!vcdiff_decode(patchdata, (size_t)patchlen,
+            sourcedata, (size_t)sourcelength, &out, &len))
+      return PATCH_PATCH_INVALID;
+
+   free(*targetdata);
+   *targetdata   = out;
+   *targetlength = (uint64_t)len;
+   return PATCH_SUCCESS;
+}
+#endif
+
 static bool apply_patch_content(uint8_t **buf,
       ssize_t *size, const char *patch_desc, const char *patch_path,
       patch_func_t func, void *patch_data, int64_t patch_size)
 {
-   settings_t *settings     = config_get_ptr();
-   bool show_notification   = settings ?
-         settings->bools.notification_show_patch_applied : false;
    enum patch_error err     = PATCH_UNKNOWN;
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
    uint64_t target_size     = 0;
    uint8_t *patched_content = NULL;
 
-   RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
+   RARCH_LOG("[Patch] Found \"%s\" file in \"%s\", attempting to patch...\n",
          patch_desc, patch_path);
 
    if ((err = func((const uint8_t*)patch_data, patch_size, ret_buf,
@@ -635,35 +919,45 @@ static bool apply_patch_content(uint8_t **buf,
       *size = target_size;
 
       /* Show an OSD message */
-      if (show_notification)
+      if (config_get_ptr()->bools.notification_show_patch_applied)
       {
+         char msg[128];
          const char *patch_filename = path_basename_nocompression(patch_path);
-         char msg[256];
-
-         msg[0] = '\0';
-
-         snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
+         size_t _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_APPLYING_PATCH),
                patch_filename ? patch_filename :
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));
-         runloop_msg_queue_push(msg, 1, 180, false, NULL,
+         runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
-   }
-   else
-      RARCH_ERR("%s %s: %s #%u\n",
-            msg_hash_to_str(MSG_FAILED_TO_PATCH),
-            patch_desc,
-            msg_hash_to_str(MSG_ERROR),
-            (unsigned)err);
 
-   return true;
+      return true;
+   }
+
+   RARCH_ERR("[Patch] %s %s: %s #%u\n",
+         msg_hash_to_str(MSG_FAILED_TO_PATCH),
+         patch_desc,
+         msg_hash_to_str(MSG_ERROR),
+         (unsigned)err);
+
+   /* A patch that was found but could not be applied is a silent
+    * failure otherwise: the content boots unpatched and nothing on
+    * screen says why. */
+   {
+      char msg[128];
+      size_t _len = snprintf(msg, sizeof(msg), "%s %s",
+            msg_hash_to_str(MSG_FAILED_TO_PATCH), patch_desc);
+      runloop_msg_queue_push(msg, _len, 2, 240, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
+   return false;
 }
 
 static bool try_bps_patch(bool allow_bps, const char *name_bps,
       uint8_t **buf, ssize_t *size)
 {
-   if (     allow_bps 
-         && !string_is_empty(name_bps)
+   if (     allow_bps
+         && name_bps
          && path_is_valid(name_bps)
       )
    {
@@ -690,7 +984,7 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
       uint8_t **buf, ssize_t *size)
 {
    if (     allow_ups
-         && !string_is_empty(name_ups)
+         && name_ups
          && path_is_valid(name_ups)
       )
    {
@@ -715,8 +1009,8 @@ static bool try_ups_patch(bool allow_ups, const char *name_ups,
 static bool try_ips_patch(bool allow_ips,
       const char *name_ips, uint8_t **buf, ssize_t *size)
 {
-   if (     allow_ips 
-         && !string_is_empty(name_ips)
+   if (     allow_ips
+         && name_ips
          && path_is_valid(name_ips)
       )
    {
@@ -738,6 +1032,34 @@ static bool try_ips_patch(bool allow_ips,
    return false;
 }
 
+static bool try_xdelta_patch(bool allow_xdelta,
+                          const char *name_xdelta, uint8_t **buf, ssize_t *size)
+{
+#if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+   if (     allow_xdelta
+            && name_xdelta
+            && path_is_valid(name_xdelta)
+           )
+   {
+      int64_t patch_size;
+      bool ret                 = false;
+      void *patch_data         = NULL;
+
+      if (!filestream_read_file(name_xdelta, &patch_data, &patch_size))
+         return false;
+
+      if (patch_size >= 0)
+         ret = apply_patch_content(buf, size, "Xdelta", name_xdelta,
+                                   xdelta_apply_patch, patch_data, patch_size);
+
+      if (patch_data)
+         free(patch_data);
+      return ret;
+    }
+#endif
+    return false;
+}
+
 /**
  * patch_content:
  * @buf          : buffer of the content file.
@@ -746,26 +1068,193 @@ static bool try_ips_patch(bool allow_ips,
  * Apply patch to the content file in-memory.
  *
  **/
+/* Does an indexed continuation patch exist for any format?  patch_content
+ * applies "<name>1", "<name>2", ... on top of the first patch, each as a
+ * further whole-buffer pass over the previous result.  A streamed first
+ * patch cannot carry that chain, so its presence disqualifies the
+ * streaming path and the caller falls back to the whole-buffer flow. */
+static bool patch_stream_indexed_exists(const char *name)
+{
+   char probe[PATH_MAX_LENGTH];
+   size_t _len;
+
+   if (string_is_empty(name))
+      return false;
+
+   _len = strlcpy(probe, name, sizeof(probe));
+   if (_len + 2 > sizeof(probe))
+      return false;
+   probe[_len]     = '1';
+   probe[_len + 1] = '\0';
+   return path_is_valid(probe);
+}
+
+/* Resolve which patch a load would apply and open a streaming applier for
+ * it, so the patch can advance as the content arrives instead of running
+ * as a separate pass afterwards.
+ *
+ * The selection rules are patch_content's, and deliberately so: the same
+ * preference gating, the same IPS -> BPS -> UPS attempt order.  Nothing
+ * here depends on the content itself - only on the preference flags and
+ * which patch files exist - which is exactly why the decision can be
+ * hoisted ahead of the load.
+ *
+ * Returns NULL, leaving the caller on the existing whole-buffer path,
+ * when there is nothing to apply, when the resolved patch is a format
+ * with no streaming applier for this build (xdelta, where support was
+ * compiled out), when indexed continuation patches are present, or on
+ * any read/parse failure.  In every one of those
+ * cases the caller loads as before and calls patch_content, so the
+ * fallback is the untouched original flow rather than a reimplementation
+ * of it.
+ *
+ * On success the caller owns the returned stream and must also free
+ * *patch_data, which the stream borrows and therefore needs alive until
+ * patch_stream_finish. */
+patch_stream_t *patch_content_stream_open(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      bool is_xdelta_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      const char *name_xdelta,
+      size_t src_len,
+      void **patch_data,
+      const char **patch_path)
+{
+   bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
+   bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
+   const char     *name = NULL;
+   patch_stream_t *ps   = NULL;
+   int64_t patch_size   = 0;
+   int     which        = -1; /* 0 ips, 1 bps, 2 ups */
+
+   const char *fmt = NULL;
+
+   *patch_data = NULL;
+   if (patch_path)
+      *patch_path = NULL;
+
+   /* Several explicitly-defined preferences: patch_content refuses the
+    * whole operation, so there is nothing to stream. */
+   if (    (unsigned)is_ips_pref
+         + (unsigned)is_bps_pref
+         + (unsigned)is_ups_pref
+         + (unsigned)is_xdelta_pref > 1)
+      return NULL;
+
+   /* patch_content's attempt order. */
+   if (allow_ips && !string_is_empty(name_ips) && path_is_valid(name_ips))
+   {
+      name  = name_ips;
+      which = 0;
+   }
+   else if (allow_bps && !string_is_empty(name_bps) && path_is_valid(name_bps))
+   {
+      name  = name_bps;
+      which = 1;
+   }
+   else if (allow_ups && !string_is_empty(name_ups) && path_is_valid(name_ups))
+   {
+      name  = name_ups;
+      which = 2;
+   }
+   else if (allow_xdelta && !string_is_empty(name_xdelta)
+         && path_is_valid(name_xdelta))
+   {
+      name  = name_xdelta;
+      which = 3;
+   }
+   else
+      return NULL;
+
+   /* An indexed continuation of any format means the whole-buffer chain
+    * has to run; do not stream the first patch out from under it. */
+   if (     patch_stream_indexed_exists(name_ips)
+         || patch_stream_indexed_exists(name_bps)
+         || patch_stream_indexed_exists(name_ups)
+         || patch_stream_indexed_exists(name_xdelta))
+      return NULL;
+
+   if (!filestream_read_file(name, patch_data, &patch_size))
+      return NULL;
+   if (patch_size <= 0)
+   {
+      free(*patch_data);
+      *patch_data = NULL;
+      return NULL;
+   }
+
+   switch (which)
+   {
+      case 0:
+         ps  = patch_stream_ips_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "IPS";
+         break;
+      case 1:
+         ps  = patch_stream_bps_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "BPS";
+         break;
+      case 2:
+         ps  = patch_stream_ups_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "UPS";
+         break;
+      default:
+         /* Returns NULL when built without xdelta support, which the
+          * caller already reads as "not streamable" and answers with
+          * the whole-buffer pass. */
+         ps  = patch_stream_xdelta_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "xdelta";
+         break;
+   }
+
+   if (!ps)
+   {
+      free(*patch_data);
+      *patch_data = NULL;
+      return NULL;
+   }
+
+   if (patch_path)
+      *patch_path = name;
+
+   RARCH_LOG("[Patch] Found \"%s\" file in \"%s\", streaming with content...\n",
+         fmt, name);
+   return ps;
+}
+
 bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,
       bool is_ups_pref,
+      bool is_xdelta_pref,
       const char *name_ips,
       const char *name_bps,
       const char *name_ups,
+      const char *name_xdelta,
       uint8_t **buf,
       void *data)
 {
-   ssize_t *size    = (ssize_t*)data;
-   bool allow_ups   = !is_bps_pref && !is_ips_pref;
-   bool allow_ips   = !is_ups_pref && !is_bps_pref;
-   bool allow_bps   = !is_ups_pref && !is_ips_pref;
+   ssize_t *size     = (ssize_t*)data;
+   bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
+   bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
 
    if (    (unsigned)is_ips_pref
          + (unsigned)is_bps_pref
-         + (unsigned)is_ups_pref > 1)
+         + (unsigned)is_ups_pref
+         + (unsigned)is_xdelta_pref > 1)
    {
-      RARCH_WARN("%s\n",
+      RARCH_WARN("[Patch] %s\n",
             msg_hash_to_str(MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED));
       return false;
    }
@@ -773,29 +1262,51 @@ bool patch_content(
    /* Attempt to apply first (non-indexed) patch */
    if (     try_ips_patch(allow_ips, name_ips, buf, size)
          || try_bps_patch(allow_bps, name_bps, buf, size)
-         || try_ups_patch(allow_ups, name_ups, buf, size))
+         || try_ups_patch(allow_ups, name_ups, buf, size)
+         || try_xdelta_patch(allow_xdelta, name_xdelta, buf, size))
    {
       /* A patch has been found. Now attempt to apply
        * any additional 'indexed' patch files */
-      size_t name_ips_len    = strlen(name_ips);
-      size_t name_bps_len    = strlen(name_bps);
-      size_t name_ups_len    = strlen(name_ups);
-      char *name_ips_indexed = (char*)malloc((name_ips_len + 2) * sizeof(char));
-      char *name_bps_indexed = (char*)malloc((name_bps_len + 2) * sizeof(char));
-      char *name_ups_indexed = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      size_t name_ips_len       = strlen(name_ips);
+      size_t name_bps_len       = strlen(name_bps);
+      size_t name_ups_len       = strlen(name_ups);
+      size_t name_xdelta_len    = strlen(name_xdelta);
+      char *name_ips_indexed    = (char*)malloc((name_ips_len + 2) * sizeof(char));
+      char *name_bps_indexed    = (char*)malloc((name_bps_len + 2) * sizeof(char));
+      char *name_ups_indexed    = (char*)malloc((name_ups_len + 2) * sizeof(char));
+      char *name_xdelta_indexed = (char*)malloc((name_xdelta_len + 2) * sizeof(char));
       /* First patch already applied -> index
        * for subsequent patches starts at 1 */
       size_t patch_index     = 1;
 
+      /* NULL-check all four mallocs together: the strlcpy calls
+       * below dereference each buffer, and the loop that follows
+       * does indexed writes into all four.  On OOM free whichever
+       * succeeded (free(NULL) is a no-op) and skip the indexed-
+       * patch scan entirely - returning true matches the behaviour
+       * when no extra indexed patches are found on disk, which is
+       * the expected outcome for nearly all content. */
+      if (   !name_ips_indexed || !name_bps_indexed
+          || !name_ups_indexed || !name_xdelta_indexed)
+      {
+         free(name_ips_indexed);
+         free(name_bps_indexed);
+         free(name_ups_indexed);
+         free(name_xdelta_indexed);
+         return true;
+      }
+
       strlcpy(name_ips_indexed, name_ips, (name_ips_len + 1) * sizeof(char));
       strlcpy(name_bps_indexed, name_bps, (name_bps_len + 1) * sizeof(char));
       strlcpy(name_ups_indexed, name_ups, (name_ups_len + 1) * sizeof(char));
+      strlcpy(name_xdelta_indexed, name_xdelta, (name_xdelta_len + 1) * sizeof(char));
 
       /* Ensure that we NUL terminate *after* the
        * index character */
       name_ips_indexed[name_ips_len + 1] = '\0';
       name_bps_indexed[name_bps_len + 1] = '\0';
       name_ups_indexed[name_ups_len + 1] = '\0';
+      name_xdelta_indexed[name_xdelta_len + 1] = '\0';
 
       /* try to patch "*.ipsX" */
       while (patch_index < 10)
@@ -815,10 +1326,12 @@ bool patch_content(
          name_ips_indexed[name_ips_len] = index_char;
          name_bps_indexed[name_bps_len] = index_char;
          name_ups_indexed[name_ups_len] = index_char;
+         name_xdelta_indexed[name_xdelta_len] = index_char;
 
          if (     !try_ips_patch(allow_ips, name_ips_indexed, buf, size)
                && !try_bps_patch(allow_bps, name_bps_indexed, buf, size)
-               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size))
+               && !try_ups_patch(allow_ups, name_ups_indexed, buf, size)
+               && !try_xdelta_patch(allow_xdelta, name_xdelta_indexed, buf, size))
             break;
 
          patch_index++;
@@ -827,6 +1340,7 @@ bool patch_content(
       free(name_ips_indexed);
       free(name_bps_indexed);
       free(name_ups_indexed);
+      free(name_xdelta_indexed);
 
       return true;
    }

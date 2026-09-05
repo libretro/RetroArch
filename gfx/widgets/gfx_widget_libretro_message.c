@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -69,7 +71,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0,                                  /* bg_width */
    0,                                  /* bg_height */
    0,                                  /* text_padding */
-   0xE0E0E0FF,                         /* text_color */
+   TEXT_COLOR_INFO,                    /* text_color */
    0,                                  /* frame_width */
 
    0,                                  /* message_duration */
@@ -84,7 +86,7 @@ static gfx_widget_libretro_message_state_t p_w_libretro_message_st = {
    0.0f,                               /* text_y_end */
    0.0f,                               /* alpha */
 
-   COLOR_HEX_TO_FLOAT(0x909090, 1.0f), /* frame_color */
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f), /* frame_color */
 
    0,                                  /* message_len */
 
@@ -164,7 +166,7 @@ void gfx_widget_set_libretro_message(
    gfx_widget_font_data_t *font_msg_queue     = &p_dispwidget->gfx_widget_fonts.msg_queue;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(msg))
+   if (!msg || !*msg)
       return;
 
    /* Cache message parameters */
@@ -224,10 +226,11 @@ static void gfx_widget_libretro_message_layout(
    state->text_padding = (unsigned)(((float)font_msg_queue->line_height * (2.0f / 3.0f)) + 0.5f);
    state->frame_width  = divider_width;
 
-   state->bg_x         = 0.0f;
+   /* X-alignment with other widget types */
+   state->bg_x         = (float)state->text_padding * 2.0f;
    state->bg_y_start   = (float)last_video_height + (float)state->frame_width;
    state->bg_y_end     = (float)last_video_height - (float)state->bg_height;
-   state->text_x       = (float)state->text_padding;
+   state->text_x       = state->bg_x + (float)state->text_padding;
    state->text_y_start = state->bg_y_start + ((float)state->bg_height * 0.5f) +
          (float)font_msg_queue->line_centre_offset;
    state->text_y_end   = state->bg_y_end + ((float)state->bg_height * 0.5f) +
@@ -236,7 +239,7 @@ static void gfx_widget_libretro_message_layout(
    /* Update values that are dependent upon message length */
    state->bg_width     = state->text_padding * 2;
 
-   if (!string_is_empty(state->message))
+   if (*state->message)
       state->bg_width += font_driver_get_message_width(
             font_msg_queue->font, state->message,
             state->message_len, 1.0f);
@@ -425,6 +428,20 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                video_width,
                video_height,
                state->bg_x,
+               bg_y,
+               state->frame_width,
+               state->bg_height,
+               video_width,
+               video_height,
+               state->frame_color,
+               NULL);
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               state->bg_x,
                bg_y - (float)state->frame_width,
                state->bg_width + state->frame_width,
                state->frame_width,
@@ -485,6 +502,12 @@ static void gfx_widget_libretro_message_free(void)
 
 /* Widget definition */
 
+static bool gfx_widget_libretro_message_visible(void)
+{
+   gfx_widget_libretro_message_state_t *state = &p_w_libretro_message_st;
+   return state->status != GFX_WIDGET_LIBRETRO_MESSAGE_IDLE;
+}
+
 const gfx_widget_t gfx_widget_libretro_message = {
    NULL, /* init */
    gfx_widget_libretro_message_free,
@@ -492,5 +515,6 @@ const gfx_widget_t gfx_widget_libretro_message = {
    NULL, /* context_destroy */
    gfx_widget_libretro_message_layout,
    gfx_widget_libretro_message_iterate,
-   gfx_widget_libretro_message_frame
+   gfx_widget_libretro_message_frame,
+   gfx_widget_libretro_message_visible
 };

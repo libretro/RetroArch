@@ -5,7 +5,7 @@ BUILD_FOR_PCSX2    = 0
 DEBUG              = 0
 SCREEN_DEBUG       = 0
 GRIFFIN_BUILD      = 0
-HAVE_THREADS       = 0
+HAVE_THREADS       = 1
 MUTE_WARNINGS      = 1
 WHOLE_ARCHIVE_LINK = 0
 HAVE_STATIC_DUMMY ?= 0
@@ -42,25 +42,26 @@ DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJ += griffin/griffin.o
 	DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_SCREENSHOTS -DHAVE_REWIND -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS
-	DEFINES += -DHAVE_ZLIB -DHAVE_NO_BUILTINZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -D_7ZIP_ST -DHAVE_CC_RESAMPLER -DHAVE_AUDIOMIXER
+	DEFINES += -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_RJPEG -DHAVE_FILTERS_BUILTIN -DHAVE_7ZIP -DHAVE_CC_RESAMPLER -DHAVE_AUDIOMIXER
 	DEFINES += -DHAVE_VIDEO_FILTER -DHAVE_RGUI -DHAVE_WINDOW_OFFSET
 	DEFINES += -DHAVE_DSP_FILTER
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1
 	HAVE_RPNG = 1
+	HAVE_RWEBP = 1
+	HAVE_RDDS = 1
 	HAVE_RJPEG = 1
 	HAVE_RBMP = 1
 	HAVE_MENU = 1
 	HAVE_CONFIGFILE = 1
 	HAVE_PATCH = 1
+	HAVE_PATCH = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 	HAVE_CHEATS = 1
 	HAVE_RGUI = 1
 	HAVE_MATERIALUI = 0
 	HAVE_XMB = 0
 	HAVE_OZONE = 0
-	HAVE_ZLIB = 1
-	HAVE_NO_BUILTINZLIB = 1
 	HAVE_7ZIP = 1
 	HAVE_SCREENSHOTS = 1
 	HAVE_REWIND = 1
@@ -82,14 +83,18 @@ ifeq ($(strip $(PS2SDK)),)
 $(error "Please set PS2SDK in your environment. export PS2SDK=<path to>ps2sdk")
 endif
 
+ifneq ($(V),1)
+        Q := @
+endif
+
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
-INCDIR += -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
+INCDIR += -Ilibretro-common/include -Ideps
 
 LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
 # Lib cdvd is needed to get proper time
-LIBS += -lpatches -lgskit -ldmakit -lps2_drivers -lz -lelf-loader
+LIBS += -lpatches -lgskit -ldmakit -lps2_drivers -lelf-loader
 
-CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) $(DEFINES) -DPS2 -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) $(DISABLE_WARNINGS) $(DEFINES) -DPS2 -fsingle-precision-constant -ffast-math
 ASFLAGS = $(CFLAGS)
 
 EE_OBJS += $(OBJ)
@@ -105,8 +110,25 @@ EE_GPVAL = $(GPVAL)
 
 all: $(EE_BIN)
 
+define INFO
+EE_BIN: $(EE_BIN)
+EE_CC: $(EE_CC)
+EE_CFLAGS: $(EE_CFLAGS)
+EE_CXX: $(EE_CXX)
+EE_CXXFLAGS: $(EE_CXXFLAGS)
+EE_INCS: $(EE_INCS)
+EE_OBJS: $(EE_OBJS)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
 clean:
-	rm -f $(EE_BIN) $(EE_OBJS)
+	@$(if $(Q), $(shell echo echo RM $<),)
+	$(Q)rm -f $(EE_BIN) $(EE_OBJS)
 
 prepare:
 	ps2client -h $(PS2_IP) reset
@@ -116,7 +138,11 @@ run:
 	ps2client -h $(PS2_IP) execee host:$(EE_BIN)
 
 sim:
-	PCSX2 --elf=$(PWD)/$(EE_BIN) --nogui
+ifeq ($(shell uname), Darwin)
+	/Applications/PCSX2.app/Contents/MacOS/PCSX2 -elf $(PWD)/$(EE_BIN)
+else
+	PCSX2 -elf $(PWD)/$(EE_BIN) -nogui
+endif
 
 debug: clean all run
 
@@ -126,3 +152,15 @@ release: all
 #Include preferences
 include $(PS2SDK)/samples/Makefile.pref
 include $(PS2SDK)/samples/Makefile.eeglobal_cpp
+
+%.o: %.c
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@
+
+%.o: %.cc
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@
+
+%.o: %.cpp
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@

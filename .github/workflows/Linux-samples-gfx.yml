@@ -1,0 +1,607 @@
+name: CI Linux samples/gfx
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-gfx:
+    name: Build and run samples/gfx
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run vulkan_extension_count_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_extension_count
+        run: |
+          set -eu
+          # Regression test for the heap-overflow fix in
+          # gfx/common/vulkan_common.c::vulkan_find_device_extensions.
+          # Pre-fix the function appended the required-extension list
+          # twice -- once via memcpy at the top of the body, then
+          # again in a per-element loop -- consuming
+          # (count_initial + 2*num_required + num_optional) slots in
+          # the caller's buffer.  vulkan_context_create_device_wrapper
+          # sized its malloc for (count_initial + num_required +
+          # num_optional) entries, so a libretro core using the Vulkan
+          # HW context-negotiation interface against a GPU exposing at
+          # least one optional extension hit a one-element heap-buffer-
+          # overflow (8 bytes on 64-bit) at the end of the malloc'd
+          # block.  Build under AddressSanitizer so any reintroduction
+          # of the duplicate write is caught at the bounds level.  If
+          # vulkan_common.c amends the append-to-enabled[] block, the
+          # verbatim copy in vulkan_extension_count_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_extension_count_test
+          timeout 60 ./vulkan_extension_count_test
+          echo "[pass] vulkan_extension_count_test"
+
+      - name: Build and run vulkan_swapchain_clamp_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_swapchain_clamp
+        run: |
+          set -eu
+          # Regression test for the unclamped-swapchain-image-count
+          # fix in gfx/common/vulkan_common.c::vulkan_create_swapchain.
+          # Pre-fix the two vkGetSwapchainImagesKHR calls (count
+          # query + image fill) had no clamp between them, so a driver
+          # returning more than VULKAN_MAX_SWAPCHAIN_IMAGES (16) images
+          # on the second call wrote past context.swapchain_images[16]
+          # and every loop bounded by num_swapchain_images walked past
+          # its compile-time-sized companion array (~12 such loops
+          # across init/deinit/textures/buffers/descriptor pools/
+          # command buffers/readback and direct vk->swapchain[i]
+          # uses).  Build under AddressSanitizer so any reintroduction
+          # of either the request-side or the post-create clamp is
+          # caught at the bounds level.  If vulkan_common.c amends
+          # the cap or the post-create clamp, the verbatim copies in
+          # vulkan_swapchain_clamp_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_swapchain_clamp_test
+          timeout 60 ./vulkan_swapchain_clamp_test
+          echo "[pass] vulkan_swapchain_clamp_test"
+
+      - name: Build and run vulkan_texture_size_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_texture_size
+        run: |
+          set -eu
+          # Regression test for the 32-bit-overflow fix in
+          # gfx/drivers/vulkan.c::vulkan_create_texture's staging-
+          # buffer sizing.  Pre-fix the buffer_info.size calculation
+          # (buffer_width * height) was unsigned*unsigned in 32-bit
+          # before being widened to VkDeviceSize on assignment.  With
+          # dimensions large enough to wrap (e.g. 65536x16385x4 ->
+          # 0x1_0004_0000 truncates to 0x40000), the staging buffer
+          # was malloc'd at the wrapped (small) size while the per-row
+          # upload memcpy loop walked the full width x height,
+          # writing past the mapped region into adjacent heap memory.
+          # Reachable from libretro cores supplying oversized
+          # retro_framebuffer dimensions and from vulkan_load_texture
+          # / vulkan_set_texture_frame.  Build under AddressSanitizer
+          # so any reintroduction of the 32-bit arithmetic is caught
+          # at the bounds level.  If vulkan.c amends the size
+          # calculation or upload-loop strides, the verbatim copies
+          # in vulkan_texture_size_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_texture_size_test
+          timeout 60 ./vulkan_texture_size_test
+          echo "[pass] vulkan_texture_size_test"
+
+      - name: Build and run slang_texture_index_bounds_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/slang_texture_index_bounds
+        run: |
+          set -eu
+          # Regression test for the texture-semantic index-bounds
+          # fix in gfx/drivers_shader/slang_process.cpp::
+          # validate_texture_semantic_index().  Pre-fix only
+          # SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT was bounded against
+          # reflection->pass_number; ORIGINAL_HISTORY, PASS_FEEDBACK
+          # and USER had no upper bound on their array index.  The
+          # index suffix in arrayed semantic names like
+          # `OriginalHistory42` is parsed via strtoul in
+          # slang_name_to_texture_semantic_array() and propagates
+          # into the downstream resize_minimum() calls in
+          # set_ubo_texture_offset() and the direct sampler-binding
+          # loop.  A malicious slang shader declaring
+          # `OriginalHistory4294967294` makes std::vector::resize
+          # request ~128 GiB, throwing std::bad_alloc which
+          # propagates unhandled out of the filter-chain create
+          # path, terminating the process.  Reachable from any
+          # malicious slang preset (downloaded via Online Updater
+          # or shipped third-party).  Build under AddressSanitizer
+          # so any reintroduction is caught at the bounds level.
+          # If slang_process.cpp amends the cap table or the
+          # dispatch structure, the verbatim copy in
+          # slang_texture_index_bounds_test.c must follow.
+          make clean all SANITIZER=address
+          test -x slang_texture_index_bounds_test
+          timeout 60 ./slang_texture_index_bounds_test
+          echo "[pass] slang_texture_index_bounds_test"
+
+      - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_mailbox_init_leak
+        run: |
+          set -eu
+          # Regression test for the partial-init leak fix in
+          # gfx/common/vulkan_common.c::vulkan_emulated_mailbox_init.
+          # Pre-fix the function had three sequential allocations
+          # (scond_new, slock_new, sthread_create) and on any of the
+          # latter two failures returned `false` directly, leaking
+          # the already-allocated cond and/or lock.  Both production
+          # call sites in vulkan_create_swapchain ignore the return
+          # value, so an init failure also left vk->mailbox.lock ==
+          # NULL and vk->mailbox.cond == NULL while VK_DATA_FLAG_
+          # EMULATING_MAILBOX was still set, setting up a NULL-deref
+          # the next time vulkan_acquire_next_image routed into
+          # vulkan_emulated_mailbox_acquire_next_image (slock_lock
+          # on a NULL pointer).  Fix routes every early failure
+          # through `goto error` to a single deinit call, which is
+          # null-safe and ends with a memset, leaving the struct in
+          # the same shape the deinit-on-shutdown path produces and
+          # tripping the existing `mailbox.swapchain == VK_NULL_
+          # HANDLE` guard at vulkan_acquire_next_image.  Build under
+          # AddressSanitizer with leak detection so any
+          # reintroduction is caught at the leak level.  If
+          # vulkan_common.c amends the init or deinit, the verbatim
+          # copies in vulkan_mailbox_init_leak_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_mailbox_init_leak_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 \
+             ./vulkan_mailbox_init_leak_test
+          echo "[pass] vulkan_mailbox_init_leak_test"
+
+      - name: Build and run vulkan_ctx_double_free_test (ASan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_ctx_double_free
+        run: |
+          set -eu
+          # Regression test for the double-free / use-after-free
+          # fix in the Vulkan context drivers' set_video_mode error
+          # paths: gfx/drivers_context/wayland_vk_ctx.c,
+          # w_vk_ctx.c, x_vk_ctx.c.  Pre-fix each set_video_mode
+          # called its own destroy()/destroy_resources()+free() on
+          # ctx_data before returning false; the caller in
+          # gfx/drivers/vulkan.c::vulkan_init then ran
+          # vulkan_free()->ctx_driver->destroy(ctx_data) on the
+          # already-freed pointer (UAF read of struct fields, then
+          # a second free of the same allocation).  Reachable from
+          # vulkan_surface_create() failure (missing extension /
+          # driver issue), Wayland's set_video_mode_common_*
+          # helpers failing, X11's XGetVisualInfo returning NULL,
+          # or win32_set_video_mode failing.  Cocoa (cocoa_vk_ctx)
+          # and Android (android_vk_ctx) already handle this
+          # correctly by returning false without freeing -- the
+          # fix makes Wayland/Win32/X11 match.  Build under
+          # AddressSanitizer so any reintroduction is caught at
+          # the bounds level (UAF + double-free both fire).  If
+          # any of the three context drivers amends the
+          # set_video_mode error path to once again destroy
+          # ctx_data, the verbatim copy in
+          # vulkan_ctx_double_free_test.c must follow.
+          make clean all SANITIZER=address
+          test -x vulkan_ctx_double_free_test
+          timeout 60 ./vulkan_ctx_double_free_test
+          echo "[pass] vulkan_ctx_double_free_test"
+
+      - name: Build and run gfx_thumbnail_status_atomic_test (TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_status_atomic
+        run: |
+          set -eu
+          # Regression test for the cross-thread thumbnail status
+          # synchronisation in gfx/gfx_thumbnail.c.  The .status
+          # field is read by the video thread (gfx_thumbnail_draw)
+          # and written by the upload-callback thread
+          # (gfx_thumbnail_handle_upload), with a release-store /
+          # acquire-load pairing that guards the texture / width /
+          # height fields published alongside the AVAILABLE
+          # status.  Pre-port the file used a hand-rolled
+          # __atomic_* / _Interlocked / volatile shim.  Post-port
+          # the .status field is retro_atomic_int_t and the
+          # accesses route through retro_atomic_*_int macros.
+          #
+          # ThreadSanitizer is the right validator for this test:
+          # it instruments every atomic load and store and would
+          # flag a missing-barrier regression as a data race, even
+          # on x86 TSO where the hardware otherwise hides the bug.
+          # ASan/UBSan would not catch barrier removal at all
+          # (no out-of-bounds access, no UB).  The test also
+          # carries static-assertion checks that validate the
+          # struct layout invariant (.status size == sizeof(int))
+          # so the field's atomic type does not change the
+          # gfx_thumbnail_t ABI.  If gfx_thumbnail.c amends
+          # GFX_THUMB_STATUS_STORE / GFX_THUMB_STATUS_LOAD or the
+          # .status field type, the verbatim copies in
+          # gfx_thumbnail_status_atomic_test.c must follow.
+          #
+          # STRESS_ITERS is bounded here because the default of
+          # 1000000 measures ~145 s on a single core before TSan
+          # multiplies it, and this step allows 60 s.  20000 runs
+          # in ~2.4 s under TSan on one core and still routes every
+          # round trip through the instrumented release/acquire
+          # pair; the default stays at 1000000 for local soak runs.
+          make clean all SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000"
+          test -x gfx_thumbnail_status_atomic_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 \
+             ./gfx_thumbnail_status_atomic_test
+          echo "[pass] gfx_thumbnail_status_atomic_test"
+
+      - name: Build and run gfx_widgets_msg_queue_race_test (TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_msg_queue_race
+        run: |
+          set -eu
+          # Regression test for the producer-producer race fix on
+          # dispgfx_widget_t::msg_queue in gfx/gfx_widgets.c.
+          # Pre-fix the FIFO had no dedicated lock: producers could
+          # be invoked from any thread (the threaded task system at
+          # libretro-common/queues/task_queue.c runs a worker
+          # thread; gfx/video_driver.c::video_driver_frame released
+          # RUNLOOP_MSG_QUEUE_LOCK before calling the producer, so
+          # main-thread producers ran unlocked) yet there was no
+          # lock dedicated to msg_queue itself.  Post-fix a
+          # msg_queue_lock is acquired around every fifo_write (in
+          # gfx_widgets_msg_queue_push), every fifo_read (in
+          # gfx_widgets_iterate), and the avail-check that gates
+          # them.  The outer fast-path FIFO_*_AVAIL checks that
+          # used to wrap the function bodies were dropped: reading
+          # the FIFO cursors outside the lock is itself a data
+          # race against the locked writes (TSan-detectable;
+          # benign on x86 TSO but real on weak-memory hardware).
+          #
+          # ThreadSanitizer is the right validator: it instruments
+          # every memory access on fifo_buffer_t::end and
+          # ::first and would flag a missing-lock regression as a
+          # data race on the producer side, the consumer side, or
+          # the avail check.  ASan/UBSan would not catch the lock
+          # removal at all.  halt_on_error=1 makes TSan exit
+          # non-zero on the first observed race, which is what we
+          # want for CI: any race here means the production
+          # locking discipline is broken.
+          #
+          # The test mirrors the post-fix locking protocol of
+          # gfx_widgets_msg_queue_push and gfx_widgets_iterate's
+          # FIFO interaction; the widget allocation, font
+          # measurement, and animation push that wrap the actual
+          # FIFO calls in production are not part of the race and
+          # are stripped from the test.  If gfx_widgets.c amends
+          # the locking around msg_queue, the verbatim copies in
+          # gfx_widgets_msg_queue_race_test.c must follow.
+          make clean all SANITIZER=thread
+          test -x gfx_widgets_msg_queue_race_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 \
+             ./gfx_widgets_msg_queue_race_test
+          echo "[pass] gfx_widgets_msg_queue_race_test"
+
+      - name: Build and run gfx_animation_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_animation_sanitize
+        run: |
+          set -eu
+          # Regression test for the stack overflow in
+          # gfx/gfx_animation.c::gfx_animation_ticker().  Pre-fix it
+          # passed PATH_MAX_LENGTH to utf8cpy() as the destination
+          # size, in all five places it copies, regardless of what the
+          # caller had provided.  utf8cpy()'s second argument is a
+          # size in BYTES; ticker->len, which the surrounding logic
+          # uses, is a width in GLYPHS -- so the guard
+          # `str_len <= ticker->len` compared glyph counts and then
+          # copied bytes, and one glyph of CJK or emoji is three or
+          # four of them.  PATH_MAX_LENGTH is 512 and not one of the
+          # 27 call sites in tree provides that much (mostly
+          # NAME_MAX_LENGTH, 64 bytes in one RGUI case), so the
+          # function was licensed to write 511 bytes plus a
+          # terminator into any of them.  Reachable from content: RGUI
+          # sets ticker.len from term_layout.width and ticker.s to a
+          # NAME_MAX_LENGTH stack buffer, so a playlist entry with a
+          # long enough Japanese, Cyrillic or emoji title overran it.
+          # Fixed by giving the struct an s_len field carrying the
+          # destination size in bytes, mirroring the dst_str_len that
+          # gfx_animation_ticker_smooth() had all along.
+          #
+          # AddressSanitizer is the validator: the test allocates
+          # every ticker destination at exactly the length it hands
+          # over, so a single byte past the end is a report rather
+          # than a stomp on whatever followed.  It also sweeps every
+          # easing type through push/update/expire, frees animation
+          # subjects while their animation is in flight, and deinits
+          # with animations still running.  If gfx_animation.c amends
+          # the destination sizing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_animation_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_animation_sanitize_test
+          echo "[pass] gfx_animation_sanitize_test"
+
+
+      - name: Build and run gfx_widgets_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_sanitize
+        run: |
+          set -eu
+          # Sanitizer sweep of gfx/gfx_widgets.c, focused on the
+          # message queue: it has the same shape as the
+          # gfx_animation ticker overflow -- a caller-supplied
+          # string, internal fixed buffers, and arithmetic that has
+          # to keep glyphs and bytes apart.  Multi-byte text,
+          # over-long text, text with no break opportunity, embedded
+          # newlines and empty strings across every message/title
+          # pairing, a 256-message overflow to drive eviction and
+          # free, and eight init/deinit cycles with messages still
+          # outstanding at teardown.
+          #
+          # Like the thumbnail sweep this pins no historical defect
+          # and is a tripwire.  Two things decide whether it sweeps
+          # anything: the font metric stubs return a non-zero
+          # proportional width (a zero-width font makes every "does
+          # this fit" test succeed and the layout paths are never
+          # entered), and gfx_widgets_init() returning false makes
+          # the whole run vacuous -- hence the asserted push and
+          # frame counters.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_widgets_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run display_servers_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers
+        run: |
+          set -eu
+          # Regression test for the XRandR query handling in
+          # gfx/display_servers/dispserv_x11.c.  Pre-fix every query
+          # was treated as infallible: XRRGetOutputInfo() returns NULL
+          # for an output the server cannot describe and
+          # info->connection was read straight off it; likewise
+          # XRRGetCrtcInfo() and crtc->width, XRRGetScreenResources(),
+          # and XRRGetScreenInfo() feeding a XRRFreeScreenConfigInfo()
+          # that is not NULL-tolerant.  On any X server advertising
+          # RandR without a usable output -- Xvfb, a headless box, a
+          # display with everything disconnected -- RetroArch died
+          # inside video_display_server_init() before drawing
+          # anything.  Both orientation walks also indexed
+          # screen->crtcs with the output's ncrtc, reading past the
+          # end and then configuring a crtc other than the one whose
+          # geometry had just been read.
+          #
+          # The test stubs libXrandr and the handful of Xlib entry
+          # points the driver reaches, so it needs the headers but no
+          # X server, no display and no RandR extension: what is under
+          # test is what happens when the queries FAIL, and a working
+          # display is exactly the environment that cannot produce
+          # that.  The stub numbers screen crtcs from 100 and output
+          # crtcs from 200 so which array was walked is read off the
+          # call log, and tracks every pointer it hands out so a
+          # double free or leak is attributed to the case that caused
+          # it.  If dispserv_x11.c amends the query handling, this
+          # goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_test
+          timeout 60 ./display_servers_test
+          echo "[pass] display_servers_test"
+
+      - name: Build and run display_servers_kms_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers_kms
+        run: |
+          set -eu
+          # Regression test for two defects in
+          # gfx/display_servers/dispserv_kms.c::
+          # kms_display_server_get_resolution_list().  g_drm_connector
+          # is owned by gfx/common/drm_common.c and set to NULL by
+          # drm_free(), which runs on every context teardown -- a
+          # resolution change, a fullscreen toggle, a driver reinit --
+          # while the display server object outlives it, so the menu
+          # could ask for the list with no connector to describe and
+          # the function read straight through NULL.  g_drm_mode, the
+          # sibling global, was already tested for exactly this a few
+          # lines earlier.  Separately the qsort() at the end was
+          # passed `count`, which was declared zero and never
+          # assigned; `j` is the element count.  So the sort ran over
+          # zero elements and the resolution list came back in
+          # whatever order the connector reported its modes -- no
+          # crash, no diagnostic, just an unsorted list that looks
+          # plausible.
+          #
+          # The test fabricates the drmModeConnector the driver reads,
+          # so it needs the libdrm headers but links nothing from
+          # libdrm: presenting a connector that is absent, empty, or
+          # reporting modes in an awkward order is the whole exercise
+          # and a real one will not do it on request.  The ordering
+          # check feeds modes in descending size, which a working sort
+          # must reverse and a broken one leaves untouched.  If
+          # dispserv_kms.c amends either, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_kms_test
+          timeout 60 ./display_servers_kms_test
+          echo "[pass] display_servers_kms_test"
+
+      - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_anim
+        run: |
+          set -eu
+          # Regression test for the two faults that froze animated
+          # thumbnails in the file browser, in gfx/gfx_thumbnail.c.
+          #
+          # gfx_thumbnail_request_file malloc'd its tag and never set
+          # tag->path, so gfx_thumbnail_anim_open - which
+          # gfx_thumbnail_handle_upload feeds that field for every
+          # load with no video stream to adopt - read uninitialised
+          # heap and returned without touching the file.  Undefined
+          # behaviour rather than a stable failure: a freed tag is
+          # the size of the next one, so the allocator commonly
+          # handed back a block still holding the previous entry's
+          # path, which opened an animation and looked like the
+          # feature working.  gfx_thumbnail_request fills the field
+          # for playlist entries, which is why playlists animated and
+          # the browser did not.
+          #
+          # Separately, anim_install marked windowed animations
+          # 'read pending' via !data_transfer_complete().  A window
+          # never completes - done stays clear for its whole life -
+          # and the pump animate() uses (iterate_while) declines
+          # windows by design, so pending forced the pump branch, the
+          # pump was a no-op, and animate() returned before ever
+          # advancing a frame, every vsync, forever.  That is every
+          # path-based open: animated WEBP, APNG, and any WEBM/MP4
+          # with no still stream to adopt.
+          #
+          # The oracle links the real gfx_thumbnail.c and measures
+          # animation as DISTINCT FRAMES REACHING THE TEXTURE - the
+          # video-driver stub CRCs every upload - not as internal
+          # flags, which is what every earlier test in this area got
+          # wrong and why neither fault was caught.  A 188-byte
+          # 3-frame lossless WEBP is embedded, so there are no
+          # fixtures.  One lane drives anim_open with a garbage path
+          # and requires no stream; one opens the real animation and
+          # requires multiple distinct uploads within bounded paced
+          # vsyncs, naming the windowed+pending deadlock explicitly
+          # before the timeout would.  Both pre-fix trees score zero
+          # uploads in 240 vsyncs.  If gfx_thumbnail.c amends the
+          # pending decision or the request plumbing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_thumbnail_anim_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (TSan)"
+
+      - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_preview
+        run: |
+          set -eu
+          # Regression test for the file-browser video preview in
+          # gfx/gfx_thumbnail.c, covering the windowed open, the
+          # anim-first status/alpha handshake, and the preview-audio
+          # hand-off to libretro-common/audio/audio_mixer.c.
+          #
+          # Every fault this pins was invisible to a decode-level
+          # test, which is why they shipped one after another:
+          #
+          #  - the windowed open produced a texture and reached
+          #    AVAILABLE but nothing raised alpha, so every video
+          #    decoded perfectly and drew at zero opacity;
+          #  - a LEADING moov left the demuxer's avail below the
+          #    media floor, so the first sample was unreachable, and
+          #    since the feeder anchors at tell==0 nothing ever
+          #    raised the bound - a standstill with no way out;
+          #  - a TRAILING moov cannot be reached by a resident head
+          #    at all, so preview audio was silent on every such
+          #    file until the moov island was committed instead;
+          #  - the mixer hand-off copied the whole container out of
+          #    a partially-committed window (SIGSEGV), took an
+          #    int32_t length that truncated a 7 GB container to
+          #    3.5 GB, dropped every feeder raise for want of an
+          #    M4A arm in audio_mixer_voice_set_avail (the same
+          #    second of audio on a loop), and applied the resident
+          #    bound only under HAVE_ROPUS.
+          #
+          # So this links the REAL gfx_thumbnail.c AND the REAL
+          # audio_mixer.c.  The earlier harness stubbed the mixer and
+          # was therefore modelling the two functions three of those
+          # defects lived in.  The stubbed audio thread consumes at a
+          # settable rate and TOUCHES every byte it is told is
+          # resident, so an over-claimed avail faults under ASan
+          # rather than passing quietly, and it counts feeder stalls
+          # (excluding the file end, where hitting the wall is the
+          # loop point rather than a starved feeder).
+          #
+          # The fixtures are container LAYOUTS, not clips - where the
+          # moov sits, whether media starts past 4 GiB, whether the
+          # moov outgrows the head - because layout is what every one
+          # of these faults turned on.  The multi-gigabyte ones are
+          # sparse: two 7.28 GB files cost ~400 KB of disk.
+          #
+          # Frame counts are set from measurement, not taste.  At 300
+          # ASan / 200 TSan frames this step took ~5.6 min on one
+          # core, against a job budget shared with a dozen others;
+          # 120 / 60 brings it to ~1.5 min and still crosses every
+          # window boundary the assertions rest on (the feeder moves
+          # at AUDIO_BYTES_PER_TICK, not per frame).  The job timeout
+          # goes to 20 min to leave headroom for the slowest runner.
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=30 ffmpeg
+          make clean all SANITIZER=address,undefined
+          make fixtures
+          test -x gfx_thumbnail_preview_test
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 \
+          AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
+             ./gfx_thumbnail_preview_test fixtures/*.mp4
+          echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # The decode test is the missing half of the harness above:
+          # the REAL mixer -> audio_transfer -> rmp4 -> raac chain over
+          # a budget-fed window, at budgets small enough that the
+          # decoder reaches the resident frontier.  The stubbed audio
+          # thread above models exactly the layer these faults lived
+          # in: no wall over the packets on the trailing-moov path
+          # (SIGSEGV inside raac_decode_frame the moment the decoder
+          # outran the feeder), demuxer bounds that refused to lower,
+          # a wall stall taken for end of stream (mid-file rewinds,
+          # then the voice released), and set_avail compiling to a
+          # no-op without HAVE_RWEBM - the _norwebm build exists for
+          # that last one.
+          test -x preview_audio_decode_test
+          test -x preview_audio_decode_test_norwebm
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (ASan)"
+          # clean keeps fixtures/ by design; regenerate anyway so the
+          # step cannot silently run against an empty glob.
+          make clean all SANITIZER=thread
+          make fixtures
+          TSAN_OPTIONS=halt_on_error=1 FRAMES=60 timeout 300 \
+             ./gfx_thumbnail_preview_test fixtures/*.mp4
+          echo "[pass] gfx_thumbnail_preview_test (TSan)"
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (TSan)"

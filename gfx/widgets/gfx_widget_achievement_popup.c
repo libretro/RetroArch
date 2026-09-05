@@ -18,7 +18,7 @@
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
 
-#include "../cheevos/cheevos.h"
+#include "../../cheevos/cheevos.h"
 
 #define CHEEVO_NOTIFICATION_DURATION      4000
 
@@ -28,7 +28,9 @@ typedef struct cheevo_popup
 {
    char* title;
    char* subtitle;
+   char* badge_name;
    uintptr_t badge;
+   retro_time_t badge_retry;
 } cheevo_popup;
 
 enum
@@ -140,7 +142,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 #endif
 
    {
-      static float pure_white[16] = {
+      float pure_white[16] = {
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
@@ -153,24 +155,19 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       gfx_display_ctx_driver_t* dispctx    = p_disp->dispctx;
       dispgfx_widget_t* p_dispwidget       = (dispgfx_widget_t*)userdata;
 
-      unsigned text_unfold_offset = 0;
-      bool is_folding = false;
-      unsigned screen_padding_x = 0;
-      unsigned screen_padding_y = 0;
-      int screen_pos_x = 0;
-      int screen_pos_y = 0;
-
+      unsigned screen_padding_x   = 0;
+      unsigned screen_padding_y   = 0;
+      int screen_pos_x            = 0;
+      int screen_pos_y            = 0;
       /* Slight additional offset for title/subtitle while unfolding */
-      text_unfold_offset = ((1.0f - state->unfold) * state->width) * 0.5;
-
+      unsigned text_unfold_offset = ((1.0f - state->unfold) * state->width) * 0.5;
       /* Whether gfx scissoring should occur, partially hiding popup */
-      is_folding = fabs(state->unfold - 1.0f) > 0.01;
+      bool is_folding             = fabs(state->unfold - 1.0f) > 0.01;
 
       /* Calculate padding in screen space */
       if (state->padding_auto)
       {
-         screen_padding_x = p_dispwidget->msg_queue_rect_start_x -
-            p_dispwidget->msg_queue_icon_size_x;
+         screen_padding_x = p_dispwidget->msg_queue_rect_start_x;
          screen_padding_y = screen_padding_x;
       }
       else
@@ -199,17 +196,32 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       switch (state->anchor_v)
       {
          case ANCHOR_TOP:
-            screen_pos_y = -(state->height);
+            screen_pos_y  = -(state->height);
             screen_pos_y += (screen_padding_y + state->height) * state->slide_v;
             break;
          case ANCHOR_BOTTOM:
-            screen_pos_y = video_height;
+            screen_pos_y  = video_height;
             screen_pos_y -= (screen_padding_y + state->height) * state->slide_v;
             break;
       }
 
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
+
+      /* badge wasn't ready, periodically see if it's become available */
+      if (!state->queue[state->queue_read_index].badge &&
+         state->queue[state->queue_read_index].badge_name)
+      {
+         const retro_time_t next_try = state->queue[state->queue_read_index].badge_retry;
+         const retro_time_t now      = cpu_features_get_time_usec();
+         if (next_try == 0 || now > next_try)
+         {
+            /* try again in 250ms */
+            state->queue[state->queue_read_index].badge_retry = now + 250000;
+            state->queue[state->queue_read_index].badge =
+               rcheevos_get_badge_texture(state->queue[state->queue_read_index].badge_name, false, false);
+         }
+      }
 
       /* Default Badge */
       if (!state->queue[state->queue_read_index].badge)
@@ -258,6 +270,24 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       /* Badge */
       else
       {
+         /* Backdrop */
+         gfx_display_draw_quad(
+            p_disp,
+            video_info->userdata,
+            video_width,
+            video_height,
+            screen_pos_x,
+            screen_pos_y,
+            state->height,
+            state->height,
+            video_width,
+            video_height,
+            p_dispwidget->backdrop_orig,
+            NULL);
+
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(video_info->userdata);
+
          gfx_widgets_draw_icon(
             video_info->userdata,
             p_disp,
@@ -272,6 +302,9 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             1.0f, /* cos(rad)   = cos(0)  = 1.0f */
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             pure_white);
+
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(video_info->userdata);
       }
 
       if (is_folding)
@@ -363,6 +396,12 @@ static void gfx_widget_achievement_popup_free_current(
    {
       free(state->queue[state->queue_read_index].subtitle);
       state->queue[state->queue_read_index].subtitle = NULL;
+   }
+
+   if (state->queue[state->queue_read_index].badge_name)
+   {
+      free(state->queue[state->queue_read_index].badge_name);
+      state->queue[state->queue_read_index].badge_name = NULL;
    }
 
    if (state->queue[state->queue_read_index].badge)
@@ -533,10 +572,10 @@ static void gfx_widget_achievement_popup_start(
    state->width = MAX(
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].title, 0, 1.0f),
+         state->queue[state->queue_read_index].title, strlen(state->queue[state->queue_read_index].title), 1.0f),
       font_driver_get_message_width(
          p_dispwidget->gfx_widget_fonts.regular.font,
-         state->queue[state->queue_read_index].subtitle, 0, 1.0f)
+         state->queue[state->queue_read_index].subtitle, strlen(state->queue[state->queue_read_index].subtitle), 1.0f)
    );
    state->width += p_dispwidget->simple_widget_padding * 2;
    state->unfold = 0.0f;
@@ -565,7 +604,7 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 
    /* important - this must be done outside the lock because it has the potential to need to
     * lock the video thread, which may be waiting for the popup queue lock to render popups */
-   uintptr_t badge_id = rcheevos_get_badge_texture(badge, 0);
+   uintptr_t badge_id = rcheevos_get_badge_texture(badge, false, true);
 
    if (state->queue_read_index < 0)
    {
@@ -601,6 +640,8 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
    state->queue[state->queue_write_index].badge = badge_id;
    state->queue[state->queue_write_index].title = strdup(title);
    state->queue[state->queue_write_index].subtitle = strdup(subtitle);
+   state->queue[state->queue_write_index].badge_name = badge_id ? NULL : strdup(badge);
+   state->queue[state->queue_write_index].badge_retry = 0;
 
    state->queue_write_index = (state->queue_write_index + 1) % ARRAY_SIZE(state->queue);
 
@@ -612,6 +653,13 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 #endif
 }
 
+static bool gfx_widget_achievement_popup_visible(void)
+{
+   gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   return state->queue_read_index >= 0
+      && state->queue[state->queue_read_index].title;
+}
+
 const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_init,
    &gfx_widget_achievement_popup_free,
@@ -619,5 +667,6 @@ const gfx_widget_t gfx_widget_achievement_popup = {
    &gfx_widget_achievement_popup_context_destroy,
    NULL, /* layout */
    NULL, /* iterate */
-   &gfx_widget_achievement_popup_frame
+   &gfx_widget_achievement_popup_frame,
+   &gfx_widget_achievement_popup_visible
 };

@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 
 #include <lists/file_list.h>
 
@@ -30,7 +31,7 @@
 
 RETRO_BEGIN_DECLS
 
-#define MENU_SUBLABEL_MAX_LENGTH 1024
+#define MENU_LABEL_MAX_LENGTH 1024
 
 #define MENU_SEARCH_FILTER_MAX_TERMS  8
 #define MENU_SEARCH_FILTER_MAX_LENGTH 64
@@ -38,8 +39,8 @@ RETRO_BEGIN_DECLS
 #define MENU_ENTRY_INITIALIZE(entry) \
    entry.path[0]            = '\0'; \
    entry.label[0]           = '\0'; \
-   entry.sublabel[0]        = '\0'; \
    entry.rich_label[0]      = '\0'; \
+   entry.sublabel[0]        = '\0'; \
    entry.value[0]           = '\0'; \
    entry.password_value[0]  = '\0'; \
    entry.enum_idx           = MSG_UNKNOWN; \
@@ -86,7 +87,9 @@ enum menu_entry_flags
 typedef struct menu_ctx_list
 {
    const char  *path;
-   char        *fullpath;
+   /* Borrowed from the menu stack, not owned; see
+    * menu_entries_append(). */
+   const char  *fullpath;
    const char  *label;
    file_list_t *list;
    void        *entry;
@@ -112,12 +115,12 @@ typedef struct menu_entry
    enum msg_hash_enums enum_idx;
    uint8_t setting_type;
    uint8_t flags;
-   char sublabel[MENU_SUBLABEL_MAX_LENGTH];
-   char path[255];
-   char label[255];
-   char rich_label[255];
-   char value[255];
-   char password_value[255];
+   char sublabel[MENU_LABEL_MAX_LENGTH];
+   char path[NAME_MAX_LENGTH];
+   char label[MENU_LABEL_MAX_LENGTH];
+   char rich_label[MENU_LABEL_MAX_LENGTH];
+   char value[NAME_MAX_LENGTH];
+   char password_value[NAME_MAX_LENGTH];
 } menu_entry_t;
 
 typedef struct menu_file_list_cbs
@@ -148,19 +151,31 @@ typedef struct menu_file_list_cbs
          unsigned type, unsigned i,
          const char *label, const char *path,
          char *s, size_t len);
-   void (*action_get_value)(file_list_t* list,
+   size_t (*action_get_value)(file_list_t* list,
          unsigned *w, unsigned type, unsigned i,
          const char *label, char *s, size_t len,
          const char *path,
-         char *path_buf, size_t path_buf_size);
-   menu_search_terms_t search;
+         char *s2, size_t len2);
+   /* Lazily allocated; NULL until a search term is actually pushed.
+    * Held by value this was 520 of the struct's 656 bytes, carried by
+    * every entry of every list, while only one cbs in the whole menu
+    * can ever be asked for it -- menu_entries_search_get_terms_internal()
+    * reads it from the top entry of the menu stack and nowhere else.
+    * Freed by menu_entries_cbs_free(), which file_list_t dispatches to
+    * through its actiondata_free hook. */
+   menu_search_terms_t *search;
    enum msg_hash_enums enum_idx;
-   char action_sublabel_cache[MENU_SUBLABEL_MAX_LENGTH];
-   char action_title_cache   [512];
+   /* When the generic sublabel handler is bound from the data map,
+    * this carries the description enum to look up. */
+   enum msg_hash_enums sublabel_enum;
+   /* When the generic title handler is bound from the data map,
+    * these carry the title enum and formatting variant. */
+   enum msg_hash_enums title_enum;
+   uint8_t title_variant;
    bool checked;
 } menu_file_list_cbs_t;
 
-int menu_entries_get_title(char *title, size_t title_len);
+size_t menu_entries_get_title(char *s, size_t len);
 
 void menu_entries_get_core_title(char *title_msg, size_t title_msg_len);
 
@@ -187,6 +202,9 @@ bool menu_entries_clear(file_list_t *list);
 bool menu_entries_search_pop(void);
 
 menu_search_terms_t *menu_entries_search_get_terms(void);
+
+/* file_list_t::actiondata_free hook for menu-owned lists. */
+void menu_entries_cbs_free(void *actiondata);
 
 /* Convenience function: Appends list of current
  * search terms to specified string */

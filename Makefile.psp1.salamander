@@ -12,7 +12,7 @@ else
 endif
 
 INCDIR = $(PSPPATH)/include libretro-common/include
-CFLAGS = $(OPTIMIZE_LV) -ffast-math -fsingle-precision-constant
+CFLAGS = $(OPTIMIZE_LV) -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP -DIS_SALAMANDER -DRARCH_CONSOLE
@@ -33,6 +33,7 @@ OBJS = frontend/frontend_salamander.o \
 		 frontend/drivers/platform_psp.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/rstrtod.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \
@@ -43,6 +44,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \

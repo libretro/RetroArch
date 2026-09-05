@@ -148,17 +148,10 @@ typedef struct elfhdr
 #define EM_386		      3		/* Intel 80386 */
 #define EM_68K		      4		/* Motorola 68000 */
 #define EM_88K		      5		/* Motorola 88000 */
-#if 0
-#define EM_486		      6		/* RESERVED - was Intel 80486 */
-#endif
 #define EM_860		      7		/* Intel 80860 */
 #define EM_MIPS		   8		/* MIPS R3000 Big-Endian only */
 #define EM_S370		   9		/* IBM System/370 Processor */
 #define EM_MIPS_RS4_BE	10		/* MIPS R4000 Big-Endian */
-#if 0
-#define EM_SPARC64	11		   /* RESERVED - was SPARC v9
-					                   64-bit unoffical */
-#endif
 
 /* RESERVED 11-14 for future use */
 

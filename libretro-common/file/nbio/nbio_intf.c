@@ -52,7 +52,13 @@ extern nbio_intf_t nbio_stdio;
 
 #endif
 
-#if defined(_linux__)
+/* Disabled: the Linux AIO backend calls io_setup/io_destroy per
+ * file handle, adding ~35us of kernel overhead per open+close.
+ * For the small-file burst pattern used by menu icon loading
+ * (40+ files of 4-64KB), this makes it ~2x slower than stdio.
+ * Fall through to nbio_stdio on Linux until the AIO backend
+ * shares a single context across handles. */
+#if 0 /* was: defined(__linux__) */
 static nbio_intf_t *internal_nbio = &nbio_linux;
 #elif defined(HAVE_MMAP) && defined(BSD)
 static nbio_intf_t *internal_nbio = &nbio_mmap_unix;
@@ -100,4 +106,38 @@ void nbio_cancel(void *data)
 void nbio_free(void *data)
 {
    internal_nbio->free(data);
+}
+
+void nbio_set_chunk_size(void *data, size_t chunk_size)
+{
+   if (internal_nbio->set_chunk_size)
+      internal_nbio->set_chunk_size(data, chunk_size);
+}
+
+int nbio_get_fd(void *data)
+{
+   if (internal_nbio->get_fd)
+      return internal_nbio->get_fd(data);
+   return -1;
+}
+
+bool nbio_get_progress(void *data, size_t *completed, size_t *total)
+{
+   if (internal_nbio->get_progress)
+      return internal_nbio->get_progress(data, completed, total);
+   if (completed) *completed = 0;
+   if (total)     *total     = 0;
+   return false;
+}
+
+void *nbio_load_entire(void *data, size_t *len)
+{
+   /* Fast path: backend provides a direct implementation */
+   if (internal_nbio->load_entire)
+      return internal_nbio->load_entire(data, len);
+
+   /* Fallback: use the iterate loop */
+   internal_nbio->begin_read(data);
+   while (!internal_nbio->iterate(data));
+   return internal_nbio->get_ptr(data, len);
 }

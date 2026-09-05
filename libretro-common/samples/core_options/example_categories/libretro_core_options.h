@@ -167,6 +167,13 @@ struct retro_core_options_v2 *options_intl[RETRO_LANGUAGE_LAST] = {
    NULL,        /* RETRO_LANGUAGE_SWEDISH */
    NULL,        /* RETRO_LANGUAGE_UKRAINIAN */
    NULL,        /* RETRO_LANGUAGE_CZECH */
+   NULL,        /* RETRO_LANGUAGE_CATALAN_VALENCIA */
+   NULL,        /* RETRO_LANGUAGE_CATALAN */
+   NULL,        /* RETRO_LANGUAGE_BRITISH_ENGLISH */
+   NULL,        /* RETRO_LANGUAGE_HUNGARIAN */
+   NULL,        /* RETRO_LANGUAGE_BELARUSIAN */
+   NULL,        /* RETRO_LANGUAGE_GALICIAN */
+   NULL,        /* RETRO_LANGUAGE_NORWEGIAN */
 };
 #endif
 

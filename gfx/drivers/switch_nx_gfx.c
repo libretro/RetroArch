@@ -74,22 +74,6 @@ static const float *gfx_display_switch_get_default_tex_coords(void)
    return &dummy[0];
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_switch = {
-   gfx_display_switch_draw,
-   NULL,                                        /* draw_pipeline   */
-   NULL,                                        /* blend_begin     */
-   NULL,                                        /* blend_end       */
-   NULL,                                        /* get_default_mvp */
-   gfx_display_switch_get_default_vertices,
-   gfx_display_switch_get_default_tex_coords,
-   FONT_DRIVER_RENDER_SWITCH,
-   GFX_VIDEO_DRIVER_SWITCH,
-   "switch",
-   false,
-   NULL,                                         /* scissor_begin */
-   NULL                                          /* scissor_end   */
-};
-
 /*
  * FONT DRIVER
  */
@@ -113,7 +97,7 @@ static void *switch_font_init(void *data, const char *font_path,
       return NULL;
 
    if (!font_renderer_create_default(&font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -174,12 +158,18 @@ static int switch_font_get_message_width(void *data, const char *msg,
 
 static void switch_font_render_line(
       switch_video_t *sw,
-      switch_font_t *font, const char *msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
-      float pos_y, unsigned text_align)
+      switch_font_t *font,
+      const struct font_glyph* glyph_q,
+      const char *msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
+      float pos_y,
+      unsigned text_align)
 {
    int i;
-   const struct font_glyph* glyph_q = NULL;
+   const char* msg_end              = msg + msg_len;
    int delta_x                      = 0;
    int delta_y                      = 0;
    unsigned fb_width                = sw->vp.full_width;
@@ -187,17 +177,30 @@ static void switch_font_render_line(
    int x                            = roundf(pos_x * fb_width);
    int y                            = roundf((1.0f - pos_y) * fb_height);
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that switch_font_get_message_width 
+    * would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= switch_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x -= switch_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
-   }
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
+   }
 
    for (i = 0; i < msg_len; i++)
    {
@@ -252,34 +255,36 @@ static void switch_font_render_message(
       unsigned text_align)
 {
    float line_height;
+   const char *start                      = msg;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* glyph_q       =
+font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = scale / line_metrics->height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
-      /* Draw the line */
-      if (msg_len <= AVG_GLPYH_LIMIT)
-         switch_font_render_line(sw, font, msg, msg_len,
-               scale, color, pos_x, pos_y - (float)lines * line_height,
-               text_align);
-
-      if (!delim)
-         break;
-
-      msg += msg_len + 1;
-      lines++;
+      if (*msg == '\n' || *msg == '\0')
+      {
+         size_t msg_len = (size_t)(msg - start);
+         if (msg_len <= AVG_GLPYH_LIMIT)
+            switch_font_render_line(sw, font, glyph_q, start, msg_len,
+                  scale, color, pos_x, pos_y - (float)lines * line_height,
+                  text_align);
+         if (*msg == '\0')
+            break;
+         start = ++msg;
+         lines++;
+      }
+      else
+         msg++;
    }
 }
 
 static void switch_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale;
@@ -335,7 +340,7 @@ static const struct font_glyph *switch_font_get_glyph(
 {
    switch_font_t *font = (switch_font_t *)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void *)font->font_driver, code);
+      return font->font_driver->get_glyph((void *)font->font_data, code);
    return NULL;
 }
 
@@ -349,19 +354,6 @@ static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **
    }
    return false;
 }
-
-font_renderer_t switch_font =
-{
-   switch_font_init,
-   switch_font_free,
-   switch_font_render_msg,
-   "switch",
-   switch_font_get_glyph,
-   NULL, /* bind_block  */
-   NULL, /* flush_block */
-   switch_font_get_message_width,
-   switch_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -471,7 +463,7 @@ static void gfx_cpy_dsp_buf(uint32_t *buffer, uint32_t *image, int w, int h, uin
     }
 }
 
-/* needed to clear surface completely as hw scaling doesn't always scale to full resoution perflectly */
+/* needed to clear surface completely as hw scaling doesn't always scale to full resolution perflectly */
 static void clear_screen(switch_video_t *sw)
 {
     nwindowSetDimensions(sw->win, sw->vp.full_width, sw->vp.full_height);
@@ -534,95 +526,25 @@ static void *switch_init(const video_info_t *video,
         *input_data          = switchinput;
     }
 
-    font_driver_init_osd(sw,
-          video,
-          false,
-          video->is_threaded,
-          FONT_DRIVER_RENDER_SWITCH);
 
     clear_screen(sw);
 
     return sw;
 }
 
-static void switch_update_viewport(switch_video_t *sw,
-            video_frame_info_t *video_info)
+static void switch_update_viewport(switch_video_t *sw)
 {
-    settings_t *settings = config_get_ptr();
-    int x                = 0;
-    int y                = 0;
-    float desired_aspect = 0.0f;
-    float width          = sw->vp.full_width;
-    float height         = sw->vp.full_height;
-
+    /* Handle o_size mode (original size) specially */
     if (sw->o_size)
     {
-        width = sw->o_width;
-        height = sw->o_height;
-        sw->vp.x = (int)(((float)sw->vp.full_width - width)) / 2;
-        sw->vp.y = (int)(((float)sw->vp.full_height - height)) / 2;
-
-        sw->vp.width = width;
-        sw->vp.height = height;
-
+        sw->vp.x      = (int)(((float)sw->vp.full_width - sw->o_width)) / 2;
+        sw->vp.y      = (int)(((float)sw->vp.full_height - sw->o_height)) / 2;
+        sw->vp.width  = sw->o_width;
+        sw->vp.height = sw->o_height;
         return;
     }
 
-    desired_aspect = video_driver_get_aspect_ratio();
-
-    if (settings->bools.video_scale_integer)
-    {
-        video_viewport_get_scaled_integer(&sw->vp, sw->vp.full_width, sw->vp.full_height, desired_aspect, sw->keep_aspect);
-    }
-    else if (sw->keep_aspect)
-    {
-#if defined(HAVE_MENU)
-        if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-        {
-            sw->vp.x = sw->vp.y = 0;
-            sw->vp.width = width;
-            sw->vp.height = height;
-        }
-        else
-#endif
-        {
-            float delta;
-            float device_aspect = ((float)sw->vp.full_width) / sw->vp.full_height;
-
-            if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-            {
-                /*
-                    * If the aspect ratios of screen and desired aspect
-                    * ratio are sufficiently equal (floating point stuff),
-                    * assume they are actually equal.
-                */
-            }
-            else if (device_aspect > desired_aspect)
-            {
-                delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-                x = (int)roundf(width * (0.5f - delta));
-                width = (unsigned)roundf(2.0f * width * delta);
-            }
-            else
-            {
-                delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-                y = (int)roundf(height * (0.5f - delta));
-                height = (unsigned)roundf(2.0f * height * delta);
-            }
-        }
-
-        sw->vp.x = x;
-        sw->vp.y = y;
-
-        sw->vp.width = width;
-        sw->vp.height = height;
-    }
-    else
-    {
-        sw->vp.x = sw->vp.y = 0;
-        sw->vp.width = width;
-        sw->vp.height = height;
-    }
+    video_driver_update_viewport(&sw->vp, false, sw->keep_aspect, true);
 }
 
 static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -686,11 +608,11 @@ static bool switch_frame(void *data, const void *frame,
          return true;
    }
 
-   if (  sw->should_resize ||
-         width  != sw->last_width ||
-         height != sw->last_height)
+   if (     sw->should_resize
+         || (width  != sw->last_width)
+         || (height != sw->last_height))
    {
-      switch_update_viewport(sw, video_info);
+      switch_update_viewport(sw);
 
       /* Sanity check */
       sw->vp.width  = MIN(sw->vp.width, sw->vp.full_width);
@@ -707,21 +629,21 @@ static bool switch_frame(void *data, const void *frame,
 
       if (!sw->smooth)
       {
-         sw->scaler.out_width = sw->vp.width;
+         sw->scaler.out_width  = sw->vp.width;
          sw->scaler.out_height = sw->vp.height;
          sw->scaler.out_stride = sw->vp.full_width * sizeof(uint32_t);
       }
       else
       {
-         sw->scaler.out_width = width;
+         sw->scaler.out_width  = width;
          sw->scaler.out_height = height;
          sw->scaler.out_stride = width * sizeof(uint32_t);
 
-         float screen_ratio = (float)sw->vp.full_width / sw->vp.full_height;
-         float tgt_ratio = (float)sw->vp.width / sw->vp.height;
+         float screen_ratio    = (float)sw->vp.full_width / sw->vp.full_height;
+         float tgt_ratio       = (float)sw->vp.width / sw->vp.height;
 
-         sw->hw_scale.width = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
-         sw->hw_scale.height = sw->scaler.out_height;
+         sw->hw_scale.width    = ceil(screen_ratio / tgt_ratio * sw->scaler.out_width);
+         sw->hw_scale.height   = sw->scaler.out_height;
          sw->hw_scale.x_offset = ceil((sw->hw_scale.width - sw->scaler.out_width) / 2.0);
 #ifdef HAVE_MENU
          if (!menu_is_alive)
@@ -731,20 +653,20 @@ static bool switch_frame(void *data, const void *frame,
             nwindowSetDimensions(sw->win, sw->hw_scale.width, sw->hw_scale.height);
          }
       }
-      sw->scaler.out_fmt = SCALER_FMT_ABGR8888;
 
+      sw->scaler.out_fmt     = SCALER_FMT_ABGR8888;
       sw->scaler.scaler_type = SCALER_TYPE_POINT;
 
       if (!scaler_ctx_gen_filter(&sw->scaler))
          return false;
 
-      sw->last_width = width;
-      sw->last_height = height;
+      sw->last_width         = width;
+      sw->last_height        = height;
 
-      sw->should_resize = false;
+      sw->should_resize      = false;
    }
 
-   out_buffer     = (uint32_t *)framebufferBegin(&sw->fb, &stride);
+   out_buffer     = (uint32_t*)framebufferBegin(&sw->fb, &stride);
    sw->out_buffer = out_buffer;
    sw->stride     = stride;
 
@@ -764,7 +686,10 @@ static bool switch_frame(void *data, const void *frame,
       if (sw->menu_texture.pixels)
       {
          memset(out_buffer, 0, stride * sw->vp.full_height);
-         scaler_ctx_scale(&sw->menu_texture.scaler, sw->tmp_image + ((sw->vp.full_height - sw->menu_texture.tgth) / 2) * sw->vp.full_width + ((sw->vp.full_width - sw->menu_texture.tgtw) / 2), sw->menu_texture.pixels);
+         scaler_ctx_scale(&sw->menu_texture.scaler,
+                 sw->tmp_image     + ((sw->vp.full_height - sw->menu_texture.tgth) / 2)
+               * sw->vp.full_width + ((sw->vp.full_width  - sw->menu_texture.tgtw) / 2),
+               sw->menu_texture.pixels);
          gfx_cpy_dsp_buf(out_buffer, sw->tmp_image, sw->vp.full_width, sw->vp.full_height, stride, true);
       }
    }
@@ -793,12 +718,12 @@ static bool switch_frame(void *data, const void *frame,
    if (statistics_show && !sw->smooth)
    {
       if (osd_params)
-         font_driver_render_msg(sw, video_info->stat_text,
+         font_driver_render_msg(sw, video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
    }
 
    if (msg)
-      font_driver_render_msg(sw, msg, NULL, NULL);
+      font_driver_render_msg(sw, msg, strlen(msg), NULL, NULL);
 
    framebufferEnd(&sw->fb);
 
@@ -859,15 +784,26 @@ static void switch_set_texture_frame(
     switch_video_t *sw = data;
     size_t sz = width * height * (rgb32 ? 4 : 2);
 
-    if (!sw->menu_texture.pixels ||
-        sw->menu_texture.width != width ||
-        sw->menu_texture.height != height)
+    if (   !sw->menu_texture.pixels
+        || (sw->menu_texture.width  != width)
+        || (sw->menu_texture.height != height))
     {
         int xsf, ysf, sf;
         struct scaler_ctx *sctx = NULL;
 
+        /* realloc-to-tmp to avoid the classic realloc-assign-self
+         * leak: the pre-patch form 'pixels = realloc(pixels, sz)'
+         * overwrites the only pointer to the old menu-texture
+         * buffer with NULL on OOM, leaking it.  The subsequent
+         * 'if (!pixels) return' catches the crash but not the
+         * leak. */
         if (sw->menu_texture.pixels)
-            sw->menu_texture.pixels = realloc(sw->menu_texture.pixels, sz);
+        {
+            void *tmp = realloc(sw->menu_texture.pixels, sz);
+            if (!tmp)
+                return;
+            sw->menu_texture.pixels = tmp;
+        }
         else
             sw->menu_texture.pixels = malloc(sz);
 
@@ -907,10 +843,7 @@ static void switch_set_texture_frame(
     memcpy(sw->menu_texture.pixels, frame, sz);
 }
 
-static void switch_apply_state_changes(void *data)
-{
-    (void)data;
-}
+static void switch_apply_state_changes(void *data) { }
 
 static void switch_set_texture_enable(void *data, bool enable, bool full_screen)
 {
@@ -1000,10 +933,11 @@ static const video_poke_interface_t switch_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void switch_get_poke_interface(void *data,
@@ -1012,6 +946,19 @@ static void switch_get_poke_interface(void *data,
     (void)data;
     *iface = &switch_poke_interface;
 }
+
+static font_renderer_t switch_font =
+{
+   switch_font_init,
+   switch_font_free,
+   switch_font_render_msg,
+   "switch",
+   switch_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   switch_font_get_message_width,
+   switch_font_get_line_metrics
+};
 
 video_driver_t video_switch = {
    switch_init,
@@ -1034,9 +981,31 @@ video_driver_t video_switch = {
 #endif
    switch_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &switch_font
 };
+
+gfx_display_ctx_driver_t gfx_display_ctx_switch = {
+   gfx_display_switch_draw,
+   NULL,                                        /* draw_pipeline   */
+   NULL,                                        /* blend_begin     */
+   NULL,                                        /* blend_end       */
+   NULL,                                        /* get_default_mvp */
+   gfx_display_switch_get_default_vertices,
+   gfx_display_switch_get_default_tex_coords,
+   &switch_font,
+   GFX_VIDEO_DRIVER_SWITCH,
+   "switch",
+   false,
+   NULL,                                         /* scissor_begin */
+   NULL                                          /* scissor_end   */
+};
+
 
 /* vim: set ts=3 sw=3 */

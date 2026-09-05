@@ -47,13 +47,129 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../common/gx2_defines.h"
+#include "../video_defines.h"
 #include "../video_shader_parse.h"
 #include "../drivers_shader/slang_process.h"
+#include "gx2_shaders/frame.h"
+#include "gx2_shaders/tex.h"
+#include "gx2_shaders/sprite.h"
+#include "gx2_shaders/menu_shaders.h"
 #include "../../wiiu/system/memory.h"
 #include "../../wiiu/wiiu_dbg.h"
 
 #include "../font_driver.h"
+
+#undef _X
+#undef _B
+
+#define _X 0x00
+#define _Y 0x01
+#define _Z 0x02
+#define _W 0x03
+#define _R 0x00
+#define _G 0x01
+#define _B 0x02
+#define _A 0x03
+#define _0 0x04
+#define _1 0x05
+#define GX2_COMP_SEL(c0, c1, c2, c3) (((c0) << 24) | ((c1) << 16) | ((c2) << 8) | (c3))
+
+#define COLOR_ARGB(r, g, b, a) (((u32)(a) << 24) | ((u32)(r) << 16) | ((u32)(g) << 8) | ((u32)(b) << 0))
+#define COLOR_RGBA(r, g, b, a) (((u32)(r) << 24) | ((u32)(g) << 16) | ((u32)(b) << 8) | ((u32)(a) << 0))
+
+typedef struct
+{
+   int width;
+   int height;
+   GX2TVRenderMode mode;
+} wiiu_render_mode_t;
+
+struct gx2_overlay_data
+{
+   GX2Texture tex;
+   sprite_vertex_t v;
+   float alpha_mod;
+};
+
+typedef struct
+{
+   struct
+   {
+      GX2Texture texture;
+      int width;
+      int height;
+      bool enable;
+      sprite_vertex_t* v;
+   } menu;
+
+#ifdef HAVE_OVERLAY
+   struct gx2_overlay_data *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+
+   GX2Sampler sampler_nearest[RARCH_WRAP_MAX];
+   GX2Sampler sampler_linear[RARCH_WRAP_MAX];
+   GX2Texture texture;
+   frame_vertex_t *v;
+   GX2_vec2 *ubo_vp;
+   GX2_vec2 *ubo_tex;
+   GX2_mat4x4 *ubo_mvp;
+   void *input_ring_buffer;
+   void *output_ring_buffer;
+   u32 input_ring_buffer_size;
+   u32 output_ring_buffer_size;
+
+   int width;
+   int height;
+
+   float* menu_shader_vbo;
+   menu_shader_uniform_t* menu_shader_ubo;
+
+   struct
+   {
+      sprite_vertex_t* v;
+      int size;
+      int current;
+   } vertex_cache;
+
+   struct
+   {
+      tex_shader_vertex_t* v;
+      int size;
+      int current;
+   } vertex_cache_tex;
+
+   void *drc_scan_buffer;
+   void *tv_scan_buffer;
+   void *cmd_buffer;
+   GX2ColorBuffer color_buffer;
+   GX2ContextState *ctx_state;
+   struct video_shader *shader_preset;
+   struct
+   {
+      GFDFile *gfd;
+      float *vs_ubos[2];
+      float *ps_ubos[2];
+      GX2Texture texture;
+      GX2ColorBuffer color_buffer;
+      bool mem1;
+   } pass[GFX_MAX_SHADERS];
+   GX2Texture luts[GFX_MAX_TEXTURES];
+
+   wiiu_render_mode_t render_mode;
+   video_viewport_t vp;
+   int frames;
+   OSTime last_vsync;
+   unsigned rotation;
+   bool vsync;
+   bool rgb32;
+   bool smooth;
+   bool keep_aspect;
+   bool should_resize;
+   bool render_msg_enabled;
+} wiiu_video_t;
 
 typedef struct
 {
@@ -121,7 +237,7 @@ static bool gx2_set_shader(void *data,
    if (wiiu->shader_preset)
       gx2_free_shader_preset(wiiu);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       if (type != RARCH_SHADER_SLANG)
       {
@@ -130,6 +246,13 @@ static bool gx2_set_shader(void *data,
       }
 
       wiiu->shader_preset = calloc(1, sizeof(*wiiu->shader_preset));
+
+      /* NULL-check the calloc before passing the pointer to
+       * video_shader_load_preset_into_shader, which does not
+       * NULL-check its 'shader' parameter and will NULL-deref
+       * on the first field write. */
+      if (!wiiu->shader_preset)
+         return false;
 
       if (!video_shader_load_preset_into_shader(path, wiiu->shader_preset))
       {
@@ -474,7 +597,16 @@ static void gfx_display_wiiu_draw_pipeline(
       wiiu->menu_shader_ubo->time = 0.0f;
    }
    else
+   {
       wiiu->menu_shader_ubo->time += 0.01f;
+      /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
+       * exactly representable up to t ~ 167772 (where 0.5*ulp first
+       * exceeds 0.01), so 65536 has wide margin and wraps roughly
+       * every 30 h of cumulative menu time, making the discontinuity
+       * effectively unobservable. */
+      if (wiiu->menu_shader_ubo->time > 65536.0f)
+         wiiu->menu_shader_ubo->time -= 65536.0f;
+   }
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, wiiu->menu_shader_ubo, sizeof(*wiiu->menu_shader_ubo));
    GX2SetVertexUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
@@ -500,22 +632,6 @@ static void gfx_display_wiiu_scissor_end(
    GX2SetScissor(0, 0, video_width, video_height);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
-   gfx_display_wiiu_draw,
-   gfx_display_wiiu_draw_pipeline,
-   NULL,                                     /* blend_begin            */
-   NULL,                                     /* blend_end              */
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_WIIU,
-   GFX_VIDEO_DRIVER_WIIU,
-   "gx2",
-   true,
-   gfx_display_wiiu_scissor_begin,
-   gfx_display_wiiu_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -531,7 +647,7 @@ static void* gx2_font_init(void* data, const char* font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -584,6 +700,10 @@ static void gx2_font_free(void* data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
+   /* Ensure the GPU has finished any draws referencing the
+    * font atlas and UBO before freeing the backing memory. */
+   GX2DrawDone();
+
    if (font->texture.surface.image)
       MEM1_free(font->texture.surface.image);
    if (font->ubo_tex)
@@ -596,13 +716,17 @@ static int gx2_font_get_message_width(void* data, const char* msg,
 {
    int i;
    int delta_x = 0;
+   void *font_data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q = NULL;
    gx2_font_t                *font  = (gx2_font_t*)data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -615,8 +739,7 @@ static int gx2_font_get_message_width(void* data, const char* msg,
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -640,18 +763,34 @@ static void gx2_font_render_line(
    int i;
    int count;
    sprite_vertex_t *v;
+   const char* msg_end              = msg + msg_len;
    int x                            = pre_x;
    int y                            = roundf((1.0 - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
+   void *font_data      = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that gx2_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x -= gx2_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x -= gx2_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
@@ -667,8 +806,7 @@ static void gx2_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph  = glyph_q))
             continue;
 
@@ -701,15 +839,26 @@ static void gx2_font_render_line(
 
    if (font->atlas->dirty)
    {
-      for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
+      /* Copy and invalidate only the dirty row band tracked by the
+       * font renderers instead of the whole atlas */
+      unsigned y0 = font->atlas->dirty_y0;
+      unsigned y1 = font->atlas->dirty_y1;
+      if (y1 > font->atlas->height)
+         y1 = font->atlas->height;
+      if (y1 > font->texture.surface.height)
+         y1 = font->texture.surface.height;
+
+      for (i = y0; i < y1; i++)
          memcpy(font->texture.surface.image
                + (i * font->texture.surface.pitch),
                 font->atlas->buffer + (i * font->atlas->width),
                 font->atlas->width);
 
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
-            font->texture.surface.image,
-            font->texture.surface.imageSize);
+      if (y1 > y0)
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+               font->texture.surface.image
+                     + (y0 * font->texture.surface.pitch),
+               (y1 - y0) * font->texture.surface.pitch);
       font->atlas->dirty = false;
    }
 
@@ -741,15 +890,14 @@ static void gx2_font_render_message(
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / wiiu->vp.height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      size_t msg_len = 0;
+      while (msg[msg_len] && msg[msg_len] != '\n')
+         msg_len++;
       /* Draw the line */
       if ((wiiu->vertex_cache.current + (msg_len * 4)
-		      <= wiiu->vertex_cache.size))
+              <= wiiu->vertex_cache.size))
          gx2_font_render_line(wiiu,
                font,
                glyph_q,
@@ -761,10 +909,8 @@ static void gx2_font_render_message(
                height,
                x,
                text_align);
-
-      if (!delim)
+      if (!msg[msg_len])
          break;
-
       msg += msg_len + 1;
       lines++;
    }
@@ -773,7 +919,7 @@ static void gx2_font_render_message(
 static void gx2_font_render_msg(
       void *userdata,
       void* data,
-      const char* msg,
+      const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    float x, y, scale, drop_mod, drop_alpha;
@@ -850,7 +996,7 @@ static const struct font_glyph* gx2_font_get_glyph(void* data, uint32_t code)
 {
    gx2_font_t* font = (gx2_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -864,19 +1010,6 @@ static bool gx2_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t wiiu_font =
-{
-   gx2_font_init,
-   gx2_font_free,
-   gx2_font_render_msg,
-   "gx2",
-   gx2_font_get_glyph,
-   NULL,                   /* bind_block */
-   NULL,                   /* flush */
-   gx2_font_get_message_width,
-   gx2_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -923,77 +1056,9 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   int x                           = 0;
-   int y                           = 0;
-   unsigned viewport_width         = wiiu->color_buffer.surface.width;
-   unsigned viewport_height        = wiiu->color_buffer.surface.height;
-   float device_aspect             = (float)viewport_width / viewport_height;
-   settings_t *settings            = config_get_ptr();
-   bool video_scale_integer        = settings->bools.video_scale_integer;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&wiiu->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), wiiu->keep_aspect);
-      viewport_width  = wiiu->vp.width;
-      viewport_height = wiiu->vp.height;
-   }
-   else if (wiiu->keep_aspect)
-   {
-      float desired_aspect = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* GX2 has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta          = (desired_aspect / device_aspect - 1.0f)
-                             / 2.0f + 0.5f;
-            x              = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta           = (device_aspect / desired_aspect - 1.0f)
-                              / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      wiiu->vp.x      = x;
-      wiiu->vp.y      = y;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
-   }
-   else
-   {
-      wiiu->vp.x      = 0;
-      wiiu->vp.y      = 0;
-      wiiu->vp.width  = viewport_width;
-      wiiu->vp.height = viewport_height;
-   }
+   wiiu->vp.full_width  = wiiu->color_buffer.surface.width;
+   wiiu->vp.full_height = wiiu->color_buffer.surface.height;
+   video_driver_update_viewport(&wiiu->vp, false, wiiu->keep_aspect, true);
 
    gx2_set_projection(wiiu);
 }
@@ -1294,15 +1359,10 @@ static void *gx2_init(const video_info_t *video,
       wiiu->vp.full_height = wiiu->render_mode.height;
    }
 
-   video_driver_set_size(wiiu->vp.width, wiiu->vp.height);
+   video_driver_set_output_size(wiiu->vp.width, wiiu->vp.height);
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
-   font_driver_init_osd(wiiu,
-         video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_WIIU);
 
    {
       enum rarch_shader_type type;
@@ -1710,9 +1770,10 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
 }
 
 static void gx2_update_uniform_block(wiiu_video_t *wiiu,
-      int pass, float *ubo, int id,
+      int pass, float *ubo, int chosen_id,
       int size, int uniformVarCount, GX2UniformVar *uniformVars,
-      uint64_t frame_count, int32_t frame_direction, uint32_t rotation)
+      uint64_t frame_count, int32_t frame_direction, uint32_t rotation, float core_aspect,
+      float core_aspect_rot, uint32_t frame_time_delta, uint32_t original_fps)
 {
    unsigned i;
    for (i = 0; i < uniformVarCount; i++)
@@ -1720,7 +1781,7 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
       int k;
       float *dst;
       const char *id = NULL;
-      if (uniformVars[i].block != id)
+      if (uniformVars[i].block != chosen_id)
          continue;
       if (!(id = strrchr(uniformVars[i].name, '.')))
          continue;
@@ -1763,10 +1824,35 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
          continue;
       }
 
+      if (string_is_equal(id, "FrameTimeDelta"))
+      {
+         *dst        = frame_time_delta;
+         *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalFPS"))
+      {
+         *dst        = original_fps;
+         continue;
+      }
+
       if (string_is_equal(id, "Rotation"))
       {
          *dst        = rotation;
          *(u32 *)dst = __builtin_bswap32(*(u32 *)dst);
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalAspect"))
+      {
+         *dst        = core_aspect;
+         continue;
+      }
+
+      if (string_is_equal(id, "OriginalAspectRotated"))
+      {
+         *dst        = core_aspect_rot;
          continue;
       }
 
@@ -1981,11 +2067,18 @@ static bool gx2_frame(void *data, const void *frame,
    {
       unsigned i;
 #ifdef HAVE_REWIND
-      int32_t frame_direction = state_manager_frame_is_reversed() ? -1 : 1;
+      int32_t frame_direction   = state_manager_frame_is_reversed() ? -1 : 1;
 #else
-      int32_t frame_direction = 1;
+      int32_t frame_direction   = 1;
 #endif
-      uint32_t rotation       = retroarch_get_rotation();
+      uint32_t frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+      float original_fps        = video_driver_get_original_fps();
+      uint32_t rotation         = retroarch_get_rotation();
+      float core_aspect         = video_driver_get_core_aspect();
+      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
+      float core_aspect_rot     = core_aspect;
+      if (rotation == 1 || rotation == 3)
+         core_aspect_rot        = 1 / core_aspect;
 
       for (i = 0; i < wiiu->shader_preset->passes; i++)
       {
@@ -1997,7 +2090,9 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].vs_ubos[j], j,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->vs->uniformVarCount, wiiu->pass[i].gfd->vs->uniformVars,
-                  frame_count, frame_direction, rotation);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,
+                  frame_time_delta, original_fps);
+
             GX2SetVertexUniformBlock(wiiu->pass[i].gfd->vs->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->vs->uniformBlocks[j].size, wiiu->pass[i].vs_ubos[j]);
          }
@@ -2009,7 +2104,8 @@ static bool gx2_frame(void *data, const void *frame,
             gx2_update_uniform_block(wiiu, i, wiiu->pass[i].ps_ubos[j], j,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size,
                   wiiu->pass[i].gfd->ps->uniformVarCount, wiiu->pass[i].gfd->ps->uniformVars,
-                  frame_count, frame_direction, rotation);
+                  frame_count, frame_direction, rotation, core_aspect, core_aspect_rot,
+                  frame_time_delta, original_fps);
             GX2SetPixelUniformBlock(wiiu->pass[i].gfd->ps->uniformBlocks[j].offset,
                   wiiu->pass[i].gfd->ps->uniformBlocks[j].size, wiiu->pass[i].ps_ubos[j]);
          }
@@ -2188,7 +2284,7 @@ static bool gx2_frame(void *data, const void *frame,
       if (statistics_show)
       {
          if (osd_params)
-            font_driver_render_msg(wiiu, video_info->stat_text,
+            font_driver_render_msg(wiiu, video_info->stat_text, video_info->stat_text_len,
                   osd_params, NULL);
       }
 
@@ -2198,7 +2294,7 @@ static bool gx2_frame(void *data, const void *frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(wiiu, msg, NULL, NULL);
+      font_driver_render_msg(wiiu, msg, strlen(msg), NULL, NULL);
 
    wiiu->render_msg_enabled = false;
 
@@ -2320,6 +2416,10 @@ static void gx2_unload_texture(void *data,
    if (!texture)
       return;
 
+   /* Ensure the GPU has finished any draws referencing this
+    * texture before freeing the backing memory. */
+   GX2DrawDone();
+
    MEM2_free(texture->surface.image);
    free(texture);
 }
@@ -2397,12 +2497,12 @@ static void gx2_set_texture_enable(void *data, bool state, bool full_screen)
       wiiu->menu.enable = state;
 }
 
-static void gx2_set_osd_msg(void *data, const char *msg,
+static void gx2_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    wiiu_video_t *wiiu = (wiiu_video_t *)data;
    if (wiiu && wiiu->render_msg_enabled)
-      font_driver_render_msg(wiiu, msg, params, font);
+      font_driver_render_msg(wiiu, msg, msg_len, params, font);
 }
 
 static uint32_t gx2_get_flags(void *data)
@@ -2415,6 +2515,100 @@ static uint32_t gx2_get_flags(void *data)
 #endif
 
    return flags;
+}
+
+/* --- GPU-native BCn compressed-texture upload --- */
+/* The Wii U GPU (Latte, R700-class) samples BC1/BC2/BC3 (also BC4/BC5);
+ * BC6H/BC7 do not exist on this GPU. Textures use the same
+ * LINEAR_ALIGNED tile mode as the uncompressed path, so the DDS blocks map
+ * in directly with no retiling. */
+static bool gx2_bc_to_format(enum texture_gpu_format fmt,
+      GX2SurfaceFormat *out, unsigned *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC1; *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC2; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC3; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool gx2_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   GX2SurfaceFormat f;
+   unsigned         bb;
+   (void)data;
+   return gx2_bc_to_format(fmt, &f, &bb);
+}
+
+static uintptr_t gx2_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   GX2Texture      *texture;
+   GX2SurfaceFormat f;
+   unsigned         block_bytes;
+   unsigned         blocks_w, blocks_h, row_bytes, dst_row_bytes, j;
+   const uint8_t   *src;
+   uint8_t         *dst;
+
+   (void)threaded;
+   (void)filter_type;
+
+   if (!tc || tc->num_mips == 0)
+      return 0;
+   if (!gx2_bc_to_format(tc->format, &f, &block_bytes))
+      return 0;
+   if (!(texture = (GX2Texture*)calloc(1, sizeof(GX2Texture))))
+      return 0;
+
+   /* Upload the base level only; GX2's per-mip surface layout for
+    * block-compressed formats is left to a follow-up. UI/menu DDS assets
+    * are single-level in practice. */
+   texture->surface.width    = tc->mips[0].width;
+   texture->surface.height   = tc->mips[0].height;
+   texture->surface.depth    = 1;
+   texture->surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
+   texture->surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+   texture->surface.format   = f;
+   texture->viewNumSlices    = 1;
+   texture->compMap          = GX2_COMP_SEL(_R, _G, _B, _A);
+
+   GX2CalcSurfaceSizeAndAlignment(&texture->surface);
+   GX2InitTextureRegs(texture);
+
+   texture->surface.image    = MEM2_alloc(
+         texture->surface.imageSize, texture->surface.alignment);
+   if (!texture->surface.image)
+   {
+      free(texture);
+      return 0;
+   }
+
+   /* Copy 4x4 blocks row by row. surface.pitch is the padded width in
+    * pixels, so one block-row occupies (pitch / 4) * block_bytes. */
+   blocks_w      = (tc->mips[0].width  + 3) >> 2;
+   blocks_h      = (tc->mips[0].height + 3) >> 2;
+   row_bytes     = blocks_w * block_bytes;
+   dst_row_bytes = (texture->surface.pitch >> 2) * block_bytes;
+   src           = (const uint8_t*)tc->mips[0].data;
+   dst           = (uint8_t*)texture->surface.image;
+
+   for (j = 0; j < blocks_h; j++)
+      memcpy(dst + j * dst_row_bytes, src + j * row_bytes, row_bytes);
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture->surface.image,
+         texture->surface.imageSize);
+
+   return (uintptr_t)texture;
 }
 
 static const video_poke_interface_t gx2_poke_interface = {
@@ -2439,10 +2633,13 @@ static const video_poke_interface_t gx2_poke_interface = {
    gx2_get_current_shader,
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL, /* set_hdr_subpixel_layout */
+   gx2_supports_texture_format,
+   gx2_load_texture_compressed
 };
 
 static void gx2_get_poke_interface(void *data,
@@ -2451,6 +2648,20 @@ static void gx2_get_poke_interface(void *data,
 #ifdef HAVE_GFX_WIDGETS
 static bool gx2_widgets_enabled(void *data) { return true; }
 #endif
+
+static font_renderer_t gx2_font =
+{
+   gx2_font_init,
+   gx2_font_free,
+   gx2_font_render_msg,
+   "gx2",
+   gx2_font_get_glyph,
+   NULL,                   /* bind_block */
+   NULL,                   /* flush */
+   gx2_font_get_message_width,
+   gx2_font_get_line_metrics
+};
+
 
 video_driver_t video_wiiu =
 {
@@ -2474,7 +2685,28 @@ video_driver_t video_wiiu =
 #endif
    gx2_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gx2_widgets_enabled
+   gx2_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gx2_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
+   gfx_display_wiiu_draw,
+   gfx_display_wiiu_draw_pipeline,
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &gx2_font,
+   GFX_VIDEO_DRIVER_WIIU,
+   "gx2",
+   true,
+   gfx_display_wiiu_scissor_begin,
+   gfx_display_wiiu_scissor_end
 };

@@ -289,7 +289,7 @@ sub expand_macros {
         # parameters can be blank
         my @arglist = split(/,/, $3);
         my @args;
-        my @args_seperator;
+        my @args_separator;
 
         my $comma_sep_required = 0;
         foreach (@arglist) {
@@ -299,14 +299,14 @@ sub expand_macros {
             my @whitespace_split = split(/\s+/, $_);
             if (!@whitespace_split) {
                 push(@args, '');
-                push(@args_seperator, '');
+                push(@args_separator, '');
             } else {
                 foreach (@whitespace_split) {
                         #print ("arglist = \"$_\"\n");
                     if (length($_)) {
                         push(@args, $_);
                         my $sep = $comma_sep_required ? "," : " ";
-                        push(@args_seperator, $sep);
+                        push(@args_separator, $sep);
                         #print ("sep = \"$sep\", arg = \"$_\"\n");
                         $comma_sep_required = 0;
                     }
@@ -336,9 +336,9 @@ sub expand_macros {
                 # XXX: is vararg allowed on arguments before the last?
                 $argname = $macro_args{$macro}[-1];
                 if ($argname =~ s/:vararg$//) {
-                    #print "macro = $macro, args[$i] = $args[$i], args_seperator=@args_seperator, argname = $argname, arglist[$i] = $arglist[$i], arglist = @arglist, args=@args, macro_args=@macro_args\n";
+                    #print "macro = $macro, args[$i] = $args[$i], args_separator=@args_separator, argname = $argname, arglist[$i] = $arglist[$i], arglist = @arglist, args=@args, macro_args=@macro_args\n";
                     #$replacements{$argname} .= ", $args[$i]";
-                    $replacements{$argname} .= "$args_seperator[$i] $args[$i]";
+                    $replacements{$argname} .= "$args_separator[$i] $args[$i]";
                 } else {
                     die "Too many arguments to macro $macro";
                 }

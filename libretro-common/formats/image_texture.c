@@ -27,8 +27,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
-#include <file/nbio.h>
-#include <string/stdstring.h>
+#include <formats/data_transfer.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -37,212 +36,186 @@ enum image_type_enum image_texture_get_type(const char *path)
     * in length. We therefore only need to extract the first
     * 5 characters from the extension of the input path
     * to correctly validate a match */
+   size_t len;
    const char *ext = NULL;
-   char ext_lower[6];
-
-   ext_lower[0] = '\0';
-
-   if (string_is_empty(path))
+   if (!path || *path == '\0')
       return IMAGE_TYPE_NONE;
 
-   /* Get file extension */
    ext = strrchr(path, '.');
-
    if (!ext || (*(++ext) == '\0'))
       return IMAGE_TYPE_NONE;
 
-   /* Copy and convert to lower case */
-   strlcpy(ext_lower, ext, sizeof(ext_lower));
-   string_to_lower(ext_lower);
+   len = strlen(ext);
 
+   /* All supported extensions are 3 or 4 characters */
+   if (len < 3 || len > 4)
+      return IMAGE_TYPE_NONE;
+
+   /* Compare with inline lowering — avoids copy + tolower pass */
+   switch (len)
+   {
+      case 3:
 #ifdef HAVE_RPNG
-   if (string_is_equal(ext_lower, "png"))
-      return IMAGE_TYPE_PNG;
+         if ((ext[0] | 0x20) == 'p' &&
+             (ext[1] | 0x20) == 'n' &&
+             (ext[2] | 0x20) == 'g')
+            return IMAGE_TYPE_PNG;
 #endif
 #ifdef HAVE_RJPEG
-   if (string_is_equal(ext_lower, "jpg") ||
-       string_is_equal(ext_lower, "jpeg"))
-      return IMAGE_TYPE_JPEG;
+         if ((ext[0] | 0x20) == 'j' &&
+             (ext[1] | 0x20) == 'p' &&
+             (ext[2] | 0x20) == 'g')
+            return IMAGE_TYPE_JPEG;
 #endif
 #ifdef HAVE_RBMP
-   if (string_is_equal(ext_lower, "bmp"))
-      return IMAGE_TYPE_BMP;
+         if ((ext[0] | 0x20) == 'b' &&
+             (ext[1] | 0x20) == 'm' &&
+             (ext[2] | 0x20) == 'p')
+            return IMAGE_TYPE_BMP;
 #endif
 #ifdef HAVE_RTGA
-   if (string_is_equal(ext_lower, "tga"))
-      return IMAGE_TYPE_TGA;
+         if ((ext[0] | 0x20) == 't' &&
+             (ext[1] | 0x20) == 'g' &&
+             (ext[2] | 0x20) == 'a')
+            return IMAGE_TYPE_TGA;
 #endif
+#ifdef HAVE_RDDS
+         if ((ext[0] | 0x20) == 'd' &&
+             (ext[1] | 0x20) == 'd' &&
+             (ext[2] | 0x20) == 's')
+            return IMAGE_TYPE_DDS;
+#endif
+#ifdef HAVE_RMP4
+         if ((ext[0] | 0x20) == 'm' &&
+              ext[1]         == '4' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_MP4;
+         if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'p' &&
+              ext[2]         == '4')
+            return IMAGE_TYPE_MP4;
+#endif
+         break;
+
+      case 4:
+#ifdef HAVE_RJPEG
+         if ((ext[0] | 0x20) == 'j' &&
+             (ext[1] | 0x20) == 'p' &&
+             (ext[2] | 0x20) == 'e' &&
+             (ext[3] | 0x20) == 'g')
+            return IMAGE_TYPE_JPEG;
+#endif
+#ifdef HAVE_RWEBP
+         if ((ext[0] | 0x20) == 'w' &&
+             (ext[1] | 0x20) == 'e' &&
+             (ext[2] | 0x20) == 'b' &&
+             (ext[3] | 0x20) == 'p')
+            return IMAGE_TYPE_WEBP;
+#endif
+#ifdef HAVE_RWEBM
+         if ((ext[0] | 0x20) == 'w' &&
+             (ext[1] | 0x20) == 'e' &&
+             (ext[2] | 0x20) == 'b' &&
+             (ext[3] | 0x20) == 'm')
+            return IMAGE_TYPE_WEBM;
+#endif
+         break;
+   }
 
    return IMAGE_TYPE_NONE;
 }
-
-bool image_texture_set_color_shifts(
-      unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
-      unsigned *a_shift,
-      struct texture_image *out_img
-      )
-{
-   *a_shift             = 24;
-   *r_shift             = 16;
-   *g_shift             = 8;
-   *b_shift             = 0;
-
-   if (out_img->supports_rgba)
-   {
-      *r_shift = 0;
-      *b_shift = 16;
-      return true;
-   }
-
-   return false;
-}
-
-bool image_texture_color_convert(unsigned r_shift,
-      unsigned g_shift, unsigned b_shift, unsigned a_shift,
-      struct texture_image *out_img)
-{
-   /* This is quite uncommon. */
-   if (a_shift != 24 || r_shift != 16 || g_shift != 8 || b_shift != 0)
-   {
-      uint32_t i;
-      uint32_t num_pixels = out_img->width * out_img->height;
-      uint32_t *pixels    = (uint32_t*)out_img->pixels;
-
-      for (i = 0; i < num_pixels; i++)
-      {
-         uint32_t col = pixels[i];
-         uint8_t a    = (uint8_t)(col >> 24);
-         uint8_t r    = (uint8_t)(col >> 16);
-         uint8_t g    = (uint8_t)(col >>  8);
-         uint8_t b    = (uint8_t)(col >>  0);
-         /* Explicitly cast these to uint32_t to prevent
-          * ASAN runtime error: left shift of 255 by 24 places
-          * cannot be represented in type 'int' */
-         pixels[i]    = ((uint32_t)a << a_shift) |
-                        ((uint32_t)r << r_shift) |
-                        ((uint32_t)g << g_shift) |
-                        ((uint32_t)b << b_shift);
-      }
-
-      return true;
-   }
-
-   return false;
-}
-
-#ifdef GEKKO
-
-#define GX_BLIT_LINE_32(off) \
-{ \
-   unsigned x; \
-   const uint16_t *tmp_src = src; \
-   uint16_t       *tmp_dst = dst; \
-   for (x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
-   { \
-      tmp_dst[  0 + off] = tmp_src[0]; \
-      tmp_dst[ 16 + off] = tmp_src[1]; \
-      tmp_dst[  1 + off] = tmp_src[2]; \
-      tmp_dst[ 17 + off] = tmp_src[3]; \
-      tmp_dst[  2 + off] = tmp_src[4]; \
-      tmp_dst[ 18 + off] = tmp_src[5]; \
-      tmp_dst[  3 + off] = tmp_src[6]; \
-      tmp_dst[ 19 + off] = tmp_src[7]; \
-   } \
-   src += tmp_pitch; \
-}
-
-static bool image_texture_internal_gx_convert_texture32(
-      struct texture_image *image)
-{
-   unsigned tmp_pitch, width2, i;
-   const uint16_t *src = NULL;
-   uint16_t *dst       = NULL;
-   /* Memory allocation in libogc is extremely primitive so try
-    * to avoid gaps in memory when converting by copying over to
-    * a temporary buffer first, then converting over into
-    * main buffer again. */
-   void *tmp           = malloc(image->width
-         * image->height * sizeof(uint32_t));
-
-   if (!tmp)
-      return false;
-
-   memcpy(tmp, image->pixels, image->width
-         * image->height * sizeof(uint32_t));
-   tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
-
-   image->width       &= ~3;
-   image->height      &= ~3;
-   width2              = image->width << 1;
-   src                 = (uint16_t*)tmp;
-   dst                 = (uint16_t*)image->pixels;
-
-   for (i = 0; i < image->height; i += 4, dst += 4 * width2)
-   {
-      GX_BLIT_LINE_32(0)
-      GX_BLIT_LINE_32(4)
-      GX_BLIT_LINE_32(8)
-      GX_BLIT_LINE_32(12)
-   }
-
-   free(tmp);
-   return true;
-}
-#endif
 
 static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
       size_t len,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
+      struct texture_image *out_img)
 {
    int ret;
-   bool success = false;
-   void *img    = image_transfer_new(type);
+   void *img;
 
+   out_img->compressed = NULL;
+
+   img = image_transfer_new(type);
    if (!img)
-      goto end;
+      return false;
 
    image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
 
    if (!image_transfer_start(img, type))
-      goto end;
+   {
+      image_transfer_free(img, type);
+      return false;
+   }
 
    while (image_transfer_iterate(img, type));
 
    if (!image_transfer_is_valid(img, type))
-      goto end;
+   {
+      image_transfer_free(img, type);
+      return false;
+   }
+
+   /* GPU-native fast path: if the loader can hand back BCn blocks for
+    * direct upload, copy the source (so the mip pointers survive the
+    * caller freeing its buffer) and defer any RGBA8 decode. */
+   {
+      struct image_gpu_layout lay;
+      if (image_transfer_get_gpu_layout(img, type, len, &lay))
+      {
+         struct texture_compressed *tc = (struct texture_compressed*)
+            calloc(1, sizeof(*tc));
+         if (tc)
+         {
+            tc->mips    = (struct texture_mip*)
+               malloc((size_t)lay.num_mips * sizeof(*tc->mips));
+            tc->storage = malloc(len);
+            if (tc->mips && tc->storage)
+            {
+               unsigned i;
+               memcpy(tc->storage, ptr, len);
+               tc->storage_len = len;
+               tc->num_mips    = lay.num_mips;
+               tc->format      = lay.format;
+               tc->type        = type;
+               for (i = 0; i < lay.num_mips; i++)
+               {
+                  tc->mips[i].data   = (const unsigned char*)tc->storage
+                                     + lay.offset[i];
+                  tc->mips[i].width  = lay.width[i];
+                  tc->mips[i].height = lay.height[i];
+                  tc->mips[i].size   = lay.size[i];
+               }
+               out_img->compressed = tc;
+               out_img->pixels     = NULL;
+               out_img->width      = lay.width[0];
+               out_img->height     = lay.height[0];
+               image_transfer_free(img, type);
+               return true;
+            }
+            free(tc->storage);
+            free(tc->mips);
+            free(tc);
+         }
+         /* allocation failure: fall through to the CPU decode below */
+      }
+   }
 
    do
    {
       ret = image_transfer_process(img, type,
             (uint32_t**)&out_img->pixels, len, &out_img->width,
-            &out_img->height);
+            &out_img->height, out_img->supports_rgba);
    } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
-      goto end;
-
-   image_texture_color_convert(r_shift, g_shift, b_shift,
-         a_shift, out_img);
-
-#ifdef GEKKO
-   if (!image_texture_internal_gx_convert_texture32(out_img))
    {
-      image_texture_free(out_img);
-      goto end;
-   }
-#endif
-
-   success = true;
-
-end:
-   if (img)
       image_transfer_free(img, type);
+      return false;
+   }
 
-   return success;
+   image_transfer_free(img, type);
+   return true;
 }
 
 void image_texture_free(struct texture_image *img)
@@ -250,6 +223,13 @@ void image_texture_free(struct texture_image *img)
    if (!img)
       return;
 
+   if (img->compressed)
+   {
+      free(img->compressed->storage);
+      free(img->compressed->mips);
+      free(img->compressed);
+      img->compressed = NULL;
+   }
    if (img->pixels)
       free(img->pixels);
    img->width  = 0;
@@ -257,27 +237,98 @@ void image_texture_free(struct texture_image *img)
    img->pixels = NULL;
 }
 
+bool image_texture_realize_rgba(struct texture_image *img)
+{
+   struct texture_compressed *tc;
+   void    *decoded = NULL;
+   void    *xfer;
+   unsigned w       = 0;
+   unsigned h       = 0;
+   int      ret;
+
+   if (!img)
+      return false;
+   if (img->pixels)               /* already decoded */
+      return true;
+   tc = img->compressed;
+   if (!tc || !tc->storage)
+      return false;
+
+   xfer = image_transfer_new(tc->type);
+   if (!xfer)
+      return false;
+   image_transfer_set_buffer_ptr(xfer, tc->type,
+         (uint8_t*)tc->storage, tc->storage_len);
+   if (!image_transfer_start(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   while (image_transfer_iterate(xfer, tc->type));
+   if (!image_transfer_is_valid(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   do
+   {
+      ret = image_transfer_process(xfer, tc->type,
+            (uint32_t**)&decoded, tc->storage_len, &w, &h,
+            img->supports_rgba);
+   } while (ret == IMAGE_PROCESS_NEXT);
+   image_transfer_free(xfer, tc->type);
+
+   if (     ret == IMAGE_PROCESS_ERROR
+         || ret == IMAGE_PROCESS_ERROR_END
+         || !decoded)
+      return false;
+
+   img->pixels = (uint32_t*)decoded;
+   img->width  = w;
+   img->height = h;
+   return true;
+}
+
+void image_texture_narrow_10bit(struct texture_image *img)
+{
+   size_t n, i;
+   uint32_t *px;
+   if (!img || !img->pix10 || !img->pixels)
+      return;
+   px = img->pixels;
+   n  = (size_t)img->width * img->height;
+   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to 8-bit ARGB8888
+    * (0xAARRGGBB, opaque) in place, for drivers without native 10-bit
+    * texture support. Matches the >> 2 narrowing used elsewhere. */
+   for (i = 0; i < n; i++)
+   {
+      uint32_t p = px[i];
+      uint32_t r = (p >> 20) & 0x3ff;
+      uint32_t g = (p >> 10) & 0x3ff;
+      uint32_t b =  p        & 0x3ff;
+      px[i] = 0xff000000u
+            | ((r >> 2) << 16)
+            | ((g >> 2) <<  8)
+            |  (b >> 2);
+   }
+   img->pix10 = false;
+}
+
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-      &a_shift, out_img);
-
    if (type != IMAGE_TYPE_NONE)
    {
       if (image_texture_load_internal(
-         type, buffer, buffer_len, out_img,
-         a_shift, r_shift, g_shift, b_shift))
-      {
+         type, buffer, buffer_len, out_img))
          return true;
-      }
    }
 
    out_img->supports_rgba = false;
    out_img->pixels = NULL;
    out_img->width = 0;
    out_img->height = 0;
+   out_img->compressed = NULL;
 
    return false;
 }
@@ -285,49 +336,42 @@ bool image_texture_load_buffer(struct texture_image *out_img,
 bool image_texture_load(struct texture_image *out_img,
       const char *path)
 {
-   unsigned r_shift, g_shift, b_shift, a_shift;
-   size_t file_len             = 0;
-   struct nbio_t      *handle  = NULL;
-   void                   *ptr = NULL;
    enum image_type_enum type  = image_texture_get_type(path);
-
-   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
-         &a_shift, out_img);
 
    if (type != IMAGE_TYPE_NONE)
    {
-      handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
-      if (!handle)
-         goto error;
-      nbio_begin_read(handle);
+      /* The synchronous read rides the data_transfer prefix spine
+       * like every other loader: filestream/VFS routing (overlays
+       * and driver assets from archive members or content://
+       * documents), 64-bit lengths, the hardware guard behind the
+       * read, and honest short-read detection.  A zero budget fills
+       * to completion in one blocking call, which is this API's
+       * contract. */
+      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
+      if (dt)
+      {
+         size_t file_len    = 0;
+         const uint8_t *ptr = NULL;
 
-      while (!nbio_iterate(handle));
-
-      ptr = nbio_get_ptr(handle, &file_len);
-
-      if (!ptr)
-         goto error;
-
-      if (image_texture_load_internal(
-               type,
-               ptr, file_len, out_img,
-               a_shift, r_shift, g_shift, b_shift))
-         goto success;
+         data_transfer_iterate(dt, 0);
+         ptr = data_transfer_ptr(dt, &file_len);
+         if (data_transfer_complete(dt) && ptr && file_len
+               && image_texture_load_internal(
+                     type,
+                     (void*)ptr, file_len, out_img))
+         {
+            data_transfer_free(dt);
+            return true;
+         }
+         data_transfer_free(dt);
+      }
    }
 
-error:
    out_img->supports_rgba = false;
    out_img->pixels        = NULL;
    out_img->width         = 0;
    out_img->height        = 0;
-   if (handle)
-      nbio_free(handle);
+   out_img->compressed    = NULL;
 
    return false;
-
-success:
-   if (handle)
-      nbio_free(handle);
-
-   return true;
 }

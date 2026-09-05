@@ -40,26 +40,6 @@
 
 RETRO_BEGIN_DECLS
 
-struct d3d_matrix
-{
-   union {
-      struct {
-         float        _11, _12, _13, _14;
-         float        _21, _22, _23, _24;
-         float        _31, _32, _33, _34;
-         float        _41, _42, _43, _44;
-
-      };
-      float m[4][4];
-   };
-};
-
-typedef struct d3d_texture
-{
-   void *data;
-   int32_t pool;
-} d3d_texture_t;
-
 typedef struct
 {
    bool fullscreen;
@@ -78,29 +58,6 @@ typedef struct Vertex
    uint32_t color;
    float u, v;
 } Vertex;
-
-#ifndef BYTE_CLAMP
-#define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
-#endif
-
-#define D3DTADDRESS_COMM_CLAMP           3
-#define D3DTEXF_COMM_LINEAR              2
-#define D3DPT_COMM_TRIANGLESTRIP         5
-
-/* Clear target surface */
-#define D3D_COMM_CLEAR_TARGET            0x00000001l
-
-void d3d_matrix_transpose(void *_pout, const void *_pm);
-
-void d3d_matrix_identity(void *_pout);
-
-void d3d_matrix_ortho_off_center_lh(void *_pout,
-      float l, float r, float b, float t, float zn, float zf);
-
-void d3d_matrix_multiply(void *_pout,
-      const void *_pm1, const void *_pm2);
-
-void d3d_matrix_rotation_z(void *_pout, float angle);
 
 int32_t d3d_translate_filter(unsigned type);
 

@@ -27,6 +27,9 @@
 
 #include "../include/vulkan/vulkan.h"
 
+#define VULKAN_ROLLING_SCANLINE_SIMULATION
+#define VULKAN_HDR_SWAPCHAIN
+
 RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
@@ -49,7 +52,7 @@ struct vulkan_filter_chain_pass_info
    float scale_x;
    float scale_y;
 
-   /* Ignored for the last pass, swapchain info 
+   /* Ignored for the last pass, swapchain info
     * will be used instead. */
    VkFormat rt_format;
    /* For the last pass, make sure VIEWPORT scale
@@ -64,7 +67,7 @@ struct vulkan_filter_chain_pass_info
 
 struct vulkan_filter_chain_swapchain_info
 {
-   VkViewport viewport;
+   VkViewport vp;
    VkFormat format;
    VkRenderPass render_pass;
    unsigned num_indices;
@@ -86,6 +89,9 @@ struct vulkan_filter_chain_create_info
       unsigned width, height;
    } max_input_size;
    struct vulkan_filter_chain_swapchain_info swapchain;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool hdr_enabled;
+#endif /* VULKAN_HDR_SWAPCHAIN */ 
 };
 
 vulkan_filter_chain_t *vulkan_filter_chain_new(
@@ -100,7 +106,7 @@ void vulkan_filter_chain_set_shader(vulkan_filter_chain_t *chain,
 
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
-      unsigned pass);      
+      unsigned pass);
 
 bool vulkan_filter_chain_update_swapchain_info(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_swapchain_info *info);
@@ -120,11 +126,58 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_shader_subframes(vulkan_filter_chain_t *chain,
+      uint32_t tot_subframes);
+
+void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *chain,
+      uint32_t cur_subframe);
+
+#ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
+void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
+      bool simulate_scanline);
+#endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
+
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
+void vulkan_filter_chain_set_frame_time_delta(vulkan_filter_chain_t *chain,
+      uint32_t time_delta);
+
+void vulkan_filter_chain_set_original_fps(vulkan_filter_chain_t *chain,
+      float fps);
+
 void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *chain,
       uint32_t rot);
+
+void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *chain,
+      float coreaspect);
+
+void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *chain,
+      float coreaspectrot);
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *chain,
+      unsigned hdr_mode);
+
+void vulkan_filter_chain_set_paper_white_nits(vulkan_filter_chain_t *chain,
+      float paper_white_nits);
+
+
+void vulkan_filter_chain_set_expand_gamut(vulkan_filter_chain_t *chain,
+      unsigned expand_gamut);
+
+void vulkan_filter_chain_set_scanlines(vulkan_filter_chain_t *chain,
+      float scanlines);
+
+void vulkan_filter_chain_set_subpixel_layout(vulkan_filter_chain_t *chain,
+      unsigned subpixel_layout);
+
+void vulkan_filter_chain_set_inverse_tonemap(vulkan_filter_chain_t *chain,
+      float inverse_tonemap);
+
+void vulkan_filter_chain_set_hdr10(vulkan_filter_chain_t *chain,
+      float hdr10);
+#endif /* VULKAN_HDR_SWAPCHAIN */
 
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
@@ -145,6 +198,22 @@ struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain);
 
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain);
+bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain);
+
+/* ---- Deferred (per-frame) filter chain construction ---- */
+
+vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
+      const struct vulkan_filter_chain_create_info *info,
+      const char *path,
+      enum glslang_filter_chain_filter filter,
+      unsigned *out_num_passes);
+
+bool vulkan_filter_chain_compile_pass(
+      vulkan_filter_chain_t *chain,
+      unsigned pass_index,
+      enum glslang_filter_chain_filter filter);
+
+bool vulkan_filter_chain_finalize(vulkan_filter_chain_t *chain);
 
 RETRO_END_DECLS
 

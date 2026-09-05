@@ -27,14 +27,13 @@
 #include <retro_inline.h>
 
 /**
- * clamp_float:
- * @val           : initial value
- * @lower         : lower limit that value should be clamped against
- * @upper         : upper limit that value should be clamped against
+ * Clamps a floating-point value to the specified range.
  *
- * Clamps a floating point value.
+ * @param val The value to clamp.
+ * @param lower The minimum possible value.
+ * @param upper The maximum possible value.
  *
- * Returns: a clamped value of initial float value @val.
+ * @returns \c val clamped to between \c lower and \c upper (inclusive).
  */
 static INLINE float clamp_float(float val, float lower, float upper)
 {
@@ -46,12 +45,10 @@ static INLINE float clamp_float(float val, float lower, float upper)
 }
 
 /**
- * clamp_8bit:
- * @val           : initial value
+ * Clamps an integer to fit in 8 bits.
  *
- * Clamps an unsigned 8-bit value.
- *
- * Returns: a clamped value of initial unsigned 8-bit value @val.
+ * @param val The value to clamp.
+ * @return \c val clamped to between 0 and 255 (inclusive).
  */
 static INLINE uint8_t clamp_8bit(int val)
 {

@@ -50,13 +50,10 @@
 #define DEFAULT_PARTITION "hdd0:__common:pfs"
 #endif
 
-// Disable pthread functionality
-PS2_DISABLE_AUTOSTART_PTHREAD();
-
 static enum frontend_fork ps2_fork_mode      = FRONTEND_FORK_NONE;
 static char cwd[FILENAME_MAX]                = {0};
-static char mountString[10]                  = {0};
-static char mountPoint[50]                   = {0};
+static char mountPoint[10]                   = {0};
+static char partition[50]                    = {0};
 static enum HDD_MOUNT_STATUS hddMountStatus  = HDD_MOUNT_INIT_STATUS_NOT_READY;
 static enum HDD_INIT_STATUS hddStatus        = HDD_INIT_STATUS_UNKNOWN;
 
@@ -64,7 +61,10 @@ static void create_path_names(void)
 {
    char user_path[FILENAME_MAX];
    size_t _len = strlcpy(user_path, cwd, sizeof(user_path));
-   strlcpy(user_path + _len, "retroarch", sizeof(user_path) - _len);
+   if (!PATH_CHAR_IS_SLASH(user_path[_len - 1])) {
+      _len += strlcpy(user_path + _len, PATH_DEFAULT_SLASH(), sizeof(user_path) - _len);
+   }
+   strlcpy_lit(user_path + _len, "retroarch", sizeof(user_path) - _len);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
@@ -130,24 +130,45 @@ static void reset_IOP()
 }
 
 /* This method returns true if it can extract needed info from path, otherwise false.
- * In case of true, it also updates mountString, mountPoint and newCWD parameters
+ * In case of true, it also updates mountPoint, partition and newCWD parameters
  * It splits path by ":", and requires a minimum of 3 elements
  * Example: if path = hdd0:__common:pfs:/retroarch/ then
- * mountString = "pfs:"
- * mountPoint = "hdd0:__common"
+ * mountPoint = "pfs:"
+ * partition = "hdd0:__common"
  * newCWD = pfs:/retroarch/
  * return true
 */
-bool getMountInfo(char *path, char *mountString, char *mountPoint, char *newCWD)
+bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
 {
    struct string_list *str_list = string_split(path, ":");
+
    if (str_list->size < 3)
+   {
+      string_list_free(str_list);
       return false;
+   }
 
-   sprintf(mountPoint, "%s:%s", str_list->elems[0].data, str_list->elems[1].data);
-   sprintf(mountString, "%s:", str_list->elems[2].data);
-   sprintf(newCWD, "%s%s", mountString, str_list->size == 4 ? str_list->elems[3].data : "");
+   /* Build partition string: "device:path" using strlcpy offsets */
+   size_t len = strlcpy(partition, str_list->elems[0].data, 50);
+   if (len < 50) {
+      len += strlcpy_lit(partition + len, ":", 50 - len);
+      if (len < 50)
+         strlcpy(partition + len, str_list->elems[1].data, 50 - len);
+   }
 
+   /* Build mountPoint string: "mount:" using strlcpy offset */
+   len = strlcpy(mountPoint, str_list->elems[2].data, 10);
+   if (len < 10)
+      strlcpy_lit(mountPoint + len, ":", 10 - len);
+
+   /* Build newCWD string using strlcpy offset */
+   len = strlcpy(newCWD, mountPoint, FILENAME_MAX);
+   if (len < FILENAME_MAX)
+      strlcpy(newCWD + len,
+            str_list->size >= 4 ? str_list->elems[3].data : "",
+            FILENAME_MAX - len);
+
+   string_list_free(str_list);
    return true;
 }
 
@@ -155,7 +176,8 @@ static void init_drivers(bool extra_drivers)
 {
    init_fileXio_driver();
    init_memcard_driver(true);
-   init_usb_driver();
+   init_usb_driver(true);
+   init_mx4sio_driver(true);
    init_cdfs_driver();
    bool only_if_booted_from_hdd = true;
 #if defined(DEBUG) && !defined(BUILD_FOR_PCSX2)
@@ -163,6 +185,7 @@ static void init_drivers(bool extra_drivers)
 #else
    init_poweroff_driver();
 #endif
+   init_dev9_driver();
    hddStatus = init_hdd_driver(false, only_if_booted_from_hdd);
 
 #ifndef IS_SALAMANDER
@@ -202,31 +225,31 @@ static void mount_partition(void)
    if (!should_mount)
       return;
 
-   if (getMountInfo(mount_path, mountString, mountPoint, new_cwd) != 1)
+   if (getMountInfo(mount_path, mountPoint, partition, new_cwd) != 1)
    {
-      RARCH_WARN("Partition info not readed\n");
+      RARCH_WARN("Partition info not read\n");
       return;
    }
 
-   hddMountStatus = mount_hdd_partition(mountString, mountPoint);
+   hddMountStatus = mount_hdd_partition(mountPoint, partition);
    if (hddMountStatus != HDD_MOUNT_STATUS_OK)
    {
-      RARCH_WARN("Error mount mounting partition %s, %s\n", mountString, mountPoint);
+      RARCH_WARN("Error mount mounting partition %s, %s\n", mountPoint, partition);
       return;
    }
 
-   /* If we're booting from HDD, we must update the cwd variable 
-    * and add : to the mount point */
+   /* If we're booting from HDD, we must update the cwd variable
+    * and add : to the partition */
    if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
    {
-      size_t _len = strlcpy(cwd, new_cwd, sizeof(cwd));
-      strlcpy(mountPoint + _len, ":", sizeof(mountPoint) - _len);
+      strlcpy(cwd, new_cwd, sizeof(cwd));
+      strlcat(partition, ":", sizeof(partition));
    }
    else
    {
-      /* We MUST put mountPoint as empty to avoid wrong results 
+      /* We MUST put partition as empty to avoid wrong results
          with LoadELFFromFileWithPartition */
-      strlcpy(mountPoint, "", sizeof(mountPoint));
+      strlcpy_lit(partition, "", sizeof(partition));
    }
 }
 
@@ -239,10 +262,13 @@ static void deinit_drivers(bool deinit_filesystem, bool deinit_powerOff)
 
    if (deinit_filesystem)
    {
-      umount_hdd_partition(mountString);
+      umount_hdd_partition(mountPoint);
 
       deinit_hdd_driver(false);
-      deinit_usb_driver();
+      deinit_dev9_driver();
+      deinit_cdfs_driver();
+      deinit_mx4sio_driver(true);
+      deinit_usb_driver(true);
       deinit_memcard_driver(true);
       deinit_fileXio_driver();
 
@@ -266,7 +292,7 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
    create_path_names();
 
 #ifndef IS_SALAMANDER
-   if (!string_is_empty(argv[1]))
+   if (argv[1] && *argv[1])
    {
       static char path[FILENAME_MAX] = {0};
       struct rarch_main_wrap      *args =
@@ -298,19 +324,29 @@ static void frontend_ps2_get_env(int *argc, char *argv[],
 #endif
 }
 
-static void common_init_drivers(bool extra_drivers) 
+static void common_init_drivers(bool extra_drivers)
 {
    init_drivers(extra_drivers);
 
    poweroffSetCallback(&poweroffHandler, NULL);
 
    getcwd(cwd, sizeof(cwd));
+
+   // Workaround for PS2SDK issue: https://github.com/ps2dev/ps2sdk/issues/805
+   // PS2SDK's initialization routine does not properly set the CWD for HDD
+   // paths, leading to all slashes being converted to backslashes. Manually
+   // convert them back to slashes to work around the issue until it is
+   // properly fixed in PS2SDK.
+   int bootDeviceID  = getBootDeviceID(cwd);
+   if (bootDeviceID == BOOT_DEVICE_HDD || bootDeviceID == BOOT_DEVICE_HDD0)
+      pathname_conform_slashes_to_os(cwd);
+
 #if !defined(IS_SALAMANDER) && !defined(DEBUG)
-   /* If it is not Salamander, we need to go one level 
+   /* If it is not Salamander, we need to go one level
     * up for setting the CWD. */
    path_parent_dir(cwd, strlen(cwd));
 #endif
-   
+
    mount_partition();
 
    waitUntilDeviceIsReady(cwd);
@@ -340,12 +376,13 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
 {
    int args = 0;
    char *argv[1];
-   RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, mountPoint);
+   RARCH_LOG("Attempt to load executable: [%s], partition [%s].\n", path, partition);
 
    /* Reload IOP drivers for saving IOP ram */
+   deinit_drivers(true, true);
    reset_IOP();
    common_init_drivers(false);
-   waitUntilDeviceIsReady(path);
+   waitUntilDeviceIsReady((char *)path);
 
 #ifndef IS_SALAMANDER
    char game_path[FILENAME_MAX];
@@ -355,10 +392,10 @@ static void frontend_ps2_exec(const char *path, bool should_load_game)
       const char *content = path_get(RARCH_PATH_CONTENT);
       strlcpy(game_path, content, sizeof(game_path));
       argv[0] = game_path;
-      RARCH_LOG("Attempt to load executable: [%s], partition [%s] with game [%s]\n", path, mountPoint, game_path);
+      RARCH_LOG("Attempt to load executable: [%s], partition [%s] with game [%s]\n", path, partition, game_path);
    }
 #endif
-   LoadELFFromFileWithPartition(path, mountPoint, args, argv);
+   LoadELFFromFileWithPartition(path, partition, args, argv);
 }
 
 #ifndef IS_SALAMANDER
@@ -409,12 +446,11 @@ static void frontend_ps2_exitspawn(char *s, size_t len, char *args)
    frontend_ps2_exec(s, should_load_content);
 }
 
-static int frontend_ps2_get_rating(void) { return 4; }
-
 enum frontend_architecture frontend_ps2_get_arch(void)
 {
    return FRONTEND_ARCH_MIPS;
 }
+
 
 static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 {
@@ -448,7 +484,7 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 
    if (hddMountStatus == HDD_MOUNT_STATUS_OK)
    {
-      size_t _len  = strlcpy(hdd, mountString, sizeof(hdd));
+      size_t _len  = strlcpy(hdd, mountPoint, sizeof(hdd));
       hdd[   _len] = '/';
       hdd[ ++_len] = '\0';
       menu_entries_append(list,
@@ -474,12 +510,23 @@ static int frontend_ps2_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
+static void frontend_ps2_process_args(int *argc, char *argv[])
+{
+#ifndef IS_SALAMANDER
+   /* Make sure active core path is set here. */
+   char path[PATH_MAX_LENGTH] = {0};
+   strlcpy(path, argv[0], sizeof(path));
+   if (path_is_valid(path))
+      path_set(RARCH_PATH_CORE, path);
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_ps2 = {
    frontend_ps2_get_env,         /* get_env */
    frontend_ps2_init,            /* init */
    frontend_ps2_deinit,          /* deinit */
    frontend_ps2_exitspawn,       /* exitspawn */
-   NULL,                         /* process_args */
+   frontend_ps2_process_args,    /* process_args */
    frontend_ps2_exec,            /* exec */
 #ifdef IS_SALAMANDER
    NULL,                         /* set_fork */
@@ -489,13 +536,10 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps2_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    frontend_ps2_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_ps2_parse_drive_list,/* parse_drive_list */
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -504,14 +548,13 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "ps2",                        /* ident */
    NULL                          /* get_video_driver */
 };

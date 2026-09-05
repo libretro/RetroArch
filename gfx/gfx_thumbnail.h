@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (gfx_thumbnail.c).
+ * The following license statement only applies to this file (gfx_thumbnail.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -27,11 +27,129 @@
 #include <libretro.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #include "gfx_animation.h"
-#include "gfx_thumbnail_path.h"
+
+#include "../playlist.h"
+
+struct data_transfer;
 
 RETRO_BEGIN_DECLS
+
+/* Note: This implementation reflects the current
+ * setup of:
+ * - gfx_thumbnail_set_system()
+ * - menu_driver_set_thumbnail_content()
+ * - menu_driver_update_thumbnail_path()
+ * This is absolutely not the best way to handle things,
+ * but I have no interest in rewriting the existing
+ * menu code... */
+
+enum gfx_thumbnail_id
+{
+   GFX_THUMBNAIL_RIGHT = 0,
+   GFX_THUMBNAIL_LEFT,
+   GFX_THUMBNAIL_ICON
+};
+
+/* Prevent direct access to gfx_thumbnail_path_data_t members */
+typedef struct gfx_thumbnail_path_data gfx_thumbnail_path_data_t;
+
+/* Used fixed size char arrays here, just to avoid
+ * the inconvenience of having to calloc()/free()
+ * each individual entry by hand... */
+struct gfx_thumbnail_path_data
+{
+   enum playlist_thumbnail_mode playlist_right_mode;
+   enum playlist_thumbnail_mode playlist_left_mode;
+   enum playlist_thumbnail_mode playlist_icon_mode;
+   size_t playlist_index;
+   size_t system_len;
+   size_t content_label_len;
+   char content_label[NAME_MAX_LENGTH];
+   char content_core_name[NAME_MAX_LENGTH];
+   char system[NAME_MAX_LENGTH];
+   char content_db_name[NAME_MAX_LENGTH];
+   char content_path[PATH_MAX_LENGTH];
+   char content_img[PATH_MAX_LENGTH];
+   char content_img_short[PATH_MAX_LENGTH];
+   char content_img_full[PATH_MAX_LENGTH];
+   char right_path[PATH_MAX_LENGTH];
+   char left_path[PATH_MAX_LENGTH];
+   char icon_path[PATH_MAX_LENGTH];
+};
+
+/* Initialisation */
+
+/* Creates new thumbnail path data container.
+ * Returns handle to new gfx_thumbnail_path_data_t object.
+ * on success, otherwise NULL.
+ * Note: Returned object must be free()d */
+gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void);
+
+/* Resets thumbnail path data
+ * (blanks all internal string containers) */
+void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data);
+
+/* Utility Functions */
+
+/* Returns true if specified thumbnail is enabled
+ * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
+
+/* Setters */
+
+/* Fills content_img field of path_data using existing
+ * content_label field (for internal use only) */
+void gfx_thumbnail_fill_content_img(char *s, size_t len, const char *src, bool shorten);
+
+/* Sets current 'system' (default database name).
+ * Returns true if 'system' is valid.
+ * If playlist is provided, extracts system-specific
+ * thumbnail assignment metadata (required for accurate
+ * usage of gfx_thumbnail_is_enabled())
+ * > Used as a fallback when individual content lacks an
+ *   associated database name */
+bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data, const char *system, playlist_t *playlist);
+
+/* Sets current thumbnail content according to the specified label.
+ * Returns true if content is valid */
+bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char *label);
+
+/* Sets current thumbnail content to the specified image.
+ * Returns true if content is valid */
+bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name);
+
+/* Sets current thumbnail content to the specified playlist entry.
+ * Returns true if content is valid.
+ * > Note: It is always best to use playlists when setting
+ *   thumbnail content, since there is no guarantee that the
+ *   corresponding menu entry label will contain a useful
+ *   identifier (it may be 'tainted', e.g. with the current
+ *   core name). 'Real' labels should be extracted from source */
+bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, playlist_t *playlist, size_t idx);
+
+/* Updaters */
+
+/* Updates path for specified thumbnail identifier (right, left).
+ * Must be called after:
+ * - gfx_thumbnail_set_system()
+ * - gfx_thumbnail_set_content*()
+ * ...and before:
+ * - gfx_thumbnail_get_path()
+ * Returns true if generated path is valid */
+bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
+
+/* Getters */
+
+/* Fetches current content directory.
+ * Returns true if content directory is valid. */
+size_t gfx_thumbnail_get_content_dir(gfx_thumbnail_path_data_t *path_data, char *s, size_t len);
+
+/* Gets the common savestate thumbnail path. */
+void gfx_savestate_thumbnail_get_path(char *s, size_t len, const char *state_name, int state_slot);
 
 /* Defines the current status of an entry
  * thumbnail texture */
@@ -66,21 +184,149 @@ enum gfx_thumbnail_shadow_type
 enum gfx_thumbnail_flags
 {
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
-   GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1)
+   GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
+   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
 };
 
 /* Holds all runtime parameters associated with
- * an entry thumbnail */
+ * an entry thumbnail.
+ *
+ * @c status is read by the video thread (via
+ * gfx_thumbnail_draw) and written by both the upload-callback
+ * thread (release-store after publishing texture/width/height)
+ * and the main thread (a number of plain transitions during menu
+ * processing).  retro_atomic_int_t backs the field with an
+ * atomic-typed integer that is safe to read/write through the
+ * retro_atomic_*_int API on every supported backend.
+ *
+ * Same size and alignment as plain int on every backend; struct
+ * layout is unchanged.  The cost of the acquire/release barriers
+ * on weak-memory ARM/PowerPC is negligible at this field's
+ * access rates (menu and frame draw, never per-sample). */
+/* LIFECYCLE CONTRACT: every instance must be zeroed before any
+ * other thumbnail API call - including gfx_thumbnail_reset(),
+ * which frees the animation pointers below and therefore treats
+ * nonzero garbage as live allocations. calloc'd and static
+ * instances are inherently safe; anything malloc'd or
+ * stack-allocated must go through gfx_thumbnail_init_blank(),
+ * which also stores the atomically-typed status correctly and
+ * stays complete as fields are added. Manual field-by-field
+ * initialization is how the materialui Android startup abort
+ * happened; do not reintroduce it. */
 typedef struct
 {
    uintptr_t texture;
+   /* Animated thumbnail state (all main-thread only). 'anim' is a
+    * streaming image_transfer handle which BORROWS 'anim_buf'; both
+    * are owned by the thumbnail and released in gfx_thumbnail_reset
+    * (or when the animation finishes its final loop). 'anim_buf'
+    * is either a malloc'd file read (anim_dt NULL, freed with
+    * free()) or borrowed from an adopted nbio handle (released via
+    * data_transfer_free(anim_dt); anim_buf itself must not be
+    * freed). */
+   void *anim;
+   void *anim_buf;
+   struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
+                                      adopted nbio handle beneath it)   */
+   /* Preview audio on a WINDOWED handle.  anim_buf is a sliding
+    * mapping there, only partly resident, so the mixer cannot be
+    * handed a copy of it - it needs the whole container.  This is a
+    * second, independent read of the same file, pumped a frame
+    * budget at a time by gfx_thumbnail_animate and handed over when
+    * complete.  NULL on every other path, where anim_buf is already
+    * the whole file and the hand-off is immediate. */
+   struct data_transfer *anim_audio_dt;
+   /* Windowed preview audio: the mixer borrows this window's mapping
+    * for the container and is told, through params.avail and
+    * audio_driver_mixer_stream_set_avail, how much of it is resident.
+    * anim_audio_hi is that figure - never above the committed
+    * frontier, which is what keeps a stale feeder a stall rather than
+    * a read of reserved pages.  anim_audio_slot is the mixer slot the
+    * feeder follows with audio_driver_mixer_stream_byte_tell. */
+   size_t anim_audio_hi;
+   int    anim_audio_slot;
+   char *anim_audio_path;  /* strdup'd source for the read above; only
+                              set on windowed handles, freed by
+                              gfx_thumbnail_anim_close */
+   /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
+    * the frame held in one job waits for its due time, the other is
+    * already decoding its successor.  anim_job_upload selects which
+    * of the two uploads next. */
+   void *anim_job;
+   void *anim_job2;
+   size_t anim_buf_len;    /* size of anim_buf                         */
+   int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
+   /* Generation the in-flight request was issued under.  Only
+    * meaningful while status is PENDING: if it no longer matches the
+    * current generation, that request was superseded and nothing will
+    * ever deliver it, so the slot must be re-requested rather than
+    * waited on. */
+   uint64_t list_id;
+   int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
    unsigned height;
    float alpha;
    float delay_timer;
-   enum gfx_thumbnail_status status;
+   retro_atomic_int_t status;
    uint8_t flags;
+   uint8_t anim_type;      /* enum image_type_enum of 'anim' */
+   uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
+   uint8_t anim_read_pending; /* adopted nbio read still in flight;
+                                 animation/audio held at the static
+                                 frame until it completes */
+   uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
+                              decoder frontier during playback, not a
+                              buffer pumped to completion: residency is
+                              the window, not the whole file (large
+                              video previews).  0 = classic whole-file
+                              buffer (audio preview, non-reserve
+                              platforms, adopted stills). */
 } gfx_thumbnail_t;
+
+/* Field-by-field initializer for non-trivial gfx_thumbnail_t.
+ *
+ * Now that .status is atomically-typed, a wholesale
+ * memset(t, 0, sizeof(*t)) of a struct containing this type
+ * warns under CXX_BUILD's C++ compile (the struct is no longer
+ * trivially-copyable per C++11), even though the resulting
+ * bytes are identical.  RetroArch's CXX_BUILD mode
+ * compiles every .c file as C++, so this helper is required
+ * for clean builds, not just style.
+ *
+ * gfx_thumbnail_init_blank zero-inits the small struct field
+ * by field, using retro_atomic_int_init() for the atomic field
+ * so the first write is well-defined under C11 stdatomic and
+ * C++11 std::atomic.  Equivalent in effect to the pre-port
+ * memset on every real backend (status field is also zero ->
+ * UNKNOWN). */
+static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
+{
+   t->texture         = 0;
+   t->anim            = NULL;
+   t->anim_buf        = NULL;
+   t->anim_dt         = NULL;
+   t->anim_audio_dt   = NULL;
+   t->anim_audio_hi   = 0;
+   t->anim_audio_slot = -1;
+   t->anim_audio_path = NULL;
+   t->anim_job        = NULL;
+   t->anim_job2       = NULL;
+   t->anim_buf_len    = 0;
+   t->anim_next_us    = 0;
+   t->list_id         = 0;
+   t->anim_loops_left = 0;
+   t->width           = 0;
+   t->height          = 0;
+   t->alpha           = 0.0f;
+   t->delay_timer     = 0.0f;
+   retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
+   t->flags           = 0;
+   t->anim_type       = 0;
+   t->anim_job_upload = 0;
+   t->anim_read_pending = 0;
+   t->anim_windowed   = 0;
+}
 
 /* Holds all configuration parameters associated
  * with a thumbnail shadow effect */
@@ -121,6 +367,12 @@ struct gfx_thumbnail_state
     * for at least gfx_thumbnail_delay ms */
    float stream_delay;
 
+   /* Animated thumbnails: per-vsync frame-decode budget, so many
+    * simultaneously visible animations degrade to a lower frame rate
+    * instead of stalling the menu (main thread only) */
+   int64_t anim_budget_start_us;
+   int64_t anim_budget_used_us;
+
    /* Duration in ms of the thumbnail 'fade in' animation */
    float fade_duration;
 
@@ -153,6 +405,12 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing);
 
 /* Core interface */
 
+/* Tears down the shared animated-thumbnail decode worker (a no-op in
+ * builds without HAVE_THREADS, and when the worker was never started).
+ * Must be called after every gfx_thumbnail_t has been reset. The worker
+ * is recreated lazily by the next animated thumbnail. */
+void gfx_thumbnail_anim_worker_deinit(void);
+
 /* When called, prevents the handling of any pending
  * thumbnail load requests
  * >> **MUST** be called before deleting any gfx_thumbnail_t
@@ -160,6 +418,15 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing);
  *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void);
+
+/* True if 'thumbnail' is waiting on a request that has since been
+ * superseded, i.e. it is PENDING with nothing behind it.  Resets the
+ * thumbnail (returning it to UNKNOWN) and returns true in that case, so
+ * the caller's normal "request if UNKNOWN" path picks it up again.
+ * gfx_thumbnail_process_stream()/_streams() call this themselves; menu
+ * drivers that call gfx_thumbnail_request() directly should call it
+ * before testing the status. */
+bool gfx_thumbnail_reset_if_orphaned(gfx_thumbnail_t *thumbnail);
 
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to
@@ -194,6 +461,13 @@ void gfx_thumbnail_request_file(
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
+
+/* Advances an animated thumbnail (animated WebP / WebM) by at most one frame,
+ * if its frame duration has elapsed. Call once per frame, on the main
+ * thread, for every on-screen thumbnail. Non-animated thumbnails and
+ * non-WebP image types return immediately (single flag test), so this
+ * is safe and near-free to call for every thumbnail unconditionally. */
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail);
 
 /* Stream processing */
 

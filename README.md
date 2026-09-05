@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
 [![Crowdin](https://badges.crowdin.net/retroarch/localized.svg)](https://crowdin.com/project/retroarch)
 
 # RetroArch
@@ -34,7 +32,7 @@ Latest binaries are currently hosted on the [buildbot](http://buildbot.libretro.
 
 ## Support
 
-To reach developers, either make an issue here on GitHub, make a thread on the [forum](https://www.libretro.com/forums/), chat on [discord](https://discord.gg/C4amCeV), or visit our IRC channel: #retroarch @ irc.freenode.org. You could create a post in [Reddit](https://www.reddit.com/r/RetroArch/) with *Technical Support* flair.
+To reach developers, either make an issue here on GitHub, make a thread on the [forum](https://www.libretro.com/forums/), chat on [Discord](https://discord.gg/C4amCeV). You could create a post in [Reddit](https://www.reddit.com/r/RetroArch/) with *Technical Support* flair.
 
 ## Documentation
 
@@ -73,21 +71,22 @@ RetroArch has been ported to the following platforms:
    - Emscripten (WebAssembly and JavaScript)
    - FreeBSD
    - Haiku
+   - LG webOS
    - Linux
+   - Original Microsoft Xbox
    - Microsoft Xbox 360 (Libxenon/XeXDK)
    - Microsoft Xbox One
    - Microsoft Xbox Series S/X
    - Miyoo
    - NetBSD
-   - Nintendo 3DS/2DS
-   - Nintendo GameCube
    - Nintendo NES/SNES Classic Edition
-   - Nintendo Switch
+   - Nintendo GameCube
    - Nintendo Wii
+   - Nintendo Switch
    - Nintendo Wii U
+   - Nintendo 3DS/2DS
    - OpenBSD
    - OpenDingux
-   - Original Microsoft Xbox
    - PlayStation2
    - PlayStation3
    - PlayStation4
@@ -95,21 +94,22 @@ RetroArch has been ported to the following platforms:
    - PlayStation Vita
    - Raspberry Pi
    - ReactOS
+   - Redox OS
    - RetroFW
    - RS90
    - SerenityOS
    - Solaris
-   - Windows 10
-   - Windows 11
-   - Windows 2000
-   - Windows 7
-   - Windows 8
+   - Windows NT 3.5
    - Windows 95
    - Windows 98
-   - Windows Millennium
-   - Windows NT 3.5
-   - Windows Vista
+   - Windows 2000
    - Windows XP
+   - Windows Millennium
+   - Windows Vista
+   - Windows 7
+   - Windows 8
+   - Windows 10
+   - Windows 11
 
 ## Dependencies (PC)
 
@@ -123,7 +123,7 @@ following dependencies come as recommended:
    - GL headers / Vulkan headers
    - X11 headers and libs, or EGL/KMS/GBM
 
-OSX port of RetroArch requires latest versions of XCode to build.
+OSX port of RetroArch requires latest versions of Xcode to build.
 
 RetroArch can utilize these libraries if enabled:
 
@@ -140,6 +140,7 @@ RetroArch needs at least one of these audio driver libraries:
    - JACK
    - SDL
    - PulseAudio
+   - PipeWire
    - XAudio2 (Win32, Xbox 360)
    - DirectSound (Win32, Xbox 1)
    - CoreAudio (OSX, iOS)
@@ -330,13 +331,11 @@ The links below belong to our official channels. Links other than this may have 
 - [Facebook](https://www.facebook.com/libretro)
 - [Twitter](https://twitter.com/libretro)
 - [Reddit](https://www.reddit.com/r/RetroArch/)
-- [YouTube](https://www.youtube.com/Libretro)
-- [Google Post](https://posts.google.com/share/55Nhs2jG)
+- [YouTube](https://www.youtube.com/@Libretro)
 - [Steam](https://store.steampowered.com/app/1118310/RetroArch/)
-- [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
+- [YouTube Topic](https://www.youtube.com/channel/UCyXchL2xdEpHNzqE52w8XYw)
 - [Patreon](https://www.patreon.com/libretro)
-- [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
-- [Discord](https://discord.com/invite/VZ2b7wghxR)
+- [Discord](https://discord.gg/C4amCeV)
 - [Teespring](https://teespring.com/stores/retroarch)
 - [Documentation](https://docs.libretro.com/)
 - [Forum](https://forums.libretro.com/)

@@ -57,6 +57,8 @@ typedef struct
 {
    rtl_runtime_t runtime;           /* unsigned alignment */
    rtl_last_played_t last_played;   /* unsigned alignment */
+   unsigned play_count;
+   unsigned state_slot;
    char path[PATH_MAX_LENGTH];
 } runtime_log_t;
 
@@ -96,7 +98,7 @@ void runtime_log_reset(runtime_log_t *runtime_log);
  * cleaner to have a symmetrical set/get interface) */
 
 /* Gets runtime as a pre-formatted string */
-void runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *str, size_t len);
+size_t runtime_log_get_runtime_str(runtime_log_t *runtime_log, char *s, size_t len);
 
 /* Gets last played entry values */
 void runtime_log_get_last_played(runtime_log_t *runtime_log,
@@ -128,13 +130,7 @@ void runtime_log_convert_usec2hms(retro_time_t usec, unsigned *hours, unsigned *
 
 /* Updates specified playlist entry runtime values with
  * contents of associated log file */
-void runtime_update_playlist(
-      playlist_t *playlist, size_t idx,
-      const char *dir_runtime_log,
-      const char *dir_playlist,
-      bool log_per_core,
-      enum playlist_sublabel_last_played_style_type timedate_style,
-      enum playlist_sublabel_last_played_date_separator_type date_separator);
+void runtime_update_playlist(playlist_t *playlist, size_t idx);
 
 #if defined(HAVE_MENU)
 /* Contentless cores manipulation */

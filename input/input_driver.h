@@ -52,6 +52,10 @@
 #include "../command.h"
 #endif
 
+#ifdef HAVE_BSV_MOVIE
+#include "bsv/uint32s_index.h"
+#endif
+
 #if defined(ANDROID)
 #define DEFAULT_MAX_PADS 8
 #define ANDROID_KEYBOARD_PORT DEFAULT_MAX_PADS
@@ -92,6 +96,8 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(DINGUX)
 #define DEFAULT_MAX_PADS 2
+#elif defined(__EMSCRIPTEN__)
+#define DEFAULT_MAX_PADS 4
 #else
 #define DEFAULT_MAX_PADS 16
 #endif /* defined(ANDROID) */
@@ -100,11 +106,35 @@
 #define MAPPER_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 #define MAPPER_UNSET_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
 
-#define INHERIT_JOYAXIS(binds) (((binds)[x_plus].joyaxis == (binds)[x_minus].joyaxis) || (  (binds)[y_plus].joyaxis == (binds)[y_minus].joyaxis))
-
+/*
+  INVALID: should never arise.
+  REGULAR: just key and button inputs, nothing else
+  CHECKPOINT: an 8-byte size and serialized raw state follow the actions.
+  CHECKPOINT2: a state follows the actions, but it is encoded and/or
+               compressed in some way. The next two bytes are the compression
+               type and the encoding type, followed by the 4-byte uncompressed,
+               unencoded size; the 4-byte uncompressed, encoded size; the 4-byte
+               compressed, encoeded, size; and the compressed, encoded data.
+               If either the encoding or the compression codec are not supported,
+               the checkpoint will be skipped.
+ */
 #define REPLAY_TOKEN_INVALID          '\0'
-#define REPLAY_TOKEN_REGULAR_FRAME    'f'
-#define REPLAY_TOKEN_CHECKPOINT_FRAME 'c'
+#define REPLAY_TOKEN_REGULAR_FRAME     'f'
+#define REPLAY_TOKEN_CHECKPOINT_FRAME  'c'
+#define REPLAY_TOKEN_CHECKPOINT2_FRAME 'C'
+
+/* Which compression codec to use. */
+#define REPLAY_CHECKPOINT2_COMPRESSION_NONE 0
+#define REPLAY_CHECKPOINT2_COMPRESSION_ZLIB 1
+#define REPLAY_CHECKPOINT2_COMPRESSION_ZSTD 2
+
+/* Which encoding to use.
+   RAW: Just raw checkpoint data, possibly compressed.
+   STATESTREAM: Incremental, block-deduplicated encoding per
+             https://github.com/sumitshetye2/v86_savestreams
+*/
+#define REPLAY_CHECKPOINT2_ENCODING_RAW 0
+#define REPLAY_CHECKPOINT2_ENCODING_STATESTREAM 1
 
 /**
  * Takes as input analog key identifiers and converts them to corresponding
@@ -153,11 +183,11 @@ enum input_driver_state_flags
    INP_FLAG_BLOCK_LIBRETRO_INPUT     = (1 << 4),
    INP_FLAG_BLOCK_POINTER_INPUT      = (1 << 5),
    INP_FLAG_GRAB_MOUSE_STATE         = (1 << 6),
-   INP_FLAG_OLD_ANALOG_DPAD_MODE_SET = (1 << 7),
-   INP_FLAG_OLD_LIBRETRO_DEVICE_SET  = (1 << 8),
-   INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 9),
-   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 10),
-   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 11)
+   INP_FLAG_REMAPPING_CACHE_ACTIVE   = (1 << 7),
+   INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 8),
+   INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9),
+   INP_FLAG_MENU_PRESS_PENDING       = (1 << 10),
+   INP_FLAG_MENU_PRESS_CANCEL        = (1 << 11)
 };
 
 #ifdef HAVE_BSV_MOVIE
@@ -168,54 +198,99 @@ enum bsv_flags
    BSV_FLAG_MOVIE_PLAYBACK           = (1 << 2),
    BSV_FLAG_MOVIE_RECORDING          = (1 << 3),
    BSV_FLAG_MOVIE_END                = (1 << 4),
-   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5)
+   BSV_FLAG_MOVIE_EOF_EXIT           = (1 << 5),
+   BSV_FLAG_MOVIE_FORCE_CHECKPOINT   = (1 << 6),
+   BSV_FLAG_MOVIE_PREV_CHECKPOINT    = (1 << 7),
+   BSV_FLAG_MOVIE_NEXT_CHECKPOINT    = (1 << 8),
+   BSV_FLAG_MOVIE_SEEK_TO_FRAME      = (1 << 9),
+   BSV_FLAG_MOVIE_SEEKING            = (1 << 10)
 };
 
 struct bsv_state
 {
-   uint8_t flags;
+   uint16_t flags;
    /* Movie playback/recording support. */
    char movie_auto_path[PATH_MAX_LENGTH];
    /* Immediate playback/recording. */
    char movie_start_path[PATH_MAX_LENGTH];
+   /* Target frame/position to seek to next iteration. */
+   int64_t seek_target_frame, seek_target_pos;
 };
 
 /* These data are always little-endian. */
 struct bsv_key_data
 {
-  uint8_t down;
-  uint16_t mod;
-  uint8_t _padding;
-  uint32_t code;
-  uint32_t character;
+   uint8_t down;
+   uint8_t _padding;
+   uint16_t mod;
+   uint32_t code;
+   uint32_t character;
 };
-
 typedef struct bsv_key_data bsv_key_data_t;
+
+struct bsv_input_data
+{
+   uint8_t port;
+   uint8_t device;
+   uint8_t idx;
+   uint8_t _padding;
+   /* little-endian numbers */
+   uint16_t id;
+   int16_t value;
+};
+typedef struct bsv_input_data bsv_input_data_t;
 
 struct bsv_movie
 {
    intfstream_t *file;
-   uint8_t *state;
+   int64_t identifier;
+   uint32_t version;
+   size_t min_file_pos;
+
    /* A ring buffer keeping track of positions
     * in the file for each frame. */
    size_t *frame_pos;
-   int64_t identifier;
    size_t frame_mask;
-   size_t frame_ptr;
-   size_t min_file_pos;
-   size_t state_size;
-   bsv_key_data_t key_events[255]; /* uint32_t alignment */
+   uint64_t frame_counter;
 
-   /* Staging variables for keyboard events */
+   /* Staging variables for events */
    uint8_t key_event_count;
+   uint16_t input_event_count;
+   bsv_key_data_t key_events[128];
+   bsv_input_data_t input_events[512];
 
    /* Rewind state */
    bool playback;
    bool first_rewind;
    bool did_rewind;
+   bool checkpoint_ready;
+
+#ifdef HAVE_STATESTREAM
+   /* Block index and superblock index for incremental checkpoints */
+   uint32s_index_t *superblocks;
+   uint32s_index_t *blocks;
+   uint32_t *superblock_seq;
+   uint8_t commit_interval, commit_threshold;
+#endif
+
+   uint8_t checkpoint_compression, checkpoint_encoding;
+
+   uint8_t *last_save, *cur_save;
+   size_t last_save_size, cur_save_size;
+
+   bool cur_save_valid;
 };
 
 typedef struct bsv_movie bsv_movie_t;
+
+enum replay_checkpoint_behavior_ {
+   REPLAY_CPBEHAVIOR_SKIP,
+   REPLAY_CPBEHAVIOR_UPDATE,
+   REPLAY_CPBEHAVIOR_DESERIALIZE
+};
+
+typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
+
 #endif
 
 /**
@@ -239,6 +314,7 @@ struct input_keyboard_line
    input_keyboard_line_complete_t cb;
    size_t ptr;
    size_t size;
+   size_t capacity;  /* Allocated size of buffer (excluding NUL) */
    bool enabled;
 };
 
@@ -257,7 +333,8 @@ typedef struct
    char joypad_driver[32];
    char name[128];
    char display_name[128];
-   char config_name[256]; /* Base name of the RetroArch config file */
+   char phys[NAME_MAX_LENGTH];
+   char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
    bool autoconfigured;
 } input_device_info_t;
 
@@ -270,18 +347,22 @@ struct remote_message
    uint16_t state;
 };
 
-struct input_remote
+typedef struct
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-   int net_fd[MAX_USERS];
-#endif
-   bool state[RARCH_BIND_LIST_END];
-};
+   char display_name[NAME_MAX_LENGTH];
+} input_mouse_info_t;
 
 typedef struct
 {
-   char display_name[256];
-} input_mouse_info_t;
+   int8_t source; /* RETRO_SENSOR_* ID to read from (0-5), -1 = unmapped */
+   int8_t sign;   /* +1 or -1 */
+} input_sensor_axis_t;
+
+typedef struct
+{
+   /* indexed by RETRO_SENSOR_ACCELEROMETER_X..RETRO_SENSOR_GYROSCOPE_Z */
+   input_sensor_axis_t axes[6];
+} input_sensor_map_t;
 
 typedef struct input_remote input_remote_t;
 
@@ -333,7 +414,7 @@ struct input_driver
    /**
     * Queries state for a specified control on a specified input port. This
     * function pointer can be set to NULL if not supported by the input driver,
-    * for example if a joypad driver is responsible for quering state for a
+    * for example if a joypad driver is responsible for querying state for a
     * particular driver/platform.
     *
     * @param joypad_data      Input state struct, defined by the input driver
@@ -395,7 +476,7 @@ struct input_driver
 
    /**
     * Retrieves the sensor state associated with the provided port and ID. This
-    * function pointer may be set to NULL if retreiving sensor state is not
+    * function pointer may be set to NULL if retrieving sensor state is not
     * supported.
     *
     * @param data
@@ -465,6 +546,10 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    bool (*set_rumble_gain)(unsigned, unsigned);
+   bool (*set_sensor_state)(unsigned port,
+         enum retro_sensor_action action, unsigned rate);
+   /* return true if handled; false to fall back to input driver */
+   bool (*get_sensor_input)(unsigned port, unsigned id, float *value);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -486,11 +571,6 @@ struct input_keyboard_ctx_wait
 
 typedef struct
 {
-   /**
-    * Array of timers, one for each entry in enum input_combo_type.
-    */
-   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
@@ -512,6 +592,7 @@ typedef struct
 #endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
+   bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -524,6 +605,14 @@ typedef struct
    int old_touch_index_lut[OVERLAY_MAX_TOUCH];
 #endif
    uint16_t flags;
+   /* Read and written every poll; kept beside flags so the per-poll
+    * bookkeeping shares a cacheline with the hot pointer block above,
+    * rather than sitting past the input_device_info string tables
+    * (~17 KB of cold data) as it used to. */
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
@@ -534,19 +623,28 @@ typedef struct
 #endif
 #endif
    int osk_ptr;
+   bool osk_textbox_focus;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
+   hold_buttons_t hold_btns;   /* int32_t alignment */
 
    input_mapper_t mapper;          /* uint32_t alignment */
+   input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
-   unsigned old_analog_dpad_mode[MAX_USERS];
-   unsigned old_libretro_device[MAX_USERS];
+   input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
+
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    * One indexed entry is read per frame, and only while a button
+    * combo is bound; cold enough that it has no business occupying
+    * the first six cachelines of this struct, which it used to.
+    * (rarch_timer_t is int64-aligned; the compiler pads as needed
+    * here, which costs at most 4 bytes.)
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
-   unsigned input_hotkey_block_counter;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
 
    enum osk_type osk_idx;
 
@@ -556,8 +654,50 @@ typedef struct
 
    /* primitives */
    bool analog_requested[MAX_USERS];
+
+   /* Per-port joypad state bitmask cache.
+    * Populated lazily on the first JOYPAD query for each mapped_port
+    * within a frame, then reused for subsequent individual button
+    * queries to the same port.  Avoids up to 32 indirect
+    * joypad->button()/axis() calls per port when cores use the
+    * old per-button query pattern instead of JOYPAD_MASK.
+    * Invalidated at the start of each input_driver_poll(). */
+   int32_t joypad_state_cache[MAX_USERS];
+
+   /* Per-port set of RetroPad buttons (bits 0..RARCH_FIRST_CUSTOM_BIND-1)
+    * that INP_FLAG_WAIT_INPUT_RELEASE is still waiting on.  Captured
+    * from whatever is held on the frame the wait is armed and pruned
+    * as those buttons are released; a button pressed after the wait
+    * was armed is never in the set, so it is delivered normally.
+    * While the flag is clear it simply tracks what is held, so a wait
+    * armed outside input_keys_pressed() starts from the previous
+    * frame's held set. */
+   uint16_t wait_release_mask[MAX_USERS];
+   bool    joypad_state_cache_valid[MAX_USERS];
+
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
+
+   /* Cached sensor values — written once per frame in input_driver_poll()
+    * on the main thread, read by shader backends on the video thread.
+    * Not formally synchronized; relies on single-writer/single-reader
+    * float stores being practically atomic on ARM/x86. Worst case is
+    * a single stale frame of sensor data. */
+   float sensor_gyroscope_cache[3];
+   float sensor_accelerometer_cache[3];
+
+   /* Accelerometer rest position capture state.
+    * Same thread-safety model as the caches above:
+    * written on the main thread, read by shader backends
+    * on the video thread. */
+   float sensor_accelerometer_rest[3];
+   float rest_accum[3];
+   unsigned rest_sample_count;
+   bool rest_capturing;
+   bool shader_uses_sensors;
+   bool frontend_sensors_enabled;
+   unsigned core_accel_rate; /* >0 means core wants accel at this rate */
+   unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
 } input_driver_state_t;
 
 
@@ -764,6 +904,20 @@ void input_config_set_device_config_name(unsigned port, const char *name);
 void input_config_set_device_joypad_driver(unsigned port, const char *driver);
 
 /**
+ * Set the physical location of the device in the specified port
+ *
+ * A NULL or empty location clears the stored one, so that a port
+ * whose device reports no location cannot inherit the location of
+ * whatever occupied it before.
+ *
+ * @param port
+ * The port of the device to be assigned to
+ * @param phys
+ * The physical location to set the given port to.
+ */
+void input_config_set_device_phys(unsigned port, const char *phys);
+
+/**
  * Set the vendor ID (vid) for the device in the specified port
  *
  * @param port
@@ -821,6 +975,21 @@ void input_config_clear_device_joypad_driver(unsigned port);
 
 unsigned input_config_get_device_count(void);
 
+/**
+ * input_config_sanitize_joypad_indices:
+ *
+ * Restores the invariant that settings->uints.input_joypad_index[]
+ * is a permutation of [0, MAX_USERS): every player maps to a distinct
+ * pad index, and every entry is in range.
+ *
+ * Entries are examined in ascending player order and the first
+ * claimant of an index keeps it, so repairing a duplicate never takes
+ * a pad away from a lower numbered player.
+ *
+ * Returns true if the mapping had to be corrected.
+ **/
+bool input_config_sanitize_joypad_indices(void);
+
 unsigned *input_config_get_device_ptr(unsigned port);
 
 unsigned input_config_get_device(unsigned port);
@@ -831,6 +1000,7 @@ const char *input_config_get_device_display_name(unsigned port);
 const char *input_config_get_mouse_display_name(unsigned port);
 const char *input_config_get_device_config_name(unsigned port);
 const char *input_config_get_device_joypad_driver(unsigned port);
+const char *input_config_get_device_phys(unsigned port);
 
 /**
  * Retrieves the vendor id (vid) of a connected controller
@@ -903,6 +1073,10 @@ char *input_config_get_device_name_ptr(unsigned port);
  */
 size_t input_config_get_device_name_size(unsigned port);
 
+unsigned input_driver_lightgun_id_convert(unsigned id);
+
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
@@ -919,6 +1093,30 @@ void input_keyboard_line_append(
 
 void input_keyboard_line_clear(input_driver_state_t *input_st);
 void input_keyboard_line_free(input_driver_state_t *input_st);
+
+#ifdef ANDROID
+/**
+ * android_keyboard_start:
+ * @buffer_ptr               : Pointer to the keyboard line buffer.
+ * @size_ptr                 : Pointer to the keyboard line size.
+ * @ptr_ptr                  : Pointer to the keyboard line cursor.
+ * @label                    : Hint shown on the keyboard, or NULL.
+ * @cb                       : Line complete callback function.
+ * @userdata                 : Userdata passed to the callback.
+ *
+ * Raises the native Android (IME) keyboard for menu text entry, made to
+ * mirror the iOS ios_keyboard_* hooks. Swaps the custom on-screen keyboard
+ * for the system soft keyboard, enabling paste and password managers.
+ * Implemented in input/drivers/android_input.c.
+ *
+ * Returns: true if the keyboard was shown.
+ **/
+bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
+      size_t *ptr_ptr, const char *label,
+      input_keyboard_line_complete_t cb, void *userdata);
+bool android_keyboard_active(void);
+void android_keyboard_end(void);
+#endif
 
 /**
  * input_keyboard_start_line:
@@ -948,15 +1146,32 @@ void input_remote_free(input_remote_t *handle, unsigned max_users);
 
 void input_game_focus_free(void);
 
-void input_config_get_bind_string_joyaxis(
-      bool input_descriptor_label_show,
-      char *buf, const char *prefix,
-      const struct retro_keybind *bind, size_t size);
+/**
+ * Converts a retro_keybind to a human-readable string, optionally allowing a
+ * fallback auto_bind to be used as the source for the string.
+ *
+ * @param buf        A string which will be overwritten with the returned value
+ * @param bind       A binding to convert to a string
+ * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
+ * @param size       The maximum length that will be written to `buf`
+ */
+size_t input_config_get_bind_string(void *settings_data,
+      char *s, const struct retro_keybind *bind,
+      const struct retro_keybind *auto_bind,
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label, size_t len);
 
-void input_config_get_bind_string_joykey(
+size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *prefix,
-      const struct retro_keybind *bind, size_t size);
+      char *s, const char *prefix,
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
+
+size_t input_config_get_bind_string_joykey(
+      bool input_descriptor_label_show,
+      char *s, const char *prefix,
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
 
@@ -967,14 +1182,23 @@ bool input_set_rumble_gain(unsigned gain);
 
 float input_get_sensor_state(unsigned port, unsigned id);
 
+void input_sensor_start_rest_capture(void);
+
 bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate);
+
+/* Core-facing sensor callbacks that track core enable/disable state */
+bool input_core_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate);
+float input_core_get_sensor_state(unsigned port, unsigned id);
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name);
 
 const struct retro_keybind *input_config_get_bind_auto(unsigned port, unsigned id);
 
 void input_config_reset_autoconfig_binds(unsigned port);
+
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port);
 
 void input_config_reset(void);
 
@@ -1001,10 +1225,24 @@ void input_overlay_check_mouse_cursor(void);
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
 void bsv_movie_next_frame(input_driver_state_t *input_st);
+bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
+bool bsv_movie_reset_playback(bsv_movie_t *handle);
+bool bsv_movie_reset_recording(bsv_movie_t *handle);
 void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
+void bsv_movie_deinit_full(input_driver_state_t *input_st);
+void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
+void bsv_movie_dequeue_next(input_driver_state_t *input_st);
 
+bool movie_commit_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
+bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
+bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
+
+/* True while a playback-start task is pending, i.e. until its
+ * callback has installed the replay handle. */
+bool movie_playback_start_in_progress(void *data);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
 bool movie_stop_playback(input_driver_state_t *input_st);
 bool movie_stop_record(input_driver_state_t *input_st);
@@ -1065,6 +1303,7 @@ extern hid_driver_t *hid_drivers[];
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
+extern input_driver_t input_sdl3;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
@@ -1087,14 +1326,16 @@ extern input_driver_t input_rwebinput;
 extern input_driver_t input_dos;
 extern input_driver_t input_winraw;
 extern input_driver_t input_wayland;
+extern input_driver_t input_test;
 
 extern input_device_driver_t dinput_joypad;
 extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t sdl_joypad; /** SDL1 or SDL2. @see sdl_joypad.c. */
 extern input_device_driver_t sdl_dingux_joypad;
+extern input_device_driver_t sdl3_joypad; /** SDL3. @see sdl3_joypad.c */
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
@@ -1110,6 +1351,8 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t mfi_joypad;
 extern input_device_driver_t dos_joypad;
 extern input_device_driver_t rwebpad_joypad;
+extern input_device_driver_t winraw_joypad;
+extern input_device_driver_t test_joypad;
 
 #ifdef HAVE_HID
 extern hid_driver_t iohidmanager_hid;
@@ -1121,6 +1364,8 @@ extern hid_driver_t wiiu_hid;
 
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+extern input_bind_label_set input_config_bind_labels[MAX_USERS];
+extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
 RETRO_END_DECLS
 

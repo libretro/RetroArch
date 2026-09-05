@@ -1,0 +1,227 @@
+[
+{
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(0001:0002) Test joypad device A",
+  "frame": 0
+},
+{
+  "action": 1,
+  "param_num": 1,
+  "param_str": "(0003:0004) Test joypad device B"
+},
+{
+  "action": 1,
+  "param_num": 2,
+  "param_str": "(0005:0006) Test joypad device C"
+},
+{
+  "action": 16,
+  "param_num": 256,
+  "frame": 330
+},
+{
+  "action": 32,
+  "param_num": 256
+},
+{
+  "action": 16,
+  "param_num": 1
+},
+{
+  "action": 32,
+  "param_num": 1
+},
+{
+  "action": 16,
+  "param_num": 512
+},
+{
+  "action": 32,
+  "param_num": 512
+},
+{
+  "action": 16,
+  "param_num": 2
+},
+{
+  "action": 32,
+  "param_num": 2
+},
+{
+  "action": 16,
+  "param_num": 4
+},
+{
+  "action": 32,
+  "param_num": 4
+},
+{
+  "action": 16,
+  "param_num": 8
+},
+{
+  "action": 32,
+  "param_num": 8
+},
+{
+  "action": 16,
+  "param_num": 16
+},
+{
+  "action": 32,
+  "param_num": 16
+},
+{
+  "action": 16,
+  "param_num": 32
+},
+{
+  "action": 32,
+  "param_num": 32
+},
+{
+  "action": 16,
+  "param_num": 64
+},
+{
+  "action": 32,
+  "param_num": 64
+},
+{
+  "action": 16,
+  "param_num": 128
+},
+{
+  "action": 32,
+  "param_num": 128
+},
+{
+  "action": 16,
+  "param_num": 1024
+},
+{
+  "action": 32,
+  "param_num": 1024
+},
+{
+  "action": 16,
+  "param_num": 2048
+},
+{
+  "action": 32,
+  "param_num": 2048
+},
+{
+  "action": 16,
+  "param_num": 4096
+},
+{
+  "action": 32,
+  "param_num": 4096
+},
+{
+  "action": 16,
+  "param_num": 8192
+},
+{
+  "action": 32,
+  "param_num": 8192
+},
+{
+  "action": 16,
+  "param_num": 16384
+},
+{
+  "action": 32,
+  "param_num": 16384
+},
+{
+  "action": 16,
+  "param_num": 32768
+},
+{
+  "action": 32,
+  "param_num": 32768
+},
+{
+  "action": 1001,
+  "param_num": 60000
+},
+{
+  "action": 1001,
+  "param_num": 32768
+},
+{
+  "action": 1001,
+  "param_num": 6000
+},
+{
+  "action": 1001,
+  "param_num": 32767
+},
+{
+  "action": 1001,
+  "param_num": 0
+},
+{
+  "action": 1000,
+  "param_num": 60000
+},
+{
+  "action": 1000,
+  "param_num": 32768
+},
+{
+  "action": 1000,
+  "param_num": 6000
+},
+{
+  "action": 1000,
+  "param_num": 32767
+},
+{
+  "action": 1000,
+  "param_num": 0
+},
+{
+  "action": 1003,
+  "param_num": 60000
+},
+{
+  "action": 1003,
+  "param_num": 32768
+},
+{
+  "action": 1003,
+  "param_num": 6000
+},
+{
+  "action": 1003,
+  "param_num": 32767
+},
+{
+  "action": 1003,
+  "param_num": 0
+},
+{
+  "action": 1002,
+  "param_num": 60000
+},
+{
+  "action": 1002,
+  "param_num": 32768
+},
+{
+  "action": 1002,
+  "param_num": 6000
+},
+{
+  "action": 1002,
+  "param_num": 32767
+},
+{
+  "action": 1002,
+  "param_num": 0
+}
+]

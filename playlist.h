@@ -18,10 +18,11 @@
 #ifndef _PLAYLIST_H__
 #define _PLAYLIST_H__
 
+#include <boolean.h>
 #include <stddef.h>
 
 #include <retro_common_api.h>
-#include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 
 #include "core_info.h"
@@ -61,7 +62,17 @@ enum playlist_thumbnail_mode
    PLAYLIST_THUMBNAIL_MODE_OFF,
    PLAYLIST_THUMBNAIL_MODE_SCREENSHOTS,
    PLAYLIST_THUMBNAIL_MODE_TITLE_SCREENS,
-   PLAYLIST_THUMBNAIL_MODE_BOXARTS
+   PLAYLIST_THUMBNAIL_MODE_BOXARTS,
+   PLAYLIST_THUMBNAIL_MODE_LOGOS,
+
+   PLAYLIST_THUMBNAIL_MODE_LAST
+};
+
+enum playlist_thumbnail_match_mode
+{
+   PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT = 0,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_LABEL = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT,
+   PLAYLIST_THUMBNAIL_MATCH_MODE_WITH_FILENAME
 };
 
 enum playlist_sort_mode
@@ -77,7 +88,17 @@ enum playlist_sort_mode
 enum playlist_thumbnail_id
 {
    PLAYLIST_THUMBNAIL_RIGHT = 0,
-   PLAYLIST_THUMBNAIL_LEFT
+   PLAYLIST_THUMBNAIL_LEFT,
+   PLAYLIST_THUMBNAIL_ICON
+};
+
+enum playlist_thumbnail_name_flags
+{
+   PLAYLIST_THUMBNAIL_FLAG_INVALID          = 0,
+   PLAYLIST_THUMBNAIL_FLAG_FULL_NAME        = (1 << 0),
+   PLAYLIST_THUMBNAIL_FLAG_STD_NAME         = (1 << 1),
+   PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME       = (1 << 2),
+   PLAYLIST_THUMBNAIL_FLAG_NONE             = (1 << 3)
 };
 
 typedef struct content_playlist playlist_t;
@@ -122,6 +143,7 @@ struct playlist_entry
    unsigned last_played_minute;
    unsigned last_played_second;
    enum playlist_runtime_status runtime_status;
+   int thumbnail_flags;
 };
 
 /* Holds all configuration parameters required
@@ -132,18 +154,18 @@ typedef struct
    bool old_format;
    bool compress;
    bool fuzzy_archive_match;
-   bool autofix_paths;   
+   bool autofix_paths;
    char path[PATH_MAX_LENGTH];
-   char base_content_directory[PATH_MAX_LENGTH];
+   char base_content_directory[DIR_MAX_LENGTH];
 } playlist_config_t;
 
 /* Convenience function: copies specified playlist
  * path to specified playlist configuration object */
-void playlist_config_set_path(playlist_config_t *config, const char *path);
+size_t playlist_config_set_path(playlist_config_t *config, const char *path);
 
 /* Convenience function: copies base content directory
  * path to specified playlist configuration object */
-void playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
+size_t playlist_config_set_base_content_directory(playlist_config_t* config, const char* path);
 
 /* Creates a copy of the specified playlist configuration.
  * Returns false in the event of an error */
@@ -163,6 +185,45 @@ playlist_config_t *playlist_get_config(playlist_t *playlist);
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
 playlist_t *playlist_init(const playlist_config_t *config);
+
+/* Resumable playlist parse.
+ *
+ * playlist_parse_begin() opens and sniffs the playlist file and
+ * returns a parse handle (NULL only on allocation failure; a missing
+ * or unreadable file resolves - as it always has - to an empty
+ * playlist at the first step).  playlist_parse_step() advances the
+ * parse, consulting @budget_cb between batches of work when
+ * non-NULL: it returns 1 when the playlist is complete, 0 when the
+ * budget ran out mid-parse (call again), and -1 on a failed parse.
+ * With a NULL @budget_cb the step runs to completion -
+ * playlist_init() is exactly begin + one unbudgeted step + end, so
+ * the blocking and budgeted paths cannot drift apart.
+ * playlist_parse_end() returns the finished playlist (or NULL after
+ * a failure) and frees the handle; playlist_parse_abort() abandons a
+ * parse at any point, releasing everything. */
+typedef struct playlist_parse playlist_parse_t;
+
+playlist_parse_t *playlist_parse_begin(const playlist_config_t *config);
+int playlist_parse_step(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud);
+playlist_t *playlist_parse_end(playlist_parse_t *p);
+void playlist_parse_abort(playlist_parse_t *p);
+
+/* Deferred variant of playlist_init_cached(): same contract, spread
+ * over budgeted steps.  playlist_init_cached_deferred() returns 1
+ * when the requested playlist is cached and ready (cache hit, or the
+ * parse completed within budget), 0 while a parse is pending, -1 on
+ * failure.  While pending, playlist_init_cached_continue() advances
+ * the parse (it never touches the global cache, so a worker task may
+ * drive it; 1 means the parse finished and
+ * playlist_init_cached_finish() - main thread - must install it).
+ * playlist_init_cached_defer_abort() abandons any pending parse. */
+int playlist_init_cached_deferred(const playlist_config_t *config,
+      bool (*budget_cb)(void *), void *budget_ud);
+bool playlist_init_cached_pending(void);
+int playlist_init_cached_continue(bool (*budget_cb)(void *), void *budget_ud);
+int playlist_init_cached_finish(void);
+void playlist_init_cached_defer_abort(void);
 
 /**
  * playlist_free:
@@ -269,6 +330,19 @@ bool playlist_content_path_is_valid(const char *path);
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry);
 
+/**
+ * playlist_push_unchecked:
+ *
+ * Appends @entry at the front of @playlist WITHOUT searching for an
+ * existing matching entry.  The caller must have already proven the
+ * entry's content path absent (via playlist_entry_exists() or a
+ * playlist_dedup_t index); pushing a path that is present creates a
+ * duplicate.  Applies the same validation, capacity and eviction
+ * rules as playlist_push().
+ **/
+bool playlist_push_unchecked(playlist_t *playlist,
+      const struct playlist_entry *entry);
+
 bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry);
 
@@ -284,12 +358,54 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry,
       bool register_update);
 
+void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
+     enum playlist_thumbnail_name_flags thumbnail_flags);
+enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlist_t *playlist, size_t idx);
+enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx);
+
 void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       const struct playlist_entry **entry);
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path);
+
+/* Content path dedup index: answers playlist_entry_exists() queries
+ * in O(1) expected time for repeated probes against the same
+ * playlist.  Verified candidates go through the same matching rules
+ * as the linear scan (including fuzzy archive matching), so answers
+ * are identical; internal allocation failure degrades the index to
+ * the linear scan transparently.  The index owns all of its state
+ * and may be freed before or after the playlist. */
+typedef struct playlist_dedup playlist_dedup_t;
+
+playlist_dedup_t *playlist_dedup_init(void);
+
+/**
+ * playlist_dedup_seed_step:
+ *
+ * Indexes @playlist's current entries, resuming from where the
+ * previous call stopped.  When @budget_cb is non-NULL it is
+ * consulted between entries and seeding yields (returning false)
+ * once it reports the budget exhausted; at least one entry is
+ * seeded per call.  Returns true when seeding has completed.
+ **/
+bool playlist_dedup_seed_step(playlist_dedup_t *dedup,
+      playlist_t *playlist,
+      bool (*budget_cb)(void *userdata), void *userdata);
+
+/**
+ * playlist_dedup_check_add:
+ *
+ * Returns what playlist_entry_exists(@playlist, @path) would
+ * return.  When @will_add is true and the path was absent, the
+ * path is recorded in the index so that subsequent queries see it;
+ * the caller is expected to push the corresponding entry.
+ **/
+bool playlist_dedup_check_add(playlist_dedup_t *dedup,
+      playlist_t *playlist, const char *path, bool will_add);
+
+void playlist_dedup_free(playlist_dedup_t *dedup);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 
@@ -354,14 +470,18 @@ const char *playlist_get_default_core_name(playlist_t *playlist);
 enum playlist_label_display_mode playlist_get_label_display_mode(playlist_t *playlist);
 enum playlist_thumbnail_mode playlist_get_thumbnail_mode(
       playlist_t *playlist, enum playlist_thumbnail_id thumbnail_id);
+bool playlist_thumbnail_match_with_filename(playlist_t *playlist);
 enum playlist_sort_mode playlist_get_sort_mode(playlist_t *playlist);
 const char *playlist_get_scan_content_dir(playlist_t *playlist);
 const char *playlist_get_scan_file_exts(playlist_t *playlist);
 const char *playlist_get_scan_dat_file_path(playlist_t *playlist);
+const char *playlist_get_scan_database_name(playlist_t *playlist);
 bool playlist_get_scan_search_recursively(playlist_t *playlist);
 bool playlist_get_scan_search_archives(playlist_t *playlist);
 bool playlist_get_scan_filter_dat_content(playlist_t *playlist);
+bool playlist_get_scan_omit_db_ref(playlist_t *playlist);
 bool playlist_get_scan_overwrite_playlist(playlist_t *playlist);
+int playlist_get_scan_db_usage(playlist_t *playlist);
 bool playlist_scan_refresh_enabled(playlist_t *playlist);
 
 void playlist_set_default_core_path(playlist_t *playlist, const char *core_path);
@@ -373,10 +493,13 @@ void playlist_set_sort_mode(playlist_t *playlist, enum playlist_sort_mode sort_m
 void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir);
 void playlist_set_scan_file_exts(playlist_t *playlist, const char *file_exts);
 void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_path);
+void playlist_set_scan_database_name(playlist_t *playlist, const char *database_name);
 void playlist_set_scan_search_recursively(playlist_t *playlist, bool search_recursively);
 void playlist_set_scan_search_archives(playlist_t *playlist, bool search_archives);
 void playlist_set_scan_filter_dat_content(playlist_t *playlist, bool filter_dat_content);
+void playlist_set_scan_omit_db_ref(playlist_t *playlist, bool omit_db_ref);
 void playlist_set_scan_overwrite_playlist(playlist_t *playlist, bool overwrite_playlist);
+void playlist_set_scan_db_usage(playlist_t *playlist, int db_usage);
 
 /* Returns true if specified entry has a valid
  * core association (i.e. a non-empty string

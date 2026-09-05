@@ -2,6 +2,7 @@
 #define _RECORD_DRIVER_H
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 enum ffemu_pix_format
 {
@@ -15,6 +16,7 @@ enum streaming_mode
    STREAMING_MODE_TWITCH = 0,
    STREAMING_MODE_YOUTUBE,
    STREAMING_MODE_FACEBOOK,
+   STREAMING_MODE_KICK,
    STREAMING_MODE_LOCAL,
    STREAMING_MODE_CUSTOM
 };
@@ -121,10 +123,10 @@ struct recording
    unsigned width;
    unsigned height;
 
-   char path[8192];
-   char config[8192];
-   char output_dir[8192];
-   char config_dir[8192];
+   char path[PATH_MAX_LENGTH];
+   char config[PATH_MAX_LENGTH];
+   char output_dir[DIR_MAX_LENGTH];
+   char config_dir[DIR_MAX_LENGTH];
 
    bool enable;
    bool streaming_enable;
@@ -132,8 +134,6 @@ struct recording
 };
 
 typedef struct recording recording_state_t;
-
-extern const record_driver_t record_ffmpeg;
 
 /**
  * config_get_record_driver_options:

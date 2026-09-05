@@ -29,6 +29,8 @@
 #ifndef __d3dcommon_h__
 #define __d3dcommon_h__
 
+#include "dxsdk_sal_compat.h"
+
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
 #endif

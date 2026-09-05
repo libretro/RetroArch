@@ -22,15 +22,96 @@
 
 #include <string.h>
 #include <stdio.h>
+
 #ifdef _WIN32
 #include <io.h>
 #else
 #include <unistd.h>
 #endif
+
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <emmintrin.h>
+#endif
+#endif
+
 #include <lrc_hash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
+
+/*
+ * SHA-256 and SHA-1 block compression, in descending order of speed:
+ *
+ *   1. ARMv8 SHA1/SHA2 instructions.
+ *   2. x86 SHA-NI.
+ *   3. Portable scalar round loop, which every target keeps as the
+ *      fallback for a CPU whose runtime probe comes back empty.
+ *
+ * The two instruction sets cover the same two digests, so a target
+ * takes at most one of them and the choice is made here rather than
+ * per digest.
+ */
+
+#if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(_MSC_VER)
+#if defined(__ARM_FEATURE_SHA2) || defined(__ARM_FEATURE_CRYPTO)
+/* Baseline already has the instructions, so use them unconditionally. */
+#define SHA_HAVE_ARM_PATH 1
+#elif (defined(__clang__) && __clang_major__ >= 16) \
+   || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9)
+/* Baseline does not, but the toolchain can build them into one function
+ * without raising the ISA for the translation unit, so compile them in
+ * and choose at runtime. Nothing in tree passes +crypto on aarch64, so
+ * without this branch Android, Linux ARM, iOS and tvOS would all take
+ * the scalar path on silicon that has the instructions.
+ *
+ * The version predicates are about the ACLE header rather than codegen,
+ * as in encoding_crc32.c: target("+crypto") lets the compiler emit the
+ * instructions, but vsha256hq_u32() and friends still have to be
+ * declared, and both compilers gated them on the baseline for a long
+ * time. */
+#define SHA_HAVE_ARM_PATH    1
+#define SHA_ARM_NEEDS_TARGET 1
+#define SHA_ARM_DISPATCH     1
+#endif
+#elif (defined(__x86_64__) || defined(__i386__)) && !defined(_MSC_VER)
+#if defined(__has_attribute) && defined(__has_include)
+#if __has_attribute(target) && __has_include(<immintrin.h>) \
+   && (!defined(__SCE__) \
+      || (defined(__SHA__) && defined(__SSSE3__) && defined(__SSE4_1__)))
+/* SHA-NI enumerates both digests through one CPUID bit, so one runtime
+ * question answers for both.
+ *
+ * The last clause is about the header rather than codegen, as the ACLE
+ * predicates in encoding_crc32.c are: immintrin.h pulls its per-feature
+ * sub-headers in only when the baseline already has the feature on
+ * targets that define __SCE__, and shaintrin.h refuses to be included
+ * on its own, so a Sony toolchain built for a CPU without the
+ * instructions leaves the intrinsics undeclared however the function
+ * carrying them is attributed. */
+#define SHA_HAVE_X86_PATH 1
+#define SHA_X86_DISPATCH  1
+#endif
+#endif
+#endif
+
+#if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
+#include <features/features_cpu.h>
+#endif
+
+#if defined(SHA_HAVE_ARM_PATH)
+#include <arm_neon.h>
+#if defined(SHA_ARM_NEEDS_TARGET)
+#define SHA_TARGET_ARM __attribute__((target("+crypto")))
+#else
+#define SHA_TARGET_ARM
+#endif
+#elif defined(SHA_HAVE_X86_PATH)
+#include <immintrin.h>
+#define SHA_TARGET_X86 __attribute__((target("sha,sse4.1")))
+#endif
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
 #define LSR32(x, n) ((uint32_t)(x) >> (n))
@@ -39,6 +120,12 @@
 /* First 32 bits of the fractional parts of the square roots of the first 8 primes 2..19 */
 static const uint32_t T_H[8] = {
    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+};
+
+/* SHA-224 differs from SHA-256 only in this starting state and in
+ * publishing seven of the eight words. FIPS 180-4, section 5.3.2. */
+static const uint32_t T_H224[8] = {
+   0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
 };
 
 /* First 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311 */
@@ -55,27 +142,107 @@ static const uint32_t T_K[64] = {
 
 /* SHA256 implementation from bSNES. Written by valditx. */
 
-struct sha256_ctx
-{
-   union
-   {
-      uint8_t u8[64];
-      uint32_t u32[16];
-   } in;
-   unsigned inlen;
 
-   uint32_t w[64];
-   uint32_t h[8];
-   uint64_t len;
-};
-
-static void sha256_init(struct sha256_ctx *p)
+static void sha256_init(struct sha256_state *p)
 {
-   memset(p, 0, sizeof(struct sha256_ctx));
+   memset(p, 0, sizeof(struct sha256_state));
    memcpy(p->h, T_H, sizeof(T_H));
 }
 
-static void sha256_block(struct sha256_ctx *p)
+
+#if defined(SHA_HAVE_ARM_PATH)
+SHA_TARGET_ARM
+static void sha256_block_hw(uint32_t *h, const uint8_t *in)
+{
+   uint32x4_t m[4], s0, s1, s0_save, s1_save;
+   unsigned i;
+
+   s0      = vld1q_u32(h + 0);
+   s1      = vld1q_u32(h + 4);
+   s0_save = s0;
+   s1_save = s1;
+
+   for (i = 0; i < 4; i++)
+      m[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(in + 16 * i)));
+
+   for (i = 0; i < 16; i++)
+   {
+      uint32x4_t w, t;
+
+      if (i >= 4)
+         m[i & 3] = vsha256su1q_u32(
+               vsha256su0q_u32(m[i & 3], m[(i + 1) & 3]),
+               m[(i + 2) & 3], m[(i + 3) & 3]);
+
+      w  = vaddq_u32(m[i & 3], vld1q_u32(T_K + 4 * i));
+      t  = s0;
+      s0 = vsha256hq_u32(s0, s1, w);
+      s1 = vsha256h2q_u32(s1, t, w);
+   }
+
+   vst1q_u32(h + 0, vaddq_u32(s0, s0_save));
+   vst1q_u32(h + 4, vaddq_u32(s1, s1_save));
+}
+#elif defined(SHA_HAVE_X86_PATH)
+SHA_TARGET_X86
+static void sha256_block_hw(uint32_t *h, const uint8_t *in)
+{
+   /* Byte-reverse within each word: SHA256RNDS2 wants the message
+    * words in memory order with big-endian bytes undone. */
+   const __m128i mask = _mm_set_epi64x(
+         (long long)0x0c0d0e0f08090a0bULL, (long long)0x0405060700010203ULL);
+   __m128i m[4], s0, s1, tmp, s0_save, s1_save;
+   unsigned i;
+
+   /* The instruction operates on {A,B,E,F} and {C,D,G,H} rather than
+    * on the digest in its natural order. */
+   tmp = _mm_loadu_si128((const __m128i *)(const void *)(h + 0));
+   s1  = _mm_loadu_si128((const __m128i *)(const void *)(h + 4));
+   tmp = _mm_shuffle_epi32(tmp, 0xB1);
+   s1  = _mm_shuffle_epi32(s1,  0x1B);
+   s0  = _mm_alignr_epi8(tmp, s1, 8);
+   s1  = _mm_blend_epi16(s1, tmp, 0xF0);
+
+   s0_save = s0;
+   s1_save = s1;
+
+   for (i = 0; i < 4; i++)
+      m[i] = _mm_shuffle_epi8(
+            _mm_loadu_si128((const __m128i *)(const void *)(in + 16 * i)), mask);
+
+   for (i = 0; i < 16; i++)
+   {
+      __m128i w, k;
+
+      if (i >= 4)
+      {
+         w = _mm_sha256msg1_epu32(m[i & 3], m[(i + 1) & 3]);
+         w = _mm_add_epi32(w,
+               _mm_alignr_epi8(m[(i + 3) & 3], m[(i + 2) & 3], 4));
+         m[i & 3] = _mm_sha256msg2_epu32(w, m[(i + 3) & 3]);
+      }
+
+      k  = _mm_loadu_si128((const __m128i *)(const void *)(T_K + 4 * i));
+      w  = _mm_add_epi32(m[i & 3], k);
+      s1 = _mm_sha256rnds2_epu32(s1, s0, w);
+      w  = _mm_shuffle_epi32(w, 0x0E);
+      s0 = _mm_sha256rnds2_epu32(s0, s1, w);
+   }
+
+   s0  = _mm_add_epi32(s0, s0_save);
+   s1  = _mm_add_epi32(s1, s1_save);
+
+   s0  = _mm_shuffle_epi32(s0, 0x1B);
+   s1  = _mm_shuffle_epi32(s1, 0xB1);
+   tmp = _mm_blend_epi16(s0, s1, 0xF0);
+   s1  = _mm_alignr_epi8(s1, s0, 8);
+
+   _mm_storeu_si128((__m128i *)(void *)(h + 0), tmp);
+   _mm_storeu_si128((__m128i *)(void *)(h + 4), s1);
+}
+#endif
+
+static void sha256_block_scalar(struct sha256_state *p)
 {
    unsigned i;
    uint32_t s0, s1;
@@ -117,19 +284,33 @@ static void sha256_block(struct sha256_ctx *p)
 
    p->h[0] += a; p->h[1] += b; p->h[2] += c; p->h[3] += d;
    p->h[4] += e; p->h[5] += f; p->h[6] += g; p->h[7] += h;
+}
+
+static void sha256_block(struct sha256_state *p)
+{
+#if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
+   if (cpu_features_get() & RETRO_SIMD_SHA256)
+      sha256_block_hw(p->h, p->in.u8);
+   else
+      sha256_block_scalar(p);
+#elif defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
+   sha256_block_hw(p->h, p->in.u8);
+#else
+   sha256_block_scalar(p);
+#endif
 
    /* Next block */
    p->inlen = 0;
 }
 
-static void sha256_chunk(struct sha256_ctx *p,
-      const uint8_t *s, unsigned len)
+static void sha256_chunk(struct sha256_state *p,
+      const uint8_t *s, size_t len)
 {
    p->len += len;
 
    while (len)
    {
-      unsigned l = 64 - p->inlen;
+      size_t l   = 64 - p->inlen;
 
       if (len < l)
          l       = len;
@@ -145,7 +326,7 @@ static void sha256_chunk(struct sha256_ctx *p,
    }
 }
 
-static void sha256_final(struct sha256_ctx *p)
+static void sha256_final(struct sha256_state *p)
 {
    uint64_t len;
    p->in.u8[p->inlen++] = 0x80;
@@ -164,7 +345,7 @@ static void sha256_final(struct sha256_ctx *p)
    sha256_block(p);
 }
 
-static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
+static void sha256_subhash(struct sha256_state *p, uint32_t *t)
 {
    unsigned i;
    for (i = 0; i < 8; i++)
@@ -179,10 +360,46 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
-void sha256_hash(char *s, const uint8_t *in, size_t size)
+void sha256_stream_init(struct sha256_state *p, unsigned is224)
+{
+   memset(p, 0, sizeof(struct sha256_state));
+   memcpy(p->h, is224 ? T_H224 : T_H, sizeof(T_H));
+   p->is224 = is224 ? 1 : 0;
+}
+
+void sha256_stream_update(struct sha256_state *p,
+      const uint8_t *data, size_t len)
+{
+   sha256_chunk(p, data, len);
+}
+
+void sha256_stream_final(struct sha256_state *p, uint8_t *digest)
 {
    unsigned i;
-   struct sha256_ctx sha;
+   unsigned words = p->is224 ? 7 : 8;
+
+   sha256_final(p);
+
+   for (i = 0; i < words; i++)
+   {
+      digest[4 * i    ] = (uint8_t)(p->h[i] >> 24);
+      digest[4 * i + 1] = (uint8_t)(p->h[i] >> 16);
+      digest[4 * i + 2] = (uint8_t)(p->h[i] >>  8);
+      digest[4 * i + 3] = (uint8_t) p->h[i];
+   }
+}
+
+void sha256_stream_block(struct sha256_state *p, const uint8_t *data)
+{
+   memcpy(p->in.u8, data, 64);
+   p->inlen = 64;
+   sha256_block(p);
+}
+
+void sha256_hash(char *s, const uint8_t *in, size_t len)
+{
+   unsigned i;
+   struct sha256_state sha;
 
    union
    {
@@ -191,7 +408,7 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
    } shahash;
 
    sha256_init(&sha);
-   sha256_chunk(&sha, in, (unsigned)size);
+   sha256_chunk(&sha, in, len);
    sha256_final(&sha);
    sha256_subhash(&sha, shahash.u32);
 
@@ -199,70 +416,13 @@ void sha256_hash(char *s, const uint8_t *in, size_t size)
       snprintf(s + 2 * i, 3, "%02x", (unsigned)shahash.u8[i]);
 }
 
-#ifndef HAVE_ZLIB
-/* Zlib CRC32. */
-static const uint32_t crc32_hash_table[256] = {
-    0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
-    0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
-    0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
-    0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
-    0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9,
-    0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172,
-    0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c,
-    0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
-    0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423,
-    0xcfba9599, 0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924,
-    0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190, 0x01db7106,
-    0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433,
-    0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d,
-    0x91646c97, 0xe6635c01, 0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e,
-    0x6c0695ed, 0x1b01a57b, 0x8208f4c1, 0xf50fc457, 0x65b0d9c6, 0x12b7e950,
-    0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3, 0xfbd44c65,
-    0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2, 0x4adfa541, 0x3dd895d7,
-    0xa4d1c46d, 0xd3d6f4fb, 0x4369e96a, 0x346ed9fc, 0xad678846, 0xda60b8d0,
-    0x44042d73, 0x33031de5, 0xaa0a4c5f, 0xdd0d7cc9, 0x5005713c, 0x270241aa,
-    0xbe0b1010, 0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f,
-    0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17, 0x2eb40d81,
-    0xb7bd5c3b, 0xc0ba6cad, 0xedb88320, 0x9abfb3b6, 0x03b6e20c, 0x74b1d29a,
-    0xead54739, 0x9dd277af, 0x04db2615, 0x73dc1683, 0xe3630b12, 0x94643b84,
-    0x0d6d6a3e, 0x7a6a5aa8, 0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1,
-    0xf00f9344, 0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb,
-    0x196c3671, 0x6e6b06e7, 0xfed41b76, 0x89d32be0, 0x10da7a5a, 0x67dd4acc,
-    0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5, 0xd6d6a3e8, 0xa1d1937e,
-    0x38d8c2c4, 0x4fdff252, 0xd1bb67f1, 0xa6bc5767, 0x3fb506dd, 0x48b2364b,
-    0xd80d2bda, 0xaf0a1b4c, 0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55,
-    0x316e8eef, 0x4669be79, 0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236,
-    0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f, 0xc5ba3bbe, 0xb2bd0b28,
-    0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31, 0x2cd99e8b, 0x5bdeae1d,
-    0x9b64c2b0, 0xec63f226, 0x756aa39c, 0x026d930a, 0x9c0906a9, 0xeb0e363f,
-    0x72076785, 0x05005713, 0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38,
-    0x92d28e9b, 0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21, 0x86d3d2d4, 0xf1d4e242,
-    0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1, 0x18b74777,
-    0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c, 0x8f659eff, 0xf862ae69,
-    0x616bffd3, 0x166ccf45, 0xa00ae278, 0xd70dd2ee, 0x4e048354, 0x3903b3c2,
-    0xa7672661, 0xd06016f7, 0x4969474d, 0x3e6e77db, 0xaed16a4a, 0xd9d65adc,
-    0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
-    0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693,
-    0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
-    0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
-};
-
-uint32_t crc32_adjust(uint32_t checksum, uint8_t input)
-{
-   return ((checksum >> 8) & 0x00ffffff) ^ crc32_hash_table[(checksum ^ input) & 0xff];
-}
-
-uint32_t crc32_calculate(const uint8_t *data, size_t length)
-{
-   size_t i;
-   uint32_t checksum = ~0;
-   for (i = 0; i < length; i++)
-      checksum = crc32_adjust(checksum, data[i]);
-   return ~checksum;
-}
-#endif
-
 /* SHA-1 implementation. */
+
+/* Block size for the copying branch of sha1_calculate(). Heap rather
+ * than stack, so it is bounded by what a read is worth rather than by
+ * the frame budget, and the same 256 KB intfstream_crc_step() reads
+ * for the same reason: both walk a whole scanned file. */
+#define SHA1_FILE_BLOCK_SIZE (256 * 1024)
 
 /*
  *  sha1.c
@@ -307,41 +467,138 @@ uint32_t crc32_calculate(const uint8_t *data, size_t length)
 /* Define the circular shift macro */
 #define SHA1CircularShift(bits,word) ((((word) << (bits)) & 0xFFFFFFFF) | ((word) >> (32-(bits))))
 
-struct sha1_context
-{
-   unsigned Message_Digest[5]; /* Message Digest (output)          */
-
-   unsigned Length_Low;        /* Message length in bits           */
-   unsigned Length_High;       /* Message length in bits           */
-
-   unsigned char Message_Block[64]; /* 512-bit message blocks      */
-   int Message_Block_Index;    /* Index into message block array   */
-
-   int Computed;               /* Is the digest computed?          */
-   int Corrupted;              /* Is the message digest corruped?  */
-};
 
 
-static void SHA1Reset(struct sha1_context *context)
+static void SHA1Reset(struct sha1_state *context)
 {
    if (!context)
       return;
 
-   context->Length_Low             = 0;
-   context->Length_High            = 0;
-   context->Message_Block_Index    = 0;
+   context->length_low             = 0;
+   context->length_high            = 0;
+   context->block_index    = 0;
 
-   context->Message_Digest[0]      = 0x67452301;
-   context->Message_Digest[1]      = 0xEFCDAB89;
-   context->Message_Digest[2]      = 0x98BADCFE;
-   context->Message_Digest[3]      = 0x10325476;
-   context->Message_Digest[4]      = 0xC3D2E1F0;
+   context->digest[0]      = 0x67452301;
+   context->digest[1]      = 0xEFCDAB89;
+   context->digest[2]      = 0x98BADCFE;
+   context->digest[3]      = 0x10325476;
+   context->digest[4]      = 0xC3D2E1F0;
 
-   context->Computed   = 0;
-   context->Corrupted  = 0;
+   context->computed   = 0;
+   context->corrupted  = 0;
 }
 
-static void SHA1ProcessMessageBlock(struct sha1_context *context)
+#if defined(SHA_HAVE_ARM_PATH)
+SHA_TARGET_ARM
+static void sha1_block_hw(uint32_t *state, const uint8_t *in)
+{
+   static const uint32_t hw_k[4] =
+   {
+      0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xCA62C1D6
+   };
+   uint32x4_t m[4], abcd, abcd_save;
+   uint32_t   e, e_save, e1;
+   unsigned   i;
+
+   abcd      = vld1q_u32(state);
+   e         = state[4];
+   abcd_save = abcd;
+   e_save    = e;
+
+   for (i = 0; i < 4; i++)
+      m[i] = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(in + 16 * i)));
+
+   for (i = 0; i < 20; i++)
+   {
+      uint32x4_t w;
+
+      if (i >= 4)
+         m[i & 3] = vsha1su1q_u32(
+               vsha1su0q_u32(m[i & 3], m[(i + 1) & 3], m[(i + 2) & 3]),
+               m[(i + 3) & 3]);
+
+      w  = vaddq_u32(m[i & 3], vdupq_n_u32(hw_k[i / 5]));
+      /* Taken from the current A, so it has to be read before the
+       * round overwrites it. */
+      e1 = vsha1h_u32(vgetq_lane_u32(abcd, 0));
+
+      if (i < 5)
+         abcd = vsha1cq_u32(abcd, e, w);
+      else if (i < 10 || i >= 15)
+         abcd = vsha1pq_u32(abcd, e, w);
+      else
+         abcd = vsha1mq_u32(abcd, e, w);
+
+      e = e1;
+   }
+
+   vst1q_u32(state, vaddq_u32(abcd, abcd_save));
+   state[4] = e + e_save;
+}
+#elif defined(SHA_HAVE_X86_PATH)
+/* SHA1RNDS4 takes the round function as an immediate, so the twenty
+ * groups are written out rather than looped. */
+#define SHA1_X86_GROUP(f, idx) \
+   do { \
+      __m128i _w, _t; \
+      if ((idx) >= 4) \
+      { \
+         _w = _mm_sha1msg1_epu32(m[(idx) & 3], m[((idx) + 1) & 3]); \
+         _w = _mm_xor_si128(_w, m[((idx) + 2) & 3]); \
+         m[(idx) & 3] = _mm_sha1msg2_epu32(_w, m[((idx) + 3) & 3]); \
+      } \
+      if ((idx) == 0) \
+         ea = _mm_add_epi32(ea, m[0]); \
+      else \
+         ea = _mm_sha1nexte_epu32(ea, m[(idx) & 3]); \
+      eb   = abcd; \
+      abcd = _mm_sha1rnds4_epu32(abcd, ea, (f)); \
+      _t   = ea; ea = eb; eb = _t; \
+   } while (0)
+
+SHA_TARGET_X86
+static void sha1_block_hw(uint32_t *state, const uint8_t *in)
+{
+   /* A full 128-bit lane reverse rather than the per-word swap SHA-256
+    * uses: SHA1RNDS4 consumes the message words in the opposite order
+    * within the vector. */
+   const __m128i mask = _mm_set_epi64x(
+         (long long)0x0001020304050607ULL, (long long)0x08090a0b0c0d0e0fULL);
+   __m128i m[4], abcd, ea, eb, abcd_save, e_save;
+   unsigned i;
+
+   abcd = _mm_shuffle_epi32(
+         _mm_loadu_si128((const __m128i *)(const void *)state), 0x1B);
+   ea   = _mm_set_epi32((int)state[4], 0, 0, 0);
+
+   abcd_save = abcd;
+   e_save    = ea;
+
+   for (i = 0; i < 4; i++)
+      m[i] = _mm_shuffle_epi8(
+            _mm_loadu_si128((const __m128i *)(const void *)(in + 16 * i)), mask);
+
+   SHA1_X86_GROUP(0,  0); SHA1_X86_GROUP(0,  1);
+   SHA1_X86_GROUP(0,  2); SHA1_X86_GROUP(0,  3);
+   SHA1_X86_GROUP(0,  4); SHA1_X86_GROUP(1,  5);
+   SHA1_X86_GROUP(1,  6); SHA1_X86_GROUP(1,  7);
+   SHA1_X86_GROUP(1,  8); SHA1_X86_GROUP(1,  9);
+   SHA1_X86_GROUP(2, 10); SHA1_X86_GROUP(2, 11);
+   SHA1_X86_GROUP(2, 12); SHA1_X86_GROUP(2, 13);
+   SHA1_X86_GROUP(2, 14); SHA1_X86_GROUP(3, 15);
+   SHA1_X86_GROUP(3, 16); SHA1_X86_GROUP(3, 17);
+   SHA1_X86_GROUP(3, 18); SHA1_X86_GROUP(3, 19);
+
+   ea   = _mm_sha1nexte_epu32(ea, e_save);
+   abcd = _mm_add_epi32(abcd, abcd_save);
+
+   _mm_storeu_si128((__m128i *)(void *)state,
+         _mm_shuffle_epi32(abcd, 0x1B));
+   state[4] = (uint32_t)_mm_extract_epi32(ea, 3);
+}
+#endif
+
+static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */
    {
@@ -358,20 +615,20 @@ static void SHA1ProcessMessageBlock(struct sha1_context *context)
    /* Initialize the first 16 words in the array W */
    for (t = 0; t < 16; t++)
    {
-      W[t] = ((unsigned) context->Message_Block[t * 4]) << 24;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 1]) << 16;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 2]) << 8;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 3]);
+      W[t] = ((unsigned) context->block[t * 4]) << 24;
+      W[t] |= ((unsigned) context->block[t * 4 + 1]) << 16;
+      W[t] |= ((unsigned) context->block[t * 4 + 2]) << 8;
+      W[t] |= ((unsigned) context->block[t * 4 + 3]);
    }
 
    for (t = 16; t < 80; t++)
       W[t] = SHA1CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
 
-   A = context->Message_Digest[0];
-   B = context->Message_Digest[1];
-   C = context->Message_Digest[2];
-   D = context->Message_Digest[3];
-   E = context->Message_Digest[4];
+   A = context->digest[0];
+   B = context->digest[1];
+   C = context->digest[2];
+   D = context->digest[3];
+   E = context->digest[4];
 
    for (t = 0; t < 20; t++)
    {
@@ -419,21 +676,35 @@ static void SHA1ProcessMessageBlock(struct sha1_context *context)
       A = temp;
    }
 
-   context->Message_Digest[0] =
-      (context->Message_Digest[0] + A) & 0xFFFFFFFF;
-   context->Message_Digest[1] =
-      (context->Message_Digest[1] + B) & 0xFFFFFFFF;
-   context->Message_Digest[2] =
-      (context->Message_Digest[2] + C) & 0xFFFFFFFF;
-   context->Message_Digest[3] =
-      (context->Message_Digest[3] + D) & 0xFFFFFFFF;
-   context->Message_Digest[4] =
-      (context->Message_Digest[4] + E) & 0xFFFFFFFF;
-
-   context->Message_Block_Index = 0;
+   context->digest[0] =
+      (context->digest[0] + A) & 0xFFFFFFFF;
+   context->digest[1] =
+      (context->digest[1] + B) & 0xFFFFFFFF;
+   context->digest[2] =
+      (context->digest[2] + C) & 0xFFFFFFFF;
+   context->digest[3] =
+      (context->digest[3] + D) & 0xFFFFFFFF;
+   context->digest[4] =
+      (context->digest[4] + E) & 0xFFFFFFFF;
 }
 
-static void SHA1PadMessage(struct sha1_context *context)
+static void SHA1ProcessMessageBlock(struct sha1_state *context)
+{
+#if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
+   if (cpu_features_get() & RETRO_SIMD_SHA1)
+      sha1_block_hw(context->digest, context->block);
+   else
+      SHA1ProcessMessageBlockScalar(context);
+#elif defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
+   sha1_block_hw(context->digest, context->block);
+#else
+   SHA1ProcessMessageBlockScalar(context);
+#endif
+
+   context->block_index = 0;
+}
+
+static void SHA1PadMessage(struct sha1_state *context)
 {
    if (!context)
       return;
@@ -444,133 +715,280 @@ static void SHA1PadMessage(struct sha1_context *context)
     *  block, process it, and then continue padding into a second
     *  block.
     */
-   context->Message_Block[context->Message_Block_Index++] = 0x80;
+   context->block[context->block_index++] = 0x80;
 
-   if (context->Message_Block_Index > 55)
+   /* The index has already advanced past the 0x80, so the block is out
+    * of room only above 56: at exactly 56 the eight length octets fill
+    * 56..63 and no second block is needed. */
+   if (context->block_index > 56)
    {
-      while (context->Message_Block_Index < 64)
-         context->Message_Block[context->Message_Block_Index++] = 0;
+      while (context->block_index < 64)
+         context->block[context->block_index++] = 0;
 
       SHA1ProcessMessageBlock(context);
    }
 
-   while (context->Message_Block_Index < 56)
-      context->Message_Block[context->Message_Block_Index++] = 0;
+   while (context->block_index < 56)
+      context->block[context->block_index++] = 0;
 
    /*  Store the message length as the last 8 octets */
-   context->Message_Block[56] = (context->Length_High >> 24) & 0xFF;
-   context->Message_Block[57] = (context->Length_High >> 16) & 0xFF;
-   context->Message_Block[58] = (context->Length_High >> 8) & 0xFF;
-   context->Message_Block[59] = (context->Length_High) & 0xFF;
-   context->Message_Block[60] = (context->Length_Low >> 24) & 0xFF;
-   context->Message_Block[61] = (context->Length_Low >> 16) & 0xFF;
-   context->Message_Block[62] = (context->Length_Low >> 8) & 0xFF;
-   context->Message_Block[63] = (context->Length_Low) & 0xFF;
+   context->block[56] = (context->length_high >> 24) & 0xFF;
+   context->block[57] = (context->length_high >> 16) & 0xFF;
+   context->block[58] = (context->length_high >> 8) & 0xFF;
+   context->block[59] = (context->length_high) & 0xFF;
+   context->block[60] = (context->length_low >> 24) & 0xFF;
+   context->block[61] = (context->length_low >> 16) & 0xFF;
+   context->block[62] = (context->length_low >> 8) & 0xFF;
+   context->block[63] = (context->length_low) & 0xFF;
 
    SHA1ProcessMessageBlock(context);
 }
 
-static int SHA1Result(struct sha1_context *context)
+static int SHA1Result(struct sha1_state *context, unsigned char digest[20])
 {
-   if (context->Corrupted)
+   unsigned i;
+
+   if (context->corrupted)
       return 0;
 
-   if (!context->Computed)
+   if (!context->computed)
    {
       SHA1PadMessage(context);
-      context->Computed = 1;
+      context->computed = 1;
+   }
+
+   if (digest)
+   {
+      /* Convert digest to byte array */
+      for (i = 0; i < 20; i++)
+      {
+         digest[i] = (unsigned char)
+            ((context->digest[i>>2] >> 8 * (3 - (i & 0x03))) & 0xFF);
+      }
    }
 
    return 1;
 }
 
-static void SHA1Input(struct sha1_context *context,
+static void SHA1Input(struct sha1_state *context,
       const unsigned char *message_array,
-      unsigned length)
+      unsigned len)
 {
-   if (!length)
+   uint64_t total;
+   uint64_t next;
+
+   if (!len)
       return;
 
-   if (context->Computed || context->Corrupted)
+   if (context->computed || context->corrupted)
    {
-      context->Corrupted = 1;
+      context->corrupted = 1;
       return;
    }
 
-   while (length-- && !context->Corrupted)
+   /* The bit count is carried as two 32-bit halves, so advance it once
+    * for the whole call. Wrapping past 2^64 bits is the length limit
+    * the algorithm is defined up to. */
+   total = ((uint64_t)context->length_high << 32) | context->length_low;
+   next  = total + ((uint64_t)len << 3);
+
+   if (next < total)
    {
-      context->Message_Block[context->Message_Block_Index++] =
-         (*message_array & 0xFF);
+      context->corrupted = 1;
+      return;
+   }
 
-      context->Length_Low += 8;
-      /* Force it to 32 bits */
-      context->Length_Low &= 0xFFFFFFFF;
-      if (context->Length_Low == 0)
-      {
-         context->Length_High++;
-         /* Force it to 32 bits */
-         context->Length_High &= 0xFFFFFFFF;
-         if (context->Length_High == 0)
-            context->Corrupted = 1; /* Message is too long */
-      }
+   context->length_high = (uint32_t)(next >> 32);
+   context->length_low  = (uint32_t)next;
 
-      if (context->Message_Block_Index == 64)
+   while (len)
+   {
+      unsigned l = 64 - (unsigned)context->block_index;
+
+      if (len < l)
+         l = len;
+
+      memcpy(context->block + context->block_index,
+            message_array, l);
+
+      message_array                += l;
+      context->block_index += (int)l;
+      len                          -= l;
+
+      if (context->block_index == 64)
          SHA1ProcessMessageBlock(context);
-
-      message_array++;
    }
+}
+
+void sha1_stream_init(struct sha1_state *p)
+{
+   SHA1Reset(p);
+}
+
+void sha1_stream_update(struct sha1_state *p,
+      const uint8_t *data, size_t len)
+{
+   /* SHA1Input() counts in a 32-bit pair, so hand it the data in
+    * pieces small enough that one call cannot overflow the count. */
+   while (len)
+   {
+      unsigned l = (len > 0x20000000u) ? 0x20000000u : (unsigned)len;
+      SHA1Input(p, data, l);
+      data += l;
+      len  -= l;
+   }
+}
+
+bool sha1_stream_final(struct sha1_state *p, uint8_t *digest)
+{
+   return SHA1Result(p, digest) ? true : false;
+}
+
+void sha1_stream_block(struct sha1_state *p, const uint8_t *data)
+{
+   memcpy(p->block, data, 64);
+   p->block_index = 64;
+   SHA1ProcessMessageBlock(p);
+}
+
+void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
+{
+   struct sha1_state sha;
+
+   SHA1Reset(&sha);
+   SHA1Input(&sha, data, len);
+
+   if (!SHA1Result(&sha, digest))
+      memset(digest, 0, 20);
 }
 
 int sha1_calculate(const char *path, char *result)
 {
-   struct sha1_context sha;
-   unsigned char buff[4096];
+   struct sha1_state sha;
+   const uint8_t *map = NULL;
+   int64_t        map_len = 0;
+   unsigned char *buff = NULL;
    int rv    = 1;
+   /* Ask for a mapping: where the platform provides one the whole
+    * file is already addressable and there is nothing to copy. */
    RFILE *fd = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
 
    if (!fd)
       goto error;
 
-   buff[0] = '\0';
-
    SHA1Reset(&sha);
 
-   do
+   if ((map = filestream_get_mapped_ptr(fd, &map_len)) && map_len >= 0)
+      SHA1Input(&sha, map, (unsigned)map_len);
+   else
    {
-      rv = (int)filestream_read(fd, buff, 4096);
-      if (rv < 0)
+      /* No mapping, so copy a block at a time.  The buffer is heap
+       * rather than a local: as unsigned char buff[4096] this was a
+       * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets
+       * (the GEKKO STACKSIZE in rthreads.c), and hashing a whole
+       * file dwarfs one allocation either way.
+       *
+       * A block far larger than a page keeps the number of reads down,
+       * which is what this path costs on a VFS where each one is a
+       * round trip rather than a memcpy out of the page cache. */
+      if (!(buff = (unsigned char*)malloc(SHA1_FILE_BLOCK_SIZE)))
          goto error;
 
-      SHA1Input(&sha, buff, rv);
-   } while (rv);
+      do
+      {
+         rv = (int)filestream_read(fd, buff, SHA1_FILE_BLOCK_SIZE);
+         if (rv < 0)
+            goto error;
 
-   if (!SHA1Result(&sha))
+         SHA1Input(&sha, buff, rv);
+      } while (rv);
+
+      free(buff);
+      buff = NULL;
+   }
+
+   if (!SHA1Result(&sha, NULL))
       goto error;
 
    sprintf(result, "%08X%08X%08X%08X%08X",
-         sha.Message_Digest[0],
-         sha.Message_Digest[1],
-         sha.Message_Digest[2],
-         sha.Message_Digest[3], sha.Message_Digest[4]);
+         sha.digest[0],
+         sha.digest[1],
+         sha.digest[2],
+         sha.digest[3], sha.digest[4]);
 
    filestream_close(fd);
    return 0;
 
 error:
+   free(buff);
    if (fd)
       filestream_close(fd);
    return -1;
 }
 
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+
+#if _MSC_VER
+#define DJB2_ALIGN(x) __declspec(align(x))
+#else
+#define DJB2_ALIGN(x) __attribute__((aligned(x)))
+#endif
+
+static const DJB2_ALIGN(16) uint32_t DJB2_W8[8] = {
+   0xEC41D4E1, /* 33^7 */
+   0x4CFA3CC1, /* 33^6 */
+   0x025528A1, /* 33^5 */
+   0x00121881, /* 33^4 */
+   0x00008C61, /* 33^3 */
+   0x00000441, /* 33^2 */
+   0x00000021, /* 33^1 */
+   0x00000001, /* 33^0 */
+};
+#endif
+
 uint32_t djb2_calculate(const char *str)
 {
-   const unsigned char *aux = (const unsigned char*)str;
-   uint32_t            hash = 5381;
+   uint32_t h = 5381;
+   const unsigned char *p = (const unsigned char*)str;
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+   __m128i w_lo = _mm_load_si128((const __m128i *)&DJB2_W8[0]);
+   __m128i w_hi = _mm_load_si128((const __m128i *)&DJB2_W8[4]);
+   size_t len   = strlen((const char*)p);
+   const unsigned char *end8 = p + (len & ~(size_t)7);
 
-   while ( *aux )
-      hash = ( hash << 5 ) + hash + *aux++;
+   while (p < end8)
+   {
+      uint32_t sum = 0;
+      __m128i raw  = _mm_loadl_epi64((const __m128i *)p);
+      __m128i zero = _mm_setzero_si128();
+      __m128i b16  = _mm_unpacklo_epi8(raw, zero);
+      __m128i b_lo = _mm_unpacklo_epi16(b16, zero);
+      __m128i b_hi = _mm_unpackhi_epi16(b16, zero);
 
-   return hash;
+     /* _mm_mul_epu32 multiplies lanes 0,2 → 64-bit results.
+      * Shuffle to access lanes 1,3. */
+      __m128i p02_lo = _mm_mul_epu32(b_lo, w_lo);
+      __m128i p13_lo = _mm_mul_epu32(_mm_shuffle_epi32(b_lo, 0xF5),
+                                     _mm_shuffle_epi32(w_lo, 0xF5));
+      __m128i p02_hi = _mm_mul_epu32(b_hi, w_hi);
+      __m128i p13_hi = _mm_mul_epu32(_mm_shuffle_epi32(b_hi, 0xF5),
+                                     _mm_shuffle_epi32(w_hi, 0xF5));
+      sum += (uint32_t)_mm_cvtsi128_si32(p02_lo);
+      sum += (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(p02_lo, 8));
+      sum += (uint32_t)_mm_cvtsi128_si32(p13_lo);
+      sum += (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(p13_lo, 8));
+      sum += (uint32_t)_mm_cvtsi128_si32(p02_hi);
+      sum += (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(p02_hi, 8));
+      sum += (uint32_t)_mm_cvtsi128_si32(p13_hi);
+      sum += (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(p13_hi, 8));
+
+      h    = h * UINT32_C(0x747C7101) + sum;
+      p   += 8;
+    }
+#endif
+    while (*p)
+        h = (h << 5) + h + *p++;
+    return h;
 }

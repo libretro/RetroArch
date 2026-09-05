@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -35,6 +36,7 @@
 
 #include "file_path_special.h"
 #include "paths.h"
+#include "runloop.h"
 #include "core_info.h"
 #include "verbosity.h"
 #include "msg_hash.h"
@@ -44,9 +46,7 @@
 #endif
 
 #include "runtime_file.h"
-
-#define LOG_FILE_RUNTIME_FORMAT_STR "%u:%02u:%02u"
-#define LOG_FILE_LAST_PLAYED_FORMAT_STR "%04u-%02u-%02u %02u:%02u:%02u"
+#include <compat/strl.h>
 
 /* JSON Stuff... */
 
@@ -55,25 +55,34 @@ typedef struct
    char **current_entry_val;
    char *runtime_string;
    char *last_played_string;
+   char *play_count;
+   char *state_slot;
 } RtlJSONContext;
 
 static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
 {
    RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
-
    /* Something went wrong */
    if (p_ctx->current_entry_val)
       return false;
-
-   if (len)
+   switch (len)
    {
-      if (string_is_equal(s, "runtime"))
-         p_ctx->current_entry_val = &p_ctx->runtime_string;
-      else if (string_is_equal(s, "last_played"))
-         p_ctx->current_entry_val = &p_ctx->last_played_string;
+      case 7:
+         if (memcmp(s, "runtime", 7) == 0)
+            p_ctx->current_entry_val = &p_ctx->runtime_string;
+         break;
+      case 10:
+         if (memcmp(s, "play_count", 10) == 0)
+            p_ctx->current_entry_val = &p_ctx->play_count;
+         else if (memcmp(s, "state_slot", 10) == 0)
+            p_ctx->current_entry_val = &p_ctx->state_slot;
+         break;
+      case 11:
+         if (memcmp(s, "last_played", 11) == 0)
+            p_ctx->current_entry_val = &p_ctx->last_played_string;
+         break;
       /* Ignore unknown members */
    }
-
    return true;
 }
 
@@ -81,7 +90,7 @@ static bool RtlJSONStringHandler(void *ctx, const char *s, size_t len)
 {
    RtlJSONContext *p_ctx = (RtlJSONContext*)ctx;
 
-   if (p_ctx->current_entry_val && len && !string_is_empty(s))
+   if (p_ctx->current_entry_val && len && s)
    {
       if (*p_ctx->current_entry_val)
          free(*p_ctx->current_entry_val);
@@ -113,21 +122,33 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned last_played_minute = 0;
    unsigned last_played_second = 0;
 
-   RtlJSONContext context      = {0};
-   /* Attempt to open log file */
-   RFILE *file                 = filestream_open(runtime_log->path,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   unsigned play_count         = 0;
 
-   if (!file)
+   unsigned state_slot         = 0;
+
+   RtlJSONContext context      = {0};
+   uint8_t *file_buf           = NULL;
+   int64_t file_len            = 0;
+
+   /* Read the whole log in one operation: these files are a few
+    * hundred bytes and always parsed in full, so a single
+    * open/size/read/close beats a pre-open stat plus the chunked
+    * callback path (which itself sizes the stream with an extra
+    * fstat).  A missing log - the first-run case - is silent, as
+    * it always was; the stat runs only when there is a failure to
+    * classify. */
+   if (!filestream_read_file(runtime_log->path,
+         (void**)&file_buf, &file_len))
    {
-      RARCH_ERR("Failed to open runtime log file: %s\n", runtime_log->path);
+      if (path_is_valid(runtime_log->path))
+         RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
       return;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
-      RARCH_ERR("Failed to create JSON parser.\n");
+      RARCH_ERR("[Runtime] Failed to create JSON parser.\n");
       goto end;
    }
 
@@ -145,16 +166,21 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    {
       if (rjson_get_source_context_len(parser))
       {
-         RARCH_ERR("Error parsing chunk of runtime log file: %s\n---snip---\n%.*s\n---snip---\n",
+         RARCH_ERR("[Runtime] Error parsing chunk of runtime log file: %s\n---snip---\n%.*s\n---snip---\n",
                runtime_log->path,
                rjson_get_source_context_len(parser),
                rjson_get_source_context_buf(parser));
       }
-      RARCH_WARN("Error parsing runtime log file: %s\n", runtime_log->path);
-      RARCH_ERR("Error: Invalid JSON at line %d, column %d - %s.\n",
+      RARCH_ERR("[Runtime] Error parsing runtime log file: \"%s\".\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Error: Invalid JSON at line %d, column %d - %s.\n",
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+
+      /* Free parser and bail out - do not process
+       * partial/corrupt data */
+      rjson_free(parser);
+      goto end;
    }
 
    /* Free parser */
@@ -163,34 +189,110 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    /* Process string values read from JSON file */
 
    /* Runtime */
-   if (!string_is_empty(context.runtime_string))
+   if (context.runtime_string)
    {
-      if (sscanf(context.runtime_string,
-               LOG_FILE_RUNTIME_FORMAT_STR,
-               &runtime_hours,
-               &runtime_minutes,
-               &runtime_seconds) != 3)
+      const char *str = context.runtime_string;
+      char *end       = NULL;
+      unsigned long val;
+
+      /* Hours */
+      val           = strtoul(str, &end, 10);
+      if (end == str || *end != ':')
       {
-         RARCH_ERR("Runtime log file - invalid 'runtime' entry detected: %s\n", runtime_log->path);
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
+      runtime_hours = (unsigned)val;
+      str           = end + 1;
+
+      /* Minutes */
+      val             = strtoul(str, &end, 10);
+      if (end == str || *end != ':')
+      {
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+      runtime_minutes = (unsigned)val;
+      str             = end + 1;
+
+      /* Seconds */
+      val             = strtoul(str, &end, 10);
+      if (end == str || (*end != '\0' && *end != '\n'))
+      {
+         RARCH_ERR("[Runtime] Invalid \"runtime\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+      runtime_seconds = (unsigned)val;
    }
 
    /* Last played */
-   if (!string_is_empty(context.last_played_string))
+   if (context.last_played_string)
    {
-      if (sscanf(context.last_played_string,
-               LOG_FILE_LAST_PLAYED_FORMAT_STR,
-               &last_played_year,
-               &last_played_month,
-               &last_played_day,
-               &last_played_hour,
-               &last_played_minute,
-               &last_played_second) != 6)
+      const char *str  = context.last_played_string;
+      char *end        = NULL;
+
+      last_played_year = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != '-')
+         goto invalid;
+      str = end + 1;
+
+      last_played_month = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != '-')
+         goto invalid;
+      str = end + 1;
+
+      last_played_day   = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ' ')
+         goto invalid;
+      str = end + 1;
+
+      last_played_hour  = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ':')
+         goto invalid;
+      str = end + 1;
+
+      last_played_minute = (unsigned)strtoul(str, &end, 10);
+      if (!end || *end != ':')
+         goto invalid;
+      str = end + 1;
+
+      last_played_second = (unsigned)strtoul(str, &end, 10);
+      if (!end || (*end != '\0' && *end != ' '))
+         goto invalid;
+
+      goto parsed;
+
+invalid:
+      RARCH_ERR("[Runtime] Invalid \"last played\" entry detected: \"%s\".\n", runtime_log->path);
+      goto end;
+
+parsed:
+      ; /* continue normal flow */
+   }
+
+   /* Play count */
+   if (context.play_count)
+   {
+      char *endptr      = NULL;
+      unsigned long val = strtoul(context.play_count, &endptr, 10);
+      if (*endptr != '\0' || errno == ERANGE)
       {
-         RARCH_ERR("Runtime log file - invalid 'last played' entry detected: %s\n", runtime_log->path);
+         RARCH_ERR("[Runtime] Invalid \"play count\" entry detected: \"%s\".\n", runtime_log->path);
          goto end;
       }
+      play_count = (unsigned)val;
+   }
+   /* State slot */
+   if (context.state_slot)
+   {
+      char *endptr      = NULL;
+      unsigned long val = strtoul(context.state_slot, &endptr, 10);
+      if (*endptr != '\0' || errno == ERANGE)
+      {
+         RARCH_ERR("[Runtime] Invalid \"state slot\" entry detected: \"%s\".\n", runtime_log->path);
+         goto end;
+      }
+      state_slot = (unsigned)val;
    }
 
    /* If we reach this point then all is well
@@ -206,15 +308,23 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    runtime_log->last_played.minute = last_played_minute;
    runtime_log->last_played.second = last_played_second;
 
+   runtime_log->play_count         = play_count;
+
+   runtime_log->state_slot         = state_slot;
+
 end:
    /* Clean up leftover strings */
    if (context.runtime_string)
       free(context.runtime_string);
    if (context.last_played_string)
       free(context.last_played_string);
+   if (context.play_count)
+      free(context.play_count);
+   if (context.state_slot)
+      free(context.state_slot);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 }
 
 /* Initialise runtime log, loading current parameters
@@ -229,9 +339,9 @@ runtime_log_t *runtime_log_init(
       const char *dir_playlist,
       bool log_per_core)
 {
-   char content_name[PATH_MAX_LENGTH];
-   char core_name[PATH_MAX_LENGTH];
-   char log_file_dir[PATH_MAX_LENGTH];
+   char log_file_dir[DIR_MAX_LENGTH];
+   char content_name[NAME_MAX_LENGTH];
+   char core_name[NAME_MAX_LENGTH];
    char log_file_path[PATH_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
    bool supports_no_game      = false;
@@ -241,17 +351,17 @@ runtime_log_t *runtime_log_init(
    content_name[0]            = '\0';
    core_name[0]               = '\0';
 
-   if (     string_is_empty(dir_runtime_log)
-         && string_is_empty(dir_playlist))
+   if (     (!dir_runtime_log || !*dir_runtime_log)
+         && (!dir_playlist || !*dir_playlist))
    {
-      RARCH_ERR("Runtime log directory is undefined - cannot save"
+      RARCH_ERR("[Runtime] Runtime log directory is undefined - cannot save"
             " runtime log files.\n");
       return NULL;
    }
 
-   if (     string_is_empty(core_path)
-         || string_is_equal(core_path, "builtin")
-         || string_is_equal(core_path, "DETECT"))
+   if (     (!core_path || !*core_path)
+         || !memcmp(core_path, "builtin", 8)
+         || !memcmp(core_path, "DETECT", 7))
       return NULL;
 
    /* Get core info:
@@ -264,18 +374,18 @@ runtime_log_t *runtime_log_init(
     * (e.g. see TyrQuake below) */
    if (core_info_find(core_path, &core_info))
    {
-      supports_no_game = core_info->supports_no_game;
-      if (!string_is_empty(core_info->core_name))
+      supports_no_game = (core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
+      if (core_info->core_name && *core_info->core_name)
          strlcpy(core_name, core_info->core_name, sizeof(core_name));
    }
 
-   if (string_is_empty(core_name))
+   if (!*core_name)
       return NULL;
 
    /* Get runtime log directory
     * If 'custom' runtime log path is undefined,
     * use default 'playlists/logs' directory... */
-   if (string_is_empty(dir_runtime_log))
+   if (!dir_runtime_log || !*dir_runtime_log)
       fill_pathname_join_special(
             tmp_buf,
             dir_playlist,
@@ -284,7 +394,7 @@ runtime_log_t *runtime_log_init(
    else
       strlcpy(tmp_buf, dir_runtime_log, sizeof(tmp_buf));
 
-   if (string_is_empty(tmp_buf))
+   if (!*tmp_buf)
       return NULL;
 
    if (log_per_core)
@@ -296,77 +406,63 @@ runtime_log_t *runtime_log_init(
    else
       strlcpy(log_file_dir, tmp_buf, sizeof(log_file_dir));
 
-   if (string_is_empty(log_file_dir))
+   if (!*log_file_dir)
       return NULL;
 
-   /* Create directory, if required */
-   if (!path_is_directory(log_file_dir))
-   {
-      if (!path_mkdir(log_file_dir))
-      {
-         RARCH_ERR("[runtime] failed to create directory for"
-               " runtime log: %s.\n", log_file_dir);
-         return NULL;
-      }
-   }
+   /* Note: the log directory is not created here - reading an
+    * existing log does not need it to exist, and this function
+    * runs on read-only paths that never write one (playlist
+    * sublabels init a log per entry).  runtime_log_save()
+    * creates it when a log is actually written, so the read
+    * paths no longer pay a stat (plus a possible mkdir) per
+    * call. */
 
    /* Get content name */
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
    {
       /* If core supports contentless operation and
        * no content is provided, 'content' is simply
        * the name of the core itself */
       if (supports_no_game)
-      {
-         size_t _len = strlcpy(content_name, core_name, sizeof(content_name));
-         strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
-      }
+         fill_pathname(content_name,
+               core_name,
+               FILE_PATH_RUNTIME_EXTENSION,
+               sizeof(content_name));
    }
    /* NOTE: TyrQuake requires a specific hack, since all
     * content has the same name... */
-   else if (string_is_equal(core_name, "TyrQuake"))
+   else if (memcmp(core_name, "TyrQuake", 9) == 0)
    {
-      const char *last_slash = find_last_slash(content_path);
+      char *last_slash = find_last_slash(content_path);
       if (last_slash)
       {
-         size_t path_length = last_slash + 1 - content_path;
-         if (path_length < PATH_MAX_LENGTH)
+         size_t _len = last_slash + 1 - content_path;
+         if (_len < PATH_MAX_LENGTH)
          {
-            size_t _len;
             memset(tmp_buf, 0, sizeof(tmp_buf));
             strlcpy(tmp_buf,
-                  content_path, path_length * sizeof(char));
-            _len = strlcpy(content_name,
-                  path_basename(tmp_buf), sizeof(content_name));
-            strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
+                  content_path, _len * sizeof(char));
+            fill_pathname(content_name,
+                  path_basename(tmp_buf),
+                  FILE_PATH_RUNTIME_EXTENSION,
+                  sizeof(content_name));
          }
       }
    }
    else
-   {
-      size_t _len;
-      /* path_remove_extension() requires a char * (not const)
-       * so have to use a temporary buffer... */
-      char *tmp_buf_no_ext = NULL;
-      tmp_buf[0]           = '\0';
-      strlcpy(tmp_buf, path_basename(content_path), sizeof(tmp_buf));
-      tmp_buf_no_ext       = path_remove_extension(tmp_buf);
+      fill_pathname(content_name,
+            path_basename(content_path),
+            FILE_PATH_RUNTIME_EXTENSION,
+            sizeof(content_name));
 
-      if (string_is_empty(tmp_buf_no_ext))
-         return NULL;
-
-      _len = strlcpy(content_name, tmp_buf_no_ext, sizeof(content_name));
-      strlcpy(content_name + _len, ".lrtl", sizeof(content_name) - _len);
-   }
-
-   if (string_is_empty(content_name))
+   if (!*content_name)
       return NULL;
 
    /* Build final log file path */
    fill_pathname_join_special(log_file_path, log_file_dir,
          content_name, sizeof(log_file_path));
 
-   if (string_is_empty(log_file_path))
+   if (!*log_file_path)
       return NULL;
 
    /* Phew... If we get this far then all is well.
@@ -386,13 +482,17 @@ runtime_log_t *runtime_log_init(
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
 
+   runtime_log->play_count         = 0;
+
+   runtime_log->state_slot         = 0;
+
    runtime_log->path[0]            = '\0';
 
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
 
-   /* Load existing log file, if it exists */
-   if (path_is_valid(runtime_log->path))
-      runtime_log_read_file(runtime_log);
+   /* Load existing log file, if it exists (a missing file is
+    * handled - silently - inside) */
+   runtime_log_read_file(runtime_log);
 
    return runtime_log;
 }
@@ -401,9 +501,9 @@ runtime_log_t *runtime_log_init(
 static retro_time_t runtime_log_convert_hms2usec(unsigned hours,
       unsigned minutes, unsigned seconds)
 {
-   return ( (retro_time_t)hours   * 60 * 60 * 1000000) +
-           ((retro_time_t)minutes * 60      * 1000000) +
-           ((retro_time_t)seconds           * 1000000);
+   return (   (retro_time_t)hours   * 60 * 60 * 1000000)
+           + ((retro_time_t)minutes * 60      * 1000000)
+           + ((retro_time_t)seconds           * 1000000);
 }
 
 /* Setters */
@@ -485,6 +585,10 @@ void runtime_log_reset(runtime_log_t *runtime_log)
    runtime_log->last_played.hour   = 0;
    runtime_log->last_played.minute = 0;
    runtime_log->last_played.second = 0;
+
+   runtime_log->play_count         = 0;
+
+   runtime_log->state_slot         = 0;
 }
 
 /* Getters */
@@ -502,31 +606,19 @@ static void runtime_log_get_runtime_hms(runtime_log_t *runtime_log,
 }
 
 /* Gets runtime as a pre-formatted string */
-void runtime_log_get_runtime_str(runtime_log_t *runtime_log,
+size_t runtime_log_get_runtime_str(runtime_log_t *runtime_log,
       char *s, size_t len)
 {
    size_t _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
          len);
-   s[_len  ]   = ' ';
    if (runtime_log)
-   {
-      snprintf(s + _len + 1, len - _len - 1, "%02u:%02u:%02u",
+      _len += snprintf(s + _len, len - _len, " %02u:%02u:%02u",
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
-   }
    else
-   {
-      s[_len+1]   = '0';
-      s[_len+2]   = '0';
-      s[_len+3]   = ':';
-      s[_len+4]   = '0';
-      s[_len+5]   = '0';
-      s[_len+6]   = ':';
-      s[_len+7]   = '0';
-      s[_len+8]   = '0';
-      s[_len+9]   = '\0';
-   }
+      _len += strlcpy_lit(s + _len, " 00:00:00", len - _len);
+   return _len;
 }
 
 /* Gets last played entry values */
@@ -535,7 +627,15 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
       unsigned *hour, unsigned *minute, unsigned *second)
 {
    if (!runtime_log)
+   {
+      *year   = 0;
+      *month  = 0;
+      *day    = 0;
+      *hour   = 0;
+      *minute = 0;
+      *second = 0;
       return;
+   }
 
    *year   = runtime_log->last_played.year;
    *month  = runtime_log->last_played.month;
@@ -550,6 +650,9 @@ void runtime_log_get_last_played(runtime_log_t *runtime_log,
 static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
       struct tm *time_info)
 {
+   if (!runtime_log)
+      return;
+
    /* Set tm values */
    time_info->tm_year  = (int)runtime_log->last_played.year  - 1900;
    time_info->tm_mon   = (int)runtime_log->last_played.month - 1;
@@ -564,10 +667,11 @@ static void runtime_log_get_last_played_time(runtime_log_t *runtime_log,
    mktime(time_info);
 }
 
-static bool runtime_last_played_human(runtime_log_t *runtime_log,
-      char *str, size_t len)
+static size_t runtime_last_played_human(runtime_log_t *runtime_log,
+      char *s, size_t len)
 {
    size_t _len;
+   int _ret;
    struct tm time_info;
    time_t last_played;
    time_t current;
@@ -588,7 +692,7 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
    float periods[6] = {60.0f, 60.0f, 24.0f, 7.0f, 4.35f, 12.0f};
 
    if (!runtime_log)
-      return false;
+      return 0;
 
    /* Get time */
    runtime_log_get_last_played_time(runtime_log, &time_info);
@@ -597,35 +701,47 @@ static bool runtime_last_played_human(runtime_log_t *runtime_log,
    current     = time(NULL);
 
    if ((delta = current - last_played) <= 0)
-      return false;
+      return 0;
 
-   for (i = 0; delta >= periods[i] && i < sizeof(periods) - 1; i++)
+   for (i = 0; i < ARRAY_SIZE(periods) - 1 && delta >= periods[i]; i++)
       delta /= periods[i];
 
-   /* Generate string */
-   _len  = snprintf(str, len, "%u ", (int)delta);
-   _len += strlcpy(str + _len,
+   /* Generate string. snprintf() reports the length it would have
+    * written, so take the length that landed. */
+   _ret  = snprintf(s, len, "%u ", (unsigned)delta);
+   _len  = (_ret < 0 || (size_t)_ret >= len) ? (len ? len - 1 : 0)
+                                            : (size_t)_ret;
+   _len += strlcpy(s + _len,
          msg_hash_to_str((enum msg_hash_enums)units[i][(delta == 1) ? 0 : 1]),
          len - _len);
 
-   str[  _len] = ' ';
-   str[++_len] = '\0';
-   strlcpy(str + _len,
+   if (_len + 2 >= len)
+      return _len;
+
+   s[  _len] = ' ';
+   s[++_len] = '\0';
+   _len += strlcpy(s   + _len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO),
          len - _len);
 
-   return true;
+   return _len;
 }
 
 /* Gets last played entry value as a pre-formatted string */
 void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
-      char *str, size_t len,
+      char *s, size_t len,
       enum playlist_sublabel_last_played_style_type timedate_style,
       enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
    const char *format_str = "";
-   size_t _len            = strlcpy(str, msg_hash_to_str(
+   /* strlcpy() reports the length of its source, so a translation of
+    * the label longer than @s would carry _len past len and leave
+    * every len - _len below wrapping to a very large size_t. */
+   size_t _len            = strlcpy(s, msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+
+   if (_len >= len)
+      _len = len ? len - 1 : 0;
 
    if (runtime_log)
    {
@@ -767,7 +883,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
          /* Get time */
          struct tm time_info;
          runtime_log_get_last_played_time(runtime_log, &time_info);
-         strftime_am_pm(str + _len, len - _len, format_str, &time_info);
+         strftime_am_pm(s + _len, len - _len, format_str, &time_info);
          return;
       }
 
@@ -787,7 +903,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %04u-%02u-%02u %02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.year,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
@@ -807,7 +923,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %04u-%02u-%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.year,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day);
@@ -825,7 +941,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %04u-%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.year,
                   runtime_log->last_played.month);
             return;
@@ -842,7 +958,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u %02u:%02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
                   runtime_log->last_played.year,
@@ -863,7 +979,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u %02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
                   runtime_log->last_played.year,
@@ -883,7 +999,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u %02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
                   runtime_log->last_played.hour,
@@ -902,7 +1018,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
                   runtime_log->last_played.year);
@@ -920,7 +1036,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day);
             return;
@@ -937,7 +1053,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u %02u:%02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.day,
                   runtime_log->last_played.month,
                   runtime_log->last_played.year,
@@ -958,7 +1074,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u %02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.day,
                   runtime_log->last_played.month,
                   runtime_log->last_played.year,
@@ -978,7 +1094,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u %02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.day,
                   runtime_log->last_played.month,
                   runtime_log->last_played.hour,
@@ -997,7 +1113,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u-%04u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.day,
                   runtime_log->last_played.month,
                   runtime_log->last_played.year);
@@ -1015,14 +1131,18 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %02u-%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.day, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
-            str[  _len] = ' ';
-            str[++_len] = '\0';               
-            if (!(runtime_last_played_human(runtime_log, str + _len, len - _len - 2)))
-               strlcat(str + _len,
+            /* Two octets are held back below, so there has to be room
+             * for the separator and for them. */
+            if (_len + 3 >= len)
+               return;
+            s[  _len] = ' ';
+            s[++_len] = '\0';
+            if ((runtime_last_played_human(runtime_log, s + _len, len - _len - 2)) == 0)
+               strlcpy(s + _len,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
                      len - _len - 2);
@@ -1041,7 +1161,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   format_str = " %04u-%02u-%02u %02u:%02u:%02u";
                   break;
             }
-            snprintf(str + _len, len - _len, format_str,
+            snprintf(s + _len, len - _len, format_str,
                   runtime_log->last_played.year,
                   runtime_log->last_played.month,
                   runtime_log->last_played.day,
@@ -1052,7 +1172,7 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       }
    }
    else
-      snprintf(str + _len, len - _len,
+      snprintf(s + _len, len - _len,
             " %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER));
 }
 
@@ -1076,27 +1196,40 @@ void runtime_log_save(runtime_log_t *runtime_log)
 {
    char value_string[64]; /* 64 characters should be
                              enough for a very long runtime... :) */
-   RFILE *file            = NULL;
+   char dir[DIR_MAX_LENGTH];
+   int _len;
+   const char *buf;
    rjsonwriter_t* writer;
 
    if (!runtime_log)
       return;
 
-   RARCH_LOG("[Runtime]: Saving runtime log file: \"%s\".\n", runtime_log->path);
+   RARCH_LOG("[Runtime] Saving runtime log file: \"%s\".\n", runtime_log->path);
 
-   /* Attempt to open log file */
-   if (!(file = filestream_open(runtime_log->path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   /* Create the log directory, if required (deferred from
+    * runtime_log_init(), which also runs on read-only paths
+    * that never write a log) */
+   fill_pathname_basedir(dir, runtime_log->path, sizeof(dir));
+
+   if (     !path_is_directory(dir)
+         && !path_mkdir(dir))
    {
-      RARCH_ERR("[Runtime]: Failed to open runtime log file: \"%s\".\n", runtime_log->path);
+      RARCH_ERR("[Runtime] Failed to create directory for"
+            " runtime log: \"%s\".\n", dir);
       return;
    }
 
-   /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   /* Serialise the whole log in memory and write it with a
+    * single filestream_write_file() call.  Opening the output
+    * before the JSON exists truncates the previous log, and any
+    * failure past that point - writer allocation, a write error,
+    * a crash mid-save - left a zero-length file behind in place
+    * of the log it destroyed.  The log is a few hundred bytes;
+    * nothing here needs to stream. */
+   if (!(writer = rjsonwriter_open_memory()))
    {
-      RARCH_ERR("[Runtime]: Failed to create JSON writer.\n");
-      goto end;
+      RARCH_ERR("[Runtime] Failed to create JSON writer.\n");
+      return;
    }
 
    /* Write output file */
@@ -1115,10 +1248,10 @@ void runtime_log_save(runtime_log_t *runtime_log)
    /* > Runtime entry */
    snprintf(value_string,
          sizeof(value_string),
-         LOG_FILE_RUNTIME_FORMAT_STR,
+         "%u:%02u:%02u",
          runtime_log->runtime.hours, runtime_log->runtime.minutes,
          runtime_log->runtime.seconds);
-    
+
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_add_string(writer, "runtime");
    rjsonwriter_raw(writer, ":", 1);
@@ -1130,7 +1263,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    /* > Last played entry */
    value_string[0] = '\0';
    snprintf(value_string, sizeof(value_string),
-         LOG_FILE_LAST_PLAYED_FORMAT_STR,
+         "%04u-%02u-%02u %02u:%02u:%02u",
          runtime_log->last_played.year, runtime_log->last_played.month,
          runtime_log->last_played.day,
          runtime_log->last_played.hour, runtime_log->last_played.minute,
@@ -1141,21 +1274,47 @@ void runtime_log_save(runtime_log_t *runtime_log)
    rjsonwriter_raw(writer, ":", 1);
    rjsonwriter_raw(writer, " ", 1);
    rjsonwriter_add_string(writer, value_string);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
+
+   /* > Play count */
+   value_string[0] = '\0';
+   snprintf(value_string, sizeof(value_string),
+         "%u",
+         runtime_log->play_count);
+
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "play_count");
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_add_string(writer, value_string);
+   rjsonwriter_raw(writer, ",", 1);
+   rjsonwriter_raw(writer, "\n", 1);
+
+   /* > Current state slot */
+   value_string[0] = '\0';
+   snprintf(value_string, sizeof(value_string),
+         "%u",
+         runtime_log->state_slot);
+
+   rjsonwriter_add_spaces(writer, 2);
+   rjsonwriter_add_string(writer, "state_slot");
+   rjsonwriter_raw(writer, ":", 1);
+   rjsonwriter_raw(writer, " ", 1);
+   rjsonwriter_add_string(writer, value_string);
    rjsonwriter_raw(writer, "\n", 1);
 
    /* > Finalise */
    rjsonwriter_raw(writer, "}", 1);
    rjsonwriter_raw(writer, "\n", 1);
 
-   /* Free JSON writer */
-   if (!rjsonwriter_free(writer))
-   {
-      RARCH_ERR("Error writing runtime log file: %s\n", runtime_log->path);
-   }
+   /* NULL means the writer hit an error while serialising */
+   buf = rjsonwriter_get_memory_buffer(writer, &_len);
 
-end:
-   /* Close log file */
-   filestream_close(file);
+   if (!buf || !filestream_write_file(runtime_log->path, buf, _len))
+      RARCH_ERR("[Runtime] Error writing runtime log file: \"%s\".\n", runtime_log->path);
+
+   rjsonwriter_free(writer);
 }
 
 /* Utility functions */
@@ -1177,21 +1336,22 @@ void runtime_log_convert_usec2hms(retro_time_t usec,
 /* Updates specified playlist entry runtime values with
  * contents of associated log file */
 void runtime_update_playlist(
-      playlist_t *playlist, size_t idx,
-      const char *dir_runtime_log,
-      const char *dir_playlist,
-      bool log_per_core,
-      enum playlist_sublabel_last_played_style_type timedate_style,
-      enum playlist_sublabel_last_played_date_separator_type date_separator)
+      playlist_t *playlist, size_t idx)
 {
    char runtime_str[64];
    char last_played_str[64];
    runtime_log_t *runtime_log             = NULL;
    const struct playlist_entry *entry     = NULL;
    struct playlist_entry update_entry     = {0};
-#if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
-   const char *menu_ident                 = menu_driver_ident();
-#endif
+   settings_t *settings                   = config_get_ptr();
+   const char *dir_runtime_log            = settings->paths.directory_runtime_log;
+   const char *dir_playlist               = settings->paths.directory_playlist;
+   unsigned runtime_type                  = settings->uints.playlist_sublabel_runtime_type;
+   bool log_per_core                      = (runtime_type == PLAYLIST_RUNTIME_PER_CORE);
+   enum playlist_sublabel_last_played_style_type
+         timedate_style                   = (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style;
+   enum playlist_sublabel_last_played_date_separator_type
+         date_separator                   = (enum playlist_sublabel_last_played_date_separator_type)settings->uints.menu_timedate_date_separator;
 
    /* Sanity check */
    if (!playlist)
@@ -1259,8 +1419,9 @@ void runtime_update_playlist(
     * to be populated even when no runtime is recorded */
    if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
    {
-      if (string_is_equal(menu_ident, "ozone") ||
-          string_is_equal(menu_ident, "glui"))
+      const char *menu_ident = menu_driver_ident();
+      if (     !strcmp(menu_ident, "ozone")
+            || !strcmp(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));
@@ -1297,14 +1458,11 @@ void runtime_update_contentless_core(
    core_info_t *core_info                       = NULL;
    runtime_log_t *runtime_log                   = NULL;
    contentless_core_runtime_info_t runtime_info = {0};
-#if (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
-   const char *menu_ident                       = menu_driver_ident();
-#endif
 
    /* Sanity check */
-   if (    string_is_empty(core_path)
+   if (    (!core_path || !*core_path)
        || !core_info_find(core_path, &core_info)
-       || !core_info->supports_no_game)
+       || !(core_info->flags & CORE_INFO_FLAG_SUPPORTS_NO_GAME))
       return;
 
    /* Set fallback runtime status
@@ -1352,8 +1510,9 @@ void runtime_update_contentless_core(
     * to be populated even when no runtime is recorded */
    if (runtime_info.status != CONTENTLESS_CORE_RUNTIME_VALID)
    {
-      if (   string_is_equal(menu_ident, "ozone")
-          || string_is_equal(menu_ident, "glui"))
+      const char *menu_ident = menu_driver_ident();
+      if (     !strcmp(menu_ident, "ozone")
+            || !strcmp(menu_ident, "glui"))
       {
          runtime_log_get_runtime_str(NULL,
                runtime_str, sizeof(runtime_str));

@@ -1,0 +1,18 @@
+[
+{
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(0001:0002) Test joypad device D",
+  "frame": 0
+},
+{
+  "action": 1,
+  "param_num": 1,
+  "param_str": "(0003:0004) Test joypad device E"
+},
+{
+  "action": 1,
+  "param_num": 2,
+  "param_str": "(0015:0016) Test joypad device X"
+}
+]

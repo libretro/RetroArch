@@ -61,6 +61,10 @@
 #endif
 #endif
 
+#include "../../audio/audio_driver.h"
+#include "../../menu/menu_entries.h"
+#include <compat/strl.h>
+
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";
 
@@ -75,14 +79,17 @@ static void get_first_valid_core(char* path_return, size_t len)
 
    if (dir)
    {
-      while (ent = readdir(dir))
+      size_t ext_len = strlen(extension);
+      while ((ent = readdir(dir)))
       {
+         size_t name_len;
          if (!ent)
             break;
-         if (strlen(ent->d_name) > strlen(extension) 
-               && !strcmp(ent->d_name + strlen(ent->d_name) - strlen(extension), extension))
+         name_len = strlen(ent->d_name);
+         if (   name_len > ext_len
+             && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
-            size_t _len = strlcpy(path_return, "sdmc:/retroarch/cores/", len);
+            size_t _len = strlcpy_lit(path_return, "sdmc:/retroarch/cores/", len);
             strlcpy(path_return + _len, ent->d_name, len - _len);
             break;
          }
@@ -129,6 +136,8 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
                       "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    fill_pathname_join(g_defaults.path_config, g_defaults.dirs[DEFAULT_DIR_PORT],
                       FILE_PATH_MAIN_CONFIG, sizeof(g_defaults.path_config));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_BOTTOM_ASSETS], g_defaults.dirs[DEFAULT_DIR_ASSETS],
@@ -138,6 +147,12 @@ static void frontend_ctr_get_env(int* argc, char* argv[],
    dir_check_defaults("custom.ini");
 #endif
 }
+
+#ifdef USE_CTRULIB_2
+u8* gfxTopLeftFramebuffers[2];
+u8* gfxTopRightFramebuffers[2];
+u8* gfxBottomFramebuffers[2];
+#endif
 
 static void frontend_ctr_deinit(void* data)
 {
@@ -187,7 +202,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
    DEBUG_VAR(path);
    DEBUG_STR(path);
 
-   if (!string_is_empty(path))
+   if (path && *path)
    {
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
@@ -212,7 +227,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
                (void*)&arg_data[1]))
 #endif
-         if (!string_is_empty(content))
+         if (content && *content)
          {
             strlcpy(game_path, content, sizeof(game_path));
             arg_data[1] = game_path;
@@ -226,10 +241,8 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          if (stat(path, &sbuff))
          {
             char core_path[PATH_MAX];
-
             get_first_valid_core(core_path, sizeof(core_path));
-
-            if (string_is_empty(core_path))
+            if (!core_path || !*core_path)
                error_and_quit("There are no cores installed, install a core to continue.");
          }
       }
@@ -243,10 +256,10 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
       /* couldnt launch new core, but context
          is corrupt so we have to quit */
       {
-         char error[PATH_MAX + 32];
-
-         snprintf(error, sizeof(error), "Can't launch core: %s", path);
-         error_and_quit(error);
+         char err[PATH_MAX + 32];
+         size_t _len = strlcpy_lit(err, "Can't launch core: ", sizeof(err));
+         strlcpy(err + _len, path, sizeof(err) - _len);
+         error_and_quit(err);
       }
    }
 }
@@ -335,7 +348,7 @@ static void ctr_check_dspfirm(void)
                {
                   size_t dspfirm_size = ptr[1];
                   ptr -= 0x40;
-                  if ((ptr + (dspfirm_size >> 2)) > 
+                  if ((ptr + (dspfirm_size >> 2)) >
                         (code_buffer + (code_size >> 2)))
                      break;
 
@@ -371,10 +384,6 @@ __attribute__((weak)) u32 __ctr_patch_services;
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id);
 
 #ifdef USE_CTRULIB_2
-u8* gfxTopLeftFramebuffers[2];
-u8* gfxTopRightFramebuffers[2];
-u8* gfxBottomFramebuffers[2];
-
 void gfxSetFramebufferInfo(gfxScreen_t screen, u8 id)
 {
    if (screen==GFX_TOP)
@@ -408,8 +417,6 @@ static void frontend_ctr_init(void* data)
 {
 #ifndef IS_SALAMANDER
    extern audio_driver_t audio_null;
-
-   (void)data;
 
    verbosity_enable();
 
@@ -465,43 +472,14 @@ static void frontend_ctr_init(void* data)
    if (csndInit() != 0)
       audio_ctr_csnd = audio_null;
    ctr_check_dspfirm();
-   if (ndspInit() != 0) {
+   if (ndspInit() != 0)
+   {
       audio_ctr_dsp = audio_null;
-#ifdef HAVE_THREADS
-      audio_ctr_dsp_thread = audio_null;
-#endif
    }
    cfguInit();
    ptmuInit();
    mcuHwcInit();
 #endif
-}
-
-static int frontend_ctr_get_rating(void)
-{
-   u8 device_model = 0xFF;
-   
-   /*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
-   CFGU_GetSystemModel(&device_model);
-
-   switch (device_model)
-   {
-      case 0:
-      case 1:
-      case 3:
-         /*Old 3/2DS*/
-         return 3;
-      case 2:
-      case 4:
-      case 5:
-         /*New 3/2DS*/
-         return 6;
-      default:
-         /*Unknown Device Or Check Failed*/
-         break;
-   }
-
-   return -1;
 }
 
 enum frontend_architecture frontend_ctr_get_arch(void)
@@ -529,16 +507,6 @@ static int frontend_ctr_parse_drive_list(void* data, bool load_content)
 #endif
 
    return 0;
-}
-
-static uint64_t frontend_ctr_get_total_mem(void)
-{
-   return osGetMemRegionSize(MEMREGION_ALL);
-}
-
-static uint64_t frontend_ctr_get_free_mem(void)
-{
-   return osGetMemRegionFree(MEMREGION_ALL);
 }
 
 static enum frontend_powerstate frontend_ctr_get_powerstate(
@@ -569,12 +537,11 @@ static enum frontend_powerstate frontend_ctr_get_powerstate(
    return FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 }
 
-static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
+static size_t frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
 {
    OS_VersionBin cver;
    OS_VersionBin nver;
-
-   strlcpy(s, "3DS OS", len);
+   size_t _len = strlcpy_lit(s, "3DS OS", len);
    Result data_invalid = osGetSystemVersionData(&nver, &cver);
    if (data_invalid == 0)
    {
@@ -586,39 +553,39 @@ static void frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
       *major = 0;
       *minor = 0;
    }
-
+   return _len;
 }
 
 static void frontend_ctr_get_name(char* s, size_t len)
 {
    u8 device_model = 0xFF;
-   
+
    /*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
    CFGU_GetSystemModel(&device_model);
 
    switch (device_model)
    {
       case 0:
-         strlcpy(s, "Old 3DS", len);
+         strlcpy_lit(s, "Old 3DS", len);
          break;
       case 1:
-         strlcpy(s, "Old 3DS XL", len);
+         strlcpy_lit(s, "Old 3DS XL", len);
          break;
       case 2:
-         strlcpy(s, "New 3DS", len);
+         strlcpy_lit(s, "New 3DS", len);
          break;
       case 3:
-         strlcpy(s, "Old 2DS", len);
+         strlcpy_lit(s, "Old 2DS", len);
          break;
       case 4:
-         strlcpy(s, "New 3DS XL", len);
+         strlcpy_lit(s, "New 3DS XL", len);
          break;
       case 5:
-         strlcpy(s, "New 2DS XL", len);
+         strlcpy_lit(s, "New 2DS XL", len);
          break;
 
       default:
-         strlcpy(s, "Unknown Device", len);
+         strlcpy_lit(s, "Unknown Device", len);
          break;
    }
 }
@@ -639,13 +606,10 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_shutdown,        /* shutdown                       */
    frontend_ctr_get_name,        /* get_name                       */
    frontend_ctr_get_os,          /* get_os                         */
-   frontend_ctr_get_rating,      /* get_rating                     */
    NULL,                         /* load_content                   */
    frontend_ctr_get_arch,        /* get_architecture               */
    frontend_ctr_get_powerstate,  /* get_powerstate                 */
    frontend_ctr_parse_drive_list,/* parse_drive_list               */
-   frontend_ctr_get_total_mem,   /* get_total_mem                  */
-   frontend_ctr_get_free_mem,    /* get_free_mem                   */
    NULL,                         /* install_signal_handler         */
    NULL,                         /* get_signal_handler_state       */
    NULL,                         /* set_signal_handler_state       */
@@ -654,14 +618,13 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    NULL,                         /* detach_console                 */
    NULL,                         /* get_lakka_version              */
    NULL,                         /* set_screen_brightness          */
-   NULL,                         /* watch_path_for_changes         */
-   NULL,                         /* check_for_path_changes         */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name             */
    NULL,                         /* get_user_language              */
    NULL,                         /* is_narrator_running            */
    NULL,                         /* accessibility_speak            */
    NULL,                         /* set_gamemode                   */
+   NULL, /* get_display_type */
    "ctr",                        /* ident                          */
    NULL                          /* get_video_driver               */
 };

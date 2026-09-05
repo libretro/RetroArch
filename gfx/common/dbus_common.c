@@ -30,7 +30,6 @@ void dbus_ensure_connection(void)
 {
 #ifdef HAVE_DBUS
     DBusError err;
-    int ret;
 
     dbus_error_init(&err);
 
@@ -38,7 +37,7 @@ void dbus_ensure_connection(void)
 
     if (dbus_error_is_set(&err))
     {
-        RARCH_LOG("[DBus]: Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
+        RARCH_LOG("[DBus] Failed to get DBus connection. Screensaver will not be suspended via DBus.\n");
         dbus_error_free(&err);
     }
 
@@ -110,11 +109,11 @@ bool dbus_screensaver_inhibit(void)
 
    if (dbus_screensaver_cookie == 0)
    {
-      RARCH_ERR("[DBus]: Failed to suspend screensaver via DBus.\n");
+      RARCH_ERR("[DBus] Failed to suspend screensaver via DBus.\n");
    }
    else
    {
-      RARCH_LOG("[DBus]: Suspended screensaver via DBus.\n");
+      RARCH_LOG("[DBus] Suspended screensaver via DBus.\n");
    }
 
 #endif

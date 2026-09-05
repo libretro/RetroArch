@@ -39,14 +39,14 @@
 #include <psp2/kernel/threadmgr.h>
 #elif defined(_3DS)
 #include <3ds.h>
-#elif defined(EMSCRIPTEN)
-#include <emscripten/emscripten.h>
 #else
 #include <time.h>
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
@@ -80,17 +80,36 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #endif
 
 /**
- * retro_sleep:
- * @msec         : amount in milliseconds to sleep
+ * Briefly suspends the running thread.
  *
- * Sleeps for a specified amount of milliseconds (@msec).
+ * @param msec The time to sleep for, in milliseconds.
  **/
 #if defined(VITA)
 #define retro_sleep(msec) (sceKernelDelayThread(1000 * (msec)))
 #elif defined(_3DS)
 #define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep(msec) (SleepEx((msec), FALSE))
+#elif defined(_WIN32) && !defined(_XBOX)
+/* Desktop Windows.
+ *
+ * Sleep() resolves at the granularity of the global timer period,
+ * which defaults to ~15.6 ms - longer than a single frame at any
+ * common refresh rate. Frame Delay and Scanline Sync both depend on
+ * sub-frame sleeps, so this is implemented out of line (in
+ * libretro-common/time/rtime.c) on top of a high resolution waitable
+ * timer where the running system provides one, falling back to plain
+ * Sleep() everywhere else.
+ *
+ * NOTE: implemented in rtime.c rather than inline here because the
+ * backing timer object must be per thread; see the comments there. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+void retro_sleep(unsigned msec);
+#ifdef __cplusplus
+}
+#endif
 #elif defined(_WIN32)
 #define retro_sleep(msec) (Sleep((msec)))
 #elif defined(XENON)
@@ -101,14 +120,70 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (usleep(1000 * (msec)))
 #elif defined(WIIU)
 #define retro_sleep(msec) (OSSleepTicks(ms_to_ticks((msec))))
-#elif defined(EMSCRIPTEN)
-#define retro_sleep(msec) (emscripten_sleep(msec))
+#elif defined(__EMSCRIPTEN__)
+/* defined in frontend */
+#ifdef __cplusplus
+extern "C" {
+#endif
+void retro_sleep(unsigned msec);
+#ifdef __cplusplus
+}
+#endif
 #else
 static INLINE void retro_sleep(unsigned msec)
 {
    struct timespec tv;
    tv.tv_sec          = msec / 1000;
    tv.tv_nsec         = (msec % 1000) * 1000000;
+   nanosleep(&tv, NULL);
+}
+#endif
+
+/**
+ * Briefly suspends the running thread, with microsecond resolution.
+ *
+ * Platforms whose sleep primitive is microsecond- or nanosecond-native
+ * honour the request as given. Platforms that can only express whole
+ * milliseconds round to nearest, so requests below 500 us degenerate to
+ * a yield rather than an unwanted full millisecond of latency.
+ *
+ * @param usec The time to sleep for, in microseconds.
+ **/
+#if defined(VITA)
+#define retro_sleep_us(usec) (sceKernelDelayThread((usec)))
+#elif defined(_3DS)
+#define retro_sleep_us(usec) (svcSleepThread(1000 * (s64)(usec)))
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#define retro_sleep_us(usec) (SleepEx(((usec) + 500) / 1000, FALSE))
+#elif defined(_WIN32) && !defined(_XBOX)
+/* Desktop Windows: see the note on retro_sleep() above. Implemented in
+ * libretro-common/time/rtime.c, where it is the primitive that
+ * retro_sleep() itself is expressed in terms of. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+void retro_sleep_us(unsigned usec);
+#ifdef __cplusplus
+}
+#endif
+#elif defined(_WIN32)
+#define retro_sleep_us(usec) (Sleep(((usec) + 500) / 1000))
+#elif defined(XENON)
+#define retro_sleep_us(usec) (udelay((usec)))
+#elif !defined(__PSL1GHT__) && defined(__PS3__)
+#define retro_sleep_us(usec) (sys_timer_usleep((usec)))
+#elif defined(GEKKO) || defined(__PSL1GHT__) || defined(__QNX__)
+#define retro_sleep_us(usec) (usleep((usec)))
+#elif defined(WIIU)
+#define retro_sleep_us(usec) (OSSleepTicks(ms_to_ticks(((usec) + 500) / 1000)))
+#elif defined(__EMSCRIPTEN__)
+#define retro_sleep_us(usec) (retro_sleep(((usec) + 500) / 1000))
+#else
+static INLINE void retro_sleep_us(unsigned usec)
+{
+   struct timespec tv;
+   tv.tv_sec          = usec / 1000000;
+   tv.tv_nsec         = (usec % 1000000) * 1000;
    nanosleep(&tv, NULL);
 }
 #endif

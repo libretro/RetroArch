@@ -1,3 +1,217 @@
+# v12.4.0
+* add avatar_last_updated field to rc_client_user_t and rc_api_login_response_t
+* add more fields to fetch_games_list API
+* add rc_client_begin_fetch_game_list
+* add extended RAM to memory map for PSP
+* add memory map for XBOX
+* add hash generation for .neo files (geolith-specific NeoGeo ROMs)
+* add validation warning if Mem and Delta conditions exist for same address and value
+* ignore warning achievements when reporting achievement count in rc_client_get_user_game_summary
+* fix crash when {recall} exists without a Remember
+* fix crash when legacy value contains invalid syntax that overflows the conversion buffer
+* fix handling of SubSource chain starting with a constant
+
+# v12.3.0
+* add rc_client_get_next_achievement_info
+* rc_client image functions will now return RC_INSUFFICENT_BUFFER instead of truncating if buffer is not large enough
+* fix race condition where rich presence from previous game may get associated to current game
+* fix rc_client_has_leaderboards returning true if the game only has hidden leaderboards
+* fix memory leak parsing large achievements
+* fix incomplete rich presence display condition affecting later display conditions
+
+# v12.2.1
+* fix parsing of leaderboards with comparisons in legacy-formatted values
+* fix validation warning on long AddSource chains
+
+# v12.2.0
+* add rc_client_create_subset_list
+* add rc_client_begin_fetch_game_titles
+* greatly improve performance parsing long AddSource chains
+* don't send pings if not processing frames; allows server to suspend session while emulator is paused
+* modify validation logic to return most severe error instead of first error found
+* improve validation warning when 'PauseIf {recall}' attempts to use non-PauseIf Remember
+* fix rounding error when subtracting floats from integers
+* fix infinite loop processing 'Remember {recall}' with no modifiers
+* fix measured value jumping to 0 if all measured-generating alts are paused
+* fix buffer overflow converting long user names between rc_client_external versions
+* fix validation warning when adding differently sized values
+* fix validation warning when ResetIf only applies to hit count inside an AndNext chain
+* fix validation warning when only last node of modified memref chain differs
+
+# v12.1.0
+* add rc_client_get_user_subset_summary
+* add validation warning for using MeasuredIf without Measured
+* add validation warning for using ResetIf without hit targets
+* add rapi function for update_rich_presence
+* add gap to RC_CONSOLE_WII memory map to make it easier to convert pointers
+* improve range validation logic
+* fix error Remembering float value
+* fix MeasuredIf evaluation in rich presence
+* fix parsing of code notes with addresses above 0x7FFFFFFF
+* fix double evaluation of rich presence parameters
+* fix validation of SubSource chain
+* fix error if rc_client_allow_background_memory_reads called before calling rc_client_begin_load_raintegration
+* fix memory corruption when mixing legacy and new-format macros in rich presence
+* fix invalid pointer reference when iterator gets cloned
+
+# v12.0.0
+* rc_client changes
+  * add RC_CLIENT_EVENT_SUBSET_COMPLETED event
+  * add 'avatar_url' to rc_client_user_t
+  * add 'badge_url' to rc_client_game_t
+  * add 'badge_url' and 'badge_locked_url' to rc_client_achievement_t
+  * add rc_client_set_hash_callbacks
+  * add rc_client_set_allow_background_memory_reads
+  * renamed rc_client_begin_change_media to rc_client_begin_identify_and_change_media
+  * renamed rc_client_begin_change_media_from_hash to rc_client_begin_change_media
+  * use slim read/write locks for rc_mutex on Windows Vista+
+  * use critical sections for rc_mutex on older versions of Windows
+  * add translation layer in rc_client_external for cross-version support 
+* rhash changes
+  * rc_hash_init_verbose_message_callback and rc_hash_init_error_message_callback have been deprecated.
+    - set values in iterator.callbacks instead.
+  * rc_hash_init_custom_filereader and rc_hash_init_custom_cdreader have been deprecated.
+    - set values in iterator.callbacks instead.
+  * rc_hash_generate_from_file and rc_hash_generate_from_buffer have been deprecated.
+    - use rc_hash_initialize_iterator and rc_hash_generate instead.
+  * hash.c has been split into several smaller files which can be conditionally excluded from the build.
+    - hash_disc.c can be excluded by defining RC_HASH_NO_DISC
+    - hash_encrypted.c can be excluded by defining RC_HASH_NO_ENCRYPTED
+    - hash_rom.c can be excluded by defining RC_HASH_NO_ROM
+    - hash_zip.c can be excluded by defining RC_HASH_NO_ZIP
+  * add hash method for RC_CONSOLE_WII
+  * add hash method for Arduboy FX games (RC_CONSOLE_ARDUBOY)
+  * fix hash for PCE homebrew games that aren't multiples of 128KB
+* rapi changes
+  * add _hosted variations of rc_api_init functions for interacting with custom hosts
+    - rc_api_set_host and rc_api_set_image_host have been deprecated
+  * add rc_api_fetch_game_sets
+  * add rc_api_fetch_followed_users
+  * add rc_api_fetch_hash_library
+  * add rc_api_fetch_all_user_progress
+  * add 'avatar_url' to login response, achievement_info response, and leaderboard_info responses
+  * add 'badge_url' to game_data response
+  * rurl has been removed (deprecated in v10.0.0)
+* trigger parsing/processing code has been largely modified to improve processing performance
+  * AddAddress/AddSource chains can now be shared across triggers to avoid recalculating them multiple times
+  * triggers are preprocessed to allocate conditions as array instead of linked list. 
+    - array is sorted such that similar conditions (pause/reset/hittarget/etc) can be processed together
+      without having to scan the linked list multiple times
+    - the linked list still exists for backwards compatibility and to maintain the original ordering  
+  * each condition type has its own handler, eliminating many switches and branches when processing triggers
+  * memrefs are now allocated in arrays (eliminating the linked list pointer from each to reduce memory footprint)
+* commas are now inserted into all numeric formats except SCORE. a new format type UNFORMATTED (@Unformatted) has
+  been added to display a number without commas.
+  - To forcibly exclude commas in a backwards-compatible way, use the @Unformatted macro and define Unformatted as
+    a VALUE formatter. Legacy clients will use the VALUE formatted and new clients will use the @Unformatted macro.
+* add RC_CONSOLE_FAMICOM_DISK_SYSTEM (split off of RC_CONSOLE_NINTENDO)
+* update RC_CONSOLE_SNES memory map to support SA-1 I-RAM and BW-RAM
+* update RC_CONSOLE_SEGACD memory map to supprot WORD RAM
+* update RC_CONSOLE_N64 memory map to place RDRAM at $80000000 and expansion pak RAM at $80400000
+* remove HAVE_LUA define and support (implementation was never finished)
+* report error when RP contains address starting with `0x0x`.
+* add .natvis files to improve debugging in Visual Studio
+
+# v11.6.0
+* backdate retried unlocks in rc_client
+* add memory map and hash method for RC_CONSOLE_ZX_SPECTRUM
+* add RC_CONSOLE_GAMECUBE to supported consoles for iso file extension
+* add DTCM to RC_CONSOLE_NINTENDO_DS and RC_CONSOLE_NINTENDO_DSI memory maps
+* don't report conflict if last conditions of OrNext chain conflict
+* don't report conflict if last conditions of AddSource chain conflict
+* fix hits not being reset on leaderboard value when start and submit are both true in a single frame
+* fix crash when multiple items in a CSV lookup overlap
+* fix crash if game is unloaded while activating achievements
+
+# v11.5.0
+* add total_entries to rc_api_fetch_leaderboard_info_response_t
+* add RC_CLIENT_RAINTEGRATION_EVENT_MENU_CHANGED event
+* modify rc_client_begin_identify_and_load_game and rc_client_begin_change_media to use locally
+  registered filereader/cdreader for hash resolution when using rc_client_raintegration
+* add support for ISO-8601 timestamps in JSON responses
+* update RC_CONSOLE_MS_DOS hash logic to support parent archives
+* fix infinite loop that sometimes occurs when resetting while progress tracker is onscreen
+
+# v11.4.0
+* add RC_CONDITION_REMEMBER and RC_OPERAND_RECALL
+* add RC_OPERATOR_ADD and RC_OPERATOR_SUB
+* add scratch pad memory to PSX memory map
+* add Super Game Module memory to Colecovision memory map
+* add rapi function fetch_game_titles
+* modify progress functions to return RC_NO_GAME_LOADED when "Unknown Game" is loaded
+* update subsystem list for arcade hash
+* fix exception if server sends null as achievement.author
+
+# v11.3.0
+* add RC_OPERATOR_MOD
+* add cartridge RAM to Game Gear and Master System memory maps
+* add extended cartridge RAM to Gameboy and Gameboy Color memory maps
+* add rc_client_is_game_loaded helper function
+* add rc_client_raintegration_set_console_id to specify console in case game resolution fails
+* add rc_client_raintegration_get_achievement_state to detect local unlocks
+* report validation errors on multi-condition logic
+* hash whole file for PSP homebrew files (eboot.pbp)
+* call DrawMenuBar in rc_client_raintegration_rebuild_submenu if menu changes
+* fix file sharing issue using default filereader on Windows
+* fix exception calling rc_client_get_game_summary with an unidentified game loaded
+
+# v11.2.0
+* add alternate methods for state serialization/deserialization that accept a buffer_size parameter
+* add RC_CLIENT_SUPPORTS_HASH compile flag
+  - allows rc_client code to build without the rhash files (except md5.c)
+  - must be explicitly defined to use rc_client_begin_identify_and_load_game
+* add rc_client_get_load_game_state
+* add rc_client_raintegration_set_get_game_name_function
+* add RC_MEMSIZE_DOUBLE32 and RC_MEMSIZE_DOUBLE32_BE
+* exclude directory records from ZIP hash algorithm
+* fix media host when explicitly setting host to production server
+* fix potential out-of-bounds read looking for error message in non-JSON response
+
+# v11.1.0
+* add rc_client_get_user_agent_clause to generate substring to include in client User-Agents
+* add rc_client_can_pause function to control pause spam
+* add achievement type and rarity to rc_api_fetch_game_data_response_t and rc_client_achievement_t
+* add RC_CLIENT_ACHIEVEMENT_BUCKET_UNSYNCED for achievements that have been unlocked locally but not synced to the server
+* add RC_CONSOLE_NEO_GEO_CD to supported consoles for chd file extension
+* add hash logic for RC_CONSOLE_NINTENDO_3DS (note: added new file rhash/aes.c to support this)
+* add hash logic for RC_CONSOLE_MS_DOS
+* add game_hash and hardcore fields to rc_api_start_session_request_t and rc_api_ping_request_t
+* add RC_FORMAT_FIXED1/2/3, RC_FORMAT_TENS, RC_FORMAT_HUNDREDS, RC_FORMAT_THOUSANDS, and RC_FORMAT_UNSIGNED_VALUE
+* add RC_CONSOLE_STANDALONE
+* add extern "C" and __cdecl attributes to public functions
+* add __declspec(dllexport/dllimport) attributes to public functions via #define enablement
+* add rc_version and rc_version_string functions for accessing version from external linkage
+* add unicode path support to default filereader (Windows builds)
+* add rc_mutex support for GEKKO (libogc)
+* fix async_handle being returned when rc_client_begin_login is aborted synchronously
+* fix logic error hashing CD files smaller than one sector
+* fix read across region boundary in rc_libretro_memory_read
+* fix RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW event not being raised if achievement is reset in the same frame that it's primed
+* moved rc_util.h from src/ to include/
+* initial (incomplete) support for rc_client_external_t and rc_client_raintegration_t
+
+# v11.0.0
+* add rc_client_t and related functions
+* add RC_MEMSIZE_FLOAT_BE
+* add Game Pak SRAM to GBA memory map
+* add hash method for Super Cassettevision
+* add PSP to potential consoles for chd iterator
+* add content_type to rc_api_request_t for client to pass to server
+* add rc_api_process_X_server_response methods to pass status_code and body_length to response processing functions
+* add additional error codes to rc_api_process_login_response: RC_INVALID_CREDENTIALS, RC_EXPIRED_TOKEN, RC_ACCESS_DENIED
+* rc_api_start_session now also returns unlocks without having to explicitly call rc_api_fetch_user_unlocks separately
+* add validation warning for using hit target of 1 on ResetIf condition
+* move compat.c up a directory and rename to rc_compat.c as it's shared by all subfolders
+* move rc_libretro.c up a directory as it uses files from all subfolders
+* convert loosely sized types to strongly sized types (unsigned -> uint32t, unsigned char -> uint8_t, etc)
+
+# v10.7.1
+* add rc_runtime_alloc
+* add rc_libretro_memory_find_avail
+* extract nginx errors from HTML returned for JSON endpoints
+* fix real address for 32X extension RAM
+* fix crash attempting to calculate gamecube hash for non-existent file
+
 # v10.7.0
 * add hash method and memory map for Gamecube
 * add console enum, hash method, and memory map for DSi

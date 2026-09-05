@@ -28,6 +28,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -40,7 +41,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -57,8 +58,16 @@ RETRO_BEGIN_DECLS
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
+#ifdef __EMSCRIPTEN__
+/* This task reads a variable that is set asynchronously, so the first check might fail.
+ * Check more often because it is cheap and to avoid a long period of missing power info. */
+#define POWERSTATE_CHECK_INTERVAL  1000000
+#else
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#endif
+
 #define DATETIME_CHECK_INTERVAL    1000000
+#define MENU_DRAW_ENTRY_DELAY      30
 
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -105,11 +114,16 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
 #ifdef ANDROID
     MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -169,6 +183,7 @@ enum menu_settings_type
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_SETTING_ACTION_PAUSE_ACHIEVEMENTS,
    MENU_SETTING_ACTION_RESUME_ACHIEVEMENTS,
+   MENU_INFO_ACHIEVEMENTS_SERVER_UNREACHABLE,
    MENU_SETTING_PLAYLIST_MANAGER_DEFAULT_CORE,
    MENU_SETTING_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
    MENU_SETTING_PLAYLIST_MANAGER_RIGHT_THUMBNAIL_MODE,
@@ -235,9 +250,9 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE,
    MENU_SETTINGS_INPUT_INPUT_REMAP_PORT,
    MENU_SETTINGS_INPUT_BEGIN,
-   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 7,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (RARCH_ANALOG_BIND_LIST_END * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
    MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
    MENU_SETTINGS_REMAPPING_PORT_BEGIN,
@@ -250,10 +265,7 @@ enum menu_settings_type
 
    MENU_SET_SCREEN_BRIGHTNESS,
 
-#ifdef HAVE_LAKKA_SWITCH
-   MENU_SET_SWITCH_GPU_PROFILE,
-#endif
-#if defined(HAVE_LAKKA_SWITCH) || defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX)
    MENU_SET_SWITCH_CPU_PROFILE,
 #endif
 
@@ -272,6 +284,9 @@ enum menu_settings_type
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
 
+   MENU_SETTING_SCAN_METHOD,
+   MENU_SETTING_SCAN_USE_DB,
+   MENU_SETTING_SCAN_DB_SELECT,
    MENU_SETTING_MANUAL_CONTENT_SCAN_DIR,
    MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -305,6 +320,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
+   MENU_SETTING_ACTION_STATE_SLOT_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -387,9 +403,10 @@ typedef struct menu_ctx_driver
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
-   void (*refresh_thumbnail_image)(void *data, unsigned i);
+   void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
+   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
@@ -410,9 +427,10 @@ typedef struct
 
    const menu_ctx_driver_t *driver_ctx;
    void *userdata;
-   char *core_buf;
 
-   size_t                     core_len;
+   char *core_buf;
+   size_t core_len;
+
    /* This is used for storing intermediary variables
     * that get used later on during menu actions -
     * for instance, selecting a shader pass for a shader
@@ -422,6 +440,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
+   int16_t state_slot_run;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory
@@ -432,11 +451,10 @@ typedef struct
       enum rarch_shader_type preset_type;
       enum rarch_shader_type pass_type;
 
-      char preset_dir[PATH_MAX_LENGTH];
-      char preset_file_name[PATH_MAX_LENGTH];
-
-      char pass_dir[PATH_MAX_LENGTH];
-      char pass_file_name[PATH_MAX_LENGTH];
+      char pass_dir[DIR_MAX_LENGTH];
+      char preset_dir[DIR_MAX_LENGTH];
+      char preset_file_name[NAME_MAX_LENGTH];
+      char pass_file_name[NAME_MAX_LENGTH];
    } last_shader_selection;
 #endif
 
@@ -444,11 +462,11 @@ typedef struct
     * loaded via the menu file browser */
    struct
    {
-      char directory[PATH_MAX_LENGTH];
-      char file_name[PATH_MAX_LENGTH];
+      char directory[DIR_MAX_LENGTH];
+      char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[8192];
+   char menu_state_msg[MENU_LABEL_MAX_LENGTH];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -457,8 +475,11 @@ typedef struct
    char scratch_buf[PATH_MAX_LENGTH];
    char scratch2_buf[PATH_MAX_LENGTH];
    char db_playlist_file[PATH_MAX_LENGTH];
-   char filebrowser_label[PATH_MAX_LENGTH];
+   char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* The Content Downloader directory the user last stepped into. */
+   char core_content_dir[NAME_MAX_LENGTH];
 } menu_handle_t;
 
 struct menu_state
@@ -509,6 +530,9 @@ struct menu_state
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+#ifdef HAVE_RUNAHEAD
+   unsigned int runahead_mode;
+#endif
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
@@ -522,15 +546,17 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Storage container for current menu datetime
-    * representation string */
-   char datetime_cache[255];
    /* Filled with current content path when a core calls
     * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
     * generic_menu_entry_action(), and must be cached
     * since RETRO_ENVIRONMENT_SHUTDOWN will cause
     * RARCH_PATH_CONTENT to be cleared */
    char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
+   /* Path of a configuration file whose load has been deferred
+    * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
+    * config_replace() is performed from runloop_check_state(),
+    * never from within menu iteration */
+   char pending_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
@@ -628,9 +654,9 @@ bool menu_driver_init(bool video_is_threaded);
 
 retro_time_t menu_driver_get_current_time(void);
 
-void menu_display_timedate(gfx_display_ctx_datetime_t *datetime);
+size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
 
-void menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate);
+size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,
       void *task_data,
@@ -669,9 +695,6 @@ int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enu
 void menu_entries_build_scroll_indices(
       struct menu_state *menu_st,
       file_list_t *list);
-
-void get_current_menu_value(struct menu_state *menu_st,
-      char *s, size_t len);
 
 /* Teardown function for the menu driver. */
 void menu_driver_destroy(
@@ -740,14 +763,21 @@ size_t menu_update_fullscreen_thumbnail_label(
       bool is_quick_menu, const char *title);
 
 bool menu_is_running_quick_menu(void);
-bool menu_is_nonrunning_quick_menu(void);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 
-void menu_driver_set_thumbnail_system(void *data, char *s, size_t len);
+#ifdef HAVE_RUNAHEAD
+void menu_update_runahead_mode(void);
+#endif
 
-size_t menu_driver_get_thumbnail_system(void *data, char *s, size_t len);
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
+
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

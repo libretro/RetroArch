@@ -67,24 +67,29 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
+/* Bound on any wait for the audio thread to consume: one wait, and how
+ * many of them before the caller gets the pass back. The thread
+ * consumes a period every period while the device runs. */
+#define PSP_AUDIO_WAIT_US   100000
+#define PSP_AUDIO_WAIT_LAPS 8
+
 /* Return port used */
-static int configureAudio(unsigned rate) {
-   int port;
+static int psp_configure_audio(unsigned rate)
+{
 #if defined(VITA)
-   port         = sceAudioOutOpenPort(
+   return sceAudioOutOpenPort(
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #elif defined(ORBIS)
-   port         = sceAudioOutOpen(0xff,
+   return sceAudioOutOpen(0xff,
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
          rate, SCE_AUDIO_OUT_MODE_STEREO);
 #else
-   port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
 #endif
-   return port;
 }
 
-static void audioMainLoop(void *data)
+static void psp_audio_mainloop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
@@ -116,7 +121,9 @@ static void audioMainLoop(void *data)
         cond ? (psp->zeroBuffer)
               : (psp->buffer + read_pos_2));
 #else
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX, cond ? (psp->zeroBuffer)
+      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
+              cond
+            ? (psp->zeroBuffer)
             : (psp->buffer + read_pos));
 #endif
    }
@@ -135,8 +142,11 @@ static void *psp_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   if ((port = configureAudio(rate)) < 0)
+   if ((port = psp_configure_audio(rate)) < 0)
+   {
+      free(psp);
       return NULL;
+   }
 
 #if defined(ORBIS)
    sceAudioOutInit();
@@ -158,7 +168,7 @@ static void *psp_audio_init(const char *device,
 
    psp->nonblock      = false;
    psp->running       = true;
-   psp->worker_thread = sthread_create(audioMainLoop, psp);
+   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
 
    return psp;
 }
@@ -200,11 +210,11 @@ static void psp_audio_free(void *data)
 
 }
 
-static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
+static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 {
-   psp_audio_t* psp     = (psp_audio_t*)data;
-   uint16_t write_pos   = psp->write_pos;
-   uint16_t sampleCount = size / sizeof(uint32_t);
+   psp_audio_t* psp      = (psp_audio_t*)data;
+   uint16_t write_pos    = psp->write_pos;
+   uint16_t sample_count = len / sizeof(uint32_t);
 
    if (!psp->running)
       return -1;
@@ -212,35 +222,50 @@ static ssize_t psp_audio_write(void *data, const void *buf, size_t size)
    if (psp->nonblock)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
-               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
+               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
          return 0;
    }
 
    slock_lock(psp->cond_lock);
-   while (AUDIO_BUFFER_SIZE - ((uint16_t)
-      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < size)
-      scond_wait(psp->cond, psp->cond_lock);
+   {
+      /* The audio thread signals every period it consumes. One that has
+       * stopped consuming - the device suspended, the thread gone -
+       * signals nothing; the wait is bounded and the write then returns
+       * having written nothing rather than holding the caller. */
+      int laps = PSP_AUDIO_WAIT_LAPS;
+      while (AUDIO_BUFFER_SIZE - ((uint16_t)
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
+      {
+         if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
+                     PSP_AUDIO_WAIT_US)
+               || --laps < 0
+               || !psp->running)
+         {
+            slock_unlock(psp->cond_lock);
+            return 0;
+         }
+      }
+   }
    slock_unlock(psp->cond_lock);
 
    slock_lock(psp->fifo_lock);
-   if ((write_pos + sampleCount) > AUDIO_BUFFER_SIZE)
+   if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + write_pos, buf,
+      memcpy(psp->buffer + write_pos, s,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*) buf +
+      memcpy(psp->buffer, (uint32_t*)s +
             (AUDIO_BUFFER_SIZE - write_pos),
-            (write_pos + sampleCount - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+            (write_pos + sample_count - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
-      memcpy(psp->buffer + write_pos, buf, size);
+      memcpy(psp->buffer + write_pos, s, len);
 
-   write_pos      += sampleCount;
+   write_pos      += sample_count;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    psp->write_pos  = write_pos;
 
    slock_unlock(psp->fifo_lock);
-   return size;
-
+   return len;
 }
 
 static bool psp_audio_alive(void *data)
@@ -258,14 +283,15 @@ static bool psp_audio_stop(void *data)
 #if defined(ORBIS)
    return false;
 #else
-   if (psp){
+   if (psp)
+   {
       psp->running = false;
 
-      if (!psp->worker_thread)
-      return true;
-
-      sthread_join(psp->worker_thread);
-      psp->worker_thread = NULL;
+      if (psp->worker_thread)
+      {
+         sthread_join(psp->worker_thread);
+         psp->worker_thread = NULL;
+      }
    }
    return true;
 #endif
@@ -280,7 +306,7 @@ static bool psp_audio_start(void *data, bool is_shutdown)
       if (!psp->worker_thread)
       {
          psp->running       = true;
-         psp->worker_thread = sthread_create(audioMainLoop, psp);
+         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
       }
    }
 
@@ -294,29 +320,72 @@ static void psp_audio_set_nonblock_state(void *data, bool toggle)
       psp->nonblock = toggle;
 }
 
-static bool psp_audio_use_float(void *data)
-{
-   return false;
-}
-
 static size_t psp_write_avail(void *data)
 {
-   size_t val;
+   size_t _len;
    psp_audio_t* psp = (psp_audio_t*)data;
 
    if (!psp||!psp->running)
       return 0;
    slock_lock(psp->fifo_lock);
-   val = AUDIO_BUFFER_SIZE - ((uint16_t)
+   _len = AUDIO_BUFFER_SIZE - ((uint16_t)
          (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
    slock_unlock(psp->fifo_lock);
-   return val;
+   return _len * sizeof(uint32_t);
 }
 
+/* Sleep on the condition the output thread signals after every block
+ * until the fifo has room for len, in the same units psp_audio_write()
+ * compares against, capped at half the fifo so the wait always ends.
+ * Returns the free space as psp_write_avail() reports it, or 0 when
+ * the output thread is not running. */
+static size_t psp_wait_writable(void *data, size_t len)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   size_t avail;
+   int laps         = PSP_AUDIO_WAIT_LAPS;
+   /* len arrives in bytes; the ring is counted in uint32_t frames. */
+   size_t want      = len / sizeof(uint32_t);
+
+   if (want > AUDIO_BUFFER_SIZE / 2)
+      want = AUDIO_BUFFER_SIZE / 2;
+
+   slock_lock(psp->cond_lock);
+   for (;;)
+   {
+      if (!psp->running)
+      {
+         slock_unlock(psp->cond_lock);
+         return 0;
+      }
+      avail = AUDIO_BUFFER_SIZE - ((uint16_t)
+            (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
+      if (avail >= want)
+         break;
+      /* Bounded per wait and overall: a thread that has stopped
+       * consuming hands the pass back as no space coming from this
+       * call. */
+      if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
+                  PSP_AUDIO_WAIT_US)
+            || --laps < 0)
+      {
+         slock_unlock(psp->cond_lock);
+         return 0;
+      }
+   }
+   slock_unlock(psp->cond_lock);
+   return avail * sizeof(uint32_t);
+}
+
+/* sceAudio takes 16-bit PCM only; there is no float output on the
+ * PSP hardware or in the kernel API. */
+static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
 {
-   /* TODO/FIXME - implement? */
-   return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
+   /* In bytes: the ring holds AUDIO_BUFFER_SIZE uint32_t frames of int16
+    * stereo. The comment beside this had the multiplication and left it
+    * out. */
+   return AUDIO_BUFFER_SIZE * sizeof(uint32_t);
 }
 
 audio_driver_t audio_psp = {
@@ -338,5 +407,7 @@ audio_driver_t audio_psp = {
    NULL,
    NULL,
    psp_write_avail,
-   psp_buffer_size
+   psp_buffer_size,
+   NULL, /* write_raw */
+   psp_wait_writable
 };

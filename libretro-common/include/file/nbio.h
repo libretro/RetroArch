@@ -69,6 +69,31 @@ typedef struct nbio_intf
 
    void (*free)(void *data);
 
+   /* Set the per-iteration chunk size in bytes.
+    * Only meaningful for backends that read/write in chunks (e.g. stdio).
+    * Backends that ignore this (mmap, linux AIO) may set this to NULL. */
+   void (*set_chunk_size)(void *data, size_t chunk_size);
+
+   /* Return the underlying OS file descriptor, or -1 if unavailable.
+    * Enables callers to use platform-specific optimizations
+    * (posix_fadvise, sendfile, copy_file_range, etc.). */
+   int (*get_fd)(void *data);
+
+   /* Report byte-level I/O progress.
+    * Sets *completed and *total; returns true if operation in progress.
+    * Backends that do not track progress may set this to NULL. */
+   bool (*get_progress)(void *data, size_t *completed, size_t *total);
+
+   /* Fast path: load an entire file in one blocking call.
+    * Collapses begin_read + iterate-loop + get_ptr into a single
+    * operation. For mmap backends this is a no-op (data already mapped).
+    * For AIO it does a blocking wait. For stdio it does a single fread.
+    * Returns a pointer to the data and sets *len, or NULL on failure.
+    * The handle must have been opened in a read mode.
+    * Backends that do not implement this may set it to NULL;
+    * the dispatch layer falls back to begin_read + iterate + get_ptr. */
+   void *(*load_entire)(void *data, size_t *len);
+
    /* Human readable string. */
    const char *ident;
 } nbio_intf_t;
@@ -118,6 +143,42 @@ void nbio_cancel(void *data);
  * Deletes the nbio structure and its associated pointer.
  */
 void nbio_free(void *data);
+
+/*
+ * Sets the chunk size (in bytes) for each iteration of I/O.
+ * Larger values reduce per-iteration overhead at the cost of
+ * longer blocking per call to nbio_iterate.
+ * A value of 0 resets to the backend default.
+ * Backends that do not chunk (mmap, linux AIO) ignore this.
+ */
+void nbio_set_chunk_size(void *data, size_t chunk_size);
+
+/*
+ * Returns the underlying OS file descriptor for the nbio handle,
+ * or -1 if the backend does not expose one.
+ * Useful for platform-specific I/O optimizations (fadvise, sendfile, etc.).
+ */
+int nbio_get_fd(void *data);
+
+/*
+ * Reports the current I/O progress.
+ * Sets *completed to the number of bytes transferred so far,
+ * and *total to the total file size.
+ * Returns true if the operation is still in progress, false if idle/done.
+ */
+bool nbio_get_progress(void *data, size_t *completed, size_t *total);
+
+/*
+ * Fast path: load the entire file into memory in one blocking call.
+ * Equivalent to begin_read + while(!iterate) + get_ptr, but backends
+ * can implement this far more efficiently:
+ *   - mmap: returns the mapped pointer directly (zero-copy, instant)
+ *   - linux AIO: blocking io_getevents wait (one syscall)
+ *   - stdio: single fread of the whole file
+ * Returns a pointer to the file data and sets *len, or NULL on error.
+ * The handle remains valid; call nbio_free() when done.
+ */
+void *nbio_load_entire(void *data, size_t *len);
 
 RETRO_END_DECLS
 

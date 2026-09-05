@@ -41,6 +41,7 @@ RETRO_BEGIN_DECLS
 
 enum event_command
 {
+   CMD_SPECIAL = -1,
    CMD_EVENT_NONE = 0,
    /* Resets RetroArch. */
    CMD_EVENT_RESET,
@@ -68,6 +69,9 @@ enum event_command
    CMD_EVENT_PLAY_REPLAY,
    CMD_EVENT_RECORD_REPLAY,
    CMD_EVENT_HALT_REPLAY,
+   CMD_EVENT_SAVE_REPLAY_CHECKPOINT,
+   CMD_EVENT_PREV_REPLAY_CHECKPOINT,
+   CMD_EVENT_NEXT_REPLAY_CHECKPOINT,
    CMD_EVENT_REPLAY_DECREMENT,
    CMD_EVENT_REPLAY_INCREMENT,
    /* Save state actions. */
@@ -80,6 +84,9 @@ enum event_command
    CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT_FROM_TOGGLE,
+   /* Re-evaluate the on-screen notification (gfx_widgets) system to
+    * match current settings, without a full driver reinit. */
+   CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
@@ -88,6 +95,8 @@ enum event_command
    CMD_EVENT_REWIND_DEINIT,
    /* Initializes rewind. */
    CMD_EVENT_REWIND_INIT,
+   /* Reinitializes rewind (primarily if the state size changes). */
+   CMD_EVENT_REWIND_REINIT,
    /* Toggles rewind. */
    CMD_EVENT_REWIND_TOGGLE,
    /* Initializes autosave. */
@@ -103,10 +112,14 @@ enum event_command
    CMD_EVENT_VOLUME_DOWN,
    CMD_EVENT_MIXER_VOLUME_UP,
    CMD_EVENT_MIXER_VOLUME_DOWN,
+   /* Toggles Video Filter*/
+   CMD_VIDEO_FILTER_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
    /* Toggles statistics display. */
    CMD_EVENT_STATISTICS_TOGGLE,
+   /* Initializes video filter. */
+   CMD_EVENT_VIDEO_FILTER_INIT,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Frees or caches overlay. */
@@ -143,6 +156,14 @@ enum event_command
    CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
+#ifdef HAVE_CLOUDSYNC
+   /* Trigger cloud sync */
+   CMD_EVENT_CLOUD_SYNC,
+   /* Resolve cloud sync conflicts by keeping local files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   /* Resolve cloud sync conflicts by keeping server files */
+   CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+#endif
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */
@@ -165,6 +186,8 @@ enum event_command
    /* Configuration saving. */
    CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG,
    CMD_EVENT_MENU_SAVE_CONFIG,
+   CMD_EVENT_MENU_SAVE_AS_CONFIG,
+   CMD_EVENT_MENU_SAVE_MAIN_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    CMD_EVENT_MENU_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
@@ -226,6 +249,8 @@ enum event_command
    CMD_EVENT_DISK_APPEND_IMAGE,
    /* Stops rumbling. */
    CMD_EVENT_RUMBLE_STOP,
+   /* Toggles turbo fire. */
+   CMD_EVENT_TURBO_FIRE_TOGGLE,
    /* Toggles mouse grab. */
    CMD_EVENT_GRAB_MOUSE_TOGGLE,
    /* Toggles game focus. */
@@ -253,11 +278,13 @@ enum event_command
    CMD_EVENT_AI_SERVICE_CALL,
    /* Misc. */
    CMD_EVENT_SAVE_FILES,
+   CMD_EVENT_LOAD_FILES,
    CMD_EVENT_CONTROLLER_INIT,
    CMD_EVENT_DISCORD_INIT,
    CMD_EVENT_PRESENCE_UPDATE,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
+   CMD_EVENT_RELOAD_CONFIG,
 #ifdef HAVE_MICROPHONE
    /* Stops all enabled microphones. */
    CMD_EVENT_MICROPHONE_STOP,
@@ -266,8 +293,8 @@ enum event_command
    /* Reinitializes microphone driver. */
    CMD_EVENT_MICROPHONE_REINIT,
 #endif
-   /* Deprecated */
-   CMD_EVENT_SEND_DEBUG_INFO
+   /* Add a playlist entry to another playlist. */
+   CMD_EVENT_ADD_TO_PLAYLIST
 };
 
 enum cmd_source_t
@@ -324,21 +351,20 @@ struct rarch_state;
 bool command_event(enum event_command action, void *data);
 
 /* Constructors for the supported drivers */
+#ifdef HAVE_NETWORK_CMD
 command_t* command_network_new(uint16_t port);
-command_t* command_stdin_new(void);
-command_t* command_uds_new(void);
-
 bool command_network_send(const char *cmd_);
-
-#ifdef HAVE_CONFIGFILE
-bool command_event_save_config(
-      const char *config_path,
-      char *s, size_t len);
+#endif
+#ifdef HAVE_STDIN_CMD
+command_t* command_stdin_new(void);
+#endif
+#ifdef HAVE_LAKKA
+command_t* command_uds_new(void);
+#endif
+#ifdef __EMSCRIPTEN__
+command_t* command_emscripten_new(void);
 #endif
 
-void command_event_undo_save_state(char *s, size_t len);
-
-void command_event_undo_load_state(char *s, size_t len);
 
 void command_event_set_mixer_volume(
       settings_t *settings,
@@ -347,9 +373,7 @@ void command_event_set_mixer_volume(
 bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale);
 
-bool command_event_save_auto_state(
-      bool savestate_auto_save,
-      const enum rarch_core_type current_core_type);
+size_t command_event_save_auto_state(void);
 
 /**
  * event_set_volume:
@@ -374,15 +398,13 @@ void command_event_init_controllers(rarch_system_info_t *info,
 
 bool command_event_load_entry_state(settings_t *settings);
 
-void command_event_load_auto_state(void);
+bool command_event_load_auto_state(void);
 
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
-void command_event_set_savestate_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
+int command_event_get_next_savestate_auto_index(
+      settings_t *settings);
 
 void command_event_set_replay_auto_index(
       settings_t *settings);
@@ -416,13 +438,25 @@ bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
+bool command_save_state_slot(command_t* cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
+bool command_seek_replay(command_t *cmd, const char *arg);
+bool command_save_savefiles(command_t *cmd, const char* arg);
+bool command_load_savefiles(command_t *cmd, const char* arg);
 #ifdef HAVE_CHEEVOS
 bool command_read_ram(command_t *cmd, const char *arg);
 bool command_write_ram(command_t *cmd, const char *arg);
 #endif
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
+bool command_load_core(command_t *cmd, const char* arg);
+bool command_start_core(command_t *cmd, const char* arg);
+bool command_load_content(command_t *cmd, const char* arg);
+bool command_close_content(command_t *cmd, const char* arg);
+bool command_unload_core(command_t *cmd, const char* arg);
+bool command_video_reinit(command_t *cmd, const char* arg);
+bool command_audio_reinit(command_t *cmd, const char* arg);
+bool command_drivers_reinit(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -442,13 +476,26 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
+
+   { "SAVE_FILES", command_save_savefiles, "No argument"},
+   { "LOAD_FILES", command_load_savefiles, "No argument"},
+
+   { "LOAD_CORE", command_load_core, "<core path>"},
+   { "START_CORE", command_start_core, "No argument"},
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>"},
+   { "CLOSE_CONTENT", command_close_content, "No argument"},
+   { "UNLOAD_CORE", command_unload_core, "No argument"},
+   { "VIDEO_REINIT", command_video_reinit, "No argument"},
+   { "AUDIO_REINIT", command_audio_reinit, "No argument"},
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument"},
 };
 
 static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "QUIT",                   RARCH_QUIT_KEY },
-   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
    { "RESET",                  RARCH_RESET },
 
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
@@ -471,6 +518,9 @@ static const struct cmd_map map[] = {
    { "PLAY_REPLAY",            RARCH_PLAY_REPLAY_KEY },
    { "RECORD_REPLAY",          RARCH_RECORD_REPLAY_KEY },
    { "HALT_REPLAY",            RARCH_HALT_REPLAY_KEY },
+   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY },
+   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY },
+   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY },
    { "REPLAY_SLOT_PLUS",       RARCH_REPLAY_SLOT_PLUS },
    { "REPLAY_SLOT_MINUS",      RARCH_REPLAY_SLOT_MINUS },
 
@@ -479,6 +529,7 @@ static const struct cmd_map map[] = {
    { "DISK_PREV",              RARCH_DISK_PREV },
 
    { "SHADER_TOGGLE",          RARCH_SHADER_TOGGLE },
+   { "SHADER_HOLD",            RARCH_SHADER_HOLD },
    { "SHADER_NEXT",            RARCH_SHADER_NEXT },
    { "SHADER_PREV",            RARCH_SHADER_PREV },
 
@@ -490,6 +541,7 @@ static const struct cmd_map map[] = {
    { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
    { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
 
+   { "TURBO_FIRE_TOGGLE",      RARCH_TURBO_FIRE_TOGGLE },
    { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
    { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
    { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
@@ -498,6 +550,7 @@ static const struct cmd_map map[] = {
    { "VRR_RUNLOOP_TOGGLE",     RARCH_VRR_RUNLOOP_TOGGLE },
    { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
    { "PREEMPT_TOGGLE",         RARCH_PREEMPT_TOGGLE },
+   { "VIDEO_FILTER_TOGGLE",    RARCH_VIDEO_FILTER_TOGGLE },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "AI_SERVICE",             RARCH_AI_SERVICE },

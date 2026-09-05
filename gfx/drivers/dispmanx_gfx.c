@@ -55,7 +55,7 @@ struct dispmanx_surface
    struct dispmanx_page *pages;
    /* the page that's currently on screen */
    struct dispmanx_page *current_page;
-   /*The page to wich we will dump the render. We need to know this
+   /* The page where we will dump the render. We need to know this
     * already when we enter the surface update function. No time to wait
     * for free pages before blitting and showing the just rendered frame! */
    struct dispmanx_page *next_page;
@@ -156,7 +156,7 @@ static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_disp
       }
    }
 
-   /* We mark the choosen page as used */
+   /* We mark the chosen page as used */
    slock_lock(page->page_used_mutex);
    page->used = true;
    slock_unlock(page->page_used_mutex);
@@ -202,7 +202,7 @@ static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
    struct dispmanx_surface *surface = *sp;
 
    /* What if we run into the vsync cb code after freeing the surface?
-    * We could be trying to get non-existant lock, signal non-existant condition..
+    * We could be trying to get non-existent lock, signal non-existent condition..
     * So we wait for any pending flips to complete before freeing any surface. */
    slock_lock(_dispvars->pending_mutex);
    if (_dispvars->pageflip_pending > 0)
@@ -239,6 +239,18 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
 
    surface = *sp;
 
+   /* NULL-check the outer calloc: the next dozen lines of
+    * surface->... field writes would NULL-deref on OOM.  This
+    * function is void-returning, so callers can't see an error
+    * code - they have to notice *sp == NULL themselves.  None of
+    * the three current callers (lines 367, 464, 518) do that,
+    * but letting the function no-op on OOM is still strictly
+    * better than a segfault, and a subsequent
+    * dispmanx_surface_update_async(..., *sp) would also no-op
+    * on a NULL surface. */
+   if (!surface)
+      return;
+
    /* Setup surface parameters */
    surface->numpages = numpages;
    /* We receive the pitch for what we consider "useful info",
@@ -254,6 +266,18 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
    /* Allocate memory for all the pages in each surface
     * and initialize variables inside each page's struct. */
    surface->pages = calloc(surface->numpages, sizeof(struct dispmanx_page));
+
+   /* NULL-check the pages calloc as well.  The for-loop below
+    * indexes into surface->pages unconditionally.  On OOM undo
+    * the outer surface allocation so the caller gets a NULL
+    * pointer back consistent with the initial-alloc failure
+    * above. */
+   if (!surface->pages)
+   {
+      free(surface);
+      *sp = NULL;
+      return;
+   }
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -276,7 +300,7 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
    dst_height = _dispvars->dispmanx_height;
 
    /* If we obtain a scaled image width that is bigger than the physical screen width,
-    * then we keep the physical screen width as our maximun width. */
+    * then we keep the physical screen width as our maximum width. */
    if (dst_width > _dispvars->dispmanx_width)
       dst_width = _dispvars->dispmanx_width;
 
@@ -376,7 +400,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
          -1,
          &_dispvars->back_surface);
 
-   /* Updating 1-page surface synchronously asks for truble, since the 1st CB will
+   /* Updating 1-page surface synchronously causes problems, since the 1st CB will
     * signal but not free because the only page is on screen, so get_free will wait forever. */
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
@@ -586,10 +610,11 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void dispmanx_get_poke_interface(void *data,
@@ -643,6 +668,8 @@ video_driver_t video_dispmanx = {
 #endif
    dispmanx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

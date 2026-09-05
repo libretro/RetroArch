@@ -39,6 +39,9 @@ typedef struct video_display_config
    unsigned refreshrate;
    unsigned idx;
    bool current;
+   bool interlaced;
+   bool dblscan;
+   float refreshrate_float;
 } video_display_config_t;
 
 typedef struct video_display_server
@@ -55,7 +58,32 @@ typedef struct video_display_server
    const char *(*get_output_options)(void *data);
    void (*set_screen_orientation)(void *data, enum rotation rotation);
    enum rotation (*get_screen_orientation)(void *data);
+   float (*get_refresh_rate)(void *data);
+   void (*get_video_output_size)(void *data,
+         unsigned *width, unsigned *height, char *s, size_t len);
+   void (*get_video_output_prev)(void *data);
+   void (*get_video_output_next)(void *data);
+   bool (*get_metrics)(void *data, enum display_metric_types type,
+         float *value);
    uint32_t (*get_flags)(void *data);
+   /* Display scanout timing, for Scanline Sync.
+    *
+    * get_scanline returns the current beam position in scanlines, or a
+    * negative value if unavailable. wait_vblank blocks until the next
+    * vertical blank and returns false if it cannot.
+    *
+    * Both are optional and a server may implement one without the
+    * other, but Scanline Sync needs get_scanline: it calibrates the
+    * total line count from the peak value and targets a specific line.
+    * A server offering only wait_vblank cannot drive it.
+    *
+    * Only win32 implements these today, through D3DKMT. The equivalents
+    * elsewhere are drmWaitVBlank on KMS and glXWaitForMscOML on X11 -
+    * both vblank waits, neither exposing a live scanout position -
+    * while Wayland's presentation-time protocol reports after the fact
+    * rather than blocking. None of them are wired up. */
+   int  (*get_scanline)(void *data);
+   bool (*wait_vblank)(void *data);
    const char *ident;
 } video_display_server_t;
 
@@ -64,6 +92,9 @@ void* video_display_server_init(enum rarch_display_type type);
 void video_display_server_destroy(void);
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
+
+int  video_display_server_get_scanline(void);
+bool video_display_server_wait_vblank(void);
 
 bool video_display_server_set_window_opacity(unsigned opacity);
 
@@ -83,6 +114,18 @@ const char *video_display_server_get_ident(void);
 
 void video_display_server_set_screen_orientation(enum rotation rotation);
 
+float video_display_server_get_refresh_rate(void);
+
+bool video_display_server_get_video_output_size(
+      unsigned *width, unsigned *height, char *s, size_t len);
+
+bool video_display_server_get_video_output_prev(void);
+
+bool video_display_server_get_video_output_next(void);
+
+bool video_display_server_get_metrics(
+      enum display_metric_types type, float *value);
+
 bool video_display_server_can_set_screen_orientation(void);
 
 bool video_display_server_has_resolution_list(void);
@@ -98,9 +141,12 @@ void video_display_server_restore_refresh_rate(void);
 enum rotation video_display_server_get_screen_orientation(void);
 
 extern const video_display_server_t dispserv_win32;
+extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
+extern const video_display_server_t dispserv_wl;
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_android;
+extern const video_display_server_t dispserv_apple;
 
 RETRO_END_DECLS
 

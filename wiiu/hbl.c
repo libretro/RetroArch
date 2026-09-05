@@ -240,62 +240,68 @@ void log_rpx(const char *filepath, unsigned char *buf, size_t len)
 
 #endif
 
-int HBL_loadToMemory(const char *filepath, u32 args_size)
+int HBL_loadToMemory(const char *file_path, u32 args_size)
 {
    int ret;
    FILE *fp;
-   u32 bytesRead = 0;
-   u32 fileSize  = 0;
-   if (!filepath || !*filepath)
+   size_t buffer_size;
+   unsigned char *buffer = NULL;
+   u32 bytes_read        = 0;
+   u32 file_size         = 0;
+   if (!file_path || !*file_path)
       return -1;
 
-   if (!(fp = fopen(filepath, "rb")))
+   if (!(fp = fopen(file_path, "rb")))
       return -1;
 
    fseek(fp, 0, SEEK_END);
-   fileSize = ftell(fp);
+   file_size    = ftell(fp);
    fseek(fp, 0, SEEK_SET);
 
-   size_t buffer_size = (fileSize + 0x3f) & ~0x3f;
-   unsigned char *buffer = (unsigned char *) memalign(0x40, buffer_size);
+   buffer_size  = (file_size + 0x3f) & ~0x3f;
+   buffer       = (unsigned char *)memalign(0x40, buffer_size);
 
    if (!buffer)
+   {
+      fclose(fp);
       return -1;
+   }
 
    memset(buffer, 0, buffer_size);
 
    /* Copy rpl in memory */
-   while (bytesRead < fileSize)
+   while (bytes_read < file_size)
    {
       int ret;
-      u32 blockSize = 0x8000;
+      u32 block_size = 0x8000;
 
-      if (blockSize > (fileSize - bytesRead))
-         blockSize = fileSize - bytesRead;
+      if (block_size > (file_size - bytes_read))
+         block_size = file_size - bytes_read;
 
-      ret = fread(buffer + bytesRead, 1, blockSize, fp);
-
-      if (ret <= 0)
+      if ((ret = fread(buffer + bytes_read, 1, block_size, fp)) <= 0)
          break;
 
-      bytesRead += ret;
+      bytes_read += ret;
    }
 
-   if (bytesRead != fileSize)
+   fclose(fp);
+
+   if (bytes_read != file_size)
    {
       free(buffer);
       return -1;
    }
+
 #ifdef WIIU_LOG_RPX
-   log_rpx(filepath, buffer, bytesRead);
+   log_rpx(file_path, buffer, bytes_read);
 #endif
 
-   ret = HomebrewCopyMemory(buffer, bytesRead, args_size);
+   ret = HomebrewCopyMemory(buffer, bytes_read, args_size);
 
    free(buffer);
 
    if (ret < 0)
       return -1;
 
-   return fileSize;
+   return file_size;
 }

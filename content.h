@@ -39,12 +39,6 @@ typedef struct content_ctx_info
    int argc;                       /* Argument count. */
 } content_ctx_info_t;
 
-/* Load a RAM state from disk to memory. */
-bool content_load_ram_file(unsigned slot);
-
-/* Save a RAM state from memory to disk. */
-bool content_save_ram_file(unsigned slot, bool compress);
-
 /* Load a state from memory. */
 bool content_load_state_from_ram(void);
 
@@ -58,7 +52,13 @@ bool content_ram_state_to_file(const char *path);
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
 /* Save a state from memory to disk. */
-bool content_save_state(const char *path, bool save_to_disk, bool autosave);
+bool content_save_state(const char *path, bool save_to_disk);
+
+/* Automatically save a state if the interval has elapsed. */
+bool content_save_state_automatic(void);
+
+/* Save an automatic savestate to disk. */
+bool content_auto_save_state(const char *path);
 
 /* Check a ram state write to disk. */
 bool content_ram_state_pending(void);
@@ -74,6 +74,10 @@ bool content_serialize_state_rewind(void* buffer, size_t buffer_size);
 
 /* Deserializes the current state. */
 bool content_deserialize_state(const void* serialized_data, size_t serialized_size);
+
+/* True while a save state task is in progress, i.e. while
+ * content_wait_for_save_state_task() would block. */
+bool content_save_state_in_progress(void* data);
 
 /* Waits for any in-progress save state tasks to finish */
 void content_wait_for_save_state_task(void);
@@ -95,7 +99,6 @@ void content_set_does_not_need_content(void);
 
 void content_unset_does_not_need_content(void);
 
-uint32_t content_get_crc(void);
 
 void content_deinit(void);
 
@@ -106,9 +109,10 @@ bool content_init(void);
 /* Resets the state and savefile backup buffers */
 void content_reset_savestate_backups(void);
 
-/* Checks if the buffers are empty */
+/* Checks if the buffers are empty, or undo feature is disabled */
 bool content_undo_load_buf_is_empty(void);
 bool content_undo_save_buf_is_empty(void);
+bool content_undo_save_disabled(void);
 
 /* Clears the pending subsystem rom buffer */
 bool content_is_subsystem_pending_load(void);
@@ -138,7 +142,7 @@ char* content_get_subsystem_rom(unsigned index);
 bool content_set_subsystem_by_name(const char* subsystem_name);
 
 /* Get the current subsystem "friendly name" */
-void content_get_subsystem_friendly_name(const char* subsystem_name, char* subsystem_friendly_name, size_t len);
+size_t content_get_subsystem_friendly_name(const char* subsystem_name, char *s, size_t len);
 
 /* Sets overrides which modify frontend handling of
  * specific content file types */

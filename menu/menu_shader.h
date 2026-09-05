@@ -18,7 +18,6 @@
 #define _MENU_SHADER_MANAGER_H
 
 #include <retro_common_api.h>
-#include <lists/string_list.h>
 
 #include "../gfx/video_shader_parse.h"
 
@@ -26,6 +25,7 @@ RETRO_BEGIN_DECLS
 
 enum auto_shader_type
 {
+   SHADER_PRESET_CURRENT,
    SHADER_PRESET_GLOBAL,
    SHADER_PRESET_CORE,
    SHADER_PRESET_PARENT,
@@ -59,15 +59,15 @@ bool menu_shader_manager_init(void);
  **/
 bool menu_shader_manager_set_preset(
       struct video_shader *menu_shader,
-      enum rarch_shader_type type, 
-      const char *preset_path, 
+      enum rarch_shader_type type,
+      const char *preset_path,
       bool apply);
 
 /**
  * menu_shader_manager_append_preset:
  * @shader                   : current shader
  * @preset_path              : path to the preset to append
- * @dir_video_shader         : temporary diretory
+ * @dir_video_shader         : temporary directory
  *
  * combine current shader with a shader preset on disk
  **/

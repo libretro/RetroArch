@@ -25,6 +25,8 @@
 #include <retro_math.h>
 #include <encodings/utf.h>
 #include <formats/image.h>
+#include <string/stdstring.h>
+#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -38,7 +40,168 @@
 #include "../gfx_widgets.h"
 #endif
 
-#include "../common/rsx_defines.h"
+#ifdef __PSL1GHT__
+#include <rsx/rsx.h>
+#include <rsx/nv40.h>
+#include <ppu-types.h>
+#endif
+
+#include "../../driver.h"
+#include "../../retroarch.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+
+#define RSX_MAX_BUFFERS 2
+#define RSX_MAX_MENU_BUFFERS 2
+#define RSX_MAX_TEXTURES 4
+#define RSX_MAX_SHADERS 2
+#define RSX_MAX_VERTICES 4
+#define RSX_MAX_TEXTURE_VERTICES 4096 /* Set > 0 for preallocated texture vertices */
+#define RSX_MAX_FONT_VERTICES 8192
+
+#define RSX_SHADER_STOCK_BLEND (RSX_MAX_SHADERS - 1)
+#define RSX_SHADER_MENU        (RSX_MAX_SHADERS - 2)
+
+/* Shader objects */
+extern const u8 modern_opaque_vpo_end[];
+extern const u8 modern_opaque_vpo[];
+extern const u32 modern_opaque_vpo_size;
+extern const u8 modern_opaque_fpo_end[];
+extern const u8 modern_opaque_fpo[];
+extern const u32 modern_opaque_fpo_size;
+
+extern const u8 modern_alpha_blend_vpo_end[];
+extern const u8 modern_alpha_blend_vpo[];
+extern const u32 modern_alpha_blend_vpo_size;
+extern const u8 modern_alpha_blend_fpo_end[];
+extern const u8 modern_alpha_blend_fpo[];
+extern const u32 modern_alpha_blend_fpo_size;
+
+typedef struct
+{
+   float x, y;
+   float w, h;
+   float min, max;
+   float scale[4];
+   float offset[4];
+} rsx_viewport_t;
+
+typedef struct __attribute__((aligned(128)))
+{
+   float x, y;
+   float u, v;
+   float r, g, b, a;
+} rsx_vertex_t;
+
+typedef struct
+{
+   gcmTexture tex;
+   u32 *data;
+   u32 offset;
+   u32 wrap_s;
+   u32 wrap_t;
+   u32 min_filter;
+   u32 mag_filter;
+   u32 width;
+   u32 height;
+} rsx_texture_t;
+
+#ifdef HAVE_OVERLAY
+typedef struct
+{
+   rsx_vertex_t *vertices;
+   rsx_texture_t texture;
+} rsx_overlay_t;
+#endif
+
+typedef struct
+{
+   int height;
+   int width;
+   int id;
+   uint32_t *ptr;
+   /* Internal stuff */
+   uint32_t offset;
+} rsx_buffer;
+
+typedef struct
+{
+   video_viewport_t vp;
+   rsx_buffer buffers[RSX_MAX_BUFFERS];
+#if defined(HAVE_MENU_BUFFER)
+   rsx_buffer menuBuffers[RSX_MAX_MENU_BUFFERS];
+   int menuBuffer;
+#endif
+   int currentBuffer, nextBuffer;
+   gcmContextData* context;
+   u32* depth_buffer;
+
+#if defined(HAVE_MENU_BUFFER)
+   gcmSurface surface[RSX_MAX_BUFFERS + RSX_MAX_MENU_BUFFERS];
+#else
+   gcmSurface surface[RSX_MAX_BUFFERS];
+#endif
+   rsx_texture_t texture[RSX_MAX_TEXTURES];
+   rsx_texture_t menu_texture;
+   rsx_vertex_t *vertices;
+   rsx_vertex_t *texture_vertices;
+   int tex_index;
+   int vert_idx;
+   int texture_vert_idx;
+   int font_vert_idx;
+   u32 pos_offset[RSX_MAX_SHADERS];
+   u32 uv_offset[RSX_MAX_SHADERS];
+   u32 col_offset[RSX_MAX_SHADERS];
+   rsxProgramConst  *proj_matrix[RSX_MAX_SHADERS];
+   rsxProgramConst  *bgcolor[RSX_MAX_SHADERS];
+   rsxProgramAttrib *pos_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *col_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *uv_index[RSX_MAX_SHADERS];
+   rsxProgramAttrib *tex_unit[RSX_MAX_SHADERS];
+   void *vp_ucode[RSX_MAX_SHADERS];
+   void *fp_ucode[RSX_MAX_SHADERS];
+   rsxVertexProgram *vpo[RSX_MAX_SHADERS];
+   rsxFragmentProgram *fpo[RSX_MAX_SHADERS];
+   u32 *fp_buffer[RSX_MAX_SHADERS];
+   u32 fp_offset[RSX_MAX_SHADERS];
+   math_matrix_4x4 mvp, mvp_no_rot;
+   const shader_backend_t* shader;
+   void* shader_data;
+   void* renderchain_data;
+   void* ctx_data;
+   const gfx_ctx_driver_t* ctx_driver;
+
+   video_info_t video_info;
+
+   float menu_texture_alpha;
+
+#ifdef HAVE_OVERLAY
+   rsx_overlay_t *overlay;
+   unsigned overlays;
+   bool overlay_enable;
+   bool overlay_full_screen;
+#endif
+
+   unsigned rotation;
+
+   u16 width;
+   u16 height;
+   u16 menu_width;
+   u16 menu_height;
+   u32 depth_pitch;
+   u32 depth_offset;
+
+   bool menu_frame_enable;
+   bool rgb32;
+   bool vsync;
+   bool smooth;
+   bool keep_aspect;
+   bool should_resize;
+   bool msg_rendering_enabled;
+   bool shared_context_use;
+} rsx_t;
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -77,11 +240,7 @@
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -130,8 +289,8 @@ static const float rsx_tex_coords[8] = {
  * FORWARD DECLARATIONS
  */
 
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate);
+static void rsx_set_viewport(void *data, unsigned vp_width,
+      unsigned vp_height, bool force_full, bool allow_rotate);
 
 /*
  * DISPLAY DRIVER
@@ -182,8 +341,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord   = &rsx_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -214,7 +371,7 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
          texture->wrap_t, GCM_TEXTURE_CLAMP_TO_EDGE, 0, GCM_TEXTURE_ZFUNC_LESS, 0);
 
 #if RSX_MAX_TEXTURE_VERTICES > 0
-   /* Using preallocated texture vertices uses better memory managment but may cause more flickering */
+   /* Using preallocated texture vertices uses better memory management but may cause more flickering */
    end_vert_idx             = rsx->texture_vert_idx + draw->coords->vertices;
    if (end_vert_idx > RSX_MAX_TEXTURE_VERTICES)
    {
@@ -313,22 +470,6 @@ static void gfx_display_rsx_blend_end(void *data)
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
-   gfx_display_rsx_draw,
-   NULL,                                        /* draw_pipeline */
-   gfx_display_rsx_blend_begin,
-   gfx_display_rsx_blend_end,
-   gfx_display_rsx_get_default_mvp,
-   gfx_display_rsx_get_default_vertices,
-   gfx_display_rsx_get_default_tex_coords,
-   FONT_DRIVER_RENDER_RSX,
-   GFX_VIDEO_DRIVER_RSX,
-   "rsx",
-   true,
-   gfx_display_rsx_scissor_begin,
-   gfx_display_rsx_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -354,13 +495,22 @@ static void rsx_font_free(void *data,
 
    rsxClearSurface(font->rsx->context, GCM_CLEAR_Z);
    gcmSetWaitFlip(font->rsx->context);
-#if 0
-   /* TODO fix crash on loading core */
+
+   /* Drain the RSX command queue before freeing font memory.
+    * gcmSetWaitFlip only waits for the page flip, not for all
+    * draw commands to complete.  rsxFinish ensures the GPU is
+    * fully idle so the font texture and vertex buffer can be
+    * safely freed.
+    *
+    * Previously #if 0'd out, leaking font RSX memory on every
+    * font scale change or context reset. */
+   rsxFinish(font->rsx->context, 0);
+
    if (font->texture.data)
       rsxFree(font->texture.data);
    if (font->vertices)
       rsxFree(font->vertices);
-#endif
+
    free(font);
 }
 
@@ -368,7 +518,20 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
-   memcpy(texbuffer, atlas_data, font->atlas->height * font->atlas->width);
+   /* Texture pitch equals the atlas width, so the dirty row band is
+    * contiguous in both buffers and one memcpy of just that band
+    * suffices; the initial upload (dirty rect covering everything
+    * after the renderer pre-cache) still transfers the full atlas. */
+   unsigned y0                 = font->atlas->dirty_y0;
+   unsigned y1                 = font->atlas->dirty_y1;
+   if (y1 > font->atlas->height || y1 <= y0)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
+   memcpy(texbuffer   + (size_t)y0 * font->atlas->width,
+          atlas_data  + (size_t)y0 * font->atlas->width,
+          (size_t)(y1 - y0) * font->atlas->width);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;
@@ -421,7 +584,7 @@ static void *rsx_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -478,7 +641,7 @@ static int rsx_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    const struct font_glyph* glyph_q = NULL;
-   rsx_font_t *font   = (rsx_font_t*)data;
+   rsx_font_t *font    = (rsx_font_t*)data;
    const char* msg_end = msg + msg_len;
    int delta_x         = 0;
 
@@ -590,20 +753,44 @@ static void rsx_font_render_line(rsx_t *rsx,
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
+   float color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * rsx->vp.height);
    int delta_x          = 0;
    int delta_y          = 0;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that rsx_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x             -= rsx_font_get_message_width(font, msg, msg_len, scale);
-         break;
-      case TEXT_ALIGN_CENTER:
-         x             -= rsx_font_get_message_width(font, msg, msg_len, scale) / 2.0;
-         break;
+      int width_accum     = 0;
+      const char *scan    = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
+
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
+   }
+
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
    }
 
    while (msg < msg_end)
@@ -635,6 +822,9 @@ static void rsx_font_render_line(rsx_t *rsx,
          RSX_FONT_EMIT(3, 1, 0); /* Top-right */
          RSX_FONT_EMIT(4, 0, 0); /* Top-left */
          RSX_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
 
          i++;
 
@@ -672,12 +862,12 @@ static void rsx_font_render_message(rsx_t *rsx,
    float inv_win_height                   = 1.0f / rsx->vp.height;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / rsx->vp.height;
-
    for (;;)
    {
-      const char *delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
-
+      const char *delim = msg;
+      while (*delim != '\n' && *delim != '\0')
+         delim++;
+      size_t msg_len = delim - msg;
       /* Draw the line */
       rsx_font_render_line(rsx, font, glyph_q,
             msg, msg_len, scale, color, pos_x,
@@ -688,11 +878,9 @@ static void rsx_font_render_message(rsx_t *rsx,
             inv_win_width,
             inv_win_height,
             text_align);
-
-      if (!delim)
+      if (*delim == '\0')
          break;
-
-      msg += msg_len + 1;
+      msg = delim + 1;
       lines++;
    }
 }
@@ -717,7 +905,7 @@ static void rsx_font_setup_viewport(
 static void rsx_font_render_msg(
       void *userdata,
       void *data,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params)
 {
    float color[4];
@@ -735,7 +923,7 @@ static void rsx_font_render_msg(
    float video_msg_color_b          = settings->floats.video_msg_color_b;
    rsx_t *rsx                       = (rsx_t*)userdata;
 
-   if (!font || string_is_empty(msg) || !rsx)
+   if (!font || !msg || !*msg || !rsx)
       return;
 
    width                            = rsx->width;
@@ -786,7 +974,7 @@ static void rsx_font_render_msg(
    else
       rsx_font_setup_viewport(rsx, font, width, height, full_screen);
 
-   if (    !string_is_empty(msg)
+   if (     (msg && *msg)
          && font->font_data
          && font->font_driver)
    {
@@ -824,7 +1012,7 @@ static const struct font_glyph *rsx_font_get_glyph(
 {
    rsx_font_t *font = (rsx_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -868,18 +1056,6 @@ static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t rsx_font = {
-   rsx_font_init,
-   rsx_font_free,
-   rsx_font_render_msg,
-   "rsx",
-   rsx_font_get_glyph,
-   rsx_font_bind_block,
-   rsx_font_flush_block,
-   rsx_font_get_message_width,
-   rsx_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -977,82 +1153,17 @@ static void rsx_set_projection(rsx_t *rsx,
    matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
-
-static void rsx_set_viewport(void *data, unsigned viewport_width,
-      unsigned viewport_height, bool force_full, bool allow_rotate)
+static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+      bool force_full, bool allow_rotate)
 {
-	int i;
+   int i;
    rsx_viewport_t vp;
-   int x                     = 0;
-   int y                     = 0;
-   float device_aspect       = (float)viewport_width / viewport_height;
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
-   settings_t *settings      = config_get_ptr();
    rsx_t *rsx                = (rsx_t*)data;
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
 
-   if (video_scale_integer && !force_full)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp,
-            viewport_width, viewport_height,
-            video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      viewport_width         = rsx->vp.width;
-      viewport_height        = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect && !force_full)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta            = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x                = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width   = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta             = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y                 = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height   = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      rsx->vp.x               = x;
-      rsx->vp.y               = y;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
-   else
-   {
-      rsx->vp.x               = 0;
-      rsx->vp.y               = 0;
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
+   rsx->vp.full_width         = vp_width;
+   rsx->vp.full_height        = vp_height;
+   video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
@@ -1075,13 +1186,6 @@ static void rsx_set_viewport(void *data, unsigned viewport_width,
    rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
 
    rsx_set_projection(rsx, &ortho, allow_rotate);
-
-   /* Set last backbuffer viewport. */
-   if (!force_full)
-   {
-      rsx->vp.width           = viewport_width;
-      rsx->vp.height          = viewport_height;
-   }
 }
 
 static const gfx_ctx_driver_t* rsx_get_context(rsx_t* rsx)
@@ -1114,7 +1218,7 @@ static bool rsx_tasks_finder(retro_task_t *task,void *userdata) { return task; }
 task_finder_data_t rsx_tasks_finder_data = {rsx_tasks_finder, NULL};
 #endif
 
-static int rsx_make_buffer(rsxBuffer * buffer, u16 width, u16 height, int id)
+static int rsx_make_buffer(rsx_buffer *buffer, u16 width, u16 height, int id)
 {
    int depth         = sizeof(u32);
    int pitch         = depth * width;
@@ -1197,7 +1301,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
 
    if (!saved_context)
    {
-      /* Allocate a 1MB buffer, alligned to a 1MB boundary
+      /* Allocate a 1MB buffer, aligned to a 1MB boundary
        * to be our shared I/O memory with the RSX. */
       void *host_addr = memalign(1024*1024, HOST_SIZE);
 
@@ -1273,7 +1377,7 @@ error:
    return NULL;
 }
 
-static void rsx_init_render_target(rsx_t *rsx, rsxBuffer * buffer, int id)
+static void rsx_init_render_target(rsx_t *rsx, rsx_buffer *buffer, int id)
 {
    u32 i;
    memset(&rsx->surface[id], 0, sizeof(gcmSurface));
@@ -1361,7 +1465,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_MENU]          = (u32*)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_MENU])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_MENU], rsx->fp_ucode[RSX_SHADER_MENU], fpsize);
@@ -1381,7 +1485,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->fp_buffer[RSX_SHADER_STOCK_BLEND]   = (u32 *)rsxMemalign(64, fpsize);
    if (!rsx->fp_buffer[RSX_SHADER_STOCK_BLEND])
    {
-      RARCH_ERR("failed to allocate fp_buffer\n");
+      RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
       return;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], rsx->fp_ucode[RSX_SHADER_STOCK_BLEND], fpsize);
@@ -1454,7 +1558,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.full_width        = rsx->width;
    rsx->vp.full_height       = rsx->height;
    rsx->rgb32                = video->rgb32;
-   video_driver_set_size(rsx->vp.width, rsx->vp.height);
+   video_driver_set_output_size(rsx->vp.width, rsx->vp.height);
    rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
 
    if (input && input_data)
@@ -1467,92 +1571,18 @@ static void* rsx_init(const video_info_t* video,
    rsx_context_bind_hw_render(rsx, true);
 
    if (video->font_enable)
-   {
-      font_driver_init_osd(rsx,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_RSX);
       rsx->msg_rendering_enabled = true;
-   }
 
    return rsx;
 }
 
 static void rsx_update_viewport(rsx_t* rsx)
 {
-   int x                     = 0;
-   int y                     = 0;
-   unsigned viewport_width   = rsx->width;
-   unsigned viewport_height  = rsx->height;
-   float device_aspect       = ((float)viewport_width) / viewport_height;
-   settings_t *settings      = config_get_ptr();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
+   rsx->vp.full_width  = rsx->width;
+   rsx->vp.full_height = rsx->height;
+   video_driver_update_viewport(&rsx->vp, false, rsx->keep_aspect, true);
 
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&rsx->vp, viewport_width,
-            viewport_height, video_driver_get_aspect_ratio(), rsx->keep_aspect);
-      viewport_width         = rsx->vp.width;
-      viewport_height        = rsx->vp.height;
-   }
-   else if (rsx->keep_aspect)
-   {
-      float desired_aspect   = video_driver_get_aspect_ratio();
-
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         video_viewport_t *custom_vp = &settings->video_viewport_custom;
-         /* RSX/libgcm has top-left origin viewport. */
-         x                           = custom_vp->x;
-         y                           = custom_vp->y;
-         viewport_width              = custom_vp->width;
-         viewport_height             = custom_vp->height;
-      }
-      else
-#endif
-      {
-         float delta;
-
-         if ((fabsf(device_aspect - desired_aspect) < 0.0001f))
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta           = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x               = (int)roundf(viewport_width * (0.5f - delta));
-            viewport_width  = (unsigned)roundf(2.0f * viewport_width * delta);
-         }
-         else
-         {
-            delta           = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y               = (int)roundf(viewport_height * (0.5f - delta));
-            viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
-         }
-      }
-
-      rsx->vp.x             = x;
-      rsx->vp.y             = y;
-      rsx->vp.width         = viewport_width;
-      rsx->vp.height        = viewport_height;
-   }
-   else
-   {
-      rsx->vp.x             = 0;
-      rsx->vp.y             = 0;
-      rsx->vp.width         = viewport_width;
-      rsx->vp.height        = viewport_height;
-   }
-
-   rsx->should_resize       = false;
+   rsx->should_resize  = false;
 }
 
 static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
@@ -1573,8 +1603,8 @@ static unsigned rsx_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-static uintptr_t rsx_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
+      enum texture_filter_type filter_type)
 {
    rsx_t *rsx                     = (rsx_t *)video_data;
    struct texture_image *image    = (struct texture_image*)data;
@@ -1585,22 +1615,95 @@ static uintptr_t rsx_load_texture(void *video_data, void *data,
    rsxAddressToOffset(texture->data, &texture->offset);
    rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
 
-   return (uintptr_t)texture;;
+   return (uintptr_t)texture;
+}
+
+static void rsx_unload_texture_internal(void *data, uintptr_t handle)
+{
+   rsx_texture_t *texture = (rsx_texture_t *)handle;
+   if (texture)
+   {
+      if (texture->data)
+      {
+         rsx_t *rsx = (rsx_t *)data;
+         /* Drain the RSX command queue before freeing texture
+          * memory.  The GPU may still be reading this memory for
+          * the current frame's draw.  rsxFinish blocks until all
+          * submitted commands complete — equivalent to
+          * vkQueueWaitIdle / D3D12 Signal+Wait.
+          *
+          * This was previously #if 0'd out, leaking every menu
+          * texture's RSX memory permanently.  On PS3 with 256MB
+          * RAM, menu navigation would eventually exhaust memory. */
+         if (rsx && rsx->context)
+            rsxFinish(rsx->context, 0);
+         rsxFree(texture->data);
+      }
+      free(texture);
+   }
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   void                         *video_data;
+   struct texture_image         *image;
+   enum texture_filter_type      filter_type;
+   uintptr_t                     handle;
+} rsx_texture_cmd_t;
+
+static uintptr_t rsx_texture_load_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   cmd->handle = rsx_load_texture_internal(
+         cmd->video_data, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static uintptr_t rsx_texture_unload_wrap(void *data)
+{
+   rsx_texture_cmd_t *cmd = (rsx_texture_cmd_t*)data;
+   rsx_unload_texture_internal(cmd->video_data, cmd->handle);
+   return 0;
+}
+#endif
+
+static uintptr_t rsx_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = video_data;
+      cmd.image       = (struct texture_image *)data;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, rsx_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+   return rsx_load_texture_internal(video_data, data, filter_type);
 }
 
 static void rsx_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   rsx_texture_t *texture = (rsx_texture_t *)handle;
-   if (texture)
+   if (!handle)
+      return;
+#ifdef HAVE_THREADS
+   if (threaded)
    {
-#if 0
-      /* TODO fix crash on loading core */
-      if (texture->data)
-         rsxFree(texture->data);
-#endif
-      free(texture);
+      rsx_texture_cmd_t cmd;
+      cmd.video_data  = data;
+      cmd.image       = NULL;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, rsx_texture_unload_wrap);
+      return;
    }
+#endif
+   rsx_unload_texture_internal(data, handle);
 }
 
 #if 0
@@ -1613,7 +1716,7 @@ static void rsx_fill_black(uint32_t *dst, uint32_t *dst_end, size_t sz)
 }
 
 static void rsx_blit_buffer(
-      rsxBuffer *buffer, const void *frame, unsigned width,
+      rsx_buffer *buffer, const void *frame, unsigned width,
       unsigned height, unsigned pitch, int rgb32, bool do_scaling)
 {
    int i;
@@ -2127,7 +2230,7 @@ static void rsx_get_overlay_interface(void *data,
 
 static void rsx_update_screen(rsx_t* gcm)
 {
-   rsxBuffer *buffer     = NULL;
+   rsx_buffer *buffer    = NULL;
 #if defined(HAVE_MENU_BUFFER)
    if (gcm->menu_frame_enable)
    {
@@ -2223,7 +2326,7 @@ static bool rsx_frame(void* data, const void* frame,
    if (statistics_show)
       if (osd_params)
          font_driver_render_msg(gcm,
-               video_info->stat_text,
+               video_info->stat_text, video_info->stat_text_len,
                osd_params, NULL);
 #endif
 
@@ -2238,7 +2341,7 @@ static bool rsx_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(gcm, msg, NULL, NULL);
+      font_driver_render_msg(gcm, msg, strlen(msg), NULL, NULL);
 
 #if 0
    /* TODO: translucid menu */
@@ -2376,16 +2479,138 @@ static void rsx_viewport_info(void* data, struct video_viewport* vp)
  * or can it be removed? */
 static void rsx_set_osd_msg(void *data,
       video_frame_info_t *video_info,
-      const char *msg,
+      const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    rsx_t* gcm = (rsx_t*)data;
    if (gcm && gcm->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 #endif
 
 static uint32_t rsx_get_flags(void *data) { return 0; }
+
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+/* RSX (NV47/G70) natively samples DXT1/DXT23/DXT45 == BC1/BC2/BC3.
+ * Nothing above BC3 exists on this GPU. */
+static bool rsx_gcm_compressed_format(enum texture_gpu_format fmt,
+      u32 *gcm_out, u32 *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT1;  *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT23; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT45; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool rsx_supports_texture_format(void *data, enum texture_gpu_format fmt)
+{
+   u32 gcm, bb;
+   (void)data;
+   return rsx_gcm_compressed_format(fmt, &gcm, &bb);
+}
+
+static uintptr_t rsx_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   rsx_t         *rsx = (rsx_t*)video_data;
+   rsx_texture_t *texture;
+   u8            *dst;
+   size_t         total       = 0;
+   size_t         off         = 0;
+   u32            gcm_fmt      = 0;
+   u32            block_bytes  = 16;
+   u32            min_filter, mag_filter;
+   unsigned       blocks_w0;
+   unsigned       i;
+
+   /* Regular texture loads on this driver marshal to the video thread;
+    * the compressed path does not yet, so under threading decline here
+    * and let the CPU-decode fallback go through the marshalled path. */
+   if (threaded)
+      return 0;
+   if (!rsx || !tc || tc->num_mips == 0)
+      return 0;
+   if (!rsx_gcm_compressed_format(tc->format, &gcm_fmt, &block_bytes))
+      return 0;
+
+   if (!(texture = (rsx_texture_t*)malloc(sizeof(rsx_texture_t))))
+      return 0;
+
+   for (i = 0; i < tc->num_mips; i++)
+      total += tc->mips[i].size;
+
+   texture->width  = tc->mips[0].width;
+   texture->height = tc->mips[0].height;
+   texture->data   = (u32*)rsxMemalign(128, total);
+   if (!texture->data)
+   {
+      free(texture);
+      return 0;
+   }
+   rsxAddressToOffset(texture->data, &texture->offset);
+
+   /* Mip chain is stored contiguously; the RSX derives per-level
+    * offsets from the base offset and mip count. */
+   dst = (u8*)texture->data;
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      memcpy(dst + off, tc->mips[i].data, tc->mips[i].size);
+      off += tc->mips[i].size;
+   }
+
+   blocks_w0              = (tc->mips[0].width + 3u) >> 2;
+
+   texture->tex.format    = gcm_fmt | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.mipmap    = tc->num_mips;
+   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+   texture->tex.cubemap   = GCM_FALSE;
+   /* DXT decodes to RGBA on-chip; reuse the driver's remap.  NOTE: RPCS3
+    * uses an identity R,G,B,A swizzle for the DXT formats -- if colours
+    * come out with R/B swapped on hardware, this remap is why. */
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width     = tc->mips[0].width;
+   texture->tex.height    = tc->mips[0].height;
+   texture->tex.depth     = 1;
+   texture->tex.location  = GCM_LOCATION_RSX;
+   /* Linear compressed surface: pitch is the byte width of one row of
+    * 4x4 blocks at mip 0. */
+   texture->tex.pitch     = blocks_w0 * block_bytes;
+   texture->tex.offset    = texture->offset;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+   {
+      min_filter = GCM_TEXTURE_NEAREST;
+      mag_filter = GCM_TEXTURE_NEAREST;
+   }
+   else
+   {
+      min_filter = GCM_TEXTURE_LINEAR;
+      mag_filter = GCM_TEXTURE_LINEAR;
+   }
+   texture->min_filter    = min_filter;
+   texture->mag_filter    = mag_filter;
+   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
+
+   return (uintptr_t)texture;
+}
 
 static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
@@ -2409,10 +2634,13 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL, /* set_hdr_subpixel_layout */
+   rsx_supports_texture_format,
+   rsx_load_texture_compressed
 };
 
 static void rsx_get_poke_interface(void* data,
@@ -2424,6 +2652,18 @@ static bool rsx_set_shader(void* data,
 #ifdef HAVE_GFX_WIDGETS
 static bool rsx_widgets_enabled(void *data)          { return true;  }
 #endif
+
+static font_renderer_t rsx_font = {
+   rsx_font_init,
+   rsx_font_free,
+   rsx_font_render_msg,
+   "rsx",
+   rsx_font_get_glyph,
+   rsx_font_bind_block,
+   rsx_font_flush_block,
+   rsx_font_get_message_width,
+   rsx_font_get_line_metrics
+};
 
 video_driver_t video_gcm =
 {
@@ -2447,7 +2687,28 @@ video_driver_t video_gcm =
 #endif
    rsx_get_poke_interface,
    rsx_wrap_type_to_enum,
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   rsx_widgets_enabled
+   rsx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &rsx_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
+   gfx_display_rsx_draw,
+   NULL,                                        /* draw_pipeline */
+   gfx_display_rsx_blend_begin,
+   gfx_display_rsx_blend_end,
+   gfx_display_rsx_get_default_mvp,
+   gfx_display_rsx_get_default_vertices,
+   gfx_display_rsx_get_default_tex_coords,
+   &rsx_font,
+   GFX_VIDEO_DRIVER_RSX,
+   "rsx",
+   true,
+   gfx_display_rsx_scissor_begin,
+   gfx_display_rsx_scissor_end
 };

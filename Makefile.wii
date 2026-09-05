@@ -1,6 +1,7 @@
 ROOT_DIR                  := .
 DEPS_DIR                  := $(ROOT_DIR)/deps
 DEBUG                     ?= 0
+LOAD_WITHOUT_CORE_INFO    ?= 0
 HAVE_LOGGER                = 0
 HAVE_FILE_LOGGER           = 0
 HAVE_CC_RESAMPLER          = 1
@@ -60,7 +61,7 @@ LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 libogc_platform    := 1
 
 EXTERNAL_LIBOGC   ?= 0
-GX_PTHREAD_LEGACY ?= 1
+HAVE_OGG_OGC      ?= 0
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD                 = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -88,10 +89,6 @@ else
    INCLUDE += -Iwii/libogc/include
 endif
 
-ifeq ($(GX_PTHREAD_LEGACY), 1)
-   CFLAGS   += -DGX_PTHREAD_LEGACY
-   CXXFLAGS += -DGX_PTHREAD_LEGACY
-endif
 
 MACHDEP := -DHW_RVL -mrvl
 
@@ -102,6 +99,10 @@ LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-w
 
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T bootstrap/gx/rvl.ld
+endif
+
+ifeq ($(HAVE_OGG_OGC), 1)
+   LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
 ifeq ($(EXTERNAL_LIBOGC), 1)
@@ -128,15 +129,17 @@ HAVE_VIDEO_FILTER        := 1
 HAVE_FILTERS_BUILTIN     := 1
 HAVE_THREADS             := 1
 HAVE_RPNG                := 1
+HAVE_RWEBP               := 1
+HAVE_RDDS                := 1
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
 HAVE_RTGA                := 1
-HAVE_IBXM                := 1
+HAVE_RMODTRACKER                := 1
 HAVE_OVERLAY             := 1
-HAVE_ZLIB                := 1
 HAVE_7ZIP                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
+HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 HAVE_CHEATS              := 1
 HAVE_SCREENSHOTS         := 1
 HAVE_REWIND              := 1
@@ -147,7 +150,6 @@ HAVE_CHEATS              := 1
 HAVE_CORE_INFO_CACHE     := 1
 HAVE_MENU_COMMON         := 1
 HAVE_MENU                := 1
-HAVE_BUILTINZLIB         := 1
 HAVE_STATIC_AUDIO_FILTERS := 1
 HAVE_STATIC_VIDEO_FILTERS := 1
 
@@ -160,8 +162,9 @@ HAVE_XMB                 := 0
 HAVE_OZONE               := 0
 HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
+HAVE_CHEEVOS             := 1
 
-CFLAGS      += -DHAVE_SOCKET_LEGACY
+CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
@@ -172,10 +175,10 @@ endif
 
 INCLUDE += -I./libretro-common/include \
            -Ideps \
-           -Ideps/stb
+	   -Ideps/rcheevos/include
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o memory/wii/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o 
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o libretro-common/memory/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o
 
 ifeq ($(EXTERNAL_LIBOGC), 0)
    OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
@@ -216,10 +219,6 @@ ifeq ($(HAVE_RARCH_EXEC), 1)
    CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
-ifeq ($(HAVE_ZLIB), 1)
-   CFLAGS      += -DHAVE_ZLIB
-   CFLAGS      += -I./libretro-common/include/compat/zlib
-endif
 
 ifeq ($(RARCH_CONSOLE), 1)
    CFLAGS += -DRARCH_CONSOLE
@@ -257,11 +256,31 @@ else
    CFLAGS += -O3
 endif
 
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+   CFLAGS += -DLOAD_WITHOUT_CORE_INFO
+endif
+
+ifneq ($(V),1)
+   Q := @
+endif
+
 OBJOUT   = -o
 LINKOUT  = -o
 LINK = $(CXX)
 
 all: $(EXT_TARGET)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+OBJOUT: $(OBJOUT)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 %.dol: %.elf
 	$(ELF2DOL) $< $@
@@ -270,13 +289,15 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LINK) $(LINKOUT)$@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) $(LIBS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.cpp
 	$(CXX) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) $(CFLAGS) -c $(OBJOUT)$@ $<
 
 %.binobj: %.bin
 	$(LD) -r -b binary $(OBJOUT)$@ $<
@@ -286,10 +307,11 @@ $(APP_BOOTER_DIR)/app_booter.bin:
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 clean:
-	rm -f $(EXT_TARGET)
-	rm -f $(EXT_INTER_TARGET)
-	rm -f $(OBJ)
-	$(MAKE) -C $(APP_BOOTER_DIR) clean
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(EXT_TARGET)
+	$(Q)rm -f $(EXT_INTER_TARGET)
+	$(Q)rm -f $(OBJ)
+	$(Q)$(MAKE) -C $(APP_BOOTER_DIR) clean
 
 .PHONY: clean
 

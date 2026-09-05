@@ -1,15 +1,18 @@
 #ifndef RC_CONSOLES_H
 #define RC_CONSOLES_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "rc_export.h"
+
+#include <stdint.h>
+
+RC_BEGIN_C_DECLS
 
 /*****************************************************************************\
 | Console identifiers                                                         |
 \*****************************************************************************/
 
 enum {
+  RC_CONSOLE_UNKNOWN = 0,
   RC_CONSOLE_MEGA_DRIVE = 1,
   RC_CONSOLE_NINTENDO_64 = 2,
   RC_CONSOLE_SUPER_NINTENDO = 3,
@@ -90,12 +93,14 @@ enum {
   RC_CONSOLE_NINTENDO_DSI = 78,
   RC_CONSOLE_TI83 = 79,
   RC_CONSOLE_UZEBOX = 80,
+  RC_CONSOLE_FAMICOM_DISK_SYSTEM = 81,
 
   RC_CONSOLE_HUBS = 100,
-  RC_CONSOLE_EVENTS = 101
+  RC_CONSOLE_EVENTS = 101,
+  RC_CONSOLE_STANDALONE = 102
 };
 
-const char* rc_console_name(int console_id);
+RC_EXPORT const char* RC_CCONV rc_console_name(uint32_t console_id);
 
 /*****************************************************************************\
 | Memory mapping                                                              |
@@ -112,25 +117,22 @@ enum {
 };
 
 typedef struct rc_memory_region_t {
-  unsigned start_address;             /* first address of block as queried by RetroAchievements */
-  unsigned end_address;               /* last address of block as queried by RetroAchievements */
-  unsigned real_address;              /* real address for first address of block */
-  char type;                          /* RC_MEMORY_TYPE_ for block */
+  uint32_t start_address;             /* first address of block as queried by RetroAchievements */
+  uint32_t end_address;               /* last address of block as queried by RetroAchievements */
+  uint32_t real_address;              /* real address for first address of block */
+  uint8_t type;                       /* RC_MEMORY_TYPE_ for block */
   const char* description;            /* short description of block */
 }
 rc_memory_region_t;
 
 typedef struct rc_memory_regions_t {
   const rc_memory_region_t* region;
-  unsigned num_regions;
+  uint32_t num_regions;
 }
 rc_memory_regions_t;
 
-const rc_memory_regions_t* rc_console_memory_regions(int console_id);
+RC_EXPORT const rc_memory_regions_t* RC_CCONV rc_console_memory_regions(uint32_t console_id);
 
-
-#ifdef __cplusplus
-}
-#endif
+RC_END_C_DECLS
 
 #endif /* RC_CONSOLES_H */

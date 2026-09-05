@@ -1011,8 +1011,13 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     free(ptr);
     return NULL;
   }
-  else
-    return realloc(ptr, nsize);
+  else {  /* cannot fail when shrinking a block */
+    void *newptr = realloc(ptr, nsize);
+    if (newptr == NULL && ptr != NULL && nsize <= osize)
+      return ptr;  /* keep the original block */
+    else  /* no fail or not shrinking */
+     return newptr;  /* use the new block */
+  }
 }
 
 

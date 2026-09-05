@@ -57,7 +57,7 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 
 /* TODO/FIXME - static globals */
 static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
+static int16_t analog_state[DEFAULT_MAX_PADS][3][2];
 
 /* TODO/FIXME - global referenced outside */
 extern uint64_t lifecycle_state;
@@ -107,7 +107,7 @@ static void *psp_joypad_init(void *data)
    for (i = 0; i < players_count; i++)
       input_autoconfigure_connect(
             psp_joypad_name(i),
-            NULL,
+            NULL, NULL,
             psp_joypad.ident,
             i,
             0,
@@ -136,7 +136,7 @@ static void psp_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
 {
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   if (AXIS_NEG_GET(joyaxis) < 6)
    {
       int16_t val  = 0;
       int16_t axis = AXIS_NEG_GET(joyaxis);
@@ -150,11 +150,15 @@ static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
          case 3:
             val = analog_state[port][1][axis - 2];
             break;
+         case 4:
+         case 5:
+            val = analog_state[port][2][axis - 4];
+            break;
       }
       if (val < 0)
          return val;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 6)
    {
       int16_t val  = 0;
       int16_t axis = AXIS_POS_GET(joyaxis);
@@ -167,6 +171,10 @@ static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
          case 2:
          case 3:
             val = analog_state[port][1][axis - 2];
+            break;
+         case 4:
+         case 5:
+            val = analog_state[port][2][axis - 4];
             break;
       }
       if (val > 0)
@@ -251,7 +259,7 @@ static void psp_joypad_poll(void)
                curr_ctrl_info.port[player + 1] != SCE_CTRL_TYPE_UNPAIRED)
             input_autoconfigure_connect(
                   psp_joypad_name(player),
-                  NULL,
+                  NULL, NULL,
                   psp_joypad.ident,
                   player,
                   0,
@@ -269,6 +277,7 @@ static void psp_joypad_poll(void)
    for (player = 0; player < players_count; player++)
    {
       unsigned j, k;
+      int32_t ret;
       SceCtrlData state_tmp;
       unsigned i  = player;
 #if defined(VITA)
@@ -286,19 +295,28 @@ static void psp_joypad_poll(void)
 #else
       unsigned p  = player;
 #endif
-      int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
+      ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
       pad_state[i] = 0;
       analog_state[i][0][0] = analog_state[i][0][1] =
-         analog_state[i][1][0] = analog_state[i][1][1] = 0;
+         analog_state[i][1][0] = analog_state[i][1][1] = 
+         analog_state[i][2][0] = analog_state[i][2][1] = 0;
 
 #if defined(SN_TARGET_PSP2) || defined(VITA)
       if (ret < 0)
          continue;
 #endif
 #if defined(VITA)
+      /* The touch panels stand in for L2/R2/L3/R3 in-game only.  In
+       * the menu the front panel is the pointer and the rear one is
+       * where the hands rest, and a trigger pressed from either is a
+       * scroll action nobody asked for. */
       if (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITA
-         && input_backtouch_enable)
+         && input_backtouch_enable
+#ifdef HAVE_MENU
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+#endif
+         )
       {
          unsigned i;
          SceTouchData touch_surface = {0};
@@ -342,6 +360,8 @@ static void psp_joypad_poll(void)
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
       pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [0] = (int16_t)(STATE_ANALOGL2(state_tmp)-128) * 256;
+      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [1] = (int16_t)(STATE_ANALOGR2(state_tmp)-128) * 256;
 #endif
 
       analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
@@ -357,9 +377,20 @@ static void psp_joypad_poll(void)
    }
 }
 
+/* Whether a pad is connected, as the other joypad drivers report it:
+ * the built-in controls are always there, and on the TV model a port
+ * is connected when a controller is paired to it. */
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   return pad < DEFAULT_MAX_PADS && pad_state[pad];
+   if (pad >= DEFAULT_MAX_PADS)
+      return false;
+#if defined(VITA)
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+      return pad == 0;
+   return curr_ctrl_info.port[pad + 1] != SCE_CTRL_TYPE_UNPAIRED;
+#else
+   return pad == 0;
+#endif
 }
 
 static bool psp_joypad_rumble(unsigned pad,
@@ -424,7 +455,9 @@ input_device_driver_t psp_joypad = {
    psp_joypad_axis,
    psp_joypad_poll,
    psp_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    psp_joypad_name,
 #ifdef VITA
    "vita",

@@ -76,6 +76,7 @@ struct core_option_manager
    size_t size;
 
    bool updated;
+   bool log;
 };
 
 typedef struct core_option_manager core_option_manager_t;
@@ -461,7 +462,7 @@ void core_option_manager_set_default(core_option_manager_t *opt,
       size_t idx, bool refresh_menu);
 
 /**
- * core_option_manager_set_visible:
+ * core_option_manager_set_display:
  *
  * @opt     : options manager handle
  * @key     : core option key string (variable to query
@@ -472,7 +473,7 @@ void core_option_manager_set_default(core_option_manager_t *opt,
  * Sets the in-menu visibility of the core option
  * identified by the specified @key.
  **/
-void core_option_manager_set_visible(core_option_manager_t *opt,
+void core_option_manager_set_display(core_option_manager_t *opt,
       const char *key, bool visible);
 
 /**********************/

@@ -163,38 +163,6 @@ typedef struct D3D11_BLEND_DESC1
     D3D11_RENDER_TARGET_BLEND_DESC1 RenderTarget[ 8 ];
     } 	D3D11_BLEND_DESC1;
 
-/* Note, the array size for RenderTarget[] above is D3D11_SIMULTANEOUS_RENDERTARGET_COUNT.
-   IDL processing/generation of this header replaces the define; this comment is merely explaining what happened. */
-#if !defined( D3D11_NO_HELPERS ) && defined( __cplusplus )
-}
-struct CD3D11_BLEND_DESC1 : public D3D11_BLEND_DESC1
-{
-    CD3D11_BLEND_DESC1()
-    {}
-    explicit CD3D11_BLEND_DESC1( const D3D11_BLEND_DESC1& o ) :
-        D3D11_BLEND_DESC1( o )
-    {}
-    explicit CD3D11_BLEND_DESC1( CD3D11_DEFAULT )
-    {
-        AlphaToCoverageEnable = FALSE;
-        IndependentBlendEnable = FALSE;
-        const D3D11_RENDER_TARGET_BLEND_DESC1 defaultRenderTargetBlendDesc =
-        {
-            FALSE,FALSE,
-            D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD,
-            D3D11_BLEND_ONE, D3D11_BLEND_ZERO, D3D11_BLEND_OP_ADD,
-            D3D11_LOGIC_OP_NOOP,
-            D3D11_COLOR_WRITE_ENABLE_ALL,
-        };
-        for (UINT i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-            RenderTarget[ i ] = defaultRenderTargetBlendDesc;
-    }
-    ~CD3D11_BLEND_DESC1() {}
-    operator const D3D11_BLEND_DESC1&() const { return *this; }
-};
-extern "C"{
-#endif
-
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_1_0000_0000_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_1_0000_0000_v0_0_s_ifspec;
 
@@ -336,60 +304,6 @@ typedef struct D3D11_RASTERIZER_DESC1
     BOOL AntialiasedLineEnable;
     UINT ForcedSampleCount;
     } 	D3D11_RASTERIZER_DESC1;
-
-#if !defined( D3D11_NO_HELPERS ) && defined( __cplusplus )
-}
-struct CD3D11_RASTERIZER_DESC1 : public D3D11_RASTERIZER_DESC1
-{
-    CD3D11_RASTERIZER_DESC1()
-    {}
-    explicit CD3D11_RASTERIZER_DESC1( const D3D11_RASTERIZER_DESC1& o ) :
-        D3D11_RASTERIZER_DESC1( o )
-    {}
-    explicit CD3D11_RASTERIZER_DESC1( CD3D11_DEFAULT )
-    {
-        FillMode = D3D11_FILL_SOLID;
-        CullMode = D3D11_CULL_BACK;
-        FrontCounterClockwise = FALSE;
-        DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
-        DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-        SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-        DepthClipEnable = TRUE;
-        ScissorEnable = FALSE;
-        MultisampleEnable = FALSE;
-        AntialiasedLineEnable = FALSE;
-        ForcedSampleCount = 0;
-    }
-    explicit CD3D11_RASTERIZER_DESC1(
-        D3D11_FILL_MODE fillMode,
-        D3D11_CULL_MODE cullMode,
-        BOOL frontCounterClockwise,
-        INT depthBias,
-        FLOAT depthBiasClamp,
-        FLOAT slopeScaledDepthBias,
-        BOOL depthClipEnable,
-        BOOL scissorEnable,
-        BOOL multisampleEnable,
-        BOOL antialiasedLineEnable,
-        UINT forcedSampleCount )
-    {
-        FillMode = fillMode;
-        CullMode = cullMode;
-        FrontCounterClockwise = frontCounterClockwise;
-        DepthBias = depthBias;
-        DepthBiasClamp = depthBiasClamp;
-        SlopeScaledDepthBias = slopeScaledDepthBias;
-        DepthClipEnable = depthClipEnable;
-        ScissorEnable = scissorEnable;
-        MultisampleEnable = multisampleEnable;
-        AntialiasedLineEnable = antialiasedLineEnable;
-        ForcedSampleCount = forcedSampleCount;
-    }
-    ~CD3D11_RASTERIZER_DESC1() {}
-    operator const D3D11_RASTERIZER_DESC1&() const { return *this; }
-};
-extern "C"{
-#endif
 
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_1_0000_0001_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_d3d11_1_0000_0001_v0_0_s_ifspec;

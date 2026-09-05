@@ -24,6 +24,41 @@
 #define __COCOA_COMMON_DEFINES_H
 
 #include <AvailabilityMacros.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
+
+/* TARGET_OS_OSX is Apple's own name for "macOS, not iOS or tvOS" and
+ * is what this tree tests, alongside TARGET_OS_IPHONE. It is only in
+ * the 10.12 and later SDKs, so on an older one it is filled in here:
+ * on Apple, anything that is not the iPhone family is macOS. That is
+ * the definition Apple's own header uses and it needs nothing but
+ * TARGET_OS_IPHONE, which every SDK that has ever had an iPhone in it
+ * defines - and whose absence, on a 10.4 or 10.5 SDK that predates
+ * the iPhone entirely, means macOS by the same reasoning. tvOS and
+ * watchOS set TARGET_OS_IPHONE, so they land on the right side too.
+ *
+ * The simulator is the exception that has to be named: iOS SDKs
+ * before iOS 9 set TARGET_OS_IPHONE to 0 for a simulator build and
+ * marked it with TARGET_IPHONE_SIMULATOR instead, so a bare
+ * TARGET_OS_IPHONE test would call the old simulator a Mac. Both
+ * simulator spellings are checked, the modern one and that one.
+ *
+ * Not defined off Apple, where #if reads it as 0.
+ *
+ * No line continuations here: this file has CRLF endings and a
+ * backslash does not continue across one. */
+#if defined(__APPLE__) && !defined(TARGET_OS_OSX)
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#define TARGET_OS_OSX 0
+#elif defined(TARGET_OS_SIMULATOR) && TARGET_OS_SIMULATOR
+#define TARGET_OS_OSX 0
+#elif defined(TARGET_IPHONE_SIMULATOR) && TARGET_IPHONE_SIMULATOR
+#define TARGET_OS_OSX 0
+#else
+#define TARGET_OS_OSX 1
+#endif
+#endif
 
 #ifndef MAC_OS_X_VERSION_10_12
 #define MAC_OS_X_VERSION_10_12 101200
@@ -71,6 +106,46 @@
 #define NSControlSizeRegular NSRegularControlSize
 #else
 #define HAS_MACOSX_10_12 1
+#endif
+
+/* ARC vs MRR macros.  Under ARC, release/autorelease are forbidden
+ * (compile error); under MRR (Manual Retain-Release / MRC) they are
+ * required.  These macros expand to the right thing for the current
+ * translation unit regardless of which mode it is compiled under.
+ *
+ * Previous convention used `#ifndef HAVE_COCOA_METAL` as a proxy
+ * for 'are we under ARC?' because HAVE_COCOA_METAL builds happened
+ * to enable ARC via CLANG_ENABLE_OBJC_ARC=YES in BaseConfig.xcconfig.
+ * That's brittle - RetroArch_PPC.xcodeproj turns ARC off explicitly
+ * even on the Metal branch, and the qb/make build is always MRR
+ * regardless.  __has_feature(objc_arc) is the canonical discriminator.
+ *
+ * GCC 4.0 (Xcode 3.1) doesn't support __has_feature; polyfill to 0
+ * so the MRR branch is selected (which is correct for GCC 4.0 - it
+ * predates ARC entirely). */
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
+#if __has_feature(objc_arc)
+#define RARCH_RETAIN(x)         (x)
+#define RARCH_RELEASE(x)        ((void)0)
+#define RARCH_AUTORELEASE(x)    ((void)0)
+#define RARCH_SUPER_DEALLOC()   ((void)0)
+#define RARCH_DISPATCH_RELEASE(x) ((void)0)
+#else
+#define RARCH_RETAIN(x)         [(x) retain]
+#define RARCH_RELEASE(x)        [(x) release]
+#define RARCH_AUTORELEASE(x)    [(x) autorelease]
+#define RARCH_SUPER_DEALLOC()   [super dealloc]
+/* GCD object release for MRR.  Use dispatch_release() rather than
+ * [x release] because the latter is a compile error on pre-10.8 SDKs
+ * where OS_OBJECT_USE_OBJC is 0 and dispatch_queue_t is a plain C
+ * handle rather than an Objective-C object.  dispatch_release works
+ * uniformly across all MRR-capable SDKs.  NULL-guarded because
+ * dispatch_release(NULL) is explicitly undefined, unlike
+ * [nil release] which is a defined no-op. */
+#define RARCH_DISPATCH_RELEASE(x) do { if (x) dispatch_release(x); } while (0)
 #endif
 
 #endif

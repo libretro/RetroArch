@@ -1,4 +1,6 @@
-TARGET := rzip
+TARGET       := rzip
+TARGET_TEST  := rzip_chunk_size_test
+TARGET_TEST2 := rzip_matches_buf_test
 
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
@@ -21,18 +23,18 @@ ifeq ($(UNAME), MSYS)
 	TARGET := rzip.exe
 endif
 
-SOURCES := \
-	rzip.c \
+COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
-	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
@@ -40,38 +42,22 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/stdin_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-ifneq ($(wildcard $(LIBRETRO_DEPS_DIR)/*),)
-	# If we are building from inside the RetroArch
-	# directory (i.e. if an 'external' deps directory
-	# is avaiable), bake in zlib support
-	SOURCES += \
-		$(LIBRETRO_DEPS_DIR)/libz/adler32.c \
-		$(LIBRETRO_DEPS_DIR)/libz/libz-crc32.c \
-		$(LIBRETRO_DEPS_DIR)/libz/deflate.c \
-		$(LIBRETRO_DEPS_DIR)/libz/gzclose.c \
-		$(LIBRETRO_DEPS_DIR)/libz/gzlib.c \
-		$(LIBRETRO_DEPS_DIR)/libz/gzread.c \
-		$(LIBRETRO_DEPS_DIR)/libz/gzwrite.c \
-		$(LIBRETRO_DEPS_DIR)/libz/inffast.c \
-		$(LIBRETRO_DEPS_DIR)/libz/inflate.c \
-		$(LIBRETRO_DEPS_DIR)/libz/inftrees.c \
-		$(LIBRETRO_DEPS_DIR)/libz/trees.c \
-		$(LIBRETRO_DEPS_DIR)/libz/zutil.c
-	INCLUDE_DIRS := -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
-else
-	# If this is a stand-alone libretro-common directory,
-	# rely on system zlib library (note: only likely to
-	# work on Unix-based platforms...)
-	LDFLAGS += -lz
-endif
 
-OBJS := $(SOURCES:.c=.o)
+SOURCES      := rzip.c $(COMMON_SOURCES)
+SOURCES_TEST := rzip_chunk_size_test.c $(COMMON_SOURCES)
+SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
+
+OBJS      := $(SOURCES:.c=.o)
+OBJS_TEST := $(SOURCES_TEST:.c=.o)
+OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
+
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS += -DHAVE_ZLIB -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+CFLAGS += -DHAVE_COMPRESSION -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
 
 # Silence "ISO C does not support the 'I64' ms_printf length modifier"
 # warnings when using MinGW
@@ -82,13 +68,18 @@ ifeq ($(UNAME), MSYS)
 	CFLAGS += -Wno-format
 endif
 
+ifneq ($(SANITIZER),)
+	CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+	LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -96,7 +87,13 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST): $(OBJS_TEST)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST2): $(OBJS_TEST2)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2)
 
 .PHONY: clean

@@ -87,7 +87,7 @@ static void *ps4_joypad_init(void *data)
 
    if (result == 0)
    {
-      unsigned i;
+      int i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          SceUserServiceUserId user_id = user_id_list.userId[i];
@@ -130,7 +130,7 @@ static void *ps4_joypad_init(void *data)
 
                   input_autoconfigure_connect(
                         ps4_joypad_name(num_players),
-                        NULL,
+                        NULL, NULL,
                         ps4_joypad.ident,
                         num_players,
                         0,
@@ -200,12 +200,12 @@ static int16_t ps4_joypad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
    if (port_idx < PS4_MAX_ORBISPADS)
    {
+      int i;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          /* Auto-binds are per joypad, not per user. */
@@ -252,6 +252,10 @@ static void ps4_joypad_poll(void)
       if (!~buttons.connected)
       {
          ds_joypad_states[player].connected = false;
+         /* ps4_joypad_button() reads pad_state[] without checking
+          * the connected flag, so it must be cleared here or the
+          * buttons held at disconnect stay readable indefinitely. */
+         pad_state[i] = 0;
          continue;
       }
 
@@ -281,6 +285,10 @@ static void ps4_joypad_poll(void)
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rx);
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ry);
       }
+      else
+         /* Read failed: drop the cached buttons rather than
+          * leaving the previous frame's state latched. */
+         pad_state[i] = 0;
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)
@@ -324,7 +332,7 @@ static void ps4_joypad_destroy(void)
    SceUserServiceLoginUserIdList user_id_list;
    if (sceUserServiceGetLoginUserIdList(&user_id_list) == 0)
    {
-      unsigned i;
+      int i;
       for (i = 0; i < SCE_USER_SERVICE_MAX_LOGIN_USERS; i++)
       {
          user_id = user_id_list.userId[i];
@@ -355,7 +363,9 @@ input_device_driver_t ps4_joypad = {
    ps4_joypad_axis,
    ps4_joypad_poll,
    ps4_joypad_rumble,
-   NULL,
+   NULL, /* set_rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    ps4_joypad_name,
    "ps4",
 };

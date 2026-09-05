@@ -40,6 +40,8 @@ special technique is called for.
 
 #define RETRO_BEGIN_DECLS
 #define RETRO_END_DECLS
+#define RETRO_BEGIN_DECLS_CXX
+#define RETRO_END_DECLS_CXX
 
 #ifdef __cplusplus
 
@@ -50,6 +52,13 @@ special technique is called for.
 #undef RETRO_END_DECLS
 #define RETRO_BEGIN_DECLS extern "C" {
 #define RETRO_END_DECLS }
+/* Force C++ linkage for a region inside a header that may be included
+ * from within a caller's extern "C" { ... } block -- needed when the
+ * region pulls in a C++ standard library header (e.g. <atomic>). */
+#undef RETRO_BEGIN_DECLS_CXX
+#undef RETRO_END_DECLS_CXX
+#define RETRO_BEGIN_DECLS_CXX extern "C++" {
+#define RETRO_END_DECLS_CXX }
 #endif
 
 #else
@@ -71,7 +80,7 @@ typedef __int64 ssize_t;
 typedef int ssize_t;
 #endif
 #endif
-#elif defined(__MACH__)
+#elif defined(__MACH__) && defined(__APPLE__)
 #include <sys/types.h>
 #endif
 
@@ -125,7 +134,7 @@ or obscure compilers */
 I would like to see retro_inline.h moved in here; possibly boolean too.
 
 rationale: these are used in public APIs, and it is easier to find problems
-and write code that works the first time portably when theyre included uniformly
+and write code that works the first time portably when they are included uniformly
 than to do the analysis from scratch each time you think you need it, for each feature.
 
 Moreover it helps force you to make hard decisions: if you EVER bring in boolean.h,

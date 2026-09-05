@@ -29,7 +29,11 @@ if [ "$HAVE_QT" = "yes" ]; then
 			>/dev/null 2>&1 &&
 		moc_works=1
 	else
-		for moc in "moc-$QT_VERSION" moc; do
+		if [ "$QT_VERSION" = "qt6" ]; then
+			QMAKE="$(exists qmake6)" || QMAKE="qmake"
+			$QMAKE -query QT_HOST_LIBEXECS && QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)/"
+		fi
+		for moc in "${QT_HOST_LIBEXECS}moc-$QT_VERSION" "${QT_HOST_LIBEXECS}moc"; do
 			MOC="$(exists "$moc")" || MOC=""
 			if [ "$MOC" ]; then
 				QT_SELECT="$QT_VERSION" \

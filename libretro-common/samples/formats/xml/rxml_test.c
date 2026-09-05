@@ -21,6 +21,7 @@
  */
 
 #include <formats/rxml.h>
+#include <formats/rxml_stream.h>
 #include <stdio.h>
 
 static void print_siblings(struct rxml_node *node, unsigned level)
@@ -43,7 +44,7 @@ static void print_siblings(struct rxml_node *node, unsigned level)
 
 static void rxml_log_document(const char *path)
 {
-   rxml_document_t *doc = rxml_load_document(path);
+   rxml_document_t *doc = rxml_load_document_filestream(path);
    if (!doc)
    {
       fprintf(stderr, "rxml: Failed to load document: %s\n", path);

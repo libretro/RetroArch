@@ -14,7 +14,7 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 SCE_LIBC_SIZE := 4194304
-DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_STB_VORBIS
+DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS
 INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
@@ -30,8 +30,9 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		   -DHAVE_MATERIALUI \
 		   -DHAVE_LIBRETRODB \
 		   -DHAVE_KEYMAPPER \
-		   -DHAVE_ZLIB \
 		   -DHAVE_RPNG \
+		   -DHAVE_RWEBP \
+		   -DHAVE_RDDS \
 		   -DHAVE_RJPEG \
 		   -DHAVE_RBMP \
 		   -DHAVE_RTGA \
@@ -41,10 +42,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
 	INCDIRS += -I. \
-		   -Ideps/7zip \
-		   -Ilibretro-common/include \
-		   -Ilibretro-common/include/compat/zlib \
-		   -Ideps/stb
+		   -Ilibretro-common/include
 else
 	HAVE_REWIND		:= 1
 	HAVE_UPDATE_ASSETS      := 1
@@ -59,10 +57,9 @@ else
 	HAVE_RJPEG		:= 1
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
-	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
-	HAVE_VITA2D		:= 0
+	HAVE_GXM		:= 0
 	HAVE_VITAGL		:= 0
 	HAVE_VITAGLES 		:= 1
 	HAVE_OPENGL 		:= 1
@@ -72,10 +69,11 @@ else
 	HAVE_GLSL 		:= 1
 	HAVE_SHADERPIPELINE 	:= 1
    else
-	HAVE_VITA2D		:= 1
+	HAVE_GXM		:= 1
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
+	HAVE_BUILTINMBEDTLS	:= 1
 	HAVE_IFINFO		:= 1
 	HAVE_NETPLAYDISCOVERY	:= 1
 	HAVE_SOCKET_LEGACY	:= 1
@@ -84,22 +82,24 @@ else
 	HAVE_GFX_WIDGETS 	:= 1
 	HAVE_CONFIGFILE 	:= 1
 	HAVE_PATCH      	:= 1
+	HAVE_XDELTA			:= 1 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 	HAVE_CHEATS     	:= 1
 	HAVE_OVERLAY		:= 1
 	HAVE_MATERIALUI		:= 1
 	HAVE_XMB		:= 1
 	HAVE_RGUI		:= 1
-	HAVE_STB_FONT		:= 1
 	HAVE_THREADS		:= 1
 	HAVE_LIBRETRODB		:= 1
 	HAVE_CC_RESAMPLER	:= 1
 	HAVE_CHEEVOS		:= 1
+    HAVE_CLOUDSYNC		:= 1
 	HAVE_RUNAHEAD		:= 1
 	RARCH_CONSOLE		:= 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_AUDIOMIXER 	:= 1
 	HAVE_RWAV       	:= 1
+	HAVE_RVORBIS    	:= 1
 	HAVE_CORE_INFO_CACHE    := 1
 
 	ifeq ($(DEBUG), 1)
@@ -137,7 +137,7 @@ ifeq ($(HAVE_VITAGLES), 1)
    ARCHFLAGS += -DSCE_LIBC_SIZE=$(SCE_LIBC_SIZE)
 endif
 
-CFLAGS    += $(ARCHFLAGS) -mword-relocations -fno-optimize-sibling-calls
+CFLAGS    += $(ARCHFLAGS) -mword-relocations
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -g -Og
@@ -146,9 +146,9 @@ else
 endif
 
 ASFLAGS := $(CFLAGS)
-LDFLAGS := -Wl,-q
+LDFLAGS := -Wl,-q,--pic-veneer
 
-CFLAGS += -Wall -ffast-math
+CFLAGS += -Wall
 CFLAGS += -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DRARCH_CONSOLE
 CFLAGS += -DHAVE_DSP_FILTER
 CFLAGS += -DHAVE_VIDEO_FILTER
@@ -168,10 +168,14 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
+# -lpthread is not for rthreads, which drives the Vita kernel directly. It
+# satisfies libstdc++.a: a C++ core is linked in under --whole-archive, and its
+# static-init guards, EH pool and std::locale reach gthreads. Static archive, so
+# a link that references none of it pulls in nothing.
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
-	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lSceShaccCg_stub
+	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lSceMotion_stub \
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lSceShaccCg_stub
 
 ifeq ($(HAVE_VITAGLES), 1)
    VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
@@ -189,6 +193,10 @@ else
   LIBS += -lretro_vita
 endif
 
+ifneq ($(V),1)
+   Q := @
+endif
+
 LIBS    += $(WHOLE_END) $(VITA_LIBS) -lm -lc
 
 TARGETS := $(TARGET).vpk
@@ -198,36 +206,63 @@ POSTCOMPILE = mv -f $*.Tdepend $*.depend
 
 all: $(TARGETS)
 
+define INFO
+ASFLAGS: $(ASFLAGS)
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+CXXFLAGS: $(CXXFLAGS)
+DEPFLAGS: $(DEPFLAGS)
+INCDIRS: $(INCDIRS)
+LD: $(LD)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+OBJ: $(OBJ)
+POSTCOMPILE: $(POSTCOMPILE)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
+
 %.o: %.cpp
 %.o: %.cpp %.depend
-	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.c
 %.o: %.c %.depend
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(CFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.S
 %.o: %.S %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.o: %.s
 %.o: %.s %.depend
-	$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
-	$(POSTCOMPILE)
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $< $(ASFLAGS) $(INCDIRS) $(DEPFLAGS)
+	$(Q)$(POSTCOMPILE)
 
 %.depend: ;
 
 liblibScePiglet_stub.a:
-	mkdir -p deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	vita-libs-gen deps/Pigs-In-A-Blanket/piglet_stub/nids.yml deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	make -C deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet ARCH=arm-vita-eabi
-	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
+	mkdir -p gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
+	vita-libs-gen gfx/drivers_context/vita_pib/piglet_stub/nids.yml gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
+	make -C gfx/drivers_context/vita_pib/piglet_stub/libScePiglet ARCH=arm-vita-eabi
+	cp gfx/drivers_context/vita_pib/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
 
 $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
-	$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
+	@$(if $(Q), $(shell echo echo LD $@),)
+	$(Q)$(LD) $(OBJ) $(LDFLAGS) $(LIBDIRS) $(LIBS) -o $@
 
 %.velf: %.elf
 	cp $< $<.unstripped.elf
@@ -242,9 +277,10 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	vita-pack-vpk -s param.sfo -b $< $@
 
 clean:
-	rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
-	rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	rm -f $(OBJ:.o=.depend)
+	@$(if $(Q), echo $@,)
+	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
+	$(Q)rm -rf  gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
+	$(Q)rm -f $(OBJ:.o=.depend)
 
 # Useful for developers
 vpksend: $(TARGET).vpk

@@ -39,7 +39,9 @@
 #endif
 
 #include "../font_driver.h"
+#define DEPRECATED
 #include "../../ctr/gpu_old.h"
+#undef DEPRECATED
 #include "ctr_gu.h"
 
 #include "../../configuration.h"
@@ -49,11 +51,26 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
-
+#include "../../paths.h"
 #include "../common/ctr_defines.h"
+
 #ifndef HAVE_THREADS
 #include "../../tasks/tasks_internal.h"
 #endif
+
+#define COLOR_ABGR(r, g, b, a) (((unsigned)(a) << 24) | ((b) << 16) | ((g) << 8) | ((r) << 0))
+
+#define CTR_TOP_FRAMEBUFFER_WIDTH      400
+#define CTR_TOP_FRAMEBUFFER_HEIGHT     240
+#define CTR_BOTTOM_FRAMEBUFFER_WIDTH   320
+#define CTR_BOTTOM_FRAMEBUFFER_HEIGHT  240
+#define CTR_STATE_DATE_SIZE            11
+
+#define CTR_SET_SCALE_VECTOR(vec, vp_width, vp_height, tex_width, tex_height) \
+   (vec)->x = -2.0f / (vp_width); \
+   (vec)->y = -2.0f / (vp_height); \
+   (vec)->u =  1.0f / (tex_width); \
+   (vec)->v = -1.0f / (tex_height)
 
 enum
 {
@@ -61,6 +78,154 @@ enum
    CTR_TEXTURE_STATE_THUMBNAIL,
    CTR_TEXTURE_LAST
 };
+
+typedef enum
+{
+   CTR_BOTTOM_MENU_NOT_AVAILABLE = 0,
+   CTR_BOTTOM_MENU_DEFAULT,
+   CTR_BOTTOM_MENU_SELECT
+} ctr_bottom_menu;
+
+typedef struct
+{
+   float v;
+   float u;
+   float y;
+   float x;
+} ctr_scale_vector_t;
+
+typedef struct
+{
+   s16 x0, y0, x1, y1;
+   s16 u0, v0, u1, v1;
+} ctr_vertex_t;
+
+#ifdef USE_CTRULIB_2
+extern u8* gfxTopLeftFramebuffers[2];
+extern u8* gfxTopRightFramebuffers[2];
+extern u8* gfxBottomFramebuffers[2];
+#endif
+
+#ifdef CONSOLE_LOG
+extern PrintConsole* ctrConsole;
+#endif
+
+extern const u8 ctr_sprite_shbin[];
+extern const u32 ctr_sprite_shbin_size;
+
+
+typedef struct ctr_video
+{
+   struct
+   {
+      struct
+      {
+         void* left;
+         void* right;
+      }top;
+      void* bottom;
+   }drawbuffers;
+   void* depthbuffer;
+
+   struct
+   {
+      uint32_t* display_list;
+      void* texture_linear;
+      void* texture_swizzled;
+      ctr_vertex_t* frame_coords;
+      int display_list_size;
+      int texture_width;
+      int texture_height;
+      ctr_scale_vector_t scale_vector;
+   }menu;
+
+   uint32_t *display_list;
+   void *texture_linear;
+   void *texture_swizzled;
+   int display_list_size;
+   unsigned int texture_width;
+   unsigned int texture_height;
+
+   ctr_scale_vector_t scale_vector;
+   ctr_vertex_t* frame_coords;
+
+   DVLB_s*         dvlb;
+   shaderProgram_s shader;
+
+   video_viewport_t vp;
+
+   unsigned rotation;
+
+#ifdef HAVE_OVERLAY
+   struct ctr_overlay_data *overlay;
+   unsigned overlays;
+#endif
+
+   aptHookCookie lcd_aptHook;
+   ctr_video_mode_enum video_mode;
+   int current_buffer_top;
+   int current_buffer_bottom;
+
+   struct
+   {
+      ctr_vertex_t* buffer;
+      ctr_vertex_t* current;
+      size_t size;
+   }vertex_cache;
+
+   int state_slot;
+   u64  idle_timestamp;
+   ctr_bottom_menu bottom_menu;
+   ctr_bottom_menu prev_bottom_menu;
+   struct ctr_bottom_texture_data *bottom_textures;
+
+   volatile bool vsync_event_pending;
+#ifdef HAVE_OVERLAY
+   bool overlay_enabled;
+   bool overlay_full_screen;
+#endif
+   bool rgb32;
+   bool vsync;
+   bool smooth;
+   bool menu_texture_enable;
+   bool menu_texture_frame_enable;
+   bool keep_aspect;
+   bool should_resize;
+   bool msg_rendering_enabled;
+   bool supports_wide_display;
+   bool enable_3d;
+   bool p3d_event_pending;
+   bool ppf_event_pending;
+   bool init_bottom_menu;
+   bool refresh_bottom_menu;
+   bool render_font_bottom;
+   bool render_state_from_png_file;
+   bool state_data_exist;
+   bool bottom_check_idle;
+   bool bottom_is_idle;
+   char state_date[CTR_STATE_DATE_SIZE];
+} ctr_video_t;
+
+typedef struct ctr_texture
+{
+   unsigned int width;
+   unsigned int height;
+   unsigned int active_width;
+   unsigned int active_height;
+
+   enum texture_filter_type type;
+   void* data;
+} ctr_texture_t;
+
+#ifdef HAVE_OVERLAY
+struct ctr_overlay_data
+{
+   ctr_texture_t texture;
+   ctr_vertex_t* frame_coords;
+   ctr_scale_vector_t scale_vector;
+   float alpha_mod;
+};
+#endif
 
 struct ctr_bottom_texture_data
 {
@@ -78,13 +243,11 @@ typedef struct
    void* font_data;
 } ctr_font_t;
 
-
 /* An annoyance...
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
  * when reinitialising... */
 static bool ctr_bottom_screen_enabled  = true;
-static int fade_count                  = 256;
 
 /*
  * FORWARD DECLARATIONS
@@ -209,22 +372,6 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
-   gfx_display_ctr_draw,
-   NULL,                                     /* draw_pipeline          */
-   NULL,                                     /* blend_begin            */
-   NULL,                                     /* blend_end              */
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_CTR,
-   GFX_VIDEO_DRIVER_CTR,
-   "ctr",
-   true,
-   NULL,
-   NULL
-};
-
 /*
  * FONT DRIVER
  */
@@ -232,7 +379,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
 static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   int i, j;
+   unsigned int i, j;
    ctr_scale_vector_t *vec_top    = NULL;
    ctr_scale_vector_t *vec_bottom = NULL;
    const uint8_t*     src         = NULL;
@@ -247,7 +394,7 @@ static void* ctr_font_init(void* data, const char* font_path,
    font_size                      = 10;
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -321,15 +468,18 @@ static void ctr_font_free(void* data, bool is_threaded)
 static int ctr_font_get_message_width(void* data, const char* msg,
       size_t msg_len, float scale)
 {
-   int i;
+   size_t i;
    int delta_x = 0;
    const struct font_glyph* glyph_q = NULL;
    ctr_font_t* font                 = (ctr_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -343,8 +493,7 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -356,36 +505,57 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 static void ctr_font_render_line(
       ctr_video_t *ctr,
-      ctr_font_t* font, const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
+      ctr_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      unsigned text_align)
 {
-   unsigned i;
-   const struct font_glyph* glyph_q = NULL;
-   ctr_vertex_t* v  = NULL;
-   int delta_x      = 0;
-   int delta_y      = 0;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
+   unsigned int i;
+   const char* msg_end = msg + msg_len;
+   ctr_vertex_t* v     = NULL;
+   int delta_x         = 0;
+   int delta_y         = 0;
+   int x               = roundf(pos_x * width);
+   int y               = roundf((1.0f - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                       = font->font_driver->get_glyph;
+   void *font_data     = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that ctr_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x += width - ctr_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x += width / 2 -
-            ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
       ctr->vertex_cache.current = ctr->vertex_cache.buffer;
 
    v       = ctr->vertex_cache.current;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -399,8 +569,7 @@ static void ctr_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -497,30 +666,32 @@ static void ctr_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
    int lines                              = 0;
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   font->font_driver->get_line_metrics(font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (delim - msg) : strlen(msg);
+      const char *end = msg;
+      while (*end && *end != '\n')
+         end++;
 
-      /* Draw the line */
-      ctr_font_render_line(ctr, font, msg, msg_len,
+      ctr_font_render_line(ctr, font, glyph_q, msg, (size_t)(end - msg),
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
-      if (!delim)
+      if (!*end)
          break;
-
-      msg += msg_len + 1;
+      msg = end + 1;
       lines++;
    }
 }
 
 static void ctr_font_render_msg(
       void *userdata,
-      void* data, const char* msg,
+      void* data, const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    int drop_x, drop_y;
@@ -604,7 +775,7 @@ static const struct font_glyph* ctr_font_get_glyph(
 {
    ctr_font_t* font = (ctr_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -618,19 +789,6 @@ static bool ctr_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t ctr_font =
-{
-   ctr_font_init,
-   ctr_font_free,
-   ctr_font_render_msg,
-   "ctr",
-   ctr_font_get_glyph,
-   NULL,                         /* bind_block */
-   NULL,                         /* flush_block */
-   ctr_font_get_message_width,
-   ctr_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -665,18 +823,15 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
 
             GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
 
-            if (ctr->supports_parallax_disable)
-               ctr_set_parallax_layer(true);
             ctr->enable_3d = true;
          }
          break;
       case CTR_VIDEO_MODE_2D_400X240:
       case CTR_VIDEO_MODE_2D_800X240:
-         if (ctr->supports_parallax_disable)
+         if (ctr->supports_wide_display)
          {
             ctr->video_mode = video_mode;
-            ctr_set_parallax_layer(false);
-            ctr->enable_3d = true;
+            ctr->enable_3d = false;
          }
          else
          {
@@ -687,8 +842,6 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr, ctr_video_mode_enum vid
       case CTR_VIDEO_MODE_2D:
       default:
          ctr->video_mode = CTR_VIDEO_MODE_2D;
-         if (ctr->supports_parallax_disable)
-            ctr_set_parallax_layer(false);
          ctr->enable_3d = false;
          break;
    }
@@ -729,7 +882,7 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 #ifdef HAVE_OVERLAY
 static void ctr_free_overlay(ctr_video_t *ctr)
 {
-   int i;
+   unsigned int i;
 
    for (i = 0; i < ctr->overlays; i++)
    {
@@ -743,84 +896,13 @@ static void ctr_free_overlay(ctr_video_t *ctr)
 }
 #endif
 
-static void ctr_update_viewport(
-      ctr_video_t* ctr,
-      settings_t *settings,
-      int custom_vp_x,
-      int custom_vp_y,
-      unsigned custom_vp_width,
-      unsigned custom_vp_height
-      )
+static void ctr_update_viewport(ctr_video_t* ctr)
 {
-   int x                     = 0;
-   int y                     = 0;
-   float width               = ctr->vp.full_width;
-   float height              = ctr->vp.full_height;
-   float desired_aspect      = video_driver_get_aspect_ratio();
-   bool video_scale_integer  = settings->bools.video_scale_integer;
-   unsigned aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-
-   if (video_scale_integer)
-   {
-      video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
-            ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
-   }
-   else if (ctr->keep_aspect)
-   {
-#if defined(HAVE_MENU)
-      if (aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-      {
-         x      = custom_vp_x;
-         y      = custom_vp_y;
-         width  = custom_vp_width;
-         height = custom_vp_height;
-      }
-      else
-#endif
-      {
-         float delta;
-         float device_aspect  = ((float)ctr->vp.full_width) / ctr->vp.full_height;
-
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
-         {
-            /* If the aspect ratios of screen and desired aspect
-             * ratio are sufficiently equal (floating point stuff),
-             * assume they are actually equal.
-             */
-         }
-         else if (device_aspect > desired_aspect)
-         {
-            delta    = (desired_aspect / device_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            x        = (int)roundf(width * (0.5f - delta));
-            width    = (unsigned)roundf(2.0f * width * delta);
-         }
-         else
-         {
-            delta    = (device_aspect / desired_aspect - 1.0f)
-               / 2.0f + 0.5f;
-            y        = (int)roundf(height * (0.5f - delta));
-            height   = (unsigned)roundf(2.0f * height * delta);
-         }
-      }
-
-      ctr->vp.x      = x;
-      ctr->vp.y      = y;
-      ctr->vp.width  = width;
-      ctr->vp.height = height;
-   }
-   else
-   {
-      ctr->vp.x      = 0;
-      ctr->vp.y      = 0;
-      ctr->vp.width  = width;
-      ctr->vp.height = height;
-   }
+   video_driver_update_viewport(&ctr->vp, false, ctr->keep_aspect, true);
 
    ctr_set_screen_coords(ctr);
 
    ctr->should_resize = false;
-
 }
 
 static const char *ctr_texture_path(unsigned id)
@@ -841,7 +923,7 @@ static const char *ctr_texture_path(unsigned id)
 
             _len = strlcpy(texture_path,
                   state_path, sizeof(texture_path));
-            strlcpy(texture_path       + _len,
+            strlcpy_lit(texture_path       + _len,
                   ".png",
                   sizeof(texture_path) - _len);
             return path_basename_nocompression(texture_path);
@@ -858,19 +940,17 @@ static void ctr_update_state_date(void *data)
    ctr_video_t *ctr = (ctr_video_t*)data;
    time_t now       = time(NULL);
    struct tm *t     = localtime(&now);
-   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
-      t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02u/%02u/%u",
+      ((unsigned)t->tm_mon + 1) % 100,
+      (unsigned)t->tm_mday % 100,
+      ((unsigned)t->tm_year + 1900) % 10000);
 }
 
 static bool ctr_update_state_date_from_file(void *data)
 {
    char state_path[PATH_MAX_LENGTH];
-#ifdef USE_CTRULIB_2
-   time_t mtime;
-#else
-   time_t ft;
    u64 mtime;
-#endif
+   time_t ft;
    struct tm *t     = NULL;
    ctr_video_t *ctr = (ctr_video_t*)data;
 
@@ -888,20 +968,17 @@ static bool ctr_update_state_date_from_file(void *data)
 
    ctr->state_data_exist = true;
 
-#ifdef USE_CTRULIB_2
-   t     = localtime(&mtime);
-#else
    ft    = mtime;
    t     = localtime(&ft);
-#endif
-   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02d/%02d/%d",
-      t->tm_mon + 1, t->tm_mday, t->tm_year + 1900);
-
-  return true;
+   snprintf(ctr->state_date, sizeof(ctr->state_date), "%02u/%02u/%u",
+      ((unsigned)t->tm_mon + 1) % 100,
+      (unsigned)t->tm_mday % 100,
+      ((unsigned)t->tm_year + 1900) % 10000);
+   return true;
 
 error:
   ctr->state_data_exist = false;
-  strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+  strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
@@ -1022,7 +1099,8 @@ static void save_state_to_file(void *data)
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
 }
 
-static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
+static void ctr_bottom_menu_control(void* data,
+      bool lcd_bottom, uint32_t flags)
 {
    touchPosition state_tmp_touch;
    uint32_t state_tmp   = 0;
@@ -1080,15 +1158,11 @@ static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
       if (ctr->bottom_is_idle)
       {
          ctr->bottom_is_idle    = false;
-         ctr->bottom_is_fading  = false;
-         fade_count             = 256;
          ctr_set_bottom_screen_enable(true,true);
       }
       else if (ctr->bottom_check_idle)
       {
          ctr->bottom_check_idle = false;
-         ctr->bottom_is_fading  = false;
-         fade_count             = 256;
       }
 
       if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
@@ -1100,6 +1174,8 @@ static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
 
       switch (ctr->bottom_menu)
       {
+         case CTR_BOTTOM_MENU_NOT_AVAILABLE:
+            return;
          case CTR_BOTTOM_MENU_DEFAULT:
             BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
             break;
@@ -1166,7 +1242,7 @@ static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
                   take_screenshot(NULL,
                         screenshot_full_path,
                         true,
-                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        video_driver_cached_frame_is_hw_render(),
                         true,
                         true);
                }
@@ -1190,8 +1266,7 @@ static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
       ctr->refresh_bottom_menu = true;
    }
 
-   if (      ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE
-         || (!(flags & RUNLOOP_FLAG_CORE_RUNNING)))
+   if (!(flags & RUNLOOP_FLAG_CORE_RUNNING))
       return;
 
 
@@ -1248,8 +1323,10 @@ static void ctr_bottom_menu_control(void* data, bool lcd_bottom, uint32_t flags)
 static void font_driver_render_msg_bottom(ctr_video_t *ctr,
       const char *msg, const void *_params)
 {
+   if (!msg)
+      return;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, NULL);
+   font_driver_render_msg(ctr, msg, strlen(msg), _params, NULL);
    ctr->render_font_bottom = false;
 }
 
@@ -1293,7 +1370,7 @@ static void ctr_render_bottom_screen(void *data)
                   &params);
 
             _len = strlcpy(str_path, dir_assets, sizeof(str_path));
-            strlcpy(str_path       + _len,
+            strlcpy_lit(str_path       + _len,
                   "\n/bottom_menu.png",
                   sizeof(str_path) - _len);
 
@@ -1449,33 +1526,6 @@ static void ctr_render_bottom_screen(void *data)
    }
 }
 
-// graphic function originates from here:
-// https://github.com/smealum/3ds_hb_menu/blob/master/source/gfx.c
-void ctr_fade_bottom_screen(gfxScreen_t screen, gfx3dSide_t side, u32 f)
-{
-#ifndef CONSOLE_LOG
-   int i;
-   u16 fbWidth, fbHeight;
-   u8* fbAdr = gfxGetFramebuffer(screen, side, &fbWidth, &fbHeight);
-
-   for(i = 0; i < fbWidth * fbHeight / 2; i++)
-   {
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-      *fbAdr = (*fbAdr * f) >> 8;
-      fbAdr++;
-   }
-#endif
-}
-
 static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 {
    u64 elapsed_tick;
@@ -1486,28 +1536,10 @@ static void ctr_set_bottom_screen_idle(ctr_video_t * ctr)
 
    if ( elapsed_tick > 2000000000 )
    {
-      if (!ctr->bottom_is_fading)
-	  {
-         ctr->bottom_is_fading    = true;
-         ctr->refresh_bottom_menu = true;
-         return;
-      }
-
-      if (fade_count > 0)
-      {
-         fade_count--;
-         ctr_fade_bottom_screen(GFX_BOTTOM, GFX_LEFT, fade_count);
-
-         if (fade_count <= 128)
-         {
-            ctr->bottom_is_idle    = true;
-            ctr->bottom_is_fading  = false;
-            ctr->bottom_check_idle = false;
-            fade_count             = 256;
-            ctr_set_bottom_screen_enable(false,true);
-            return;
-         }
-      }
+      ctr->bottom_is_idle    = true;
+      ctr->bottom_check_idle = false;
+      ctr_set_bottom_screen_enable(false,true);
+      return;
    }
 }
 
@@ -1598,8 +1630,6 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
                   gfxTopRightFramebuffers[
                   ctr->current_buffer_top], 400 * 240 * 3);
          }
-         if (ctr->supports_parallax_disable)
-            ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
          ctr_set_bottom_screen_enable(true, ctr->bottom_is_idle);
          save_state_to_file(ctr);
          break;
@@ -1626,6 +1656,9 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
       case APTHOOK_ONRESTORE:
       case APTHOOK_ONWAKEUP:
          command_event(CMD_EVENT_AUDIO_START, NULL);
+         break;
+      case APTHOOK_ONEXIT:
+      case APTHOOK_COUNT:
          break;
    }
 }
@@ -1670,7 +1703,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.height                  = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->vp.full_width              = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->vp.full_height             = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   video_driver_set_size(ctr->vp.width, ctr->vp.height);
+   video_driver_set_output_size(ctr->vp.width, ctr->vp.height);
 
    ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
@@ -1697,11 +1730,10 @@ static void* ctr_init(const video_info_t* video,
    ctr->prev_bottom_menu           = CTR_BOTTOM_MENU_NOT_AVAILABLE;
    ctr->bottom_check_idle          = false;
    ctr->bottom_is_idle             = false;
-   ctr->bottom_is_fading           = false;
    ctr->idle_timestamp             = 0;
    ctr->state_slot                 = settings->ints.state_slot;
 
-   strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+   strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
 
    ctr->rgb32                      = video->rgb32;
    ctr->texture_width              = video->input_scale * RARCH_SCALE_BASE;
@@ -1827,19 +1859,15 @@ static void* ctr_init(const video_info_t* video,
     * (i.e. these are the only platforms that can use
     * CTR_VIDEO_MODE_2D_400X240 and CTR_VIDEO_MODE_2D_800X240) */
    CFGU_GetSystemModel(&device_model); /* (0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL) */
-   ctr->supports_parallax_disable = (device_model == 0) || (device_model == 1);
+   ctr->supports_wide_display = device_model != 3;
 
    refresh_rate = (32730.0 * 8192.0) / 4481134.0;
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_CTR);
 
-   ctr->msg_rendering_enabled     = false;
+   ctr->msg_rendering_enabled     = true;
    ctr->menu_texture_frame_enable = false;
    ctr->menu_texture_enable       = false;
 
@@ -2053,12 +2081,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    if (ctr->should_resize)
-      ctr_update_viewport(ctr, settings,
-            custom_vp_x,
-            custom_vp_y,
-            custom_vp_width,
-            custom_vp_height
-            );
+      ctr_update_viewport(ctr);
 
    if (ctr->refresh_bottom_menu)
       ctrGuSetMemoryFill(true,
@@ -2105,7 +2128,7 @@ static bool ctr_frame(void* data, const void* frame,
       }
       else
       {
-         int i;
+         unsigned int i;
          uint8_t       *dst = (uint8_t*)ctr->texture_linear;
          const uint8_t *src = frame;
 
@@ -2242,17 +2265,15 @@ static bool ctr_frame(void* data, const void* frame,
          }
       }
 
-      ctr->msg_rendering_enabled = true;
 #ifdef HAVE_MENU
       menu_driver_frame(menu_is_alive, video_info);
 #endif
-      ctr->msg_rendering_enabled = false;
    }
    else if (statistics_show)
    {
       if (osd_params)
       {
-         font_driver_render_msg(ctr, stat_text,
+         font_driver_render_msg(ctr, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }
@@ -2282,7 +2303,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, strlen(msg), NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -2323,14 +2344,16 @@ static bool ctr_frame(void* data, const void* frame,
 
 #ifdef USE_CTRULIB_2
    u32 *buf0, *buf1, *bottom;
-   u32 stride;
+   u32 stride = 240 * 3;
+   u8 bit5, bit6;
 
    buf0 = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
 
    if (ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
-      buf1 = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      stride = 240 * 3 * 2;
+      buf1 = buf0;
+      bit5 = false;
+      bit6 = false;
    }
    else
    {
@@ -2339,13 +2362,14 @@ static bool ctr_frame(void* data, const void* frame,
       else
          buf1 = buf0;
 
-      stride = 240 * 3;
+      bit5 = (ctr->enable_3d != 0);
+      bit6 = 1^bit5;
    }
 
-   u8 bit5 = (ctr->enable_3d != 0);
+
 
    gspPresentBuffer(GFX_TOP, ctr->current_buffer_top, buf0, buf1,
-                    stride, (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES);
+                    stride, (1<<8)|((bit6)<<6)|((bit5)<<5)|GSP_BGR8_OES);
 
 #ifndef CONSOLE_LOG
    if (ctr->refresh_bottom_menu)
@@ -2355,23 +2379,19 @@ static bool ctr_frame(void* data, const void* frame,
       gspPresentBuffer(GFX_BOTTOM, ctr->current_buffer_bottom, bottom, bottom,
             stride, GSP_BGR8_OES);
    }
-   else if (ctr->bottom_is_fading)
-   {
-      gfxScreenSwapBuffers(GFX_BOTTOM,false);
-   }
 #endif
 #else
    topFramebufferInfo.
       active_framebuf           = ctr->current_buffer_top;
    topFramebufferInfo.
       framebuf0_vaddr           = (u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+   topFramebufferInfo.
+      framebuf_widthbytesize = 240 * 3;
 
    if (ctr->video_mode == CTR_VIDEO_MODE_2D_800X240)
    {
       topFramebufferInfo.
          framebuf1_vaddr        = (u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
-      topFramebufferInfo.
-         framebuf_widthbytesize = 240 * 3 * 2;
    }
    else
    {
@@ -2382,11 +2402,10 @@ static bool ctr_frame(void* data, const void* frame,
          topFramebufferInfo.
             framebuf1_vaddr     = topFramebufferInfo.framebuf0_vaddr;
 
-      topFramebufferInfo.
-         framebuf_widthbytesize = 240 * 3;
    }
 
-   u8 bit5                      = (ctr->enable_3d != 0);
+   u8 bit5                      = (ctr->enable_3d != 0) & (ctr->video_mode != CTR_VIDEO_MODE_2D_800X240);
+   u8 bit6                      = (1^bit5) & (ctr->video_mode != CTR_VIDEO_MODE_2D_800X240);
    topFramebufferInfo.format    = (1<<8)|((1^bit5)<<6)|((bit5)<<5)|GSP_BGR8_OES;
    topFramebufferInfo.
       framebuf_dispselect       = ctr->current_buffer_top;
@@ -2430,7 +2449,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 #endif
    ctr->current_buffer_top     ^= 1;
-   if (ctr->refresh_bottom_menu || ctr->bottom_is_fading)
+   if (ctr->refresh_bottom_menu)
       ctr->current_buffer_bottom  ^= 1;
 
    ctr->p3d_event_pending       = true;
@@ -2510,7 +2529,7 @@ static void ctr_free(void* data)
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
                                   unsigned width, unsigned height, float alpha)
 {
-   int i;
+   unsigned int i;
    uint16_t *dst;
    const uint16_t *src;
    ctr_video_t *ctr = (ctr_video_t*)data;
@@ -2610,10 +2629,10 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    ctr_texture_t *texture      = NULL;
    ctr_video_t            *ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   int size                    = image->width
+   u32 size                    = image->width
       * image->height * sizeof(uint32_t);
 
-   if ((size * 3) > linearSpaceFree())
+   if ((u64)size * 3 > linearSpaceFree())
       return 0;
 
    if (!ctr || !image || image->width > 2048 || image->height > 2048)
@@ -2638,7 +2657,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
 
    if ((image->width <= 32) || (image->height <= 32))
    {
-      int i, j;
+      unsigned int i, j;
       uint32_t* src = (uint32_t*)image->pixels;
 
       for (j = 0; j < image->height; j++)
@@ -2657,7 +2676,7 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    }
    else
    {
-      int i;
+      unsigned int i;
       uint32_t *src = NULL;
       uint32_t *dst = NULL;
 
@@ -2763,7 +2782,7 @@ static void ctr_overlay_vertex_geom(void *data,
 static bool ctr_overlay_load(void *data,
             const void *image_data, unsigned num_images)
 {
-   int i, j;
+   unsigned int i, j;
    void *tmpdata;
    ctr_texture_t       *texture = NULL;
    ctr_video_t             *ctr = (ctr_video_t *)data;
@@ -2866,11 +2885,12 @@ static void ctr_overlay_full_screen(void *data, bool enable)
    ctr->overlay_full_screen = enable;
 }
 
-static void ctr_overlay_set_alpha(void *data, unsigned image, float mod){ }
+/* TODO/FIXME - implement? */
+static void ctr_overlay_set_alpha(void *data, unsigned image, float mod) { }
 
 static void ctr_render_overlay(ctr_video_t *ctr)
 {
-   int i;
+   size_t i;
 
    for (i = 0; i < ctr->overlays; i++)
    {
@@ -2918,13 +2938,13 @@ void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
 }
 #endif
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)
@@ -2952,20 +2972,21 @@ static const video_poke_interface_t ctr_poke_interface = {
    ctr_apply_state_changes,
    ctr_set_texture_frame,
    ctr_set_texture_enable,
-   font_driver_render_msg,
+   ctr_set_osd_msg,
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void ctr_get_poke_interface(void* data,
-                                   const video_poke_interface_t** iface)
+      const video_poke_interface_t** iface)
 {
    *iface = &ctr_poke_interface;
 }
@@ -2975,6 +2996,19 @@ static bool ctr_widgets_enabled(void *data) { return true; }
 #endif
 static bool ctr_set_shader(void* data,
       enum rarch_shader_type type, const char* path) { return false; }
+
+static font_renderer_t ctr_font =
+{
+   ctr_font_init,
+   ctr_font_free,
+   ctr_font_render_msg,
+   "ctr",
+   ctr_font_get_glyph,
+   NULL,                         /* bind_block */
+   NULL,                         /* flush_block */
+   ctr_font_get_message_width,
+   ctr_font_get_line_metrics
+};
 
 video_driver_t video_ctr =
 {
@@ -2998,7 +3032,28 @@ video_driver_t video_ctr =
 #endif
    ctr_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   ctr_widgets_enabled
+   ctr_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &ctr_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
+   gfx_display_ctr_draw,
+   NULL,                                     /* draw_pipeline          */
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &ctr_font,
+   GFX_VIDEO_DRIVER_CTR,
+   "ctr",
+   true,
+   NULL,
+   NULL
 };

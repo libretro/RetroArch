@@ -32,8 +32,16 @@ typedef struct
    uint16_t* buffer_l;
    uint16_t* buffer_r;
    OSSpinLock spinlock;
+   /* Signalled by the AX frame callback every 3 ms, so a waiter sleeps
+    * a frame at a time instead of yielding in a loop. */
+   OSEvent frame_event;
    uint32_t pos;
    uint32_t written;
+   /* Frames the voice has played since it started, for the sink rate
+    * estimate. Counted in the frame callback beside the decrement of
+    * written and under the same spinlock, so it needs no atomics of its
+    * own and cannot disagree with what was actually consumed. */
+   uint64_t consumed;
    bool nonblock;
 } ax_audio_t;
 
@@ -45,6 +53,10 @@ typedef struct
 #define AX_AUDIO_SAMPLE_MIN         (AX_AUDIO_SAMPLE_COUNT * 3) /* 9ms */
 #define AX_AUDIO_SAMPLE_LOAD        (AX_AUDIO_SAMPLE_COUNT * 10)/* 30ms */
 #define AX_AUDIO_MAX_FREE           (AX_AUDIO_COUNT - (AX_AUDIO_SAMPLE_COUNT * 2))
+/* Bound on a wait for the frame callback to free room: one wait, in
+ * microseconds, and how many before the caller gets the pass back. */
+#define AX_AUDIO_WAIT_US     100000
+#define AX_AUDIO_WAIT_LAPS   8
 #define AX_AUDIO_RATE               48000
 
 #if 0
@@ -69,10 +81,40 @@ void wiiu_ax_callback(void)
          /* Buffer underrun, stop playback to let it fill up */
          if (ax->written < AX_AUDIO_SAMPLE_MIN)
             AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
-         ax->written -= AX_AUDIO_SAMPLE_COUNT;
+         ax->written  -= AX_AUDIO_SAMPLE_COUNT;
+         /* Only here, where the voice is running and a frame of our
+          * audio has actually gone: a stopped voice is not taking
+          * anything, and a count that ran on regardless would report
+          * the device consuming audio it never played. The estimator
+          * discards windows that stall, which is the right reading of
+          * a voice that stopped. */
+         ax->consumed += AX_AUDIO_SAMPLE_COUNT;
          OSUninterruptibleSpinLock_Release(&ax->spinlock);
       }
    }
+   OSSignalEvent(&ax->frame_event);
+}
+
+/* Frames the voice has played since it started.
+ *
+ * The AX frame callback fires every 3 ms and takes AX_AUDIO_SAMPLE_COUNT
+ * frames when the voice is running, so counting them counts device time
+ * - JACK's shape rather than ALSA's, with no queue to subtract. Read
+ * under the same spinlock the callback writes it under; a 64-bit read
+ * is not atomic on this CPU, and a torn one would look like the device
+ * jumping backwards. */
+static size_t ax_audio_frames_consumed(void *data)
+{
+   ax_audio_t *ax  = (ax_audio_t*)data;
+   uint64_t    out = 0;
+   if (!ax)
+      return 0;
+   if (OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
+   {
+      out = ax->consumed;
+      OSUninterruptibleSpinLock_Release(&ax->spinlock);
+   }
+   return (size_t)out;
 }
 
 extern void AXRegisterFrameCallback(void *cb);
@@ -136,6 +178,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
    *new_rate                 = AX_AUDIO_RATE;
 
    OSInitSpinLock(&ax->spinlock);
+   OSInitEvent(&ax->frame_event, FALSE, OS_EVENT_MODE_AUTO);
 
    wiiu_cb_ax                = ax;
    AXRegisterFrameCallback(wiiu_ax_callback);
@@ -176,41 +219,39 @@ static int ax_audio_limit(int in)
 
 static bool ax_audio_start(void* data, bool is_shutdown)
 {
-   ax_audio_t* ax = (ax_audio_t*)data;
-
    /* Prevents restarting audio when the menu
     * is toggled off on shutdown */
-   if (is_shutdown)
-      return true;
-
-   /* Set back to playing on enough buffered data */
-   if (ax->written > AX_AUDIO_SAMPLE_LOAD)
+   if (!is_shutdown)
    {
-      AXSetMultiVoiceCurrentOffset(ax->mvoice,
-            ax_audio_limit(ax->pos - ax->written));
-      AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
+      ax_audio_t* ax = (ax_audio_t*)data;
+      /* Set back to playing on enough buffered data */
+      if (ax->written > AX_AUDIO_SAMPLE_LOAD)
+      {
+         AXSetMultiVoiceCurrentOffset(ax->mvoice,
+               ax_audio_limit(ax->pos - ax->written));
+         AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_PLAYING);
+      }
    }
 
    return true;
 }
 
-static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
+static ssize_t ax_audio_write(void* data, const void* buf, size_t len)
 {
-   uint32_t i;
    size_t count_avail  = 0;
-   ax_audio_t* ax      = (ax_audio_t*)data;
-   const uint16_t* src = buf;
-   size_t count        = size >> 2;
+   ax_audio_t *ax      = (ax_audio_t*)data;
+   const uint16_t *src = buf;
+   size_t count        = len >> 2;
 
-   if (!size || (size & 0x3))
+   if (!len || (len & 0x3))
       return 0;
 
    if (count > AX_AUDIO_MAX_FREE)
       count            = AX_AUDIO_MAX_FREE;
 
    count_avail         = (
-         (ax->written > AX_AUDIO_MAX_FREE) 
-         ? 0 
+         (ax->written > AX_AUDIO_MAX_FREE)
+         ? 0
          : (AX_AUDIO_MAX_FREE - ax->written));
 
    if (ax->nonblock)
@@ -221,11 +262,19 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    }
    else if (count_avail < count)
    {
-      /* Sync, wait for free memory */
+      /* Sync, wait for free memory. The AX frame callback frees a
+       * frame's worth and signals frame_event each frame; wait on that
+       * rather than yield-spin, and bound it - a voice that reports
+       * running while its callback has stopped freed nothing, and the
+       * spin never ended. The write then takes what room there is. */
+      int laps = AX_AUDIO_WAIT_LAPS;
       while (AXIsMultiVoiceRunning(ax->mvoice) && (count_avail < count))
       {
-         OSYieldThread(); /* Gives threads with same priority time to run */
+         OSWaitEventWithTimeout(&ax->frame_event,
+               (OSTime)OSMicroseconds(AX_AUDIO_WAIT_US));
          count_avail = (ax->written > AX_AUDIO_MAX_FREE ? 0 : (AX_AUDIO_MAX_FREE - ax->written));
+         if (--laps < 0)
+            break;
       }
    }
 
@@ -236,10 +285,11 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
    /* make sure we have input size */
    if (count > 0)
    {
+      size_t i;
       /* write in new data */
       size_t start_pos    = ax->pos;
       int flush_p2_needed = 0;
-      int flush_p2       = 0;
+      int flush_p2        = 0;
 
       for (i = 0; i < (count << 1); i += 2)
       {
@@ -251,7 +301,7 @@ static ssize_t ax_audio_write(void* data, const void* buf, size_t size)
          if (ax->pos == 0)
          {
             flush_p2_needed = 1;
-            flush_p2       = ((count << 1) - i);
+            flush_p2        = ((count << 1) - i);
             DCStoreRangeNoSync(ax->buffer_l + start_pos,
                   (AX_AUDIO_COUNT - start_pos) << 1);
             DCStoreRangeNoSync(ax->buffer_r + start_pos, (AX_AUDIO_COUNT - start_pos) << 1);
@@ -310,12 +360,47 @@ static size_t ax_audio_write_avail(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
    size_t ret = AX_AUDIO_COUNT - ax->written;
-   return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret);
+   return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret * 2 * sizeof(int16_t));
 }
 
+/* Sleep on the frame event until at least len samples are free below
+ * the load limit, in the units write_avail() reports, len capped at
+ * half the ring so the wait always ends. Returns the free space then,
+ * or 0 once the voice is no longer running. */
+static size_t ax_audio_wait_writable(void* data, size_t len)
+{
+   ax_audio_t* ax = (ax_audio_t*)data;
+   size_t avail;
+   int laps       = AX_AUDIO_WAIT_LAPS;
+   /* len arrives in bytes; the count is kept in frames of int16
+    * stereo, four bytes each. */
+   size_t want    = len / (2 * sizeof(int16_t));
+
+   if (want > AX_AUDIO_MAX_FREE / 2)
+      want = AX_AUDIO_MAX_FREE / 2;
+
+   for (;;)
+   {
+      if (!AXIsMultiVoiceRunning(ax->mvoice))
+         return 0;
+      avail = (ax->written > AX_AUDIO_MAX_FREE)
+            ? 0 : (AX_AUDIO_MAX_FREE - ax->written);
+      if (avail >= want)
+         return avail * 2 * sizeof(int16_t);
+      /* Timed and capped: a callback that has stopped hands the pass
+       * back as no space coming from this call. */
+      OSWaitEventWithTimeout(&ax->frame_event,
+            (OSTime)OSMicroseconds(AX_AUDIO_WAIT_US));
+      if (--laps < 0)
+         return 0;
+   }
+}
+
+/* Both in bytes of int16 stereo, as the interface asks: written counts
+ * frames, a frame per four bytes. They were reported in frames. */
 static size_t ax_audio_buffer_size(void* data)
 {
-   return AX_AUDIO_COUNT;
+   return AX_AUDIO_COUNT * 2 * sizeof(int16_t);
 }
 
 audio_driver_t audio_ax =
@@ -333,4 +418,7 @@ audio_driver_t audio_ax =
    NULL, /* device_list_free */
    ax_audio_write_avail,
    ax_audio_buffer_size,
+   NULL, /* write_raw */
+   ax_audio_wait_writable,
+   ax_audio_frames_consumed
 };

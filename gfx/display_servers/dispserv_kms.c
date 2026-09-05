@@ -16,9 +16,9 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -30,6 +30,9 @@
 
 #include "../video_display_server.h"
 #include "../../retroarch.h"
+/* CMD_EVENT_REINIT / command_event(); previously reached only
+ * transitively, and only under some configurations. */
+#include "../../command.h"
 #include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
 #include "../common/drm_common.h"
 #include "../../verbosity.h"
@@ -66,7 +69,7 @@ static bool kms_display_server_set_resolution(void *data,
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
    }
-   RARCH_DBG("[DRM]: Display server set resolution - incoming: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - incoming: %d x %d, %f Hz.\n",width, height, hz);
 
    if (width == 0)
       width = curr_width;
@@ -74,11 +77,11 @@ static bool kms_display_server_set_resolution(void *data,
       height = curr_height;
    if (hz == 0)
       hz = curr_refreshrate;
-   
+
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   RARCH_DBG("[DRM]: Display server set resolution - actual: %d x %d, %f Hz\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",width, height, hz);
 
    retval = video_driver_set_video_mode(width, height, true);
 
@@ -119,12 +122,12 @@ static void *kms_display_server_get_resolution_list(
 {
    unsigned i                        = 0;
    unsigned j                        = 0;
-   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
+   bool curr_interlaced              = false;
+   bool curr_dblscan                 = false;
    float curr_refreshrate            = 0;
-   unsigned curr_orientation         = 0;
    struct video_display_config *conf = NULL;
 
 
@@ -134,6 +137,19 @@ static void *kms_display_server_get_resolution_list(
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
       curr_bpp         = 32;
+      curr_interlaced  = (g_drm_mode->flags & DRM_MODE_FLAG_INTERLACE) ? true : false;
+      curr_dblscan     = (g_drm_mode->flags & DRM_MODE_FLAG_DBLSCAN)   ? true : false;
+   }
+
+   /* g_drm_connector is NULLed by drm_free(), which runs on every
+    * context teardown -- a resolution change, a fullscreen toggle, a
+    * driver reinit.  The display server outlives that, so the menu can
+    * ask for the resolution list with no connector to describe.
+    * g_drm_mode is already tested for exactly this a few lines up. */
+   if (!g_drm_connector || g_drm_connector->count_modes <= 0)
+   {
+      *len = 0;
+      return NULL;
    }
 
    *len = g_drm_connector->count_modes;
@@ -147,20 +163,28 @@ static void *kms_display_server_get_resolution_list(
       conf[j].height      = g_drm_connector->modes[i].vdisplay;
       conf[j].bpp         = 32;
       conf[j].refreshrate = floor(drm_calc_refresh_rate(&g_drm_connector->modes[i]));
+      conf[j].refreshrate_float = drm_calc_refresh_rate(&g_drm_connector->modes[i]);
+      conf[j].interlaced  = (g_drm_connector->modes[i].flags & DRM_MODE_FLAG_INTERLACE) ? true : false;
+      conf[j].dblscan     = (g_drm_connector->modes[i].flags & DRM_MODE_FLAG_DBLSCAN)   ? true : false;
       conf[j].idx         = j;
       conf[j].current     = false;
 
       if (     (conf[j].width       == curr_width)
             && (conf[j].height      == curr_height)
             && (conf[j].bpp         == curr_bpp)
-            && (drm_calc_refresh_rate(&g_drm_connector->modes[i]) == curr_refreshrate)
+            && (conf[j].refreshrate_float == curr_refreshrate)
+            && (conf[j].interlaced  == curr_interlaced)
+            && (conf[j].dblscan     == curr_dblscan)
          )
          conf[j].current  = true;
       j++;
    }
 
+   /* j, not count: count was declared zero and never assigned, so
+    * this sorted nothing at all and the resolution list came back in
+    * whatever order the connector reported it. */
    qsort(
-         conf, count,
+         conf, j,
          sizeof(video_display_config_t),
          (int (*)(const void *, const void *))
                resolution_list_qsort_func);
@@ -168,7 +192,8 @@ static void *kms_display_server_get_resolution_list(
    return conf;
 }
 
-/* TODO: screen orientation has support in DRM via planes, although not really exposed via xf86drm */
+/* TODO/FIXME: screen orientation has support in DRM via planes,
+ * although not really exposed via xf86drm */
 #if 0
 static void kms_display_server_set_screen_orientation(void *data,
       enum rotation rotation)
@@ -213,6 +238,24 @@ static uint32_t kms_display_server_get_flags(void *data)
    return flags;
 }
 
+static float kms_display_server_get_refresh_rate(void *data)
+{
+   if (g_drm_mode)
+      return drm_calc_refresh_rate(g_drm_mode);
+   return 0.0f;
+}
+
+static void kms_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   if (!g_drm_mode)
+      return;
+   if (width)
+      *width  = g_drm_mode->hdisplay;
+   if (height)
+      *height = g_drm_mode->vdisplay;
+}
+
 const video_display_server_t dispserv_kms = {
    kms_display_server_init,
    kms_display_server_destroy,
@@ -224,6 +267,13 @@ const video_display_server_t dispserv_kms = {
    NULL, /* get output options */
    NULL, /* kms_display_server_set_screen_orientation */
    NULL, /* kms_display_server_get_screen_orientation */
+   kms_display_server_get_refresh_rate,
+   kms_display_server_get_video_output_size,
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    kms_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
    "kms"
 };

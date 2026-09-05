@@ -16,20 +16,58 @@
 #ifndef _MMDEVICE_COMMON_H
 #define _MMDEVICE_COMMON_H
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <stdlib.h>
 
 #include <retro_common_api.h>
-#include "mmdevice_common_inline.h"
 
 RETRO_BEGIN_DECLS
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow);
+void *mmdevice_list_new(const void *u, unsigned data_flow);
 
 /**
  * Gets the friendly name of the provided IMMDevice.
  * The string must be freed with free().
  */
-char* mmdevice_name(IMMDevice *device);
+char* mmdevice_name(void *data);
+
+/**
+ * Gets the samplerate of the provided IMMDevice.
+ */
+size_t mmdevice_samplerate(void *data);
+
+/**
+ * Gets the handle of the IMMDevice.
+ */
+void *mmdevice_handle(int id, unsigned data_flow);
+
+size_t mmdevice_get_samplerate(int id);
+
+const char *mmdevice_hresult_name(int hr);
+
+void *mmdevice_init_device(const char *id, unsigned data_flow);
+
+/**
+ * mmdevice_set_active_device:
+ *
+ * Records @data (an IMMDevice, or NULL to forget) as the endpoint this
+ * process holds open for @data_flow (0 render, 1 capture), so the
+ * endpoint notification callbacks can tell a state change on a device
+ * in use from one on an unrelated device.  Render and capture are
+ * tracked separately because both are open at once whenever the
+ * microphone driver is running.
+ * mmdevice_init_device() calls this itself; drivers that acquire a
+ * device another way should call it too.
+ **/
+void mmdevice_set_active_device(void *data, unsigned data_flow);
+
+#ifdef HAVE_THREADS
+void mmdevice_thread(void *data);
+#else
+DWORD CALLBACK mmdevice_thread(PVOID data);
+#endif
 
 RETRO_END_DECLS
 

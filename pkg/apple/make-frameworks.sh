@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# Prefer the expanded name, if available.
+CODE_SIGN_IDENTITY_FOR_ITEMS="${EXPANDED_CODE_SIGN_IDENTITY}"
+if [ "${CODE_SIGN_IDENTITY_FOR_ITEMS}" = "" ] ; then
+    # Fall back to old behavior.
+    CODE_SIGN_IDENTITY_FOR_ITEMS="${CODE_SIGN_IDENTITY}"
+fi
+
+echo "Identity:"
+echo "${CODE_SIGN_IDENTITY_FOR_ITEMS}"
+
+if [ "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
+    BASE_DIR="tvOS"
+    SUFFIX="_tvos"
+    PLATFORM="tvos"
+    DEPLOYMENT_TARGET="${TVOS_DEPLOYMENT_TARGET}"
+elif [ "$PLATFORM_FAMILY_NAME" = "iOS" ] ; then
+    BASE_DIR="iOS"
+    SUFFIX="_ios"
+    PLATFORM="ios"
+    DEPLOYMENT_TARGET="${IPHONEOS_DEPLOYMENT_TARGET}"
+elif [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
+    BASE_DIR="OSX"
+    SUFFIX=
+    PLATFORM=
+    DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET}"
+fi
+
+if [ -n "$BUILT_PRODUCTS_DIR" -a -n "$FRAMEWORKS_FOLDER_PATH" ] ; then
+    OUTDIR="$BUILT_PRODUCTS_DIR"/"$FRAMEWORKS_FOLDER_PATH"
+    DSYM_OUTDIR="$BUILT_PRODUCTS_DIR"
+else
+    OUTDIR="$BASE_DIR"/Frameworks
+    DSYM_OUTDIR="$BASE_DIR"/Frameworks
+fi
+
+mkdir -p "$OUTDIR"
+
+process_one() {
+    set -e
+    local dylib="$1"
+    local intermediate fwName fwDir build_sdk dSYMDir dylibName
+
+    intermediate=$(basename "$dylib")
+    intermediate="${intermediate/%.dylib/}"
+    if [ -n "$SUFFIX" ] ; then
+        intermediate="${intermediate/%$SUFFIX/}"
+    fi
+    fwName="${intermediate//_/.}"
+    echo Making framework $fwName from $dylib
+
+    fwDir="${OUTDIR}/${fwName}.framework"
+    mkdir -p "$fwDir"
+    if [ "$PLATFORM_FAMILY_NAME" = "iOS" -o "$PLATFORM_FAMILY_NAME" = "tvOS" ] ; then
+        build_sdk=$(vtool -show-build "$dylib" | grep sdk | awk '{print $2}')
+        vtool -set-build-version "${PLATFORM}" "${DEPLOYMENT_TARGET}" "${build_sdk}" -set-build-tool "$PLATFORM" ld 1115.7.3 -set-source-version 0.0 -replace -output "$dylib" "$dylib"
+    fi
+    lipo -create "$dylib" -output "$fwDir/$fwName"
+    sed -e "s,%CORE%,$fwName," -e "s,%BUNDLE%,$fwName," -e "s,%IDENTIFIER%,$fwName," -e "s,%OSVER%,$DEPLOYMENT_TARGET," iOS/fw.tmpl > "$fwDir/Info.plist"
+    if [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
+        mkdir -p "$fwDir"/Versions/A/Resources
+        mv "$fwDir/$fwName" "$fwDir"/Versions/A
+        mv "$fwDir"/Info.plist "$fwDir"/Versions/A/Resources
+        ln -sf A "$fwDir"/Versions/Current
+        ln -sf Versions/Current/Resources "$fwDir"/Resources
+        ln -sf "Versions/Current/$fwName" "$fwDir/$fwName"
+    fi
+    echo "signing $fwName"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "$fwDir"
+
+    # Create framework dSYM if dylib dSYM exists
+    if [ -d "$dylib.dSYM" ] ; then
+        echo "Creating dSYM for framework $fwName"
+        dSYMDir="${DSYM_OUTDIR}/${fwName}.framework.dSYM"
+
+        # Copy entire dSYM structure to preserve all metadata and future additions
+        cp -R "$dylib.dSYM" "$dSYMDir"
+
+        # Rename DWARF binary to match framework name
+        dylibName=$(basename "$dylib")
+        mv "$dSYMDir/Contents/Resources/DWARF/$dylibName" "$dSYMDir/Contents/Resources/DWARF/$fwName"
+
+        # Update binary-path in Relocations yml files if they exist
+        if [ -d "$dSYMDir/Contents/Resources/Relocations" ] ; then
+            find "$dSYMDir/Contents/Resources/Relocations" -name "*.yml" -type f | while read -r ymlfile ; do
+                sed -i '' "s/binary-path: *$dylibName/binary-path:     $fwName/" "$ymlfile"
+            done
+        fi
+
+        # Update Info.plist with framework identifier
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.apple.xcode.dsym.$fwName" "$dSYMDir/Contents/Info.plist"
+    fi
+}
+export -f process_one
+export OUTDIR DSYM_OUTDIR SUFFIX PLATFORM_FAMILY_NAME PLATFORM \
+       DEPLOYMENT_TARGET CODE_SIGN_IDENTITY_FOR_ITEMS
+
+JOBS=$(sysctl -n hw.ncpu)
+if [ "$JOBS" -gt 8 ] ; then JOBS=8 ; fi
+
+find "$BASE_DIR"/modules -maxdepth 1 -type f -regex '.*libretro.*\.dylib$' -print0 \
+    | xargs -0 -n1 -P"$JOBS" bash -c 'process_one "$0"' || exit 1
+
+# Copy in MoltenVK as an embedded library manually instead of having
+# Xcode do it. This makes it potentially easier to substitute out
+# MoltenVK, have it provided outside the repo, or have different
+# MoltenVK builds for different OS versions.
+
+if [ -z "${MOLTENVK_XCFRAMEWORK}" ] ; then
+    MOLTENVK_XCFRAMEWORK="${SRCROOT}/Frameworks/MoltenVK.xcframework"
+fi
+MVK_PLATFORM_SUBDIR="${SWIFT_PLATFORM_TARGET_PREFIX}-$(echo $ARCHS_STANDARD_64_BIT | sed -e 's/ /_/g')${LLVM_TARGET_TRIPLE_SUFFIX}"
+if [ -d "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" ] ; then
+    echo copying moltenvk from "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework"
+    cp -R "${MOLTENVK_XCFRAMEWORK}/${MVK_PLATFORM_SUBDIR}/MoltenVK.framework" "${OUTDIR}"
+    # tvOS App Store rejects arm64e; strip it from the fat MoltenVK binary
+    if [ "$PLATFORM_FAMILY_NAME" = "tvOS" -a "$APPSTORE_BUILD" = "1" ] ; then
+        MVK_BIN="${OUTDIR}/MoltenVK.framework/MoltenVK"
+        if lipo -info "$MVK_BIN" 2>/dev/null | grep -q arm64e ; then
+            echo "stripping arm64e from MoltenVK for tvOS App Store build"
+            lipo -remove arm64e "$MVK_BIN" -output "$MVK_BIN"
+        fi
+    fi
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK.framework"
+fi
+
+# iOS 12 needs an older version of MoltenVK
+if [ -n "$MOLTENVK_LEGACY_XCFRAMEWORK_PATH" -a -d "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework" ] ; then
+    echo copying legacy moltenvk from "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
+    cp -R "${MOLTENVK_LEGACY_XCFRAMEWORK_PATH}/${MVK_PLATFORM_SUBDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework" "${OUTDIR}"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework/MoltenVK-${MOLTENVK_LEGACY_VERSION}"
+    codesign --force --verbose --sign "${CODE_SIGN_IDENTITY_FOR_ITEMS}" "${OUTDIR}/MoltenVK-${MOLTENVK_LEGACY_VERSION}.framework"
+fi
+
+# Copy Vulkan ICD file for loader discovery (macOS only)
+# This allows the Vulkan loader to find MoltenVK when using validation layers
+# Only include current MoltenVK - legacy version is for old OS support, not validation
+if [ "$PLATFORM_FAMILY_NAME" = "macOS" ] ; then
+    RESOURCES_DIR="$(dirname "$OUTDIR")/Resources"
+    ICD_DIR="$RESOURCES_DIR/vulkan/icd.d"
+    mkdir -p "$ICD_DIR"
+
+    if [ -f "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" ] ; then
+        sed 's|\.\./MoltenVK|../../../Frameworks/MoltenVK.framework/Versions/A/MoltenVK|' \
+            "${OUTDIR}/MoltenVK.framework/Versions/A/Resources/MoltenVK_icd.json" \
+            > "$ICD_DIR/MoltenVK_icd.json"
+    fi
+fi

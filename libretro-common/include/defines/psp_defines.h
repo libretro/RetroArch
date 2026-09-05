@@ -51,7 +51,7 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_FB_HEIGHT       544
 #define PSP_PITCH_PIXELS 1024
 
- // Memory left to the system for threads and other internal stuffs
+/* Memory left to the system for threads and other internal stuffs */
 #ifdef SCE_LIBC_SIZE
 #define RAM_THRESHOLD 0x2000000 + SCE_LIBC_SIZE
 #else
@@ -100,6 +100,8 @@ int sceClibPrintf ( const char * format, ... );
 #define PSP_CTRL_R2 SCE_CTRL_RTRIGGER
 #define PSP_CTRL_L3 SCE_CTRL_L3
 #define PSP_CTRL_R3 SCE_CTRL_R3
+#define STATE_ANALOGL2(state) ((state).lt)
+#define STATE_ANALOGR2(state) ((state).rt)
 #else
 #define DEFAULT_SAMPLING_MODE (SCE_CTRL_MODE_DIGITALANALOG)
 

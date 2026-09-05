@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>RetroArch Web Player</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="libretro.css" rel="stylesheet" type="text/css">
+		<link rel="shortcut icon" href="media/retroarch.ico">
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+		<!-- Google Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	</head>
+	<body>
+		<!--Navbar-->
+		<div id="navbar">
+			<input type="checkbox" id="menuhider">
+			<label for="menuhider" class="menuhiderlabel" aria-label="Hide/Show Top Navigation" id="btnHideMenu" title="Hide/Show Top Navigation">
+				<span class="fa fa-chevron-up"></span>
+			</label>
+			<ul id="menu">
+				<li class="dropdown-parent">
+					<input type="checkbox" id="dropdown-box">
+					<label for="dropdown-box">
+						<span id="current-core">Core Selection</span>&nbsp;
+						<span class="fa fa-caret-down"></span>
+					</label>
+					<div class="dropdown-child ozone-list" id="core-selector"></div>
+				</li>
+				<li id="btnRun" class="disabled">
+					<span class="fa fa-spinner fa-spin" id="icnRun"></span>&nbsp; Run
+				</li>
+				<li id="btnAdd" class="disabled">
+					<span class="fa fa-plus" id="icnAdd"></span>&nbsp; Add Content
+				</li>
+				<li id="btnFiles" title="Manage files" aria-label="Manage files">
+					<span class="fa fa-file"></span>
+				</li>
+				<li id="btnMenu" title="Menu toggle" aria-label="Menu" class="disabled">
+					<span class="fa fa-bars"></span>
+				</li>
+				<li id="btnFullscreen" title="Fullscreen" aria-label="Fullscreen" class="disabled">
+					<span class="fa fa-expand"></span>
+				</li>
+				<li id="btnHelp">Help</li>
+			</ul>
+			<div class="progressContainer">
+				<div class="progressBar" id="progressBarMain"></div>
+				<div class="progressText" id="progressTextMain"></div>
+			</div>
+		</div>
+		<div id="modals">
+			<div id="modal-window">
+				<div class="modal-header">
+					<h2 id="modal-title">Sample title</h2>
+					<div id="modal-close"><span class="fa fa-times"></span></div>
+					<div class="progressContainer">
+						<div class="progressBar" id="progressBarModal"></div>
+						<div class="progressText" id="progressTextModal"></div>
+					</div>
+				</div>
+				<!-- Basic steps modal for Web Libretro -->
+				<div class="modal-body" role="dialog" id="helpModal">
+					<h3><b>Load Core</b></h3>
+					<p>Load your core by clicking on the first tab. Scroll down until you reach the desired Core. We will use Nestopia for now. Don't forget - Content must be compatible with the matched Core.</p>
+					<ul>
+						<li>NES: <i>Nestopia</i></li>
+						<li>Game Boy / Color: <i>Gambatte</i></li>
+					</ul>
+					<p>etc.</p>
+					<p></p>
+					<h3><b>Load Content</b></h3>
+					<p>After selecting Core, click Run. After RetroArch opens, click Add Content and select your compatible ROM.</p>
+					<ul>
+						<li>Nestopia > <i>YourGame.nes</i></li>
+						<li>Gambatte > <i>YourGame.gb(c)</i></li>
+					</ul>
+					<p>etc.</p>
+					<p></p>
+					<h3><b><span class="fa fa-file"></span>&nbsp; File Management</b></h3>
+					<p>Download/upload/erase save data</p>
+					<p>If the Web Player doesn't start, you should click "Delete all" and refresh the cache in your browser (usually F5 or Shift+F5).</p>
+					<p>If this happens, please also report an issue on <a target="_blank" href="https://github.com/libretro/RetroArch/issues">GitHub</a> with logs from the browser's developer tools console.</p>
+					<p></p>
+					<h3><b><span class="fa fa-bars"></span>&nbsp; Quick Menu</b></h3>
+					<p>If you click on the three line icons, the Quick Menu will open in RetroArch.</p>
+				</div>
+				<!-- File management -->
+				<div class="modal-body" role="dialog" id="filesModal">
+					<div class="ozone-list" id="fileManagerPanel">
+						<span data-action="upload_saves">Upload saves</span>
+						<span data-action="upload_states">Upload states</span>
+						<span data-action="upload_system">Upload system files</span>
+						<span data-action="download_sss">Download saves/states/screenshots</span>
+						<span data-action="download_all">Download all (slow)</span>
+						<span data-action="delete_sss" class="danger">Delete saves/states/screenshots</span>
+						<span data-action="delete_content" class="danger">Delete content</span>
+						<span data-action="delete_config" class="danger">Delete config</span>
+						<span data-action="delete_assets" class="danger">Delete assets</span>
+						<span data-action="delete_all" class="danger">Delete all</span>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="webplayer-container">
+			<canvas class="webplayer" id="canvas"></canvas>
+			<div id="webplayer-preview"></div>
+		</div>
+		<script src="core_list.js"></script>
+		<script src="libretro.js"></script>
+	</body>
+</html>

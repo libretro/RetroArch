@@ -14,7 +14,7 @@ GRIFFIN_BUILD           = 0
 
 OBJ :=
 
-DEFINES := -DHAVE_DJGPP=1 -U__linux__ -U__linux -DRARCH_INTERNAL -DHAVE_STB_VORBIS
+DEFINES := -DHAVE_DJGPP=1 -U__linux__ -U__linux -DRARCH_INTERNAL -DHAVE_RVORBIS
 CC := i586-pc-msdosdjgpp-gcc
 CXX := i586-pc-msdosdjgpp-g++
 TARGET := retrodos.exe
@@ -27,7 +27,7 @@ HAVE_LUA = 0
 HAVE_CONFIGFILE = 1
 HAVE_GFX_WIDGETS = 1
 HAVE_LANGEXTRA = 1
-HAVE_DR_MP3 = 1
+HAVE_RMP3 = 1
 HAVE_TRANSLATE = 0
 HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
@@ -36,17 +36,18 @@ HAVE_CC_RESAMPLER = 1
 HAVE_MENU_COMMON = 1
 HAVE_RTGA = 1
 HAVE_RPNG = 1
+HAVE_RWEBP = 1
+HAVE_RDDS = 1
 HAVE_RJPEG = 1
 HAVE_RBMP = 1
 HAVE_7ZIP = 1
-HAVE_ZLIB = 1
 HAVE_IMAGEVIEWER = 1
-HAVE_BUILTINZLIB = 1
 HAVE_LIBRETRODB = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1
+HAVE_STATIC_CORES = 1
 HAVE_FILTERS_BUILTIN = 1
 HAVE_MENU = 1
 HAVE_CONFIGFILE = 1
@@ -57,15 +58,15 @@ HAVE_NETWORKING = 0
 HAVE_IFINFO = 0
 HAVE_NETPLAYDISCOVERY = 0
 HAVE_OVERLAY             := 1
-HAVE_STB_FONT = 1
 HAVE_COMMAND             := 1
 HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1
 HAVE_CHEEVOS = 0
-HAVE_CHD = 0 # disabled due to static libretro-common and libchdr conflicts between different cores
-HAVE_STB_VORBIS = 1
-HAVE_IBXM = 1
+HAVE_CHD = 1
+HAVE_RVORBIS = 1
+HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
+HAVE_XDELTA = 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
 
 HAVE_RGUI = 1
 HAVE_MATERIALUI = 0
@@ -118,7 +119,7 @@ APP_ICON := pkg/libnx/retroarch.jpg
 #---------------------------------------------------------------------------------
 ARCH	:=
 
-CFLAGS := -g -Wall -O3 -fcommon -ffast-math -ffunction-sections \
+CFLAGS := -g -Wall -O3 -fcommon -ffunction-sections \
           $(ARCH) $(DEFINES) $(INCLUDE_DIRS)
 
 CFLAGS += $(INCLUDE)
@@ -193,6 +194,10 @@ else
   LIB_CORE += -lretro_dos
 endif
 
+ifneq ($(V),1)
+        Q := @
+endif
+
 DEPENDS_TMP  := $(OFILES:.o=.d)
 DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 
@@ -201,19 +206,43 @@ DEPENDS      := $(filter-out libretro_libnx.a,$(DEPENDS_TMP))
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-all	:	$(OUTPUT)
+all: $(OUTPUT)
+
+define INFO
+CC: $(CC)
+CFLAGS: $(CFLAGS)
+CXX: $(CXX)
+DEPENDS: $(DEPENDS)
+LDFLAGS: $(LDFLAGS)
+LIBDIRS: $(LIBDIRS)
+LIBS: $(LIBS)
+LIB_CORE: $(LIB_CORE)
+OBJ: $(OBJ)
+OUTPUT: $(OUTPUT)
+PLATEXTRA: $(PLATEXTRA)
+endef
+export INFO
+
+info:
+ifneq ($(V),1)
+	@echo "$$INFO"
+endif
 
 $(OUTPUT): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) -L. $(LIB_CORE) $(LIBS)
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -o $@ $(LDFLAGS) $(LIBDIRS) $(OBJ) $(PLATEXTRA) -L. $(LIB_CORE) $(LIBS)
 
 %.o: %.c
-	$(CC) -c -o $@ $(CFLAGS) $<
+	@$(if $(Q), $(shell echo echo CC $<),)
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
 
 %.o: %.cpp
-	$(CXX) -c -o $@ $(CFLAGS) $<
+	@$(if $(Q), $(shell echo echo CXX $<),)
+	$(Q)$(CXX) -c -o $@ $(CFLAGS) $<
 
 clean:
-	rm -f $(DEPENDS) $(OBJ) $(OUTPUT)
+	@$(if $(Q), $(shell echo echo RM),)
+	$(Q)rm -f $(DEPENDS) $(OBJ) $(OUTPUT)
 
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data

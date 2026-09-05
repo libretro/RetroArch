@@ -194,8 +194,8 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
 
    /* Check whether shake device has the required
     * feature set */
-   if (!Shake_QueryEffectSupport(rumble->device, SHAKE_EFFECT_PERIODIC) ||
-       !Shake_QueryWaveformSupport(rumble->device, SHAKE_PERIODIC_SINE))
+   if (   !Shake_QueryEffectSupport(rumble->device, SHAKE_EFFECT_PERIODIC)
+       || !Shake_QueryWaveformSupport(rumble->device, SHAKE_PERIODIC_SINE))
       goto error;
 
    /* In most cases it is recommended to use SHAKE_EFFECT_PERIODIC
@@ -237,7 +237,7 @@ static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
    return true;
 
 error:
-   RARCH_WARN("[libShake]: Input device does not support rumble effects.\n");
+   RARCH_WARN("[libShake] Input device does not support rumble effects.\n");
 
    if (rumble->device)
    {
@@ -311,8 +311,7 @@ static bool sdl_dingux_joypad_set_rumble(unsigned pad,
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if ((pad != 0) ||
-       !joypad->rumble.device)
+   if ((pad != 0) || !joypad->rumble.device)
       return false;
 
    switch (effect)
@@ -336,8 +335,7 @@ static bool sdl_dingux_joypad_set_rumble_gain(unsigned pad, unsigned gain)
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
 
-   if ((pad != 0) ||
-       !joypad->rumble.device)
+   if ((pad != 0) || !joypad->rumble.device)
       return false;
 
    /* Gain is automatically capped by Shake_SetGain(),
@@ -387,7 +385,7 @@ static void sdl_dingux_joypad_connect(void)
     * autoconfig task */
    input_autoconfigure_connect(
          sdl_dingux_joypad_name(0), /* name */
-         NULL,                      /* display_name */
+         NULL, NULL,                /* display_names */
          sdl_dingux_joypad.ident,   /* driver */
          0,                         /* port */
          0,                         /* vid */
@@ -808,6 +806,8 @@ input_device_driver_t sdl_dingux_joypad = {
    NULL,
    NULL,
 #endif
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    sdl_dingux_joypad_name,
    "sdl_dingux",
 };

@@ -2,7 +2,7 @@
  *  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2017 - Daniel De Matteis
- *  Copyright (C) 2016-2019 - Andr�s Su�rez (input mapper code)
+ *  Copyright (C) 2016-2019 - Andr s Su rez (input mapper code)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under
  *  the terms of the GNU General Public License as published by the Free
@@ -18,18 +18,33 @@
  *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#include <memory/mem_stats.h>
+#include "libretro.h"
+#include <queues/message_queue.h>
+#include <streams/interface_stream.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
-#include <retro_endianness.h>
+
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif /* HAVE_CONFIG_H */
+
+#if defined(_WIN32) && !defined(SOCKET)
+#include <winsock2.h>
+#endif
 
 #include "input_driver.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
 #include "input_types.h"
+
+#ifdef HAVE_BSV_MOVIE
+#include "bsv/bsvmovie.h"
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos/cheevos.h"
@@ -47,27 +62,72 @@
 #include "../accessibility.h"
 #include "../command.h"
 #include "../config.def.keybinds.h"
-#include "../driver.h"
-#include "../retroarch.h"
-#include "../verbosity.h"
 #include "../configuration.h"
+#include "../core_info.h"
+#include "../driver.h"
+#include "../frontend/frontend_driver.h"
 #include "../list_special.h"
+#include "../paths.h"
 #include "../performance_counters.h"
-#ifdef HAVE_BSV_MOVIE
-#include "../tasks/task_content.h"
-#endif
+#include "../retroarch.h"
 #include "../tasks/tasks_internal.h"
+#include "../verbosity.h"
+
+#ifdef ANDROID
+#include "../frontend/drivers/platform_unix.h"
+#endif
+
+#include "../ai/game_ai.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
+
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define INPUT_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define INPUT_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define INPUT_NOINLINE __declspec(noinline)
+#else
+#define INPUT_NOINLINE
+#endif
 
 #define HOLD_BTN_DELAY_SEC 2
 
+/* Precomputed reciprocals used in analog input scaling.
+ * 0x8000 = 32768 is the full int16 range (unsigned half),
+ * 0x7fff = 32767 is the max positive int16 value. */
+#define INV_0x8000 (1.0f / 0x8000)
+#define INV_0x7fff (1.0f / 0x7fff)
+
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+#define IS_UTF8_CONTINUATION(c) ((((uint8_t)(c)) & 0xc0) == 0x80)
 
 #define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
 #define IS_COMPOSITION(c)       ( (c & 0x0F000000) ? 1 : 0)
 #define IS_COMPOSITION_KR(c)    ( (c & 0x01000000) ? 1 : 0)
 #define IS_END_COMPOSITION(c)   ( (c & 0xF0000000) ? 1 : 0)
+
+struct input_remote
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#ifdef _WIN32
+   SOCKET net_fd[MAX_USERS];
+#else
+   int net_fd[MAX_USERS];
+#endif
+#endif
+   bool state[RARCH_BIND_LIST_END];
+};
+
 
 /**
  * check_input_driver_block_hotkey:
@@ -123,6 +183,8 @@ const unsigned input_config_bind_order[24] = {
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
+input_bind_label_set input_config_bind_labels[MAX_USERS];
+input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
@@ -169,6 +231,8 @@ static input_device_driver_t null_joypad = {
    NULL, /* poll */
    NULL, /* rumble */
    NULL, /* rumble_gain */
+   NULL, /* set_sensor_state */
+   NULL, /* get_sensor_input */
    NULL, /* name */
    "null",
 };
@@ -257,7 +321,9 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef ANDROID
    &android_joypad,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if defined(HAVE_SDL3)
+   &sdl3_joypad,
+#elif defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -278,8 +344,16 @@ input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &rwebpad_joypad,
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
+   &winraw_joypad,
+#endif
+#endif
+#ifdef HAVE_TEST_DRIVERS
+   &test_joypad,
 #endif
    &null_joypad,
    NULL,
@@ -328,8 +402,11 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &input_sdl,
+#endif
+#if defined(HAVE_SDL3) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+   &input_sdl3,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    &input_sdl_dingux,
@@ -355,11 +432,14 @@ input_driver_t *input_drivers[] = {
 #ifdef __QNX__
    &input_qnx,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &input_rwebinput,
 #endif
 #ifdef DJGPP
    &input_dos,
+#endif
+#ifdef HAVE_TEST_DRIVERS
+   &input_test,
 #endif
    &input_null,
    NULL,
@@ -424,12 +504,18 @@ const char* config_get_joypad_driver_options(void)
  * Finds first suitable joypad driver and initializes. Used as a fallback by
  * input_joypad_init_driver when no matching driver is found.
  *
- * @param data  joypad state data pointer, which can be NULL and will be
- *              initialized by the new joypad driver, if one is found.
+ * @param data        joypad state data pointer, which can be NULL and will be
+ *                    initialized by the new joypad driver, if one is found.
+ * @param skip_ident  optional ident of a driver that was already tried (and
+ *                    failed) as the explicitly configured driver; skipped
+ *                    here since re-running its init would just fail again
+ *                    (and, for the hybrid XInput driver, repeat the
+ *                    controller slot probe).
  *
  * @return joypad driver if found and initialized, otherwise NULL.
  **/
-static const input_device_driver_t *input_joypad_init_first(void *data)
+static const input_device_driver_t *input_joypad_init_first(void *data,
+      const char *skip_ident)
 {
    int i;
    for (i = 0; joypad_drivers[i]; i++)
@@ -437,10 +523,14 @@ static const input_device_driver_t *input_joypad_init_first(void *data)
       if (     joypad_drivers[i]
             && joypad_drivers[i]->init)
       {
-         void *ptr = joypad_drivers[i]->init(data);
+         void *ptr;
+         if (     skip_ident
+               && string_is_equal(skip_ident, joypad_drivers[i]->ident))
+            continue;
+         ptr = joypad_drivers[i]->init(data);
          if (ptr)
          {
-            RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
+            RARCH_LOG("[Input] Found joypad driver: \"%s\".\n",
                   joypad_drivers[i]->ident);
             return joypad_drivers[i];
          }
@@ -494,25 +584,30 @@ bool input_driver_set_sensor(
          enum retro_sensor_action action, unsigned rate)
 {
    const input_driver_t *current_driver;
+   bool enabled = false;
 
    if (!input_driver_st.current_data)
       return false;
    /* If sensors are disabled, inhibit any enable
     * actions (but always allow disable actions) */
-   if (!sensors_enable &&
-       (   (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
-        || (action == RETRO_SENSOR_GYROSCOPE_ENABLE)
-        || (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
+   if (!sensors_enable
+        && ((action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+        ||  (action == RETRO_SENSOR_GYROSCOPE_ENABLE)
+        ||  (action == RETRO_SENSOR_ILLUMINANCE_ENABLE)))
       return false;
-   if (   (current_driver = input_driver_st.current_driver)
+
+   if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->set_sensor_state)
+      enabled = input_driver_st.primary_joypad->set_sensor_state(port, action, rate);
+
+   if (   !enabled
+       && (current_driver = input_driver_st.current_driver)
        &&  current_driver->set_sensor_state)
    {
       void *current_data = input_driver_st.current_data;
-      return current_driver->set_sensor_state(current_data,
+      enabled |= current_driver->set_sensor_state(current_data,
             port, action, rate);
    }
-
-   return false;
+   return enabled;
 }
 
 /**************************************/
@@ -520,13 +615,23 @@ bool input_driver_set_sensor(
 float input_driver_get_sensor(
          unsigned port, bool sensors_enable, unsigned id)
 {
+   if (!sensors_enable)
+      return 0.0f;
+
+   if (input_driver_st.primary_joypad && input_driver_st.primary_joypad->get_sensor_input)
+   {
+      float value;
+      /* if joypad driver's get_sensor_input returns false, let input driver try */
+      if (input_driver_st.primary_joypad->get_sensor_input(port, id, &value))
+         return value;
+   }
    if (input_driver_st.current_data)
    {
-      const input_driver_t *current_driver = input_driver_st.current_driver;
-      if (sensors_enable && current_driver->get_sensor_input)
+      const input_driver_t *input = input_driver_st.current_driver;
+      if (input->get_sensor_input)
       {
          void *current_data = input_driver_st.current_data;
-         return current_driver->get_sensor_input(current_data, port, id);
+         return input->get_sensor_input(current_data, port, id);
       }
    }
 
@@ -547,15 +652,38 @@ const input_device_driver_t *input_joypad_init_driver(
             void *ptr = joypad_drivers[i]->init(data);
             if (ptr)
             {
-               RARCH_LOG("[Joypad]: Found joypad driver: \"%s\".\n",
+               RARCH_LOG("[Input] Found joypad driver: \"%s\".\n",
                      joypad_drivers[i]->ident);
                return joypad_drivers[i];
             }
          }
       }
    }
+   /* Fall back to first available driver, skipping the configured
+    * one that just failed above.
+    *
+    * Warn when this happens: from here on the active joypad driver is
+    * not the configured one, which changes which pads are visible and
+    * how they are named, and the only prior evidence was a "Found
+    * joypad driver" line naming a driver the user never asked for.
+    * On Windows in particular the first entry that initialises is
+    * xinput, so a transient winraw/dinput init failure would silently
+    * present as xinput with no indication why. */
+   {
+      const input_device_driver_t *fallback = input_joypad_init_first(data,
+            (ident && *ident) ? ident : NULL);
 
-   return input_joypad_init_first(data); /* fall back to first available driver */
+      if (     ident
+            && *ident
+            && fallback
+            && fallback->ident
+            && !string_is_equal(ident, fallback->ident))
+         RARCH_WARN("[Input] Configured joypad driver \"%s\" failed to "
+               "initialise; falling back to \"%s\".\n",
+               ident, fallback->ident);
+
+      return fallback;
+   }
 }
 
 static bool input_driver_button_combo_hold(
@@ -623,6 +751,49 @@ static bool input_driver_button_combo_hold(
    return false;
 }
 
+bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
+{
+   /* Use unsigned cast: values outside [-32700, 32700] will wrap
+    * beyond 32700*2 = 65400 when biased by 32700 */
+   return ((uint16_t)(x + 32700) > 65400u) || ((uint16_t)(y + 32700) > 65400u);
+}
+
+unsigned input_driver_lightgun_id_convert(unsigned id)
+{
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+         return RARCH_LIGHTGUN_DPAD_RIGHT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+         return RARCH_LIGHTGUN_DPAD_LEFT;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+         return RARCH_LIGHTGUN_DPAD_UP;
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+         return RARCH_LIGHTGUN_DPAD_DOWN;
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+         return RARCH_LIGHTGUN_SELECT;
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+         return RARCH_LIGHTGUN_START;
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+         return RARCH_LIGHTGUN_RELOAD;
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+         return RARCH_LIGHTGUN_TRIGGER;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+         return RARCH_LIGHTGUN_AUX_A;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+         return RARCH_LIGHTGUN_AUX_B;
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+         return RARCH_LIGHTGUN_AUX_C;
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+         return RARCH_LIGHTGUN_START;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
@@ -688,8 +859,8 @@ bool input_driver_button_combo(
    return false;
 }
 
-static int16_t input_state_wrap(
-      input_driver_t *current_input,
+static int32_t input_state_wrap(
+      input_driver_t *input,
       void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -701,7 +872,7 @@ static int16_t input_state_wrap(
       unsigned idx,
       unsigned id)
 {
-   int16_t ret                   = 0;
+   int32_t ret = 0;
 
    if (!binds)
       return 0;
@@ -713,25 +884,61 @@ static int16_t input_state_wrap(
       if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
       {
          if (joypad)
-            ret                    |= joypad->state(
-                  joypad_info, binds[_port], _port);
+            ret |= joypad->state(joypad_info, binds[_port], _port);
          if (sec_joypad)
-            ret                    |= sec_joypad->state(
-                  joypad_info, binds[_port], _port);
+            ret |= sec_joypad->state(joypad_info, binds[_port], _port);
+      }
+      else if (id < RARCH_FIRST_CUSTOM_BIND)
+      {
+         /* Standard joypad buttons (0-15): serve from a per-port
+          * bitmask cache when available.  The cache is populated
+          * either by an earlier JOYPAD_MASK query for this port
+          * (common in modern cores) or lazily on the first
+          * individual button query (old-style cores).
+          * This avoids up to 32 indirect joypad->button()/axis()
+          * calls per port per frame. */
+         input_driver_state_t *input_st = &input_driver_st;
+
+         if (_port < MAX_USERS
+               && !input_st->joypad_state_cache_valid[_port])
+         {
+            int32_t cached = 0;
+            if (joypad)
+               cached |= joypad->state(joypad_info, binds[_port], _port);
+            if (sec_joypad)
+               cached |= sec_joypad->state(joypad_info, binds[_port], _port);
+            if (input && input->input_state)
+               cached |= input->input_state(
+                     data, joypad, sec_joypad, joypad_info, binds,
+                     keyboard_mapping_blocked,
+                     _port, RETRO_DEVICE_JOYPAD, 0,
+                     RETRO_DEVICE_ID_JOYPAD_MASK);
+            input_st->joypad_state_cache[_port]       = cached;
+            input_st->joypad_state_cache_valid[_port]  = true;
+         }
+
+         if (    _port < MAX_USERS
+              && (input_st->joypad_state_cache[_port] & (1 << id)))
+            return 1;
+
+         /* Cache says not pressed; skip input->input_state() below
+          * since the cache already incorporates it. */
+         return 0;
       }
       else
       {
-         /* Do a bitwise OR to combine both input
-          * states together */
+         /* Extended bind IDs (turbo, hold, meta keys) are not
+          * covered by joypad->state(), so use the original
+          * per-button dispatch path. */
          if (binds[_port][id].valid)
          {
-            /* Auto-binds are per joypad, not per user. */
             const uint64_t bind_joykey     = binds[_port][id].joykey;
             const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
             const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
             const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
             uint16_t port                  = joypad_info->joy_idx;
             float axis_threshold           = joypad_info->axis_threshold;
+            float inv_0x8000               = INV_0x8000;
             const uint64_t joykey          = (bind_joykey != NO_BTN)
                ? bind_joykey  : autobind_joykey;
             const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
@@ -744,7 +951,7 @@ static int16_t input_state_wrap(
                   return 1;
                if (joyaxis != AXIS_NONE &&
                      ((float)abs(joypad->axis(port, (uint32_t)joyaxis))
-                      / 0x8000) > axis_threshold)
+                      * inv_0x8000) > axis_threshold)
                   return 1;
             }
             if (sec_joypad)
@@ -754,15 +961,21 @@ static int16_t input_state_wrap(
                   return 1;
                if (joyaxis != AXIS_NONE &&
                      ((float)abs(sec_joypad->axis(port, (uint32_t)joyaxis))
-                      / 0x8000) > axis_threshold)
+                      * inv_0x8000) > axis_threshold)
                   return 1;
             }
          }
       }
    }
+   else if (device == RETRO_DEVICE_KEYBOARD)
+   {
+      /* Always ignore null key. */
+      if (id == RETROK_UNKNOWN)
+         return ret;
+   }
 
-   if (current_input && current_input->input_state)
-      ret |= current_input->input_state(
+   if (input && input->input_state)
+      ret |= input->input_state(
             data,
             joypad,
             sec_joypad,
@@ -773,6 +986,24 @@ static int16_t input_state_wrap(
             device,
             idx,
             id);
+
+   /* Populate the per-port joypad cache from the MASK result so that
+    * subsequent individual button queries (from hybrid or old-style
+    * cores) can be served from cache without a second joypad->state()
+    * call.  This is a no-op when the cache is already valid (i.e.
+    * individual queries ran before the first MASK query). */
+   if (    device == RETRO_DEVICE_JOYPAD
+        && id     == RETRO_DEVICE_ID_JOYPAD_MASK
+        && _port  <  MAX_USERS)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      if (!input_st->joypad_state_cache_valid[_port])
+      {
+         input_st->joypad_state_cache[_port]       = ret;
+         input_st->joypad_state_cache_valid[_port]  = true;
+      }
+   }
+
    return ret;
 }
 
@@ -782,36 +1013,36 @@ static int16_t input_joypad_axis(
       const input_device_driver_t *drv,
       unsigned port, uint32_t joyaxis, float normal_mag)
 {
-   int16_t val                    = (joyaxis != AXIS_NONE) ? drv->axis(port, joyaxis) : 0;
+   int16_t val = ((joyaxis != AXIS_NONE) && drv && drv->axis)
+      ? drv->axis(port, joyaxis) : 0;
 
    if (input_analog_deadzone)
    {
-      /* if analog value is below the deadzone, ignore it
-       * normal magnitude is calculated radially for analog sticks
-       * and linearly for analog buttons */
+      /* If below deadzone, short-circuit immediately */
       if (normal_mag <= input_analog_deadzone)
          return 0;
 
-      /* due to the way normal_mag is calculated differently for buttons and
-       * sticks, this results in either a radial scaled deadzone for sticks
-       * or linear scaled deadzone for analog buttons */
-      val = val * MAX(1.0f,(1.0f / normal_mag)) * MIN(1.0f,
-            ((normal_mag - input_analog_deadzone)
-          / (1.0f - input_analog_deadzone)));
+      /* Radial/linear scaled deadzone rescale.
+       * Precompute 1/normal_mag once; clamp implicitly via MIN/MAX. */
+      {
+         float inv_mag   = (normal_mag > 1.0f) ? (1.0f / normal_mag) : 1.0f;
+         float dz_scale  = (normal_mag - input_analog_deadzone)
+                         / (1.0f - input_analog_deadzone);
+         if (dz_scale > 1.0f) dz_scale = 1.0f;
+         val = (int16_t)((float)val * inv_mag * dz_scale);
+      }
    }
 
    if (input_analog_sensitivity != 1.0f)
    {
-      float normalized = (1.0f / 0x7fff) * val;
-      int      new_val = 0x7fff * normalized  *
-         input_analog_sensitivity;
-
+      /* Fused: scale = sensitivity / 0x7fff; new_val = val * scale * 0x7fff
+       * reduces to val * sensitivity, with clamp */
+      int new_val = (int)((float)val * input_analog_sensitivity);
       if (new_val > 0x7fff)
          return 0x7fff;
-      else if (new_val < -0x7fff)
+      if (new_val < -0x7fff)
          return -0x7fff;
-
-      return new_val;
+      return (int16_t)new_val;
    }
 
    return val;
@@ -844,35 +1075,60 @@ static int16_t input_joypad_analog_button(
       unsigned ident,
       const struct retro_keybind *bind)
 {
-   int16_t res                      = 0;
-   float normal_mag                 = 0.0f;
-   uint32_t axis                    = (bind->joyaxis == AXIS_NONE)
+   int16_t res      = 0;
+   float normal_mag = 0.0f;
+   uint16_t joy_idx = joypad_info->joy_idx;
+   uint32_t axis    = (bind->joyaxis == AXIS_NONE)
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
-   /* Analog button. */
-   if (input_analog_deadzone)
-   {
-      int16_t mult = 0;
-      if (axis != AXIS_NONE)
-         if ((mult = drv->axis(
-                     joypad_info->joy_idx, axis)) != 0)
-            normal_mag   = fabs((1.0f / 0x7fff) * mult);
-   }
+   /* The joypad driver pointer can be NULL for the duration of a
+    * driver teardown/reinit cycle - video_driver_free_internal()
+    * clears primary_joypad before the joypad is recreated by
+    * input_driver_init_joypads(). input_joypad_axis() already
+    * guards against this, but the digital button fallback paths
+    * below dereference drv directly. */
+   if (!drv)
+      return 0;
 
-   /* If the result is zero, it's got a digital button
-    * attached to it instead */
-   if ((res = abs(input_joypad_axis(
-            input_analog_deadzone,
-            input_analog_sensitivity,
-            drv,
-            joypad_info->joy_idx, axis, normal_mag))) == 0)
+   /* Early exit for digital-only buttons: if neither the user bind
+    * nor the autoconfig bind has an analog axis, this button has no
+    * analog capability. Skip the input_joypad_axis() call and
+    * deadzone magnitude computation entirely — go straight to the
+    * digital button fallback. Saves one drv->axis() indirect call
+    * plus float math per pressed digital button in the remap loop. */
+   if (axis == AXIS_NONE)
    {
       uint16_t key = (bind->joykey == NO_BTN)
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (drv->button(joypad_info->joy_idx, key))
+      if (drv->button(joy_idx, key))
+         return 0x7fff;
+      return 0;
+   }
+
+   /* Analog button - call drv->axis at most once */
+   if (input_analog_deadzone)
+   {
+      int16_t mult = drv->axis(joy_idx, axis);
+      if (mult != 0)
+      {
+         /* Manual abs avoids fabs() float-to-int rounding ambiguity */
+         normal_mag = (float)(mult < 0 ? -mult : mult) * INV_0x7fff;
+      }
+   }
+
+   /* If the result is zero, it's got a digital button attached to it instead */
+   if ((res = abs(input_joypad_axis(input_analog_deadzone,
+            input_analog_sensitivity, drv,
+            joy_idx, axis, normal_mag))) == 0)
+   {
+      uint16_t key = (bind->joykey == NO_BTN)
+         ? joypad_info->auto_binds[ident].joykey
+         : bind->joykey;
+
+      if (drv->button(joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -906,6 +1162,11 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
 
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return 0;
+
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
    {
@@ -917,14 +1178,20 @@ static int16_t input_joypad_analog_axis(
          if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
             return 0;
          break;
+      case ANALOG_DPAD_LRSTICK:
+      case ANALOG_DPAD_TWINSTICK:
+         if (     idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+               || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            return 0;
+         break;
       default:
          break;
    }
 
    input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus);
 
-   bind_minus                             = &binds[ident_minus];
-   bind_plus                              = &binds[ident_plus];
+   bind_minus   = &binds[ident_minus];
+   bind_plus    = &binds[ident_plus];
 
    if (!bind_minus->valid || !bind_plus->valid)
       return 0;
@@ -947,14 +1214,47 @@ static int16_t input_joypad_analog_axis(
    if (!bind_y_minus->valid || !bind_y_plus->valid)
       return 0;
 
+   /* Keyboard bind priority */
+   if (     bind_plus->key  != RETROK_UNKNOWN
+         || bind_minus->key != RETROK_UNKNOWN)
    {
-      uint32_t axis_minus            = (bind_minus->joyaxis   == AXIS_NONE)
+      input_driver_state_t *input_st = &input_driver_st;
+
+      if (bind_plus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL,
+            joypad_info,
+            (*input_st->libretro_input_binds),
+            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_plus->key))
+         res  = 0x7fff;
+      if (bind_minus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL,
+            joypad_info,
+            (*input_st->libretro_input_binds),
+            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_minus->key))
+         res += -0x7fff;
+
+      if (res)
+         return res;
+   }
+
+   {
+      uint32_t axis_minus         = (bind_minus->joyaxis   == AXIS_NONE)
          ? joypad_info->auto_binds[ident_minus].joyaxis
          : bind_minus->joyaxis;
-      uint32_t axis_plus             = (bind_plus->joyaxis    == AXIS_NONE)
+      uint32_t axis_plus          = (bind_plus->joyaxis    == AXIS_NONE)
          ? joypad_info->auto_binds[ident_plus].joyaxis
          : bind_plus->joyaxis;
-      float normal_mag               = 0.0f;
+      float normal_mag            = 0.0f;
 
       /* normalized magnitude of stick actuation, needed for scaled
        * radial deadzone */
@@ -962,6 +1262,7 @@ static int16_t input_joypad_analog_axis(
       {
          float x                  = 0.0f;
          float y                  = 0.0f;
+         float mag_sq;
          uint32_t x_axis_minus    = (bind_x_minus->joyaxis == AXIS_NONE)
             ? joypad_info->auto_binds[ident_x_minus].joyaxis
             : bind_x_minus->joyaxis;
@@ -975,19 +1276,34 @@ static int16_t input_joypad_analog_axis(
             ? joypad_info->auto_binds[ident_y_plus].joyaxis
             : bind_y_plus->joyaxis;
          /* normalized magnitude for radial scaled analog deadzone */
-         if (x_axis_plus != AXIS_NONE)
+         if (x_axis_plus != AXIS_NONE && drv->axis)
             x                     = drv->axis(
                   joypad_info->joy_idx, x_axis_plus);
-         if (x_axis_minus != AXIS_NONE)
+         if (x_axis_minus != AXIS_NONE && drv->axis)
             x                    += drv->axis(joypad_info->joy_idx,
                   x_axis_minus);
-         if (y_axis_plus != AXIS_NONE)
+         if (y_axis_plus != AXIS_NONE && drv->axis)
             y                     = drv->axis(
                   joypad_info->joy_idx, y_axis_plus);
-         if (y_axis_minus != AXIS_NONE)
+         if (y_axis_minus != AXIS_NONE && drv->axis)
             y                    += drv->axis(
                   joypad_info->joy_idx, y_axis_minus);
-         normal_mag               = (1.0f / 0x7fff) * sqrt(x * x + y * y);
+
+         /* Use squared magnitude to avoid sqrtf when possible.
+          * dz_sq is the squared deadzone threshold in raw axis units.
+          * If mag_sq <= dz_sq, the stick is inside the deadzone
+          * and input_joypad_axis() will return 0 without needing
+          * the actual magnitude. Only compute sqrtf when we're in
+          * the rescaling region (between deadzone and full tilt). */
+         mag_sq = x * x + y * y;
+         {
+            float dz_raw = input_analog_deadzone * 0x7fff;
+            float dz_sq  = dz_raw * dz_raw;
+            if (mag_sq <= dz_sq)
+               normal_mag = 0.0f; /* Will trigger early-exit in input_joypad_axis */
+            else
+               normal_mag = INV_0x7fff * sqrtf(mag_sq);
+         }
       }
 
       res           = abs(
@@ -1012,42 +1328,305 @@ static int16_t input_joypad_analog_axis(
       uint16_t key_plus     = (bind_plus->joykey  == NO_BTN)
          ? joypad_info->auto_binds[ident_plus].joykey
          : bind_plus->joykey;
-      if (drv->button(joypad_info->joy_idx, key_plus))
+      if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
          res  = 0x7fff;
-      if (drv->button(joypad_info->joy_idx, key_minus))
+      if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
          res += -0x7fff;
    }
 
    return res;
 }
 
-void input_keyboard_line_append(
-      struct input_keyboard_line *keyboard_line,
-      const char *word, size_t len)
+/**
+ * input_joypad_analog_stick:
+ *
+ * Processes both X and Y axes of a single analog stick together,
+ * computing the radial deadzone magnitude only once. This avoids
+ * the redundant drv->axis() calls and sqrtf() that occur when
+ * input_joypad_analog_axis() is called separately for X and Y.
+ *
+ * @param input_analog_dpad_mode Analog-to-dpad mode for this port
+ * @param input_analog_deadzone  Deadzone threshold (0.0 = disabled)
+ * @param input_analog_sensitivity Sensitivity multiplier
+ * @param drv                    Joypad driver
+ * @param joypad_info            Joypad info (joy_idx, auto_binds, threshold)
+ * @param idx                    Stick index (ANALOG_LEFT or ANALOG_RIGHT)
+ * @param binds                  Keybinds for this port
+ * @param out_x                  Output: X axis value
+ * @param out_y                  Output: Y axis value
+ *
+ * @return true if the stick was processed, false if skipped (dpad mode)
+ */
+INPUT_NOINLINE static bool input_joypad_analog_stick(
+      unsigned input_analog_dpad_mode,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned idx,
+      const struct retro_keybind *binds,
+      int16_t *out_x, int16_t *out_y)
 {
-   size_t i;
-   char *newbuf                = (char*)realloc(
-         keyboard_line->buffer,
-         keyboard_line->size + len * 2);
+   unsigned ident_x_minus          = 0;
+   unsigned ident_x_plus           = 0;
+   unsigned ident_y_minus          = 0;
+   unsigned ident_y_plus           = 0;
+   const struct retro_keybind *bind_x_minus = NULL;
+   const struct retro_keybind *bind_x_plus  = NULL;
+   const struct retro_keybind *bind_y_minus = NULL;
+   const struct retro_keybind *bind_y_plus  = NULL;
+   float normal_mag                = 0.0f;
 
-   if (!newbuf)
-      return;
+   *out_x = 0;
+   *out_y = 0;
 
-   memmove(
-         newbuf + keyboard_line->ptr + len,
-         newbuf + keyboard_line->ptr,
-         keyboard_line->size - keyboard_line->ptr + len);
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return false;
 
-   for (i = 0; i < len; i++)
+   /* Skip analog input with analog_dpad_mode */
+   switch (input_analog_dpad_mode)
    {
-      newbuf[keyboard_line->ptr]= word[i];
-      keyboard_line->ptr++;
-      keyboard_line->size++;
+      case ANALOG_DPAD_LSTICK:
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+            return false;
+         break;
+      case ANALOG_DPAD_RSTICK:
+         if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            return false;
+         break;
+      case ANALOG_DPAD_LRSTICK:
+      case ANALOG_DPAD_TWINSTICK:
+         if (     idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+               || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            return false;
+         break;
+      default:
+         break;
    }
 
-   newbuf[keyboard_line->size]  = '\0';
+   /* Resolve all 4 bind IDs for this stick at once */
+   input_conv_analog_id_to_bind_id(idx,
+         RETRO_DEVICE_ID_ANALOG_X, ident_x_minus, ident_x_plus);
+   input_conv_analog_id_to_bind_id(idx,
+         RETRO_DEVICE_ID_ANALOG_Y, ident_y_minus, ident_y_plus);
 
-   keyboard_line->buffer        = newbuf;
+   bind_x_minus = &binds[ident_x_minus];
+   bind_x_plus  = &binds[ident_x_plus];
+   bind_y_minus = &binds[ident_y_minus];
+   bind_y_plus  = &binds[ident_y_plus];
+
+   if (   !bind_x_minus->valid || !bind_x_plus->valid
+       || !bind_y_minus->valid || !bind_y_plus->valid)
+      return false;
+
+   /* Keyboard bind priority — check X */
+   if (     bind_x_plus->key  != RETROK_UNKNOWN
+         || bind_x_minus->key != RETROK_UNKNOWN)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
+      if (bind_x_plus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL, joypad_info,
+            (*input_st->libretro_input_binds),
+            kb_blocked,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_x_plus->key))
+         *out_x  = 0x7fff;
+      if (bind_x_minus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL, joypad_info,
+            (*input_st->libretro_input_binds),
+            kb_blocked,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_x_minus->key))
+         *out_x += -0x7fff;
+   }
+
+   /* Keyboard bind priority — check Y */
+   if (     bind_y_plus->key  != RETROK_UNKNOWN
+         || bind_y_minus->key != RETROK_UNKNOWN)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
+      if (bind_y_plus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL, joypad_info,
+            (*input_st->libretro_input_binds),
+            kb_blocked,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_y_plus->key))
+         *out_y  = 0x7fff;
+      if (bind_y_minus->key && input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            NULL, joypad_info,
+            (*input_st->libretro_input_binds),
+            kb_blocked,
+            0, RETRO_DEVICE_KEYBOARD, 0,
+            bind_y_minus->key))
+         *out_y += -0x7fff;
+   }
+
+   /* If keyboard produced results for both axes, we're done */
+   if (*out_x && *out_y)
+      return true;
+
+   {
+      uint32_t x_axis_minus = (bind_x_minus->joyaxis == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_x_minus].joyaxis
+         : bind_x_minus->joyaxis;
+      uint32_t x_axis_plus  = (bind_x_plus->joyaxis  == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_x_plus].joyaxis
+         : bind_x_plus->joyaxis;
+      uint32_t y_axis_minus = (bind_y_minus->joyaxis == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_y_minus].joyaxis
+         : bind_y_minus->joyaxis;
+      uint32_t y_axis_plus  = (bind_y_plus->joyaxis  == AXIS_NONE)
+         ? joypad_info->auto_binds[ident_y_plus].joyaxis
+         : bind_y_plus->joyaxis;
+
+      /* Compute radial magnitude ONCE for this stick */
+      if (input_analog_deadzone)
+      {
+         float x    = 0.0f;
+         float y    = 0.0f;
+         float mag_sq;
+         if (x_axis_plus != AXIS_NONE && drv->axis)
+            x  = drv->axis(joypad_info->joy_idx, x_axis_plus);
+         if (x_axis_minus != AXIS_NONE && drv->axis)
+            x += drv->axis(joypad_info->joy_idx, x_axis_minus);
+         if (y_axis_plus != AXIS_NONE && drv->axis)
+            y  = drv->axis(joypad_info->joy_idx, y_axis_plus);
+         if (y_axis_minus != AXIS_NONE && drv->axis)
+            y += drv->axis(joypad_info->joy_idx, y_axis_minus);
+
+         mag_sq = x * x + y * y;
+         {
+            float dz_raw = input_analog_deadzone * 0x7fff;
+            float dz_sq  = dz_raw * dz_raw;
+            if (mag_sq <= dz_sq)
+               normal_mag = 0.0f;
+            else
+               normal_mag = INV_0x7fff * sqrtf(mag_sq);
+         }
+      }
+
+      /* X axis — reuse cached normal_mag */
+      if (!*out_x)
+      {
+         int16_t x_val;
+         x_val  = abs(input_joypad_axis(
+               input_analog_deadzone, input_analog_sensitivity,
+               drv, joypad_info->joy_idx,
+               x_axis_plus, normal_mag));
+         x_val -= abs(input_joypad_axis(
+               input_analog_deadzone, input_analog_sensitivity,
+               drv, joypad_info->joy_idx,
+               x_axis_minus, normal_mag));
+
+         if (x_val == 0)
+         {
+            uint16_t key_minus = (bind_x_minus->joykey == NO_BTN)
+               ? joypad_info->auto_binds[ident_x_minus].joykey
+               : bind_x_minus->joykey;
+            uint16_t key_plus  = (bind_x_plus->joykey  == NO_BTN)
+               ? joypad_info->auto_binds[ident_x_plus].joykey
+               : bind_x_plus->joykey;
+            if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+               x_val  = 0x7fff;
+            if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+               x_val += -0x7fff;
+         }
+         *out_x = x_val;
+      }
+
+      /* Y axis — reuse same cached normal_mag */
+      if (!*out_y)
+      {
+         int16_t y_val;
+         y_val  = abs(input_joypad_axis(
+               input_analog_deadzone, input_analog_sensitivity,
+               drv, joypad_info->joy_idx,
+               y_axis_plus, normal_mag));
+         y_val -= abs(input_joypad_axis(
+               input_analog_deadzone, input_analog_sensitivity,
+               drv, joypad_info->joy_idx,
+               y_axis_minus, normal_mag));
+
+         if (y_val == 0)
+         {
+            uint16_t key_minus = (bind_y_minus->joykey == NO_BTN)
+               ? joypad_info->auto_binds[ident_y_minus].joykey
+               : bind_y_minus->joykey;
+            uint16_t key_plus  = (bind_y_plus->joykey  == NO_BTN)
+               ? joypad_info->auto_binds[ident_y_plus].joykey
+               : bind_y_plus->joykey;
+            if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+               y_val  = 0x7fff;
+            if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+               y_val += -0x7fff;
+         }
+         *out_y = y_val;
+      }
+   }
+
+   return true;
+}
+
+void input_keyboard_line_append(struct input_keyboard_line *kb_line,
+      const char *word, size_t len)
+{
+   /* Need room for current content + inserted text + NUL terminator.
+    * new_size is the string length after insertion (not counting NUL). */
+   size_t new_size     = kb_line->size + len;
+
+   /* Overflow guard */
+   if (new_size < kb_line->size || new_size < len)
+      return;
+
+   /* Grow buffer with exponential strategy if needed */
+   if (new_size > kb_line->capacity)
+   {
+      /* At least double the current capacity, with a minimum of 64 */
+      size_t new_cap = kb_line->capacity ? kb_line->capacity * 2 : 64;
+      char *newbuf;
+
+      while (new_cap < new_size)
+         new_cap *= 2;
+
+      /* +1 for NUL terminator */
+      newbuf = (char*)realloc(kb_line->buffer, new_cap + 1);
+      if (!newbuf)
+         return;
+
+      kb_line->buffer   = newbuf;
+      kb_line->capacity = new_cap;
+   }
+
+   /* Shift existing content after insertion point to make room */
+   memmove(
+         kb_line->buffer + kb_line->ptr + len,
+         kb_line->buffer + kb_line->ptr,
+         kb_line->size - kb_line->ptr);
+
+   /* Insert new text at cursor */
+   memcpy(kb_line->buffer + kb_line->ptr, word, len);
+   kb_line->ptr  += len;
+   kb_line->size  = new_size;
+
+   kb_line->buffer[kb_line->size] = '\0';
 }
 
 void input_keyboard_line_clear(input_driver_state_t *input_st)
@@ -1057,34 +1636,178 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.buffer       = NULL;
    input_st->keyboard_line.ptr          = 0;
    input_st->keyboard_line.size         = 0;
+   input_st->keyboard_line.capacity     = 0;
 }
 
 void input_keyboard_line_free(input_driver_state_t *input_st)
 {
-   if (input_st->keyboard_line.buffer)
-      free(input_st->keyboard_line.buffer);
-   input_st->keyboard_line.buffer       = NULL;
-   input_st->keyboard_line.ptr          = 0;
-   input_st->keyboard_line.size         = 0;
-   input_st->keyboard_line.cb           = NULL;
-   input_st->keyboard_line.userdata     = NULL;
-   input_st->keyboard_line.enabled      = false;
+   input_keyboard_line_t *kb_line = (input_keyboard_line_t*)&input_st->keyboard_line;
+   if (kb_line->buffer)
+      free(kb_line->buffer);
+   kb_line->buffer             = NULL;
+   kb_line->ptr                =  0;
+   kb_line->size               = 0;
+   kb_line->capacity           = 0;
+   kb_line->cb                 = NULL;
+   kb_line->userdata           = NULL;
+   kb_line->enabled            = false;
+   input_st->osk_textbox_focus = false;
 }
 
 const char **input_keyboard_start_line(
       void *userdata,
-      struct input_keyboard_line *keyboard_line,
+      struct input_keyboard_line *kb_line,
       input_keyboard_line_complete_t cb)
 {
-   keyboard_line->buffer    = NULL;
-   keyboard_line->ptr       = 0;
-   keyboard_line->size      = 0;
-   keyboard_line->cb        = cb;
-   keyboard_line->userdata  = userdata;
-   keyboard_line->enabled   = true;
+   kb_line->buffer                   = NULL;
+   kb_line->ptr                      = 0;
+   kb_line->size                     = 0;
+   kb_line->capacity                 = 0;
+   kb_line->cb                       = cb;
+   kb_line->userdata                 = userdata;
+   kb_line->enabled                  = true;
+   input_driver_st.osk_textbox_focus = false;
 
-   return (const char**)&keyboard_line->buffer;
+   return (const char**)&kb_line->buffer;
 }
+
+#ifdef HAVE_OVERLAY
+static int16_t input_overlay_device_mouse_state(
+      input_overlay_t *ol, unsigned id)
+{
+   int16_t res;
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+
+   switch(id)
+   {
+      case RETRO_DEVICE_ID_MOUSE_X:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_MOUSE);
+         res =   (ptr_st->mouse.scale_x)
+               * (ptr_st->screen_x - ptr_st->mouse.prev_screen_x);
+         return res;
+      case RETRO_DEVICE_ID_MOUSE_Y:
+         res =   (ptr_st->mouse.scale_y)
+               * (ptr_st->screen_y - ptr_st->mouse.prev_screen_y);
+         return res;
+      case RETRO_DEVICE_ID_MOUSE_LEFT:
+         return    (ptr_st->mouse.click & 0x1)
+                || (ptr_st->mouse.hold  & 0x1);
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:
+         return    (ptr_st->mouse.click & 0x2)
+                || (ptr_st->mouse.hold  & 0x2);
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+         return    (ptr_st->mouse.click & 0x4)
+                || (ptr_st->mouse.hold  & 0x4);
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+static int16_t input_overlay_lightgun_state(
+      bool input_overlay_lightgun_allow_offscreen,
+      input_overlay_t *ol, unsigned id)
+{
+   unsigned rarch_id;
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+
+   switch(id)
+   {
+      /* Pointer positions have been clamped earlier in input drivers,   *
+       * so if we want to pass true offscreen value, it must be detected */
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
+         if (   ( ptr_st->ptr[0].x > -0x7fff && ptr_st->ptr[0].x != 0x7fff)
+               || !input_overlay_lightgun_allow_offscreen)
+            return ptr_st->ptr[0].x;
+         return -0x8000;
+      case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
+         if (   ( ptr_st->ptr[0].y > -0x7fff && ptr_st->ptr[0].y != 0x7fff)
+               || !input_overlay_lightgun_allow_offscreen)
+            return ptr_st->ptr[0].y;
+         return -0x8000;
+      case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+         ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
+         return ( input_overlay_lightgun_allow_offscreen
+               && input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y));
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+         rarch_id = input_driver_lightgun_id_convert(id);
+         break;
+      default:
+         rarch_id = RARCH_BIND_LIST_END;
+         break;
+   }
+
+   return (   rarch_id < RARCH_BIND_LIST_END
+           && (   ptr_st->lightgun.multitouch_id == rarch_id
+               || BIT256_GET(ol->overlay_state.buttons, rarch_id)));
+}
+
+static int16_t input_overlay_pointer_state(input_overlay_t *ol,
+      input_overlay_pointer_state_t *ptr_st,
+      unsigned idx, unsigned id)
+{
+   ptr_st->device_mask |= (1 << RETRO_DEVICE_POINTER);
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_POINTER_X:
+         return ptr_st->ptr[idx].x;
+      case RETRO_DEVICE_ID_POINTER_Y:
+         return ptr_st->ptr[idx].y;
+      case RETRO_DEVICE_ID_POINTER_PRESSED:
+         return (idx < ptr_st->count)
+               && ptr_st->ptr[idx].x != -0x8000
+               && ptr_st->ptr[idx].y != -0x8000;
+      case RETRO_DEVICE_ID_POINTER_COUNT:
+         return ptr_st->count;
+      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+         return input_driver_pointer_is_offscreen(ptr_st->ptr[idx].x, ptr_st->ptr[idx].y);
+   }
+
+   return 0;
+}
+
+static int16_t input_overlay_pointing_device_state(
+      int input_overlay_lightgun_port,
+      bool input_overlay_lightgun_allow_offscreen,
+      input_overlay_t *ol, unsigned port, unsigned device,
+      unsigned idx, unsigned id)
+{
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+         return input_overlay_device_mouse_state(ol, id);
+      case RETRO_DEVICE_LIGHTGUN:
+         if (     input_overlay_lightgun_port == -1
+               || input_overlay_lightgun_port == (int)port)
+            return input_overlay_lightgun_state(
+                  input_overlay_lightgun_allow_offscreen,
+                  ol, id);
+         break;
+      case RETRO_DEVICE_POINTER:
+         return input_overlay_pointer_state(ol,
+               (input_overlay_pointer_state_t*)&ol->pointer_state,
+               idx, id);
+      default:
+         break;
+   }
+
+   return 0;
+}
+#endif
 
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 static bool input_remote_init_network(input_remote_t *handle,
@@ -1097,27 +1820,24 @@ static bool input_remote_init_network(input_remote_t *handle,
    if (!network_init())
       return false;
 
-   RARCH_LOG("Bringing up remote interface on port %hu.\n",
+   RARCH_LOG("[Network] Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) < 0)
-      goto error;
-
-   handle->net_fd[user] = fd;
-
-   if (!socket_nonblock(handle->net_fd[user]))
-      goto error;
-
-   if (!socket_bind(handle->net_fd[user], res))
+   if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) >= 0)
    {
-      RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
-      goto error;
+      handle->net_fd[user] = fd;
+
+      if (socket_nonblock(handle->net_fd[user]))
+      {
+         if (socket_bind(handle->net_fd[user], res))
+         {
+            freeaddrinfo_retro(res);
+            return true;
+         }
+         RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_BIND_SOCKET));
+      }
    }
 
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
    if (res)
       freeaddrinfo_retro(res);
    return false;
@@ -1164,12 +1884,16 @@ static void input_remote_parse_packet(
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:
-         input_state->buttons[user] &= ~(1 << msg->id);
-         if (msg->state)
-            input_state->buttons[user] |= 1 << msg->id;
+         if (msg->id < 16)
+         {
+            input_state->buttons[user] &= ~(1 << msg->id);
+            if (msg->state)
+               input_state->buttons[user] |= 1 << msg->id;
+         }
          break;
       case RETRO_DEVICE_ANALOG:
-         input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
+         if (msg->id<2 && msg->index<2)
+            input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
          break;
    }
 }
@@ -1178,10 +1902,8 @@ input_remote_t *input_driver_init_remote(
       settings_t *settings,
       unsigned num_active_users)
 {
-   unsigned network_remote_base_port = settings->uints.network_remote_base_port;
-   return input_remote_new(
-         settings,
-         network_remote_base_port,
+   return input_remote_new(settings,
+         settings->uints.network_remote_base_port,
          num_active_users);
 }
 #endif
@@ -1191,7 +1913,7 @@ static int16_t input_state_device(
       settings_t *settings,
       input_mapper_t *handle,
       unsigned input_analog_dpad_mode,
-      int16_t ret,
+      int32_t ret,
       unsigned port, unsigned device,
       unsigned idx, unsigned id,
       bool button_mask)
@@ -1255,28 +1977,82 @@ static int16_t input_state_device(
                    * > 'id' is not equal to remapped button index
                    * If these conditions are met, input here
                    * is ignored */
-                  if ((menu_driver_alive || !input_remap_binds_enable) ||
-                      (id == remap_button))
+                  if (   (menu_driver_alive
+                      || !input_remap_binds_enable)
+                      || (id == remap_button))
                      res |= 1;
                }
 #endif
             }
 
-            /* Don't allow turbo for D-pad. */
-            if (          (id  < RETRO_DEVICE_ID_JOYPAD_UP)
-                  || (    (id  > RETRO_DEVICE_ID_JOYPAD_RIGHT)
-                       && (id <= RETRO_DEVICE_ID_JOYPAD_R3)))
+            if (id <= RETRO_DEVICE_ID_JOYPAD_R3)
             {
-               /*
-                * Apply turbo button if activated.
-                */
-               unsigned turbo_mode = settings->uints.input_turbo_mode;
+               uint8_t turbo_period     = settings->uints.input_turbo_period;
+               uint8_t turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
+               uint8_t turbo_mode       = settings->uints.input_turbo_mode;
 
-               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC)
+               /* Apply hold button logic.
+                * When hold modifier is pressed, tapping buttons toggles their held state.
+                * Held buttons report as pressed even when not physically touched.
+                * Physical presses pass through normally (no modification). */
+
+               /* Handle hold modifier state and toggle logic */
+               if (!input_st->hold_btns.frame_enable[port])
                {
-                  /* Pressing turbo button toggles turbo mode on or off.
-                   * Holding the button will
-                   * pass through, else the pressed state will be modulated by a
+                  /* Hold modifier not pressed - clear edge detection state */
+                  input_st->hold_btns.hold_pressed[port] = 0;
+               }
+               else
+               {
+                  /* Hold modifier is pressed - handle toggle on rising edge */
+                  if (!res)
+                     input_st->hold_btns.hold_pressed[port] &= ~(1 << id);
+                  else if (!(input_st->hold_btns.hold_pressed[port] & (1 << id)))
+                  {
+                     /* Rising edge - toggle hold for this button */
+                     input_st->hold_btns.hold_pressed[port] |= (1 << id);
+                     input_st->hold_btns.enable[port] ^= (1 << id);
+                  }
+               }
+
+               /* Apply hold effect: if button is held and not physically pressed */
+               if (!res && (input_st->hold_btns.enable[port] & (1 << id)))
+                  res = 1;
+
+               /* Apply turbo button if activated. */
+
+               /* Don't allow classic mode turbo for D-pad unless explicitly allowed. */
+               if (     turbo_mode <= INPUT_TURBO_MODE_CLASSIC_TOGGLE
+                     && !settings->bools.input_turbo_allow_dpad
+                     && id >= RETRO_DEVICE_ID_JOYPAD_UP
+                     && id <= RETRO_DEVICE_ID_JOYPAD_RIGHT)
+                  break;
+
+               if (turbo_duty_cycle == 0)
+                  turbo_duty_cycle = turbo_period / 2;
+
+               /* Clear underlying button to prevent duplicates. */
+               if (input_st->turbo_btns.frame_enable[port])
+               {
+                  int      turbo_bind = settings->ints.input_turbo_bind;
+                  unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+
+                  if (id == remap_bind)
+                     res = 0;
+               }
+
+               if (turbo_mode > INPUT_TURBO_MODE_CLASSIC_TOGGLE)
+               {
+                  unsigned turbo_button = settings->uints.input_turbo_button;
+                  unsigned remap_button = settings->uints.input_remap_ids[port][turbo_button];
+
+                  /* Single button modes only care about the defined button. */
+                  if (id != remap_button)
+                     break;
+
+                  /* Pressing turbo bind toggles turbo button on or off.
+                   * Holding the button will pass through, else
+                   * the pressed state will be modulated by a
                    * periodic pulse defined by the configured duty cycle.
                    */
 
@@ -1286,26 +2062,9 @@ static int16_t input_state_device(
                   else if (input_st->turbo_btns.turbo_pressed[port] >= 0)
                   {
                      input_st->turbo_btns.turbo_pressed[port] |= (1 << 31);
-                     /* Toggle turbo for selected buttons. */
-                     if (input_st->turbo_btns.enable[port]
-                           != (1 << settings->uints.input_turbo_default_button))
-                     {
-                        static const int button_map[]={
-                           RETRO_DEVICE_ID_JOYPAD_B,
-                           RETRO_DEVICE_ID_JOYPAD_Y,
-                           RETRO_DEVICE_ID_JOYPAD_A,
-                           RETRO_DEVICE_ID_JOYPAD_X,
-                           RETRO_DEVICE_ID_JOYPAD_L,
-                           RETRO_DEVICE_ID_JOYPAD_R,
-                           RETRO_DEVICE_ID_JOYPAD_L2,
-                           RETRO_DEVICE_ID_JOYPAD_R2,
-                           RETRO_DEVICE_ID_JOYPAD_L3,
-                           RETRO_DEVICE_ID_JOYPAD_R3};
-                        input_st->turbo_btns.enable[port] = 1 << button_map[
-                           MIN(
-                                 ARRAY_SIZE(button_map) - 1,
-                                 settings->uints.input_turbo_default_button)];
-                     }
+                     /* Toggle turbo for selected button. */
+                     if (input_st->turbo_btns.enable[port] != (1 << id))
+                        input_st->turbo_btns.enable[port] = (1 << id);
                      input_st->turbo_btns.mode1_enable[port] ^= 1;
                   }
 
@@ -1319,33 +2078,26 @@ static int16_t input_state_device(
                      {
                         uint16_t enable_new;
                         input_st->turbo_btns.turbo_pressed[port] |= 1 << id;
-                        /* Toggle turbo for pressed button but make
-                         * sure at least one button has turbo */
                         enable_new = input_st->turbo_btns.enable[port] ^ (1 << id);
                         if (enable_new)
                            input_st->turbo_btns.enable[port] = enable_new;
                      }
                   }
                   /* Hold mode stops turbo on release */
-                  else if (
-                           turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD
-                        && input_st->turbo_btns.enable[port]
-                        && input_st->turbo_btns.mode1_enable[port])
+                  else if ((turbo_mode == INPUT_TURBO_MODE_SINGLEBUTTON_HOLD)
+                        && (input_st->turbo_btns.enable[port])
+                        && (input_st->turbo_btns.mode1_enable[port]))
                      input_st->turbo_btns.mode1_enable[port] = 0;
 
-                  if (!res && input_st->turbo_btns.mode1_enable[port] &&
-                        input_st->turbo_btns.enable[port] & (1 << id))
-                  {
-                     /* If turbo button is enabled for this key ID */
-                     res = ((   input_st->turbo_btns.count
-                              % settings->uints.input_turbo_period)
-                           < settings->uints.input_turbo_duty_cycle);
-                  }
+                  if (     (!res)
+                        && (input_st->turbo_btns.mode1_enable[port])
+                        && (input_st->turbo_btns.enable[port] & (1 << id)))
+                     res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
                }
-               else
+               else if (turbo_mode == INPUT_TURBO_MODE_CLASSIC)
                {
-                  /* If turbo button is held, all buttons pressed except
-                   * for D-pad will go into a turbo mode. Until the button is
+                  /* If turbo button is held, all buttons pressed
+                   * will go into a turbo mode. Until the button is
                    * released again, the input state will be modulated by a
                    * periodic pulse defined by the configured duty cycle.
                    */
@@ -1356,12 +2108,39 @@ static int16_t input_state_device(
 
                      if (input_st->turbo_btns.enable[port] & (1 << id))
                         /* if turbo button is enabled for this key ID */
-                        res = ((input_st->turbo_btns.count
-                                 % settings->uints.input_turbo_period)
-                              < settings->uints.input_turbo_duty_cycle);
+                        res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
                   }
                   else
                      input_st->turbo_btns.enable[port] &= ~(1 << id);
+               }
+               else /* Classic toggle mode */
+               {
+                  /* Works pretty much the same as
+                   * classic mode above but with a
+                   * toggle mechanic */
+
+                  /* Check if it's to enable the turbo func,
+                   * if we're still holding the button from
+                   * previous toggle then ignore */
+                  if (   (res)
+                      && (input_st->turbo_btns.frame_enable[port]))
+                  {
+                     if (!(input_st->turbo_btns.turbo_pressed[port] & (1 << id)))
+                     {
+                        input_st->turbo_btns.enable[port] ^= (1 << id);
+                        /* Remember for the toggle check */
+                        input_st->turbo_btns.turbo_pressed[port] |= (1 << id);
+                     }
+                  }
+                  else
+                     input_st->turbo_btns.turbo_pressed[port] &= ~(1 << id);
+
+                  if (res)
+                  {
+                     /* If turbo button is enabled for this key ID */
+                     if (input_st->turbo_btns.enable[port] & (1 << id))
+                        res = ((input_st->turbo_btns.count % turbo_period) < turbo_duty_cycle);
+                  }
                }
             }
          }
@@ -1409,7 +2188,7 @@ static int16_t input_state_device(
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
 #ifdef HAVE_NETWORKGAMEPAD
-            if (     input_st->remote
+            if (     input_st->remote && idx < RETRO_DEVICE_INDEX_ANALOG_BUTTON
                   && input_state && input_state->analog[base][port])
                res          = input_state->analog[base][port];
             else
@@ -1435,6 +2214,18 @@ static int16_t input_state_device(
                            reset_state = true;
                         else if (settings->uints.input_remap_ids[port][offset + 1] != (offset+1))
                            reset_state = true;
+
+                        if (input_st->turbo_btns.frame_enable[port])
+                        {
+                           int      turbo_bind = settings->ints.input_turbo_bind;
+                           unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+
+                           if (offset == remap_bind || offset + 1 == remap_bind)
+                           {
+                              res = 0;
+                              break;
+                           }
+                        }
                      }
 
                      if (reset_state)
@@ -1444,14 +2235,20 @@ static int16_t input_state_device(
                         res = ret;
 
 #ifdef HAVE_OVERLAY
-                        if (   (input_st->overlay_ptr)
-                            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-                            && (port == 0)
-                            && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-                            && !(((input_analog_dpad_mode == ANALOG_DPAD_LSTICK)
-                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT))
-                            || ((input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
-                            &&   (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))))
+                        if (     (input_st->overlay_ptr)
+                              && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+                              && (port == 0)
+                              && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+                              && !(    (  input_analog_dpad_mode == ANALOG_DPAD_LSTICK
+                                       && idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+                                    || (  input_analog_dpad_mode == ANALOG_DPAD_RSTICK
+                                       && idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                                    || (  (  input_analog_dpad_mode == ANALOG_DPAD_LRSTICK
+                                          || input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
+                                       && (  idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+                                          || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+                                 )
+                           )
                         {
                            input_overlay_state_t *ol_state =
                               &input_st->overlay_ptr->overlay_state;
@@ -1506,7 +2303,17 @@ static int16_t input_state_device(
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
 
-         if (input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
+#ifdef HAVE_OVERLAY
+         if (     (input_st->overlay_ptr)
+               && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ENABLE)
+               && (settings->bools.input_overlay_pointer_enable))
+            res = input_overlay_pointing_device_state(
+                  settings->ints.input_overlay_lightgun_port,
+                  settings->bools.input_overlay_lightgun_allow_offscreen,
+                  input_st->overlay_ptr, port, device, idx, id);
+#endif
+
+         if (res || input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT)
             break;
 
          if (id < RARCH_FIRST_META_KEY)
@@ -1540,17 +2347,22 @@ static int16_t input_state_internal(
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   unsigned mapped_port;
    float input_analog_deadzone             = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
    unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
-   bool input_driver_analog_requested      = input_st->analog_requested[port];
+   /* Clamped: the arrays walked below are [MAX_USERS] and the setting
+    * comes from the config file. */
+   uint8_t max_users                       = (settings->uints.input_max_users
+         > MAX_USERS) ? MAX_USERS
+         : (uint8_t)settings->uints.input_max_users;
    const input_device_driver_t *joypad     = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
 #else
    const input_device_driver_t *sec_joypad = NULL;
 #endif
+   uint8_t mapped_port                     = 0;
+   int16_t result                          = 0;
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
    bool input_blocked                      =    (menu_st->input_driver_flushing_input > 0)
@@ -1558,25 +2370,30 @@ static int16_t input_state_internal(
 #else
    bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT) ? true : false;
 #endif
+   bool input_driver_analog_requested      = input_st->analog_requested[port];
    bool bitmask_enabled                    = false;
-   unsigned max_users                      = settings->uints.input_max_users;
-   int16_t result                          = 0;
 
    device                                 &= RETRO_DEVICE_MASK;
    bitmask_enabled                         =    (device == RETRO_DEVICE_JOYPAD)
                                              && (id == RETRO_DEVICE_ID_JOYPAD_MASK);
    joypad_info.axis_threshold              = settings->floats.input_axis_threshold;
 
+   /* Cache once; flag does not change during this function */
+   {
+      bool kb_mapping_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
    /* Loop over all 'physical' ports mapped to specified
     * 'virtual' port index */
    while ((mapped_port = *(input_remap_port_map++)) < MAX_USERS)
    {
-      int16_t ret                     = 0;
-      int16_t port_result             = 0;
-      unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
+      int16_t ret                    = 0;
+      int16_t port_result            = 0;
+      uint8_t input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[mapped_port];
 
-      joypad_info.joy_idx             = settings->uints.input_joypad_index[mapped_port];
-      joypad_info.auto_binds          = input_autoconf_binds[joypad_info.joy_idx];
+      joypad_info.joy_idx            = settings->uints.input_joypad_index[mapped_port];
+      if (joypad_info.joy_idx >= MAX_USERS)
+         joypad_info.joy_idx         = 0;
+      joypad_info.auto_binds         = input_autoconf_binds[joypad_info.joy_idx];
 
       /* Skip disabled input devices */
       if (mapped_port >= max_users)
@@ -1588,6 +2405,8 @@ static int16_t input_state_internal(
       {
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
+         case ANALOG_DPAD_LRSTICK:
+         case ANALOG_DPAD_TWINSTICK:
             if (input_driver_analog_requested)
                input_analog_dpad_mode = ANALOG_DPAD_NONE;
             break;
@@ -1596,6 +2415,12 @@ static int16_t input_state_internal(
             break;
          case ANALOG_DPAD_RSTICK_FORCED:
             input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
+            break;
+         case ANALOG_DPAD_LRSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_LRSTICK;
+            break;
+         case ANALOG_DPAD_TWINSTICK_FORCED:
+            input_analog_dpad_mode = ANALOG_DPAD_TWINSTICK;
             break;
          default:
             break;
@@ -1612,11 +2437,16 @@ static int16_t input_state_internal(
             sec_joypad,
             &joypad_info,
             (*input_st->libretro_input_binds),
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_mapping_blocked,
             mapped_port, device, idx, id);
 
-      if (   (device == RETRO_DEVICE_ANALOG)
-          && (ret == 0))
+      /* Ignore analog sticks when using Analog to Digital */
+      if (     (device == RETRO_DEVICE_ANALOG)
+            && (input_analog_dpad_mode != ANALOG_DPAD_NONE))
+         ret = 0;
+
+      if (     (device == RETRO_DEVICE_ANALOG)
+            && (ret == 0))
       {
          if (input_st->libretro_input_binds[mapped_port])
          {
@@ -1686,7 +2516,7 @@ static int16_t input_state_internal(
 
          if (bitmask_enabled)
          {
-            unsigned i;
+            uint8_t i;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                if (input_state_device(input_st,
                         settings, handle,
@@ -1699,6 +2529,90 @@ static int16_t input_state_internal(
                   settings, handle,
                   input_analog_dpad_mode, ret, mapped_port,
                   device, idx, id, false);
+
+         /* Handle Analog to Digital */
+         if (     (device == RETRO_DEVICE_JOYPAD)
+               && (input_analog_dpad_mode != ANALOG_DPAD_NONE)
+               && joypad
+            )
+         {
+            int16_t ret_axis;
+            uint8_t s;
+            uint8_t a;
+            float axis_thr     = joypad_info.axis_threshold;
+            float inv_0x7fff   = INV_0x7fff;
+
+            for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
+            {
+               if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
+                     || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode == ANALOG_DPAD_LSTICK))
+                  continue;
+
+               for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
+               {
+                  ret_axis = input_joypad_analog_axis(
+                        ANALOG_DPAD_NONE,
+                        settings->floats.input_analog_deadzone,
+                        settings->floats.input_analog_sensitivity,
+                        joypad,
+                        &joypad_info,
+                        s,
+                        a,
+                        (*input_st->libretro_input_binds[mapped_port]));
+
+                  if (ret_axis)
+                  {
+                     float norm  = (float)ret_axis * inv_0x7fff;
+                     int bit     = -1;
+
+                     if (a == RETRO_DEVICE_ID_ANALOG_Y && norm < -axis_thr)
+                     {
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_X;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_UP;
+                     }
+                     else if (a == RETRO_DEVICE_ID_ANALOG_Y && norm > axis_thr)
+                     {
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_B;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_DOWN;
+                     }
+
+                     if (a == RETRO_DEVICE_ID_ANALOG_X && norm < -axis_thr)
+                     {
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_Y;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_LEFT;
+                     }
+                     else if (a == RETRO_DEVICE_ID_ANALOG_X && norm > axis_thr)
+                     {
+                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                           bit = RETRO_DEVICE_ID_JOYPAD_A;
+                        else
+                           bit = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+                     }
+
+                     if (bit > -1)
+                     {
+                        if (bitmask_enabled)
+                           port_result |= (1 << bit);
+                        else if (id == (unsigned)bit)
+                        {
+                           /* Digital results are OR'd together by the
+                            * caller, so this must be a plain 1 - not
+                            * the bind index, which would leave stray
+                            * high bits in the returned value */
+                           port_result = 1;
+                           result      = 1;
+                        }
+                     }
+                  }
+               }
+            }
+         }
       }
 
       /* Digital values are represented by a bitmap;
@@ -1726,6 +2640,7 @@ static int16_t input_state_internal(
       else
          result |= port_result;
    }
+   } /* kb_mapping_blocked scope */
 
    return result;
 }
@@ -1777,7 +2692,8 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
                      /* Light up the button if pressed */
                      if (     ol_state
                            ? !BIT256_GET(ol_state->buttons, id)
-                           : !input_state_internal(input_st, settings, port, RETRO_DEVICE_JOYPAD, 0, id))
+                           : !input_state_internal(input_st,
+                              settings, port, RETRO_DEVICE_JOYPAD, 0, id))
                      {
                         /* We need ALL of the inputs to be active,
                          * abort. */
@@ -1935,23 +2851,28 @@ static INLINE void input_overlay_get_eightway_state(
       float x_dist, float y_dist)
 {
    uint32_t *data;
-   float abs_slope;
+   float abs_x, abs_y;
 
    x_dist /= desc->range_x;
    y_dist /= desc->range_y;
 
-   if (x_dist == 0.0f)
-      x_dist = 0.0001f;
-   abs_slope = fabs(y_dist / x_dist);
+   abs_x = fabsf(x_dist);
+   abs_y = fabsf(y_dist);
+
+   /* Compare abs_y against slope * abs_x instead of computing
+    * abs_slope = abs_y / abs_x.  Avoids a division and the
+    * special-case for x_dist == 0 (vertical input). When
+    * abs_x is zero, abs_y > slope_high * 0 is always true
+    * for any nonzero touch, correctly selecting up/down. */
 
    if (x_dist > 0.0f)
    {
       if (y_dist < 0.0f)
       {
          /* Q1 */
-         if (abs_slope > *eightway->slope_high)
+         if (abs_y > *eightway->slope_high * abs_x)
             data = eightway->up.data;
-         else if (abs_slope < *eightway->slope_low)
+         else if (abs_y < *eightway->slope_low * abs_x)
             data = eightway->right.data;
          else
             data = eightway->up_right.data;
@@ -1959,9 +2880,9 @@ static INLINE void input_overlay_get_eightway_state(
       else
       {
          /* Q4 */
-         if (abs_slope > *eightway->slope_high)
+         if (abs_y > *eightway->slope_high * abs_x)
             data = eightway->down.data;
-         else if (abs_slope < *eightway->slope_low)
+         else if (abs_y < *eightway->slope_low * abs_x)
             data = eightway->right.data;
          else
             data = eightway->down_right.data;
@@ -1972,9 +2893,9 @@ static INLINE void input_overlay_get_eightway_state(
       if (y_dist < 0.0f)
       {
          /* Q2 */
-         if (abs_slope > *eightway->slope_high)
+         if (abs_y > *eightway->slope_high * abs_x)
             data = eightway->up.data;
-         else if (abs_slope < *eightway->slope_low)
+         else if (abs_y < *eightway->slope_low * abs_x)
             data = eightway->left.data;
          else
             data = eightway->up_left.data;
@@ -1982,9 +2903,9 @@ static INLINE void input_overlay_get_eightway_state(
       else
       {
          /* Q3 */
-         if (abs_slope > *eightway->slope_high)
+         if (abs_y > *eightway->slope_high * abs_x)
             data = eightway->down.data;
-         else if (abs_slope < *eightway->slope_low)
+         else if (abs_y < *eightway->slope_low * abs_x)
             data = eightway->left.data;
          else
             data = eightway->down_left.data;
@@ -1992,6 +2913,72 @@ static INLINE void input_overlay_get_eightway_state(
    }
 
    bits_or_bits(out->data, data, CUSTOM_BINDS_U32_COUNT);
+}
+
+/**
+ * input_overlay_get_analog_state:
+ * @out : Overlay input state to be modified
+ * @desc : Overlay descriptor handle
+ * @base : 0 or 2 for analog_left or analog_right
+ * @x : X coordinate
+ * @y : Y coordinate
+ * @x_dist : X offset from analog center
+ * @y_dist : Y offset from analog center
+ * @first_touch : Set true if analog was not controlled in previous poll
+ *
+ * Gets the analog input state based on @x and @y, and applies to @out.
+ */
+static void input_overlay_get_analog_state(
+      input_overlay_state_t *out, struct overlay_desc *desc,
+      unsigned base, float x, float y, float *x_dist, float *y_dist,
+      bool first_touch)
+{
+   float x_val, y_val;
+   float x_val_sat, y_val_sat;
+   const int b = base / 2;
+
+   static float x_center[2];
+   static float y_center[2];
+
+   if (first_touch)
+   {
+      unsigned recenter_zone =  /* [0,100] */
+            config_get_ptr()->uints.input_overlay_analog_recenter_zone;
+
+      if (recenter_zone != 0)
+      {
+         float touch_dist, w;
+
+         x_val      = (x - desc->x_shift) / desc->range_x;
+         y_val      = (y - desc->y_shift) / desc->range_y;
+         touch_dist = sqrt((x_val * x_val + y_val * y_val) * 1e4);
+
+         /* Inside zone, recenter to first touch.
+          * Outside zone, recenter to zone perimeter. */
+         if (touch_dist <= recenter_zone || recenter_zone >= 100)
+            w = 0.0f;
+         else
+            w = (touch_dist - recenter_zone) / touch_dist;
+
+         x_center[b] = x * (1.0f - w) + desc->x_shift * w;
+         y_center[b] = y * (1.0f - w) + desc->y_shift * w;
+      }
+      else
+      {
+         x_center[b] = desc->x_shift;
+         y_center[b] = desc->y_shift;
+      }
+   }
+
+   *x_dist   = x - x_center[b];
+   *y_dist   = y - y_center[b];
+   x_val     = *x_dist / desc->range_x;
+   y_val     = *y_dist / desc->range_y;
+   x_val_sat = x_val   / desc->analog_saturate_pct;
+   y_val_sat = y_val   / desc->analog_saturate_pct;
+
+   out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+   out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
 }
 
 /**
@@ -2047,6 +3034,7 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  * input_overlay_poll:
  * @out                   : Polled output data.
  * @touch_idx             : Touch pointer index.
+ * @old_touch_idx         : Touch pointer index from previous poll, or -1.
  * @norm_x                : Normalized X coordinate.
  * @norm_y                : Normalized Y coordinate.
  * @touch_scale           : Overlay scale.
@@ -2055,16 +3043,19 @@ static bool input_overlay_coords_inside_hitbox(const struct overlay_desc *desc,
  *
  * @norm_x and @norm_y are the result of
  * video_driver_translate_coord_viewport().
+ *
+ * @return true if touch pointer is inside any hitbox
  **/
-static void input_overlay_poll(
+static bool input_overlay_poll(
       input_overlay_t *ol,
       input_overlay_state_t *out,
-      int touch_idx, int16_t norm_x, int16_t norm_y, float touch_scale)
+      int touch_idx, int old_touch_idx,
+      int16_t norm_x, int16_t norm_y, float touch_scale)
 {
    size_t i, j;
    struct overlay_desc *descs = ol->active->descs;
    unsigned int highest_prio  = 0;
-   int old_touch_idx          = input_driver_st.old_touch_index_lut[touch_idx];
+   bool any_hitbox_pressed    = false;
    bool use_range_mod;
 
    /* norm_x and norm_y is in [-0x7fff, 0x7fff] range,
@@ -2133,24 +3124,24 @@ static void input_overlay_poll(
             break;
          case OVERLAY_TYPE_DPAD_AREA:
          case OVERLAY_TYPE_ABXY_AREA:
-            input_overlay_get_eightway_state(
-                  desc, desc->eightway_config,
-                  &out->buttons, x_dist, y_dist);
+            /* Gate on eightway_config because task_overlay_desc_
+             * populate_eightway_config can legitimately fail its
+             * calloc under OOM and leave this field NULL for an
+             * area-type desc that requires it.  Without the
+             * gate input_overlay_get_eightway_state NULL-derefs
+             * on eightway->slope_high below. */
+            if (desc->eightway_config)
+               input_overlay_get_eightway_state(
+                     desc, desc->eightway_config,
+                     &out->buttons, x_dist, y_dist);
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
             base = 2;
             /* fall-through */
          default:
-            {
-               float x_val           = x_dist / desc->range_x;
-               float y_val           = y_dist / desc->range_y;
-               float x_val_sat       = x_val / desc->analog_saturate_pct;
-               float y_val_sat       = y_val / desc->analog_saturate_pct;
-               out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-               out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f)
-                  * 32767.0f;
-            }
+            input_overlay_get_analog_state(
+                  out, desc, base, x, y,
+                  &x_dist, &y_dist, !use_range_mod);
             break;
       }
 
@@ -2161,10 +3152,14 @@ static void input_overlay_poll(
          desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
             * ol->active->mod_h;
       }
+
+      any_hitbox_pressed = true;
    }
 
    if (ol->flags & INPUT_OVERLAY_BLOCKED)
       memset(out, 0, sizeof(*out));
+
+   return any_hitbox_pressed;
 }
 
 /**
@@ -2496,6 +3491,40 @@ void input_overlay_load_active(
 }
 
 /**
+ * input_overlay_next_move_touch_masks
+ * @ol : Overlay handle.
+ *
+ * Finds similar descs in the next overlay (i.e. same location and type)
+ * and moves touch masks from active overlay to next.
+ */
+void input_overlay_next_move_touch_masks(input_overlay_t *ol)
+{
+   const struct overlay *active = ol->active;
+   const struct overlay *next   = ol->overlays + ol->next_index;
+   size_t i, j;
+
+   for (i = 0; i < active->size; i++)
+   {
+      struct overlay_desc *desc = active->descs + i;
+
+      if (desc->old_touch_mask)
+      {
+         for (j = 0; j < next->size; j++)
+         {
+            struct overlay_desc *desc2 = next->descs + j;
+
+            if (     desc2->type == desc->type
+                  && fabs(desc2->x - desc->x) < 0.01f
+                  && fabs(desc2->y - desc->y) < 0.01f)
+               desc2->old_touch_mask = desc->old_touch_mask;
+         }
+
+         desc->old_touch_mask = 0;
+      }
+   }
+}
+
+/**
  * input_overlay_poll_clear:
  * @ol                    : overlay handle
  *
@@ -2543,6 +3572,9 @@ void input_overlay_set_alpha_mod(
    if (!ol)
       return;
 
+   if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+      mod = 0.0f;
+
    for (i = 0; i < ol->active->load_images_size; i++)
    {
       if (input_overlay_get_visibility(visibility, i)
@@ -2551,6 +3583,20 @@ void input_overlay_set_alpha_mod(
       else
           ol->iface->set_alpha(ol->iface_data, i, mod);
    }
+}
+
+static void input_overlay_free_images(input_overlay_t *ol)
+{
+   size_t i;
+
+   if (!ol || !ol->images)
+      return;
+
+   for (i = 0; i < ol->num_images; i++)
+      image_texture_free(ol->images[i]);
+
+   free(ol->images);
+   ol->images = NULL;
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -2576,7 +3622,6 @@ void input_overlay_free_overlay(struct overlay *overlay)
 
    for (i = 0; i < overlay->size; i++)
    {
-      image_texture_free(&overlay->descs[i].image);
       if (overlay->descs[i].eightway_config)
          free(overlay->descs[i].eightway_config);
       overlay->descs[i].eightway_config = NULL;
@@ -2588,7 +3633,6 @@ void input_overlay_free_overlay(struct overlay *overlay)
    if (overlay->descs)
       free(overlay->descs);
    overlay->descs       = NULL;
-   image_texture_free(&overlay->image);
 }
 
 /**
@@ -2601,6 +3645,8 @@ static void input_overlay_free(input_overlay_t *ol)
 {
    if (!ol)
       return;
+
+   input_overlay_free_images(ol);
 
    input_overlay_free_overlays(ol);
 
@@ -2636,7 +3682,7 @@ void input_overlay_auto_rotate_(
       screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
 
    /* Get orientation of active overlay */
-   if (!string_is_empty(ol->active->name))
+   if (*ol->active->name)
    {
       if (strstr(ol->active->name, "landscape"))
          active_overlay_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
@@ -2662,7 +3708,7 @@ void input_overlay_auto_rotate_(
       if (!desc)
          continue;
 
-      if (!string_is_empty(desc->next_index_name))
+      if (*desc->next_index_name)
       {
          bool next_overlay_found = false;
          if (active_overlay_orientation == OVERLAY_ORIENTATION_LANDSCAPE)
@@ -2681,6 +3727,295 @@ void input_overlay_auto_rotate_(
             break;
          }
       }
+   }
+}
+
+/**
+ * input_overlay_poll_lightgun
+ * @settings : pointer to settings
+ * @ol : overlay handle
+ * @old_ptr_count : previous poll's non-hitbox pointer count
+ *
+ * Updates multi-touch button state of the overlay lightgun.
+ */
+static void input_overlay_poll_lightgun(settings_t *settings,
+      input_overlay_t *ol, const int old_ptr_count)
+{
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   const int ptr_count                   = ptr_st->count;
+   unsigned action                       = OVERLAY_LIGHTGUN_ACTION_NONE;
+   int8_t trig_delay                     =
+         settings->uints.input_overlay_lightgun_trigger_delay;
+   int8_t delay_idx;
+
+   static uint16_t trig_buf;
+   static uint8_t now_idx;
+   static uint8_t peak_ptr_count;
+   static const unsigned action_to_id[OVERLAY_LIGHTGUN_ACTION_END] = {
+      RARCH_BIND_LIST_END,
+      RARCH_LIGHTGUN_TRIGGER,
+      RARCH_LIGHTGUN_RELOAD,
+      RARCH_LIGHTGUN_AUX_A,
+      RARCH_LIGHTGUN_AUX_B,
+      RARCH_LIGHTGUN_AUX_C,
+      RARCH_LIGHTGUN_START,
+      RARCH_LIGHTGUN_SELECT,
+      RARCH_LIGHTGUN_DPAD_UP,
+      RARCH_LIGHTGUN_DPAD_DOWN,
+      RARCH_LIGHTGUN_DPAD_LEFT,
+      RARCH_LIGHTGUN_DPAD_RIGHT
+   };
+
+   /* Update peak pointer count */
+   if (!old_ptr_count && ptr_count)
+      peak_ptr_count = ptr_count;
+   else
+      peak_ptr_count = MAX(ptr_count, peak_ptr_count);
+
+   /* Apply trigger delay */
+   now_idx   = (now_idx + 1) % (OVERLAY_LIGHTGUN_TRIG_MAX_DELAY + 1);
+   delay_idx = (now_idx + trig_delay) % (OVERLAY_LIGHTGUN_TRIG_MAX_DELAY + 1);
+
+   if (ptr_count > 0)
+      BIT16_SET(trig_buf, delay_idx);
+   else
+      BIT16_CLEAR(trig_buf, delay_idx);
+
+   /* Create button input if we're past the trigger delay */
+   if (BIT16_GET(trig_buf, now_idx))
+   {
+      switch (peak_ptr_count)
+      {
+         case 1:
+            if (settings->bools.input_overlay_lightgun_trigger_on_touch)
+               action = OVERLAY_LIGHTGUN_ACTION_TRIGGER;
+            break;
+         case 2:
+            action = settings->uints.input_overlay_lightgun_two_touch_input;
+            break;
+         case 3:
+            action = settings->uints.input_overlay_lightgun_three_touch_input;
+            break;
+         case 4:
+            action = settings->uints.input_overlay_lightgun_four_touch_input;
+            break;
+         default:
+            break;
+      }
+   }
+
+   ptr_st->lightgun.multitouch_id = action_to_id[action];
+}
+
+static void input_overlay_get_mouse_scale(settings_t *settings,
+      float *scale_x, float *scale_y,
+      int *swipe_thres_x, int *swipe_thres_y)
+{
+   video_driver_state_t *video_st   = video_state_get_ptr();
+   struct retro_game_geometry *geom = &video_st->av_info.geometry;
+
+   if (geom->base_height)
+   {
+      float adj_x, adj_y;
+      float speed          = settings->floats.input_overlay_mouse_speed;
+      float swipe_thres    =
+            655.35f * settings->floats.input_overlay_mouse_swipe_threshold;
+      float display_aspect = (float)video_st->width / video_st->height;
+      float core_aspect    = (float)geom->base_width / geom->base_height;
+
+      if (display_aspect > core_aspect)
+      {
+         adj_x = speed * (display_aspect / core_aspect);
+         adj_y = speed;
+      }
+      else
+      {
+         adj_y = speed * (core_aspect / display_aspect);
+         adj_x = speed;
+      }
+
+      *scale_x = (adj_x * geom->base_width) / (float)0x7fff;
+      *scale_y = (adj_y * geom->base_height) / (float)0x7fff;
+
+      if (display_aspect > 1.0f)
+      {
+         *swipe_thres_x = (int)(swipe_thres / display_aspect);
+         *swipe_thres_y = (int)swipe_thres;
+      }
+      else
+      {
+         *swipe_thres_x = (int)swipe_thres;
+         *swipe_thres_y = (int)(swipe_thres / display_aspect);
+      }
+   }
+}
+
+/**
+ * input_overlay_poll_mouse
+ * @settings : pointer to settings
+ * @mouse_st : pointer to overlay mouse state
+ * @ol : overlay handle
+ * @ptr_count : this poll's non-hitbox pointer count
+ * @old_ptr_count : previous poll's non-hitbox pointer count
+ *
+ * Updates button state of the overlay mouse.
+ */
+static void input_overlay_poll_mouse(settings_t *settings,
+      struct input_overlay_mouse_state *mouse_st,
+      input_overlay_t *ol,
+      const int ptr_count,
+      const int old_ptr_count)
+{
+   input_overlay_pointer_state_t *ptr_st = &ol->pointer_state;
+   const retro_time_t now_usec           = cpu_features_get_time_usec();
+   const retro_time_t hold_usec          = settings->uints.input_overlay_mouse_hold_msec * 1000;
+   const retro_time_t dtap_usec          = settings->uints.input_overlay_mouse_dtap_msec * 1000;
+   const uint8_t alt_2touch              = settings->uints.input_overlay_mouse_alt_two_touch_input;
+   int swipe_thres_x                     = 0;
+   int swipe_thres_y                     = 0;
+   const bool hold_to_drag               = settings->bools.input_overlay_mouse_hold_to_drag;
+   const bool dtap_to_drag               = settings->bools.input_overlay_mouse_dtap_to_drag;
+   bool want_feedback                    = false;
+   bool is_swipe, is_brief, is_long;
+
+   static retro_time_t start_usec;
+   static retro_time_t last_down_usec;
+   static retro_time_t last_up_usec;
+   static retro_time_t pending_click_usec;
+   static retro_time_t click_dur_usec;
+   static retro_time_t click_end_usec;
+   static int x_start;
+   static int y_start;
+   static int peak_ptr_count;
+   static int old_peak_ptr_count;
+   static bool check_gestures;
+   static bool pending_click;
+   static const uint8_t btns[OVERLAY_MAX_TOUCH + 1] =
+         {0x0, 0x1, 0x2, 0x4};  /* none, lmb, rmb, mmb */
+
+   input_overlay_get_mouse_scale(settings,
+         (float*)&mouse_st->scale_x, &mouse_st->scale_y,
+         &swipe_thres_x, &swipe_thres_y);
+
+   /* Check for pointer count changes */
+   if (ptr_count != old_ptr_count)
+   {
+      mouse_st->click = 0;
+      pending_click   = false;
+
+      /* Assume main pointer changed. Reset deltas */
+      mouse_st->prev_screen_x = x_start = ptr_st->screen_x;
+      mouse_st->prev_screen_y = y_start = ptr_st->screen_y;
+
+      if (ptr_count > old_ptr_count)
+      {
+         /* Pointer added */
+         peak_ptr_count = ptr_count;
+         start_usec     = now_usec;
+
+         /* Alt 2-touch input. After gesture checks,
+          * use 2nd touch as a button */
+         if (!check_gestures && ptr_count == 2)
+            mouse_st->hold = btns[alt_2touch];
+      }
+      else
+      {
+         /* Pointer removed */
+         mouse_st->hold = 0;
+         if (!ptr_count)
+            old_peak_ptr_count = peak_ptr_count;
+      }
+   }
+
+   /* Action type */
+   is_swipe = abs(ptr_st->screen_x - x_start) > swipe_thres_x ||
+              abs(ptr_st->screen_y - y_start) > swipe_thres_y;
+   is_brief = (now_usec - start_usec) < 200000;
+   is_long  = (now_usec - start_usec) > (hold_to_drag ? hold_usec : 250000);
+
+   /* Check if new button input should be created */
+   if (check_gestures)
+   {
+      if (!is_swipe)
+      {
+         if (     hold_to_drag
+               && is_long && ptr_count && !mouse_st->hold)
+         {
+            /* Long press */
+            mouse_st->hold = btns[ptr_count];
+            want_feedback  = true;
+         }
+         else if (is_brief)
+         {
+            if (ptr_count && !old_ptr_count)
+            {
+               /* New input. Check for double tap */
+               if (     dtap_to_drag
+                     && now_usec - last_up_usec < dtap_usec)
+                  mouse_st->hold = btns[old_peak_ptr_count];
+
+               last_down_usec = now_usec;
+            }
+            else if (!ptr_count && old_ptr_count)
+            {
+               /* Finished a tap. Send click */
+               click_dur_usec = (now_usec - last_down_usec) + 5000;
+
+               if (dtap_to_drag)
+               {
+                  pending_click      = true;
+                  pending_click_usec = now_usec + dtap_usec;
+               }
+               else
+               {
+                  mouse_st->click    = btns[peak_ptr_count];
+                  click_end_usec     = now_usec + click_dur_usec;
+               }
+
+               last_up_usec = now_usec;
+            }
+         }
+      }
+      else
+      {
+         /* Swiping. Stop gesture checks and possibly hold a button */
+         if (ptr_count > 1)
+         {
+            if (hold_to_drag && !alt_2touch)
+            {
+               mouse_st->hold = btns[ptr_count];
+               want_feedback = true;
+            }
+            else if (alt_2touch && !hold_to_drag
+                  && ptr_count == 2)
+               mouse_st->hold = btns[alt_2touch];
+         }
+         check_gestures = false;
+      }
+   }
+
+   /* Check for pending click */
+   if (pending_click && now_usec >= pending_click_usec)
+   {
+      mouse_st->click = (1 << (old_peak_ptr_count - 1));
+      click_end_usec  = now_usec + click_dur_usec;
+      pending_click   = false;
+   }
+
+   if (!ptr_count)
+      check_gestures = true;
+   else if (is_long)
+      check_gestures = false;
+
+   /* Remove stale clicks */
+   if (mouse_st->click && now_usec > click_end_usec)
+      mouse_st->click = 0;
+
+   if (want_feedback && settings->bools.vibrate_on_keypress)
+   {
+      input_driver_t *input = input_driver_st.current_driver;
+      if (input && input->keypress_vibrate)
+         input->keypress_vibrate();
    }
 }
 
@@ -2705,7 +4040,7 @@ static void input_overlay_track_touch_inputs(
    /* Compute (squared) distances and match new indexes to old */
    for (i = 0; i < state->touch_count; i++)
    {
-      min_sq_dist[i] = 1e10f;
+      min_sq_dist[i] = 3e8f;
 
       for (j = 0; j < old_state->touch_count; j++)
       {
@@ -2729,15 +4064,66 @@ static void input_overlay_track_touch_inputs(
       outlier = 0;
 
       for (i = 0; i < state->touch_count; i++)
-         if (     min_sq_dist[i] > outlier
-               && old_index_lut[i] != -1)
+         if (min_sq_dist[i] > outlier)
          {
-            outlier = min_sq_dist[i];
-            new_idx = i;
+            outlier        = min_sq_dist[i];
+            new_idx        = i;
+            min_sq_dist[i] = 0;
          }
 
       old_index_lut[new_idx] = -1;
    }
+}
+
+static void input_overlay_update_pointer_coords(
+      input_overlay_pointer_state_t *ptr_st, int touch_idx)
+{
+   void *input_data      = input_driver_st.current_data;
+   input_driver_t *input = (input_driver_t*)input_driver_st.current_driver;
+
+   /* Need multi-touch coordinates for pointer only */
+   if (     ptr_st->count
+         && !(ptr_st->device_mask & (1 << RETRO_DEVICE_POINTER)))
+   {
+      ptr_st->count++;
+      return;
+   }
+
+   /* Need viewport pointers for pointer and lightgun */
+   if (     ptr_st->device_mask
+         & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
+   {
+      ptr_st->ptr[ptr_st->count].x  = input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RETRO_DEVICE_POINTER,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_X);
+      ptr_st->ptr[ptr_st->count].y  = input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RETRO_DEVICE_POINTER,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_Y);
+   }
+
+   /* Need fullscreen pointer for mouse only */
+   if (     !ptr_st->count
+         && (ptr_st->device_mask & (1 << RETRO_DEVICE_MOUSE)))
+   {
+      ptr_st->mouse.prev_screen_x = ptr_st->screen_x;
+      ptr_st->screen_x            = input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RARCH_DEVICE_POINTER_SCREEN,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_X);
+      ptr_st->mouse.prev_screen_y = ptr_st->screen_y;
+      ptr_st->screen_y            = input->input_state(
+            input_data, NULL, NULL, NULL, NULL, true, 0,
+            RARCH_DEVICE_POINTER_SCREEN,
+            touch_idx,
+            RETRO_DEVICE_ID_POINTER_Y);
+   }
+
+   ptr_st->count++;
 }
 
 /*
@@ -2745,7 +4131,7 @@ static void input_overlay_track_touch_inputs(
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static void input_poll_overlay(
+INPUT_NOINLINE static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,
@@ -2756,19 +4142,29 @@ static void input_poll_overlay(
 {
    input_overlay_state_t old_ol_state;
    int i, j;
-   input_overlay_t *ol                     = (input_overlay_t*)ol_data;
-   uint16_t key_mod                        = 0;
-   bool button_pressed                     = false;
-   input_driver_state_t *input_st          = &input_driver_st;
-   void *input_data                        = input_st->current_data;
-   input_overlay_state_t *ol_state         = &ol->overlay_state;
-   input_driver_t *current_input           = input_st->current_driver;
+   input_overlay_t *ol                      = (input_overlay_t*)ol_data;
+   int blocked_touch_idx                    = -1;
+   uint16_t key_mod                         = 0;
+   uint16_t ptrdev_touch_mask               = 0;
+   uint16_t hitbox_touch_mask               = 0;
+   bool button_pressed                      = false;
+   input_driver_state_t *input_st           = &input_driver_st;
+   void *input_data                         = input_st->current_data;
+   input_overlay_state_t *ol_state          = &ol->overlay_state;
+   input_overlay_pointer_state_t *ptr_state = &ol->pointer_state;
+   input_driver_t *input                    = (input_driver_t*)input_st->current_driver;
    enum overlay_show_input_type
-         input_overlay_show_inputs         = (enum overlay_show_input_type)
+         input_overlay_show_inputs          = (enum overlay_show_input_type)
                settings->uints.input_overlay_show_inputs;
-   unsigned input_overlay_show_inputs_port = settings->uints.input_overlay_show_inputs_port;
-   float touch_scale                       = (float)settings->uints.input_touch_scale;
-   bool osk_state_changed                  = false;
+   unsigned input_overlay_show_inputs_port  = settings->uints.input_overlay_show_inputs_port;
+   float touch_scale                        = (float)settings->uints.input_touch_scale;
+   bool ol_ptr_enable                       = settings->bools.input_overlay_pointer_enable;
+   bool osk_state_changed                   = false;
+
+   static int old_ptr_count;
+   static int old_blocked_touch_idx;
+   static int16_t old_ptrdev_touch_mask;
+   static int16_t old_hitbox_touch_mask;
 
    if (!ol_state)
       return;
@@ -2777,7 +4173,17 @@ static void input_poll_overlay(
          sizeof(old_ol_state));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   if (current_input->input_state)
+   if (ol_ptr_enable)
+   {
+      old_ptr_count    = ptr_state->count;
+      ptr_state->count = 0;
+   }
+
+   /* input_data is dereferenced by the driver's pointer paths, so a
+    * NULL current_data (mid driver teardown/reinit, e.g. Android
+    * surface recreation) must skip driver input for this frame
+    * instead of faulting inside the input driver. */
+   if (input->input_state && input_data)
    {
       rarch_joypad_info_t joypad_info;
       unsigned device                 = (ol->active->flags & OVERLAY_FULL_SCREEN)
@@ -2797,9 +4203,13 @@ static void input_poll_overlay(
       joypad_info.auto_binds          = NULL;
       joypad_info.axis_threshold      = 0.0f;
 
-      /* Get driver input */
+      /* Get driver input.
+       * Bound check first: the PRESSED query must never be issued
+       * with idx == OVERLAY_MAX_TOUCH, since drivers index their
+       * touch arrays by idx and are not required to range-check it. */
       for (i = 0;
-            current_input->input_state(
+               (i < OVERLAY_MAX_TOUCH)
+            && input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -2809,11 +4219,10 @@ static void input_poll_overlay(
                0,
                device,
                i,
-               RETRO_DEVICE_ID_POINTER_PRESSED)
-                  && i < OVERLAY_MAX_TOUCH;
+               RETRO_DEVICE_ID_POINTER_PRESSED);
             i++)
       {
-         ol_state->touch[i].x = current_input->input_state(
+         ol_state->touch[i].x = input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -2824,7 +4233,7 @@ static void input_poll_overlay(
                device,
                i,
                RETRO_DEVICE_ID_POINTER_X);
-         ol_state->touch[i].y = current_input->input_state(
+         ol_state->touch[i].y = input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -2845,43 +4254,97 @@ static void input_poll_overlay(
       for (i = 0; i < ol_state->touch_count; i++)
       {
          input_overlay_state_t polled_data;
+         int old_i           = input_st->old_touch_index_lut[i];
+         bool hitbox_pressed = false;
+
+         if (old_i != -1)
+         {
+            /* Keep each touch pointer dedicated to the same input type
+             * (hitbox or pointing device) from the previous poll */
+            if (BIT16_GET(old_hitbox_touch_mask, old_i))
+               BIT16_SET(hitbox_touch_mask, i);
+            else if (BIT16_GET(old_ptrdev_touch_mask, old_i))
+               BIT16_SET(ptrdev_touch_mask, i);
+
+            /* Skip blocked touch pointer and freeze any overlay_next
+             * input until the blocked touch is removed */
+            if (old_i == old_blocked_touch_idx)
+            {
+               blocked_touch_idx = i;
+               if (BIT256_GET(old_ol_state.buttons, RARCH_OVERLAY_NEXT))
+                  BIT256_SET(ol_state->buttons, RARCH_OVERLAY_NEXT);
+               continue;
+            }
+         }
+
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
-         if (ol->flags & INPUT_OVERLAY_ENABLE)
-            input_overlay_poll(ol, &polled_data, i,
+         /* Check hitboxes only if this touch pointer
+          * is not controlling a pointing device */
+         if (   ol->flags & INPUT_OVERLAY_ENABLE
+             && !(ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+             && !BIT16_GET(ptrdev_touch_mask, i))
+            hitbox_pressed = input_overlay_poll(
+                  ol, &polled_data, i, old_i,
                   ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
 
-         bits_or_bits(ol_state->buttons.data,
-               polled_data.buttons.data,
-               ARRAY_SIZE(polled_data.buttons.data));
+         if (hitbox_pressed)
+         {
+            /* Block touch pointer if overlay_next was pressed */
+            if (BIT256_GET(polled_data.buttons, RARCH_OVERLAY_NEXT))
+               blocked_touch_idx = i;
 
-         for (j = 0; j < (int)ARRAY_SIZE(ol_state->keys); j++)
-            ol_state->keys[j] |= polled_data.keys[j];
+            bits_or_bits(ol_state->buttons.data,
+                  polled_data.buttons.data,
+                  ARRAY_SIZE(polled_data.buttons.data));
 
-         /* Fingers pressed later take priority and matched up
-          * with overlay poll priorities. */
-         for (j = 0; j < 4; j++)
-            if (polled_data.analog[j])
-               ol_state->analog[j] = polled_data.analog[j];
+            for (j = 0; j < (int)ARRAY_SIZE(ol_state->keys); j++)
+               ol_state->keys[j] |= polled_data.keys[j];
+
+            /* Fingers pressed later take priority and matched up
+             * with overlay poll priorities. */
+            for (j = 0; j < 4; j++)
+               if (polled_data.analog[j])
+                  ol_state->analog[j] = polled_data.analog[j];
+
+            hitbox_touch_mask |= (1 << i);
+         }
+         else if (   ol_ptr_enable
+                  && ptr_state->device_mask
+                  && !BIT16_GET(hitbox_touch_mask, i)
+                  && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         {
+            input_overlay_update_pointer_coords(ptr_state, i);
+            ptrdev_touch_mask |= (1 << i);
+         }
       }
    }
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
+   if (ol_ptr_enable)
+   {
+      if (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
+         input_overlay_poll_lightgun(settings, ol, old_ptr_count);
+      if (ptr_state->device_mask & (1 << RETRO_DEVICE_MOUSE))
+         input_overlay_poll_mouse(settings, &ptr_state->mouse, ol,
+               ptr_state->count, old_ptr_count);
+   }
+
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))
       key_mod |= RETROKMOD_SHIFT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LCTRL) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LCTRL)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RCTRL))
       key_mod |= RETROKMOD_CTRL;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LALT) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RALT))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LALT)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RALT))
       key_mod |= RETROKMOD_ALT;
 
-   if (  OVERLAY_GET_KEY(ol_state, RETROK_LMETA) ||
-         OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
+   if (     OVERLAY_GET_KEY(ol_state, RETROK_LMETA)
+         || OVERLAY_GET_KEY(ol_state, RETROK_RMETA))
       key_mod |= RETROKMOD_META;
 
    /* CAPSLOCK SCROLLOCK NUMLOCK */
@@ -2897,7 +4360,7 @@ static void input_poll_overlay(
             if ((orig_bits & (1 << j)) != (new_bits & (1 << j)))
             {
                unsigned rk = i * 32 + j;
-               uint32_t c  = input_keymaps_translate_rk_to_ascii(rk, key_mod);
+               uint32_t c  = input_keymaps_translate_rk_to_ascii((enum retro_key)rk, (enum retro_mod)key_mod);
                input_keyboard_event(new_bits & (1 << j),
                      rk, c, key_mod, RETRO_DEVICE_POINTER);
             }
@@ -2946,6 +4409,60 @@ static void input_poll_overlay(
          break;
       }
 
+      case ANALOG_DPAD_LRSTICK:
+      {
+         float analog_x, analog_y;
+
+         analog_x = (float)ol_state->analog[0] / 0x7fff;
+         analog_y = (float)ol_state->analog[1] / 0x7fff;
+
+         if (!analog_x)
+            analog_x = (float)ol_state->analog[2] / 0x7fff;
+
+         if (!analog_y)
+            analog_y = (float)ol_state->analog[3] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         break;
+      }
+
+      case ANALOG_DPAD_TWINSTICK:
+      {
+         float analog_x, analog_y;
+
+         analog_x = (float)ol_state->analog[0] / 0x7fff;
+         analog_y = (float)ol_state->analog[1] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
+
+         analog_x = (float)ol_state->analog[2] / 0x7fff;
+         analog_y = (float)ol_state->analog[3] / 0x7fff;
+
+         if (analog_x <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_Y);
+         if (analog_x >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_A);
+         if (analog_y <= -axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_X);
+         if (analog_y >=  axis_threshold)
+            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_B);
+         break;
+      }
+
       default:
          break;
    }
@@ -2955,13 +4472,46 @@ static void input_poll_overlay(
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
-   if (button_pressed)
+   /* Block other touchscreen input as needed. */
+   if (     button_pressed
+#if TARGET_OS_IPHONE
+         || (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
+         || (ol->flags & INPUT_OVERLAY_BLOCKED))
+#else
+         || ol_ptr_enable)
+#endif
       input_st->flags |=  INP_FLAG_BLOCK_POINTER_INPUT;
    else
       input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
+
+   /* menu_toggle fires on release and cannot tell a lift from a
+    * slide-off, so a slide-off must cancel it here. */
+   if (ol_state->touch_count)
+   {
+      int d, t;
+      for (d = 0; d < (int)ol->active->size; d++)
+      {
+         struct overlay_desc *desc = &ol->active->descs[d];
+
+         if (    desc->touch_mask
+             || !desc->old_touch_mask
+             || !BIT256_GET(desc->button_mask, RARCH_MENU_TOGGLE))
+            continue;
+
+         for (t = 0; t < ol_state->touch_count; t++)
+         {
+            int old_t = input_st->old_touch_index_lut[t];
+            if (old_t >= 0 && BIT32_GET(desc->old_touch_mask, old_t))
+            {
+               input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
+               break;
+            }
+         }
+      }
+   }
 
    if (button_pressed || ol_state->touch_count)
       input_overlay_post_poll(overlay_visibility, ol,
@@ -2971,11 +4521,10 @@ static void input_poll_overlay(
 
    /* Create haptic feedback for any change in button/key state,
     * unless touch_count decreased. */
-   if (     current_input->keypress_vibrate
+   if (     input->keypress_vibrate
          && settings->bools.vibrate_on_keypress
          && ol_state->touch_count
-         && ol_state->touch_count >= old_ol_state.touch_count
-         && !(ol->flags & INPUT_OVERLAY_BLOCKED))
+         && ol_state->touch_count >= old_ol_state.touch_count)
    {
       if (     osk_state_changed
             || bits_any_different(
@@ -2983,8 +4532,13 @@ static void input_poll_overlay(
                      old_ol_state.buttons.data,
                      ARRAY_SIZE(old_ol_state.buttons.data))
          )
-         current_input->keypress_vibrate();
+         input->keypress_vibrate();
    }
+
+   old_hitbox_touch_mask  = hitbox_touch_mask;
+   old_ptrdev_touch_mask  = ptrdev_touch_mask;
+   old_blocked_touch_idx  = blocked_touch_idx;
+   ptr_state->device_mask = 0;
 }
 #endif
 
@@ -3029,38 +4583,52 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
-void input_config_get_bind_string(
+/* Every helper below returns the untruncated (would-be) length of what
+ * it formatted, so one bind label longer than the destination pushes
+ * _len past len, and each later "len - _len" size underflows to a huge
+ * size_t: bionic's FORTIFY aborts on it, and the next copy's "s + _len"
+ * writes out of bounds everywhere else. Saturate the offset at the last
+ * writable byte after every segment. */
+#define BIND_STR_CLAMP(_l, _cap) (((_l) < (_cap)) ? (_l) : ((_cap) - 1))
+
+size_t input_config_get_bind_string(
       void *settings_data,
-      char *buf,
+      char *s,
       const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
-      size_t size)
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label,
+      size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
+   size_t _len                          = 0;
    int delim                            = 0;
    bool  input_descriptor_label_show    =
       settings->bools.input_descriptor_label_show;
 
-   *buf                                 = '\0';
+   if (len == 0)
+      return 0;
+   *s                                 = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, label, len);
    else if (bind      && bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "", bind, size);
+            s, "", bind, label, len);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
-      input_config_get_bind_string_joykey(
+      _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, auto_label, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
-      input_config_get_bind_string_joyaxis(
+      _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            buf, "(Auto)", auto_bind, size);
+            s, "(Auto)", auto_bind, auto_label, len);
+   _len = BIND_STR_CLAMP(_len, len);
 
-   if (*buf)
+   if (*s)
       delim = 1;
 
 #ifndef RARCH_CONSOLE
@@ -3078,15 +4646,13 @@ void input_config_get_bind_string(
       /*empty?*/
       else if (*key != '\0')
       {
-         char keybuf[64];
-
-         keybuf[0] = '\0';
-
          if (delim)
-            strlcat(buf, ", ", size);
-         snprintf(keybuf, sizeof(keybuf),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
-         strlcat(buf, keybuf, size);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, ", ", len - _len), len);
+         _len     = BIND_STR_CLAMP(
+               _len + snprintf(s + _len, len - _len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key),
+               len);
          delim = 1;
       }
    }
@@ -3129,86 +4695,121 @@ void input_config_get_bind_string(
       if (tag != 0)
       {
          if (delim)
-            strlcat(buf, ", ", size);
-         strlcat(buf, msg_hash_to_str((enum msg_hash_enums)tag), size);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, ", ", len - _len), len);
+         _len     = BIND_STR_CLAMP(
+               _len + strlcpy(s + _len,
+                     msg_hash_to_str((enum msg_hash_enums)tag), len - _len),
+               len);
       }
    }
 
    /*completely empty?*/
-   if (*buf == '\0')
-      strlcat(buf, "---", size);
+   if (*s == '\0')
+      _len = BIND_STR_CLAMP(
+            _len + strlcpy(s + _len, RARCH_NO_BIND, len - _len), len);
+   return _len;
 }
 
-void input_config_get_bind_string_joykey(
+size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
+   const char *joykey_label = label ? label->joykey : NULL;
+   size_t _len = 0;
+   if (len == 0)
+      return 0;
    if (GET_HAT_DIR(bind->joykey))
    {
-      if (      bind->joykey_label
-            && !string_is_empty(bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
+         return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+               joykey_label, suffix, ' ', len), len);
+      /* TODO/FIXME - localize */
+      _len  = BIND_STR_CLAMP((size_t)snprintf(s, len,
+            "Hat #%u ", (unsigned)GET_HAT(bind->joykey)), len);
+      switch (GET_HAT_DIR(bind->joykey))
       {
-         size_t len  = snprintf(buf, size,
-               "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
-
-         switch (GET_HAT_DIR(bind->joykey))
-         {
-            case HAT_UP_MASK:
-               strlcpy(buf + len, "Up",    size - len);
-               break;
-            case HAT_DOWN_MASK:
-               strlcpy(buf + len, "Down",  size - len);
-               break;
-            case HAT_LEFT_MASK:
-               strlcpy(buf + len, "Left",  size - len);
-               break;
-            case HAT_RIGHT_MASK:
-               strlcpy(buf + len, "Right", size - len);
-               break;
-            default:
-               strlcpy(buf + len, "?",     size - len);
-               break;
-         }
+         case HAT_UP_MASK:
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Up",    len - _len), len);
+            break;
+         case HAT_DOWN_MASK:
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Down",  len - _len), len);
+            break;
+         case HAT_LEFT_MASK:
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Left",  len - _len), len);
+            break;
+         case HAT_RIGHT_MASK:
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Right", len - _len), len);
+            break;
+         default:
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "?",     len - _len), len);
+            break;
       }
    }
    else
    {
-      if (      bind->joykey_label
-            && !string_is_empty(bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
-         fill_pathname_join_delim(buf,
-               bind->joykey_label, suffix, ' ', size);
-      else
-         snprintf(buf, size, "%s%u",
-               "Button ", (unsigned)bind->joykey);
+         return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+               joykey_label, suffix, ' ', len), len);
+
+      /* TODO/FIXME - localize */
+      _len  = BIND_STR_CLAMP(strlcpy_lit(s, "Button ", len), len);
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "%u",
+                  (unsigned)bind->joykey), len);
    }
+
+   if (suffix && *suffix)
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, " %s", suffix), len);
+
+   return _len;
 }
 
-void input_config_get_bind_string_joyaxis(
+size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
-      char *buf, const char *suffix,
-      const struct retro_keybind *bind, size_t size)
+      char *s, const char *suffix,
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
-   if (      bind->joyaxis_label
-         && !string_is_empty(bind->joyaxis_label)
+   const char *joyaxis_label = label ? label->joyaxis : NULL;
+   size_t _len = 0;
+   if (len == 0)
+      return 0;
+   if (      joyaxis_label
+         && (joyaxis_label && *joyaxis_label)
          && input_descriptor_label_show)
-      fill_pathname_join_delim(buf,
-            bind->joyaxis_label, suffix, ' ', size);
-   else
-   {
-      size_t _len = strlcpy(buf, "Axis ", size);
-      if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "-%u",
-               (unsigned)AXIS_NEG_GET(bind->joyaxis));
-      else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-         snprintf(buf + _len, size - _len, "+%u",
-               (unsigned)AXIS_POS_GET(bind->joyaxis));
-   }
+      return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+            joyaxis_label, suffix, ' ', len), len);
+
+   /* TODO/FIXME - localize */
+   _len = BIND_STR_CLAMP(strlcpy_lit(s, "Axis ", len), len);
+
+   if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "-%u",
+                  (unsigned)AXIS_NEG_GET(bind->joyaxis)), len);
+   else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "+%u",
+                  (unsigned)AXIS_POS_GET(bind->joyaxis)), len);
+
+   if (suffix && *suffix)
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, " %s", suffix), len);
+
+   return _len;
 }
 
 void osk_update_last_codepoint(
@@ -3241,7 +4842,7 @@ void osk_update_last_codepoint(
 
 #ifdef HAVE_LANGEXTRA
 /* combine 3 korean elements. make utf8 character */
-static unsigned get_kr_utf8( int c1,int c2,int c3)
+static unsigned get_kr_utf8(int c1, int c2, int c3)
 {
    int  uv = c1 * (28 * 21) + c2 * 28 + c3 + 0xac00;
    int  tv = (uv >> 12) | ((uv & 0x0f00) << 2) | ((uv & 0xc0) << 2) | ((uv & 0x3f) << 16);
@@ -3249,7 +4850,7 @@ static unsigned get_kr_utf8( int c1,int c2,int c3)
 }
 
 /* utf8 korean composition */
-static unsigned get_kr_composition( char* pcur, char* padd)
+static unsigned get_kr_composition(char* pcur, char* padd)
 {
    size_t _len;
    static char cc1[] = {"ㄱㄱㄲ ㄷㄷㄸ ㅂㅂㅃ ㅅㅅㅆ ㅈㅈㅉ"};
@@ -3336,7 +4937,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             /* 2nd element transform */
             strlcpy(utf8, s1 + (19 + c2) * 3, 4);
             utf8[3] = 0;
-            strlcat(utf8, padd, sizeof(utf8));
+            strlcpy(utf8 + 3, padd, sizeof(utf8) - 3);
             if (    !(tmp2 = strstr(cc2, utf8))
                   || (tmp2 >= cc2 + sizeof(cc2) - 10))
                return ret;
@@ -3355,7 +4956,7 @@ static unsigned get_kr_composition( char* pcur, char* padd)
             if (nv < 19)
             {
                /* 3rd element transform */
-               strlcat(utf8, padd, sizeof(utf8));
+               strlcpy(utf8 + 3, padd, sizeof(utf8) - 3);
                if (    !(tmp2 = strstr(cc3, utf8))
                      || (tmp2 >= cc3 + sizeof(cc3) - 10))
                      return ret;
@@ -3417,7 +5018,6 @@ static bool input_keyboard_line_event(
    bool            ret         = false;
    const char            *word = NULL;
    char            c           = (character >= 128) ? '?' : character;
-
 #ifdef HAVE_LANGEXTRA
    static uint32_t composition = 0;
    /* reset composition, when edit box is opened. */
@@ -3428,12 +5028,12 @@ static bool input_keyboard_line_event(
       composition = 0;
    if (IS_COMPOSITION(character) || IS_END_COMPOSITION(character))
    {
-      size_t len = strlen((char*)&composition);
-      if (composition && state->buffer && state->size >= len && state->ptr >= len)
+      size_t _len = strlen((char*)&composition);
+      if (composition && state->buffer && state->size >= _len && state->ptr >= _len)
       {
-         memmove(state->buffer + state->ptr-len, state->buffer + state->ptr, len + 1);
-         state->ptr  -= len;
-         state->size -= len;
+         memmove(state->buffer + state->ptr - _len, state->buffer + state->ptr, _len + 1);
+         state->ptr  -= _len;
+         state->size -= _len;
       }
       if (IS_COMPOSITION_KR(character) && composition)
       {
@@ -3452,8 +5052,6 @@ static bool input_keyboard_line_event(
             composition = character & 0xffffff;
          character     &= 0xffffff;
       }
-      if (len && composition == 0)
-         word = state->buffer;
       if (character)
          input_keyboard_line_append(state, (char*)&character, strlen((char*)&character));
       word = state->buffer;
@@ -3463,7 +5061,6 @@ static bool input_keyboard_line_event(
 
    /* Treat extended chars as ? as we cannot support
     * printable characters for unicode stuff. */
-
    if (c == '\r' || c == '\n')
    {
       state->cb(state->userdata, state->buffer);
@@ -3476,25 +5073,27 @@ static bool input_keyboard_line_event(
    }
    else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
-      if (state->ptr)
+      if (state->ptr && state->buffer)
       {
-         unsigned i;
+         size_t ptr = state->ptr;
 
-         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
+         while (state->ptr)
          {
-            memmove(state->buffer + state->ptr - 1,
-                  state->buffer + state->ptr,
-                  state->size - state->ptr + 1);
             state->ptr--;
-            state->size--;
+            if (!IS_UTF8_CONTINUATION(state->buffer[state->ptr]))
+               break;
          }
+
+         memmove(state->buffer + state->ptr,
+               state->buffer + ptr,
+               state->size - ptr + 1);
+         state->size -= ptr - state->ptr;
 
          word     = state->buffer;
       }
    }
    else if (ISPRINT(c))
    {
-      /* Handle left/right here when suitable */
       char *newbuf = (char*)
          realloc(state->buffer, state->size + 2);
       if (!newbuf)
@@ -3526,7 +5125,6 @@ static bool input_keyboard_line_event(
    return ret;
 }
 
-
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
@@ -3535,61 +5133,60 @@ void input_event_osk_append(
       int ptr,
       bool show_symbol_pages,
       const char *word,
-      size_t word_len)
+      size_t len)
 {
 #ifdef HAVE_LANGEXTRA
-   if (string_is_equal(word, "\xe2\x87\xa6")) /* backspace character */
+   if (memcmp(word, "\xe2\x87\xa6", 4) == 0) /* backspace character */
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "\xe2\x8f\x8e")) /* return character */
+   else if (memcmp(word, "\xe2\x8f\x8e", 4) == 0) /* return character */
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "\xe2\x87\xa7")) /* up arrow */
+   else if (memcmp(word, "\xe2\x87\xa7", 4) == 0) /* up arrow */
       *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "\xe2\x87\xa9")) /* down arrow */
+   else if (memcmp(word, "\xe2\x87\xa9", 4) == 0) /* down arrow */
       *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word,"\xe2\x8a\x95")) /* plus sign (next button) */
+   else if (memcmp(word, "\xe2\x8a\x95", 4) == 0) /* plus sign (next button) */
    {
-      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN   )
+      if (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE) == RETRO_LANGUAGE_KOREAN)
       {
-         static int prv_osk = OSK_TYPE_UNKNOWN+1;
-         if (*osk_idx < OSK_KOREAN_PAGE1 )
+         static int prv_osk = OSK_TYPE_UNKNOWN + 1;
+         if (*osk_idx < OSK_KOREAN_PAGE1)
          {
             prv_osk = *osk_idx;
-            *osk_idx =  OSK_KOREAN_PAGE1;
+            *osk_idx = OSK_KOREAN_PAGE1;
          }
          else
             *osk_idx = (enum osk_type)prv_osk;
       }
-      else
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
+      else if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
    }
-   else if (*osk_idx == OSK_KOREAN_PAGE1 && word && word_len == 3)
+   else if (*osk_idx == OSK_KOREAN_PAGE1 && word && len == 3)
    {
       unsigned character = *((unsigned*)word) | 0x01000000;
-      input_keyboard_line_event(&input_driver_st,  keyboard_line, character);
+      input_keyboard_line_event(&input_driver_st, keyboard_line, character);
    }
 #else
-   if (string_is_equal(word, "Bksp"))
+   if (memcmp(word, "Bksp", 5) == 0)
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
-   else if (string_is_equal(word, "Enter"))
+   else if (memcmp(word, "Enter", 6) == 0)
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-   else
-   if (string_is_equal(word, "Upper"))
+   else if (memcmp(word, "Upper", 6) == 0)
       *osk_idx = OSK_UPPERCASE_LATIN;
-   else if (string_is_equal(word, "Lower"))
+   else if (memcmp(word, "Lower", 6) == 0)
       *osk_idx = OSK_LOWERCASE_LATIN;
-   else if (string_is_equal(word, "Next"))
+   else if (memcmp(word, "Next", 5) == 0)
+   {
       if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
          *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         *osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+   }
 #endif
    else
    {
-      input_keyboard_line_append(keyboard_line, word, word_len);
+      input_keyboard_line_append(keyboard_line, word, len);
       osk_update_last_codepoint(
             osk_last_codepoint,
             osk_last_codepoint_len,
@@ -3599,8 +5196,8 @@ void input_event_osk_append(
 
 void *input_driver_init_wrap(input_driver_t *input, const char *name)
 {
-   void *ret                   = NULL;
-   if (!input)
+   void *ret = NULL;
+   if (!input || !input->init)
       return NULL;
    if ((ret = input->init(name)))
    {
@@ -3610,19 +5207,16 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
    return NULL;
 }
 
-bool input_driver_find_driver(
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
+bool input_driver_find_driver(settings_t *settings,
+      const char *prefix, bool verbosity_enabled)
 {
-   int i                = (int)driver_find_index(
-         "input_driver",
+   int i = (int)driver_find_index("input_driver",
          settings->arrays.input_driver);
 
    if (i >= 0)
    {
       input_driver_st.current_driver = (input_driver_t*)input_drivers[i];
-      RARCH_LOG("[Input]: Found %s: \"%s\".\n", prefix,
+      RARCH_LOG("[Input] Found %s: \"%s\".\n", prefix,
             input_driver_st.current_driver->ident);
    }
    else
@@ -3683,9 +5277,60 @@ bool input_set_sensor_state(unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
    settings_t *settings        = config_get_ptr();
-   bool input_sensors_enable   = settings->bools.input_sensors_enable;
+   /* Default to enabled if settings not loaded yet (matches config default) */
+   bool input_sensors_enable   = settings
+      ? settings->bools.input_sensors_enable
+      : true;
+   unsigned joy_idx            = settings
+      ? settings->uints.input_joypad_index[port]
+      : port;
    return input_driver_set_sensor(
-      port, input_sensors_enable, action, rate);
+      joy_idx, input_sensors_enable, action, rate);
+}
+
+/* Core-facing wrappers that track which sensors the core has enabled.
+ * Used as the retro_sensor_interface callbacks so the frontend knows
+ * what the core requested independently of shader/platform enables. */
+bool input_core_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         input_st->core_accel_rate = rate;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         input_st->core_accel_rate = 0;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         input_st->core_gyro_rate = rate;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         input_st->core_gyro_rate = 0;
+         break;
+      default:
+         break;
+   }
+
+   /* pass through to the driver directly. */
+   return input_set_sensor_state(port, action, rate);
+}
+
+float input_core_get_sensor_state(unsigned port, unsigned id)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   /* Only return data for sensor types the core has enabled */
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z && !input_st->core_accel_rate)
+      return 0.0f;
+   if (  id >= RETRO_SENSOR_GYROSCOPE_X
+      && id <= RETRO_SENSOR_GYROSCOPE_Z
+      && !input_st->core_gyro_rate)
+      return 0.0f;
+
+   return input_get_sensor_state(port, id);
 }
 
 const char *joypad_driver_name(unsigned i)
@@ -3716,10 +5361,6 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 #endif
    if (!input_driver_st.primary_joypad)
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
-#ifdef HAVE_MFI
-   if (!input_driver_st.secondary_joypad)
-      input_driver_st.secondary_joypad  = input_joypad_init_driver("mfi", data);
-#endif
 }
 
 /**
@@ -3730,12 +5371,155 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
  *
  * @return The current state associated with the port and ID as a float
  **/
+/**
+ * Internal version that accepts a pre-resolved settings pointer,
+ * avoiding repeated config_get_ptr() calls when invoked in a batch
+ * (e.g. the per-frame sensor cache update in input_driver_poll).
+ */
+static float input_get_sensor_state_internal(
+      settings_t *settings, unsigned port, unsigned id)
+{
+   float raw_value;
+   unsigned joy_idx;
+   bool input_sensors_enable = false;
+   float sensitivity         = 1.0f;
+   unsigned fetch_id         = id;
+   float sign                = 1.0f;
+
+   /* Return 0 if settings unavailable (e.g., during driver transitions) */
+   if (!settings)
+      return 0.0f;
+
+   if (port >= MAX_USERS)
+      return 0.0f;
+
+   input_sensors_enable = settings->bools.input_sensors_enable;
+   joy_idx              = settings->uints.input_joypad_index[port];
+
+   /* Return 0 when sensors disabled */
+   if (!input_sensors_enable)
+      return 0.0f;
+
+   /* Apply sensor axis remap from autoconfig profile */
+   if (id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      const input_sensor_map_t *map = input_config_get_sensor_map(joy_idx);
+      if (map && map->axes[id].source >= 0)
+      {
+         fetch_id = (unsigned)map->axes[id].source;
+         sign     = (float)map->axes[id].sign;
+      }
+   }
+
+   /* Get sensitivity for sensor type */
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
+      sensitivity = settings->floats.input_sensor_accelerometer_sensitivity;
+   else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+      sensitivity = settings->floats.input_sensor_gyroscope_sensitivity;
+
+   /* Apply sensor orientation rotation for X and Y axes.
+    * Skip on iOS/tvOS — cocoa_input handles rotation at the driver level.
+    * Setting values: 0=Auto, 1=0°, 2=90°, 3=180°, 4=270°
+    * Rotation transforms (clockwise):
+    * 0°:   (x, y)   -> (x, y)
+    * 90°:  (x, y)   -> (y, -x)
+    * 180°: (x, y)   -> (-x, -y)
+    * 270°: (x, y)   -> (-y, x)
+    * Both accelerometer and gyroscope use the same orientation setting
+    * since they share the same physical sensor orientation */
+#ifndef HAVE_COCOATOUCH
+   if (id == RETRO_SENSOR_ACCELEROMETER_X || id == RETRO_SENSOR_ACCELEROMETER_Y ||
+       id == RETRO_SENSOR_GYROSCOPE_X || id == RETRO_SENSOR_GYROSCOPE_Y)
+   {
+      unsigned orientation_setting = settings->uints.input_sensor_orientation;
+      unsigned rotation = 0;
+      bool is_gyro = (id == RETRO_SENSOR_GYROSCOPE_X || id == RETRO_SENSOR_GYROSCOPE_Y);
+      bool is_x_axis = (id == RETRO_SENSOR_ACCELEROMETER_X || id == RETRO_SENSOR_GYROSCOPE_X);
+
+      if (orientation_setting == 0)
+      {
+         /* Auto: detect from platform */
+#ifdef ANDROID
+         if (g_android)
+            rotation = g_android->detected_screen_rotation;
+#endif
+      }
+      else
+      {
+         /* Manual: setting 1=0°, 2=90°, 3=180°, 4=270° */
+         rotation = orientation_setting - 1;
+      }
+
+      switch (rotation)
+      {
+         case 1: /* 90° CW: X->Y, Y->-X */
+            if (is_x_axis)
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_Y : RETRO_SENSOR_ACCELEROMETER_Y;
+            else
+            {
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;
+               sign    *= -1.0f;
+            }
+            break;
+         case 2: /* 180°: X->-X, Y->-Y */
+            sign *= -1.0f;
+            break;
+         case 3: /* 270° CW: X->-Y, Y->X */
+            if (is_x_axis)
+            {
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_Y : RETRO_SENSOR_ACCELEROMETER_Y;
+               sign    *= -1.0f;
+            }
+            else
+               fetch_id = is_gyro ? RETRO_SENSOR_GYROSCOPE_X : RETRO_SENSOR_ACCELEROMETER_X;
+            break;
+         default: /* 0°: no change */
+            break;
+      }
+   }
+#endif /* HAVE_COCOATOUCH */
+
+   /* Get raw sensor value (use fetch_id for rotated axes) */
+   raw_value = input_driver_get_sensor(joy_idx, true, fetch_id);
+
+   /* Apply sensitivity and rotation sign */
+   return raw_value * sensitivity * sign;
+}
+
 float input_get_sensor_state(unsigned port, unsigned id)
 {
-   settings_t *settings                   = config_get_ptr();
-   bool input_sensors_enable              = settings->bools.input_sensors_enable;
+   return input_get_sensor_state_internal(config_get_ptr(), port, id);
+}
 
-   return input_driver_get_sensor(port, input_sensors_enable, id);
+void input_sensor_start_rest_capture(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_st->rest_accum[0]       = 0.0f;
+   input_st->rest_accum[1]       = 0.0f;
+   input_st->rest_accum[2]       = 0.0f;
+   input_st->rest_sample_count   = 0;
+   input_st->rest_capturing      = true;
+}
+
+static void input_sensor_update_rest_capture(settings_t *settings)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (!input_st->rest_capturing)
+      return;
+
+   input_st->rest_accum[0] += input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
+   input_st->rest_accum[1] += input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
+   input_st->rest_accum[2] += input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
+   input_st->rest_sample_count++;
+
+   if (input_st->rest_sample_count >= 30)
+   {
+      input_st->sensor_accelerometer_rest[0] = input_st->rest_accum[0] / 30.0f;
+      input_st->sensor_accelerometer_rest[1] = input_st->rest_accum[1] / 30.0f;
+      input_st->sensor_accelerometer_rest[2] = input_st->rest_accum[2] / 30.0f;
+      input_st->rest_capturing = false;
+   }
 }
 
 /**
@@ -3750,11 +5534,11 @@ float input_get_sensor_state(unsigned port, unsigned id)
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   settings_t *settings                   = config_get_ptr();
-   unsigned joy_idx                       = settings->uints.input_joypad_index[port];
-   uint16_t scaled_strength               = strength;
+   settings_t *settings     = config_get_ptr();
+   unsigned joy_idx         = settings->uints.input_joypad_index[port];
+   uint16_t scaled_strength = strength;
 
-   /* If gain setting is not suported, do software gain control */
+   /* If gain setting is not supported, do software gain control */
    if (input_driver_st.primary_joypad)
    {
       if (!input_driver_st.primary_joypad->set_rumble_gain)
@@ -3777,19 +5561,16 @@ bool input_set_rumble_state(unsigned port,
  **/
 bool input_set_rumble_gain(unsigned gain)
 {
-   settings_t           *settings         = config_get_ptr();
-   if (input_driver_set_rumble_gain(
-            gain, settings->uints.input_max_users))
-      return true;
-   return false;
+   return (input_driver_set_rumble_gain(
+            gain, config_get_ptr()->uints.input_max_users));
 }
 
 uint64_t input_driver_get_capabilities(void)
 {
-   if (  !input_driver_st.current_driver ||
-         !input_driver_st.current_driver->get_capabilities)
+   const input_driver_t *input = input_driver_st.current_driver;
+   if (!input || !input->get_capabilities)
       return 0;
-   return input_driver_st.current_driver->get_capabilities(input_driver_st.current_data);
+   return input->get_capabilities(input_driver_st.current_data);
 }
 
 void input_driver_init_joypads(void)
@@ -3799,12 +5580,6 @@ void input_driver_init_joypads(void)
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
-#ifdef HAVE_MFI
-   if (!input_driver_st.secondary_joypad)
-      input_driver_st.secondary_joypad      = input_joypad_init_driver(
-            "mfi",
-            input_driver_st.current_data);
-#endif
 }
 
 bool input_key_pressed(int key, bool keyboard_pressed)
@@ -3812,13 +5587,8 @@ bool input_key_pressed(int key, bool keyboard_pressed)
    /* If a keyboard key is pressed then immediately return
     * true, otherwise call button_is_pressed to determine
     * if the input comes from another input device */
-   if (!(
-            (key < RARCH_BIND_LIST_END)
-            && keyboard_pressed
-        )
-      )
+   if (!((key < RARCH_BIND_LIST_END) && keyboard_pressed))
    {
-      settings_t           *settings = config_get_ptr();
       const input_device_driver_t
          *joypad                     = (const input_device_driver_t*)
          input_driver_st.primary_joypad;
@@ -3827,7 +5597,7 @@ bool input_key_pressed(int key, bool keyboard_pressed)
       const uint64_t autobind_joykey = input_autoconf_binds[0][key].joykey;
       const uint64_t autobind_joyaxis= input_autoconf_binds[0][key].joyaxis;
       uint16_t port                  = 0;
-      float axis_threshold           = settings->floats.input_axis_threshold;
+      float axis_threshold           = config_get_ptr()->floats.input_axis_threshold;
       const uint64_t joykey          = (bind_joykey != NO_BTN)
          ? bind_joykey  : autobind_joykey;
       const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
@@ -3838,7 +5608,7 @@ bool input_key_pressed(int key, bool keyboard_pressed)
          return true;
       if (joyaxis != AXIS_NONE &&
             ((float)abs(joypad->axis(port, (uint32_t)joyaxis))
-             / 0x8000) > axis_threshold)
+             * INV_0x8000) > axis_threshold)
          return true;
       return false;
    }
@@ -3850,14 +5620,27 @@ bool video_driver_init_input(
       settings_t *settings,
       bool verbosity_enabled)
 {
-   void              *new_data    = NULL;
-   input_driver_t         **input = &input_driver_st.current_driver;
+   void              *new_data = NULL;
+   input_driver_t    **input   = &input_driver_st.current_driver;
    if (*input)
+#if HAVE_TEST_DRIVERS
+      /* Test driver not in use, keep selected driver */
+      if (strcmp(settings->arrays.input_driver, "test") != 0)
+         return true;
+      else if (!*settings->paths.test_input_file_general)
+      {
+         RARCH_LOG("[Input] Test input driver selected, but no input file provided - falling back.\n");
+         return true;
+      }
+      else
+         RARCH_LOG("[Video] Graphics driver initialized an input driver, but ignoring it as test input driver is in use.\n");
+#else
       return true;
-
-   /* Video driver didn't provide an input driver,
-    * so we use configured one. */
-   RARCH_LOG("[Video]: Graphics driver did not initialize an input driver."
+#endif
+   else
+      /* Video driver didn't provide an input driver,
+       * so we use configured one. */
+      RARCH_LOG("[Video] Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
 
    if (tmp)
@@ -3868,7 +5651,7 @@ bool video_driver_init_input(
             settings, "input driver",
             verbosity_enabled)))
       {
-         RARCH_ERR("[Video]: Cannot find input driver. Exiting ...\n");
+         RARCH_ERR("[Video] Cannot find input driver. Exiting...\n");
          return false;
       }
    }
@@ -3876,12 +5659,12 @@ bool video_driver_init_input(
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
     * in a similar fashion anyways. */
-   if (  !input_driver_st.current_driver ||
-         !(new_data = input_driver_init_wrap(
+   if (     !input_driver_st.current_driver
+         || !(new_data = input_driver_init_wrap(
                input_driver_st.current_driver,
                settings->arrays.input_joypad_driver)))
    {
-      RARCH_ERR("[Video]: Cannot initialize input driver. Exiting ...\n");
+      RARCH_ERR("[Video] Cannot initialize input driver. Exiting...\n");
       return false;
    }
 
@@ -3892,18 +5675,20 @@ bool video_driver_init_input(
 
 bool input_driver_grab_mouse(void)
 {
-   if (!input_driver_st.current_driver || !input_driver_st.current_driver->grab_mouse)
+   const input_driver_t *input = (const input_driver_t*)input_driver_st.current_driver;
+   if (!input || !input->grab_mouse)
       return false;
-   input_driver_st.current_driver->grab_mouse(
-         input_driver_st.current_data, true);
+   input->grab_mouse(input_driver_st.current_data, true);
    return true;
 }
 
 bool input_driver_ungrab_mouse(void)
 {
-   if (!input_driver_st.current_driver || !input_driver_st.current_driver->grab_mouse)
+   const input_driver_t *input = (const input_driver_t*)
+   input_driver_st.current_driver;
+   if (!input || !input->grab_mouse)
       return false;
-   input_driver_st.current_driver->grab_mouse(input_driver_st.current_data, false);
+   input->grab_mouse(input_driver_st.current_data, false);
    return true;
 }
 
@@ -3942,7 +5727,6 @@ void input_config_reset(void)
 void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t        *settings = config_get_ptr();
-
    if (settings && (port < MAX_USERS))
       configuration_set_uint(settings,
             settings->uints.input_libretro_device[port], id);
@@ -3950,20 +5734,17 @@ void input_config_set_device(unsigned port, unsigned id)
 
 unsigned input_config_get_device(unsigned port)
 {
-   settings_t             *settings = config_get_ptr();
-
+   settings_t *settings = config_get_ptr();
    if (settings && (port < MAX_USERS))
       return settings->uints.input_libretro_device[port];
-
    return RETRO_DEVICE_NONE;
 }
 
 const struct retro_keybind *input_config_get_bind_auto(
       unsigned port, unsigned id)
 {
-   settings_t        *settings = config_get_ptr();
-   unsigned        joy_idx     = settings->uints.input_joypad_index[port];
-
+   settings_t *settings = config_get_ptr();
+   unsigned  joy_idx    = settings->uints.input_joypad_index[port];
    if (joy_idx < MAX_USERS)
       return &input_autoconf_binds[joy_idx][id];
    return NULL;
@@ -3971,12 +5752,75 @@ const struct retro_keybind *input_config_get_bind_auto(
 
 unsigned *input_config_get_device_ptr(unsigned port)
 {
-   settings_t             *settings = config_get_ptr();
-
+   settings_t *settings = config_get_ptr();
    if (settings && (port < MAX_USERS))
       return &settings->uints.input_libretro_device[port];
-
    return NULL;
+}
+
+/* The player -> pad mapping is required to be a permutation of
+ * [0, MAX_USERS):
+ *
+ * - Two players sharing a pad index makes a single physical device
+ *   drive two libretro ports at once, so one controller presses
+ *   Start for both players.
+ * - reallocate_port_if_needed() in tasks/task_autodetect.c reassigns
+ *   ports by transposing entries of this array. A transposition
+ *   preserves the permutation property but cannot restore it, so a
+ *   mapping that is already non-injective stays non-injective for
+ *   every subsequent hotplug.
+ * - That same function inverts the mapping through an array indexed
+ *   by pad index, so an out of range entry is an out of bounds write.
+ *
+ * Nothing validates the mapping when it is read back from a
+ * configuration file, and the menu's device index selector happily
+ * lets two players point at the same pad, so the invariant has to be
+ * asserted rather than assumed. */
+bool input_config_sanitize_joypad_indices(void)
+{
+   unsigned i;
+   bool taken[MAX_USERS];
+   unsigned next_free   = 0;
+   bool corrected       = false;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return false;
+
+   for (i = 0; i < MAX_USERS; i++)
+      taken[i] = false;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned joy_idx = settings->uints.input_joypad_index[i];
+
+      if (joy_idx < MAX_USERS && !taken[joy_idx])
+      {
+         taken[joy_idx] = true;
+         continue;
+      }
+
+      while (next_free < MAX_USERS && taken[next_free])
+         next_free++;
+
+      /* MAX_USERS players cannot claim more than MAX_USERS distinct
+       * indices, so this is unreachable; bail out rather than write
+       * past the end of the array if it ever is reached. */
+      if (next_free >= MAX_USERS)
+         break;
+
+      RARCH_WARN("[Input] Player %u had %s pad index %u, "
+            "reassigning to %u.\n",
+            i + 1,
+            (joy_idx < MAX_USERS) ? "duplicate" : "out of range",
+            joy_idx, next_free);
+
+      settings->uints.input_joypad_index[i] = next_free;
+      taken[next_free]                      = true;
+      corrected                             = true;
+   }
+
+   return corrected;
 }
 
 /* Adds an index to devices with the same name,
@@ -3984,8 +5828,7 @@ unsigned *input_config_get_device_ptr(unsigned port)
  * frontend */
 static void input_config_reindex_device_names(input_driver_state_t *input_st)
 {
-   unsigned i;
-   unsigned j;
+   unsigned i, j;
    unsigned name_index;
 
    /* Reset device name indices */
@@ -4001,7 +5844,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
        * name index has already been assigned, continue
        * to the next device */
       if (
-               string_is_empty(device_name)
+               (!device_name || !*device_name)
             || input_st->input_device_info[i].name_index != 0)
          continue;
 
@@ -4017,7 +5860,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
       {
          const char *next_device_name = input_config_get_device_name(j);
 
-         if (string_is_empty(next_device_name))
+         if (!next_device_name || !*next_device_name)
             continue;
 
          /* Check if names match */
@@ -4026,12 +5869,12 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
             /* If this is the first match, set a starting
              * index for the current device selection */
             if (input_st->input_device_info[i].name_index == 0)
-               input_st->input_device_info[i].name_index       = name_index++;
+               input_st->input_device_info[i].name_index = name_index++;
 
             /* Set name index for the next device
              * (will keep incrementing as more matches
              *  are found) */
-            input_st->input_device_info[j].name_index          = name_index++;
+            input_st->input_device_info[j].name_index    = name_index++;
          }
       }
    }
@@ -4040,7 +5883,7 @@ static void input_config_reindex_device_names(input_driver_state_t *input_st)
 const char *input_config_get_device_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].name))
+   if (!*input_st->input_device_info[port].name)
       return NULL;
    return input_st->input_device_info[port].name;
 }
@@ -4048,7 +5891,7 @@ const char *input_config_get_device_name(unsigned port)
 const char *input_config_get_device_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].display_name))
+   if (!*input_st->input_device_info[port].display_name)
       return NULL;
    return input_st->input_device_info[port].display_name;
 }
@@ -4056,7 +5899,7 @@ const char *input_config_get_device_display_name(unsigned port)
 const char *input_config_get_device_config_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].config_name))
+   if (!*input_st->input_device_info[port].config_name)
       return NULL;
    return input_st->input_device_info[port].config_name;
 }
@@ -4064,9 +5907,17 @@ const char *input_config_get_device_config_name(unsigned port)
 const char *input_config_get_device_joypad_driver(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_device_info[port].joypad_driver))
+   if (!*input_st->input_device_info[port].joypad_driver)
       return NULL;
    return input_st->input_device_info[port].joypad_driver;
+}
+
+const char *input_config_get_device_phys(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!*input_st->input_device_info[port].phys)
+      return NULL;
+   return input_st->input_device_info[port].phys;
 }
 
 uint16_t input_config_get_device_vid(unsigned port)
@@ -4112,7 +5963,7 @@ size_t input_config_get_device_name_size(unsigned port)
 void input_config_set_device_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(name))
+   if (!name || !*name)
       return;
 
    strlcpy(input_st->input_device_info[port].name, name,
@@ -4124,7 +5975,7 @@ void input_config_set_device_name(unsigned port, const char *name)
 void input_config_set_device_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(name))
+   if (name && *name)
       strlcpy(input_st->input_device_info[port].display_name, name,
             sizeof(input_st->input_device_info[port].display_name));
 }
@@ -4132,7 +5983,7 @@ void input_config_set_device_display_name(unsigned port, const char *name)
 void input_config_set_device_config_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(name))
+   if (name && *name)
       strlcpy(input_st->input_device_info[port].config_name, name,
             sizeof(input_st->input_device_info[port].config_name));
 }
@@ -4140,9 +5991,19 @@ void input_config_set_device_config_name(unsigned port, const char *name)
 void input_config_set_device_joypad_driver(unsigned port, const char *driver)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (!string_is_empty(driver))
+   if (driver && *driver)
       strlcpy(input_st->input_device_info[port].joypad_driver, driver,
             sizeof(input_st->input_device_info[port].joypad_driver));
+}
+
+void input_config_set_device_phys(unsigned port, const char *phys)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (phys && *phys)
+      strlcpy(input_st->input_device_info[port].phys, phys,
+            sizeof(input_st->input_device_info[port].phys));
+   else
+      input_st->input_device_info[port].phys[0] = '\0';
 }
 
 void input_config_set_device_vid(unsigned port, uint16_t vid)
@@ -4197,7 +6058,7 @@ void input_config_clear_device_joypad_driver(unsigned port)
 const char *input_config_get_mouse_display_name(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   if (string_is_empty(input_st->input_mouse_info[port].display_name))
+   if (!*input_st->input_mouse_info[port].display_name)
       return NULL;
    return input_st->input_mouse_info[port].display_name;
 }
@@ -4210,10 +6071,13 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
    name_ascii[0] = '\0';
 
    /* Strip non-ASCII characters */
-   if (!string_is_empty(name))
+   if (name && *name)
+   {
       string_copy_only_ascii(name_ascii, name);
+      string_trim_whitespace(name_ascii);
+   }
 
-   if (!string_is_empty(name_ascii))
+   if (*name_ascii)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
 }
@@ -4250,24 +6114,24 @@ void config_read_keybinds_conf(void *data)
       for (j = 0; input_config_bind_map_get_valid(j); j++)
       {
          char str[NAME_MAX_LENGTH];
+         char prefix[16];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
-         struct retro_keybind *bind = &input_config_binds[i][j];
-         bool meta                  = false;
-         const char *prefix         = NULL;
-         const char *btn            = NULL;
-         struct config_entry_list
-            *entry                  = NULL;
+         struct retro_keybind *bind      = &input_config_binds[i][j];
+         bool meta                       = false;
+         const char *btn                 = NULL;
+         struct config_entry_list *entry = NULL;
 
+         if (!bind || !bind->valid || !keybind || !keybind->valid)
+            continue;
 
-         if (!bind || !bind->valid || !keybind)
-            continue;
-         if (!keybind->valid)
-            continue;
          meta                       = keybind->meta;
          btn                        = keybind->base;
-         prefix                     = input_config_get_prefix(i, meta);
-         if (!btn || !prefix)
+
+         prefix[0]                  = '\0';
+         input_config_get_prefix(prefix, sizeof(prefix), i, meta);
+
+         if (!*prefix || !btn)
             continue;
 
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
@@ -4277,7 +6141,7 @@ void config_read_keybinds_conf(void *data)
             input_keyboard_mapping_bits(0, bind->key);
 
          entry                      = config_get_entry(conf, str);
-         if (entry && !string_is_empty(entry->value))
+         if (entry && entry->value && *entry->value)
             bind->key               = input_config_translate_str_to_rk(
                   entry->value, strlen(entry->value));
 
@@ -4286,8 +6150,10 @@ void config_read_keybinds_conf(void *data)
          input_keyboard_mapping_bits(1, bind->key);
          key_store[bind->key]       = true;
 
-         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
-         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
+         input_config_parse_joy_button  (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
+         input_config_parse_joy_axis    (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
@@ -4303,9 +6169,10 @@ void input_driver_init_command(input_driver_state_t *input_st,
    if (input_stdin_cmd_enable)
    {
       input_driver_state_t *input_st = &input_driver_st;
-      bool grab_stdin                =
-         input_st->current_driver->grab_stdin &&
-         input_st->current_driver->grab_stdin(input_st->current_data);
+      const input_driver_t *input    = (const input_driver_t*)
+	      input_st->current_driver;
+      bool grab_stdin                = input->grab_stdin
+         && input->grab_stdin(input_st->current_data);
       if (grab_stdin)
       {
          RARCH_WARN("stdin command interface is desired, "
@@ -4334,10 +6201,14 @@ void input_driver_init_command(input_driver_state_t *input_st,
    }
 #endif
 
-#ifdef HAVE_LAKKA
+#if defined(HAVE_LAKKA)
    if (!(input_st->command[2] = command_uds_new()))
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
+#elif defined(__EMSCRIPTEN__)
+   if (!(input_st->command[2] = command_emscripten_new()))
+      RARCH_ERR("Failed to initialize the emscripten command interface.\n");
 #endif
+
 }
 
 void input_driver_deinit_command(input_driver_state_t *input_st)
@@ -4402,7 +6273,7 @@ static void input_overlay_enable_(bool enable)
       ol->iface_data = video_st->data;
       if (!video_driver_overlay_interface(&ol->iface) || !ol->iface)
       {
-         RARCH_ERR("Overlay interface is not present in video driver.\n");
+         RARCH_ERR("[Input] Overlay interface is not present in video driver.\n");
          ol->flags &= ~INPUT_OVERLAY_ALIVE;
          return;
       }
@@ -4431,13 +6302,15 @@ static void input_overlay_enable_(bool enable)
    else
    {
       /* Disable and clear input state */
-      ol->flags &= ~INPUT_OVERLAY_ENABLE;
+      ol->flags       &= ~INPUT_OVERLAY_ENABLE;
+      input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 
       if (ol->iface && ol->iface->enable)
          ol->iface->enable(ol->iface_data, false);
       ol->iface = NULL;
 
       memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));
+      memset(&ol->pointer_state, 0, sizeof(input_overlay_pointer_state_t));
    }
 }
 
@@ -4448,6 +6321,8 @@ static void input_overlay_deinit(void)
 
    input_overlay_free(input_driver_st.overlay_cache_ptr);
    input_driver_st.overlay_cache_ptr = NULL;
+
+   input_driver_st.flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
 }
 
 static void input_overlay_move_to_cache(void)
@@ -4488,12 +6363,12 @@ static void input_overlay_swap_with_cached(void)
 
 void input_overlay_unload(void)
 {
-   settings_t      *settings   = config_get_ptr();
+   bool input_overlay_enable   = config_get_ptr()->bools.input_overlay_enable;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    /* Free if overlays disabled or initing/deiniting core */
-   if (     !settings->bools.input_overlay_enable
-         || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+   if (     !input_overlay_enable
+         || !runloop_is_inited()
          ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
       input_overlay_deinit();
    else
@@ -4511,6 +6386,14 @@ void input_overlay_set_visibility(int overlay_idx,
       unsigned i;
       input_st->overlay_visibility = (enum overlay_visibility *)calloc(
             MAX_VISIBILITY, sizeof(enum overlay_visibility));
+
+      /* NULL-check: the init loop below and the later
+       * overlay_visibility[overlay_idx] = vis write NULL-deref
+       * on OOM.  Bail early - on failure the overlay stays at
+       * its compile-time default visibility rather than being
+       * explicitly set, which is strictly better than crashing. */
+      if (!input_st->overlay_visibility)
+         return;
 
       for (i = 0; i < MAX_VISIBILITY; i++)
          input_st->overlay_visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
@@ -4533,7 +6416,8 @@ static bool input_overlay_want_hidden(void)
    if (settings->bools.input_overlay_hide_in_menu)
       hide = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #endif
-   if (settings->bools.input_overlay_hide_when_gamepad_connected)
+   if (settings->bools.input_overlay_hide_when_gamepad_connected
+         && !settings->bools.input_overlay_pointer_enable)
       hide = hide || (input_config_get_device_name(0) != NULL);
 
    return hide;
@@ -4541,7 +6425,6 @@ static bool input_overlay_want_hidden(void)
 
 void input_overlay_check_mouse_cursor(void)
 {
-   settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
    video_driver_state_t *video_st = video_state_get_ptr();
    input_overlay_t *ol            = input_st->overlay_ptr;
@@ -4550,35 +6433,83 @@ void input_overlay_check_mouse_cursor(void)
          && video_st->poke
          && video_st->poke->show_mouse)
    {
-      if (settings->bools.input_overlay_show_mouse_cursor)
+      if (config_get_ptr()->bools.input_overlay_show_mouse_cursor)
          video_st->poke->show_mouse(video_st->data, true);
       else if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
          video_st->poke->show_mouse(video_st->data, false);
    }
 }
 
+static void input_overlay_loaded_move_images(input_overlay_t *ol,
+      struct string_list *image_list)
+{
+   size_t i;
+
+   ol->images = (struct texture_image**)malloc(ol->num_images * sizeof(struct texture_image *));
+
+   if (!ol->images)
+   {
+      for (i = 0; i < ol->num_images; i++)
+         image_texture_free((struct texture_image*)image_list->elems[i].attr.p);
+      ol->num_images = 0;
+      RARCH_ERR("[Overlay] Couldn't allocate images array.\n");
+   }
+
+   for (i = 0; i < ol->num_images; i++)
+      ol->images[i] = (struct texture_image*)image_list->elems[i].attr.p;
+}
+
 /* task_data = overlay_task_data_t* */
 static void input_overlay_loaded(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   settings_t           *settings = config_get_ptr();
+#ifdef HAVE_MENU
+   uint16_t overlay_types;
+#endif
    overlay_task_data_t  *data     = (overlay_task_data_t*)task_data;
    input_overlay_t      *ol       = NULL;
    input_driver_state_t *input_st = &input_driver_st;
    bool enable_overlay            = !input_overlay_want_hidden()
-         && settings->bools.input_overlay_enable;
-#ifdef HAVE_MENU
-   uint16_t overlay_types;
-#endif
+         && config_get_ptr()->bools.input_overlay_enable;
 
    if (err)
       return;
 
+   /* NULL-check task_data: the task producer (task_overlay_handler
+    * in tasks/task_overlay.c) can legitimately fail its data
+    * alloc under OOM and pass NULL here; data->overlays below
+    * would NULL-deref.  Nothing useful to do with a NULL payload
+    * so bail cleanly. */
+   if (!data)
+      return;
+
    ol              = (input_overlay_t*)calloc(1, sizeof(*ol));
+   /* NULL-check the ol calloc: the field writes below NULL-deref
+    * on OOM.  Task_data ownership transferred to us by the
+    * retro_task framework via task_set_data - we must tear it
+    * down cleanly.  image_list entries each have a heap
+    * texture_image* in elems[i].attr.p that move_images would
+    * normally transfer into ol->images; since ol doesn't exist,
+    * free each texture explicitly before string_list_free
+    * (string_list_free only frees the list struct and its
+    * entries' .data strings, not their .attr.p attachments). */
+   if (!ol)
+   {
+      if (data->image_list)
+      {
+         size_t i;
+         for (i = 0; i < data->image_list->size; i++)
+            image_texture_free((struct texture_image*)data->image_list->elems[i].attr.p);
+         string_list_free(data->image_list);
+      }
+      free(data);
+      return;
+   }
    ol->overlays    = data->overlays;
    ol->size        = data->size;
    ol->active      = data->active;
    ol->path        = data->overlay_path;
+   ol->num_images  = data->image_list->size;
    ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
    ol->flags      |= INPUT_OVERLAY_ALIVE;
    if (data->flags & OVERLAY_LOADER_IS_OSK)
@@ -4586,6 +6517,10 @@ static void input_overlay_loaded(retro_task_t *task,
 #ifdef HAVE_MENU
    overlay_types   = data->overlay_types;
 #endif
+
+   if (ol->num_images > 0)
+      input_overlay_loaded_move_images(ol, data->image_list);
+   string_list_free(data->image_list);
 
    free(data);
 
@@ -4611,7 +6546,20 @@ static void input_overlay_loaded(retro_task_t *task,
    if (!enable_overlay)
       input_overlay_unload();
 
+   /* Soft-hide when gamepad connected but pointer input enabled */
+   {
+      settings_t *settings = config_get_ptr();
+      if (enable_overlay
+            && settings->bools.input_overlay_hide_when_gamepad_connected
+            && settings->bools.input_overlay_pointer_enable
+            && input_config_get_device_name(0) != NULL)
+         ol->flags |= INPUT_OVERLAY_GAMEPAD_HIDDEN;
+   }
+
    input_overlay_set_eightway_diagonal_sensitivity();
+
+   /* Trigger viewport recalculation - overlay may have viewport override */
+   command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
 #ifdef HAVE_MENU
    /* Update menu entries if this is the main overlay */
@@ -4628,6 +6576,96 @@ static void input_overlay_loaded(retro_task_t *task,
 #endif
 }
 
+#define SYSTEM_OVERLAY_DIR "gamepads/Named_Overlays"
+
+static const char *input_overlay_path(bool want_osk)
+{
+   static char   system_overlay_path[PATH_MAX_LENGTH] = {0};
+   char          overlay_directory[PATH_MAX_LENGTH];
+   const char *a = NULL;
+   settings_t   *settings                             = config_get_ptr();
+   playlist_t   *playlist                             = playlist_get_cached();
+   core_info_t  *core_info                            = NULL;
+   const char   *content_path                         = path_get(RARCH_PATH_CONTENT);
+
+   if (want_osk)
+      return settings->paths.path_osk_overlay;
+   /* If the option is set to turn this off, just return default */
+   if (!settings->bools.input_overlay_enable_autopreferred)
+       return settings->paths.path_overlay;
+   /* If there's an override, use it */
+   if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL))
+       return settings->paths.path_overlay;
+   /* If there's no core, just return the default */
+   a = path_get(RARCH_PATH_CORE);
+   if (!a || !*a)
+      return settings->paths.path_overlay;
+   /* Let's go hunting */
+   fill_pathname_expand_special(overlay_directory,
+         settings->paths.directory_overlay,
+         sizeof(overlay_directory));
+
+   /* Try based on the playlist entry first */
+   if (playlist)
+   {
+      if (content_path && *content_path)
+      {
+         const struct playlist_entry *entry = NULL;
+         playlist_get_index_by_path(playlist, content_path, &entry);
+         if (entry && entry->db_name)
+         {
+            size_t _len = fill_pathname_join_special_ext(system_overlay_path,
+                  overlay_directory, SYSTEM_OVERLAY_DIR, entry->db_name, "",
+                  sizeof(system_overlay_path));
+            char *ext = path_get_extension_mutable(system_overlay_path);
+            if (!ext)
+               ext = system_overlay_path + _len;
+            strlcpy_lit(ext, ".cfg", 5);
+            if (path_is_valid(system_overlay_path))
+               return system_overlay_path;
+         }
+      }
+   }
+
+   /* Maybe the core info will have some clues... */
+   core_info_get_current_core(&core_info);
+   if (core_info)
+   {
+      if (core_info->databases_list && core_info->databases_list->size == 1)
+      {
+         fill_pathname_join_special_ext(system_overlay_path,
+               overlay_directory, SYSTEM_OVERLAY_DIR, core_info->databases_list->elems[0].data, ".cfg",
+               sizeof(system_overlay_path));
+         if (path_is_valid(system_overlay_path))
+            return system_overlay_path;
+      }
+
+      if (core_info->display_name)
+      {
+         fill_pathname_join_special_ext(system_overlay_path,
+               overlay_directory, SYSTEM_OVERLAY_DIR, core_info->display_name, ".cfg",
+               sizeof(system_overlay_path));
+         if (path_is_valid(system_overlay_path))
+            return system_overlay_path;
+      }
+   }
+
+   /* Maybe based on the content's directory name... */
+   if (content_path && *content_path)
+   {
+      char dirname[DIR_MAX_LENGTH];
+      fill_pathname_parent_dir_name(dirname, content_path, sizeof(dirname));
+      fill_pathname_join_special_ext(system_overlay_path,
+            overlay_directory, SYSTEM_OVERLAY_DIR, dirname, ".cfg",
+            sizeof(system_overlay_path));
+      if (path_is_valid(system_overlay_path))
+         return system_overlay_path;
+   }
+
+   /* I give up */
+   return settings->paths.path_overlay;
+}
+
 void input_overlay_init(void)
 {
    settings_t *settings           = config_get_ptr();
@@ -4636,10 +6674,8 @@ void input_overlay_init(void)
    input_overlay_t *ol_cache      = input_st->overlay_cache_ptr;
    bool want_osk                  =
             (input_st->flags & INP_FLAG_KB_LINEFEED_ENABLE)
-         && !string_is_empty(settings->paths.path_osk_overlay);
-   const char *path_overlay       = want_osk
-         ? settings->paths.path_osk_overlay
-         : settings->paths.path_overlay;
+         && *settings->paths.path_osk_overlay;
+   const char *path_overlay       = input_overlay_path(want_osk);
    bool want_hidden               = input_overlay_want_hidden();
    bool overlay_shown             = ol
          && (ol->flags & INPUT_OVERLAY_ENABLE)
@@ -4651,7 +6687,7 @@ void input_overlay_init(void)
 
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
+   if (mem_stats_free() < (3 * 1024 * 1024))
       return;
 #endif
 
@@ -4684,18 +6720,18 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver)
 {
    if (port >= MAX_USERS || !driver)
    {
-      RARCH_ERR("[Input]: input_pad_connect: bad parameters\n");
+      RARCH_ERR("[Input] input_pad_connect: Bad parameters.\n");
       return;
    }
 
-   input_autoconfigure_connect(driver->name(port), NULL, driver->ident,
+   input_autoconfigure_connect(driver->name(port), NULL, NULL, driver->ident,
           port, 0, 0);
 }
 
 static bool input_keys_pressed_other_sources(
       input_driver_state_t *input_st,
       unsigned i,
-      input_bits_t* p_new_state)
+      input_bits_t *p_new_state)
 {
 #ifdef HAVE_COMMAND
    int j;
@@ -4722,6 +6758,26 @@ static bool input_keys_pressed_other_sources(
    return false;
 }
 
+#define CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i) \
+   if (     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) \
+         && (  (i == RARCH_ENABLE_HOTKEY) \
+            || (i != RARCH_ENABLE_HOTKEY && !block_hotkey[RARCH_ENABLE_HOTKEY])) \
+      ) \
+   { \
+      if (input_state_wrap( \
+            input_st->current_driver, \
+            input_st->current_data, \
+            input_st->primary_joypad, \
+            sec_joypad, \
+            joypad_info, \
+            binds, \
+            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED), \
+            port, RETRO_DEVICE_JOYPAD, 0, \
+            i)) \
+         block_hotkey[i] = false; \
+   } \
+
+
 /**
  * input_keys_pressed:
  *
@@ -4729,6 +6785,7 @@ static bool input_keys_pressed_other_sources(
  */
 static void input_keys_pressed(
       unsigned port,
+      unsigned hotkey_port,
       bool is_menu,
       unsigned input_hotkey_block_delay,
       input_bits_t *p_new_state,
@@ -4737,23 +6794,40 @@ static void input_keys_pressed(
       const struct retro_keybind *binds_auto,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
-      rarch_joypad_info_t *joypad_info)
+      rarch_joypad_info_t *joypad_info,
+      bool input_hotkey_device_merge)
 {
    unsigned i;
+   /* Autoconf binds are indexed by joy_idx, not frontend port */
+   unsigned joy_idx               = joypad_info->joy_idx;
+   int32_t ret                    = 0;
    input_driver_state_t *input_st = &input_driver_st;
+   /* RetroPad buttons held this frame, for wait_release_mask pruning */
+   uint16_t held_now              = 0;
    bool block_hotkey[RARCH_BIND_LIST_END];
+   bool enable_hotkey_pressed     = false;
+   bool any_pressed               = false;
    bool libretro_hotkey_set       =
-            binds[port][RARCH_ENABLE_HOTKEY].joykey                 != NO_BTN
-         || binds[port][RARCH_ENABLE_HOTKEY].joyaxis                != AXIS_NONE
-         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joykey  != NO_BTN
-         || input_autoconf_binds[port][RARCH_ENABLE_HOTKEY].joyaxis != AXIS_NONE;
+            binds_norm->joykey  != NO_BTN
+         || binds_norm->joyaxis != AXIS_NONE
+         || binds_auto->joykey  != NO_BTN
+         || binds_auto->joyaxis != AXIS_NONE;
    bool keyboard_hotkey_set       =
-         binds[port][RARCH_ENABLE_HOTKEY].key != RETROK_UNKNOWN;
+         binds_norm->key != RETROK_UNKNOWN;
 
    if (!binds)
       return;
 
-   if (     binds[port][RARCH_ENABLE_HOTKEY].valid
+   if (     input_hotkey_device_merge
+         && (libretro_hotkey_set || keyboard_hotkey_set))
+      libretro_hotkey_set = keyboard_hotkey_set = true;
+
+   /* Cache once - flag does not change during a single poll */
+   {
+      bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
+   if (     (port == hotkey_port)
+         && (binds_norm->valid || binds_auto->valid)
          && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       if (input_state_wrap(
@@ -4763,87 +6837,99 @@ static void input_keys_pressed(
             sec_joypad,
             joypad_info,
             binds,
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
             RARCH_ENABLE_HOTKEY))
       {
+         enable_hotkey_pressed = true;
          if (input_st->input_hotkey_block_counter < input_hotkey_block_delay)
             input_st->input_hotkey_block_counter++;
          else
             input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
       }
       else
-      {
-         input_st->input_hotkey_block_counter = 0;
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
+   }
+
+   /* While the wait is clear nothing has been captured; the first
+    * frame it is armed (here, or by the menu bind / dialog paths)
+    * captures whatever is held below. */
+   if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
+      input_st->wait_release_mask[port] = 0xFFFF;
+
+#ifdef HAVE_MENU
+   /* Prevent triggering menu actions after binding */
+   if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+         && menu_state_get_ptr()->input_driver_flushing_input)
+      input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
+#endif
+
+   /* Check libretro input if emulated device type is active,
+    * except device type must be always active in menu. */
+   if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+         && !(!is_menu && !input_config_get_device(port)))
+      ret = input_state_wrap(
+            input_st->current_driver,
+            input_st->current_data,
+            input_st->primary_joypad,
+            sec_joypad,
+            joypad_info,
+            binds,
+            kb_blocked,
+            port, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      if (     (ret & (UINT64_C(1) << i))
+            || input_keys_pressed_other_sources(input_st, i, p_new_state))
+      {
+         any_pressed = true;
+         held_now   |= (uint16_t)(1u << i);
+         /* Only the buttons the wait was armed against are held
+          * back; a button pressed after arming is delivered, so a
+          * button that stays down (rear-touch triggers, a stuck or
+          * remapped key) cannot lock out the rest of the pad. */
+         if (     (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+               && (input_st->wait_release_mask[port] & (1u << i)))
+            continue;
+
+         BIT256_SET_PTR(p_new_state, i);
       }
    }
 
-   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   /* Drop released buttons from the captured set; on the arming
+    * frame this narrows 0xFFFF down to what is actually held. */
+   input_st->wait_release_mask[port] &= held_now;
+
+   /* Allow menu toggle to bypass 'enable_hotkey' when it is
+    * not part of the usual buttons, unless 'enable_hotkey'
+    * is set in autoconf. */
+   if (     !any_pressed
+         && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && (binds[port][RARCH_MENU_TOGGLE].joykey != NO_BTN)
+         && (  input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == binds[port][RARCH_MENU_TOGGLE].joykey
+            || input_autoconf_binds[joy_idx][RARCH_ENABLE_HOTKEY].joykey == NO_BTN))
    {
-      const struct retro_keybind *focus_binds_auto =
-            &input_autoconf_binds[port][RARCH_GAME_FOCUS_TOGGLE];
-      const struct retro_keybind *focus_normal     =
-            &binds[port][RARCH_GAME_FOCUS_TOGGLE];
+      /* Ignore keyboard menu toggle button and check
+       * joypad menu toggle button for pressing
+       * it without 'enable_hotkey', because Guide button
+       * is not part of the usual buttons. */
+      i = RARCH_MENU_TOGGLE;
 
-      /* Allows Game Focus toggle hotkey to still work
-       * even though every hotkey is blocked */
-      if (CHECK_INPUT_DRIVER_BLOCK_HOTKEY(focus_normal, focus_binds_auto))
+      if (!(binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+                  port, RETRO_DEVICE_KEYBOARD, 0,
+                  input_config_binds[port][i].key)))
       {
-         if (input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               input_st->primary_joypad,
-               sec_joypad,
-               joypad_info,
-               binds,
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               port, RETRO_DEVICE_JOYPAD, 0,
-               RARCH_GAME_FOCUS_TOGGLE))
-            input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
-      }
-   }
-
-   {
-      int16_t ret                 = 0;
-      bool libretro_input_pressed = false;
-
-      /* Check libretro input if emulated device type is active,
-       * except device type must be always active in menu. */
-      if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
-            && !(!is_menu && !input_config_get_device(port)))
-         ret = input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               input_st->primary_joypad,
-               sec_joypad,
-               joypad_info,
-               binds,
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               port, RETRO_DEVICE_JOYPAD, 0,
-               RETRO_DEVICE_ID_JOYPAD_MASK);
-
-      for (i = 0; i < RARCH_FIRST_META_KEY; i++)
-      {
-         if (     (ret & (UINT64_C(1) << i))
-               || input_keys_pressed_other_sources(input_st, i, p_new_state))
-         {
-            BIT256_SET_PTR(p_new_state, i);
-            libretro_input_pressed = true;
-         }
-      }
-
-      if (!libretro_input_pressed)
-      {
-         bool keyboard_menu_pressed = false;
-
-         /* Ignore keyboard menu toggle button and check
-          * joypad menu toggle button for pressing
-          * it without 'enable_hotkey', because Guide button
-          * is not part of the usual buttons. */
-         i = RARCH_MENU_TOGGLE;
-
-         keyboard_menu_pressed = binds[port][i].valid
+         bool bit_pressed = binds[port][i].valid
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
@@ -4851,36 +6937,51 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                     port, RETRO_DEVICE_KEYBOARD, 0,
-                     input_config_binds[port][i].key);
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+                     port, RETRO_DEVICE_JOYPAD, 0, i);
 
-         if (!keyboard_menu_pressed)
+         if (     bit_pressed
+               || BIT64_GET(lifecycle_state, i)
+               || input_keys_pressed_other_sources(input_st, i, p_new_state))
          {
-            bool bit_pressed = binds[port][i].valid
-                  && input_state_wrap(
-                        input_st->current_driver,
-                        input_st->current_data,
-                        input_st->primary_joypad,
-                        sec_joypad,
-                        joypad_info,
-                        binds,
-                        (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                        port, RETRO_DEVICE_JOYPAD, 0, i);
+            if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
 
-            if (
-                     bit_pressed
-                  || BIT64_GET(lifecycle_state, i)
-                  || input_keys_pressed_other_sources(input_st, i, p_new_state))
-            {
-               BIT256_SET_PTR(p_new_state, i);
-            }
+            input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
          }
+         else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+            /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
+            BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
       }
    }
 
-   /* Hotkeys are only relevant for first port */
-   if (port > 0)
+   /* Ignore hotkey block delay when menu toggle and hotkey enabler share the same key */
+   if (     !any_pressed
+         && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && !(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
+         && binds[port][RARCH_MENU_TOGGLE].key == binds[port][RARCH_ENABLE_HOTKEY].key)
+   {
+      i = RARCH_MENU_TOGGLE;
+
+      if (     binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+                  port, RETRO_DEVICE_KEYBOARD, 0,
+                  input_config_binds[port][i].key))
+         input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
+      else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+         /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
+         BIT256_SET_PTR(p_new_state, RARCH_ENABLE_HOTKEY);
+   }
+
+   /* Hotkeys are only relevant for the first user or core port */
+   if (port != hotkey_port)
       return;
 
    /* Check hotkeys to block keyboard and joypad hotkeys separately.
@@ -4891,7 +6992,12 @@ static void input_keys_pressed(
    {
       /* Block everything when hotkey bind exists for both device types */
       for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      {
          block_hotkey[i] = true;
+
+         /* Don't block controller hotkey enabler with Game Focus */
+         CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i);
+      }
    }
    else if (input_st->flags & INP_FLAG_BLOCK_HOTKEY
          && (!libretro_hotkey_set || !keyboard_hotkey_set))
@@ -4919,7 +7025,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
                {
@@ -4937,7 +7043,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
@@ -4963,7 +7069,7 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_KEYBOARD, 0,
                      input_config_binds[port][i].key))
                {
@@ -4982,17 +7088,19 @@ static void input_keys_pressed(
                      sec_joypad,
                      joypad_info,
                      binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i))
                {
-
                   /* Only block if keyboard is not pressed */
                   if (!keyboard_hotkey_pressed)
                      block_hotkey[i] = true;
                }
             }
          }
+
+         /* Don't block controller hotkey enabler with Game Focus */
+         CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i);
       }
    }
    else
@@ -5002,394 +7110,104 @@ static void input_keys_pressed(
          block_hotkey[i] = false;
    }
 
+   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
    {
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+      /* Never block Game Focus toggle hotkey */
+      block_hotkey[RARCH_GAME_FOCUS_TOGGLE] = false;
+   }
+
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
+      bool bit_pressed   = binds[port][i].valid
+            && input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  input_st->primary_joypad,
+                  sec_joypad,
+                  joypad_info,
+                  binds,
+                  kb_blocked,
+                  port, RETRO_DEVICE_JOYPAD, 0,
+                  i);
+
+      if (     bit_pressed
+            || other_pressed
+            || BIT64_GET(lifecycle_state, i))
       {
-         bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-         bool bit_pressed   = binds[port][i].valid
-               && input_state_wrap(
-                     input_st->current_driver,
-                     input_st->current_data,
-                     input_st->primary_joypad,
-                     sec_joypad,
-                     joypad_info,
-                     binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-                     port, RETRO_DEVICE_JOYPAD, 0,
-                     i);
+         any_pressed = true;
+         if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+            continue;
 
-         if (     bit_pressed
-               || other_pressed
-               || BIT64_GET(lifecycle_state, i))
+         if (libretro_hotkey_set || keyboard_hotkey_set)
          {
-            if (libretro_hotkey_set || keyboard_hotkey_set)
-            {
-               /* Do not block "other source" (input overlay) presses */
-               if (block_hotkey[i] && !other_pressed)
-                  continue;
-            }
-
-            BIT256_SET_PTR(p_new_state, i);
+            /* Do not block "other source" (input overlay) presses */
+            if (block_hotkey[i] && !other_pressed)
+               continue;
          }
-      }
-   }
-}
 
-#ifdef HAVE_BSV_MOVIE
-/* Forward declaration */
-void bsv_movie_free(bsv_movie_t*);
-
-void bsv_movie_deinit(input_driver_state_t *input_st)
-{
-   if (input_st->bsv_movie_state_handle)
-      bsv_movie_free(input_st->bsv_movie_state_handle);
-   input_st->bsv_movie_state_handle = NULL;
-}
-
-void bsv_movie_frame_rewind(void)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-
-   if (!handle)
-      return;
-
-   handle->did_rewind = true;
-
-   if (     (handle->frame_ptr <= 1)
-         && (handle->frame_pos[0] == handle->min_file_pos))
-   {
-      /* If we're at the beginning... */
-      handle->frame_ptr = 0;
-      intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-   else
-   {
-      /* First time rewind is performed, the old frame is simply replayed.
-       * However, playing back that frame caused us to read data, and push
-       * data to the ring buffer.
-       *
-       * Sucessively rewinding frames, we need to rewind past the read data,
-       * plus another. */
-      handle->frame_ptr = (handle->frame_ptr -
-            (handle->first_rewind ? 1 : 2)) & handle->frame_mask;
-      intfstream_seek(handle->file,
-            (int)handle->frame_pos[handle->frame_ptr], SEEK_SET);
-   }
-
-   if (intfstream_tell(handle->file) <= (long)handle->min_file_pos)
-   {
-      /* We rewound past the beginning. */
-
-      if (!handle->playback)
-      {
-         retro_ctx_serialize_info_t serial_info;
-
-         /* If recording, we simply reset
-          * the starting point. Nice and easy. */
-
-         intfstream_seek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-
-         serial_info.data = handle->state;
-         serial_info.size = handle->state_size;
-
-         core_serialize(&serial_info);
-
-         intfstream_write(handle->file, handle->state, handle->state_size);
-      }
-      else
-         intfstream_seek(handle->file, (int)handle->min_file_pos, SEEK_SET);
-   }
-}
-
-/* Zero out key events when playing back or recording */
-static void bsv_movie_handle_clear_key_events(bsv_movie_t *movie)
-{
-   movie->key_event_count = 0;
-}
-
-void bsv_movie_handle_push_key_event(bsv_movie_t *movie,
-      uint8_t down, uint16_t mod, uint32_t code, uint32_t character)
-{
-   bsv_key_data_t data;
-   data.down                                 = down;
-   data.mod                                  = swap_if_big16(mod);
-   data.code                                 = swap_if_big32(code);
-   data.character                            = swap_if_big32(character);
-   movie->key_events[movie->key_event_count] = data;
-   movie->key_event_count++;
-}
-
-void bsv_movie_finish_rewind(input_driver_state_t *input_st)
-{
-   bsv_movie_t *handle  = input_st->bsv_movie_state_handle;
-   if (!handle)
-      return;
-   handle->frame_ptr    = (handle->frame_ptr + 1) & handle->frame_mask;
-   handle->first_rewind = !handle->did_rewind;
-   handle->did_rewind   = false;
-}
-
-void bsv_movie_next_frame(input_driver_state_t *input_st)
-{
-   settings_t *settings           = config_get_ptr();
-   unsigned checkpoint_interval   = settings->uints.replay_checkpoint_interval;
-   bsv_movie_t         *handle    = input_st->bsv_movie_state_handle;
-
-   if (!handle)
-      return;
-#ifdef HAVE_REWIND
-   if (state_manager_frame_is_reversed())
-      return;
-#endif
-
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
-   {
-      int i;
-      /* write key events, frame is over */
-      intfstream_write(handle->file, &(handle->key_event_count), 1);
-      for (i = 0; i < handle->key_event_count; i++)
-         intfstream_write(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t));
-      bsv_movie_handle_clear_key_events(handle);
-
-      /* Maybe record checkpoint */
-      if (checkpoint_interval != 0 && handle->frame_ptr > 0 && (handle->frame_ptr % (checkpoint_interval*60) == 0))
-      {
-         retro_ctx_serialize_info_t serial_info;
-         uint8_t frame_tok = REPLAY_TOKEN_CHECKPOINT_FRAME;
-         size_t info_size  = core_serialize_size();
-         uint64_t size     = swap_if_big64(info_size);
-         uint8_t *st       = (uint8_t*)malloc(info_size);
-         serial_info.data  = st;
-         serial_info.size  = info_size;
-         core_serialize(&serial_info);
-         /* "next frame is a checkpoint" */
-         intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
-         intfstream_write(handle->file, &size, sizeof(uint64_t));
-         intfstream_write(handle->file, st, info_size);
-         free(st);
-      }
-      else
-      {
-         uint8_t frame_tok = REPLAY_TOKEN_REGULAR_FRAME;
-         /* write "next frame is not a checkpoint" */
-         intfstream_write(handle->file, (uint8_t *)(&frame_tok), sizeof(uint8_t));
-      }
-   }
-
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
-   {
-      /* read next key events, a frame happened for sure? but don't apply them yet */
-      if (handle->key_event_count != 0)
-      {
-         RARCH_ERR("[Replay] Keyboard replay reading next frame while some unused keys still in queue\n");
-      }
-      if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
-      {
-         int i;
-         for (i = 0; i < handle->key_event_count; i++)
+         /* Set menu toggle on release */
+         if (i == RARCH_MENU_TOGGLE)
          {
-            if (intfstream_read(handle->file, &(handle->key_events[i]), sizeof(bsv_key_data_t)) != sizeof(bsv_key_data_t))
+            if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
             {
-               /* Unnatural EOF */
-               RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
-               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-               return;
+               input_st->flags |=  INP_FLAG_MENU_PRESS_PENDING;
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+            }
+            continue;
+         }
+         else if (i != RARCH_ENABLE_HOTKEY)
+         {
+            input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
+
+            /* Game Focus toggle is always allowed, so it must clear menu cancel */
+            if (i == RARCH_GAME_FOCUS_TOGGLE)
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+         }
+
+         BIT256_SET_PTR(p_new_state, i);
+      }
+      else
+      {
+         if (i == RARCH_MENU_TOGGLE)
+         {
+            /* Untrigger menu if press was shorter than hotkey block delay */
+            if (      (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+                  && !(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL)
+                  && !BIT256_GET_PTR(p_new_state, RARCH_ENABLE_HOTKEY)
+                  && input_st->input_hotkey_block_counter
+                  && input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+               input_st->flags &= ~INP_FLAG_MENU_PRESS_PENDING;
+
+            if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+            {
+               /* Forget menu press if any other hotkey was pressed */
+               if (!(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL))
+                  BIT256_SET_PTR(p_new_state, i);
+
+               input_st->flags &= ~(INP_FLAG_MENU_PRESS_PENDING | INP_FLAG_MENU_PRESS_CANCEL);
             }
          }
       }
-      else
-      {
-         RARCH_LOG("[Replay] EOF after buttons\n",handle->key_event_count);
-         /* Natural(?) EOF */
-         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-         return;
-      }
-
-      {
-        uint8_t next_frame_type=REPLAY_TOKEN_INVALID;
-        if (intfstream_read(handle->file, (uint8_t *)(&next_frame_type), sizeof(uint8_t)) != sizeof(uint8_t))
-        {
-           /* Unnatural EOF */
-           RARCH_ERR("[Replay] Replay ran out of frames\n");
-           input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-           return;
-        }
-        else if (next_frame_type == REPLAY_TOKEN_REGULAR_FRAME)
-        {
-           /* do nothing */
-        }
-        else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
-        {
-           uint64_t size;
-           uint8_t *st;
-           retro_ctx_serialize_info_t serial_info;
-
-           if (intfstream_read(handle->file, &(size), sizeof(uint64_t)) != sizeof(uint64_t))
-           {
-              RARCH_ERR("[Replay] Replay ran out of frames\n");
-              input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-              return;
-           }
-
-           size = swap_if_big64(size);
-           st   = (uint8_t*)malloc(size);
-           if (intfstream_read(handle->file, st, size) != (int64_t)size)
-           {
-              RARCH_ERR("[Replay] Replay checkpoint truncated\n");
-              input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-              free(st);
-              return;
-           }
-
-           serial_info.data_const = st;
-           serial_info.size       = size;
-           core_unserialize(&serial_info);
-           free(st);
-        }
-      }
    }
-   handle->frame_pos[handle->frame_ptr] = intfstream_tell(handle->file);
+
+   if (     (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && !input_st->wait_release_mask[port])
+      input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+
+   if (input_st->flags & INP_FLAG_BLOCK_HOTKEY && !enable_hotkey_pressed)
+      input_st->input_hotkey_block_counter = 0;
+
+   } /* kb_blocked scope */
 }
-
-size_t replay_get_serialize_size(void)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
-      return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
-   return 0;
-}
-
-bool replay_get_serialized_data(void* buffer)
-{
-   input_driver_state_t *input_st = &input_driver_st;
-   bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
-
-   if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
-   {
-      long file_end           = intfstream_tell(handle->file);
-      long read_amt           = 0;
-      long file_end_lil       = swap_if_big32(file_end);
-      uint8_t *file_end_bytes = (uint8_t *)(&file_end_lil);
-      uint8_t *buf            = buffer;
-      buf[0]                  = file_end_bytes[0];
-      buf[1]                  = file_end_bytes[1];
-      buf[2]                  = file_end_bytes[2];
-      buf[3]                  = file_end_bytes[3];
-      buf                    += 4;
-      intfstream_rewind(handle->file);
-      read_amt                = intfstream_read(handle->file, (void *)buf, file_end);
-      if (read_amt != file_end)
-         RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d\n", read_amt, file_end);
-   }
-   return true;
-}
-
-bool replay_set_serialized_data(void* buf)
-{
-   uint8_t *buffer                = buf;
-   input_driver_state_t *input_st = &input_driver_st;
-   bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
-   bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;
-
-   /* If there is no current replay, ignore this entirely.
-      TODO/FIXME: Later, consider loading up the replay
-      and allow the user to continue it?
-      Or would that be better done from the replay hotkeys?
-    */
-   if (!(playback || recording))
-      return true;
-
-   if (!buffer)
-   {
-      if (recording)
-      {
-         const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
-         runloop_msg_queue_push(str,
-            1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         RARCH_ERR("[Replay] %s.\n", str);
-         return false;
-      }
-
-      if (playback)
-      {
-         const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
-         runloop_msg_queue_push(str,
-            1, 180, true,
-            NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-         RARCH_WARN("[Replay] %s.\n", str);
-         movie_stop(input_st);
-      }
-   }
-   else
-   {
-      int32_t loaded_len       = swap_if_big32(((int32_t *)buffer)[0]);
-      /* TODO: should factor the next few lines away, magic numbers ahoy */
-      uint32_t *header         = (uint32_t *)(buffer+sizeof(int32_t));
-      int64_t *identifier_spot = (int64_t *)(header+4);
-      int64_t identifier       = swap_if_big64(*identifier_spot);
-      int64_t handle_idx       = intfstream_tell(input_st->bsv_movie_state_handle->file);
-      bool is_compatible       = identifier == input_st->bsv_movie_state_handle->identifier;
-
-      if (is_compatible)
-      {
-         /* If the state is part of this replay, go back to that state
-            and rewind the replay; otherwise
-            halt playback and go to that state normally.
-
-            If the savestate movie is after the current replay
-            length we can replace the current replay data with it,
-            but if it's earlier we can rewind the replay to the
-            savestate movie time point.
-
-            This can truncate the current recording, so beware!
-
-            TODO/FIXME: Figure out what to do about rewinding across load
-         */
-         if (loaded_len > handle_idx)
-         {
-            /* TODO: Really, to be very careful, we should be
-               checking that the events in the loaded state are the
-               same up to handle_idx. Right? */
-            intfstream_rewind(input_st->bsv_movie_state_handle->file);
-            intfstream_write(input_st->bsv_movie_state_handle->file, buffer+sizeof(int32_t), loaded_len);
-         }
-         else
-            intfstream_seek(input_st->bsv_movie_state_handle->file, loaded_len, SEEK_SET);
-      }
-      else
-      {
-         if (recording)
-         {
-            const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT);
-            runloop_msg_queue_push(str,
-                                   1, 180, true,
-                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-            RARCH_ERR("[Replay] %s.\n", str);
-            return false;
-         }
-
-         if (playback)
-         {
-            const char *str = msg_hash_to_str(MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT);
-            runloop_msg_queue_push(str,
-                                   1, 180, true,
-                                   NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-            RARCH_WARN("[Replay] %s.\n", str);
-            movie_stop(input_st);
-         }
-      }
-   }
-   return true;
-}
-#endif
 
 void input_driver_poll(void)
 {
    size_t i, j;
    rarch_joypad_info_t joypad_info[MAX_USERS];
    input_driver_state_t *input_st = &input_driver_st;
+   const input_driver_t *input    = (const input_driver_t*)
+	      input_st->current_driver;
    settings_t *settings           = config_get_ptr();
    const input_device_driver_t
       *joypad                     = input_st->primary_joypad;
@@ -5401,47 +7219,84 @@ void input_driver_poll(void)
       *sec_joypad                 = NULL;
 #endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
-   uint8_t max_users              = (uint8_t)settings->uints.input_max_users;
+   float input_axis_threshold     = settings->floats.input_axis_threshold;
+   /* Clamped: the arrays walked below are [MAX_USERS] and the setting
+    * comes from the config file. */
+   uint8_t max_users              = (settings->uints.input_max_users
+         > MAX_USERS) ? MAX_USERS
+         : (uint8_t)settings->uints.input_max_users;
 
-   if (     joypad && joypad->poll)
+   if (joypad && joypad->poll)
       joypad->poll();
-   if (     sec_joypad && sec_joypad->poll)
+   if (sec_joypad && sec_joypad->poll)
       sec_joypad->poll();
-   if (     input_st->current_driver
-         && input_st->current_driver->poll)
-      input_st->current_driver->poll(input_st->current_data);
+   if (input && input->poll)
+      input->poll(input_st->current_data);
 
-   input_st->turbo_btns.count++;
+   /* Invalidate joypad state bitmask cache for the new frame */
+   memset(input_st->joypad_state_cache_valid, 0,
+         sizeof(input_st->joypad_state_cache_valid));
 
-   if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
+   /* Enable/disable sensors at the driver level based on demand
+    * from shaders and/or core. Setting gates everything. */
+   if (settings->bools.input_sensors_enable)
    {
-      for (i = 0; i < max_users; i++)
-         input_st->turbo_btns.frame_enable[i] = 0;
-      return;
+      bool want = input_st->shader_uses_sensors
+         || input_st->core_accel_rate
+         || input_st->core_gyro_rate;
+
+      if (want && !input_st->frontend_sensors_enabled)
+      {
+         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+               input_st->core_accel_rate ? input_st->core_accel_rate : 60);
+         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE,
+               input_st->core_gyro_rate ? input_st->core_gyro_rate : 60);
+         input_st->frontend_sensors_enabled = true;
+         input_sensor_start_rest_capture();
+      }
+      else if (!want && input_st->frontend_sensors_enabled)
+      {
+         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+         input_st->frontend_sensors_enabled = false;
+      }
+   }
+   else if (input_st->frontend_sensors_enabled)
+   {
+      input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+      input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+      input_st->frontend_sensors_enabled = false;
    }
 
-   /* This rarch_joypad_info_t struct contains the device index + autoconfig binds for the
-    * controller to be queried, and also (for unknown reasons) the analog axis threshold
-    * when mapping analog stick to dpad input. */
-   for (i = 0; i < max_users; i++)
-   {
-      joypad_info[i].axis_threshold           = settings->floats.input_axis_threshold;
-      joypad_info[i].joy_idx                  = settings->uints.input_joypad_index[i];
-      joypad_info[i].auto_binds               = input_autoconf_binds[joypad_info[i].joy_idx];
+   /* Update accelerometer rest position capture (runs for ~30 frames
+    * after focus gain, then stops) */
+   input_sensor_update_rest_capture(settings);
 
-      input_st->turbo_btns.frame_enable[i]    = (*input_st->libretro_input_binds[i])[RARCH_TURBO_ENABLE].valid ?
-         input_state_wrap(
-               input_st->current_driver,
-               input_st->current_data,
-               joypad,
-               sec_joypad,
-               &joypad_info[i],
-               (*input_st->libretro_input_binds),
-               (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
-               (unsigned)i,
-               RETRO_DEVICE_JOYPAD,
-               0,
-               RARCH_TURBO_ENABLE) : 0;
+   /* Cache sensor values so shader backends on the video thread
+    * read a consistent per-frame snapshot instead of calling into
+    * the input subsystem directly.
+    * Uses the internal variant to avoid 6 redundant config_get_ptr() calls.
+    *
+    * When the master input_sensors_enable toggle is off (the common
+    * default), input_get_sensor_state_internal would return 0.0 for
+    * every call after two settings reads and a couple of branches per
+    * call. Short-circuit that to a single memset since the result is
+    * the same. */
+   if (!settings->bools.input_sensors_enable)
+   {
+      memset(input_st->sensor_gyroscope_cache,     0,
+            sizeof(input_st->sensor_gyroscope_cache));
+      memset(input_st->sensor_accelerometer_cache, 0,
+            sizeof(input_st->sensor_accelerometer_cache));
+   }
+   else
+   {
+      input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_X);
+      input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Y);
+      input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Z);
+      input_st->sensor_accelerometer_cache[0] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
+      input_st->sensor_accelerometer_cache[1] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
+      input_st->sensor_accelerometer_cache[2] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
    }
 
 #ifdef HAVE_OVERLAY
@@ -5457,6 +7312,8 @@ void input_driver_poll(void)
       {
          case ANALOG_DPAD_LSTICK:
          case ANALOG_DPAD_RSTICK:
+         case ANALOG_DPAD_LRSTICK:
+         case ANALOG_DPAD_TWINSTICK:
             {
                unsigned mapped_port      = settings->uints.input_remap_ports[0];
                if (input_st->analog_requested[mapped_port])
@@ -5469,12 +7326,18 @@ void input_driver_poll(void)
          case ANALOG_DPAD_RSTICK_FORCED:
             input_analog_dpad_mode       = ANALOG_DPAD_RSTICK;
             break;
+         case ANALOG_DPAD_LRSTICK_FORCED:
+            input_analog_dpad_mode       = ANALOG_DPAD_LRSTICK;
+            break;
+         case ANALOG_DPAD_TWINSTICK_FORCED:
+            input_analog_dpad_mode       = ANALOG_DPAD_TWINSTICK;
+            break;
          default:
             break;
       }
 
       input_poll_overlay(
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
             settings,
             input_st->overlay_ptr,
             input_st->overlay_visibility,
@@ -5484,22 +7347,100 @@ void input_driver_poll(void)
    }
 #endif
 
-#ifdef HAVE_MENU
-   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
-#endif
-   if (input_remap_binds_enable)
+   input_st->turbo_btns.count++;
+
+   if (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
    {
+      for (i = 0; i < max_users; i++)
+      {
+         input_st->turbo_btns.frame_enable[i] = 0;
+         input_st->hold_btns.frame_enable[i]  = 0;
+      }
+      return;
+   }
+
+   /* Fused turbo/hold + remap loop.
+    *
+    * Previously these were two separate max_users iterations:
+    *   1) turbo/hold: init joypad_info[i], call input_state_wrap ×2
+    *   2) remap:      reuse joypad_info[i], do remap work
+    * Now fused into a single pass to improve cache locality —
+    * joypad_info[i], bind arrays, and joypad driver state stay hot
+    * in L1 across all per-user work, and the loop overhead is halved. */
+   {
+      bool turbo_enable              = settings->bools.input_turbo_enable;
+      uint16_t turbo_btn_id          = RARCH_TURBO_ENABLE;
+      bool kb_blocked                = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+#ifdef HAVE_MENU
+      bool do_remap                  = input_remap_binds_enable
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+#else
+      bool do_remap                  = input_remap_binds_enable;
+#endif
 #ifdef HAVE_OVERLAY
-      input_overlay_t *overlay_pointer   = (input_overlay_t*)input_st->overlay_ptr;
-      bool poll_overlay                  = (overlay_pointer &&
+      input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
+      bool poll_overlay              = (overlay_pointer &&
             (overlay_pointer->flags & INPUT_OVERLAY_ALIVE));
 #endif
-      input_mapper_t *handle             = &input_st->mapper;
-      float input_analog_deadzone        = settings->floats.input_analog_deadzone;
-      float input_analog_sensitivity     = settings->floats.input_analog_sensitivity;
+      input_mapper_t *handle         = &input_st->mapper;
+      float input_analog_deadzone    = settings->floats.input_analog_deadzone;
+      float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
+
+      if (settings->ints.input_turbo_bind != -1)
+         turbo_btn_id = settings->ints.input_turbo_bind;
 
       for (i = 0; i < max_users; i++)
       {
+         /* --- joypad_info init (shared by turbo/hold and remap) --- */
+         joypad_info[i].axis_threshold        = input_axis_threshold;
+         joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
+         if (joypad_info[i].joy_idx >= MAX_USERS)
+            joypad_info[i].joy_idx            = 0;
+         joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
+
+         /* --- Turbo button state --- */
+         input_st->turbo_btns.frame_enable[i] =
+                  (*input_st->libretro_input_binds[i])[turbo_btn_id].valid
+               && turbo_enable ?
+            input_state_wrap(input_st->current_driver,
+                  input_st->current_data,
+                  joypad, sec_joypad, &joypad_info[i],
+                  (*input_st->libretro_input_binds),
+                  kb_blocked,
+                  (unsigned)i,
+                  RETRO_DEVICE_JOYPAD, 0, turbo_btn_id) : 0;
+
+#ifdef HAVE_OVERLAY
+         if (     (i == 0)
+               && turbo_enable
+               && overlay_pointer
+               && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
+               && BIT256_GET(overlay_pointer->overlay_state.buttons, turbo_btn_id))
+            input_st->turbo_btns.frame_enable[i] = true;
+#endif
+
+         /* --- Hold button modifier state --- */
+         input_st->hold_btns.frame_enable[i] =
+                  (*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE].valid ?
+            input_state_wrap(input_st->current_driver,
+                  input_st->current_data,
+                  joypad, sec_joypad, &joypad_info[i],
+                  (*input_st->libretro_input_binds),
+                  kb_blocked,
+                  (unsigned)i,
+                  RETRO_DEVICE_JOYPAD, 0, RARCH_HOLD_ENABLE) : 0;
+
+#ifdef HAVE_OVERLAY
+         if (     (i == 0)
+               && overlay_pointer
+               && (overlay_pointer->flags & INPUT_OVERLAY_ALIVE)
+               && BIT256_GET(overlay_pointer->overlay_state.buttons, RARCH_HOLD_ENABLE))
+            input_st->hold_btns.frame_enable[i] = true;
+#endif
+
+         /* --- Remap work (conditional) --- */
+         if (do_remap)
+         {
          input_bits_t current_inputs;
          unsigned mapped_port            = settings->uints.input_remap_ports[i];
          unsigned device                 = settings->uints.input_libretro_device[mapped_port]
@@ -5507,10 +7448,25 @@ void input_driver_poll(void)
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
 
+         /* Clear the whole state up front. The 'mapper' switch below
+          * only reads p_new_state for the same device cases that the
+          * 'device' switch fills in (KEYBOARD/JOYPAD/ANALOG), so no
+          * uninitialised read can occur - but the two switches are
+          * separate and the state is reached through p_new_state, so
+          * GCC cannot correlate them and warns about a 'maybe
+          * uninitialized' current_inputs at the BIT256_GET_PTR() in
+          * the mapper switch. Clearing here rather than inside the
+          * device switch case leaves the value defined on every path
+          * and costs nothing extra for the devices that were already
+          * clearing it. */
+         BIT256_CLEAR_ALL_PTR(&current_inputs);
+
          switch (input_analog_dpad_mode)
          {
             case ANALOG_DPAD_LSTICK:
             case ANALOG_DPAD_RSTICK:
+            case ANALOG_DPAD_LRSTICK:
+            case ANALOG_DPAD_TWINSTICK:
                if (input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
                break;
@@ -5519,6 +7475,12 @@ void input_driver_poll(void)
                break;
             case ANALOG_DPAD_RSTICK_FORCED:
                input_analog_dpad_mode    = ANALOG_DPAD_RSTICK;
+               break;
+            case ANALOG_DPAD_LRSTICK_FORCED:
+               input_analog_dpad_mode    = ANALOG_DPAD_LRSTICK;
+               break;
+            case ANALOG_DPAD_TWINSTICK_FORCED:
+               input_analog_dpad_mode    = ANALOG_DPAD_TWINSTICK;
                break;
             default:
                break;
@@ -5529,18 +7491,17 @@ void input_driver_poll(void)
             case RETRO_DEVICE_KEYBOARD:
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
-               BIT256_CLEAR_ALL_PTR(&current_inputs);
                if (joypad)
                {
-                  unsigned k, j;
-                  int16_t ret = input_state_wrap(
+                  unsigned k;
+                  int32_t ret = input_state_wrap(
                         input_st->current_driver,
                         input_st->current_data,
                         input_st->primary_joypad,
                         sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
-                        (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                        kb_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
 
@@ -5570,28 +7531,31 @@ void input_driver_poll(void)
                      }
                   }
 
-                  /* This is the analog joypad index -
-                   * handles only the two analog axes */
+                  /* Process both axes of each analog stick together,
+                   * computing radial deadzone magnitude only once
+                   * per stick instead of once per axis. */
                   for (k = 0; k < 2; k++)
                   {
-                     /* This is the analog joypad ident */
-                     for (j = 0; j < 2; j++)
-                     {
-                        unsigned offset = 0 + (k * 4) + (j * 2);
-                        int16_t     val = input_joypad_analog_axis(
+                     int16_t stick_x = 0;
+                     int16_t stick_y = 0;
+                     if (input_joypad_analog_stick(
                               input_analog_dpad_mode,
                               input_analog_deadzone,
                               input_analog_sensitivity,
-                              joypad,
-                              &joypad_info[i],
-                              k,
-                              j,
-                              (*input_st->libretro_input_binds[i]));
-
-                        if (val >= 0)
-                           p_new_state->analogs[offset]   = val;
+                              joypad, &joypad_info[i],
+                              k, (*input_st->libretro_input_binds[i]),
+                              &stick_x, &stick_y))
+                     {
+                        unsigned off_x = 0 + (k * 4);
+                        unsigned off_y = 0 + (k * 4) + 2;
+                        if (stick_x >= 0)
+                           p_new_state->analogs[off_x]     = stick_x;
                         else
-                           p_new_state->analogs[offset+1] = val;
+                           p_new_state->analogs[off_x + 1] = stick_x;
+                        if (stick_y >= 0)
+                           p_new_state->analogs[off_y]     = stick_y;
+                        else
+                           p_new_state->analogs[off_y + 1] = stick_y;
                      }
                   }
                }
@@ -5622,21 +7586,15 @@ void input_driver_poll(void)
                             * 32767;
                   }
                   else
-                  {
-                     current_button_value =
-                        BIT256_GET_PTR(p_new_state, j);
-                  }
+                     current_button_value = BIT256_GET_PTR(p_new_state, j);
 
 #ifdef HAVE_OVERLAY
                   if (poll_overlay && i == 0)
                   {
-                     input_overlay_state_t *ol_state  =
-                        overlay_pointer
-                        ? &overlay_pointer->overlay_state
-                        : NULL;
+                     input_overlay_state_t *ol_state  = overlay_pointer
+                        ? &overlay_pointer->overlay_state : NULL;
                      if (ol_state)
-                        current_button_value |=
-                           BIT256_GET(ol_state->buttons, j);
+                        current_button_value |= BIT256_GET(ol_state->buttons, j);
                   }
 #endif
                   /* Press */
@@ -5690,12 +7648,11 @@ void input_driver_poll(void)
                   if (poll_overlay && i == 0)
                   {
                      input_overlay_state_t *ol_state  =
-                        overlay_pointer
+                          overlay_pointer
                         ? &overlay_pointer->overlay_state
                         : NULL;
                      if (ol_state)
-                        current_button_value            |=
-                           BIT256_GET(ol_state->buttons, j);
+                        current_button_value |= BIT256_GET(ol_state->buttons, j);
                   }
 #endif
                   remap_valid                   =
@@ -5720,13 +7677,26 @@ void input_driver_poll(void)
                      }
                      else
                      {
-                        int invert = 1;
+                        unsigned remap_axis_bind =
+                              remap_button - RARCH_FIRST_CUSTOM_BIND;
+                        int      invert          = 1;
+
+                        /* Bound: analog_value is int16_t[8].  remap_button
+                         * comes from settings->uints.input_remap_ids[][]
+                         * which is loaded from .rmp config files;
+                         * input_remapping_load_file's config_get_int
+                         * accepts any integer, so a malformed .rmp can
+                         * supply remap_button anywhere in (RARCH_FIRST_
+                         * CUSTOM_BIND, INT_MAX], producing a write at
+                         * arbitrary offset past analog_value[i].  Reject
+                         * out-of-range targets here. */
+                        if (remap_axis_bind >= ARRAY_SIZE(handle->analog_value[i]))
+                           continue;
 
                         if (remap_button % 2 != 0)
                            invert = -1;
 
-                        handle->analog_value[i][
-                           remap_button - RARCH_FIRST_CUSTOM_BIND] =
+                        handle->analog_value[i][remap_axis_bind] =
                               (p_new_state->analog_buttons[j]
                                ? p_new_state->analog_buttons[j]
                                : 32767) * invert;
@@ -5760,11 +7730,15 @@ void input_driver_poll(void)
                         unsigned remap_axis_bind =
                            remap_axis - RARCH_FIRST_CUSTOM_BIND;
 
-                        if (remap_axis_bind < sizeof(handle->analog_value[i]))
+                        /* Pre-patch this read 'sizeof(handle->analog_value[i])'
+                         * which is 16 (bytes), but the array has 8 elements;
+                         * any remap_axis_bind in [8, 15] caused an OOB write.
+                         * Use ARRAY_SIZE so the check is in elements. */
+                        if (remap_axis_bind < ARRAY_SIZE(handle->analog_value[i]))
                         {
                            int invert = 1;
-                           if (  (k % 2 == 0 && remap_axis % 2 != 0) ||
-                                 (k % 2 != 0 && remap_axis % 2 == 0)
+                           if (     (k % 2 == 0 && remap_axis % 2 != 0)
+                                 || (k % 2 != 0 && remap_axis % 2 == 0)
                               )
                               invert = -1;
 
@@ -5780,7 +7754,8 @@ void input_driver_poll(void)
             default:
                break;
          }
-      }
+         } /* if (do_remap) */
+      } /* for (i = 0; i < max_users; i++) */
    }
 
 #ifdef HAVE_COMMAND
@@ -5812,7 +7787,12 @@ void input_driver_poll(void)
             ssize_t ret;
             struct remote_message msg;
 
+
+#if defined(_WIN32)
+            if (input_st->remote->net_fd[user] == INVALID_SOCKET)
+#else
             if (input_st->remote->net_fd[user] < 0)
+#endif
                return;
 
             FD_ZERO(&fds);
@@ -5840,26 +7820,7 @@ void input_driver_poll(void)
 #endif
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
-   {
-      runloop_state_t *runloop_st   = runloop_state_get_ptr();
-      retro_keyboard_event_t *key_event                 = &runloop_st->key_event;
-
-      if (*key_event && *key_event == runloop_st->frontend_key_event)
-      {
-         int i;
-         bsv_key_data_t k;
-         for (i = 0; i < input_st->bsv_movie_state_handle->key_event_count; i++)
-         {
-#ifdef HAVE_CHEEVOS
-            rcheevos_pause_hardcore();
-#endif
-            k = input_st->bsv_movie_state_handle->key_events[i];
-            input_keyboard_event(k.down, swap_if_big32(k.code), swap_if_big32(k.character), swap_if_big16(k.mod), RETRO_DEVICE_KEYBOARD);
-         }
-         /* Have to clear here so we don't double-apply key events */
-         bsv_movie_handle_clear_key_events(input_st->bsv_movie_state_handle);
-      }
-   }
+      bsv_movie_poll(input_st);
 #endif
 }
 
@@ -5871,22 +7832,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
    settings_t *settings        = config_get_ptr();
    int16_t result              = 0;
 #ifdef HAVE_BSV_MOVIE
-   /* Load input from BSV record, if enabled */
    if (BSV_MOVIE_IS_PLAYBACK_ON())
-   {
-      int16_t bsv_result = 0;
-      if (intfstream_read(
-               input_st->bsv_movie_state_handle->file,
-               &bsv_result, 2) == 2)
-      {
-#ifdef HAVE_CHEEVOS
-         rcheevos_pause_hardcore();
-#endif
-         return swap_if_big16(bsv_result);
-      }
-
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
-   }
+     return bsv_movie_read_state(input_st, port, device, idx, id);
 #endif
 
    /* Read input state */
@@ -5900,12 +7847,24 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       input_st->analog_requested[port] = true;
 
 #ifdef HAVE_BSV_MOVIE
-   /* Save input to BSV record, if enabled */
    if (BSV_MOVIE_IS_RECORDING())
-   {
-      result = swap_if_big16(result);
-      intfstream_write(input_st->bsv_movie_state_handle->file, &result, 2);
-   }
+#ifdef HAVE_REWIND
+      if (!state_manager_frame_is_reversed())
+#endif
+      bsv_movie_push_input_event(
+            input_st->bsv_movie_state_handle,
+            port,
+            device,
+            idx,
+            id,
+            result);
+#endif
+
+#ifdef HAVE_GAME_AI
+   if (settings->bools.game_ai_override_p1 && port == 0)
+      result |= game_ai_input(port, device, idx, id, result);
+   if (settings->bools.game_ai_override_p2 && port == 1)
+      result |= game_ai_input(port, device, idx, id, result);
 #endif
 
    return result;
@@ -5914,17 +7873,14 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 #ifdef HAVE_HID
 void *hid_driver_get_data(void)
 {
-   return (void *)input_driver_st.hid_data;
+   return (void*)input_driver_st.hid_data;
 }
 
 /* This is only to be called after we've invoked free() on the
  * HID driver; the memory will have already been freed, so we need to
  * reset the pointer.
  */
-void hid_driver_reset_data(void)
-{
-   input_driver_st.hid_data = NULL;
-}
+void hid_driver_reset_data(void) { input_driver_st.hid_data = NULL; }
 
 /**
  * config_get_hid_driver_options:
@@ -5956,7 +7912,7 @@ const hid_driver_t *input_hid_init_first(void)
 
       if (input_st->hid_data)
       {
-         RARCH_LOG("[Input]: Found HID driver: \"%s\".\n",
+         RARCH_LOG("[Input] Found HID driver: \"%s\".\n",
                hid_drivers[i]->ident);
          return hid_drivers[i];
       }
@@ -5984,15 +7940,20 @@ void input_remapping_cache_global_config(void)
             RARCH_OVERRIDE_SETTING_LIBRETRO_DEVICE, &i))
          device = settings->uints.input_libretro_device[i];
 
-      input_st->old_analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
-      input_st->old_libretro_device[i]  = device;
+      input_st->remapping_cache.analog_dpad_mode[i] = settings->uints.input_analog_dpad_mode[i];
+      input_st->remapping_cache.libretro_device[i]  = device;
    }
 
-   input_st->flags |= INP_FLAG_OLD_ANALOG_DPAD_MODE_SET
-                    | INP_FLAG_OLD_LIBRETRO_DEVICE_SET;
+   input_st->remapping_cache.turbo_enable     = settings->bools.input_turbo_enable;
+   input_st->remapping_cache.turbo_allow_dpad = settings->bools.input_turbo_allow_dpad;
+   input_st->remapping_cache.turbo_bind       = settings->ints.input_turbo_bind;
+   input_st->remapping_cache.turbo_mode       = settings->uints.input_turbo_mode;
+   input_st->remapping_cache.turbo_button     = settings->uints.input_turbo_button;
+   input_st->remapping_cache.turbo_period     = settings->uints.input_turbo_period;
+   input_st->remapping_cache.turbo_duty_cycle = settings->uints.input_turbo_duty_cycle;
 }
 
-void input_remapping_restore_global_config(bool clear_cache)
+void input_remapping_restore_global_config(bool clear_cache, bool restore_analog_dpad_mode)
 {
    unsigned i;
    settings_t *settings           = config_get_ptr();
@@ -6003,26 +7964,47 @@ void input_remapping_restore_global_config(bool clear_cache)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if ((input_st->flags & INP_FLAG_OLD_ANALOG_DPAD_MODE_SET)
-          && (settings->uints.input_analog_dpad_mode[i] !=
-               input_st->old_analog_dpad_mode[i]))
+      if (restore_analog_dpad_mode)
          configuration_set_uint(settings,
                settings->uints.input_analog_dpad_mode[i],
-               input_st->old_analog_dpad_mode[i]);
+               input_st->remapping_cache.analog_dpad_mode[i]);
 
-      if (   (input_st->flags & INP_FLAG_OLD_LIBRETRO_DEVICE_SET)
-          && (settings->uints.input_libretro_device[i] !=
-               input_st->old_libretro_device[i]))
-         configuration_set_uint(settings,
-               settings->uints.input_libretro_device[i],
-               input_st->old_libretro_device[i]);
+      configuration_set_uint(settings,
+            settings->uints.input_libretro_device[i],
+            input_st->remapping_cache.libretro_device[i]);
    }
+
+   configuration_set_bool(settings,
+         settings->bools.input_turbo_enable,
+         input_st->remapping_cache.turbo_enable);
+
+   configuration_set_bool(settings,
+         settings->bools.input_turbo_allow_dpad,
+         input_st->remapping_cache.turbo_allow_dpad);
+
+   configuration_set_int(settings,
+         settings->ints.input_turbo_bind,
+         input_st->remapping_cache.turbo_bind);
+
+   configuration_set_uint(settings,
+         settings->uints.input_turbo_mode,
+         input_st->remapping_cache.turbo_mode);
+
+   configuration_set_uint(settings,
+         settings->uints.input_turbo_button,
+         input_st->remapping_cache.turbo_button);
+
+   configuration_set_uint(settings,
+         settings->uints.input_turbo_period,
+         input_st->remapping_cache.turbo_period);
+
+   configuration_set_uint(settings,
+         settings->uints.input_turbo_duty_cycle,
+         input_st->remapping_cache.turbo_duty_cycle);
 
 end:
    if (clear_cache)
-      input_st->flags &= ~(INP_FLAG_OLD_ANALOG_DPAD_MODE_SET
-                         | INP_FLAG_OLD_LIBRETRO_DEVICE_SET
-                         | INP_FLAG_REMAPPING_CACHE_ACTIVE);
+      input_st->flags &= ~INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
 void input_remapping_update_port_map(void)
@@ -6107,7 +8089,7 @@ void input_remapping_set_defaults(bool clear_cache)
       }
 
       /* Analog stick remaps */
-      for (j = RARCH_FIRST_CUSTOM_BIND; j < (RARCH_FIRST_CUSTOM_BIND + 8); j++)
+      for (j = RARCH_FIRST_CUSTOM_BIND; j < RARCH_ANALOG_BIND_LIST_END; j++)
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[i][j], j);
 
@@ -6125,15 +8107,14 @@ void input_remapping_set_defaults(bool clear_cache)
     * the last core init
     * > Prevents remap changes from 'bleeding through'
     *   into the main config file */
-   input_remapping_restore_global_config(clear_cache);
+   input_remapping_restore_global_config(clear_cache, true);
 }
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
-   int port;
    rarch_joypad_info_t joypad_info;
-   unsigned block_delay                = settings->uints.input_hotkey_block_delay;
+   input_driver_t *input               = input_st->current_driver;
    const input_device_driver_t *joypad = input_st->primary_joypad;
 #ifdef HAVE_MFI
    const input_device_driver_t
@@ -6142,82 +8123,138 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    const input_device_driver_t
       *sec_joypad                      = NULL;
 #endif
+   unsigned block_delay                = settings->uints.input_hotkey_block_delay;
+   /* Both of the arrays indexed below are [MAX_USERS]; the setting is
+    * read from the config file and is not guaranteed to respect that. */
+   uint8_t max_users                   = (settings->uints.input_max_users
+         > MAX_USERS) ? MAX_USERS
+         : (uint8_t)settings->uints.input_max_users;
+   uint8_t port                        = 0;
+   uint8_t hotkey_port                 = 0;
 #ifdef HAVE_MENU
+   bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    bool display_kb                     = menu_input_dialog_get_display_kb();
    bool menu_is_alive                  = (menu_state_get_ptr()->flags &
          MENU_ST_FLAG_ALIVE) ? true : false;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
-   input_driver_t *current_input       = input_st->current_driver;
-   unsigned max_users                  = settings->uints.input_max_users;
-   bool all_users_control_menu         = settings->bools.input_all_users_control_menu;
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
    for (port = 0; port < (int)max_users; port++)
    {
       const struct retro_keybind *binds_norm = &input_config_binds[port][RARCH_ENABLE_HOTKEY];
-      const struct retro_keybind *binds_auto = &input_autoconf_binds[port][RARCH_ENABLE_HOTKEY];
-      struct retro_keybind *auto_binds       = input_autoconf_binds[port];
-      struct retro_keybind *general_binds    = input_config_binds[port];
+      const struct retro_keybind *binds_auto = NULL;
+
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
+      /* input_autoconf_binds is [MAX_USERS] and joy_idx comes from the
+       * config file, so it can point past the end - the same bound the
+       * rumble and autoconfig paths already apply. Fall back to the
+       * first slot rather than skipping the port, so a bad index
+       * degrades to the wrong binds instead of no input at all. */
+      if (joypad_info.joy_idx >= MAX_USERS)
+         joypad_info.joy_idx                 = 0;
       joypad_info.auto_binds                 = input_autoconf_binds[joypad_info.joy_idx];
+      binds_auto                             = &input_autoconf_binds[joypad_info.joy_idx][RARCH_ENABLE_HOTKEY];
 
 #ifdef HAVE_MENU
-      if (menu_is_alive)
+      if (menu_is_alive && joypad)
       {
-         int k;
-         int s;
+         uint8_t s;
+         uint8_t a;
 
-         /* Read input from both analog sticks. */
+         /* Read input from analog sticks according to settings. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
          {
-            unsigned x_plus  = RARCH_ANALOG_LEFT_X_PLUS;
-            unsigned y_plus  = RARCH_ANALOG_LEFT_Y_PLUS;
-            unsigned x_minus = RARCH_ANALOG_LEFT_X_MINUS;
-            unsigned y_minus = RARCH_ANALOG_LEFT_Y_MINUS;
+            if (     (settings->bools.menu_disable_left_analog  && s == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+                  || (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+               continue;
 
-            if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
             {
-               x_plus  = RARCH_ANALOG_RIGHT_X_PLUS;
-               y_plus  = RARCH_ANALOG_RIGHT_Y_PLUS;
-               x_minus = RARCH_ANALOG_RIGHT_X_MINUS;
-               y_minus = RARCH_ANALOG_RIGHT_Y_MINUS;
-            }
+               int16_t ret = input_joypad_analog_axis(
+                     ANALOG_DPAD_NONE,
+                     settings->floats.input_analog_deadzone,
+                     settings->floats.input_analog_sensitivity,
+                     joypad,
+                     &joypad_info,
+                     s,
+                     a,
+                     (input_st->libretro_input_binds[port]
+                        ? *input_st->libretro_input_binds[port] : NULL));
 
-            if (!INHERIT_JOYAXIS(auto_binds))
-            {
-               unsigned j = x_plus + 3;
-               /* Inherit joyaxis from analogs. */
-               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
+               if (ret)
                {
-                  if ((auto_binds)[j].joyaxis != AXIS_NONE &&
-                        ((float)abs(joypad->axis(port, (uint32_t)(auto_binds)[j].joyaxis))
-                         / 0x8000) > joypad_info.axis_threshold)
-                     (auto_binds)[k].joyaxis = (auto_binds)[j].joyaxis;
-                  j--;
-               }
-            }
+                  bool playlist = false;
 
-            if (!INHERIT_JOYAXIS(general_binds))
-            {
-               unsigned j = x_plus + 3;
-               /* Inherit joyaxis from analogs. */
-               for (k = RETRO_DEVICE_ID_JOYPAD_UP; k <= RETRO_DEVICE_ID_JOYPAD_RIGHT; k++)
-               {
-                  if ((general_binds)[j].joyaxis != AXIS_NONE &&
-                        ((float)abs(joypad->axis(port, (uint32_t)(general_binds)[j].joyaxis))
-                         / 0x8000) > joypad_info.axis_threshold)
-                     (general_binds)[k].joyaxis = (general_binds)[j].joyaxis;
-                  j--;
+                  /* Replace right analog stick navigation in playlists to thumbnail cycling. */
+                  if (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  {
+                     menu_entry_t entry;
+                     MENU_ENTRY_INITIALIZE(entry);
+                     menu_entry_get(&entry, 0, 0, NULL, true);
+
+                     switch (entry.type)
+                     {
+                        case FILE_TYPE_RPL_ENTRY:
+                        case FILE_TYPE_PLAYLIST_ENTRY:
+                        case FILE_TYPE_PLAIN:
+                        case FILE_TYPE_RDB:
+                           playlist = true;
+                           break;
+                        default:
+                           break;
+                     }
+                  }
+
+                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
+                  }
+                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
+                  }
+                  if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_MINUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
+                  }
+                  else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff > joypad_info.axis_threshold)
+                  {
+                     if (playlist)
+                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_PLUS);
+                     else
+                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                  }
                }
             }
          }
       }
 #endif /* HAVE_MENU */
 
-      input_keys_pressed(port,
+      if (settings->bools.input_hotkey_follows_player1)
+      {
+         /* Hotkeys are bound to player 1 (the first user mapped to core port 0),
+          * even if player 1 is remapped to a different user. */
+         hotkey_port = settings->uints.input_remap_port_map[0][0];
+
+         if (hotkey_port >= MAX_USERS)
+            hotkey_port = 0;
+      }
+
+      input_keys_pressed(
+            port,
+            hotkey_port,
 #ifdef HAVE_MENU
             menu_is_alive,
 #else
@@ -6230,7 +8267,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             binds_auto,
             joypad,
             sec_joypad,
-            &joypad_info);
+            &joypad_info,
+            settings->bools.input_hotkey_device_merge);
 
 #ifdef HAVE_MENU
       if (menu_is_alive)
@@ -6247,10 +8285,10 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       /* Gather keyboard input, if enabled
        * Note: Keyboard input always read from
        * port 0 */
-      if (     !display_kb
-            &&  current_input
-            &&  current_input->input_state)
+      if (!display_kb && input && input->input_state)
       {
+         struct menu_state *menu_st  = menu_state_get_ptr();
+         bool swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
          unsigned i;
          unsigned ids[][2] =
          {
@@ -6268,12 +8306,13 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_HOME,      RETRO_DEVICE_ID_JOYPAD_L3     },
             {RETROK_END,       RETRO_DEVICE_ID_JOYPAD_R3     },
+            /* Extra keys read regardless of 'enable_hotkey' */
             {0,                RARCH_QUIT_KEY                }, /* 14 */
             {0,                RARCH_FULLSCREEN_TOGGLE_KEY   },
             {0,                RARCH_UI_COMPANION_TOGGLE     },
             {0,                RARCH_FPS_TOGGLE              },
             {0,                RARCH_NETPLAY_HOST_TOGGLE     },
-            {0,                RARCH_MENU_TOGGLE             },
+            {0,                RARCH_BIND_LIST_END_NULL      },
          };
 
          ids[14][0] = input_config_binds[0][RARCH_QUIT_KEY].key;
@@ -6281,9 +8320,14 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          ids[16][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
          ids[17][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
          ids[18][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
-         ids[19][0] = input_config_binds[0][RARCH_MENU_TOGGLE].key;
+         ids[19][0] = RETROK_ESCAPE;
 
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+         /* Escape cancels dialogs */
+         if (menu_st && menu_st->driver_data && *menu_st->driver_data->menu_state_msg)
+            ids[19][1] = (swap_ok_cancel_buttons)
+                  ? RETRO_DEVICE_ID_JOYPAD_A : RETRO_DEVICE_ID_JOYPAD_B;
+
+         if (swap_ok_cancel_buttons)
          {
             ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
             ids[1][1] = RETRO_DEVICE_ID_JOYPAD_A;
@@ -6291,29 +8335,37 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
-            if (current_input->input_state(
+            if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
                      sec_joypad,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
+            {
+               /* Wait for release when closing dialogs with Escape,
+                * otherwise quit hotkey will also get triggered */
+               if (ids[i][0] == RETROK_ESCAPE && ids[19][1] != RARCH_BIND_LIST_END_NULL)
+                  input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
+
                BIT256_SET_PTR(current_bits, ids[i][1]);
+            }
          }
       }
-      else if (display_kb
-            && current_input
-            && current_input->input_state)
+      else if (display_kb && input && input->input_state)
       {
-         /* Allow arrows, LCtrl as OK, character map switches,
-          * and set RetroPad Select bit when pressing Escape
-          * in order to clear the input window and close it. */
+         /* OSK grid navigation from keyboard / TV remote D-pad, plus
+          * page switches and Escape to clear/close. Return and LCTRL/RCTRL
+          * confirm the highlighted OSK character (same as menu OK) */
          unsigned i;
+         bool swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
          unsigned ids[][2] =
          {
+            {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
             {RETROK_LCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_RCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
             {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
             {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
             {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
@@ -6323,18 +8375,28 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
          };
 
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
+         if (swap_ok_cancel_buttons)
             ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
-            if (current_input->input_state(
+            if (     swap_ok_cancel_buttons
+                  && (ids[i][0] == RETROK_LCTRL || ids[i][0] == RETROK_RCTRL))
+               ids[i][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
+            if (     input_st->osk_textbox_focus
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_L
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_R
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_SELECT)
+               continue;
+
+            if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
                      sec_joypad,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
-                     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false,
+                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                BIT256_SET_PTR(current_bits, ids[i][1]);
@@ -6366,11 +8428,6 @@ static const char *accessibility_lut_name(char key)
 {
    switch (key)
    {
-#if 0
-      /* TODO/FIXME - overlaps with tilde */
-      case '`':
-         return "left quote";
-#endif
       case '`':
          return "tilde";
       case '!':
@@ -6445,20 +8502,20 @@ static const char *accessibility_lut_name(char key)
 void input_keyboard_event(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
-   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    retro_keyboard_event_t
-      *key_event                 = &runloop_st->key_event;
+      *key_event               = &runloop_st->key_event;
    input_driver_state_t
-      *input_st                  = &input_driver_st;
+      *input_st                = &input_driver_st;
 #ifdef HAVE_ACCESSIBILITY
-   access_state_t *access_st     = access_state_get_ptr();
-   settings_t *settings          = config_get_ptr();
-   bool accessibility_enable     = settings->bools.accessibility_enable;
+   access_state_t *access_st   = access_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   bool accessibility_enable   = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed
-                                 = settings->uints.accessibility_narrator_speech_speed;
+                               = settings->uints.accessibility_narrator_speech_speed;
 #endif
 #ifdef HAVE_MENU
-   struct menu_state *menu_st    = menu_state_get_ptr();
+   struct menu_state *menu_st  = menu_state_get_ptr();
 
    /* If screensaver is active, then it should be
     * disabled if:
@@ -6481,22 +8538,21 @@ void input_keyboard_event(bool down, unsigned code,
    {
       if (   (down)
           && (code != RETROK_UNKNOWN)
-          && (menu_input_dialog_get_display_kb() ||
-              !((code == RETROK_SPACE)    || /* RETRO_DEVICE_ID_JOYPAD_START */
-                (code == RETROK_SLASH)    || /* RETRO_DEVICE_ID_JOYPAD_X */
-                (code == RETROK_RSHIFT)   || /* RETRO_DEVICE_ID_JOYPAD_SELECT */
-                (code == RETROK_RIGHT)    || /* RETRO_DEVICE_ID_JOYPAD_RIGHT */
-                (code == RETROK_LEFT)     || /* RETRO_DEVICE_ID_JOYPAD_LEFT */
-                (code == RETROK_DOWN)     || /* RETRO_DEVICE_ID_JOYPAD_DOWN */
-                (code == RETROK_UP)       || /* RETRO_DEVICE_ID_JOYPAD_UP */
-                (code == RETROK_PAGEUP)   || /* RETRO_DEVICE_ID_JOYPAD_L */
-                (code == RETROK_PAGEDOWN) || /* RETRO_DEVICE_ID_JOYPAD_R */
-                (code == RETROK_BACKSPACE)|| /* RETRO_DEVICE_ID_JOYPAD_B */
-                (code == RETROK_RETURN)   || /* RETRO_DEVICE_ID_JOYPAD_A */
-                (code == RETROK_DELETE)   || /* RETRO_DEVICE_ID_JOYPAD_Y */
-                 BIT512_GET(input_st->keyboard_mapping_bits, code))))
+          && (menu_input_dialog_get_display_kb()
+          || !((code == RETROK_SPACE)       /* RETRO_DEVICE_ID_JOYPAD_START */
+          ||   (code == RETROK_SLASH)       /* RETRO_DEVICE_ID_JOYPAD_X */
+          ||   (code == RETROK_RSHIFT)      /* RETRO_DEVICE_ID_JOYPAD_SELECT */
+          ||   (code == RETROK_RIGHT)       /* RETRO_DEVICE_ID_JOYPAD_RIGHT */
+          ||   (code == RETROK_LEFT)        /* RETRO_DEVICE_ID_JOYPAD_LEFT */
+          ||   (code == RETROK_DOWN)        /* RETRO_DEVICE_ID_JOYPAD_DOWN */
+          ||   (code == RETROK_UP)          /* RETRO_DEVICE_ID_JOYPAD_UP */
+          ||   (code == RETROK_PAGEUP)      /* RETRO_DEVICE_ID_JOYPAD_L */
+          ||   (code == RETROK_PAGEDOWN)    /* RETRO_DEVICE_ID_JOYPAD_R */
+          ||   (code == RETROK_BACKSPACE)   /* RETRO_DEVICE_ID_JOYPAD_B */
+          ||   (code == RETROK_RETURN)      /* RETRO_DEVICE_ID_JOYPAD_A */
+          ||   (code == RETROK_DELETE)      /* RETRO_DEVICE_ID_JOYPAD_Y */
+          ||   (BIT512_GET(input_st->keyboard_mapping_bits, code)))))
       {
-         struct menu_state *menu_st  = menu_state_get_ptr();
          menu_st->flags             &= ~MENU_ST_FLAG_SCREENSAVER_ACTIVE;
          menu_st->input_last_time_us = menu_st->current_time_us;
          if (menu_st->driver_ctx->environ_cb)
@@ -6510,41 +8566,34 @@ void input_keyboard_event(bool down, unsigned code,
       menu_st->input_last_time_us = menu_st->current_time_us;
 
 #ifdef HAVE_ACCESSIBILITY
-   if (menu_input_dialog_get_display_kb()
-         && down && is_accessibility_enabled(
-            accessibility_enable,
+   if (     menu_input_dialog_get_display_kb()
+         && down
+         && is_accessibility_enabled(accessibility_enable,
             access_st->enabled))
    {
       if (code != 303 && code != 0)
       {
-         char* say_char = (char*)malloc(sizeof(char)+1);
+         char say_char[2];
+         char c      = (char)character;
+         say_char[0] = c;
+         say_char[1] = '\0';
 
-         if (say_char)
+         if (character == 127 || character == 8)
+            accessibility_speak_priority(accessibility_enable,
+                  accessibility_narrator_speech_speed, "backspace", 10);
+         else
          {
-            char c      = (char)character;
-            *say_char   = c;
-            say_char[1] = '\0';
-
-            if (character == 127 || character == 8)
+            const char *lut_name = accessibility_lut_name(c);
+            if (lut_name)
                accessibility_speak_priority(
                      accessibility_enable,
                      accessibility_narrator_speech_speed,
-                     "backspace", 10);
-            else
-            {
-               const char *lut_name = accessibility_lut_name(c);
-               if (lut_name)
-                  accessibility_speak_priority(
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        lut_name, 10);
-               else if (character != 0)
-                  accessibility_speak_priority(
-                        accessibility_enable,
-                        accessibility_narrator_speech_speed,
-                        say_char, 10);
-            }
-            free(say_char);
+                     lut_name, 10);
+            else if (character != 0)
+               accessibility_speak_priority(
+                     accessibility_enable,
+                     accessibility_narrator_speech_speed,
+                     say_char, 10);
          }
       }
    }
@@ -6571,18 +8620,66 @@ void input_keyboard_event(bool down, unsigned code,
    }
    else if (input_st->keyboard_line.enabled)
    {
+      input_keyboard_line_t *line = &input_st->keyboard_line;
+
       if (!down)
          return;
 
-      if (!input_keyboard_line_event(input_st,
-            &input_st->keyboard_line, character))
+      if (code == RETROK_TAB)
+      {
+         input_st->osk_textbox_focus = !input_st->osk_textbox_focus;
+         return;
+      }
+
+      if (input_st->osk_textbox_focus)
+      {
+         switch (code)
+         {
+            case RETROK_LEFT:
+               if (line->ptr && line->buffer)
+               {
+                  line->ptr--;
+                  while (line->ptr && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
+                     line->ptr--;
+
+                  if (mod & RETROKMOD_CTRL)
+                     while (line->ptr &&
+                           (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                        line->ptr--;
+               }
+               return;
+            case RETROK_RIGHT:
+               if (line->buffer && line->ptr < line->size)
+               {
+                  line->ptr++;
+                  while (line->ptr < line->size && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
+                     line->ptr++;
+
+                  if (mod & RETROKMOD_CTRL)
+                     while (line->ptr < line->size &&
+                           (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                        line->ptr++;
+               }
+               return;
+            case RETROK_UP:
+               line->ptr = 0;
+               return;
+            case RETROK_DOWN:
+               line->ptr = line->size;
+               return;
+            default:
+               break;
+         }
+      }
+
+      if (!input_keyboard_line_event(input_st, line, character))
          return;
 
       /* Line is complete, can free it now. */
       input_keyboard_line_free(input_st);
 
       /* Unblock all hotkeys. */
-      input_st->flags                     &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
    }
    else
    {
@@ -6594,14 +8691,18 @@ void input_keyboard_event(bool down, unsigned code,
        * - not with Game Focus
        * - not from keyboard device type mappings
        * - not from overlay keyboard input
-       * - with 'enable_hotkey' modifier set and unpressed. */
-      if (     !input_st->game_focus_state.enabled
+       * - with 'enable_hotkey' modifier set and unpressed.
+       *
+       * Also do not block key up events, because keys will
+       * get stuck if Game Focus key is also pressing a key. */
+      if (     down
+            && !input_st->game_focus_state.enabled
             && BIT512_GET(input_st->keyboard_mapping_bits, code)
             && device != RETRO_DEVICE_POINTER)
       {
+         unsigned j;
          settings_t *settings        = config_get_ptr();
          unsigned max_users          = settings->uints.input_max_users;
-         unsigned j;
          bool hotkey_pressed         = (input_st->input_hotkey_block_counter > 0);
          bool block_key_event        = false;
 
@@ -6615,9 +8716,9 @@ void input_keyboard_event(bool down, unsigned code,
              * and only when modifier is a keyboard key. */
             if (     j == 0
                   && !block_key_event
-                  && !(    !hotkey_pressed
-                        && hotkey_code != RETROK_UNKNOWN
-                        && hotkey_code != code))
+                  && !( !hotkey_pressed
+                  &&     hotkey_code != RETROK_UNKNOWN
+                  &&     hotkey_code != code))
             {
                for (k = RARCH_FIRST_META_KEY; k < RARCH_BIND_LIST_END; k++)
                {
@@ -6629,7 +8730,8 @@ void input_keyboard_event(bool down, unsigned code,
                }
             }
 
-            /* RetroPad blocking needed only when emulated device type is active. */
+            /* RetroPad blocking needed only when emulated
+             * device type is active. */
             if (     input_config_get_device(j)
                   && !block_key_event)
             {
@@ -6657,11 +8759,13 @@ void input_keyboard_event(bool down, unsigned code,
          if (*key_event == runloop_st->frontend_key_event)
          {
 #ifdef HAVE_BSV_MOVIE
-            /* Save input to BSV record, if recording */
             if (BSV_MOVIE_IS_RECORDING())
-            {
-               bsv_movie_handle_push_key_event(input_st->bsv_movie_state_handle, down, mod, code, character);
-            }
+#ifdef HAVE_REWIND
+               if (!state_manager_frame_is_reversed())
+#endif
+               bsv_movie_push_key_event(
+                     input_st->bsv_movie_state_handle, down, mod,
+                     code, character);
 #endif
          }
          (*key_event)(down, code, character, mod);

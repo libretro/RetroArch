@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <stdint.h>
 
 #include <boolean.h>
@@ -23,7 +24,7 @@
 #include "../../retroarch.h"
 
 /* forward declarations */
-void *RWebCamInit(uint64_t caps, unsigned width, unsigned height);
+void *RWebCamInit(uint64_t caps, unsigned width, unsigned height, bool debug);
 void RWebCamFree(void *data);
 bool RWebCamStart(void *data);
 void RWebCamStop(void *data);
@@ -34,7 +35,7 @@ static void *rwebcam_init(const char *device, uint64_t caps,
       unsigned width, unsigned height)
 {
    (void)device;
-   return RWebCamInit(caps, width, height);
+   return RWebCamInit(caps, width, height, !!getenv("RWEBCAM_DEBUG"));
 }
 
 static void rwebcam_free(void *data)

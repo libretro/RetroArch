@@ -47,11 +47,22 @@
 #define drmModeFreePlaneResources p_drmModeFreePlaneResources
 #define drmIoctl p_drmIoctl
 #define drmGetCap p_drmGetCap
+#define drmGetDevices2 p_drmGetDevices2
 #define drmIsMaster p_drmIsMaster
 #define drmSetMaster p_drmSetMaster
 #define drmDropMaster p_drmDropMaster
 
 # define MAX_CARD_ID 10
+# define MAX_DRM_DEVICES 16
+
+// To enable libdrmhook: make SR_WITH_DRMHOOK=1
+#ifdef SR_WITH_DRMHOOK
+	#define hook_handle RTLD_DEFAULT
+	#define hook_log " (will attempt hook)"
+#else
+	#define hook_handle mp_drm_handle
+	#define hook_log ""
+#endif
 
 //============================================================
 //  shared the privileges of the master fd
@@ -212,6 +223,13 @@ bool drmkms_timing::test_kernel_user_modes()
 	// Count the number of existing modes, so it should be +1 when attaching
 	// a new mode. Could also check the mode name, still better
 	conn = drmModeGetConnector(fd, m_desktop_output);
+	if (!conn)
+	{
+		log_verbose("DRM/KMS: <%d> (%s) Cannot get connector\n", m_id, __FUNCTION__);
+		m_kernel_user_modes = false;
+		return false;
+	}
+
 	first_modes_count = conn->count_modes;
 	ret = drmModeAttachMode(fd, m_desktop_output, &mode);
 	drmModeFreeConnector(conn);
@@ -329,7 +347,7 @@ drmkms_timing::~drmkms_timing()
 
 bool drmkms_timing::init()
 {
-	log_verbose("DRM/KMS: <%d> (init) loading DRM/KMS library\n", m_id);
+	log_verbose("DRM/KMS: <%d> (init) loading DRM/KMS library%s\n", m_id, hook_log);
 	mp_drm_handle = dlopen("libdrm.so", RTLD_NOW);
 	if (mp_drm_handle)
 	{
@@ -354,21 +372,21 @@ bool drmkms_timing::init()
 			return false;
 		}
 
-		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(RTLD_DEFAULT, "drmModeGetConnector");
+		p_drmModeGetConnector = (__typeof__(drmModeGetConnector)) dlsym(hook_handle, "drmModeGetConnector");
 		if (p_drmModeGetConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnector", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(RTLD_DEFAULT, "drmModeGetConnectorCurrent");
+		p_drmModeGetConnectorCurrent = (__typeof__(drmModeGetConnectorCurrent)) dlsym(hook_handle, "drmModeGetConnectorCurrent");
 		if (p_drmModeGetConnectorCurrent == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeGetConnectorCurrent", "DRM_LIBRARY");
 			return false;
 		}
 
-		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(RTLD_DEFAULT, "drmModeFreeConnector");
+		p_drmModeFreeConnector = (__typeof__(drmModeFreeConnector)) dlsym(hook_handle, "drmModeFreeConnector");
 		if (p_drmModeFreeConnector == NULL)
 		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmModeFreeConnector", "DRM_LIBRARY");
@@ -494,6 +512,13 @@ bool drmkms_timing::init()
 			return false;
 		}
 
+		p_drmGetDevices2 = (__typeof__(drmGetDevices2)) dlsym(mp_drm_handle, "drmGetDevices2");
+		if (p_drmGetDevices2 == NULL)
+		{
+			log_error("DRM/KMS: <%d> (init) [ERROR] missing func %s in %s", m_id, "drmGetDevices2", "DRM_LIBRARY");
+			return false;
+		}
+
 		p_drmIsMaster = (__typeof__(drmIsMaster)) dlsym(mp_drm_handle, "drmIsMaster");
 		if (p_drmIsMaster == NULL)
 		{
@@ -529,14 +554,31 @@ bool drmkms_timing::init()
 	else if (strlen(m_device_name) == 1 && m_device_name[0] >= '0' && m_device_name[0] <= '9')
 		screen_pos = m_device_name[0] - '0';
 
-	char drm_name[15] = "/dev/dri/card_";
+	// Get an array of drm devices to check
+	drmDevicePtr devices[MAX_DRM_DEVICES];
+	int num_devices = drmGetDevices2(0, NULL, 0);
+
+	if (num_devices > MAX_DRM_DEVICES)
+		num_devices = MAX_DRM_DEVICES;
+
+	int ret = drmGetDevices2(0, devices, num_devices);
+	if (ret < 0)
+	{
+		log_error("DRM/KMS: drmGetDevices2() returned an error %d\n", ret);
+		return false;
+	}
+
+	char *drm_name;
 	drmModeRes *p_res;
 	drmModeConnector *p_connector;
 
 	int output_position = 0;
-	for (int num = 0; !m_desktop_output && num < MAX_CARD_ID; num++)
+	for (int num = 0; num < num_devices; num++)
 	{
-		drm_name[13] = '0' + num;
+		// Skip non-primary nodes
+		if (devices[num]->available_nodes & (1 << DRM_NODE_PRIMARY))
+			drm_name = devices[num]->nodes[DRM_NODE_PRIMARY];
+		else continue;
 
 		if (!access(drm_name, F_OK) == 0)
 		{
@@ -554,7 +596,10 @@ bool drmkms_timing::init()
 			log_error("DRM/KMS: <%d> (init) [ERROR] ioctl DRM_CAP_DUMB_BUFFER\n", m_id);
 
 		if (!check_dumb)
+		{
 			log_error("DRM/KMS: <%d> (init) [ERROR] dumb buffer not supported\n", m_id);
+			continue;
+		}
 
 		p_res = drmModeGetResources(m_drm_fd);
 
@@ -582,6 +627,7 @@ bool drmkms_timing::init()
 					}
 					m_desktop_output = p_connector->connector_id;
 					m_card_id = num;
+					strcpy(m_drm_name, drm_name);
 					log_verbose("DRM/KMS: <%d> (init) card %d connector %d id %d name %s selected as primary output\n", m_id, num, i, m_desktop_output, connector_name);
 
 					drmModeEncoder *p_encoder = drmModeGetEncoder(m_drm_fd, p_connector->encoder_id);
@@ -601,7 +647,10 @@ bool drmkms_timing::init()
 						}
 					}
 					if (!mp_crtc_desktop)
+					{
+						m_desktop_output = 0;
 						log_error("DRM/KMS: <%d> (init) [ERROR] no crtc found\n", m_id);
+					}
 					drmModeFreeEncoder(p_encoder);
 				}
 				output_position++;
@@ -649,9 +698,14 @@ bool drmkms_timing::init()
 						s_shared_count[m_card_id] = 2;
 					}
 					if (!drmIsMaster(m_drm_fd))
+					{
+						m_desktop_output = 0;
 						log_error("DRM/KMS: <%d> (%s) [ERROR] limited DRM rights on this screen\n", m_id, __FUNCTION__);
+					}
 				}
 			}
+			// If we're here and we have a valid output, we're done.
+			if (m_desktop_output) break;
 		}
 	}
 
@@ -697,9 +751,8 @@ bool drmkms_timing::init()
 
 int drmkms_timing::get_master_fd()
 {
-	const size_t path_length = 15;
-	char dev_path[path_length];
-	char procpath[50];
+	const size_t path_length = 20;
+	char procpath[path_length];
 	char fullpath[512];
 	char* actualpath;
 	struct stat st;
@@ -721,10 +774,9 @@ int drmkms_timing::get_master_fd()
 		return -1;
 	}
 
-	snprintf(dev_path, path_length, "/dev/dri/card%d", m_card_id);
-	if (!access(dev_path, F_OK) == 0)
+	if (!access(m_drm_name, F_OK) == 0)
 	{
-		log_error("DRM/KMS: <%d> (%s) [ERROR] Device %s doesn't exist\n", m_id, __FUNCTION__, dev_path);
+		log_error("DRM/KMS: <%d> (%s) [ERROR] Device %s doesn't exist\n", m_id, __FUNCTION__, m_drm_name);
 		return -1;
 	}
 
@@ -749,7 +801,7 @@ int drmkms_timing::get_master_fd()
 			continue;
 		actualpath = realpath(fullpath, NULL);
 		// Only check the device we expect
-		if (strncmp(dev_path, actualpath, path_length) != 0)
+		if (strncmp(m_drm_name, actualpath, path_length) != 0)
 		{
 			free(actualpath);
 			continue;
@@ -770,16 +822,16 @@ int drmkms_timing::get_master_fd()
 
 	// CASE 3: m_drm_fd is not a master (and probably not even a valid FD), the currend pid doesn't have master rights
 	// Or master is owned by a 3rd party app (like a frontend ...)
-	log_verbose("DRM/KMS: <%d> (%s) Couldn't find a master FD, opening default /dev/dri/card%d\n", m_id, __FUNCTION__, m_card_id);
+	log_verbose("DRM/KMS: <%d> (%s) Couldn't find a master FD, opening default %s\n", m_id, __FUNCTION__, m_drm_name);
 
 	// mark our former hook as invalid
 	m_hook_fd = -1;
 
-	fd = open(dev_path, O_RDWR | O_CLOEXEC);
+	fd = open(m_drm_name, O_RDWR | O_CLOEXEC);
 	if (fd < 0)
 	{
 		// Oh, we're totally screwed here, worst possible scenario
-		log_error("DRM/KMS: <%d> (%s) Can't open /dev/dri/card%d, can't get master rights\n", m_id, __FUNCTION__, m_card_id);
+		log_error("DRM/KMS: <%d> (%s) Can't open %s, can't get master rights\n", m_id, __FUNCTION__, m_drm_name);
 		return -1;
 	}
 

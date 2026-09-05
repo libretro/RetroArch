@@ -88,7 +88,9 @@ typedef enum {
     VK_ICD_WSI_PLATFORM_ANDROID,
     VK_ICD_WSI_PLATFORM_MACOS,
     VK_ICD_WSI_PLATFORM_IOS,
-    VK_ICD_WSI_PLATFORM_DISPLAY
+    VK_ICD_WSI_PLATFORM_DISPLAY,
+    VK_ICD_WSI_PLATFORM_HEADLESS,
+    VK_ICD_WSI_PLATFORM_METAL,
 } VkIcdWsiPlatform;
 
 typedef struct {
@@ -138,7 +140,7 @@ typedef struct {
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 typedef struct {
     VkIcdSurfaceBase base;
-    ANativeWindow *window;
+    struct ANativeWindow *window;
 } VkIcdSurfaceAndroid;
 #endif  /* VK_USE_PLATFORM_ANDROID_KHR */
 
@@ -166,5 +168,16 @@ typedef struct {
     VkDisplayPlaneAlphaFlagBitsKHR alphaMode;
     VkExtent2D imageExtent;
 } VkIcdSurfaceDisplay;
+
+typedef struct {
+    VkIcdSurfaceBase base;
+} VkIcdSurfaceHeadless;
+
+#ifdef VK_USE_PLATFORM_METAL_EXT
+typedef struct {
+    VkIcdSurfaceBase base;
+    const CAMetalLayer *pLayer;
+} VkIcdSurfaceMetal;
+#endif /* VK_USE_PLATFORM_METAL_EXT */
 
 #endif  /* VKICD_H */

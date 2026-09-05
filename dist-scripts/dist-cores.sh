@@ -61,6 +61,7 @@ mkdir -p ../pkg/${platform}/build/rom
 # Emscripten
 elif [ $PLATFORM = "emscripten" ] ; then
 platform=emscripten
+# todo: change this to a
 EXT=bc
 
 if [ -z "$EMSCRIPTEN" ] ; then
@@ -194,20 +195,23 @@ if [ $PLATFORM = "libnx" ]; then
    make -C ../ -f Makefile.${platform} clean || exit 1
 fi
 
+if [ $PLATFORM = "psl1ght" ]; then
+   echo Buildbot: building static core for ${platform}
+   mkdir -p ../pkg/${platform}/pkg/USRDIR
+   make -C ../ -f Makefile.${platform} HAVE_STATIC_DUMMY=1 -j3 || exit 1
+   mv -f ../retroarch_psl1ght.self ../pkg/${platform}/pkg/USRDIR/retroarch_psl1ght.self
+   make -C ../ -f Makefile.${platform} clean || exit 1
+fi
+
 #for f in *_${platform}.${EXT} ; do
 for f in `ls -v *_${platform}.${EXT}`; do
 
    echo Buildbot: building ${name} for ${platform}
    name=`echo "$f" | sed "s/\(_libretro_${platform}\|\).${EXT}$//"`
-   async=0
-   pthread=${pthread:-0}
    lto=0
    whole_archive=
    big_stack=
 
-   if [ $PLATFORM = "emscripten" ]; then
-      async=1 #emscripten needs async to sleep
-   fi
    if [ $name = "nxengine" ] ; then
       echo "Applying whole archive linking..."
       whole_archive="WHOLE_ARCHIVE_LINK=1"
@@ -215,10 +219,33 @@ for f in `ls -v *_${platform}.${EXT}`; do
       echo "Applying big stack..."
       lto=0
       big_stack="BIG_STACK=1"
-   elif [ $name = "mupen64plus" ] ; then
-      async=1
-   elif [ $name = "dosbox" ] ; then
-      async=0
+   fi
+   if [ $PLATFORM = "emscripten" ]; then
+      async=${ASYNC:-0}
+      have_threads=${HAVE_THREADS:-0}
+      proxy_to_pthread=${PROXY_TO_PTHREAD:-0}
+      gles3=${HAVE_OPENGLES3:-0}
+      stack_mem=4194304
+      heap_mem=134217728
+      if [ $name = "mupen64plus_next" ] ; then
+         gles3=1
+         async=1
+         #proxy_to_pthread=0
+         stack_mem=134217728
+         heap_mem=268435456
+      elif [ $name = "parallel_n64" ] ; then
+         gles3=1
+         async=1
+      elif [ $name = "mednafen_psx" ] ; then
+         heap_mem=536870912
+      elif [ $name = "mednafen_psx_hw" ] ; then
+         gles3=1
+         heap_mem=536870912
+      elif [ $name = "dosbox" ] ; then
+         async=1
+      elif [ $name = "scummvm" ] ; then
+         async=1
+      fi
    fi
    echo "-- Building core: $name --"
    if [ $PLATFORM = "unix" ]; then
@@ -227,15 +254,22 @@ for f in `ls -v *_${platform}.${EXT}`; do
       cp -f "$f" ../libretro_${platform}.${EXT}
    fi
    echo NAME: $name
-   echo ASYNC: $async
    echo LTO: $lto
+   if [ $PLATFORM = "emscripten" ]; then
+      echo ASYNC: $async
+      echo HAVE_THREADS: $have_threads
+      echo PROXY_TO_PTHREAD: $proxy_to_pthread
+      echo GLES3: $gles3
+      echo STACK_MEMORY: $stack_mem
+      echo HEAP_MEMORY: $heap_mem
+   fi
 
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten HAVE_THREADS=$have_threads ASYNC=$async LTO=$lto HAVE_OPENGLES3=$gles3 -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || exit 1
       else
@@ -247,8 +281,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $MAKEFILE_GRIFFIN = "yes" ]; then
       make -C ../ -f Makefile.griffin $OPTS platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
-       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js"
-       make -C ../ -f Makefile.emscripten $OPTS PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 TARGET=${name}_libretro.js || exit 1
+       echo "BUILD COMMAND: make -C ../ -f Makefile.emscripten $OPTS LTO=$lto ASYNC=$async HAVE_THREADS=$have_threads PROXY_TO_PTHREAD=$proxy_to_pthread HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js"
+       make -C ../ -f Makefile.emscripten $OPTS LTO=$lto ASYNC=$async HAVE_THREADS=$have_threads PROXY_TO_PTHREAD=$proxy_to_pthread HAVE_OPENGLES3=$gles3 STACK_SIZE=$stack_mem INITIAL_HEAP=$heap_mem -j7 LIBRETRO=${name} TARGET=${name}_libretro.js || exit 1
    elif [ $PLATFORM = "unix" ]; then
       make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
@@ -266,8 +300,8 @@ for f in `ls -v *_${platform}.${EXT}`; do
    if [ $platform = "psl1ght" ] ; then
        mv -fv ../retroarch_psl1ght.self ../pkg/psl1ght/pkg/USRDIR/cores/"${name}_libretro_${platform}.SELF"
        if [ -d ../../dist/info ]; then
-           mkdir -p ../pkg/psl1ght/pkg/USRDIR/cores/info
-           cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/psl1ght/pkg/USRDIR/cores/info/"${name}_libretro.info"
+           mkdir -p ../pkg/psl1ght/pkg/USRDIR/info
+           cp -fv ../../dist/info/"${name}_libretro.info" ../pkg/psl1ght/pkg/USRDIR/info/"${name}_libretro.info"
        fi
    elif [ $platform = "ps3" ] ; then
       if [ $PLATFORM = "ode-ps3" ] ; then
@@ -315,8 +349,11 @@ for f in `ls -v *_${platform}.${EXT}`; do
       mkdir -p ../pkg/emscripten/
       mv -f ../${name}_libretro.js ../pkg/emscripten/${name}_libretro.js
       mv -f ../${name}_libretro.wasm ../pkg/emscripten/${name}_libretro.wasm
-      if [ $pthread != 0 ] ; then
+      if [ -f ../${name}_libretro.worker.js ] ; then
          mv -f ../${name}_libretro.worker.js ../pkg/emscripten/${name}_libretro.worker.js
+      fi
+      if [ -f ../${name}_libretro.wasm.map ] ; then
+         mv -f ../${name}_libretro.wasm.map ../pkg/emscripten/${name}_libretro.wasm.map
       fi
    fi
 
@@ -364,7 +401,7 @@ for f in `ls -v *_${platform}.${EXT}`; do
       if [ $MAKEFILE_GRIFFIN = "yes" ]; then
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
-         make -C ../ -f Makefile.emscripten PTHREAD=$pthread ASYNC=$async LTO=$lto -j7 clean || exit 1
+         make -C ../ -f Makefile.emscripten HAVE_THREADS=$have_threads ASYNC=$async LTO=$lto -j7 clean || exit 1
       elif [ $PLATFORM = "unix" ]; then
          make -C ../ -f Makefile LTO=$lto -j7 clean || exit 1
       else
@@ -378,26 +415,26 @@ if [ $platform = "ps3" ] || [ $platform = "psl1ght" ] ; then
    if [ $PLATFORM = "ode-ps3" ] ; then
       echo Deploy : Assets...
       if [ -d ../media/assets ]; then
-         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/assets
          cp -r ../media/assets/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/assets
       fi
       echo Deploy : Databases...
       if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/database/rdb
          cp -r ../media/libretrodb/rdb/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/rdb
 	  fi
 	  if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/cursors
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/database/cursors
          cp -r ../media/libretrodb/cursors/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
-         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/overlays
          cp -r ../media/overlays/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/overlays
       fi
       echo Deploy : Shaders...
       if [ -d ../media/shaders_cg ]; then
-         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
+         mkdir -p ../pkg/${platform}_iso/PS3_GAME/USRDIR/shaders_cg
          cp -r ../media/shaders_cg/* ../pkg/${platform}_iso/PS3_GAME/USRDIR/cores/shaders_cg
       fi
    else
@@ -407,27 +444,27 @@ if [ $platform = "ps3" ] || [ $platform = "psl1ght" ] ; then
       fi
       echo Deploy : Assets...
       if [ -d ../media/assets ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/assets
-         cp -r ../media/assets/* ../${ps3pkgdir}/USRDIR/cores/assets
+         mkdir -p ../${ps3pkgdir}/USRDIR/assets
+         cp -r ../media/assets/* ../${ps3pkgdir}/USRDIR/assets
       fi
       echo Deploy : Databases...
       if [ -d ../media/libretrodb/rdb ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/rdb
-         cp -r ../media/libretrodb/rdb/* ../${ps3pkgdir}/USRDIR/cores/database/rdb
+         mkdir -p ../${ps3pkgdir}/USRDIR/database/rdb
+         cp -r ../media/libretrodb/rdb/* ../${ps3pkgdir}/USRDIR/database/rdb
 	  fi
 	  if [ -d ../media/libretrodb/cursors ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/database/cursors
-         cp -r ../media/libretrodb/cursors/* ../${ps3pkgdir}/USRDIR/cores/database/cursors
+         mkdir -p ../${ps3pkgdir}/USRDIR/database/cursors
+         cp -r ../media/libretrodb/cursors/* ../${ps3pkgdir}/USRDIR/database/cursors
       fi
       echo Deploy : Overlays...
       if [ -d ../media/overlays ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/overlays
-         cp -r ../media/overlays/* ../${ps3pkgdir}/USRDIR/cores/overlays
+         mkdir -p ../${ps3pkgdir}/USRDIR/overlays
+         cp -r ../media/overlays/* ../${ps3pkgdir}/USRDIR/overlays
       fi
       echo Deploy : Shaders...
       if [ -d ../media/shaders_cg ]; then
-         mkdir -p ../${ps3pkgdir}/USRDIR/cores/shaders_cg
-         cp -r ../media/shaders_cg/* ../${ps3pkgdir}/USRDIR/cores/shaders_cg
+         mkdir -p ../${ps3pkgdir}/USRDIR/shaders_cg
+         cp -r ../media/shaders_cg/* ../${ps3pkgdir}/USRDIR/shaders_cg
       fi
    fi
 fi

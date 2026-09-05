@@ -168,9 +168,9 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 		// if we can, let's apply the same scaling to both directions
 		if (t_mode->type & X_RES_EDITABLE)
 		{
-			x_scale = y_scale;
+			x_scale = cs->scale_proportional? y_scale : 1;
 			double aspect_corrector = max(1.0f, cs->monitor_aspect / source_aspect);
-			t_mode->hactive = normalize(double(t_mode->hactive) * double(x_scale) * aspect_corrector, 8);
+			t_mode->hactive = normalize(double(t_mode->hactive) * double(x_scale) * aspect_corrector, cs->pixel_precision? 1 : 8);
 		}
 
 		// otherwise, try to get the best out of our current xres
@@ -204,7 +204,7 @@ int modeline_create(modeline *s_mode, modeline *t_mode, monitor_range *range, ge
 
 		// check if we can create a normal aspect resolution
 		if (t_mode->type & X_RES_EDITABLE)
-			t_mode->hactive = max(t_mode->hactive, normalize(STANDARD_CRT_ASPECT * t_mode->vactive, 8));
+			t_mode->hactive = max(t_mode->hactive, normalize(STANDARD_CRT_ASPECT * t_mode->vactive, cs->pixel_precision? 1 : 8));
 
 		// calculate integer scale for prescaling
 		x_scale = max(1, scale_into_aspect(s_mode->hactive, t_mode->hactive, source_aspect, cs->monitor_aspect, &x_diff));

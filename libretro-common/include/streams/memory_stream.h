@@ -32,7 +32,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct memstream memstream_t;
 
-memstream_t *memstream_open(unsigned writing);
+memstream_t *memstream_open(uint8_t *data, uint64_t size, unsigned writing);
 
 void memstream_close(memstream_t *stream);
 
@@ -44,17 +44,15 @@ int memstream_getc(memstream_t *stream);
 
 void memstream_putc(memstream_t *stream, int c);
 
-char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
+char *memstream_gets(memstream_t *stream, char *s, size_t len);
 
 uint64_t memstream_pos(memstream_t *stream);
+
+uint64_t memstream_get_size(memstream_t *stream);
 
 void memstream_rewind(memstream_t *stream);
 
 int64_t memstream_seek(memstream_t *stream, int64_t offset, int whence);
-
-void memstream_set_buffer(uint8_t *buffer, uint64_t size);
-
-uint64_t memstream_get_last_size(void);
 
 uint64_t memstream_get_ptr(memstream_t *stream);
 

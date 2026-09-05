@@ -27,6 +27,7 @@
 #include <net/net_http.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#include <features/features_cpu.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -47,6 +48,22 @@
 #include "../menu/menu_entries.h"
 #include "../menu/menu_driver.h"
 #endif
+
+/* Bytes hashed per step.  Matches the read size inside
+ * intfstream_crc_step(). */
+#define CORE_CRC_CHUNK      (256 * 1024)
+
+/* Time budget per tick.  Deliberately well under a 60Hz frame: the
+ * handler still has its own work to do, and the caller may be the
+ * video thread. */
+#define CORE_CRC_TICK_BUDGET_US 4000
+
+typedef struct
+{
+   intfstream_t *file;
+   uint32_t      accumulator;
+   bool          active;
+} core_crc_slice_t;
 
 /* Get core updater list */
 enum core_updater_list_status
@@ -94,6 +111,7 @@ typedef struct core_updater_download_handle
    retro_task_t *decompress_task;
    retro_task_t *backup_task;
    size_t auto_backup_history_size;
+   core_crc_slice_t crc_slice;
    uint32_t local_crc;
    uint32_t remote_crc;
    enum core_updater_download_status status;
@@ -122,39 +140,24 @@ typedef struct update_installed_cores_handle
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
-   retro_task_t *list_task;
-   retro_task_t *download_task;
    size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
    size_t installed_index;
+   core_crc_slice_t crc_slice;
    unsigned num_updated;
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* Set from the child task callbacks. The child
+    * retro_task_t pointers are deliberately *not*
+    * retained: task_queue frees a finished task in the
+    * same gather pass that ran its handler, so a stored
+    * pointer can dangle before this task is stepped
+    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST). */
+   bool list_task_complete;
+   bool download_task_complete;
 } update_installed_cores_handle_t;
-
-#if 0
-enum update_single_core_status
-{
-   UPDATE_SINGLE_CORE_BEGIN = 0,
-   UPDATE_SINGLE_CORE_WAIT_LIST,
-   UPDATE_SINGLE_CORE_UPDATE_CORE,
-   UPDATE_SINGLE_CORE_WAIT_DOWNLOAD,
-   UPDATE_SINGLE_CORE_END
-};
-
-typedef struct update_single_core_handle
-{
-   core_updater_list_t *core_list;
-   size_t auto_backup_history_size;
-   enum update_single_core_status status;
-   char path_core[PATH_MAX_LENGTH];
-   char path_dir_libretro[PATH_MAX_LENGTH];
-   char path_dir_core_assets[PATH_MAX_LENGTH];
-   bool auto_backup;
-} update_single_core_handle_t;
-#endif
 
 #if defined(ANDROID)
 /* Play feature delivery core install */
@@ -190,7 +193,7 @@ typedef struct play_feature_delivery_switch_cores_handle
 {
    char *path_dir_libretro;
    char *path_libretro_info;
-   char *error_msg;
+   char *err_msg;
    core_updater_list_t* core_list;
    retro_task_t *install_task;
    size_t list_size;
@@ -204,30 +207,93 @@ typedef struct play_feature_delivery_switch_cores_handle
 /* Utility functions */
 /*********************/
 
-/* Returns CRC32 of specified core file */
-static uint32_t task_core_updater_get_core_crc(const char *core_path)
+/* Sliced CRC32 of a core file.
+ *
+ * This used to be a blocking intfstream_get_crc() over the whole
+ * file, called from inside a task handler tick.  The cost of that
+ * tick is therefore a function of core size and nothing else --
+ * unbounded from the frontend's point of view.  Measured cold on
+ * NVMe: 43ms for a 40MB core, 112ms for a 260MB one, i.e. 3 to 7
+ * dropped frames per core.  RetroArch's SD-card and spinning-disk
+ * targets read an order of magnitude slower, which turns the same
+ * work into seconds.
+ *
+ * It matters most on the bulk path.  update_installed_cores hashes
+ * every installed core to find out which ones changed, so a 40-core
+ * set is 601MB read (measured) before anything is downloaded -- and
+ * on a repeat run, where nothing has changed, all of it is read
+ * again to learn exactly that.
+ *
+ * The work is now spread across ticks against a time budget, the
+ * same shape the save-state transfer loops in tasks/task_save.c use.
+ * Total work is unchanged; what changes is that no single tick can
+ * exceed the budget regardless of file size.
+ *
+ * Not done here: caching the result keyed by (path, size, mtime) so
+ * a repeat "update installed cores" skips the read entirely.  That
+ * is the larger win, but the libretro VFS exposes no mtime, and size
+ * alone is not a safe invalidation key -- a rebuilt core of identical
+ * size would be silently skipped, which is a worse failure than a
+ * slow one.  It wants a VFS extension first. */
+
+static void task_core_updater_crc_reset(core_crc_slice_t *slice)
 {
-   /* Open core file */
-   intfstream_t *core_file = intfstream_open_file(
-         core_path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (core_file)
+   if (slice->file)
    {
-      uint32_t crc = 0;
-      /* Get CRC value */
-      bool success = intfstream_get_crc(core_file, &crc);
+      intfstream_close(slice->file);
+      free(slice->file);
+      slice->file = NULL;
+   }
+   slice->accumulator = 0;
+   slice->active      = false;
+}
 
-      /* Close core file */
-      intfstream_close(core_file);
-      free(core_file);
-      core_file = NULL;
+/* Advance the CRC of @core_path by one tick's worth of work.
+ *
+ * Returns true when the CRC is complete, writing it to @crc; false
+ * means "call me again next tick".  An unreadable file completes
+ * immediately with a CRC of 0, which is what the blocking version
+ * returned and what the callers already treat as "no local core to
+ * compare against". */
+static bool task_core_updater_crc_step(core_crc_slice_t *slice,
+      const char *core_path, uint32_t *crc)
+{
+   retro_time_t deadline;
 
-      if (success)
-         return crc;
+   if (!slice->active)
+   {
+      slice->accumulator = 0;
+      if (!(slice->file = intfstream_open_file(core_path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         *crc = 0;
+         return true;
+      }
+      intfstream_rewind(slice->file);
+      slice->active = true;
    }
 
-   return 0;
+   /* do/while, so a device slow enough that one chunk exceeds the
+    * budget still makes progress rather than spinning forever. */
+   deadline = cpu_features_get_time_usec() + CORE_CRC_TICK_BUDGET_US;
+   do
+   {
+      int64_t hashed = intfstream_crc_step(slice->file,
+            &slice->accumulator, CORE_CRC_CHUNK);
+
+      if (hashed > 0)
+         continue;
+
+      /* 0 is end of stream, negative is a read error; a partial
+       * hash is not a usable CRC, so both yield 0 like the old
+       * open-failure path. */
+      *crc = (hashed == 0) ? slice->accumulator : 0;
+      task_core_updater_crc_reset(slice);
+      return true;
+   } while (cpu_features_get_time_usec() < deadline);
+
+   return false;
 }
 
 /*************************/
@@ -238,28 +304,26 @@ static void cb_http_task_core_updater_get_list(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   http_transfer_data_t *data              = (http_transfer_data_t*)task_data;
-   file_transfer_t *transf                 = (file_transfer_t*)user_data;
-   core_updater_list_handle_t *list_handle = NULL;
-   bool success                            = data && string_is_empty(err);
+   file_transfer_t *transf    = (file_transfer_t*)user_data;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   bool ret                   = data && (!err || !*err);
 
-   if (!transf)
-      goto finish;
+   if (transf)
+   {
+      core_updater_list_handle_t *list_handle = NULL;
+      if ((list_handle = (core_updater_list_handle_t*)transf->user_data))
+      {
+         task_set_data(task, NULL); /* going to pass ownership to list_handle */
 
-   if (!(list_handle = (core_updater_list_handle_t*)transf->user_data))
-      goto finish;
+         list_handle->http_data          = data;
+         list_handle->http_task_complete = true;
+         list_handle->http_task_success  = ret;
+      }
+   }
 
-   task_set_data(task, NULL); /* going to pass ownership to list_handle */
-
-   list_handle->http_data          = data;
-   list_handle->http_task_complete = true;
-   list_handle->http_task_success  = success;
-
-
-finish:
    /* Log any error messages */
-   if (!success)
-      RARCH_ERR("[core updater] Download of core list '%s' failed: %s\n",
+   if (!ret)
+      RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"),
             (err ? err : "unknown"));
 
@@ -272,7 +336,7 @@ static void free_core_updater_list_handle(
 {
    if (list_handle->http_data)
    {
-      /* since we took onwership, we have to destroy it ourself */
+      /* since we took ownership, we have to destroy it ourself */
       if (list_handle->http_data->data)
          free(list_handle->http_data->data);
 
@@ -285,15 +349,16 @@ static void free_core_updater_list_handle(
 
 static void task_core_updater_get_list_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_updater_list_handle_t *list_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(list_handle = (core_updater_list_handle_t*)task->state))
-      goto task_finished;
+   list_handle = (core_updater_list_handle_t*)task->state;
+   flg         = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!list_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (list_handle->status)
@@ -301,19 +366,21 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
       case CORE_UPDATER_LIST_BEGIN:
          {
             char buildbot_url[PATH_MAX_LENGTH];
-            settings_t *settings         = config_get_ptr();
-            file_transfer_t *transf      = NULL;
-            char *tmp_url                = NULL;
-            const char *net_buildbot_url = 
-               settings->paths.network_buildbot_url;
+            settings_t *settings    = config_get_ptr();
+            file_transfer_t *transf = NULL;
+            const char *net_buildbot_url;
 
             /* Reset core updater list */
             core_updater_list_reset(list_handle->core_list);
-            /* Get core listing URL */
+
+            /* Get core listing URL - check settings first to
+             * avoid dereferencing NULL */
             if (!settings)
                goto task_finished;
 
-            if (string_is_empty(net_buildbot_url))
+            net_buildbot_url = settings->paths.network_buildbot_url;
+
+            if (!net_buildbot_url || !*net_buildbot_url)
                goto task_finished;
 
             fill_pathname_join_special(
@@ -322,14 +389,17 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                   ".index-extended",
                   sizeof(buildbot_url));
 
-            tmp_url = strdup(buildbot_url);
-            buildbot_url[0] = '\0';
-            net_http_urlencode_full(
-                  buildbot_url, tmp_url, sizeof(buildbot_url));
-            if (tmp_url)
-               free(tmp_url);
+            /* URL-encode in place using a stack buffer
+             * instead of heap-allocating a copy */
+            {
+               char tmp_url[PATH_MAX_LENGTH];
+               strlcpy(tmp_url, buildbot_url, sizeof(tmp_url));
+               buildbot_url[0] = '\0';
+               net_http_urlencode_full(
+                     buildbot_url, tmp_url, sizeof(buildbot_url));
+            }
 
-            if (string_is_empty(buildbot_url))
+            if (!*buildbot_url)
                goto task_finished;
 
             /* Configure file transfer object */
@@ -337,10 +407,7 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                         sizeof(file_transfer_t))))
                goto task_finished;
 
-            /* > Seems to be required - not sure why the
-             *   underlying code is implemented like this... */
             strlcpy(transf->path, buildbot_url, sizeof(transf->path));
-
             transf->user_data = (void*)list_handle;
 
             /* Push HTTP transfer task */
@@ -363,10 +430,14 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             /* Otherwise, check if HTTP task is still running */
             else if (!list_handle->http_task_finished)
             {
+               uint8_t _flg = task_get_flags(list_handle->http_task);
+
+               list_handle->http_task_finished =
+                  ((_flg & RETRO_TASK_FLG_FINISHED) > 0);
+
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
-               if (!(list_handle->http_task_finished =
-                     task_get_finished(list_handle->http_task)))
+               if (!list_handle->http_task_finished)
                   task_set_progress(
                      task, task_get_progress(list_handle->http_task));
             }
@@ -379,20 +450,22 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_LIST_END:
          {
-            settings_t *settings    = config_get_ptr();
-
             /* Check whether HTTP task was successful */
             if (list_handle->http_task_success)
             {
                /* Parse HTTP transfer data */
                if (list_handle->http_data)
-                  core_updater_list_parse_network_data(
-                        list_handle->core_list,
-                        settings->paths.directory_libretro,
-                        settings->paths.path_libretro_info,
-                        settings->paths.network_buildbot_url,
-                        list_handle->http_data->data,
-                        list_handle->http_data->len);
+               {
+                  settings_t *settings = config_get_ptr();
+                  if (settings)
+                     core_updater_list_parse_network_data(
+                           list_handle->core_list,
+                           settings->paths.directory_libretro,
+                           settings->paths.path_libretro_info,
+                           settings->paths.network_buildbot_url,
+                           list_handle->http_data->data,
+                           list_handle->http_data->len);
+               }
             }
             else
             {
@@ -403,7 +476,6 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
             /* Enable menu refresh, if required */
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-            if (list_handle->refresh_menu)
             {
                struct menu_state *menu_st = menu_state_get_ptr();
                if (list_handle->refresh_menu)
@@ -423,7 +495,19 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (list_handle)
       free_core_updater_list_handle(list_handle);
@@ -445,8 +529,27 @@ static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_dat
    return ((uintptr_t)user_data == (uintptr_t)list_handle->core_list);
 }
 
-void *task_push_get_core_updater_list(
-      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+/* Signals completion of the core list fetch to a parent
+ * 'update installed cores' task, if there is one. The
+ * parent must never poll task_get_flags() on the child
+ * instead: a finished task is retired and freed inside the
+ * same task_queue gather pass that ran its handler, so with
+ * threaded tasks disabled the parent may not get to observe
+ * RETRO_TASK_FLG_FINISHED before the memory is freed. */
+static void cb_task_core_updater_get_list(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   if (update_installed_handle)
+      update_installed_handle->list_task_complete = true;
+}
+
+static void *task_push_get_core_updater_list_internal(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    task_finder_data_t find_data;
    retro_task_t *task                      = NULL;
@@ -490,10 +593,16 @@ void *task_push_get_core_updater_list(
    /* Configure task */
    task->handler          = task_core_updater_get_list_handler;
    task->state            = list_handle;
-   task->mute             = mute;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
+   task->callback         = cb_task_core_updater_get_list;
+   task->user_data        = (void*)update_installed_handle;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Push task */
    task_queue_push(task);
@@ -516,6 +625,13 @@ error:
    return NULL;
 }
 
+void *task_push_get_core_updater_list(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+{
+   return task_push_get_core_updater_list_internal(
+         core_list, mute, refresh_menu, NULL);
+}
+
 /*****************/
 /* Download core */
 /*****************/
@@ -525,8 +641,20 @@ static void cb_task_core_updater_download(
       void *user_data, const char *err)
 {
    /* Reload core info files
-    * > This must be done on the main thread */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+    * > This must be done on the main thread
+    * > Forced: a core file changed on disk */
+   bool refresh                                            = true;
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   /* Signal completion to the parent 'update installed
+    * cores' task, if there is one - it cannot safely poll
+    * this task's flags, since the task is freed as soon as
+    * it is retired */
+   if (update_installed_handle)
+      update_installed_handle->download_task_complete = true;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* Force reload of contentless cores icons */
@@ -550,7 +678,7 @@ static void cb_decompress_task_core_updater_download(
    /* Remove original archive file */
    if (decompress_data)
    {
-      if (!string_is_empty(decompress_data->source_file))
+      if (*decompress_data->source_file)
          if (path_is_valid(decompress_data->source_file))
             filestream_delete(decompress_data->source_file);
 
@@ -561,8 +689,8 @@ static void cb_decompress_task_core_updater_download(
    }
 
    /* Log any error messages */
-   if (!string_is_empty(err))
-      RARCH_ERR("[core updater] %s", err);
+   if (err && *err)
+      RARCH_ERR("[Core Updater] %s", err);
 }
 
 void cb_http_task_core_updater_download(
@@ -572,11 +700,11 @@ void cb_http_task_core_updater_download(
    http_transfer_data_t *data                      = (http_transfer_data_t*)task_data;
    file_transfer_t *transf                         = (file_transfer_t*)user_data;
    core_updater_download_handle_t *download_handle = NULL;
-   char output_dir[PATH_MAX_LENGTH];
+   char output_dir[DIR_MAX_LENGTH];
 
    if (!data || !transf)
       goto finish;
-   if (!data->data || string_is_empty(transf->path))
+   if (!*transf->path)
       goto finish;
 
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
@@ -585,37 +713,26 @@ void cb_http_task_core_updater_download(
    /* Update download_handle task status */
    download_handle->http_task_complete       = true;
 
-   /* Create output directory, if required */
+   /* The body was streamed to transf->path as it arrived, so
+    * data->data is NULL by design and there is nothing to write here.
+    * task_push_http_download_file() removes the partial file unless
+    * the transfer finished cleanly, so a non-2xx means there is no
+    * file on disk to decompress. */
+   if (err && *err)
+      goto finish;
+
+   if (data->status < 200 || data->status > 299)
+   {
+      err = "Download failed.";
+      goto finish;
+   }
+
+   /* Recomputed for the decompress call below; the directory itself
+    * was created before the transfer started. */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
    path_basedir_wrapper(output_dir);
 
-   if (!path_mkdir(output_dir))
-   {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-#ifdef HAVE_COMPRESSION
-   /* If core file is an archive, make sure it is
-    * not being decompressed already (by another task) */
-   if (path_is_compressed_file(transf->path))
-   {
-      if (task_check_decompress(transf->path))
-      {
-         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
-         goto finish;
-      }
-   }
-#endif
-
-   /* Write core file to disk */
-   if (!filestream_write_file(transf->path, data->data, data->len))
-   {
-      err = "Write failed.";
-      goto finish;
-   }
-
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    /* Decompress core file, if required
     * NOTE: If core is compressed and platform
     * doesn't have compression support, then this
@@ -639,22 +756,30 @@ void cb_http_task_core_updater_download(
 
 finish:
    /* Log any error messages */
-   if (!string_is_empty(err))
+   if (err && *err)
    {
-      RARCH_ERR("[core updater] Download of '%s' failed: %s\n",
+      RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
-      download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+      /* download_handle is still NULL on the early bail-outs above
+       * (no data, no transfer, no user_data), so it cannot be
+       * dereferenced unconditionally here. */
+      if (download_handle)
+         download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
    }
    if (transf)
       free(transf);
 
    /* if no decompress task was queued, mark it as completed */
-   if (!download_handle->decompress_task)
+   if (download_handle && !download_handle->decompress_task)
       download_handle->decompress_task_complete = true;
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
+   /* A task cancelled part-way through the sliced CRC still holds an
+    * open intfstream; without this it leaks the handle and the fd. */
+   task_core_updater_crc_reset(&download_handle->crc_slice);
+
    if (download_handle->path_dir_libretro)
       free(download_handle->path_dir_libretro);
 
@@ -682,38 +807,50 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
 
 static void task_core_updater_download_handler(retro_task_t *task)
 {
+   uint8_t flg;
    core_updater_download_handle_t *download_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(download_handle = (core_updater_download_handle_t*)task->state))
-      goto task_finished;
+   download_handle = (core_updater_download_handle_t*)task->state;
+   flg             = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!download_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (download_handle->status)
    {
       case CORE_UPDATER_DOWNLOAD_BEGIN:
          {
-            /* Get CRC of existing core, if required */
+            /* Get CRC of existing core, if required.
+             *
+             * Sliced: the handler returns after one tick's budget and
+             * is re-entered next tick, staying in this state until
+             * the hash completes.  A 260MB core no longer stalls a
+             * single tick for the whole read. */
             if (download_handle->local_crc == 0)
             {
-               const char *local_core_path = 
+               const char *local_core_path =
                   download_handle->local_core_path;
                if (
-                       !string_is_empty(local_core_path)
+                       (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  download_handle->local_crc = 
-                     task_core_updater_get_core_crc(local_core_path);
+               {
+                  uint32_t crc = 0;
+                  if (!task_core_updater_crc_step(
+                           &download_handle->crc_slice,
+                           local_core_path, &crc))
+                     break; /* resume next tick */
+                  download_handle->local_crc = crc;
+               }
             }
 
             /* Check whether existing core and remote core
              * have the same CRC */
-            download_handle->crc_match = (download_handle->local_crc != 0) &&
-                  (download_handle->local_crc == download_handle->remote_crc);
+            download_handle->crc_match = (download_handle->local_crc != 0)
+                  && (download_handle->local_crc == download_handle->remote_crc);
 
             /* If CRC matches, end task immediately */
             if (download_handle->crc_match)
@@ -766,7 +903,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
                /* This cannot realistically happen...
                 * > If it does, just log an error and initialise
                 *   download */
-               RARCH_ERR("[core updater] Failed to backup core: %s\n",
+               RARCH_ERR("[Core Updater] Failed to backup core: \"%s\".\n",
                      download_handle->local_core_path);
                download_handle->backup_enabled = false;
                download_handle->status         = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
@@ -783,7 +920,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
              *   by definition */
             if (download_handle->backup_task)
             {
-               backup_complete = task_get_finished(download_handle->backup_task);
+               uint8_t _flg    = task_get_flags(download_handle->backup_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  backup_complete = true;
+               else
+                  backup_complete = false;
 
                /* If backup task is running, copy current
                 * progress value to *this* task */
@@ -810,8 +952,11 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
          {
             size_t _len;
+            size_t _tlen;
             file_transfer_t *transf = NULL;
             char task_title[128];
+            char output_dir[DIR_MAX_LENGTH];
+            char http_title[NAME_MAX_LENGTH];
 
             /* Configure file transfer object */
             if (!(transf = (file_transfer_t*)calloc(1,
@@ -824,10 +969,55 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             transf->user_data = (void*)download_handle;
 
+            /* The body is streamed straight to transf->path as it
+             * arrives, so everything that used to gate the write in
+             * cb_http_task_core_updater_download() has to happen
+             * before the transfer starts rather than after it. */
+            strlcpy(output_dir, transf->path, sizeof(output_dir));
+            path_basedir_wrapper(output_dir);
+
+            if (!path_mkdir(output_dir))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+
+#ifdef HAVE_COMPRESSION
+            /* If the core file is an archive, make sure it is not
+             * already being decompressed by another task -- otherwise
+             * we would now be overwriting the very file that task is
+             * reading. */
+            if (path_is_compressed_file(transf->path)
+                  && task_check_decompress(transf->path))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+#endif
+
+            /* Title that task_push_http_transfer_file() used to build
+             * internally; task_push_http_download_file() takes it as
+             * an argument instead. */
+            _tlen = 0;
+            http_title[0] = '\0';
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  msg_hash_to_str(MSG_DOWNLOADING));
+            strlcpy_append(http_title, sizeof(http_title), &_tlen, ": ");
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  transf->path);
+
             /* Push HTTP transfer task */
-            download_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
-                  download_handle->remote_core_path, true, NULL,
-                  cb_http_task_core_updater_download, transf);
+            download_handle->http_task = (retro_task_t*)task_push_http_download_file(
+                  download_handle->remote_core_path, transf->path, true,
+                  http_title, cb_http_task_core_updater_download, transf);
 
             /* Update task title */
             task_free_title(task);
@@ -853,8 +1043,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Otherwise, check if HTTP task is still running */
             else if (!download_handle->http_task_finished)
             {
-               download_handle->http_task_finished =
-                     task_get_finished(download_handle->http_task);
+               uint8_t _flg = task_get_flags(download_handle->http_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  download_handle->http_task_finished = true;
+               else
+                  download_handle->http_task_finished = false;
 
                /* If HTTP task is running, copy current
                 * progress value to *this* task */
@@ -907,8 +1101,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
             if (download_handle->decompress_task &&
                !download_handle->decompress_task_finished)
             {
-               download_handle->decompress_task_finished =
-                     task_get_finished(download_handle->decompress_task);
+               uint8_t _flg = task_get_flags(download_handle->decompress_task);
+
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  download_handle->decompress_task_finished = true;
+               else
+                  download_handle->decompress_task_finished = false;
 
                /* If decompression task is running, copy
                 * current progress value to *this* task */
@@ -979,9 +1177,20 @@ static void task_core_updater_download_handler(retro_task_t *task)
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (download_handle)
       free_core_updater_download_handle(download_handle);
@@ -998,12 +1207,13 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
    return false;
 }
 
-void *task_push_core_updater_download(
+static void *task_push_core_updater_download_internal(
       core_updater_list_t* core_list,
       const char *filename, uint32_t crc, bool mute,
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
-      const char *path_dir_core_assets)
+      const char *path_dir_core_assets,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -1026,7 +1236,7 @@ void *task_push_core_updater_download(
 
    /* Sanity check */
    if (   !core_list
-       || string_is_empty(filename)
+       || (!filename || !*filename)
        || !download_handle)
       goto error;
 
@@ -1035,9 +1245,9 @@ void *task_push_core_updater_download(
          core_list, filename, &list_entry))
       goto error;
 
-   if (string_is_empty(list_entry->remote_core_path) ||
-       string_is_empty(list_entry->local_core_path) ||
-       string_is_empty(list_entry->display_name))
+   if (   (!list_entry->remote_core_path || !*list_entry->remote_core_path)
+       || (!list_entry->local_core_path || !*list_entry->local_core_path)
+       || (!list_entry->display_name || !*list_entry->display_name))
       goto error;
 
    /* Check whether core is locked
@@ -1047,7 +1257,7 @@ void *task_push_core_updater_download(
     *   updater list provides 'sane' core paths */
    if (core_info_get_core_lock(list_entry->local_core_path, false))
    {
-      RARCH_ERR("[core updater] Update disabled - core is locked: %s\n",
+      RARCH_ERR("[Core Updater] Update disabled - core is locked: \"%s\".\n",
             list_entry->local_core_path);
 
       /* If task is not muted, generate notification */
@@ -1055,17 +1265,16 @@ void *task_push_core_updater_download(
       {
          char msg[128];
          size_t _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_UPDATE_DISABLED), sizeof(msg));
-         strlcpy(msg + _len, list_entry->display_name, sizeof(msg) - _len);
-
-         runloop_msg_queue_push(msg, 1, 100, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         _len += strlcpy(msg + _len, list_entry->display_name, sizeof(msg) - _len);
+         runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
 
       goto error;
    }
 
    /* Get local file download path */
-   if (string_is_empty(path_dir_libretro))
+   if (!path_dir_libretro || !*path_dir_libretro)
       goto error;
 
    fill_pathname_join_special(
@@ -1078,7 +1287,7 @@ void *task_push_core_updater_download(
    download_handle->auto_backup              = auto_backup;
    download_handle->auto_backup_history_size = auto_backup_history_size;
    download_handle->path_dir_libretro        = strdup(path_dir_libretro);
-   download_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ? NULL : strdup(path_dir_core_assets);
+   download_handle->path_dir_core_assets     = (path_dir_core_assets && *path_dir_core_assets) ? strdup(path_dir_core_assets) : NULL ;
    download_handle->remote_filename          = strdup(list_entry->remote_filename);
    download_handle->remote_core_path         = strdup(list_entry->remote_core_path);
    download_handle->local_download_path      = strdup(local_download_path);
@@ -1117,11 +1326,16 @@ void *task_push_core_updater_download(
 
    task->handler          = task_core_updater_download_handler;
    task->state            = download_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
+   task->user_data        = (void*)update_installed_handle;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Push task */
    task_queue_push(task);
@@ -1142,6 +1356,19 @@ error:
       free_core_updater_download_handle(download_handle);
 
    return NULL;
+}
+
+void *task_push_core_updater_download(
+      core_updater_list_t* core_list,
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets)
+{
+   return task_push_core_updater_download_internal(
+         core_list, filename, crc, mute, auto_backup,
+         auto_backup_history_size, path_dir_libretro,
+         path_dir_core_assets, NULL);
 }
 
 /**************************/
@@ -1165,48 +1392,50 @@ static void free_update_installed_cores_handle(
 
 static void task_update_installed_cores_handler(retro_task_t *task)
 {
+   uint8_t flg;
    update_installed_cores_handle_t *update_installed_handle = NULL;
 
    if (!task)
       goto task_finished;
 
    update_installed_handle = (update_installed_cores_handle_t*)task->state;
+   flg                     = task_get_flags(task);
 
-   if (!update_installed_handle)
-      goto task_finished;
-
-   if (task_get_cancelled(task))
+   if (!update_installed_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (update_installed_handle->status)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
-         /* Request buildbot core list */
-         update_installed_handle->list_task = (retro_task_t*)
-            task_push_get_core_updater_list(
-                  update_installed_handle->core_list,
-                  true, false);
+         /* Request buildbot core list
+          * > Must be cleared *before* the push: the child
+          *   task can finish and fire its callback before
+          *   this returns */
+         update_installed_handle->list_task_complete = false;
 
          /* If push failed, go to end
           * (error will message will be displayed when
           * final task title is set) */
-         if (!update_installed_handle->list_task)
+         if (!task_push_get_core_updater_list_internal(
+                  update_installed_handle->core_list,
+                  true, false, update_installed_handle))
             update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
          else
             update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
          break;
       case UPDATE_INSTALLED_CORES_WAIT_LIST:
          {
-            bool list_available = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->list_task)
-               list_available = task_get_finished(update_installed_handle->list_task);
-            else
-               list_available = true;
+            /* Wait for cb_task_core_updater_get_list() to
+             * trigger. Note that the child task must not be
+             * polled via task_get_flags(): a finished task is
+             * retired and freed inside the same task_queue
+             * gather pass that ran its handler, and with
+             * threaded tasks disabled that pass may run the
+             * child *after* this one - leaving nothing to
+             * observe on the next tick but freed memory, and
+             * this task stuck on 'Fetching core list...'
+             * forever */
+            bool list_available = update_installed_handle->list_task_complete;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
@@ -1215,6 +1444,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             {
                update_installed_handle->list_size =
                      core_updater_list_size(update_installed_handle->core_list);
+               RARCH_DBG("[Core Updater] Updater list size from buildbot: %d.\n",
+                     update_installed_handle->list_size);
 
                if (update_installed_handle->list_size < 1)
                   update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
@@ -1249,6 +1480,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                         update_installed_handle->list_index;
                   update_installed_handle->status          =
                         UPDATE_INSTALLED_CORES_UPDATE_CORE;
+                  RARCH_LOG("[Core Updater] Checking: \"%s\"...\n",
+                        list_entry->local_core_path);
                }
             }
 
@@ -1301,7 +1534,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              *   updater list provides 'sane' core paths */
             if (core_info_get_core_lock(list_entry->local_core_path, false))
             {
-               RARCH_LOG("[core updater] Skipping locked core: %s\n",
+               RARCH_LOG("[Core Updater] Skipping locked core: \"%s\".\n",
                      list_entry->display_name);
 
                /* Core update is disabled
@@ -1312,15 +1545,29 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                break;
             }
 
-            /* Get CRC of existing core */
+            /* Get CRC of existing core.
+             *
+             * Sliced across ticks.  This is the site that matters
+             * most: it runs once per installed core, so a 40-core
+             * set hashes 601MB (measured) before a single byte is
+             * downloaded, and on a repeat run where nothing has
+             * changed it reads all of it again to establish that.
+             * Slicing does not reduce that total -- it stops any one
+             * tick from carrying an arbitrary share of it. */
             {
                const char *local_core_path = list_entry->local_core_path;
                if (
-                       !string_is_empty(local_core_path)
+                       (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  local_crc = task_core_updater_get_core_crc(
-                        local_core_path);
+               {
+                  uint32_t crc = 0;
+                  if (!task_core_updater_crc_step(
+                           &update_installed_handle->crc_slice,
+                           local_core_path, &crc))
+                     break; /* resume next tick */
+                  local_crc = crc;
+               }
             }
 
             /* Check whether existing core and remote core
@@ -1331,24 +1578,28 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             if ((local_crc != 0) && (local_crc == list_entry->crc))
             {
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+               RARCH_LOG("[Core Updater] Core \"%s\" is already at latest version.\n",
+                     list_entry->display_name);
                break;
             }
 
             /* Existing core is not the most recent version
-             * > Request download */
-            update_installed_handle->download_task = (retro_task_t*)
-                  task_push_core_updater_download(
+             * > Request download
+             * > Flag must be cleared *before* the push, since
+             *   the child task can complete before it returns */
+            update_installed_handle->download_task_complete = false;
+
+            /* Again, if an error occurred, just return to
+             * UPDATE_INSTALLED_CORES_ITERATE state */
+            if (!task_push_core_updater_download_internal(
                         update_installed_handle->core_list,
                         list_entry->remote_filename,
                         local_crc, true,
                         update_installed_handle->auto_backup,
                         update_installed_handle->auto_backup_history_size,
                         update_installed_handle->path_dir_libretro,
-                        update_installed_handle->path_dir_core_assets);
-
-            /* Again, if an error occurred, just return to
-             * UPDATE_INSTALLED_CORES_ITERATE state */
-            if (!update_installed_handle->download_task)
+                        update_installed_handle->path_dir_core_assets,
+                        update_installed_handle))
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             else
             {
@@ -1370,29 +1621,24 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
                /* Wait for download to complete */
                update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD;
+               RARCH_LOG("[Core Updater] Downloading: \"%s\"...\n",
+                     list_entry->display_name);
             }
          }
          break;
       case UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD:
          {
-            bool download_complete = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->download_task)
-               download_complete = task_get_finished(update_installed_handle->download_task);
-            else
-               download_complete = true;
+            /* Wait for cb_task_core_updater_download() to
+             * trigger - same lifetime hazard as
+             * UPDATE_INSTALLED_CORES_WAIT_LIST, so the child
+             * task's flags are deliberately not polled */
+            bool download_complete =
+                  update_installed_handle->download_task_complete;
 
             /* If download is complete, return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
             if (download_complete)
-            {
-               update_installed_handle->download_task = NULL;
-               update_installed_handle->status        = UPDATE_INSTALLED_CORES_ITERATE;
-            }
+               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
          }
          break;
       case UPDATE_INSTALLED_CORES_END:
@@ -1417,7 +1663,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                      snprintf(
                            task_title         + _len,
                            sizeof(task_title) - _len,
-                           " [%s%u, %s%u]",
+                           " (%s%u, %s%u)",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated,
                            msg_hash_to_str(MSG_NUM_CORES_LOCKED),
@@ -1426,7 +1672,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                      snprintf(
                            task_title         + _len,
                            sizeof(task_title) - _len,
-                           " [%s%u]",
+                           " (%s%u)",
                            msg_hash_to_str(MSG_NUM_CORES_UPDATED),
                            update_installed_handle->num_updated);
                }
@@ -1434,7 +1680,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                   snprintf(
                         task_title         + _len,
                         sizeof(task_title) - _len,
-                        " [%s%u]",
+                        " (%s%u)",
                         msg_hash_to_str(MSG_NUM_CORES_LOCKED),
                         update_installed_handle->num_locked);
 
@@ -1453,124 +1699,28 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
 }
 
-#if 0
-static void task_update_single_core_handler(retro_task_t *task)
-{
-   update_single_core_handle_t *handle =
-      (update_single_core_handle_t*)task->state;
-
-   switch (handle->status)
-   {
-      case UPDATE_SINGLE_CORE_BEGIN:
-         {
-            if (task_push_get_core_updater_list(handle->core_list,
-                  true, false))
-               handle->status = UPDATE_SINGLE_CORE_WAIT_LIST;
-            else
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_WAIT_LIST:
-         {
-            task_finder_data_t find_data;
-
-            find_data.func     = task_core_updater_get_list_finder;
-            find_data.userdata = handle->core_list;
-            if (!task_queue_find(&find_data))
-               handle->status = UPDATE_SINGLE_CORE_UPDATE_CORE;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_UPDATE_CORE:
-         {
-            uint32_t crc                           = 0;
-            const core_updater_list_entry_t *entry = NULL;
-
-            if (!core_updater_list_get_core(handle->core_list,
-                  handle->path_core, &entry))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            if (core_info_get_core_lock(entry->local_core_path, false))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            {
-               const char *local_core_path = entry->local_core_path;
-               if (
-                       !string_is_empty(local_core_path)
-                     && path_is_valid  (local_core_path)
-                  )
-                  crc = task_core_updater_get_core_crc(local_core_path);
-            }
-
-            if (!crc || crc == entry->crc)
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            if (task_push_core_updater_download(handle->core_list,
-                  entry->remote_filename, crc, true,
-                  handle->auto_backup, handle->auto_backup_history_size,
-                  handle->path_dir_libretro, handle->path_dir_core_assets))
-               handle->status = UPDATE_SINGLE_CORE_WAIT_DOWNLOAD;
-            else
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_WAIT_DOWNLOAD:
-         {
-            task_finder_data_t find_data;
-            const core_updater_list_entry_t *entry = NULL;
-
-            if (!core_updater_list_get_core(handle->core_list,
-                  handle->path_core, &entry))
-            {
-               handle->status = UPDATE_SINGLE_CORE_END;
-               break;
-            }
-
-            find_data.func     = task_core_updater_download_finder;
-            find_data.userdata = entry->remote_filename;
-            if (!task_queue_find(&find_data))
-               handle->status = UPDATE_SINGLE_CORE_END;
-         }
-         break;
-      case UPDATE_SINGLE_CORE_END:
-      default:
-         task_set_progress(task, 100);
-         task_set_finished(task, true);
-         break;
-   }
-}
-
-static void task_update_single_core_cleanup(retro_task_t *task)
-{
-   update_single_core_handle_t *handle =
-      (update_single_core_handle_t*)task->state;
-
-   core_updater_list_free(handle->core_list);
-   free(handle);
-}
-#endif
-
 static bool task_update_installed_cores_finder(retro_task_t *task, void *user_data)
 {
    if (task)
       if (     task->handler == task_update_installed_cores_handler
-#if 0
-            || task->handler == task_update_single_core_handler
-#endif
             )
          return true;
    return false;
@@ -1596,18 +1746,18 @@ void task_push_update_installed_cores(
 
    /* Sanity check */
    if (  !update_installed_handle
-       || string_is_empty(path_dir_libretro))
+       || (!path_dir_libretro || !*path_dir_libretro))
       goto error;
 
    /* Configure handle */
    update_installed_handle->auto_backup              = auto_backup;
    update_installed_handle->auto_backup_history_size = auto_backup_history_size;
    update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
-   update_installed_handle->path_dir_core_assets     = string_is_empty(path_dir_core_assets) ?
+   update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
-   update_installed_handle->list_task                = NULL;
-   update_installed_handle->download_task            = NULL;
+   update_installed_handle->list_task_complete       = false;
+   update_installed_handle->download_task_complete   = false;
    update_installed_handle->list_size                = 0;
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
@@ -1633,8 +1783,9 @@ void task_push_update_installed_cores(
    task->handler          = task_update_installed_cores_handler;
    task->state            = update_installed_handle;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
+   task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);
@@ -1654,69 +1805,6 @@ error:
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
 }
-
-#if 0
-bool task_push_update_single_core(
-      const char *path_core, bool auto_backup, size_t auto_backup_history_size,
-      const char *path_dir_libretro, const char *path_dir_core_assets)
-{
-   task_finder_data_t find_data;
-   core_updater_list_t *core_list;
-   update_single_core_handle_t *handle;
-   retro_task_t *task;
-
-   if (string_is_empty(path_core) || string_is_empty(path_dir_libretro))
-      return false;
-
-#ifdef ANDROID
-   /* Regular core updater is disabled in Play Store builds. */
-   if (play_feature_delivery_enabled())
-      return false;
-#endif
-
-   /* Only one instance of this task may run at a time. */
-   find_data.func     = task_update_installed_cores_finder;
-   find_data.userdata = NULL;
-   if (task_queue_find(&find_data))
-      return false;
-
-   core_list = core_updater_list_init();
-   handle    = (update_single_core_handle_t*)malloc(sizeof(*handle));
-   task      = task_init();
-   if (!core_list || !handle || !task)
-   {
-      core_updater_list_free(core_list);
-      free(handle);
-      free(task);
-
-      return false;
-   }
-
-   /* Configure handle */
-   handle->status                   = UPDATE_SINGLE_CORE_BEGIN;
-   handle->core_list                = core_list;
-   handle->auto_backup              = auto_backup;
-   handle->auto_backup_history_size = auto_backup_history_size;
-   strlcpy(handle->path_core, path_core, sizeof(handle->path_core));
-   strlcpy(handle->path_dir_libretro, path_dir_libretro,
-      sizeof(handle->path_dir_libretro));
-   if (!string_is_empty(path_dir_core_assets))
-      strlcpy(handle->path_dir_core_assets, path_dir_core_assets,
-         sizeof(handle->path_dir_core_assets));
-   else
-      handle->path_dir_core_assets[0] = '\0';
-
-   /* Configure task */
-   task->handler = task_update_single_core_handler;
-   task->cleanup = task_update_single_core_cleanup;
-   task->state   = handle;
-
-   /* Push task */
-   task_queue_push(task);
-
-   return true;
-}
-#endif
 
 #if defined(ANDROID)
 /**************************************/
@@ -1745,16 +1833,17 @@ static void free_play_feature_delivery_install_handle(
 static void task_play_feature_delivery_core_install_handler(
       retro_task_t *task)
 {
+   uint8_t flg;
    play_feature_delivery_install_handle_t *pfd_install_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(pfd_install_handle =
-            (play_feature_delivery_install_handle_t*)task->state))
-      goto task_finished;
+   pfd_install_handle =
+      (play_feature_delivery_install_handle_t*)task->state;
+   flg                = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!pfd_install_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (pfd_install_handle->status)
@@ -1795,7 +1884,7 @@ static void task_play_feature_delivery_core_install_handler(
                      FILE_PATH_BACKUP_EXTENSION,
                      sizeof(backup_core_path) - _len);
 
-               if (!string_is_empty(backup_core_path))
+               if (*backup_core_path)
                {
                   int ret;
 
@@ -1886,6 +1975,7 @@ static void task_play_feature_delivery_core_install_handler(
       case PLAY_FEATURE_DELIVERY_INSTALL_END:
          {
             size_t _len;
+            uint8_t _flg;
             char task_title[128];
             const char *msg_str = msg_hash_to_str(MSG_CORE_INSTALL_FAILED);
 
@@ -1905,8 +1995,8 @@ static void task_play_feature_delivery_core_install_handler(
             task_set_title(task, strdup(task_title));
 
             /* Check whether a core backup file was created */
-            if (!string_is_empty(pfd_install_handle->backup_core_path) &&
-                path_is_valid(pfd_install_handle->backup_core_path))
+            if (  (pfd_install_handle->backup_core_path && *pfd_install_handle->backup_core_path)
+                && path_is_valid(pfd_install_handle->backup_core_path))
             {
                /* If install was successful, delete backup */
                if (pfd_install_handle->success)
@@ -1928,8 +2018,10 @@ static void task_play_feature_delivery_core_install_handler(
             /* If task is muted and install failed, set
              * error string (allows status to be checked
              * externally) */
-            if (!pfd_install_handle->success &&
-                task_get_mute(task))
+            _flg = task_get_flags(task);
+
+            if (     !pfd_install_handle->success
+                && ((_flg & RETRO_TASK_FLG_MUTE) > 0))
                task_set_error(task, strdup(task_title));
          }
          /* fall-through */
@@ -1941,9 +2033,20 @@ static void task_play_feature_delivery_core_install_handler(
    return;
 
 task_finished:
-
    if (task)
-      task_set_finished(task, true);
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_install_handle)
       free_play_feature_delivery_install_handle(pfd_install_handle);
@@ -1971,7 +2074,7 @@ void *task_push_play_feature_delivery_core_install(
 
    /* Sanity check */
    if (   !core_list
-       ||  string_is_empty(filename)
+       ||  (!filename || !*filename)
        || !pfd_install_handle
        || !play_feature_delivery_enabled())
       goto error;
@@ -1981,8 +2084,8 @@ void *task_push_play_feature_delivery_core_install(
          core_list, filename, &list_entry))
       goto error;
 
-   if (   string_is_empty(list_entry->local_core_path)
-       || string_is_empty(list_entry->display_name))
+   if (   (!list_entry->local_core_path || !*list_entry->local_core_path)
+       || (!list_entry->display_name || !*list_entry->display_name))
       goto error;
 
    /* Only one core may be downloaded at a time */
@@ -2014,11 +2117,15 @@ void *task_push_play_feature_delivery_core_install(
 
    task->handler          = task_play_feature_delivery_core_install_handler;
    task->state            = pfd_install_handle;
-   task->mute             = mute;
    task->title            = strdup(task_title);
-   task->alternative_look = true;
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   if (mute)
+      task->flags        |=  RETRO_TASK_FLG_MUTE;
+   else
+      task->flags        &= ~RETRO_TASK_FLG_MUTE;
 
    /* Install process may involve the *deletion*
     * of an existing core file. If core is
@@ -2061,8 +2168,8 @@ static void free_play_feature_delivery_switch_cores_handle(
    if (pfd_switch_cores_handle->path_libretro_info)
       free(pfd_switch_cores_handle->path_libretro_info);
 
-   if (pfd_switch_cores_handle->error_msg)
-      free(pfd_switch_cores_handle->error_msg);
+   if (pfd_switch_cores_handle->err_msg)
+      free(pfd_switch_cores_handle->err_msg);
 
    core_updater_list_free(pfd_switch_cores_handle->core_list);
 
@@ -2073,16 +2180,17 @@ static void free_play_feature_delivery_switch_cores_handle(
 static void task_play_feature_delivery_switch_cores_handler(
       retro_task_t *task)
 {
+   uint8_t flg;
    play_feature_delivery_switch_cores_handle_t *pfd_switch_cores_handle = NULL;
 
    if (!task)
       goto task_finished;
 
-   if (!(pfd_switch_cores_handle =
-            (play_feature_delivery_switch_cores_handle_t*)task->state))
-      goto task_finished;
+   pfd_switch_cores_handle =
+      (play_feature_delivery_switch_cores_handle_t*)task->state;
+   flg                     = task_get_flags(task);
 
-   if (task_get_cancelled(task))
+   if (!pfd_switch_cores_handle || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       goto task_finished;
 
    switch (pfd_switch_cores_handle->status)
@@ -2099,7 +2207,7 @@ static void task_play_feature_delivery_switch_cores_handler(
              * core list' error */
             struct string_list *available_cores =
                   play_feature_delivery_available_cores();
-            bool success                        = false;
+            bool ret                        = false;
 
             if (!available_cores)
             {
@@ -2109,7 +2217,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             }
 
             /* Populate core updater list */
-            success = core_updater_list_parse_pfd_data(
+            ret = core_updater_list_parse_pfd_data(
                   pfd_switch_cores_handle->core_list,
                   pfd_switch_cores_handle->path_dir_libretro,
                   pfd_switch_cores_handle->path_libretro_info,
@@ -2118,7 +2226,7 @@ static void task_play_feature_delivery_switch_cores_handler(
             string_list_free(available_cores);
 
             /* Cache list size */
-            if (success)
+            if (ret)
                pfd_switch_cores_handle->list_size =
                      core_updater_list_size(pfd_switch_cores_handle->core_list);
 
@@ -2149,8 +2257,8 @@ static void task_play_feature_delivery_switch_cores_handler(
             if (core_updater_list_get_index(
                   pfd_switch_cores_handle->core_list,
                   pfd_switch_cores_handle->list_index,
-                  &list_entry) &&
-                path_is_valid(list_entry->local_core_path))
+                  &list_entry)
+                && path_is_valid(list_entry->local_core_path))
             {
                core_installed                           = true;
                pfd_switch_cores_handle->installed_index =
@@ -2253,17 +2361,18 @@ static void task_play_feature_delivery_switch_cores_handler(
       case PLAY_FEATURE_DELIVERY_SWITCH_CORES_WAIT_INSTALL:
          {
             bool install_complete = false;
-            const char* error_msg = NULL;
+            const char* err_msg   = NULL;
 
             /* > If task is running, check 'is finished' status
              * > If task is NULL, then it is finished by
              *   definition */
             if (pfd_switch_cores_handle->install_task)
             {
-               error_msg        = task_get_error(
+               uint8_t _flg   = task_get_flags(pfd_switch_cores_handle->install_task);
+               err_msg        = task_get_error(
                      pfd_switch_cores_handle->install_task);
-               install_complete = task_get_finished(
-                     pfd_switch_cores_handle->install_task);
+               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
+                  install_complete = true;
             }
             else
                install_complete = true;
@@ -2271,9 +2380,9 @@ static void task_play_feature_delivery_switch_cores_handler(
             /* Check for installation errors
              * > These should be considered 'serious', and
              *   will trigger the task to end early */
-            if (!string_is_empty(error_msg))
+            if (err_msg && *err_msg)
             {
-               pfd_switch_cores_handle->error_msg    = strdup(error_msg);
+               pfd_switch_cores_handle->err_msg      = strdup(err_msg);
                pfd_switch_cores_handle->install_task = NULL;
                pfd_switch_cores_handle->status       =
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_END;
@@ -2303,8 +2412,8 @@ static void task_play_feature_delivery_switch_cores_handler(
             if (pfd_switch_cores_handle->list_size > 0)
             {
                /* Check whether any installation errors occurred */
-               if (!string_is_empty(pfd_switch_cores_handle->error_msg))
-                  task_title = pfd_switch_cores_handle->error_msg;
+               if (pfd_switch_cores_handle->err_msg && *pfd_switch_cores_handle->err_msg)
+                  task_title = pfd_switch_cores_handle->err_msg;
                else
                   task_title = msg_hash_to_str(MSG_ALL_CORES_SWITCHED_PFD);
             }
@@ -2321,7 +2430,19 @@ static void task_play_feature_delivery_switch_cores_handler(
 
 task_finished:
    if (task)
-      task_set_finished(task, true);
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_switch_cores_handle)
       free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
@@ -2345,8 +2466,8 @@ void task_push_play_feature_delivery_switch_installed_cores(
                calloc(1, sizeof(play_feature_delivery_switch_cores_handle_t));
 
    /* Sanity check */
-   if (    string_is_empty(path_dir_libretro)
-       ||  string_is_empty(path_libretro_info)
+   if (    (!path_dir_libretro || !*path_dir_libretro)
+       ||  (!path_libretro_info || !*path_libretro_info)
        || !pfd_switch_cores_handle
        || !play_feature_delivery_enabled())
       goto error;
@@ -2361,7 +2482,7 @@ void task_push_play_feature_delivery_switch_installed_cores(
    /* Configure handle */
    pfd_switch_cores_handle->path_dir_libretro  = strdup(path_dir_libretro);
    pfd_switch_cores_handle->path_libretro_info = strdup(path_libretro_info);
-   pfd_switch_cores_handle->error_msg          = NULL;
+   pfd_switch_cores_handle->err_msg            = NULL;
    pfd_switch_cores_handle->core_list          = core_updater_list_init();
    pfd_switch_cores_handle->install_task       = NULL;
    pfd_switch_cores_handle->list_size          = 0;
@@ -2380,8 +2501,9 @@ void task_push_play_feature_delivery_switch_installed_cores(
    task->handler          = task_play_feature_delivery_switch_cores_handler;
    task->state            = pfd_switch_cores_handle;
    task->title            = strdup(msg_hash_to_str(MSG_SCANNING_CORES));
-   task->alternative_look = true;
    task->progress         = 0;
+   task->progress_cb      = task_window_progress_cb;
+   task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* Push task */
    task_queue_push(task);

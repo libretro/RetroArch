@@ -4,7 +4,7 @@
 # This script will upload the packaged RetroArch cores to a WiiU running
 # FTPiiU or FTPiiU Anywhere
 #
-# IMPORTANT: This script assumes the following structur
+# IMPORTANT: This script assumes the following structure
 #
 # WARNING: I experienced corrupt uploads when using Dimok's FTPiiU. You
 # probably want to use FIX94's FTPiiU Anywhere.

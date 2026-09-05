@@ -132,8 +132,10 @@ input_device_driver_t wiiu_joypad =
   wiiu_joypad_get_buttons,
   wiiu_joypad_axis,
   wiiu_joypad_poll,
-  NULL,
-  NULL,
+  NULL, /* set_rumble */
+  NULL, /* set_rumble_gain */
+  NULL, /* set_sensor_state */
+  NULL, /* get_sensor_input */
   wiiu_joypad_name,
   "wiiu",
 };

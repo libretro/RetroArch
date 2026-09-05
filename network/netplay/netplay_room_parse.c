@@ -33,6 +33,14 @@ enum netplay_parse_state
    STATE_OBJECT_START,
    STATE_FIELDS_START,
    STATE_FIELDS_OBJECT_START,
+   /* Entered when the inner per-room calloc in
+    * netplay_json_start_object fails or when the preceding
+    * room's allocation failed.  All field-write handlers gate
+    * on STATE_FIELDS_OBJECT_START so they silently skip while
+    * state == STATE_SKIP_OBJECT; netplay_json_end_object pops
+    * back to STATE_ARRAY_START so the next room in the array
+    * can be attempted. */
+   STATE_SKIP_OBJECT,
    STATE_END
 };
 
@@ -94,23 +102,53 @@ static bool netplay_json_number(void* ctx, const char *p_value, size_t len)
 static bool netplay_json_start_object(void* ctx)
 {
    struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    if (p_ctx->state == STATE_FIELDS_START)
    {
-      p_ctx->state = STATE_FIELDS_OBJECT_START;
+      struct netplay_room *new_room = NULL;
 
       if (!net_st->rooms_data->head)
       {
-         net_st->rooms_data->head      = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->head));
-         net_st->rooms_data->cur       = net_st->rooms_data->head;
+         /* First room in the list */
+         new_room                      = (struct netplay_room*)
+            calloc(1, sizeof(*new_room));
+         if (new_room)
+         {
+            net_st->rooms_data->head   = new_room;
+            net_st->rooms_data->cur    = new_room;
+         }
       }
-      else if (!net_st->rooms_data->cur->next)
+      else if (net_st->rooms_data->cur && !net_st->rooms_data->cur->next)
       {
-         net_st->rooms_data->cur->next = (struct netplay_room*)calloc(1, sizeof(*net_st->rooms_data->cur->next));
-         net_st->rooms_data->cur       = net_st->rooms_data->cur->next;
+         /* Subsequent room: append to the tail.  Gate on
+          * rooms_data->cur being non-NULL - if a prior room's
+          * calloc failed, cur was set to NULL and we'd NULL-
+          * deref 'cur->next' below. */
+         new_room                      = (struct netplay_room*)
+            calloc(1, sizeof(*new_room));
+         if (new_room)
+         {
+            net_st->rooms_data->cur->next = new_room;
+            net_st->rooms_data->cur       = new_room;
+         }
       }
 
+      /* NULL-check: on OOM (inner calloc returned NULL) or on
+       * the 'prior room failed' branch above (new_room stayed
+       * NULL because we didn't enter either 'if' clause), skip
+       * this entire JSON object.  The object-member and value
+       * handlers gate on STATE_FIELDS_OBJECT_START and so will
+       * become no-ops; netplay_json_end_object transitions
+       * SKIP_OBJECT back to ARRAY_START so the next array
+       * element can be attempted. */
+      if (!new_room)
+      {
+         p_ctx->state = STATE_SKIP_OBJECT;
+         return true;
+      }
+
+      p_ctx->state                          = STATE_FIELDS_OBJECT_START;
       net_st->rooms_data->cur->connectable  = true;
       net_st->rooms_data->cur->is_retroarch = true;
    }
@@ -124,7 +162,11 @@ static bool netplay_json_end_object(void* ctx)
 {
    struct netplay_json_context *p_ctx = (struct netplay_json_context*)ctx;
 
-   if (p_ctx->state == STATE_FIELDS_OBJECT_START)
+   /* Transition both the normal case (FIELDS_OBJECT_START) and
+    * the OOM-skip case (SKIP_OBJECT) back to ARRAY_START so the
+    * next room in the array can be attempted. */
+   if (   p_ctx->state == STATE_FIELDS_OBJECT_START
+       || p_ctx->state == STATE_SKIP_OBJECT)
       p_ctx->state = STATE_ARRAY_START;
 
    return true;
@@ -134,12 +176,12 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       size_t len)
 {
    struct netplay_json_context* p_ctx = (struct netplay_json_context*)ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    if (!p_value || !len)
       return true;
 
-   if (p_ctx->state == STATE_OBJECT_START && !string_is_empty(p_value)
+   if (p_ctx->state == STATE_OBJECT_START && (p_value && *p_value)
          && string_is_equal(p_value, "fields"))
       p_ctx->state = STATE_FIELDS_START;
 
@@ -150,7 +192,7 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
       p_ctx->cur_member_inthex = NULL;
       p_ctx->cur_member_string = NULL;
 
-      if (!string_is_empty(p_value))
+      if (p_value && *p_value)
       {
          if (string_is_equal(p_value, "username"))
          {
@@ -173,44 +215,32 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->address);
          }
          else if (string_is_equal(p_value, "port"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->port;
-         }
          else if (string_is_equal(p_value, "game_crc"))
-         {
             p_ctx->cur_member_inthex = &net_st->rooms_data->cur->gamecrc;
-         }
          else if (string_is_equal(p_value, "core_version"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->coreversion;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->coreversion);
          }
          else if (string_is_equal(p_value, "has_password"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_password;
-         }
          else if (string_is_equal(p_value, "has_spectate_password"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->has_spectate_password;
-         }
          else if (string_is_equal(p_value, "mitm_ip"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_address;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_address);
          }
          else if (string_is_equal(p_value, "mitm_port"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->mitm_port;
-         }
          else if (string_is_equal(p_value, "mitm_session"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->mitm_session;
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->mitm_session);
          }
          else if (string_is_equal(p_value, "host_method"))
-         {
             p_ctx->cur_member_int    = &net_st->rooms_data->cur->host_method;
-         }
          else if (string_is_equal(p_value, "retroarch_version"))
          {
             p_ctx->cur_member_string = net_st->rooms_data->cur->retroarch_version;
@@ -232,13 +262,13 @@ static bool netplay_json_object_member(void *ctx, const char *p_value,
             p_ctx->cur_member_size   = sizeof(net_st->rooms_data->cur->subsystem_name);
          }
          else if (string_is_equal(p_value, "connectable"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->connectable;
-         }
          else if (string_is_equal(p_value, "is_retroarch"))
-         {
             p_ctx->cur_member_bool   = &net_st->rooms_data->cur->is_retroarch;
-         }
+         else if (string_is_equal(p_value, "player_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->player_count;
+         else if (string_is_equal(p_value, "spectator_count"))
+            p_ctx->cur_member_int    = &net_st->rooms_data->cur->spectator_count;
       }
    }
 
@@ -255,16 +285,16 @@ static bool netplay_json_start_array(void* ctx)
    return true;
 }
 
-static void netplay_rooms_error(void *context,
-      int line, int col, const char* error)
+static void netplay_rooms_err(void *context,
+      int line, int col, const char* err)
 {
-   RARCH_ERR("[netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
-         line, col, error);
+   RARCH_ERR("[Netplay] Error: Invalid JSON at line %d, column %d - %s.\n",
+         line, col, err);
 }
 
 void netplay_rooms_free(void)
 {
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
    if (net_st->rooms_data)
    {
       struct netplay_room *room = net_st->rooms_data->head;
@@ -288,7 +318,7 @@ void netplay_rooms_free(void)
 int netplay_rooms_parse(const char *buf, size_t len)
 {
    struct netplay_json_context ctx;
-   net_driver_state_t         *net_st = networking_state_get_ptr(); 
+   net_driver_state_t         *net_st = networking_state_get_ptr();
 
    memset(&ctx, 0, sizeof(ctx));
 
@@ -300,6 +330,22 @@ int netplay_rooms_parse(const char *buf, size_t len)
    net_st->rooms_data = (struct netplay_rooms*)
       calloc(1, sizeof(*net_st->rooms_data));
 
+   /* NULL-check: the rjson_parse_quick callbacks below
+    * dereference net_st->rooms_data unconditionally in the JSON
+    * member / object-start handlers.  On OOM bail before
+    * invoking the parser - 'return 0' is the existing success
+    * return, but the caller (parse_lobby_json) only iterates
+    * rooms if net_st->rooms_data is non-NULL, so the no-rooms-
+    * available outcome matches the 'no entries in the JSON'
+    * success path.
+    *
+    * The inner per-room callocs in netplay_json_start_object
+    * now handle OOM by transitioning the parser state to
+    * STATE_SKIP_OBJECT for the failed room; parsing continues
+    * for subsequent rooms which may succeed. */
+   if (!net_st->rooms_data)
+      return 0;
+
    rjson_parse_quick(buf, len, &ctx, 0,
          netplay_json_object_member,
          netplay_json_string,
@@ -310,7 +356,7 @@ int netplay_rooms_parse(const char *buf, size_t len)
          NULL /* end_array_handler */,
          netplay_json_boolean,
          NULL /* null handler */,
-         netplay_rooms_error);
+         netplay_rooms_err);
 
    return 0;
 }
@@ -318,7 +364,7 @@ int netplay_rooms_parse(const char *buf, size_t len)
 struct netplay_room* netplay_room_get(int index)
 {
    int                    cur = 0;
-   net_driver_state_t *net_st = networking_state_get_ptr(); 
+   net_driver_state_t *net_st = networking_state_get_ptr();
    struct netplay_room  *room = net_st->rooms_data->head;
 
    if (index < 0)
@@ -340,7 +386,7 @@ int netplay_rooms_get_count(void)
 {
    int count = 0;
    struct netplay_room *room  = NULL;
-   net_driver_state_t *net_st = networking_state_get_ptr(); 
+   net_driver_state_t *net_st = networking_state_get_ptr();
 
    if (!net_st || !net_st->rooms_data)
       return count;
@@ -351,7 +397,6 @@ int netplay_rooms_get_count(void)
    while (room)
    {
       count++;
-
       room = room->next;
    }
 

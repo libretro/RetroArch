@@ -20,18 +20,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* rjson -- streaming JSON parser and writer.
+ *
+ * What it implements: a pull (SAX-style) parser over strings, buffers,
+ * or a user I/O callback, delivering the
+ * element stream through rjson_next with string/double/int accessors
+ * and the callback-driven rjson_parse convenience driver; UTF-8
+ * validation with
+ * configurable handling of invalid input; opt-in extensions
+ * (JavaScript comments, UTF-8 BOM, unescaped control characters,
+ * trailing data - see enum rjson_option); a depth limit; and a
+ * matching writer (rjsonwriter_*) with the same sink choices and
+ * proper string escaping.
+ *
+ * What it does not implement: an in-memory DOM (callers consume the
+ * event stream), JSON5/NaN/Infinity extensions beyond the listed
+ * options, and sorting or pretty-printing beyond the writer's simple
+ * indentation helpers.
+ */
+
 /* The parser is based on Public Domain JSON Parser for C by Christopher Wellons - https://github.com/skeeto/pdjson */
 
 #include <stdio.h>  /* snprintf, vsnprintf */
 #include <stdarg.h> /* va_list */
 #include <string.h> /* memcpy */
-#include <stdint.h> /* int64_t */
+#include <stdint.h> /* int64_t, SIZE_MAX */
 #include <stdlib.h> /* malloc, realloc, atof, atoi */
+#include <limits.h> /* INT_MAX */
 
+/* Ceiling for the parser's growing string buffer and the writer's
+ * in-memory buffer.  Reached in practice only by pathologically large
+ * (and almost certainly malformed) JSON inputs on a 32-bit system,
+ * but having an explicit cap avoids undefined behaviour in the
+ * signed-int arithmetic of the writer and the size_t doubling in the
+ * parser wrapping past SIZE_MAX / 2.  Callers with legitimate giant
+ * payloads should not be using these APIs in the first place --
+ * stream in chunks. */
+#define _RJSON_MAX_SIZE ((size_t)256 * 1024 * 1024)
+
+#include <retro_inline.h> /* INLINE - was reached transitively
+                            * through the stream headers before the
+                            * I/O adapters moved out */
 #include <formats/rjson.h>
+#include <string/rstrtod.h>
 #include <compat/posix_string.h>
-#include <streams/interface_stream.h>
-#include <streams/file_stream.h>
 
 struct _rjson_stack { enum rjson_type type; size_t count; };
 
@@ -58,7 +90,6 @@ struct rjson
    int input_len;
 
    char option_flags;
-   char decimal_sep;
    char error_text[80];
    char inline_string[512];
 
@@ -139,7 +170,23 @@ static bool _rjson_io_input(rjson_t *json)
 static bool _rjson_grow_string(rjson_t *json)
 {
    char *string;
-   size_t new_string_cap = json->string_cap * 2;
+   size_t new_string_cap;
+   /* Bound the doubling so string_cap * 2 can never wrap past
+    * SIZE_MAX.  Pre-patch a pathological input on 32-bit (string_cap
+    * nearing 2 GiB) doubled to 0 and realloc() returned either NULL
+    * (benign) or a 0-byte pointer (heap overflow on next pushchar).
+    * Post-patch we fail cleanly before the arithmetic wrap. */
+   if (json->string_cap > _RJSON_MAX_SIZE / 2)
+   {
+      if (json->string_cap >= _RJSON_MAX_SIZE)
+      {
+         _rjson_error(json, "string token too large");
+         return false;
+      }
+      new_string_cap = _RJSON_MAX_SIZE;
+   }
+   else
+      new_string_cap = json->string_cap * 2;
    if (json->string != json->inline_string)
       string             = (char*)realloc(json->string, new_string_cap);
    else if ((string      = (char*)malloc(new_string_cap)) != NULL)
@@ -163,14 +210,15 @@ static INLINE bool _rjson_pushchar(rjson_t *json, _rjson_char_t c)
 static INLINE bool _rjson_pushchars(rjson_t *json,
       const unsigned char *from, const unsigned char *to)
 {
-   size_t len = json->string_len, new_len = len + (to - from);
    unsigned char* string;
+   size_t _len    = json->string_len;
+   size_t new_len = _len + (to - from);
    while (new_len >= json->string_cap)
       if (!_rjson_grow_string(json))
          return false;
    string = (unsigned char *)json->string;
-   while (len != new_len)
-      string[len++] = *(from++);
+   while (_len != new_len)
+      string[_len++] = *(from++);
    json->string_len = new_len;
    return true;
 }
@@ -455,7 +503,7 @@ static enum rjson_type _rjson_read_string(rjson_t *json)
                case 'n':
                   esc = '\n';
                   goto escape_pushchar;
-               case 'r': 
+               case 'r':
                   if (!(json->option_flags & RJSON_OPTION_IGNORE_STRING_CARRIAGE_RETURN))
                   {
                      esc = '\r';
@@ -573,7 +621,7 @@ static enum rjson_type _rjson_read_number(rjson_t *json)
          goto invalid_number;
       if (*p < '0' || *p > '9')
          goto invalid_number;
-      do 
+      do
       {
          if (++p == end)
             return RJSON_NUMBER;
@@ -909,12 +957,18 @@ void _rjson_setup(rjson_t *json, rjson_io_t io, void *user_data, int input_len)
    json->source_line         = 1;
    json->source_column_p     = json->input_p;
    json->option_flags        = 0;
-   json->decimal_sep         = 0;
 }
 
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size)
 {
-   rjson_t* json = (rjson_t*)malloc(
+   rjson_t* json;
+   /* Clamp io_block_size against negative / tiny / oversized values:
+    * this function is public and can be reached with anything. */
+   if (io_block_size < 16)
+      io_block_size = 16;
+   else if ((size_t)io_block_size > _RJSON_MAX_SIZE)
+      io_block_size = (int)_RJSON_MAX_SIZE;
+   json = (rjson_t*)malloc(
          sizeof(rjson_t) - sizeof(((rjson_t*)0)->input_buf) + io_block_size);
    if (json) _rjson_setup(json, io, user_data, io_block_size);
    return json;
@@ -929,14 +983,14 @@ static int _rjson_buffer_io(void* buf, int len, void *user)
    return len;
 }
 
-rjson_t *rjson_open_buffer(const void *buffer, size_t size)
+rjson_t *rjson_open_buffer(const void *buffer, size_t len)
 {
    rjson_t *json   = (rjson_t *)malloc(sizeof(rjson_t) + sizeof(const char *)*2);
    const char **ud = (const char **)(json + 1);
    if (!json)
       return NULL;
    ud[0] = (const char *)buffer;
-   ud[1] = ud[0] + size;
+   ud[1] = ud[0] + len;
    _rjson_setup(json, _rjson_buffer_io, (void*)ud, sizeof(json->input_buf));
    return json;
 }
@@ -944,36 +998,6 @@ rjson_t *rjson_open_buffer(const void *buffer, size_t size)
 rjson_t *rjson_open_string(const char *string, size_t len)
 {
    return rjson_open_buffer(string, len);
-}
-
-static int _rjson_stream_io(void* buf, int len, void *user)
-{
-   return (int)intfstream_read((intfstream_t*)user, buf, (uint64_t)len);
-}
-
-rjson_t *rjson_open_stream(struct intfstream_internal *stream)
-{
-   /* Allocate an input buffer based on the file size */
-   int64_t size = intfstream_get_size(stream);
-   int io_size  =
-         (size > 1024*1024 ? 4096 :
-         (size >  256*1024 ? 2048 : 1024));
-   return rjson_open_user(_rjson_stream_io, stream, io_size);
-}
-
-static int _rjson_rfile_io(void* buf, int len, void *user)
-{
-   return (int)filestream_read((RFILE*)user, buf, (int64_t)len);
-}
-
-rjson_t *rjson_open_rfile(RFILE *rfile)
-{
-   /* Allocate an input buffer based on the file size */
-   int64_t size = filestream_get_size(rfile);
-   int io_size =
-         (size > 1024*1024 ? 4096 :
-         (size >  256*1024 ? 2048 : 1024));
-   return rjson_open_user(_rjson_rfile_io, rfile, io_size);
 }
 
 void rjson_set_options(rjson_t *json, char rjson_option_flags)
@@ -986,12 +1010,12 @@ void rjson_set_max_depth(rjson_t *json, unsigned int max_depth)
    json->stack_max = max_depth;
 }
 
-const char *rjson_get_string(rjson_t *json, size_t *length)
+const char *rjson_get_string(rjson_t *json, size_t *len)
 {
-   char* str             = (json->string_pass_through 
+   char* str             = (json->string_pass_through
          ? json->string_pass_through : json->string);
-   if (length)
-      *length            = json->string_len;
+   if (len)
+      *len               = json->string_len;
    str[json->string_len] = '\0';
    return str;
 }
@@ -1000,26 +1024,9 @@ double rjson_get_double(rjson_t *json)
 {
    char* str = (json->string_pass_through ? json->string_pass_through : json->string);
    str[json->string_len] = '\0';
-   if (json->decimal_sep != '.')
-   {
-      /* handle locale that uses a non-standard decimal separator */
-      char *p;
-      if (json->decimal_sep == 0)
-      {
-         char test[4];
-         snprintf(test, sizeof(test), "%.1f", 0.0f);
-         json->decimal_sep = test[1];
-      }
-      if (json->decimal_sep != '.' && (p = strchr(str, '.')) != NULL)
-      {
-         double res;
-         *p  = json->decimal_sep;
-         res = atof(str);
-         *p  = '.';
-         return res;
-      }
-   }
-   return atof(str);
+   /* rstrtod reads the '.' the JSON grammar requires in any locale, so
+    * the old sniff-the-separator-and-rewrite-the-buffer dance is gone. */
+   return rstrtod(str, NULL);
 }
 
 int rjson_get_int(rjson_t *json)
@@ -1101,17 +1108,32 @@ enum rjson_type rjson_get_context_type(rjson_t *json)
    return json->stack_top->type;
 }
 
-void rjson_free(rjson_t *json)
+/* Release the two buffers that can outgrow their inline storage.
+ * Split out of rjson_free() because a stack-allocated rjson_t has
+ * the same buffers to release but must not have free() called on
+ * the handle itself. */
+static void _rjson_free_buffers(rjson_t *json)
 {
    if (json->stack != json->inline_stack)
+   {
       free(json->stack);
+      json->stack = json->inline_stack;
+   }
    if (json->string != json->inline_string)
+   {
       free(json->string);
+      json->string = json->inline_string;
+   }
+}
+
+void rjson_free(rjson_t *json)
+{
+   _rjson_free_buffers(json);
    free(json);
 }
 
 static bool _rjson_nop_default(void *context) { return true; }
-static bool _rjson_nop_string(void *context, const char *value, size_t length) { return true; }
+static bool _rjson_nop_string(void *context, const char *value, size_t len) { return true; }
 static bool _rjson_nop_bool(void *context, bool value) { return true; }
 
 enum rjson_type rjson_parse(rjson_t *json, void* context,
@@ -1126,7 +1148,7 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
       bool (*null_handler         )(void *context))
 {
    bool in_object = false;
-   size_t len;
+   size_t _len;
    const char* string;
    if (!object_member_handler) object_member_handler = _rjson_nop_string;
    if (!string_handler       ) string_handler        = _rjson_nop_string;
@@ -1142,16 +1164,16 @@ enum rjson_type rjson_parse(rjson_t *json, void* context,
       switch (rjson_next(json))
       {
          case RJSON_STRING:
-            string = rjson_get_string(json, &len);
+            string = rjson_get_string(json, &_len);
             if (_rJSON_LIKELY(
                   (in_object && (json->stack_top->count & 1) ?
                      object_member_handler : string_handler)
-                     (context, string, len)))
+                     (context, string, _len)))
                continue;
             return RJSON_STRING;
          case RJSON_NUMBER:
-            string = rjson_get_string(json, &len);
-            if (_rJSON_LIKELY(number_handler(context, string, len)))
+            string = rjson_get_string(json, &_len);
+            if (_rJSON_LIKELY(number_handler(context, string, _len)))
                continue;
             return RJSON_NUMBER;
          case RJSON_OBJECT:
@@ -1221,12 +1243,27 @@ bool rjson_parse_quick(const char *string, size_t len, void* context, char optio
          start_object_handler, end_object_handler,
          start_array_handler, end_array_handler,
          boolean_handler, null_handler) == RJSON_DONE)
+   {
+      /* The handle is on the stack, but its string and stack buffers
+       * are not: either outgrows its inline storage onto the heap - a
+       * long string token, or deep nesting - and nothing released
+       * them on the way out.  rjson_free() cannot be used here
+       * because it frees the handle too, so the buffer release is
+       * split out.
+       *
+       * The one caller in the tree parses netplay lobby responses,
+       * so the input is a remote server's and the growth is its
+       * choice, up to _RJSON_MAX_SIZE.  That made this leak per
+       * refresh and sized by whatever the other end sent. */
+      _rjson_free_buffers(&json);
       return true;
+   }
    if (error_handler)
       error_handler(context,
             (int)rjson_get_source_line(&json),
             (int)rjson_get_source_column(&json),
             rjson_get_error(&json));
+   _rjson_free_buffers(&json);
    return false;
 }
 
@@ -1265,31 +1302,28 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data)
    return writer;
 }
 
-static int _rjsonwriter_stream_io(const void* buf, int len, void *user)
-{
-   return (int)intfstream_write((intfstream_t*)user, buf, (uint64_t)len);
-}
-
-rjsonwriter_t *rjsonwriter_open_stream(struct intfstream_internal *stream)
-{
-   return rjsonwriter_open_user(_rjsonwriter_stream_io, stream);
-}
-
-static int _rjsonwriter_rfile_io(const void* buf, int len, void *user)
-{
-   return (int)filestream_write((RFILE*)user, buf, (int64_t)len);
-}
-
-rjsonwriter_t *rjsonwriter_open_rfile(RFILE *rfile)
-{
-   return rjsonwriter_open_user(_rjsonwriter_rfile_io, rfile);
-}
-
 static int _rjsonwriter_memory_io(const void* buf, int len, void *user)
 {
    rjsonwriter_t *writer = (rjsonwriter_t *)user;
    bool is_append        = (buf != writer->buf);
-   int new_cap           = writer->buf_num + (is_append ? len : 0) + 512;
+   size_t append_len     = (is_append ? (size_t)len : 0);
+   size_t target;
+   int    new_cap;
+   /* Detect the int-overflow pre-patch, where buf_num + len + 512
+    * wrapped past INT_MAX and new_cap went negative.  The subsequent
+    * "new_cap > buf_cap" comparison then misbehaved and memcpy wrote
+    * past the existing allocation on a post-overflow buffer that
+    * hadn't been grown.  Do the arithmetic in size_t and cap at
+    * _RJSON_MAX_SIZE (which also fits comfortably in int). */
+   if (len < 0 || (size_t)writer->buf_num > _RJSON_MAX_SIZE - append_len
+                                           - 512)
+   {
+      if (!writer->error_text)
+         writer->error_text = "output buffer too large";
+      return 0;
+   }
+   target = (size_t)writer->buf_num + append_len + 512;
+   new_cap = (int)target;
    if (!writer->final_flush && (is_append || new_cap > writer->buf_cap))
    {
       bool can_realloc   = (writer->buf != writer->inline_buf);
@@ -1375,7 +1409,13 @@ const char *rjsonwriter_get_error(rjsonwriter_t *writer)
 
 void rjsonwriter_raw(rjsonwriter_t *writer, const char *buf, int len)
 {
-   if (writer->buf_num + len > writer->buf_cap)
+   /* Guard against negative len and against buf_num+len signed
+    * overflow.  A caller that somehow passes a huge len would
+    * pre-patch compute a negative sum, skip the flush, then memcpy
+    * past the existing buffer below. */
+   if (len < 0)
+      return;
+   if ((size_t)writer->buf_num + (size_t)len > (size_t)writer->buf_cap)
       rjsonwriter_flush(writer);
    if (len == 1)
    {
@@ -1423,6 +1463,14 @@ void rjsonwriter_rawf(rjsonwriter_t *writer, const char *fmt, ...)
       return;
    }
    rjsonwriter_flush(writer);
+   /* Guard signed-int overflow on newcap: buf_num + need + 1 could
+    * wrap past INT_MAX for a single very large formatted value. */
+   if ((size_t)writer->buf_num + (size_t)need + 1 > _RJSON_MAX_SIZE)
+   {
+      if (!writer->error_text)
+         writer->error_text = "output buffer too large";
+      return;
+   }
    if (writer->buf_num + need >= writer->buf_cap)
    {
       int newcap   = writer->buf_num + need + 1;

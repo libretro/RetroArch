@@ -80,7 +80,7 @@ static int16_t hidpad_snesusb_get_axis(void *data, unsigned axis)
    if (!device || axis >= 2)
       return 0;
 
-   val = device->data[1 + axis];
+   val = device->data[axis];
    val = (val << 8) - 0x8000;
 
    if (abs(val) > 0x1000)

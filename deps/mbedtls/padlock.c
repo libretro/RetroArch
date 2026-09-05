@@ -39,6 +39,7 @@
 
 #ifndef asm
 #define asm __asm
+#define MBEDTLS_ASM_IS_OURS
 #endif
 
 #if defined(MBEDTLS_HAVE_X86)
@@ -58,10 +59,10 @@ int mbedtls_padlock_has_support( int feature )
              "cpuid                     \n\t"
              "cmpl  $0xC0000001, %%eax  \n\t"
              "movl  $0, %%edx           \n\t"
-             "jb    unsupported         \n\t"
+             "jb    1f                  \n\t"
              "movl  $0xC0000001, %%eax  \n\t"
              "cpuid                     \n\t"
-             "unsupported:              \n\t"
+             "1:                        \n\t"
              "movl  %%edx, %1           \n\t"
              "movl  %2, %%ebx           \n\t"
              : "=m" (ebx), "=m" (edx)
@@ -166,5 +167,11 @@ int mbedtls_padlock_xcryptcbc( mbedtls_aes_context *ctx,
 }
 
 #endif /* MBEDTLS_HAVE_X86 */
+
+/* Only take back what we defined; a system header may own it. */
+#ifdef MBEDTLS_ASM_IS_OURS
+#undef asm
+#undef MBEDTLS_ASM_IS_OURS
+#endif
 
 #endif /* MBEDTLS_PADLOCK_C */

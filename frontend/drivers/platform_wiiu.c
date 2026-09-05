@@ -132,6 +132,8 @@ static void frontend_wiiu_get_env_settings(int *argc, char *argv[],
          "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_CORE],
          "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], g_defaults.dirs[DEFAULT_DIR_CORE],
+         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS], g_defaults.dirs[DEFAULT_DIR_PORT],
          "thumbnails", sizeof(g_defaults.dirs[DEFAULT_DIR_THUMBNAILS]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_OVERLAY], g_defaults.dirs[DEFAULT_DIR_PORT],
@@ -165,8 +167,6 @@ static void frontend_wiiu_init(void *data)
    verbosity_enable();
    DEBUG_LINE();
 }
-
-static int frontend_wiiu_get_rating(void) { return 10; }
 
 enum frontend_architecture frontend_wiiu_get_arch(void)
 {
@@ -252,7 +252,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
       }
       else
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          param->argc    = 2;
          param->argv[1] = arg;
@@ -266,7 +266,7 @@ static void frontend_wiiu_exec(const char *path, bool should_load_content)
 
    if (HBL_loadToMemory(path, (u32)arg - (u32)param) < 0)
    {
-      RARCH_ERR("Failed to load core\n");
+      RARCH_ERR("Failed to load core.\n");
    }
    else
    {
@@ -338,13 +338,10 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    frontend_wiiu_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_wiiu_get_rating,
    NULL,                         /* content_loaded */
    frontend_wiiu_get_arch,       /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_wiiu_parse_drive_list,
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state       */
@@ -353,14 +350,13 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    NULL,                         /* detach_console                 */
    NULL,                         /* get_lakka_version              */
    NULL,                         /* set_screen_brightness          */
-   NULL,                         /* watch_path_for_changes         */
-   NULL,                         /* check_for_path_changes         */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name             */
    NULL,                         /* get_user_language              */
    NULL,                         /* is_narrator_running            */
    NULL,                         /* accessibility_speak            */
    NULL,                         /* set_gamemode                   */
+   NULL, /* get_display_type */
    "wiiu",                       /* ident                          */
    NULL                          /* get_video_driver               */
 };

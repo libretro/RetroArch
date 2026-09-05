@@ -352,6 +352,8 @@ static INLINE bool isagain(int val)
    return (val == SCE_NET_ERROR_EAGAIN) || (val == SCE_NET_ERROR_EWOULDBLOCK);
 #elif defined(WIIU)
    return (val == -1) && (socketlasterr() == SO_SUCCESS || socketlasterr() == SO_EWOULDBLOCK);
+#elif defined(GEKKO)
+   return (-val == EAGAIN);
 #else
    return (val < 0) && (errno == EAGAIN || errno == EWOULDBLOCK);
 #endif
@@ -367,6 +369,8 @@ static INLINE bool isinprogress(int val)
    return (val == SCE_NET_ERROR_EINPROGRESS);
 #elif defined(WIIU)
    return (val == -1) && (socketlasterr() == SO_EINPROGRESS);
+#elif defined(GEKKO)
+   return (-val == EINPROGRESS);
 #else
    return (val < 0) && (errno == EINPROGRESS);
 #endif

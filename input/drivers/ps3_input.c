@@ -148,8 +148,6 @@ static void ps3_end_camera(ps3_input_t *ps3)
 
 static int ps3_setup_camera(ps3_input_t *ps3)
 {
-   int error = 0;
-
    cameraGetType(0, &ps3->type);
    if (ps3->type == CAM_TYPE_PLAYSTATION_EYE)
    {
@@ -163,24 +161,20 @@ static int ps3_setup_camera(ps3_input_t *ps3)
       {
          case CAMERA_ERRO_DOUBLE_OPEN:
             cameraClose(0);
-            error                = 1;
-            break;
-         case CAMERA_ERRO_NO_DEVICE_FOUND:
-            error                = 1;
-            break;
+            return 1;
          case 0:
             ps3->camread.buffer  = ps3->camInf.buffer;
             ps3->camread.version = 0x0100;
             ps3->cam_buf         = (u8 *)(u64)ps3->camread.buffer;
             break;
+         case CAMERA_ERRO_NO_DEVICE_FOUND:
          default:
-            error                = 1;
-            break;
+            return 1;
       }
    }
    else
-      error = 1;
-   return error;
+      return 1;
+   return 0;
 }
 
 #if 0
@@ -296,6 +290,13 @@ static int ps3_init_spurs(ps3_input_t *ps3)
       return ret;
 
    ps3->threads = (sys_spu_thread_t *)malloc(sizeof(sys_spu_thread_t) * nthread);
+
+   /* NULL-check: spursGetSpuThreadId writes into ps3->threads.
+    * Return -1 to match the pattern of the malloc-failure branch
+    * in ps3_init_gem below.  ps3_end_spurs (the cleanup path)
+    * free()s ps3->threads via free(NULL) which is a no-op. */
+   if (!ps3->threads)
+      return -1;
 
    if ((ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread)))
       return ret;

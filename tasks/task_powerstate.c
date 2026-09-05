@@ -67,7 +67,7 @@ static void task_powerstate_handler(retro_task_t *task)
    }
 
    task_set_data(task, powerstate);
-   task_set_finished(task, true);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 void task_push_get_powerstate(void)
@@ -77,8 +77,8 @@ void task_push_get_powerstate(void)
 
    if (!task)
       return;
-   state = (powerstate_t*)calloc(1, sizeof(*state));
-   if (!state)
+
+   if (!(state = (powerstate_t*)calloc(1, sizeof(*state))))
    {
       free(task);
       return;
@@ -88,7 +88,7 @@ void task_push_get_powerstate(void)
    task->state    = state;
    task->handler  = task_powerstate_handler;
    task->callback = task_powerstate_cb;
-   task->mute     = true;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
 
    task_queue_push(task);
 }

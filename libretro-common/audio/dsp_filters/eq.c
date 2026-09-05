@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <retro_inline.h>
@@ -34,11 +35,17 @@
 struct eq_data
 {
    fft_t *fft;
+   /* save, block, filter and fftblock are views into this one block. */
+   uint8_t *arena;
    float *save;
    float *block;
    fft_complex_t *filter;
    fft_complex_t *fftblock;
    float buffer[8 * 1024];
+   /* Scratch for the int16 bridge: converted float input (one block at a
+    * time) and the s16 image of the float output block. */
+   float scratch_in[8 * 1024];
+   int16_t buffer_i16[8 * 1024];
    unsigned block_size;
    unsigned block_ptr;
 };
@@ -56,10 +63,7 @@ static void eq_free(void *data)
       return;
 
    fft_free(eq->fft);
-   free(eq->save);
-   free(eq->block);
-   free(eq->fftblock);
-   free(eq->filter);
+   free(eq->arena);
    free(eq);
 }
 
@@ -116,6 +120,70 @@ static void eq_process(void *data, struct dspfilter_output *output,
          eq->block_ptr   = 0;
       }
    }
+}
+
+/* int16 entry point: bridge through the unmodified float eq_process so an
+ * int16 chain containing the equalizer stays on the deterministic s16 path.
+ * A fixed-point FFT would be large and precision-losing for narrow benefit,
+ * so the game signal is converted here (s16 <-> the host's normalized [-1,1]
+ * float domain) around the existing FFT overlap-add convolution.  Input is
+ * fed one block at a time so a single eq_process call can never emit more
+ * than one block into eq->buffer, and each emitted block is converted (round
+ * half away from zero, saturate) into eq->buffer_i16 before the next call
+ * overwrites eq->buffer.  Filter state persists across the per-block calls,
+ * so the result matches a single call over the whole input. */
+static void eq_process_i16(void *data, struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   struct eq_data *eq  = (struct eq_data*)data;
+   const int16_t *in   = input->samples;
+   unsigned remaining  = input->frames;
+   unsigned out_frames = 0;
+   const unsigned cap  = (unsigned)(sizeof(eq->buffer_i16) / (2 * sizeof(int16_t)));
+
+   output->samples     = eq->buffer_i16;
+
+   while (remaining)
+   {
+      unsigned j, kf;
+      struct dspfilter_input  fin;
+      struct dspfilter_output fout;
+      unsigned chunk = remaining;
+
+      if (chunk > eq->block_size)
+         chunk = eq->block_size;
+
+      for (j = 0; j < chunk * 2; j++)
+         eq->scratch_in[j] = (float)in[j] * (1.0f / 32768.0f);
+
+      fin.samples = eq->scratch_in;
+      fin.frames  = chunk;
+      eq_process(eq, &fout, &fin);
+
+      for (kf = 0; kf < fout.frames && out_frames < cap; kf++, out_frames++)
+      {
+         int32_t v;
+         float l = fout.samples[2 * kf + 0];
+         float r = fout.samples[2 * kf + 1];
+
+         v = (l >= 0.0f) ? (int32_t)(l * 32768.0f + 0.5f)
+                         : (int32_t)(l * 32768.0f - 0.5f);
+         if      (v >  32767) v =  32767;
+         else if (v < -32768) v = -32768;
+         eq->buffer_i16[2 * out_frames + 0] = (int16_t)v;
+
+         v = (r >= 0.0f) ? (int32_t)(r * 32768.0f + 0.5f)
+                         : (int32_t)(r * 32768.0f - 0.5f);
+         if      (v >  32767) v =  32767;
+         else if (v < -32768) v = -32768;
+         eq->buffer_i16[2 * out_frames + 1] = (int16_t)v;
+      }
+
+      in        += chunk * 2;
+      remaining -= chunk;
+   }
+
+   output->frames = out_frames;
 }
 
 static int gains_cmp(const void *a_, const void *b_)
@@ -222,7 +290,7 @@ static void create_filter(struct eq_data *eq, unsigned size_log2,
       time_filter[i] = tmp;
    }
 
-   /* Apply a window to smooth out the frequency repsonse. */
+   /* Apply a window to smooth out the frequency response. */
    for (i = 0; i < (int)eq->block_size; i++)
    {
       /* Kaiser window. */
@@ -256,10 +324,16 @@ end:
    free(time_filter);
 }
 
+/* Region spacing inside the arena, in bytes. */
+#define EQ_ARENA_ALIGN 64
+#define EQ_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + EQ_ARENA_ALIGN - 1) / EQ_ARENA_ALIGN) * EQ_ARENA_ALIGN)
+
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    int size_log2;
+   size_t save_len, block_len, fftblock_len, filter_len;
    float beta;
    float *frequencies, *gain;
    unsigned num_freq, num_gain, i, size;
@@ -300,17 +374,27 @@ static void *eq_init(const struct dspfilter_info *info,
 
    eq->block_size = size;
 
-   eq->save       = (float*)calloc(    size, 2 * sizeof(*eq->save));
-   eq->block      = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
-   eq->fftblock   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
-   eq->filter     = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
+   /* The overlap-save state, the input block and the two FFT-domain
+    * blocks come out of one zeroed arena, each region starting on a
+    * 64-byte boundary. */
+   save_len       = EQ_ARENA_NEXT(0,        size * 2 * sizeof(*eq->save));
+   block_len      = EQ_ARENA_NEXT(save_len, 2 * size * 2 * sizeof(*eq->block));
+   fftblock_len   = EQ_ARENA_NEXT(block_len, 2 * size * sizeof(*eq->fftblock));
+   filter_len     = EQ_ARENA_NEXT(fftblock_len, 2 * size * sizeof(*eq->filter));
+   if ((eq->arena = (uint8_t*)calloc(1, filter_len)))
+   {
+      eq->save     = (float*)(eq->arena);
+      eq->block    = (float*)(eq->arena + save_len);
+      eq->fftblock = (fft_complex_t*)(eq->arena + block_len);
+      eq->filter   = (fft_complex_t*)(eq->arena + fftblock_len);
+   }
 
    /* Use an FFT which is twice the block size with zero-padding
     * to make circular convolution => proper convolution.
     */
    eq->fft        = fft_new(size_log2 + 1);
 
-   if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
+   if (!eq->fft || !eq->arena)
       goto error;
 
    create_filter(eq, size_log2, gains, num_gain, beta, filter_path);
@@ -334,6 +418,8 @@ static const struct dspfilter_implementation eq_plug = {
    DSPFILTER_API_VERSION,
    "Linear-Phase FFT Equalizer",
    "eq",
+
+   eq_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
    out_file_path[0] = '\0';
 
    /* Parse arguments */
-   if ((argc > 1) && !string_is_empty(argv[1]))
+   if ((argc > 1) && (argv[1] && *argv[1]))
    {
       valid_args = true;
 
@@ -94,11 +94,11 @@ int main(int argc, char *argv[])
    }
 
    /* Get input file path */
-   if (valid_args && (argc > 2) && !string_is_empty(argv[2]))
+   if (valid_args && (argc > 2) && (argv[2] && *argv[2]))
    {
       strlcpy(in_file_path, argv[2], sizeof(in_file_path));
       path_resolve_realpath(in_file_path, sizeof(in_file_path), true);
-      valid_args = valid_args && !string_is_empty(in_file_path);
+      valid_args = valid_args && *in_file_path;
    }
    else
       valid_args = false;
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
    }
 
    /* Get output file path, if specified */
-   if ((argc > 3) && !string_is_empty(argv[3]))
+   if ((argc > 3) && (argv[3] && *argv[3]))
    {
       strlcpy(out_file_path, argv[3], sizeof(out_file_path));
       path_resolve_realpath(out_file_path, sizeof(out_file_path), true);
@@ -131,17 +131,17 @@ int main(int argc, char *argv[])
    /* If we are compressing/extracting and an
     * output file was not specified, generate a
     * temporary output file path */
-   if ((action != RZIP_ACTION_QUERY) &&
-       string_is_empty(out_file_path))
+   if (   (action != RZIP_ACTION_QUERY) 
+       && !*out_file_path)
    {
       const char *in_file_name = path_basename(in_file_path);
-      char in_file_dir[PATH_MAX_LENGTH];
+      char in_file_dir[DIR_MAX_LENGTH];
 
       in_file_dir[0] = '\0';
 
       fill_pathname_parent_dir(in_file_dir, in_file_path, sizeof(in_file_dir));
 
-      if (string_is_empty(in_file_name))
+      if (!in_file_name || !*in_file_name)
       {
          fprintf(stderr, "ERROR: Invalid input file: %s\n", in_file_path);
          goto end;
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
          rand_str(tmp_str, sizeof(tmp_str) - 1);
          tmp_str[0] = '.';
 
-         if (!string_is_empty(in_file_dir))
+         if (*in_file_dir)
             fill_pathname_join_special(out_file_path, in_file_dir,
                   tmp_str, sizeof(out_file_path));
          else
@@ -243,7 +243,13 @@ int main(int argc, char *argv[])
 
       printf("WARNING: Output file already exists: %s\n", out_file_path);
       printf("         Overwrite? [Y/n]: ");
-      fgets(reply, sizeof(reply), stdin);
+      /* Ignore the fgets return value intentionally -- on EOF or
+       * error we fall through to the reply[0] check below, which
+       * fails the 'Y' comparison (reply[0] stays '\0' from the
+       * initialisation above) and bails out safely without
+       * overwriting.  Cast to void to silence -Wunused-result on
+       * GCC/glibc, which attaches warn_unused_result to fgets. */
+      (void)!fgets(reply, sizeof(reply), stdin);
       if (reply[0] != 'Y')
          goto end;
    }

@@ -909,27 +909,17 @@ bool _FAT_directory_addEntry (PARTITION* partition, DIR_ENTRY* entry, uint32_t d
 	int lfnLen;
 
 	// Remove trailing spaces
-	for (i = strlen (entry->filename) - 1; (i >= 0) && (entry->filename[i] == ' '); --i) {
+	for (i = strlen (entry->filename) - 1; (i >= 0) && (entry->filename[i] == ' '); --i)
 		entry->filename[i] = '\0';
-	}
-#if 0
-	// Remove leading spaces
-	for (i = 0; entry->filename[i] == ' '; ++i) ;
-	if (i > 0) {
-		memmove (entry->filename, entry->filename + i, strlen (entry->filename + i));
-	}
-#endif
 
 	// Make sure the filename is not 0 length
-	if (strnlen (entry->filename, NAME_MAX) < 1) {
+	if (strnlen (entry->filename, NAME_MAX) < 1)
 		return false;
-	}
 
 	// Make sure the filename is at least a valid LFN
 	lfnLen = _FAT_directory_lfnLength (entry->filename);
-	if (lfnLen < 0) {
+	if (lfnLen < 0)
 		return false;
-	}
 
 	// Remove junk in filename
 	i = strlen (entry->filename);
@@ -1108,17 +1098,29 @@ void _FAT_directory_entryStat (PARTITION* partition, DIR_ENTRY* entry, struct st
 		0,
 		u8array_to_u16 (entry->entryData, DIR_ENTRY_aDate)
 	);
+#ifdef st_atime
+	st->st_atim.tv_nsec = 0;
+#else
 	st->st_spare1 = 0;
+#endif
 	st->st_mtime = _FAT_filetime_to_time_t (
 		u8array_to_u16 (entry->entryData, DIR_ENTRY_mTime),
 		u8array_to_u16 (entry->entryData, DIR_ENTRY_mDate)
 	);
+#ifdef st_mtime
+	st->st_mtim.tv_nsec = 0;
+#else
 	st->st_spare2 = 0;
+#endif
 	st->st_ctime = _FAT_filetime_to_time_t (
 		u8array_to_u16 (entry->entryData, DIR_ENTRY_cTime),
 		u8array_to_u16 (entry->entryData, DIR_ENTRY_cDate)
 	);
+#ifdef st_ctime
+	st->st_ctim.tv_nsec = 0;
+#else
 	st->st_spare3 = 0;
+#endif
 	st->st_blksize = partition->bytesPerSector;				// Prefered file I/O block size
 	st->st_blocks = (st->st_size + partition->bytesPerSector - 1) / partition->bytesPerSector;	// File size in blocks
 	st->st_spare4[0] = 0;

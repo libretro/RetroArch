@@ -1,0 +1,4 @@
+__pycache__
+crowdin-cli.jar
+*.h
+*.json

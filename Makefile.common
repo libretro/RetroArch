@@ -15,7 +15,9 @@ ifeq ($(HAVE_NOUNUSED_VARIABLE), 1)
    DEF_FLAGS += $(NOUNUSED_VARIABLE_CFLAGS)
 endif
 
-ifeq ($(HAVE_CXX11), 1)
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += $(CXX17_CFLAGS)
+else ifeq ($(HAVE_CXX11), 1)
    CXXFLAGS += $(CXX11_CFLAGS)
 endif
 
@@ -59,8 +61,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    DEFINES += -DHAVE_LIBRETRODB
 endif
 
-ifeq ($(HAVE_VITA2D), 1)
-   DEFINES += -DHAVE_VITA2D
+ifeq ($(HAVE_GXM), 1)
+   DEFINES += -DHAVE_GXM
 endif
 
 ifeq ($(HAVE_DYLIB), 1)
@@ -131,26 +133,26 @@ ifneq ($(findstring Darwin,$(OS)),)
    ARCHFLAGS=
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
-      MINVERFLAGS = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
    else ifeq ($(HAVE_METAL),1)
-      MINVERFLAGS = -mmacosx-version-min=10.13 -stdlib=libc++  # macOS  (Metal, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.13 # macOS  (Metal, x86 64bit)
    else ifeq ($(shell uname -p),powerpc)
       MINVERFLAGS = -mmacosx-version-min=10.5  # macOSX (PowerPC 32-bit)
    else ifeq ($(shell uname -m),i386)
       MINVERFLAGS = -mmacosx-version-min=10.6  # macOSX (OpenGL, x86 32bit)
    else
-      MINVERFLAGS = -mmacosx-version-min=10.7 -stdlib=libc++ # macOSX (OpenGL, x86 64bit)
+      MINVERFLAGS = -mmacosx-version-min=10.7 # macOSX (OpenGL, x86 64bit)
    endif
 
 	# Build for a specific architecture when ARCH is defined as a switch
    ifeq ($(ARCH),arm64)
-      MINVERFLAGS  = -mmacosx-version-min=10.15 -stdlib=libc++ # macOS  (Metal, ARM 64bit)
+      MINVERFLAGS  = -mmacosx-version-min=10.15 # macOS  (Metal, ARM 64bit)
       ARCHFLAGS    = -arch arm64
    else ifeq ($(ARCH),x86_64)
       ifeq ($(HAVE_METAL),1)
-         MINVERFLAGS  = -mmacosx-version-min=10.13 -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.13
       else
-         MINVERFLAGS  = -mmacosx-version-min=10.7  -stdlib=libc++
+         MINVERFLAGS  = -mmacosx-version-min=10.7
       endif
       ARCHFLAGS       = -arch x86_64
    else ifeq ($(ARCH),x86)
@@ -230,8 +232,9 @@ ifneq ($(GIT_VERSION),)  # Enable version_git.o?
 endif
 
 # General object files
-ifeq ($(HAVE_DR_MP3), 1)
-   DEFINES += -DHAVE_DR_MP3
+ifeq ($(HAVE_RMP3), 1)
+   DEFINES += -DHAVE_RMP3
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
 endif
 
 OBJ += frontend/frontend_driver.o \
@@ -240,26 +243,32 @@ OBJ += frontend/frontend_driver.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
+       record/drivers/record_wav.o \
        command.o \
        msg_hash.o \
-       midi_driver.o \
-       location_driver.o \
        intl/msg_hash_us.o \
        $(LIBRETRO_COMM_DIR)/queues/task_queue.o \
        tasks/task_content.o
 
 ifeq ($(HAVE_PATCH), 1)
    DEFINES += -DHAVE_PATCH
-	OBJ += tasks/task_patch.o
+   OBJ     += tasks/task_patch.o
+   OBJ     += tasks/patch_stream.o
+   ifeq ($(HAVE_XDELTA), 1)
+      DEFINES += -DHAVE_XDELTA
+      OBJ     += $(LIBRETRO_COMM_DIR)/encodings/encoding_vcdiff.o
+   endif
 endif
 
 OBJ += \
+       save.o \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
+       tasks/task_nbio_slice.o \
+       tasks/task_content_prefetch.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
-       tasks/task_manual_content_scan.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
@@ -275,39 +284,33 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
+       $(LIBRETRO_COMM_DIR)/file/file_watch.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
-       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o \
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_hybrid.o
+
+ifeq ($(ANDROID), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_saf.o
+endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
+       $(LIBRETRO_COMM_DIR)/string/rstrtod.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.o
+       $(LIBRETRO_COMM_DIR)/memmap/memcpy_nt.o
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
        $(LIBRETRO_COMM_DIR)/lists/nested_list.o \
        $(LIBRETRO_COMM_DIR)/queues/generic_queue.o
 
-ifneq ($(findstring Linux,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.o
-endif
-ifneq ($(findstring Win32,$(OS)),)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.o
-endif
-ifneq ($(findstring BSD,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
-else ifneq ($(findstring Darwin,$(OS)),)
-	OBJ += $(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.o
-endif
-
 OBJ += \
-       $(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.o \
        $(LIBRETRO_COMM_DIR)/file/file_path.o \
        $(LIBRETRO_COMM_DIR)/file/file_path_io.o \
        file_path_special.o \
@@ -319,7 +322,6 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
-       gfx/gfx_thumbnail_path.o \
        gfx/gfx_thumbnail.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
@@ -328,7 +330,6 @@ OBJ += \
 
 ifeq ($(HAVE_MICROPHONE), 1)
    DEFINES += -DHAVE_MICROPHONE
-   OBJ += audio/microphone_driver.o
 endif
 
 ifeq ($(HAVE_REWIND), 1)
@@ -337,13 +338,12 @@ OBJ     += state_manager.o
 endif
 
 OBJ += \
-       gfx/drivers_font_renderer/bitmapfont.o \
-       gfx/drivers_font_renderer/bitmapfont_10x10.o \
-       gfx/drivers_font_renderer/bitmapfont_6x10.o \
+       gfx/bitmapfont.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
+       $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.o \
        $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.o
 
@@ -361,6 +361,7 @@ OBJ += \
        core_backup.o \
        core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
+	$(LIBRETRO_COMM_DIR)/file/config_file_io.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
        disk_index_file.o
@@ -395,20 +396,25 @@ OBJ     += $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o
+OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.o
 
 ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
    DEFINES += -DHAVE_NEAREST_RESAMPLER
    OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o
+   OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler_int16.o
 endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
+       $(LIBRETRO_COMM_DIR)/memory/mem_stats.o \
+       $(LIBRETRO_COMM_DIR)/memory/mempool.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
        manual_content_scan.o \
+       tasks/task_database.o \
        disk_control_interface.o
 
 ifeq ($(HAVE_CONFIGFILE), 1)
@@ -429,6 +435,20 @@ endif
 
 ifeq ($(HAVE_BSV_MOVIE), 1)
    DEFINES += -DHAVE_BSV_MOVIE
+   OBJ += input/bsv/bsvmovie.o
+endif
+
+# The MessagePack encoder is shared: the database stores its records
+# with it and the BSV movie format writes its frames with it, so it is
+# linked when either is built rather than only with the database.
+ifneq ($(filter 1,$(HAVE_LIBRETRODB) $(HAVE_BSV_MOVIE)),)
+   OBJ += libretro-db/rmsgpack.o \
+          libretro-db/rmsgpack_dom.o
+endif
+
+ifeq ($(HAVE_STATESTREAM), 1)
+   DEFINES += -DHAVE_STATESTREAM
+   OBJ += input/bsv/uint32s_index.o
 endif
 
 ifeq ($(HAVE_RUNAHEAD), 1)
@@ -439,6 +459,7 @@ endif
 ifeq ($(HAVE_CC_RESAMPLER), 1)
    DEFINES += -DHAVE_CC_RESAMPLER
    OBJ += audio/drivers_resampler/cc_resampler.o
+   OBJ += audio/drivers_resampler/cc_resampler_int16.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/drivers_resampler/cc_resampler_neon.o
@@ -454,9 +475,9 @@ ifneq ($(HAVE_GETOPT_LONG), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_getopt.o
 endif
 
-ifneq ($(HAVE_STRCASESTR), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.o
-endif
+# Always built: compat_strcasestr is used by name rather than as a
+# fallback for a missing C library function.
+OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.o
 
 ifneq ($(HAVE_STRL), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strl.o
@@ -495,29 +516,24 @@ endif
 
 ifeq ($(HAVE_QT), 1)
    OBJ += ui/drivers/ui_qt.o \
-          ui/drivers/qt/gridview.o \
-          ui/drivers/qt/qt_dialogs.o \
-          ui/drivers/qt/qt_widgets.o \
-          ui/drivers/qt/qt_playlist.o \
-          ui/drivers/qt/qt_downloads.o
-    ifeq ($(HAVE_MENU), 1)
-       OBJ += ui/drivers/qt/qt_options.o
-    endif
+          ui/drivers/ui_qt_widgets.o
 
    MOC_HEADERS += ui/drivers/ui_qt.h \
-                  ui/drivers/qt/ui_qt_load_core_window.h \
-                  ui/drivers/qt/gridview.h \
-                  ui/drivers/qt/qt_dialogs.h \
-                  ui/drivers/qt/qt_widgets.h
-   ifeq ($(HAVE_MENU), 1)
-      MOC_HEADERS += ui/drivers/qt/qt_options.h
-   endif
+                  ui/drivers/ui_qt_widgets.h
 
    DEFINES += -DHAVE_MAIN
-   DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS) $(QT5CONCURRENT_CFLAGS) $(QT5NETWORK_CFLAGS)
+ifeq ($(HAVE_QT6), 1)
+   CXXFLAGS += -DQT_DISABLE_DEPRECATED_BEFORE=0x060000 $(QT6CORE_CFLAGS) $(QT6GUI_CFLAGS) $(QT6WIDGETS_CFLAGS)
+   #DEF_FLAGS += $(QT6WEBENGINE_CFLAGS)
+   LIBS += $(QT6CORE_LIBS) $(QT6GUI_LIBS) $(QT6WIDGETS_LIBS)
+   #LIBS += $(QT6WEBENGINE_LIBS)
+else
+   DEF_FLAGS += $(QT5CORE_CFLAGS) $(QT5GUI_CFLAGS) $(QT5WIDGETS_CFLAGS)
    #DEF_FLAGS += $(QT5WEBENGINE_CFLAGS)
-   LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS) $(QT5CONCURRENT_LIBS) $(QT5NETWORK_LIBS)
+   LIBS += $(QT5CORE_LIBS) $(QT5GUI_LIBS) $(QT5WIDGETS_LIBS)
    #LIBS += $(QT5WEBENGINE_LIBS)
+endif
+
    NEED_CXX_LINKER = 1
 
    ifneq ($(findstring Linux,$(OS)),)
@@ -541,15 +557,13 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    OBJ += libretro-db/bintree.o \
           libretro-db/libretrodb.o \
           libretro-db/query.o \
-          libretro-db/rmsgpack.o \
-          libretro-db/rmsgpack_dom.o \
           database_info.o \
-          tasks/task_database.o \
           tasks/task_database_cue.o
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += menu/menu_explore.o \
-             tasks/task_menu_explore.o
+             tasks/task_menu_explore.o \
+             tasks/task_database_info.o
    endif
 endif
 
@@ -709,6 +723,7 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/ripemd160.o \
                      deps/mbedtls/rsa.o \
                      deps/mbedtls/sha1.o \
+                     deps/mbedtls/sha_alt.o \
                      deps/mbedtls/sha256.o \
                      deps/mbedtls/sha512.o \
                      deps/mbedtls/threading.o \
@@ -737,7 +752,8 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
    OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
 else ifeq ($(HAVE_SSL), 1)
    DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS)
+   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -758,6 +774,9 @@ ifeq ($(HAVE_EMSCRIPTEN), 1)
    ifeq ($(HAVE_RWEBAUDIO), 1)
       OBJ += audio/drivers/rwebaudio.o
    endif
+   ifeq ($(HAVE_AUDIOWORKLET), 1)
+      OBJ += audio/drivers/audioworklet.o
+   endif
 endif
 
 ifeq ($(HAVE_BLUETOOTH), 1)
@@ -772,6 +791,7 @@ endif
 ifeq ($(HAVE_LAKKA), 1)
    OBJ += network/drivers_wifi/connmanctl.o
    OBJ += misc/cpufreq/cpufreq.o
+   LIBS += -lsystemd
 endif
 
 ifeq ($(HAVE_WIFI), 1)
@@ -787,17 +807,17 @@ ifeq ($(HAVE_COREAUDIO), 1)
    DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
    HAVE_COREAUDIO_LIBS = 1
-endif
-
-ifeq ($(HAVE_COREAUDIO3), 1)
-   DEFINES += -DHAVE_COREAUDIO3
-   OBJ += audio/drivers/coreaudio3.o
-   HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolBox -framework AVFoundation
+   LIBS += -framework AudioToolbox
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
+endif
+
+ifeq ($(HAVE_CORELOCATION), 1)
+   DEFINES += -DHAVE_CORELOCATION
+   OBJ     += location/drivers/corelocation.o
+   LIBS    += -framework CoreLocation
 endif
 
 ifeq ($(HAVE_CORETEXT), 1)
@@ -817,18 +837,11 @@ endif
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += audio/drivers/ctr_csnd_audio.o \
           audio/drivers/ctr_dsp_audio.o
-ifeq ($(HAVE_THREADS), 1)
-   OBJ += audio/drivers/ctr_dsp_thread_audio.o
-endif
 endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o \
           audio/common/alsa.o
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/alsa.o
-   endif
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
@@ -838,16 +851,6 @@ ifeq ($(HAVE_ALSA), 1)
       endif
    endif
 
-   ifneq ($(MIYOO), 1)
-      ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o \
-                audio/common/alsathread.o
-
-         ifeq ($(HAVE_MICROPHONE), 1)
-            OBJ += audio/drivers_microphone/alsathread.o
-         endif
-      endif
-   endif
 
    LIBS += $(ALSA_LIBS)
    DEF_FLAGS += $(ALSA_CFLAGS)
@@ -889,6 +892,18 @@ ifeq ($(HAVE_PULSE), 1)
    DEF_FLAGS += $(PULSE_CFLAGS)
 endif
 
+ifeq ($(HAVE_PIPEWIRE), 1)
+   OBJ += audio/drivers/pipewire.o \
+          audio/common/pipewire.o
+
+   ifeq ($(HAVE_PIPEWIRE_STABLE), 1)
+      OBJ += camera/drivers/pipewire.o
+   endif
+
+   LIBS += $(PIPEWIRE_LIBS)
+   DEF_FLAGS += $(PIPEWIRE_CFLAGS)
+endif
+
 ifeq ($(HAVE_OSS_LIB), 1)
    LIBS += -lossaudio
 endif
@@ -902,20 +917,20 @@ endif
 ifeq ($(HAVE_DSOUND), 1)
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
-   HAVE_DX_COMMON  = 1
    LIBS += -ldsound
 endif
 
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
-   OBJ += audio/drivers/wasapi.o \
-          audio/common/wasapi.o
+   OBJ += audio/drivers/wasapi.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
+endif
 
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/wasapi.o
-      endif
+ifeq ($(HAVE_ASIO), 1)
+   OBJ += audio/drivers/asio.o
+   DEFINES += -DHAVE_ASIO
+   LIBS += -lole32
 endif
 
 ifeq ($(HAVE_XAUDIO), 1)
@@ -933,6 +948,15 @@ ifeq ($(HAVE_WINMM), 1)
    DEFINES += -DHAVE_WINMM
    LIBS += -lwinmm
 endif
+
+ifeq ($(HAVE_COREMIDI), 1)
+   OBJ += midi/drivers/coremidi.o
+   DEFINES += -DHAVE_COREMIDI
+   LIBS += -framework CoreMIDI
+endif
+
+# In-process FM synth MIDI driver (no external dependency, all platforms)
+OBJ += midi/drivers/fmsynth_midi.o
 
 # Audio Resamplers
 
@@ -1004,7 +1028,8 @@ ifeq ($(HAVE_MENU), 1)
    endif
 
    ifeq ($(HAVE_RGUI), 1)
-      OBJ += menu/drivers/rgui.o
+      OBJ += menu/drivers/rgui.o \
+             menu/drivers/rgui_bitmapfont.o
       DEFINES += -DHAVE_RGUI
    endif
 
@@ -1040,19 +1065,50 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   ifeq ($(HAVE_RETROFLAG), 1)
+      DEFINES += -DHAVE_RETROFLAG
+      ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+         DEFINES += -DHAVE_RETROFLAG_RPI5
+      endif
+   else
+      ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+         DEFINES += -DHAVE_RETROFLAG
+         DEFINES += -DHAVE_RETROFLAG_RPI5
+      endif
+   endif
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      DEFINES += -DHAVE_LAKKA_PROJECT=\"${HAVE_LAKKA_PROJECT}\"
+   else
+      $(error You asked for Lakka, but you did not specify a target device name in HAVE_LAKKA_PROJECT.)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      DEFINES += -DHAVE_LAKKA_SERVER=\"${HAVE_LAKKA_SERVER}\"
+   else
+      $(error You asked for Lakka, but you did not specify update server in HAVE_LAKKA_SERVER.)
+   endif
+else
+   ifeq ($(HAVE_RETROFLAG), 1)
+      $(error You enabled Retroflag specific codepaths with HAVE_RETROFLAG, but not Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifeq ($(HAVE_RETROFLAG_RPI5), 1)
+      $(error You enabled Retroflag specific codepaths with HAVE_RETROFLAG_RPI5, but not Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifneq ($(HAVE_LAKKA_PROJECT),)
+      $(error You set Lakka project with HAVE_LAKKA_PROJECT, but did not enable Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
+   ifneq ($(HAVE_LAKKA_SERVER),)
+      $(error You set Lakka update server with HAVE_LAKKA_SERVER, but did not enable Lakka! Add HAVE_LAKKA=1 to continue.)
+   endif
 endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
-ifeq ($(HAVE_LAKKA_NIGHTLY), 1)
-   DEFINES += -DHAVE_LAKKA_NIGHTLY
-endif
-
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_str.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -1067,6 +1123,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_sublabel.o \
           menu/cbs/menu_cbs_title.o \
           menu/menu_displaylist.o \
+          menu/menu_dirwalk.o \
           menu/menu_contentless_cores.o
 endif
 
@@ -1095,11 +1152,7 @@ ifeq ($(HAVE_OVERLAY), 1)
           led/drivers/led_overlay.o
 endif
 
-ifeq ($(HAVE_STB_FONT), 1)
-   OBJ += gfx/drivers_font_renderer/stb.o
-   OBJ += gfx/drivers_font_renderer/stb_unicode.o
-   DEFINES += -DHAVE_STB_FONT
-endif
+OBJ += gfx/drivers_font_renderer/stb.o
 
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/drivers_font_renderer/freetype.o
@@ -1125,24 +1178,18 @@ ifeq ($(HAVE_THREAD_STORAGE), 1)
    DEFINES += -DHAVE_THREAD_STORAGE
 endif
 
-ifeq ($(HAVE_VITA2D), 1)
-   OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
-          $(DEPS_DIR)/libvita2d/source/utils.o
+ifeq ($(HAVE_GXM), 1)
+   # The GXM backend (was deps/libvita2d) is folded directly into
+   # gxm_gfx.c; only the precompiled shader blobs remain as a dependency
+   # (the driver still references color_v_gxp/texture_v_gxp/... as externs).
+   OBJ += gfx/drivers/vita_shaders/color_v_gxp.o \
+          gfx/drivers/vita_shaders/color_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_f_gxp.o
 
-   OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
-
-   OBJ += gfx/drivers/vita2d_gfx.o
-
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
+   OBJ += gfx/drivers/gxm_gfx.o
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -1160,8 +1207,8 @@ endif
 
 ifeq ($(TARGET), retroarch_orbis)
    OBJ +=  input/drivers/ps4_input.o \
-			  input/drivers_joypad/ps4_joypad.o \
-			  audio/drivers/psp_audio.o
+	   input/drivers_joypad/ps4_joypad.o \
+	   audio/drivers/psp_audio.o
 endif
 
 ifeq ($(TARGET), retroarch_vita)
@@ -1192,14 +1239,12 @@ endif
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
       OBJ += gfx/drivers/switch_nx_gfx.o \
-             audio/drivers/switch_libnx_audren_audio.o \
-             audio/drivers/switch_libnx_audren_thread_audio.o
+             audio/drivers/switch_libnx_audren_audio.o
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
    endif
    OBJ += audio/drivers/switch_audio.o \
-          audio/drivers/switch_thread_audio.o \
           input/drivers/switch_input.o \
           input/drivers_joypad/switch_joypad.o \
           frontend/drivers/platform_switch.o
@@ -1216,18 +1261,38 @@ endif
 
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o \
+        gfx/display_servers/dispserv_wl.o \
         input/common/wayland_common.o \
         input/drivers/wayland_input.o \
         gfx/common/wayland_common.o \
+        gfx/common/wayland/fractional-scale-v1.o \
         gfx/common/wayland/viewporter.o \
+        gfx/common/wayland/xdg-toplevel-icon-v1.o \
+        gfx/common/wayland/xdg-toplevel-tag-v1.o \
         gfx/common/wayland/xdg-shell.o \
         gfx/common/wayland/idle-inhibit-unstable-v1.o \
         gfx/common/wayland/xdg-decoration-unstable-v1.o \
         gfx/common/wayland/pointer-constraints-unstable-v1.o \
-        gfx/common/wayland/relative-pointer-unstable-v1.o
+        gfx/common/wayland/presentation-time.o \
+        gfx/common/wayland/relative-pointer-unstable-v1.o \
+        gfx/common/wayland/cursor-shape-v1.o \
+        gfx/common/wayland/tablet-unstable-v2.o \
+        gfx/common/wayland/content-type-v1.o \
+        gfx/common/wayland/single-pixel-buffer-v1.o \
+        gfx/common/wayland/tearing-control-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
+   endif
+
+   ifeq ($(WEBOS), 1)
+      OBJ += input/common/wayland_common_webos.o
+      OBJ += gfx/common/wayland/webos-shell.o
+      ifeq ($(HAVE_WEBOS_EXTRA_PROTOS), 1)
+         OBJ += gfx/common/wayland/webos-foreign.o
+         OBJ += gfx/common/wayland/webos-input-manager.o
+         OBJ += gfx/common/wayland/webos-surface-group.o
+      endif
    endif
 
  DEF_FLAGS += $(WAYLAND_CFLAGS) $(WAYLAND_CURSOR_CFLAGS)
@@ -1238,18 +1303,20 @@ ifeq ($(HAVE_WAYLAND), 1)
     DEF_FLAGS += $(LIBDECOR_CFLAGS)
  endif
 
+ ifeq ($(HAVE_WAYLAND_BACKPORT),1)
+    DEFINES += -DHAVE_WAYLAND_BACKPORT=1
+    OBJ += gfx/common/wayland_common_backport.o
+ endif
 endif
 
 # XML
 OBJ += \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
-       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o \
-       deps/yxml/yxml.o
+       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o
 
 #Input
 
 ifeq ($(HAVE_DINPUT), 1)
-   HAVE_DX_COMMON  = 1
    LIBS += -ldinput8 -lole32
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o
@@ -1269,6 +1336,10 @@ ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
    OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
 endif
 
+ifneq ($(findstring Darwin,$(OS)),)
+   OBJ += gfx/display_servers/dispserv_apple.o
+endif
+
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
@@ -1281,6 +1352,13 @@ ifeq ($(HAVE_X11), 1)
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
       LIBS += -lX11-xcb
+   endif
+   ifeq ($(HAVE_XI2),1)
+      LIBS += -lXi
+      DEFINES += -DHAVE_XI2
+   endif
+   ifeq ($(HAVE_XSCRNSAVER),1)
+      LIBS += -lXss
    endif
    ifneq ($(HAVE_OPENGLES), 1)
       OBJ += gfx/drivers_context/x_ctx.o
@@ -1355,6 +1433,7 @@ ifneq ($(findstring Win32,$(OS)),)
 ifeq ($(HAVE_WINRAWINPUT), 1)
    DEFINES += -DHAVE_WINRAWINPUT
    OBJ     += input/drivers/winraw_input.o
+   OBJ     += input/drivers_joypad/winraw_joypad.o
 endif
 endif
 
@@ -1430,12 +1509,19 @@ ifeq ($(HAVE_NETWORK_VIDEO), 1)
    OBJ += gfx/drivers/network_gfx.o
 endif
 
+ifeq ($(HAVE_HUB75), 1)
+   DEFINES += -DHAVE_HUB75
+   OBJ += gfx/drivers/hub75_gfx.o
+   LIBS += -lrt -lm -lpthread
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    ifneq ($(HAVE_LAKKA), 1)
       INCLUDE_DIRS += -I/usr/include/libdrm
    endif
    LIBS += -ldrm
+   HAVE_AND_WILL_USE_DRM = 1
 endif
 
 ifeq ($(HAVE_VITAGL), 1)
@@ -1468,7 +1554,10 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    endif
 
    ifeq ($(HAVE_EMSCRIPTEN), 1)
-      OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      ifeq ($(HAVE_EGL), 1)
+        OBJ += gfx/drivers_context/emscriptenegl_ctx.o
+      endif
+      OBJ += gfx/drivers_context/emscriptenwebgl_ctx.o
    endif
 
    ifeq ($(HAVE_MALI_FBDEV), 1)
@@ -1492,8 +1581,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_FFMPEG), 1)
       ifneq ($(HAVE_OPENGLES), 1)
-         OBJ += cores/libretro-ffmpeg/ffmpeg_fft.o
-         DEFINES += -DHAVE_GL_FFT
          INCLUDE_DIRS += -I$(DEPS_DIR)
       endif
    endif
@@ -1512,10 +1599,11 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       DEF_FLAGS += $(OPENGLES_CFLAGS)
       ifeq ($(HAVE_OPENGLES3), 1)
          DEFINES += -DHAVE_OPENGLES3
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es3.o
       else
          DEFINES += -DHAVE_OPENGLES2
+         OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
       endif
-      OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_es2.o
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.o
@@ -1533,12 +1621,19 @@ endif
 
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
-   LIBS += -framework Metal -framework MetalKit
-   # Metal code relies on ARC (Automatic Reference Counting), enable it
-   DEF_FLAGS += -fobjc-arc
-   OBJ += \
-	  gfx/common/metal/metal_renderer.o \
-	  gfx/drivers/metal.o
+   LIBS += -framework Metal -framework MetalKit -framework QuartzCore
+   # Metal code (metal.m) relies on ARC. Enabled per-file via an override
+   # in the top-level Makefile, since applying -fobjc-arc globally would
+   # break the MRC-written Cocoa code (ui_cocoa.m et al.).
+   OBJ += gfx/drivers/metal.o
+endif
+
+ifeq ($(HAVE_MFI), 1)
+   DEFINES += -DHAVE_MFI
+   LIBS    += -framework GameController -framework CoreHaptics
+   # mfi_joypad.m uses __weak references, which require ARC. Enabled
+   # per-file in the top-level Makefile (see comment above).
+   OBJ     += input/drivers_joypad/mfi_joypad.o
 endif
 
 ifeq ($(HAVE_EGL), 1)
@@ -1554,22 +1649,45 @@ endif
 
 endif
 
-ifeq ($(HAVE_SDL2), 1)
+ifeq ($(HAVE_SDL3), 1)
+   SDL3_CFLAGS = $(shell pkg-config sdl3 --cflags)
+	SDL3_LIBS = $(shell pkg-config sdl3 --libs)
+   DEF_FLAGS += $(SDL3_CFLAGS)
+   # RetroArch supplies its own entry point and sets SDL_MAIN_HANDLED
+   # (see retroarch.c), so SDL's WinMain shim library (-lSDL3main /
+   # -lSDLmain, pulled in automatically by pkg-config --libs on
+   # Windows/MSYS2) is both unnecessary and harmful: its WinMain
+   # references SDL_main, which no longer exists once main stays main.
+   # Filter it out.
+   LIBS += $(filter-out -lSDL3main -lSDLmain -lSDL_main,$(SDL3_LIBS))
+	DEFINES += -DHAVE_SDL3
+   OBJ += input/drivers_joypad/sdl3_joypad.o \
+          input/drivers/sdl3_input.o \
+          gfx/drivers/sdl3_gfx.o \
+          gfx/common/sdl3_common.o \
+          audio/drivers/sdl3_audio.o
+
+   ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
+      OBJ += gfx/drivers_context/sdl3_gl_ctx.o
+   endif
+
+   ifeq ($(HAVE_VULKAN), 1)
+      OBJ += gfx/drivers_context/sdl3_vk_ctx.o
+   endif
+else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-			 gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
-   LIBS += $(SDL2_LIBS)
-
-   ifeq ($(HAVE_MICROPHONE), 1)
-      OBJ += audio/drivers_microphone/sdl_microphone.o
-      # Microphones are not supported by SDL 1.x
-   endif
+   # See the SDL3 note above: drop SDL's WinMain shim lib, we set
+   # SDL_MAIN_HANDLED and provide our own entry point.
+   LIBS += $(filter-out -lSDL2main -lSDLmain -lSDL_main,$(SDL2_LIBS))
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
    DEF_FLAGS += $(SDL_CFLAGS)
-   LIBS += $(SDL_LIBS)
+   # See the SDL3 note above: drop SDL's WinMain shim lib.
+   LIBS += $(filter-out -lSDLmain -lSDL_main,$(SDL_LIBS))
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
@@ -1606,7 +1724,7 @@ endif
 
 ifeq ($(HAVE_VULKAN), 1)
    ifneq ($(findstring Win32,$(OS)),)
-      WANT_WGL = 1
+      OBJ += gfx/drivers_context/w_vk_ctx.o
       # Trivial temporary workaround for MinGW and glslang.
       CXXFLAGS += -fpermissive
    endif
@@ -1627,14 +1745,31 @@ ifeq ($(HAVE_VULKAN), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
+
+   # On macOS, the Vulkan loader at gfx/common/vulkan_common.c dlopens
+   # "MoltenVK" by bare name. Embed rpath entries pointing at the Frameworks
+   # dir inside an .app bundle, so that `make bundle` (which copies
+   # pkg/apple/Frameworks/MoltenVK.xcframework/macos-arm64_x86_64/MoltenVK.framework
+   # into Contents/Frameworks) produces a self-contained bundle with no
+   # external MoltenVK dependency. Matches what Xcode's
+   # LD_RUNPATH_SEARCH_PATHS does for the .xcodeproj build.
+   ifneq ($(findstring Darwin,$(OS)),)
+      LDFLAGS += -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
+                 -Xlinker -rpath -Xlinker @executable_path/../Frameworks/MoltenVK.framework
+   endif
 endif
 
 ifeq ($(HAVE_OPENGL_CORE), 1)
-   OBJ += gfx/drivers/gl3.o \
-	  gfx/drivers_shader/shader_gl3.o
+   OBJ += gfx/drivers/gl3.o
 
    DEFINES += -DHAVE_OPENGL_CORE
-   NEED_CXX_LINKER  = 1
+
+   ifeq ($(HAVE_SLANG), 1)
+      OBJ += gfx/drivers_shader/shader_gl3.o
+      OBJ += gfx/drivers_shader/spirv_opengl.o
+
+      NEED_CXX_LINKER = 1
+   endif
 endif
 
 ifeq ($(HAVE_OMAP), 1)
@@ -1677,17 +1812,9 @@ endif
 ifeq ($(HAVE_D3D9), 1)
    HAVE_D3D_COMMON = 1
    DEFINES += -DHAVE_D3D9
-   ifeq ($(HAVE_D3DX9), 1)
-      HAVE_D3DX_COMMON = 1
-   endif
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D9_LIBS)
-      ifeq ($(HAVE_D3DX9), 1)
-         LIBS += $(D3DX9_LIBS)
-      endif
    endif
-   HAVE_DX_COMMON  = 1
-   OBJ  += gfx/drivers_font/d3d9x_w32_font.o
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
       OBJ  += gfx/drivers/d3d9cg.o
@@ -1696,22 +1823,19 @@ endif
 
 ifeq ($(HAVE_D3D10), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d10.o \
-          gfx/common/d3d10_common.o
+   OBJ += gfx/drivers/d3d10.o
    DEFINES += -DHAVE_D3D10
 endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o \
-          gfx/common/d3d11_common.o
+   OBJ += gfx/drivers/d3d11.o
    DEFINES += -DHAVE_D3D11
 endif
 
 ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d12.o \
-          gfx/common/d3d12_common.o
+   OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
 endif
 
@@ -1724,25 +1848,10 @@ endif
 
 ifeq ($(HAVE_D3D8), 1)
    HAVE_D3D_COMMON = 1
-   HAVE_DX_COMMON  = 1
    DEFINES += -DHAVE_D3D8
-   ifeq ($(HAVE_D3DX8), 1)
-      HAVE_D3DX_COMMON = 1
-   endif
    ifneq ($(HAVE_DYLIB), 1)
       LIBS += $(D3D8_LIBS)
-      ifeq ($(HAVE_D3DX8), 1)
-         LIBS += $(D3DX8_LIBS)
-      endif
    endif
-endif
-
-ifeq ($(HAVE_D3DX_COMMON), 1)
-   DEFINES += -DHAVE_D3DX
-endif
-
-ifeq ($(HAVE_DX_COMMON), 1)
-   LIBS += -ldxguid
 endif
 
 ifeq ($(HAVE_D3D8), 1)
@@ -1780,8 +1889,7 @@ ifeq ($(HAVE_SLANG),1)
    DEFINES += -DHAVE_SLANG
    OBJ += gfx/drivers_shader/slang_process.o
    OBJ += gfx/drivers_shader/glslang_util.o
-   OBJ += gfx/drivers_shader/glslang_util_cxx.o
-   OBJ += gfx/drivers_shader/slang_reflection.o
+   OBJ += gfx/drivers_shader/slang_cache.o
 endif
 
 ifeq ($(HAVE_SHADERS_COMMON), 1)
@@ -1818,10 +1926,6 @@ ifeq ($(HAVE_BUILTINGLSLANG), 1)
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/*.cpp) \
       $(wildcard $(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
       $(DEPS_DIR)/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/ossource.cpp
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DENABLE_HLSL
-      GLSLANG_SOURCES += $(wildcard $(DEPS_DIR)/glslang/glslang/hlsl/*.cpp)
-   endif
 else ifeq ($(HAVE_GLSLANG),1)
    HAVE_GLSLANG_COMMON = 1
    GLSLANG_SOURCES := gfx/drivers_shader/glslang.cpp
@@ -1832,7 +1936,6 @@ else ifeq ($(HAVE_GLSLANG),1)
            $(GLSLANG_GENERICCODEGEN_LIBS) \
            $(GLSLANG_OSDEPENDENT_LIBS) \
            $(GLSLANG_OGLCOMPILER_LIBS) \
-           $(GLSLANG_HLSL_LIBS) \
            $(GLSLANG_SPIRV_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_OPT_LIBS) \
            $(GLSLANG_SPIRV_TOOLS_LIBS)
@@ -1846,6 +1949,15 @@ endif
 
 ifeq ($(HAVE_SPIRV_CROSS), 1)
    DEFINES += -DHAVE_SPIRV_CROSS
+# Default to the vendored (builtin) SPIRV-Cross unless it was explicitly
+# turned off via 'configure --disable-builtinspirv_cross', which writes
+# HAVE_BUILTINSPIRV_CROSS=0 to config.mk. An unset value (every platform
+# Makefile that sets HAVE_SPIRV_CROSS=1 directly, e.g. Makefile.wiiu) is
+# treated as builtin, so existing builds are unaffected. Note: griffin
+# console builds pull the vendored sources in via griffin_cpp.cpp guarded
+# by -DHAVE_SPIRV_CROSS and never reach this block.
+ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
+   DEFINES += -DHAVE_BUILTINSPIRV_CROSS
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
@@ -1854,131 +1966,289 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   # The C API translation unit compiles its backend wrappers only
+   # when these are defined truthy.
+   DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_HLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_MSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_CPP=0
+   DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
+else
+   # slang_process.c is C: the header path must reach the C compiler too.
+   CFLAGS   += $(SPIRV_CROSS_CFLAGS)
+   CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
+   LIBS     += $(SPIRV_CROSS_LIBS)
+endif
 endif
 
 ifeq ($(WANT_WGL), 1)
    OBJ += gfx/drivers_context/wgl_ctx.o
-   ifeq ($(HAVE_VULKAN),1)
-      OBJ += gfx/drivers_context/w_vk_ctx.o
-   endif
-   LIBS += -lcomctl32
 endif
 
 # Compression/Archive
 
 OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
+       $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
-       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.o \
+       $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
+
+# The ZIP archive backend decodes DEFLATE through the built-in inflate when
+# zlib is not present, so ZIP/APK extraction is always available.
+HAVE_COMPRESSION = 1
 
 ifeq ($(HAVE_7ZIP),1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
-   DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
-   7ZOBJ = $(DEPS_DIR)/7zip/7zArcIn.o \
-           $(DEPS_DIR)/7zip/7zBuf.o \
-           $(DEPS_DIR)/7zip/7zCrc.o \
-           $(DEPS_DIR)/7zip/7zCrcOpt.o \
-           $(DEPS_DIR)/7zip/7zDec.o \
-           $(DEPS_DIR)/7zip/CpuArch.o \
-           $(DEPS_DIR)/7zip/Delta.o \
-           $(DEPS_DIR)/7zip/LzFind.o \
-           $(DEPS_DIR)/7zip/LzmaDec.o \
-           $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/LzmaEnc.o \
-           $(DEPS_DIR)/7zip/Bra.o \
-           $(DEPS_DIR)/7zip/Bra86.o \
-           $(DEPS_DIR)/7zip/BraIA64.o \
-           $(DEPS_DIR)/7zip/Bcj2.o \
-           $(DEPS_DIR)/7zip/7zFile.o \
-           $(DEPS_DIR)/7zip/7zStream.o
+   DEFINES += -DHAVE_7ZIP
+   7ZOBJ = $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.o
 
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
            $(7ZOBJ)
 endif
 
-ifeq ($(HAVE_IBXM), 1)
-   DEFINES += -DHAVE_IBXM
-   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
+# The built-in Zstandard codec. Independent of HAVE_ZSTD: a build may
+# have either, both while platforms are moving over, or eventually only
+# this one, at which point HAVE_ZSTD and deps/zstd can go.
+ifeq ($(HAVE_RZSTD),1)
+   DEFINES += -DHAVE_RZSTD
+   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o
 endif
 
-ifeq ($(HAVE_BUILTINFLAC),1)
-   HAVE_FLAC = 1
-   DEFINES += -DHAVE_FLAC -DHAVE_DR_FLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
-              -DFLAC_PACKAGE_VERSION="\"retroarch\""
-   INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
-   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
-             $(DEPS_DIR)/libFLAC/bitreader.o \
-             $(DEPS_DIR)/libFLAC/cpu.o \
-             $(DEPS_DIR)/libFLAC/crc.o \
-             $(DEPS_DIR)/libFLAC/fixed.o \
-             $(DEPS_DIR)/libFLAC/float.o \
-             $(DEPS_DIR)/libFLAC/format.o \
-             $(DEPS_DIR)/libFLAC/lpc.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
-             $(DEPS_DIR)/libFLAC/md5.o \
-             $(DEPS_DIR)/libFLAC/memory.o \
-             $(DEPS_DIR)/libFLAC/stream_decoder.o
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DHAVE_FSEEKO
-      # make sure not to use this on legacy Windows versions that don't have W-functions implemented
-      DEFINES += -DNEED_UTF8_SUPPORT
-      FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
-   endif
-   OBJ += $(FLACOBJ)
-else ifeq ($(HAVE_FLAC),1)
+ifeq ($(HAVE_ZSTD),1)
+   INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
+   DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
+   ZSOBJ = $(DEPS_DIR)/zstd/lib/common/entropy_common.o \
+           $(DEPS_DIR)/zstd/lib/common/error_private.o \
+           $(DEPS_DIR)/zstd/lib/common/fse_decompress.o \
+           $(DEPS_DIR)/zstd/lib/common/zstd_common.o \
+           $(DEPS_DIR)/zstd/lib/common/xxhash.o \
+           $(DEPS_DIR)/zstd/lib/compress/fse_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/hist.o \
+           $(DEPS_DIR)/zstd/lib/compress/huf_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_literals.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_sequences.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_superblock.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_double_fast.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_fast.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_lazy.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_ldm.o \
+           $(DEPS_DIR)/zstd/lib/compress/zstd_opt.o \
+           $(DEPS_DIR)/zstd/lib/decompress/huf_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_ddict.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
+           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
+
+   OBJ += $(ZSOBJ)
+endif
+
+# The archive backend needs one decoder, not a particular one. Testing
+# the two concatenated would be wrong: "00" is not empty.
+ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o
+endif
+
+ifeq ($(HAVE_RMODTRACKER), 1)
+   DEFINES += -DHAVE_RMODTRACKER
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
+endif
+
+ifeq ($(HAVE_RAAC), 1)
+   DEFINES += -DHAVE_RAAC
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/aac/raac.o
+endif
+
+ifeq ($(HAVE_ROPUS), 1)
+   DEFINES += -DHAVE_ROPUS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
+endif
+
+ifeq ($(HAVE_RFLAC),1)
+   DEFINES += -DHAVE_RFLAC
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+endif
+
+ifeq ($(HAVE_FLAC),1)
    DEFINES += -DHAVE_FLAC
    LIBS    += $(FLAC_LIBS)
 endif
 
-ifeq ($(HAVE_BUILTINZLIB), 1)
-   HAVE_ZLIB_COMMON = 1
-   OBJ += $(DEPS_DIR)/libz/adler32.o \
-          $(DEPS_DIR)/libz/libz-crc32.o \
-          $(DEPS_DIR)/libz/deflate.o \
-          $(DEPS_DIR)/libz/gzclose.o \
-          $(DEPS_DIR)/libz/gzlib.o \
-          $(DEPS_DIR)/libz/gzread.o \
-          $(DEPS_DIR)/libz/gzwrite.o \
-          $(DEPS_DIR)/libz/inffast.o \
-          $(DEPS_DIR)/libz/inflate.o \
-          $(DEPS_DIR)/libz/inftrees.o \
-          $(DEPS_DIR)/libz/trees.o \
-          $(DEPS_DIR)/libz/zutil.o
-   INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include/compat/zlib
-else ifeq ($(HAVE_ZLIB),1)
-   HAVE_ZLIB_COMMON = 1
-   LIBS += $(ZLIB_LIBS)
+ifeq ($(HAVE_RVORBIS),1)
+   DEFINES += -DHAVE_RVORBIS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
 endif
 
-ifeq ($(HAVE_ZLIB_COMMON), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
+# System zlib is optional.  When it is absent every consumer
+# (archive_file_zlib, libchdr's zlib codec, trans_stream) falls back to the
+# clean-room DEFLATE/inflate codec in encodings/deflate.c, which is always
+# part of the base object list above.
+ifeq ($(HAVE_ZLIB),1)
+   OBJ     += $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    DEFINES += -DHAVE_ZLIB
-   HAVE_COMPRESSION = 1
+   LIBS    += $(ZLIB_LIBS)
+endif
 
-   ifeq ($(HAVE_CHD), 1)
-      INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
-      DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
-      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
-                 $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
-                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
-
-      ifeq ($(HAVE_FLAC),1)
-         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
-                $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
-      endif
-
-      ifeq ($(HAVE_7ZIP), 1)
-         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+# Which CHD reader streams/chd_stream.c is built against. HAVE_RCHD
+# selects formats/chd/rchd.c and none of libchdr is compiled; without it,
+# libchdr, exactly as before. Nested rather than testing the two flags
+# concatenated, because an explicit HAVE_RCHD=0 is not the same string as
+# an unset one and would fall through both arms.
+ifeq ($(HAVE_CHD), 1)
+ifeq ($(HAVE_RCHD), 1)
+   DEFINES += -DHAVE_CHD -DHAVE_RCHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+   OBJ     += $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
+              $(LIBRETRO_COMM_DIR)/formats/chd/rchd.o
+   # rchd calls these directly where the libchdr path reached them
+   # through libchdr's own wrappers. encoding_huffman is not optional:
+   # a version 5 map is Huffman-coded, so it is needed to open an image
+   # at all, whatever codecs the hunks use.
+   OBJ     += $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.o
+   DEFINES += -DHAVE_RCHD_DEFLATE -DHAVE_RCHD_LZMA
+   ifneq ($(filter 1,$(HAVE_FLAC) $(HAVE_RFLAC)),)
+      DEFINES += -DHAVE_RCHD_FLAC
+      ifneq ($(HAVE_RFLAC),1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
       endif
    endif
+   ifeq ($(HAVE_RZSTD), 1)
+      DEFINES += -DHAVE_RCHD_ZSTD
+   endif
+   ifneq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
+   endif
+else
+   INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
+   DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+   ifeq ($(HAVE_STATIC_CORES), 1)
+      DEFINES += -Dbitstream_overflow=retroarch_internal_bitstream_overflow
+      DEFINES += -Dcreate_bitstream=retroarch_internal_create_bitstream
+      DEFINES += -Dbitstream_peek=retroarch_internal_bitstream_peek
+      DEFINES += -Dbitstream_remove=retroarch_internal_bitstream_remove
+      DEFINES += -Dbitstream_read=retroarch_internal_bitstream_read
+      DEFINES += -Dbitstream_read_offset=retroarch_internal_bitstream_read_offset
+      DEFINES += -Dbitstream_flush=retroarch_internal_bitstream_flush
+
+      DEFINES += -Decc_compute_bytes=retroarch_internal_ecc_compute_bytes
+      DEFINES += -Decc_verify=retroarch_internal_ecc_verify
+      DEFINES += -Decc_generate=retroarch_internal_ecc_generate
+      DEFINES += -Decc_clear=retroarch_internal_ecc_clear
+
+      DEFINES += -Ds_cd_sync_header=retroarch_internal_s_cd_sync_header
+      DEFINES += -Dchd_open_file=retroarch_internal_chd_open_file
+      DEFINES += -Dchd_precache=retroarch_internal_chd_precache
+      DEFINES += -Dchd_open=retroarch_internal_chd_open
+      DEFINES += -Dchd_close=retroarch_internal_chd_close
+      DEFINES += -Dchd_core_file=retroarch_internal_chd_core_file
+      DEFINES += -Dchd_error_string=retroarch_internal_chd_error_string
+      DEFINES += -Dchd_get_header=retroarch_internal_chd_get_header
+      DEFINES += -Dchd_read=retroarch_internal_chd_read
+      DEFINES += -Dchd_get_metadata=retroarch_internal_chd_get_metadata
+      DEFINES += -Dchd_codec_config=retroarch_internal_chd_codec_config
+      DEFINES += -Dchd_get_codec_name=retroarch_internal_chd_get_codec_name
+
+      DEFINES += -Dcreate_huffman_decoder=retroarch_internal_create_huffman_decoder
+      DEFINES += -Ddelete_huffman_decoder=retroarch_internal_delete_huffman_decoder
+      DEFINES += -Dhuffman_decode_one=retroarch_internal_huffman_decode_one
+      DEFINES += -Dhuffman_import_tree_rle=retroarch_internal_huffman_import_tree_rle
+      DEFINES += -Dhuffman_import_tree_huffman=retroarch_internal_huffman_import_tree_huffman
+      DEFINES += -Dhuffman_compute_tree_from_histo=retroarch_internal_huffman_compute_tree_from_histo
+      DEFINES += -Dhuffman_build_tree=retroarch_internal_huffman_build_tree
+      DEFINES += -Dhuffman_assign_canonical_codes=retroarch_internal_huffman_assign_canonical_codes
+      DEFINES += -Dhuffman_build_lookup_table=retroarch_internal_huffman_build_lookup_table
+
+      DEFINES += -Dcdzl_codec_init=retroarch_internal_cdzl_codec_init
+      DEFINES += -Dcdzl_codec_free=retroarch_internal_cdzl_codec_free
+      DEFINES += -Dcdzl_codec_decompress=retroarch_internal_cdzl_codec_decompress
+      DEFINES += -Dzlib_codec_init=retroarch_internal_zlib_codec_init
+      DEFINES += -Dzlib_codec_free=retroarch_internal_zlib_codec_free
+      DEFINES += -Dzlib_codec_decompress=retroarch_internal_zlib_codec_decompress
+      DEFINES += -Dzlib_fast_alloc=retroarch_internal_zlib_fast_alloc
+      DEFINES += -Dzlib_fast_free=retroarch_internal_zlib_fast_free
+
+      DEFINES += -Dchdstream_open=retroarch_internal_chdstream_open
+      DEFINES += -Dchdstream_close=retroarch_internal_chdstream_close
+      DEFINES += -Dchdstream_read=retroarch_internal_chdstream_read
+      DEFINES += -Dchdstream_getc=retroarch_internal_chdstream_getc
+      DEFINES += -Dchdstream_gets=retroarch_internal_chdstream_gets
+      DEFINES += -Dchdstream_tell=retroarch_internal_chdstream_tell
+      DEFINES += -Dchdstream_rewind=retroarch_internal_chdstream_rewind
+      DEFINES += -Dchdstream_seek=retroarch_internal_chdstream_seek
+      DEFINES += -Dchdstream_get_size=retroarch_internal_chdstream_get_size
+      DEFINES += -Dchdstream_get_track_start=retroarch_internal_chdstream_get_track_start
+      DEFINES += -Dchdstream_get_frame_size=retroarch_internal_chdstream_get_frame_size
+      DEFINES += -Dchdstream_get_first_track_sector=retroarch_internal_chdstream_get_first_track_sector
+
+      DEFINES += -Dflac_decoder_init=retroarch_internal_flac_decoder_init
+      DEFINES += -Dflac_decoder_free=retroarch_internal_flac_decoder_free
+      DEFINES += -Dflac_decoder_reset=retroarch_internal_flac_decoder_reset
+      DEFINES += -Dflac_decoder_decode_interleaved=retroarch_internal_flac_decoder_decode_interleaved
+      DEFINES += -Dflac_decoder_finish=retroarch_internal_flac_decoder_finish
+      DEFINES += -Dflac_decoder_read_callback_static=retroarch_internal_flac_decoder_read_callback_static
+      DEFINES += -Dflac_decoder_read_callback=retroarch_internal_flac_decoder_read_callback
+      DEFINES += -Dflac_decoder_metadata_callback_static=retroarch_internal_flac_decoder_metadata_callback_static
+      DEFINES += -Dflac_decoder_tell_callback_static=retroarch_internal_flac_decoder_tell_callback_static
+      DEFINES += -Dflac_decoder_write_callback_static=retroarch_internal_flac_decoder_write_callback_static
+      DEFINES += -Dflac_decoder_write_callback=retroarch_internal_flac_decoder_write_callback
+      DEFINES += -Dflac_decoder_error_callback_static=retroarch_internal_flac_decoder_error_callback_static
+      DEFINES += -Dcdfl_codec_init=retroarch_internal_cdfl_codec_init
+      DEFINES += -Dcdfl_codec_free=retroarch_internal_cdfl_codec_free
+      DEFINES += -Dcdfl_codec_decompress=retroarch_internal_cdfl_codec_decompress
+
+      DEFINES += -Dlzma_allocator_init=retroarch_internal_lzma_allocator_init
+      DEFINES += -Dlzma_allocator_free=retroarch_internal_lzma_allocator_free
+      DEFINES += -Dlzma_codec_init=retroarch_internal_lzma_codec_init
+      DEFINES += -Dlzma_codec_free=retroarch_internal_lzma_codec_free
+      DEFINES += -Dlzma_codec_decompress=retroarch_internal_lzma_codec_decompress
+      DEFINES += -Dcdlz_codec_init=retroarch_internal_cdlz_codec_init
+      DEFINES += -Dcdlz_codec_free=retroarch_internal_cdlz_codec_free
+      DEFINES += -Dcdlz_codec_decompress=retroarch_internal_cdlz_codec_decompress
+
+      DEFINES += -Dzstd_codec_init=retroarch_internal_zstd_codec_init
+      DEFINES += -Dzstd_codec_free=retroarch_internal_zstd_codec_free
+      DEFINES += -Dzstd_codec_decompress=retroarch_internal_zstd_codec_decompress
+      DEFINES += -Dcdzs_codec_init=retroarch_internal_cdzs_codec_init
+      DEFINES += -Dcdzs_codec_free=retroarch_internal_cdzs_codec_free
+      DEFINES += -Dcdzs_codec_decompress=retroarch_internal_cdzs_codec_decompress
+   endif
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_bitstream.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_cdrom.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_chd.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_huffman.o \
+              $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
+              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
+
+   ifneq ($(filter 1,$(HAVE_FLAC) $(HAVE_RFLAC)),)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
+             $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+      # libchdr decodes CHD FLAC through rflac; add the object only
+      # when the RFLAC block has not already.
+      ifneq ($(HAVE_RFLAC),1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+      endif
+   endif
+
+   # CHD decodes LZMA through r7z_lzma. r7z_lzma.o is also part of
+   # the 7z backend's object list, so only add it when that is off.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+   ifneq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
+   endif
+
+   # The CHD Zstandard codec decodes through whichever backend is
+   # configured, rzstd first. Same shape as the FLAC test above: either
+   # one gives libchdr a decoder, so build the wrapper for both.
+   ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
+   endif
+endif
 endif
 
 ifeq ($(HAVE_CDROM), 1)
@@ -1998,10 +2268,17 @@ ifeq ($(HAVE_RTGA), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/tga/rtga.o
 endif
 
+ifeq ($(HAVE_RDDS), 1)
+   DEFINES += -DHAVE_RDDS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/dds/rdds.o
+endif
+
 ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
    OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
-          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.o \
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o \
+          $(LIBRETRO_COMM_DIR)/file/rpng_file.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
@@ -2014,10 +2291,72 @@ ifeq ($(HAVE_RBMP), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.o
 endif
 
+ifeq ($(HAVE_RWEBP), 1)
+   DEFINES += -DHAVE_RWEBP
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o \
+          $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
+endif
+
+ifeq ($(HAVE_RWEBM), 1)
+   DEFINES += -DHAVE_RWEBM
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.o \
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.o \
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_audio.o
+ifneq ($(HAVE_RWEBP), 1)
+   # rwebm_video decodes VP8 tracks with rvp8, normally built with RWEBP
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
+endif
+endif
+
+ifeq ($(HAVE_RMP4), 1)
+   DEFINES += -DHAVE_RMP4
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.o \
+          $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.o \
+          $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_audio.o \
+          $(LIBRETRO_COMM_DIR)/formats/h264/rh264.o \
+          $(LIBRETRO_COMM_DIR)/formats/h265/rh265.o
+ifneq ($(HAVE_RVP9), 1)
+   # rmp4_video's H.265 Main10 arm uses the shared 10-bit / HDR
+   # I420->RGB blits; normally linked from the HAVE_RVP9 block below.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
+endif
+ifneq ($(HAVE_RWEBP), 1)
+ifneq ($(HAVE_RWEBM), 1)
+   # rmp4_video decodes VP8 tracks with rvp8, normally built with RWEBP
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
+endif
+endif
+endif
+
+ifeq ($(HAVE_RVP9), 1)
+   DEFINES += -DHAVE_RVP9
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.o
+   # Shared 10-bit / HDR I420->RGB blits, used by both the webm and mp4
+   # rvp9 paths; kept demuxer-independent so neither has to link the other.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
+endif
+
+ifeq ($(HAVE_RMPEG1), 1)
+   DEFINES += -DHAVE_RMPEG1
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_ps.o \
+          $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_video.o
+   # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
+   # wants sound from an MPEG-1 stream needs HAVE_RMP3 as well.
+endif
+
+ifeq ($(HAVE_WEBMPLAYER), 1)
+   DEFINES += -DHAVE_WEBMPLAYER
+   OBJ += cores/libretro-webm/webm_core.o
+endif
+
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
+       $(LIBRETRO_COMM_DIR)/file/rbmp_file.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
-       $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
+       $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
+       $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
+       $(LIBRETRO_COMM_DIR)/memmap/memmap.o \
+       $(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.o
 
 # Video4Linux 2
 
@@ -2029,6 +2368,80 @@ ifeq ($(HAVE_V4L2),1)
    endif
    DEFINES += -DHAVE_V4L2
    LIBS += $(V4L2_LIBS)
+endif
+
+# AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
+# 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
+# there); this section just wires the object files and frameworks in
+# when HAVE_AVF is on.
+ifeq ($(HAVE_AVF), 1)
+   DEFINES += -DHAVE_AVF
+   OBJ     += camera/drivers/avfoundation.o \
+              record/drivers/record_avfoundation.o
+   LIBS    += -framework AVFoundation -framework CoreVideo \
+              -framework CoreMedia   -framework Accelerate
+   ifeq ($(HAVE_COCOATOUCH), 1)
+      LIBS += -framework UIKit
+   endif
+endif
+
+# FFmpeg
+
+ifeq ($(HAVE_FFMPEG), 1)
+   DEFINES += -DHAVE_FFMPEG
+   INCLUDE_DIRS += -Iffmpeg
+   DEF_FLAGS += $(FFMPEG_CFLAGS) -Wno-deprecated-declarations
+   LIBS += $(FFMPEG_LIBS)
+
+   ifeq ($(HAVE_AVCODEC), 1)
+      DEFINES += -DHAVE_AVCODEC
+      DEF_FLAGS += $(AVCODEC_CFLAGS)
+      LIBS += $(AVCODEC_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVDEVICE), 1)
+      DEFINES += -DHAVE_AVDEVICE
+      DEF_FLAGS += $(AVDEVICE_CFLAGS)
+      LIBS += $(AVDEVICE_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVFORMAT), 1)
+      DEFINES += -DHAVE_AVFORMAT
+      DEF_FLAGS += $(AVFORMAT_CFLAGS)
+      LIBS += $(AVFORMAT_LIBS)
+   endif
+
+   ifeq ($(HAVE_AVUTIL), 1)
+      DEFINES += -DHAVE_AVUTIL
+      DEF_FLAGS += $(AVUTIL_CFLAGS)
+      LIBS += $(AVUTIL_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWSCALE), 1)
+      DEFINES += -DHAVE_SWSCALE
+      DEF_FLAGS += $(SWSCALE_CFLAGS)
+      LIBS += $(SWSCALE_LIBS)
+   endif
+
+   ifeq ($(HAVE_SWRESAMPLE), 1)
+      DEFINES += -DHAVE_SWRESAMPLE
+      DEF_FLAGS += $(SWRESAMPLE_CFLAGS)
+      LIBS += $(SWRESAMPLE_LIBS)
+   endif
+endif
+
+ifeq ($(HAVE_FFMPEG), 1)
+ifeq ($(HAVE_AVFORMAT), 1)
+ifeq ($(HAVE_AVDEVICE), 1)
+ifeq ($(HAVE_AVCODEC), 1)
+ifeq ($(HAVE_AVUTIL), 1)
+ifeq ($(HAVE_SWSCALE), 1)
+   OBJ += camera/drivers/ffmpeg.o
+endif
+endif
+endif
+endif
+endif
 endif
 
 # Accessibility
@@ -2055,15 +2468,40 @@ ifeq ($(HAVE_NETWORKING), 1)
           $(LIBRETRO_COMM_DIR)/net/net_socket.o \
           core_updater_list.o \
           network/natt.o \
-          network/net_http_special.o \
-          tasks/task_http.o \
           tasks/task_netplay_lan_scan.o \
           tasks/task_netplay_nat_traversal.o \
 	  tasks/task_pl_thumbnail_download.o \
           tasks/task_netplay_find_content.o
 
+   ifeq ($(HAVE_EMSCRIPTEN), 1)
+     OBJ += tasks/task_http_emscripten.o
+   else
+     OBJ += tasks/task_http.o
+   endif
+
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += tasks/task_core_updater.o
+   endif
+
+   ifneq ($(findstring Linux,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+
+   ifneq ($(findstring Win,$(OS)),)
+      HAVE_CLOUDSYNC = 1
+   endif
+
+   ifeq ($(HAVE_CLOUDSYNC), 1)
+      DEFINES += -DHAVE_CLOUDSYNC
+      OBJ += tasks/task_cloudsync.o \
+             network/cloud_sync/webdav.o \
+             network/cloud_sync_driver.o
+      ifeq ($(HAVE_SSL), 1)
+         OBJ += network/cloud_sync/google_drive.o
+      endif
+      ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+         OBJ += network/cloud_sync/smb.o
+      endif
    endif
 
    ifeq ($(HAVE_BUILTINBEARSSL), 1)
@@ -2094,15 +2532,25 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    # RetroAchievements
    ifeq ($(HAVE_CHEEVOS), 1)
-      DEFINES += -DHAVE_CHEEVOS
+      DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
+
+      # rc_compat carries native recursive mutexes for the consoles
+      # that build threaded (GEKKO, 3DS, WiiU, Vita), so only a
+      # thread-less build compiles the locks out.
+      ifneq ($(HAVE_THREADS), 1)
+         DEFINES += -DRC_NO_THREADS
+      endif
 
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
+             deps/rcheevos/src/rc_client.o \
+             deps/rcheevos/src/rc_compat.o \
+             deps/rcheevos/src/rc_libretro.o \
+             deps/rcheevos/src/rc_util.o \
              deps/rcheevos/src/rcheevos/alloc.o \
-             deps/rcheevos/src/rcheevos/compat.o \
              deps/rcheevos/src/rcheevos/condition.o \
              deps/rcheevos/src/rcheevos/condset.o \
              deps/rcheevos/src/rcheevos/consoleinfo.o \
@@ -2110,17 +2558,29 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rcheevos/lboard.o \
              deps/rcheevos/src/rcheevos/memref.o \
              deps/rcheevos/src/rcheevos/operand.o \
-             deps/rcheevos/src/rcheevos/rc_libretro.o \
              deps/rcheevos/src/rcheevos/richpresence.o \
              deps/rcheevos/src/rcheevos/runtime.o \
              deps/rcheevos/src/rcheevos/runtime_progress.o \
              deps/rcheevos/src/rcheevos/trigger.o \
              deps/rcheevos/src/rcheevos/value.o \
+             deps/rcheevos/src/rhash/aes.o \
              deps/rcheevos/src/rhash/cdreader.o \
              deps/rcheevos/src/rhash/hash.o \
+             deps/rcheevos/src/rhash/hash_disc.o \
+             deps/rcheevos/src/rhash/hash_encrypted.o \
+             deps/rcheevos/src/rhash/hash_rom.o \
+             deps/rcheevos/src/rhash/hash_zip.o \
              deps/rcheevos/src/rapi/rc_api_common.o \
+             deps/rcheevos/src/rapi/rc_api_info.o \
              deps/rcheevos/src/rapi/rc_api_runtime.o \
              deps/rcheevos/src/rapi/rc_api_user.o \
+
+      # RVZ/WIA disc image support for RetroAchievements
+      HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),1,0)
+      ifeq ($(HAVE_CHEEVOS_RVZ), 1)
+         DEFINES += -DHAVE_CHEEVOS_RVZ
+         OBJ += cheevos/cheevos_rvz.o
+      endif
 
       ifeq ($(HAVE_LUA), 1)
          DEFINES += -DHAVE_LUA \
@@ -2166,34 +2626,10 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_DISCORD), 1)
-      NEED_CXX_LINKER = 1
       HAVE_PRESENCE = 1
       DEFINES += -DHAVE_DISCORD
-      INCLUDE_DIRS += -Ideps/discord-rpc/include
-
-      ifneq ($(HAVE_THREADS), 1)
-         DEFINES += -DDISCORD_DISABLE_IO_THREAD
-      endif
-
-      OBJ     += deps/discord-rpc/src/discord_rpc.o \
-                 deps/discord-rpc/src/rpc_connection.o \
-                 deps/discord-rpc/src/serialization.o
 
       OBJ     += network/discord.o
-
-      ifneq ($(findstring Win32,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_win.o \
-                 deps/discord-rpc/src/connection_win.o
-         LIBS += -lpsapi -ladvapi32
-      endif
-      ifneq ($(findstring Linux,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_linux.o \
-                 deps/discord-rpc/src/connection_unix.o
-      endif
-      ifneq ($(findstring Darwin,$(OS)),)
-         OBJ  += deps/discord-rpc/src/discord_register_osx.o \
-                 deps/discord-rpc/src/connection_unix.o
-      endif
    endif
 
    ifeq ($(HAVE_TRANSLATE), 1)
@@ -2213,7 +2649,31 @@ ifneq ($(findstring Win32,$(OS)),)
    OBJ += media/rarch.o \
           gfx/common/win32_common.o \
           frontend/drivers/platform_win32.o \
-          gfx/display_servers/dispserv_win32.o
+          gfx/display_servers/dispserv_win32.o \
+          gfx/common/dx_guids.o
+
+   # Scanline Sync. Despite the name, D3DKMT is the kernel-mode thunk
+   # into dxgkrnl.sys rather than Direct3D: gdi32 forwards
+   # D3DKMTGetScanLine to ext-ms-win-dx-d3dkmt-dxcore, the adapter is
+   # opened from a plain GDI HDC via EnumDisplayDevices()/CreateDC(),
+   # and d3dkmt_init() runs from win32_window_init(), which every win32
+   # video driver calls - w_vk_ctx, wgl_ctx, gdi and sdl2 as much as
+   # the d3d ones. It lives in win32_common.c, so gate it the same way
+   # that object is gated. It used to be defined only as a side effect
+   # of HAVE_D3D12, which silently dropped the feature from a
+   # Vulkan-or-GL-only Windows build.
+   DEFINES += -DHAVE_D3DKMT
+   INCLUDE_DIRS += -isystemgfx/include/dxsdk
+
+   # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
+   # between system <d3d8types.h> / <d3d9types.h> and the bundled
+   # <dxsdk/dxgitype.h>. See dx_guids.c header comment.
+   ifeq ($(HAVE_D3D9), 1)
+      OBJ += gfx/common/dx_guids_d3d9.o
+   endif
+   ifeq ($(HAVE_D3D8), 1)
+      OBJ += gfx/common/dx_guids_d3d8.o
+   endif
 
    ifeq ($(HAVE_GDI), 1)
       OBJ += gfx/drivers/gdi_gfx.o
@@ -2232,11 +2692,9 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o \
-          cores/libretro-ffmpeg/packet_buffer.o \
-          cores/libretro-ffmpeg/video_buffer.o \
           $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
 
-   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
+   LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS) $(AVDEVICE_LIBS)
    DEFINES += -DHAVE_FFMPEG
    DEF_FLAGS += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS) \
                 -Wno-deprecated-declarations
@@ -2286,13 +2744,24 @@ ifeq ($(HAVE_COCOA), 1)
 endif
 ifeq ($(HAVE_COCOA_METAL), 1)
    HAVE_COCOA_COMMON = 1
+   DEFINES += -DHAVE_COCOA_METAL
 endif
 
 ifeq ($(HAVE_COCOA_COMMON),1)
-   DEFINES += -DHAVE_MAIN -DOSX
+   DEFINES += -DHAVE_MAIN -DTARGET_OS_OSX=1 -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
           ui/drivers/cocoa/cocoa_common.o
+   # RetroArchPlaylistManager uses Obj-C lightweight generics and
+   # nullability macros (Xcode 7+, 2015).  It's fine on iOS/tvOS and
+   # modern macOS (10.11+), but GCC 4.0 / old clang on pre-10.11
+   # macOS SDKs can't parse the syntax.  HAVE_RETROARCH_PLAYLIST_MANAGER
+   # is set by qb/config.libs.sh based on the macOS target version
+   # (or HAVE_COCOATOUCH on iOS/tvOS).
+   ifeq ($(HAVE_RETROARCH_PLAYLIST_MANAGER), 1)
+      OBJ += ui/drivers/cocoa/RetroArchPlaylistManager.o
+   endif
+   LIBS += -framework Cocoa -framework AppKit -framework Foundation
 
    ifeq ($(HAVE_OPENGL), 1)
            DEFINES += -DGL_SILENCE_DEPRECATION
@@ -2333,10 +2802,16 @@ ifeq ($(HAVE_STATIC_VIDEO_FILTERS), 1)
           gfx/video_filters/dot_matrix_3x.o \
           gfx/video_filters/dot_matrix_4x.o \
           gfx/video_filters/upscale_1_5x.o \
+          gfx/video_filters/upscale_1_66x_fast.o \
           gfx/video_filters/upscale_256x_320x240.o \
           gfx/video_filters/picoscale_256x_320x240.o \
           gfx/video_filters/upscale_240x160_320x240.o \
-          gfx/video_filters/upscale_mix_240x160_320x240.o
+          gfx/video_filters/upscale_mix_240x160_320x240.o \
+          gfx/video_filters/dedither.o \
+          gfx/video_filters/pixel_art_aa.o \
+          gfx/video_filters/crop_borders.o \
+          gfx/video_filters/ntsc.o \
+          gfx/video_filters/ntsc_crt.o
 endif
 
 ifeq ($(WANT_IOSUHAX), 1)
@@ -2363,13 +2838,16 @@ ifeq ($(WANT_LIBFAT), 1)
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
-   OBJ += libretro-common/audio/dsp_filters/echo.o \
+   OBJ += libretro-common/audio/dsp_filters/chorus.o \
+          libretro-common/audio/dsp_filters/crystalizer.o \
+          libretro-common/audio/dsp_filters/echo.o \
           libretro-common/audio/dsp_filters/eq.o \
-          libretro-common/audio/dsp_filters/chorus.o \
           libretro-common/audio/dsp_filters/iir.o \
           libretro-common/audio/dsp_filters/panning.o \
           libretro-common/audio/dsp_filters/phaser.o \
           libretro-common/audio/dsp_filters/reverb.o \
+          libretro-common/audio/dsp_filters/tremolo.o \
+          libretro-common/audio/dsp_filters/vibrato.o \
           libretro-common/audio/dsp_filters/wahwah.o
 endif
 
@@ -2388,13 +2866,125 @@ endif
 
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
-   INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
-   SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
+   INCLUDE_DIRS += -Igfx/drivers_context/vita_pib/include
+   SOURCES := gfx/drivers_context/vita_pib/src
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
 ifeq ($(HAVE_WEBOS), 1)
   DEFINES += -DWEBOS
+endif
+
+ifeq ($(HAVE_TEST_DRIVERS), 1)
+  DEFINES += -DHAVE_TEST_DRIVERS
+  OBJ += input/drivers_joypad/test_joypad.o
+  OBJ += input/drivers/test_input.o
+endif
+
+ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+   DEFINES += -DHAVE_SMBCLIENT
+   # The libsmb2 public headers gate their <stdint.h> include on
+   # HAVE_STDINT_H (autoconf-style), and every TU that includes
+   # them - the bundled library sources and frontend consumers
+   # like network/cloud_sync/smb.c alike - needs the define.
+   # It used to arrive only as a side effect of an unrelated block,
+   # which broke builds that did not enable that block on hundreds
+   # of unknown uint*_t types. Own the dependency here.
+   DEFINES += -DHAVE_STDINT_H
+
+   ifeq ($(HAVE_SMBCLIENT),1)
+      # system libsmb2
+      ifeq ($(shell pkg-config --exists libsmb2 && echo yes),yes)
+         CFLAGS += $(shell pkg-config --cflags libsmb2)
+         LIBS   += $(shell pkg-config --libs libsmb2)
+      else
+         LIBS   += -lsmb2
+      endif
+   else ifeq ($(HAVE_BUILTINSMBCLIENT),1)
+      # builtin libsmb2
+      ifneq ($(findstring Win32,$(OS)),)
+         # WIN32_LEAN_AND_MEAN is defined with an empty replacement list on
+         # purpose. It has to be on the command line because the bundled
+         # libsmb2 needs it, but it lands on every TU in the build, and ~40
+         # RetroArch headers do a bare "#define WIN32_LEAN_AND_MEAN" of their
+         # own before including <windows.h>. A plain -DWIN32_LEAN_AND_MEAN
+         # expands to 1, which does not match those, so each one of them
+         # warns about a macro redefinition. Nothing tests the value, only
+         # #ifndef, so an empty definition is equivalent and silent.
+         CFLAGS += -D_WINDOWS -DWIN32_LEAN_AND_MEAN=
+         CFLAGS += -DNEED_RANDOM -DNEED_SRANDOM -DNEED_GETLOGIN_R
+      endif
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include/smb2
+      CFLAGS += "-D_U_=__attribute__((unused))"
+      CFLAGS += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
+      CFLAGS += -DHAVE_STDLIB_H -DSTDC_HEADERS
+      CFLAGS += -DHAVE_STRING_H
+      CFLAGS += -DHAVE_LINGER
+ifeq ($(findstring Win32,$(OS)),)
+      CFLAGS += -DHAVE_SYS_UIO_H
+      CFLAGS += -DHAVE_POLL_H -DHAVE_NETDB_H
+      CFLAGS += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
+      CFLAGS += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
+endif
+      OBJ += \
+         deps/libsmb2/lib/aes.o \
+         deps/libsmb2/lib/aes_apple.o \
+         deps/libsmb2/lib/aes128ccm.o \
+         deps/libsmb2/lib/asn1-ber.o \
+         deps/libsmb2/lib/aes_reference.o \
+         deps/libsmb2/lib/alloc.o \
+         deps/libsmb2/lib/compat.o \
+         deps/libsmb2/lib/dcerpc.o \
+         deps/libsmb2/lib/dcerpc-lsa.o \
+         deps/libsmb2/lib/dcerpc-srvsvc.o \
+         deps/libsmb2/lib/errors.o \
+         deps/libsmb2/lib/hmac.o \
+         deps/libsmb2/lib/hmac-md5.o \
+         deps/libsmb2/lib/init.o \
+         deps/libsmb2/lib/krb5-wrapper.o \
+         deps/libsmb2/lib/libsmb2.o \
+         deps/libsmb2/lib/md4c.o \
+         deps/libsmb2/lib/ntlmssp.o \
+         deps/libsmb2/lib/pdu.o \
+         deps/libsmb2/lib/sha1.o \
+         deps/libsmb2/lib/sha224-256.o \
+         deps/libsmb2/lib/sha384-512.o \
+         deps/libsmb2/lib/smb2-cmd-close.o \
+         deps/libsmb2/lib/smb2-cmd-create.o \
+         deps/libsmb2/lib/smb2-cmd-echo.o \
+         deps/libsmb2/lib/smb2-cmd-error.o \
+         deps/libsmb2/lib/smb2-cmd-flush.o \
+         deps/libsmb2/lib/smb2-cmd-ioctl.o \
+         deps/libsmb2/lib/smb2-cmd-lock.o \
+         deps/libsmb2/lib/smb2-cmd-logoff.o \
+         deps/libsmb2/lib/smb2-cmd-negotiate.o \
+         deps/libsmb2/lib/smb2-cmd-oplock-break.o \
+         deps/libsmb2/lib/smb2-cmd-notify-change.o \
+         deps/libsmb2/lib/smb2-cmd-query-directory.o \
+         deps/libsmb2/lib/smb2-cmd-query-info.o \
+         deps/libsmb2/lib/smb2-cmd-read.o \
+         deps/libsmb2/lib/smb2-cmd-session-setup.o \
+         deps/libsmb2/lib/smb2-cmd-set-info.o \
+         deps/libsmb2/lib/smb2-cmd-tree-connect.o \
+         deps/libsmb2/lib/smb2-cmd-tree-disconnect.o \
+         deps/libsmb2/lib/smb2-cmd-write.o \
+         deps/libsmb2/lib/smb2-data-file-info.o \
+         deps/libsmb2/lib/smb2-data-filesystem-info.o \
+         deps/libsmb2/lib/smb2-data-security-descriptor.o \
+         deps/libsmb2/lib/smb2-data-reparse-point.o \
+         deps/libsmb2/lib/smb2-share-enum.o \
+         deps/libsmb2/lib/smb2-signing.o \
+         deps/libsmb2/lib/smb3-seal.o \
+         deps/libsmb2/lib/socket.o \
+         deps/libsmb2/lib/spnego-wrapper.o \
+         deps/libsmb2/lib/sync.o \
+         deps/libsmb2/lib/timestamps.o \
+         deps/libsmb2/lib/usha.o \
+         deps/libsmb2/lib/unicode.o
+   endif
+
+   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
 endif
 
 #####################################
@@ -2468,6 +3058,38 @@ ifeq ($(HAVE_ODROIDGO2), 1)
   OBJ += $(DEPS_DIR)/libgo2/src/display.o \
          $(DEPS_DIR)/libgo2/src/queue.o \
          gfx/drivers/oga_gfx.o
+endif
+
+ifeq ($(HAVE_GAME_AI),1)
+   DEFINES += -DHAVE_GAME_AI
+   OBJ += ai/game_ai.o
+endif
+
+# Detect the operating system
+UNAME := $(shell uname -s)
+
+# Check if the system is MSYS2 (MINGW64 or MINGW32)
+ifneq ($(findstring MINGW,$(UNAME)),)
+$(info Detected MSYS2 environment)
+
+NT_VERSION := $(shell \
+  echo '#include <windows.h>' > temp.c; \
+  echo '#ifdef _WIN32_WINNT' >> temp.c; \
+  echo '#define GET_MACRO_VALUE(x) #x' >> temp.c; \
+  echo '#define EXPAND_MACRO_VALUE(x) GET_MACRO_VALUE(x)' >> temp.c; \
+  echo '#pragma message("_WIN32_WINNT=" EXPAND_MACRO_VALUE(_WIN32_WINNT))' >> temp.c; \
+  echo '#endif' >> temp.c; \
+  $(CC) -c temp.c 2>&1 | sed -n 's/^.*_WIN32_WINNT=\(0x[0-9A-Fa-f]\+\).*/\1/p'; \
+  rm -f temp.c temp.o)
+
+ifneq ($(NT_VERSION),)
+ifeq ($(shell [ $$(( $(NT_VERSION) )) -gt $$(( 0x602 )) ] && echo true),true)
+LIBS += -lxaudio2_9
+endif
+else
+$(warning Windows NT version macro (_WIN32_WINNT) is not defined.)
+endif
+
 endif
 
 ##################################

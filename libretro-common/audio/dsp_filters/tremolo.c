@@ -22,34 +22,57 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
-#include <string/stdstring.h>
 
 #define sqr(a) ((a) * (a))
 
 struct tremolo_core
 {
    float *wavetable;
+   /* Q16 fixed-point mirror of wavetable, for the int16 path. */
+   int32_t *wavetable_i;
    float freq;
    float depth;
-   int index;
-   int maxindex;
+   unsigned index;
+   unsigned maxindex;
 };
 
 struct tremolo
 {
    struct tremolo_core left, right;
+   /* Both channels' wavetables and their Q16 mirrors are views into this
+    * one block. */
+   uint8_t *arena;
 };
 
 static void tremolo_free(void *data)
 {
    struct tremolo *tre = (struct tremolo*)data;
-   free(tre->left.wavetable);
-   free(tre->right.wavetable);
-   free(data);
+   if (!tre)
+      return;
+   free(tre->arena);
+   free(tre);
+}
+
+/* Region spacing inside the arena, in bytes. */
+#define TREMOLO_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + 63) / 64) * 64)
+
+/* Lay one channel's two tables out at byte offset cur inside base
+ * (measure only when base is NULL); returns the cursor after them. */
+static size_t tremolocore_carve(struct tremolo_core *core, int samplerate,
+      float freq, uint8_t *base, size_t cur)
+{
+   core->maxindex    = samplerate / freq;
+   core->wavetable   = base ? (float*)(base + cur) : NULL;
+   cur               = TREMOLO_ARENA_NEXT(cur, (size_t)core->maxindex * sizeof(float));
+   core->wavetable_i = base ? (int32_t*)(base + cur) : NULL;
+   cur               = TREMOLO_ARENA_NEXT(cur, (size_t)core->maxindex * sizeof(int32_t));
+   return cur;
 }
 
 static void tremolocore_init(struct tremolo_core *core,float depth,int samplerate,float freq)
@@ -58,14 +81,13 @@ static void tremolocore_init(struct tremolo_core *core,float depth,int samplerat
    unsigned i;
    const double offset = 1. - depth / 2.;
    core->index     = 0;
-   core->maxindex  = samplerate / freq;
-   core->wavetable = malloc(core->maxindex   * sizeof(float));
-   memset(core->wavetable, 0, core->maxindex * sizeof(float));
    for (i = 0; i < core->maxindex; i++)
    {
       env                = freq * i / samplerate;
       env                = sin((M_PI*2) * fmod(env + 0.25, 1.0));
       core->wavetable[i] = env * (1 - fabs(offset)) + offset;
+      core->wavetable_i[i] =
+            (int32_t)floor((double)core->wavetable[i] * 65536.0 + 0.5);
    }
 }
 
@@ -94,16 +116,63 @@ static void tremolo_process(void *data, struct dspfilter_output *output,
    }
 }
 
+/* Deterministic int16 path: multiply by the same per-sample envelope as the
+ * float path, using the Q16 wavetable (int64 product, round-half-away-from-
+ * zero, saturate). */
+static int16_t tremolocore_core_i16(struct tremolo_core *core, int16_t in)
+{
+   int64_t v;
+   int32_t r;
+   core->index = core->index % core->maxindex;
+   v = (int64_t)in * core->wavetable_i[core->index++];
+   r = (v >= 0) ? (int32_t)(( v + 32768) >> 16)
+               : -(int32_t)((-v + 32768) >> 16);
+   if      (r >  32767) r =  32767;
+   else if (r < -32768) r = -32768;
+   return (int16_t)r;
+}
+
+static void tremolo_process_i16(void *data,
+      struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   unsigned i;
+   int16_t *out;
+   struct tremolo *tre = (struct tremolo*)data;
+
+   output->samples     = input->samples;
+   output->frames      = input->frames;
+   out                 = output->samples;
+
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      int16_t in[2]    = { out[0], out[1] };
+      out[0]           = tremolocore_core_i16(&tre->left, in[0]);
+      out[1]           = tremolocore_core_i16(&tre->right, in[1]);
+   }
+}
+
 static void *tremolo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    float freq, depth;
+   size_t len;
    struct tremolo *tre = (struct tremolo*)calloc(1, sizeof(*tre));
    if (!tre)
       return NULL;
 
    config->get_float(userdata, "freq", &freq,4.0f);
    config->get_float(userdata, "depth", &depth, 0.9f);
+   len = tremolocore_carve(&tre->left,  info->input_rate, freq, NULL, 0);
+   len = tremolocore_carve(&tre->right, info->input_rate, freq, NULL, len);
+   /* Every entry is written by init, so the block is not zeroed first. */
+   if (!(tre->arena = (uint8_t*)malloc(len)))
+   {
+      free(tre);
+      return NULL;
+   }
+   len = tremolocore_carve(&tre->left,  info->input_rate, freq, tre->arena, 0);
+   tremolocore_carve(&tre->right, info->input_rate, freq, tre->arena, len);
    tremolocore_init(&tre->left,depth,info->input_rate,freq);
    tremolocore_init(&tre->right,depth,info->input_rate,freq);
    return tre;
@@ -117,6 +186,8 @@ static const struct dspfilter_implementation tremolo_plug = {
    DSPFILTER_API_VERSION,
    "Tremolo",
    "tremolo",
+
+   tremolo_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

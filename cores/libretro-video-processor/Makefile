@@ -37,6 +37,7 @@ ifneq ($(findstring Linux,$(shell uname -a)),)
    LIBUDEV	= -ludev
    CFLAGS +=	-DHAVE_ALSA
    LIBASOUND	= -lasound
+   LIBPTHREAD	= -lpthread
 endif
 
 ifeq ($(ARCHFLAGS),)
@@ -109,7 +110,7 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
-LDFLAGS += $(LIBV4L2) $(LIBASOUND) $(LIBUDEV) -lm
+LDFLAGS += $(LIBV4L2) $(LIBASOUND) $(LIBUDEV) $(LIBPTHREAD) -lm
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -117,7 +118,9 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := video_processor_v4l2.o
+# compat_strl provides the strlcpy/strlcat fallback that compat/strl.h
+# routes to on platforms without native strl* (everything but BSD/macOS).
+OBJECTS := video_processor_v4l2.o ../../libretro-common/compat/compat_strl.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))

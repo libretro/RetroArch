@@ -37,8 +37,6 @@
 		9210C2F724B3A32D00E6FE7C /* griffin_cpp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */; };
 		9210C2F824B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */; };
 		9210C2F924B3A32D00E6FE7C /* griffin_glslang.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */; };
-		9210C2FC24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2FA24B4CB4900E6FE7C /* menu_pipeline.metal */; };
-		9210C2FD24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2FA24B4CB4900E6FE7C /* menu_pipeline.metal */; };
 		9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2FB24B4CB4900E6FE7C /* Shaders.metal */; };
 		9210C2FF24B4CB4900E6FE7C /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 9210C2FB24B4CB4900E6FE7C /* Shaders.metal */; };
 		9222F1FF2314BA7C0097C0FD /* assets.zip in Resources */ = {isa = PBXBuildFile; fileRef = 9222F1FE2314BA7C0097C0FD /* assets.zip */; };
@@ -136,8 +134,7 @@
 		9210C2F124B3A19100E6FE7C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
-		9210C2FA24B4CB4900E6FE7C /* menu_pipeline.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = menu_pipeline.metal; path = ../../gfx/common/metal/menu_pipeline.metal; sourceTree = "<group>"; };
-		9210C2FB24B4CB4900E6FE7C /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../gfx/common/metal/Shaders.metal; sourceTree = "<group>"; };
+		9210C2FB24B4CB4900E6FE7C /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../gfx/drivers/metal_shaders/Shaders.metal; sourceTree = "<group>"; };
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
@@ -165,8 +162,6 @@
 		92B9EB6A24E0518700E6CFB2 /* fopen_utf8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fopen_utf8.h; sourceTree = "<group>"; };
 		92B9EB6B24E0518700E6CFB2 /* intrinsics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = intrinsics.h; sourceTree = "<group>"; };
 		92B9EB6C24E0518700E6CFB2 /* posix_string.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = posix_string.h; sourceTree = "<group>"; };
-		92B9EB6E24E0518700E6CFB2 /* zlib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zlib.h; sourceTree = "<group>"; };
-		92B9EB6F24E0518700E6CFB2 /* zconf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zconf.h; sourceTree = "<group>"; };
 		92B9EB7024E0518700E6CFB2 /* getopt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = getopt.h; sourceTree = "<group>"; };
 		92B9EB7124E0518700E6CFB2 /* fnmatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fnmatch.h; sourceTree = "<group>"; };
 		92B9EB7224E0518700E6CFB2 /* msvc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msvc.h; sourceTree = "<group>"; };
@@ -181,7 +176,7 @@
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
 		92B9EB8124E0518700E6CFB2 /* retro_timers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_timers.h; sourceTree = "<group>"; };
-		92B9EB8324E0518700E6CFB2 /* m3u_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = m3u_file.h; sourceTree = "<group>"; };
+		92B9EB8324E0518700E6CFB2 /* rm3u.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rm3u.h; sourceTree = "<group>"; };
 		92B9EB8424E0518700E6CFB2 /* rjson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rjson.h; sourceTree = "<group>"; };
 		92B9EB8524E0518700E6CFB2 /* rxml.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rxml.h; sourceTree = "<group>"; };
 		92B9EB8624E0518700E6CFB2 /* cdfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdfs.h; sourceTree = "<group>"; };
@@ -326,7 +321,6 @@
 		92B9ECBF24E054B500E6CFB2 /* core_backup.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = core_backup.h; path = ../../core_backup.h; sourceTree = "<group>"; };
 		92B9ECC024E054B500E6CFB2 /* disk_control_interface.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = disk_control_interface.h; path = ../../disk_control_interface.h; sourceTree = "<group>"; };
 		92B9ECC124E054B600E6CFB2 /* msg_hash.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = msg_hash.c; path = ../../msg_hash.c; sourceTree = "<group>"; };
-		92B9ECC224E054B600E6CFB2 /* nvda_controller.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = nvda_controller.h; path = ../../nvda_controller.h; sourceTree = "<group>"; };
 		92B9ECC324E054B600E6CFB2 /* defaults.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = defaults.h; path = ../../defaults.h; sourceTree = "<group>"; };
 		92B9ECC424E054B600E6CFB2 /* database_info.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = database_info.c; path = ../../database_info.c; sourceTree = "<group>"; };
 		92B9ECC524E054B600E6CFB2 /* runtime_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = runtime_file.c; path = ../../runtime_file.c; sourceTree = "<group>"; };
@@ -580,8 +574,6 @@
 		92B9EB6D24E0518700E6CFB2 /* zlib */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB6E24E0518700E6CFB2 /* zlib.h */,
-				92B9EB6F24E0518700E6CFB2 /* zconf.h */,
 			);
 			path = zlib;
 			sourceTree = "<group>";
@@ -618,7 +610,7 @@
 		92B9EB8224E0518700E6CFB2 /* formats */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB8324E0518700E6CFB2 /* m3u_file.h */,
+				92B9EB8324E0518700E6CFB2 /* rm3u.h */,
 				92B9EB8424E0518700E6CFB2 /* rjson.h */,
 				92B9EB8524E0518700E6CFB2 /* rxml.h */,
 				92B9EB8624E0518700E6CFB2 /* cdfs.h */,
@@ -907,7 +899,6 @@
 				92B9ECBE24E054B500E6CFB2 /* manual_content_scan.h */,
 				92B9ECC124E054B600E6CFB2 /* msg_hash.c */,
 				92B9ECAE24E054B400E6CFB2 /* msg_hash.h */,
-				92B9ECC224E054B600E6CFB2 /* nvda_controller.h */,
 				92B9ECAA24E054B400E6CFB2 /* paths.h */,
 				92B9ECA524E054B300E6CFB2 /* performance_counters.h */,
 				92B9EC9F24E053BD00E6CFB2 /* playlist.c */,
@@ -1015,7 +1006,6 @@
 				92B9EAE024E04F8800E6CFB2 /* Sources */,
 				9222F2082315DAD50097C0FD /* Launch Screen.storyboard */,
 				9222F1FE2314BA7C0097C0FD /* assets.zip */,
-				9210C2FA24B4CB4900E6FE7C /* menu_pipeline.metal */,
 				9210C2FB24B4CB4900E6FE7C /* Shaders.metal */,
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
@@ -1260,7 +1250,6 @@
 				92CC05B421FE3C1700FF79F0 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				92CC05B021FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C221FE3C6D00FF79F0 /* WebServer.m in Sources */,
-				9210C2FC24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */,
 				9210C2FE24B4CB4900E6FE7C /* Shaders.metal in Sources */,
 				92CC05BA21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AE21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
@@ -1289,7 +1278,6 @@
 				92CC05B521FE3C1700FF79F0 /* GCDWebServerURLEncodedFormRequest.m in Sources */,
 				92CC05B121FE3C1700FF79F0 /* GCDWebServerDataResponse.m in Sources */,
 				92CC05C321FE3C6D00FF79F0 /* WebServer.m in Sources */,
-				9210C2FD24B4CB4900E6FE7C /* menu_pipeline.metal in Sources */,
 				9210C2FF24B4CB4900E6FE7C /* Shaders.metal in Sources */,
 				92CC05BB21FE3C1700FF79F0 /* GCDWebServerFileRequest.m in Sources */,
 				92CC05AF21FE3C1700FF79F0 /* GCDWebServerFileResponse.m in Sources */,
@@ -1323,7 +1311,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.16.0;
+				CURRENT_PROJECT_VERSION = 1.22.2;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1332,7 +1320,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1352,7 +1339,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.16.0;
+				MARKETING_VERSION = 1.22.2;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = (
@@ -1366,7 +1353,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1391,8 +1378,9 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -1415,7 +1403,6 @@
 					"-DHAVE_GLSLANG",
 					"-DWANT_GLSLANG",
 					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_CHEATS",
 					"-DHAVE_CORE_INFO_CACHE",
@@ -1426,7 +1413,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
@@ -1449,7 +1435,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_RESOURCE_RULES_PATH = "$(SDKROOT)/ResourceRules.plist";
-				CURRENT_PROJECT_VERSION = 1.16.0;
+				CURRENT_PROJECT_VERSION = 1.22.2;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
 				ENABLE_BITCODE = NO;
@@ -1458,7 +1444,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1478,7 +1463,7 @@
 					"@executable_path/Frameworks",
 					"$(PROJECT_DIR)/iOS/modules",
 				);
-				MARKETING_VERSION = 1.16.0;
+				MARKETING_VERSION = 1.22.2;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
 					"-DNS_BLOCK_ASSERTIONS=1",
@@ -1493,7 +1478,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1520,8 +1505,9 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -1536,7 +1522,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -1552,7 +1537,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1578,8 +1563,9 @@
 					"-DHAVE_DYNAMIC",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -1588,7 +1574,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
@@ -1603,7 +1588,6 @@
 					"-DHAVE_GLSLANG",
 					"-DWANT_GLSLANG",
 					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_CHEATS",
 					"-DHAVE_CORE_INFO_CACHE",
@@ -1656,7 +1640,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.16.0;
+				CURRENT_PROJECT_VERSION = 1.22.2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1672,7 +1656,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1690,7 +1673,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.16.0;
+				MARKETING_VERSION = 1.22.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1705,7 +1688,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1729,8 +1712,9 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -1752,7 +1736,6 @@
 					"-DHAVE_GLSLANG",
 					"-DWANT_GLSLANG",
 					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
@@ -1798,7 +1781,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.16.0;
+				CURRENT_PROJECT_VERSION = 1.22.2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPS_DIR = "$(SRCBASE)/deps";
 				DEVELOPMENT_TEAM = UK699V5ZS8;
@@ -1814,7 +1797,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1832,7 +1814,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/tvOS/modules",
 				);
-				MARKETING_VERSION = 1.16.0;
+				MARKETING_VERSION = 1.22.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				OTHER_CFLAGS = (
@@ -1848,7 +1830,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1872,8 +1854,9 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -1883,7 +1866,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
@@ -1897,7 +1879,6 @@
 					"-DHAVE_GLSLANG",
 					"-DWANT_GLSLANG",
 					"-DGLSLANG_OSINCLUDE_UNIX",
-					"-DENABLE_HLSL",
 					"-DHAVE_BUILTINGLSLANG",
 					"-DHAVE_CHEATS",
 					"-DHAVE_CORE_INFO_CACHE",
@@ -1957,7 +1938,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1984,8 +1965,9 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",
@@ -2032,7 +2014,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -2059,8 +2041,9 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
+					"-DHAVE_RWEBP",
+					"-DHAVE_RDDS",
 					"-DHAVE_RJPEG",
 					"-DHAVE_RBMP",
 					"-DHAVE_RTGA",

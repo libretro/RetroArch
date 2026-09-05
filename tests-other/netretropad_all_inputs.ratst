@@ -1,0 +1,130 @@
+[
+{
+  "expected_button": 8,
+  "message": "Press A (face button right)"
+},
+{
+  "expected_button": 0,
+  "message": "Press B (face button bottom)"
+},
+{
+  "expected_button": 9,
+  "message": "Press X (face button top)"
+},
+{
+  "expected_button": 1,
+  "message": "Press Y (face button left)"
+},
+{
+  "expected_button": 2,
+  "message": "Press Select"
+},
+{
+  "expected_button": 3,
+  "message": "Press Start"
+},
+{
+  "expected_button": 4,
+  "message": "Press D-Pad Up"
+},
+{
+  "expected_button": 5,
+  "message": "Press D-Pad Down"
+},
+{
+  "expected_button": 6,
+  "message": "Press D-Pad Left"
+},
+{
+  "expected_button": 7,
+  "message": "Press D-Pad Right"
+},
+{
+  "expected_button": 10,
+  "message": "Press L1"
+},
+{
+  "expected_button": 11,
+  "message": "Press R1"
+},
+{
+  "expected_button": 12,
+  "message": "Press L2"
+},
+{
+  "expected_button": 13,
+  "message": "Press R2"
+},
+{
+  "expected_button": 14,
+  "message": "Press L3"
+},
+{
+  "expected_button": 15,
+  "message": "Press R3"
+},
+{
+  "expected_button": 25,
+  "message": "Move left analog stick up slightly"
+},
+{
+  "expected_button": 24,
+  "message": "Move left analog stick up fully"
+},
+{
+  "expected_button": 26,
+  "message": "Move left analog stick down slightly"
+},
+{
+  "expected_button": 27,
+  "message": "Move left analog stick down fully"
+},
+{
+  "expected_button": 17,
+  "message": "Move left analog stick left slightly"
+},
+{
+  "expected_button": 16,
+  "message": "Move left analog stick left fully"
+},
+{
+  "expected_button": 18,
+  "message": "Move left analog stick right slightly"
+},
+{
+  "expected_button": 19,
+  "message": "Move left analog stick right fully"
+},
+{
+  "expected_button": 29,
+  "message": "Move right analog stick up slightly"
+},
+{
+  "expected_button": 28,
+  "message": "Move right analog stick up fully"
+},
+{
+  "expected_button": 30,
+  "message": "Move right analog stick down slightly"
+},
+{
+  "expected_button": 31,
+  "message": "Move right analog stick down fully"
+},
+{
+  "expected_button": 21,
+  "message": "Move right analog stick left slightly"
+},
+{
+  "expected_button": 20,
+  "message": "Move right analog stick left fully"
+},
+{
+  "expected_button": 22,
+  "message": "Move right analog stick right slightly"
+},
+{
+  "expected_button": 23,
+  "message": "Move right analog stick right fully"
+}
+]

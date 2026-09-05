@@ -64,6 +64,9 @@ else
     CPPFLAGS += -DSR_WITH_KMSDRM
     EXTRA_LIBS = libdrm
     SRC += custom_video_drmkms.cpp
+    ifeq ($(SR_WITH_DRMHOOK),1)
+        CPPFLAGS += -DSR_WITH_DRMHOOK
+    endif
 endif
 
 # SDL2 misses a test for drm as drm.h is required
@@ -150,8 +153,8 @@ install:
 	$(INSTALL) -Dm644 switchres.h $(INCDIR)/switchres/switchres.h
 	$(INSTALL) -Dm644 switchres.pc $(PKGDIR)/switchres.pc
 ifneq ($(SO_NAME),)
-	$(LN) -s $(REAL_SO_NAME) $(LIBDIR)/$(SO_NAME)
-	$(LN) -s $(SO_NAME) $(LIBDIR)/$(LINKER_NAME)
+	$(LN) -s -f $(REAL_SO_NAME) $(LIBDIR)/$(SO_NAME)
+	$(LN) -s -f $(SO_NAME) $(LIBDIR)/$(LINKER_NAME)
 endif
 
 uninstall:

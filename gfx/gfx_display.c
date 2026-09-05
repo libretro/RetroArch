@@ -14,13 +14,28 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string/stdstring.h>
+
 #include "gfx_display.h"
 
+#ifdef HAVE_SDL2
+/* SDL_version.h is needed for the SDL_VERSION_ATLEAST gate on the
+ * gfx_display_ctx_sdl2 table entry. The driver itself requires
+ * SDL_RenderGeometry (>= 2.0.18); on older SDL the symbol is not
+ * defined in sdl2_gfx.c, so the table entry must be elided too. */
+#include <SDL_version.h>
+#endif
+
 #include "../configuration.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_MIST
 #include "../steam/steam.h"
+#endif
+
+#ifdef HAVE_COCOATOUCH
+#include "../ui/drivers/cocoa/apple_platform.h"
 #endif
 
 /* Standard reference DPI value, used when determining
@@ -79,8 +94,8 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_METAL
    &gfx_display_ctx_metal,
 #endif
-#ifdef HAVE_VITA2D
-   &gfx_display_ctx_vita2d,
+#ifdef HAVE_GXM
+   &gfx_display_ctx_gxm,
 #endif
 #ifdef _3DS
    &gfx_display_ctx_ctr,
@@ -95,6 +110,14 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,
 #endif
+#endif
+#ifdef HAVE_SDL2
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   &gfx_display_ctx_sdl2,
+#endif
+#endif
+#ifdef HAVE_SDL3
+   &gfx_display_ctx_sdl3,
 #endif
    NULL,
 };
@@ -121,24 +144,8 @@ static float gfx_display_get_dpi_scale_internal(
    diagonal_pixels = (float)sqrt(
          (double)((width * width) + (height * height)));
 
-   /* TODO/FIXME: On Mac, calling video_context_driver_get_metrics()
-    * here causes RetroArch to crash (EXC_BAD_ACCESS). This is
-    * unfortunate, and needs to be fixed at the gfx context driver
-    * level. Until this is done, all we can do is fallback to using
-    * the old legacy 'magic number' scaling on Mac platforms. */
-#if !defined(HAVE_COCOATOUCH) && (defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
-   if (true)
-   {
-      scale        = (diagonal_pixels / 6.5f) / 212.0f;
-      scale_cached = true;
-      last_width   = width;
-      last_height  = height;
-      return scale;
-   }
-#endif
-
    /* Get pixel scale relative to baseline 1080p display */
-   pixel_scale   = diagonal_pixels / DIAGONAL_PIXELS_1080P;
+   pixel_scale   = diagonal_pixels / (float)DIAGONAL_PIXELS_1080P;
 
    /* Attempt to get display DPI */
    metrics.type  = DISPLAY_METRIC_DPI;
@@ -262,18 +269,18 @@ float gfx_display_get_dpi_scale(
    bool gfx_widget_scale_auto                          = settings->bools.menu_widget_scale_auto;
 #if (defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
    float menu_widget_scale_factor                      = settings->floats.menu_widget_scale_factor;
-#else
+#else /* !RARCH_CONSOLE && !RARCH_MOBILE */
    float menu_widget_scale_factor_fullscreen           = settings->floats.menu_widget_scale_factor;
    float menu_widget_scale_factor_windowed             = settings->floats.menu_widget_scale_factor_windowed;
    float menu_widget_scale_factor                      = fullscreen ?
          menu_widget_scale_factor_fullscreen : menu_widget_scale_factor_windowed;
-#endif
+#endif /* RARCH_CONSOLE || RARCH_MOBILE */
    float menu_scale_factor                             = is_widget
       ? menu_widget_scale_factor
       : settings->floats.menu_scale_factor;
-#else
+#else /* !HAVE_GFX_WIDGETS */
    float menu_scale_factor                             = settings->floats.menu_scale_factor;
-#endif
+#endif /* HAVE_GFX_WIDGETS */
 
 #ifdef HAVE_GFX_WIDGETS
    if (is_widget)
@@ -288,11 +295,11 @@ float gfx_display_get_dpi_scale(
          if (p_disp->menu_driver_id == MENU_DRIVER_ID_RGUI)
             menu_scale_factor        = 1.0f;
          else
-#endif
+#endif /* HAVE_RGUI */
             menu_scale_factor        = settings->floats.menu_scale_factor;
       }
    }
-#endif
+#endif /* HAVE_GFX_WIDGETS */
 
    /* Scale is based on display metrics - these are a fixed
     * hardware property. To minimise performance overheads
@@ -399,22 +406,32 @@ font_data_t *gfx_display_font_file(
          font_size = 2.0f;
       if ((font_data = font_driver_init_first(video_driver_get_ptr(),
                   fontpath, font_size, true, is_threaded,
-                  dispctx->font_type)))
+                  dispctx->font_backend)))
          return font_data;
    }
    return NULL;
 }
 
 /* Draw text on top of the screen */
-void gfx_display_draw_text(
+static void gfx_display_draw_text_internal(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
-      uint32_t color, enum text_alignment text_align,
+      uint32_t color, const float *color_hp,
+      enum text_alignment text_align,
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
    struct font_params params;
    video_driver_state_t *video_st = video_state_get_ptr();
+
+   /* NULL text is a no-op: ozone_draw_footer and similar menu code can
+    * legitimately reach here with text==NULL for unset/optional fields,
+    * and the original code path passed it straight through to
+    * font_driver_render_msg whose (msg && *msg) check turned it into
+    * a no-op.  Now that we strlen() at this boundary, NULL has to be
+    * caught before the strlen. */
+   if (!text)
+      return;
 
    if ((color & 0x000000FF) == 0)
       return;
@@ -433,6 +450,7 @@ void gfx_display_draw_text(
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;
    params.color       = color;
+   params.color_hp    = color_hp;
    params.full_screen = true;
    params.text_align  = text_align;
 
@@ -445,20 +463,51 @@ void gfx_display_draw_text(
 
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
-            text, &params, (void*)font);
+            text, strlen(text), &params, (void*)font);
+}
+
+void gfx_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   gfx_display_draw_text_internal(font, text, x, y, width, height,
+         color, NULL, text_align, scale, shadows_enable, shadow_offset,
+         draw_outside);
+}
+
+/* As gfx_display_draw_text, but drives the glyph colour at full float
+ * precision (color_rgba points to 4 floats R,G,B,A in 0..1) so text can
+ * exceed 8 bits per channel on a deep-colour framebuffer. The 8-bit 'color'
+ * is still supplied for backends that ignore the high-precision path (they
+ * fall back to it), so pass an equivalent packed value. Font backends that
+ * do not opt in behave exactly as the 8-bit entry point. */
+void gfx_display_draw_text_hp(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, const float *color_rgba,
+      enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   gfx_display_draw_text_internal(font, text, x, y, width, height,
+         color, color_rgba, text_align, scale, shadows_enable,
+         shadow_offset, draw_outside);
 }
 
 void gfx_display_draw_bg(
       gfx_display_t *p_disp,
       gfx_display_ctx_draw_t *draw,
+      struct video_coords *coords,
       void *userdata, bool add_opacity_to_wallpaper,
       float override_opacity)
 {
-   static struct video_coords coords;
    const float           *new_vertex = NULL;
    const float        *new_tex_coord = NULL;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   if (!dispctx || !draw)
+   if (!dispctx || !draw || !coords)
       return;
 
    if (draw->vertex)
@@ -471,13 +520,13 @@ void gfx_display_draw_bg(
    else if (dispctx->get_default_tex_coords)
       new_tex_coord                  = dispctx->get_default_tex_coords();
 
-   coords.vertices                   = (unsigned)draw->vertex_count;
-   coords.vertex                     = new_vertex;
-   coords.tex_coord                  = new_tex_coord;
-   coords.lut_tex_coord              = new_tex_coord;
-   coords.color                      = (const float*)draw->color;
+   coords->vertices                  = (unsigned)draw->vertex_count;
+   coords->vertex                    = new_vertex;
+   coords->tex_coord                 = new_tex_coord;
+   coords->lut_tex_coord             = new_tex_coord;
+   coords->color                     = (const float*)draw->color;
 
-   draw->coords                      = &coords;
+   draw->coords                      = coords;
    draw->scale_factor                = 1.0f;
    draw->rotation                    = 0.0f;
 
@@ -511,7 +560,7 @@ void gfx_display_draw_quad(
 
    if (w == 0 || h == 0)
       return;
-   if (!dispctx)
+   if (!dispctx || !color)
       return;
 
    coords.vertices      = 4;
@@ -526,10 +575,9 @@ void gfx_display_draw_quad(
    draw.height          = h;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture != 0)
+   draw.texture         = (texture && *texture)
       ? *texture
       : gfx_white_texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -559,83 +607,74 @@ void gfx_display_draw_texture_slice(
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
-   gfx_display_ctx_driver_t
-      *dispctx              = p_disp->dispctx;
-   float V_BL[2], V_BR[2], V_TL[2], V_TR[2], T_BL[2], T_BR[2], T_TL[2], T_TR[2];
-   /* To prevent visible seams between the corners and
-    * middle segments of the sliced texture, the texture
-    * must be scaled such that its effective size (before
-    * expansion of the middle segments) is no greater than
-    * the requested display size.
-    * > This is consequence of the way textures are rendered
-    *   in hardware...
-    * > Whenever an image is scaled, the colours at the
-    *   transparent edges get interpolated, which means
-    *   the colours of the transparent pixels themselves bleed
-    *   into the visible area.
-    * > This effectively 'blurs' anything that gets scaled
-    *   [SIDE NOTE: this causes additional issues if the transparent
-    *    pixels have the wrong colour - i.e. if they are black,
-    *    every edge gets a nasty dark border...]
-    * > This blurring is a problem because (by design) the corners
-    *   of the sliced texture are drawn at native resolution,
-    *   whereas the middle segments are stretched to fit the
-    *   requested dimensions. Consequently, the corners are sharp
-    *   while the middle segments are blurred.
-    * > When *upscaling* the middle segments (i.e. display size
-    *   greater than texture size), the visible effects of this
-    *   are mostly imperceptible.
-    * > When *downscaling* them, however, the interpolation effects
-    *   completely dominate the output image - creating an ugly
-    *   transition between the corners and middle parts.
-    * > Since this is a property of hardware rendering, it is not
-    *   practical to fix this 'properly'...
-    * > However: An effective workaround is to force downscaling of
-    *   the entire texture (including corners) whenever the
-    *   requested display size is less than the texture dimensions.
-    * > This blurs the corners enough that the corner/middle
-    *   transitions are essentially invisible. */
-   float max_scale_w = (float)new_w / (float)w;
-   float max_scale_h = (float)new_h / (float)h;
-   /* Find the minimum of scale_factor, max_scale_w, max_scale_h */
-   float slice_scale = (scale_factor < max_scale_w) ?
-         (scale_factor < max_scale_h) ? scale_factor : max_scale_h :
-         (max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h;
-
-   /* Need space for the coordinates of two triangles in a strip,
-    * so 8 vertices */
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   float V_BL[2], V_BR[2], V_TL[2], V_TR[2];
+   float T_BL[2], T_BR[2], T_TL[2], T_TR[2];
    float tex_coord[8];
    float vert_coord[8];
-   static float colors[16] = {
+   float max_scale_w, max_scale_h, slice_scale;
+   float vert_woff, vert_hoff, tex_woff, tex_hoff;
+   float vert_scaled_mid_width, vert_scaled_mid_height;
+   float tex_mid_width, tex_mid_height;
+   float norm_x, norm_y;
+   static const float colors[16] = {
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
 
-   /* normalized width/height of the amount to offset from the corners,
-    * for both the vertex and texture coordinates */
-   float vert_woff   = (offset * slice_scale) / (float)width;
-   float vert_hoff   = (offset * slice_scale) / (float)height;
-   float tex_woff    = offset / (float)w;
-   float tex_hoff    = offset / (float)h;
-
-   /* the width/height of the middle sections of both the scaled and original image */
-   float vert_scaled_mid_width  = (new_w - (offset * slice_scale * 2))
-      / (float)width;
-   float vert_scaled_mid_height = (new_h - (offset * slice_scale * 2))
-      / (float)height;
-   float tex_mid_width          = (w - (offset * 2)) / (float)w;
-   float tex_mid_height         = (h - (offset * 2)) / (float)h;
-
-   /* normalized coordinates for the start position of the image */
-   float norm_x                 = x / (float)width;
-   float norm_y                 = (height - y) / (float)height;
-
-   if (width == 0 || height == 0)
+   /* Early-out: guard against division by zero from
+    * zero display dimensions or zero texture dimensions */
+   if (width == 0 || height == 0 || w == 0 || h == 0)
       return;
    if (!dispctx || !dispctx->draw)
       return;
+
+   /* To prevent visible seams between the corners and
+    * middle segments of the sliced texture, the texture
+    * must be scaled such that its effective size (before
+    * expansion of the middle segments) is no greater than
+    * the requested display size.
+    * > Whenever an image is scaled, the colours at the
+    *   transparent edges get interpolated, which means
+    *   the colours of the transparent pixels bleed into
+    *   the visible area.
+    * > This is a problem because (by design) the corners
+    *   of the sliced texture are drawn at native resolution,
+    *   whereas the middle segments are stretched to fit.
+    * > When *downscaling*, the interpolation effects dominate
+    *   the output - creating an ugly corner/middle transition.
+    * > Workaround: force downscaling of the entire texture
+    *   (including corners) whenever the requested display size
+    *   is less than the texture dimensions. */
+   max_scale_w = (float)new_w / (float)w;
+   max_scale_h = (float)new_h / (float)h;
+
+   /* Find the minimum of scale_factor, max_scale_w, max_scale_h */
+   slice_scale = (scale_factor < max_scale_w)
+      ? ((scale_factor < max_scale_h) ? scale_factor : max_scale_h)
+      : ((max_scale_w  < max_scale_h) ? max_scale_w  : max_scale_h);
+
+   /* Normalized width/height of the amount to offset from the corners,
+    * for both the vertex and texture coordinates */
+   vert_woff   = (offset * slice_scale) / (float)width;
+   vert_hoff   = (offset * slice_scale) / (float)height;
+   tex_woff    = offset / (float)w;
+   tex_hoff    = offset / (float)h;
+
+   /* The width/height of the middle sections of both
+    * the scaled and original image */
+   vert_scaled_mid_width  = (new_w - (offset * slice_scale * 2))
+      / (float)width;
+   vert_scaled_mid_height = (new_h - (offset * slice_scale * 2))
+      / (float)height;
+   tex_mid_width          = (w - (offset * 2)) / (float)w;
+   tex_mid_height         = (h - (offset * 2)) / (float)h;
+
+   /* Normalized coordinates for the start position of the image */
+   norm_x = x / (float)width;
+   norm_y = (height - y) / (float)height;
 
    /* The four vertices of the top-left corner of the image,
     * used as a starting point for all the other sections
@@ -669,16 +708,17 @@ void gfx_display_draw_texture_slice(
    draw.height              = height;
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
-   draw.prim_type           = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
    draw.texture             = texture;
    draw.x                   = 0;
    draw.y                   = 0;
+   draw.scale_factor        = 1.0f;
+   draw.rotation            = 0.0f;
 
-   /* vertex coords are specfied bottom-up in this order: BL BR TL TR */
-   /* texture coords are specfied top-down in this order: BL BR TL TR */
+   /* vertex coords are specified bottom-up in this order: BL BR TL TR */
+   /* texture coords are specified top-down in this order: BL BR TL TR */
 
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
@@ -882,7 +922,7 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
       : NULL;
    if (b)
    {
-      static math_matrix_4x4 rot         = {
+      math_matrix_4x4 rot             = {
          {  0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          0.0f,          0.0f ,
             0.0f,          0.0f,          1.0f,          0.0f ,
@@ -915,6 +955,10 @@ void gfx_display_draw_cursor(
    if (!dispctx)
       return;
 
+   /* Bail out early if cursor should not be drawn */
+   if (!cursor_visible)
+      return;
+
    coords.vertices      = 4;
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
@@ -928,7 +972,6 @@ void gfx_display_draw_cursor(
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = texture;
-   draw.prim_type       = GFX_DISPLAY_PRIM_TRIANGLESTRIP;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -954,9 +997,9 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 
    for (i = 0; i < 44; i++)
    {
-      int line_y    = (i / 11)*height/10.0;
-      int ptr_x     = width/2.0 - (11*ptr_width)/2.0 + (i % 11) * ptr_width;
-      int ptr_y     = height/2.0 + ptr_height*1.5 + line_y - ptr_height;
+      int line_y    = (int)((i / 11) * height / 10);
+      int ptr_x     = (int)(width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
+      int ptr_y     = (int)(height / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_height)
@@ -980,21 +1023,25 @@ void gfx_display_draw_keyboard(
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
-   static float white[16]    =  {
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
-      1.00, 1.00, 1.00, 1.00,
+   static const float white[16]    =  {
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
+      1.00f, 1.00f, 1.00f, 1.00f,
    };
-   static float osk_dark[16] =  {
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
-      0.00, 0.00, 0.00, 0.85,
+   static const float osk_dark[16] =  {
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
+      0.00f, 0.00f, 0.00f, 0.85f,
    };
 
 #ifdef HAVE_MIST
    if (steam_has_osk_open())
+      return;
+#endif
+#ifdef HAVE_COCOATOUCH
+   if (ios_keyboard_active())
       return;
 #endif
 
@@ -1004,12 +1051,12 @@ void gfx_display_draw_keyboard(
          video_width,
          video_height,
          0,
-         video_height / 2.0,
+         (int)(video_height / 2),
          video_width,
-         video_height / 2.0,
+         video_height / 2,
          video_width,
          video_height,
-         &osk_dark[0],
+         (float*)osk_dark,
          NULL);
 
    ptr_width  = video_width  / 11;
@@ -1020,7 +1067,7 @@ void gfx_display_draw_keyboard(
 
    for (i = 0; i < 44; i++)
    {
-      int line_y     = (i / 11) * video_height / 10.0;
+      int line_y     = (int)((i / 11) * video_height / 10);
       unsigned color = 0xffffffff;
 
       if (i == id)
@@ -1033,12 +1080,12 @@ void gfx_display_draw_keyboard(
            userdata,
            video_width,
            video_height,
-           video_width / 2.0 - (11 * ptr_width) / 2.0 + (i % 11) * ptr_width,
-           video_height / 2.0 + ptr_height * 1.5 + line_y - ptr_height,
+           (int)(video_width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width),
+           (int)(video_height / 2 + ptr_height * 3 / 2 + line_y - ptr_height),
            ptr_width, ptr_height,
            video_width,
            video_height,
-           &white[0],
+           (float*)white,
            &hover_texture);
 
          if (dispctx && dispctx->blend_end)
@@ -1048,9 +1095,10 @@ void gfx_display_draw_keyboard(
       }
 
       gfx_display_draw_text(font, grid[i],
-            video_width/2.0 - (11*ptr_width)/2.0 + (i % 11)
-            * ptr_width + ptr_width/2.0,
-            video_height / 2.0 + ptr_height + line_y + font->size / 3,
+            (float)(video_width / 2 - (11 * ptr_width) / 2
+               + (i % 11) * ptr_width + ptr_width / 2),
+            (float)(video_height / 2 + ptr_height + line_y)
+               + font->size / 3.0f,
             video_width,
             video_height,
             color,
@@ -1071,7 +1119,8 @@ bool gfx_display_reset_textures_list_buffer(
    ti.width         = 0;
    ti.height        = 0;
    ti.pixels        = NULL;
-   ti.supports_rgba = video_driver_supports_rgba();
+   ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10         = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1081,12 +1130,16 @@ bool gfx_display_reset_textures_list_buffer(
       if (height)
          *height    = ti.height;
 
-      /* if the poke interface doesn't support texture load then return false */
-      if (video_driver_texture_load(&ti, filter_type, item))
+      /* If the poke interface doesn't support 
+         texture load then free and return false */
+      if (!video_driver_texture_load(&ti, filter_type, item))
       {
          image_texture_free(&ti);
-         return true;
+         return false;
       }
+
+      image_texture_free(&ti);
+      return true;
    }
    return false;
 }
@@ -1103,9 +1156,10 @@ bool gfx_display_reset_textures_list(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = video_driver_supports_rgba();
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
 
-   if (string_is_empty(texture_path))
+   if (!texture_path || !*texture_path)
       return false;
 
    fill_pathname_join_special(texpath,
@@ -1120,11 +1174,103 @@ bool gfx_display_reset_textures_list(
    if (height)
       *height = ti.height;
 
-   video_driver_texture_load(&ti,
-         filter_type, item);
+   if (!video_driver_texture_load(&ti,
+         filter_type, item))
+   {
+      image_texture_free(&ti);
+      return false;
+   }
+
    image_texture_free(&ti);
 
    return true;
+}
+
+bool gfx_display_reset_icon_texture(
+      const char *texture_path,
+      uintptr_t *item, enum texture_filter_type filter_type,
+      unsigned *width, unsigned *height)
+{
+   struct texture_image ti;
+
+   ti.width                      = 0;
+   ti.height                     = 0;
+   ti.pixels                     = NULL;
+   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
+
+   if (!texture_path || !*texture_path)
+      return false;
+   if (!image_texture_load(&ti, texture_path))
+      return false;
+
+   if (width)
+      *width = ti.width;
+   if (height)
+      *height = ti.height;
+
+   if (!video_driver_texture_load(&ti, filter_type, item))
+   {
+      image_texture_free(&ti);
+      return false;
+   }
+
+   image_texture_free(&ti);
+
+   return true;
+}
+
+/* -----------------------------------------------------------------------
+ * Platform-adaptive icon/texture loading
+ *
+ * Dispatches to either the synchronous (blocking) or asynchronous
+ * (task-queue) icon loading path depending on the platform.
+ *
+ * Platforms that define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS get the
+ * pre-async behavior: image_texture_load -> video_driver_texture_load
+ * in one call, no task queue involvement.  This avoids frame-spread
+ * I/O and GL context contention on platforms where the async path is
+ * actually slower (e.g. Android behind SAF / fuse storage).
+ *
+ * To opt a new platform into the synchronous path, add it to the
+ * ifdef below.
+ * ----------------------------------------------------------------------- */
+
+#if 0 
+#define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+#endif
+
+enum texture_filter_type gfx_display_texture_filter(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings && settings->bools.menu_texture_mipmapping)
+      return TEXTURE_FILTER_MIPMAP_LINEAR;
+   return TEXTURE_FILTER_LINEAR;
+}
+
+bool gfx_display_load_icon(
+      const char *fullpath,
+      bool supports_rgba,
+      uintptr_t *target_texture,
+      uint64_t generation,
+      uint64_t *generation_ptr)
+{
+#ifdef GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
+   /* Synchronous path - identical to pre-async behavior.
+    * Generation counter is irrelevant: the load completes
+    * before this function returns, so there is no in-flight
+    * callback that could write to a freed pointer. */
+   (void)supports_rgba;
+   (void)generation;
+   (void)generation_ptr;
+   return gfx_display_reset_icon_texture(
+         fullpath, target_texture,
+         gfx_display_texture_filter(), NULL, NULL);
+#else
+   return task_push_icon_load(
+         fullpath, supports_rgba,
+         target_texture, generation, generation_ptr);
+#endif
 }
 
 void gfx_display_deinit_white_texture(void)
@@ -1139,9 +1285,11 @@ void gfx_display_init_white_texture(void)
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
 
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&white_data;
+   ti.width      = 1;
+   ti.height     = 1;
+   ti.pixels     = (uint32_t*)&white_data;
+   ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
+   ti.pix10      = false; /* 8-bit white; must not be read as 10-bit */
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);
@@ -1152,13 +1300,12 @@ void gfx_display_free(void)
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
-   p_disp->flags              &= ~(GFX_DISP_FLAG_MSG_FORCE
-                                 | GFX_DISP_FLAG_HAS_WINDOWED
-                                  );
+   p_disp->flags               = 0;
    p_disp->header_height       = 0;
    p_disp->framebuf_width      = 0;
    p_disp->framebuf_height     = 0;
    p_disp->framebuf_pitch      = 0;
+   p_disp->menu_driver_id      = MENU_DRIVER_ID_UNKNOWN;
    p_disp->dispctx             = NULL;
 }
 
@@ -1188,7 +1335,7 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       if (     (type != GFX_VIDEO_DRIVER_GENERIC)
             && (!string_is_equal(video_driver, ident)))
          continue;
-      RARCH_LOG("[Display]: Found display driver: \"%s\".\n", ident);
+      RARCH_LOG("[Display] Found display driver: \"%s\".\n", ident);
       p_disp->dispctx = dispctx;
       return true;
    }

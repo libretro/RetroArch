@@ -64,6 +64,7 @@ enum translation_lang
    TRANSLATION_LANG_TH,    /* Thai */
    TRANSLATION_LANG_TR,    /* Turkish */
    TRANSLATION_LANG_UK,    /* Ukrainian */
+   TRANSLATION_LANG_BE,    /* Belarusian */
    TRANSLATION_LANG_UR,    /* Urdu */
    TRANSLATION_LANG_VI,    /* Vietnamese */
    TRANSLATION_LANG_CY,    /* Welsh */

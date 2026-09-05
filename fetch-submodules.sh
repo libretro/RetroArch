@@ -1,6 +1,8 @@
 #! /usr/bin/env bash
 # vim: set ts=3 sw=3 noet ft=sh : bash
 
+set -e # quit script on error
+
 # TODO: This entire script _should_ be replaced with git submodules, but
 # that cannot be done until we sort out the limitations of that option.  At
 # this time, this script is called by libretro-super.  Revisit the whole

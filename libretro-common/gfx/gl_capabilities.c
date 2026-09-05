@@ -20,12 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdint.h>
-#include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <boolean.h>
+
+#if defined(__APPLE__)
+/* Every TARGET_OS_* macro is defined to 0 or 1 here; test the value,
+ * never the definition. */
+#include <TargetConditionals.h>
+#endif
 
 #include <glsym/glsym.h>
 
@@ -78,27 +83,27 @@ bool gl_query_extension(const char *ext)
    return ret;
 }
 
-bool gl_check_error(char **error_string)
+bool gl_check_error(char **err_string)
 {
-   int error = glGetError();
-   switch (error)
+   int err = glGetError();
+   switch (err)
    {
       case GL_INVALID_ENUM:
-         *error_string = strdup("GL: Invalid enum.");
+         *err_string = strdup("GL: Invalid enum.");
          break;
       case GL_INVALID_VALUE:
-         *error_string = strdup("GL: Invalid value.");
+         *err_string = strdup("GL: Invalid value.");
          break;
       case GL_INVALID_OPERATION:
-         *error_string = strdup("GL: Invalid operation.");
+         *err_string = strdup("GL: Invalid operation.");
          break;
       case GL_OUT_OF_MEMORY:
-         *error_string = strdup("GL: Out of memory.");
+         *err_string = strdup("GL: Out of memory.");
          break;
       case GL_NO_ERROR:
          return true;
       default:
-         *error_string = strdup("Non specified GL error.");
+         *err_string = strdup("Non specified GL error.");
          break;
    }
 
@@ -108,16 +113,34 @@ bool gl_check_error(char **error_string)
 bool gl_check_capability(enum gl_capability_enum enum_idx)
 {
    unsigned major       = 0;
-   unsigned minor       = 0;
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
 #ifdef HAVE_OPENGLES
-   if (version && sscanf(version, "OpenGL ES %u.%u", &major, &minor) != 2)
+   if (version)
+   {
+      /* Skip "OpenGL ES " prefix */
+      const char *v = strstr(version, "OpenGL ES ");
+      if (v)
+      {
+         char *end  = NULL;
+         v         += sizeof("OpenGL ES ")-1;
+         major      = (unsigned)strtol(v, &end, 10);
+         if (end && *end == '.') { }
+         else
+            major   = 0;
+      }
+   }
 #else
-   if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
+   if (version)
+   {
+      char *end  = NULL;
+      major      = (unsigned)strtol(version, &end, 10);
+      if (end && *end == '.') { }
+      else
+         major   = 0;
+   }
 #endif
-      major = minor = 0;
 
    (void)vendor;
    (void)renderer;
@@ -190,10 +213,14 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          break;
 #endif
       case GL_CAPS_ARGB8:
-#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES) && !defined(__EMSCRIPTEN__)
          if (gl_query_extension("OES_rgb8_rgba8")
                || gl_query_extension("ARM_rgba8")
                   || major >= 3)
+            return true;
+#elif defined(HAVE_OPENGLES) && defined(__EMSCRIPTEN__)
+         if (gl_query_extension("EXT_sRGB")
+               || major >= 3)
             return true;
 #else
          /* TODO/FIXME - implement this for non-GLES? */
@@ -287,15 +314,12 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
          }
          break;
       case GL_CAPS_FP_FBO:
-         /* GLES - No extensions for float FBO currently. */
-#ifndef HAVE_OPENGLES
          if (gl_check_capability(GL_CAPS_FBO))
          {
             /* Float FBO is core in 3.2. */
-            if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float"))
+            if (gl_query_core_context_in_use() || gl_query_extension("ARB_texture_float") || gl_query_extension("OES_texture_float_linear"))
                return true;
          }
-#endif
          break;
       case GL_CAPS_BGRA8888:
 #ifdef HAVE_OPENGLES
@@ -318,7 +342,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_TEX_STORAGE_EXT:
-#ifdef TARGET_OS_IPHONE
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
            /* Not working on iOS */
            return false;
 #else

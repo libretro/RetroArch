@@ -14,48 +14,618 @@
  */
 
 #include <stdlib.h>
+#include <wchar.h>
+
+#include <rthreads/rthreads.h>
 
 #include <encodings/utf.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 
 #include "mmdevice_common.h"
 #include "mmdevice_common_inline.h"
 
+#include "../audio_driver.h"
 
-char* mmdevice_name(IMMDevice *device)
+#include "../../verbosity.h"
+
+DWORD IMMNotificationThreadId = 0;
+
+/* Ids of the endpoints this process actually holds open - one per
+ * data flow, since a render device and a capture device are open at
+ * the same time whenever the microphone driver is in use.  The
+ * endpoint notifications fire for *every* audio device in the system,
+ * so these are what let OnDeviceStateChanged tell "a device we opened
+ * changed" (worth a driver reinit) from "some unrelated device
+ * changed" (not).  Guarded by a lock: the notification callbacks run
+ * on an MMDevice thread while init/deinit run on the audio threads. */
+#define MMDEVICE_FLOW_COUNT 2
+
+static wchar_t *mmdevice_active_id[MMDEVICE_FLOW_COUNT];
+static slock_t *mmdevice_active_id_lock = NULL;
+
+static bool mmdevice_id_is_active(LPCWSTR id)
+{
+   bool match = false;
+   unsigned i;
+
+   if (!mmdevice_active_id_lock || !id)
+      return true;   /* cannot tell: keep the old, always-react behaviour */
+
+   slock_lock(mmdevice_active_id_lock);
+   /* With nothing recorded yet we cannot tell either, so react. */
+   if (     !mmdevice_active_id[0]
+         && !mmdevice_active_id[1])
+      match = true;
+   else
+      for (i = 0; i < MMDEVICE_FLOW_COUNT; i++)
+         if (     mmdevice_active_id[i]
+               && !wcscmp(mmdevice_active_id[i], id))
+         {
+            match = true;
+            break;
+         }
+   slock_unlock(mmdevice_active_id_lock);
+   return match;
+}
+
+void mmdevice_set_active_device(void *data, unsigned data_flow)
+{
+   IMMDevice *device = (IMMDevice*)data;
+   LPWSTR id_wstr    = NULL;
+
+   if (data_flow >= MMDEVICE_FLOW_COUNT)
+      return;
+
+   if (!mmdevice_active_id_lock)
+      if (!(mmdevice_active_id_lock = slock_new()))
+         return;
+
+   if (device && FAILED(_IMMDevice_GetId(device, &id_wstr)))
+      id_wstr = NULL;
+
+   slock_lock(mmdevice_active_id_lock);
+   if (mmdevice_active_id[data_flow])
+      free(mmdevice_active_id[data_flow]);
+   mmdevice_active_id[data_flow] = NULL;
+   if (id_wstr)
+   {
+      size_t _len = wcslen(id_wstr) + 1;
+      if ((mmdevice_active_id[data_flow] = (wchar_t*)
+               malloc(_len * sizeof(wchar_t))))
+         memcpy(mmdevice_active_id[data_flow], id_wstr,
+               _len * sizeof(wchar_t));
+   }
+   slock_unlock(mmdevice_active_id_lock);
+
+   if (id_wstr)
+      CoTaskMemFree(id_wstr);
+}
+
+/* IUnknown methods */
+HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
+      REFIID riid, void **ppvObject)
+{
+#ifdef __cplusplus
+   if (IsEqualIID(riid, IID_IUnknown) || IsEqualIID(riid, IID_IMMNotificationClient))
+#else
+   if (IsEqualIID(riid, &IID_IUnknown) || IsEqualIID(riid, &IID_IMMNotificationClient))
+#endif
+   {
+      *ppvObject = This;
+      retro_atomic_inc_int(&((MyNotificationClient*)This)->refCount);
+      return S_OK;
+   }
+   *ppvObject = NULL;
+   return E_NOINTERFACE;
+}
+
+ULONG STDMETHODCALLTYPE IMM_AddRef(IMMNotificationClient *This)
+{
+   return (ULONG)(retro_atomic_fetch_add_int(
+            &((MyNotificationClient*)This)->refCount, 1) + 1);
+}
+
+ULONG STDMETHODCALLTYPE IMM_Release(IMMNotificationClient *This)
+{
+   /* Release-decrement: the object's last use by another thread must
+    * be ordered before the free() here. Plain InterlockedDecrement is
+    * a full barrier on x86/x64 but not on ARM. */
+   LONG ref = (LONG)(retro_atomic_fetch_sub_int(
+            &((MyNotificationClient*)This)->refCount, 1) - 1);
+   if (ref == 0)
+      free(This);
+   return (ULONG)ref;
+}
+
+/* IMMNotificationClient methods */
+HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(IMMNotificationClient *This,
+      EDataFlow flow, ERole role, LPCWSTR pwstrDefaultDeviceId)
+{
+   BOOL result = PostThreadMessage(IMMNotificationThreadId,
+         WM_AUDIO_DEFAULT_CHANGED, 0, 0);
+
+   if (!result)
+      RARCH_ERR("[MMDevice] PostThreadMessage failed: %lu, threadId: %lu\n",
+            GetLastError(), IMMNotificationThreadId);
+
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceAdded(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId)
+{
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceRemoved(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId)
+{
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId, DWORD dwNewState)
+{
+   BOOL result;
+
+   /* This fires for every audio endpoint in the system, not just the
+    * one in use.  Anything that exposes audio - a headset, a webcam,
+    * an HDMI sink waking up, or a gamepad with a headphone jack and a
+    * microphone (a DualSense adds both) - makes Windows report state
+    * changes here, and reinitialising the audio driver for a device
+    * this process never opened drops the stream for no reason.  A
+    * single controller reconnect could do it several times over, once
+    * per endpoint.  Only react to our own device. */
+   if (!mmdevice_id_is_active(pwstrDeviceId))
+      return S_OK;
+
+   result = PostThreadMessage(IMMNotificationThreadId,
+         WM_AUDIO_DEVICE_STATE_CHANGED, 0, 0);
+
+   if (!result)
+      RARCH_ERR("[MMDevice] PostThreadMessage failed: %lu, threadId: %lu\n",
+            GetLastError(), IMMNotificationThreadId);
+
+   return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE OnPropertyValueChanged(IMMNotificationClient *This,
+      LPCWSTR pwstrDeviceId, const PROPERTYKEY key)
+{
+   return S_OK;
+}
+
+/* IMMNotificationClient VTable */
+IMMNotificationClientVtbl notificationVtbl = {
+   IMM_QueryInterface,
+   IMM_AddRef,
+   IMM_Release,
+   OnDeviceStateChanged,
+   OnDeviceAdded,
+   OnDeviceRemoved,
+   OnDefaultDeviceChanged,
+   OnPropertyValueChanged
+};
+
+#ifdef HAVE_THREADS
+void mmdevice_thread(void *data)
+#else
+DWORD CALLBACK mmdevice_thread(PVOID data)
+#endif
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   HRESULT hr;
+   IMMDeviceEnumerator *enumerator = NULL;
+   MyNotificationClient *client    = NULL;
+   audio_driver_state_t *audio_st  = audio_state_get_ptr();
+
+   hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+   if (FAILED(hr))
+#ifdef HAVE_THREADS
+      return;
+#else
+      return 0;
+#endif
+
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         IID_IMMDeviceEnumerator, (void **)&enumerator);
+#else
+   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+#endif
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to create device enumerator: %s.\n", mmdevice_hresult_name(hr));
+      goto cleanup;
+   }
+
+   client = (MyNotificationClient*)malloc(sizeof(MyNotificationClient));
+   if (!client)
+      goto cleanup;
+
+   client->lpVtbl   = &notificationVtbl;
+   retro_atomic_int_init(&client->refCount, 1);
+
+   _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(enumerator,
+         (IMMNotificationClient*)client);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] RegisterEndpointNotificationCallback failed: 0x%lx.\n", hr);
+      goto cleanup;
+   }
+
+   IMMNotificationThreadId = GetCurrentThreadId();
+
+   while (IMMNotificationThreadId)
+   {
+      DWORD result = MsgWaitForMultipleObjects(0, NULL, FALSE, 5000, QS_ALLPOSTMESSAGE);
+      if (result == WAIT_OBJECT_0)
+      {
+         MSG msg;
+         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+         {
+            switch (msg.message)
+            {
+               case WM_AUDIO_DEVICE_STATE_CHANGED:
+               case WM_AUDIO_DEFAULT_CHANGED:
+                  audio_st->reinit_request = true;
+                  goto done;
+               case WM_QUIT:
+                  goto done;
+            }
+         }
+      }
+   }
+
+done:
+   _IMMDeviceEnumerator_UnregisterEndpointNotificationCallback(enumerator,
+         (IMMNotificationClient*)client);
+
+cleanup:
+   free(client);
+   client = NULL;
+
+   RELEASE(enumerator);
+
+   IMMNotificationThreadId = 0;
+   CoUninitialize();
+   ExitThread(0);
+#ifndef HAVE_THREADS
+   return 0;
+#endif
+#endif
+}
+
+static const char *mmdevice_data_flow_name(unsigned data_flow)
+{
+   switch (data_flow)
+   {
+      case 0:
+         return "eRender";
+      case 1:
+         return "eCapture";
+      case 2:
+         return "eAll";
+      default:
+         break;
+   }
+
+   return "<unknown>";
+}
+
+const char *mmdevice_hresult_name(int hr)
+{
+   switch (hr)
+   {
+      /* Standard error codes */
+      case E_INVALIDARG:
+         return "E_INVALIDARG";
+      case E_NOINTERFACE:
+         return "E_NOINTERFACE";
+      case E_OUTOFMEMORY:
+         return "E_OUTOFMEMORY";
+      case E_POINTER:
+         return "E_POINTER";
+      /* Standard success codes */
+      case S_FALSE:
+         return "S_FALSE";
+      case S_OK:
+         return "S_OK";
+      /* AUDCLNT error codes */
+      case AUDCLNT_E_ALREADY_INITIALIZED:
+         return "AUDCLNT_E_ALREADY_INITIALIZED";
+      case AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL:
+         return "AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL";
+      case AUDCLNT_E_BUFFER_ERROR:
+         return "AUDCLNT_E_BUFFER_ERROR";
+      case AUDCLNT_E_BUFFER_OPERATION_PENDING:
+         return "AUDCLNT_E_BUFFER_OPERATION_PENDING";
+      case AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED:
+         return "AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED";
+      case AUDCLNT_E_BUFFER_SIZE_ERROR:
+         return "AUDCLNT_E_BUFFER_SIZE_ERROR";
+      case AUDCLNT_E_CPUUSAGE_EXCEEDED:
+         return "AUDCLNT_E_CPUUSAGE_EXCEEDED";
+      case AUDCLNT_E_DEVICE_IN_USE:
+         return "AUDCLNT_E_DEVICE_IN_USE";
+      case AUDCLNT_E_DEVICE_INVALIDATED:
+         return "AUDCLNT_E_DEVICE_INVALIDATED";
+      case AUDCLNT_E_ENDPOINT_CREATE_FAILED:
+         return "AUDCLNT_E_ENDPOINT_CREATE_FAILED";
+      case AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED:
+         return "AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED";
+      case AUDCLNT_E_INVALID_DEVICE_PERIOD:
+         return "AUDCLNT_E_INVALID_DEVICE_PERIOD";
+      case AUDCLNT_E_INVALID_SIZE:
+         return "AUDCLNT_E_INVALID_SIZE";
+      case AUDCLNT_E_NOT_INITIALIZED:
+         return "AUDCLNT_E_NOT_INITIALIZED";
+      case AUDCLNT_E_OUT_OF_ORDER:
+         return "AUDCLNT_E_OUT_OF_ORDER";
+      case AUDCLNT_E_SERVICE_NOT_RUNNING:
+         return "AUDCLNT_E_SERVICE_NOT_RUNNING";
+      case AUDCLNT_E_UNSUPPORTED_FORMAT:
+         return "AUDCLNT_E_UNSUPPORTED_FORMAT";
+      case AUDCLNT_E_WRONG_ENDPOINT_TYPE:
+         return "AUDCLNT_E_WRONG_ENDPOINT_TYPE";
+      /* AUDCLNT success codes */
+      case AUDCLNT_S_BUFFER_EMPTY:
+         return "AUDCLNT_S_BUFFER_EMPTY";
+      /* Something else; probably from an API that we started using
+       * after mic support was implemented */
+      default:
+         break;
+   }
+
+   return "<unknown>";
+}
+
+size_t mmdevice_samplerate(void *data)
 {
    HRESULT hr;
-   IPropertyStore *prop_store = NULL;
+   PWAVEFORMATEX devfmt_props;
    PROPVARIANT prop_var;
-   bool prop_var_init         = false;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
+   DWORD result               = 0;
+
+   if (!device)
+      return 0;
+
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
+
+   if (FAILED(hr))
+      return 0;
+
+   PropVariantInit(&prop_var);
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_AudioEngine_DeviceFormat, &prop_var);
+   if (SUCCEEDED(hr))
+   {
+      devfmt_props = (PWAVEFORMATEX)prop_var.blob.pBlobData;
+      result       = devfmt_props->nSamplesPerSec;
+   }
+
+   PropVariantClear(&prop_var);
+   RELEASE(prop_store);
+   return (size_t)result;
+}
+
+char *mmdevice_name(void *data)
+{
+   HRESULT hr;
+   PROPVARIANT prop_var;
+   IMMDevice *device          = (IMMDevice*)data;
+   IPropertyStore *prop_store = NULL;
    char* result               = NULL;
 
    if (!device)
       return NULL;
 
-   hr = _IMMDevice_OpenPropertyStore(device, STGM_READ, &prop_store);
+   hr = _IMMDevice_OpenPropertyStore(device,
+         STGM_READ, &prop_store);
 
    if (FAILED(hr))
       return NULL;
 
    PropVariantInit(&prop_var);
-   prop_var_init = true;
-   hr = _IPropertyStore_GetValue(prop_store, PKEY_Device_FriendlyName, &prop_var);
-   if (FAILED(hr))
-      goto done;
+   hr = _IPropertyStore_GetValue(prop_store,
+         PKEY_Device_FriendlyName, &prop_var);
+   if (SUCCEEDED(hr))
+      result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
 
-   result = utf16_to_utf8_string_alloc(prop_var.pwszVal);
-
-done:
-   if (prop_var_init)
-      PropVariantClear(&prop_var);
-
-   IFACE_RELEASE(prop_store);
-
+   PropVariantClear(&prop_var);
+   RELEASE(prop_store);
    return result;
 }
 
-void *mmdevice_list_new(const void *u, EDataFlow data_flow)
+void *mmdevice_handle(int id, unsigned data_flow)
+{
+   HRESULT hr;
+   IMMDeviceEnumerator *enumerator = NULL;
+   IMMDevice *device               = NULL;
+   IMMDeviceCollection *collection = NULL;
+
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         IID_IMMDeviceEnumerator, (void **)&enumerator);
+#else
+   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+#endif
+   if (FAILED(hr))
+      return NULL;
+
+   hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to enumerate audio endpoints: %s.\n", mmdevice_hresult_name(hr));
+      goto error;
+   }
+
+   hr = _IMMDeviceCollection_Item(collection, id, &device);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to get IMMDevice #%d: %s.\n", id, mmdevice_hresult_name(hr));
+      goto error;
+   }
+
+   return device;
+
+error:
+   RELEASE(collection);
+   RELEASE(enumerator);
+   return NULL;
+}
+
+size_t mmdevice_get_samplerate(int id)
+{
+   IMMDevice *device = (IMMDevice*)mmdevice_handle(id, 0 /* eRender */);
+   if (device)
+   {
+      size_t _len = mmdevice_samplerate(device);
+      RELEASE(device);
+      return _len;
+   }
+   return 0;
+}
+
+void *mmdevice_init_device(const char *id, unsigned data_flow)
+{
+   HRESULT hr;
+   UINT32 dev_count, i;
+   IMMDeviceEnumerator *enumerator = NULL;
+   IMMDevice *device               = NULL;
+   IMMDeviceCollection *collection = NULL;
+   const char *data_flow_name      = mmdevice_data_flow_name(data_flow);
+
+   if (id)
+      RARCH_LOG("[MMDevice] Initializing %s device \"%s\"...\n", data_flow_name, id);
+   else
+      RARCH_LOG("[MMDevice] Initializing default %s device...\n", data_flow_name);
+
+#ifdef __cplusplus
+   hr = CoCreateInstance(CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         IID_IMMDeviceEnumerator, (void **)&enumerator);
+#else
+   hr = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL,
+         &IID_IMMDeviceEnumerator, (void **)&enumerator);
+#endif
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[MMDevice] Failed to create device enumerator: %s.\n", mmdevice_hresult_name(hr));
+      goto error;
+   }
+
+   if (id)
+   {
+      /* If a specific device was requested... */
+      int32_t idx_found        = -1;
+      struct string_list *list = (struct string_list*)mmdevice_list_new(NULL, data_flow);
+
+      if (!list)
+      {
+         RARCH_ERR("[MMDevice] Failed to allocate %s device list.\n", data_flow_name);
+         goto error;
+      }
+
+      if (list->elems)
+      {
+         size_t d;
+         /* If any devices were found... */
+         for (d = 0; d < list->size; d++)
+         {
+            if (string_is_equal(id, list->elems[d].data))
+            {
+               RARCH_LOG("[MMDevice] Found device #%d: \"%s\".\n", d,
+                     list->elems[d].data);
+               idx_found = d;
+               break;
+            }
+         }
+
+         /* Index was not found yet based on name string,
+          * just assume id is a one-character number index. */
+         if (idx_found == -1 && isdigit(id[0]))
+         {
+            idx_found = strtoul(id, NULL, 0);
+            RARCH_LOG("[MMDevice] Fallback, %s device index is a single number index instead: %u.\n",
+                  data_flow_name, idx_found);
+         }
+      }
+      string_list_free(list);
+
+      if (idx_found == -1)
+         idx_found = 0;
+
+      hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
+            (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[MMDevice] Failed to enumerate audio endpoints: %s.\n", mmdevice_hresult_name(hr));
+         goto error;
+      }
+
+      hr = _IMMDeviceCollection_GetCount(collection, &dev_count);
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[MMDevice] Failed to count IMMDevices: %s.\n", mmdevice_hresult_name(hr));
+         goto error;
+      }
+
+      for (i = 0; i < dev_count; ++i)
+      {
+         hr = _IMMDeviceCollection_Item(collection, i, &device);
+         if (FAILED(hr))
+         {
+            RARCH_ERR("[MMDevice] Failed to get IMMDevice #%d: %s.\n", i, mmdevice_hresult_name(hr));
+            goto error;
+         }
+
+         if (i == (UINT32)idx_found)
+            break;
+
+         RELEASE(device);
+      }
+   }
+   else
+   {
+      hr = _IMMDeviceEnumerator_GetDefaultAudioEndpoint(
+            enumerator, (EDataFlow)data_flow, eConsole, &device);
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[MMDevice] Failed to get default audio endpoint: %s.\n", mmdevice_hresult_name(hr));
+         goto error;
+      }
+   }
+
+   if (!device)
+      goto error;
+
+   RELEASE(collection);
+   RELEASE(enumerator);
+   /* Remember which endpoint we handed out, so the notification
+    * callbacks can filter on it. */
+   mmdevice_set_active_device(device, data_flow);
+   return device;
+
+error:
+   RELEASE(collection);
+   RELEASE(enumerator);
+
+   if (id)
+      RARCH_ERR("[MMDevice] Failed to initialize %s device \"%s\".\n", data_flow_name, id);
+   else
+      RARCH_ERR("[MMDevice] Failed to initialize default %s device.\n", data_flow_name);
+
+   return NULL;
+}
+
+void *mmdevice_list_new(const void *u, unsigned data_flow)
 {
    HRESULT hr;
    UINT i;
@@ -85,7 +655,7 @@ void *mmdevice_list_new(const void *u, EDataFlow data_flow)
       goto error;
 
    hr = _IMMDeviceEnumerator_EnumAudioEndpoints(enumerator,
-         data_flow, DEVICE_STATE_ACTIVE, &collection);
+         (EDataFlow)data_flow, DEVICE_STATE_ACTIVE, &collection);
    if (FAILED(hr))
       goto error;
 
@@ -117,31 +687,36 @@ void *mmdevice_list_new(const void *u, EDataFlow data_flow)
 
       if (dev_id_wstr)
          CoTaskMemFree(dev_id_wstr);
+      dev_id_wstr  = NULL;
+
       if (dev_name_str)
          free(dev_name_str);
       dev_name_str = NULL;
-      dev_id_wstr  = NULL;
-      IFACE_RELEASE(device);
+
+      RELEASE(device);
    }
 
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
-
+   RELEASE(collection);
+   RELEASE(enumerator);
    return sl;
 
 error:
    if (dev_id_str)
       free(dev_id_str);
+   dev_id_str   = NULL;
+
    if (dev_name_str)
       free(dev_name_str);
-   dev_id_str   = NULL;
    dev_name_str = NULL;
+
    if (dev_id_wstr)
       CoTaskMemFree(dev_id_wstr);
    dev_id_wstr = NULL;
-   IFACE_RELEASE(device);
-   IFACE_RELEASE(collection);
-   IFACE_RELEASE(enumerator);
+
+   RELEASE(device);
+   RELEASE(collection);
+   RELEASE(enumerator);
+
    if (sl)
       string_list_free(sl);
 
