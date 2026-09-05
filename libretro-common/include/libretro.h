@@ -2882,6 +2882,223 @@ struct retro_memory_status
    uint64_t total;  /**< Total physical memory installed. */
 };
 
+/**
+ * Gives a core access to a link bus hosted by the frontend, so that two or more
+ * core instances running in the same process can emulate machines that were
+ * originally joined by a cable: a Game Boy serial cable, a Game Boy Advance
+ * link cable, a GameCube-to-GBA cable, a PlayStation link cable, and so on.
+ *
+ * This exists because core instances cannot reach each other on their own. A
+ * frontend that runs several cores at once generally loads each from its own
+ * copy of the shared library, so each instance has its own copy of every global
+ * and no in-core coordinator can be shared between them. The frontend is the
+ * only thing they have in common, so the frontend hosts the bus.
+ *
+ * Distinct from #RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE, which joins
+ * separate frontend instances over a network and carries packets in real time.
+ * This joins core instances inside one process and carries payloads stamped on
+ * emulated time, with the frontend deciding how far each core may advance so a
+ * transfer lands on the cycle it is due. The timing is the feature: a link
+ * protocol delivered a millisecond late is a link protocol that has failed,
+ * which is why this cannot be built on a packet interface with no clock.
+ *
+ * The frontend arbitrates emulated time and moves opaque payloads. All
+ * knowledge of the wire protocol stays in the cores; the frontend never
+ * interprets a payload, which is what allows two different cores emulating two
+ * different machines to share one cable.
+ *
+ * Should be called in \c retro_init or \c retro_load_game. The returned function
+ * pointers remain valid until \c retro_deinit, whether or not anything ever
+ * attaches, so a core has exactly one code path and still runs standalone: with
+ * nothing cabled to it, \c advance never bounds it and \c recv never yields,
+ * which is what a machine with an empty socket does anyway.
+ *
+ * @param[out] data <tt>struct retro_link_interface *</tt>.
+ * Set to the frontend's link interface. None of its members are \c NULL if this
+ * call returns \c true.
+ * @return \c true if the frontend hosts a link bus.
+ * \c false otherwise, which a core must treat as a socket with nothing in it —
+ * the behaviour it already has today.
+ * @see retro_link_interface
+ */
+#define RETRO_ENVIRONMENT_GET_LINK_INTERFACE (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Returned by \c retro_link_advance_t when nothing bounds this core: nothing is
+ * attached to the port, or every peer has detached.
+ *
+ * The core must then run freely. This is what lets a core that uses this
+ * interface behave exactly as it does today when no cable is plugged in.
+ */
+#define RETRO_LINK_UNBOUNDED ((uint64_t)-1)
+
+/** Peer id meaning "every other peer on this port's bus". */
+#define RETRO_LINK_BROADCAST 0xFF
+
+/**
+ * An attached port, as the frontend knows it.
+ *
+ * Handed back by \c retro_link_attach_t and passed to every other call, the way
+ * a file handle is by \c retro_vfs_open_t. The core never looks inside it.
+ *
+ * It names a PORT rather than a core, and that is what makes it necessary: a
+ * machine with more than one socket -- a GameCube has four -- must say which one
+ * it means on every call, so an argument of some kind was always going to be
+ * here. Naming the port with a token the frontend issued, rather than a bare
+ * number, lets the frontend validate it and tells it which core is calling for
+ * free.
+ *
+ * That second part is worth having. libretro's function pointers carry no
+ * userdata, so the usual way to recover the caller is a thread-local set when
+ * the core's emulation thread starts, which holds only while a core does its
+ * work on that one thread. Plenty do not: Dolphin runs its CPU on a thread of
+ * its own whenever dual-core is enabled, and that is a user-facing setting.
+ */
+typedef struct retro_link_port retro_link_port_t;
+
+/**
+ * Joins the bus on \c port.
+ *
+ * @param port The core's own port number. A machine with more than one socket —
+ * a GameCube has four — distinguishes them here.
+ * @param protocol_id Names the emulated wire protocol, e.g. "gba-sio-1". Peers
+ * whose ids differ are never connected to each other, which is what allows two
+ * different cores emulating two different machines to share one cable while
+ * keeping unrelated cores apart.
+ * @param clock_rate The number of ticks of this core's link timeline that elapse
+ * per second of emulated time, e.g. 16777216 for a Game Boy Advance, so the
+ * frontend can convert exactly between participants' units. Must not be zero.
+ * @return A handle to pass to every other call on this port, or \c NULL if it
+ * could not be attached. The core keeps it for as long as the port is attached
+ * and hands it back unchanged; nothing about its contents is a core's business.
+ *
+ * @note The bus index a core needs for addressing comes from
+ * \c retro_link_peers_t, not from here, because a cable can be plugged or pulled
+ * at any time and an index handed out once would be stale by the next transfer.
+ */
+typedef retro_link_port_t *(RETRO_CALLCONV *retro_link_attach_t)(unsigned port,
+      const char *protocol_id, uint64_t clock_rate);
+
+/**
+ * Leaves the bus. Peers observe this as a detach at the current tick.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ */
+typedef void (RETRO_CALLCONV *retro_link_detach_t)(retro_link_port_t *handle);
+
+/**
+ * Current membership of this port's bus.
+ *
+ * Cores generally need this per transfer rather than once at attach time: the
+ * frontend decides what a port is cabled to, and a cable can be plugged or
+ * pulled while the machine is running, so a core's index and peer count can
+ * change during a session.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param[out] count If non-\c NULL, receives the number of participants,
+ * including this one.
+ * @return This core's index on the bus (0 or greater), or -1 when the port is
+ * not attached or is not cabled to anything.
+ */
+typedef int (RETRO_CALLCONV *retro_link_peers_t)(retro_link_port_t *handle, unsigned *count);
+
+/**
+ * Queues \c buf for delivery to a peer, stamped at \c tick on this core's
+ * timeline.
+ *
+ * The frontend copies the payload and does not interpret it.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param tick When the event happens, on this core's own timeline.
+ * @param to The peer's index on the bus, or #RETRO_LINK_BROADCAST.
+ * @param buf The payload.
+ * @param len The payload's length in bytes.
+ * @return \c false if the port is not attached.
+ */
+typedef bool (RETRO_CALLCONV *retro_link_send_t)(retro_link_port_t *handle, uint64_t tick,
+      unsigned to, const void *buf, size_t len);
+
+/**
+ * Pops the next queued message, oldest first, with its tick translated into this
+ * core's own units.
+ *
+ * The tick says when the event LANDS, not when the message became readable. A
+ * core is told about a transfer ahead of time precisely so it can schedule its
+ * own side of it for that tick, so messages are handed over as soon as they
+ * arrive rather than held until the clock catches up. What stops one landing in
+ * the past is the sender's commit horizon: it promised not to originate before
+ * that tick, and the bus will not have let this core run beyond it.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param[out] tick When the event lands, on this core's own timeline.
+ * @param[out] from The sender's index on the bus.
+ * @param[out] buf Receives the payload.
+ * @param[in,out] len Buffer capacity on entry, bytes written on return.
+ * @return \c false when the queue is empty.
+ */
+typedef bool (RETRO_CALLCONV *retro_link_recv_t)(retro_link_port_t *handle, uint64_t *tick,
+      unsigned *from, void *buf, size_t *len);
+
+/**
+ * Publishes this core's position and its commit horizon, then asks how far it
+ * may advance. Blocks until \c request_tick can be granted or until every peer
+ * has detached.
+ *
+ * The horizon is what keeps the bus deadlock-free, and it is required rather
+ * than an optimization. A core that always passes \c safe_tick equal to
+ * \c local_tick promises nothing, so if every participant does that they all sit
+ * at the same tick waiting for someone else to move and none of them ever can.
+ * Publishing a horizon some way ahead of the current position lets peers run to
+ * it without asking, and the core makes the promise true by scheduling anything
+ * it originates at the horizon rather than at the instant the guest asked for it.
+ *
+ * The horizon is therefore a tuning knob, traded against fidelity: a larger one
+ * means fewer rendezvous and more emulated delay before an originated event
+ * lands. Within a single process it only has to be large enough to avoid
+ * synchronizing every few cycles, so a small fraction of a frame is plenty.
+ *
+ * The grant MUST be a pure function of the participants' published ticks. It
+ * must never depend on wall-clock time, nor on the order in which threads happen
+ * to arrive. A frontend that violates this will desync any peer that replays the
+ * same inputs expecting the same result, which is exactly what rollback and
+ * lockstep multiplayer do. For the same reason there is deliberately no timeout:
+ * a peer that is behind is waited for, not guessed at.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param local_tick Where the core is now.
+ * @param safe_tick A promise that the core will not originate any event a peer
+ * must observe before that tick. Must be greater than or equal to
+ * \c local_tick and, once published, may never be retracted.
+ * @param request_tick How far the core is asking to advance.
+ * @return The tick this core may advance to: \c request_tick, or more only where
+ * a previous grant or the core's own position already stood further on, or
+ * #RETRO_LINK_UNBOUNDED. The grant is never larger than what was asked for even
+ * when more headroom happens to be available, because how far a peer has run at
+ * this instant is a wall-clock accident and returning it would make two machines
+ * replaying identical inputs disagree. Ask for more to get more.
+ *
+ * @note Thread-safe. Cores generally run on their own emulation threads, and
+ * this call is the rendezvous between them.
+ */
+typedef uint64_t (RETRO_CALLCONV *retro_link_advance_t)(retro_link_port_t *handle,
+      uint64_t local_tick, uint64_t safe_tick, uint64_t request_tick);
+
+/**
+ * Result of \c RETRO_ENVIRONMENT_GET_LINK_INTERFACE.
+ *
+ * All members are set by the frontend; none are \c NULL if the environment call
+ * returned \c true.
+ */
+struct retro_link_interface
+{
+   retro_link_attach_t  attach;  /**< Join the bus on a port. */
+   retro_link_detach_t  detach;  /**< Leave the bus. */
+   retro_link_peers_t   peers;   /**< Who else is on this port's bus. */
+   retro_link_send_t    send;    /**< Queue a payload for a peer. */
+   retro_link_recv_t    recv;    /**< Take the next payload off the queue. */
+   retro_link_advance_t advance; /**< Publish a position, ask how far to run. */
+};
+
 /**@}*/
 
 /**
