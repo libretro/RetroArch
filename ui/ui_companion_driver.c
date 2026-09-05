@@ -78,6 +78,9 @@ static const ui_companion_driver_t *ui_companion_wimp_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_wimp_win32,
 #endif
+#if defined(HAVE_COCOA) && TARGET_OS_OSX
+   &ui_companion_wimp_cocoa,
+#endif
    &ui_companion_null,
    NULL
 };

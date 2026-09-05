@@ -2748,6 +2748,7 @@ ifeq ($(HAVE_COCOA), 1)
    DEFINES += -DHAVE_MAIN -DTARGET_OS_OSX=1 -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
+          ui/drivers/ui_cocoa_companion.o \
           ui/drivers/cocoa/cocoa_common.o
    # HAVE_COCOA_COMMON is only known here, after the companion-core
    # block above ran; add the shared core if Qt/Win32 did not already.
