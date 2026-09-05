@@ -2154,7 +2154,7 @@ static bool menu_content_find_first_core(
    return true;
 }
 
-static int file_load_with_detect_core_wrapper(
+int file_load_with_detect_core_wrapper(
       enum msg_hash_enums enum_label_idx,
       size_t idx, size_t entry_idx,
       const char *path, const char *label,

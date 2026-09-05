@@ -2034,10 +2034,11 @@ static unsigned menu_displaylist_parse_supported_cores(
                MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                0, 0, 0, NULL))
             count++;
-
-         info->flags |= MD_FLAG_DOWNLOAD_CORE;
       }
+
    }
+
+   info->flags |= MD_FLAG_DOWNLOAD_CORE;
 
    return count;
 }
@@ -14321,6 +14322,31 @@ static bool menu_displaylist_ctl_internal(
                menu_search_terms_t *search_terms= menu_entries_search_get_terms();
                bool show_experimental_cores     = settings->bools.network_buildbot_show_experimental_cores;
                size_t selection                 = menu_st->selection_ptr;
+               const char *content_ext          = NULL;
+
+               /* Filter the list by the detected content's extension,
+                * but only when the downloader was reached from a
+                * supported-cores list - not when browsing all cores
+                * via the Online Updater */
+               if (   menu_st->driver_data
+                   && !string_is_empty(menu_st->driver_data->detect_content_path))
+               {
+                  menu_list_t *entries_list = menu_st->entries.list;
+                  file_list_t *entries_stack = MENU_LIST_GET(entries_list, 0);
+                  size_t entries_stack_size = MENU_LIST_GET_STACK_SIZE(entries_list, 0);
+                  const char *core_list_label = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
+                  size_t i;
+
+                  for (i = 0; i < entries_stack_size; i++)
+                  {
+                     if (string_is_equal(entries_stack->list[i].label, core_list_label))
+                     {
+                        content_ext = path_get_extension(
+                              menu_st->driver_data->detect_content_path);
+                        break;
+                     }
+                  }
+               }
 
                if (core_list)
                {
@@ -14365,6 +14391,17 @@ static bool menu_displaylist_ctl_internal(
                            if (!entry_valid)
                               continue;
                         }
+
+                        /* If content has been provided, only show
+                         * cores that support its extension. Cores
+                         * without a local info file are always shown,
+                         * since their supported extensions are not
+                         * yet known */
+                        if (     content_ext
+                              && entry->supported_extensions
+                              && string_list_find_elem(
+                                    entry->supported_extensions, content_ext) == 0)
+                           continue;
 
                         if (menu_entries_append(info->list,
                                  entry->remote_filename,

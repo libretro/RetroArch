@@ -118,6 +118,48 @@ static int action_cancel_cheat_details(const char *path,
 }
 #endif
 
+static const char *find_core_updater_list_flush_target(void)
+{
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   menu_list_t *list            = menu_st->entries.list;
+   const file_list_t *menu_list = MENU_LIST_GET(list, 0);
+   size_t menu_stack_size       = MENU_LIST_GET_STACK_SIZE(list, 0);
+   const char *targets[3];
+   size_t i, j;
+
+   targets[0] = msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER);
+   targets[1] = msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST);
+   targets[2] = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
+
+   /* Iterate from the top of the stack to the bottom,
+    * excluding the bottom entry itself */
+   for (i = menu_stack_size; i > 1; i--)
+   {
+      const char *candidate_label = menu_list->list[i - 1].label;
+      for (j = 0; j < sizeof(targets) / sizeof(targets[0]); j++)
+      {
+         if (string_is_equal(candidate_label, targets[j]))
+            return candidate_label;
+      }
+   }
+   return targets[0];
+}
+
+static int action_cancel_core_list(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   /* When we back out of the filtered core list,
+    * clear out any filters we used */
+   menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+
+   if (menu)
+   {
+      menu->deferred_path[0]       = '\0';
+      menu->detect_content_path[0] = '\0';
+   }
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
@@ -151,7 +193,7 @@ static int action_cancel_core_content(const char *path,
          return 0;
       }
 
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(find_core_updater_list_flush_target(), 0);
    }
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
@@ -186,6 +228,13 @@ static int action_cancel_core_content(const char *path,
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+   if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST))
+       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST))
+       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE)))
+   {
+      BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
+   }
+
    return -1;
 }
 
@@ -199,6 +248,9 @@ static int menu_cbs_init_bind_cancel_compare_type(menu_file_list_cbs_t *cbs,
       case FILE_TYPE_DOWNLOAD_URL:
       case FILE_TYPE_DOWNLOAD_CORE:
          BIND_ACTION_CANCEL(cbs, action_cancel_core_content);
+         return 0;
+      case FILE_TYPE_CORE:
+         BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
          return 0;
       case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);

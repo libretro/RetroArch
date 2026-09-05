@@ -4070,6 +4070,36 @@ bool libretro_get_system_info(
    return true;
 }
 
+/* If exactly one installed core supports the specified
+ * content, set it as the current core. Returns true if
+ * a core was selected. */
+static bool auto_load_core(const char *content_path)
+{
+   core_info_list_t *core_info_list = NULL;
+
+   if (string_is_empty(content_path))
+      return false;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   core_info_get_list(&core_info_list);
+
+   if (core_info_list)
+   {
+      size_t list_size             = 0;
+      const core_info_t *core_info = NULL;
+      core_info_list_get_supported_cores(core_info_list,
+            content_path, &core_info, &list_size);
+
+      /* If there is only one core available, use it */
+      if (list_size == 1)
+      {
+         path_set(RARCH_PATH_CORE, core_info[0].path);
+         return true;
+      }
+   }
+   return false;
+}
+
 bool runloop_init_libretro_symbols(
       void *data,
       enum rarch_core_type type,
@@ -4097,9 +4127,54 @@ bool runloop_init_libretro_symbols(
 
                if (!path || !*path)
                {
-                  RARCH_ERR("[Core] Frontend is built for dynamic libretro cores, but "
+                  const char* content_path = path_get(RARCH_PATH_CONTENT);
+                  if (!string_is_empty(content_path))
+                  {
+                     /* Attempt to automatically load a supported core. */
+                     if (!auto_load_core(content_path))
+                     {
+#ifdef HAVE_MENU
+                        /* Multiple (or no) cores support this content -
+                         * load the dummy core and show the list of
+                         * supported cores in the menu instead.
+                         * Init the menu driver early so that entries can
+                         * be pushed onto its stack; the video threading
+                         * argument is set to its proper value during the
+                         * regular menu init */
+                        struct menu_state *menu_state = menu_state_get_ptr();
+
+                        CORE_SYMBOLS(SYMBOL_DUMMY);
+                        runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
+                        menu_driver_init(false);
+
+                        if (menu_state->driver_data)
+                        {
+                           strlcpy(menu_state->driver_data->deferred_path,
+                                 content_path,
+                                 sizeof(menu_state->driver_data->deferred_path));
+                           /* detect_content_path is normally filled while
+                            * browsing the menu file tree; since we did not
+                            * come from the file browser, fill it ourselves */
+                           strlcpy(menu_state->driver_data->detect_content_path,
+                                 content_path,
+                                 sizeof(menu_state->driver_data->detect_content_path));
+                        }
+
+                        file_load_with_detect_core_wrapper(
+                              MSG_UNKNOWN, 0, 0,
+                              content_path, NULL, 0, false);
+                        break;
+#endif
+                     }
+                  }
+                  path = path_get(RARCH_PATH_CORE);
+
+                  if (string_is_empty(path))
+                  {
+                     RARCH_ERR("[Core] Frontend is built for dynamic libretro cores, but "
                         "path is not set. Cannot continue.\n");
-                  retroarch_fail(1, "init_libretro_symbols()");
+                     retroarch_fail(1, "init_libretro_symbols()");
+                  }
                }
 
                RARCH_LOG("[Core] Loading dynamic libretro core from: \"%s\".\n",
