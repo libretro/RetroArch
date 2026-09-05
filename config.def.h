@@ -173,6 +173,9 @@
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
 
+/* SDL display server: 0 never, 1 only when the native server cannot switch modes, 2 always */
+#define DEFAULT_VIDEO_SDL_DISPLAY_SERVER VIDEO_SDL_DISPLAY_SERVER_AUTO
+
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
 
 #define DEFAULT_CRT_SWITCH_PORCH_ADJUST 0

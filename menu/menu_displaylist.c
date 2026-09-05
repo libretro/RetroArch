@@ -8713,6 +8713,13 @@ unsigned menu_displaylist_build_list(
                      count++;
             }
 
+            /* Only an SDL window can hand mode switching to SDL */
+            if (video_display_server_sdl_available())
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SDL_DISPLAY_SERVER,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+
             {
                static const menu_displaylist_settings_row_t dl_rows_7[] = {
                   { MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE, PARSE_ONLY_BOOL, false },

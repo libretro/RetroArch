@@ -196,6 +196,10 @@ enum rotation video_display_server_get_screen_orientation(void);
 struct video_modeline_ops;
 bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops);
 
+/* True when an SDL2 video driver or context owns the window, so the
+ * SDL display server can switch among its listed modes. */
+bool video_display_server_sdl_available(void);
+
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
@@ -203,6 +207,7 @@ extern const video_display_server_t dispserv_wl;
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
+extern const video_display_server_t dispserv_sdl;
 
 RETRO_END_DECLS
 

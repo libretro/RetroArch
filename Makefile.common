@@ -1677,7 +1677,8 @@ ifeq ($(HAVE_SDL3), 1)
 else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-	  gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o \
+	  gfx/display_servers/dispserv_sdl.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    # See the SDL3 note above: drop SDL's WinMain shim lib, we set
    # SDL_MAIN_HANDLED and provide our own entry point.

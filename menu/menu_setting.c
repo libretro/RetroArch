@@ -7112,6 +7112,24 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_video_sdl_display_server(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SDL_DISPLAY_SERVER_OFF:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case VIDEO_SDL_DISPLAY_SERVER_AUTO:
+            return strlcpy_lit(s, "Auto", len);
+         case VIDEO_SDL_DISPLAY_SERVER_ALWAYS:
+            return strlcpy_lit(s, "Always", len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_audio_resampler_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -11845,6 +11863,11 @@ static const setting_desc_t crt_switchres_desc_0[] = {
 #include "../settings/settings_def_crt_switchres.h"
 };
 
+static const setting_desc_t video_sdl_display_server_desc[] = {
+/* GENERATED: rows come from settings_def_video_sdl_display_server.h in order. */
+#include "../settings/settings_def_video_sdl_display_server.h"
+};
+
 static const setting_desc_t menu_sounds_desc_0[] = {
 /* GENERATED: rows come from settings_def_menu_sounds.h in order. */
 #include "../settings/settings_def_menu_sounds.h"
@@ -14585,6 +14608,8 @@ static void settings_build_video(
 #endif
 
                   ADD_DESC(rot_desc);
+
+                  ADD_DESC(video_sdl_display_server_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -17882,6 +17907,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_ctx_desc, (uint16_t)ARRAY_SIZE(vid_ctx_desc) },
 #endif
    { rot_desc, (uint16_t)ARRAY_SIZE(rot_desc) },
+   { video_sdl_display_server_desc, (uint16_t)ARRAY_SIZE(video_sdl_display_server_desc) },
    { vid_desc_18, (uint16_t)ARRAY_SIZE(vid_desc_18) },
    { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
    { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },

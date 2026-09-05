@@ -2041,6 +2041,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -2753,6 +2754,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -3417,6 +3419,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4129,6 +4132,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4722,6 +4726,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"

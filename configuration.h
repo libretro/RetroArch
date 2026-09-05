@@ -83,6 +83,13 @@ enum crt_switch_type
    CRT_SWITCH_INI
 };
 
+enum video_sdl_display_server_mode
+{
+   VIDEO_SDL_DISPLAY_SERVER_OFF = 0,
+   VIDEO_SDL_DISPLAY_SERVER_AUTO,
+   VIDEO_SDL_DISPLAY_SERVER_ALWAYS
+};
+
 enum override_type
 {
    OVERRIDE_NONE = 0,
@@ -229,6 +236,7 @@ typedef struct settings
       unsigned video_window_opacity;
       unsigned crt_switch_resolution;
       unsigned crt_switch_resolution_super;
+      unsigned video_sdl_display_server;
       unsigned screen_brightness;
       unsigned video_monitor_index;
       unsigned video_fullscreen_x;

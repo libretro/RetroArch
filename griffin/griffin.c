@@ -597,6 +597,7 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
+#include "../gfx/display_servers/dispserv_sdl.c"
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)

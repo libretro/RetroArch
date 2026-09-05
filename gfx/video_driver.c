@@ -156,6 +156,7 @@ static const video_display_server_t dispserv_null = {
    "null"
 };
 
+
 static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(ORBIS)
    &orbis_ctx,
@@ -586,6 +587,71 @@ const video_driver_t *video_drivers[] = {
 static video_driver_state_t video_driver_st = { 0 };
 static const video_display_server_t *current_display_server =
 &dispserv_null;
+
+#ifdef HAVE_SDL2
+/* The SDL display server switches among listed modes on the SDL
+ * window. It never replaces the native server outright: metrics,
+ * orientation and decorations stay native. What it can take over is
+ * mode switching, decided by video_sdl_display_server: 0 never,
+ * 1 only when the native server cannot switch modes at all, 2 always
+ * (custom timings are then unavailable, SDL cannot create them). */
+static void *sdl_display_server_data = NULL;
+
+bool video_display_server_sdl_available(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   gfx_ctx_ident_t ctx;
+   const char *ident;
+   if (!video_st->display_userdata)
+      return false;
+   ident = video_driver_get_ident();
+   if (ident && string_starts_with(ident, "sdl"))
+      return true;
+   ctx.ident = NULL;
+   video_context_driver_get_ident(&ctx);
+   return ctx.ident && string_starts_with(ctx.ident, "sdl");
+}
+
+static bool video_display_server_sdl_selected(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned mode        = settings ? settings->uints.video_sdl_display_server : 0;
+   if (!mode || !video_display_server_sdl_available())
+      return false;
+   if (mode == 1 && current_display_server
+         && (current_display_server->set_resolution
+            || current_display_server->modeline_set))
+      return false;
+   return true;
+}
+#else
+bool video_display_server_sdl_available(void)
+{
+   return false;
+}
+#endif
+
+/* The server that answers mode-switching calls: native, or the SDL
+ * layer when the setting selects it. */
+static const video_display_server_t *video_display_server_modes(void **data)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_SDL2
+   if (video_display_server_sdl_selected())
+   {
+      if (!sdl_display_server_data && dispserv_sdl.init)
+      {
+         sdl_display_server_data = dispserv_sdl.init();
+         RARCH_LOG("[Video] SDL display server handles mode switching (native: %s).\n",
+               current_display_server ? current_display_server->ident : "none");
+      }
+      *data = sdl_display_server_data;
+      return &dispserv_sdl;
+   }
+#endif
+   *data = video_st->current_display_server_data;
+   return current_display_server;
+}
 
 /* Cached-frame state.  Private to this TU; all access goes through
  * video_driver_cached_frame_{info,read,is_hw_render,publish,
@@ -1405,8 +1471,10 @@ static void recording_dump_frame(
 
 const char *video_display_server_get_ident(void)
 {
-   if (current_display_server)
-      return current_display_server->ident;
+   void *data;
+   const video_display_server_t *s = video_display_server_modes(&data);
+   if (s)
+      return s->ident;
    return FILE_PATH_UNKNOWN;
 }
 
@@ -1492,6 +1560,13 @@ void video_display_server_destroy(void)
    if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
+#ifdef HAVE_SDL2
+   if (sdl_display_server_data)
+   {
+      dispserv_sdl.destroy(sdl_display_server_data);
+      sdl_display_server_data = NULL;
+   }
+#endif
 }
 
 bool video_display_server_set_window_opacity(unsigned opacity)
@@ -1535,11 +1610,11 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
 
 bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   const video_display_server_t *s = current_display_server;
+   void *data;
+   const video_display_server_t *s = video_display_server_modes(&data);
    if (!s || !s->modeline_set)
       return false;
-   ops->data       = video_st->current_display_server_data;
+   ops->data       = data;
    ops->caps       = s->modeline_caps;
    ops->enum_modes = s->modeline_enum;
    ops->add        = s->modeline_add;
@@ -1758,21 +1833,21 @@ bool video_display_server_wait_vblank(void)
 
 float video_display_server_get_refresh_rate(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   if (current_display_server && current_display_server->get_refresh_rate)
-      return current_display_server->get_refresh_rate(
-            video_st->current_display_server_data);
+   void *data;
+   const video_display_server_t *s = video_display_server_modes(&data);
+   if (s && s->get_refresh_rate)
+      return s->get_refresh_rate(data);
    return 0.0f;
 }
 
 bool video_display_server_get_video_output_size(
       unsigned *width, unsigned *height, char *s, size_t len)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   if (current_display_server && current_display_server->get_video_output_size)
+   void *data;
+   const video_display_server_t *srv = video_display_server_modes(&data);
+   if (srv && srv->get_video_output_size)
    {
-      current_display_server->get_video_output_size(
-            video_st->current_display_server_data, width, height, s, len);
+      srv->get_video_output_size(data, width, height, s, len);
       return true;
    }
    return false;
@@ -1814,11 +1889,11 @@ bool video_display_server_get_metrics(
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags)
 {
-   video_driver_state_t *video_st                 = &video_driver_st;
-   if (!flags || !current_display_server || !current_display_server->get_flags)
+   void *data;
+   const video_display_server_t *s = video_display_server_modes(&data);
+   if (!flags || !s || !s->get_flags)
       return false;
-   flags->flags = current_display_server->get_flags(
-         video_st->current_display_server_data);
+   flags->flags = s->get_flags(data);
    return true;
 }
 
