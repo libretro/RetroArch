@@ -36,7 +36,7 @@
  * condition must be kept in sync with the guards in
  * settings/settings_def_desktop_menu.h, which cannot include this
  * header. */
-#if defined(HAVE_QT) || defined(HAVE_COCOA) || \
+#if defined(HAVE_QT) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || \
       (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))
 #define HAVE_COMPANION_WIMP 1
 #endif

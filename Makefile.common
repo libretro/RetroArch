@@ -1465,6 +1465,9 @@ endif
 ifneq ($(findstring Win32,$(OS)),)
    OBJ += ui/drivers/ui_win32.o \
           ui/drivers/ui_win32_companion.o
+   # comctl32: InitCommonControls / list-view / status bar used by the
+   # native Win32 companion (MSVC builds pull it in via #pragma comment).
+   LIBS += -lcomctl32
    HAVE_COMPANION_CORE = 1
 endif
 ifeq ($(HAVE_QT), 1)
