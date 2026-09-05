@@ -1117,6 +1117,7 @@ typedef struct settings
       char input_driver[32];
       char input_joypad_driver[32];
       char midi_driver[32];
+      char ui_companion_driver[32];
       char midi_input[32];
       char midi_output[32];
       char ai_service_backend[32];

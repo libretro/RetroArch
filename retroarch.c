@@ -1303,6 +1303,12 @@ static size_t find_driver_nonempty(
          return strlcpy(s, cloud_sync_drivers[i]->ident, len);
    }
 #endif
+   else if (!strcmp(label, "ui_companion_driver"))
+   {
+      const char *ident = ui_companion_wimp_find_ident(i);
+      if (ident)
+         return strlcpy(s, ident, len);
+   }
    return 0;
 }
 
@@ -2344,6 +2350,17 @@ static struct string_list *string_list_new_special(
          for (i = 0; camera_drivers[i]; i++)
          {
             const char *opt  = camera_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_UI_COMPANION_DRIVERS:
+         for (i = 0; ; i++)
+         {
+            const char *opt  = ui_companion_wimp_find_ident(i);
+            if (!opt)
+               break;
             *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
@@ -4930,7 +4947,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
          {
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
             bool ui_companion_toggle = settings->bools.ui_companion_toggle;
 #else
@@ -5787,7 +5804,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
          {
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
             bool ui_companion_toggle = settings->bools.ui_companion_toggle;
 #else
@@ -6624,7 +6641,7 @@ int rarch_main(int argc, char *argv[], void *data)
    settings = config_get_ptr();
 
    ui_companion_driver_init_first(
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
          settings->bools.desktop_menu_enable,
          settings->bools.ui_companion_toggle,
 #else
@@ -6645,9 +6662,7 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       int ret;
       bool app_exit     = false;
-#ifdef HAVE_QT
-      ui_companion_qt.application->process_events();
-#endif
+      ui_companion_driver_wimp_iterate();
       ret = runloop_iterate();
 
       task_queue_check();

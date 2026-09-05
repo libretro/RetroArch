@@ -3219,6 +3219,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    "MIDI driver to use. (Restart required)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
+   "Companion UI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
+   "Desktop companion UI driver to use when the Desktop Menu is enabled. (Restart required)"
+   )
 
 /* Settings > Video */
 

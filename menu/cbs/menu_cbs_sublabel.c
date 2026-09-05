@@ -30,6 +30,7 @@
 #include "../../input/input_remapping.h"
 
 #include "../../retroarch.h"
+#include "../../ui/ui_companion_driver.h"
 #include "../../core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
@@ -524,6 +525,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, ME
 #ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_driver,              MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ui_companion_driver,           MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER)
 
 #ifdef HAVE_MICROPHONE
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_driver,                  MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER)
@@ -625,7 +627,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
 #endif
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_wimp,                             MENU_ENUM_SUBLABEL_SHOW_WIMP)
 #endif
 
@@ -3056,6 +3058,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_driver);
 #endif
             break;
+         case MENU_ENUM_LABEL_UI_COMPANION_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ui_companion_driver);
+            break;
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
          case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_screensaver_animation);
@@ -3560,7 +3565,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_enable);
             break;
 #endif
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
          case MENU_ENUM_LABEL_SHOW_WIMP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;

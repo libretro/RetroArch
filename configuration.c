@@ -82,6 +82,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #if __APPLE__
 #include "ui/drivers/cocoa/apple_platform.h"
 #endif
+#include "ui/ui_companion_driver.h"
 
 #ifdef HAVE_LAKKA
 #include <time.h>
@@ -1601,6 +1602,7 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("microphone_resampler",         settings->arrays.microphone_resampler, false, NULL, true);
 #endif
    SETTING_ARRAY("midi_driver",                  settings->arrays.midi_driver, false, NULL, true);
+   SETTING_ARRAY("ui_companion_driver",          settings->arrays.ui_companion_driver, false, NULL, true);
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
@@ -5303,6 +5305,7 @@ void config_set_defaults(void *data)
    const char *def_menu             = config_get_default_menu();
 #endif
    const char *def_camera           = config_get_default_camera();
+   const char *def_ui_companion     = config_get_default_ui_companion();
    const char *def_bluetooth        = config_get_default_bluetooth();
    const char *def_wifi             = config_get_default_wifi();
    const char *def_led              = config_get_default_led();
@@ -5380,6 +5383,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.camera_driver,
             def_camera);
+   if (def_ui_companion)
+      configuration_set_string(settings,
+            settings->arrays.ui_companion_driver,
+            def_ui_companion);
    if (def_bluetooth)
       configuration_set_string(settings,
             settings->arrays.bluetooth_driver,

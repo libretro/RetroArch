@@ -13152,7 +13152,7 @@ static void settings_build_drivers(
    {
 
          unsigned i, j = 0;
-         struct string_options_entry string_options_entries[14] = {{0}};
+         struct string_options_entry string_options_entries[15] = {{0}};
 
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -13295,6 +13295,17 @@ static void settings_build_drivers(
          string_options_entries[j].values          = config_get_midi_driver_options();
 
          j++;
+
+#ifdef HAVE_COMPANION_WIMP
+         string_options_entries[j].target          = settings->arrays.ui_companion_driver;
+         string_options_entries[j].len             = sizeof(settings->arrays.ui_companion_driver);
+         string_options_entries[j].name_enum_idx   = MENU_ENUM_LABEL_UI_COMPANION_DRIVER;
+         string_options_entries[j].SHORT_enum_idx  = MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER;
+         string_options_entries[j].default_value   = config_get_default_ui_companion();
+         string_options_entries[j].values          = config_get_ui_companion_driver_options();
+
+         j++;
+#endif
 
          for (i = 0; i < j; i++)
          {
@@ -15269,7 +15280,7 @@ static void settings_build_input_hotkey(
          {
             if (!input_config_bind_map_get_meta(i))
                continue;
-#ifndef HAVE_QT
+#ifndef HAVE_COMPANION_WIMP
             if (i == RARCH_UI_COMPANION_TOGGLE)
                continue;
 #endif

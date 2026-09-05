@@ -1942,6 +1942,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          case MENU_ENUM_LABEL_RECORD_DRIVER:
          case MENU_ENUM_LABEL_MIDI_DRIVER:
+         case MENU_ENUM_LABEL_UI_COMPANION_DRIVER:
          case MENU_ENUM_LABEL_LOCATION_DRIVER:
          case MENU_ENUM_LABEL_CAMERA_DRIVER:
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:

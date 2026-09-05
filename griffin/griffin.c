@@ -1346,6 +1346,9 @@ RETROARCH
 #endif
 #include "../command.c"
 #include "../ui/ui_companion_driver.c"
+#ifdef HAVE_COMPANION_WIMP
+#include "../ui/companion/companion_core.c"
+#endif
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"

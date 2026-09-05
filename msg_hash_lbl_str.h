@@ -528,6 +528,7 @@
 #define MENU_ENUM_LABEL_RECORDING_OUTPUT_DIRECTORY_STR "recording_output_directory"
 #define MENU_ENUM_LABEL_RECORD_DRIVER_STR "record_driver"
 #define MENU_ENUM_LABEL_MIDI_DRIVER_STR "midi_driver"
+#define MENU_ENUM_LABEL_UI_COMPANION_DRIVER_STR "ui_companion_driver"
 #define MENU_ENUM_LABEL_DEFERRED_REMAP_FILE_MANAGER_LIST_STR "deferred_remap_file_manager_list"
 #define MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST_STR "remap_file_manager_list"
 #define MENU_ENUM_LABEL_REMAP_FILE_INFO_STR "remap_file_info"

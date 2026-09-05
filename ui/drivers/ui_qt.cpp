@@ -5234,6 +5234,7 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
    ui_companion_qt_toggle,
+   NULL, /* iterate: QApplication is pumped via application->process_events */
    ui_companion_qt_event_command,
    ui_companion_qt_notify_refresh,
    ui_companion_qt_msg_queue_push,

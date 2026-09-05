@@ -1127,6 +1127,7 @@ static ui_application_t ui_application_cocoa = {
 #endif
        if (application)
           application->process_events();
+       ui_companion_driver_wimp_iterate();
 
        ret = runloop_iterate();
 
@@ -1775,6 +1776,7 @@ ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
    ui_companion_cocoa_toggle,
+   NULL, /* iterate */
    ui_companion_cocoa_event_command,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */

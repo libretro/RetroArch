@@ -30,6 +30,17 @@
 
 #include "../command.h"
 
+/* A desktop ("WIMP") companion backend is available in this build.
+ * The Qt companion, the native Win32 companion (any desktop Windows
+ * target) and the native Cocoa companion (macOS) all count. This
+ * condition must be kept in sync with the guards in
+ * settings/settings_def_desktop_menu.h, which cannot include this
+ * header. */
+#if defined(HAVE_QT) || defined(HAVE_COCOA) || \
+      (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))
+#define HAVE_COMPANION_WIMP 1
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum ui_msg_window_buttons
@@ -59,7 +70,7 @@ enum ui_msg_window_type
 
 enum uico_driver_state_flags
 {
-   UICO_ST_FLAG_QT_IS_INITED     = (1 << 0),
+   UICO_ST_FLAG_WIMP_IS_INITED   = (1 << 0),
    UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
 };
 
@@ -124,6 +135,11 @@ typedef struct ui_companion_driver
    void *(*init)(void);
    void (*deinit)(void *data);
    void (*toggle)(void *data, bool force);
+   /* Per-frame hook for desktop companion drivers that do not own the
+    * platform event pump (the native Win32 / Cocoa companions). Called
+    * once per runloop iteration while the driver is initialised. Must
+    * be bounded and never block. */
+   void (*iterate)(void *data);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
@@ -143,10 +159,18 @@ typedef struct ui_companion_driver
 
 typedef struct
 {
+   /* Platform driver: OS glue (message pump, message boxes, file
+    * browser, window handling). Always present; selected by platform. */
    const ui_companion_driver_t *drv;
    void *data;
-#ifdef HAVE_QT
-   void *qt_data;
+#ifdef HAVE_COMPANION_WIMP
+   /* Desktop companion ("WIMP") driver: the playlist / content browser
+    * window. Selected by the ui_companion_driver setting, enabled by
+    * desktop_menu_enable. Layered on top of the platform driver: with
+    * the Qt companion on Windows / macOS the platform driver keeps
+    * doing exactly what it does today. */
+   const ui_companion_driver_t *wimp;
+   void *wimp_data;
 #endif
    uint8_t flags;
 } uico_driver_state_t;
@@ -187,6 +211,18 @@ void ui_companion_driver_toggle(
       bool force);
 
 uico_driver_state_t *uico_state_get_ptr(void);
+
+/* Per-frame hook for the desktop companion driver; call once per
+ * runloop iteration from the platform's main loop. */
+void ui_companion_driver_wimp_iterate(void);
+
+/* Desktop companion driver selection (Settings -> Drivers ->
+ * Companion UI). */
+const ui_companion_driver_t *ui_companion_wimp_find_driver(const char *ident);
+const char *ui_companion_wimp_find_ident(int idx);
+/* Space-separated list of available desktop companion driver idents. */
+const char *config_get_ui_companion_driver_options(void);
+const char *config_get_default_ui_companion(void);
 
 extern ui_companion_driver_t ui_companion_cocoa;
 extern ui_companion_driver_t ui_companion_cocoatouch;

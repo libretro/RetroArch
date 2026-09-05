@@ -1593,6 +1593,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* init */
    NULL, /* deinit */
    NULL, /* toggle */
+   NULL, /* iterate */
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */

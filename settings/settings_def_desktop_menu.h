@@ -20,33 +20,41 @@ S_UINT_EX(menu_scroll_delay, MENU_SCROLL_DELAY,
       "Scroll Delay",
       "Initial delay in milliseconds when holding a direction to scroll.")
 #endif
-/* Descriptor and configuration rows are #if defined(HAVE_QT) || defined(HAVE_COCOA); the string
- * tables always carry this row via the strings pass. */
-#if (defined(HAVE_QT) || defined(HAVE_COCOA)) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Descriptor and configuration rows are guarded by the same condition
+ * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or
+ * desktop Win32); the string tables always carry this row via the
+ * strings pass. */
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL_NS(ui_companion_enable, UI_COMPANION_ENABLE,
       "ui_companion_enable",
       DEFAULT_UI_COMPANION_ENABLE, SD_FLAG_ADVANCED, 0, 0,
       "UI Companion")
 #endif
-/* Descriptor and configuration rows are #if defined(HAVE_QT) || defined(HAVE_COCOA); the string
- * tables always carry this row via the strings pass. */
-#if (defined(HAVE_QT) || defined(HAVE_COCOA)) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Descriptor and configuration rows are guarded by the same condition
+ * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or
+ * desktop Win32); the string tables always carry this row via the
+ * strings pass. */
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL_NS_H(ui_companion_start_on_boot, UI_COMPANION_START_ON_BOOT,
       "ui_companion_start_on_boot",
       DEFAULT_UI_COMPANION_START_ON_BOOT, SD_FLAG_ADVANCED, 0, 0,
       "Start UI Companion on Boot")
 #endif
-/* Descriptor and configuration rows are #if defined(HAVE_QT) || defined(HAVE_COCOA); the string
- * tables always carry this row via the strings pass. */
-#if (defined(HAVE_QT) || defined(HAVE_COCOA)) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Descriptor and configuration rows are guarded by the same condition
+ * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or
+ * desktop Win32); the string tables always carry this row via the
+ * strings pass. */
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL_EX_NS(desktop_menu_enable, DESKTOP_MENU_ENABLE,
       "desktop_menu_enable",
       DEFAULT_DESKTOP_MENU_ENABLE, SD_FLAG_NONE, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
       "Desktop Menu (Restart required)")
 #endif
-/* Descriptor and configuration rows are #if defined(HAVE_QT) || defined(HAVE_COCOA); the string
- * tables always carry this row via the strings pass. */
-#if (defined(HAVE_QT) || defined(HAVE_COCOA)) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* Descriptor and configuration rows are guarded by the same condition
+ * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or
+ * desktop Win32); the string tables always carry this row via the
+ * strings pass. */
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 /* The configuration table registers this row by hand in
  * configuration.c because it carries no default there; the
  * generated row is for the other passes. */
