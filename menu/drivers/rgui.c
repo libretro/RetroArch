@@ -5707,8 +5707,9 @@ static bool gfx_thumbnail_get_label(
 /*
  * Moves the list by whole rows while keeping the selection the
  * same.
- * Returns true when the list was moved, false to let the notch
- * fall back to stepping the selection. */
+ * Returns true whenever the list is what the wheel drives, even
+ * where it has nowhere to go, so that a notch never steps the
+ * selection. False falls back to that step. */
 static bool rgui_wheel_scroll(void *data, int notches)
 {
    int start;
@@ -5728,14 +5729,7 @@ static bool rgui_wheel_scroll(void *data, int notches)
 
    entries_end = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    bottom = (int)entries_end - (int)rgui->term_layout.height;
-
-   /* Everything is on screen already, so there is nothing to
-    * move. Switch the selection instead. */
-   if (bottom <= 0)
-      return false;
-
    start = (int)menu_st->entries.begin + (notches * RGUI_WHEEL_SCROLL_ROWS);
-
    if (start > bottom)
       start = bottom;
    if (start < 0)
