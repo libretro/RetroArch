@@ -3831,6 +3831,9 @@ static bool rarch_menu_init(
        * again after the first startup, so we save to config
        * file immediately. */
       p_dialog->current_type         = MENU_DIALOG_WELCOME;
+      /* generic_menu_iterate() only pushes the help entry
+       * for this dialog when pending_push is set. */
+      p_dialog->pending_push         = true;
 
       configuration_set_bool(settings,
             settings->bools.menu_show_start_screen, false);
