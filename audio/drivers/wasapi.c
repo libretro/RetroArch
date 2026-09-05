@@ -1483,12 +1483,23 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
                 * every setting below 44 ms. */
                unsigned period_frames = 0;
                unsigned floor_frames;
-               hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
-               if (SUCCEEDED(hr) && dev_period > 0)
-                  period_frames = (unsigned)(dev_period * rate / 10000000);
                /* The period the engine actually runs at - the one its
                 * events follow - is what the pump counts consumed by.
-                * Under IAudioClient3 that may be below the default. */
+                * Under IAudioClient3 that may be below the default, and
+                * it is recorded in wasapi_sh_engine_period when that
+                * path opened the stream; GetDevicePeriod() only knows
+                * the default. The comment said this and the code did
+                * not do it, so an IAudioClient3 stream at 3 ms got a
+                * floor sized for 10 - 30 ms of fifo where 23 was the
+                * point of asking for the small period. */
+               if (wasapi_sh_engine_period)
+                  period_frames = wasapi_sh_engine_period;
+               else
+               {
+                  hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
+                  if (SUCCEEDED(hr) && dev_period > 0)
+                     period_frames = (unsigned)(dev_period * rate / 10000000);
+               }
                floor_frames = rate / 50 + period_frames;
                if (floor_frames < period_frames * 2)
                   floor_frames = period_frames * 2;

@@ -188,17 +188,29 @@ int main(int argc, char **argv)
       report(sc[i].name, &sc[i], &r);
       /* What the driver reports is the setting, within the engine's
        * rounding, once the setting exceeds the floor the writer's burst
-       * needs: a 20 ms floor and a 10 ms engine period leave 32 ms and
-       * up reporting as themselves. It reported 66 ms at every setting
-       * on the reporter's endpoint, the floor having been written as two
-       * engine buffers rather than two periods. */
+       * needs. The floor is the driver's rule, restated here so a change
+       * to either side fails this rather than passing by accident: a
+       * frame at 50 fps plus one engine period, never below two periods
+       * and never below the engine buffer. The frame is there because
+       * the writer hands the fifo a whole frame at a time and the pump
+       * only frees room once per period - a fifo of exactly one frame
+       * made PAL wait a period on every write. The period is the one the
+       * engine actually runs at, so an IAudioClient3 stream at 3 ms gets
+       * a 23 ms floor, not the 30 the default period would give. */
       if (!sc[i].exclusive && sc[i].sh_buffer_length == 0)
       {
-         unsigned reported_ms = (unsigned)(r.reported_buffer / r.frame_bytes * 1000 / 48000);
-         unsigned engine_ms   = r.dev.buffer_frames * 1000 / 48000;
-         /* The floor is a 20 ms fifo before whatever engine buffer the
-          * endpoint handed back; above it, the setting. */
-         unsigned expect_ms   = sc[i].latency_ms > 20 + engine_ms ? sc[i].latency_ms : 20 + engine_ms;
+         unsigned reported_ms  = (unsigned)(r.reported_buffer / r.frame_bytes * 1000 / 48000);
+         unsigned engine_ms    = r.dev.buffer_frames * 1000 / 48000;
+         unsigned period       = r.dev.period_frames;
+         unsigned floor_frames = 48000 / 50 + period;
+         unsigned floor_ms;
+         unsigned expect_ms;
+         if (floor_frames < period * 2)
+            floor_frames = period * 2;
+         if (floor_frames < r.dev.buffer_frames)
+            floor_frames = r.dev.buffer_frames;
+         floor_ms  = floor_frames * 1000 / 48000 + engine_ms;
+         expect_ms = sc[i].latency_ms > floor_ms ? sc[i].latency_ms : floor_ms;
          CHECK(reported_ms <= expect_ms + 4,
                "scenario %u: reports %u ms against a %u ms setting (floor %u)", i, reported_ms, sc[i].latency_ms, expect_ms);
       }
