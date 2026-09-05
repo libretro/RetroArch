@@ -959,6 +959,13 @@ typedef struct
    void    *ff_carry;
    size_t   ff_carry_frames;
    bool     ff_carry_is_float;
+
+   /* Speed the machine actually reached during the last fast-forward hold,
+    * measured at its release; 0 until one has happened. The configured
+    * fastforward_ratio is a ceiling, not a promise - a heavy core on a
+    * handheld can sit well under it - so this is what the next engage
+    * anchors the speed estimate to. See audio_driver_flush(). */
+   double   ff_speed_achieved;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

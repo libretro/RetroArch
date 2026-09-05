@@ -864,6 +864,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->stretch_ff_settle        = 0;
    audio_st->stretch_ff_anchored      = false;
    audio_st->stretch_was_ff           = false;
+   audio_st->ff_speed_achieved        = 0.0;
 #ifdef HAVE_AUDIO_TIMESTRETCH
    audio_st->stretch_was_engaged      = false;
    audio_st->stretch_arrival_avg      = 0.0;
@@ -3016,6 +3017,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             ? audio_st->avg_flush_frames
             : ((double)samples / 2.0);
       double expected = frames / audio_st->input * 1000000.0;
+      double anchor   = (double)ff_ratio;
       /* stretch_ratio_prev is anchored alongside the estimate below: the
        * slew limit guards against a measurement that overshoots, but an
        * anchored edge is known rather than measured, and leaving it on the
@@ -3038,16 +3040,41 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          audio_st->fade_out_from[1] = audio_st->last_out[1];
       }
 #endif
-      if (is_fastforward && ff_ratio > 1.0f)
-         audio_st->avg_flush_delta = expected / (double)ff_ratio;
+      /* Leaving fast-forward: bank the speed that was actually reached,
+       * before the anchor below overwrites the measurement it came from.
+       * avg_flush_delta is the measured flush interval and expected is the
+       * 1x one, so their quotient is the speed of the hold just ended.
+       * The upper guard only rejects a nonsense reading - a flush interval
+       * near zero - not a genuinely fast machine. */
+      if (!is_fastforward && audio_st->avg_flush_delta > 0.0)
+      {
+         double achieved = expected / audio_st->avg_flush_delta;
+         if (achieved > 1.05 && achieved < 1000.0)
+            audio_st->ff_speed_achieved = achieved;
+      }
+
+      /* Anchor to what this machine manages, not to what the setting asks
+       * for: the configured ratio is a ceiling, and a core the host cannot
+       * run that fast would spend the whole hold walking the estimate down
+       * to the truth. The ceiling still bounds it, and remains the anchor
+       * for the first hold after a core loads. This is also what an
+       * uncapped fast-forward (ratio 0) can anchor to. */
+      if (audio_st->ff_speed_achieved > 1.05)
+      {
+         anchor = audio_st->ff_speed_achieved;
+         if (ff_ratio > 1.0f && anchor > (double)ff_ratio)
+            anchor = (double)ff_ratio;
+      }
+
+      if (is_fastforward && anchor > 1.0)
+         audio_st->avg_flush_delta = expected / anchor;
       else if (!is_fastforward)
          audio_st->avg_flush_delta = expected;
       else
          audio_st->stretch_ff_anchored = false;
 #ifdef HAVE_AUDIO_TIMESTRETCH
       if (audio_st->stretch_ff_anchored)
-         audio_st->stretch_ratio_prev = is_fastforward
-               ? (double)ff_ratio : 1.0;
+         audio_st->stretch_ratio_prev = is_fastforward ? anchor : 1.0;
 #endif
       /* Whether or not there was a rate to anchor to, let the average
        * re-settle quickly from here. */
