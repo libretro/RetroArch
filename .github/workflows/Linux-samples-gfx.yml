@@ -26,6 +26,7 @@ jobs:
         timeout-minutes: 5
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
+          pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -463,6 +464,50 @@ jobs:
           test -x display_servers_test
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
+
+      - name: Live mode switching on an Xorg dummy server (X11 + SDL)
+        shell: bash
+        run: |
+          set -eu
+          # The stubbed display_servers_test proves the driver issues
+          # the right RandR calls; this proves a real X server accepts
+          # them.  Xorg's 'dummy' driver honours XRRCreateMode /
+          # XRRAddOutputMode / XRRSetCrtcConfig with arbitrary timings
+          # (Xvfb's RandR shim returns success and lists nothing, so it
+          # cannot stand in).  The X11 sample runs the modeline engine
+          # end to end - generate a 15 kHz timing, put it on the wire
+          # through dispserv_x11, read the crtc back and compare every
+          # field, switch again, restore - and the SDL sample switches
+          # a real SDL2 window among the listed modes through
+          # dispserv_sdl, for the modeline path and the menu picker.
+          sudo Xorg :99 -config samples/gfx/display_servers_x11_live/xorg-dummy.conf \
+             -logfile /tmp/xorg-dummy.log -noreset -nolisten tcp -ac \
+             > /tmp/xorg-dummy.out 2>&1 &
+          XORG_PID=$!
+          for i in $(seq 1 30); do
+             DISPLAY=:99 xrandr >/dev/null 2>&1 && break
+             sleep 0.5
+          done
+          DISPLAY=:99 xrandr | head -3
+          export DISPLAY=:99
+          (cd samples/gfx/display_servers_x11_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                timeout 120 ./display_servers_x11_live_test)
+          echo "[pass] display_servers_x11_live_test"
+          (cd samples/gfx/display_servers_sdl_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl_live_test)
+          echo "[pass] display_servers_sdl_live_test"
+          # The server must be back on its desktop mode with nothing
+          # generated left behind.
+          xrandr | head -3
+          if xrandr | grep -q 'RA-'; then
+             echo "generated modes left on the server"; exit 1
+          fi
+          sudo kill "$XORG_PID" || true
 
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash

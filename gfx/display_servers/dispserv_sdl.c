@@ -331,8 +331,12 @@ static int sdl_display_server_modeline_enum(void *data,
    n = SDL_GetNumDisplayModes(dispserv->display_index);
    if (n < 0)
       return -1;
+   /* The desktop entry; a backend without one reports what is
+    * current instead */
    memset(&desktop, 0, sizeof(desktop));
-   SDL_GetDesktopDisplayMode(dispserv->display_index, &desktop);
+   if (SDL_GetDesktopDisplayMode(dispserv->display_index, &desktop) != 0
+         || desktop.w == 0)
+      SDL_GetCurrentDisplayMode(dispserv->display_index, &desktop);
 
    for (i = 0, j = 0; i < n && j < max; i++)
    {
