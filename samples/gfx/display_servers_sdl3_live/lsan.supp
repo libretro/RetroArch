@@ -1,0 +1,3 @@
+leak:libdbus
+leak:libSDL3
+leak:SDL_calloc

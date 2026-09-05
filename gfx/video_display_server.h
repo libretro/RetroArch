@@ -196,8 +196,9 @@ enum rotation video_display_server_get_screen_orientation(void);
 struct video_modeline_ops;
 bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops);
 
-/* True when an SDL2 video driver or context owns the window, so the
- * SDL display server can switch among its listed modes. */
+/* True when an SDL2 or SDL3 video driver or context owns the window,
+ * so the matching SDL display server can switch among its listed
+ * modes. */
 bool video_display_server_sdl_available(void);
 
 /* The heads the mode server can drive; count, or -1 without a list. */
@@ -210,7 +211,8 @@ extern const video_display_server_t dispserv_wl;
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
-extern const video_display_server_t dispserv_sdl;
+extern const video_display_server_t dispserv_sdl2;
+extern const video_display_server_t dispserv_sdl3;
 
 RETRO_END_DECLS
 

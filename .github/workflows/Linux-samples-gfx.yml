@@ -27,7 +27,7 @@ jobs:
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
-          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64"
+          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -480,7 +480,8 @@ jobs:
           # through dispserv_x11, read the crtc back and compare every
           # field, switch again, restore - and the SDL sample switches
           # a real SDL2 window among the listed modes through
-          # dispserv_sdl, for the modeline path and the menu picker.
+          # dispserv_sdl2 (and dispserv_sdl3 on an SDL3 build), for the
+          # modeline path and the menu picker.
           # The Win32 build runs after them under Wine.
           sudo Xorg :99 -config samples/gfx/display_servers_x11_live/xorg-dummy.conf \
              -logfile /tmp/xorg-dummy.log -noreset -nolisten tcp -ac \
@@ -492,17 +493,46 @@ jobs:
           done
           DISPLAY=:99 xrandr | head -3
           export DISPLAY=:99
+          # SDL3's X11 backend makes a window fullscreen through the
+          # window manager and reverts the mode switch when none
+          # answers; a light one runs for the SDL samples.
+          openbox > /tmp/openbox.out 2>&1 &
+          sleep 1
           (cd samples/gfx/display_servers_x11_live \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
                 timeout 120 ./display_servers_x11_live_test)
           echo "[pass] display_servers_x11_live_test"
-          (cd samples/gfx/display_servers_sdl_live \
+          (cd samples/gfx/display_servers_sdl2_live \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
                 LSAN_OPTIONS=suppressions=lsan.supp \
-                timeout 120 ./display_servers_sdl_live_test)
-          echo "[pass] display_servers_sdl_live_test"
+                timeout 120 ./display_servers_sdl2_live_test)
+          echo "[pass] display_servers_sdl2_live_test"
+          # The SDL3 server against an SDL3 built from a pinned release
+          # (the runner image ships no libsdl3-dev): video and events
+          # only, X11 backend.
+          SDL3_VER=3.2.20
+          if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
+             curl -sL -o /tmp/sdl3.tar.gz \
+                "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
+             tar -C /tmp -xzf /tmp/sdl3.tar.gz
+             cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=OFF -DSDL_CAMERA=OFF \
+                -DSDL_WAYLAND=OFF -DSDL_X11=ON -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF \
+                -DSDL_VULKAN=OFF -DSDL_RENDER=OFF -DCMAKE_INSTALL_PREFIX=/opt/sdl3 \
+                > /tmp/sdl3-cmake.log
+             ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
+             sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
+          fi
+          (cd samples/gfx/display_servers_sdl3_live \
+             && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
+             && LD_LIBRARY_PATH=/opt/sdl3/lib \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl3_live_test)
+          echo "[pass] display_servers_sdl3_live_test"
           # The Win32 server, its vendor timing paths and the engine
           # cross-built with mingw-w64 and run under Wine on the same
           # display: Wine backs EnumDisplaySettingsExA and
@@ -527,6 +557,7 @@ jobs:
           if xrandr | grep -q 'RA-'; then
              echo "generated modes left on the server"; exit 1
           fi
+          pkill openbox || true
           sudo kill "$XORG_PID" || true
 
       - name: Build and run display_servers_kms_test (ASan + UBSan)

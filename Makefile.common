@@ -1665,6 +1665,7 @@ ifeq ($(HAVE_SDL3), 1)
           input/drivers/sdl3_input.o \
           gfx/drivers/sdl3_gfx.o \
           gfx/common/sdl3_common.o \
+          gfx/display_servers/dispserv_sdl3.o \
           audio/drivers/sdl3_audio.o
 
    ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
@@ -1678,7 +1679,7 @@ else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
 	  gfx/common/sdl2_common.o \
-	  gfx/display_servers/dispserv_sdl.o
+	  gfx/display_servers/dispserv_sdl2.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    # See the SDL3 note above: drop SDL's WinMain shim lib, we set
    # SDL_MAIN_HANDLED and provide our own entry point.

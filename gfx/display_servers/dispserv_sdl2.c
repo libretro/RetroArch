@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* SDL2 display server: a thin layer over the SDL window that switches
+/* SDL2 display server: a thin layer over the SDL2 window that switches
  * among the display modes SDL already lists. It is not a custom timing
  * path: SDL cannot create a 256x240@60.0988 modeline, so modeline caps
  * are 0 and the engine can only pick a listed mode. Which server drives
@@ -381,7 +381,7 @@ static bool sdl_display_server_modeline_flush(void *data)
    return true;
 }
 
-const video_display_server_t dispserv_sdl = {
+const video_display_server_t dispserv_sdl2 = {
    sdl_display_server_init,
    sdl_display_server_destroy,
    NULL, /* set_window_opacity */
@@ -410,5 +410,5 @@ const video_display_server_t dispserv_sdl = {
    NULL, /* modeline_delete */
    sdl_display_server_modeline_set,
    sdl_display_server_modeline_flush,
-   "sdl"
+   "sdl2"
 };

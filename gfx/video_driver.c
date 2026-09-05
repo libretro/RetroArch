@@ -588,8 +588,15 @@ static video_driver_state_t video_driver_st = { 0 };
 static const video_display_server_t *current_display_server =
 &dispserv_null;
 
-#ifdef HAVE_SDL2
-/* The SDL display server switches among listed modes on the SDL
+#if defined(HAVE_SDL3)
+#define dispserv_sdl dispserv_sdl3
+#elif defined(HAVE_SDL2)
+#define dispserv_sdl dispserv_sdl2
+#endif
+
+#if defined(HAVE_SDL2) || defined(HAVE_SDL3)
+/* The SDL display server (dispserv_sdl2 or dispserv_sdl3, whichever
+ * SDL the build has) switches among listed modes on the SDL
  * window. It never replaces the native server outright: metrics,
  * orientation and decorations stay native. What it can take over is
  * mode switching, decided by video_sdl_display_server: 0 never,
@@ -636,7 +643,7 @@ bool video_display_server_sdl_available(void)
 static const video_display_server_t *video_display_server_modes(void **data)
 {
    video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_SDL2
+#if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    if (video_display_server_sdl_selected())
    {
       if (!sdl_display_server_data && dispserv_sdl.init)
@@ -1560,7 +1567,7 @@ void video_display_server_destroy(void)
    if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
          current_display_server->destroy(video_st->current_display_server_data);
-#ifdef HAVE_SDL2
+#if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    if (sdl_display_server_data)
    {
       dispserv_sdl.destroy(sdl_display_server_data);

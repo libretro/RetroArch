@@ -597,7 +597,7 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
-#include "../gfx/display_servers/dispserv_sdl.c"
+#include "../gfx/display_servers/dispserv_sdl2.c"
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -999,6 +999,7 @@ AUDIO
 #include "../input/drivers/sdl3_input.c"
 #include "../gfx/drivers/sdl3_gfx.c"
 #include "../gfx/common/sdl3_common.c"
+#include "../gfx/display_servers/dispserv_sdl3.c"
 #include "../audio/drivers/sdl3_audio.c"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/sdl3_gl_ctx.c"
