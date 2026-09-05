@@ -2563,11 +2563,9 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
 {
    PlaylistEntry entry          = getCurrentContentEntry();
    QString dirString            = m_playlistModel->getPlaylistThumbnailsDir(
-                                      entry.dbName)
-                                + QString("/") + type;
-   QString thumbPath            = m_playlistModel->getSanitizedThumbnailName(
-                                      dirString + QString("/"),
-                                      entry.labelNoExt);
+                                      entry.dbName, type);
+   QString thumbPath            = m_playlistModel->getRepositoryThumbnailPath(
+                                      entry.dbName, entry.labelNoExt, type);
    QByteArray   dirArray        = QDir::toNativeSeparators(dirString).toUtf8();
    const char   *dirData        = dirArray.constData();
    QByteArray thumbArray        = QDir::toNativeSeparators(thumbPath).toUtf8();
@@ -3527,9 +3525,6 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
    }
    else
    {
-      QString thumbnailsDir = m_playlistModel->getPlaylistThumbnailsDir(
-            entry.dbName);
-
       /* Clear any pending file-browser preview request: this code
        * path serves the playlist views, not the file browser, so a
        * preview result arriving now would be unwanted. */
@@ -3537,10 +3532,8 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
 
       for (i = 0; i < 4; i++)
       {
-         QString name = m_playlistModel->getSanitizedThumbnailName(
-               thumbnailsDir + QString("/")
-               + qt_thumbnail_subdirs[i] + QString("/"),
-               entry.labelNoExt);
+         QString name = m_playlistModel->getRepositoryThumbnailPath(
+               entry.dbName, entry.labelNoExt, qt_thumbnail_subdirs[i]);
          m_thumbnailPixmaps[i] = new QPixmap(pixmapFromPathRA(name));
       }
 

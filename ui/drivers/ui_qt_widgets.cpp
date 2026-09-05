@@ -7229,7 +7229,6 @@ QVector<OptionsPage*> FrameThrottleCategory::pages()
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)
 {
-   m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
    m_thumbnailLoader    = new ThumbnailLoader(this);
    setThumbnailCacheLimit(500);
    connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)),
@@ -7325,12 +7324,18 @@ QString PlaylistModel::getThumbnailPath(const QModelIndex &index,
    return getThumbnailPath(m_contents.at(index.row()), type);
 }
 
+/* Thumbnail layout, name sanitising and extension probing live in the
+ * companion core; these are the Qt string wrappers. */
 QString PlaylistModel::getPlaylistThumbnailsDir(
-      const QString playlistName) const
+      const QString playlistName, const QString type) const
 {
-   settings_t *settings            = config_get_ptr();
-   const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-   return QDir::cleanPath(QString(path_dir_thumbnails)) + "/" + playlistName;
+   char dir[PATH_MAX_LENGTH];
+   QByteArray dbArray   = playlistName.toUtf8();
+   QByteArray typeArray = type.toUtf8();
+
+   companion_core_thumbnail_dir(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), dir, sizeof(dir));
+   return QString::fromUtf8(dir);
 }
 
 bool PlaylistModel::isSupportedImage(const QString path) const
@@ -7339,37 +7344,32 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return image_texture_get_type(pathArray.constData()) != IMAGE_TYPE_NONE;
 }
 
-QString PlaylistModel::getSanitizedThumbnailName(QString dir, QString label) const
+QString PlaylistModel::getRepositoryThumbnailPath(const QString playlistName,
+      const QString labelNoExt, const QString type) const
 {
-   QDir tnDir(dir);
+   char path[PATH_MAX_LENGTH];
+   QByteArray dbArray    = playlistName.toUtf8();
+   QByteArray typeArray  = type.toUtf8();
+   QByteArray labelArray = labelNoExt.toUtf8();
 
-   QString tnName = label.replace(m_fileSanitizerRegex, "_");
-   if (tnDir.exists(tnName + ".png"))
-      return dir + tnName + ".png";
-   if (tnDir.exists(tnName + ".jpg"))
-      return dir + tnName + ".jpg";
-   if (tnDir.exists(tnName + ".jpeg"))
-      return dir + tnName + ".jpeg";
-   if (tnDir.exists(tnName + ".bmp"))
-      return dir + tnName + ".bmp";
-   if (tnDir.exists(tnName + ".tga"))
-      return dir + tnName + ".tga";
-   return dir + tnName + ".png";
-
+   companion_core_thumbnail_path(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), labelArray.constData(),
+         NULL, path, sizeof(path));
+   return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type) const
 {
-   /* use thumbnail widgets to show regular image files */
-   if (isSupportedImage(entry.path))
-      return entry.path;
+   char path[PATH_MAX_LENGTH];
+   QByteArray dbArray    = entry.dbName.toUtf8();
+   QByteArray typeArray  = type.toUtf8();
+   QByteArray labelArray = entry.labelNoExt.toUtf8();
+   QByteArray pathArray  = entry.path.toUtf8();
 
-   return getSanitizedThumbnailName(
-      getPlaylistThumbnailsDir(entry.dbName)
-      + QString("/")
-      + type
-      + QString("/"),
-      entry.labelNoExt);
+   companion_core_thumbnail_path(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), labelArray.constData(),
+         pathArray.constData(), path, sizeof(path));
+   return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const

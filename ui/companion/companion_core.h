@@ -150,6 +150,28 @@ void companion_core_event_command(companion_core_t *core,
 bool companion_core_request_scan(companion_core_t *core, const char *path,
       bool directory, bool show_hidden_files);
 
+/* --- Thumbnails ---------------------------------------------------- */
+
+/* Subdirectory names of the thumbnail repository layout. */
+#define COMPANION_THUMB_BOXART     "Named_Boxarts"
+#define COMPANION_THUMB_SCREENSHOT "Named_Snaps"
+#define COMPANION_THUMB_TITLE      "Named_Titles"
+#define COMPANION_THUMB_LOGO       "Named_Logos"
+
+/* <thumbnails dir>/<db_name>/<subdir>. Returns the length written. */
+size_t companion_core_thumbnail_dir(companion_core_t *core,
+      const char *db_name, const char *subdir, char *s, size_t len);
+/* Thumbnail file for an entry: the label with the characters the
+ * thumbnail repository forbids replaced by '_', under
+ * companion_core_thumbnail_dir(); the first of .png .jpg .jpeg .bmp .tga
+ * that exists, else the .png name (the download / save target). When
+ * @content_path is itself an image file it is returned as-is, so image
+ * content shows as its own thumbnail. @db_name is the playlist name
+ * without .lpl; @label has no extension. Returns the length written. */
+size_t companion_core_thumbnail_path(companion_core_t *core,
+      const char *db_name, const char *subdir, const char *label,
+      const char *content_path, char *s, size_t len);
+
 /* --- Installed cores (for "associate core" style pickers) ---------- */
 
 size_t companion_core_installed_core_count(companion_core_t *core);

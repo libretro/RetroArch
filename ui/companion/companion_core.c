@@ -21,6 +21,7 @@
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
 #include <file/file_path.h>
+#include <formats/image.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -512,6 +513,73 @@ bool companion_core_request_scan(companion_core_t *core, const char *path,
    (void)show_hidden_files;
    return false;
 #endif
+}
+
+/* --- Thumbnails -------------------------------------------------------- */
+
+size_t companion_core_thumbnail_dir(companion_core_t *core,
+      const char *db_name, const char *subdir, char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || !db_name || !subdir)
+      return 0;
+
+   fill_pathname_join_special(s,
+         settings->paths.directory_thumbnails, db_name, len);
+   return fill_pathname_join_special(s, s, subdir, len);
+}
+
+size_t companion_core_thumbnail_path(companion_core_t *core,
+      const char *db_name, const char *subdir, const char *label,
+      const char *content_path, char *s, size_t len)
+{
+   /* Extensions probed, in order; the first is also the default. */
+   static const char *exts[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
+   char name[PATH_MAX_LENGTH];
+   size_t i, _len, name_len;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || !label)
+      return 0;
+
+   /* Image content is its own thumbnail. */
+   if (     !string_is_empty(content_path)
+         && image_texture_get_type(content_path) != IMAGE_TYPE_NONE)
+      return strlcpy(s, content_path, len);
+
+   /* Characters the thumbnail repository replaces with '_':
+    * & * / : ` < > ? \ | */
+   name_len = strlcpy(name, label, sizeof(name));
+   for (i = 0; i < name_len; i++)
+   {
+      switch (name[i])
+      {
+         case '&': case '*': case '/': case ':': case '`':
+         case '<': case '>': case '?': case '\\': case '|':
+            name[i] = '_';
+            break;
+         default:
+            break;
+      }
+   }
+
+   companion_core_thumbnail_dir(core, db_name, subdir, s, len);
+   _len = fill_pathname_join_special(s, s, name, len);
+
+   for (i = 0; i < sizeof(exts) / sizeof(exts[0]); i++)
+   {
+      strlcpy(s + _len, exts[i], len - _len);
+      if (path_is_valid(s))
+         return strlen(s);
+   }
+   strlcpy(s + _len, exts[0], len - _len);
+   return strlen(s);
 }
 
 /* --- Installed cores --------------------------------------------------- */

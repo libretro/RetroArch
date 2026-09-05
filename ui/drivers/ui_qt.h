@@ -71,10 +71,10 @@ companion_core_t *ui_companion_qt_core(void);
 
 #define ALL_PLAYLISTS_TOKEN "|||ALL|||"
 #define ICON_PATH "/xmb/dot-art/png/"
-#define THUMBNAIL_BOXART "Named_Boxarts"
-#define THUMBNAIL_SCREENSHOT "Named_Snaps"
-#define THUMBNAIL_TITLE "Named_Titles"
-#define THUMBNAIL_LOGO "Named_Logos"
+#define THUMBNAIL_BOXART     COMPANION_THUMB_BOXART
+#define THUMBNAIL_SCREENSHOT COMPANION_THUMB_SCREENSHOT
+#define THUMBNAIL_TITLE      COMPANION_THUMB_TITLE
+#define THUMBNAIL_LOGO       COMPANION_THUMB_LOGO
 
 class QApplication;
 class QCloseEvent;
@@ -242,8 +242,10 @@ public:
    void reloadSystemThumbnails(const QString system);
    void setThumbnailCacheLimit(int limit);
    bool isSupportedImage(const QString path) const;
-   QString getPlaylistThumbnailsDir(const QString playlistName) const;
-   QString getSanitizedThumbnailName(QString dir, QString label) const;
+   QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
+   /* Repository thumbnail file for a label, ignoring whether the content
+    * itself is an image (the save target / the sidebar images). */
+   QString getRepositoryThumbnailPath(const QString playlistName, const QString labelNoExt, const QString type) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
@@ -264,7 +266,6 @@ private:
    void startNextPendingPlaylist();
    QCache<QString, QPixmap> m_cache;
    QSet<QString> m_pendingImages;
-   QRegularExpression m_fileSanitizerRegex;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    ThumbnailLoader *m_thumbnailLoader;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
