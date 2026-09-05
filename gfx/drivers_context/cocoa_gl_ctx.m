@@ -672,6 +672,20 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
          [fullscreen_window makeFirstResponder:g_view];
 
          cocoa_show_mouse(data, false);
+
+         /* WindowServer registers this newly-created fullscreen window's
+          * backing surface asynchronously - makeKeyAndOrderFront returning
+          * does not mean that has finished. On some systems the very first
+          * -flushBuffer call (issued moments after this function returns)
+          * can land before that registration completes, crashing inside
+          * AppleMetalOpenGLRenderer/SkyLight with a null surface handle
+          * (EXC_BAD_ACCESS in SLSFlushSurfaceWithOptionsAndIndex). Pumping
+          * the run loop briefly here - actually processing the pending
+          * window-order/CATransaction work, not just sleeping - gives the
+          * WindowServer a real chance to catch up before the first frame.
+          * Only needed on this one-time transition into fullscreen. */
+         [[NSRunLoop currentRunLoop] runUntilDate:
+               [NSDate dateWithTimeIntervalSinceNow:0.2]];
       }
    }
    else
