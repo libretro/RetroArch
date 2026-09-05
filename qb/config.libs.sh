@@ -317,6 +317,7 @@ if [ "$OS" = 'Darwin' ]; then
    check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
+   add_opt MODELINE no
    add_opt CRTSWITCHRES no
 
    # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
@@ -848,13 +849,15 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
-if [ "$HAVE_CRTSWITCHRES" != no ]; then
-   if [ "$HAVE_CXX11" = 'no' ]; then
-      HAVE_CRTSWITCHRES=no
-   else
-      HAVE_CRTSWITCHRES=yes
-   fi
+# The modeline engine is C89 and needs no extra libraries; the old
+# CRTSWITCHRES switch still turns it off.
+if [ "$HAVE_CRTSWITCHRES" = no ]; then
+   HAVE_MODELINE=no
 fi
+if [ "$HAVE_MODELINE" != no ]; then
+   HAVE_MODELINE=yes
+fi
+HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false

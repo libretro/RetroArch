@@ -1074,8 +1074,18 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_core.c"
+#include "../gfx/modeline/modeline_monitor.c"
+#include "../gfx/modeline/modeline_list.c"
+#include "../gfx/modeline/modeline_ini.c"
 #include "../gfx/video_crt_switch.c"
+#ifdef _WIN32
+#include "../gfx/display_servers/win32_modeline_resync.c"
+#include "../gfx/display_servers/win32_modeline_adl.c"
+#include "../gfx/display_servers/win32_modeline_ati.c"
+#include "../gfx/display_servers/win32_modeline_pstrip.c"
+#endif
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"

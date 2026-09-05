@@ -8698,7 +8698,7 @@ unsigned menu_displaylist_build_list(
 
             if (video_display_server_get_flags(&flags))
             {
-               if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
+               if (BIT32_GET(flags.flags, DISPSERV_CTX_MODELINE))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
                            PARSE_ACTION, false) == 0)

@@ -205,7 +205,7 @@ bool android_get_vfs_authorized_locations(
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
 #include "gfx/video_crt_switch.h"
 #endif
 #ifdef HAVE_BLUETOOTH

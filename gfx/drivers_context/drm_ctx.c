@@ -345,7 +345,7 @@ error:
 /* Get the mode from video_state */
 bool gfx_ctx_drm_get_mode_from_video_state(drmModeModeInfoPtr modeInfo)
 {
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
    video_driver_state_t *video_st = video_state_get_ptr();
    if (video_st->crt_switch_st.vdisplay >= 1)
    {

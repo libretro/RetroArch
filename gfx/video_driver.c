@@ -37,6 +37,7 @@
 #include "video_driver.h"
 #include "video_filter.h"
 #include "video_display_server.h"
+#include "modeline/modeline_list.h"
 
 #include "gfx_animation.h"
 #ifdef HAVE_GFX_WIDGETS
@@ -1520,6 +1521,26 @@ bool video_display_server_set_resolution(unsigned width, unsigned height,
             video_st->current_display_server_data, width, height, int_hz,
             hz, center, monitor_index, xoffset, padjust);
    return false;
+}
+
+bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   const video_display_server_t *s = current_display_server;
+   if (!s || !s->modeline_set)
+      return false;
+   ops->data       = video_st->current_display_server_data;
+   ops->caps       = s->modeline_caps;
+   ops->enum_modes = s->modeline_enum;
+   ops->add        = s->modeline_add;
+   ops->update     = s->modeline_update;
+   ops->del        = s->modeline_delete;
+   ops->set        = s->modeline_set;
+   ops->flush      = s->modeline_flush;
+   ops->open       = s->modeline_open;
+   ops->close      = s->modeline_close;
+   ops->name       = s->ident;
+   return true;
 }
 
 bool video_display_server_has_resolution_list(void)
@@ -5825,7 +5846,7 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
 
-#if defined(HAVE_CRTSWITCHRES)
+#if defined(HAVE_MODELINE)
    /* trigger set resolution*/
    if (video_info.crt_switch_resolution)
    {
