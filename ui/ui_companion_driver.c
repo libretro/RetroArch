@@ -75,6 +75,9 @@ static const ui_companion_driver_t *ui_companion_wimp_drivers[] = {
 #ifdef HAVE_QT
    &ui_companion_qt,
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   &ui_companion_wimp_win32,
+#endif
    &ui_companion_null,
    NULL
 };

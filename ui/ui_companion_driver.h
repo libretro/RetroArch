@@ -228,6 +228,8 @@ extern ui_companion_driver_t ui_companion_cocoa;
 extern ui_companion_driver_t ui_companion_cocoatouch;
 extern ui_companion_driver_t ui_companion_qt;
 extern ui_companion_driver_t ui_companion_win32;
+/* Native desktop companions (shared core + native controls). */
+extern ui_companion_driver_t ui_companion_wimp_win32;
 
 extern ui_msg_window_t ui_msg_window_win32;
 

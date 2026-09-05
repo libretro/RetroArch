@@ -1463,7 +1463,8 @@ endif
 # Shared companion core (ui/companion/) is needed by every desktop
 # companion driver: Qt, native Win32, native Cocoa. Added once.
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += ui/drivers/ui_win32.o
+   OBJ += ui/drivers/ui_win32.o \
+          ui/drivers/ui_win32_companion.o
    HAVE_COMPANION_CORE = 1
 endif
 ifeq ($(HAVE_QT), 1)

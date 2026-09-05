@@ -1326,6 +1326,7 @@ UI
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
+#include "../ui/drivers/ui_win32_companion.c"
 #endif
 
 /*============================================================
