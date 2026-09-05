@@ -43,6 +43,7 @@
 #include "../deps/switchres/switchres.h"
 #include "../deps/switchres/display.h"
 #include "../deps/switchres/custom_video.h"
+#include "../deps/switchres/edid.h"
 
 class gold_video : public custom_video
 {
@@ -133,6 +134,19 @@ static const modeline *gold_get(gold_ctx *c, int w, int h, double hz, int flags)
    return m;
 }
 
+/* The EDID's detailed timing and range/name descriptors for a mode:
+ * the bytes the 2.2.1 generator and the in-tree one agree on (the
+ * vendor, serial and feature-flag bytes differ on purpose). */
+static void gold_edid(gold_ctx *c, const modeline *m, unsigned char *out)
+{
+   edid_block e;
+   memset(&e, 0, sizeof(e));
+   edid_from_modeline((modeline*)m, &c->disp->range[m->range], c->disp->monitor(), &e);
+   memcpy(out, e.b, 128);
+}
+
+static const char *gold_monitor(gold_ctx *c) { return c->disp->monitor(); }
+
 typedef modeline gold_mode;
 #define GM_STRETCH(m) (((m)->result.weight & R_RES_STRETCH) ? 1 : 0)
 #define GM_VOFF(m)    (((m)->result.weight & R_V_FREQ_OFF) ? 1 : 0)
@@ -155,6 +169,7 @@ typedef modeline gold_mode;
 #include "../gfx/modeline/modeline_monitor.c"
 #include "../gfx/modeline/modeline_list.c"
 #include "../gfx/modeline/modeline_ini.c"
+#include "../gfx/modeline/modeline_edid.c"
 
 typedef struct
 {
@@ -231,6 +246,13 @@ static const video_modeline_t *gold_get(gold_ctx *c, int w, int h,
       modeline_flush(c->gen, &c->ops);
    return m;
 }
+
+static void gold_edid(gold_ctx *c, const video_modeline_t *m, unsigned char *out)
+{
+   modeline_edid_build(m, &c->gen->range[m->range], c->gen->monitor, out);
+}
+
+static const char *gold_monitor(gold_ctx *c) { return c->gen->monitor; }
 
 typedef video_modeline_t gold_mode;
 #define GM_STRETCH(m) (((m)->result.weight & MODELINE_R_RES_STRETCH) ? 1 : 0)
@@ -353,6 +375,24 @@ static void gold_run_case(const gold_case *c, int caps,
             hz, gold_sources[i].flags);
       snprintf(line, sizeof(line), "%s/%s", tag, c->name);
       gold_print(line, &gold_sources[i], m);
+      /* The EDID block's timing, limits and name bytes for the
+       * 320x240 source on the dummy display */
+      if (m && i == 1 && caps < 0)
+      {
+         unsigned char edid[128];
+         int b;
+         memset(edid, 0, sizeof(edid));
+         gold_edid(ctx, m, edid);
+         printf("%s edid:", line);
+         for (b = 54; b < 71; b++)
+            printf(" %02x", edid[b]);
+         /* up to the end of the name: the padding after it is the
+          * one byte where the two generators differ by design */
+         printf(" |");
+         for (b = 90; b < 113 + (int)strlen(gold_monitor(ctx)) && b < 125; b++)
+            printf(" %02x", edid[b]);
+         printf("\n");
+      }
    }
    gold_free(ctx);
 }

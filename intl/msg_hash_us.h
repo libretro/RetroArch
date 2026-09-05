@@ -31454,6 +31454,14 @@ MSG_HASH(
    "ASIO is not the running audio driver yet. Restart RetroArch to open its control panel."
    )
 MSG_HASH(
+   MSG_CRT_SWITCH_EDID_WRITTEN,
+   "EDID written to %s. See the log for how to load it."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_FAILED,
+   "Could not write an EDID for the selected CRT preset."
+   )
+MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "Audio unmuted."
    )

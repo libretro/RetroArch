@@ -11014,6 +11014,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,                               PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,                           PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,                            PARSE_ONLY_INT },
+#ifdef HAVE_MODELINE
+               {MENU_ENUM_LABEL_CRT_SWITCH_WRITE_EDID,                                 PARSE_ACTION   },
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

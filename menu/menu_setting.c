@@ -126,6 +126,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/video_crt_switch.h"
+#endif
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.h"
 #endif
@@ -7120,6 +7123,24 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
    }
    return 0;
 }
+
+#ifdef HAVE_MODELINE
+static int setting_action_crt_switch_write_edid(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH + 64];
+   size_t _len;
+   if (crt_switch_write_edid(path, sizeof(path)))
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_CRT_SWITCH_EDID_WRITTEN), path);
+   else
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CRT_SWITCH_EDID_FAILED), sizeof(msg));
+   runloop_msg_queue_push(msg, _len, 1, 240, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return 0;
+}
+#endif
 
 static size_t setting_get_string_representation_uint_video_sdl_display_server(
       rarch_setting_t *setting, char *s, size_t len)

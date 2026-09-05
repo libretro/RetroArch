@@ -1080,6 +1080,7 @@ DRIVERS
 #include "../gfx/modeline/modeline_monitor.c"
 #include "../gfx/modeline/modeline_list.c"
 #include "../gfx/modeline/modeline_ini.c"
+#include "../gfx/modeline/modeline_edid.c"
 #include "../gfx/video_crt_switch.c"
 #ifdef _WIN32
 #include "../gfx/display_servers/win32_modeline_resync.c"

@@ -36,12 +36,14 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #include "gfx_display.h"
 #include "video_crt_switch.h"
 #include "video_display_server.h"
 #include "modeline/modeline_list.h"
 #include "modeline/modeline_ini.h"
+#include "modeline/modeline_edid.h"
 #include "../command.h"
 #include "../core_info.h"
 #include "../verbosity.h"
@@ -462,6 +464,70 @@ static void switch_res_crt(
       video_driver_set_output_size(width , height);
       command_event(CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, NULL);
    }
+}
+#endif
+
+#if !defined(HAVE_VIDEOCORE)
+bool crt_switch_write_edid(char *s, size_t len)
+{
+   uint8_t block[MODELINE_EDID_SIZE];
+   char dir[DIR_MAX_LENGTH];
+   video_output_info_t outputs[4];
+   int nout;
+   settings_t *settings      = config_get_ptr();
+   video_modeline_gen_t *gen = modeline_gen_new();
+   videocrt_switch_t tmp;
+   bool ok;
+
+   if (!gen)
+      return false;
+
+   /* The same ini and preset order the switching path uses */
+   memset(&tmp, 0, sizeof(tmp));
+   tmp.gen = gen;
+   modeline_ini_load(gen, "switchres.ini");
+   crt_apply_menu_preset(&tmp, settings->uints.crt_switch_resolution,
+         settings->uints.crt_switch_resolution_super);
+   modeline_ini_load(gen, "display0.ini");
+   modeline_parse_options(gen);
+   crt_load_config_ini(&tmp);
+
+   ok = modeline_edid_for_gen(gen, block);
+   if (ok)
+   {
+      fill_pathname_application_data(dir, sizeof(dir));
+      fill_pathname_join(s, dir, "edid", len);
+      path_mkdir(s);
+      fill_pathname_join(dir, s, gen->monitor, sizeof(dir));
+      strlcpy(s, dir, len);
+      strlcat(s, ".bin", len);
+      ok = filestream_write_file(s, block, MODELINE_EDID_SIZE);
+   }
+
+   if (ok)
+   {
+      RARCH_LOG("[CRT] EDID for preset %s (%u-%u kHz, %u-%u Hz) written to \"%s\".\n",
+            gen->monitor, block[97], block[98], block[95], block[96], s);
+      nout = video_display_server_list_outputs(outputs, 4);
+      if (nout > 0 && outputs[0].name[0])
+         RARCH_LOG("[CRT] Linux: copy it to /lib/firmware/edid/ and boot with drm.edid_firmware=%s:edid/%s.bin\n",
+               outputs[0].name, gen->monitor);
+      else
+         RARCH_LOG("[CRT] Linux: copy it to /lib/firmware/edid/ and boot with drm.edid_firmware=<connector>:edid/%s.bin\n",
+               gen->monitor);
+      RARCH_LOG("[CRT] Windows: load it as an EDID override for the CRT's monitor entry (CRU or a monitor INF), then restart the display driver.\n");
+   }
+   else
+      RARCH_ERR("[CRT] Could not write an EDID for preset %s.\n", gen->monitor);
+
+   modeline_gen_free(gen);
+   return ok;
+}
+#else
+bool crt_switch_write_edid(char *s, size_t len)
+{
+   (void)s; (void)len;
+   return false;
 }
 #endif
 

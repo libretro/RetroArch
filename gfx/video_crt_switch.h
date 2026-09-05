@@ -100,6 +100,12 @@ void crt_switch_res_core(
 
 void crt_destroy_modes(videocrt_switch_t *p_switch);
 
+/* Write an EDID block for the configured CRT preset (menu mode, or
+ * the ini set for mode 4) to <config>/edid/<preset>.bin; s receives
+ * the path. Generation only: installing the block on a connector is
+ * the user's step, and the log says how. */
+bool crt_switch_write_edid(char *s, size_t len);
+
 RETRO_END_DECLS
 
 #endif

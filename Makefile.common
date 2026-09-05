@@ -2712,7 +2712,8 @@ ifeq ($(HAVE_MODELINE), 1)
           gfx/modeline/modeline_core.o \
           gfx/modeline/modeline_monitor.o \
           gfx/modeline/modeline_list.o \
-          gfx/modeline/modeline_ini.o
+          gfx/modeline/modeline_ini.o \
+          gfx/modeline/modeline_edid.o
    ifneq ($(findstring Win32,$(OS)),)
       OBJ += gfx/display_servers/win32_modeline_resync.o \
              gfx/display_servers/win32_modeline_adl.o \
