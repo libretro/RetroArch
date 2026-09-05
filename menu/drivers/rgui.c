@@ -353,6 +353,9 @@ typedef struct
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
    uint32_t flags;
+   /* Pixel offset of the list, term rows * font_height_stride;
+    * int16_t overflows on playlists past a few thousand entries. */
+   int32_t scroll_y;
    int8_t gfx_thumbnails_prev;
 
    rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
@@ -362,7 +365,6 @@ typedef struct
    size_t playlist_selection_ptr;
    size_t playlist_selection[NAME_MAX_LENGTH];
    size_t playlist_mainmenu_selection[RGUI_MAINMENU_LAST]; /* History + Favorites */
-   int16_t scroll_y;
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
@@ -5736,7 +5738,7 @@ static bool rgui_wheel_scroll(void *data, int notches)
       start = 0;
 
    menu_st->entries.begin = (size_t)start;
-   rgui->scroll_y = (int16_t)(start * (int)rgui->font_height_stride);
+   rgui->scroll_y = start * (int32_t)rgui->font_height_stride;
    rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
    return true;
 }
@@ -5902,7 +5904,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       if (     (rgui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
             && (bottom > 0))
       {
-         int16_t scroll_y_max   = bottom * rgui->font_height_stride;
+         int32_t scroll_y_max   = bottom * (int32_t)rgui->font_height_stride;
          rgui->scroll_y        += -1 * rgui->pointer.dy;
          if (rgui->scroll_y < 0)
             rgui->scroll_y      = 0;
