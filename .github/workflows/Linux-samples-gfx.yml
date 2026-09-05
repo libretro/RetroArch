@@ -43,6 +43,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Video modeline engine goldens and C89 lane
+        shell: bash
+        run: |
+          set -eu
+          # The engine in gfx/modeline/ replaced the SwitchRes 2.2.1
+          # library; tools/modeline_gold.ref is the reference output of
+          # the same matrix run through that library. The scoring and
+          # timing arithmetic are compared bit-for-bit: any drift in
+          # modeline_create/compare/adjust, the presets or the list
+          # logic shows up here as a diff rather than as a CRT that
+          # loses sync in the field.
+          C89="-std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long"
+          C89="$C89 -Werror=declaration-after-statement -Wno-variadic-macros"
+          C89="$C89 -D_GNU_SOURCE"
+          INC="-Ilibretro-common/include -I. -Ideps"
+          gcc $C89 $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o modeline_gold
+          ./modeline_gold > modeline_gold.out
+          diff -u tools/modeline_gold.ref modeline_gold.out
+          echo "[pass] modeline goldens (C89)"
+          gcc -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all \
+             -std=gnu89 -D_GNU_SOURCE $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o modeline_gold_san
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             ./modeline_gold_san > modeline_gold_san.out
+          diff -u tools/modeline_gold.ref modeline_gold_san.out
+          echo "[pass] modeline goldens (ASan/UBSan)"
+          # The consumer and the X11 apply path are C89 too; the
+          # full C89_BUILD covers them only after a complete build.
+          DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE"
+          DEF="$DEF -DHAVE_X11 -DHAVE_XRANDR -DHAVE_CONFIGFILE -DHAVE_DYNAMIC"
+          for f in gfx/modeline/modeline_core.c \
+                   gfx/modeline/modeline_monitor.c \
+                   gfx/modeline/modeline_list.c \
+                   gfx/modeline/modeline_ini.c \
+                   gfx/video_crt_switch.c \
+                   gfx/display_servers/dispserv_x11.c; do
+             gcc $C89 $INC $DEF -c "$f" -o /dev/null
+          done
+          echo "[pass] modeline C89 syntax check"
+
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_extension_count
