@@ -128,13 +128,15 @@ companion_core_t *ui_companion_qt_core(void)
 #define HIRA_KATA_OFFSET            (KATAKANA_START - HIRAGANA_START)
 #define DOCS_URL                    "http://docs.libretro.com/"
 
+/* Same values as companion_launch_selection: the combo stores what the
+ * companion core hands back. */
 enum core_selection
 {
-   CORE_SELECTION_CURRENT = 0,
-   CORE_SELECTION_PLAYLIST_SAVED,
-   CORE_SELECTION_PLAYLIST_DEFAULT,
-   CORE_SELECTION_ASK,
-   CORE_SELECTION_LOAD_CORE
+   CORE_SELECTION_CURRENT          = COMPANION_LAUNCH_CURRENT,
+   CORE_SELECTION_PLAYLIST_SAVED   = COMPANION_LAUNCH_PLAYLIST_SAVED,
+   CORE_SELECTION_PLAYLIST_DEFAULT = COMPANION_LAUNCH_PLAYLIST_DEFAULT,
+   CORE_SELECTION_ASK              = COMPANION_LAUNCH_ASK,
+   CORE_SELECTION_LOAD_CORE        = COMPANION_LAUNCH_LOAD_CORE
 };
 
 static AppHandler *app_handler;
@@ -3006,161 +3008,51 @@ ViewOptionsDialog* MainWindow::viewOptionsDialog() {return m_viewOptionsDialog;}
 
 void MainWindow::setCoreActions()
 {
-   QListWidgetItem *currentPlaylistItem = m_listWidget->currentItem();
-   PlaylistEntry                  entry = getCurrentContentEntry();
-   QString      currentPlaylistFileName = QString();
-   rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
+   companion_launch_option_t options[8];
+   size_t i, n;
+   PlaylistEntry entry             = getCurrentContentEntry();
+   QString currentPlaylistFileName = QString();
+   QByteArray entryCorePath, entryCoreName, playlistName;
+   companion_core_t *core          = ui_companion_qt_core();
 
    m_launchWithComboBox->clear();
 
    /* Is contentless core? */
-   if (sys_info->load_no_content)
+   if (companion_core_current_core_supports_no_content(core))
       m_startCorePushButton->show();
    else
       m_startCorePushButton->hide();
 
-   /* Is core loaded? */
-   if (    !m_currentCore.isEmpty()
-         && m_currentCore != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE)
-         && m_settings->value("suggest_loaded_core_first", false).toBool())
-   {
-      QVariantMap comboBoxMap;
-      comboBoxMap["core_name"]      = m_currentCore;
-      comboBoxMap["core_path"]      = path_get(RARCH_PATH_CORE);
-      comboBoxMap["core_selection"] = CORE_SELECTION_CURRENT;
-      m_launchWithComboBox->addItem(m_currentCore,
-            QVariant::fromValue(comboBoxMap));
-   }
-
-   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
-   {
-      const QString &coreName = entry.coreName;
-
-      if (!coreName.isEmpty() && coreName != QLatin1String("DETECT"))
-      {
-         if (m_launchWithComboBox->findText(coreName) == -1)
-         {
-            int i;
-            bool found_existing = false;
-
-            for (i = 0; i < m_launchWithComboBox->count(); i++)
-            {
-               QVariantMap map = m_launchWithComboBox->itemData(
-                     i, Qt::UserRole).toMap();
-
-               if (     map.value("core_path").toString() == entry.corePath
-                     || map.value("core_name").toString() == coreName)
-               {
-                  found_existing = true;
-                  break;
-               }
-            }
-
-            if (!found_existing)
-            {
-               QVariantMap comboBoxMap;
-               comboBoxMap["core_name"]      = coreName;
-               comboBoxMap["core_path"]      = entry.corePath;
-               comboBoxMap["core_selection"] = CORE_SELECTION_PLAYLIST_SAVED;
-               m_launchWithComboBox->addItem(coreName,
-                     QVariant::fromValue(comboBoxMap));
-            }
-         }
-      }
-   }
-
-   switch(m_currentBrowser)
+   switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
          currentPlaylistFileName = entry.plName.isEmpty()
                ? entry.dbName : entry.plName;
+         entryCorePath = entry.corePath.toUtf8();
+         entryCoreName = entry.coreName.toUtf8();
          break;
       case BROWSER_TYPE_FILES:
          currentPlaylistFileName = m_fileModel->rootDirectory().dirName();
          break;
    }
+   playlistName = currentPlaylistFileName.toUtf8();
 
-   if (!currentPlaylistFileName.isEmpty())
+   /* Candidate cores (running / entry's own / playlist default) come
+    * de-duplicated from the companion core; Qt only fills the combo. */
+   n = companion_core_launch_options(core,
+         entryCorePath.constData(), entryCoreName.constData(),
+         playlistName.constData(),
+         m_settings->value("suggest_loaded_core_first", false).toBool(),
+         options, sizeof(options) / sizeof(options[0]));
+
+   for (i = 0; i < n; i++)
    {
-      QString defaultCorePath = getPlaylistDefaultCore(currentPlaylistFileName);
-
-      if (!defaultCorePath.isEmpty())
-      {
-         QString currentPlaylistItemDataString;
-         bool allPlaylists                  = false;
-         int row                            = 0;
-         QByteArray defaultCorePathArray    = defaultCorePath.toUtf8();
-         const char *default_core_path_data = defaultCorePathArray.constData();
-
-         if (currentPlaylistItem)
-         {
-            currentPlaylistItemDataString   = currentPlaylistItem->data(
-                  Qt::UserRole).toString();
-            allPlaylists                    = (
-                  currentPlaylistItemDataString == ALL_PLAYLISTS_TOKEN);
-         }
-
-         for (row = 0; row < m_listWidget->count(); row++)
-         {
-            core_info_t *coreInfo = NULL;
-
-            if (allPlaylists)
-            {
-               QListWidgetItem *listItem = m_listWidget->item(row);
-               QString    listItemString = listItem->data(
-                     Qt::UserRole).toString();
-
-               if (listItemString == ALL_PLAYLISTS_TOKEN)
-                  continue;
-            }
-
-            /* Search for default core */
-            if (core_info_find(default_core_path_data, &coreInfo))
-            {
-               if (m_launchWithComboBox->findText(coreInfo->core_name) == -1)
-               {
-                  int i;
-                  bool found_existing = false;
-
-                  for (i = 0; i < m_launchWithComboBox->count(); i++)
-                  {
-                     QVariantMap map            =
-                        m_launchWithComboBox->itemData(
-                              i, Qt::UserRole).toMap();
-                     QByteArray CorePathArray   =
-                        map.value("core_path").toString().toUtf8();
-                     const char *core_path_data = CorePathArray.constData();
-
-                     if (
-                              string_starts_with(path_basename(core_path_data),
-                              coreInfo->core_file_id.str)
-                           || map.value("core_name").toString() == coreInfo->core_name
-                           || map.value("core_name").toString() == coreInfo->display_name)
-                     {
-                        found_existing = true;
-                        break;
-                     }
-                  }
-
-                  if (!found_existing)
-                  {
-                     QVariantMap comboBoxMap;
-                     comboBoxMap["core_name"]      = QVariant::fromValue(
-                           QString(coreInfo->core_name));
-                     comboBoxMap["core_path"]      = QVariant::fromValue(
-                           QString(coreInfo->path));
-                     comboBoxMap["core_selection"] =
-                        CORE_SELECTION_PLAYLIST_DEFAULT;
-                     m_launchWithComboBox->addItem(coreInfo->core_name,
-                           QVariant::fromValue(comboBoxMap));
-                  }
-               }
-            }
-
-            if (!allPlaylists)
-               break;
-         }
-      }
+      QVariantMap comboBoxMap;
+      comboBoxMap["core_name"]      = QString::fromUtf8(options[i].name);
+      comboBoxMap["core_path"]      = QString::fromUtf8(options[i].path);
+      comboBoxMap["core_selection"] = (int)options[i].selection;
+      m_launchWithComboBox->addItem(QString::fromUtf8(options[i].name),
+            QVariant::fromValue(comboBoxMap));
    }
 
    {
@@ -3722,8 +3614,8 @@ void MainWindow::onStopClicked()
 void MainWindow::setCurrentCoreLabel()
 {
    bool update                       = false;
-   struct retro_system_info *sysinfo = &runloop_state_get_ptr()->system.info;
-   QString libraryName               = sysinfo->library_name;
+   companion_core_t *core            = ui_companion_qt_core();
+   QString libraryName               = companion_core_current_core_name(core);
    const char *no_core_str           = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (     (m_statusLabel->text().isEmpty())
@@ -3739,10 +3631,8 @@ void MainWindow::setCurrentCoreLabel()
       if (      m_currentCore != libraryName
             && !libraryName.isEmpty())
       {
-         m_currentCore        = sysinfo->library_name;
-         m_currentCoreVersion = 
-		 ((!sysinfo->library_version || !*sysinfo->library_version)
-               ? "" : sysinfo->library_version);
+         m_currentCore        = libraryName;
+         m_currentCoreVersion = companion_core_current_core_version(core);
          update = true;
       }
    }

@@ -36,6 +36,7 @@
 #include "../../retroarch_types.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
+#include "../../runloop.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #ifdef HAVE_MENU
@@ -580,6 +581,106 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
    }
    strlcpy(s + _len, exts[0], len - _len);
    return strlen(s);
+}
+
+/* --- Running core ------------------------------------------------------ */
+
+const char *companion_core_current_core_name(companion_core_t *core)
+{
+   const char *s = core ? runloop_state_get_ptr()->system.info.library_name : NULL;
+   return s ? s : "";
+}
+
+const char *companion_core_current_core_version(companion_core_t *core)
+{
+   const char *s = core ? runloop_state_get_ptr()->system.info.library_version : NULL;
+   return s ? s : "";
+}
+
+bool companion_core_current_core_supports_no_content(companion_core_t *core)
+{
+   return core && runloop_state_get_ptr()->system.load_no_content;
+}
+
+/* --- "Launch with" candidates ------------------------------------------ */
+
+static bool companion_core_launch_option_present(
+      const companion_launch_option_t *opts, size_t n,
+      const char *path, const char *name, const char *display_name,
+      const char *file_id)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+   {
+      if (!string_is_empty(path) && string_is_equal(opts[i].path, path))
+         return true;
+      if (!string_is_empty(name) && string_is_equal(opts[i].name, name))
+         return true;
+      if (!string_is_empty(display_name)
+            && string_is_equal(opts[i].name, display_name))
+         return true;
+      /* Same core file under another directory / suffix. */
+      if (!string_is_empty(file_id)
+            && string_starts_with(path_basename(opts[i].path), file_id))
+         return true;
+   }
+   return false;
+}
+
+static void companion_core_launch_option_set(companion_launch_option_t *o,
+      const char *name, const char *path,
+      enum companion_launch_selection sel)
+{
+   strlcpy(o->name, name ? name : "", sizeof(o->name));
+   strlcpy(o->path, path ? path : "", sizeof(o->path));
+   o->selection = sel;
+}
+
+size_t companion_core_launch_options(companion_core_t *core,
+      const char *entry_core_path, const char *entry_core_name,
+      const char *playlist_name, bool suggest_loaded_first,
+      companion_launch_option_t *out, size_t max)
+{
+   size_t n = 0;
+   char default_core[PATH_MAX_LENGTH];
+
+   if (!core || !out || !max)
+      return 0;
+
+   /* The running core first, when asked for and one is loaded. */
+   if (suggest_loaded_first)
+   {
+      const char *cur = companion_core_current_core_name(core);
+      if (!string_is_empty(cur) && n < max)
+         companion_core_launch_option_set(&out[n++], cur,
+               path_get(RARCH_PATH_CORE), COMPANION_LAUNCH_CURRENT);
+   }
+
+   /* The entry's own core. */
+   if (     !string_is_empty(entry_core_name)
+         && !string_is_equal(entry_core_name, "DETECT")
+         && n < max
+         && !companion_core_launch_option_present(out, n,
+               entry_core_path, entry_core_name, NULL, NULL))
+      companion_core_launch_option_set(&out[n++], entry_core_name,
+            entry_core_path, COMPANION_LAUNCH_PLAYLIST_SAVED);
+
+   /* The playlist's default core. */
+   if (     !string_is_empty(playlist_name)
+         && companion_core_playlist_default_core(core, playlist_name,
+               default_core, sizeof(default_core)))
+   {
+      core_info_t *info = NULL;
+      if (     core_info_find(default_core, &info) && info
+            && n < max
+            && !companion_core_launch_option_present(out, n,
+                  info->path, info->core_name, info->display_name,
+                  info->core_file_id.str))
+         companion_core_launch_option_set(&out[n++], info->core_name,
+               info->path, COMPANION_LAUNCH_PLAYLIST_DEFAULT);
+   }
+
+   return n;
 }
 
 /* --- Installed cores --------------------------------------------------- */

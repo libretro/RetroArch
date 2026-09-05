@@ -172,6 +172,46 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
       const char *db_name, const char *subdir, const char *label,
       const char *content_path, char *s, size_t len);
 
+/* --- Running core -------------------------------------------------- */
+
+/* Library name of the running core ("" if none). */
+const char *companion_core_current_core_name(companion_core_t *core);
+/* Version string of the running core ("" if none). */
+const char *companion_core_current_core_version(companion_core_t *core);
+/* True when the running core can start without content. */
+bool companion_core_current_core_supports_no_content(companion_core_t *core);
+
+/* --- "Launch with" candidates -------------------------------------- */
+
+enum companion_launch_selection
+{
+   COMPANION_LAUNCH_CURRENT = 0,      /* the running core */
+   COMPANION_LAUNCH_PLAYLIST_SAVED,   /* the entry's own core */
+   COMPANION_LAUNCH_PLAYLIST_DEFAULT, /* the playlist's default core */
+   COMPANION_LAUNCH_ASK,              /* presentation: "Ask" */
+   COMPANION_LAUNCH_LOAD_CORE         /* presentation: "Load Core..." */
+};
+
+typedef struct companion_launch_option
+{
+   char name[NAME_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   enum companion_launch_selection selection;
+} companion_launch_option_t;
+
+/* Cores worth offering to launch a content entry with, in menu order
+ * and de-duplicated: the running core (when @suggest_loaded_first and
+ * one is loaded), the entry's own core (@entry_core_path /
+ * @entry_core_name, skipped when empty or "DETECT"), and the default
+ * core of playlist @playlist_name (name without .lpl; for a file
+ * browser pass the directory name) resolved through core_info.
+ * The presentation appends its own ASK / LOAD_CORE items.
+ * Returns the number of options written to @out (at most @max). */
+size_t companion_core_launch_options(companion_core_t *core,
+      const char *entry_core_path, const char *entry_core_name,
+      const char *playlist_name, bool suggest_loaded_first,
+      companion_launch_option_t *out, size_t max);
+
 /* --- Installed cores (for "associate core" style pickers) ---------- */
 
 size_t companion_core_installed_core_count(companion_core_t *core);
