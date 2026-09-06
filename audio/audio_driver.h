@@ -971,6 +971,11 @@ typedef struct
     * handheld can sit well under it - so this is what the next engage
     * anchors the speed estimate to. See audio_driver_flush(). */
    double   ff_speed_achieved;
+
+   /* Set by a resume in audio_driver_pause_fade(); the first flush after it
+    * fills the device with silence before writing. See
+    * audio_driver_resume_topup(). */
+   bool     resume_topup_pending;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

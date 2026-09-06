@@ -873,6 +873,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->stretch_ff_anchored      = false;
    audio_st->stretch_was_ff           = false;
    audio_st->ff_speed_achieved        = 0.0;
+   audio_st->resume_topup_pending     = false;
 #ifdef HAVE_AUDIO_TIMESTRETCH
    audio_st->stretch_was_engaged      = false;
    audio_st->stretch_arrival_avg      = 0.0;
@@ -2986,6 +2987,40 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
    }
 }
 
+/**
+ * audio_driver_resume_topup:
+ *
+ * Fills the device with silence before the first buffer after a resume.
+ * The runloop hands nothing over between the last write of a pause and the
+ * first of resumed core audio, so the device drains, and rate control
+ * refills it too slowly to keep the driver's pulls whole.
+ *
+ * On the first flush rather than at the resume, so it lands after that hole
+ * whatever its length; the surplus is what rate control already takes out.
+ * Chunked against a driver's per-write limit and bounded by write_avail(),
+ * so a blocking write cannot wait on it.
+ **/
+static void audio_driver_resume_topup(audio_driver_state_t *audio_st)
+{
+   const audio_driver_t *audio = audio_st->current_audio;
+   static const float zeros[1024 * 2];
+   size_t room;
+
+   audio_st->resume_topup_pending = false;
+   if (     !audio || !audio->write || !audio->write_avail
+         || !audio_st->context_audio_data
+         || audio_st->buffer_size == 0)
+      return;
+   room = audio->write_avail(audio_st->context_audio_data);
+   while (room > 0)
+   {
+      size_t n = (room < sizeof(zeros)) ? room : sizeof(zeros);
+      if (audio->write(audio_st->context_audio_data, zeros, n) <= 0)
+         break;
+      room -= n;
+   }
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
@@ -3158,6 +3193,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    /* Record the core's delivered sample format for the statistics overlay. */
    audio_st->stat_core_is_float = is_float;
+
+   if (audio_st->resume_topup_pending)
+      audio_driver_resume_topup(audio_st);
 
    /* Fast path: if driver handles resampling and no DSP/mixer is active,
     * bypass software resampling entirely. An active in-process MIDI synth
@@ -5167,6 +5205,9 @@ void audio_driver_pause_fade(bool paused)
       if (was_silenced)
       {
          audio_st->fade_in_frames = AUDIO_PAUSE_TAIL_FRAMES;
+         /* And refill the device ahead of that first frame; see
+          * audio_driver_resume_topup(). */
+         audio_st->resume_topup_pending = true;
       }
       /* Whatever the pipeline was holding at the pause is long gone; do not
        * take the resumed audio for it. */
