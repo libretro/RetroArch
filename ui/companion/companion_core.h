@@ -154,6 +154,11 @@ bool companion_core_browse_open(companion_core_t *core, const char *path);
 /* The directory currently listed ("" before the first open). */
 const char *companion_core_browse_dir(companion_core_t *core);
 size_t companion_core_browse_count(companion_core_t *core);
+/* The listing is directories first (".." included), then files: indices
+ * [0, dir_count) are directories, [dir_count, count) files. A Qt-style
+ * browser shows the first range in its folder pane and the second as
+ * the selected folder's content. */
+size_t companion_core_browse_dir_count(companion_core_t *core);
 /* Display name of entry @i (base name; ".." for the parent link). */
 const char *companion_core_browse_name(companion_core_t *core, size_t i);
 /* Full path of entry @i. */

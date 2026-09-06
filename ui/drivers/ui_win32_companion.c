@@ -1051,17 +1051,63 @@ static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
+/* Qt's File Browser: the folder tree lives in the left pane and the
+ * content view shows the selected folder's files. Here the left list
+ * shows the current folder's subfolders (".." first) and the entries
+ * view its files; a folder descends on double-click / Enter. */
 static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
 {
-   size_t i, n = companion_core_browse_count(w->core);
+   size_t i, n  = companion_core_browse_count(w->core);
+   size_t dc    = companion_core_browse_dir_count(w->core);
+   size_t files = (n > dc) ? n - dc : 0;
+   const char *dir = companion_core_browse_dir(w->core);
+   char buf[64];
 
-   if (!cw_rows_alloc(w, n))
-      n = 0;
-   for (i = 0; i < n; i++)
-      w->rows[i] = i;            /* browse rows are never filtered */
-   cw_rows_commit(w, n);
-   cw_thumbs_reset(w, n);        /* browse rows show the placeholder */
-   cw_status_set(w, companion_core_browse_dir(w->core));
+   /* Left pane: the folders. */
+   SendMessageA(w->playlists, LVM_DELETEALLITEMS, 0, 0);
+   SendMessageA(w->playlists, WM_SETREDRAW, FALSE, 0);
+   for (i = 0; i < dc; i++)
+   {
+      LVITEMA item;
+      const char *name = companion_core_browse_name(w->core, i);
+      memset(&item, 0, sizeof(item));
+      item.mask    = LVIF_TEXT | LVIF_IMAGE;
+      item.iItem   = (int)i;
+      item.iImage  = 0; /* the shell folder */
+      item.pszText = (LPSTR)(name ? name : "");
+      SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
+   }
+   SendMessageA(w->playlists, WM_SETREDRAW, TRUE, 0);
+
+   /* Content view: the files, as virtual rows mapping to browse indices. */
+   if (!cw_rows_alloc(w, files))
+      files = 0;
+   for (i = 0; i < files; i++)
+      w->rows[i] = dc + i;
+   cw_rows_commit(w, files);
+   cw_thumbs_reset(w, files);    /* files show the placeholder */
+
+   {
+      const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
+      const char *p1  = strstr(fmt, "%1");
+      if (p1)
+         snprintf(buf, sizeof(buf), "%.*s%u%s", (int)(p1 - fmt), fmt,
+               (unsigned)files, p1 + 2);
+      else
+         snprintf(buf, sizeof(buf), "%u", (unsigned)files);
+   }
+   if (w->items_label)
+      SetWindowTextA(w->items_label, buf);
+   cw_status_set(w, (dir && *dir) ? dir : "Computer");
+}
+
+/* Leaving the browser: the left pane shows playlists again. */
+static void cw_browse_leave(ui_companion_win32_wimp_t *w)
+{
+   if (!w->browse_mode)
+      return;
+   w->browse_mode = false;
+   cw_playlists_rebuild(w);
 }
 
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
@@ -1541,6 +1587,8 @@ static bool cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
 static void cw_on_playlists_changed(void *ud)
 {
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   if (w && w->browse_mode)
+      return; /* the left pane is showing folders; playlists refresh on return */
    cw_playlists_rebuild(w);
 
    /* Startup: open the playlist Qt would - desktop_menu_initial_playlist,
@@ -1624,7 +1672,6 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
          (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
    if (sel < 0)
       return;
-   w->browse_mode = false; /* picking a playlist leaves the file browser */
    if (w->tabs)
       SendMessageA(w->tabs, TCM_SETCURSEL, 0, 0);
    if (companion_core_select_playlist(w->core, (size_t)sel))
@@ -1832,7 +1879,8 @@ static void cw_browse_enter(ui_companion_win32_wimp_t *w)
    w->browse_mode = true;
    if (w->tabs)
       SendMessageA(w->tabs, TCM_SETCURSEL, 1, 0);
-   if (!companion_core_browse_dir(w->core)[0])
+   /* First entry: the content directory, or the drive list / root. */
+   if (!companion_core_browse_count(w->core))
       companion_core_browse_open(w->core, NULL);
    cw_browse_rebuild(w);
 }
@@ -2485,19 +2533,12 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                            const char *s = "";
                            if (w->browse_mode)
                            {
-                              const char *name = companion_core_browse_name(w->core, row);
+                              /* Files only here (folders are in the left
+                               * pane); rows[] maps to the browse index. */
+                              const char *name = companion_core_browse_name(
+                                    w->core, w->rows[row]);
                               if (it->iSubItem == 0)
-                              {
-                                 if (companion_core_browse_is_dir(w->core, row)
-                                       && name && strcmp(name, ".."))
-                                 {
-                                    snprintf(it->pszText, (size_t)it->cchTextMax,
-                                          "%s\\", name);
-                                    s = NULL; /* already written */
-                                 }
-                                 else
-                                    s = name ? name : "";
-                              }
+                                 s = name ? name : "";
                            }
                            else
                            {
@@ -2547,7 +2588,21 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             }
             else if (hdr->idFrom == IDC_CW_PLAYLISTS)
             {
-               if (hdr->code == LVN_ITEMCHANGED)
+               if (w->browse_mode)
+               {
+                  /* A folder: descend on double-click / Enter. */
+                  if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
+                  {
+                     LRESULT sel = SendMessageA(w->playlists, LVM_GETNEXTITEM,
+                           (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                     if (sel >= 0
+                           && companion_core_browse_activate(w->core, (size_t)sel,
+                              NULL, NULL, NULL, 0) == 0)
+                        cw_browse_rebuild(w);
+                     return 0;
+                  }
+               }
+               else if (hdr->code == LVN_ITEMCHANGED)
                {
                   NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
                   if ((nm->uChanged & LVIF_STATE)
@@ -2580,7 +2635,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                      cw_browse_enter(w);
                   else
                   {
-                     w->browse_mode = false;
+                     cw_browse_leave(w);
                      cw_entries_rebuild(w);
                   }
                   companion_core_pref_set_last_tab(w->core, (int)tab);

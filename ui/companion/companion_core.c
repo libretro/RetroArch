@@ -18,6 +18,9 @@
 #include <string.h>
 
 #include <compat/posix_string.h>
+#ifdef _WIN32
+#include <windows.h> /* GetLogicalDrives, for the browser's top level */
+#endif
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
@@ -1700,10 +1703,34 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
          ? settings->paths.directory_menu_content : NULL;
 
 #ifdef _WIN32
-   /* NULL dir with no default: list nothing rather than a bogus root;
-    * a drive picker is a platform concern for the backend. */
-   if (!dir)
-      return false;
+   /* No directory: the top level on Windows is the list of drives, each
+    * a directory entry ("C:\"), with browse_dir "" naming that level. */
+   if (!dir || !*dir)
+   {
+      union string_list_elem_attr attr;
+      unsigned mask = (unsigned)GetLogicalDrives();
+      char drv[4];
+      int  d;
+      list   = string_list_new();
+      if (!list)
+         return false;
+      attr.i = RARCH_DIRECTORY;
+      for (d = 0; d < 26; d++)
+      {
+         if (!(mask & (1u << d)))
+            continue;
+         drv[0] = (char)('A' + d);
+         drv[1] = ':';
+         drv[2] = '\\';
+         drv[3] = '\0';
+         string_list_append(list, drv, attr);
+      }
+      if (core->browse)
+         string_list_free(core->browse);
+      core->browse        = list;
+      core->browse_dir[0] = '\0';
+      return true;
+   }
 #else
    if (!dir)
       dir = "/";
@@ -1736,14 +1763,30 @@ static bool companion_core_browse_has_parent(companion_core_t *core)
    if (len == 0)
       return false;
 #ifdef _WIN32
-   /* "C:\" is a root. */
+   /* "C:\" is a drive root; its parent is the drive list (""), which
+    * has none. */
    if (len <= 3 && d[1] == ':')
-      return false;
+      return true;
 #else
    if (len == 1 && d[0] == '/')
       return false;
 #endif
    return true;
+}
+
+size_t companion_core_browse_dir_count(companion_core_t *core)
+{
+   size_t i, n;
+   if (!core || !core->browse)
+      return 0;
+   /* Sorted directories-first, so count the leading directories. */
+   for (i = 0; i < core->browse->size; i++)
+      if (core->browse->elems[i].attr.i != RARCH_DIRECTORY)
+         break;
+   n = i;
+   if (companion_core_browse_has_parent(core))
+      n++;
+   return n;
 }
 
 size_t companion_core_browse_count(companion_core_t *core)
@@ -1829,7 +1872,12 @@ int companion_core_browse_activate(companion_core_t *core, size_t i,
    {
       char parent[PATH_MAX_LENGTH];
       strlcpy(parent, core->browse_dir, sizeof(parent));
-      path_parent_dir(parent, strlen(parent));
+#ifdef _WIN32
+      if (strlen(parent) <= 3 && parent[1] == ':')
+         parent[0] = '\0'; /* drive root -> the drive list */
+      else
+#endif
+         path_parent_dir(parent, strlen(parent));
       return companion_core_browse_open(core, parent) ? 0 : -1;
    }
 
