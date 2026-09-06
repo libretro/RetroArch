@@ -278,6 +278,51 @@ static void test_forget_and_budget(void)
    companion_thumbs_free(t);
 }
 
+static long ms_since(const struct timespec *t0)
+{
+   struct timespec t1;
+   clock_gettime(CLOCK_MONOTONIC, &t1);
+   return (long)((t1.tv_sec - t0->tv_sec) * 1000 + (t1.tv_nsec - t0->tv_nsec) / 1000000);
+}
+
+/* Big images must not hold up shutdown or a view that moved on: the
+ * decode is abandoned between steps. */
+static void test_abort(void)
+{
+   char big[8][512];
+   int i;
+   struct timespec t0;
+   companion_thumbs_t *t = companion_thumbs_new(0, 1);
+   /* 8 x (2048 x 2048 x 4 = 16 MiB) TGA: each decode is a real amount
+    * of work on one worker. */
+   for (i = 0; i < 8; i++)
+   {
+      char name[32];
+      snprintf(name, sizeof(name), "big%d.tga", i);
+      fixture(big[i], sizeof(big[i]), name);
+      write_tga(big[i], 2048, 2048, 0xff808080u);
+   }
+   /* cancel() while decoding: the stale job is abandoned and its key
+    * can be requested again */
+   ngot = 0;
+   for (i = 0; i < 8; i++)
+      companion_thumbs_request(t, big[i], 64, 64, (uintptr_t)i, true, 0);
+   sleep_ms(5);
+   companion_thumbs_cancel(t);
+   drain(t, 1, 300);
+   CHECK(companion_thumbs_request(t, big[0], 64, 64, 100, true, 0), "re-request after cancel mid-decode");
+   CHECK(drain(t, 1, 5000) >= 1, "re-requested big image lands");
+   CHECK(gots[ngot - 1].tag == 100, "and it is the new request that was delivered (tag %u)", (unsigned)gots[ngot - 1].tag);
+
+   /* free() while decoding: returns promptly */
+   for (i = 0; i < 8; i++)
+      companion_thumbs_request(t, big[i], 96, 96, (uintptr_t)i, true, 0);
+   sleep_ms(5);
+   clock_gettime(CLOCK_MONOTONIC, &t0);
+   companion_thumbs_free(t);
+   CHECK(ms_since(&t0) < 1000, "free with 8 x 16 MiB decodes queued returned in %ld ms", ms_since(&t0));
+}
+
 static void test_undecodable(void)
 {
    char bad[512];
@@ -359,6 +404,7 @@ int main(int argc, char **argv)
    test_lru_budget();
    test_priority_and_cancel();
    test_forget_and_budget();
+   test_abort();
    test_undecodable();
    test_many_and_shutdown();
 

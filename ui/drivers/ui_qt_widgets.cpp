@@ -7188,6 +7188,13 @@ bool PlaylistModel::imageAt(const QString &path, int w, int h, QPixmap *out) con
    return true;
 }
 
+void PlaylistModel::abandonPending()
+{
+   if (m_engine)
+      companion_thumbs_cancel(m_engine);
+   m_pendingRows.clear();
+}
+
 void PlaylistModel::requestImage(const QString &path, int w, int h)
 {
    if (!m_engine || path.isEmpty() || w < 1 || h < 1)

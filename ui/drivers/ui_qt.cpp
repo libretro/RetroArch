@@ -1547,6 +1547,19 @@ void MainWindow::setupFileSystemBrowser()
          | hidden_filters);
    m_fileModel->setFilter(QDir::NoDot | QDir::AllEntries | hidden_filters);
 
+   /* Two things QFileSystemModel does per directory that the browser
+    * pays for on every visit: it asks the shell for each folder's own
+    * icon (a disk lookup per folder - on a big or network directory the
+    * pane stalls on it), and it starts a QFileSystemWatcher on every
+    * directory it has ever shown. Neither is needed here: the generic
+    * folder icon is fine, and the file table is rebuilt on navigation. */
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+   m_dirModel->setOption(QFileSystemModel::DontUseCustomDirectoryIcons, true);
+   m_fileModel->setOption(QFileSystemModel::DontUseCustomDirectoryIcons, true);
+   m_dirModel->setOption(QFileSystemModel::DontWatchForChanges, true);
+   m_fileModel->setOption(QFileSystemModel::DontWatchForChanges, true);
+#endif
+
 #if defined(Q_OS_WIN)
    m_dirModel->setRootPath("");
    m_fileModel->setRootPath("");
@@ -3112,7 +3125,10 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
       /* A regular image file in the file browser: every pane previews
        * it. Decoded and scaled by the engine off the UI thread (these
        * can be multi-GiB after decoding); blank until it lands, which
-       * also clears the previous selection's image. */
+       * also clears the previous selection's image. A decode still
+       * running for the previous selection is abandoned first, so a
+       * quick run through a folder of large images never queues up. */
+      m_playlistModel->abandonPending();
       for (i = 0; i < 4; i++)
          showSidebarImage((int)i, path, false);
    }

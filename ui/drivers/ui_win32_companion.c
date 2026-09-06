@@ -238,7 +238,16 @@ typedef struct ui_companion_win32_wimp
     * is showing. */
    HWND br_up, br_start, br_downloads; /* file-browser buttons (browse mode) */
    HIMAGELIST sys_small;   /* the shell's small image list, for browse rows */
-   int *browse_icon;       /* per browse row: shell icon index, -1 unknown */
+   /* Per browse row, filled once on first paint from one FindFirstFile
+    * (size + date) and one attribute-only SHGetFileInfo (icon): a paint
+    * never touches the disk again. */
+   struct cw_browse_meta
+   {
+      signed char state;   /* 0 unknown, 1 known, -1 no info (drive / ..) */
+      int icon;
+      uint64_t size;
+      FILETIME mtime;
+   } *browse_meta;
    HIMAGELIST thumbs;
    /* The entry list is a virtual (LVS_OWNERDATA) list view: the control
     * asks for each row's text and image as it draws (LVN_GETDISPINFO),
@@ -693,6 +702,22 @@ static void cw_thumb_tick(ui_companion_win32_wimp_t *w)
    }
 
    companion_thumbs_poll(w->thumbs_engine, cw_thumb_done, w, 0, 4000);
+
+   /* Idle with rows still marked "requested": their decodes were
+    * abandoned (a cancel) or dropped from a full queue. Ask again. */
+   if (!companion_thumbs_pending(w->thumbs_engine)
+         && w->vis_first != (size_t)-1)
+   {
+      bool any = false;
+      for (i = w->vis_first; i <= w->vis_last && i < w->row_count; i++)
+         if (w->thumb_idx[i] == -1)
+         {
+            w->thumb_idx[i] = 0;
+            any = true;
+         }
+      if (any)
+         w->vis_first = w->vis_last = (size_t)-1; /* re-request next tick */
+   }
 }
 
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
@@ -750,8 +775,59 @@ static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
  * shows the current folder's subfolders (".." first) and the entries
  * view its files; a folder descends on double-click / Enter. */
 static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry);
+static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, const char *path, long id);
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons);
 static void cw_layout(ui_companion_win32_wimp_t *w);
+
+/* Browse row @row's metadata, resolved once: the disk is asked exactly
+ * one FindFirstFile (size, date) the first time the row is painted, and
+ * the icon comes from the shell by attributes alone (no file access). */
+static const struct cw_browse_meta *cw_browse_meta_get(
+      ui_companion_win32_wimp_t *w, size_t row)
+{
+   struct cw_browse_meta *m;
+   size_t bi;
+   const char *fp, *name;
+   bool is_dir, is_drive;
+   if (!w->browse_meta || row >= w->row_count)
+      return NULL;
+   m = &w->browse_meta[row];
+   if (m->state)
+      return m;
+   bi       = w->rows[row];
+   fp       = companion_core_browse_path(w->core, bi);
+   name     = companion_core_browse_name(w->core, bi);
+   is_dir   = companion_core_browse_is_dir(w->core, bi);
+   is_drive = fp && strlen(fp) <= 3 && fp[1] == ':';
+   m->state = -1;
+   m->icon  = 0;
+   {
+      SHFILEINFOA sfi;
+      memset(&sfi, 0, sizeof(sfi));
+      /* SHGFI_USEFILEATTRIBUTES: the icon for "a folder" / "a .zip",
+       * decided from the name and attributes, no shell/disk lookup. A
+       * drive keeps its real icon (one lookup, four drives at most). */
+      if (fp && SHGetFileInfoA(fp,
+               is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
+               &sfi, sizeof(sfi),
+               SHGFI_SYSICONINDEX | SHGFI_SMALLICON
+               | (is_drive ? 0 : SHGFI_USEFILEATTRIBUTES)))
+         m->icon = sfi.iIcon;
+   }
+   if (fp && !is_drive && !(name && !strcmp(name, "..")))
+   {
+      WIN32_FIND_DATAA fd;
+      HANDLE h = FindFirstFileA(fp, &fd);
+      if (h != INVALID_HANDLE_VALUE)
+      {
+         FindClose(h);
+         m->size  = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+         m->mtime = fd.ftLastWriteTime;
+         m->state = 1;
+      }
+   }
+   return m;
+}
 
 /* The report view's columns: Name / Core for playlists, Qt's
  * Name / Size / Type / Date Modified for the file browser. */
@@ -808,11 +884,8 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       n = 0;
    for (i = 0; i < n; i++)
       w->rows[i] = i;
-   free(w->browse_icon);
-   w->browse_icon = (int*)malloc((n ? n : 1) * sizeof(int));
-   if (w->browse_icon)
-      for (i = 0; i < n; i++)
-         w->browse_icon[i] = -1;
+   free(w->browse_meta);
+   w->browse_meta = (struct cw_browse_meta*)calloc(n ? n : 1, sizeof(*w->browse_meta));
    cw_entries_columns(w, true);
    cw_rows_commit(w, n);
    cw_thumbs_reset(w, n);
@@ -1222,20 +1295,22 @@ static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
  * urgent request that lands through cw_thumb_done. The pane is cleared
  * meanwhile, so a stale cover never sits under a new selection. Never
  * decodes on the UI thread. */
-static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
+/* Show the image at @path in the pane, tagged @id (entry index, or a
+ * browse index with the high bit). From the engine cache at once,
+ * otherwise an urgent request that lands through cw_thumb_done; the
+ * pane is cleared meanwhile. Never decodes on the UI thread. */
+static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
+      const char *path, long id)
 {
-   char path[PATH_MAX_LENGTH];
-   char db_name[NAME_MAX_LENGTH];
-   const struct playlist_entry *e;
    const uint32_t *bits;
    RECT rc;
    int bw, bh;
 
    if (!w || !w->boxart || !w->boxart_visible)
       return;
-   if (entry == w->boxart_entry)
+   if (id == w->boxart_entry)
       return;
-   w->boxart_entry = entry;
+   w->boxart_entry = id;
 
    SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
    if (w->boxart_bmp)
@@ -1243,17 +1318,7 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
       DeleteObject(w->boxart_bmp);
       w->boxart_bmp = NULL;
    }
-   if (entry < 0 || !w->thumbs_engine || w->browse_mode)
-      return;
-   if (!(e = companion_core_entry(w->core, (size_t)entry)))
-      return;
-
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(w->core, db_name,
-            w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
-            !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            e->path, path, sizeof(path)))
+   if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;
 
    GetClientRect(w->boxart, &rc);
@@ -1268,8 +1333,51 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
       return;
    }
    companion_thumbs_request(w->thumbs_engine, path, bw, bh,
-         (uintptr_t)entry | CW_TAG_BOXART, true,
+         (uintptr_t)id | CW_TAG_BOXART, true,
          cw_sys_color_argb(COLOR_BTNFACE));
+}
+
+/* Boxart pane for playlist entry @entry (the pane's own type). */
+static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
+{
+   char path[PATH_MAX_LENGTH];
+   char db_name[NAME_MAX_LENGTH];
+   const struct playlist_entry *e;
+
+   if (!w || !w->boxart)
+      return;
+   if (entry < 0 || w->browse_mode
+         || !(e = companion_core_entry(w->core, (size_t)entry)))
+   {
+      cw_boxart_update_path(w, NULL, -1);
+      return;
+   }
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   if (!companion_core_thumbnail_path(w->core, db_name,
+            w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            e->path, path, sizeof(path)))
+      path[0] = '\0';
+   cw_boxart_update_path(w, path, entry);
+}
+
+/* File browser selection: an image file previews in the pane, as in
+ * the Qt companion; anything else clears it. */
+static void cw_boxart_browse(ui_companion_win32_wimp_t *w, long row)
+{
+   const char *fp;
+   if (!w || row < 0 || (size_t)row >= w->row_count)
+   {
+      cw_boxart_update_path(w, NULL, -1);
+      return;
+   }
+   fp = companion_core_browse_path(w->core, w->rows[row]);
+   if (fp && !companion_core_browse_is_dir(w->core, w->rows[row])
+         && image_texture_get_type(fp) != IMAGE_TYPE_NONE)
+      cw_boxart_update_path(w, fp, (long)(0x40000000L | row));
+   else
+      cw_boxart_update_path(w, NULL, -1);
 }
 
 /* The playlist-entry index behind the entries' focused row, or -1. */
@@ -2377,47 +2485,39 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                                        s = "File";
                                  }
                               }
-                              else if (fp)
+                              else
                               {
-                                 /* Size / Date from the shell's own view of
-                                  * the file (FindFirstFile: Windows 95). */
-                                 WIN32_FIND_DATAA fd;
-                                 HANDLE h = is_drive ? INVALID_HANDLE_VALUE : FindFirstFileA(fp, &fd);
-                                 if (h != INVALID_HANDLE_VALUE)
+                                 const struct cw_browse_meta *m = cw_browse_meta_get(w, row);
+                                 if (!m || m->state != 1)
+                                    s = "";
+                                 else if (it->iSubItem == 1)
                                  {
-                                    FindClose(h);
-                                    if (it->iSubItem == 1)
-                                    {
-                                       if (is_dir)
-                                          s = "";
-                                       else
-                                       {
-                                          uint64_t sz = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
-                                          if (sz >= 1024u * 1024 * 1024)
-                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f GB", (double)sz / (1024.0 * 1024 * 1024));
-                                          else if (sz >= 1024u * 1024)
-                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f MB", (double)sz / (1024.0 * 1024));
-                                          else
-                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%u KB", (unsigned)((sz + 1023) / 1024));
-                                          s = NULL;
-                                       }
-                                    }
+                                    if (is_dir)
+                                       s = "";
                                     else
                                     {
-                                       SYSTEMTIME st, lt;
-                                       FILETIME ft;
-                                       char d[64], t[64];
-                                       FileTimeToLocalFileTime(&fd.ftLastWriteTime, &ft);
-                                       FileTimeToSystemTime(&ft, &st);
-                                       lt = st;
-                                       GetDateFormatA(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &lt, NULL, d, sizeof(d));
-                                       GetTimeFormatA(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &lt, NULL, t, sizeof(t));
-                                       snprintf(it->pszText, (size_t)it->cchTextMax, "%s %s", d, t);
+                                       uint64_t sz = m->size;
+                                       if (sz >= 1024u * 1024 * 1024)
+                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f GB", (double)sz / (1024.0 * 1024 * 1024));
+                                       else if (sz >= 1024u * 1024)
+                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f MB", (double)sz / (1024.0 * 1024));
+                                       else
+                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%u KB", (unsigned)((sz + 1023) / 1024));
                                        s = NULL;
                                     }
                                  }
                                  else
-                                    s = "";
+                                 {
+                                    SYSTEMTIME st;
+                                    FILETIME ft;
+                                    char d[64], tm[64];
+                                    FileTimeToLocalFileTime(&m->mtime, &ft);
+                                    FileTimeToSystemTime(&ft, &st);
+                                    GetDateFormatA(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &st, NULL, d, sizeof(d));
+                                    GetTimeFormatA(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, tm, sizeof(tm));
+                                    snprintf(it->pszText, (size_t)it->cchTextMax, "%s %s", d, tm);
+                                    s = NULL;
+                                 }
                               }
                            }
                            else
@@ -2437,29 +2537,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         {
                            if (w->browse_mode)
                            {
-                              /* The shell's icon for the entry, from the
-                               * system image list; resolved once per row
-                               * and cached (SHGetFileInfo does a lookup
-                               * per call). */
-                              int ic = w->browse_icon ? w->browse_icon[row] : -1;
-                              if (ic < 0 && w->browse_icon)
-                              {
-                                 SHFILEINFOA sfi;
-                                 size_t bi      = w->rows[row];
-                                 const char *fp = companion_core_browse_path(w->core, bi);
-                                 bool is_dir    = companion_core_browse_is_dir(w->core, bi);
-                                 memset(&sfi, 0, sizeof(sfi));
-                                 if (fp && SHGetFileInfoA(fp,
-                                          is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
-                                          &sfi, sizeof(sfi),
-                                          SHGFI_SYSICONINDEX | SHGFI_SMALLICON
-                                          | (is_dir ? 0 : SHGFI_USEFILEATTRIBUTES)))
-                                    ic = sfi.iIcon;
-                                 else
-                                    ic = 0;
-                                 w->browse_icon[row] = ic;
-                              }
-                              it->iImage = ic > 0 ? ic : 0;
+                              const struct cw_browse_meta *m = cw_browse_meta_get(w, row);
+                              it->iImage = (m && m->icon > 0) ? m->icon : 0;
                            }
                            else
                            {
@@ -2482,10 +2561,15 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         if ((nm->uChanged & LVIF_STATE)
                               && (nm->uNewState & LVIS_SELECTED))
                         {
-                           long e = cw_focused_entry(w);
-                           cw_boxart_update(w, e);
-                           cw_core_combo_fill(w, e);
-                           cw_info_fill(w);
+                           if (w->browse_mode)
+                              cw_boxart_browse(w, (long)nm->iItem); /* image preview */
+                           else
+                           {
+                              long e = cw_focused_entry(w);
+                              cw_boxart_update(w, e);
+                              cw_core_combo_fill(w, e);
+                              cw_info_fill(w);
+                           }
                         }
                      }
                      break;
@@ -3066,7 +3150,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
    free(w->rows);
    free(w->thumb_idx);
    free(w->slot_row);
-   free(w->browse_icon);
+   free(w->browse_meta);
    companion_core_free(w->core);
    if (g_win32_wimp == w)
       g_win32_wimp = NULL;

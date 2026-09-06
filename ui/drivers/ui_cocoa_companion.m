@@ -53,6 +53,7 @@
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
 #include "../companion/companion_thumbs.h"
+#include <formats/image.h>
 
 #define COMPANION_COCOA_ITER_US 2000
 
@@ -874,6 +875,17 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          [self thumbWant:i urgent:NO];
    }
    companion_thumbs_poll(thumbs, cc_thumb_done, (BRIDGE void*)self, 0, 4000);
+   /* Idle with empty cells on screen (a decode was abandoned or the
+    * queue was full): ask for them again. */
+   if (!companion_thumbs_pending(thumbs) && visFirst >= 0)
+   {
+      for (i = visFirst; i <= visLast; i++)
+         if (![grid hasImageForRow:i] && !(thumbNone && thumbNone[i]))
+         {
+            visFirst = visLast = -1;
+            break;
+         }
+   }
 }
 
 /* Returns an autoreleased table wrapped in an autoreleased scroll view;
@@ -1875,19 +1887,34 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
    [boxart setImage:nil];
    boxartEntry = -1;
-   if (!boxartVisible || !boxart || browseMode || !thumbs)
+   if (!boxartVisible || !boxart || !thumbs)
       return;
-   row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
-   if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
-      return;
-   boxartEntry = row;
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(wimp->core, db_name,
-            boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
-            !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            e->path, path, sizeof(path)))
-      return;
+   if (browseMode)
+   {
+      /* Qt previews an image file selected in the browser. */
+      NSInteger bi = [self entryForRow:[entries selectedRow]];
+      const char *fp = bi >= 0 ? companion_core_browse_path(wimp->core, (size_t)bi) : NULL;
+      if (!fp || companion_core_browse_is_dir(wimp->core, (size_t)bi)
+            || image_texture_get_type(fp) == IMAGE_TYPE_NONE)
+         return;
+      strlcpy(path, fp, sizeof(path));
+      row         = bi;
+      boxartEntry = 0x40000000L | bi;
+   }
+   else
+   {
+      row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
+      if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
+         return;
+      boxartEntry = row;
+      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+      path_remove_extension(db_name);
+      if (!companion_core_thumbnail_path(wimp->core, db_name,
+               boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
+               !string_is_empty(e->label) ? e->label : path_basename(e->path),
+               e->path, path, sizeof(path)))
+         return;
+   }
    sz = [boxart bounds].size;
    bw = (int)sz.width  - 4;
    bh = (int)sz.height - 4;
@@ -1900,7 +1927,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       return;
    }
    companion_thumbs_request(thumbs, path, bw, bh,
-         (uintptr_t)row | CC_TAG_BOXART, true, 0xffe8e8e8u);
+         (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0xffe8e8e8u);
+   (void)row;
 }
 
 - (void)toggleBoxart:(id)sender

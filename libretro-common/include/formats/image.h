@@ -146,6 +146,15 @@ bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
 bool image_texture_load(struct texture_image *img, const char *path);
+
+/* image_texture_load with an abort hook: both decode stages are
+ * incremental (one chunk / one pass per step) and @should_abort is
+ * asked between steps; returning true abandons the decode, which then
+ * fails cleanly. For decodes on worker threads that must stop promptly
+ * at shutdown or when their result is no longer wanted. @should_abort
+ * may be NULL. */
+bool image_texture_load_ex(struct texture_image *img, const char *path,
+      bool (*should_abort)(void *ud), void *ud);
 void image_texture_free(struct texture_image *img);
 
 /* Force a CPU decode of a compressed texture_image into ->pixels (RGBA8).

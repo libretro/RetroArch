@@ -172,6 +172,9 @@ public:
     * thumbnailReady(path) is emitted. */
    bool imageAt(const QString &path, int w, int h, QPixmap *out) const;
    void requestImage(const QString &path, int w, int h);
+   /* Drop queued decodes and abandon those in flight (the view moved
+    * on); cached images stay. */
+   void abandonPending();
    bool isSupportedImage(const QString path) const;
    QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
    /* Repository thumbnail file for a label, ignoring whether the content

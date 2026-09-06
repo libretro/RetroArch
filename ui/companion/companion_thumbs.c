@@ -59,8 +59,9 @@ struct ct_done
 {
    struct ct_entry *e;
    uintptr_t tag;
-   uint32_t *bits;        /* NULL: decode failed */
+   uint32_t *bits;        /* NULL: decode failed (or aborted) */
    unsigned epoch;
+   bool aborted;          /* abandoned: not delivered, entry dropped */
 };
 
 /* A ring with both ends usable: urgent jobs are pushed to and popped
@@ -182,13 +183,16 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
    return buf;
 }
 
-/* Decode @path and scale to @w x @h. Pure; runs on a worker. */
-static uint32_t *ct_decode(const char *path, int w, int h, uint32_t bg)
+/* Decode @path and scale to @w x @h. Runs on a worker; @should_abort
+ * (may be NULL) is asked between decode steps so a giant image can be
+ * abandoned at shutdown or once nobody wants it. */
+static uint32_t *ct_decode(const char *path, int w, int h, uint32_t bg,
+      bool (*should_abort)(void *ud), void *ud)
 {
    struct texture_image img;
    uint32_t *bits = NULL;
    memset(&img, 0, sizeof(img));
-   if (image_texture_load(&img, path))
+   if (image_texture_load_ex(&img, path, should_abort, ud))
    {
       if (img.pixels)
          bits = companion_thumbs_scale(img.pixels, img.width, img.height,
@@ -434,23 +438,41 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
       t->done     = nd;
       t->done_cap = nc;
    }
-   d       = &t->done[t->done_len++];
-   d->e    = j->e;
-   d->tag   = j->tag;
-   d->bits  = bits;
-   d->epoch = j->epoch;
+   d          = &t->done[t->done_len++];
+   d->e       = j->e;
+   d->tag     = j->tag;
+   d->bits    = bits;
+   d->epoch   = j->epoch;
+   d->aborted = false;
 }
 
 /* --- workers -------------------------------------------------------------- */
 
 #ifdef HAVE_THREADS
+/* Abort hook for a worker's decode: stop at shutdown, and once the
+ * job's epoch is stale (a cancel() happened since it was queued - the
+ * view moved on, so its result would be discarded anyway). */
+struct ct_abort_ctx { companion_thumbs_t *t; unsigned epoch; };
+
+static bool ct_should_abort(void *ud)
+{
+   struct ct_abort_ctx *a = (struct ct_abort_ctx*)ud;
+   bool stop;
+   slock_lock(a->t->lock);
+   stop = a->t->quit || a->t->epoch != a->epoch;
+   slock_unlock(a->t->lock);
+   return stop;
+}
+
 static void ct_worker(void *ud)
 {
    companion_thumbs_t *t = (companion_thumbs_t*)ud;
    for (;;)
    {
       struct ct_job job;
+      struct ct_abort_ctx actx;
       uint32_t *bits;
+      bool aborted;
       slock_lock(t->lock);
       /* Timed wait: a lost wake-up can never keep a worker parked past
        * quit, so shutdown cannot hang on the join. */
@@ -468,10 +490,16 @@ static void ct_worker(void *ud)
       }
       slock_unlock(t->lock);
 
-      bits = ct_decode(job.e->path, job.e->w, job.e->h, job.bg);
+      actx.t     = t;
+      actx.epoch = job.epoch;
+      bits       = ct_decode(job.e->path, job.e->w, job.e->h, job.bg,
+            ct_should_abort, &actx);
 
       slock_lock(t->lock);
+      aborted = !bits && (t->quit || t->epoch != job.epoch);
       ct_push_done(t, &job, bits);
+      if (aborted && t->done_len)
+         t->done[t->done_len - 1].aborted = true;
       slock_unlock(t->lock);
    }
 }
@@ -648,7 +676,8 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       struct ct_job job;
       while (t->queued && cpu_features_get_time_usec() < end
             && ct_next_job(t, &job))
-         ct_push_done(t, &job, ct_decode(job.e->path, job.e->w, job.e->h, job.bg));
+         ct_push_done(t, &job, ct_decode(job.e->path, job.e->w, job.e->h, job.bg,
+               NULL, NULL));
    }
 #else
    (void)budget_us;
@@ -671,6 +700,15 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       for (i = 0; i < n; i++)
       {
          struct ct_entry *e = batch[i].e;
+         if (batch[i].aborted)
+         {
+            /* Abandoned mid-decode: nothing to deliver; forget the
+             * entry unless a newer request re-queued it, so it can be
+             * asked for again. */
+            if (!e->queued && !e->bits)
+               ct_entry_free(t, e);
+            continue;
+         }
          if (batch[i].epoch == t->epoch)
             e->queued = false; /* else a newer request owns the flag */
          if (batch[i].bits)
