@@ -28,6 +28,7 @@
 #include <objc/objc-runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <boolean.h>
@@ -46,6 +47,8 @@
 #include "../../command.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../msg_hash.h"
+#include "../../version.h"
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -76,9 +79,18 @@ typedef unsigned int NSUInteger;
 
 typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 
-#define CC_GRID_THUMB 128.0
 #define CC_GRID_PAD   16.0
 #define CC_GRID_LABEL 18.0
+/* Layout metrics (points; macOS scales them for the display). Match the
+ * Qt companion's docks. */
+#define CC_PANE_W     280.0   /* left and right columns */
+#define CC_LABEL_H    18.0
+#define CC_CTRL_H     24.0
+#define CC_PAD         6.0
+#define CC_STATUS_H   20.0
+#define CC_FOOTER_H   30.0
+#define CC_PL_ROW_H   34.0    /* playlist rows, as Qt's icon rows */
+#define CC_PL_ICON    32.0
 
 @class RACompanionController;
 
@@ -93,7 +105,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSMutableArray *images;
    NSInteger count;
    NSInteger selected;
+   CGFloat thumb;   /* thumbnail edge, from the zoom slider */
 }
+- (void)setThumbEdge:(CGFloat)edge;
 - (id)initWithOwner:(RACompanionController*)o;
 - (void)setCount:(NSInteger)n;
 - (void)setImage:(NSImage*)img forRow:(NSInteger)row;
@@ -127,7 +141,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSMenu *entriesMenu;    /* right-click on an entry   */
    NSMenu *playlistsMenu;  /* right-click on a playlist */
    NSMenu *assocMenu;      /* "Associate Core" submenu, rebuilt on open */
-   NSSplitView *split;
    NSScrollView *logScroll; /* log pane, hidden until Companion > Log */
    NSTextView *logView;
    BOOL logVisible;
@@ -148,6 +161,25 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    struct string_list *infoKeys;
    struct string_list *infoValues;
    char infoCore[PATH_MAX_LENGTH];
+
+   /* Qt-layout chrome (all owned by the view hierarchy; +1 in ivars). */
+   NSTextField *searchLabel, *browserLabel, *coreLabel, *infoLabel, *boxartLabel;
+   NSTextField *itemsLabel, *zoomLabel;
+   NSTextField *searchField;
+   NSButton *clearButton, *infoButton, *runButton;
+   NSTabView *browserTabs;            /* Playlists | File Browser */
+   NSScrollView *playlistsScroll;
+   NSPopUpButton *corePopup;          /* launch-with core, like Qt's */
+   NSMutableArray *corePaths;         /* per popup row: core path or "" */
+   NSPopUpButton *viewPopup;          /* List / Icons */
+   NSPopUpButton *thumbPopup;         /* boxart / screenshot / title / logo */
+   NSSlider *zoomSlider;
+   NSSegmentedControl *boxartTypes;   /* the four types for the boxart pane */
+   const char *boxartSubdir;
+   NSMutableArray *playlistIcons;     /* NSImage per playlist row */
+   char filter[128];                  /* lower-cased search text */
+   NSInteger *rowMap;                 /* table row -> entry index under a filter */
+   NSInteger rowCount;
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (BOOL)buildWindow;
@@ -166,9 +198,27 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
 - (void)applySharedSettings;
+- (void)layoutViews;
+- (void)fillCorePopup:(NSInteger)entryRow;
+- (const char*)popupCorePath;
+- (void)runWithPopup:(id)sender;
+- (void)zoomChanged:(id)sender;
+- (void)thumbTypeChanged:(id)sender;
+- (void)viewChanged:(id)sender;
+- (void)boxartTypeChanged:(id)sender;
+- (void)clearSearch:(id)sender;
+- (void)statusDefault;
+- (void)tabChanged:(id)sender;
+- (void)corePopupChanged:(id)sender;
+- (void)focusSearch:(id)sender;
+- (void)searchChanged:(id)sender;
+- (void)openDocs:(id)sender;
+- (NSInteger)entryForRow:(NSInteger)row;
+- (void)rebuildRowMap;
 - (void)buildCoresWindow;
 - (void)setIconView:(BOOL)icons;
 - (void)gridRun:(NSInteger)row;
+- (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
 - (void)toggleLog:(id)sender;
 - (void)loadSelectedCore:(id)sender;
@@ -290,6 +340,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       images   = [[NSMutableArray alloc] init];
       count    = 0;
       selected = -1;
+      thumb    = 192.0;
    }
    return self;
 }
@@ -304,14 +355,20 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 
 - (BOOL)isFlipped { return YES; }
 
+- (void)setThumbEdge:(CGFloat)edge
+{
+   thumb = edge < 32.0 ? 32.0 : edge;
+   [self relayout];
+}
+
 - (NSInteger)columns
 {
    NSInteger c = (NSInteger)([self bounds].size.width
-         / (CC_GRID_THUMB + CC_GRID_PAD));
+         / (thumb + CC_GRID_PAD));
    return c < 1 ? 1 : c;
 }
 
-- (CGFloat)cellHeight { return CC_GRID_THUMB + CC_GRID_PAD + CC_GRID_LABEL; }
+- (CGFloat)cellHeight { return thumb + CC_GRID_PAD + CC_GRID_LABEL; }
 
 - (void)relayout
 {
@@ -352,6 +409,8 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    {
       selected = row;
       [self setNeedsDisplay:YES];
+      if (owner)
+         [owner gridSelectionChanged:row];
    }
 }
 
@@ -360,16 +419,16 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    NSInteger cols = [self columns];
    NSInteger col  = row % cols;
    NSInteger line = row / cols;
-   CGFloat cw     = CC_GRID_THUMB + CC_GRID_PAD;
+   CGFloat cw     = thumb + CC_GRID_PAD;
    return NSMakeRect(col * cw + CC_GRID_PAD / 2,
          line * [self cellHeight] + CC_GRID_PAD / 2,
-         CC_GRID_THUMB, CC_GRID_THUMB + CC_GRID_LABEL);
+         thumb, thumb + CC_GRID_LABEL);
 }
 
 - (NSInteger)rowAtPoint:(NSPoint)p
 {
    NSInteger cols = [self columns];
-   NSInteger col  = (NSInteger)(p.x / (CC_GRID_THUMB + CC_GRID_PAD));
+   NSInteger col  = (NSInteger)(p.x / (thumb + CC_GRID_PAD));
    NSInteger line = (NSInteger)(p.y / [self cellHeight]);
    NSInteger row;
    if (col < 0 || col >= cols)
@@ -396,9 +455,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
          continue;
 
       thumb = NSMakeRect(cell.origin.x, cell.origin.y,
-            CC_GRID_THUMB, CC_GRID_THUMB);
-      label = NSMakeRect(cell.origin.x, cell.origin.y + CC_GRID_THUMB,
-            CC_GRID_THUMB, CC_GRID_LABEL);
+            thumb, thumb);
+      label = NSMakeRect(cell.origin.x, cell.origin.y + thumb,
+            thumb, CC_GRID_LABEL);
 
       if (i == selected)
       {
@@ -414,9 +473,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
          NSRect dst;
          if (is.width > 0 && is.height > 0)
             s = (is.width >= is.height)
-               ? CC_GRID_THUMB / is.width : CC_GRID_THUMB / is.height;
-         dst = NSMakeRect(thumb.origin.x + (CC_GRID_THUMB - is.width * s) / 2,
-               thumb.origin.y + (CC_GRID_THUMB - is.height * s) / 2,
+               ? thumb / is.width : thumb / is.height;
+         dst = NSMakeRect(thumb.origin.x + (thumb - is.width * s) / 2,
+               thumb.origin.y + (thumb - is.height * s) / 2,
                is.width * s, is.height * s);
          [(NSImage*)im setFlipped:YES];
          [(NSImage*)im drawInRect:dst fromRect:NSZeroRect
@@ -509,6 +568,22 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 
 - (void)reloadPlaylists
 {
+   if (wimp && playlistIcons)
+   {
+      size_t i, n = companion_core_playlist_count(wimp->core);
+      NSImage *folder = [[NSWorkspace sharedWorkspace] iconForFileType:
+         NSFileTypeForHFSTypeCode(kGenericFolderIcon)];
+      [playlistIcons removeAllObjects];
+      for (i = 0; i < n; i++)
+      {
+         char icon[PATH_MAX_LENGTH];
+         NSImage *im = nil;
+         /* Qt's per-system XMB dot-art icon when the asset exists. */
+         if (companion_core_playlist_icon_path(wimp->core, i, icon, sizeof(icon)))
+            im = [[[NSImage alloc] initWithContentsOfFile:BOXSTRING(icon)] autorelease_compat];
+         [playlistIcons addObject:(im ? (id)im : (folder ? (id)folder : (id)[NSNull null]))];
+      }
+   }
    if (playlists)
       [playlists reloadData];
 
@@ -545,6 +620,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (!entries)
       return;
    n = companion_core_entry_count(wimp->core);
+   [self rebuildRowMap];
    [entries reloadData];
    if (grid)
    {
@@ -559,8 +635,18 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       if (grid)
          [grid setSelectedRow:0];
    }
-   snprintf(buf, sizeof(buf), "%u entries", (unsigned)n);
-   [self setStatus:buf];
+   {
+      /* Qt's footer: "%1 items". */
+      const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
+      const char *p1  = strstr(fmt, "%1");
+      if (p1)
+         snprintf(buf, sizeof(buf), "%.*s%u%s", (int)(p1 - fmt), fmt, (unsigned)n, p1 + 2);
+      else
+         snprintf(buf, sizeof(buf), "%u", (unsigned)n);
+   }
+   if (itemsLabel)
+      [itemsLabel setStringValue:BOXSTRING(buf)];
+   [self statusDefault];
 }
 
 - (void)setIconView:(BOOL)icons
@@ -578,6 +664,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    }
    else
       [entriesScroll setDocumentView:entries];
+   if (viewPopup)
+      [viewPopup selectItemAtIndex:icons ? 1 : 0];
+}
+
+- (void)gridSelectionChanged:(NSInteger)row
+{
+   [self refreshBoxart];
+   [self fillCorePopup:row];
+   [self refreshInfo];
 }
 
 - (void)gridRun:(NSInteger)row
@@ -646,14 +741,53 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    return table;
 }
 
+/* A plain label in the small system font. */
+- (NSTextField*)makeLabel:(const char*)text
+{
+   NSTextField *l = [[[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, CC_LABEL_H)] autorelease_compat];
+   [l setStringValue:BOXSTRING(text ? text : "")];
+   [l setEditable:NO];
+   [l setBordered:NO];
+   [l setDrawsBackground:NO];
+   [l setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+   return l;
+}
+
+- (NSButton*)makeButton:(const char*)title action:(SEL)sel
+{
+   NSButton *b = [[[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 60, CC_CTRL_H)] autorelease_compat];
+   [b setTitle:BOXSTRING(title ? title : "")];
+   [b setBezelStyle:NSRoundedBezelStyle];
+   [b setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+   [b setTarget:self];
+   [b setAction:sel];
+   return b;
+}
+
+- (NSPopUpButton*)makePopup:(SEL)sel
+{
+   NSPopUpButton *pb = [[[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 100, CC_CTRL_H)
+      pullsDown:NO] autorelease_compat];
+   [pb setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+   [pb setTarget:self];
+   [pb setAction:sel];
+   return pb;
+}
+
 - (BOOL)buildWindow
 {
-   NSRect frame       = NSMakeRect(0, 0, 800, 520);
+   NSRect screen      = [[NSScreen mainScreen] visibleFrame];
+   /* Qt opens at 1280x720 logical, centred, clamped to the screen. */
+   CGFloat ww         = screen.size.width  < 1280.0 ? screen.size.width  : 1280.0;
+   CGFloat wh         = screen.size.height <  720.0 ? screen.size.height :  720.0;
+   NSRect frame       = NSMakeRect(0, 0, ww, wh);
    NSScrollView *sl   = nil;
    NSScrollView *sr   = nil;
+   NSScrollView *si   = nil;
    NSView *content    = nil;
    NSMenu *menu       = nil;
    NSMenuItem *item   = nil;
+   NSTabViewItem *tab = nil;
 
    window = [[NSWindow alloc] initWithContentRect:frame
       styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
@@ -664,144 +798,335 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 
    [window setTitle:@"RetroArch"];
    [window setDelegate:self];
-   [window setMinSize:NSMakeSize(480, 320)];
+   [window setMinSize:NSMakeSize(640, 400)];
    [window setReleasedWhenClosed:NO];
    [window center];
+   content = [window contentView];
 
-   content   = [window contentView];
+   /* --- Left column: Search / Content Browser (tabs) / Core ----------- */
+   searchLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH)];
+   KEEP_IVAR(searchLabel);
+   [content addSubview:searchLabel];
+   searchField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, CC_CTRL_H)];
+   [searchField setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+   [searchField setTarget:self];
+   [searchField setAction:@selector(searchChanged:)];
+   [searchField setDelegate:(id)self];
+   [content addSubview:searchField];
+   clearButton = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR)
+      action:@selector(clearSearch:)];
+   KEEP_IVAR(clearButton);
+   [content addSubview:clearButton];
 
+   browserLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER)];
+   KEEP_IVAR(browserLabel);
+   [content addSubview:browserLabel];
+
+   /* Playlists: icon + name, tall rows like Qt's. */
    playlists = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 200, 500)
          scroll:&sl twoColumns:NO]);
-   entries   = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 600, 500)
+   playlistsScroll = sl;
+   KEEP_IVAR(playlistsScroll);
+   {
+      NSTableColumn *ic = [[[NSTableColumn alloc] initWithIdentifier:@"icon"] autorelease_compat];
+      NSImageCell *cell = [[[NSImageCell alloc] init] autorelease_compat];
+      [cell setImageScaling:NSImageScaleProportionallyDown];
+      [ic setDataCell:cell];
+      [ic setWidth:CC_PL_ICON + 4.0];
+      [playlists addTableColumn:ic];
+      /* icon first, then the name */
+      [playlists moveColumn:1 toColumn:0];
+      [playlists setRowHeight:CC_PL_ROW_H];
+      [playlists setHeaderView:nil];
+      [[[playlists tableColumns] objectAtIndex:1] setWidth:CC_PANE_W - CC_PL_ICON - 30.0];
+   }
+   playlistIcons = [[NSMutableArray alloc] init];
+
+   browserTabs = [[NSTabView alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
+   [browserTabs setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
+   [browserTabs setDelegate:(id)self];
+   tab = [[[NSTabViewItem alloc] initWithIdentifier:@"playlists"] autorelease_compat];
+   [tab setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))];
+   [tab setView:sl];
+   [browserTabs addTabViewItem:tab];
+   tab = [[[NSTabViewItem alloc] initWithIdentifier:@"files"] autorelease_compat];
+   [tab setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))];
+   [browserTabs addTabViewItem:tab];
+   [content addSubview:browserTabs];
+
+   coreLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE)];
+   KEEP_IVAR(coreLabel);
+   [content addSubview:coreLabel];
+   corePopup = [self makePopup:@selector(corePopupChanged:)];
+   KEEP_IVAR(corePopup);
+   [content addSubview:corePopup];
+   corePaths  = [[NSMutableArray alloc] init];
+   infoButton = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_INFO)
+      action:@selector(toggleInfo:)];
+   KEEP_IVAR(infoButton);
+   [content addSubview:infoButton];
+   runButton  = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN)
+      action:@selector(runWithPopup:)];
+   KEEP_IVAR(runButton);
+   [content addSubview:runButton];
+
+   /* --- Centre: entries (table or grid) over Qt's footer -------------- */
+   entries = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 600, 500)
          scroll:&sr twoColumns:YES]);
    [entries setDoubleAction:@selector(runSelected:)];
    [entries setTarget:self];
-   entriesScroll = RETAIN_COMPAT(sr); /* sr shows the table or the grid */
+   [[[[entries tableColumns] objectAtIndex:0] headerCell]
+      setStringValue:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME))];
+   [[[[entries tableColumns] objectAtIndex:1] headerCell]
+      setStringValue:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE))];
+   entriesScroll = RETAIN_COMPAT(sr);
+   [content addSubview:sr];
    grid = [[RACompanionGrid alloc] initWithOwner:self];
 
-   split = [[NSSplitView alloc] initWithFrame:
-      NSMakeRect(0, 20, frame.size.width, frame.size.height - 20)];
-   [split setVertical:YES];
-   [split addSubview:sl];
-   [split addSubview:sr];
-   [split setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   [content addSubview:split];
+   itemsLabel = [self makeLabel:""];
+   KEEP_IVAR(itemsLabel);
+   [content addSubview:itemsLabel];
+   zoomLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM)];
+   KEEP_IVAR(zoomLabel);
+   [zoomLabel setAlignment:NSRightTextAlignment];
+   [content addSubview:zoomLabel];
+   zoomSlider = [[NSSlider alloc] initWithFrame:NSMakeRect(0, 0, 140, CC_CTRL_H)];
+   [zoomSlider setMinValue:0];
+   [zoomSlider setMaxValue:100];
+   [zoomSlider setTarget:self];
+   [zoomSlider setAction:@selector(zoomChanged:)];
+   [content addSubview:zoomSlider];
+   thumbPopup = [self makePopup:@selector(thumbTypeChanged:)];
+   KEEP_IVAR(thumbPopup);
+   [thumbPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART))];
+   [thumbPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT))];
+   [thumbPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN))];
+   [thumbPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO))];
+   [content addSubview:thumbPopup];
+   viewPopup = [self makePopup:@selector(viewChanged:)];
+   KEEP_IVAR(viewPopup);
+   [viewPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST))];
+   [viewPopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS))];
+   [content addSubview:viewPopup];
 
-   /* Core information pane: a key / value table that joins the split
-    * view as a third pane while shown. */
-   {
-      /* Out-parameters must be locals under ARC (an ivar would be an
-       * __autoreleasing write-back, which clang rejects). */
-      NSScrollView *si = nil;
-      infoTable  = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 280, 500)
-            scroll:&si twoColumns:YES]);
-      infoScroll = si;
-      KEEP_IVAR(infoScroll);
-   }
-   [[[infoTable tableColumns] objectAtIndex:0] setWidth:100.0];
-   [[[[infoTable tableColumns] objectAtIndex:0] headerCell] setStringValue:@""];
-   boxart = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, 280, 300)];
+   /* --- Right column: Core Info over Boxart (with its type tabs) ------ */
+   infoLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO)];
+   KEEP_IVAR(infoLabel);
+   [content addSubview:infoLabel];
+   infoTable  = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, CC_PANE_W, 300)
+         scroll:&si twoColumns:NO]);
+   infoScroll = si;
+   KEEP_IVAR(infoScroll);
+   [infoTable setHeaderView:nil];
+   [[[infoTable tableColumns] objectAtIndex:0] setWidth:800.0]; /* long lines scroll */
+   [infoScroll setHasHorizontalScroller:YES];
+   [content addSubview:infoScroll];
+
+   boxartLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART)];
+   KEEP_IVAR(boxartLabel);
+   [content addSubview:boxartLabel];
+   boxartTypes = [[NSSegmentedControl alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, CC_CTRL_H)];
+   [boxartTypes setSegmentCount:4];
+   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART)) forSegment:0];
+   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN)) forSegment:1];
+   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT)) forSegment:2];
+   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO)) forSegment:3];
+   [boxartTypes setSelectedSegment:0];
+   [boxartTypes setTarget:self];
+   [boxartTypes setAction:@selector(boxartTypeChanged:)];
+   [content addSubview:boxartTypes];
+   boxartSubdir = COMPANION_THUMB_BOXART;
+   boxart = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
    [boxart setImageScaling:NSImageScaleProportionallyUpOrDown];
    [boxart setImageFrameStyle:NSImageFrameGrayBezel];
-   [[[infoTable tableColumns] objectAtIndex:1] setWidth:170.0];
-   [[[[infoTable tableColumns] objectAtIndex:1] headerCell]
-      setStringValue:@"Core Information"];
+   [content addSubview:boxart];
+   infoVisible   = YES; /* Qt shows both docks by default */
+   boxartVisible = YES;
 
-   /* Log pane: a read-only NSTextView under the split, added to the
-    * hierarchy only while shown so the split gets the full height
-    * otherwise. Anchored to the bottom edge above the status line. */
-   logScroll = [[NSScrollView alloc] initWithFrame:
-      NSMakeRect(0, 20, frame.size.width, 120)];
-   logView   = [[NSTextView alloc] initWithFrame:
-      [[logScroll contentView] bounds]];
+   /* Log pane (hidden until Companion > Log). */
+   logScroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, CC_STATUS_H, frame.size.width, 120)];
+   logView   = [[NSTextView alloc] initWithFrame:[[logScroll contentView] bounds]];
    [logView setEditable:NO];
    [logView setRichText:NO];
    [logView setAutoresizingMask:NSViewWidthSizable];
    [logScroll setDocumentView:logView];
    [logScroll setHasVerticalScroller:YES];
-   [logScroll setAutoresizingMask:NSViewWidthSizable | NSViewMaxYMargin];
 
-   status = [[NSTextField alloc] initWithFrame:
-      NSMakeRect(4, 0, frame.size.width - 8, 18)];
+   status = [[NSTextField alloc] initWithFrame:NSMakeRect(4, 0, frame.size.width - 8, CC_STATUS_H)];
    [status setEditable:NO];
    [status setBordered:NO];
    [status setDrawsBackground:NO];
-   [status setAutoresizingMask:NSViewWidthSizable | NSViewMaxYMargin];
+   [status setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
    [content addSubview:status];
 
-   /* "Companion" menu appended to the main menu bar. */
+   /* "Companion" menu on the main menu bar (Qt's File / View entries). */
    menu = [[[NSMenu alloc] initWithTitle:@"Companion"] autorelease_compat];
-   item = [menu addItemWithTitle:@"Load Core..." action:@selector(loadCore:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE))
+      action:@selector(loadCore:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Load Content..." action:@selector(loadContent:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:@"Load Content..." action:@selector(loadContent:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Start Core" action:@selector(startCore:)
-      keyEquivalent:@""];
-   [item setTarget:self];
-   [menu addItem:[NSMenuItem separatorItem]];
-   item = [menu addItemWithTitle:@"Browse Files" action:@selector(browseFiles:)
-      keyEquivalent:@""];
-   [item setTarget:self];
-   item = [menu addItemWithTitle:@"Scan Directory..." action:@selector(scanDirectory:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_CORE))
+      action:@selector(startCore:) keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
-   item = [menu addItemWithTitle:@"Run Selected" action:@selector(runSelected:)
-      keyEquivalent:@"\r"];
+   item = [menu addItemWithTitle:@"Browse Files" action:@selector(browseFiles:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:)
-      keyEquivalent:@"r"];
+   item = [menu addItemWithTitle:@"Scan Directory..." action:@selector(scanDirectory:) keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
-   item = [menu addItemWithTitle:@"List" action:@selector(viewList:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH))
+      action:@selector(focusSearch:) keyEquivalent:@"f"];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Icons" action:@selector(viewIcons:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:@"Run Selected" action:@selector(runWithPopup:) keyEquivalent:@"\r"];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:) keyEquivalent:@"r"];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
-   item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST))
+      action:@selector(viewList:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Core Information" action:@selector(toggleInfo:)
-      keyEquivalent:@""];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS))
+      action:@selector(viewIcons:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:@"Boxart" action:@selector(toggleBoxart:)
-      keyEquivalent:@""];
+   [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO))
+      action:@selector(toggleInfo:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART))
+      action:@selector(toggleBoxart:) keyEquivalent:@""];
+   [item setTarget:self];
+   [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION))
+      action:@selector(openDocs:) keyEquivalent:@""];
    [item setTarget:self];
 
-   menuItem = [[NSMenuItem alloc] initWithTitle:@"Companion" action:NULL
-      keyEquivalent:@""];
+   menuItem = [[NSMenuItem alloc] initWithTitle:@"Companion" action:NULL keyEquivalent:@""];
    [menuItem setSubmenu:menu];
    [[NSApp mainMenu] addItem:menuItem];
 
-   /* Context menus. The table's -menu is shown on right-click; the
-    * actions use -clickedRow so they act on the row under the mouse. */
+   /* Context menus. */
    entriesMenu = [[NSMenu alloc] initWithTitle:@""];
-   item = [entriesMenu addItemWithTitle:@"Run" action:@selector(runSelected:)
-      keyEquivalent:@""];
+   item = [entriesMenu addItemWithTitle:@"Run" action:@selector(runSelected:) keyEquivalent:@""];
    [item setTarget:self];
    [entriesMenu addItem:[NSMenuItem separatorItem]];
-   item = [entriesMenu addItemWithTitle:@"Delete Entry" action:@selector(deleteEntry:)
-      keyEquivalent:@""];
+   item = [entriesMenu addItemWithTitle:@"Delete Entry" action:@selector(deleteEntry:) keyEquivalent:@""];
    [item setTarget:self];
    [entries setMenu:entriesMenu];
 
    playlistsMenu = [[NSMenu alloc] initWithTitle:@""];
    assocMenu     = [[NSMenu alloc] initWithTitle:@"Associate Core"];
-   [assocMenu setDelegate:self]; /* -menuNeedsUpdate: fills it */
-   item = [playlistsMenu addItemWithTitle:@"Associate Core" action:NULL
-      keyEquivalent:@""];
+   [assocMenu setDelegate:self];
+   item = [playlistsMenu addItemWithTitle:@"Associate Core" action:NULL keyEquivalent:@""];
    [item setSubmenu:assocMenu];
-   item = [playlistsMenu addItemWithTitle:@"Refresh Playlists"
-      action:@selector(refreshPlaylists:) keyEquivalent:@""];
+   item = [playlistsMenu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:) keyEquivalent:@""];
    [item setTarget:self];
    [playlists setMenu:playlistsMenu];
 
+   [self layoutViews];
+   [self statusDefault];
+   [self fillCorePopup:-1];
    return YES;
 }
+
+/* Explicit layout (10.4-safe; no autolayout), recomputed on resize.
+ * Cocoa coordinates run bottom-up, so y grows towards the top. */
+- (void)layoutViews
+{
+   NSRect b;
+   CGFloat W, H, top, y, x, leftW, rightW, cx, cw;
+   CGFloat logH = logVisible ? 120.0 : 0.0;
+   if (!window)
+      return;
+   b     = [[window contentView] bounds];
+   W     = b.size.width;
+   H     = b.size.height;
+   top   = H - CC_PAD;
+   leftW = CC_PANE_W;
+   rightW = (infoVisible || boxartVisible) ? CC_PANE_W : 0.0;
+   if (W - leftW - rightW < 300.0)
+      rightW = 0.0;
+
+   [status setFrame:NSMakeRect(4, 0, W - 8, CC_STATUS_H)];
+   if (logVisible)
+      [logScroll setFrame:NSMakeRect(0, CC_STATUS_H, W, logH)];
+
+   /* Left column, top-down. */
+   x = CC_PAD;
+   y = top - CC_LABEL_H;
+   [searchLabel setFrame:NSMakeRect(x, y, leftW - 2 * CC_PAD, CC_LABEL_H)];
+   y -= CC_CTRL_H + 2;
+   [searchField setFrame:NSMakeRect(x, y, leftW - 3 * CC_PAD - 60.0, CC_CTRL_H)];
+   [clearButton setFrame:NSMakeRect(leftW - CC_PAD - 60.0, y, 60.0, CC_CTRL_H)];
+   y -= CC_PAD + CC_LABEL_H;
+   [browserLabel setFrame:NSMakeRect(x, y, leftW - 2 * CC_PAD, CC_LABEL_H)];
+   {
+      /* Core section at the bottom of the column. */
+      CGFloat coreY = CC_STATUS_H + logH + CC_PAD;
+      [corePopup setFrame:NSMakeRect(x, coreY, leftW - 4 * CC_PAD - 2 * 50.0, CC_CTRL_H)];
+      [infoButton setFrame:NSMakeRect(leftW - 2 * CC_PAD - 100.0, coreY, 50.0, CC_CTRL_H)];
+      [runButton setFrame:NSMakeRect(leftW - CC_PAD - 50.0, coreY, 50.0, CC_CTRL_H)];
+      coreY += CC_CTRL_H + 2;
+      [coreLabel setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, CC_LABEL_H)];
+      coreY += CC_LABEL_H + CC_PAD;
+      /* Tabs fill what is left between the browser label and Core. */
+      [browserTabs setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, y - CC_PAD - coreY)];
+   }
+
+   /* Centre. */
+   cx = leftW;
+   cw = W - leftW - rightW;
+   {
+      CGFloat fy = CC_STATUS_H + logH;
+      [entriesScroll setFrame:NSMakeRect(cx + CC_PAD, fy + CC_FOOTER_H, cw - 2 * CC_PAD, H - CC_PAD - fy - CC_FOOTER_H)];
+      [itemsLabel setFrame:NSMakeRect(cx + CC_PAD, fy + (CC_FOOTER_H - CC_LABEL_H) / 2, 160.0, CC_LABEL_H)];
+      x = cx + cw - CC_PAD;
+      x -= 100.0;
+      [viewPopup setFrame:NSMakeRect(x, fy + (CC_FOOTER_H - CC_CTRL_H) / 2, 100.0, CC_CTRL_H)];
+      x -= CC_PAD + 120.0;
+      [thumbPopup setFrame:NSMakeRect(x, fy + (CC_FOOTER_H - CC_CTRL_H) / 2, 120.0, CC_CTRL_H)];
+      x -= CC_PAD + 140.0;
+      [zoomSlider setFrame:NSMakeRect(x, fy + (CC_FOOTER_H - CC_CTRL_H) / 2, 140.0, CC_CTRL_H)];
+      x -= CC_PAD + 44.0;
+      [zoomLabel setFrame:NSMakeRect(x, fy + (CC_FOOTER_H - CC_LABEL_H) / 2, 44.0, CC_LABEL_H)];
+      if (iconView && grid)
+         [grid relayout];
+   }
+
+   /* Right column: Core Info on top, Boxart below, 50/50 like Qt. */
+   x = W - rightW + CC_PAD;
+   {
+      CGFloat colTop = top;
+      CGFloat colBot = CC_STATUS_H + logH + CC_PAD;
+      CGFloat colH   = colTop - colBot;
+      CGFloat infoH  = boxartVisible ? (infoVisible ? colH / 2 : 0) : colH;
+      CGFloat boxH   = colH - infoH;
+      CGFloat w      = rightW - 2 * CC_PAD;
+      BOOL showInfo  = rightW > 0 && infoVisible;
+      BOOL showBox   = rightW > 0 && boxartVisible;
+      [infoLabel  setHidden:!showInfo];
+      [infoScroll setHidden:!showInfo];
+      [boxartLabel setHidden:!showBox];
+      [boxartTypes setHidden:!showBox];
+      [boxart     setHidden:!showBox];
+      if (showInfo)
+      {
+         [infoLabel  setFrame:NSMakeRect(x, colTop - CC_LABEL_H, w, CC_LABEL_H)];
+         [infoScroll setFrame:NSMakeRect(x, colTop - infoH + CC_PAD, w, infoH - CC_LABEL_H - CC_PAD)];
+      }
+      if (showBox)
+      {
+         CGFloat by = colBot;
+         [boxartLabel setFrame:NSMakeRect(x, by + boxH - CC_LABEL_H, w, CC_LABEL_H)];
+         [boxartTypes setFrame:NSMakeRect(x, by + boxH - CC_LABEL_H - CC_CTRL_H, w, CC_CTRL_H)];
+         [boxart      setFrame:NSMakeRect(x, by, w, boxH - CC_LABEL_H - CC_CTRL_H - CC_PAD)];
+      }
+   }
+}
+
+- (void)windowDidResize:(NSNotification*)note { [self layoutViews]; }
 
 /* NSMenuDelegate (10.3+): rebuild the core list each time it opens so a
  * core installed while the window is up shows without a restart. */
@@ -865,6 +1190,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    }
    RELEASE(infoScroll);
    RELEASE(boxart);
+   RELEASE(searchLabel);  RELEASE(browserLabel); RELEASE(coreLabel);
+   RELEASE(infoLabel);    RELEASE(boxartLabel);  RELEASE(itemsLabel);
+   RELEASE(zoomLabel);    RELEASE(searchField);  RELEASE(clearButton);
+   RELEASE(infoButton);   RELEASE(runButton);    RELEASE(browserTabs);
+   RELEASE(playlistsScroll); RELEASE(corePopup); RELEASE(corePaths);
+   RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
+   RELEASE(boxartTypes);  RELEASE(playlistIcons);
+   free(rowMap);
+   rowMap = NULL;
    string_list_free(infoKeys);
    string_list_free(infoValues);
    infoKeys   = NULL;
@@ -883,7 +1217,6 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    }
    RELEASE(logView);
    RELEASE(logScroll);
-   RELEASE(split);
    if (assocMenu)
       [assocMenu setDelegate:nil];
    RELEASE(assocMenu);
@@ -898,6 +1231,47 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 }
 
 /* NSTableDataSource (10.4 informal protocol) */
+/* Search filter: map visible table rows to entry indices (identity when
+ * the filter is empty), as Qt's proxy model does. */
+- (void)rebuildRowMap
+{
+   size_t i, n = wimp ? companion_core_entry_count(wimp->core) : 0;
+   free(rowMap);
+   rowMap   = NULL;
+   rowCount = 0;
+   if (!filter[0] || browseMode)
+   {
+      rowCount = (NSInteger)n;
+      return;
+   }
+   rowMap = (NSInteger*)malloc((n ? n : 1) * sizeof(NSInteger));
+   if (!rowMap)
+      return;
+   for (i = 0; i < n; i++)
+   {
+      const struct playlist_entry *e = companion_core_entry(wimp->core, i);
+      const char *label = e ? (!string_is_empty(e->label) ? e->label : e->path) : NULL;
+      char low[PATH_MAX_LENGTH];
+      size_t k;
+      if (!label)
+         continue;
+      for (k = 0; label[k] && k < sizeof(low) - 1; k++)
+         low[k] = (char)tolower((unsigned char)label[k]);
+      low[k] = '\0';
+      if (strstr(low, filter))
+         rowMap[rowCount++] = (NSInteger)i;
+   }
+}
+
+- (NSInteger)entryForRow:(NSInteger)row
+{
+   if (row < 0)
+      return -1;
+   if (rowMap)
+      return (row < rowCount) ? rowMap[row] : -1;
+   return row;
+}
+
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)tv
 {
    if (!wimp)
@@ -907,7 +1281,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (tv == entries)
       return browseMode
          ? (NSInteger)companion_core_browse_count(wimp->core)
-         : (NSInteger)companion_core_entry_count(wimp->core);
+         : rowCount;
    if (tv == coresTable)
       return coresRows;
    if (tv == infoTable)
@@ -925,13 +1299,23 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       return @"";
 
    if (tv == playlists)
+   {
+      if ([[col identifier] isEqualToString:@"icon"])
+      {
+         id im = ((NSUInteger)row < [playlistIcons count])
+            ? [playlistIcons objectAtIndex:(NSUInteger)row] : nil;
+         return (im && im != [NSNull null]) ? im : nil;
+      }
       s = companion_core_playlist_name(wimp->core, (size_t)row);
+   }
    else if (tv == infoTable)
    {
-      struct string_list *l = [[col identifier] isEqualToString:@"core"]
-         ? infoValues : infoKeys;
-      if (l && (size_t)row < l->size)
-         s = l->elems[row].data;
+      /* Qt renders "Key: value" on one line; do the same. */
+      const char *k = (infoKeys   && (size_t)row < infoKeys->size)   ? infoKeys->elems[row].data   : "";
+      const char *v = (infoValues && (size_t)row < infoValues->size) ? infoValues->elems[row].data : "";
+      if (k && *k && v && *v)
+         return [NSString stringWithFormat:@"%@ %@", BOXSTRING(k), BOXSTRING(v)];
+      s = (k && *k) ? k : v;
    }
    else if (tv == coresTable)
       s = [[col identifier] isEqualToString:@"core"]
@@ -947,8 +1331,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    }
    else if (tv == entries)
    {
-      const struct playlist_entry *e =
-         companion_core_entry(wimp->core, (size_t)row);
+      NSInteger ei = [self entryForRow:row];
+      const struct playlist_entry *e = ei >= 0
+         ? companion_core_entry(wimp->core, (size_t)ei) : NULL;
       if (e)
       {
          if ([[col identifier] isEqualToString:@"core"])
@@ -969,7 +1354,10 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       return;
    if ([note object] == entries)
    {
+      NSInteger row = [self entryForRow:[entries selectedRow]];
       [self refreshBoxart];
+      [self fillCorePopup:row];
+      [self refreshInfo];
       return;
    }
    if ([note object] != playlists)
@@ -1016,6 +1404,12 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    row = [self actionRowIn:entries];
    if (row < 0)
       return;
+   if (!browseMode)
+   {
+      row = [self entryForRow:row];
+      if (row < 0)
+         return;
+   }
 
    if (browseMode)
    {
@@ -1049,7 +1443,29 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       companion_core_browse_open(wimp->core, NULL);
    [self setIconView:NO];   /* the browser is a list */
    [entries reloadData];
+   if (browserTabs && [browserTabs indexOfTabViewItem:[browserTabs selectedTabViewItem]] != 1)
+      [browserTabs selectTabViewItemAtIndex:1];
+   companion_core_pref_set_last_tab(wimp->core, 1);
 }
+
+/* NSTabView delegate: the second tab is the file browser. */
+- (void)tabView:(NSTabView*)tv didSelectTabViewItem:(NSTabViewItem*)item
+{
+   NSInteger idx = [tv indexOfTabViewItem:item];
+   if (idx == 1)
+   {
+      if (!browseMode)
+         [self browseFiles:nil];
+   }
+   else if (browseMode)
+   {
+      browseMode = NO;
+      [entries reloadData];
+      companion_core_pref_set_last_tab(wimp->core, 0);
+   }
+}
+
+- (void)tabChanged:(id)sender { }
 
 - (void)reloadSelectedPlaylist
 {
@@ -1066,7 +1482,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 
    if (!wimp)
       return;
-   row = [self actionRowIn:entries];
+   row = [self entryForRow:[self actionRowIn:entries]];
    sel = companion_core_selected_playlist(wimp->core);
    if (row < 0 || sel == (size_t)-1)
       return;
@@ -1120,8 +1536,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    string_list_free(infoValues);
    infoKeys   = string_list_new();
    infoValues = string_list_new();
-   strlcpy(infoCore, companion_core_current_core_path(wimp->core),
-         sizeof(infoCore));
+   strlcpy(infoCore, [self popupCorePath], sizeof(infoCore));
    if (infoKeys && infoValues)
       companion_core_core_info_rows(infoCore, infoKeys, infoValues);
    [infoTable reloadData];
@@ -1130,9 +1545,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 /* Called from the iterate hook: a short strcmp per frame while shown. */
 - (void)infoFollowCore
 {
-   if (infoVisible && wimp
-         && strcmp(infoCore, companion_core_current_core_path(wimp->core)))
-      [self refreshInfo];
+   if (wimp && strcmp(infoCore, [self popupCorePath]))
+   {
+      if (infoVisible)
+         [self refreshInfo];
+      else
+         strlcpy(infoCore, [self popupCorePath], sizeof(infoCore));
+      [self statusDefault];
+   }
 }
 
 - (void)refreshBoxart
@@ -1144,79 +1564,45 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       [boxart setImage:nil];
       return;
    }
-   row = [entries selectedRow];
+   row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
    if (row >= 0)
-      img = cc_thumb_image(wimp, row, thumbSubdir); /* selected entry */
+      img = cc_thumb_image(wimp, row, boxartSubdir); /* the pane's own type */
    [boxart setImage:img];
 }
 
 - (void)toggleBoxart:(id)sender
 {
-   NSView *content;
-   NSRect b;
-   if (!window || !boxart)
-      return;
    boxartVisible = !boxartVisible;
-   content = [window contentView];
-   b       = [content bounds];
+   [self layoutViews];
    if (boxartVisible)
-   {
-      /* Right edge, above the status line. */
-      [boxart setFrame:NSMakeRect(b.size.width - 280, 20, 280,
-            b.size.height - 40)];
-      [boxart setAutoresizingMask:NSViewMinXMargin | NSViewHeightSizable];
-      [content addSubview:boxart];
       [self refreshBoxart];
-   }
-   else
-      [boxart removeFromSuperview];
+   return;
 }
+
 
 - (void)toggleInfo:(id)sender
 {
-   if (!split || !infoScroll)
-      return;
    infoVisible = !infoVisible;
+   [self layoutViews];
    if (infoVisible)
-   {
-      [split addSubview:infoScroll];
-      [split adjustSubviews];
       [self refreshInfo];
-   }
-   else
-   {
-      [infoScroll removeFromSuperview];
-      [split adjustSubviews];
-   }
+   return;
 }
+
 
 - (void)viewList:(id)sender  { [self setIconView:NO]; }
 - (void)viewIcons:(id)sender { [self setIconView:YES]; }
 
 - (void)toggleLog:(id)sender
 {
-   NSView *content;
-   NSRect frame;
-   if (!window || !split || !logScroll)
+   if (!window || !logScroll)
       return;
-
-   content    = [window contentView];
-   frame      = [content bounds];
    logVisible = !logVisible;
-
    if (logVisible)
-   {
-      [logScroll setFrame:NSMakeRect(0, 20, frame.size.width, 120)];
-      [split setFrame:NSMakeRect(0, 140, frame.size.width,
-            frame.size.height - 140)];
-      [content addSubview:logScroll];
-   }
+      [[window contentView] addSubview:logScroll];
    else
-   {
       [logScroll removeFromSuperview];
-      [split setFrame:NSMakeRect(0, 20, frame.size.width,
-            frame.size.height - 20)];
-   }
+   [self layoutViews];
 }
 
 /* Append a log line; trim the oldest half once the text passes 256 KiB
@@ -1247,13 +1633,201 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 /* Shared companion settings (retroarch.cfg), applied at startup. */
 - (void)applySharedSettings
 {
+   unsigned z;
    if (!wimp)
       return;
    thumbSubdir = companion_core_pref_thumbnail_subdir(wimp->core);
+   if (thumbPopup)
+      [thumbPopup selectItemAtIndex:(NSInteger)companion_core_pref_thumbnail_type(wimp->core)];
+   z = companion_core_pref_icon_view_zoom(wimp->core);
+   if (zoomSlider)
+      [zoomSlider setDoubleValue:(double)z];
+   if (grid)
+      [grid setThumbEdge:64.0 + (CGFloat)z * 256.0 / 100.0];
    if (companion_core_pref_icon_view(wimp->core))
       [self setIconView:YES];
    if (companion_core_pref_last_tab(wimp->core) == 1)
       [self browseFiles:nil];
+}
+
+/* --- Qt-layout actions -------------------------------------------------- */
+
+- (void)statusDefault
+{
+   char buf[NAME_MAX_LENGTH + 32];
+   const char *core = wimp ? companion_core_current_core_name(wimp->core) : NULL;
+   snprintf(buf, sizeof(buf), "%s - %s", PACKAGE_VERSION,
+         (core && *core) ? core : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
+   [self setStatus:buf];
+}
+
+/* Launch-with popup: the running / entry's / playlist-default cores for
+ * @entryRow, then "Ask" and "Load Core..."; a parallel path per row. */
+- (void)fillCorePopup:(NSInteger)entryRow
+{
+   companion_launch_option_t opts[6];
+   size_t i, n = 0;
+   const struct playlist_entry *e = NULL;
+   char pl_name[NAME_MAX_LENGTH];
+   char label[64];
+   if (!wimp || !corePopup)
+      return;
+   [corePopup removeAllItems];
+   [corePaths removeAllObjects];
+   pl_name[0] = '\0';
+   if (entryRow >= 0 && !browseMode)
+      e = companion_core_entry(wimp->core, (size_t)entryRow);
+   if (e && e->db_name)
+   {
+      strlcpy(pl_name, e->db_name, sizeof(pl_name));
+      path_remove_extension(pl_name);
+   }
+   n = companion_core_launch_options(wimp->core,
+         e ? e->core_path : NULL, e ? e->core_name : NULL, pl_name,
+         companion_core_pref_suggest_loaded_core_first(wimp->core),
+         opts, sizeof(opts) / sizeof(opts[0]));
+   for (i = 0; i < n; i++)
+   {
+      [corePopup addItemWithTitle:BOXSTRING(opts[i].name)];
+      [[corePopup lastItem] setTag:(NSInteger)opts[i].selection];
+      [corePaths addObject:BOXSTRING(opts[i].path)];
+   }
+   [corePopup addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK))];
+   [[corePopup lastItem] setTag:COMPANION_LAUNCH_ASK];
+   [corePaths addObject:@""];
+   snprintf(label, sizeof(label), "%s...", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
+   [corePopup addItemWithTitle:BOXSTRING(label)];
+   [[corePopup lastItem] setTag:COMPANION_LAUNCH_LOAD_CORE];
+   [corePaths addObject:@""];
+   [corePopup selectItemAtIndex:0];
+}
+
+/* Core the popup names, or the running core's path. */
+- (const char*)popupCorePath
+{
+   NSInteger idx = corePopup ? [corePopup indexOfSelectedItem] : -1;
+   if (idx >= 0 && (NSUInteger)idx < [corePaths count])
+   {
+      NSInteger tag = [[corePopup itemAtIndex:idx] tag];
+      NSString *pth = [corePaths objectAtIndex:(NSUInteger)idx];
+      if ((tag == COMPANION_LAUNCH_CURRENT || tag == COMPANION_LAUNCH_PLAYLIST_SAVED
+               || tag == COMPANION_LAUNCH_PLAYLIST_DEFAULT) && [pth length])
+         return [pth UTF8String];
+   }
+   return wimp ? companion_core_current_core_path(wimp->core) : "";
+}
+
+- (void)corePopupChanged:(id)sender { [self refreshInfo]; }
+
+/* Run with the popup's choice (Qt's Run button). */
+- (void)runWithPopup:(id)sender
+{
+   NSInteger row, idx, tag;
+   const struct playlist_entry *e;
+   if (!wimp)
+      return;
+   row = iconView ? [grid selectedRow] : [entries selectedRow];
+   if (browseMode || row < 0)
+   {
+      [self runSelected:sender];
+      return;
+   }
+   e = companion_core_entry(wimp->core, (size_t)row);
+   if (!e)
+      return;
+   idx = [corePopup indexOfSelectedItem];
+   tag = idx >= 0 ? [[corePopup itemAtIndex:idx] tag] : COMPANION_LAUNCH_ASK;
+   switch (tag)
+   {
+      case COMPANION_LAUNCH_CURRENT:
+      case COMPANION_LAUNCH_PLAYLIST_SAVED:
+      case COMPANION_LAUNCH_PLAYLIST_DEFAULT:
+         if (companion_core_request_load_content(wimp->core,
+                  [[corePaths objectAtIndex:(NSUInteger)idx] UTF8String],
+                  e->path, e->label, e->db_name, e->crc32))
+            [window orderOut:nil];
+         else
+            [self setStatus:"Failed to load the content."];
+         return;
+      case COMPANION_LAUNCH_LOAD_CORE:
+         [self showCoresForContent:NULL];
+         return;
+      default:
+         [self showCoresForContent:e->path];
+         return;
+   }
+}
+
+- (void)zoomChanged:(id)sender
+{
+   unsigned z = (unsigned)[zoomSlider doubleValue];
+   companion_core_pref_set_icon_view_zoom(wimp->core, z);
+   if (grid)
+      [grid setThumbEdge:64.0 + (CGFloat)z * 256.0 / 100.0];
+}
+
+- (void)thumbTypeChanged:(id)sender
+{
+   unsigned t = (unsigned)[thumbPopup indexOfSelectedItem];
+   companion_core_pref_set_thumbnail_type(wimp->core, t);
+   thumbSubdir = companion_core_pref_thumbnail_subdir(wimp->core);
+   /* redecode the grid at the new type */
+   if (grid)
+   {
+      [grid setCount:(NSInteger)companion_core_entry_count(wimp->core)];
+      gridNext = 0;
+   }
+}
+
+- (void)viewChanged:(id)sender
+{
+   [self setIconView:[viewPopup indexOfSelectedItem] == 1];
+}
+
+- (void)boxartTypeChanged:(id)sender
+{
+   switch ([boxartTypes selectedSegment])
+   {
+      case 1:  boxartSubdir = COMPANION_THUMB_TITLE;      break;
+      case 2:  boxartSubdir = COMPANION_THUMB_SCREENSHOT; break;
+      case 3:  boxartSubdir = COMPANION_THUMB_LOGO;       break;
+      default: boxartSubdir = COMPANION_THUMB_BOXART;     break;
+   }
+   [self refreshBoxart];
+}
+
+- (void)clearSearch:(id)sender
+{
+   [searchField setStringValue:@""];
+   filter[0] = '\0';
+   [self rebuildRowMap];
+   [entries reloadData];
+}
+
+- (void)focusSearch:(id)sender { [window makeFirstResponder:searchField]; }
+
+/* Search: NSTextField's delegate hook for edits; filters the entry list
+ * the way Qt's proxy model does (case-insensitive substring). Applied
+ * at draw time for the table; the aggregate stays untouched. */
+- (void)controlTextDidChange:(NSNotification*)note
+{
+   if ([note object] == searchField)
+   {
+      const char *raw = [[searchField stringValue] UTF8String];
+      size_t k;
+      for (k = 0; raw && raw[k] && k < sizeof(filter) - 1; k++)
+         filter[k] = (char)tolower((unsigned char)raw[k]);
+      filter[k] = '\0';
+      [self rebuildRowMap];
+      [entries reloadData];
+   }
+}
+
+- (void)searchChanged:(id)sender { }
+
+- (void)openDocs:(id)sender
+{
+   [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://docs.libretro.com/"]];
 }
 
 - (void)scanDirectory:(id)sender
