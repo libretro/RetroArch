@@ -1811,15 +1811,17 @@ static void companion_core_browse_enumerate(companion_core_t *core,
          drv[3] = '\0';
          string_list_append(list, drv, attr);
       }
-      job->list = list;
-      job->ok   = true;
-      return;
    }
+   else
 #endif
-   list = dir_list_new(job->dir, NULL, true, false, true, false);
-   if (!list)
-      goto fail;
-   dir_list_sort(list, true);
+   {
+      list = dir_list_new(job->dir, NULL, true, false, true, false);
+      if (!list)
+         goto fail;
+      dir_list_sort(list, true);
+   }
+   /* Every listing carries its metadata arrays (a drive list's are
+    * zero): the sort comparators and accessors index them freely. */
    n          = list->size;
    job->size  = (uint64_t*)calloc(n ? n : 1, sizeof(uint64_t));
    job->mtime = (int64_t*)calloc(n ? n : 1, sizeof(int64_t));
@@ -1830,7 +1832,12 @@ static void companion_core_browse_enumerate(companion_core_t *core,
    }
    for (i = 0; i < n; i++)
    {
-      companion_core_stat(list->elems[i].data,
+      const char *p = list->elems[i].data;
+#ifdef _WIN32
+      if (strlen(p) <= 3 && p[1] == ':')
+         continue; /* a drive root: nothing to stat */
+#endif
+      companion_core_stat(p,
             list->elems[i].attr.i == RARCH_DIRECTORY, &job->size[i], &job->mtime[i]);
       /* superseded? stop enumerating this directory */
       if ((i & 63) == 63)
@@ -1936,7 +1943,7 @@ static int companion_core_browse_cmp(const void *a, const void *b)
    switch (cb_sort.col)
    {
       case COMPANION_BROWSE_SORT_SIZE:
-         if (!da)
+         if (!da && cb_sort.size)
             r = (cb_sort.size[ia] > cb_sort.size[ib]) - (cb_sort.size[ia] < cb_sort.size[ib]);
          break;
       case COMPANION_BROWSE_SORT_TYPE:
@@ -1944,7 +1951,8 @@ static int companion_core_browse_cmp(const void *a, const void *b)
             r = strcasecmp(path_get_extension(ea->data), path_get_extension(eb->data));
          break;
       case COMPANION_BROWSE_SORT_DATE:
-         r = (cb_sort.mtime[ia] > cb_sort.mtime[ib]) - (cb_sort.mtime[ia] < cb_sort.mtime[ib]);
+         if (cb_sort.mtime)
+            r = (cb_sort.mtime[ia] > cb_sort.mtime[ib]) - (cb_sort.mtime[ia] < cb_sort.mtime[ib]);
          break;
       default:
          break;
@@ -1993,6 +2001,19 @@ static void companion_core_browse_apply_sort(companion_core_t *core,
    if (nmtime) memcpy(mtime, nmtime, n * sizeof(*nmtime));
    free(idx); free(elems); free(nsize); free(nmtime);
 }
+
+#ifdef COMPANION_CORE_TESTING
+/* Test hook: sort @list with @size / @mtime (either may be NULL, as a
+ * listing built without metadata would be) by @column. */
+void companion_core_test_sort_listing(companion_core_t *core,
+      struct string_list *list, uint64_t *size, int64_t *mtime,
+      enum companion_browse_column column, bool ascending)
+{
+   core->browse_sort_col  = column;
+   core->browse_sort_desc = !ascending;
+   companion_core_browse_apply_sort(core, list, size, mtime);
+}
+#endif
 
 void companion_core_browse_sort(companion_core_t *core,
       enum companion_browse_column column, bool ascending)

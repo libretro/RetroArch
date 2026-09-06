@@ -23,7 +23,7 @@ trap 'rm -rf "$OUT"' EXIT
 
 LC=libretro-common
 INC="-I. -I$LC/include -Ideps -Igfx/include"
-DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG"
+DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DCOMPANION_CORE_TESTING"
 SRCS="ui/companion/companion_core.c \
       ui/companion/test/companion_core_stubs.c \
       ui/companion/test/companion_core_test.c \

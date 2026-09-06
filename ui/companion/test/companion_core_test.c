@@ -46,6 +46,8 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
+#include <lists/dir_list.h>
 
 #include "../../../configuration.h"
 #include "../../../runloop.h"
@@ -408,6 +410,121 @@ static void test_browser_sort(void)
    companion_core_free(c);
 }
 
+void companion_core_test_sort_listing(companion_core_t *core,
+      struct string_list *list, uint64_t *size, int64_t *mtime,
+      enum companion_browse_column column, bool ascending);
+
+/* The crash: a listing with no metadata arrays (the Windows drive list
+ * was built that way) sorted by Date or Size dereferenced NULL. Built
+ * here directly, on every platform, so the comparator's NULL-safety is
+ * tested where the drive list cannot be. */
+static void test_sort_without_metadata(void)
+{
+   companion_core_t *c = make_core();
+   struct string_list *l = string_list_new();
+   union string_list_elem_attr attr;
+   int col, asc;
+   attr.i = RARCH_DIRECTORY;
+   string_list_append(l, "C:\\", attr);
+   string_list_append(l, "A:\\", attr);
+   string_list_append(l, "D:\\", attr);
+   for (col = COMPANION_BROWSE_SORT_NAME; col <= COMPANION_BROWSE_SORT_DATE; col++)
+      for (asc = 0; asc < 2; asc++)
+         companion_core_test_sort_listing(c, l, NULL, NULL,
+               (enum companion_browse_column)col, asc != 0);
+   companion_core_test_sort_listing(c, l, NULL, NULL, COMPANION_BROWSE_SORT_NAME, true);
+   CHECK(string_is_equal(l->elems[0].data, "A:\\"), "sorted by name with no metadata: A first (got %s)", l->elems[0].data);
+   string_list_free(l);
+   companion_core_free(c);
+}
+
+/* Then the same shape through the real job path: sort by Date (or
+ * Size), then open a listing made only of folders. */
+static void test_sort_then_folders_only(void)
+{
+   companion_core_t *c = make_core();
+   char p[512];
+   int col;
+   fixture(p, sizeof(p), "onlydirs"); mkdirp(p);
+   fixture(p, sizeof(p), "onlydirs/b"); mkdirp(p);
+   fixture(p, sizeof(p), "onlydirs/a"); mkdirp(p);
+   fixture(p, sizeof(p), "onlydirs/c"); mkdirp(p);
+   fixture(p, sizeof(p), "onlydirs");
+   for (col = COMPANION_BROWSE_SORT_NAME; col <= COMPANION_BROWSE_SORT_DATE; col++)
+   {
+      int asc;
+      for (asc = 0; asc < 2; asc++)
+      {
+         companion_core_browse_sort(c, (enum companion_browse_column)col, asc != 0);
+         browse_changed = 0;
+         CHECK(companion_core_browse_open(c, p), "open folders-only (col %d asc %d)", col, asc);
+         CHECK(wait_browse(c), "lands (col %d asc %d)", col, asc);
+         CHECK(companion_core_browse_count(c) == 4, "4 entries (.. a b c)");
+         CHECK(companion_core_browse_dir_count(c) == 4, "all folders");
+         /* and sorting the landed listing again, every column */
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_DATE, false);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, true);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_TYPE, false);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, true);
+         CHECK(string_is_equal(companion_core_browse_name(c, 0), ".."), ".. first");
+         CHECK(string_is_equal(companion_core_browse_name(c, 1), "a"), "then a (got %s)", companion_core_browse_name(c, 1));
+      }
+   }
+   companion_core_free(c);
+}
+
+/* Scenario: the click sequences the backends send, in order, the way
+ * a user drives the browser - every step must complete and nothing may
+ * fault. Run under ASan / TSan this is the regression net for the
+ * core side of every companion. */
+static void test_backend_scenario(void)
+{
+   companion_core_t *c = make_core();
+   char content[512], pick[PATH_MAX_LENGTH], buf[64];
+   bool needs_core = false;
+   size_t i, n;
+   fixture(content, sizeof(content), "content");
+
+   /* tab -> File Browser: open default, listing lands */
+   CHECK(companion_core_browse_open(c, NULL) && wait_browse(c), "enter browser");
+   /* header clicks: every column, both ways, on the live listing */
+   for (i = 0; i < 8; i++)
+      companion_core_browse_sort(c, (enum companion_browse_column)(i % 4), (i & 1) != 0);
+   /* select each row (the backends resolve name / path / type / size /
+    * date / is-dir for the boxart pane and the table) */
+   n = companion_core_browse_count(c);
+   for (i = 0; i < n; i++)
+   {
+      CHECK(companion_core_browse_name(c, i) != NULL, "name %u", (unsigned)i);
+      CHECK(companion_core_browse_path(c, i) != NULL, "path %u", (unsigned)i);
+      companion_core_browse_size_str(c, i, buf, sizeof(buf));
+      companion_core_browse_type_str(c, i, buf, sizeof(buf));
+      companion_core_browse_date_str(c, i, buf, sizeof(buf));
+      (void)companion_core_browse_is_dir(c, i);
+      (void)companion_core_browse_size(c, i);
+      (void)companion_core_browse_mtime(c, i);
+   }
+   /* double-click the folder, then a file, then Up, then the buttons */
+   CHECK(companion_core_browse_activate(c, 1, NULL, &needs_core, pick, sizeof(pick)) == 0 && wait_browse(c), "descend");
+   CHECK(companion_core_browse_activate(c, 2, NULL, &needs_core, pick, sizeof(pick)) < 0, "activate a file");
+   CHECK(companion_core_browse_up(c) && wait_browse(c), "Up");
+   CHECK(companion_core_browse_open(c, content) && wait_browse(c), "Start Directory");
+   /* rapid navigation: several opens without waiting */
+   companion_core_browse_open(c, content);
+   companion_core_browse_up(c);
+   companion_core_browse_open(c, content);
+   companion_core_browse_up(c);
+   CHECK(wait_browse(c), "rapid navigation settles");
+   /* and the sort again on whatever landed */
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_DATE, false);
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, true);
+   /* out of the browser and back into a playlist */
+   companion_core_refresh_playlists(c);
+   CHECK(companion_core_select_playlist(c, 2) && iterate_until_loaded(c), "back to a playlist");
+   CHECK(companion_core_entry_count(c) == 3, "entries intact");
+   companion_core_free(c);
+}
+
 static void test_run_paths(void)
 {
    companion_core_t *c = make_core();
@@ -459,6 +576,9 @@ int main(void)
    test_thumbnail_path();
    test_browser();
    test_browser_sort();
+   test_sort_without_metadata();
+   test_sort_then_folders_only();
+   test_backend_scenario();
    test_run_paths();
    test_launch_options();
    teardown();
