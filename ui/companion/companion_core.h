@@ -82,6 +82,10 @@ typedef struct companion_callbacks
    /* A thumbnail pack download + extraction finished. */
    void (*on_thumbnail_pack_finished)(void *ud,
          enum companion_download_result result);
+   /* A companion_core_browse_open() finished: the listing is in place.
+    * Fired from companion_core_iterate() on the UI thread. (Last, so
+    * existing positional tables stay valid; NULL if unused.) */
+   void (*on_browse_changed)(void *ud);
 } companion_callbacks_t;
 
 /* Lifecycle */
@@ -154,6 +158,24 @@ bool companion_core_browse_open(companion_core_t *core, const char *path);
 /* The directory currently listed ("" before the first open). */
 const char *companion_core_browse_dir(companion_core_t *core);
 size_t companion_core_browse_count(companion_core_t *core);
+/* Whether a browse_open() is still enumerating (show "Loading..."). The
+ * previous listing stays readable until the new one lands. */
+bool companion_core_browse_busy(companion_core_t *core);
+/* Size (bytes; 0 for directories) and modification time (seconds since
+ * the epoch; 0 unknown) of entry @i, gathered with the listing off the
+ * UI thread so a view never touches the disk to paint. */
+uint64_t companion_core_browse_size(companion_core_t *core, size_t i);
+int64_t  companion_core_browse_mtime(companion_core_t *core, size_t i);
+/* The browser table's columns as the Qt companion shows them, formatted
+ * once here for every backend: Size ("12 KB", "1.5 MB", "" for a
+ * folder), Type ("Drive", "File Folder", "ZIP File"), Date Modified
+ * (local time, "YYYY-MM-DD HH:MM"). Each writes into @s and returns it. */
+const char *companion_core_browse_size_str(companion_core_t *core, size_t i,
+      char *s, size_t len);
+const char *companion_core_browse_type_str(companion_core_t *core, size_t i,
+      char *s, size_t len);
+const char *companion_core_browse_date_str(companion_core_t *core, size_t i,
+      char *s, size_t len);
 /* The listing is directories first (".." included), then files: indices
  * [0, dir_count) are directories, [dir_count, count) files. A Qt-style
  * browser shows the first range in its folder pane and the second as

@@ -216,6 +216,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)browseStart:(id)sender;
 - (void)browseDownloads:(id)sender;
 - (void)browseReload;
+- (void)browseLanded;
 - (void)playlistsDoubleClick:(id)sender;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
@@ -322,6 +323,14 @@ static void cc_on_scan_finished(void *ud)
       [CC_CTRL(w) setStatus:"Scan finished."];
 }
 
+/* The listing landed (enumerated off the UI thread): rebuild the panes. */
+static void cc_on_browse_changed(void *ud)
+{
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)ud;
+   if (w && w->controller)
+      [CC_CTRL(w) browseLanded];
+}
+
 static const companion_callbacks_t cc_callbacks = {
    cc_on_playlists_changed,
    cc_on_playlist_changed,
@@ -330,7 +339,8 @@ static const companion_callbacks_t cc_callbacks = {
    cc_on_notify_refresh,
    cc_on_scan_finished,
    NULL, /* on_thumbnail_downloaded */
-   NULL  /* on_thumbnail_pack_finished */
+   NULL, /* on_thumbnail_pack_finished */
+   cc_on_browse_changed
 };
 
 /* --- Controller ------------------------------------------------------- */
@@ -1572,17 +1582,10 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       NSInteger bi = [self entryForRow:row];
       if ([[col identifier] isEqualToString:@"core"])
       {
-         /* Qt's Type column: File Folder / <EXT> File */
-         const char *fp = bi >= 0 ? companion_core_browse_path(wimp->core, (size_t)bi) : NULL;
-         if (bi >= 0 && companion_core_browse_is_dir(wimp->core, (size_t)bi))
-            s = "File Folder";
-         else
-         {
-            const char *ext = fp ? path_get_extension(fp) : "";
-            if (ext && *ext)
-               return [[BOXSTRING(ext) uppercaseString] stringByAppendingString:@" File"];
-            s = "File";
-         }
+         /* Qt's Type column, formatted by the core for every backend. */
+         char buf[64];
+         s = bi >= 0 ? companion_core_browse_type_str(wimp->core, (size_t)bi, buf, sizeof(buf)) : "";
+         return BOXSTRING(s ? s : "");
       }
       else
          s = bi >= 0 ? companion_core_browse_name(wimp->core, (size_t)bi) : "";
@@ -1670,7 +1673,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       int r = companion_core_browse_activate(wimp->core, (size_t)row,
             NULL, &needs_core, content, sizeof(content));
       if (r == 0)
-         [self browseReload];          /* entered a directory */
+         [self setStatus:"Loading..."]; /* entered a directory: lands via callback */
       else if (r == 1)
          [window orderOut:nil];        /* content loaded */
       else if (needs_core)
@@ -1700,13 +1703,13 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       sel = [playlists selectedRow];
    if (sel >= 0 && companion_core_browse_activate(wimp->core, (size_t)sel,
             NULL, NULL, NULL, 0) == 0)
-      [self browseReload];
+      [self setStatus:"Loading..."];
 }
 
 - (void)browseUp:(id)sender
 {
    if (browseMode && companion_core_browse_up(wimp->core))
-      [self browseReload];
+      [self setStatus:"Loading..."];
 }
 
 - (void)browseStart:(id)sender
@@ -1715,7 +1718,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (browseMode && companion_core_browse_open(wimp->core,
             !string_is_empty(st->paths.directory_menu_content)
             ? st->paths.directory_menu_content : NULL))
-      [self browseReload];
+      [self setStatus:"Loading..."];
 }
 
 - (void)browseDownloads:(id)sender
@@ -1723,6 +1726,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    settings_t *st = config_get_ptr();
    if (browseMode && !string_is_empty(st->paths.directory_core_assets)
          && companion_core_browse_open(wimp->core, st->paths.directory_core_assets))
+      [self setStatus:"Loading..."];
+}
+
+- (void)browseLanded
+{
+   if (browseMode)
       [self browseReload];
 }
 
@@ -1751,11 +1760,15 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 - (void)browseFiles:(id)sender
 {
    browseMode = YES;
-   if (!companion_core_browse_count(wimp->core))
-      companion_core_browse_open(wimp->core, NULL);
    [self setIconView:NO];   /* the browser is a list */
    [self layoutViews];      /* the button row appears */
-   [self browseReload];
+   if (!companion_core_browse_count(wimp->core) && !companion_core_browse_busy(wimp->core))
+   {
+      companion_core_browse_open(wimp->core, NULL); /* lands via callback */
+      [self setStatus:"Loading..."];
+   }
+   else
+      [self browseReload];
    [self refreshBoxart];    /* Qt shows no boxart for a browser selection */
    if (browserTabs && [browserTabs indexOfTabViewItem:[browserTabs selectedTabViewItem]] != 1)
       [browserTabs selectTabViewItemAtIndex:1];

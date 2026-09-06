@@ -1178,35 +1178,119 @@ void LogTextEdit::appendMessage(const QString& text)
    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
-/* Only accept indexes from current path.
- * https://www.qtcentre.org/threads/50700-QFileSystemModel-and-QSortFilterProxyModel-don-t-work-well-together
- *
- * The root index is cached because this method is invoked once per
- * (row, parent) pair the proxy considers - which can be tens of
- * thousands per directory load on a populous tree - while the
- * QFileSystemModel root path changes only when the user navigates.
- * Resolving the root path to an index via sm->index(...) walks the
- * model on every call without the cache. */
-bool FileSystemProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+/* --- BrowseTableModel: the core's listing, painted --------------------- */
+
+int BrowseTableModel::rowCount(const QModelIndex &parent) const
 {
-   QFileSystemModel *sm     = qobject_cast<QFileSystemModel*>(sourceModel());
-   const QString currentRoot = sm->rootPath();
-
-   if (currentRoot != m_cachedRootPath)
-   {
-      m_cachedRootPath  = currentRoot;
-      m_cachedRootIndex = sm->index(currentRoot);
-   }
-
-   if (sourceParent == m_cachedRootIndex)
-      return QSortFilterProxyModel::filterAcceptsRow(sourceRow, sourceParent);
-   return true;
+   return parent.isValid() ? 0 : m_rows.size();
 }
 
-/* sort the source (QFileSystemModel to keep directories before files) */
-void FileSystemProxyModel::sort(int column, Qt::SortOrder order)
+long BrowseTableModel::browseIndex(const QModelIndex &index) const
 {
-   sourceModel()->sort(column, order);
+   if (!index.isValid() || index.row() < 0 || index.row() >= m_rows.size())
+      return -1;
+   return m_rows.at(index.row());
+}
+
+QString BrowseTableModel::pathAt(const QModelIndex &index) const
+{
+   long bi = browseIndex(index);
+   const char *p = bi >= 0 ? companion_core_browse_path(ui_companion_qt_core(), (size_t)bi) : NULL;
+   return p ? QString::fromUtf8(p) : QString();
+}
+
+bool BrowseTableModel::isDirAt(const QModelIndex &index) const
+{
+   long bi = browseIndex(index);
+   return bi >= 0 && companion_core_browse_is_dir(ui_companion_qt_core(), (size_t)bi);
+}
+
+QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+   if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
+      return QVariant();
+   switch (section)
+   {
+      case 0: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME));
+      case 1: return QStringLiteral("Size");
+      case 2: return QStringLiteral("Type");
+      case 3: return QStringLiteral("Date Modified");
+   }
+   return QVariant();
+}
+
+QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
+{
+   companion_core_t *core = ui_companion_qt_core();
+   long bi = browseIndex(index);
+   char buf[64];
+   if (bi < 0 || !core)
+      return QVariant();
+   if (role == Qt::DisplayRole)
+   {
+      switch (index.column())
+      {
+         case 0: return QString::fromUtf8(companion_core_browse_name(core, (size_t)bi));
+         case 1: return QString::fromUtf8(companion_core_browse_size_str(core, (size_t)bi, buf, sizeof(buf)));
+         case 2: return QString::fromUtf8(companion_core_browse_type_str(core, (size_t)bi, buf, sizeof(buf)));
+         case 3: return QString::fromUtf8(companion_core_browse_date_str(core, (size_t)bi, buf, sizeof(buf)));
+      }
+   }
+   else if (role == Qt::DecorationRole && index.column() == 0)
+   {
+      /* Three stock icons, resolved once: no per-file shell lookups. */
+      const char *p = companion_core_browse_path(core, (size_t)bi);
+      bool is_dir   = companion_core_browse_is_dir(core, (size_t)bi);
+      bool is_drive = p && strlen(p) <= 3 && p[1] == ':';
+      if (is_drive)
+      {
+         if (m_driveIcon.isNull())
+            const_cast<BrowseTableModel*>(this)->m_driveIcon = QApplication::style()->standardIcon(QStyle::SP_DriveHDIcon);
+         return m_driveIcon;
+      }
+      if (is_dir)
+      {
+         if (m_folderIcon.isNull())
+            const_cast<BrowseTableModel*>(this)->m_folderIcon = QApplication::style()->standardIcon(QStyle::SP_DirIcon);
+         return m_folderIcon;
+      }
+      if (m_fileIcon.isNull())
+         const_cast<BrowseTableModel*>(this)->m_fileIcon = QApplication::style()->standardIcon(QStyle::SP_FileIcon);
+      return m_fileIcon;
+   }
+   else if (role == Qt::TextAlignmentRole && index.column() == 1)
+      return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+   return QVariant();
+}
+
+void BrowseTableModel::reload()
+{
+   companion_core_t *core = ui_companion_qt_core();
+   size_t i, n = core ? companion_core_browse_count(core) : 0;
+   beginResetModel();
+   m_rows.clear();
+   m_rows.reserve((int)n);
+   for (i = 0; i < n; i++)
+   {
+      if (m_filter.isValid() && !m_filter.pattern().isEmpty())
+      {
+         const char *nm = companion_core_browse_name(core, i);
+         /* folders always show; files are filtered on their name */
+         if (!companion_core_browse_is_dir(core, i)
+               && !(nm && m_filter.match(QString::fromUtf8(nm)).hasMatch()))
+            continue;
+      }
+      m_rows.append((long)i);
+   }
+   endResetModel();
+}
+
+void BrowseTableModel::setFilter(const QRegularExpression &re)
+{
+   if (re == m_filter)
+      return;
+   m_filter = re;
+   reload();
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -1218,7 +1302,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusLabel(new QLabel(this))
    ,m_dirTree(new TreeView(this))
    ,m_dirModel(new QFileSystemModel(m_dirTree))
-   ,m_fileModel(new QFileSystemModel(this))
    ,m_listWidget(new ListWidget(this))
    ,m_centralWidget(new QStackedWidget(this))
    ,m_tableView(new TableView(this))
@@ -1495,9 +1578,7 @@ void MainWindow::setupModels()
    m_proxyModel->setSourceModel(m_playlistModel);
    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
 
-   m_proxyFileModel = new FileSystemProxyModel();
-   m_proxyFileModel->setSourceModel(m_fileModel);
-   m_proxyFileModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+   m_browseModel = new BrowseTableModel(this);
 
    m_tableView->setAlternatingRowColors(true);
    m_tableView->setModel(m_proxyModel);
@@ -1512,9 +1593,11 @@ void MainWindow::setupModels()
    m_tableView->horizontalHeader()->setStretchLastSection(true);
    m_tableView->setWordWrap(false);
 
-   m_fileTableView->setModel(m_fileModel);
-   m_fileTableView->sortByColumn(0, Qt::AscendingOrder);
-   m_fileTableView->setSortingEnabled(true);
+   m_fileTableView->setModel(m_browseModel);
+   /* The core sorts folders first, then by name, once, off the UI
+    * thread; the view never re-sorts (a header sort over a large
+    * directory is exactly the stall this replaces). */
+   m_fileTableView->setSortingEnabled(false);
    m_fileTableView->setAlternatingRowColors(true);
    m_fileTableView->verticalHeader()->setVisible(false);
    m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -1545,7 +1628,6 @@ void MainWindow::setupFileSystemBrowser()
 
    m_dirModel->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs | QDir::Drives
          | hidden_filters);
-   m_fileModel->setFilter(QDir::NoDot | QDir::AllEntries | hidden_filters);
 
    /* Two things QFileSystemModel does per directory that the browser
     * pays for on every visit: it asks the shell for each folder's own
@@ -1555,24 +1637,19 @@ void MainWindow::setupFileSystemBrowser()
     * folder icon is fine, and the file table is rebuilt on navigation. */
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
    m_dirModel->setOption(QFileSystemModel::DontUseCustomDirectoryIcons, true);
-   m_fileModel->setOption(QFileSystemModel::DontUseCustomDirectoryIcons, true);
    m_dirModel->setOption(QFileSystemModel::DontWatchForChanges, true);
-   m_fileModel->setOption(QFileSystemModel::DontWatchForChanges, true);
 #endif
 
 #if defined(Q_OS_WIN)
    m_dirModel->setRootPath("");
-   m_fileModel->setRootPath("");
 #else
    m_dirModel->setRootPath("/");
-   m_fileModel->setRootPath("/");
 #endif
 
    m_dirTree->setModel(m_dirModel);
    m_dirTree->setSelectionMode(QAbstractItemView::SingleSelection);
    m_dirTree->header()->setVisible(false);
 
-   m_fileTableView->setModel(m_proxyFileModel);
 
    if (m_dirModel->columnCount() > 3)
    {
@@ -1671,8 +1748,6 @@ void MainWindow::setupSignalConnections()
          SLOT(onZoomValueChanged(int)));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
          SLOT(onFileSystemDirLoaded(const QString&)));
-   connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this,
-         SLOT(onFileBrowserTableDirLoaded(const QString&)));
 
    m_dirTree->setCurrentIndex(m_dirModel->index(path_dir_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
@@ -1755,8 +1830,6 @@ void MainWindow::setupSignalConnections()
 
 MainWindow::~MainWindow()
 {
-   if (m_proxyFileModel)
-      delete m_proxyFileModel;
 }
 
 void MainWindow::startTimer()
@@ -1806,10 +1879,13 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 }
 
 /* workaround for columns being resized */
-void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
+/* The core's listing landed (enumerated off the UI thread): show it. */
+void MainWindow::onBrowseChanged()
 {
-   if (!path.isEmpty())
+   m_browseModel->reload();
+   if (!m_fileTableHeaderState.isEmpty())
       m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
+   setCoreActions();
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
@@ -2474,11 +2550,23 @@ void MainWindow::onTreeViewItemsSelected(QModelIndexList selectedIndexes)
    selectBrowserDir(dir);
 }
 
-void MainWindow::onFileDoubleClicked(const QModelIndex &proxyIndex)
+void MainWindow::onFileDoubleClicked(const QModelIndex &index)
 {
-   const QModelIndex index = m_proxyFileModel->mapToSource(proxyIndex);
-   if (m_fileModel->isDir(index))
-      m_dirTree->setCurrentIndex(m_dirModel->index(m_fileModel->filePath(index)));
+   if (m_browseModel->isDirAt(index))
+   {
+      /* Keep the tree in step, and open through the core (lands via
+       * onBrowseChanged). ".." has no tree node: just go up. */
+      QString p = m_browseModel->pathAt(index);
+      long bi   = m_browseModel->browseIndex(index);
+      const char *nm = bi >= 0 ? companion_core_browse_name(ui_companion_qt_core(), (size_t)bi) : NULL;
+      if (nm && !strcmp(nm, ".."))
+         companion_core_browse_up(ui_companion_qt_core());
+      else
+      {
+         m_dirTree->setCurrentIndex(m_dirModel->index(p));
+         companion_core_browse_open(ui_companion_qt_core(), p.toUtf8().constData());
+      }
+   }
    else
       loadContent(getFileContentEntry(index));
 }
@@ -2487,29 +2575,12 @@ void MainWindow::selectBrowserDir(QString path)
 {
    if (!path.isEmpty())
    {
-      QModelIndex sourceIndex = m_fileModel->setRootPath(path);
-      QModelIndex proxyIndex  = m_proxyFileModel->mapFromSource(sourceIndex);
-      m_fileTableHeaderState  = m_fileTableView->horizontalHeader()->saveState();
-
-      if (proxyIndex.isValid())
-         m_fileTableView->setRootIndex(proxyIndex);
-      else
-      {
-         /* the directory is filtered out. Remove the filter for a moment.
-          * FIXME: Find a way to not have to do this
-          * (not filtering dirs is one). */
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         m_proxyFileModel->setFilterRegularExpression(QRegularExpression());
-#else
-         m_proxyFileModel->setFilterRegExp(QRegExp());
-#endif
-         m_fileTableView->setRootIndex(m_proxyFileModel->mapFromSource(sourceIndex));
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         m_proxyFileModel->setFilterRegularExpression(m_searchRegularExpression);
-#else
-         m_proxyFileModel->setFilterRegExp(m_searchRegExp);
-#endif
-      }
+      /* Enumerated off the UI thread by the core; the table fills in
+       * from onBrowseChanged() when it lands. Nothing here blocks. */
+      m_fileTableHeaderState = m_fileTableView->horizontalHeader()->saveState();
+      companion_core_browse_open(ui_companion_qt_core(), path.toUtf8().constData());
+      if (companion_core_browse_busy(ui_companion_qt_core()))
+         m_statusLabel->setText(QStringLiteral("Loading..."));
    }
    setCoreActions();
 }
@@ -2550,9 +2621,12 @@ PlaylistEntry MainWindow::getCurrentContentEntry()
 PlaylistEntry MainWindow::getFileContentEntry(const QModelIndex &index)
 {
    PlaylistEntry entry;
-   QFileInfo fileInfo  = m_fileModel->fileInfo(index);
+   QString path = m_browseModel->pathAt(index);
+   /* Path-string work only (no stat): the listing already knows what
+    * it is. */
+   QFileInfo fileInfo(path);
 
-   entry.path          = QDir::toNativeSeparators(m_fileModel->filePath(index));
+   entry.path          = QDir::toNativeSeparators(path);
    entry.label         = entry.path;
    entry.labelNoExt    = fileInfo.completeBaseName();
    entry.dbName        = fileInfo.dir().dirName();
@@ -2719,8 +2793,7 @@ void MainWindow::onRunClicked()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_FILES:
-         entry = getFileContentEntry(
-               m_proxyFileModel->mapToSource(m_fileTableView->currentIndex()));
+         entry = getFileContentEntry(m_fileTableView->currentIndex());
          break;
       case BROWSER_TYPE_PLAYLISTS:
          entry = getCurrentContentEntry();
@@ -2764,7 +2837,8 @@ void MainWindow::setCoreActions()
          entryCoreName = entry.coreName.toUtf8();
          break;
       case BROWSER_TYPE_FILES:
-         currentPlaylistFileName = m_fileModel->rootDirectory().dirName();
+         currentPlaylistFileName = QFileInfo(QString::fromUtf8(
+                  companion_core_browse_dir(ui_companion_qt_core()))).fileName();
          break;
    }
    playlistName = currentPlaylistFileName.toUtf8();
@@ -2931,13 +3005,10 @@ void MainWindow::applySearch()
          break;
       case BROWSER_TYPE_FILES:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         if (     m_proxyFileModel->filterRegularExpression()
-               != m_searchRegularExpression)
-            m_proxyFileModel->setFilterRegularExpression(
-                  m_searchRegularExpression);
+         m_browseModel->setFilter(m_searchRegularExpression);
 #else
-         if (m_proxyFileModel->filterRegExp() != m_searchRegExp)
-            m_proxyFileModel->setFilterRegExp(m_searchRegExp);
+         m_browseModel->setFilter(QRegularExpression(m_searchRegExp.pattern(),
+                  QRegularExpression::CaseInsensitiveOption));
 #endif
          break;
    }
@@ -3110,8 +3181,7 @@ void MainWindow::onCurrentItemChanged(const QModelIndex &index)
 
 void MainWindow::onCurrentFileChanged(const QModelIndex &index)
 {
-   onCurrentItemChanged(getFileContentEntry(
-            m_proxyFileModel->mapToSource(index)));
+   onCurrentItemChanged(getFileContentEntry(index));
 }
 
 void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
@@ -4011,6 +4081,13 @@ static void ui_companion_qt_core_on_thumbnail_pack_finished(void *ud,
       win_handle->qtWindow->onCoreThumbnailPackFinished((int)result);
 }
 
+static void ui_companion_qt_core_on_browse_changed(void *ud)
+{
+   (void)ud;
+   if (ui_window.qtWindow)
+      ui_window.qtWindow->onBrowseChanged();
+}
+
 static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_playlists_changed */
    ui_companion_qt_core_on_playlist_changed,
@@ -4019,7 +4096,8 @@ static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_notify_refresh */
    ui_companion_qt_core_on_scan_finished,
    ui_companion_qt_core_on_thumbnail_downloaded,
-   ui_companion_qt_core_on_thumbnail_pack_finished
+   ui_companion_qt_core_on_thumbnail_pack_finished,
+   ui_companion_qt_core_on_browse_changed
 };
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }

@@ -33,6 +33,8 @@
 #include <QTimer>
 #include <QHash>
 #include <QPersistentModelIndex>
+#include <QAbstractTableModel>
+#include <QIcon>
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
@@ -351,21 +353,30 @@ public:
    void setThumbnailVerticalAlign(const QString valign);
 };
 
-class FileSystemProxyModel : public QSortFilterProxyModel
+/* The file browser's table, backed by the companion core's browse
+ * listing (enumerated, stat'ed and formatted off the UI thread, shared
+ * by every companion): this class only paints it. Columns are Qt's
+ * Name / Size / Type / Date Modified. A search filter keeps a row map. */
+class BrowseTableModel : public QAbstractTableModel
 {
-protected:
-   virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
-   void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+   Q_OBJECT
+public:
+   BrowseTableModel(QObject *parent = 0) : QAbstractTableModel(parent) {}
+   int rowCount(const QModelIndex &parent = QModelIndex()) const;
+   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 4; }
+   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+   QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+   /* The core listing changed: rebuild the row map and reset. */
+   void reload();
+   void setFilter(const QRegularExpression &re);
+   /* Browse index (into the core listing) behind a table row, or -1. */
+   long browseIndex(const QModelIndex &index) const;
+   QString pathAt(const QModelIndex &index) const;
+   bool isDirAt(const QModelIndex &index) const;
 private:
-   /* Cache for filterAcceptsRow's "is this row a child of the
-    * source model's current root?" check. The QFileSystemModel
-    * root path rarely changes, but filterAcceptsRow can fire
-    * thousands of times per directory load / sort / filter, and
-    * resolving rootPath() to a QModelIndex via sm->index(...)
-    * is not free. Compare the cached path string against the
-    * current one on each call; refresh both members on mismatch. */
-   mutable QString m_cachedRootPath;
-   mutable QModelIndex m_cachedRootIndex;
+   QVector<long> m_rows;   /* table row -> browse index */
+   QRegularExpression m_filter;
+   QIcon m_folderIcon, m_fileIcon, m_driveIcon;
 };
 
 class LoadCoreTableWidget : public QTableWidget
@@ -537,6 +548,7 @@ public slots:
    /* companion core download results (see ui_companion_qt_core_callbacks) */
    void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
    void onCoreThumbnailPackFinished(int result);
+   void onBrowseChanged();
    void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
    void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
@@ -583,7 +595,6 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
-   void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
 
@@ -620,7 +631,7 @@ private:
 
    PlaylistModel *m_playlistModel;
    QSortFilterProxyModel *m_proxyModel;
-   FileSystemProxyModel *m_proxyFileModel;
+   BrowseTableModel *m_browseModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
    QString m_currentCore;
@@ -628,7 +639,6 @@ private:
    QLabel *m_statusLabel;
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
-   QFileSystemModel *m_fileModel;
    ListWidget *m_listWidget;
    QStackedWidget *m_centralWidget;
    TableView *m_tableView;

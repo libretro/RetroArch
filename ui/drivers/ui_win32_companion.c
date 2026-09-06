@@ -238,16 +238,10 @@ typedef struct ui_companion_win32_wimp
     * is showing. */
    HWND br_up, br_start, br_downloads; /* file-browser buttons (browse mode) */
    HIMAGELIST sys_small;   /* the shell's small image list, for browse rows */
-   /* Per browse row, filled once on first paint from one FindFirstFile
-    * (size + date) and one attribute-only SHGetFileInfo (icon): a paint
-    * never touches the disk again. */
-   struct cw_browse_meta
-   {
-      signed char state;   /* 0 unknown, 1 known, -1 no info (drive / ..) */
-      int icon;
-      uint64_t size;
-      FILETIME mtime;
-   } *browse_meta;
+   /* Per browse row: the shell icon index, resolved once by attributes
+    * (no disk); size / type / date come from the core, gathered with the
+    * listing off the UI thread. */
+   int *browse_icon;
    HIMAGELIST thumbs;
    /* The entry list is a virtual (LVS_OWNERDATA) list view: the control
     * asks for each row's text and image as it draws (LVN_GETDISPINFO),
@@ -779,54 +773,32 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, const char *path
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons);
 static void cw_layout(ui_companion_win32_wimp_t *w);
 
-/* Browse row @row's metadata, resolved once: the disk is asked exactly
- * one FindFirstFile (size, date) the first time the row is painted, and
- * the icon comes from the shell by attributes alone (no file access). */
-static const struct cw_browse_meta *cw_browse_meta_get(
-      ui_companion_win32_wimp_t *w, size_t row)
+/* Shell icon for browse row @row, decided from name and attributes
+ * alone (SHGFI_USEFILEATTRIBUTES: no shell or disk lookup); a drive
+ * keeps its real icon. Resolved once per row. */
+static int cw_browse_icon_get(ui_companion_win32_wimp_t *w, size_t row)
 {
-   struct cw_browse_meta *m;
    size_t bi;
-   const char *fp, *name;
+   const char *fp;
    bool is_dir, is_drive;
-   if (!w->browse_meta || row >= w->row_count)
-      return NULL;
-   m = &w->browse_meta[row];
-   if (m->state)
-      return m;
+   SHFILEINFOA sfi;
+   if (!w->browse_icon || row >= w->row_count)
+      return 0;
+   if (w->browse_icon[row] >= 0)
+      return w->browse_icon[row];
    bi       = w->rows[row];
    fp       = companion_core_browse_path(w->core, bi);
-   name     = companion_core_browse_name(w->core, bi);
    is_dir   = companion_core_browse_is_dir(w->core, bi);
    is_drive = fp && strlen(fp) <= 3 && fp[1] == ':';
-   m->state = -1;
-   m->icon  = 0;
-   {
-      SHFILEINFOA sfi;
-      memset(&sfi, 0, sizeof(sfi));
-      /* SHGFI_USEFILEATTRIBUTES: the icon for "a folder" / "a .zip",
-       * decided from the name and attributes, no shell/disk lookup. A
-       * drive keeps its real icon (one lookup, four drives at most). */
-      if (fp && SHGetFileInfoA(fp,
-               is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
-               &sfi, sizeof(sfi),
-               SHGFI_SYSICONINDEX | SHGFI_SMALLICON
-               | (is_drive ? 0 : SHGFI_USEFILEATTRIBUTES)))
-         m->icon = sfi.iIcon;
-   }
-   if (fp && !is_drive && !(name && !strcmp(name, "..")))
-   {
-      WIN32_FIND_DATAA fd;
-      HANDLE h = FindFirstFileA(fp, &fd);
-      if (h != INVALID_HANDLE_VALUE)
-      {
-         FindClose(h);
-         m->size  = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
-         m->mtime = fd.ftLastWriteTime;
-         m->state = 1;
-      }
-   }
-   return m;
+   w->browse_icon[row] = 0;
+   memset(&sfi, 0, sizeof(sfi));
+   if (fp && SHGetFileInfoA(fp,
+            is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
+            &sfi, sizeof(sfi),
+            SHGFI_SYSICONINDEX | SHGFI_SMALLICON
+            | (is_drive ? 0 : SHGFI_USEFILEATTRIBUTES)))
+      w->browse_icon[row] = sfi.iIcon;
+   return w->browse_icon[row];
 }
 
 /* The report view's columns: Name / Core for playlists, Qt's
@@ -884,8 +856,11 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       n = 0;
    for (i = 0; i < n; i++)
       w->rows[i] = i;
-   free(w->browse_meta);
-   w->browse_meta = (struct cw_browse_meta*)calloc(n ? n : 1, sizeof(*w->browse_meta));
+   free(w->browse_icon);
+   w->browse_icon = (int*)malloc((n ? n : 1) * sizeof(int));
+   if (w->browse_icon)
+      for (i = 0; i < n; i++)
+         w->browse_icon[i] = -1;
    cw_entries_columns(w, true);
    cw_rows_commit(w, n);
    cw_thumbs_reset(w, n);
@@ -1547,6 +1522,14 @@ static void cw_on_scan_finished(void *ud)
    cw_status_set(w, "Scan finished.");
 }
 
+/* The listing landed (enumerated off the UI thread): rebuild the panes. */
+static void cw_on_browse_changed(void *ud)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   if (w && w->browse_mode)
+      cw_browse_rebuild(w);
+}
+
 static const companion_callbacks_t cw_callbacks = {
    cw_on_playlists_changed,
    cw_on_playlist_changed,
@@ -1555,7 +1538,8 @@ static const companion_callbacks_t cw_callbacks = {
    cw_on_notify_refresh,
    cw_on_scan_finished,
    NULL, /* on_thumbnail_downloaded */
-   NULL  /* on_thumbnail_pack_finished */
+   NULL, /* on_thumbnail_pack_finished */
+   cw_on_browse_changed
 };
 
 /* --- Window procedure ------------------------------------------------- */
@@ -1748,7 +1732,7 @@ static void cw_run_selected(ui_companion_win32_wimp_t *w)
       int r = companion_core_browse_activate(w->core, (size_t)idx,
             NULL, &needs_core, content, sizeof(content));
       if (r == 0)
-         cw_browse_rebuild(w);       /* entered a directory */
+         cw_status_set(w, "Loading..."); /* entered a directory: lands via callback */
       else if (r == 1)
          ShowWindow(w->hwnd, SW_HIDE); /* content loaded */
       else if (needs_core)
@@ -1773,14 +1757,19 @@ static void cw_browse_enter(ui_companion_win32_wimp_t *w)
    w->browse_mode = true;
    if (w->tabs)
       SendMessageA(w->tabs, TCM_SETCURSEL, 1, 0);
-   /* First entry: the content directory, or the drive list / root. */
-   if (!companion_core_browse_count(w->core))
-      companion_core_browse_open(w->core, NULL);
    ShowWindow(w->br_up, SW_SHOW);
    ShowWindow(w->br_start, SW_SHOW);
    ShowWindow(w->br_downloads, SW_SHOW);
    cw_layout(w);
-   cw_browse_rebuild(w);
+   /* First entry: the content directory, or the drive list / root; it
+    * lands through the callback. Otherwise show what we have. */
+   if (!companion_core_browse_count(w->core) && !companion_core_browse_busy(w->core))
+   {
+      companion_core_browse_open(w->core, NULL);
+      cw_status_set(w, "Loading...");
+   }
+   else
+      cw_browse_rebuild(w);
 }
 
 /* Reload the selected playlist after an edit (the core keeps its own
@@ -2283,7 +2272,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          {
             case IDC_CW_BR_UP:
                if (w->browse_mode && companion_core_browse_up(w->core))
-                  cw_browse_rebuild(w);
+                  cw_status_set(w, "Loading...");
                return 0;
             case IDC_CW_BR_START:
                if (w->browse_mode)
@@ -2292,7 +2281,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                   if (companion_core_browse_open(w->core,
                            !string_is_empty(st->paths.directory_menu_content)
                            ? st->paths.directory_menu_content : NULL))
-                     cw_browse_rebuild(w);
+                     cw_status_set(w, "Loading...");
                }
                return 0;
             case IDC_CW_BR_DOWNLOADS:
@@ -2301,7 +2290,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                   settings_t *st = config_get_ptr();
                   if (!string_is_empty(st->paths.directory_core_assets)
                         && companion_core_browse_open(w->core, st->paths.directory_core_assets))
-                     cw_browse_rebuild(w);
+                     cw_status_set(w, "Loading...");
                }
                return 0;
             case IDC_CW_CLEAR:
@@ -2454,70 +2443,29 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                            const char *s = "";
                            if (w->browse_mode)
                            {
-                              /* Qt's table: Name / Size / Type / Date. */
+                              /* Qt's table: Name / Size / Type / Date,
+                               * all formatted by the core from what it
+                               * gathered with the listing - no I/O here. */
                               size_t bi = w->rows[row];
-                              const char *name = companion_core_browse_name(w->core, bi);
-                              const char *fp   = companion_core_browse_path(w->core, bi);
-                              bool is_dir      = companion_core_browse_is_dir(w->core, bi);
-                              bool is_drive    = fp && strlen(fp) <= 3 && fp[1] == ':';
-                              if (it->iSubItem == 0)
-                                 s = name ? name : "";
-                              else if (name && !strcmp(name, ".."))
-                                 s = "";
-                              else if (it->iSubItem == 2)
+                              switch (it->iSubItem)
                               {
-                                 if (is_drive)
-                                    s = "Drive";
-                                 else if (is_dir)
-                                    s = "File Folder";
-                                 else
-                                 {
-                                    const char *ext = fp ? path_get_extension(fp) : "";
-                                    if (ext && *ext)
-                                    {
-                                       size_t k;
-                                       snprintf(it->pszText, (size_t)it->cchTextMax, "%s File", ext);
-                                       for (k = 0; it->pszText[k] && it->pszText[k] != ' '; k++)
-                                          it->pszText[k] = (char)toupper((unsigned char)it->pszText[k]);
-                                       s = NULL;
-                                    }
-                                    else
-                                       s = "File";
-                                 }
-                              }
-                              else
-                              {
-                                 const struct cw_browse_meta *m = cw_browse_meta_get(w, row);
-                                 if (!m || m->state != 1)
-                                    s = "";
-                                 else if (it->iSubItem == 1)
-                                 {
-                                    if (is_dir)
-                                       s = "";
-                                    else
-                                    {
-                                       uint64_t sz = m->size;
-                                       if (sz >= 1024u * 1024 * 1024)
-                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f GB", (double)sz / (1024.0 * 1024 * 1024));
-                                       else if (sz >= 1024u * 1024)
-                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f MB", (double)sz / (1024.0 * 1024));
-                                       else
-                                          snprintf(it->pszText, (size_t)it->cchTextMax, "%u KB", (unsigned)((sz + 1023) / 1024));
-                                       s = NULL;
-                                    }
-                                 }
-                                 else
-                                 {
-                                    SYSTEMTIME st;
-                                    FILETIME ft;
-                                    char d[64], tm[64];
-                                    FileTimeToLocalFileTime(&m->mtime, &ft);
-                                    FileTimeToSystemTime(&ft, &st);
-                                    GetDateFormatA(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &st, NULL, d, sizeof(d));
-                                    GetTimeFormatA(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &st, NULL, tm, sizeof(tm));
-                                    snprintf(it->pszText, (size_t)it->cchTextMax, "%s %s", d, tm);
+                                 case 1:
+                                    companion_core_browse_size_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
                                     s = NULL;
-                                 }
+                                    break;
+                                 case 2:
+                                    companion_core_browse_type_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
+                                    s = NULL;
+                                    break;
+                                 case 3:
+                                    companion_core_browse_date_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
+                                    s = NULL;
+                                    break;
+                                 default:
+                                    s = companion_core_browse_name(w->core, bi);
+                                    if (!s)
+                                       s = "";
+                                    break;
                               }
                            }
                            else
@@ -2537,8 +2485,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         {
                            if (w->browse_mode)
                            {
-                              const struct cw_browse_meta *m = cw_browse_meta_get(w, row);
-                              it->iImage = (m && m->icon > 0) ? m->icon : 0;
+                              int ic = cw_browse_icon_get(w, row);
+                              it->iImage = ic > 0 ? ic : 0;
                            }
                            else
                            {
@@ -2589,7 +2537,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                      if (sel >= 0
                            && companion_core_browse_activate(w->core, (size_t)sel,
                               NULL, NULL, NULL, 0) == 0)
-                        cw_browse_rebuild(w);
+                        cw_status_set(w, "Loading...");
                      return 0;
                   }
                }
@@ -3150,7 +3098,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
    free(w->rows);
    free(w->thumb_idx);
    free(w->slot_row);
-   free(w->browse_meta);
+   free(w->browse_icon);
    companion_core_free(w->core);
    if (g_win32_wimp == w)
       g_win32_wimp = NULL;

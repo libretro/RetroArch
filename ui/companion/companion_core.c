@@ -20,7 +20,14 @@
 #include <compat/posix_string.h>
 #ifdef _WIN32
 #include <windows.h> /* GetLogicalDrives, for the browser's top level */
+#else
+#include <sys/stat.h>
 #endif
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+#include <ctype.h>
+#include <time.h>
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
@@ -102,6 +109,27 @@ struct companion_core
    /* File-system browser listing. */
    struct string_list *browse;
    char browse_dir[PATH_MAX_LENGTH];
+   /* Per entry of @browse: size and mtime, gathered with the listing. */
+   uint64_t *browse_size;
+   int64_t  *browse_mtime;
+   /* browse_open() enumerates on a worker (HAVE_THREADS) so a large or
+    * slow directory never stalls the UI: the result lands in iterate().
+    * One job at a time; a newer open supersedes it (generation), and
+    * the worker abandons a superseded enumeration between entries. */
+   struct companion_browse_job
+   {
+      char dir[PATH_MAX_LENGTH];
+      unsigned gen;
+      struct string_list *list;
+      uint64_t *size;
+      int64_t  *mtime;
+      bool done, ok;
+   } *browse_job;
+   unsigned browse_gen;
+#ifdef HAVE_THREADS
+   slock_t   *browse_lock;
+   sthread_t *browse_thread;
+#endif
 
    /* Budget for the parse step currently running. */
    retro_time_t budget_end;
@@ -305,6 +333,10 @@ static void companion_core_migrate_qt_cfg(void)
    filestream_delete(path);
 }
 
+static void companion_core_browse_worker_stop(companion_core_t *core);
+static void companion_core_browse_poll(companion_core_t *core);
+static long companion_core_browse_real(companion_core_t *core, size_t i);
+
 companion_core_t *companion_core_new(const companion_callbacks_t *cb,
       void *ud)
 {
@@ -335,8 +367,11 @@ void companion_core_free(companion_core_t *core)
    companion_core_free_playlist_names(core);
    if (core->playlist_files)
       string_list_free(core->playlist_files);
+   companion_core_browse_worker_stop(core);
    if (core->browse)
       string_list_free(core->browse);
+   free(core->browse_size);
+   free(core->browse_mtime);
    free(core);
 }
 
@@ -463,7 +498,10 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
 {
    int ret;
 
-   if (!core || !core->pending_parse)
+   if (!core)
+      return;
+   companion_core_browse_poll(core);
+   if (!core->pending_parse)
       return;
 
    core->budget_end = cpu_features_get_time_usec() + (retro_time_t)budget_us;
@@ -1704,40 +1742,62 @@ void companion_core_event_command(companion_core_t *core,
 
 /* --- File-system browser ----------------------------------------------- */
 
-bool companion_core_browse_open(companion_core_t *core, const char *path)
+/* Size and mtime of @path (a file), without the VFS: one stat. */
+static void companion_core_stat(const char *path, bool is_dir,
+      uint64_t *size, int64_t *mtime)
 {
-   settings_t *settings     = config_get_ptr();
-   struct string_list *list;
-   char dir_buf[PATH_MAX_LENGTH];
-   const char *dir          = path;
-
-   if (!core)
-      return false;
-
-   if (string_is_empty(dir))
-      dir = !string_is_empty(settings->paths.directory_menu_content)
-         ? settings->paths.directory_menu_content : NULL;
-
-   /* @path may point into the current listing (descending into one of
-    * its own entries), which is freed below: copy it first. */
-   if (dir)
+   *size  = 0;
+   *mtime = 0;
+#ifdef _WIN32
    {
-      strlcpy(dir_buf, dir, sizeof(dir_buf));
-      dir = dir_buf;
+      WIN32_FIND_DATAA fd;
+      HANDLE h = FindFirstFileA(path, &fd);
+      if (h != INVALID_HANDLE_VALUE)
+      {
+         ULARGE_INTEGER t;
+         FindClose(h);
+         if (!is_dir)
+            *size = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+         t.LowPart  = fd.ftLastWriteTime.dwLowDateTime;
+         t.HighPart = fd.ftLastWriteTime.dwHighDateTime;
+         /* FILETIME (100 ns since 1601) -> seconds since 1970 */
+         *mtime = (int64_t)(t.QuadPart / 10000000ULL) - 11644473600LL;
+      }
    }
+#else
+   {
+      struct stat st;
+      if (stat(path, &st) == 0)
+      {
+         if (!is_dir)
+            *size = (uint64_t)st.st_size;
+         *mtime = (int64_t)st.st_mtime;
+      }
+   }
+#endif
+}
+
+/* Enumerate @job->dir into the job (list sorted folders first, then
+ * per-entry size / mtime). Runs on the worker; between entries it
+ * checks whether it has been superseded and stops early if so. Sets
+ * job->done last. @core is only read for the generation under the lock. */
+static void companion_core_browse_enumerate(companion_core_t *core,
+      struct companion_browse_job *job)
+{
+   struct string_list *list;
+   size_t i, n;
 
 #ifdef _WIN32
-   /* No directory: the top level on Windows is the list of drives, each
-    * a directory entry ("C:\"), with browse_dir "" naming that level. */
-   if (!dir || !*dir)
+   if (!job->dir[0])
    {
+      /* the drive list */
       union string_list_elem_attr attr;
       unsigned mask = (unsigned)GetLogicalDrives();
       char drv[4];
       int  d;
-      list   = string_list_new();
+      list = string_list_new();
       if (!list)
-         return false;
+         goto fail;
       attr.i = RARCH_DIRECTORY;
       for (d = 0; d < 26; d++)
       {
@@ -1749,28 +1809,218 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
          drv[3] = '\0';
          string_list_append(list, drv, attr);
       }
-      if (core->browse)
-         string_list_free(core->browse);
-      core->browse        = list;
-      core->browse_dir[0] = '\0';
-      return true;
+      job->list = list;
+      job->ok   = true;
+      return;
    }
-#else
-   if (!dir)
-      dir = "/";
+#endif
+   list = dir_list_new(job->dir, NULL, true, false, true, false);
+   if (!list)
+      goto fail;
+   dir_list_sort(list, true);
+   n          = list->size;
+   job->size  = (uint64_t*)calloc(n ? n : 1, sizeof(uint64_t));
+   job->mtime = (int64_t*)calloc(n ? n : 1, sizeof(int64_t));
+   if (!job->size || !job->mtime)
+   {
+      string_list_free(list);
+      goto fail;
+   }
+   for (i = 0; i < n; i++)
+   {
+      companion_core_stat(list->elems[i].data,
+            list->elems[i].attr.i == RARCH_DIRECTORY, &job->size[i], &job->mtime[i]);
+      /* superseded? stop enumerating this directory */
+      if ((i & 63) == 63)
+      {
+         bool stale;
+#ifdef HAVE_THREADS
+         slock_lock(core->browse_lock);
+#endif
+         stale = core->browse_gen != job->gen;
+#ifdef HAVE_THREADS
+         slock_unlock(core->browse_lock);
+#endif
+         if (stale)
+         {
+            string_list_free(list);
+            goto fail;
+         }
+      }
+   }
+   job->list = list;
+   job->ok   = true;
+   return;
+fail:
+   job->ok = false;
+}
+
+#ifdef HAVE_THREADS
+static void companion_core_browse_thread(void *ud)
+{
+   companion_core_t *core = (companion_core_t*)ud;
+   struct companion_browse_job *job;
+   slock_lock(core->browse_lock);
+   job = core->browse_job;
+   slock_unlock(core->browse_lock);
+   if (!job)
+      return;
+   companion_core_browse_enumerate(core, job);
+   slock_lock(core->browse_lock);
+   job->done = true;
+   slock_unlock(core->browse_lock);
+}
 #endif
 
-   /* Directories and files, no hidden, archives shown as files. */
-   list = dir_list_new(dir, NULL, true, false, true, false);
-   if (!list)
-      return false;
-   dir_list_sort(list, true); /* directories first */
+static void companion_core_browse_job_free(struct companion_browse_job *job)
+{
+   if (!job)
+      return;
+   if (job->list)
+      string_list_free(job->list);
+   free(job->size);
+   free(job->mtime);
+   free(job);
+}
 
+/* Join the worker (if any) and drop its job. */
+static void companion_core_browse_worker_stop(companion_core_t *core)
+{
+#ifdef HAVE_THREADS
+   if (core->browse_thread)
+   {
+      /* Make whatever it is doing stale so it stops between entries. */
+      slock_lock(core->browse_lock);
+      core->browse_gen++;
+      slock_unlock(core->browse_lock);
+      sthread_join(core->browse_thread);
+      core->browse_thread = NULL;
+   }
+   if (core->browse_lock)
+   {
+      slock_free(core->browse_lock);
+      core->browse_lock = NULL;
+   }
+#endif
+   companion_core_browse_job_free(core->browse_job);
+   core->browse_job = NULL;
+}
+
+/* Install a finished job as the listing. */
+static void companion_core_browse_install(companion_core_t *core,
+      struct companion_browse_job *job)
+{
    if (core->browse)
       string_list_free(core->browse);
-   core->browse = list;
-   strlcpy(core->browse_dir, dir, sizeof(core->browse_dir));
-   return true;
+   free(core->browse_size);
+   free(core->browse_mtime);
+   core->browse       = job->list;
+   core->browse_size  = job->size;
+   core->browse_mtime = job->mtime;
+   job->list  = NULL;
+   job->size  = NULL;
+   job->mtime = NULL;
+   strlcpy(core->browse_dir, job->dir, sizeof(core->browse_dir));
+}
+
+/* Called from iterate(): land a finished enumeration. */
+static void companion_core_browse_poll(companion_core_t *core)
+{
+   struct companion_browse_job *job;
+   bool done, current;
+#ifdef HAVE_THREADS
+   if (!core->browse_job)
+      return;
+   slock_lock(core->browse_lock);
+   job     = core->browse_job;
+   done    = job->done;
+   current = (job->gen == core->browse_gen);
+   slock_unlock(core->browse_lock);
+   if (!done)
+      return;
+   sthread_join(core->browse_thread);
+   core->browse_thread = NULL;
+   core->browse_job    = NULL;
+   if (current && job->ok)
+   {
+      companion_core_browse_install(core, job);
+      if (core->cb.on_browse_changed)
+         core->cb.on_browse_changed(core->ud);
+   }
+   companion_core_browse_job_free(job);
+#else
+   (void)core; (void)job; (void)done; (void)current;
+#endif
+}
+
+bool companion_core_browse_open(companion_core_t *core, const char *path)
+{
+   settings_t *settings     = config_get_ptr();
+   struct companion_browse_job *job;
+   char dir_buf[PATH_MAX_LENGTH];
+   const char *dir          = path;
+
+   if (!core)
+      return false;
+
+   if (string_is_empty(dir))
+      dir = !string_is_empty(settings->paths.directory_menu_content)
+         ? settings->paths.directory_menu_content : NULL;
+
+   /* @path may point into the current listing (descending into one of
+    * its own entries), which is replaced later: copy it first. */
+   dir_buf[0] = '\0';
+   if (dir)
+      strlcpy(dir_buf, dir, sizeof(dir_buf));
+#ifndef _WIN32
+   if (!dir_buf[0])
+      strlcpy(dir_buf, "/", sizeof(dir_buf));
+#endif
+
+   job = (struct companion_browse_job*)calloc(1, sizeof(*job));
+   if (!job)
+      return false;
+   strlcpy(job->dir, dir_buf, sizeof(job->dir));
+
+#ifdef HAVE_THREADS
+   if (!core->browse_lock)
+      core->browse_lock = slock_new();
+   if (core->browse_lock)
+   {
+      /* Supersede whatever is running: it stops between entries and
+       * its result is discarded in poll(); this one starts once it has
+       * been joined (a second thread is never spawned alongside). */
+      slock_lock(core->browse_lock);
+      core->browse_gen++;
+      job->gen = core->browse_gen;
+      slock_unlock(core->browse_lock);
+      if (core->browse_thread)
+      {
+         sthread_join(core->browse_thread);  /* returns promptly: stale */
+         core->browse_thread = NULL;
+         companion_core_browse_job_free(core->browse_job);
+         core->browse_job = NULL;
+      }
+      core->browse_job    = job;
+      core->browse_thread = sthread_create(companion_core_browse_thread, core);
+      if (core->browse_thread)
+         return true;
+      /* could not start a thread: enumerate here */
+      core->browse_job = NULL;
+   }
+#endif
+   job->gen = core->browse_gen;
+   companion_core_browse_enumerate(core, job);
+   if (job->ok)
+   {
+      companion_core_browse_install(core, job);
+      companion_core_browse_job_free(job);
+      if (core->cb.on_browse_changed)
+         core->cb.on_browse_changed(core->ud);
+      return true;
+   }
+   companion_core_browse_job_free(job);
+   return false;
 }
 
 const char *companion_core_browse_dir(companion_core_t *core)
@@ -1778,8 +2028,104 @@ const char *companion_core_browse_dir(companion_core_t *core)
    return (core && core->browse) ? core->browse_dir : "";
 }
 
-/* Index 0 is the ".." parent link (unless already at a filesystem
- * root); real entries follow, so the accessors offset by it. */
+bool companion_core_browse_busy(companion_core_t *core)
+{
+   return core && core->browse_job != NULL;
+}
+
+uint64_t companion_core_browse_size(companion_core_t *core, size_t i)
+{
+   long r;
+   if (!core || !core->browse || !core->browse_size)
+      return 0;
+   r = companion_core_browse_real(core, i);
+   if (r < 0 || (size_t)r >= core->browse->size)
+      return 0;
+   return core->browse_size[r];
+}
+
+const char *companion_core_browse_size_str(companion_core_t *core, size_t i,
+      char *s, size_t len)
+{
+   uint64_t sz;
+   if (!s || !len)
+      return "";
+   s[0] = '\0';
+   if (!core || companion_core_browse_is_dir(core, i))
+      return s;
+   sz = companion_core_browse_size(core, i);
+   if (sz >= 1024u * 1024 * 1024)
+      snprintf(s, len, "%.1f GB", (double)sz / (1024.0 * 1024 * 1024));
+   else if (sz >= 1024u * 1024)
+      snprintf(s, len, "%.1f MB", (double)sz / (1024.0 * 1024));
+   else
+      snprintf(s, len, "%u KB", (unsigned)((sz + 1023) / 1024));
+   return s;
+}
+
+const char *companion_core_browse_type_str(companion_core_t *core, size_t i,
+      char *s, size_t len)
+{
+   const char *p, *name, *ext;
+   if (!s || !len)
+      return "";
+   s[0] = '\0';
+   if (!core)
+      return s;
+   name = companion_core_browse_name(core, i);
+   p    = companion_core_browse_path(core, i);
+   if (name && !strcmp(name, ".."))
+      return s;
+   if (companion_core_browse_is_dir(core, i))
+   {
+      strlcpy(s, (p && strlen(p) <= 3 && p[1] == ':') ? "Drive" : "File Folder", len);
+      return s;
+   }
+   ext = p ? path_get_extension(p) : "";
+   if (ext && *ext)
+   {
+      size_t k;
+      snprintf(s, len, "%s File", ext);
+      for (k = 0; s[k] && s[k] != ' '; k++)
+         s[k] = (char)toupper((unsigned char)s[k]);
+   }
+   else
+      strlcpy(s, "File", len);
+   return s;
+}
+
+const char *companion_core_browse_date_str(companion_core_t *core, size_t i,
+      char *s, size_t len)
+{
+   int64_t t;
+   time_t tt;
+   struct tm *lt;
+   if (!s || !len)
+      return "";
+   s[0] = '\0';
+   if (!core)
+      return s;
+   t = companion_core_browse_mtime(core, i);
+   if (!t)
+      return s;
+   tt = (time_t)t;
+   lt = localtime(&tt);
+   if (lt)
+      strftime(s, len, "%Y-%m-%d %H:%M", lt);
+   return s;
+}
+
+int64_t companion_core_browse_mtime(companion_core_t *core, size_t i)
+{
+   long r;
+   if (!core || !core->browse || !core->browse_mtime)
+      return 0;
+   r = companion_core_browse_real(core, i);
+   if (r < 0 || (size_t)r >= core->browse->size)
+      return 0;
+   return core->browse_mtime[r];
+}
+
 static bool companion_core_browse_has_parent(companion_core_t *core)
 {
    const char *d = core->browse_dir;

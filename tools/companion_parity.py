@@ -68,6 +68,10 @@ FEATURES = {
     'thumbnail engine':   'companion_thumbs_request',
     'thumbnail poll':     'companion_thumbs_poll',
     'two-pane browser':   'companion_core_browse_dir_count',
+    # The listing is enumerated off the UI thread; a backend that asks
+    # whether it is still busy is one that waits for the callback rather
+    # than rebuilding straight after open() (or enumerating itself).
+    'async browser':      'companion_core_browse_busy',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',
@@ -98,7 +102,7 @@ QT_EQUIVALENT = {
     # Qt runs the file browser through QFileSystemModel; it has no
     # in-core browse listing, and so no folder / file split either.
     'file browser':     None,
-    'two-pane browser': None,
+    'two-pane browser': 'BrowseTableModel',
     # (Qt now draws through the same engine as the natives: no waiver.)
 }
 

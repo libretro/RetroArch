@@ -62,10 +62,29 @@ static int fails;
 #define CHECK(cond, ...) do { if (!(cond)) { fails++; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
 static char root[512];
-static int  playlist_changed, playlists_changed;
+static int  playlist_changed, playlists_changed, browse_changed;
 
 static void on_playlists_changed(void *ud) { (void)ud; playlists_changed++; }
 static void on_playlist_changed(void *ud)  { (void)ud; playlist_changed++; }
+static void on_browse_changed(void *ud)    { (void)ud; browse_changed++; }
+
+/* The listing is enumerated off the UI thread and lands in iterate():
+ * spin it until the browse callback fires (or a timeout). */
+static bool wait_browse(companion_core_t *core)
+{
+   int i;
+   int before = browse_changed;
+   for (i = 0; i < 200000 && browse_changed == before; i++)
+   {
+      companion_core_iterate(core, 1000);
+      if (browse_changed == before)
+      {
+         struct timespec ts = { 0, 200000 };
+         nanosleep(&ts, NULL);
+      }
+   }
+   return browse_changed != before;
+}
 
 static void mkdirp(const char *p) { mkdir(p, 0755); }
 
@@ -181,6 +200,7 @@ static companion_core_t *make_core(void)
    memset(&cb, 0, sizeof(cb));
    cb.on_playlists_changed = on_playlists_changed;
    cb.on_playlist_changed  = on_playlist_changed;
+   cb.on_browse_changed    = on_browse_changed;
    return companion_core_new(&cb, NULL);
 }
 
@@ -278,12 +298,16 @@ static void test_thumbnail_path(void)
 static void test_browser(void)
 {
    companion_core_t *c = make_core();
-   char content[512];
+   char content[512], sub[512];
+   char buf[64];
    size_t n, dc;
    bool needs_core = false;
    char pick[PATH_MAX_LENGTH];
    fixture(content, sizeof(content), "content");
+   fixture(sub, sizeof(sub), "content/sub");
    CHECK(companion_core_browse_open(c, NULL), "open defaults to the content directory");
+   CHECK(wait_browse(c), "listing lands through iterate()");
+   CHECK(!companion_core_browse_busy(c), "not busy once landed");
    CHECK(string_is_equal(companion_core_browse_dir(c), content), "browse dir");
    n  = companion_core_browse_count(c);
    dc = companion_core_browse_dir_count(c);
@@ -293,8 +317,19 @@ static void test_browser(void)
    CHECK(string_is_equal(companion_core_browse_name(c, 0), ".."), "first is ..");
    CHECK(string_is_equal(companion_core_browse_name(c, 1), "sub"), "then the folder");
    CHECK(companion_core_browse_is_dir(c, 1) && !companion_core_browse_is_dir(c, 2), "dir / file flags");
+   /* metadata gathered with the listing, formatted by the core */
+   CHECK(companion_core_browse_size(c, 2) == 1, "a.nes is 1 byte (got %u)", (unsigned)companion_core_browse_size(c, 2));
+   CHECK(string_is_equal(companion_core_browse_size_str(c, 2, buf, sizeof(buf)), "1 KB"), "size string: %s", buf);
+   CHECK(string_is_equal(companion_core_browse_size_str(c, 1, buf, sizeof(buf)), ""), "folders have no size");
+   CHECK(string_is_equal(companion_core_browse_type_str(c, 2, buf, sizeof(buf)), "NES File"), "type string: %s", buf);
+   CHECK(string_is_equal(companion_core_browse_type_str(c, 1, buf, sizeof(buf)), "File Folder"), "folder type: %s", buf);
+   CHECK(string_is_equal(companion_core_browse_type_str(c, 0, buf, sizeof(buf)), ""), ".. has no type");
+   CHECK(companion_core_browse_mtime(c, 2) > 1000000000, "mtime is a real time");
+   CHECK(strlen(companion_core_browse_date_str(c, 2, buf, sizeof(buf))) == 16, "date string YYYY-MM-DD HH:MM: %s", buf);
    /* descend */
    CHECK(companion_core_browse_activate(c, 1, NULL, &needs_core, pick, sizeof(pick)) == 0, "activate a folder descends");
+   CHECK(wait_browse(c), "sub lands");
+   CHECK(string_is_equal(companion_core_browse_dir(c), sub), "in sub");
    CHECK(companion_core_browse_dir_count(c) == 2, "sub: .. and deeper");
    CHECK(companion_core_browse_count(c) == 3, "sub: .. deeper c.gb");
    /* a file with no core: needs-core with its path */
@@ -303,12 +338,26 @@ static void test_browser(void)
    CHECK(strstr(pick, "c.gb") != NULL, "and hands back its path: %s", pick);
    /* up */
    CHECK(companion_core_browse_up(c), "up");
+   CHECK(wait_browse(c), "parent lands");
    CHECK(string_is_equal(companion_core_browse_dir(c), content), "back at content (dir is [%s])", companion_core_browse_dir(c));
+   /* supersession: open two directories back to back; only the second
+    * lands, and nothing blocks meanwhile */
+   browse_changed = 0;
+   CHECK(companion_core_browse_open(c, sub), "open sub");
+   CHECK(companion_core_browse_open(c, content), "open content right after");
+   CHECK(wait_browse(c), "the later open lands");
+   CHECK(string_is_equal(companion_core_browse_dir(c), content), "and it is content, not sub");
+   {
+      struct timespec ts = { 0, 20000000 };
+      nanosleep(&ts, NULL);
+      companion_core_iterate(c, 1000);
+   }
+   CHECK(browse_changed == 1, "the superseded open never delivered (callbacks: %d)", browse_changed);
    /* keep going up to the root: eventually no parent */
    {
       int guard = 0;
       while (companion_core_browse_up(c) && guard++ < 64)
-         ;
+         wait_browse(c);
       CHECK(guard < 64, "reaches a top (dir is [%s])", companion_core_browse_dir(c));
       CHECK(!companion_core_browse_up(c), "up at the top is refused");
    }

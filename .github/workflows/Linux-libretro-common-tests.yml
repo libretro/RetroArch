@@ -131,6 +131,7 @@ jobs:
           # state replaced by stubs.
           tools/companion_core_test.sh
           tools/companion_core_test.sh asan
+          tools/companion_core_test.sh tsan
 
       - name: Check stack frame budget
         shell: bash

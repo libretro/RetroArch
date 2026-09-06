@@ -13,8 +13,9 @@ CC=${CC:-gcc}
 SAN=""
 case "${1:-}" in
    asan) SAN="-fsanitize=address,undefined -fno-omit-frame-pointer" ;;
+   tsan) SAN="-fsanitize=thread" ;;
    "")   ;;
-   *)    echo "usage: $0 [asan]" >&2; exit 2 ;;
+   *)    echo "usage: $0 [asan|tsan]" >&2; exit 2 ;;
 esac
 
 OUT=$(mktemp -d)
