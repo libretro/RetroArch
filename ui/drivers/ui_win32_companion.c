@@ -579,11 +579,11 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       int list_h   = rc.bottom - status_h - log_h;
       int entry_x  = w->pane_w + COMPANION_WIN32_SPLIT_W;
       int entry_w  = rc.right - entry_x - right_w;
-      int entry_h  = list_h - search_h;
+      int pl_h     = list_h - search_h; /* playlist list below the search box */
       if (list_h < 0)
          list_h = 0;
-      if (entry_h < 0)
-         entry_h = 0;
+      if (pl_h < 0)
+         pl_h = 0;
       if (entry_w < COMPANION_WIN32_PANE_MIN)
       {
          right_w = 0;
@@ -591,12 +591,14 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          entry_w = rc.right - entry_x;
       }
 
-      if (w->playlists)
-         MoveWindow(w->playlists, 0, 0, w->pane_w, list_h, TRUE);
+      /* Left column, matching the Qt companion: search box on top, the
+       * playlist list under it. */
       if (w->search)
-         MoveWindow(w->search, entry_x, 0, entry_w, search_h, TRUE);
+         MoveWindow(w->search, 0, 0, w->pane_w, search_h, TRUE);
+      if (w->playlists)
+         MoveWindow(w->playlists, 0, search_h, w->pane_w, pl_h, TRUE);
       if (w->entries)
-         MoveWindow(w->entries, entry_x, search_h, entry_w, entry_h, TRUE);
+         MoveWindow(w->entries, entry_x, 0, entry_w, list_h, TRUE);
 
       /* Right column: info on top, boxart below (each takes the full
        * column when it is the only one shown). */
