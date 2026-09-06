@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <boolean.h>
@@ -99,6 +100,7 @@
 #define COMPANION_WIN32_MIN_H      320
 #define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
 #define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
+#define COMPANION_WIN32_SEARCH_H   24    /* search strip above the entries */
 #define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
 /* Icon view: one thumbnail decoded per frame from the iterate hook, so a
  * playlist of any size never costs more than one file decode per frame. */
@@ -128,6 +130,7 @@ enum
    IDC_CW_STATUS,
    IDC_CW_LOG,
    IDC_CW_INFO,       /* core information pane: list view */
+   IDC_CW_SEARCH,     /* search box above the entries */
    IDC_CW_CORES,      /* Load Core window: list view */
    IDC_CW_CORES_OK,
    IDC_CW_CORES_CANCEL,
@@ -146,6 +149,7 @@ enum
    IDM_CW_VIEW_LIST,
    IDM_CW_VIEW_ICONS,
    IDM_CW_BROWSE_FILES,
+   IDM_CW_FIND,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -163,6 +167,8 @@ typedef struct ui_companion_win32_wimp
    bool log_visible;
    HWND info;        /* core information: SysListView32 key / value */
    bool info_visible;
+   HWND search;      /* EDIT above the entries; substring filter */
+   char filter[128]; /* lower-cased search text, "" = show all */
    /* Core the info pane currently describes; the pane follows the
     * running core from the iterate hook (only the shader commands are
     * forwarded to companions, so a load/unload is not an event here). */
@@ -203,6 +209,22 @@ static void cw_status_set(ui_companion_win32_wimp_t *w, const char *msg)
 {
    if (w && w->status)
       SendMessageA(w->status, SB_SETTEXTA, 0, (LPARAM)(msg ? msg : ""));
+}
+
+/* Case-insensitive substring test against the current filter; empty
+ * filter matches everything. */
+static bool cw_filter_match(ui_companion_win32_wimp_t *w, const char *s)
+{
+   char low[PATH_MAX_LENGTH];
+   size_t i;
+   if (!w->filter[0])
+      return true;
+   if (!s)
+      return false;
+   for (i = 0; s[i] && i < sizeof(low) - 1; i++)
+      low[i] = (char)tolower((unsigned char)s[i]);
+   low[i] = '\0';
+   return strstr(low, w->filter) != NULL;
 }
 
 static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
@@ -361,8 +383,18 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
    if (!w->thumbs || w->thumb_next >= w->thumb_count)
       return false;
 
-   i = w->thumb_next++;
-   e = companion_core_entry(w->core, i);
+   {
+      /* Row -> entry index via lParam (filtered rows are not
+       * contiguous with entry indices). */
+      LVITEMA row;
+      i = w->thumb_next++;
+      memset(&row, 0, sizeof(row));
+      row.mask  = LVIF_PARAM;
+      row.iItem = (int)i;
+      if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&row))
+         return true;
+      e = companion_core_entry(w->core, (size_t)row.lParam);
+   }
    if (!e)
       return true;
 
@@ -388,7 +420,7 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
          LVITEMA item;
          memset(&item, 0, sizeof(item));
          item.mask   = LVIF_IMAGE;
-         item.iItem  = (int)i;
+         item.iItem  = (int)i; /* the visible row we are decoding */
          item.iImage = idx;
          SendMessageA(w->entries, LVM_SETITEMA, 0, (LPARAM)&item);
       }
@@ -448,7 +480,7 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
 
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 {
-   size_t i, n;
+   size_t i, n, row;
    LVITEMA item;
    char buf[64];
 
@@ -463,25 +495,33 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 
    SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
    n = companion_core_entry_count(w->core);
+   /* Image list must be installed before items reference image 0; size
+    * it to the full count (an over-estimate under a filter is harmless).
+    * thumb_count is corrected to the visible-row count after the loop. */
    cw_thumbs_reset(w, n);
 
-   /* Bulk insert without per-item repaint. */
+   /* Bulk insert without per-item repaint. @row is the visible row (may
+    * lag @i when a filter is active); the entry index rides in lParam. */
    SendMessageA(w->entries, WM_SETREDRAW, FALSE, 0);
-   for (i = 0; i < n; i++)
+   for (i = 0, row = 0; i < n; i++)
    {
       const struct playlist_entry *e = companion_core_entry(w->core, i);
+      const char *label;
       if (!e)
+         continue;
+
+      label = !string_is_empty(e->label) ? e->label
+            : (e->path ? e->path : "");
+      if (!cw_filter_match(w, label))
          continue;
 
       memset(&item, 0, sizeof(item));
       item.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
-      item.iItem    = (int)i;
+      item.iItem    = (int)row;
       item.iSubItem = 0;
       item.iImage   = 0; /* placeholder until decoded */
       item.lParam   = (LPARAM)i;
-      item.pszText  = (LPSTR)(!string_is_empty(e->label)
-            ? e->label
-            : (e->path ? e->path : ""));
+      item.pszText  = (LPSTR)label;
       SendMessageA(w->entries, LVM_INSERTITEMA, 0, (LPARAM)&item);
 
       item.mask     = LVIF_TEXT;
@@ -489,10 +529,14 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
       item.pszText  = (LPSTR)(!string_is_empty(e->core_name)
             ? e->core_name : "");
       SendMessageA(w->entries, LVM_SETITEMA, 0, (LPARAM)&item);
+      row++;
    }
    SendMessageA(w->entries, WM_SETREDRAW, TRUE, 0);
 
-   snprintf(buf, sizeof(buf), "%u entries", (unsigned)n);
+   /* One thumbnail per visible row; the step reads each row's lParam. */
+   w->thumb_count = row;
+
+   snprintf(buf, sizeof(buf), "%u entries", (unsigned)row);
    cw_status_set(w, buf);
 }
 
@@ -520,24 +564,29 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       w->pane_w = COMPANION_WIN32_PANE_MIN;
 
    {
-      int log_h   = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
-      int info_w  = (w->info_visible && w->info) ? COMPANION_WIN32_INFO_W : 0;
-      int list_h  = rc.bottom - status_h - log_h;
-      int entry_x = w->pane_w + COMPANION_WIN32_SPLIT_W;
-      int entry_w = rc.right - entry_x - info_w;
+      int log_h    = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
+      int info_w   = (w->info_visible && w->info) ? COMPANION_WIN32_INFO_W : 0;
+      int search_h = COMPANION_WIN32_SEARCH_H;
+      int list_h   = rc.bottom - status_h - log_h;
+      int entry_x  = w->pane_w + COMPANION_WIN32_SPLIT_W;
+      int entry_w  = rc.right - entry_x - info_w;
+      int entry_h  = list_h - search_h;
       if (list_h < 0)
          list_h = 0;
+      if (entry_h < 0)
+         entry_h = 0;
       if (entry_w < COMPANION_WIN32_PANE_MIN)
       {
-         /* Too narrow for all three: the info pane yields. */
          info_w  = 0;
          entry_w = rc.right - entry_x;
       }
 
       if (w->playlists)
          MoveWindow(w->playlists, 0, 0, w->pane_w, list_h, TRUE);
+      if (w->search)
+         MoveWindow(w->search, entry_x, 0, entry_w, search_h, TRUE);
       if (w->entries)
-         MoveWindow(w->entries, entry_x, 0, entry_w, list_h, TRUE);
+         MoveWindow(w->entries, entry_x, search_h, entry_w, entry_h, TRUE);
       if (w->info)
          MoveWindow(w->info, entry_x + entry_w, 0, info_w, list_h, TRUE);
       if (w->log)
@@ -720,16 +769,36 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
 
 static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
 
-static LRESULT cw_selected_entry(ui_companion_win32_wimp_t *w)
+static LRESULT cw_selected_row(ui_companion_win32_wimp_t *w)
 {
    return SendMessageA(w->entries, LVM_GETNEXTITEM,
          (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
 }
 
+/* The playlist-entry (or browse) index behind the selected row. Browse
+ * rows are never filtered so row == index there; playlist rows carry the
+ * entry index in lParam because a filter makes rows non-contiguous.
+ * Returns -1 when nothing is selected. */
+static long cw_selected_entry(ui_companion_win32_wimp_t *w)
+{
+   LVITEMA item;
+   LRESULT row = cw_selected_row(w);
+   if (row < 0)
+      return -1;
+   if (w->browse_mode)
+      return (long)row;
+   memset(&item, 0, sizeof(item));
+   item.mask  = LVIF_PARAM;
+   item.iItem = (int)row;
+   if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&item))
+      return -1;
+   return (long)item.lParam;
+}
+
 static void cw_run_selected(ui_companion_win32_wimp_t *w)
 {
    char content[PATH_MAX_LENGTH];
-   LRESULT idx = cw_selected_entry(w);
+   long idx = cw_selected_entry(w);
    if (idx < 0)
       return;
 
@@ -778,8 +847,8 @@ static void cw_reload_selected_playlist(ui_companion_win32_wimp_t *w)
 
 static void cw_delete_selected(ui_companion_win32_wimp_t *w)
 {
-   size_t sel  = companion_core_selected_playlist(w->core);
-   LRESULT idx = cw_selected_entry(w);
+   size_t sel = companion_core_selected_playlist(w->core);
+   long idx   = cw_selected_entry(w);
    const char *path;
 
    if (idx < 0 || sel == (size_t)-1)
@@ -1247,6 +1316,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                if (HIWORD(wparam) == LBN_SELCHANGE)
                   cw_select_playlist(w);
                return 0;
+            case IDC_CW_SEARCH:
+               if (HIWORD(wparam) == EN_CHANGE)
+               {
+                  char raw[128];
+                  size_t k;
+                  GetWindowTextA(w->search, raw, sizeof(raw));
+                  for (k = 0; raw[k]; k++)
+                     w->filter[k] = (char)tolower((unsigned char)raw[k]);
+                  w->filter[k] = '\0';
+                  /* Browse listing is not filtered; re-run the active one. */
+                  if (w->browse_mode)
+                     cw_browse_rebuild(w);
+                  else
+                     cw_entries_rebuild(w);
+               }
+               return 0;
             case IDM_CW_LOAD_CORE:
                /* The companion's own picker (installed cores by name /
                 * version), like the Qt Load Core window. */
@@ -1272,6 +1357,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                return 0;
             case IDM_CW_REFRESH:
                companion_core_refresh_playlists(w->core);
+               return 0;
+            case IDM_CW_FIND:
+               SetFocus(w->search);
                return 0;
             case IDM_CW_BROWSE_FILES:
                cw_browse_enter(w);
@@ -1366,8 +1454,13 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_INFO,  "Core &Information");
 
-   AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file, "&File");
-   AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view, "&View");
+   {
+      HMENU edit = CreatePopupMenu();
+      AppendMenuA(edit, MF_STRING, IDM_CW_FIND, "&Search\tCtrl+F");
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file, "&File");
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit, "&Edit");
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view, "&View");
+   }
    return bar;
 }
 
@@ -1440,11 +1533,16 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          | ES_AUTOVSCROLL | ES_LEFT,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_LOG, inst, NULL);
 
+   w->search = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+         WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
+         0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_SEARCH, inst, NULL);
+
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
-   if (!w->playlists || !w->entries || !w->status || !w->log || !w->info)
+   if (!w->playlists || !w->entries || !w->status || !w->log || !w->info
+         || !w->search)
       return false;
 
    SendMessageA(w->info, LVM_SETEXTENDEDLISTVIEWSTYLE,
