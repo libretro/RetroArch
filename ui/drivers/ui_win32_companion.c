@@ -56,9 +56,6 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <lists/string_list.h>
@@ -78,6 +75,7 @@
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
+#include "../companion/companion_thumbs.h"
 #include "ui_win32.h"
 
 #ifndef IDI_ICON
@@ -119,16 +117,6 @@
  * 2560x1440 screen. Scale ours the same way or the companion comes up
  * half the size with a font that does not fit its rows. */
 #define CW_S(w, x) MulDiv((x), (w)->dpi, 96)
-
-/* Thumbnail pipeline lock (a no-op without decode threads). */
-#define CW_LOCK(w)   do { if ((w)->lock) slock_lock((w)->lock); } while (0)
-#define CW_UNLOCK(w) do { if ((w)->lock) slock_unlock((w)->lock); } while (0)
-#ifndef HAVE_THREADS
-#undef  CW_LOCK
-#undef  CW_UNLOCK
-#define CW_LOCK(w)   ((void)0)
-#define CW_UNLOCK(w) ((void)0)
-#endif
 
 #define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
 /* Icon view: one thumbnail decoded per frame from the iterate hook, so a
@@ -249,45 +237,20 @@ typedef struct ui_companion_win32_wimp
    /* The entry list is a virtual (LVS_OWNERDATA) list view: the control
     * asks for each row's text and image as it draws (LVN_GETDISPINFO),
     * so populating it costs one LVM_SETITEMCOUNT however large the
-    * playlist, and thumbnails are decoded only for rows the control has
-    * actually asked to draw - the model the Qt view uses. */
+    * playlist. Thumbnails come from the shared engine (see the
+    * "Thumbnails" section). */
    size_t *rows;           /* visible row -> entry (or browse) index */
    size_t row_count;
-   int *thumb_idx;         /* per row: 0 none/placeholder, -1 queued, >0 image */
-   /* Rows whose thumbnail the control wants, oldest first. Each job
-    * carries the resolved file path so the decode needs nothing from
-    * the (single-threaded) companion core. */
-   struct cw_thumb_job { size_t row; unsigned gen; char path[PATH_MAX_LENGTH]; } *req;
-   size_t req_cap, req_head, req_len;
-   /* Finished decodes, thumbnail-sized ARGB, waiting for the UI thread
-    * to blit them into the image list. */
-   struct cw_thumb_done { size_t row; unsigned gen; uint32_t *bits; int edge; char *key; } *ready;
-   size_t ready_cap, ready_len;
-   unsigned gen;            /* bumped whenever the list or size changes */
-#ifdef HAVE_THREADS
-   /* Decode pool: like the Qt companion's ThumbnailLoader thread, but
-    * several of them, and they scale to thumbnail size themselves so
-    * the UI thread never touches the full-size image. */
-   slock_t *lock;
-   scond_t *cond;
-   sthread_t *workers[4];
-   unsigned nworkers;
-   bool quit;
-#endif
-   /* Image-list slots recycle in a ring so memory is bounded. Each slot
-    * is keyed by the thumbnail's file path, so a thumbnail decoded once
-    * is reused when its entry is drawn again - including after switching
-    * playlists and coming back, which is what makes the Qt companion feel
-    * instant on a revisit (its QCache is keyed the same way). slot_row is
-    * the row currently showing the slot (for eviction redraws); slot_key
-    * the path; ht an open-addressed hash from path to slot + 1. */
+   int *thumb_idx;         /* per row: 0 unknown, -1 requested, -2 none, >0 image */
+   unsigned gen;           /* bumped per rebuild; in a request's tag */
+   companion_thumbs_t *thumbs_engine;
+   size_t vis_first, vis_last; /* visible rows last frame */
+   /* Image-list slots (recycled ring) holding what is on / near screen;
+    * the engine holds the real cache. */
    size_t *slot_row;
-   char **slot_key;
-   int *ht;                 /* 0 empty, -1 tombstone, else slot + 1 */
-   size_t ht_size;          /* power of two, >= 2 * slot_cap */
    size_t slot_cap, slot_used, slot_next;
-   int slots_edge;          /* thumbnail edge the slots were made at */
-   const char *slots_subdir;/* and their type; either changing drops them */
+   int slots_edge;
+   const char *slots_subdir;
    bool icon_view;
    /* Which repository subdirectory the icon view and boxart pane show;
     * from desktop_menu_thumbnail_type, boxart default. */
@@ -442,70 +405,6 @@ static void cw_icon_spacing_apply(ui_companion_win32_wimp_t *w)
          MAKELPARAM(T + CW_S(w, 24), T + CW_S(w, 40)));
 }
 
-/* Letterbox @img into a T x T ARGB buffer (caller frees). Pure: safe on
- * a worker thread. Nearest-neighbour is plenty at thumbnail size. */
-static uint32_t *cw_thumb_pixels(int T, const struct texture_image *img,
-      uint32_t bg)
-{
-   uint32_t *buf;
-   int sw, sh, ox, oy, x, y;
-
-   if (!img->pixels || !img->width || !img->height || T < 1)
-      return NULL;
-   buf = (uint32_t*)malloc((size_t)T * T * sizeof(uint32_t));
-   if (!buf)
-      return NULL;
-
-   if (img->width >= img->height)
-   {
-      sw = T;
-      sh = (int)((unsigned)T * img->height / img->width);
-   }
-   else
-   {
-      sh = T;
-      sw = (int)((unsigned)T * img->width / img->height);
-   }
-   if (sw < 1) sw = 1;
-   if (sh < 1) sh = 1;
-   ox = (T - sw) / 2;
-   oy = (T - sh) / 2;
-
-   for (y = 0; y < T; y++)
-   {
-      uint32_t *row = buf + (size_t)y * T;
-      if (y < oy || y >= oy + sh)
-      {
-         for (x = 0; x < T; x++)
-            row[x] = bg;
-         continue;
-      }
-      {
-         const uint32_t *src = img->pixels
-            + (size_t)((y - oy) * img->height / sh) * img->width;
-         for (x = 0; x < T; x++)
-            row[x] = (x < ox || x >= ox + sw)
-               ? bg
-               : src[(x - ox) * img->width / sw] | 0xff000000u;
-      }
-   }
-   return buf;
-}
-
-/* Decode @path and scale it to @T: the work a decode thread does. */
-static uint32_t *cw_thumb_decode(const char *path, int T, uint32_t bg)
-{
-   struct texture_image img;
-   uint32_t *bits = NULL;
-   memset(&img, 0, sizeof(img));
-   if (image_texture_load(&img, path))
-   {
-      bits = cw_thumb_pixels(T, &img, bg);
-      image_texture_free(&img);
-   }
-   return bits;
-}
-
 static uint32_t cw_sys_color_argb(int index)
 {
    DWORD c = GetSysColor(index); /* 0x00BBGGRR */
@@ -514,102 +413,63 @@ static uint32_t cw_sys_color_argb(int index)
 
 /* New image list for the current entry list: placeholder at 0, every
  * item pointed at it, decoding restarted from the top. */
+/* --- Thumbnails: the shared engine, driven the way Qt drives it -------- */
+/* The engine (ui/companion/companion_thumbs) decodes on threads and
+ * caches by (path, edge). This backend's whole job:
+ *   - once per frame, work out which rows the list view has on screen
+ *     (from its own item rects; positions are monotonic in row order,
+ *     so a binary search finds the first visible row) and request those
+ *     urgently, plus a prefetch band of the next screen at low priority
+ *     - the same "visible indexes" model as the Qt companion, and never
+ *     a request per LVN_GETDISPINFO, which comctl32 fires for every one
+ *     of a virtual icon view's items while laying it out
+ *   - poll the engine once per frame and blit finished pixels into a
+ *     recycled image-list slot, redrawing that row
+ *   - LVN_GETDISPINFO only reads the row's slot.
+ * thumb_idx per row: 0 unknown, -1 requested, -2 no thumbnail file,
+ * > 0 image-list index. A row's tag carries (row, rebuild generation)
+ * so a result for a list that has since changed is ignored. */
+
 static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
 {
    HBITMAP placeholder;
    uint32_t *bits;
    const int T = cw_thumb_edge(w);
-   CW_LOCK(w);
-   w->thumb_px = T;
-   CW_UNLOCK(w);
 
-   /* A new size means new cell spacing too, or the grid lays items out
-    * for the old (or, at startup, zero) thumbnail size. */
+   w->thumb_px = T;
    if (w->icon_view)
       cw_icon_spacing_apply(w);
 
-   /* The decoded thumbnails survive a list change: only a new edge or a
-    * new thumbnail type invalidates them (they were made for the old
-    * one). Queued and in-flight work is always dropped (gen bump). */
+   /* Drop what was queued for the old list; the engine's cache stays. */
+   if (w->thumbs_engine)
+      companion_thumbs_cancel(w->thumbs_engine);
+   w->gen++;
+   if (w->thumb_idx)
+      memset(w->thumb_idx, 0, w->row_count * sizeof(*w->thumb_idx));
+   w->vis_first = w->vis_last = (size_t)-1;
+   (void)count;
+
+   /* The image list holds one screen's worth plus prefetch, recycled;
+    * the engine holds the real cache. Rebuilt only when the size or
+    * type changes. */
+   if (w->thumbs && w->slots_edge == T && w->slots_subdir == w->thumb_subdir)
    {
-      bool keep = w->thumbs && w->slots_edge == T
-         && w->slots_subdir == w->thumb_subdir;
-
-      CW_LOCK(w);
-      w->gen++;
-      if (w->thumb_idx)
-         memset(w->thumb_idx, 0, w->row_count * sizeof(*w->thumb_idx));
-      w->req_len = w->req_head = 0;
-      while (w->ready_len)
-      {
-         w->ready_len--;
-         free(w->ready[w->ready_len].bits);
-         free(w->ready[w->ready_len].key);
-      }
-      CW_UNLOCK(w);
-      (void)count;
-
-      if (keep)
-      {
-         /* Rows changed: no slot is on screen yet; the row map is
-          * re-established as rows are drawn and hit the cache. */
-         size_t i;
-         for (i = 0; i < w->slot_used; i++)
-            w->slot_row[i] = (size_t)-1;
-         return;
-      }
+      size_t i;
+      for (i = 0; i < w->slot_used; i++)
+         w->slot_row[i] = (size_t)-1;
+      return;
    }
-
    if (w->thumbs)
    {
       SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_NORMAL, (LPARAM)NULL);
       ImageList_Destroy(w->thumbs);
       w->thumbs = NULL;
    }
-   /* Drop the keyed cache: size or type changed. */
+   w->slot_used = w->slot_next = 0;
+   if (!w->slot_cap)
    {
-      size_t i;
-      for (i = 0; i < w->slot_used; i++)
-      {
-         free(w->slot_key[i]);
-         w->slot_key[i] = NULL;
-      }
-      if (w->ht)
-         memset(w->ht, 0, w->ht_size * sizeof(*w->ht));
-      w->slot_used = w->slot_next = 0;
-   }
-
-   /* Bounded: at most slot_cap decoded thumbnails live at a time; the
-    * cap follows the size so the cache stays near 64 MiB (a few hundred
-    * at 320 px, a few thousand at 64 px). ILC_COLOR32 is honoured from
-    * comctl32 4.71; older ones pick a lower depth. */
-   {
-      size_t bytes = (size_t)T * T * 4;
-      size_t cap   = (64u * 1024 * 1024) / (bytes ? bytes : 1);
-      if (cap < 256)  cap = 256;
-      if (cap > 4096) cap = 4096;
-      if (cap != w->slot_cap)
-      {
-         size_t hs = 1;
-         while (hs < cap * 2)
-            hs <<= 1;
-         w->slot_cap = cap;
-         w->slot_row = (size_t*)realloc(w->slot_row, cap * sizeof(*w->slot_row));
-         w->slot_key = (char**)realloc(w->slot_key, cap * sizeof(*w->slot_key));
-         if (w->slot_key)
-            memset(w->slot_key, 0, cap * sizeof(*w->slot_key));
-         w->ht_size  = hs;
-         w->ht       = (int*)realloc(w->ht, hs * sizeof(*w->ht));
-         if (w->ht)
-            memset(w->ht, 0, hs * sizeof(*w->ht));
-      }
-      if (!w->req)
-      {
-         w->req_cap   = 512;
-         w->req       = (struct cw_thumb_job*)calloc(w->req_cap, sizeof(*w->req));
-         w->ready_cap = 256;
-         w->ready     = (struct cw_thumb_done*)calloc(w->ready_cap, sizeof(*w->ready));
-      }
+      w->slot_cap = 1024;
+      w->slot_row = (size_t*)calloc(w->slot_cap, sizeof(*w->slot_row));
    }
    w->slots_edge   = T;
    w->slots_subdir = w->thumb_subdir;
@@ -635,277 +495,37 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
    SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_NORMAL, (LPARAM)w->thumbs);
 }
 
-/* --- Thumbnail pipeline ------------------------------------------------ */
-/* UI thread: LVN_GETDISPINFO -> cw_thumb_request (resolve the file path,
- * queue a job). Decode threads: pop newest job, decode + scale, push a
- * ready result. UI thread, per frame: cw_thumb_collect blits ready
- * results into the image list and redraws their rows. Without
- * HAVE_THREADS the UI thread runs the decode itself under a budget. */
-
-/* Path -> slot cache. FNV-1a over the path, open addressing with
- * tombstones; sized at 2x the slot count so probes stay short. */
-static size_t cw_ht_hash(const char *s)
-{
-   size_t h = 2166136261u;
-   while (*s)
-      h = (h ^ (unsigned char)*s++) * 16777619u;
-   return h;
-}
-
-/* Slot holding @key, or -1. */
-static int cw_ht_find(ui_companion_win32_wimp_t *w, const char *key)
-{
-   size_t i, mask;
-   if (!w->ht)
-      return -1;
-   mask = w->ht_size - 1;
-   i    = cw_ht_hash(key) & mask;
-   for (;;)
-   {
-      int v = w->ht[i];
-      if (v == 0)
-         return -1;
-      if (v > 0 && w->slot_key[v - 1] && string_is_equal(w->slot_key[v - 1], key))
-         return v - 1;
-      i = (i + 1) & mask;
-   }
-}
-
-static void cw_ht_remove(ui_companion_win32_wimp_t *w, const char *key)
-{
-   size_t i, mask;
-   if (!w->ht)
-      return;
-   mask = w->ht_size - 1;
-   i    = cw_ht_hash(key) & mask;
-   for (;;)
-   {
-      int v = w->ht[i];
-      if (v == 0)
-         return;
-      if (v > 0 && w->slot_key[v - 1] && string_is_equal(w->slot_key[v - 1], key))
-      {
-         w->ht[i] = -1; /* tombstone */
-         return;
-      }
-      i = (i + 1) & mask;
-   }
-}
-
-static void cw_ht_insert(ui_companion_win32_wimp_t *w, const char *key, int slot)
-{
-   size_t i, mask;
-   if (!w->ht)
-      return;
-   mask = w->ht_size - 1;
-   i    = cw_ht_hash(key) & mask;
-   while (w->ht[i] > 0)
-      i = (i + 1) & mask;
-   w->ht[i] = slot + 1;
-}
-
-/* Queue a row's thumbnail (from LVN_GETDISPINFO when the control draws a
- * row that has no image yet). The path is resolved here, on the UI
- * thread, because the companion core is not thread-safe; the decode is
- * not. A full queue drops the oldest job - it was scrolled past. */
-static void cw_thumb_request(ui_companion_win32_wimp_t *w, size_t row)
+/* Resolve row -> thumbnail file path (UI thread; the core is single-
+ * threaded). false when the entry has no thumbnail file. */
+static bool cw_thumb_path(ui_companion_win32_wimp_t *w, size_t row,
+      char *path, size_t len)
 {
    char db_name[NAME_MAX_LENGTH];
-   char path[PATH_MAX_LENGTH];
    const struct playlist_entry *e;
-   struct cw_thumb_job *job;
-   size_t at;
-
-   if (!w->req || row >= w->row_count || w->thumb_idx[row] != 0)
-      return;
-   e = w->browse_mode ? NULL : companion_core_entry(w->core, w->rows[row]);
+   if (w->browse_mode || row >= w->row_count)
+      return false;
+   e = companion_core_entry(w->core, w->rows[row]);
    if (!e)
-      return;
+      return false;
    strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
    path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(w->core, db_name,
-            w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
-            !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            e->path, path, sizeof(path)))
-   {
-      w->thumb_idx[row] = -2; /* no file: placeholder, and do not probe again */
-      return;
-   }
-
-   /* Already decoded for this size / type: reuse the slot, no decode.
-    * This is what makes a revisited playlist show at once. */
-   {
-      int slot = cw_ht_find(w, path);
-      if (slot >= 0)
-      {
-         CW_LOCK(w);
-         w->slot_row[slot] = row;
-         w->thumb_idx[row] = slot + 1;
-         CW_UNLOCK(w);
-         return;
-      }
-   }
-
-   CW_LOCK(w);
-   w->thumb_idx[row] = -1;
-   if (w->req_len == w->req_cap)
-   {
-      size_t old = w->req[w->req_head].row;
-      if (old < w->row_count && w->thumb_idx[old] == -1)
-         w->thumb_idx[old] = 0;
-      w->req_head = (w->req_head + 1) % w->req_cap;
-      w->req_len--;
-   }
-   at        = (w->req_head + w->req_len) % w->req_cap;
-   job       = &w->req[at];
-   job->row  = row;
-   job->gen  = w->gen;
-   strlcpy(job->path, path, sizeof(job->path));
-   w->req_len++;
-#ifdef HAVE_THREADS
-   if (w->cond)
-      scond_signal(w->cond);
-#endif
-   CW_UNLOCK(w);
+   return companion_core_thumbnail_path(w->core, db_name,
+         w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
+         !string_is_empty(e->label) ? e->label : path_basename(e->path),
+         e->path, path, len);
 }
 
-/* Take the newest job (the row most likely still on screen). Lock held. */
-static bool cw_thumb_pop(ui_companion_win32_wimp_t *w, struct cw_thumb_job *out)
-{
-   if (!w->req_len)
-      return false;
-   *out = w->req[(w->req_head + w->req_len - 1) % w->req_cap];
-   w->req_len--;
-   return true;
-}
-
-/* Park a finished decode for the UI thread. Lock held. Drops the result
- * when the ring is full (the row simply re-queues when drawn again). */
-static void cw_thumb_push_ready(ui_companion_win32_wimp_t *w, size_t row,
-      unsigned gen, uint32_t *bits, int edge, const char *key)
-{
-   struct cw_thumb_done *d;
-   if (w->ready_len == w->ready_cap)
-   {
-      free(bits);
-      return;
-   }
-   d       = &w->ready[w->ready_len++];
-   d->row  = row;
-   d->gen  = gen;
-   d->bits = bits;
-   d->edge = edge;
-   d->key  = strdup(key);
-}
-
-#ifdef HAVE_THREADS
-static void cw_thumb_worker(void *ud)
-{
-   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
-   for (;;)
-   {
-      struct cw_thumb_job job;
-      uint32_t *bits;
-      int T;
-      slock_lock(w->lock);
-      /* A timed wait: even a lost wake-up cannot keep a worker parked
-       * past quit, so shutdown can never hang on the join. */
-      while (!w->quit && (!w->req_len || w->ready_len == w->ready_cap))
-         scond_wait_timeout(w->cond, w->lock, 100000);
-      if (w->quit)
-      {
-         slock_unlock(w->lock);
-         return;
-      }
-      cw_thumb_pop(w, &job);
-      T = w->thumb_px;
-      slock_unlock(w->lock);
-
-      bits = cw_thumb_decode(job.path, T, cw_sys_color_argb(COLOR_WINDOW));
-
-      slock_lock(w->lock);
-      if (bits)
-         cw_thumb_push_ready(w, job.row, job.gen, bits, T, job.path);
-      else if (job.gen == w->gen && job.row < w->row_count
-            && w->thumb_idx[job.row] == -1)
-         w->thumb_idx[job.row] = 0; /* undecodable: placeholder is final */
-      slock_unlock(w->lock);
-   }
-}
-
-static void cw_thumb_pool_start(ui_companion_win32_wimp_t *w)
-{
-   unsigned n = cpu_features_get_core_amount();
-   unsigned i;
-   if (w->lock)
-      return;
-   w->lock = slock_new();
-   w->cond = scond_new();
-   if (!w->lock || !w->cond)
-      return;
-   /* Leave a core for RetroArch itself; one worker at least, four at most. */
-   n = (n > 1) ? n - 1 : 1;
-   if (n > 4)
-      n = 4;
-   for (i = 0; i < n; i++)
-   {
-      w->workers[i] = sthread_create(cw_thumb_worker, w);
-      if (!w->workers[i])
-         break;
-      w->nworkers++;
-   }
-}
-
-static void cw_thumb_pool_stop(ui_companion_win32_wimp_t *w)
-{
-   unsigned i;
-   if (!w->lock)
-      return;
-   slock_lock(w->lock);
-   w->quit = true;
-   scond_broadcast(w->cond);
-   slock_unlock(w->lock);
-   for (i = 0; i < w->nworkers; i++)
-      sthread_join(w->workers[i]);
-   w->nworkers = 0;
-   scond_free(w->cond);
-   slock_free(w->lock);
-   w->cond = NULL;
-   w->lock = NULL;
-}
-#endif
-
-/* UI thread: install one finished thumbnail into a (recycled) image-list
- * slot and redraw its row. Index 0 is the placeholder, so slot s lives
- * at image index s + 1. */
+/* Put @bits (T x T ARGB) into an image-list slot for @row. */
 static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
-      uint32_t *bits, int edge, const char *key)
+      const uint32_t *bits)
 {
    HBITMAP bmp;
    int slot;
-
-   if (row >= w->row_count || w->thumb_idx[row] != -1 || edge != w->thumb_px)
-      return; /* stale: list or zoom changed while it was decoding */
-   if (key && cw_ht_find(w, key) >= 0)
-   {
-      /* Decoded twice (two rows, same file, both queued before either
-       * landed): reuse the existing slot. */
-      slot = cw_ht_find(w, key);
-      CW_LOCK(w);
-      w->slot_row[slot] = row;
-      w->thumb_idx[row] = slot + 1;
-      CW_UNLOCK(w);
-      SendMessageA(w->entries, LVM_REDRAWITEMS, row, row);
+   if (!w->thumbs || row >= w->row_count)
       return;
-   }
-   bmp = cw_dib_from_argb(bits, edge, edge);
+   bmp = cw_dib_from_argb(bits, w->thumb_px, w->thumb_px);
    if (!bmp)
-   {
-      CW_LOCK(w);
-      w->thumb_idx[row] = 0;
-      CW_UNLOCK(w);
       return;
-   }
    if (w->slot_used < w->slot_cap)
    {
       slot = (int)w->slot_used++;
@@ -919,82 +539,134 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
       victim       = w->slot_row[slot];
       if (victim < w->row_count && w->thumb_idx[victim] == slot + 1)
       {
-         CW_LOCK(w);
-         w->thumb_idx[victim] = 0;
-         CW_UNLOCK(w);
+         w->thumb_idx[victim] = 0; /* falls back to the engine cache */
          SendMessageA(w->entries, LVM_REDRAWITEMS, victim, victim);
-      }
-      if (w->slot_key[slot])
-      {
-         cw_ht_remove(w, w->slot_key[slot]);
-         free(w->slot_key[slot]);
-         w->slot_key[slot] = NULL;
       }
       ImageList_Replace(w->thumbs, slot + 1, bmp, NULL);
    }
    DeleteObject(bmp);
    w->slot_row[slot] = row;
-   if (key)
-   {
-      w->slot_key[slot] = strdup(key);
-      if (w->slot_key[slot])
-         cw_ht_insert(w, key, slot);
-   }
-   CW_LOCK(w);
    w->thumb_idx[row] = slot + 1;
-   CW_UNLOCK(w);
    SendMessageA(w->entries, LVM_REDRAWITEMS, row, row);
 }
 
-/* UI thread, per frame: blit every finished decode (cheap - a DIB and an
- * image-list replace each) and, without threads, do a little decoding. */
-static void cw_thumb_collect(ui_companion_win32_wimp_t *w)
-{
-   size_t i, n;
-   struct cw_thumb_done batch[32];
+/* Engine delivery: tag = row | (gen << 32) (gen in the high bits on
+ * 64-bit; on 32-bit the row alone, checked against row_count). */
+#define CW_TAG(row, gen) ((uintptr_t)(row) | (sizeof(uintptr_t) > 4 ? ((uintptr_t)(gen) << 32) : 0))
+#define CW_TAG_ROW(t)    ((size_t)((t) & (sizeof(uintptr_t) > 4 ? 0xffffffffu : (uintptr_t)-1)))
+#define CW_TAG_GEN(t)    ((unsigned)(sizeof(uintptr_t) > 4 ? ((t) >> 32) : 0))
 
-   if (!w->thumbs)
+static void cw_thumb_done(void *ud, const char *path, int edge,
+      uintptr_t tag, const uint32_t *bits)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   size_t row = CW_TAG_ROW(tag);
+   (void)path;
+   if (sizeof(uintptr_t) > 4 && CW_TAG_GEN(tag) != w->gen)
+      return;                       /* for a list since replaced */
+   if (row >= w->row_count || edge != w->thumb_px)
+      return;
+   if (w->thumb_idx[row] != -1)
+      return;                       /* row re-resolved meanwhile */
+   if (!bits)
+   {
+      w->thumb_idx[row] = -2;
+      return;
+   }
+   cw_thumb_install(w, row, bits);
+}
+
+/* Make sure @row has its thumbnail on the way (or installed from the
+ * engine cache right now). @urgent: on screen; else prefetch. */
+static void cw_thumb_want(ui_companion_win32_wimp_t *w, size_t row, bool urgent)
+{
+   char path[PATH_MAX_LENGTH];
+   const uint32_t *bits;
+   if (row >= w->row_count || w->thumb_idx[row] != 0)
+      return;
+   if (!cw_thumb_path(w, row, path, sizeof(path)))
+   {
+      w->thumb_idx[row] = -2;
+      return;
+   }
+   bits = companion_thumbs_get(w->thumbs_engine, path, w->thumb_px);
+   if (bits)
+   {
+      cw_thumb_install(w, row, bits);   /* cached: no decode, shown now */
+      return;
+   }
+   w->thumb_idx[row] = -1;
+   companion_thumbs_request(w->thumbs_engine, path, w->thumb_px,
+         CW_TAG(row, w->gen), urgent, cw_sys_color_argb(COLOR_WINDOW));
+}
+
+/* Rows currently on screen: [first, last]. Item rects are monotonic in
+ * row order (rows fill left-to-right, top-to-bottom), so binary search
+ * the first row whose bottom is below the top edge, then walk to the
+ * first row whose top is past the bottom edge. */
+static bool cw_visible_rows(ui_companion_win32_wimp_t *w, size_t *first,
+      size_t *last)
+{
+   RECT client, rc;
+   size_t lo, hi, i;
+   if (!w->row_count)
+      return false;
+   GetClientRect(w->entries, &client);
+
+   lo = 0;
+   hi = w->row_count;
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      rc.left = LVIR_BOUNDS;
+      if (!SendMessageA(w->entries, LVM_GETITEMRECT, mid, (LPARAM)&rc))
+         return false;
+      if (rc.bottom < 0)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+   if (lo >= w->row_count)
+      return false;
+   *first = lo;
+   for (i = lo; i < w->row_count; i++)
+   {
+      rc.left = LVIR_BOUNDS;
+      if (!SendMessageA(w->entries, LVM_GETITEMRECT, i, (LPARAM)&rc))
+         break;
+      if (rc.top > client.bottom)
+         break;
+   }
+   *last = i ? i - 1 : lo;
+   return true;
+}
+
+/* Per frame: request what is on screen (and about to be), deliver what
+ * finished. Cheap when nothing moved: the visible range is compared to
+ * last frame's before any row is touched. */
+static void cw_thumb_tick(ui_companion_win32_wimp_t *w)
+{
+   size_t first, last, i, span;
+   if (!w->thumbs_engine || !w->thumbs || !w->icon_view || w->browse_mode)
       return;
 
-#ifndef HAVE_THREADS
-   /* No decode threads: decode on the UI thread within a small budget. */
+   if (cw_visible_rows(w, &first, &last)
+         && (first != w->vis_first || last != w->vis_last))
    {
-      retro_time_t end = cpu_features_get_time_usec() + 4000;
-      struct cw_thumb_job job;
-      while (w->req_len && cpu_features_get_time_usec() < end
-            && cw_thumb_pop(w, &job))
-      {
-         uint32_t *bits = cw_thumb_decode(job.path, w->thumb_px,
-               cw_sys_color_argb(COLOR_WINDOW));
-         if (bits)
-            cw_thumb_push_ready(w, job.row, job.gen, bits, w->thumb_px, job.path);
-         else if (job.row < w->row_count && w->thumb_idx[job.row] == -1)
-            w->thumb_idx[job.row] = 0;
-      }
+      w->vis_first = first;
+      w->vis_last  = last;
+      /* On screen, topmost last so it is served first (newest-first). */
+      for (i = last + 1; i > first; i--)
+         cw_thumb_want(w, i - 1, true);
+      /* Prefetch the next screen (below), then the previous (above). */
+      span = last - first + 1;
+      for (i = last + 1; i <= last + span && i < w->row_count; i++)
+         cw_thumb_want(w, i, false);
+      for (i = first; i > 0 && i + span > first; i--)
+         cw_thumb_want(w, i - 1, false);
    }
-#endif
 
-   /* Take a batch out from under the lock, then do the GDI work. */
-   CW_LOCK(w);
-   n = w->ready_len < 32 ? w->ready_len : 32;
-   memcpy(batch, w->ready, n * sizeof(*batch));
-   if (n < w->ready_len)
-      memmove(w->ready, w->ready + n, (w->ready_len - n) * sizeof(*w->ready));
-   w->ready_len -= n;
-#ifdef HAVE_THREADS
-   if (n && w->cond)
-      scond_signal(w->cond); /* room in the ring again */
-#endif
-   CW_UNLOCK(w);
-
-   for (i = 0; i < n; i++)
-   {
-      if (batch[i].gen == w->gen)
-         cw_thumb_install(w, batch[i].row, batch[i].bits, batch[i].edge,
-               batch[i].key);
-      free(batch[i].bits);
-      free(batch[i].key);
-   }
+   companion_thumbs_poll(w->thumbs_engine, cw_thumb_done, w, 0, 4000);
 }
 
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
@@ -1023,9 +695,8 @@ static bool cw_rows_alloc(ui_companion_win32_wimp_t *w, size_t n)
    size_t *r, *rr;
    int *t;
    bool ok;
-   /* Workers index thumb_idx by row and check row_count: swap the
-    * arrays under the lock, and make any job in flight stale. */
-   CW_LOCK(w);
+   /* Any result in flight is for the old list: the generation in its
+    * tag no longer matches. */
    w->gen++;
    w->row_count = 0;
    r  = (size_t*)realloc(w->rows, (n ? n : 1) * sizeof(*r));
@@ -1036,16 +707,13 @@ static bool cw_rows_alloc(ui_companion_win32_wimp_t *w, size_t n)
    if (ok)
       memset(w->thumb_idx, 0, (n ? n : 1) * sizeof(*t));
    rr = r; (void)rr;
-   CW_UNLOCK(w);
    return ok;
 }
 
 /* Hand the control its new row count; it draws through LVN_GETDISPINFO. */
 static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
 {
-   CW_LOCK(w);
    w->row_count = n;
-   CW_UNLOCK(w);
    SendMessageA(w->entries, LVM_SETITEMCOUNT, (WPARAM)n,
          LVSICF_NOSCROLL);
    InvalidateRect(w->entries, NULL, TRUE);
@@ -2555,13 +2223,11 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         }
                         if (it->mask & LVIF_IMAGE)
                         {
+                           /* Read only: what is on screen is requested
+                            * from the per-frame tick, never from here
+                            * (comctl32 asks for every item at layout). */
                            int t = w->thumb_idx ? w->thumb_idx[row] : 0;
                            it->iImage = t > 0 ? t : 0;
-                           /* -1: queued; -2: known absent */
-                           /* Ask for it: the control wants this row on
-                            * screen and it has no image yet. */
-                           if (t == 0 && w->icon_view && !w->browse_mode)
-                              cw_thumb_request(w, row);
                         }
                         return 0;
                      }
@@ -3052,9 +2718,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    cw_status_default(w);
    cw_info_fill(w);
    cw_core_combo_fill(w, -1);
-#ifdef HAVE_THREADS
-   cw_thumb_pool_start(w);
-#endif
+   w->thumbs_engine = companion_thumbs_new(0, 0);
+   w->vis_first = w->vis_last = (size_t)-1;
    return true;
 }
 
@@ -3102,9 +2767,12 @@ static void ui_companion_win32_wimp_deinit(void *data)
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
    if (!w)
       return;
-#ifdef HAVE_THREADS
-   cw_thumb_pool_stop(w);
-#endif
+   /* Stop decoding before anything it could touch goes away. */
+   if (w->thumbs_engine)
+   {
+      companion_thumbs_free(w->thumbs_engine);
+      w->thumbs_engine = NULL;
+   }
 
    /* Windows first, data after. A virtual list view can ask for rows
     * (LVN_GETDISPINFO) while it is being torn down; empty it so it asks
@@ -3133,23 +2801,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DeleteObject(w->font);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
-   while (w->ready && w->ready_len)
-   {
-      w->ready_len--;
-      free(w->ready[w->ready_len].bits);
-      free(w->ready[w->ready_len].key);
-   }
-   {
-      size_t i;
-      for (i = 0; i < w->slot_used; i++)
-         free(w->slot_key[i]);
-   }
-   free(w->slot_key);
-   free(w->ht);
    free(w->rows);
    free(w->thumb_idx);
-   free(w->req);
-   free(w->ready);
    free(w->slot_row);
    companion_core_free(w->core);
    if (g_win32_wimp == w)
@@ -3179,9 +2832,9 @@ static void ui_companion_win32_wimp_iterate(void *data)
       return;
    companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
 
-   /* Thumbnails decoded by the pool land here, a DIB blit each. */
+   /* Thumbnails: request what is on screen, install what finished. */
    if (w->icon_view && IsWindowVisible(w->hwnd))
-      cw_thumb_collect(w);
+      cw_thumb_tick(w);
 
    /* A short strcmp per frame: the info pane and the "<version> - <core>"
     * status follow the running core. */

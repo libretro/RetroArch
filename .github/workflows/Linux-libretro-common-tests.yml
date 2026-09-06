@@ -106,6 +106,19 @@ jobs:
           # drivers.  Source-level check, for free, on Linux.
           python3 tools/companion_parity.py
 
+      - name: Companion thumbnail engine regression test (plain, TSan, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The shared thumbnail engine every desktop companion draws
+          # through: real decoder, decode threads, cache, priority,
+          # cancel, shutdown.  Under both sanitizers, since it is the
+          # one piece of threaded code in the companions.
+          tools/companion_thumbs_test.sh
+          tools/companion_thumbs_test.sh tsan
+          tools/companion_thumbs_test.sh asan
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

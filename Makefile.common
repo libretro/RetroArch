@@ -1474,7 +1474,7 @@ ifeq ($(HAVE_QT), 1)
    HAVE_COMPANION_CORE = 1
 endif
 ifeq ($(HAVE_COMPANION_CORE), 1)
-   OBJ += ui/companion/companion_core.o
+   OBJ += ui/companion/companion_core.o ui/companion/companion_thumbs.o
 endif
 
 # Video
@@ -2756,7 +2756,7 @@ ifeq ($(HAVE_COCOA), 1)
    # HAVE_COCOA_COMMON is only known here, after the companion-core
    # block above ran; add the shared core if Qt/Win32 did not already.
    ifneq ($(HAVE_COMPANION_CORE), 1)
-      OBJ += ui/companion/companion_core.o
+      OBJ += ui/companion/companion_core.o ui/companion/companion_thumbs.o
       HAVE_COMPANION_CORE = 1
    endif
    # RetroArchPlaylistManager uses Obj-C lightweight generics and

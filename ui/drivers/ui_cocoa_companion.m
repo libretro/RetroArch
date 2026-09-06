@@ -52,6 +52,7 @@
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
+#include "../companion/companion_thumbs.h"
 
 #define COMPANION_COCOA_ITER_US 2000
 
@@ -122,6 +123,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)setSelectedRow:(NSInteger)row;
 - (void)relayout;
 - (NSRect)rectForRow:(NSInteger)row;
+- (BOOL)hasImageForRow:(NSInteger)row;
+/* Rows whose cells intersect the visible rect. */
+- (BOOL)visibleRowsFirst:(NSInteger*)first last:(NSInteger*)last;
 @end
 
 /* Owns the AppKit objects (as ivars, so both MRC and ARC manage them
@@ -142,7 +146,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    RACompanionGrid *grid;
    BOOL iconView;
    BOOL browseMode;   /* entries table shows the filesystem */
-   size_t gridNext;   /* next grid row to decode */
    NSTextField *status;
    NSMenuItem *menuItem;
    NSMenu *entriesMenu;    /* right-click on an entry   */
@@ -187,6 +190,12 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    char filter[128];                  /* lower-cased search text */
    NSInteger *rowMap;                 /* table row -> entry index under a filter */
    NSInteger rowCount;
+   /* Shared thumbnail engine (ui/companion/companion_thumbs): the grid
+    * requests what is on screen each tick and installs what finished. */
+   companion_thumbs_t *thumbs;
+   unsigned thumbGen;                 /* bumped per grid reload; in tags */
+   NSInteger visFirst, visLast;
+   char *thumbNone;                   /* per row: 1 = no thumbnail file */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (ui_companion_cocoa_wimp_t*)wimp;
@@ -228,6 +237,10 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)gridRun:(NSInteger)row;
 - (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits;
+- (CGFloat)thumbEdge;
+- (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent;
+- (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len;
 - (void)toggleLog:(id)sender;
 - (void)loadSelectedCore:(id)sender;
 - (void)showCoresForContent:(const char*)content;
@@ -407,6 +420,28 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       return;
    [images replaceObjectAtIndex:row withObject:(img ? (id)img : (id)[NSNull null])];
    [self setNeedsDisplay:YES];
+}
+
+- (BOOL)hasImageForRow:(NSInteger)row
+{
+   return row >= 0 && row < count && [images objectAtIndex:row] != [NSNull null];
+}
+
+- (BOOL)visibleRowsFirst:(NSInteger*)first last:(NSInteger*)last
+{
+   NSRect vis     = [self visibleRect];
+   NSInteger cols = [self columns];
+   CGFloat ch     = [self cellHeight];
+   NSInteger l0, l1;
+   if (count <= 0 || ch <= 0)
+      return NO;
+   l0 = (NSInteger)(NSMinY(vis) / ch);
+   l1 = (NSInteger)(NSMaxY(vis) / ch);
+   *first = l0 * cols;
+   *last  = (l1 + 1) * cols - 1;
+   if (*first < 0)      *first = 0;
+   if (*last >= count)  *last  = count - 1;
+   return *first <= *last;
 }
 
 - (NSInteger)selectedRow { return selected; }
@@ -643,8 +678,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (grid)
    {
       [grid setCount:(NSInteger)n];
-      gridNext = 0;
    }
+   /* New list: drop queued decodes (the engine's cache stays), forget
+    * the "no file" marks, and make the grid re-ask for its screen. */
+   thumbGen++;
+   if (thumbs)
+      companion_thumbs_cancel(thumbs);
+   free(thumbNone);
+   thumbNone = (char*)calloc(n ? n : 1, 1);
+   visFirst = visLast = -1;
    /* Qt selects the first entry of a freshly loaded playlist. */
    if (n > 0)
    {
@@ -711,16 +753,126 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 /* Called from the iterate hook: decode one pending grid thumbnail per
  * frame while the icon view is showing (one file decode per frame, any
  * playlist size), and keep the info pane following the core. */
+/* Thumbnail file for entry @row, or NO. */
+- (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len
+{
+   char db_name[NAME_MAX_LENGTH];
+   const struct playlist_entry *e = companion_core_entry(wimp->core, (size_t)row);
+   if (!e)
+      return NO;
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   return companion_core_thumbnail_path(wimp->core, db_name,
+         thumbSubdir ? thumbSubdir : COMPANION_THUMB_BOXART,
+         !string_is_empty(e->label) ? e->label : path_basename(e->path),
+         e->path, path, len) ? YES : NO;
+}
+
+/* ARGB pixels from the engine -> NSImage (a byte swap into an RGBA rep). */
+static NSImage *cc_image_from_argb(const uint32_t *bits, int edge)
+{
+   NSBitmapImageRep *rep = [[[NSBitmapImageRep alloc]
+      initWithBitmapDataPlanes:NULL pixelsWide:edge pixelsHigh:edge
+      bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
+      colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:edge * 4
+      bitsPerPixel:32] autorelease_compat];
+   NSImage *img;
+   unsigned char *dst;
+   int i;
+   if (!rep)
+      return nil;
+   dst = [rep bitmapData];
+   for (i = 0; i < edge * edge; i++)
+   {
+      uint32_t p = bits[i];
+      dst[i * 4 + 0] = (unsigned char)((p >> 16) & 0xff);
+      dst[i * 4 + 1] = (unsigned char)((p >>  8) & 0xff);
+      dst[i * 4 + 2] = (unsigned char)( p        & 0xff);
+      dst[i * 4 + 3] = 0xff;
+   }
+   img = [[[NSImage alloc] initWithSize:NSMakeSize(edge, edge)] autorelease_compat];
+   [img addRepresentation:rep];
+   return img;
+}
+
+/* Engine delivery: tag = row | gen << 32. */
+static void cc_thumb_done(void *ud, const char *path, int edge,
+      uintptr_t tag, const uint32_t *bits)
+{
+   RACompanionController *self = (BRIDGE RACompanionController*)ud;
+   (void)path; (void)edge;
+   [self thumbDone:tag bits:bits];
+}
+
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits
+{
+   NSInteger row = (NSInteger)(tag & 0xffffffffu);
+   if (sizeof(uintptr_t) > 4 && (unsigned)(tag >> 32) != thumbGen)
+      return;
+   if (!grid || row < 0 || row >= (NSInteger)companion_core_entry_count(wimp->core))
+      return;
+   if (!bits)
+   {
+      if (thumbNone) thumbNone[row] = 1;
+      return;
+   }
+   [grid setImage:cc_image_from_argb(bits, (int)[self thumbEdge]) forRow:row];
+}
+
+- (CGFloat)thumbEdge
+{
+   unsigned z = companion_core_pref_icon_view_zoom(wimp->core);
+   return 64.0 + (CGFloat)z * 256.0 / 100.0;
+}
+
+/* Make sure @row's thumbnail is installed (from the engine cache) or on
+ * its way; @urgent for rows on screen, prefetch otherwise. */
+- (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent
+{
+   char path[PATH_MAX_LENGTH];
+   int edge = (int)[self thumbEdge];
+   const uint32_t *bits;
+   if (!thumbs || !grid || [grid hasImageForRow:row])
+      return;
+   if (thumbNone && thumbNone[row])
+      return;
+   if (![self thumbPathForRow:row into:path len:sizeof(path)])
+   {
+      if (thumbNone) thumbNone[row] = 1;
+      return;
+   }
+   bits = companion_thumbs_get(thumbs, path, edge);
+   if (bits)
+   {
+      [grid setImage:cc_image_from_argb(bits, edge) forRow:row];
+      return;
+   }
+   companion_thumbs_request(thumbs, path, edge,
+         (uintptr_t)row | (sizeof(uintptr_t) > 4 ? ((uintptr_t)thumbGen << 32) : 0),
+         urgent ? true : false, 0xffffffffu);
+}
+
+/* Per frame: request what the grid shows (topmost served first), prefetch
+ * the next screen, install what finished. The Qt companion's model. */
 - (void)iconTick
 {
-   if (!iconView || !grid)
+   NSInteger first, last, i, span;
+   if (!iconView || !grid || !thumbs || browseMode)
       return;
-   if (gridNext < companion_core_entry_count(wimp->core))
+   if ([grid visibleRowsFirst:&first last:&last]
+         && (first != visFirst || last != visLast))
    {
-      NSImage *img = cc_thumb_image(wimp, (NSInteger)gridNext, thumbSubdir);
-      [grid setImage:img forRow:(NSInteger)gridNext];
-      gridNext++;
+      visFirst = first;
+      visLast  = last;
+      for (i = last; i >= first; i--)
+         [self thumbWant:i urgent:YES];
+      span = last - first + 1;
+      for (i = last + 1; i <= last + span; i++)
+         [self thumbWant:i urgent:NO];
+      for (i = first - 1; i >= 0 && i > first - span; i--)
+         [self thumbWant:i urgent:NO];
    }
+   companion_thumbs_poll(thumbs, cc_thumb_done, (BRIDGE void*)self, 0, 4000);
 }
 
 /* Returns an autoreleased table wrapped in an autoreleased scroll view;
@@ -1046,6 +1198,8 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    [self layoutViews];
    [self statusDefault];
    [self fillCorePopup:-1];
+   thumbs   = companion_thumbs_new(0, 0);
+   visFirst = visLast = -1;
    return YES;
 }
 
@@ -1197,6 +1351,13 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       [entries setTarget:nil];
       RELEASE(entries);
    }
+   if (thumbs)
+   {
+      companion_thumbs_free(thumbs); /* joins the decode threads first */
+      thumbs = NULL;
+   }
+   free(thumbNone);
+   thumbNone = NULL;
    RELEASE(grid);
    RELEASE(entriesScroll);
    RELEASE(status);
@@ -1781,7 +1942,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    unsigned z = (unsigned)[zoomSlider doubleValue];
    companion_core_pref_set_icon_view_zoom(wimp->core, z);
    if (grid)
+   {
       [grid setThumbEdge:64.0 + (CGFloat)z * 256.0 / 100.0];
+      [grid setCount:(NSInteger)companion_core_entry_count(wimp->core)];
+   }
+   thumbGen++;
+   if (thumbs)
+      companion_thumbs_cancel(thumbs);
+   visFirst = visLast = -1;
 }
 
 - (void)thumbTypeChanged:(id)sender
@@ -1789,12 +1957,18 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    unsigned t = (unsigned)[thumbPopup indexOfSelectedItem];
    companion_core_pref_set_thumbnail_type(wimp->core, t);
    thumbSubdir = companion_core_pref_thumbnail_subdir(wimp->core);
-   /* redecode the grid at the new type */
+   /* redraw the grid at the new type: images come back from the engine
+    * (cached per path, so a type already seen is instant) */
    if (grid)
    {
       [grid setCount:(NSInteger)companion_core_entry_count(wimp->core)];
-      gridNext = 0;
    }
+   thumbGen++;
+   if (thumbs)
+      companion_thumbs_cancel(thumbs);
+   if (thumbNone)
+      memset(thumbNone, 0, (size_t)companion_core_entry_count(wimp->core));
+   visFirst = visLast = -1;
 }
 
 - (void)viewChanged:(id)sender
