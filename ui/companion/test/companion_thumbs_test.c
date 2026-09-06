@@ -118,6 +118,26 @@ static void sleep_ms(int ms)
    nanosleep(&ts, NULL);
 }
 
+/* Poll until a delivery with @tag arrives (true) or a timeout. Other
+ * deliveries - a job popped before a cancel() still lands with its old
+ * epoch - do not count. */
+static bool drain_tag(companion_thumbs_t *t, uintptr_t tag, int timeout_ms)
+{
+   int waited = 0;
+   size_t i, from = ngot;
+   for (;;)
+   {
+      companion_thumbs_poll(t, on_done, NULL, 0, 20000);
+      for (i = from; i < ngot; i++)
+         if (gots[i].tag == tag)
+            return true;
+      if (waited >= timeout_ms)
+         return false;
+      sleep_ms(2);
+      waited += 2;
+   }
+}
+
 /* Poll until @want deliveries or a timeout. */
 static size_t drain(companion_thumbs_t *t, size_t want, int timeout_ms)
 {
@@ -245,9 +265,11 @@ static void test_priority_and_cancel(void)
    companion_thumbs_cancel(t);
    CHECK(companion_thumbs_queued(t) == 0, "cancel empties queues");
    CHECK(companion_thumbs_get(t, p[0], 8, 8) != NULL, "cancel keeps the cache");
-   /* A cancelled key can be requested again. */
+   /* A cancelled key can be requested again. Wait for that request's
+    * own delivery (tag 1): a job popped before the cancel may land
+    * first with its old epoch, and must not be mistaken for it. */
    CHECK(companion_thumbs_request(t, p[1], 8, 8, 1, true, 0), "re-request after cancel");
-   drain(t, 1, 2000);
+   CHECK(drain_tag(t, 1, 5000), "re-requested key delivered");
    CHECK(companion_thumbs_get(t, p[1], 8, 8) != NULL, "re-requested decoded");
    companion_thumbs_free(t);
 }
@@ -266,7 +288,7 @@ static void test_forget_and_budget(void)
    CHECK(companion_thumbs_forget(t, p) == 2, "forget drops every size");
    CHECK(companion_thumbs_get(t, p, 16, 16) == NULL, "forgotten");
    CHECK(companion_thumbs_request(t, p, 16, 16, 2, true, 0), "re-request after forget");
-   drain(t, 1, 2000);
+   CHECK(drain_tag(t, 2, 5000), "re-request after forget delivered");
    CHECK(companion_thumbs_get(t, p, 16, 16) != NULL, "decoded again");
    /* shrinking the budget evicts at once */
    companion_thumbs_request(t, p, 32, 32, 3, true, 0);
@@ -311,8 +333,7 @@ static void test_abort(void)
    companion_thumbs_cancel(t);
    drain(t, 1, 300);
    CHECK(companion_thumbs_request(t, big[0], 64, 64, 100, true, 0), "re-request after cancel mid-decode");
-   CHECK(drain(t, 1, 5000) >= 1, "re-requested big image lands");
-   CHECK(gots[ngot - 1].tag == 100, "and it is the new request that was delivered (tag %u)", (unsigned)gots[ngot - 1].tag);
+   CHECK(drain_tag(t, 100, 10000), "re-requested big image lands (its own delivery, tag 100)");
 
    /* free() while decoding: returns promptly */
    for (i = 0; i < 8; i++)
@@ -321,6 +342,35 @@ static void test_abort(void)
    clock_gettime(CLOCK_MONOTONIC, &t0);
    companion_thumbs_free(t);
    CHECK(ms_since(&t0) < 1000, "free with 8 x 16 MiB decodes queued returned in %ld ms", ms_since(&t0));
+}
+
+/* Two records for one key in flight at once, both failing: the first
+ * polled must not free the entry the second still points at. Built by
+ * requesting an undecodable file, cancelling (the in-flight job keeps
+ * its record), and requesting it again at once. */
+static void test_double_failure_no_uaf(void)
+{
+   char bad[512];
+   companion_thumbs_t *t = companion_thumbs_new(0, 1);
+   FILE *f;
+   int i;
+   fixture(bad, sizeof(bad), "bad2.tga");
+   f = fopen(bad, "wb");
+   fputs("not a tga", f);
+   fclose(f);
+   ngot = 0;
+   for (i = 0; i < 20; i++)
+   {
+      companion_thumbs_request(t, bad, 16, 16, 1, true, 0);
+      companion_thumbs_cancel(t);
+      companion_thumbs_request(t, bad, 16, 16, 2, true, 0);
+      drain(t, 1, 1000);
+      companion_thumbs_get(t, bad, 16, 16); /* walks the hash chain */
+   }
+   drain(t, 1, 1000);
+   companion_thumbs_get(t, bad, 16, 16);
+   CHECK(companion_thumbs_cached_count(t) == 0, "nothing cached");
+   companion_thumbs_free(t);
 }
 
 static void test_undecodable(void)
@@ -405,6 +455,7 @@ int main(int argc, char **argv)
    test_priority_and_cancel();
    test_forget_and_budget();
    test_abort();
+   test_double_failure_no_uaf();
    test_undecodable();
    test_many_and_shutdown();
 

@@ -58,6 +58,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/string/stdstring.c \
       $LC/string/rstrtod.c \
       $LC/compat/compat_strl.c \
+      $LC/compat/compat_strldup.c \
       $LC/compat/compat_posix_string.c \
       $LC/compat/compat_strcasestr.c \
       $LC/compat/fopen_utf8.c \

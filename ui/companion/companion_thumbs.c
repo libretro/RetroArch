@@ -43,6 +43,12 @@ struct ct_entry
    /* hash chain */
    struct ct_entry *chain;
    bool queued;           /* in a request queue or being decoded */
+   /* Jobs (queued, decoding, or finished but not yet polled) that point
+    * at this entry. An entry is only ever freed at zero: two records
+    * for one key exist when a key is re-requested while its earlier
+    * decode is still in flight across a cancel(), or when a failed
+    * decode's record is polled with another still pending. */
+   unsigned refs;
 };
 
 /* --- request / result queues ------------------------------------------- */
@@ -260,7 +266,11 @@ static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
    e = (struct ct_entry*)calloc(1, sizeof(*e));
    if (!e)
       return NULL;
-   e->path = strdup(path);
+   /* strldup(s, n) copies n - 1 characters (a buffer size, strlcpy
+    * style): pass the length plus one. Declared for any -std, unlike
+    * strdup under -ansi, where the implicit int would truncate the
+    * pointer on 64-bit. */
+   e->path = strldup(path, strlen(path) + 1);
    if (!e->path)
    {
       free(e);
@@ -360,6 +370,8 @@ static struct ct_job *ct_ring_push_top(struct ct_ring *r)
    if (r->len == r->cap)
    {
       r->v[r->head].e->queued = false; /* dropped: may be requested again */
+      if (r->v[r->head].e->refs)
+         r->v[r->head].e->refs--;
       r->head = (r->head + 1) % r->cap;
       r->len--;
    }
@@ -375,6 +387,8 @@ static struct ct_job *ct_ring_push_bottom(struct ct_ring *r)
    {
       size_t top = (r->head + r->len - 1) % r->cap;
       r->v[top].e->queued = false;
+      if (r->v[top].e->refs)
+         r->v[top].e->refs--;
       r->len--;
    }
    r->head = (r->head + r->cap - 1) % r->cap;
@@ -620,6 +634,7 @@ bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
 
    CT_LOCK(t);
    e->queued = true;
+   e->refs++;
    j      = urgent ? ct_ring_push_top(&t->urgent) : ct_ring_push_bottom(&t->prefetch);
    j->e   = e;
    j->tag = tag;
@@ -641,9 +656,17 @@ void companion_thumbs_cancel(companion_thumbs_t *t)
       return;
    CT_LOCK(t);
    while (ct_ring_pop_top(&t->urgent, &j))
+   {
       j.e->queued = false;
+      if (j.e->refs)
+         j.e->refs--;
+   }
    while (ct_ring_pop_bottom(&t->prefetch, &j))
+   {
       j.e->queued = false;
+      if (j.e->refs)
+         j.e->refs--;
+   }
    t->queued = 0;
    /* Jobs a worker already holds: release their entries' queued flag
     * too (they are from the old epoch), so those keys can be requested
@@ -700,12 +723,14 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       for (i = 0; i < n; i++)
       {
          struct ct_entry *e = batch[i].e;
+         if (e->refs)
+            e->refs--;             /* this record's reference */
          if (batch[i].aborted)
          {
             /* Abandoned mid-decode: nothing to deliver; forget the
-             * entry unless a newer request re-queued it, so it can be
-             * asked for again. */
-            if (!e->queued && !e->bits)
+             * entry unless something still points at it (a newer
+             * request, or another finished record of this key). */
+            if (!e->queued && !e->bits && !e->refs)
                ct_entry_free(t, e);
             continue;
          }
@@ -732,8 +757,9 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
          if (!batch[i].bits)
          {
             /* Undecodable: forget the entry so the file can be retried
-             * later (e.g. after a download) without a stale marker. */
-            if (!e->bits)
+             * later (e.g. after a download) without a stale marker -
+             * once nothing else refers to it. */
+            if (!e->bits && !e->queued && !e->refs)
                ct_entry_free(t, e);
          }
       }
@@ -762,7 +788,7 @@ size_t companion_thumbs_forget(companion_thumbs_t *t, const char *path)
       while (e)
       {
          struct ct_entry *next = e->chain;
-         if (e->bits && !e->queued && string_is_equal(e->path, path))
+         if (e->bits && !e->queued && !e->refs && string_is_equal(e->path, path))
          {
             ct_lru_remove(t, e);
             t->cached_bytes -= e->bytes;
