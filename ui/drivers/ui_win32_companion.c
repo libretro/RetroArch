@@ -51,6 +51,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commctrl.h>
+#include <shellapi.h>
 #include <shlobj.h>
 
 #include <compat/strl.h>
@@ -66,6 +67,8 @@
 
 #include "../../command.h"
 #include "../../configuration.h"
+#include "../../msg_hash.h"
+#include "../../version.h"
 #include "../../retroarch.h"
 #include "../../gfx/common/win32_common.h"
 
@@ -102,6 +105,12 @@
 #define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
 #define COMPANION_WIN32_SEARCH_H   24    /* search strip above the entries */
 #define COMPANION_WIN32_BOXART_H   300   /* boxart pane height when shown */
+#define COMPANION_WIN32_LABEL_H    18    /* section caption ("Search", "Core"...) */
+#define COMPANION_WIN32_TAB_H      24    /* Playlists / File Browser tab strip */
+#define COMPANION_WIN32_CTRL_H     24    /* combo / button row */
+#define COMPANION_WIN32_FOOTER_H   28    /* "N items" + View combo under the list */
+#define COMPANION_WIN32_PL_ICON    16    /* playlist folder icon */
+#define COMPANION_WIN32_DOCS_URL   "https://docs.libretro.com/"
 #define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
 /* Icon view: one thumbnail decoded per frame from the iterate hook, so a
  * playlist of any size never costs more than one file decode per frame. */
@@ -131,8 +140,21 @@ enum
    IDC_CW_STATUS,
    IDC_CW_LOG,
    IDC_CW_INFO,       /* core information pane: list view */
-   IDC_CW_SEARCH,     /* search box above the entries */
+   IDC_CW_SEARCH,     /* search box (left column, top) */
    IDC_CW_BOXART,     /* boxart preview (right column, below info) */
+   IDC_CW_SEARCH_LABEL,
+   IDC_CW_CLEAR,      /* "Clear" next to the search box */
+   IDC_CW_BROWSER_LABEL,
+   IDC_CW_TABS,       /* Playlists / File Browser */
+   IDC_CW_CORE_LABEL,
+   IDC_CW_CORE_COMBO, /* launch-with core selection */
+   IDC_CW_CORE_INFO_BTN,
+   IDC_CW_RUN_BTN,
+   IDC_CW_ITEMS_LABEL,/* "N items" footer */
+   IDC_CW_VIEW_LABEL,
+   IDC_CW_VIEW_COMBO, /* List / Icons */
+   IDC_CW_INFO_LABEL,
+   IDC_CW_BOXART_LABEL,
    IDC_CW_CORES,      /* Load Core window: list view */
    IDC_CW_CORES_OK,
    IDC_CW_CORES_CANCEL,
@@ -153,6 +175,8 @@ enum
    IDM_CW_VIEW_ICONS,
    IDM_CW_BROWSE_FILES,
    IDM_CW_FIND,
+   IDM_CW_HELP_DOCS,
+   IDM_CW_HELP_ABOUT,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -172,6 +196,13 @@ typedef struct ui_companion_win32_wimp
    bool info_visible;
    HWND search;      /* EDIT above the entries; substring filter */
    char filter[128]; /* lower-cased search text, "" = show all */
+   HWND search_label, clear_btn;
+   HWND browser_label, tabs;
+   HWND core_label, core_combo, core_info_btn, run_btn;
+   HWND items_label, view_label, view_combo;
+   HWND info_label, boxart_label;
+   HFONT font;              /* DEFAULT_GUI_FONT for every control */
+   HIMAGELIST pl_icons;     /* folder icon for the playlist list */
    HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
    HBITMAP boxart_bmp;
    bool boxart_visible;
@@ -240,14 +271,23 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
    if (!w || !w->playlists)
       return;
 
-   SendMessageA(w->playlists, LB_RESETCONTENT, 0, 0);
+   SendMessageA(w->playlists, LVM_DELETEALLITEMS, 0, 0);
+   SendMessageA(w->playlists, WM_SETREDRAW, FALSE, 0);
    n = companion_core_playlist_count(w->core);
    for (i = 0; i < n; i++)
    {
+      LVITEMA item;
       const char *name = companion_core_playlist_name(w->core, i);
-      SendMessageA(w->playlists, LB_ADDSTRING, 0,
-            (LPARAM)(name ? name : ""));
+      memset(&item, 0, sizeof(item));
+      item.mask    = LVIF_TEXT | LVIF_IMAGE;
+      item.iItem   = (int)i;
+      item.iImage  = 0; /* the folder */
+      item.pszText = (LPSTR)(name ? name : "");
+      SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
    }
+   SendMessageA(w->playlists, WM_SETREDRAW, TRUE, 0);
+   /* One column, sized to the pane. */
+   SendMessageA(w->playlists, LVM_SETCOLUMNWIDTH, 0, LVSCW_AUTOSIZE_USEHEADER);
 }
 
 /* --- Icon view thumbnails ---------------------------------------------- */
@@ -543,8 +583,19 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
    /* One thumbnail per visible row; the step reads each row's lParam. */
    w->thumb_count = row;
 
-   snprintf(buf, sizeof(buf), "%u entries", (unsigned)row);
-   cw_status_set(w, buf);
+   /* Qt's footer: "%1 items". */
+   {
+      /* The string is Qt-style "%1 items"; swap the placeholder for %u. */
+      const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
+      const char *p1  = strstr(fmt, "%1");
+      if (p1)
+         snprintf(buf, sizeof(buf), "%.*s%u%s", (int)(p1 - fmt), fmt,
+               (unsigned)row, p1 + 2);
+      else
+         snprintf(buf, sizeof(buf), "%u", (unsigned)row);
+   }
+   if (w->items_label)
+      SetWindowTextA(w->items_label, buf);
 }
 
 static void cw_layout(ui_companion_win32_wimp_t *w)
@@ -575,15 +626,15 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       bool r_info  = (w->info_visible && w->info);
       bool r_box   = (w->boxart_visible && w->boxart);
       int right_w  = (r_info || r_box) ? COMPANION_WIN32_INFO_W : 0;
-      int search_h = COMPANION_WIN32_SEARCH_H;
       int list_h   = rc.bottom - status_h - log_h;
       int entry_x  = w->pane_w + COMPANION_WIN32_SPLIT_W;
       int entry_w  = rc.right - entry_x - right_w;
-      int pl_h     = list_h - search_h; /* playlist list below the search box */
+      const int L  = COMPANION_WIN32_LABEL_H;
+      const int C  = COMPANION_WIN32_CTRL_H;
+      const int P  = 4; /* padding */
+      int y;
       if (list_h < 0)
          list_h = 0;
-      if (pl_h < 0)
-         pl_h = 0;
       if (entry_w < COMPANION_WIN32_PANE_MIN)
       {
          right_w = 0;
@@ -591,26 +642,80 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          entry_w = rc.right - entry_x;
       }
 
-      /* Left column, matching the Qt companion: search box on top, the
-       * playlist list under it. */
-      if (w->search)
-         MoveWindow(w->search, 0, 0, w->pane_w, search_h, TRUE);
-      if (w->playlists)
-         MoveWindow(w->playlists, 0, search_h, w->pane_w, pl_h, TRUE);
-      if (w->entries)
-         MoveWindow(w->entries, entry_x, 0, entry_w, list_h, TRUE);
+      /* Left column, laid out like the Qt companion's docks:
+       *   Search        [ edit ][Clear]
+       *   Content Browser
+       *   [Playlists | File Browser]
+       *   [ playlist list ...                ]
+       *   Core
+       *   [ launch-with combo ][Info][Run]  */
+      y = 0;
+      MoveWindow(w->search_label, P, y, w->pane_w - 2 * P, L, TRUE);
+      y += L;
+      MoveWindow(w->search, P, y, w->pane_w - 2 * P - 56, C, TRUE);
+      MoveWindow(w->clear_btn, w->pane_w - P - 52, y, 52, C, TRUE);
+      y += C + P;
+      MoveWindow(w->browser_label, P, y, w->pane_w - 2 * P, L, TRUE);
+      y += L;
+      MoveWindow(w->tabs, P, y, w->pane_w - 2 * P, COMPANION_WIN32_TAB_H, TRUE);
+      y += COMPANION_WIN32_TAB_H;
+      {
+         int core_h = P + L + C + P;           /* the Core section */
+         int pl_h   = list_h - y - core_h;
+         if (pl_h < 0)
+            pl_h = 0;
+         MoveWindow(w->playlists, P, y, w->pane_w - 2 * P, pl_h, TRUE);
+         y += pl_h + P;
+         MoveWindow(w->core_label, P, y, w->pane_w - 2 * P, L, TRUE);
+         y += L;
+         MoveWindow(w->core_combo, P, y, w->pane_w - 2 * P - 100, C, TRUE);
+         MoveWindow(w->core_info_btn, w->pane_w - P - 96, y, 46, C, TRUE);
+         MoveWindow(w->run_btn, w->pane_w - P - 46, y, 46, C, TRUE);
+      }
 
-      /* Right column: info on top, boxart below (each takes the full
-       * column when it is the only one shown). */
+      /* Centre: the content view with Qt's footer ("N items" left,
+       * View combo right). */
+      {
+         int fh = COMPANION_WIN32_FOOTER_H;
+         int eh = list_h - fh;
+         if (eh < 0)
+            eh = 0;
+         MoveWindow(w->entries, entry_x, 0, entry_w, eh, TRUE);
+         MoveWindow(w->items_label, entry_x + P, eh + P, 160, L, TRUE);
+         MoveWindow(w->view_combo, entry_x + entry_w - P - 90, eh + 2, 90, C, TRUE);
+         MoveWindow(w->view_label, entry_x + entry_w - P - 90 - 40, eh + P, 36, L, TRUE);
+      }
+
+      /* Right column: "Core Info" caption + list on top, "Boxart" caption
+       * + image below; each takes the full column when alone. */
       {
          int rx     = entry_x + entry_w;
          int box_h  = r_box ? (list_h < COMPANION_WIN32_BOXART_H
                                ? list_h : COMPANION_WIN32_BOXART_H) : 0;
          int info_h = r_info ? list_h - box_h : 0;
-         if (w->info)
-            MoveWindow(w->info, rx, 0, r_info ? right_w : 0, info_h, TRUE);
-         if (w->boxart)
-            MoveWindow(w->boxart, rx, info_h, r_box ? right_w : 0, box_h, TRUE);
+         int iw     = right_w - P;
+         if (r_info)
+         {
+            MoveWindow(w->info_label, rx + P, 0, iw - P, L, TRUE);
+            MoveWindow(w->info, rx + P, L, iw - P, info_h - L, TRUE);
+         }
+         else
+         {
+            MoveWindow(w->info_label, rx, 0, 0, 0, TRUE);
+            MoveWindow(w->info, rx, 0, 0, 0, TRUE);
+         }
+         if (r_box)
+         {
+            MoveWindow(w->boxart_label, rx + P, info_h, iw - P, L, TRUE);
+            MoveWindow(w->boxart, rx + P, info_h + L, iw - P, box_h - L, TRUE);
+         }
+         else
+         {
+            MoveWindow(w->boxart_label, rx, 0, 0, 0, TRUE);
+            MoveWindow(w->boxart, rx, 0, 0, 0, TRUE);
+         }
+         ShowWindow(w->info_label, r_info ? SW_SHOW : SW_HIDE);
+         ShowWindow(w->boxart_label, r_box ? SW_SHOW : SW_HIDE);
       }
 
       if (w->log)
@@ -892,15 +997,135 @@ static const companion_callbacks_t cw_callbacks = {
 
 static void cw_select_playlist(ui_companion_win32_wimp_t *w)
 {
-   LRESULT sel = SendMessageA(w->playlists, LB_GETCURSEL, 0, 0);
-   if (sel == LB_ERR)
+   LRESULT sel = SendMessageA(w->playlists, LVM_GETNEXTITEM,
+         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+   if (sel < 0)
       return;
    w->browse_mode = false; /* picking a playlist leaves the file browser */
+   if (w->tabs)
+      SendMessageA(w->tabs, TCM_SETCURSEL, 0, 0);
    if (companion_core_select_playlist(w->core, (size_t)sel))
       cw_status_set(w, "Loading playlist...");
 }
 
 static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
+static long cw_selected_entry(ui_companion_win32_wimp_t *w);
+static void cw_run_selected(ui_companion_win32_wimp_t *w);
+
+/* --- Core section (launch-with combo, like Qt's Core dock) ------------- */
+
+/* Item data in the combo: the companion_launch_selection of that row; the
+ * core path for the first three kinds is kept in a parallel table. */
+#define CW_COMBO_MAX 8
+static char cw_combo_paths[CW_COMBO_MAX][PATH_MAX_LENGTH];
+
+static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
+{
+   companion_launch_option_t opts[CW_COMBO_MAX - 2];
+   size_t i, n = 0;
+   const struct playlist_entry *e = NULL;
+   char pl_name[NAME_MAX_LENGTH];
+   LRESULT idx;
+
+   if (!w || !w->core_combo)
+      return;
+   SendMessageA(w->core_combo, CB_RESETCONTENT, 0, 0);
+
+   pl_name[0] = '\0';
+   if (entry >= 0 && !w->browse_mode)
+      e = companion_core_entry(w->core, (size_t)entry);
+   if (e && e->db_name)
+   {
+      strlcpy(pl_name, e->db_name, sizeof(pl_name));
+      path_remove_extension(pl_name);
+   }
+
+   n = companion_core_launch_options(w->core,
+         e ? e->core_path : NULL, e ? e->core_name : NULL,
+         pl_name, true, opts, sizeof(opts) / sizeof(opts[0]));
+
+   for (i = 0; i < n; i++)
+   {
+      idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0, (LPARAM)opts[i].name);
+      if (idx >= 0 && idx < CW_COMBO_MAX)
+      {
+         SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
+               (LPARAM)opts[i].selection);
+         strlcpy(cw_combo_paths[idx], opts[i].path, PATH_MAX_LENGTH);
+      }
+   }
+   idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0,
+         (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
+   if (idx >= 0)
+      SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
+            (LPARAM)COMPANION_LAUNCH_ASK);
+   {
+      char label[64];
+      snprintf(label, sizeof(label), "%s...",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
+      idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0, (LPARAM)label);
+      if (idx >= 0)
+         SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
+               (LPARAM)COMPANION_LAUNCH_LOAD_CORE);
+   }
+   SendMessageA(w->core_combo, CB_SETCURSEL, 0, 0);
+}
+
+/* Run the selected entry with the core chosen in the combo. */
+static void cw_run_with_combo(ui_companion_win32_wimp_t *w)
+{
+   char content[PATH_MAX_LENGTH];
+   const struct playlist_entry *e;
+   LRESULT idx;
+   LRESULT sel;
+   long entry = cw_selected_entry(w);
+
+   if (w->browse_mode || entry < 0)
+   {
+      cw_run_selected(w); /* browse mode / nothing: the default path */
+      return;
+   }
+   e = companion_core_entry(w->core, (size_t)entry);
+   if (!e)
+      return;
+
+   idx = SendMessageA(w->core_combo, CB_GETCURSEL, 0, 0);
+   sel = (idx >= 0) ? SendMessageA(w->core_combo, CB_GETITEMDATA, (WPARAM)idx, 0)
+                    : COMPANION_LAUNCH_ASK;
+
+   switch ((enum companion_launch_selection)sel)
+   {
+      case COMPANION_LAUNCH_CURRENT:
+      case COMPANION_LAUNCH_PLAYLIST_SAVED:
+      case COMPANION_LAUNCH_PLAYLIST_DEFAULT:
+         if (idx < CW_COMBO_MAX && companion_core_request_load_content(
+                  w->core, cw_combo_paths[idx], e->path, e->label,
+                  e->db_name, e->crc32))
+            ShowWindow(w->hwnd, SW_HIDE);
+         else
+            cw_status_set(w, "Failed to load the content.");
+         return;
+      case COMPANION_LAUNCH_LOAD_CORE:
+         cw_cores_show(w, NULL);
+         return;
+      case COMPANION_LAUNCH_ASK:
+      default:
+         strlcpy(content, e->path ? e->path : "", sizeof(content));
+         cw_cores_show(w, content);
+         return;
+   }
+}
+
+/* Status-bar default, as Qt shows: "<version> - <core or No Core>". */
+static void cw_status_default(ui_companion_win32_wimp_t *w)
+{
+   char buf[NAME_MAX_LENGTH + 32];
+   const char *core = companion_core_current_core_name(w->core);
+   snprintf(buf, sizeof(buf), "%s - %s", PACKAGE_VERSION,
+         (core && *core) ? core
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
+   cw_status_set(w, buf);
+}
 
 static LRESULT cw_selected_row(ui_companion_win32_wimp_t *w)
 {
@@ -964,6 +1189,8 @@ static void cw_run_selected(ui_companion_win32_wimp_t *w)
 static void cw_browse_enter(ui_companion_win32_wimp_t *w)
 {
    w->browse_mode = true;
+   if (w->tabs)
+      SendMessageA(w->tabs, TCM_SETCURSEL, 1, 0);
    if (!companion_core_browse_dir(w->core)[0])
       companion_core_browse_open(w->core, NULL);
    cw_browse_rebuild(w);
@@ -1313,11 +1540,12 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
       POINT cl    = pt;
       LRESULT hit;
 
+      LVHITTESTINFO ht;
       ScreenToClient(w->playlists, &cl);
-      hit = SendMessageA(w->playlists, LB_ITEMFROMPOINT, 0,
-            MAKELPARAM(cl.x, cl.y));
-      /* HIWORD is non-zero when the point is outside any item. */
-      w->ctx_playlist = HIWORD(hit) ? (size_t)-1 : (size_t)LOWORD(hit);
+      memset(&ht, 0, sizeof(ht));
+      ht.pt = cl;
+      hit   = SendMessageA(w->playlists, LVM_HITTEST, 0, (LPARAM)&ht);
+      w->ctx_playlist = (hit < 0) ? (size_t)-1 : (size_t)hit;
 
       if (assoc)
       {
@@ -1445,9 +1673,28 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             break;
          switch (LOWORD(wparam))
          {
-            case IDC_CW_PLAYLISTS:
-               if (HIWORD(wparam) == LBN_SELCHANGE)
-                  cw_select_playlist(w);
+            case IDC_CW_CLEAR:
+               SetWindowTextA(w->search, ""); /* EN_CHANGE re-filters */
+               return 0;
+            case IDC_CW_RUN_BTN:
+               cw_run_with_combo(w);
+               return 0;
+            case IDC_CW_CORE_INFO_BTN:
+               cw_info_toggle(w);
+               return 0;
+            case IDC_CW_VIEW_COMBO:
+               if (HIWORD(wparam) == CBN_SELCHANGE)
+                  cw_set_icon_view(w,
+                        SendMessageA(w->view_combo, CB_GETCURSEL, 0, 0) == 1);
+               return 0;
+            case IDM_CW_HELP_DOCS:
+               ShellExecuteA(hwnd, "open", COMPANION_WIN32_DOCS_URL,
+                     NULL, NULL, SW_SHOWNORMAL);
+               return 0;
+            case IDM_CW_HELP_ABOUT:
+               MessageBoxA(hwnd, "RetroArch " PACKAGE_VERSION,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT),
+                     MB_OK | MB_ICONINFORMATION);
                return 0;
             case IDC_CW_SEARCH:
                if (HIWORD(wparam) == EN_CHANGE)
@@ -1542,25 +1789,58 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          break;
 
       case WM_NOTIFY:
-         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_ENTRIES)
+         if (!w)
+            break;
          {
             NMHDR *hdr = (NMHDR*)lparam;
-            switch (hdr->code)
+            if (hdr->idFrom == IDC_CW_ENTRIES)
             {
-               case NM_DBLCLK:
-               case NM_RETURN:
-                  cw_run_selected(w);
-                  return 0;
-               case LVN_ITEMCHANGED:
+               switch (hdr->code)
+               {
+                  case NM_DBLCLK:
+                  case NM_RETURN:
+                     cw_run_selected(w);
+                     return 0;
+                  case LVN_ITEMCHANGED:
+                     {
+                        NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+                        if ((nm->uChanged & LVIF_STATE)
+                              && (nm->uNewState & LVIS_SELECTED))
+                        {
+                           long e = cw_focused_entry(w);
+                           cw_boxart_update(w, e);
+                           cw_core_combo_fill(w, e);
+                        }
+                     }
+                     break;
+                  default:
+                     break;
+               }
+            }
+            else if (hdr->idFrom == IDC_CW_PLAYLISTS)
+            {
+               if (hdr->code == LVN_ITEMCHANGED)
+               {
+                  NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+                  if ((nm->uChanged & LVIF_STATE)
+                        && (nm->uNewState & LVIS_SELECTED))
+                     cw_select_playlist(w);
+               }
+            }
+            else if (hdr->idFrom == IDC_CW_TABS)
+            {
+               if (hdr->code == TCN_SELCHANGE)
+               {
+                  LRESULT tab = SendMessageA(w->tabs, TCM_GETCURSEL, 0, 0);
+                  if (tab == 1)
+                     cw_browse_enter(w);
+                  else
                   {
-                     NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
-                     if ((nm->uChanged & LVIF_STATE)
-                           && (nm->uNewState & LVIS_SELECTED))
-                        cw_boxart_update(w, cw_focused_entry(w));
+                     w->browse_mode = false;
+                     cw_entries_rebuild(w);
                   }
-                  break;
-               default:
-                  break;
+                  return 0;
+               }
             }
          }
          break;
@@ -1601,13 +1881,47 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_BOXART, "&Boxart");
 
    {
+      /* Same top-level titles as the Qt menubar, from the same strings. */
       HMENU edit = CreatePopupMenu();
-      AppendMenuA(edit, MF_STRING, IDM_CW_FIND, "&Search\tCtrl+F");
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file, "&File");
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit, "&Edit");
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view, "&View");
+      HMENU help = CreatePopupMenu();
+      char find[64];
+      snprintf(find, sizeof(find), "%s\tCtrl+F",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH));
+      AppendMenuA(edit, MF_STRING, IDM_CW_FIND, find);
+      AppendMenuA(help, MF_STRING, IDM_CW_HELP_DOCS,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION));
+      AppendMenuA(help, MF_STRING, IDM_CW_HELP_ABOUT,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT));
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW));
+      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)help,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    }
    return bar;
+}
+
+/* A plain child control: STATIC / BUTTON / COMBOBOX, in the GUI font. */
+static HWND cw_make(ui_companion_win32_wimp_t *w, const char *cls,
+      const char *text, DWORD style, int id)
+{
+   HWND h = CreateWindowExA(0, cls, text, WS_CHILD | WS_VISIBLE | style,
+         0, 0, 0, 0, w->hwnd, (HMENU)(UINT_PTR_COMPAT)id,
+         GetModuleHandleA(NULL), NULL);
+   if (h && w->font)
+      SendMessageA(h, WM_SETFONT, (WPARAM)w->font, TRUE);
+   return h;
+}
+
+/* Apply the GUI font to every child; the default is the bold, bitmapped
+ * System font, which is most of why the window looked nothing like Qt. */
+static BOOL CALLBACK cw_setfont_cb(HWND h, LPARAM lp)
+{
+   SendMessageA(h, WM_SETFONT, (WPARAM)lp, TRUE);
+   return TRUE;
 }
 
 static bool cw_create_window(ui_companion_win32_wimp_t *w)
@@ -1660,9 +1974,88 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    if (!w->hwnd)
       return false;
 
-   w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "LISTBOX", "",
-         WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT,
+   /* The GUI font first, so every control below is created with it. */
+   w->font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+   /* Playlist list: a list view with a folder icon per row, like Qt's. */
+   w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER
+         | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_PLAYLISTS, inst, NULL);
+   if (w->playlists)
+   {
+      SHFILEINFOA sfi;
+      LVCOLUMNA c;
+      w->pl_icons = ImageList_Create(COMPANION_WIN32_PL_ICON,
+            COMPANION_WIN32_PL_ICON, ILC_COLOR32 | ILC_MASK, 1, 1);
+      memset(&sfi, 0, sizeof(sfi));
+      /* The shell's folder icon, without touching the filesystem. */
+      if (w->pl_icons && SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY,
+               &sfi, sizeof(sfi),
+               SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES)
+            && sfi.hIcon)
+      {
+         ImageList_AddIcon(w->pl_icons, sfi.hIcon);
+         DestroyIcon(sfi.hIcon);
+      }
+      if (w->pl_icons)
+         SendMessageA(w->playlists, LVM_SETIMAGELIST, LVSIL_SMALL,
+               (LPARAM)w->pl_icons);
+      memset(&c, 0, sizeof(c));
+      c.mask = LVCF_WIDTH;
+      c.cx   = 180;
+      SendMessageA(w->playlists, LVM_INSERTCOLUMNA, 0, (LPARAM)&c);
+      SendMessageA(w->playlists, LVM_SETEXTENDEDLISTVIEWSTYLE,
+            LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+   }
+
+   /* Section captions and controls that make up Qt's docks. */
+   w->search_label  = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), SS_LEFT, IDC_CW_SEARCH_LABEL);
+   w->clear_btn     = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), BS_PUSHBUTTON, IDC_CW_CLEAR);
+   w->browser_label = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), SS_LEFT,
+            IDC_CW_BROWSER_LABEL);
+   w->tabs          = cw_make(w, "SysTabControl32", "", WS_CLIPSIBLINGS, IDC_CW_TABS);
+   if (w->tabs)
+   {
+      TCITEMA ti;
+      memset(&ti, 0, sizeof(ti));
+      ti.mask    = TCIF_TEXT;
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS);
+      SendMessageA(w->tabs, TCM_INSERTITEMA, 0, (LPARAM)&ti);
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER);
+      SendMessageA(w->tabs, TCM_INSERTITEMA, 1, (LPARAM)&ti);
+   }
+   w->core_label    = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_CORE), SS_LEFT, IDC_CW_CORE_LABEL);
+   w->core_combo    = cw_make(w, "COMBOBOX", "",
+         CBS_DROPDOWNLIST | WS_VSCROLL, IDC_CW_CORE_COMBO);
+   w->core_info_btn = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_INFO), BS_PUSHBUTTON, IDC_CW_CORE_INFO_BTN);
+   w->run_btn       = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_RUN), BS_PUSHBUTTON, IDC_CW_RUN_BTN);
+   w->items_label   = cw_make(w, "STATIC", "", SS_LEFT, IDC_CW_ITEMS_LABEL);
+   w->view_label    = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_VIEW), SS_RIGHT, IDC_CW_VIEW_LABEL);
+   w->view_combo    = cw_make(w, "COMBOBOX", "", CBS_DROPDOWNLIST, IDC_CW_VIEW_COMBO);
+   if (w->view_combo)
+   {
+      SendMessageA(w->view_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
+      SendMessageA(w->view_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
+      SendMessageA(w->view_combo, CB_SETCURSEL, 0, 0);
+   }
+   w->info_label    = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_CORE_INFO), SS_LEFT, IDC_CW_INFO_LABEL);
+   w->boxart_label  = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), SS_LEFT, IDC_CW_BOXART_LABEL);
+
+   /* Qt shows the Core Info and Boxart docks by default. */
+   w->info_visible   = true;
+   w->boxart_visible = true;
 
    w->entries = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
@@ -1684,12 +2077,12 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_SEARCH, inst, NULL);
 
    w->boxart = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
-         WS_CHILD | SS_BITMAP | SS_CENTERIMAGE,
+         WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_BOXART, inst, NULL);
    w->boxart_entry = -1;
 
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
-         WS_CHILD | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
    if (!w->playlists || !w->entries || !w->status || !w->log || !w->info
@@ -1706,7 +2099,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       icol.cx       = 110;
       icol.iSubItem = 0;
       SendMessageA(w->info, LVM_INSERTCOLUMNA, 0, (LPARAM)&icol);
-      icol.pszText  = (LPSTR)"Core Information";
+      icol.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
       icol.cx       = 400;
       icol.iSubItem = 1;
       SendMessageA(w->info, LVM_INSERTCOLUMNA, 1, (LPARAM)&icol);
@@ -1718,16 +2111,24 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
 
    memset(&col, 0, sizeof(col));
    col.mask     = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-   col.pszText  = (LPSTR)"Name";
+   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME);
    col.cx       = 380;
    col.iSubItem = 0;
    SendMessageA(w->entries, LVM_INSERTCOLUMNA, 0, (LPARAM)&col);
-   col.pszText  = (LPSTR)"Core";
+   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE);
    col.cx       = 180;
    col.iSubItem = 1;
    SendMessageA(w->entries, LVM_INSERTCOLUMNA, 1, (LPARAM)&col);
 
+   /* Every control in the GUI font (the ones created before the font was
+    * chosen included). */
+   if (w->font)
+      EnumChildWindows(w->hwnd, cw_setfont_cb, (LPARAM)w->font);
+
    cw_layout(w);
+   cw_status_default(w);
+   cw_info_fill(w);
+   cw_core_combo_fill(w, -1);
    return true;
 }
 
@@ -1768,6 +2169,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
       return;
    if (w->boxart_bmp)
       DeleteObject(w->boxart_bmp);
+   if (w->pl_icons)
+      ImageList_Destroy(w->pl_icons);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
    if (w->cores_hwnd)
@@ -1810,10 +2213,17 @@ static void ui_companion_win32_wimp_iterate(void *data)
    if (w->icon_view && IsWindowVisible(w->hwnd))
       cw_thumb_step(w);
 
-   /* A short strcmp per frame, only while the pane is shown. */
-   if (     w->info_visible
-         && strcmp(w->info_core, companion_core_current_core_path(w->core)))
-      cw_info_fill(w);
+   /* A short strcmp per frame: the info pane and the "<version> - <core>"
+    * status follow the running core. */
+   if (strcmp(w->info_core, companion_core_current_core_path(w->core)))
+   {
+      if (w->info_visible)
+         cw_info_fill(w);
+      else
+         strlcpy(w->info_core, companion_core_current_core_path(w->core),
+               sizeof(w->info_core));
+      cw_status_default(w);
+   }
 }
 
 static void ui_companion_win32_wimp_event_command(void *data,
