@@ -36,7 +36,7 @@
  * debounce), turn a row into a file path, and poll once per frame for
  * finished thumbnails to hand to its image control.
  *
- * Pixels are ARGB8888 (0xAARRGGBB, opaque), edge x edge, row-major -
+ * Pixels are ARGB8888 (0xAARRGGBB, opaque), w x h, row-major -
  * Windows' 32-bit DIB order, and what Cocoa/Qt take with a byte swap.
  *
  * Thread-safe where stated; everything else is UI-thread only. Builds
@@ -59,7 +59,7 @@ typedef struct companion_thumbs companion_thumbs_t;
  * when the file could not be decoded (the backend marks the row as
  * having no thumbnail). */
 typedef void (*companion_thumbs_done_cb)(void *ud, const char *path,
-      int edge, uintptr_t tag, const uint32_t *bits);
+      int w, int h, uintptr_t tag, const uint32_t *bits);
 
 /* @budget_bytes: cache size in bytes of decoded pixels (0 = a default of
  * 64 MiB). @threads: decode threads to start, 0 = cores - 1 clamped to
@@ -68,11 +68,12 @@ companion_thumbs_t *companion_thumbs_new(size_t budget_bytes,
       unsigned threads);
 void companion_thumbs_free(companion_thumbs_t *t);
 
-/* Cached thumbnail for (@path, @edge), or NULL. The pointer is valid
+/* Cached thumbnail for (@path, @w x @h), or NULL. The pointer is valid
  * until the next companion_thumbs_* call on this instance. UI thread.
- * Touches the entry (LRU). */
+ * Touches the entry (LRU). Grid cells pass w == h; the boxart pane its
+ * own size. */
 const uint32_t *companion_thumbs_get(companion_thumbs_t *t,
-      const char *path, int edge);
+      const char *path, int w, int h);
 
 /* Ask for (@path, @edge) to be decoded. @urgent requests are served
  * most-recent-first ahead of every non-urgent one; non-urgent ones
@@ -80,7 +81,7 @@ const uint32_t *companion_thumbs_get(companion_thumbs_t *t,
  * or already queued is ignored (returns false). @bg is the ARGB colour
  * the letterbox is filled with. UI thread. */
 bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
-      int edge, uintptr_t tag, bool urgent, uint32_t bg);
+      int w, int h, uintptr_t tag, bool urgent, uint32_t bg);
 
 /* Drop every queued request (the view changed); cached thumbnails stay.
  * Decodes already in flight still land, are cached, and are delivered -
@@ -100,12 +101,12 @@ size_t companion_thumbs_cached_count(companion_thumbs_t *t);
 size_t companion_thumbs_cached_bytes(companion_thumbs_t *t);
 size_t companion_thumbs_queued(companion_thumbs_t *t);
 
-/* Letterbox @src (w x h ARGB) into a freshly allocated edge x edge ARGB
+/* Letterbox @src (sw x sh ARGB) into a freshly allocated dw x dh ARGB
  * buffer filled with @bg. Pure; exposed for tests and for backends that
  * scale their own images (the boxart pane). Nearest-neighbour: plenty at
  * thumbnail size, and the same on every backend. */
-uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned w,
-      unsigned h, int edge, uint32_t bg);
+uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
+      unsigned sh, int dw, int dh, uint32_t bg);
 
 RETRO_END_DECLS
 

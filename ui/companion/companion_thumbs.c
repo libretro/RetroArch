@@ -36,7 +36,7 @@ struct ct_entry
 {
    char *path;
    uint32_t *bits;        /* NULL while queued / decoding */
-   int edge;
+   int w, h;
    size_t bytes;
    /* LRU list of cached entries (bits != NULL); most recent at head. */
    struct ct_entry *lru_prev, *lru_next;
@@ -115,54 +115,54 @@ struct companion_thumbs
 
 /* --- scaling (pure) ---------------------------------------------------- */
 
-uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned w,
-      unsigned h, int edge, uint32_t bg)
+uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
+      unsigned sh, int dw, int dh, uint32_t bg)
 {
    uint32_t *buf;
-   int sw, sh, ox, oy, x, y;
-   const int T = edge;
+   int fw, fh, ox, oy, x, y;
 
-   if (!src || !w || !h || T < 1)
+   if (!src || !sw || !sh || dw < 1 || dh < 1)
       return NULL;
-   buf = (uint32_t*)malloc((size_t)T * T * sizeof(uint32_t));
+   buf = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t));
    if (!buf)
       return NULL;
 
-   if (w >= h)
+   /* Fit: the relatively larger dimension fills the box. */
+   if ((uint64_t)sw * (unsigned)dh >= (uint64_t)sh * (unsigned)dw)
    {
-      sw = T;
-      sh = (int)((unsigned)T * h / w);
+      fw = dw;
+      fh = (int)((uint64_t)dw * sh / sw);
    }
    else
    {
-      sh = T;
-      sw = (int)((unsigned)T * w / h);
+      fh = dh;
+      fw = (int)((uint64_t)dh * sw / sh);
    }
-   if (sw < 1) sw = 1;
-   if (sh < 1) sh = 1;
-   ox = (T - sw) / 2;
-   oy = (T - sh) / 2;
+   if (fw < 1) fw = 1;
+   if (fh < 1) fh = 1;
+   ox = (dw - fw) / 2;
+   oy = (dh - fh) / 2;
 
-   for (y = 0; y < T; y++)
+   for (y = 0; y < dh; y++)
    {
-      uint32_t *row = buf + (size_t)y * T;
-      if (y < oy || y >= oy + sh)
+      uint32_t *row = buf + (size_t)y * dw;
+      if (y < oy || y >= oy + fh)
       {
-         for (x = 0; x < T; x++)
+         for (x = 0; x < dw; x++)
             row[x] = bg;
          continue;
       }
       {
-         const uint32_t *s = src + (size_t)((y - oy) * h / sh) * w;
-         for (x = 0; x < T; x++)
+         const uint32_t *s = src + (size_t)((y - oy) * sh / fh) * sw;
+         for (x = 0; x < dw; x++)
          {
-            if (x < ox || x >= ox + sw)
+            if (x < ox || x >= ox + fw)
                row[x] = bg;
             else
             {
                /* Composite the source alpha over @bg so transparent
                 * images sit on the view colour; the result is opaque. */
-               uint32_t p = s[(x - ox) * w / sw];
+               uint32_t p = s[(x - ox) * sw / fw];
                unsigned a = (p >> 24) & 0xff;
                if (a == 0xff)
                   row[x] = p | 0xff000000u;
@@ -171,8 +171,8 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned w,
                   unsigned ia = 255 - a;
                   unsigned r  = (((p >> 16) & 0xff) * a + ((bg >> 16) & 0xff) * ia) / 255;
                   unsigned g  = (((p >>  8) & 0xff) * a + ((bg >>  8) & 0xff) * ia) / 255;
-                  unsigned b  = (( p        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
-                  row[x] = 0xff000000u | (r << 16) | (g << 8) | b;
+                  unsigned bb = (( p        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
+                  row[x] = 0xff000000u | (r << 16) | (g << 8) | bb;
                }
             }
          }
@@ -181,8 +181,8 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned w,
    return buf;
 }
 
-/* Decode @path and scale to @edge. Pure; runs on a worker. */
-static uint32_t *ct_decode(const char *path, int edge, uint32_t bg)
+/* Decode @path and scale to @w x @h. Pure; runs on a worker. */
+static uint32_t *ct_decode(const char *path, int w, int h, uint32_t bg)
 {
    struct texture_image img;
    uint32_t *bits = NULL;
@@ -191,7 +191,7 @@ static uint32_t *ct_decode(const char *path, int edge, uint32_t bg)
    {
       if (img.pixels)
          bits = companion_thumbs_scale(img.pixels, img.width, img.height,
-               edge, bg);
+               w, h, bg);
       image_texture_free(&img);
    }
    return bits;
@@ -199,23 +199,24 @@ static uint32_t *ct_decode(const char *path, int edge, uint32_t bg)
 
 /* --- hash table ---------------------------------------------------------- */
 
-static size_t ct_hash(const char *path, int edge)
+static size_t ct_hash(const char *path, int w, int h)
 {
-   size_t h = 2166136261u;
+   size_t k = 2166136261u;
    while (*path)
-      h = (h ^ (unsigned char)*path++) * 16777619u;
-   h = (h ^ (unsigned)edge) * 16777619u;
-   return h;
+      k = (k ^ (unsigned char)*path++) * 16777619u;
+   k = (k ^ (unsigned)w) * 16777619u;
+   k = (k ^ (unsigned)h) * 16777619u;
+   return k;
 }
 
 static struct ct_entry *ct_find(companion_thumbs_t *t, const char *path,
-      int edge)
+      int w, int h)
 {
    struct ct_entry *e;
    if (!t->ht)
       return NULL;
-   for (e = t->ht[ct_hash(path, edge) & (t->ht_size - 1)]; e; e = e->chain)
-      if (e->edge == edge && string_is_equal(e->path, path))
+   for (e = t->ht[ct_hash(path, w, h) & (t->ht_size - 1)]; e; e = e->chain)
+      if (e->w == w && e->h == h && string_is_equal(e->path, path))
          return e;
    return NULL;
 }
@@ -232,7 +233,7 @@ static bool ct_grow(companion_thumbs_t *t)
       while (e)
       {
          struct ct_entry *next = e->chain;
-         size_t k = ct_hash(e->path, e->edge) & (ns - 1);
+         size_t k = ct_hash(e->path, e->w, e->h) & (ns - 1);
          e->chain = nh[k];
          nh[k]    = e;
          e        = next;
@@ -245,7 +246,7 @@ static bool ct_grow(companion_thumbs_t *t)
 }
 
 static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
-      int edge)
+      int w, int h)
 {
    struct ct_entry *e;
    size_t k;
@@ -260,8 +261,9 @@ static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
       free(e);
       return NULL;
    }
-   e->edge  = edge;
-   k        = ct_hash(path, edge) & (t->ht_size - 1);
+   e->w     = w;
+   e->h     = h;
+   k        = ct_hash(path, w, h) & (t->ht_size - 1);
    e->chain = t->ht[k];
    t->ht[k] = e;
    t->ht_count++;
@@ -270,7 +272,7 @@ static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
 
 static void ct_unlink_ht(companion_thumbs_t *t, struct ct_entry *e)
 {
-   struct ct_entry **pp = &t->ht[ct_hash(e->path, e->edge) & (t->ht_size - 1)];
+   struct ct_entry **pp = &t->ht[ct_hash(e->path, e->w, e->h) & (t->ht_size - 1)];
    while (*pp && *pp != e)
       pp = &(*pp)->chain;
    if (*pp)
@@ -327,7 +329,7 @@ static void ct_evict(companion_thumbs_t *t, size_t need)
 static void ct_cache_put(companion_thumbs_t *t, struct ct_entry *e,
       uint32_t *bits)
 {
-   size_t bytes = (size_t)e->edge * e->edge * sizeof(uint32_t);
+   size_t bytes = (size_t)e->w * e->h * sizeof(uint32_t);
    ct_evict(t, bytes);
    e->bits  = bits;
    e->bytes = bytes;
@@ -462,7 +464,7 @@ static void ct_worker(void *ud)
       }
       slock_unlock(t->lock);
 
-      bits = ct_decode(job.e->path, job.e->edge, job.bg);
+      bits = ct_decode(job.e->path, job.e->w, job.e->h, job.bg);
 
       slock_lock(t->lock);
       ct_push_done(t, &job, bits);
@@ -556,12 +558,12 @@ void companion_thumbs_free(companion_thumbs_t *t)
 }
 
 const uint32_t *companion_thumbs_get(companion_thumbs_t *t, const char *path,
-      int edge)
+      int w, int h)
 {
    struct ct_entry *e;
    if (!t || string_is_empty(path))
       return NULL;
-   e = ct_find(t, path, edge);
+   e = ct_find(t, path, w, h);
    if (!e || !e->bits)
       return NULL;
    /* touch */
@@ -571,17 +573,17 @@ const uint32_t *companion_thumbs_get(companion_thumbs_t *t, const char *path,
 }
 
 bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
-      int edge, uintptr_t tag, bool urgent, uint32_t bg)
+      int w, int h, uintptr_t tag, bool urgent, uint32_t bg)
 {
    struct ct_entry *e;
    struct ct_job *j;
-   if (!t || string_is_empty(path) || edge < 1)
+   if (!t || string_is_empty(path) || w < 1 || h < 1)
       return false;
 
-   e = ct_find(t, path, edge);
+   e = ct_find(t, path, w, h);
    if (e && (e->bits || e->queued))
       return false;          /* cached or already on its way */
-   if (!e && !(e = ct_insert(t, path, edge)))
+   if (!e && !(e = ct_insert(t, path, w, h)))
       return false;
 
    CT_LOCK(t);
@@ -642,7 +644,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       struct ct_job job;
       while (t->queued && cpu_features_get_time_usec() < end
             && ct_next_job(t, &job))
-         ct_push_done(t, &job, ct_decode(job.e->path, job.e->edge, job.bg));
+         ct_push_done(t, &job, ct_decode(job.e->path, job.e->w, job.e->h, job.bg));
    }
 #else
    (void)budget_us;
@@ -683,7 +685,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
           * cancel() still lands, and the backend checks the tag against
           * its own view state (its row generation). */
          if (cb)
-            cb(ud, e->path, e->edge, batch[i].tag, batch[i].bits);
+            cb(ud, e->path, e->w, e->h, batch[i].tag, batch[i].bits);
          delivered++;
          if (!batch[i].bits)
          {

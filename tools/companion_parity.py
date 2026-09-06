@@ -62,6 +62,12 @@ FEATURES = {
     'core info panel':    'companion_core_core_info_rows',
     'directory scan':     'companion_core_request_scan',
     'thumbnails':         'companion_core_thumbnail_path',
+    # Decoding goes through the shared engine (threads, cache, visible-
+    # first requests); a backend decoding on its own UI thread regresses
+    # the grid to the "shows on click" behaviour this replaced.
+    'thumbnail engine':   'companion_thumbs_request',
+    'thumbnail poll':     'companion_thumbs_poll',
+    'two-pane browser':   'companion_core_browse_dir_count',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',
@@ -90,8 +96,13 @@ QT_EQUIVALENT = {
     'run entry':        'companion_core_launch_options',
     'pick core on run': 'companion_core_launch_options',
     # Qt runs the file browser through QFileSystemModel; it has no
-    # in-core browse listing.
+    # in-core browse listing, and so no folder / file split either.
     'file browser':     None,
+    'two-pane browser': None,
+    # Qt's ThumbnailLoader is the model the engine generalises; Qt keeps
+    # its own thread and QCache for now.
+    'thumbnail engine': 'ThumbnailLoader',
+    'thumbnail poll':   'onImageLoaded',
 }
 
 

@@ -187,6 +187,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSSegmentedControl *boxartTypes;   /* the four types for the boxart pane */
    const char *boxartSubdir;
    NSMutableArray *playlistIcons;     /* NSImage per playlist row */
+   NSImage *folderIcon;               /* the XMB folder asset, for the browser */
    char filter[128];                  /* lower-cased search text */
    NSInteger *rowMap;                 /* table row -> entry index under a filter */
    NSInteger rowCount;
@@ -196,6 +197,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    unsigned thumbGen;                 /* bumped per grid reload; in tags */
    NSInteger visFirst, visLast;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
+   NSInteger boxartEntry;             /* entry the pane shows / awaits */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (ui_companion_cocoa_wimp_t*)wimp;
@@ -208,6 +210,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)refreshPlaylists:(id)sender;
 - (void)runSelected:(id)sender;
 - (void)browseFiles:(id)sender;
+- (void)browseReload;
+- (void)playlistsDoubleClick:(id)sender;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
 - (void)loadContent:(id)sender;
@@ -237,7 +241,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)gridRun:(NSInteger)row;
 - (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
-- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits;
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h;
 - (CGFloat)thumbEdge;
 - (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent;
 - (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len;
@@ -325,31 +329,6 @@ static const companion_callbacks_t cc_callbacks = {
 };
 
 /* --- Controller ------------------------------------------------------- */
-
-/* Decode the boxart thumbnail for entry @row into an autoreleased
- * NSImage, or nil. Shared by the grid's per-frame decode. */
-static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
-      const char *subdir)
-{
-   char path[PATH_MAX_LENGTH];
-   char db_name[NAME_MAX_LENGTH];
-   const struct playlist_entry *e = companion_core_entry(w->core, (size_t)row);
-   NSImage *img;
-
-   if (!e)
-      return nil;
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(w->core, db_name,
-            subdir ? subdir : COMPANION_THUMB_BOXART,
-            !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            e->path, path, sizeof(path)))
-      return nil;
-   if (!path_is_valid(path))
-      return nil;
-   img = [[NSImage alloc] initWithContentsOfFile:BOXSTRING(path)];
-   return [img autorelease_compat];
-}
 
 @implementation RACompanionGrid
 
@@ -769,12 +748,12 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 }
 
 /* ARGB pixels from the engine -> NSImage (a byte swap into an RGBA rep). */
-static NSImage *cc_image_from_argb(const uint32_t *bits, int edge)
+static NSImage *cc_image_from_argb(const uint32_t *bits, int w, int h)
 {
    NSBitmapImageRep *rep = [[[NSBitmapImageRep alloc]
-      initWithBitmapDataPlanes:NULL pixelsWide:edge pixelsHigh:edge
+      initWithBitmapDataPlanes:NULL pixelsWide:w pixelsHigh:h
       bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
-      colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:edge * 4
+      colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:w * 4
       bitsPerPixel:32] autorelease_compat];
    NSImage *img;
    unsigned char *dst;
@@ -782,7 +761,7 @@ static NSImage *cc_image_from_argb(const uint32_t *bits, int edge)
    if (!rep)
       return nil;
    dst = [rep bitmapData];
-   for (i = 0; i < edge * edge; i++)
+   for (i = 0; i < w * h; i++)
    {
       uint32_t p = bits[i];
       dst[i * 4 + 0] = (unsigned char)((p >> 16) & 0xff);
@@ -790,23 +769,34 @@ static NSImage *cc_image_from_argb(const uint32_t *bits, int edge)
       dst[i * 4 + 2] = (unsigned char)( p        & 0xff);
       dst[i * 4 + 3] = 0xff;
    }
-   img = [[[NSImage alloc] initWithSize:NSMakeSize(edge, edge)] autorelease_compat];
+   img = [[[NSImage alloc] initWithSize:NSMakeSize(w, h)] autorelease_compat];
    [img addRepresentation:rep];
    return img;
 }
 
+/* Boxart-pane requests carry the entry index and this bit. */
+#define CC_TAG_BOXART ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+
 /* Engine delivery: tag = row | gen << 32. */
-static void cc_thumb_done(void *ud, const char *path, int edge,
+static void cc_thumb_done(void *ud, const char *path, int w, int h,
       uintptr_t tag, const uint32_t *bits)
 {
    RACompanionController *self = (BRIDGE RACompanionController*)ud;
-   (void)path; (void)edge;
-   [self thumbDone:tag bits:bits];
+   (void)path;
+   [self thumbDone:tag bits:bits width:w height:h];
 }
 
-- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h
 {
-   NSInteger row = (NSInteger)(tag & 0xffffffffu);
+   NSInteger row;
+   if (tag & CC_TAG_BOXART)
+   {
+      /* The pane: show it if it is still the selected entry's. */
+      if ((NSInteger)(tag & ~CC_TAG_BOXART) == boxartEntry && bits && boxart)
+         [boxart setImage:cc_image_from_argb(bits, w, h)];
+      return;
+   }
+   row = (NSInteger)(tag & 0xffffffffu);
    if (sizeof(uintptr_t) > 4 && (unsigned)(tag >> 32) != thumbGen)
       return;
    if (!grid || row < 0 || row >= (NSInteger)companion_core_entry_count(wimp->core))
@@ -816,7 +806,9 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
       if (thumbNone) thumbNone[row] = 1;
       return;
    }
-   [grid setImage:cc_image_from_argb(bits, (int)[self thumbEdge]) forRow:row];
+   if (w != (int)[self thumbEdge])
+      return; /* zoomed since */
+   [grid setImage:cc_image_from_argb(bits, w, h) forRow:row];
 }
 
 - (CGFloat)thumbEdge
@@ -841,13 +833,13 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
       if (thumbNone) thumbNone[row] = 1;
       return;
    }
-   bits = companion_thumbs_get(thumbs, path, edge);
+   bits = companion_thumbs_get(thumbs, path, edge, edge);
    if (bits)
    {
-      [grid setImage:cc_image_from_argb(bits, edge) forRow:row];
+      [grid setImage:cc_image_from_argb(bits, edge, edge) forRow:row];
       return;
    }
-   companion_thumbs_request(thumbs, path, edge,
+   companion_thumbs_request(thumbs, path, edge, edge,
          (uintptr_t)row | (sizeof(uintptr_t) > 4 ? ((uintptr_t)thumbGen << 32) : 0),
          urgent ? true : false, 0xffffffffu);
 }
@@ -857,8 +849,13 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
 - (void)iconTick
 {
    NSInteger first, last, i, span;
-   if (!iconView || !grid || !thumbs || browseMode)
+   if (!thumbs)
       return;
+   if (!iconView || !grid || browseMode)
+   {
+      companion_thumbs_poll(thumbs, cc_thumb_done, (BRIDGE void*)self, 0, 4000);
+      return;
+   }
    if ([grid visibleRowsFirst:&first last:&last]
          && (first != visFirst || last != visLast))
    {
@@ -1011,6 +1008,16 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
       [[[playlists tableColumns] objectAtIndex:1] setWidth:CC_PANE_W - CC_PL_ICON - 30.0];
    }
    playlistIcons = [[NSMutableArray alloc] init];
+   [playlists setDoubleAction:@selector(playlistsDoubleClick:)];
+   [playlists setTarget:self];
+   {
+      char icon[PATH_MAX_LENGTH];
+      if (companion_core_folder_icon_path(wimp->core, icon, sizeof(icon)))
+         folderIcon = [[NSImage alloc] initWithContentsOfFile:BOXSTRING(icon)];
+      if (!folderIcon)
+         folderIcon = RETAIN_COMPAT([[NSWorkspace sharedWorkspace]
+               iconForFileType:NSFileTypeForHFSTypeCode('fldr')]);
+   }
 
    browserTabs = [[NSTabView alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
    [browserTabs setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
@@ -1375,7 +1382,7 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    RELEASE(infoButton);   RELEASE(runButton);    RELEASE(browserTabs);
    RELEASE(playlistsScroll); RELEASE(corePopup); RELEASE(corePaths);
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
-   RELEASE(boxartTypes);  RELEASE(playlistIcons);
+   RELEASE(boxartTypes);  RELEASE(playlistIcons); RELEASE(folderIcon);
    free(rowMap);
    rowMap = NULL;
    string_list_free(infoKeys);
@@ -1418,7 +1425,22 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    free(rowMap);
    rowMap   = NULL;
    rowCount = 0;
-   if (!filter[0] || browseMode)
+   if (browseMode)
+   {
+      /* The browser's content view lists the files: browse indices
+       * [dir_count, count). */
+      size_t dc = companion_core_browse_dir_count(wimp->core);
+      size_t bc = companion_core_browse_count(wimp->core);
+      size_t files = bc > dc ? bc - dc : 0;
+      rowMap = (NSInteger*)malloc((files ? files : 1) * sizeof(NSInteger));
+      if (!rowMap)
+         return;
+      for (i = 0; i < files; i++)
+         rowMap[i] = (NSInteger)(dc + i);
+      rowCount = (NSInteger)files;
+      return;
+   }
+   if (!filter[0])
    {
       rowCount = (NSInteger)n;
       return;
@@ -1456,11 +1478,11 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    if (!wimp)
       return 0;
    if (tv == playlists)
-      return (NSInteger)companion_core_playlist_count(wimp->core);
-   if (tv == entries)
       return browseMode
-         ? (NSInteger)companion_core_browse_count(wimp->core)
-         : rowCount;
+         ? (NSInteger)companion_core_browse_dir_count(wimp->core)
+         : (NSInteger)companion_core_playlist_count(wimp->core);
+   if (tv == entries)
+      return rowCount; /* under the browser: the files (see rebuildRowMap) */
    if (tv == coresTable)
       return coresRows;
    if (tv == infoTable)
@@ -1479,13 +1501,21 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
 
    if (tv == playlists)
    {
-      if ([[col identifier] isEqualToString:@"icon"])
+      if (browseMode)
+      {
+         /* Qt's File Browser: the folder pane. */
+         if ([[col identifier] isEqualToString:@"icon"])
+            return folderIcon;
+         s = companion_core_browse_name(wimp->core, (size_t)row);
+      }
+      else if ([[col identifier] isEqualToString:@"icon"])
       {
          id im = ((NSUInteger)row < [playlistIcons count])
             ? [playlistIcons objectAtIndex:(NSUInteger)row] : nil;
          return (im && im != [NSNull null]) ? im : nil;
       }
-      s = companion_core_playlist_name(wimp->core, (size_t)row);
+      else
+         s = companion_core_playlist_name(wimp->core, (size_t)row);
    }
    else if (tv == infoTable)
    {
@@ -1502,11 +1532,12 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
          : companion_core_installed_core_name(wimp->core, (size_t)row);
    else if (tv == entries && browseMode)
    {
+      /* Files only; rows map to browse indices past the folders. */
+      NSInteger bi = [self entryForRow:row];
       if ([[col identifier] isEqualToString:@"core"])
-         s = companion_core_browse_is_dir(wimp->core, (size_t)row)
-            ? "folder" : "";
+         s = "";
       else
-         s = companion_core_browse_name(wimp->core, (size_t)row);
+         s = bi >= 0 ? companion_core_browse_name(wimp->core, (size_t)bi) : "";
    }
    else if (tv == entries)
    {
@@ -1541,7 +1572,8 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    }
    if ([note object] != playlists)
       return;
-   browseMode = NO; /* picking a playlist leaves the file browser */
+   if (browseMode)
+      return; /* folders: double-click descends (-playlistsDoubleClick:) */
    row = (int)[playlists selectedRow];
    if (row < 0)
       return;
@@ -1580,15 +1612,9 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    NSInteger row;
    if (!wimp)
       return;
-   row = [self actionRowIn:entries];
+   row = [self entryForRow:[self actionRowIn:entries]];
    if (row < 0)
       return;
-   if (!browseMode)
-   {
-      row = [self entryForRow:row];
-      if (row < 0)
-         return;
-   }
 
    if (browseMode)
    {
@@ -1596,7 +1622,7 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
       int r = companion_core_browse_activate(wimp->core, (size_t)row,
             NULL, &needs_core, content, sizeof(content));
       if (r == 0)
-         [entries reloadData];         /* entered a directory */
+         [self browseReload];          /* entered a directory */
       else if (r == 1)
          [window orderOut:nil];        /* content loaded */
       else if (needs_core)
@@ -1615,13 +1641,49 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
       [window orderOut:nil];
 }
 
+/* Left pane double-click under the browser: descend into the folder. */
+- (void)playlistsDoubleClick:(id)sender
+{
+   NSInteger sel;
+   if (!browseMode)
+      return;
+   sel = [playlists clickedRow];
+   if (sel < 0)
+      sel = [playlists selectedRow];
+   if (sel >= 0 && companion_core_browse_activate(wimp->core, (size_t)sel,
+            NULL, NULL, NULL, 0) == 0)
+      [self browseReload];
+}
+
+/* Both panes from the current browse listing. */
+- (void)browseReload
+{
+   const char *dir = companion_core_browse_dir(wimp->core);
+   [self rebuildRowMap];
+   [playlists reloadData];
+   [entries reloadData];
+   [self setStatus:(dir && *dir) ? dir : "/"];
+   {
+      char buf[64];
+      const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
+      const char *p1  = strstr(fmt, "%1");
+      if (p1)
+         snprintf(buf, sizeof(buf), "%.*s%u%s", (int)(p1 - fmt), fmt,
+               (unsigned)rowCount, p1 + 2);
+      else
+         snprintf(buf, sizeof(buf), "%u", (unsigned)rowCount);
+      if (itemsLabel)
+         [itemsLabel setStringValue:BOXSTRING(buf)];
+   }
+}
+
 - (void)browseFiles:(id)sender
 {
    browseMode = YES;
-   if (!companion_core_browse_dir(wimp->core)[0])
+   if (!companion_core_browse_count(wimp->core))
       companion_core_browse_open(wimp->core, NULL);
    [self setIconView:NO];   /* the browser is a list */
-   [entries reloadData];
+   [self browseReload];
    if (browserTabs && [browserTabs indexOfTabViewItem:[browserTabs selectedTabViewItem]] != 1)
       [browserTabs selectTabViewItemAtIndex:1];
    companion_core_pref_set_last_tab(wimp->core, 1);
@@ -1639,6 +1701,8 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    else if (browseMode)
    {
       browseMode = NO;
+      [self reloadPlaylists];
+      [self rebuildRowMap];
       [entries reloadData];
       companion_core_pref_set_last_tab(wimp->core, 0);
    }
@@ -1734,19 +1798,47 @@ static void cc_thumb_done(void *ud, const char *path, int edge,
    }
 }
 
+/* Boxart pane: from the engine cache at once, else an urgent request
+ * that lands in -thumbDone:. Cleared meanwhile; never decodes on the UI
+ * thread. */
 - (void)refreshBoxart
 {
    NSInteger row;
-   NSImage *img = nil;
-   if (!boxartVisible || !boxart || browseMode)
+   char path[PATH_MAX_LENGTH];
+   char db_name[NAME_MAX_LENGTH];
+   const struct playlist_entry *e;
+   const uint32_t *bits;
+   NSSize sz;
+   int bw, bh;
+
+   [boxart setImage:nil];
+   boxartEntry = -1;
+   if (!boxartVisible || !boxart || browseMode || !thumbs)
+      return;
+   row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
+   if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
+      return;
+   boxartEntry = row;
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   if (!companion_core_thumbnail_path(wimp->core, db_name,
+            boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            e->path, path, sizeof(path)))
+      return;
+   sz = [boxart bounds].size;
+   bw = (int)sz.width  - 4;
+   bh = (int)sz.height - 4;
+   if (bw < 1 || bh < 1)
+      return;
+   bits = companion_thumbs_get(thumbs, path, bw, bh);
+   if (bits)
    {
-      [boxart setImage:nil];
+      [boxart setImage:cc_image_from_argb(bits, bw, bh)];
       return;
    }
-   row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
-   if (row >= 0)
-      img = cc_thumb_image(wimp, row, boxartSubdir); /* the pane's own type */
-   [boxart setImage:img];
+   companion_thumbs_request(thumbs, path, bw, bh,
+         (uintptr_t)row | CC_TAG_BOXART, true, 0xffe8e8e8u);
 }
 
 - (void)toggleBoxart:(id)sender

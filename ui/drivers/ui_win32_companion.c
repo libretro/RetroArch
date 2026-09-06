@@ -556,15 +556,29 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
 #define CW_TAG_ROW(t)    ((size_t)((t) & (sizeof(uintptr_t) > 4 ? 0xffffffffu : (uintptr_t)-1)))
 #define CW_TAG_GEN(t)    ((unsigned)(sizeof(uintptr_t) > 4 ? ((t) >> 32) : 0))
 
-static void cw_thumb_done(void *ud, const char *path, int edge,
+/* Boxart-pane requests are tagged with the entry index and this bit. */
+#define CW_TAG_BOXART ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+
+static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
+      int bw, int bh);
+
+static void cw_thumb_done(void *ud, const char *path, int bw, int bh,
       uintptr_t tag, const uint32_t *bits)
 {
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
-   size_t row = CW_TAG_ROW(tag);
+   size_t row;
    (void)path;
+   if (tag & CW_TAG_BOXART)
+   {
+      /* The pane: show it if it is still the selected entry's. */
+      if ((long)(tag & ~CW_TAG_BOXART) == w->boxart_entry && bits)
+         cw_boxart_show(w, bits, bw, bh);
+      return;
+   }
+   row = CW_TAG_ROW(tag);
    if (sizeof(uintptr_t) > 4 && CW_TAG_GEN(tag) != w->gen)
       return;                       /* for a list since replaced */
-   if (row >= w->row_count || edge != w->thumb_px)
+   if (row >= w->row_count || bw != w->thumb_px || bh != w->thumb_px)
       return;
    if (w->thumb_idx[row] != -1)
       return;                       /* row re-resolved meanwhile */
@@ -589,14 +603,14 @@ static void cw_thumb_want(ui_companion_win32_wimp_t *w, size_t row, bool urgent)
       w->thumb_idx[row] = -2;
       return;
    }
-   bits = companion_thumbs_get(w->thumbs_engine, path, w->thumb_px);
+   bits = companion_thumbs_get(w->thumbs_engine, path, w->thumb_px, w->thumb_px);
    if (bits)
    {
       cw_thumb_install(w, row, bits);   /* cached: no decode, shown now */
       return;
    }
    w->thumb_idx[row] = -1;
-   companion_thumbs_request(w->thumbs_engine, path, w->thumb_px,
+   companion_thumbs_request(w->thumbs_engine, path, w->thumb_px, w->thumb_px,
          CW_TAG(row, w->gen), urgent, cw_sys_color_argb(COLOR_WINDOW));
 }
 
@@ -647,8 +661,14 @@ static bool cw_visible_rows(ui_companion_win32_wimp_t *w, size_t *first,
 static void cw_thumb_tick(ui_companion_win32_wimp_t *w)
 {
    size_t first, last, i, span;
-   if (!w->thumbs_engine || !w->thumbs || !w->icon_view || w->browse_mode)
+   if (!w->thumbs_engine)
       return;
+   if (!w->thumbs || !w->icon_view || w->browse_mode)
+   {
+      /* No grid, but the boxart pane may be waiting on a decode. */
+      companion_thumbs_poll(w->thumbs_engine, cw_thumb_done, w, 0, 4000);
+      return;
+   }
 
    if (cw_visible_rows(w, &first, &last)
          && (first != w->vis_first || last != w->vis_last))
@@ -1115,14 +1135,31 @@ static HBITMAP cw_boxart_scale(const struct texture_image *img,
 
 /* Show the boxart of entry @entry (index into the playlist, or -1 to
  * clear). No-op if the pane already shows it. */
+/* Put engine pixels (bw x bh) into the pane's static control. */
+static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
+      int bw, int bh)
+{
+   HBITMAP bmp = cw_dib_from_argb(bits, bw, bh);
+   if (!bmp)
+      return;
+   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
+   if (w->boxart_bmp)
+      DeleteObject(w->boxart_bmp);
+   w->boxart_bmp = bmp;
+}
+
+/* Boxart pane for @entry: from the engine cache at once, otherwise an
+ * urgent request that lands through cw_thumb_done. The pane is cleared
+ * meanwhile, so a stale cover never sits under a new selection. Never
+ * decodes on the UI thread. */
 static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
 {
    char path[PATH_MAX_LENGTH];
    char db_name[NAME_MAX_LENGTH];
-   struct texture_image img;
    const struct playlist_entry *e;
+   const uint32_t *bits;
    RECT rc;
-   HBITMAP bmp = NULL;
+   int bw, bh;
 
    if (!w || !w->boxart || !w->boxart_visible)
       return;
@@ -1130,28 +1167,39 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
       return;
    w->boxart_entry = entry;
 
-   if (entry >= 0 && (e = companion_core_entry(w->core, (size_t)entry)))
-   {
-      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-      path_remove_extension(db_name);
-      memset(&img, 0, sizeof(img));
-      GetClientRect(w->boxart, &rc);
-      if (companion_core_thumbnail_path(w->core, db_name,
-               w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
-               !string_is_empty(e->label) ? e->label : path_basename(e->path),
-               e->path, path, sizeof(path))
-            && image_texture_load(&img, path))
-      {
-         bmp = cw_boxart_scale(&img, rc.right - 4, rc.bottom - 4,
-               cw_sys_color_argb(COLOR_BTNFACE));
-         image_texture_free(&img);
-      }
-   }
-
-   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
+   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
    if (w->boxart_bmp)
+   {
       DeleteObject(w->boxart_bmp);
-   w->boxart_bmp = bmp;
+      w->boxart_bmp = NULL;
+   }
+   if (entry < 0 || !w->thumbs_engine || w->browse_mode)
+      return;
+   if (!(e = companion_core_entry(w->core, (size_t)entry)))
+      return;
+
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   if (!companion_core_thumbnail_path(w->core, db_name,
+            w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            e->path, path, sizeof(path)))
+      return;
+
+   GetClientRect(w->boxart, &rc);
+   bw = rc.right - 4;
+   bh = rc.bottom - 4;
+   if (bw < 1 || bh < 1)
+      return;
+   bits = companion_thumbs_get(w->thumbs_engine, path, bw, bh);
+   if (bits)
+   {
+      cw_boxart_show(w, bits, bw, bh);
+      return;
+   }
+   companion_thumbs_request(w->thumbs_engine, path, bw, bh,
+         (uintptr_t)entry | CW_TAG_BOXART, true,
+         cw_sys_color_argb(COLOR_BTNFACE));
 }
 
 /* The playlist-entry index behind the entries' focused row, or -1. */
@@ -2833,7 +2881,7 @@ static void ui_companion_win32_wimp_iterate(void *data)
    companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
 
    /* Thumbnails: request what is on screen, install what finished. */
-   if (w->icon_view && IsWindowVisible(w->hwnd))
+   if (IsWindowVisible(w->hwnd))
       cw_thumb_tick(w);
 
    /* A short strcmp per frame: the info pane and the "<version> - <core>"

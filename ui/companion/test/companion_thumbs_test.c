@@ -94,7 +94,7 @@ struct got
 static struct got gots[4096];
 static size_t ngot;
 
-static void on_done(void *ud, const char *path, int edge, uintptr_t tag,
+static void on_done(void *ud, const char *path, int w, int h, uintptr_t tag,
       const uint32_t *bits)
 {
    struct got *g;
@@ -103,9 +103,10 @@ static void on_done(void *ud, const char *path, int edge, uintptr_t tag,
       return;
    g         = &gots[ngot++];
    g->tag    = tag;
-   g->edge   = edge;
+   g->edge   = w;
    g->null   = (bits == NULL);
-   g->centre = bits ? bits[(size_t)(edge / 2) * edge + edge / 2] : 0;
+   /* centre of a w x h buffer */
+   g->centre = bits ? bits[(size_t)(h / 2) * w + w / 2] : 0;
    g->corner = bits ? bits[0] : 0;
 }
 
@@ -147,7 +148,7 @@ static void test_decode_and_scale(void)
    write_tga(tall, 20, 80, 0xff00ff00u);
 
    ngot = 0;
-   CHECK(companion_thumbs_request(t, red, 32, 1, true, 0xff000000u), "request accepted");
+   CHECK(companion_thumbs_request(t, red, 32, 32, 1, true, 0xff000000u), "request accepted");
    /* (queued() is 0 or 1 here depending on whether a worker already
     * took the job - both are correct, so it is not asserted.) */
    CHECK(drain(t, 1, 2000) == 1, "red delivered");
@@ -157,18 +158,32 @@ static void test_decode_and_scale(void)
 
    /* Tall image: letterboxed left/right with the bg colour. */
    ngot = 0;
-   companion_thumbs_request(t, tall, 40, 2, true, 0xff123456u);
+   companion_thumbs_request(t, tall, 40, 40, 2, true, 0xff123456u);
    CHECK(drain(t, 1, 2000) == 1, "tall delivered");
    CHECK(gots[0].centre == 0xff00ff00u, "tall centre is the image");
    CHECK(gots[0].corner == 0xff123456u, "tall corner is the letterbox bg 0x%08x", gots[0].corner);
 
+   /* Rectangular box (a boxart pane): fit inside, letterboxed. */
+   ngot = 0;
+   companion_thumbs_request(t, tall, 60, 30, 5, true, 0xff0000ffu);
+   CHECK(drain(t, 1, 2000) == 1, "rect delivered");
+   CHECK(gots[0].tag == 5 && !gots[0].null, "rect tag");
+   {
+      /* 20x80 into 60x30 fits by height: a 7x30 image around x = 30;
+       * the corner is letterbox, the centre column is image. */
+      const uint32_t *r = companion_thumbs_get(t, tall, 60, 30);
+      CHECK(r != NULL, "rect cached");
+      CHECK(r && r[0] == 0xff0000ffu, "rect corner is bg");
+      CHECK(r && r[15 * 60 + 30] == 0xff00ff00u, "rect centre is image");
+   }
+
    /* Cached now: get() serves it, request() declines. */
-   bits = companion_thumbs_get(t, red, 32);
+   bits = companion_thumbs_get(t, red, 32, 32);
    CHECK(bits && bits[0] == 0xffff0000u, "cache get");
-   CHECK(!companion_thumbs_request(t, red, 32, 3, true, 0), "cached key not re-queued");
-   CHECK(companion_thumbs_get(t, red, 33) == NULL, "other edge is a different key");
-   CHECK(companion_thumbs_cached_count(t) == 2, "two cached");
-   CHECK(companion_thumbs_cached_bytes(t) == 32u * 32 * 4 + 40u * 40 * 4, "cached bytes");
+   CHECK(!companion_thumbs_request(t, red, 32, 32, 3, true, 0), "cached key not re-queued");
+   CHECK(companion_thumbs_get(t, red, 33, 33) == NULL, "other edge is a different key");
+   CHECK(companion_thumbs_cached_count(t) == 3, "three cached");
+   CHECK(companion_thumbs_cached_bytes(t) == 32u * 32 * 4 + 40u * 40 * 4 + 60u * 30 * 4, "cached bytes");
 
    companion_thumbs_free(t);
 }
@@ -187,21 +202,21 @@ static void test_lru_budget(void)
       write_tga(p[i], 8, 8, 0xff000000u | (uint32_t)(i * 40));
    }
    ngot = 0;
-   companion_thumbs_request(t, p[0], 16, 0, true, 0);
+   companion_thumbs_request(t, p[0], 16, 16, 0, true, 0);
    drain(t, 1, 2000);
-   companion_thumbs_request(t, p[1], 16, 1, true, 0);
+   companion_thumbs_request(t, p[1], 16, 16, 1, true, 0);
    drain(t, 1, 2000);
-   companion_thumbs_request(t, p[2], 16, 2, true, 0);
+   companion_thumbs_request(t, p[2], 16, 16, 2, true, 0);
    drain(t, 1, 2000);
    CHECK(companion_thumbs_cached_count(t) == 3, "three fit");
    /* touch p[0] so p[1] is the least recently used */
-   CHECK(companion_thumbs_get(t, p[0], 16) != NULL, "touch p0");
-   companion_thumbs_request(t, p[3], 16, 3, true, 0);
+   CHECK(companion_thumbs_get(t, p[0], 16, 16) != NULL, "touch p0");
+   companion_thumbs_request(t, p[3], 16, 16, 3, true, 0);
    drain(t, 1, 2000);
    CHECK(companion_thumbs_cached_count(t) == 3, "still three after eviction");
-   CHECK(companion_thumbs_get(t, p[1], 16) == NULL, "LRU p1 evicted");
-   CHECK(companion_thumbs_get(t, p[0], 16) != NULL, "touched p0 kept");
-   CHECK(companion_thumbs_get(t, p[3], 16) != NULL, "new p3 kept");
+   CHECK(companion_thumbs_get(t, p[1], 16, 16) == NULL, "LRU p1 evicted");
+   CHECK(companion_thumbs_get(t, p[0], 16, 16) != NULL, "touched p0 kept");
+   CHECK(companion_thumbs_get(t, p[3], 16, 16) != NULL, "new p3 kept");
    CHECK(companion_thumbs_cached_bytes(t) <= 3u * 16 * 16 * 4, "within budget");
    companion_thumbs_free(t);
 }
@@ -223,17 +238,17 @@ static void test_priority_and_cancel(void)
    }
    /* Cancel: queued requests vanish, cache stays. */
    ngot = 0;
-   companion_thumbs_request(t, p[0], 8, 0, true, 0);
+   companion_thumbs_request(t, p[0], 8, 8, 0, true, 0);
    drain(t, 1, 2000);
    for (i = 1; i < 6; i++)
-      companion_thumbs_request(t, p[i], 8, (uintptr_t)i, i < 3, 0);
+      companion_thumbs_request(t, p[i], 8, 8, (uintptr_t)i, i < 3, 0);
    companion_thumbs_cancel(t);
    CHECK(companion_thumbs_queued(t) == 0, "cancel empties queues");
-   CHECK(companion_thumbs_get(t, p[0], 8) != NULL, "cancel keeps the cache");
+   CHECK(companion_thumbs_get(t, p[0], 8, 8) != NULL, "cancel keeps the cache");
    /* A cancelled key can be requested again. */
-   CHECK(companion_thumbs_request(t, p[1], 8, 1, true, 0), "re-request after cancel");
+   CHECK(companion_thumbs_request(t, p[1], 8, 8, 1, true, 0), "re-request after cancel");
    drain(t, 1, 2000);
-   CHECK(companion_thumbs_get(t, p[1], 8) != NULL, "re-requested decoded");
+   CHECK(companion_thumbs_get(t, p[1], 8, 8) != NULL, "re-requested decoded");
    companion_thumbs_free(t);
 }
 
@@ -247,12 +262,12 @@ static void test_undecodable(void)
    fputs("not a tga", f);
    fclose(f);
    ngot = 0;
-   companion_thumbs_request(t, bad, 16, 9, true, 0);
+   companion_thumbs_request(t, bad, 16, 16, 9, true, 0);
    CHECK(drain(t, 1, 2000) == 1, "undecodable delivered");
    CHECK(gots[0].null && gots[0].tag == 9, "delivered with NULL bits");
    CHECK(companion_thumbs_cached_count(t) == 0, "not cached");
    /* forgotten: can be requested again (e.g. after a download fixes it) */
-   CHECK(companion_thumbs_request(t, bad, 16, 9, true, 0), "retry allowed");
+   CHECK(companion_thumbs_request(t, bad, 16, 16, 9, true, 0), "retry allowed");
    drain(t, 1, 2000);
    companion_thumbs_free(t);
 }
@@ -272,7 +287,7 @@ static void test_many_and_shutdown(void)
    }
    ngot = 0;
    for (i = 0; i < N; i++)
-      companion_thumbs_request(t, paths[i], 48, (uintptr_t)i, (i & 1) != 0, 0);
+      companion_thumbs_request(t, paths[i], 48, 48, (uintptr_t)i, (i & 1) != 0, 0);
    CHECK(drain(t, N, 10000) == N, "all %d delivered (got %u)", N, (unsigned)ngot);
    {
       /* each tag exactly once */
@@ -296,7 +311,7 @@ static void test_many_and_shutdown(void)
 
    /* Shutdown with work in flight must return. */
    for (i = 0; i < N; i++)
-      companion_thumbs_request(t, paths[i], 64, (uintptr_t)i, true, 0);
+      companion_thumbs_request(t, paths[i], 64, 64, (uintptr_t)i, true, 0);
    companion_thumbs_free(t);
 }
 
