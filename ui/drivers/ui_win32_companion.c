@@ -377,6 +377,16 @@ static int cw_thumb_edge(ui_companion_win32_wimp_t *w)
    return CW_S(w, 64 + (int)(z * 256 / 100));
 }
 
+/* Icon-view cell spacing for the current thumbnail edge: the thumbnail
+ * plus room for a two-line label, like Qt's grid cells. */
+static void cw_icon_spacing_apply(ui_companion_win32_wimp_t *w)
+{
+   int T = cw_thumb_edge(w);
+   w->thumb_px = T;
+   SendMessageA(w->entries, LVM_SETICONSPACING, 0,
+         MAKELPARAM(T + CW_S(w, 24), T + CW_S(w, 40)));
+}
+
 static HBITMAP cw_thumb_bitmap(ui_companion_win32_wimp_t *w,
       const struct texture_image *img, uint32_t bg)
 {
@@ -443,6 +453,11 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
    HBITMAP placeholder;
    uint32_t *bits;
    const int T = w->thumb_px = cw_thumb_edge(w);
+
+   /* A new size means new cell spacing too, or the grid lays items out
+    * for the old (or, at startup, zero) thumbnail size. */
+   if (w->icon_view)
+      cw_icon_spacing_apply(w);
 
    if (w->thumbs)
    {
@@ -551,9 +566,10 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    style |= icons ? LVS_ICON : LVS_REPORT;
    SetWindowLongA(w->entries, GWL_STYLE, style);
    if (icons)
-      SendMessageA(w->entries, LVM_SETICONSPACING, 0,
-            MAKELPARAM(w->thumb_px + CW_S(w, 24),
-                       w->thumb_px + CW_S(w, 40)));
+   {
+      cw_icon_spacing_apply(w);
+      SendMessageA(w->entries, LVM_ARRANGE, LVA_DEFAULT, 0);
+   }
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
@@ -648,6 +664,8 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 
    /* One thumbnail per visible row; the step reads each row's lParam. */
    w->thumb_count = row;
+   if (w->icon_view)
+      SendMessageA(w->entries, LVM_ARRANGE, LVA_DEFAULT, 0);
 
    /* Qt's footer: "%1 items". */
    {
