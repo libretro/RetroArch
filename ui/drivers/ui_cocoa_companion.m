@@ -115,6 +115,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSScrollView *entriesScroll;   /* holds the table or the grid */
    RACompanionGrid *grid;
    BOOL iconView;
+   BOOL browseMode;   /* entries table shows the filesystem */
    size_t gridNext;   /* next grid row to decode */
    NSTextField *status;
    NSMenuItem *menuItem;
@@ -148,6 +149,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)reloadEntries;
 - (void)refreshPlaylists:(id)sender;
 - (void)runSelected:(id)sender;
+- (void)browseFiles:(id)sender;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
 - (void)loadContent:(id)sender;
@@ -681,6 +683,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:@"Browse Files" action:@selector(browseFiles:)
+      keyEquivalent:@""];
+   [item setTarget:self];
    item = [menu addItemWithTitle:@"Scan Directory..." action:@selector(scanDirectory:)
       keyEquivalent:@""];
    [item setTarget:self];
@@ -838,7 +843,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    if (tv == playlists)
       return (NSInteger)companion_core_playlist_count(wimp->core);
    if (tv == entries)
-      return (NSInteger)companion_core_entry_count(wimp->core);
+      return browseMode
+         ? (NSInteger)companion_core_browse_count(wimp->core)
+         : (NSInteger)companion_core_entry_count(wimp->core);
    if (tv == coresTable)
       return coresRows;
    if (tv == infoTable)
@@ -868,6 +875,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       s = [[col identifier] isEqualToString:@"core"]
          ? companion_core_installed_core_version(wimp->core, (size_t)row)
          : companion_core_installed_core_name(wimp->core, (size_t)row);
+   else if (tv == entries && browseMode)
+   {
+      if ([[col identifier] isEqualToString:@"core"])
+         s = companion_core_browse_is_dir(wimp->core, (size_t)row)
+            ? "folder" : "";
+      else
+         s = companion_core_browse_name(wimp->core, (size_t)row);
+   }
    else if (tv == entries)
    {
       const struct playlist_entry *e =
@@ -890,6 +905,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    int row;
    if (!wimp || [note object] != playlists)
       return;
+   browseMode = NO; /* picking a playlist leaves the file browser */
    row = (int)[playlists selectedRow];
    if (row < 0)
       return;
@@ -930,6 +946,21 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    row = [self actionRowIn:entries];
    if (row < 0)
       return;
+
+   if (browseMode)
+   {
+      bool needs_core = false;
+      int r = companion_core_browse_activate(wimp->core, (size_t)row,
+            NULL, &needs_core, content, sizeof(content));
+      if (r == 0)
+         [entries reloadData];         /* entered a directory */
+      else if (r == 1)
+         [window orderOut:nil];        /* content loaded */
+      else if (needs_core)
+         [self showCoresForContent:content];
+      return;
+   }
+
    /* No usable core: ask, filtered to what runs this content. */
    if (companion_core_entry_needs_core(wimp->core, (size_t)row,
             content, sizeof(content)))
@@ -939,6 +970,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    }
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
       [window orderOut:nil];
+}
+
+- (void)browseFiles:(id)sender
+{
+   browseMode = YES;
+   if (!companion_core_browse_dir(wimp->core)[0])
+      companion_core_browse_open(wimp->core, NULL);
+   [self setIconView:NO];   /* the browser is a list */
+   [entries reloadData];
 }
 
 - (void)reloadSelectedPlaylist

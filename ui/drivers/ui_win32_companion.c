@@ -140,6 +140,7 @@ enum
    IDM_CW_TOGGLE_INFO,
    IDM_CW_VIEW_LIST,
    IDM_CW_VIEW_ICONS,
+   IDM_CW_BROWSE_FILES,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -161,6 +162,9 @@ typedef struct ui_companion_win32_wimp
     * running core from the iterate hook (only the shader commands are
     * forwarded to companions, so a load/unload is not an event here). */
    char info_core[PATH_MAX_LENGTH];
+   /* Files browser: the entries list shows the filesystem instead of the
+    * selected playlist; a directory descends, a file loads. */
+   bool browse_mode;
    /* Icon (grid) view: thumbnails in a 32-bit image list, index 0 the
     * placeholder; pending items decode one per frame while the view
     * is showing. */
@@ -403,6 +407,40 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
+static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
+{
+   size_t i, n;
+   LVITEMA item;
+
+   SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
+   cw_thumbs_reset(w, 0);
+   n = companion_core_browse_count(w->core);
+
+   SendMessageA(w->entries, WM_SETREDRAW, FALSE, 0);
+   for (i = 0; i < n; i++)
+   {
+      char label[PATH_MAX_LENGTH];
+      const char *name = companion_core_browse_name(w->core, i);
+      bool is_dir      = companion_core_browse_is_dir(w->core, i);
+
+      /* Trailing slash marks directories in the report view. */
+      if (is_dir && name && strcmp(name, ".."))
+         snprintf(label, sizeof(label), "%s\\", name);
+      else
+         strlcpy(label, name ? name : "", sizeof(label));
+
+      memset(&item, 0, sizeof(item));
+      item.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
+      item.iItem    = (int)i;
+      item.iImage   = 0;
+      item.lParam   = (LPARAM)i;
+      item.pszText  = label;
+      SendMessageA(w->entries, LVM_INSERTITEMA, 0, (LPARAM)&item);
+   }
+   SendMessageA(w->entries, WM_SETREDRAW, TRUE, 0);
+   cw_status_set(w, companion_core_browse_dir(w->core));
+}
+
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 {
    size_t i, n;
@@ -411,6 +449,12 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 
    if (!w || !w->entries)
       return;
+
+   if (w->browse_mode)
+   {
+      cw_browse_rebuild(w);
+      return;
+   }
 
    SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
    n = companion_core_entry_count(w->core);
@@ -664,6 +708,7 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
    LRESULT sel = SendMessageA(w->playlists, LB_GETCURSEL, 0, 0);
    if (sel == LB_ERR)
       return;
+   w->browse_mode = false; /* picking a playlist leaves the file browser */
    if (companion_core_select_playlist(w->core, (size_t)sel))
       cw_status_set(w, "Loading playlist...");
 }
@@ -683,6 +728,20 @@ static void cw_run_selected(ui_companion_win32_wimp_t *w)
    if (idx < 0)
       return;
 
+   if (w->browse_mode)
+   {
+      bool needs_core = false;
+      int r = companion_core_browse_activate(w->core, (size_t)idx,
+            NULL, &needs_core, content, sizeof(content));
+      if (r == 0)
+         cw_browse_rebuild(w);       /* entered a directory */
+      else if (r == 1)
+         ShowWindow(w->hwnd, SW_HIDE); /* content loaded */
+      else if (needs_core)
+         cw_cores_show(w, content);  /* pick a core for this file */
+      return;
+   }
+
    /* No usable core for this entry: ask, filtered to what runs it. */
    if (companion_core_entry_needs_core(w->core, (size_t)idx,
             content, sizeof(content)))
@@ -693,6 +752,14 @@ static void cw_run_selected(ui_companion_win32_wimp_t *w)
 
    if (companion_core_request_load_entry(w->core, (size_t)idx))
       ShowWindow(w->hwnd, SW_HIDE);
+}
+
+static void cw_browse_enter(ui_companion_win32_wimp_t *w)
+{
+   w->browse_mode = true;
+   if (!companion_core_browse_dir(w->core)[0])
+      companion_core_browse_open(w->core, NULL);
+   cw_browse_rebuild(w);
 }
 
 /* Reload the selected playlist after an edit (the core keeps its own
@@ -1201,6 +1268,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_REFRESH:
                companion_core_refresh_playlists(w->core);
                return 0;
+            case IDM_CW_BROWSE_FILES:
+               cw_browse_enter(w);
+               return 0;
             case IDM_CW_SCAN_DIR:
                cw_scan_directory(w);
                return 0;
@@ -1276,6 +1346,7 @@ static HMENU cw_build_menu(void)
    AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CONTENT, "&Load Content...");
    AppendMenuA(file, MF_STRING, IDM_CW_START_CORE,   "&Start Core");
    AppendMenuA(file, MF_SEPARATOR, 0, NULL);
+   AppendMenuA(file, MF_STRING, IDM_CW_BROWSE_FILES, "&Browse Files");
    AppendMenuA(file, MF_STRING, IDM_CW_SCAN_DIR,     "Scan &Directory...");
    AppendMenuA(file, MF_SEPARATOR, 0, NULL);
    AppendMenuA(file, MF_STRING, IDM_CW_CLOSE,        "&Close Window");

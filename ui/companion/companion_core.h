@@ -125,6 +125,33 @@ size_t companion_core_entry_count(companion_core_t *core);
 const struct playlist_entry *companion_core_entry(companion_core_t *core,
       size_t i);
 
+/* --- File-system browser ------------------------------------------- */
+
+/* Open @path as the browse directory (NULL / empty -> the configured
+ * default content directory, else the filesystem root). Lists it
+ * (directories first, then files), replacing the previous listing.
+ * Cheap - a single directory read. Returns false only on a listing
+ * error, in which case the previous listing is kept. */
+bool companion_core_browse_open(companion_core_t *core, const char *path);
+/* The directory currently listed ("" before the first open). */
+const char *companion_core_browse_dir(companion_core_t *core);
+size_t companion_core_browse_count(companion_core_t *core);
+/* Display name of entry @i (base name; ".." for the parent link). */
+const char *companion_core_browse_name(companion_core_t *core, size_t i);
+/* Full path of entry @i. */
+const char *companion_core_browse_path(companion_core_t *core, size_t i);
+bool companion_core_browse_is_dir(companion_core_t *core, size_t i);
+/* Activate entry @i: descend into a directory (re-opens it, fires
+ * nothing) or, for a file, load it - through the current core, or, when
+ * @pick_core_path is given, that core. Returns 1 when content was
+ * requested (the caller may hide its window), 0 when a directory was
+ * entered, -1 on error. A file with no usable core and no
+ * @pick_core_path returns -1 with *needs_core set and the path in
+ * @content, so the caller can open a core picker. */
+int companion_core_browse_activate(companion_core_t *core, size_t i,
+      const char *pick_core_path, bool *needs_core,
+      char *content, size_t content_len);
+
 /* --- Commands (never block; work goes to the task queue) ----------- */
 
 /* Load playlist entry @i with its associated core (or the current core

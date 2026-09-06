@@ -85,6 +85,10 @@ struct companion_core
     * may name a file outside the playlist directory). */
    char selected_path[PATH_MAX_LENGTH];
 
+   /* File-system browser listing. */
+   struct string_list *browse;
+   char browse_dir[PATH_MAX_LENGTH];
+
    /* Budget for the parse step currently running. */
    retro_time_t budget_end;
 
@@ -176,6 +180,8 @@ void companion_core_free(companion_core_t *core)
    companion_core_free_playlist_names(core);
    if (core->playlist_files)
       string_list_free(core->playlist_files);
+   if (core->browse)
+      string_list_free(core->browse);
    free(core);
 }
 
@@ -1145,6 +1151,182 @@ void companion_core_event_command(companion_core_t *core,
    if (!core)
       return;
    command_event(cmd, NULL);
+}
+
+/* --- File-system browser ----------------------------------------------- */
+
+bool companion_core_browse_open(companion_core_t *core, const char *path)
+{
+   settings_t *settings     = config_get_ptr();
+   struct string_list *list;
+   const char *dir          = path;
+
+   if (!core)
+      return false;
+
+   if (string_is_empty(dir))
+      dir = !string_is_empty(settings->paths.directory_menu_content)
+         ? settings->paths.directory_menu_content : NULL;
+
+#ifdef _WIN32
+   /* NULL dir with no default: list nothing rather than a bogus root;
+    * a drive picker is a platform concern for the backend. */
+   if (!dir)
+      return false;
+#else
+   if (!dir)
+      dir = "/";
+#endif
+
+   /* Directories and files, no hidden, archives shown as files. */
+   list = dir_list_new(dir, NULL, true, false, true, false);
+   if (!list)
+      return false;
+   dir_list_sort(list, true); /* directories first */
+
+   if (core->browse)
+      string_list_free(core->browse);
+   core->browse = list;
+   strlcpy(core->browse_dir, dir, sizeof(core->browse_dir));
+   return true;
+}
+
+const char *companion_core_browse_dir(companion_core_t *core)
+{
+   return (core && core->browse) ? core->browse_dir : "";
+}
+
+/* Index 0 is the ".." parent link (unless already at a filesystem
+ * root); real entries follow, so the accessors offset by it. */
+static bool companion_core_browse_has_parent(companion_core_t *core)
+{
+   const char *d = core->browse_dir;
+   size_t len    = strlen(d);
+   if (len == 0)
+      return false;
+#ifdef _WIN32
+   /* "C:\" is a root. */
+   if (len <= 3 && d[1] == ':')
+      return false;
+#else
+   if (len == 1 && d[0] == '/')
+      return false;
+#endif
+   return true;
+}
+
+size_t companion_core_browse_count(companion_core_t *core)
+{
+   size_t n;
+   if (!core || !core->browse)
+      return 0;
+   n = core->browse->size;
+   if (companion_core_browse_has_parent(core))
+      n++;
+   return n;
+}
+
+/* Maps a public index to a browse->elems index, or -1 for the parent. */
+static long companion_core_browse_real(companion_core_t *core, size_t i)
+{
+   if (companion_core_browse_has_parent(core))
+   {
+      if (i == 0)
+         return -1;
+      return (long)(i - 1);
+   }
+   return (long)i;
+}
+
+const char *companion_core_browse_name(companion_core_t *core, size_t i)
+{
+   long r;
+   if (!core || !core->browse)
+      return NULL;
+   r = companion_core_browse_real(core, i);
+   if (r < 0)
+      return "..";
+   if ((size_t)r >= core->browse->size)
+      return NULL;
+   return path_basename(core->browse->elems[r].data);
+}
+
+const char *companion_core_browse_path(companion_core_t *core, size_t i)
+{
+   long r;
+   if (!core || !core->browse)
+      return NULL;
+   r = companion_core_browse_real(core, i);
+   if (r < 0)
+      return core->browse_dir; /* parent handled in _activate */
+   if ((size_t)r >= core->browse->size)
+      return NULL;
+   return core->browse->elems[r].data;
+}
+
+bool companion_core_browse_is_dir(companion_core_t *core, size_t i)
+{
+   long r;
+   if (!core || !core->browse)
+      return false;
+   r = companion_core_browse_real(core, i);
+   if (r < 0)
+      return true; /* parent */
+   if ((size_t)r >= core->browse->size)
+      return false;
+   return core->browse->elems[r].attr.i == RARCH_DIRECTORY;
+}
+
+int companion_core_browse_activate(companion_core_t *core, size_t i,
+      const char *pick_core_path, bool *needs_core,
+      char *content, size_t content_len)
+{
+   const char *core_path;
+   long r;
+
+   if (needs_core)
+      *needs_core = false;
+   if (content && content_len)
+      content[0] = '\0';
+   if (!core || !core->browse)
+      return -1;
+
+   r = companion_core_browse_real(core, i);
+
+   /* Parent link. */
+   if (r < 0)
+   {
+      char parent[PATH_MAX_LENGTH];
+      strlcpy(parent, core->browse_dir, sizeof(parent));
+      path_parent_dir(parent, strlen(parent));
+      return companion_core_browse_open(core, parent) ? 0 : -1;
+   }
+
+   if ((size_t)r >= core->browse->size)
+      return -1;
+
+   if (core->browse->elems[r].attr.i == RARCH_DIRECTORY)
+      return companion_core_browse_open(core,
+            core->browse->elems[r].data) ? 0 : -1;
+
+   /* A file: load it. */
+   {
+      const char *file = core->browse->elems[r].data;
+      if (content && content_len)
+         strlcpy(content, file, content_len);
+
+      core_path = pick_core_path;
+      if (string_is_empty(core_path))
+         core_path = path_get(RARCH_PATH_CORE);
+      if (string_is_empty(core_path))
+      {
+         if (needs_core)
+            *needs_core = true;
+         return -1;
+      }
+      return companion_core_request_load_content(core, core_path,
+            file, NULL, NULL, NULL) ? 1 : -1;
+   }
 }
 
 /* --- Window hand-off ---------------------------------------------------- */
