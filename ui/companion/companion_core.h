@@ -249,13 +249,50 @@ bool companion_core_thumbnail_pack_download(companion_core_t *core,
 void companion_core_download_cancel(companion_core_t *core);
 bool companion_core_download_active(companion_core_t *core);
 
+/* --- Core information panel ---------------------------------------- */
+
+/* Status codes carried in string_list_elem_attr.i for the
+ * core-info value list returned by companion_core_core_info_rows(). */
+enum companion_core_info_row_status
+{
+   COMPANION_CORE_INFO_ROW_NORMAL = 0,
+   /* Firmware section: header rows with a key but empty value. */
+   COMPANION_CORE_INFO_ROW_FIRMWARE_NOTE,
+   /* Firmware status rows that should render in green. */
+   COMPANION_CORE_INFO_ROW_FIRMWARE_PRESENT,
+   /* Firmware status rows that should render in red. */
+   COMPANION_CORE_INFO_ROW_FIRMWARE_MISSING,
+   /* Notes: no key, free-form value. */
+   COMPANION_CORE_INFO_ROW_NOTE_NO_KEY
+};
+
+
+/* Fill @keys / @values (parallel, caller-created string_lists) with the
+ * rows a core-information panel shows for @core_path: name, label,
+ * version, system, authors, permissions, licences, extensions, then the
+ * firmware section and free-form notes. Each value's attr.i carries a
+ * companion_core_info_row_status. Returns false when there is no
+ * information (one "no information" row is still emitted). */
+bool companion_core_core_info_rows(const char *core_path,
+      struct string_list *keys, struct string_list *values);
+
 /* --- Installed cores (for "associate core" style pickers) ---------- */
 
 size_t companion_core_installed_core_count(companion_core_t *core);
 const char *companion_core_installed_core_path(companion_core_t *core,
       size_t i);
+/* Display name, falling back to the core file's base name. */
 const char *companion_core_installed_core_name(companion_core_t *core,
       size_t i);
+const char *companion_core_installed_core_version(companion_core_t *core,
+      size_t i);
+/* Reorder the installed-core list so the cores that can run
+ * @content_path - by its extension, or any member's when it is an
+ * archive, using core_info's matcher - come first, and return how many
+ * there are. Indices 0..n-1 of the accessors above then name them.
+ * NULL / empty @content_path leaves the order and returns the count. */
+size_t companion_core_installed_cores_supporting(companion_core_t *core,
+      const char *content_path);
 
 /* --- Playlist editing ---------------------------------------------- */
 

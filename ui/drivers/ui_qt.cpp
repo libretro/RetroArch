@@ -1093,245 +1093,6 @@ static double exp_scale(double input_val, double mid_val, double max_val)
    return ret;
 }
 
-/* Status codes carried in string_list_elem_attr.i for the
- * core-info value list returned by qt_core_info_collect(). */
-enum qt_core_info_row_status
-{
-   QT_CORE_INFO_ROW_NORMAL = 0,
-   /* Firmware section: header rows with a key but empty value. */
-   QT_CORE_INFO_ROW_FIRMWARE_NOTE,
-   /* Firmware status rows that should render in green. */
-   QT_CORE_INFO_ROW_FIRMWARE_PRESENT,
-   /* Firmware status rows that should render in red. */
-   QT_CORE_INFO_ROW_FIRMWARE_MISSING,
-   /* Notes: no key, free-form value. */
-   QT_CORE_INFO_ROW_NOTE_NO_KEY
-};
-
-/* Append a single (key, value) row.  status applies to value->attr.i. */
-static void qt_core_info_append_row(
-      struct string_list *keys,
-      struct string_list *values,
-      const char *key, const char *value,
-      enum qt_core_info_row_status status)
-{
-   union string_list_elem_attr attr;
-   attr.i = 0;
-   string_list_append(keys, key ? key : "", attr);
-   attr.i = (int)status;
-   string_list_append(values, value ? value : "", attr);
-}
-
-/* Append a row whose key is "<msg_hash>:" and whose value is plain. */
-static void qt_core_info_append_kv(
-      struct string_list *keys,
-      struct string_list *values,
-      enum msg_hash_enums label_enum, const char *value)
-{
-   char key[256];
-   size_t _len = strlcpy(key, msg_hash_to_str(label_enum), sizeof(key));
-   strlcpy_lit(key + _len, ":", sizeof(key) - _len);
-   qt_core_info_append_row(keys, values, key, value,
-         QT_CORE_INFO_ROW_NORMAL);
-}
-
-/* Append a row built from a list of strings joined by ", ". */
-static void qt_core_info_append_joined(
-      struct string_list *keys,
-      struct string_list *values,
-      enum msg_hash_enums label_enum,
-      const struct string_list *src)
-{
-   char buf[NAME_MAX_LENGTH * 4];
-   size_t i, _len = 0;
-   buf[0] = '\0';
-   for (i = 0; i < src->size; i++)
-   {
-      _len += strlcpy(buf + _len, src->elems[i].data, sizeof(buf) - _len);
-      if (i < src->size - 1)
-         _len += strlcpy_lit(buf + _len, ", ", sizeof(buf) - _len);
-   }
-   qt_core_info_append_kv(keys, values, label_enum, buf);
-}
-
-/* Collect a list of human-readable rows describing the currently-selected
- * core. Output: two parallel string_lists. values->elems[i].attr.i holds
- * a qt_core_info_row_status for that row.
- *
- * Returns false if no core is selected or its info isn't loaded; in that
- * case a single row with the "no info available" message is appended. */
-static bool qt_core_info_collect(
-      const char *current_core_path,
-      struct string_list *keys,
-      struct string_list *values)
-{
-   size_t i;
-   core_info_t *core_info = NULL;
-
-   core_info_find(current_core_path, &core_info);
-
-   if (    !current_core_path
-        || !*current_core_path
-        || !core_info
-        || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
-   {
-      qt_core_info_append_row(keys, values,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
-            "", QT_CORE_INFO_ROW_NORMAL);
-      return false;
-   }
-
-   if (core_info->core_name)
-      qt_core_info_append_kv(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME, core_info->core_name);
-   if (core_info->display_name)
-      qt_core_info_append_kv(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL, core_info->display_name);
-   if (core_info->systemname)
-      qt_core_info_append_kv(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME, core_info->systemname);
-   if (core_info->system_manufacturer)
-      qt_core_info_append_kv(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-            core_info->system_manufacturer);
-
-   if (core_info->categories_list)
-      qt_core_info_append_joined(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-            core_info->categories_list);
-   if (core_info->authors_list)
-      qt_core_info_append_joined(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-            core_info->authors_list);
-   if (core_info->permissions_list)
-      qt_core_info_append_joined(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-            core_info->permissions_list);
-   if (core_info->licenses_list)
-      qt_core_info_append_joined(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-            core_info->licenses_list);
-   if (core_info->supported_extensions_list)
-      qt_core_info_append_joined(keys, values,
-            MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-            core_info->supported_extensions_list);
-
-   if (core_info->firmware_count > 0)
-   {
-      char tmp_path[PATH_MAX_LENGTH];
-      core_info_ctx_firmware_t firmware_info;
-      bool update_missing_firmware    = false;
-      settings_t *settings            = config_get_ptr();
-      uint8_t flags                   = content_get_flags();
-      bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
-      bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
-
-      firmware_info.path              = core_info->path;
-
-      if (systemfiles_in_content_dir && content_is_inited)
-      {
-         fill_pathname_basedir(tmp_path,
-               path_get(RARCH_PATH_CONTENT),
-               sizeof(tmp_path));
-         if (!*tmp_path)
-            firmware_info.directory.system = settings->paths.directory_system;
-         else
-         {
-            size_t _len = strlen(tmp_path);
-            if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
-                  && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
-                     tmp_path[_len - 1] = '\0';
-            firmware_info.directory.system = tmp_path;
-         }
-      }
-      else
-         firmware_info.directory.system = settings->paths.directory_system;
-
-      update_missing_firmware = core_info_list_update_missing_firmware(&firmware_info);
-
-      if (update_missing_firmware)
-      {
-         char firmware_label[256];
-         char tmp[PATH_MAX_LENGTH];
-         size_t _len = strlcpy(firmware_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
-               sizeof(firmware_label));
-         strlcpy_lit(firmware_label + _len, ":",
-               sizeof(firmware_label) - _len);
-
-         qt_core_info_append_row(keys, values,
-               firmware_label, "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
-
-         if (systemfiles_in_content_dir)
-            qt_core_info_append_row(keys, values,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
-                  "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
-
-         snprintf(tmp, sizeof(tmp),
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
-               firmware_info.directory.system);
-         qt_core_info_append_row(keys, values,
-               tmp, "", QT_CORE_INFO_ROW_FIRMWARE_NOTE);
-
-         for (i = 0; i < core_info->firmware_count; i++)
-         {
-            char lbl_txt[256];
-            const char *val_txt          = NULL;
-            bool missing                 = false;
-            enum qt_core_info_row_status status;
-            size_t lbl_len               = 0;
-
-            if (!core_info->firmware[i].desc)
-               continue;
-
-            lbl_len = strlcpy_lit(lbl_txt, "(!) ", sizeof(lbl_txt));
-
-            if (core_info->firmware[i].missing)
-            {
-               missing = true;
-               if (core_info->firmware[i].optional)
-                  strlcpy(lbl_txt + lbl_len,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL),
-                        sizeof(lbl_txt) - lbl_len);
-               else
-                  strlcpy(lbl_txt + lbl_len,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED),
-                        sizeof(lbl_txt) - lbl_len);
-            }
-            else
-            {
-               if (core_info->firmware[i].optional)
-                  strlcpy(lbl_txt + lbl_len,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL),
-                        sizeof(lbl_txt) - lbl_len);
-               else
-                  strlcpy(lbl_txt + lbl_len,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED),
-                        sizeof(lbl_txt) - lbl_len);
-            }
-
-            val_txt = core_info->firmware[i].desc
-                  ? core_info->firmware[i].desc
-                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
-            status  = missing
-                  ? QT_CORE_INFO_ROW_FIRMWARE_MISSING
-                  : QT_CORE_INFO_ROW_FIRMWARE_PRESENT;
-            qt_core_info_append_row(keys, values,
-                  lbl_txt, val_txt, status);
-         }
-      }
-   }
-
-   if (core_info->notes && core_info->note_list)
-   {
-      for (i = 0; i < core_info->note_list->size; i++)
-         qt_core_info_append_row(keys, values,
-               "", core_info->note_list->elems[i].data,
-               QT_CORE_INFO_ROW_NOTE_NO_KEY);
-   }
-
-   return true;
-}
 
 /* Thumbnail widgets are addressed by a flat 0..3 index. The index order
  * (boxart, title, screenshot, logo) matches the four QObject names set
@@ -2664,23 +2425,23 @@ QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
       return infoList;
    }
 
-   qt_core_info_collect(current_core_path_data, keys, values);
+   companion_core_core_info_rows(current_core_path_data, keys, values);
 
    for (i = 0; i < keys->size; i++)
    {
       QHash<QString, QString> hash;
-      enum qt_core_info_row_status status =
-         (enum qt_core_info_row_status)values->elems[i].attr.i;
+      enum companion_core_info_row_status status =
+         (enum companion_core_info_row_status)values->elems[i].attr.i;
 
       hash["key"]   = keys->elems[i].data;
       hash["value"] = values->elems[i].data;
 
-      if (    status == QT_CORE_INFO_ROW_FIRMWARE_PRESENT
-           || status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
+      if (    status == COMPANION_CORE_INFO_ROW_FIRMWARE_PRESENT
+           || status == COMPANION_CORE_INFO_ROW_FIRMWARE_MISSING)
       {
-         const char *css_color  = (status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
+         const char *css_color  = (status == COMPANION_CORE_INFO_ROW_FIRMWARE_MISSING)
             ? "#ff0000" : "#00af00";
-         const char *style_rgb  = (status == QT_CORE_INFO_ROW_FIRMWARE_MISSING)
+         const char *style_rgb  = (status == COMPANION_CORE_INFO_ROW_FIRMWARE_MISSING)
             ? "color: #ff0000" : "color: rgb(0, 175, 0)";
          QString style          = QString("font-weight: bold; ") + style_rgb;
 
@@ -2911,43 +2672,11 @@ void MainWindow::loadContent(const PlaylistEntry &entry)
       coreSelection             = CORE_SELECTION_CURRENT;
    else if (coreSelection == CORE_SELECTION_ASK)
    {
-      QStringList extensionFilters;
-
-      if (!entry.path.isEmpty())
-      {
-         QByteArray pathArray = entry.path.toUtf8();
-         const char *pathData = pathArray.constData();
-         const char *ext      = path_get_extension(pathData);
-
-         if (ext && *ext)
-            extensionFilters.append(QString(ext).toLower());
-
-         if (path_is_compressed_file(pathData))
-         {
-            struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-            if (list)
-            {
-               if (list->size > 0)
-               {
-                  size_t i;
-                  for (i = 0; i < list->size; i++)
-                  {
-                     const char *filePath  = list->elems[i].data;
-                     const char *extension = path_get_extension(filePath);
-
-                     if (!extensionFilters.contains(extension, Qt::CaseInsensitive))
-                        extensionFilters.append(extension);
-                  }
-               }
-
-               string_list_free(list);
-            }
-         }
-      }
-
+      /* The core picker filters by what can run this content; the
+       * extension / archive-member matching is core_info's, via the
+       * companion core. */
       m_pendingRun = true;
-      onLoadCoreClicked(extensionFilters);
+      onLoadCoreClicked(entry.path);
 
       return;
    }
@@ -3731,14 +3460,14 @@ void MainWindow::onUnloadCoreMenuAction()
    raise();
 }
 
-void MainWindow::onLoadCoreClicked(const QStringList &extensionFilters)
+void MainWindow::onLoadCoreClicked(const QString &contentPath)
 {
    m_loadCoreWindow->show();
    m_loadCoreWindow->resize(width() / 2, height());
    m_loadCoreWindow->setGeometry(QStyle::alignedRect(
             Qt::LeftToRight, Qt::AlignCenter, m_loadCoreWindow->size(),
             geometry()));
-   m_loadCoreWindow->initCoreList(extensionFilters);
+   m_loadCoreWindow->initCoreList(contentPath);
 }
 
 void MainWindow::initContentTableWidget()
@@ -5246,19 +4975,26 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    loadCore(pathData);
 }
 
-void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
+void LoadCoreWindow::initCoreList(const QString &contentPath)
 {
-   int j;
-   unsigned i;
+   size_t i, count, supported;
    QStringList horizontal_header_labels;
-   core_info_list_t *cores = NULL;
-   QScreen *desktop = qApp->primaryScreen();
+   companion_core_t *core  = ui_companion_qt_core();
+   QByteArray contentArray = contentPath.toUtf8();
+   QScreen *desktop        = qApp->primaryScreen();
    QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION);
 
-   core_info_get_list(&cores);
+   /* Puts the cores that can run the content first and says how many;
+    * the rest are hidden below. With no content every core qualifies,
+    * and when none qualifies the whole list stays visible, as before. */
+   supported = companion_core_installed_cores_supporting(core,
+         contentArray.constData());
+   count     = companion_core_installed_core_count(core);
+   if (supported == 0)
+      supported = count;
 
    m_table->clear();
    m_table->setColumnCount(0);
@@ -5268,81 +5004,27 @@ void LoadCoreWindow::initCoreList(const QStringList &extensionFilters)
    m_table->setSortingEnabled(false);
    m_table->setColumnCount(2);
    m_table->setHorizontalHeaderLabels(horizontal_header_labels);
+   m_table->setRowCount((int)count);
 
-   if (cores)
+   for (i = 0; i < count; i++)
    {
-      m_table->setRowCount(cores->count);
+      QVariantHash hash;
+      QTableWidgetItem *name_item    = new QTableWidgetItem(
+            QString::fromUtf8(companion_core_installed_core_name(core, i)));
+      QTableWidgetItem *version_item = new QTableWidgetItem(
+            QString::fromUtf8(companion_core_installed_core_version(core, i)));
 
-      for (i = 0; i < cores->count; i++)
-      {
-         QVariantHash hash;
-         core_info_t              *core = core_info_get(cores, i);
-         QTableWidgetItem    *name_item = NULL;
-         QTableWidgetItem *version_item = new QTableWidgetItem(core->display_version);
-         const char               *name = core->display_name;
+      hash["path"] = QByteArray(companion_core_installed_core_path(core, i));
 
-         if (!name || !*name)
-            name                        = path_basename(core->path);
+      name_item->setData(Qt::UserRole, hash);
+      name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
+      version_item->setFlags(version_item->flags() & ~Qt::ItemIsEditable);
 
-         name_item                      = new QTableWidgetItem(name);
+      m_table->setItem((int)i, CORE_NAME_COLUMN, name_item);
+      m_table->setItem((int)i, CORE_VERSION_COLUMN, version_item);
 
-         hash["path"]                   = QByteArray(core->path);
-         hash["extensions"]             = QString(core->supported_extensions).split('|');
-
-         name_item->setData(Qt::UserRole, hash);
-         name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
-         version_item->setFlags(version_item->flags() & ~Qt::ItemIsEditable);
-
-         m_table->setItem(i, CORE_NAME_COLUMN, name_item);
-         m_table->setItem(i, CORE_VERSION_COLUMN, version_item);
-      }
-   }
-
-   if (!extensionFilters.isEmpty())
-   {
-      QVector<int> rowsToHide;
-
-      for (j = 0; j < m_table->rowCount(); j++)
-      {
-         int k;
-         QVariantHash hash;
-         QStringList extensions;
-         bool             found = false;
-         QTableWidgetItem *item = m_table->item(j, CORE_NAME_COLUMN);
-
-         if (!item)
-            continue;
-
-         hash       = item->data(Qt::UserRole).toHash();
-         extensions = hash["extensions"].toStringList();
-
-         if (!extensions.isEmpty())
-         {
-            for (k = 0; k < extensions.size(); k++)
-            {
-               QString ext = extensions.at(k).toLower();
-
-               if (extensionFilters.contains(ext, Qt::CaseInsensitive))
-               {
-                  found = true;
-                  break;
-               }
-            }
-
-            if (!found)
-               rowsToHide.append(j);
-         }
-      }
-
-      if (rowsToHide.size() != m_table->rowCount())
-      {
-         int i;
-         for (i = 0; i < rowsToHide.count() && rowsToHide.count() > 0; i++)
-         {
-            const int &row = rowsToHide.at(i);
-            m_table->setRowHidden(row, true);
-         }
-      }
+      if (i >= supported)
+         m_table->setRowHidden((int)i, true);
    }
 
    m_table->setSortingEnabled(true);

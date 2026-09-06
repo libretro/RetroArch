@@ -437,7 +437,9 @@ class LoadCoreWindow : public QMainWindow
    Q_OBJECT
 public:
    LoadCoreWindow(QWidget *parent = 0);
-   void initCoreList(const QStringList &extensionFilters = QStringList());
+   /* @contentPath: when non-empty, only cores that can run it (by
+    * extension, archive members included) are shown. */
+   void initCoreList(const QString &contentPath = QString());
    void setStatusLabel(QString label);
 signals:
    void coreLoaded();
@@ -600,7 +602,7 @@ public slots:
    void onThumbnailDropped(const QImage &image, ThumbnailType type);
 
 private slots:
-   void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
+   void onLoadCoreClicked(const QString &contentPath = QString());
    void onUnloadCoreMenuAction();
    void onTimeout();
    void onCoreLoaded();

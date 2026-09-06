@@ -37,6 +37,7 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#include "../../msg_hash.h"
 #include "../../retroarch_types.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
@@ -701,6 +702,233 @@ size_t companion_core_launch_options(companion_core_t *core,
    return n;
 }
 
+/* --- Core information panel -------------------------------------------- */
+
+/* Append a single (key, value) row.  status applies to value->attr.i. */
+static void cc_info_append_row(
+      struct string_list *keys,
+      struct string_list *values,
+      const char *key, const char *value,
+      enum companion_core_info_row_status status)
+{
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   string_list_append(keys, key ? key : "", attr);
+   attr.i = (int)status;
+   string_list_append(values, value ? value : "", attr);
+}
+
+/* Append a row whose key is "<msg_hash>:" and whose value is plain. */
+static void cc_info_append_kv(
+      struct string_list *keys,
+      struct string_list *values,
+      enum msg_hash_enums label_enum, const char *value)
+{
+   char key[256];
+   size_t _len = strlcpy(key, msg_hash_to_str(label_enum), sizeof(key));
+   strlcpy_lit(key + _len, ":", sizeof(key) - _len);
+   cc_info_append_row(keys, values, key, value,
+         COMPANION_CORE_INFO_ROW_NORMAL);
+}
+
+/* Append a row built from a list of strings joined by ", ". */
+static void cc_info_append_joined(
+      struct string_list *keys,
+      struct string_list *values,
+      enum msg_hash_enums label_enum,
+      const struct string_list *src)
+{
+   char buf[NAME_MAX_LENGTH * 4];
+   size_t i, _len = 0;
+   buf[0] = '\0';
+   for (i = 0; i < src->size; i++)
+   {
+      _len += strlcpy(buf + _len, src->elems[i].data, sizeof(buf) - _len);
+      if (i < src->size - 1)
+         _len += strlcpy_lit(buf + _len, ", ", sizeof(buf) - _len);
+   }
+   cc_info_append_kv(keys, values, label_enum, buf);
+}
+
+/* Collect a list of human-readable rows describing the currently-selected
+ * core. Output: two parallel string_lists. values->elems[i].attr.i holds
+ * a qt_core_info_row_status for that row.
+ *
+ * Returns false if no core is selected or its info isn't loaded; in that
+ * case a single row with the "no info available" message is appended. */
+bool companion_core_core_info_rows(
+      const char *current_core_path,
+      struct string_list *keys,
+      struct string_list *values)
+{
+   size_t i;
+   core_info_t *core_info = NULL;
+
+   core_info_find(current_core_path, &core_info);
+
+   if (    !current_core_path
+        || !*current_core_path
+        || !core_info
+        || !(core_info->flags & CORE_INFO_FLAG_HAS_INFO))
+   {
+      cc_info_append_row(keys, values,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
+            "", COMPANION_CORE_INFO_ROW_NORMAL);
+      return false;
+   }
+
+   if (core_info->core_name)
+      cc_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME, core_info->core_name);
+   if (core_info->display_name)
+      cc_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL, core_info->display_name);
+   if (core_info->systemname)
+      cc_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME, core_info->systemname);
+   if (core_info->system_manufacturer)
+      cc_info_append_kv(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+            core_info->system_manufacturer);
+
+   if (core_info->categories_list)
+      cc_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+            core_info->categories_list);
+   if (core_info->authors_list)
+      cc_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+            core_info->authors_list);
+   if (core_info->permissions_list)
+      cc_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+            core_info->permissions_list);
+   if (core_info->licenses_list)
+      cc_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+            core_info->licenses_list);
+   if (core_info->supported_extensions_list)
+      cc_info_append_joined(keys, values,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+            core_info->supported_extensions_list);
+
+   if (core_info->firmware_count > 0)
+   {
+      char tmp_path[PATH_MAX_LENGTH];
+      core_info_ctx_firmware_t firmware_info;
+      bool update_missing_firmware    = false;
+      settings_t *settings            = config_get_ptr();
+      uint8_t flags                   = content_get_flags();
+      bool systemfiles_in_content_dir = settings->bools.systemfiles_in_content_dir;
+      bool content_is_inited          = flags & CONTENT_ST_FLAG_IS_INITED;
+
+      firmware_info.path              = core_info->path;
+
+      if (systemfiles_in_content_dir && content_is_inited)
+      {
+         fill_pathname_basedir(tmp_path,
+               path_get(RARCH_PATH_CONTENT),
+               sizeof(tmp_path));
+         if (!*tmp_path)
+            firmware_info.directory.system = settings->paths.directory_system;
+         else
+         {
+            size_t _len = strlen(tmp_path);
+            if (     string_count_occurrences_single_character(tmp_path, PATH_DEFAULT_SLASH_C()) > 1
+                  && tmp_path[_len - 1] == PATH_DEFAULT_SLASH_C())
+                     tmp_path[_len - 1] = '\0';
+            firmware_info.directory.system = tmp_path;
+         }
+      }
+      else
+         firmware_info.directory.system = settings->paths.directory_system;
+
+      update_missing_firmware = core_info_list_update_missing_firmware(&firmware_info);
+
+      if (update_missing_firmware)
+      {
+         char firmware_label[256];
+         char tmp[PATH_MAX_LENGTH];
+         size_t _len = strlcpy(firmware_label,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
+               sizeof(firmware_label));
+         strlcpy_lit(firmware_label + _len, ":",
+               sizeof(firmware_label) - _len);
+
+         cc_info_append_row(keys, values,
+               firmware_label, "", COMPANION_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         if (systemfiles_in_content_dir)
+            cc_info_append_row(keys, values,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
+                  "", COMPANION_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         snprintf(tmp, sizeof(tmp),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH),
+               firmware_info.directory.system);
+         cc_info_append_row(keys, values,
+               tmp, "", COMPANION_CORE_INFO_ROW_FIRMWARE_NOTE);
+
+         for (i = 0; i < core_info->firmware_count; i++)
+         {
+            char lbl_txt[256];
+            const char *val_txt          = NULL;
+            bool missing                 = false;
+            enum companion_core_info_row_status status;
+            size_t lbl_len               = 0;
+
+            if (!core_info->firmware[i].desc)
+               continue;
+
+            lbl_len = strlcpy_lit(lbl_txt, "(!) ", sizeof(lbl_txt));
+
+            if (core_info->firmware[i].missing)
+            {
+               missing = true;
+               if (core_info->firmware[i].optional)
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL),
+                        sizeof(lbl_txt) - lbl_len);
+               else
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED),
+                        sizeof(lbl_txt) - lbl_len);
+            }
+            else
+            {
+               if (core_info->firmware[i].optional)
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL),
+                        sizeof(lbl_txt) - lbl_len);
+               else
+                  strlcpy(lbl_txt + lbl_len,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED),
+                        sizeof(lbl_txt) - lbl_len);
+            }
+
+            val_txt = core_info->firmware[i].desc
+                  ? core_info->firmware[i].desc
+                  : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
+            status  = missing
+                  ? COMPANION_CORE_INFO_ROW_FIRMWARE_MISSING
+                  : COMPANION_CORE_INFO_ROW_FIRMWARE_PRESENT;
+            cc_info_append_row(keys, values,
+                  lbl_txt, val_txt, status);
+         }
+      }
+   }
+
+   if (core_info->notes && core_info->note_list)
+   {
+      for (i = 0; i < core_info->note_list->size; i++)
+         cc_info_append_row(keys, values,
+               "", core_info->note_list->elems[i].data,
+               COMPANION_CORE_INFO_ROW_NOTE_NO_KEY);
+   }
+
+   return true;
+}
+
 /* --- Installed cores --------------------------------------------------- */
 
 static const core_info_t *companion_core_installed_core(size_t i)
@@ -732,8 +960,34 @@ const char *companion_core_installed_core_name(companion_core_t *core,
    const core_info_t *info = core ? companion_core_installed_core(i) : NULL;
    if (!info)
       return NULL;
-   return !string_is_empty(info->display_name)
-      ? info->display_name : info->core_name;
+   if (!string_is_empty(info->display_name))
+      return info->display_name;
+   if (!string_is_empty(info->core_name))
+      return info->core_name;
+   return path_basename(info->path);
+}
+
+const char *companion_core_installed_core_version(companion_core_t *core,
+      size_t i)
+{
+   const core_info_t *info = core ? companion_core_installed_core(i) : NULL;
+   return (info && info->display_version) ? info->display_version : "";
+}
+
+size_t companion_core_installed_cores_supporting(companion_core_t *core,
+      const char *content_path)
+{
+   core_info_list_t *list       = NULL;
+   const core_info_t *supported = NULL;
+   size_t n                     = 0;
+
+   if (!core || !core_info_get_list(&list) || !list)
+      return 0;
+   if (string_is_empty(content_path))
+      return list->count;
+
+   core_info_list_get_supported_cores(list, content_path, &supported, &n);
+   return n;
 }
 
 /* --- Playlist editing -------------------------------------------------- */
