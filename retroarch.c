@@ -6684,6 +6684,11 @@ int rarch_main(int argc, char *argv[], void *data)
       }
    }
 
+   /* Close the desktop companion window while its message pump and the
+    * drivers are still alive; leaving it for main_exit's teardown lets a
+    * native (Win32) companion window outlive the pump and hang. */
+   ui_companion_driver_wimp_deinit();
+
    main_exit(data);
 #endif
 

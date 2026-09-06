@@ -193,7 +193,14 @@ void ui_companion_driver_deinit(void)
    if (ui->deinit)
       ui->deinit(uico_st->data);
 
+   ui_companion_driver_wimp_deinit();
+   uico_st->data       = NULL;
+}
+
+void ui_companion_driver_wimp_deinit(void)
+{
 #ifdef HAVE_COMPANION_WIMP
+   uico_driver_state_t *uico_st = &uico_driver_st;
    if (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
    {
       if (uico_st->wimp && uico_st->wimp->deinit)
@@ -202,7 +209,6 @@ void ui_companion_driver_deinit(void)
       uico_st->flags    &= ~UICO_ST_FLAG_WIMP_IS_INITED;
    }
 #endif
-   uico_st->data       = NULL;
 }
 
 void ui_companion_driver_toggle(

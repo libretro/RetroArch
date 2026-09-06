@@ -1148,6 +1148,7 @@ static ui_application_t ui_application_cocoa = {
        }
     }
 
+    ui_companion_driver_wimp_deinit();
     main_exit(NULL);
 }
 #endif

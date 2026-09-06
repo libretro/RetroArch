@@ -205,6 +205,13 @@ void ui_companion_driver_msg_queue_push(
 
 void ui_companion_driver_deinit(void);
 
+/* Tear down just the desktop companion window (safe to call more than
+ * once). Called at quit before the drivers go away, so the window is
+ * gone while its own thread's message pump is still running - otherwise
+ * a native companion window outlives the pump and the process hangs
+ * with an undestroyed window. */
+void ui_companion_driver_wimp_deinit(void);
+
 void ui_companion_driver_toggle(
       bool desktop_menu_enable,
       bool ui_companion_toggle,
