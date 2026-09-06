@@ -53,6 +53,7 @@
 #include <shlobj.h>
 
 #include <compat/strl.h>
+#include <lists/string_list.h>
 #include <compat/msvc.h>
 #include <string/stdstring.h>
 
@@ -90,6 +91,7 @@
 #define COMPANION_WIN32_MIN_W      480
 #define COMPANION_WIN32_MIN_H      320
 #define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
+#define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
 /* The log edit is trimmed from the front when it passes this, in one
  * cut, so appends stay O(line) instead of the control's O(text). */
 #define COMPANION_WIN32_LOG_MAX    (256 * 1024)
@@ -115,6 +117,7 @@ enum
    IDC_CW_ENTRIES,
    IDC_CW_STATUS,
    IDC_CW_LOG,
+   IDC_CW_INFO,       /* core information pane: list view */
    IDC_CW_CORES,      /* Load Core window: list view */
    IDC_CW_CORES_OK,
    IDC_CW_CORES_CANCEL,
@@ -129,6 +132,7 @@ enum
    IDM_CW_ASSOC_DETECT,
    IDM_CW_SCAN_DIR,
    IDM_CW_TOGGLE_LOG,
+   IDM_CW_TOGGLE_INFO,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -144,6 +148,12 @@ typedef struct ui_companion_win32_wimp
    HWND status;      /* msctls_statusbar32 */
    HWND log;         /* read-only multiline EDIT, hidden by default */
    bool log_visible;
+   HWND info;        /* core information: SysListView32 key / value */
+   bool info_visible;
+   /* Core the info pane currently describes; the pane follows the
+    * running core from the iterate hook (only the shader commands are
+    * forwarded to companions, so a load/unload is not an event here). */
+   char info_core[PATH_MAX_LENGTH];
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
    HWND cores_hwnd;
    HWND cores_list;
@@ -250,19 +260,83 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       w->pane_w = COMPANION_WIN32_PANE_MIN;
 
    {
-      int log_h  = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
-      int list_h = rc.bottom - status_h - log_h;
+      int log_h   = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
+      int info_w  = (w->info_visible && w->info) ? COMPANION_WIN32_INFO_W : 0;
+      int list_h  = rc.bottom - status_h - log_h;
+      int entry_x = w->pane_w + COMPANION_WIN32_SPLIT_W;
+      int entry_w = rc.right - entry_x - info_w;
       if (list_h < 0)
          list_h = 0;
+      if (entry_w < COMPANION_WIN32_PANE_MIN)
+      {
+         /* Too narrow for all three: the info pane yields. */
+         info_w  = 0;
+         entry_w = rc.right - entry_x;
+      }
 
       if (w->playlists)
          MoveWindow(w->playlists, 0, 0, w->pane_w, list_h, TRUE);
       if (w->entries)
-         MoveWindow(w->entries, w->pane_w + COMPANION_WIN32_SPLIT_W, 0,
-               rc.right - w->pane_w - COMPANION_WIN32_SPLIT_W, list_h, TRUE);
+         MoveWindow(w->entries, entry_x, 0, entry_w, list_h, TRUE);
+      if (w->info)
+         MoveWindow(w->info, entry_x + entry_w, 0, info_w, list_h, TRUE);
       if (w->log)
          MoveWindow(w->log, 0, list_h, rc.right, log_h, TRUE);
    }
+}
+
+/* Core information pane: the rows companion_core_core_info_rows()
+ * produces for the running core, as a two-column list. Rebuilt when the
+ * pane is shown and when the core changes. */
+static void cw_info_fill(ui_companion_win32_wimp_t *w)
+{
+   struct string_list *keys, *values;
+   size_t i;
+   LVITEMA item;
+
+   if (!w || !w->info || !w->info_visible)
+      return;
+
+   keys   = string_list_new();
+   values = string_list_new();
+   if (!keys || !values)
+   {
+      string_list_free(keys);
+      string_list_free(values);
+      return;
+   }
+
+   strlcpy(w->info_core, companion_core_current_core_path(w->core),
+         sizeof(w->info_core));
+   companion_core_core_info_rows(w->info_core, keys, values);
+
+   SendMessageA(w->info, WM_SETREDRAW, FALSE, 0);
+   SendMessageA(w->info, LVM_DELETEALLITEMS, 0, 0);
+   for (i = 0; i < keys->size; i++)
+   {
+      memset(&item, 0, sizeof(item));
+      item.mask     = LVIF_TEXT;
+      item.iItem    = (int)i;
+      item.pszText  = (LPSTR)(keys->elems[i].data ? keys->elems[i].data : "");
+      SendMessageA(w->info, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      item.iSubItem = 1;
+      item.pszText  = (LPSTR)(values->elems[i].data ? values->elems[i].data : "");
+      SendMessageA(w->info, LVM_SETITEMA, 0, (LPARAM)&item);
+   }
+   SendMessageA(w->info, WM_SETREDRAW, TRUE, 0);
+
+   string_list_free(keys);
+   string_list_free(values);
+}
+
+static void cw_info_toggle(ui_companion_win32_wimp_t *w)
+{
+   if (!w || !w->info)
+      return;
+   w->info_visible = !w->info_visible;
+   ShowWindow(w->info, w->info_visible ? SW_SHOW : SW_HIDE);
+   cw_layout(w);
+   cw_info_fill(w);
 }
 
 /* Append one log line to the EDIT: move the caret to the end and
@@ -883,6 +957,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_TOGGLE_LOG:
                cw_log_toggle(w);
                return 0;
+            case IDM_CW_TOGGLE_INFO:
+               cw_info_toggle(w);
+               return 0;
             case IDM_CW_CLOSE:
                ShowWindow(hwnd, SW_HIDE);
                return 0;
@@ -952,6 +1029,7 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
+   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_INFO,  "Core &Information");
 
    AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file, "&File");
    AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view, "&View");
@@ -1005,8 +1083,28 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          | ES_AUTOVSCROLL | ES_LEFT,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_LOG, inst, NULL);
 
-   if (!w->playlists || !w->entries || !w->status || !w->log)
+   w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+         WS_CHILD | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
+         0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
+
+   if (!w->playlists || !w->entries || !w->status || !w->log || !w->info)
       return false;
+
+   SendMessageA(w->info, LVM_SETEXTENDEDLISTVIEWSTYLE,
+         LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+   {
+      LVCOLUMNA icol;
+      memset(&icol, 0, sizeof(icol));
+      icol.mask     = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+      icol.pszText  = (LPSTR)"";
+      icol.cx       = 110;
+      icol.iSubItem = 0;
+      SendMessageA(w->info, LVM_INSERTCOLUMNA, 0, (LPARAM)&icol);
+      icol.pszText  = (LPSTR)"Core Information";
+      icol.cx       = 400;
+      icol.iSubItem = 1;
+      SendMessageA(w->info, LVM_INSERTCOLUMNA, 1, (LPARAM)&icol);
+   }
 
    /* Full-row select is an IE3+ extended style; harmless where absent. */
    SendMessageA(w->entries, LVM_SETEXTENDEDLISTVIEWSTYLE,
@@ -1094,8 +1192,14 @@ static void ui_companion_win32_wimp_toggle(void *data, bool force)
 static void ui_companion_win32_wimp_iterate(void *data)
 {
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
-   if (w)
-      companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
+   if (!w)
+      return;
+   companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
+
+   /* A short strcmp per frame, only while the pane is shown. */
+   if (     w->info_visible
+         && strcmp(w->info_core, companion_core_current_core_path(w->core)))
+      cw_info_fill(w);
 }
 
 static void ui_companion_win32_wimp_event_command(void *data,

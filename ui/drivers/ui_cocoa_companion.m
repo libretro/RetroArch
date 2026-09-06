@@ -31,6 +31,8 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -62,9 +64,13 @@ typedef unsigned int NSUInteger;
 #if defined(__clang__) && __has_feature(objc_arc)
 #define autorelease_compat self
 #define RETAIN_COMPAT(x) (x)
+/* Keep an autoreleased object already stored in a strong ivar: ARC has
+ * retained it on assignment, MRC needs the retain spelled out. */
+#define KEEP_IVAR(x) ((void)0)
 #else
 #define autorelease_compat autorelease
 #define RETAIN_COMPAT(x) [(x) retain]
+#define KEEP_IVAR(x) [(x) retain]
 #endif
 
 typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
@@ -90,6 +96,14 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    /* Load Core window: installed cores by name / version. */
    NSWindow *coresWindow;
    NSTableView *coresTable;
+   /* Core information pane (right of the entries), shown on demand;
+    * rows cached from companion_core_core_info_rows(). */
+   NSScrollView *infoScroll;
+   NSTableView *infoTable;
+   BOOL infoVisible;
+   struct string_list *infoKeys;
+   struct string_list *infoValues;
+   char infoCore[PATH_MAX_LENGTH];
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (BOOL)buildWindow;
@@ -108,6 +122,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)scanDirectory:(id)sender;
 - (void)toggleLog:(id)sender;
 - (void)loadSelectedCore:(id)sender;
+- (void)toggleInfo:(id)sender;
+- (void)refreshInfo;
+- (void)infoFollowCore;
 - (void)cancelLoadCore:(id)sender;
 - (void)appendLog:(const char*)msg;
 @end
@@ -302,6 +319,17 @@ static const companion_callbacks_t cc_callbacks = {
    [split setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    [content addSubview:split];
 
+   /* Core information pane: a key / value table that joins the split
+    * view as a third pane while shown. */
+   infoTable = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 280, 500)
+         scroll:&infoScroll twoColumns:YES]);
+   KEEP_IVAR(infoScroll);
+   [[[infoTable tableColumns] objectAtIndex:0] setWidth:100.0];
+   [[[[infoTable tableColumns] objectAtIndex:0] headerCell] setStringValue:@""];
+   [[[infoTable tableColumns] objectAtIndex:1] setWidth:170.0];
+   [[[[infoTable tableColumns] objectAtIndex:1] headerCell]
+      setStringValue:@"Core Information"];
+
    /* Log pane: a read-only NSTextView under the split, added to the
     * hierarchy only while shown so the split gets the full height
     * otherwise. Anchored to the bottom edge above the status line. */
@@ -348,6 +376,9 @@ static const companion_callbacks_t cc_callbacks = {
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:@"Core Information" action:@selector(toggleInfo:)
       keyEquivalent:@""];
    [item setTarget:self];
 
@@ -434,6 +465,17 @@ static const companion_callbacks_t cc_callbacks = {
       RELEASE(entries);
    }
    RELEASE(status);
+   if (infoTable)
+   {
+      [infoTable setDataSource:nil];
+      [infoTable setDelegate:nil];
+      RELEASE(infoTable);
+   }
+   RELEASE(infoScroll);
+   string_list_free(infoKeys);
+   string_list_free(infoValues);
+   infoKeys   = NULL;
+   infoValues = NULL;
    if (coresTable)
    {
       [coresTable setDataSource:nil];
@@ -473,6 +515,8 @@ static const companion_callbacks_t cc_callbacks = {
       return (NSInteger)companion_core_entry_count(wimp->core);
    if (tv == coresTable)
       return (NSInteger)companion_core_installed_core_count(wimp->core);
+   if (tv == infoTable)
+      return infoKeys ? (NSInteger)infoKeys->size : 0;
    return 0;
 }
 
@@ -487,6 +531,13 @@ static const companion_callbacks_t cc_callbacks = {
 
    if (tv == playlists)
       s = companion_core_playlist_name(wimp->core, (size_t)row);
+   else if (tv == infoTable)
+   {
+      struct string_list *l = [[col identifier] isEqualToString:@"core"]
+         ? infoValues : infoKeys;
+      if (l && (size_t)row < l->size)
+         s = l->elems[row].data;
+   }
    else if (tv == coresTable)
       s = [[col identifier] isEqualToString:@"core"]
          ? companion_core_installed_core_version(wimp->core, (size_t)row)
@@ -612,6 +663,47 @@ static const companion_callbacks_t cc_callbacks = {
 {
    if (wimp && !companion_core_start_core(wimp->core))
       [self setStatus:"Failed to start the core."];
+}
+
+- (void)refreshInfo
+{
+   if (!wimp || !infoVisible)
+      return;
+   string_list_free(infoKeys);
+   string_list_free(infoValues);
+   infoKeys   = string_list_new();
+   infoValues = string_list_new();
+   strlcpy(infoCore, companion_core_current_core_path(wimp->core),
+         sizeof(infoCore));
+   if (infoKeys && infoValues)
+      companion_core_core_info_rows(infoCore, infoKeys, infoValues);
+   [infoTable reloadData];
+}
+
+/* Called from the iterate hook: a short strcmp per frame while shown. */
+- (void)infoFollowCore
+{
+   if (infoVisible && wimp
+         && strcmp(infoCore, companion_core_current_core_path(wimp->core)))
+      [self refreshInfo];
+}
+
+- (void)toggleInfo:(id)sender
+{
+   if (!split || !infoScroll)
+      return;
+   infoVisible = !infoVisible;
+   if (infoVisible)
+   {
+      [split addSubview:infoScroll];
+      [split adjustSubviews];
+      [self refreshInfo];
+   }
+   else
+   {
+      [infoScroll removeFromSuperview];
+      [split adjustSubviews];
+   }
 }
 
 - (void)toggleLog:(id)sender
@@ -857,8 +949,11 @@ static void ui_companion_cocoa_wimp_toggle(void *data, bool force)
 static void ui_companion_cocoa_wimp_iterate(void *data)
 {
    ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
-   if (w)
-      companion_core_iterate(w->core, COMPANION_COCOA_ITER_US);
+   if (!w)
+      return;
+   companion_core_iterate(w->core, COMPANION_COCOA_ITER_US);
+   if (w->controller)
+      [CC_CTRL(w) infoFollowCore];
 }
 
 static void ui_companion_cocoa_wimp_event_command(void *data,
