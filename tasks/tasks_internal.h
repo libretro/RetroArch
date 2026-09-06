@@ -418,6 +418,7 @@ extern const char* const input_builtin_autoconfs[];
 /* cloud sync tasks */
 void task_push_cloud_sync_update_driver(void);
 void task_push_cloud_sync(void);
+void task_wait_for_cloud_sync(void);
 void task_push_cloud_sync_resolve_keep_local(void);
 void task_push_cloud_sync_resolve_keep_server(void);
 

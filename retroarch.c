@@ -6634,7 +6634,9 @@ int rarch_main(int argc, char *argv[], void *data)
          settings->bools.ui_companion_start_on_boot
          );
 #ifdef HAVE_CLOUDSYNC
-   if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
+   if (   settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC
+       && (   !(global_get_ptr()->flags & GLOB_FLG_LAUNCHED_FROM_CLI)
+           || path_is_empty(RARCH_PATH_CONTENT)))
       task_push_cloud_sync();
 #endif
 #ifdef HAVE_LAKKA
@@ -8705,6 +8707,18 @@ bool retroarch_main_init(int argc, char *argv[])
 #ifdef HAVE_CLOUDSYNC
    cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
          "cloud sync driver", verbosity_enabled);
+
+   /* Directly launched content loads SaveRAM later in this function.
+    * Complete the automatic startup sync first so the core cannot retain
+    * stale SaveRAM and overwrite a newer downloaded file on content close. */
+   if (   settings->bools.cloud_sync_enable
+       && settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC
+       && (global->flags & GLOB_FLG_LAUNCHED_FROM_CLI)
+       && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      task_push_cloud_sync();
+      task_wait_for_cloud_sync();
+   }
 #endif
    location_driver_find_driver(settings->arrays.location_driver,
          &location_driver_st,
