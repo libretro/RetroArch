@@ -1867,7 +1867,7 @@
 #define DEFAULT_DESKTOP_MENU_THUMBNAIL_QUALITY 0     /* 0 = default */
 #define DEFAULT_DESKTOP_MENU_ICON_VIEW_ZOOM 50
 #define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT 0
-#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT 1000
+#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT 0
 #define DEFAULT_DESKTOP_MENU_THEME 0                 /* 0 system, 1 dark, 2 custom */
 
 /* Keep track of how long each core+content has been running for over time */

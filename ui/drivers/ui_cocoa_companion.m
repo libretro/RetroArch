@@ -551,6 +551,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       [grid setCount:(NSInteger)n];
       gridNext = 0;
    }
+   /* Qt selects the first entry of a freshly loaded playlist. */
+   if (n > 0)
+   {
+      [entries selectRowIndexes:[NSIndexSet indexSetWithIndex:0]
+         byExtendingSelection:NO]; /* delegate updates the boxart */
+      if (grid)
+         [grid setSelectedRow:0];
+   }
    snprintf(buf, sizeof(buf), "%u entries", (unsigned)n);
    [self setStatus:buf];
 }

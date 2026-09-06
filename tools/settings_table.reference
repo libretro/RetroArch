@@ -1797,7 +1797,7 @@ uint	desktop_menu_thumbnail_max_size	1	0
 uint	desktop_menu_thumbnail_quality	1	0
 uint	desktop_menu_icon_view_zoom	1	50
 uint	desktop_menu_all_playlists_list_max_count	1	0
-uint	desktop_menu_all_playlists_grid_max_count	1	1000
+uint	desktop_menu_all_playlists_grid_max_count	1	0
 uint	desktop_menu_theme	1	0
 uint	desktop_menu_window_x	1	0
 uint	desktop_menu_window_y	1	0

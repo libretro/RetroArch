@@ -444,11 +444,14 @@ static void companion_core_all_finish(companion_core_t *core)
             companion_core_all_cmp);
       companion_all_sort_core = NULL;
    }
-   /* Qt caps the list and grid views separately; the larger applies to
-    * a model shared by both, and 0 means no cap. */
-   cap = settings->uints.desktop_menu_all_playlists_list_max_count;
-   if (settings->uints.desktop_menu_all_playlists_grid_max_count > cap)
-      cap = settings->uints.desktop_menu_all_playlists_grid_max_count;
+   /* Qt caps the list and grid views separately, 0 meaning no cap. The
+    * model here is shared by both views, so a cap applies only when both
+    * are set, and then the larger one. */
+   {
+      unsigned l = settings->uints.desktop_menu_all_playlists_list_max_count;
+      unsigned g = settings->uints.desktop_menu_all_playlists_grid_max_count;
+      cap = (l && g) ? (l > g ? l : g) : 0;
+   }
    if (cap && core->all_count > cap)
       core->all_count = cap;
 }

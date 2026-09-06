@@ -667,6 +667,12 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
    if (w->icon_view)
       SendMessageA(w->entries, LVM_ARRANGE, LVA_DEFAULT, 0);
 
+   /* Qt selects the first entry of a freshly loaded playlist, so the
+    * boxart pane and Core section show something at once. */
+   if (row > 0)
+      ListView_SetItemState(w->entries, 0,
+            LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+
    /* Qt's footer: "%1 items". */
    {
       /* The string is Qt-style "%1 items"; swap the placeholder for %u. */
