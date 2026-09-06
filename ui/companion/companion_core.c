@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <compat/posix_string.h>
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
@@ -85,6 +86,16 @@ struct companion_core
     * may name a file outside the playlist directory). */
    char selected_path[PATH_MAX_LENGTH];
 
+   /* "All Playlists": every playlist file parsed in turn; entries are
+    * referenced, not copied, through a (list, index) table sorted by
+    * label. all_next is the next file to parse while loading. */
+   bool all_mode;
+   playlist_t **all_lists;
+   size_t all_n;
+   struct companion_all_ref { uint32_t list, idx; } *all_index;
+   size_t all_count;
+   size_t all_next;
+
    /* File-system browser listing. */
    struct string_list *browse;
    char browse_dir[PATH_MAX_LENGTH];
@@ -113,6 +124,7 @@ static void companion_core_free_playlist_names(companion_core_t *core)
 
 static void companion_core_clear_playlist(companion_core_t *core)
 {
+   size_t i;
    if (core->pending_parse)
    {
       playlist_parse_abort(core->pending_parse);
@@ -123,6 +135,15 @@ static void companion_core_clear_playlist(companion_core_t *core)
       playlist_free(core->playlist);
       core->playlist = NULL;
    }
+   for (i = 0; i < core->all_n; i++)
+      if (core->all_lists[i])
+         playlist_free(core->all_lists[i]);
+   free(core->all_lists);
+   free(core->all_index);
+   core->all_lists = NULL;
+   core->all_index = NULL;
+   core->all_n     = core->all_count = core->all_next = 0;
+   core->all_mode  = false;
 }
 
 static bool companion_core_budget_cb(void *ud)
@@ -316,6 +337,122 @@ void companion_core_free(companion_core_t *core)
    free(core);
 }
 
+/* --- "All Playlists" aggregation ---------------------------------------- */
+
+const char *companion_core_entry_playlist_path(companion_core_t *core,
+      size_t i)
+{
+   if (!core)
+      return NULL;
+   if (core->all_mode)
+   {
+      /* The entry's own list; its conf path is the file it came from. */
+      const struct companion_all_ref *r;
+      if (i >= core->all_count)
+         return NULL;
+      r = &core->all_index[i];
+      if (r->list >= core->all_n || !core->all_lists[r->list])
+         return NULL;
+      return playlist_get_conf_path(core->all_lists[r->list]);
+   }
+   return core->selected_path[0] ? core->selected_path : NULL;
+}
+
+size_t companion_core_entry_index_in_playlist(companion_core_t *core, size_t i)
+{
+   if (!core)
+      return (size_t)-1;
+   if (core->all_mode)
+      return (i < core->all_count) ? core->all_index[i].idx : (size_t)-1;
+   return i;
+}
+
+/* Take ownership of a parsed playlist and reference all its entries. */
+static void companion_core_all_add(companion_core_t *core, playlist_t *pl)
+{
+   size_t n = playlist_size(pl), i;
+   playlist_t **lists;
+   struct companion_all_ref *index;
+
+   lists = (playlist_t**)realloc(core->all_lists,
+         (core->all_n + 1) * sizeof(*lists));
+   if (!lists)
+   {
+      playlist_free(pl);
+      return;
+   }
+   core->all_lists               = lists;
+   core->all_lists[core->all_n]  = pl;
+
+   index = (struct companion_all_ref*)realloc(core->all_index,
+         (core->all_count + n) * sizeof(*index));
+   if (!index)
+   {
+      core->all_n++; /* keep the list for freeing; entries just not shown */
+      return;
+   }
+   core->all_index = index;
+   for (i = 0; i < n; i++)
+   {
+      core->all_index[core->all_count].list = (uint32_t)core->all_n;
+      core->all_index[core->all_count].idx  = (uint32_t)i;
+      core->all_count++;
+   }
+   core->all_n++;
+}
+
+/* Start parsing the next playlist file; false when none is left. */
+static bool companion_core_all_next(companion_core_t *core)
+{
+   playlist_config_t cfg;
+   while (core->playlist_files && core->all_next < core->playlist_files->size)
+   {
+      const char *path = core->playlist_files->elems[core->all_next++].data;
+      companion_core_playlist_config_init(&cfg, path);
+      core->pending_parse = playlist_parse_begin(&cfg);
+      if (core->pending_parse)
+         return true;
+      /* allocation failure for this one: skip it */
+   }
+   return false;
+}
+
+/* qsort needs the lists to resolve a ref to its label; single-threaded. */
+static companion_core_t *companion_all_sort_core;
+static int companion_core_all_cmp(const void *a, const void *b)
+{
+   const struct companion_all_ref *ra = (const struct companion_all_ref*)a;
+   const struct companion_all_ref *rb = (const struct companion_all_ref*)b;
+   const struct playlist_entry *ea = NULL, *eb = NULL;
+   const char *la, *lb;
+   playlist_get_index(companion_all_sort_core->all_lists[ra->list], ra->idx, &ea);
+   playlist_get_index(companion_all_sort_core->all_lists[rb->list], rb->idx, &eb);
+   la = (ea && !string_is_empty(ea->label)) ? ea->label : (ea && ea->path ? ea->path : "");
+   lb = (eb && !string_is_empty(eb->label)) ? eb->label : (eb && eb->path ? eb->path : "");
+   return strcasecmp(la, lb);
+}
+
+/* All files parsed: sort by label like the Qt companion, apply the cap. */
+static void companion_core_all_finish(companion_core_t *core)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned cap;
+   if (core->all_count > 1)
+   {
+      companion_all_sort_core = core;
+      qsort(core->all_index, core->all_count, sizeof(*core->all_index),
+            companion_core_all_cmp);
+      companion_all_sort_core = NULL;
+   }
+   /* Qt caps the list and grid views separately; the larger applies to
+    * a model shared by both, and 0 means no cap. */
+   cap = settings->uints.desktop_menu_all_playlists_list_max_count;
+   if (settings->uints.desktop_menu_all_playlists_grid_max_count > cap)
+      cap = settings->uints.desktop_menu_all_playlists_grid_max_count;
+   if (cap && core->all_count > cap)
+      core->all_count = cap;
+}
+
 void companion_core_iterate(companion_core_t *core, unsigned budget_us)
 {
    int ret;
@@ -332,8 +469,21 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
 
    /* Finished (1) or failed (-1): playlist_parse_end() frees the
     * handle in either case and yields NULL on failure. */
-   core->playlist      = playlist_parse_end(core->pending_parse);
-   core->pending_parse = NULL;
+   if (core->all_mode)
+   {
+      playlist_t *pl      = playlist_parse_end(core->pending_parse);
+      core->pending_parse = NULL;
+      if (pl)
+         companion_core_all_add(core, pl);
+      if (companion_core_all_next(core))
+         return; /* another file started; keeps going next iterate */
+      companion_core_all_finish(core);
+   }
+   else
+   {
+      core->playlist      = playlist_parse_end(core->pending_parse);
+      core->pending_parse = NULL;
+   }
 
    if (core->cb.on_playlist_changed)
       core->cb.on_playlist_changed(core->ud);
@@ -434,10 +584,16 @@ static size_t companion_core_special_count(companion_core_t *core)
 
 /* Map a public playlist index to (special i) or (file index), returning
  * whether it is special via *is_special. */
+/* Public index 0 is "All Playlists"; specials and files follow. */
+#define COMPANION_ALL_SLOT 1
+
 static bool companion_core_playlist_map(companion_core_t *core, size_t idx,
       size_t *out, bool *is_special)
 {
    size_t i, seen = 0;
+   if (idx < COMPANION_ALL_SLOT)
+      return false; /* callers handle the All slot before mapping */
+   idx -= COMPANION_ALL_SLOT;
    for (i = 0; i < 5; i++)
    {
       if (!companion_core_special_path(core, i))
@@ -465,7 +621,7 @@ size_t companion_core_playlist_count(companion_core_t *core)
    size_t n;
    if (!core)
       return 0;
-   n = companion_core_special_count(core);
+   n = COMPANION_ALL_SLOT + companion_core_special_count(core);
    if (core->playlist_files)
       n += core->playlist_files->size;
    return n;
@@ -475,7 +631,11 @@ const char *companion_core_playlist_name(companion_core_t *core, size_t i)
 {
    size_t r;
    bool special;
-   if (!core || !companion_core_playlist_map(core, i, &r, &special))
+   if (!core)
+      return NULL;
+   if (i == 0)
+      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS);
+   if (!companion_core_playlist_map(core, i, &r, &special))
       return NULL;
    if (special)
       return msg_hash_to_str(companion_core_special_label(r));
@@ -486,7 +646,11 @@ const char *companion_core_playlist_path(companion_core_t *core, size_t i)
 {
    size_t r;
    bool special;
-   if (!core || !companion_core_playlist_map(core, i, &r, &special))
+   if (!core)
+      return NULL;
+   if (i == 0)
+      return COMPANION_ALL_PLAYLISTS_TOKEN;
+   if (!companion_core_playlist_map(core, i, &r, &special))
       return NULL;
    if (special)
       return companion_core_special_path(core, r);
@@ -503,6 +667,16 @@ static bool companion_core_begin_playlist(companion_core_t *core,
    companion_core_clear_playlist(core);
    core->selected = index;
    strlcpy(core->selected_path, path, sizeof(core->selected_path));
+
+   if (string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
+   {
+      /* Every playlist file, one budgeted parse after another. */
+      core->all_mode = true;
+      core->all_next = 0;
+      if (!companion_core_all_next(core) && core->cb.on_playlist_changed)
+         core->cb.on_playlist_changed(core->ud); /* no files: empty */
+      return true;
+   }
 
    companion_core_playlist_config_init(&cfg, path);
    core->pending_parse = playlist_parse_begin(&cfg);
@@ -562,7 +736,11 @@ bool companion_core_playlist_loading(companion_core_t *core)
 
 size_t companion_core_entry_count(companion_core_t *core)
 {
-   if (!core || !core->playlist)
+   if (!core)
+      return 0;
+   if (core->all_mode)
+      return core->all_count;
+   if (!core->playlist)
       return 0;
    return playlist_size(core->playlist);
 }
@@ -571,7 +749,20 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
       size_t i)
 {
    const struct playlist_entry *entry = NULL;
-   if (!core || !core->playlist || i >= playlist_size(core->playlist))
+   if (!core)
+      return NULL;
+   if (core->all_mode)
+   {
+      const struct companion_all_ref *r;
+      if (i >= core->all_count)
+         return NULL;
+      r = &core->all_index[i];
+      if (r->list >= core->all_n || !core->all_lists[r->list])
+         return NULL;
+      playlist_get_index(core->all_lists[r->list], r->idx, &entry);
+      return entry;
+   }
+   if (!core->playlist || i >= playlist_size(core->playlist))
       return NULL;
    playlist_get_index(core->playlist, i, &entry);
    return entry;
@@ -893,7 +1084,7 @@ size_t companion_core_playlist_icon_path(companion_core_t *core, size_t i,
    /* <name>.png for a system playlist; the specials have no asset of
     * their own and take the folder. */
    name = companion_core_playlist_name(core, i);
-   if (name && i >= companion_core_special_count(core))
+   if (name && i >= COMPANION_ALL_SLOT + companion_core_special_count(core))
    {
       char tmp[PATH_MAX_LENGTH];
       _len = fill_pathname_join_special(tmp, s, name, sizeof(tmp));
@@ -1371,7 +1562,10 @@ playlist_t *companion_core_playlist_open(companion_core_t *core,
 
    if (owned)
       *owned = false;
-   if (!core || string_is_empty(path))
+   /* The All Playlists token is not a file; an edit must name the
+    * entry's own playlist (companion_core_entry_playlist_path). */
+   if (!core || string_is_empty(path)
+         || string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
       return NULL;
 
    /* Borrow the menu's cached playlist when it is the same file: an

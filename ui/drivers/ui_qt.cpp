@@ -4601,7 +4601,7 @@ static void* ui_companion_qt_init(void)
    initialPlaylist = !string_is_empty(
          config_get_ptr()->paths.desktop_menu_initial_playlist)
       ? QString::fromUtf8(config_get_ptr()->paths.desktop_menu_initial_playlist)
-      : mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY);
+      : QString(ALL_PLAYLISTS_TOKEN);
 
    mainwindow->resize(((desktopRect.width()) < (INITIAL_WIDTH) ? (desktopRect.width()) : (INITIAL_WIDTH)),
          ((desktopRect.height()) < (INITIAL_HEIGHT) ? (desktopRect.height()) : (INITIAL_HEIGHT)));

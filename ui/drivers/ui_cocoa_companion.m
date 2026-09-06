@@ -519,19 +519,19 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       char initial[PATH_MAX_LENGTH];
       size_t i, n  = companion_core_playlist_count(wimp->core);
       long pick    = -1;
-      const char *hist = config_get_ptr()->paths.path_content_history;
       started = YES;
       strlcpy(initial, companion_core_pref_initial_playlist(wimp->core),
             sizeof(initial));
-      for (i = 0; i < n && pick < 0; i++)
-      {
-         const char *p_i = companion_core_playlist_path(wimp->core, i);
-         if (!p_i)
-            continue;
-         if (initial[0] ? string_is_equal(p_i, initial)
-                        : (!string_is_empty(hist) && string_is_equal(p_i, hist)))
-            pick = (long)i;
-      }
+      if (initial[0])
+         for (i = 0; i < n && pick < 0; i++)
+         {
+            const char *p_i = companion_core_playlist_path(wimp->core, i);
+            if (p_i && string_is_equal(p_i, initial))
+               pick = (long)i;
+         }
+      /* No (or unknown) start playlist: All Playlists, index 0, as Qt. */
+      if (pick < 0 && n > 0)
+         pick = 0;
       if (pick >= 0 && playlists)
          [playlists selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)pick]
             byExtendingSelection:NO]; /* delegate loads it */
@@ -1069,8 +1069,11 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    [alert addButtonWithTitle:@"Cancel"];
    if ([alert runModal] == NSAlertFirstButtonReturn)
    {
-      if (companion_core_playlist_delete_entry(wimp->core,
-               companion_core_playlist_path(wimp->core, sel), (size_t)row))
+      /* The entry's own file and its index there (differ from the
+       * selected slot / aggregate row under All Playlists). */
+      const char *pl = companion_core_entry_playlist_path(wimp->core, (size_t)row);
+      if (pl && companion_core_playlist_delete_entry(wimp->core, pl,
+               companion_core_entry_index_in_playlist(wimp->core, (size_t)row)))
          [self reloadSelectedPlaylist];
    }
    RELEASE(alert);

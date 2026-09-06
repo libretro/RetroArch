@@ -1127,17 +1127,10 @@ static void cw_on_playlists_changed(void *ud)
                pick = (long)i;
          }
       }
-      if (pick < 0)
-      {
-         /* History is the second special entry when configured. */
-         const char *hist = config_get_ptr()->paths.path_content_history;
-         for (i = 0; i < n && pick < 0; i++)
-         {
-            const char *p_i = companion_core_playlist_path(w->core, i);
-            if (p_i && !string_is_empty(hist) && string_is_equal(p_i, hist))
-               pick = (long)i;
-         }
-      }
+      /* No (or unknown) start playlist: All Playlists, index 0, as the
+       * Qt companion opens. */
+      if (pick < 0 && n > 0)
+         pick = 0;
       if (pick >= 0 && w->playlists)
       {
          ListView_SetItemState(w->playlists, (int)pick,
@@ -1437,8 +1430,11 @@ static void cw_delete_selected(ui_companion_win32_wimp_t *w)
             MB_YESNO | MB_ICONQUESTION) != IDYES)
       return;
 
-   path = companion_core_playlist_path(w->core, sel);
-   if (companion_core_playlist_delete_entry(w->core, path, (size_t)idx))
+   /* The entry's own playlist file and its index there - under All
+    * Playlists these differ from the selected slot / aggregate index. */
+   path = companion_core_entry_playlist_path(w->core, (size_t)idx);
+   if (path && companion_core_playlist_delete_entry(w->core, path,
+            companion_core_entry_index_in_playlist(w->core, (size_t)idx)))
       cw_reload_selected_playlist(w);
 }
 

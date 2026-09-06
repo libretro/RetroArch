@@ -2690,7 +2690,7 @@ void ViewOptionsWidget::loadViewOptions()
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
    QString initialPlaylist =
       string_is_empty(settings->paths.desktop_menu_initial_playlist)
-      ? m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)
+      ? QString(ALL_PLAYLISTS_TOKEN)
       : QString::fromUtf8(settings->paths.desktop_menu_initial_playlist);
 
    m_saveGeometryCheckBox->setChecked(settings->bools.desktop_menu_save_geometry);
@@ -8011,7 +8011,7 @@ void MainWindow::reloadPlaylists()
          bool            foundInitial = false;
          QString      initialPlaylist =
             string_is_empty(config_get_ptr()->paths.desktop_menu_initial_playlist)
-            ? m_historyPlaylistsItem->data(Qt::UserRole).toString()
+            ? QString(ALL_PLAYLISTS_TOKEN)
             : QString::fromUtf8(config_get_ptr()->paths.desktop_menu_initial_playlist);
          QListWidgetItem *initialItem = NULL;
 

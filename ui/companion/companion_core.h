@@ -94,6 +94,24 @@ void companion_core_free(companion_core_t *core);
  * path. Never blocks past the budget. */
 void companion_core_iterate(companion_core_t *core, unsigned budget_us);
 
+/* "All Playlists": the first playlist entry every companion lists. Not
+ * a file - selecting it loads every playlist file in turn (under the
+ * same per-frame budget) and presents the union, sorted by label, capped
+ * by desktop_menu_all_playlists_list/grid_max_count (0 = no cap). Its
+ * companion_core_playlist_path() is this token, as the Qt companion has
+ * always used, so desktop_menu_initial_playlist can name it. */
+#define COMPANION_ALL_PLAYLISTS_TOKEN "|||ALL|||"
+
+/* The playlist file entry @i of the current view belongs to: the selected
+ * playlist normally, or, under All Playlists, the file that entry came
+ * from. Edits (delete, associate core) must target this, never the All
+ * token. NULL when unknown. */
+const char *companion_core_entry_playlist_path(companion_core_t *core,
+      size_t i);
+/* Entry @i's index within that file (== @i except under All Playlists);
+ * (size_t)-1 when unknown. Pair with the path above for edits. */
+size_t companion_core_entry_index_in_playlist(companion_core_t *core, size_t i);
+
 /* --- Playlist files ------------------------------------------------ */
 
 /* Rescan the playlist directory. Cheap (directory listing only),
