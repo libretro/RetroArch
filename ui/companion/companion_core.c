@@ -1071,6 +1071,21 @@ void companion_core_pref_set_thumbnail_type(companion_core_t *core, unsigned t)
 
 #define COMPANION_ICON_DIR "xmb/dot-art/png"
 
+size_t companion_core_folder_icon_path(companion_core_t *core,
+      char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || string_is_empty(settings->paths.directory_assets))
+      return 0;
+   fill_pathname_join_special(s, settings->paths.directory_assets,
+         COMPANION_ICON_DIR, len);
+   fill_pathname_join_special(s, s, "folder.png", len);
+   return path_is_valid(s) ? strlen(s) : 0;
+}
+
 size_t companion_core_playlist_icon_path(companion_core_t *core, size_t i,
       char *s, size_t len)
 {
@@ -1822,7 +1837,12 @@ const char *companion_core_browse_name(companion_core_t *core, size_t i)
       return "..";
    if ((size_t)r >= core->browse->size)
       return NULL;
-   return path_basename(core->browse->elems[r].data);
+   {
+      /* A drive root ("C:\") has no basename: show the path itself. */
+      const char *p = core->browse->elems[r].data;
+      const char *b = path_basename(p);
+      return (b && *b) ? b : p;
+   }
 }
 
 const char *companion_core_browse_path(companion_core_t *core, size_t i)

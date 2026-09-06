@@ -2820,17 +2820,67 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    {
       SHFILEINFOA sfi;
       LVCOLUMNA c;
+      /* Every image here is an opaque composited bitmap, so no mask:
+       * a masked list is what drew transparent pixels as black. */
       w->pl_icons = ImageList_Create(CW_S(w, COMPANION_WIN32_PL_ICON),
-            CW_S(w, COMPANION_WIN32_PL_ICON), ILC_COLOR32 | ILC_MASK, 1, 1);
-      memset(&sfi, 0, sizeof(sfi));
-      /* The shell's folder icon, without touching the filesystem. */
-      if (w->pl_icons && SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY,
-               &sfi, sizeof(sfi),
-               SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES)
-            && sfi.hIcon)
+            CW_S(w, COMPANION_WIN32_PL_ICON), ILC_COLOR32, 1, 1);
+      /* Index 0: the folder. The XMB folder.png asset (what Qt shows),
+       * composited on the window colour so it is opaque; failing that,
+       * the shell's folder icon drawn onto a window-coloured bitmap for
+       * the same reason - an icon added raw draws its alpha as black in
+       * a masked list. */
+      if (w->pl_icons)
       {
-         ImageList_AddIcon(w->pl_icons, sfi.hIcon);
-         DestroyIcon(sfi.hIcon);
+         const int T = CW_S(w, COMPANION_WIN32_PL_ICON);
+         char icon[PATH_MAX_LENGTH];
+         HBITMAP bmp = NULL;
+         if (companion_core_folder_icon_path(w->core, icon, sizeof(icon)))
+         {
+            struct texture_image ti;
+            memset(&ti, 0, sizeof(ti));
+            if (image_texture_load(&ti, icon))
+            {
+               bmp = cw_boxart_scale(&ti, T, T, cw_sys_color_argb(COLOR_WINDOW));
+               image_texture_free(&ti);
+            }
+         }
+         if (!bmp)
+         {
+            memset(&sfi, 0, sizeof(sfi));
+            if (SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY, &sfi,
+                     sizeof(sfi),
+                     SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES)
+                  && sfi.hIcon)
+            {
+               uint32_t *bits = (uint32_t*)malloc((size_t)T * T * 4);
+               if (bits)
+               {
+                  int k;
+                  uint32_t bg = cw_sys_color_argb(COLOR_WINDOW);
+                  for (k = 0; k < T * T; k++)
+                     bits[k] = bg;
+                  bmp = cw_dib_from_argb(bits, T, T);
+                  free(bits);
+                  if (bmp)
+                  {
+                     HDC hdc = CreateCompatibleDC(NULL);
+                     if (hdc)
+                     {
+                        HGDIOBJ old = SelectObject(hdc, bmp);
+                        DrawIconEx(hdc, 0, 0, sfi.hIcon, T, T, 0, NULL, DI_NORMAL);
+                        SelectObject(hdc, old);
+                        DeleteDC(hdc);
+                     }
+                  }
+               }
+               DestroyIcon(sfi.hIcon);
+            }
+         }
+         if (bmp)
+         {
+            ImageList_Add(w->pl_icons, bmp, NULL);
+            DeleteObject(bmp);
+         }
       }
       if (w->pl_icons)
          SendMessageA(w->playlists, LVM_SETIMAGELIST, LVSIL_SMALL,

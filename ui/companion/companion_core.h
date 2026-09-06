@@ -264,6 +264,10 @@ void companion_core_pref_set_thumbnail_type(companion_core_t *core, unsigned t);
  * Copies the path into @s; returns its length, 0 if neither exists. */
 size_t companion_core_playlist_icon_path(companion_core_t *core, size_t i,
       char *s, size_t len);
+/* The generic folder icon of the same asset set (folder.png), for
+ * playlists without their own and for the file browser. */
+size_t companion_core_folder_icon_path(companion_core_t *core,
+      char *s, size_t len);
 
 /* --- Thumbnails ---------------------------------------------------- */
 
