@@ -77,6 +77,13 @@ typedef unsigned int NSUInteger;
 #define KEEP_IVAR(x) [(x) retain]
 #endif
 
+/* 10.12 renamed the text-alignment constants; older SDKs (the 10.5 SDK
+ * the PowerPC cross build uses) only have the original names. */
+#if !defined(MAC_OS_X_VERSION_MAX_ALLOWED) || MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+#define NSTextAlignmentCenter NSCenterTextAlignment
+#define NSTextAlignmentRight  NSRightTextAlignment
+#endif
+
 typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 
 #define CC_GRID_PAD   16.0
@@ -448,15 +455,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    for (i = 0; i < count; i++)
    {
       NSRect cell = [self rectForRow:i];
-      NSRect thumb, label;
+      NSRect trect, label; /* thumbnail box; `thumb` is its edge */
       const struct playlist_entry *e;
       id im;
 
       if (!NSIntersectsRect(cell, dirty))
          continue;
 
-      thumb = NSMakeRect(cell.origin.x, cell.origin.y,
-            thumb, thumb);
+      trect = NSMakeRect(cell.origin.x, cell.origin.y, thumb, thumb);
       label = NSMakeRect(cell.origin.x, cell.origin.y + thumb,
             thumb, CC_GRID_LABEL);
 
@@ -475,17 +481,25 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
          if (is.width > 0 && is.height > 0)
             s = (is.width >= is.height)
                ? thumb / is.width : thumb / is.height;
-         dst = NSMakeRect(thumb.origin.x + (thumb - is.width * s) / 2,
-               thumb.origin.y + (thumb - is.height * s) / 2,
+         dst = NSMakeRect(trect.origin.x + (thumb - is.width * s) / 2,
+               trect.origin.y + (thumb - is.height * s) / 2,
                is.width * s, is.height * s);
+         /* This view is flipped. From 10.6 the drawing call can honour
+          * that itself; before, the image had to be flipped. */
+#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
+         [(NSImage*)im drawInRect:dst fromRect:NSZeroRect
+            operation:NSCompositingOperationSourceOver fraction:1.0
+            respectFlipped:YES hints:nil];
+#else
          [(NSImage*)im setFlipped:YES];
          [(NSImage*)im drawInRect:dst fromRect:NSZeroRect
-            operation:NSCompositeSourceOver fraction:1.0];
+            operation:NSCompositingOperationSourceOver fraction:1.0];
+#endif
       }
       else
       {
          [[NSColor gridColor] set];
-         NSFrameRect(thumb);
+         NSFrameRect(trect);
       }
 
       e = companion_core_entry(w->core, (size_t)i);
@@ -496,7 +510,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
          NSMutableParagraphStyle *ps =
             [[[NSMutableParagraphStyle alloc] init] autorelease_compat];
          NSDictionary *attr;
-         [ps setAlignment:NSCenterTextAlignment];
+         [ps setAlignment:NSTextAlignmentCenter];
          [ps setLineBreakMode:NSLineBreakByTruncatingTail];
          attr = [NSDictionary dictionaryWithObjectsAndKeys:
                [NSFont systemFontOfSize:11.0], NSFontAttributeName,
@@ -664,7 +678,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    {
       [entriesScroll setDocumentView:grid];
       [grid relayout];
-      [[window makeFirstResponder:grid] self];
+      [window makeFirstResponder:grid];
    }
    else
       [entriesScroll setDocumentView:entries];
@@ -892,7 +906,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    [content addSubview:itemsLabel];
    zoomLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ZOOM)];
    KEEP_IVAR(zoomLabel);
-   [zoomLabel setAlignment:NSRightTextAlignment];
+   [zoomLabel setAlignment:NSTextAlignmentRight];
    [content addSubview:zoomLabel];
    zoomSlider = [[NSSlider alloc] initWithFrame:NSMakeRect(0, 0, 140, CC_CTRL_H)];
    [zoomSlider setMinValue:0];
