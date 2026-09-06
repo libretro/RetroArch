@@ -657,6 +657,42 @@ bool companion_core_request_scan(companion_core_t *core, const char *path,
 #endif
 }
 
+/* --- Playlist icons ---------------------------------------------------- */
+
+#define COMPANION_ICON_DIR "xmb/dot-art/png"
+
+size_t companion_core_playlist_icon_path(companion_core_t *core, size_t i,
+      char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   const char *name;
+   size_t _len;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || string_is_empty(settings->paths.directory_assets))
+      return 0;
+
+   fill_pathname_join_special(s, settings->paths.directory_assets,
+         COMPANION_ICON_DIR, len);
+
+   /* <name>.png for a system playlist; the specials have no asset of
+    * their own and take the folder. */
+   name = companion_core_playlist_name(core, i);
+   if (name && i >= companion_core_special_count(core))
+   {
+      char tmp[PATH_MAX_LENGTH];
+      _len = fill_pathname_join_special(tmp, s, name, sizeof(tmp));
+      strlcpy(tmp + _len, ".png", sizeof(tmp) - _len);
+      if (path_is_valid(tmp))
+         return strlcpy(s, tmp, len);
+   }
+
+   _len = fill_pathname_join_special(s, s, "folder.png", len);
+   return path_is_valid(s) ? _len : 0;
+}
+
 /* --- Thumbnails -------------------------------------------------------- */
 
 size_t companion_core_thumbnail_dir(companion_core_t *core,

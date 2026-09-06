@@ -103,12 +103,11 @@
 #define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
 #define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
 #define COMPANION_WIN32_SEARCH_H   24    /* search strip above the entries */
-#define COMPANION_WIN32_BOXART_H   300   /* boxart pane height when shown */
 #define COMPANION_WIN32_LABEL_H    18    /* section caption ("Search", "Core"...) */
 #define COMPANION_WIN32_TAB_H      24    /* Playlists / File Browser tab strip */
 #define COMPANION_WIN32_CTRL_H     24    /* combo / button row */
 #define COMPANION_WIN32_FOOTER_H   28    /* "N items" + View combo under the list */
-#define COMPANION_WIN32_PL_ICON    16    /* playlist folder icon */
+#define COMPANION_WIN32_PL_ICON    32    /* playlist icon; sets the row height, as Qt's */
 #define COMPANION_WIN32_DOCS_URL   "https://docs.libretro.com/"
 
 /* Every size above is in 96-dpi logical pixels, as Qt's are; Qt renders
@@ -272,6 +271,9 @@ static bool cw_filter_match(ui_companion_win32_wimp_t *w, const char *s)
    return strstr(low, w->filter) != NULL;
 }
 
+static HBITMAP cw_boxart_scale(const struct texture_image *img,
+      int maxw, int maxh, uint32_t bg);
+
 static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
 {
    size_t i, n;
@@ -280,15 +282,44 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
 
    SendMessageA(w->playlists, LVM_DELETEALLITEMS, 0, 0);
    SendMessageA(w->playlists, WM_SETREDRAW, FALSE, 0);
+   /* Drop last time's asset icons; index 0 (the shell folder) stays. */
+   if (w->pl_icons)
+      while (ImageList_GetImageCount(w->pl_icons) > 1)
+         ImageList_Remove(w->pl_icons, 1);
    n = companion_core_playlist_count(w->core);
    for (i = 0; i < n; i++)
    {
       LVITEMA item;
+      char icon[PATH_MAX_LENGTH];
       const char *name = companion_core_playlist_name(w->core, i);
+      int img          = 0;
+
+      /* Qt's per-system XMB dot-art icon, when the asset exists. */
+      if (w->pl_icons && companion_core_playlist_icon_path(w->core, i,
+               icon, sizeof(icon)))
+      {
+         struct texture_image ti;
+         memset(&ti, 0, sizeof(ti));
+         if (image_texture_load(&ti, icon))
+         {
+            HBITMAP bmp = cw_boxart_scale(&ti,
+                  CW_S(w, COMPANION_WIN32_PL_ICON),
+                  CW_S(w, COMPANION_WIN32_PL_ICON), 0);
+            image_texture_free(&ti);
+            if (bmp)
+            {
+               int idx = ImageList_Add(w->pl_icons, bmp, NULL);
+               DeleteObject(bmp);
+               if (idx > 0)
+                  img = idx;
+            }
+         }
+      }
+
       memset(&item, 0, sizeof(item));
       item.mask    = LVIF_TEXT | LVIF_IMAGE;
       item.iItem   = (int)i;
-      item.iImage  = 0; /* the folder */
+      item.iImage  = img;
       item.pszText = (LPSTR)(name ? name : "");
       SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
    }
@@ -708,8 +739,8 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          MoveWindow(w->items_label, entry_x + P, eh + P + (C - L) / 2,
                CW_S(w, 160), L, TRUE);
          MoveWindow(w->view_combo, entry_x + entry_w - P - cb_w, eh + P, cb_w, C, TRUE);
-         MoveWindow(w->view_label, entry_x + entry_w - 2 * P - cb_w - lb_w,
-               eh + P + (C - L) / 2, lb_w, L, TRUE);
+         (void)lb_w;
+         MoveWindow(w->view_label, 0, 0, 0, 0, TRUE); /* Qt shows none */
          /* Name / Core columns share the list width (Qt: name wider). */
          SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 0, (entry_w * 2) / 3 - CW_S(w, 8));
          SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 1, entry_w / 3 - CW_S(w, 24));
@@ -719,17 +750,17 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
        * + image below; each takes the full column when alone. */
       {
          int rx     = entry_x + entry_w;
-         int bh     = CW_S(w, COMPANION_WIN32_BOXART_H);
-         int box_h  = r_box ? (list_h < bh ? list_h : bh) : 0;
+         /* Qt's Core Info and Boxart docks share the column equally. */
+         int box_h  = r_box ? (r_info ? list_h / 2 : list_h) : 0;
          int info_h = r_info ? list_h - box_h : 0;
          int iw     = right_w - P;
          if (r_info)
          {
             MoveWindow(w->info_label, rx + P, P, iw - P, L, TRUE);
             MoveWindow(w->info, rx + P, P + L, iw - P, info_h - L - P, TRUE);
-            /* Key column narrow, value column takes the rest. */
-            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 110));
-            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 1, iw - P - CW_S(w, 110) - CW_S(w, 24));
+            /* One text column; wide enough that long firmware lines
+             * scroll horizontally rather than truncate, as Qt's do. */
+            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 800));
          }
          else
          {
@@ -784,14 +815,20 @@ static void cw_info_fill(ui_companion_win32_wimp_t *w)
    SendMessageA(w->info, LVM_DELETEALLITEMS, 0, 0);
    for (i = 0; i < keys->size; i++)
    {
+      /* Qt renders each row as "Key: value" on one line; do the same in
+       * a single column so nothing is cut at a column boundary. */
+      char line[1024];
+      const char *k = keys->elems[i].data   ? keys->elems[i].data   : "";
+      const char *v = values->elems[i].data ? values->elems[i].data : "";
+      if (*k && *v)
+         snprintf(line, sizeof(line), "%s %s", k, v);
+      else
+         strlcpy(line, *k ? k : v, sizeof(line));
       memset(&item, 0, sizeof(item));
       item.mask     = LVIF_TEXT;
       item.iItem    = (int)i;
-      item.pszText  = (LPSTR)(keys->elems[i].data ? keys->elems[i].data : "");
+      item.pszText  = line;
       SendMessageA(w->info, LVM_INSERTITEMA, 0, (LPARAM)&item);
-      item.iSubItem = 1;
-      item.pszText  = (LPSTR)(values->elems[i].data ? values->elems[i].data : "");
-      SendMessageA(w->info, LVM_SETITEMA, 0, (LPARAM)&item);
    }
    SendMessageA(w->info, WM_SETREDRAW, TRUE, 0);
 
@@ -2058,7 +2095,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       /* The shell's folder icon, without touching the filesystem. */
       if (w->pl_icons && SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY,
                &sfi, sizeof(sfi),
-               SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES)
+               SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES)
             && sfi.hIcon)
       {
          ImageList_AddIcon(w->pl_icons, sfi.hIcon);
@@ -2160,15 +2197,10 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    {
       LVCOLUMNA icol;
       memset(&icol, 0, sizeof(icol));
-      icol.mask     = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-      icol.pszText  = (LPSTR)"";
-      icol.cx       = 110;
+      icol.mask     = LVCF_WIDTH | LVCF_SUBITEM;
+      icol.cx       = 800;
       icol.iSubItem = 0;
       SendMessageA(w->info, LVM_INSERTCOLUMNA, 0, (LPARAM)&icol);
-      icol.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
-      icol.cx       = 400;
-      icol.iSubItem = 1;
-      SendMessageA(w->info, LVM_INSERTCOLUMNA, 1, (LPARAM)&icol);
    }
 
    /* Full-row select is an IE3+ extended style; harmless where absent. */
@@ -2177,11 +2209,11 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
 
    memset(&col, 0, sizeof(col));
    col.mask     = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME);
+   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
    col.cx       = 380;
    col.iSubItem = 0;
    SendMessageA(w->entries, LVM_INSERTCOLUMNA, 0, (LPARAM)&col);
-   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE);
+   col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE);
    col.cx       = 180;
    col.iSubItem = 1;
    SendMessageA(w->entries, LVM_INSERTCOLUMNA, 1, (LPARAM)&col);

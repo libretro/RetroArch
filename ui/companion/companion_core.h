@@ -206,6 +206,15 @@ void companion_core_event_command(companion_core_t *core,
 bool companion_core_request_scan(companion_core_t *core, const char *path,
       bool directory, bool show_hidden_files);
 
+/* --- Playlist icons ------------------------------------------------ */
+
+/* The icon a playlist list shows for playlist @i: the XMB dot-art asset
+ * <assets>/xmb/dot-art/png/<playlist name>.png when it exists, else the
+ * generic folder.png from the same set (what the Qt companion shows).
+ * Copies the path into @s; returns its length, 0 if neither exists. */
+size_t companion_core_playlist_icon_path(companion_core_t *core, size_t i,
+      char *s, size_t len);
+
 /* --- Thumbnails ---------------------------------------------------- */
 
 /* Subdirectory names of the thumbnail repository layout. */
