@@ -169,6 +169,14 @@
  * interval lands the ratio at its clamp. */
 #define AUDIO_STRETCH_SLEW_RELAX_MAX   8.0
 
+/* Where the stretcher's output pacing holds the device's occupancy, as a
+ * fraction of its buffer; how quickly it steers there, as a time constant in
+ * microseconds; and the most of one flush's real-time output it may add to
+ * get there. See the pacing in audio_driver_time_stretch(). */
+#define AUDIO_STRETCH_DEVICE_FILL_TARGET    0.6
+#define AUDIO_STRETCH_DEVICE_FILL_TC_US     200000.0
+#define AUDIO_STRETCH_DEVICE_FILL_MAX_SHARE 0.05
+
 /* Cross-fade across a fast-forward handover. Kept short: both sides are the
  * same material at different points, so a long overlap is heard for itself. */
 #define AUDIO_PAUSE_FADE_FRAMES        256
@@ -871,6 +879,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->stretch_output_credit    = 0.0;
    audio_st->stretch_ratio_prev       = 0.0;
    audio_st->stretch_speed_mult       = 1.0;
+   audio_st->stretch_device_fill      = -1.0;
 #endif
 #ifdef HAVE_AUDIO_LOWPASS
    audio_st->lowpass_was_engaged      = false;
@@ -2219,6 +2228,9 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
    int    fill_now;
    double sp_mult;
    double consumed_exact;
+   double allow;
+   size_t room_bytes;
+   size_t frame_bytes;
    const audio_driver_t *audio = audio_st->current_audio;
 
    if (!audio_driver_time_stretch_alloc(audio_st, in_frames))
@@ -2246,13 +2258,14 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
     * discard bound: audio dropped there leaves a hole the next chunk splices
     * onto, whereas frames not emitted stay in the ring for the next flush. */
    {
-      size_t room_bytes  = audio->write_avail
+      size_t room;
+      room_bytes  = audio->write_avail
             ? audio->write_avail(audio_st->context_audio_data) : 0;
-      size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+      frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
             ? (2 * sizeof(float)) : (2 * sizeof(int16_t));
       /* src_ratio_curr converts the device's output-rate room into the
        * input-rate count this function works in. */
-      size_t room        = (audio_st->src_ratio_curr > 0.0)
+      room        = (audio_st->src_ratio_curr > 0.0)
             ? (size_t)((double)(room_bytes / frame_bytes)
                   / audio_st->src_ratio_curr)
             : 0;
@@ -2364,8 +2377,48 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
     * read that comes up short is made good on the next flush rather than
     * lost, which would settle the output rate below real time. */
    audio_st->stretch_output_credit += consumed_exact;
-   if ((double)want > audio_st->stretch_output_credit)
-      want = (size_t)audio_st->stretch_output_credit;
+   allow = audio_st->stretch_output_credit;
+
+   /* The credit pays out real time only as estimated, and the room bound
+    * says how full the device may get, never how empty it may run, so the
+    * error integrates and the occupancy drifts to empty. Close the loop:
+    * allow output beyond the credit in proportion to how far the device
+    * sits below the setpoint. Averaged over the arrival window because a
+    * single reading is mostly the driver's pull sawtooth, gained per unit
+    * of time so it converges alike at any speed, and capped at the surplus
+    * the ring-fill trim can supply without draining the ring. */
+   if (frame_bytes > 0 && audio_st->buffer_size > 0)
+   {
+      double dev_size = (double)(audio_st->buffer_size / frame_bytes);
+      double dev_fill = dev_size - (double)(room_bytes / frame_bytes);
+      double deficit;
+      if (dev_fill < 0.0)
+         dev_fill = 0.0;
+      if (audio_st->stretch_device_fill < 0.0)
+         audio_st->stretch_device_fill = dev_fill;
+      else
+         audio_st->stretch_device_fill =
+                 (audio_st->stretch_device_fill
+                  * (AUDIO_STRETCH_ARRIVAL_AVG_N - 1)
+                  / AUDIO_STRETCH_ARRIVAL_AVG_N)
+               + (dev_fill / AUDIO_STRETCH_ARRIVAL_AVG_N);
+      deficit = (dev_size * AUDIO_STRETCH_DEVICE_FILL_TARGET)
+            - audio_st->stretch_device_fill;
+      if (     deficit > 0.0
+            && audio_st->avg_flush_delta > 0.0
+            && audio_st->src_ratio_curr  > 0.0)
+      {
+         /* Output-rate frames, into the input-rate frames this function
+          * counts in. */
+         double extra = deficit
+               * (audio_st->avg_flush_delta / AUDIO_STRETCH_DEVICE_FILL_TC_US)
+               / audio_st->src_ratio_curr;
+         double cap   = consumed_exact * AUDIO_STRETCH_DEVICE_FILL_MAX_SHARE;
+         allow       += (extra < cap) ? extra : cap;
+      }
+   }
+   if ((double)want > allow)
+      want = (size_t)allow;
 
    {
       int got;
@@ -2384,6 +2437,10 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
             (int)want, ratio);
       if (got > 0)
          audio_st->stretch_output_credit -= (double)got;
+      /* What the fill correction added is not owed back: paying it off
+       * would drain the device to where it started. */
+      if (audio_st->stretch_output_credit < 0.0)
+         audio_st->stretch_output_credit = 0.0;
       if (audio_st->stretch_output_credit > (double)out_capacity)
          audio_st->stretch_output_credit = (double)out_capacity;
       return got;
@@ -2991,6 +3048,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (audio_st->time_stretch)
          audio_time_stretch_reset(audio_st->time_stretch);
       audio_st->stretch_output_credit = 0.0;
+      audio_st->stretch_device_fill   = -1.0;
       /* The ratio is derived from the flush-interval average, so drop the
        * interval that spans the transition - it measures the gap since
        * whenever this last ran, not the emulation speed. */
@@ -3075,6 +3133,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #ifdef HAVE_AUDIO_TIMESTRETCH
       if (audio_st->stretch_ff_anchored)
          audio_st->stretch_ratio_prev = is_fastforward ? anchor : 1.0;
+      /* Occupancy is only sampled while synthesising, and rate control
+       * moves it in between; reseed rather than steer from a stale reading. */
+      audio_st->stretch_device_fill = -1.0;
 #endif
       /* Whether or not there was a rate to anchor to, let the average
        * re-settle quickly from here. */

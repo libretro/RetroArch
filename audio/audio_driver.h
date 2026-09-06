@@ -509,6 +509,11 @@ typedef struct
    double                stretch_output_credit;
    /* Previous flush's stretch ratio, for the slew limit. */
    double                stretch_ratio_prev;
+   /* Device occupancy in output frames, averaged over the same window as
+    * stretch_arrival_avg; negative until a synthesis flush seeds it. The
+    * output pacing steers it toward a setpoint, see
+    * audio_driver_time_stretch(). */
+   double                stretch_device_fill;
    /* Whether the previous flush engaged the stretcher; either edge resets it,
     * so synthesis never splices across a gap where it went unfed. */
    bool                  stretch_was_engaged;
