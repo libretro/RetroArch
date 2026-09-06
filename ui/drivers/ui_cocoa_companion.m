@@ -32,6 +32,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <file/file_path.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -75,6 +76,33 @@ typedef unsigned int NSUInteger;
 
 typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 
+#define CC_GRID_THUMB 128.0
+#define CC_GRID_PAD   16.0
+#define CC_GRID_LABEL 18.0
+
+@class RACompanionController;
+
+/* Hand-laid thumbnail grid: NSCollectionView is 10.5+ and the baseline
+ * is 10.4, so this is a flipped NSView that flow-lays fixed cells and
+ * draws each (thumbnail letterboxed above a one-line label). One
+ * NSImage per row is cached; the controller decodes them one per frame
+ * and calls -setImage:forRow: as they arrive. */
+@interface RACompanionGrid : NSView
+{
+   RACompanionController *owner;
+   NSMutableArray *images;
+   NSInteger count;
+   NSInteger selected;
+}
+- (id)initWithOwner:(RACompanionController*)o;
+- (void)setCount:(NSInteger)n;
+- (void)setImage:(NSImage*)img forRow:(NSInteger)row;
+- (NSInteger)selectedRow;
+- (void)setSelectedRow:(NSInteger)row;
+- (void)relayout;
+- (NSRect)rectForRow:(NSInteger)row;
+@end
+
 /* Owns the AppKit objects (as ivars, so both MRC and ARC manage them
  * correctly); is the tables' data source / delegate, the window
  * delegate and the menu target. */
@@ -84,6 +112,10 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSWindow *window;
    NSTableView *playlists;
    NSTableView *entries;
+   NSScrollView *entriesScroll;   /* holds the table or the grid */
+   RACompanionGrid *grid;
+   BOOL iconView;
+   size_t gridNext;   /* next grid row to decode */
    NSTextField *status;
    NSMenuItem *menuItem;
    NSMenu *entriesMenu;    /* right-click on an entry   */
@@ -120,6 +152,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)deleteEntry:(id)sender;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
+- (void)setIconView:(BOOL)icons;
+- (void)gridRun:(NSInteger)row;
+- (void)iconTick;
 - (void)toggleLog:(id)sender;
 - (void)loadSelectedCore:(id)sender;
 - (void)toggleInfo:(id)sender;
@@ -202,6 +237,231 @@ static const companion_callbacks_t cc_callbacks = {
 
 /* --- Controller ------------------------------------------------------- */
 
+/* Decode the boxart thumbnail for entry @row into an autoreleased
+ * NSImage, or nil. Shared by the grid's per-frame decode. */
+static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
+{
+   char path[PATH_MAX_LENGTH];
+   char db_name[NAME_MAX_LENGTH];
+   const struct playlist_entry *e = companion_core_entry(w->core, (size_t)row);
+   NSImage *img;
+
+   if (!e)
+      return nil;
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   if (!companion_core_thumbnail_path(w->core, db_name, COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            e->path, path, sizeof(path)))
+      return nil;
+   if (!path_is_valid(path))
+      return nil;
+   img = [[NSImage alloc] initWithContentsOfFile:BOXSTRING(path)];
+   return [img autorelease_compat];
+}
+
+@implementation RACompanionGrid
+
+- (id)initWithOwner:(RACompanionController*)o
+{
+   if ((self = [super initWithFrame:NSMakeRect(0, 0, 10, 10)]))
+   {
+      owner    = o;
+      images   = [[NSMutableArray alloc] init];
+      count    = 0;
+      selected = -1;
+   }
+   return self;
+}
+
+- (void)dealloc
+{
+   RELEASE(images);
+#if !(defined(__clang__) && __has_feature(objc_arc))
+   [super dealloc];
+#endif
+}
+
+- (BOOL)isFlipped { return YES; }
+
+- (NSInteger)columns
+{
+   NSInteger c = (NSInteger)([self bounds].size.width
+         / (CC_GRID_THUMB + CC_GRID_PAD));
+   return c < 1 ? 1 : c;
+}
+
+- (CGFloat)cellHeight { return CC_GRID_THUMB + CC_GRID_PAD + CC_GRID_LABEL; }
+
+- (void)relayout
+{
+   NSInteger cols = [self columns];
+   NSInteger rows = (count + cols - 1) / (cols > 0 ? cols : 1);
+   NSSize sz      = [[self superview] bounds].size;
+   CGFloat h      = rows * [self cellHeight];
+   if (h < sz.height)
+      h = sz.height;
+   [self setFrameSize:NSMakeSize(sz.width, h)];
+   [self setNeedsDisplay:YES];
+}
+
+- (void)setCount:(NSInteger)n
+{
+   NSInteger i;
+   [images removeAllObjects];
+   for (i = 0; i < n; i++)
+      [images addObject:[NSNull null]];
+   count    = n;
+   selected = (n > 0) ? 0 : -1;
+   [self relayout];
+}
+
+- (void)setImage:(NSImage*)img forRow:(NSInteger)row
+{
+   if (row < 0 || row >= count)
+      return;
+   [images replaceObjectAtIndex:row withObject:(img ? (id)img : (id)[NSNull null])];
+   [self setNeedsDisplay:YES];
+}
+
+- (NSInteger)selectedRow { return selected; }
+
+- (void)setSelectedRow:(NSInteger)row
+{
+   if (row >= -1 && row < count)
+   {
+      selected = row;
+      [self setNeedsDisplay:YES];
+   }
+}
+
+- (NSRect)rectForRow:(NSInteger)row
+{
+   NSInteger cols = [self columns];
+   NSInteger col  = row % cols;
+   NSInteger line = row / cols;
+   CGFloat cw     = CC_GRID_THUMB + CC_GRID_PAD;
+   return NSMakeRect(col * cw + CC_GRID_PAD / 2,
+         line * [self cellHeight] + CC_GRID_PAD / 2,
+         CC_GRID_THUMB, CC_GRID_THUMB + CC_GRID_LABEL);
+}
+
+- (NSInteger)rowAtPoint:(NSPoint)p
+{
+   NSInteger cols = [self columns];
+   NSInteger col  = (NSInteger)(p.x / (CC_GRID_THUMB + CC_GRID_PAD));
+   NSInteger line = (NSInteger)(p.y / [self cellHeight]);
+   NSInteger row;
+   if (col < 0 || col >= cols)
+      return -1;
+   row = line * cols + col;
+   return (row >= 0 && row < count) ? row : -1;
+}
+
+- (void)drawRect:(NSRect)dirty
+{
+   NSInteger i;
+   ui_companion_cocoa_wimp_t *w = owner ? [owner wimp] : NULL;
+   if (!w)
+      return;
+
+   for (i = 0; i < count; i++)
+   {
+      NSRect cell = [self rectForRow:i];
+      NSRect thumb, label;
+      const struct playlist_entry *e;
+      id im;
+
+      if (!NSIntersectsRect(cell, dirty))
+         continue;
+
+      thumb = NSMakeRect(cell.origin.x, cell.origin.y,
+            CC_GRID_THUMB, CC_GRID_THUMB);
+      label = NSMakeRect(cell.origin.x, cell.origin.y + CC_GRID_THUMB,
+            CC_GRID_THUMB, CC_GRID_LABEL);
+
+      if (i == selected)
+      {
+         [[NSColor selectedControlColor] set];
+         NSRectFill(NSInsetRect(cell, -2, -2));
+      }
+
+      im = [images objectAtIndex:i];
+      if (im != [NSNull null])
+      {
+         NSSize is = [(NSImage*)im size];
+         CGFloat s = 1.0;
+         NSRect dst;
+         if (is.width > 0 && is.height > 0)
+            s = (is.width >= is.height)
+               ? CC_GRID_THUMB / is.width : CC_GRID_THUMB / is.height;
+         dst = NSMakeRect(thumb.origin.x + (CC_GRID_THUMB - is.width * s) / 2,
+               thumb.origin.y + (CC_GRID_THUMB - is.height * s) / 2,
+               is.width * s, is.height * s);
+         [(NSImage*)im setFlipped:YES];
+         [(NSImage*)im drawInRect:dst fromRect:NSZeroRect
+            operation:NSCompositeSourceOver fraction:1.0];
+      }
+      else
+      {
+         [[NSColor gridColor] set];
+         NSFrameRect(thumb);
+      }
+
+      e = companion_core_entry(w->core, (size_t)i);
+      if (e)
+      {
+         const char *lbl = !string_is_empty(e->label)
+            ? e->label : path_basename(e->path);
+         NSMutableParagraphStyle *ps =
+            [[[NSMutableParagraphStyle alloc] init] autorelease_compat];
+         NSDictionary *attr;
+         [ps setAlignment:NSCenterTextAlignment];
+         [ps setLineBreakMode:NSLineBreakByTruncatingTail];
+         attr = [NSDictionary dictionaryWithObjectsAndKeys:
+               [NSFont systemFontOfSize:11.0], NSFontAttributeName,
+               ps, NSParagraphStyleAttributeName, nil];
+         [BOXSTRING(lbl ? lbl : "") drawInRect:label withAttributes:attr];
+      }
+   }
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+   NSPoint p     = [self convertPoint:[event locationInWindow] fromView:nil];
+   NSInteger row = [self rowAtPoint:p];
+   if (row < 0)
+      return;
+   [self setSelectedRow:row];
+   if ([event clickCount] >= 2)
+      [owner gridRun:row];
+}
+
+- (void)keyDown:(NSEvent*)event
+{
+   NSInteger cols = [self columns];
+   NSInteger row  = selected;
+   unichar c;
+   if (count == 0)
+      return;
+   c = [[event characters] length] ? [[event characters] characterAtIndex:0] : 0;
+   switch (c)
+   {
+      case NSLeftArrowFunctionKey:  row = (row > 0) ? row - 1 : 0; break;
+      case NSRightArrowFunctionKey: row = (row < count - 1) ? row + 1 : row; break;
+      case NSUpArrowFunctionKey:    row = (row - cols >= 0) ? row - cols : row; break;
+      case NSDownArrowFunctionKey:  row = (row + cols < count) ? row + cols : row; break;
+      case '\r': case 3:            [owner gridRun:selected]; return;
+      default: [super keyDown:event]; return;
+   }
+   [self setSelectedRow:row];
+   [self scrollRectToVisible:[self rectForRow:row]];
+}
+
+- (BOOL)acceptsFirstResponder { return YES; }
+
+@end
+
 @implementation RACompanionController
 
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w
@@ -236,12 +496,56 @@ static const companion_callbacks_t cc_callbacks = {
 - (void)reloadEntries
 {
    char buf[64];
+   size_t n;
    if (!entries)
       return;
+   n = companion_core_entry_count(wimp->core);
    [entries reloadData];
-   snprintf(buf, sizeof(buf), "%u entries",
-         (unsigned)companion_core_entry_count(wimp->core));
+   if (grid)
+   {
+      [grid setCount:(NSInteger)n];
+      gridNext = 0;
+   }
+   snprintf(buf, sizeof(buf), "%u entries", (unsigned)n);
    [self setStatus:buf];
+}
+
+- (void)setIconView:(BOOL)icons
+{
+   if (!entriesScroll || iconView == icons)
+      return;
+   iconView = icons;
+   if (icons)
+   {
+      [entriesScroll setDocumentView:grid];
+      [grid relayout];
+      [[window makeFirstResponder:grid] self];
+   }
+   else
+      [entriesScroll setDocumentView:entries];
+}
+
+- (void)gridRun:(NSInteger)row
+{
+   if (row < 0)
+      return;
+   if (companion_core_request_load_entry(wimp->core, (size_t)row))
+      [window orderOut:nil];
+}
+
+/* Called from the iterate hook: decode one pending grid thumbnail per
+ * frame while the icon view is showing (one file decode per frame, any
+ * playlist size), and keep the info pane following the core. */
+- (void)iconTick
+{
+   if (!iconView || !grid)
+      return;
+   if (gridNext < companion_core_entry_count(wimp->core))
+   {
+      NSImage *img = cc_thumb_image(wimp, (NSInteger)gridNext);
+      [grid setImage:img forRow:(NSInteger)gridNext];
+      gridNext++;
+   }
 }
 
 /* Returns an autoreleased table wrapped in an autoreleased scroll view;
@@ -310,6 +614,8 @@ static const companion_callbacks_t cc_callbacks = {
          scroll:&sr twoColumns:YES]);
    [entries setDoubleAction:@selector(runSelected:)];
    [entries setTarget:self];
+   entriesScroll = RETAIN_COMPAT(sr); /* sr shows the table or the grid */
+   grid = [[RACompanionGrid alloc] initWithOwner:self];
 
    split = [[NSSplitView alloc] initWithFrame:
       NSMakeRect(0, 20, frame.size.width, frame.size.height - 20)];
@@ -373,6 +679,13 @@ static const companion_callbacks_t cc_callbacks = {
    [item setTarget:self];
    item = [menu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:)
       keyEquivalent:@"r"];
+   [item setTarget:self];
+   [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:@"List" action:@selector(viewList:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:@"Icons" action:@selector(viewIcons:)
+      keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:)
@@ -464,6 +777,8 @@ static const companion_callbacks_t cc_callbacks = {
       [entries setTarget:nil];
       RELEASE(entries);
    }
+   RELEASE(grid);
+   RELEASE(entriesScroll);
    RELEASE(status);
    if (infoTable)
    {
@@ -705,6 +1020,9 @@ static const companion_callbacks_t cc_callbacks = {
       [split adjustSubviews];
    }
 }
+
+- (void)viewList:(id)sender  { [self setIconView:NO]; }
+- (void)viewIcons:(id)sender { [self setIconView:YES]; }
 
 - (void)toggleLog:(id)sender
 {
@@ -953,7 +1271,10 @@ static void ui_companion_cocoa_wimp_iterate(void *data)
       return;
    companion_core_iterate(w->core, COMPANION_COCOA_ITER_US);
    if (w->controller)
+   {
+      [CC_CTRL(w) iconTick];
       [CC_CTRL(w) infoFollowCore];
+   }
 }
 
 static void ui_companion_cocoa_wimp_event_command(void *data,
