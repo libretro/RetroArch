@@ -143,6 +143,8 @@ bool companion_core_request_load(companion_core_t *core,
 bool companion_core_request_load_content(companion_core_t *core,
       const char *core_path, const char *content_path,
       const char *label, const char *db_name, const char *crc32);
+/* Start the running core without content (contentless cores). */
+bool companion_core_start_core(companion_core_t *core);
 /* Load a core with no content (HAVE_DYNAMIC): sets the core path,
  * rebuilds core_info and issues CMD_EVENT_LOAD_CORE. Returns false if
  * the core could not be loaded (or the build is not HAVE_DYNAMIC). */
@@ -334,6 +336,16 @@ size_t companion_core_resolve_content_path(companion_core_t *core,
 bool companion_core_playlist_push(companion_core_t *core,
       playlist_t *playlist, const char *content_path, const char *label,
       const char *core_path, const char *core_name, const char *db_name);
+
+/* --- Window hand-off ------------------------------------------------ */
+
+/* Before a companion raises its window: release the mouse grab, show
+ * the cursor and leave fullscreen so the window can be reached. Every
+ * backend's toggle does exactly this. */
+void companion_core_prepare_show_window(companion_core_t *core);
+/* True when RetroArch started in fullscreen (a companion may prefer to
+ * stay behind the video window then). */
+bool companion_core_video_started_fullscreen(companion_core_t *core);
 
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 

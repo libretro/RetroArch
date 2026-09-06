@@ -42,8 +42,6 @@
 
 #include "../../command.h"
 #include "../../configuration.h"
-#include "../../gfx/video_driver.h"
-#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 
 #include "../ui_companion_driver.h"
@@ -589,8 +587,8 @@ static const companion_callbacks_t cc_callbacks = {
 
 - (void)startCore:(id)sender
 {
-   if (wimp)
-      companion_core_request_load(wimp->core, NULL, NULL);
+   if (wimp && !companion_core_start_core(wimp->core))
+      [self setStatus:"Failed to start the core."];
 }
 
 - (void)toggleLog:(id)sender
@@ -752,28 +750,15 @@ static void ui_companion_cocoa_wimp_deinit(void *data)
 
 static void ui_companion_cocoa_wimp_toggle(void *data, bool force)
 {
-   ui_companion_cocoa_wimp_t *w   = (ui_companion_cocoa_wimp_t*)data;
-   settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
-   bool ui_companion_toggle       = settings->bools.ui_companion_toggle;
-   bool video_fullscreen          = settings->bools.video_fullscreen;
-   bool mouse_grabbed             = (input_state_get_ptr()->flags
-         & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
+   settings_t *settings         = config_get_ptr();
 
    if (!w || !w->controller)
       return;
-   if (!(ui_companion_toggle || force))
+   if (!(settings->bools.ui_companion_toggle || force))
       return;
 
-   /* Same hand-off as the Qt companion: release the mouse, show the
-    * cursor and leave fullscreen so the window is reachable. */
-   if (mouse_grabbed)
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-   if (video_st && video_st->poke && video_st->poke->show_mouse)
-      video_st->poke->show_mouse(video_st->data, true);
-   if (video_fullscreen)
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-
+   companion_core_prepare_show_window(w->core);
    [[CC_CTRL(w) window] makeKeyAndOrderFront:nil];
 }
 

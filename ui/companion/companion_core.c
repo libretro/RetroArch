@@ -37,6 +37,8 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#include "../../gfx/video_driver.h"
+#include "../../input/input_driver.h"
 #include "../../msg_hash.h"
 #include "../../retroarch_types.h"
 #include "../../file_path_special.h"
@@ -413,6 +415,16 @@ bool companion_core_request_load_content(companion_core_t *core,
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 #endif
    return true;
+}
+
+bool companion_core_start_core(companion_core_t *core)
+{
+   content_ctx_info_t content_info;
+   if (!core)
+      return false;
+   memset(&content_info, 0, sizeof(content_info));
+   path_clear(RARCH_PATH_BASENAME);
+   return task_push_start_current_core(&content_info);
 }
 
 bool companion_core_load_core(companion_core_t *core, const char *path)
@@ -1114,6 +1126,30 @@ void companion_core_event_command(companion_core_t *core,
    if (!core)
       return;
    command_event(cmd, NULL);
+}
+
+/* --- Window hand-off ---------------------------------------------------- */
+
+void companion_core_prepare_show_window(companion_core_t *core)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!core)
+      return;
+
+   if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   if (video_st && video_st->poke && video_st->poke->show_mouse)
+      video_st->poke->show_mouse(video_st->data, true);
+   if (settings->bools.video_fullscreen)
+      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+}
+
+bool companion_core_video_started_fullscreen(companion_core_t *core)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   return core && video_st && (video_st->flags & VIDEO_FLAG_STARTED_FULLSCREEN);
 }
 
 /* --- Inbound notifications ------------------------------------------- */

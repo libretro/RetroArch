@@ -62,8 +62,6 @@
 
 #include "../../command.h"
 #include "../../configuration.h"
-#include "../../gfx/video_driver.h"
-#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 #include "../../gfx/common/win32_common.h"
 
@@ -641,7 +639,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                      ? ID_M_LOAD_CORE : ID_M_LOAD_CONTENT);
                return 0;
             case IDM_CW_START_CORE:
-               companion_core_request_load(w->core, NULL, NULL);
+               if (!companion_core_start_core(w->core))
+                  cw_status_set(w, "Failed to start the core.");
                return 0;
             case IDM_CW_RUN:
                cw_run_selected(w);
@@ -665,7 +664,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                ShowWindow(hwnd, SW_HIDE);
                return 0;
             case IDM_CW_QUIT:
-               command_event(CMD_EVENT_QUIT, NULL);
+               companion_core_event_command(w->core, CMD_EVENT_QUIT);
                return 0;
             default:
                if (     LOWORD(wparam) >= IDM_CW_ASSOC_BASE
@@ -852,28 +851,15 @@ static void ui_companion_win32_wimp_deinit(void *data)
 
 static void ui_companion_win32_wimp_toggle(void *data, bool force)
 {
-   ui_companion_win32_wimp_t *w   = (ui_companion_win32_wimp_t*)data;
-   settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
-   bool ui_companion_toggle       = settings->bools.ui_companion_toggle;
-   bool video_fullscreen          = settings->bools.video_fullscreen;
-   bool mouse_grabbed             = (input_state_get_ptr()->flags
-         & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
+   settings_t *settings         = config_get_ptr();
 
    if (!w || !w->hwnd)
       return;
-   if (!(ui_companion_toggle || force))
+   if (!(settings->bools.ui_companion_toggle || force))
       return;
 
-   /* Same hand-off as the Qt companion: release the mouse, show the
-    * cursor and leave fullscreen so the window is reachable. */
-   if (mouse_grabbed)
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-   if (video_st && video_st->poke && video_st->poke->show_mouse)
-      video_st->poke->show_mouse(video_st->data, true);
-   if (video_fullscreen)
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-
+   companion_core_prepare_show_window(w->core);
    ShowWindow(w->hwnd, SW_SHOW);
    SetForegroundWindow(w->hwnd);
 }

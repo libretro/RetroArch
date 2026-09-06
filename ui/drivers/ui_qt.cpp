@@ -2576,16 +2576,7 @@ void MainWindow::onContentItemDoubleClicked(const QModelIndex &index)
 
 void MainWindow::onStartCoreClicked()
 {
-   content_ctx_info_t content_info;
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-   path_clear(RARCH_PATH_BASENAME);
-
-   if (!task_push_start_current_core(&content_info))
+   if (!companion_core_start_core(ui_companion_qt_core()))
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
             msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 }
@@ -2616,7 +2607,8 @@ QString MainWindow::getSelectedCorePath()
    switch (coreSelection)
    {
       case CORE_SELECTION_CURRENT:
-         return QString::fromUtf8(path_get(RARCH_PATH_CORE));
+         return QString::fromUtf8(
+               companion_core_current_core_path(ui_companion_qt_core()));
       case CORE_SELECTION_PLAYLIST_SAVED:
          if (!entry.corePath.isEmpty())
             return entry.corePath;
@@ -4704,29 +4696,16 @@ static void ui_companion_qt_toggle(void *data, bool force)
    ui_window_qt_t *win_handle  = (ui_window_qt_t*)handle->window;
    settings_t *settings        = config_get_ptr();
    bool ui_companion_toggle    = settings->bools.ui_companion_toggle;
-   bool video_fullscreen       = settings->bools.video_fullscreen;
-   bool mouse_grabbed          = (input_state_get_ptr()->flags
-         & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
 
    if (ui_companion_toggle || force)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
-
-      if (mouse_grabbed)
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, true);
-
-      if (video_fullscreen)
-         command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+      companion_core_prepare_show_window(handle->core);
 
       win_handle->qtWindow->activateWindow();
       win_handle->qtWindow->raise();
       win_handle->qtWindow->show();
 
-      if (    video_st
-          && (video_st->flags & VIDEO_FLAG_STARTED_FULLSCREEN))
+      if (companion_core_video_started_fullscreen(handle->core))
          win_handle->qtWindow->lower();
 
       if (!already_started)
