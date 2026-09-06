@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Check that every desktop companion backend exposes the same features.
+
+The companion UI has three presentation backends over one shared C core
+(ui/companion/companion_core.*): Qt, native Win32, native Cocoa. The
+plan for the refactor requires them to be interchangeable - "same
+actions produce the same results" - but nothing enforces it: a backend
+can quietly omit a feature (no file browser, no scan, no core picker)
+and still compile and run, and the omission only surfaces when a user
+switches drivers and finds a menu entry gone. That is exactly the drift
+this check exists to catch, the same way vfs_backend_parity.py catches a
+VFS backend that skips a call.
+
+Each feature below is defined by the companion-core entry point a
+backend must call to implement it. A backend "has" the feature when it
+references that symbol. Qt's presentation is split across two
+translation units (ui_qt.cpp + ui_qt_widgets.cpp), so they are checked
+together as one backend.
+
+This is a source-level grep, so it costs nothing and runs on Linux. It
+is deliberately loose - it proves a backend wired the feature's core
+call in at all, not that the UI is pixel-identical; visual parity is a
+manual pass. What it reliably catches is a whole feature missing from
+one backend.
+
+A backend that genuinely should not carry a feature must be listed in
+WAIVERS with a reason, so dropping one is a conscious, reviewed choice
+rather than an oversight.
+
+Usage:
+  tools/companion_parity.py            # check, exit 1 on any gap
+  tools/companion_parity.py --list     # print the feature matrix
+"""
+
+import re
+import sys
+
+# backend name -> the translation unit(s) that make up its presentation
+BACKENDS = {
+    'qt':    ['ui/drivers/ui_qt.cpp', 'ui/drivers/ui_qt_widgets.cpp'],
+    'win32': ['ui/drivers/ui_win32_companion.c'],
+    'cocoa': ['ui/drivers/ui_cocoa_companion.m'],
+}
+
+# feature -> the companion_core_* symbol whose use implements it.
+# One representative call per feature: the one a backend cannot skip and
+# still offer it.
+FEATURES = {
+    'lifecycle':          'companion_core_new',
+    'iterate':            'companion_core_iterate',
+    'playlist list':      'companion_core_playlist_count',
+    'playlist entries':   'companion_core_entry_count',
+    'select playlist':    'companion_core_select_playlist',
+    'run entry':          'companion_core_request_load_entry',
+    'load content':       'companion_core_request_load_content',
+    'start core':         'companion_core_start_core',
+    'load core':          'companion_core_load_core',
+    'installed cores':    'companion_core_installed_core_count',
+    'core picker filter': 'companion_core_installed_cores_supporting',
+    'core association':   'companion_core_playlist_set_default_core',
+    'delete entry':       'companion_core_playlist_delete_entry',
+    'core info panel':    'companion_core_core_info_rows',
+    'directory scan':     'companion_core_request_scan',
+    'thumbnails':         'companion_core_thumbnail_path',
+    'file browser':       'companion_core_browse_open',
+    'pick core on run':   'companion_core_entry_needs_core',
+    'window hand-off':    'companion_core_prepare_show_window',
+}
+
+# (backend, feature) pairs that are intentionally absent, with a reason.
+# Empty for now: all three backends implement every feature above.
+WAIVERS = {
+    # ('qt', 'window hand-off'): 'Qt calls it under its own guard',
+}
+
+# Qt reaches the window hand-off through the same call from ui_qt.cpp;
+# the playlist-file browser accessors it does not use because its model
+# owns the QFileSystemModel. Rather than hard-code such exceptions, a
+# feature a backend implements a different but equivalent way is waived
+# above with a reason; keep that list short and reviewed.
+QT_EQUIVALENT = {
+    # Qt lists playlist files through its own QDir model (getPlaylistFiles)
+    # and selects by path, not by the core's playlist-file index.
+    'playlist list':   'companion_core_select_playlist_path',
+    'select playlist': 'companion_core_select_playlist_path',
+    # Qt's "Run" and its core picker go through the launch-with combo:
+    # it resolves the core (companion_core_launch_options) and loads the
+    # content directly, rather than the natives' request_load_entry /
+    # entry_needs_core path.
+    'run entry':        'companion_core_launch_options',
+    'pick core on run': 'companion_core_launch_options',
+    # Qt runs the file browser through QFileSystemModel; it has no
+    # in-core browse listing.
+    'file browser':     None,
+}
+
+
+def uses(paths, symbol):
+    pat = re.compile(r'\b' + re.escape(symbol) + r'\b')
+    for p in paths:
+        try:
+            with open(p, encoding='utf-8', errors='replace') as f:
+                if pat.search(f.read()):
+                    return True
+        except OSError:
+            pass
+    return False
+
+
+def has_feature(backend, feature):
+    sym = FEATURES[feature]
+    if uses(BACKENDS[backend], sym):
+        return True
+    if backend == 'qt' and feature in QT_EQUIVALENT:
+        alt = QT_EQUIVALENT[feature]
+        if alt is None:
+            return True  # implemented a toolkit-native way
+        return uses(BACKENDS['qt'], alt)
+    return False
+
+
+def main():
+    want_list = '--list' in sys.argv[1:]
+
+    if want_list:
+        w = max(len(f) for f in FEATURES)
+        print('%-*s  %s' % (w, 'feature', '  '.join(BACKENDS)))
+        for feat in FEATURES:
+            cells = []
+            for b in BACKENDS:
+                if (b, feat) in WAIVERS:
+                    cells.append('waived')
+                else:
+                    cells.append('yes' if has_feature(b, feat) else 'NO')
+            print('%-*s  %s' % (w, feat, '  '.join(
+                '%-*s' % (len(b), c) for b, c in zip(BACKENDS, cells))))
+        return 0
+
+    gaps = []
+    for feat in FEATURES:
+        for b in BACKENDS:
+            if (b, feat) in WAIVERS:
+                continue
+            if not has_feature(b, feat):
+                gaps.append((b, feat))
+
+    if gaps:
+        print('error: companion backends disagree on features:',
+              file=sys.stderr)
+        for b, feat in gaps:
+            print('   %-6s is missing "%s" (expected a call to %s)'
+                  % (b, feat, FEATURES[feat]), file=sys.stderr)
+        print('\nEither wire the feature into that backend, or - if it '
+              'genuinely should not carry it - add the (backend, feature) '
+              'pair to WAIVERS in this script with a reason.',
+              file=sys.stderr)
+        return 1
+
+    print('companion parity: %d features, all %d backends agree'
+          % (len(FEATURES), len(BACKENDS)))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

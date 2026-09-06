@@ -94,6 +94,18 @@ jobs:
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
 
+      - name: Check companion backend feature parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The Qt, Win32 and Cocoa desktop companions share one C core
+          # but each has its own presentation; a backend can quietly omit
+          # a feature (no file browser, no scan, no core picker) and still
+          # build and run, the gap only showing when a user switches
+          # drivers.  Source-level check, for free, on Linux.
+          python3 tools/companion_parity.py
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}
