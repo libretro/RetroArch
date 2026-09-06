@@ -182,6 +182,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSInteger rowCount;
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
+- (ui_companion_cocoa_wimp_t*)wimp;
 - (BOOL)buildWindow;
 - (void)teardown;
 - (NSWindow*)window;
@@ -559,6 +560,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 }
 
 - (NSWindow*)window { return window; }
+- (ui_companion_cocoa_wimp_t*)wimp { return wimp; }
 
 - (void)setStatus:(const char*)msg
 {
@@ -571,8 +573,10 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (wimp && playlistIcons)
    {
       size_t i, n = companion_core_playlist_count(wimp->core);
+      /* 'fldr' is the generic folder HFS type; the named constant lives
+       * in Carbon's Icons.h, which is not pulled in here. */
       NSImage *folder = [[NSWorkspace sharedWorkspace] iconForFileType:
-         NSFileTypeForHFSTypeCode(kGenericFolderIcon)];
+         NSFileTypeForHFSTypeCode('fldr')];
       [playlistIcons removeAllObjects];
       for (i = 0; i < n; i++)
       {
