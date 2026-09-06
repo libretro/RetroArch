@@ -152,6 +152,135 @@ static void companion_core_playlist_config_init(playlist_config_t *cfg,
 
 /* --- Lifecycle ------------------------------------------------------- */
 
+/* One-time migration of the Qt companion's former private settings
+ * file. Older builds kept the desktop companion's presentation settings
+ * in retroarch_qt.cfg (QSettings INI: "[General]" then key=value lines)
+ * beside retroarch.cfg. Those now live in retroarch.cfg. On the first
+ * companion start that still finds the old file, the values that have
+ * a home are imported into settings_t and the file is deleted, so it
+ * does not linger as dead configuration. Qt-only blobs (geometry,
+ * dock_positions, table headers, options-dialog geometry) have no home
+ * and are dropped with it. Runs once per process at most. */
+static void companion_core_migrate_qt_cfg(void)
+{
+   static bool done = false;
+   char path[PATH_MAX_LENGTH];
+   const char *cfg      = path_get(RARCH_PATH_CONFIG);
+   settings_t *settings = config_get_ptr();
+   int64_t len          = 0;
+   char *buf            = NULL;
+   char *line, *next;
+
+   if (done)
+      return;
+   done = true;
+
+   if (string_is_empty(cfg))
+      return;
+   fill_pathname_basedir(path, cfg, sizeof(path));
+   fill_pathname_join_special(path, path, "retroarch_qt.cfg", sizeof(path));
+   if (!path_is_valid(path))
+      return;
+   if (!filestream_read_file(path, (void**)&buf, &len) || !buf)
+      return;
+
+   RARCH_LOG("[Companion] Importing %s into retroarch.cfg and removing it.\n",
+         path);
+
+   for (line = buf; line && *line; line = next)
+   {
+      char *eq, *end;
+      next = strchr(line, '\n');
+      if (next)
+         *next++ = '\0';
+      while (*line == ' ' || *line == '\t' || *line == '\r')
+         line++;
+      end = line + strlen(line);
+      while (end > line && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r'))
+         *--end = '\0';
+      if (*line == '\0' || *line == '[' || *line == ';' || *line == '#')
+         continue;
+      if (!(eq = strchr(line, '=')))
+         continue;
+      *eq = '\0';
+      end = eq;
+      while (end > line && (end[-1] == ' ' || end[-1] == '\t'))
+         *--end = '\0';
+      eq++;
+      while (*eq == ' ' || *eq == '\t')
+         eq++;
+
+#define QT_BOOL(v) (string_is_equal((v), "true") || string_is_equal((v), "1"))
+      if (string_is_equal(line, "view_type"))
+         settings->uints.desktop_menu_view_type = string_is_equal(eq, "icons") ? 1 : 0;
+      else if (string_is_equal(line, "icon_view_thumbnail_type"))
+         settings->uints.desktop_menu_thumbnail_type =
+              string_is_equal(eq, "screenshot") ? 1
+            : string_is_equal(eq, "title")      ? 2
+            : string_is_equal(eq, "logo")       ? 3 : 0;
+      else if (string_is_equal(line, "initial_playlist"))
+         strlcpy(settings->paths.desktop_menu_initial_playlist, eq,
+               sizeof(settings->paths.desktop_menu_initial_playlist));
+      else if (string_is_equal(line, "suggest_loaded_core_first"))
+         settings->bools.desktop_menu_suggest_loaded_core_first = QT_BOOL(eq);
+      else if (string_is_equal(line, "show_hidden_files"))
+         settings->bools.show_hidden_files = QT_BOOL(eq);
+      else if (string_is_equal(line, "save_last_tab"))
+         settings->bools.desktop_menu_save_last_tab = QT_BOOL(eq);
+      else if (string_is_equal(line, "last_tab"))
+         settings->uints.desktop_menu_last_tab = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "save_geometry"))
+         settings->bools.desktop_menu_save_geometry = QT_BOOL(eq);
+      else if (string_is_equal(line, "show_welcome_screen"))
+         settings->bools.desktop_menu_show_welcome_screen = QT_BOOL(eq);
+      else if (string_is_equal(line, "scan_finish_confirm"))
+         settings->bools.desktop_menu_scan_finish_confirm = QT_BOOL(eq);
+      else if (string_is_equal(line, "thumbnail_cache_limit"))
+         settings->uints.desktop_menu_thumbnail_cache_limit = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "thumbnail_max_size"))
+         settings->uints.desktop_menu_thumbnail_max_size = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "thumbnail_quality"))
+         settings->uints.desktop_menu_thumbnail_quality = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "icon_view_zoom"))
+         settings->uints.desktop_menu_icon_view_zoom = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "all_playlists_list_max_count"))
+         settings->uints.desktop_menu_all_playlists_list_max_count = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "all_playlists_grid_max_count"))
+         settings->uints.desktop_menu_all_playlists_grid_max_count = (unsigned)strtoul(eq, NULL, 10);
+      else if (string_is_equal(line, "theme"))
+         settings->uints.desktop_menu_theme =
+              string_is_equal(eq, "dark")   ? 1
+            : string_is_equal(eq, "custom") ? 2 : 0;
+      else if (string_is_equal(line, "custom_theme"))
+         strlcpy(settings->paths.desktop_menu_custom_theme, eq,
+               sizeof(settings->paths.desktop_menu_custom_theme));
+      else if (string_is_equal(line, "highlight_color"))
+         strlcpy(settings->arrays.desktop_menu_highlight_color, eq,
+               sizeof(settings->arrays.desktop_menu_highlight_color));
+      else if (string_is_equal(line, "hidden_playlists"))
+      {
+         /* QSettings writes a QStringList as "a, b, c". */
+         char *p;
+         strlcpy(settings->arrays.desktop_menu_hidden_playlists, eq,
+               sizeof(settings->arrays.desktop_menu_hidden_playlists));
+         for (p = settings->arrays.desktop_menu_hidden_playlists; *p; )
+         {
+            if (*p == ' ' && p > settings->arrays.desktop_menu_hidden_playlists
+                  && p[-1] == ',')
+               memmove(p, p + 1, strlen(p + 1) + 1); /* drop the space */
+            else
+               p++;
+         }
+      }
+      /* geometry, dock_positions, options_dialog_geometry,
+       * file_browser_table_headers: Qt blobs, dropped. */
+#undef QT_BOOL
+   }
+   free(buf);
+
+   filestream_delete(path);
+}
+
 companion_core_t *companion_core_new(const companion_callbacks_t *cb,
       void *ud)
 {
@@ -162,6 +291,8 @@ companion_core_t *companion_core_new(const companion_callbacks_t *cb,
       core->cb    = *cb;
    core->ud       = ud;
    core->selected = COMPANION_NO_SELECTION;
+
+   companion_core_migrate_qt_cfg();
    return core;
 }
 

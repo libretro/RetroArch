@@ -67,8 +67,7 @@ S_BOOL_NS(ui_companion_toggle, UI_COMPANION_TOGGLE,
 #endif
 
 /* Desktop companion presentation settings shared by every companion
- * backend (formerly the Qt companion's private retroarch_qt.cfg). Same
- * guard as HAVE_COMPANION_WIMP. */
+ * backend. Same guard as HAVE_COMPANION_WIMP. */
 #if (defined(HAVE_QT) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL_NS(desktop_menu_suggest_loaded_core_first, DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,
       "desktop_menu_suggest_loaded_core_first",

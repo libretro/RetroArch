@@ -228,7 +228,7 @@ typedef struct ui_companion_win32_wimp
    size_t thumb_count;     /* entries in the current list */
    bool icon_view;
    /* Which repository subdirectory the icon view and boxart pane show;
-    * from retroarch_qt.cfg's icon_view_thumbnail_type, boxart default. */
+    * from desktop_menu_thumbnail_type, boxart default. */
    const char *thumb_subdir;
    bool started;   /* initial_playlist applied once after the first list */
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
@@ -1031,8 +1031,8 @@ static void cw_on_playlists_changed(void *ud)
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
    cw_playlists_rebuild(w);
 
-   /* Startup: open the playlist Qt would - retroarch_qt.cfg's
-    * initial_playlist, falling back to History. Once. */
+   /* Startup: open the playlist Qt would - desktop_menu_initial_playlist,
+    * falling back to History. Once. */
    if (w && !w->started)
    {
       char initial[PATH_MAX_LENGTH];

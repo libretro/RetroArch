@@ -1853,8 +1853,7 @@
 #define DEFAULT_DESKTOP_MENU_ENABLE true
 
 /* Desktop companion presentation settings, shared by the Qt, Win32 and
- * Cocoa companions (formerly the Qt companion's private
- * retroarch_qt.cfg). */
+ * Cocoa companions. */
 #define DEFAULT_DESKTOP_MENU_VIEW_TYPE 0            /* 0 list, 1 icons */
 #define DEFAULT_DESKTOP_MENU_THUMBNAIL_TYPE 0       /* 0 boxart, 1 screenshot, 2 title, 3 logo */
 #define DEFAULT_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST false

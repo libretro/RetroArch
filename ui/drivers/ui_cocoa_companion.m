@@ -512,7 +512,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (playlists)
       [playlists reloadData];
 
-   /* Startup: select retroarch_qt.cfg's initial_playlist (History as the
+   /* Startup: select desktop_menu_initial_playlist (History as the
     * fallback), once, as the Qt companion does. */
    if (wimp && !started)
    {
@@ -1233,7 +1233,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 /* Same shape as the platform driver's open panel (ui_cocoa.m): the
  * 10.6+ URL API when present, else the 10.4 selectors through
  * objc_msgSend so a modern SDK does not see the removed declarations. */
-/* Shared companion settings from retroarch_qt.cfg, applied at startup. */
+/* Shared companion settings (retroarch.cfg), applied at startup. */
 - (void)applySharedSettings
 {
    if (!wimp)

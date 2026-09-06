@@ -1351,7 +1351,7 @@ MainWindow::MainWindow(QWidget *parent) :
    m_defaultPalette = QApplication::palette();
 
    /* Companion settings live in retroarch.cfg (settings_t) now, shared
-    * with the native companions; retroarch_qt.cfg is no longer used. */
+    * with the native companions. */
    m_viewOptionsDialog   = new ViewOptionsDialog(this, 0);
    m_playlistEntryDialog = new PlaylistEntryDialog(this, 0);
 

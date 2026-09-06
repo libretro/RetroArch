@@ -10503,8 +10503,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
-               /* Presentation settings shared by every desktop companion
-                * (formerly the Qt companion's private retroarch_qt.cfg). */
+               /* Presentation settings shared by every desktop companion. */
                {MENU_ENUM_LABEL_DESKTOP_MENU_VIEW_TYPE,                                PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_TYPE,                           PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,                PARSE_ONLY_BOOL,   true},
