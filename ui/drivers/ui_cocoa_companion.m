@@ -217,6 +217,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)browseDownloads:(id)sender;
 - (void)browseReload;
 - (void)browseLanded;
+- (void)tableView:(NSTableView*)tv sortDescriptorsDidChange:(NSArray*)old;
 - (void)playlistsDoubleClick:(id)sender;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
@@ -1093,6 +1094,27 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       setStringValue:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME))];
    [[[[entries tableColumns] objectAtIndex:1] headerCell]
       setStringValue:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE))];
+   /* Header clicks sort through the core (under the browser). Column 0
+    * is Name, column 1 doubles as Type there; Size and Date columns
+    * appear only in browse mode. */
+   {
+      NSTableColumn *sz = [[[NSTableColumn alloc] initWithIdentifier:@"size"] autorelease_compat];
+      NSTableColumn *dt = [[[NSTableColumn alloc] initWithIdentifier:@"date"] autorelease_compat];
+      [[sz headerCell] setStringValue:@"Size"];
+      [[dt headerCell] setStringValue:@"Date Modified"];
+      [sz setWidth:90.0];
+      [dt setWidth:140.0];
+      [entries addTableColumn:sz];
+      [entries addTableColumn:dt];
+      [sz setHidden:YES];
+      [dt setHidden:YES];
+      [[[entries tableColumns] objectAtIndex:0] setSortDescriptorPrototype:
+         [NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]];
+      [[[entries tableColumns] objectAtIndex:1] setSortDescriptorPrototype:
+         [NSSortDescriptor sortDescriptorWithKey:@"type" ascending:YES]];
+      [sz setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"size" ascending:YES]];
+      [dt setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:YES]];
+   }
    entriesScroll = RETAIN_COMPAT(sr);
    [content addSubview:sr];
    grid = [[RACompanionGrid alloc] initWithOwner:self];
@@ -1580,11 +1602,22 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    else if (tv == entries && browseMode)
    {
       NSInteger bi = [self entryForRow:row];
-      if ([[col identifier] isEqualToString:@"core"])
+      if ([[col identifier] isEqualToString:@"core"]
+            || [[col identifier] isEqualToString:@"size"]
+            || [[col identifier] isEqualToString:@"date"])
       {
-         /* Qt's Type column, formatted by the core for every backend. */
+         /* Qt's Type / Size / Date columns, formatted by the core for
+          * every backend. */
          char buf[64];
-         s = bi >= 0 ? companion_core_browse_type_str(wimp->core, (size_t)bi, buf, sizeof(buf)) : "";
+         NSString *id = [col identifier];
+         if (bi < 0)
+            return @"";
+         if ([id isEqualToString:@"size"])
+            s = companion_core_browse_size_str(wimp->core, (size_t)bi, buf, sizeof(buf));
+         else if ([id isEqualToString:@"date"])
+            s = companion_core_browse_date_str(wimp->core, (size_t)bi, buf, sizeof(buf));
+         else
+            s = companion_core_browse_type_str(wimp->core, (size_t)bi, buf, sizeof(buf));
          return BOXSTRING(s ? s : "");
       }
       else
@@ -1735,6 +1768,23 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self browseReload];
 }
 
+/* NSTableView: a header click changed the sort descriptors. */
+- (void)tableView:(NSTableView*)tv sortDescriptorsDidChange:(NSArray*)old
+{
+   NSSortDescriptor *d;
+   enum companion_browse_column col = COMPANION_BROWSE_SORT_NAME;
+   NSString *key;
+   if (tv != entries || !browseMode || ![[tv sortDescriptors] count])
+      return;
+   d   = [[tv sortDescriptors] objectAtIndex:0];
+   key = [d key];
+   if ([key isEqualToString:@"size"])      col = COMPANION_BROWSE_SORT_SIZE;
+   else if ([key isEqualToString:@"type"]) col = COMPANION_BROWSE_SORT_TYPE;
+   else if ([key isEqualToString:@"date"]) col = COMPANION_BROWSE_SORT_DATE;
+   companion_core_browse_sort(wimp->core, col, [d ascending] ? true : false);
+   /* on_browse_changed -> browseLanded -> browseReload */
+}
+
 /* Both panes from the current browse listing. */
 - (void)browseReload
 {
@@ -1760,6 +1810,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 - (void)browseFiles:(id)sender
 {
    browseMode = YES;
+   [[entries tableColumnWithIdentifier:@"size"] setHidden:NO];
+   [[entries tableColumnWithIdentifier:@"date"] setHidden:NO];
    [self setIconView:NO];   /* the browser is a list */
    [self layoutViews];      /* the button row appears */
    if (!companion_core_browse_count(wimp->core) && !companion_core_browse_busy(wimp->core))
@@ -1790,6 +1842,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    else if (browseMode)
    {
       browseMode = NO;
+      [[entries tableColumnWithIdentifier:@"size"] setHidden:YES];
+      [[entries tableColumnWithIdentifier:@"date"] setHidden:YES];
       [self reloadPlaylists];
       [self rebuildRowMap];
       [entries reloadData];

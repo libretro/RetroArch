@@ -364,6 +364,50 @@ static void test_browser(void)
    companion_core_free(c);
 }
 
+static void test_browser_sort(void)
+{
+   companion_core_t *c = make_core();
+   char big[512];
+   size_t n;
+   /* a bigger file so size order differs from name order */
+   fixture(big, sizeof(big), "content/zz_big.sfc");
+   writef(big, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+   browse_changed = 0;
+   companion_core_browse_open(c, NULL);
+   wait_browse(c);
+   n = companion_core_browse_count(c);
+   /* .., sub | a.nes b.sfc cover.png zz_big.sfc */
+   CHECK(n == 6, "6 entries, got %u", (unsigned)n);
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "a.nes"), "default: a.nes first file");
+
+   browse_changed = 0;
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, false);
+   CHECK(browse_changed == 1, "sort fires on_browse_changed");
+   CHECK(string_is_equal(companion_core_browse_name(c, 0), ".."), "name desc: .. still first");
+   CHECK(string_is_equal(companion_core_browse_name(c, 1), "sub"), "name desc: folders still before files");
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "zz_big.sfc"), "name desc: zz_big first file (got %s)", companion_core_browse_name(c, 2));
+   CHECK(string_is_equal(companion_core_browse_name(c, 5), "a.nes"), "name desc: a.nes last");
+
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, false);
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "zz_big.sfc"), "size desc: biggest first (got %s)", companion_core_browse_name(c, 2));
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, true);
+   CHECK(string_is_equal(companion_core_browse_name(c, 5), "zz_big.sfc"), "size asc: biggest last (got %s)", companion_core_browse_name(c, 5));
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "a.nes"), "size asc ties broken by name: a.nes (got %s)", companion_core_browse_name(c, 2));
+
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_TYPE, true);
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "a.nes"), "type asc: nes < png < sfc (got %s)", companion_core_browse_name(c, 2));
+   CHECK(string_is_equal(companion_core_browse_name(c, 3), "cover.png"), "then png (got %s)", companion_core_browse_name(c, 3));
+   CHECK(string_is_equal(companion_core_browse_name(c, 4), "b.sfc"), "then sfc by name: b before zz (got %s)", companion_core_browse_name(c, 4));
+
+   /* the order persists across a re-enumeration */
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, false);
+   companion_core_browse_open(c, NULL);
+   wait_browse(c);
+   CHECK(companion_core_browse_sort_column(c) == COMPANION_BROWSE_SORT_NAME && !companion_core_browse_sort_ascending(c), "sort setting kept");
+   CHECK(string_is_equal(companion_core_browse_name(c, 2), "zz_big.sfc"), "re-opened listing is in the chosen order (got %s)", companion_core_browse_name(c, 2));
+   companion_core_free(c);
+}
+
 static void test_run_paths(void)
 {
    companion_core_t *c = make_core();
@@ -414,6 +458,7 @@ int main(void)
    test_all_playlists();
    test_thumbnail_path();
    test_browser();
+   test_browser_sort();
    test_run_paths();
    test_launch_options();
    teardown();

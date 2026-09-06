@@ -183,6 +183,23 @@ const char *companion_core_browse_date_str(companion_core_t *core, size_t i,
 size_t companion_core_browse_dir_count(companion_core_t *core);
 /* Go to the parent directory (Qt's "Up"); false at the top. */
 bool companion_core_browse_up(companion_core_t *core);
+
+/* Sort the listing by a column, as clicking the browser's header does
+ * in every companion: folders always first (and ".." first of all),
+ * then the files by name (case-insensitive), size, type (extension) or
+ * modification time, ascending or not. Applies to the current listing
+ * at once (on_browse_changed fires) and to every listing after it. */
+enum companion_browse_column
+{
+   COMPANION_BROWSE_SORT_NAME = 0,
+   COMPANION_BROWSE_SORT_SIZE,
+   COMPANION_BROWSE_SORT_TYPE,
+   COMPANION_BROWSE_SORT_DATE
+};
+void companion_core_browse_sort(companion_core_t *core,
+      enum companion_browse_column column, bool ascending);
+enum companion_browse_column companion_core_browse_sort_column(companion_core_t *core);
+bool companion_core_browse_sort_ascending(companion_core_t *core);
 /* Display name of entry @i (base name; ".." for the parent link). */
 const char *companion_core_browse_name(companion_core_t *core, size_t i);
 /* Full path of entry @i. */

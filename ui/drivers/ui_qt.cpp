@@ -1285,6 +1285,14 @@ void BrowseTableModel::reload()
    endResetModel();
 }
 
+void BrowseTableModel::sort(int column, Qt::SortOrder order)
+{
+   companion_core_browse_sort(ui_companion_qt_core(),
+         (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column),
+         order == Qt::AscendingOrder);
+   /* on_browse_changed -> onBrowseChanged -> reload() */
+}
+
 void BrowseTableModel::setFilter(const QRegularExpression &re)
 {
    if (re == m_filter)
@@ -1594,10 +1602,10 @@ void MainWindow::setupModels()
    m_tableView->setWordWrap(false);
 
    m_fileTableView->setModel(m_browseModel);
-   /* The core sorts folders first, then by name, once, off the UI
-    * thread; the view never re-sorts (a header sort over a large
-    * directory is exactly the stall this replaces). */
-   m_fileTableView->setSortingEnabled(false);
+   /* A header click asks the core to re-order its listing (one qsort
+    * over an already gathered array); the view itself never sorts. */
+   m_fileTableView->setSortingEnabled(true);
+   m_fileTableView->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
    m_fileTableView->setAlternatingRowColors(true);
    m_fileTableView->verticalHeader()->setVisible(false);
    m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);

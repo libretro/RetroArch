@@ -126,6 +126,8 @@ struct companion_core
       bool done, ok;
    } *browse_job;
    unsigned browse_gen;
+   enum companion_browse_column browse_sort_col;
+   bool browse_sort_desc;
 #ifdef HAVE_THREADS
    slock_t   *browse_lock;
    sthread_t *browse_thread;
@@ -1906,10 +1908,126 @@ static void companion_core_browse_worker_stop(companion_core_t *core)
    core->browse_job = NULL;
 }
 
+/* --- browser sorting ---------------------------------------------------- */
+
+/* qsort has no context argument in C89; the UI thread is the only
+ * caller, so the arrays being sorted sit in statics for the comparator. */
+static struct
+{
+   struct string_list *list;
+   const uint64_t *size;
+   const int64_t  *mtime;
+   enum companion_browse_column col;
+   bool desc;
+} cb_sort;
+
+static int companion_core_browse_cmp(const void *a, const void *b)
+{
+   size_t ia = *(const size_t*)a, ib = *(const size_t*)b;
+   const struct string_list_elem *ea = &cb_sort.list->elems[ia];
+   const struct string_list_elem *eb = &cb_sort.list->elems[ib];
+   bool da = ea->attr.i == RARCH_DIRECTORY, db = eb->attr.i == RARCH_DIRECTORY;
+   int r = 0;
+
+   /* Folders before files, whatever the column or direction. */
+   if (da != db)
+      return da ? -1 : 1;
+
+   switch (cb_sort.col)
+   {
+      case COMPANION_BROWSE_SORT_SIZE:
+         if (!da)
+            r = (cb_sort.size[ia] > cb_sort.size[ib]) - (cb_sort.size[ia] < cb_sort.size[ib]);
+         break;
+      case COMPANION_BROWSE_SORT_TYPE:
+         if (!da)
+            r = strcasecmp(path_get_extension(ea->data), path_get_extension(eb->data));
+         break;
+      case COMPANION_BROWSE_SORT_DATE:
+         r = (cb_sort.mtime[ia] > cb_sort.mtime[ib]) - (cb_sort.mtime[ia] < cb_sort.mtime[ib]);
+         break;
+      default:
+         break;
+   }
+   if (r == 0)
+      r = strcasecmp(path_basename(ea->data), path_basename(eb->data));
+   return cb_sort.desc ? -r : r;
+}
+
+/* Reorder @list / @size / @mtime in place by the core's sort setting. */
+static void companion_core_browse_apply_sort(companion_core_t *core,
+      struct string_list *list, uint64_t *size, int64_t *mtime)
+{
+   size_t n, i, *idx;
+   struct string_list_elem *elems;
+   uint64_t *nsize;
+   int64_t  *nmtime;
+   if (!list || list->size < 2)
+      return;
+   n     = list->size;
+   idx   = (size_t*)malloc(n * sizeof(*idx));
+   elems = (struct string_list_elem*)malloc(n * sizeof(*elems));
+   nsize = size  ? (uint64_t*)malloc(n * sizeof(*nsize))  : NULL;
+   nmtime= mtime ? (int64_t*)malloc(n * sizeof(*nmtime))  : NULL;
+   if (!idx || !elems || (size && !nsize) || (mtime && !nmtime))
+   {
+      free(idx); free(elems); free(nsize); free(nmtime);
+      return;
+   }
+   for (i = 0; i < n; i++)
+      idx[i] = i;
+   cb_sort.list  = list;
+   cb_sort.size  = size;
+   cb_sort.mtime = mtime;
+   cb_sort.col   = core->browse_sort_col;
+   cb_sort.desc  = core->browse_sort_desc;
+   qsort(idx, n, sizeof(*idx), companion_core_browse_cmp);
+   for (i = 0; i < n; i++)
+   {
+      elems[i] = list->elems[idx[i]];
+      if (nsize)  nsize[i]  = size[idx[i]];
+      if (nmtime) nmtime[i] = mtime[idx[i]];
+   }
+   memcpy(list->elems, elems, n * sizeof(*elems));
+   if (nsize)  memcpy(size,  nsize,  n * sizeof(*nsize));
+   if (nmtime) memcpy(mtime, nmtime, n * sizeof(*nmtime));
+   free(idx); free(elems); free(nsize); free(nmtime);
+}
+
+void companion_core_browse_sort(companion_core_t *core,
+      enum companion_browse_column column, bool ascending)
+{
+   if (!core)
+      return;
+   core->browse_sort_col  = column;
+   core->browse_sort_desc = !ascending;
+   if (core->browse)
+   {
+      companion_core_browse_apply_sort(core, core->browse,
+            core->browse_size, core->browse_mtime);
+      if (core->cb.on_browse_changed)
+         core->cb.on_browse_changed(core->ud);
+   }
+}
+
+enum companion_browse_column companion_core_browse_sort_column(companion_core_t *core)
+{
+   return core ? core->browse_sort_col : COMPANION_BROWSE_SORT_NAME;
+}
+
+bool companion_core_browse_sort_ascending(companion_core_t *core)
+{
+   return core ? !core->browse_sort_desc : true;
+}
+
 /* Install a finished job as the listing. */
 static void companion_core_browse_install(companion_core_t *core,
       struct companion_browse_job *job)
 {
+   /* A landed listing takes the chosen order (the worker's own sort is
+    * the default name order; only re-sort when something else is set). */
+   if (core->browse_sort_col != COMPANION_BROWSE_SORT_NAME || core->browse_sort_desc)
+      companion_core_browse_apply_sort(core, job->list, job->size, job->mtime);
    if (core->browse)
       string_list_free(core->browse);
    free(core->browse_size);

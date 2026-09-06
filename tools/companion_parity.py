@@ -72,6 +72,7 @@ FEATURES = {
     # whether it is still busy is one that waits for the callback rather
     # than rebuilding straight after open() (or enumerating itself).
     'async browser':      'companion_core_browse_busy',
+    'browser sorting':    'companion_core_browse_sort',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',

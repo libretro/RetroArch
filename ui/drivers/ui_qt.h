@@ -369,6 +369,8 @@ public:
    /* The core listing changed: rebuild the row map and reset. */
    void reload();
    void setFilter(const QRegularExpression &re);
+   /* Header click: the core sorts, every companion the same way. */
+   void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
    /* Browse index (into the core listing) behind a table row, or -1. */
    long browseIndex(const QModelIndex &index) const;
    QString pathAt(const QModelIndex &index) const;

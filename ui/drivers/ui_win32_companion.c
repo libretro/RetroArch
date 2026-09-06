@@ -2508,6 +2508,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         }
                         return 0;
                      }
+                  case LVN_COLUMNCLICK:
+                     if (w->browse_mode)
+                     {
+                        /* Same column again flips the direction; a new
+                         * column starts ascending, as Qt's header does. */
+                        int col = ((NMLISTVIEW*)lparam)->iSubItem;
+                        bool asc = true;
+                        if (col < 0) col = 0;
+                        if (col > 3) col = 3;
+                        if ((int)companion_core_browse_sort_column(w->core) == col)
+                           asc = !companion_core_browse_sort_ascending(w->core);
+                        companion_core_browse_sort(w->core,
+                              (enum companion_browse_column)col, asc);
+                        /* on_browse_changed -> cw_browse_rebuild */
+                     }
+                     return 0;
                   case NM_DBLCLK:
                   case NM_RETURN:
                      cw_run_selected(w);
