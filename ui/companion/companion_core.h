@@ -226,6 +226,12 @@ bool companion_core_pref_show_hidden_files(companion_core_t *core);
 /* Content-browser tab to restore: -1 when not remembering, else 0/1. */
 int companion_core_pref_last_tab(companion_core_t *core);
 void companion_core_pref_set_last_tab(companion_core_t *core, int tab);
+/* Icon-view zoom, 0..100 (desktop_menu_icon_view_zoom). */
+unsigned companion_core_pref_icon_view_zoom(companion_core_t *core);
+void companion_core_pref_set_icon_view_zoom(companion_core_t *core, unsigned z);
+/* Thumbnail type, 0 boxart / 1 screenshot / 2 title / 3 logo. */
+unsigned companion_core_pref_thumbnail_type(companion_core_t *core);
+void companion_core_pref_set_thumbnail_type(companion_core_t *core, unsigned t);
 
 /* --- Playlist icons ------------------------------------------------ */
 

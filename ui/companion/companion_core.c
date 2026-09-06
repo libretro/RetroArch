@@ -846,6 +846,30 @@ void companion_core_pref_set_last_tab(companion_core_t *core, int tab)
       settings->uints.desktop_menu_last_tab = (tab == 1) ? 1 : 0;
 }
 
+unsigned companion_core_pref_icon_view_zoom(companion_core_t *core)
+{
+   unsigned z = core ? config_get_ptr()->uints.desktop_menu_icon_view_zoom : 50;
+   return z > 100 ? 100 : z;
+}
+
+void companion_core_pref_set_icon_view_zoom(companion_core_t *core, unsigned z)
+{
+   if (core)
+      config_get_ptr()->uints.desktop_menu_icon_view_zoom = z > 100 ? 100 : z;
+}
+
+unsigned companion_core_pref_thumbnail_type(companion_core_t *core)
+{
+   unsigned t = core ? config_get_ptr()->uints.desktop_menu_thumbnail_type : 0;
+   return t > 3 ? 0 : t;
+}
+
+void companion_core_pref_set_thumbnail_type(companion_core_t *core, unsigned t)
+{
+   if (core)
+      config_get_ptr()->uints.desktop_menu_thumbnail_type = t > 3 ? 0 : t;
+}
+
 /* --- Playlist icons ---------------------------------------------------- */
 
 #define COMPANION_ICON_DIR "xmb/dot-art/png"

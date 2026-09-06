@@ -157,6 +157,10 @@ enum
    IDC_CW_ITEMS_LABEL,/* "N items" footer */
    IDC_CW_VIEW_LABEL,
    IDC_CW_VIEW_COMBO, /* List / Icons */
+   IDC_CW_ZOOM_LABEL,
+   IDC_CW_ZOOM,       /* icon-view zoom trackbar */
+   IDC_CW_THUMB_COMBO,/* boxart / screenshot / title / logo for the grid */
+   IDC_CW_BOXART_TABS,/* the same four, for the boxart pane */
    IDC_CW_INFO_LABEL,
    IDC_CW_BOXART_LABEL,
    IDC_CW_CORES,      /* Load Core window: list view */
@@ -209,6 +213,9 @@ typedef struct ui_companion_win32_wimp
    int dpi;                 /* LOGPIXELSX; all layout sizes scale by it */
    int text_h;              /* font height in px, drives row heights */
    HIMAGELIST pl_icons;     /* folder icon for the playlist list */
+   HWND zoom_label, zoom, thumb_combo, boxart_tabs;
+   int thumb_px;            /* icon-view thumbnail edge in px, from zoom */
+   const char *boxart_subdir; /* boxart pane's type (its own tabs) */
    HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
    HBITMAP boxart_bmp;
    bool boxart_visible;
@@ -277,6 +284,9 @@ static bool cw_filter_match(ui_companion_win32_wimp_t *w, const char *s)
 
 static HBITMAP cw_boxart_scale(const struct texture_image *img,
       int maxw, int maxh, uint32_t bg);
+static uint32_t cw_sys_color_argb(int index);
+static const char *cw_combo_core_path(ui_companion_win32_wimp_t *w);
+static void cw_status_default(ui_companion_win32_wimp_t *w);
 
 static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
 {
@@ -308,7 +318,8 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
          {
             HBITMAP bmp = cw_boxart_scale(&ti,
                   CW_S(w, COMPANION_WIN32_PL_ICON),
-                  CW_S(w, COMPANION_WIN32_PL_ICON), 0);
+                  CW_S(w, COMPANION_WIN32_PL_ICON),
+                  cw_sys_color_argb(COLOR_WINDOW));
             image_texture_free(&ti);
             if (bmp)
             {
@@ -358,12 +369,21 @@ static HBITMAP cw_dib_from_argb(const uint32_t *bits, int w, int h)
 
 /* Letterbox @img into a square of THUMB px, nearest-neighbour: cheap,
  * and thumbnails are viewed at that size. */
-static HBITMAP cw_thumb_bitmap(const struct texture_image *img, uint32_t bg)
+/* Icon-view thumbnail edge for a zoom of 0..100: 64..320 logical px,
+ * scaled to the display, like Qt's zoom slider range. */
+static int cw_thumb_edge(ui_companion_win32_wimp_t *w)
+{
+   unsigned z = companion_core_pref_icon_view_zoom(w->core);
+   return CW_S(w, 64 + (int)(z * 256 / 100));
+}
+
+static HBITMAP cw_thumb_bitmap(ui_companion_win32_wimp_t *w,
+      const struct texture_image *img, uint32_t bg)
 {
    uint32_t *buf;
    HBITMAP bmp;
    int sw, sh, ox, oy, x, y;
-   const int T = COMPANION_WIN32_THUMB;
+   const int T = w->thumb_px;
 
    if (!img->pixels || !img->width || !img->height)
       return NULL;
@@ -422,7 +442,7 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
 {
    HBITMAP placeholder;
    uint32_t *bits;
-   const int T = COMPANION_WIN32_THUMB;
+   const int T = w->thumb_px = cw_thumb_edge(w);
 
    if (w->thumbs)
    {
@@ -498,7 +518,7 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
             e->path, path, sizeof(path))
          && image_texture_load(&img, path))
    {
-      bmp = cw_thumb_bitmap(&img, cw_sys_color_argb(COLOR_WINDOW));
+      bmp = cw_thumb_bitmap(w, &img, cw_sys_color_argb(COLOR_WINDOW));
       image_texture_free(&img);
    }
    if (bmp)
@@ -532,8 +552,8 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    SetWindowLongA(w->entries, GWL_STYLE, style);
    if (icons)
       SendMessageA(w->entries, LVM_SETICONSPACING, 0,
-            MAKELPARAM(COMPANION_WIN32_THUMB + CW_S(w, 24),
-                       COMPANION_WIN32_THUMB + CW_S(w, 40)));
+            MAKELPARAM(w->thumb_px + CW_S(w, 24),
+                       w->thumb_px + CW_S(w, 40)));
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
@@ -642,6 +662,9 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
    }
    if (w->items_label)
       SetWindowTextA(w->items_label, buf);
+   /* The playlist has loaded; the status bar goes back to Qt's
+    * "<version> - <core>" rather than staying on "Loading playlist...". */
+   cw_status_default(w);
 }
 
 static void cw_layout(ui_companion_win32_wimp_t *w)
@@ -727,7 +750,10 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
             y += pl_h + P;
             MoveWindow(w->core_label, P, y, w->pane_w - 2 * P, L, TRUE);
             y += L;
-            MoveWindow(w->core_combo, P, y, w->pane_w - 4 * P - 2 * sm_w, C, TRUE);
+            /* A COMBOBOX's height is its dropped-list height; the closed
+             * control stays one row tall regardless. */
+            MoveWindow(w->core_combo, P, y, w->pane_w - 4 * P - 2 * sm_w,
+                  C + 10 * (w->text_h + CW_S(w, 4)), TRUE);
             MoveWindow(w->core_info_btn, w->pane_w - 2 * P - 2 * sm_w, y, sm_w, C, TRUE);
             MoveWindow(w->run_btn, w->pane_w - P - sm_w, y, sm_w, C, TRUE);
          }
@@ -742,11 +768,22 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          int lb_w = CW_S(w, 44);    /* "View" caption */
          if (eh < 0)
             eh = 0;
+         int list_room = C + 5 * (w->text_h + CW_S(w, 4)); /* combo drop room */
+         int tb_w = CW_S(w, 130);   /* Thumbnail type combo */
+         int zs_w = CW_S(w, 140);   /* zoom slider */
+         int x    = entry_x + entry_w - P;
          MoveWindow(w->entries, entry_x, 0, entry_w, eh, TRUE);
          MoveWindow(w->items_label, entry_x + P, eh + P + (C - L) / 2,
                CW_S(w, 160), L, TRUE);
-         MoveWindow(w->view_combo, entry_x + entry_w - P - cb_w, eh + P, cb_w, C, TRUE);
-         (void)lb_w;
+         /* Right-aligned run, as Qt's footer: View, Thumbnail, Zoom. */
+         x -= cb_w;
+         MoveWindow(w->view_combo, x, eh + P, cb_w, list_room, TRUE);
+         x -= P + tb_w;
+         MoveWindow(w->thumb_combo, x, eh + P, tb_w, list_room, TRUE);
+         x -= P + zs_w;
+         MoveWindow(w->zoom, x, eh + P, zs_w, C, TRUE);
+         x -= P + lb_w;
+         MoveWindow(w->zoom_label, x, eh + P + (C - L) / 2, lb_w, L, TRUE);
          MoveWindow(w->view_label, 0, 0, 0, 0, TRUE); /* Qt shows none */
          /* Name / Core columns share the list width (Qt: name wider). */
          SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 0, (entry_w * 2) / 3 - CW_S(w, 8));
@@ -776,16 +813,21 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          }
          if (r_box)
          {
+            int tab_h = w->text_h + CW_S(w, 10);
             MoveWindow(w->boxart_label, rx + P, info_h, iw - P, L, TRUE);
-            MoveWindow(w->boxart, rx + P, info_h + L, iw - P, box_h - L, TRUE);
+            MoveWindow(w->boxart_tabs, rx + P, info_h + L, iw - P, tab_h, TRUE);
+            MoveWindow(w->boxart, rx + P, info_h + L + tab_h, iw - P,
+                  box_h - L - tab_h, TRUE);
          }
          else
          {
             MoveWindow(w->boxart_label, rx, 0, 0, 0, TRUE);
+            MoveWindow(w->boxart_tabs, rx, 0, 0, 0, TRUE);
             MoveWindow(w->boxart, rx, 0, 0, 0, TRUE);
          }
          ShowWindow(w->info_label, r_info ? SW_SHOW : SW_HIDE);
          ShowWindow(w->boxart_label, r_box ? SW_SHOW : SW_HIDE);
+         ShowWindow(w->boxart_tabs, r_box ? SW_SHOW : SW_HIDE);
       }
 
       if (w->log)
@@ -814,8 +856,9 @@ static void cw_info_fill(ui_companion_win32_wimp_t *w)
       return;
    }
 
-   strlcpy(w->info_core, companion_core_current_core_path(w->core),
-         sizeof(w->info_core));
+   /* Qt shows the core picked in the Core combo (the entry's own or the
+    * playlist default), not only the running one. */
+   strlcpy(w->info_core, cw_combo_core_path(w), sizeof(w->info_core));
    companion_core_core_info_rows(w->info_core, keys, values);
 
    SendMessageA(w->info, WM_SETREDRAW, FALSE, 0);
@@ -873,9 +916,24 @@ static HBITMAP cw_boxart_scale(const struct texture_image *img,
          + (size_t)((unsigned)y * img->height / dh) * img->width;
       uint32_t *dst = buf + (size_t)y * dw;
       for (x = 0; x < dw; x++)
-         dst[x] = src[(unsigned)x * img->width / dw] | 0xff000000u;
+      {
+         /* Composite the source alpha over @bg so transparent PNGs (the
+          * XMB icons) sit on the control colour rather than on black;
+          * the result is opaque, which every comctl32 draws the same. */
+         uint32_t s = src[(unsigned)x * img->width / dw];
+         unsigned a = (s >> 24) & 0xff;
+         if (a == 0xff || bg == 0)
+            dst[x] = s | 0xff000000u;
+         else
+         {
+            unsigned ia = 255 - a;
+            unsigned r  = (((s >> 16) & 0xff) * a + ((bg >> 16) & 0xff) * ia) / 255;
+            unsigned g  = (((s >>  8) & 0xff) * a + ((bg >>  8) & 0xff) * ia) / 255;
+            unsigned b  = (( s        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
+            dst[x] = 0xff000000u | (r << 16) | (g << 8) | b;
+         }
+      }
    }
-   (void)bg;
    bmp = cw_dib_from_argb(buf, dw, dh);
    free(buf);
    return bmp;
@@ -905,7 +963,7 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
       memset(&img, 0, sizeof(img));
       GetClientRect(w->boxart, &rc);
       if (companion_core_thumbnail_path(w->core, db_name,
-               w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
+               w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
                !string_is_empty(e->label) ? e->label : path_basename(e->path),
                e->path, path, sizeof(path))
             && image_texture_load(&img, path))
@@ -1188,6 +1246,31 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
                (LPARAM)COMPANION_LAUNCH_LOAD_CORE);
    }
    SendMessageA(w->core_combo, CB_SETCURSEL, 0, 0);
+}
+
+/* Core path the Core combo currently names: the running / entry / default
+ * core for those kinds, else the running core's path. */
+static const char *cw_combo_core_path(ui_companion_win32_wimp_t *w)
+{
+   LRESULT idx, sel;
+   if (!w->core_combo)
+      return companion_core_current_core_path(w->core);
+   idx = SendMessageA(w->core_combo, CB_GETCURSEL, 0, 0);
+   if (idx < 0 || idx >= CW_COMBO_MAX)
+      return companion_core_current_core_path(w->core);
+   sel = SendMessageA(w->core_combo, CB_GETITEMDATA, (WPARAM)idx, 0);
+   switch ((enum companion_launch_selection)sel)
+   {
+      case COMPANION_LAUNCH_CURRENT:
+      case COMPANION_LAUNCH_PLAYLIST_SAVED:
+      case COMPANION_LAUNCH_PLAYLIST_DEFAULT:
+         if (cw_combo_paths[idx][0])
+            return cw_combo_paths[idx];
+         break;
+      default:
+         break;
+   }
+   return companion_core_current_core_path(w->core);
 }
 
 /* Run the selected entry with the core chosen in the combo. */
@@ -1711,6 +1794,24 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          }
          return 0;
 
+      case WM_HSCROLL:
+         /* Zoom slider: a released thumb (or keyboard step) re-sizes the
+          * icon view's thumbnails; the drag itself is not chased. */
+         if (w && (HWND)lparam == w->zoom
+               && (LOWORD(wparam) == TB_ENDTRACK || LOWORD(wparam) == TB_LINEUP
+                  || LOWORD(wparam) == TB_LINEDOWN || LOWORD(wparam) == TB_PAGEUP
+                  || LOWORD(wparam) == TB_PAGEDOWN))
+         {
+            LRESULT z = SendMessageA(w->zoom, TBM_GETPOS, 0, 0);
+            companion_core_pref_set_icon_view_zoom(w->core, (unsigned)z);
+            if (w->icon_view)
+               cw_entries_rebuild(w);
+            else
+               w->thumb_px = cw_thumb_edge(w);
+            return 0;
+         }
+         break;
+
       case WM_CLOSE:
          /* Closing the companion never quits RetroArch. */
          ShowWindow(hwnd, SW_HIDE);
@@ -1800,6 +1901,19 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                return 0;
             case IDC_CW_CORE_INFO_BTN:
                cw_info_toggle(w);
+               return 0;
+            case IDC_CW_CORE_COMBO:
+               if (HIWORD(wparam) == CBN_SELCHANGE)
+                  cw_info_fill(w);
+               return 0;
+            case IDC_CW_THUMB_COMBO:
+               if (HIWORD(wparam) == CBN_SELCHANGE)
+               {
+                  LRESULT t = SendMessageA(w->thumb_combo, CB_GETCURSEL, 0, 0);
+                  companion_core_pref_set_thumbnail_type(w->core, (unsigned)t);
+                  w->thumb_subdir = companion_core_pref_thumbnail_subdir(w->core);
+                  cw_entries_rebuild(w); /* new image list, redecode */
+               }
                return 0;
             case IDC_CW_VIEW_COMBO:
                if (HIWORD(wparam) == CBN_SELCHANGE)
@@ -1929,6 +2043,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                            long e = cw_focused_entry(w);
                            cw_boxart_update(w, e);
                            cw_core_combo_fill(w, e);
+                           cw_info_fill(w);
                         }
                      }
                      break;
@@ -1944,6 +2059,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                   if ((nm->uChanged & LVIF_STATE)
                         && (nm->uNewState & LVIS_SELECTED))
                      cw_select_playlist(w);
+               }
+            }
+            else if (hdr->idFrom == IDC_CW_BOXART_TABS)
+            {
+               if (hdr->code == TCN_SELCHANGE)
+               {
+                  switch (SendMessageA(w->boxart_tabs, TCM_GETCURSEL, 0, 0))
+                  {
+                     case 1:  w->boxart_subdir = COMPANION_THUMB_TITLE;      break;
+                     case 2:  w->boxart_subdir = COMPANION_THUMB_SCREENSHOT; break;
+                     case 3:  w->boxart_subdir = COMPANION_THUMB_LOGO;       break;
+                     default: w->boxart_subdir = COMPANION_THUMB_BOXART;     break;
+                  }
+                  w->boxart_entry = -2; /* force a refresh */
+                  cw_boxart_update(w, cw_focused_entry(w));
+                  return 0;
                }
             }
             else if (hdr->idFrom == IDC_CW_TABS)
@@ -2202,6 +2333,49 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
             (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
       SendMessageA(w->view_combo, CB_SETCURSEL, 0, 0);
    }
+   /* Qt's footer also has a Zoom slider and a Thumbnail type combo. */
+   w->zoom_label  = cw_make(w, "STATIC", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_ZOOM), SS_RIGHT, IDC_CW_ZOOM_LABEL);
+   w->zoom        = cw_make(w, "msctls_trackbar32", "",
+         TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, IDC_CW_ZOOM);
+   if (w->zoom)
+   {
+      SendMessageA(w->zoom, TBM_SETRANGE, TRUE, MAKELPARAM(0, 100));
+      SendMessageA(w->zoom, TBM_SETPOS, TRUE,
+            (LPARAM)companion_core_pref_icon_view_zoom(w->core));
+   }
+   w->thumb_combo = cw_make(w, "COMBOBOX", "", CBS_DROPDOWNLIST, IDC_CW_THUMB_COMBO);
+   if (w->thumb_combo)
+   {
+      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
+      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
+      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
+      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
+            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
+      SendMessageA(w->thumb_combo, CB_SETCURSEL,
+            (WPARAM)companion_core_pref_thumbnail_type(w->core), 0);
+   }
+   /* Qt's boxart dock has tabs for the four thumbnail types. */
+   w->boxart_tabs = cw_make(w, "SysTabControl32", "", WS_CLIPSIBLINGS, IDC_CW_BOXART_TABS);
+   if (w->boxart_tabs)
+   {
+      TCITEMA ti;
+      memset(&ti, 0, sizeof(ti));
+      ti.mask    = TCIF_TEXT;
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART);
+      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 0, (LPARAM)&ti);
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN);
+      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 1, (LPARAM)&ti);
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT);
+      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 2, (LPARAM)&ti);
+      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
+      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 3, (LPARAM)&ti);
+   }
+   w->boxart_subdir = COMPANION_THUMB_BOXART;
+
    w->info_label    = cw_make(w, "STATIC", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_CORE_INFO), SS_LEFT, IDC_CW_INFO_LABEL);
    w->boxart_label  = cw_make(w, "STATIC", msg_hash_to_str(
@@ -2375,13 +2549,12 @@ static void ui_companion_win32_wimp_iterate(void *data)
 
    /* A short strcmp per frame: the info pane and the "<version> - <core>"
     * status follow the running core. */
-   if (strcmp(w->info_core, companion_core_current_core_path(w->core)))
+   if (strcmp(w->info_core, cw_combo_core_path(w)))
    {
       if (w->info_visible)
          cw_info_fill(w);
       else
-         strlcpy(w->info_core, companion_core_current_core_path(w->core),
-               sizeof(w->info_core));
+         strlcpy(w->info_core, cw_combo_core_path(w), sizeof(w->info_core));
       cw_status_default(w);
    }
 }
