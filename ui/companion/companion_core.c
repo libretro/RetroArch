@@ -657,6 +657,206 @@ bool companion_core_request_scan(companion_core_t *core, const char *path,
 #endif
 }
 
+/* --- Companion settings (retroarch_qt.cfg) ----------------------------- */
+
+/* Path of the shared companion settings file: retroarch_qt.cfg beside the
+ * active retroarch.cfg. */
+static size_t companion_core_settings_path(char *s, size_t len)
+{
+   const char *cfg = path_get(RARCH_PATH_CONFIG);
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (string_is_empty(cfg))
+      return 0;
+   fill_pathname_basedir(s, cfg, len);
+   return fill_pathname_join_special(s, s, "retroarch_qt.cfg", len);
+}
+
+/* Load the file into a key/value string_list (attr unused). Lines are
+ * "[section]" (skipped), blank / ';' comments (skipped), or key=value
+ * split at the first '=' with surrounding whitespace trimmed and the
+ * value otherwise verbatim - QSettings' INI dialect. Returns NULL when
+ * the file does not exist. */
+static struct string_list *companion_core_settings_load(void)
+{
+   char path[PATH_MAX_LENGTH];
+   int64_t len = 0;
+   char *buf   = NULL;
+   char *line, *next;
+   struct string_list *kv;
+   union string_list_elem_attr attr;
+
+   if (!companion_core_settings_path(path, sizeof(path)))
+      return NULL;
+   if (!filestream_read_file(path, (void**)&buf, &len) || !buf)
+      return NULL;
+
+   kv     = string_list_new();
+   attr.i = 0;
+   if (!kv)
+   {
+      free(buf);
+      return NULL;
+   }
+
+   for (line = buf; line && *line; line = next)
+   {
+      char *eq, *end;
+      next = strchr(line, '\n');
+      if (next)
+         *next++ = '\0';
+      /* trim */
+      while (*line == ' ' || *line == '\t' || *line == '\r')
+         line++;
+      end = line + strlen(line);
+      while (end > line && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r'))
+         *--end = '\0';
+      if (*line == '\0' || *line == '[' || *line == ';' || *line == '#')
+         continue;
+      if (!(eq = strchr(line, '=')))
+         continue;
+      *eq = '\0';
+      end = eq;
+      while (end > line && (end[-1] == ' ' || end[-1] == '\t'))
+         *--end = '\0';
+      eq++;
+      while (*eq == ' ' || *eq == '\t')
+         eq++;
+      if (*line == '\0')
+         continue;
+      /* Stored as two consecutive elements: key, value. */
+      string_list_append(kv, line, attr);
+      string_list_append(kv, eq, attr);
+   }
+   free(buf);
+   return kv;
+}
+
+/* Index of the value element for @key in a loaded list, or -1. */
+static long companion_core_settings_find(struct string_list *kv,
+      const char *key)
+{
+   size_t i;
+   if (!kv)
+      return -1;
+   for (i = 0; i + 1 < kv->size; i += 2)
+      if (string_is_equal(kv->elems[i].data, key))
+         return (long)(i + 1);
+   return -1;
+}
+
+size_t companion_core_setting_get(companion_core_t *core, const char *key,
+      char *s, size_t len)
+{
+   struct string_list *kv;
+   long v;
+   size_t n = 0;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || string_is_empty(key))
+      return 0;
+
+   kv = companion_core_settings_load();
+   if ((v = companion_core_settings_find(kv, key)) >= 0)
+      n = strlcpy(s, kv->elems[v].data, len);
+   if (kv)
+      string_list_free(kv);
+   return n;
+}
+
+bool companion_core_setting_get_bool(companion_core_t *core, const char *key,
+      bool def)
+{
+   char v[16];
+   if (!companion_core_setting_get(core, key, v, sizeof(v)))
+      return def;
+   if (string_is_equal(v, "true") || string_is_equal(v, "1"))
+      return true;
+   if (string_is_equal(v, "false") || string_is_equal(v, "0"))
+      return false;
+   return def;
+}
+
+int companion_core_setting_get_int(companion_core_t *core, const char *key,
+      int def)
+{
+   char v[32];
+   char *end = NULL;
+   long n;
+   if (!companion_core_setting_get(core, key, v, sizeof(v)))
+      return def;
+   n = strtol(v, &end, 10);
+   return (end && end != v && *end == '\0') ? (int)n : def;
+}
+
+bool companion_core_setting_set(companion_core_t *core, const char *key,
+      const char *value)
+{
+   char path[PATH_MAX_LENGTH];
+   struct string_list *kv;
+   union string_list_elem_attr attr;
+   RFILE *f;
+   size_t i;
+   long v;
+
+   if (!core || string_is_empty(key))
+      return false;
+   if (!companion_core_settings_path(path, sizeof(path)))
+      return false;
+
+   attr.i = 0;
+   kv     = companion_core_settings_load();
+   if (!kv && !(kv = string_list_new()))
+      return false;
+
+   v = companion_core_settings_find(kv, key);
+   if (v >= 0)
+   {
+      /* Replace in place (or blank both halves to drop the key). */
+      free(kv->elems[v].data);
+      kv->elems[v].data = strdup(value ? value : "");
+      if (string_is_empty(value))
+      {
+         free(kv->elems[v - 1].data);
+         kv->elems[v - 1].data = strdup("");
+      }
+   }
+   else if (!string_is_empty(value))
+   {
+      string_list_append(kv, key, attr);
+      string_list_append(kv, value, attr);
+   }
+
+   /* Write in the same shape QSettings does, so it reads it back. */
+   f = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!f)
+   {
+      string_list_free(kv);
+      return false;
+   }
+   filestream_printf(f, "[General]\n");
+   for (i = 0; i + 1 < kv->size; i += 2)
+   {
+      if (string_is_empty(kv->elems[i].data))
+         continue; /* dropped */
+      filestream_printf(f, "%s=%s\n", kv->elems[i].data,
+            kv->elems[i + 1].data ? kv->elems[i + 1].data : "");
+   }
+   filestream_close(f);
+   string_list_free(kv);
+   return true;
+}
+
+bool companion_core_setting_set_bool(companion_core_t *core, const char *key,
+      bool value)
+{
+   return companion_core_setting_set(core, key, value ? "true" : "false");
+}
+
 /* --- Playlist icons ---------------------------------------------------- */
 
 #define COMPANION_ICON_DIR "xmb/dot-art/png"

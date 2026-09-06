@@ -227,6 +227,10 @@ typedef struct ui_companion_win32_wimp
    size_t thumb_next;      /* next entry to decode */
    size_t thumb_count;     /* entries in the current list */
    bool icon_view;
+   /* Which repository subdirectory the icon view and boxart pane show;
+    * from retroarch_qt.cfg's icon_view_thumbnail_type, boxart default. */
+   const char *thumb_subdir;
+   bool started;   /* initial_playlist applied once after the first list */
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
    HWND cores_hwnd;
    HWND cores_list;
@@ -488,7 +492,8 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
    path_remove_extension(db_name);
 
    memset(&img, 0, sizeof(img));
-   if (companion_core_thumbnail_path(w->core, db_name, COMPANION_THUMB_BOXART,
+   if (companion_core_thumbnail_path(w->core, db_name,
+            w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
             !string_is_empty(e->label) ? e->label : path_basename(e->path),
             e->path, path, sizeof(path))
          && image_texture_load(&img, path))
@@ -518,6 +523,8 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    LONG style;
    if (!w || !w->entries)
       return;
+   if (w->icon_view != icons && w->started)
+      companion_core_setting_set(w->core, "view_type", icons ? "icons" : "list");
    w->icon_view = icons;
    style  = GetWindowLongA(w->entries, GWL_STYLE);
    style &= ~(LVS_TYPEMASK);
@@ -898,7 +905,7 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
       memset(&img, 0, sizeof(img));
       GetClientRect(w->boxart, &rc);
       if (companion_core_thumbnail_path(w->core, db_name,
-               COMPANION_THUMB_BOXART,
+               w->thumb_subdir ? w->thumb_subdir : COMPANION_THUMB_BOXART,
                !string_is_empty(e->label) ? e->label : path_basename(e->path),
                e->path, path, sizeof(path))
             && image_texture_load(&img, path))
@@ -1021,7 +1028,48 @@ static bool cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
 
 static void cw_on_playlists_changed(void *ud)
 {
-   cw_playlists_rebuild((ui_companion_win32_wimp_t*)ud);
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   cw_playlists_rebuild(w);
+
+   /* Startup: open the playlist Qt would - retroarch_qt.cfg's
+    * initial_playlist, falling back to History. Once. */
+   if (w && !w->started)
+   {
+      char initial[PATH_MAX_LENGTH];
+      size_t i, n = companion_core_playlist_count(w->core);
+      long pick   = -1;
+      w->started  = true;
+
+      if (companion_core_setting_get(w->core, "initial_playlist",
+               initial, sizeof(initial)))
+      {
+         for (i = 0; i < n && pick < 0; i++)
+         {
+            const char *p_i = companion_core_playlist_path(w->core, i);
+            if (p_i && string_is_equal(p_i, initial))
+               pick = (long)i;
+         }
+      }
+      if (pick < 0)
+      {
+         /* History is the second special entry when configured. */
+         const char *hist = config_get_ptr()->paths.path_content_history;
+         for (i = 0; i < n && pick < 0; i++)
+         {
+            const char *p_i = companion_core_playlist_path(w->core, i);
+            if (p_i && !string_is_empty(hist) && string_is_equal(p_i, hist))
+               pick = (long)i;
+         }
+      }
+      if (pick >= 0 && w->playlists)
+      {
+         ListView_SetItemState(w->playlists, (int)pick,
+               LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+         ListView_EnsureVisible(w->playlists, (int)pick, FALSE);
+         /* LVN_ITEMCHANGED from the above selects it through
+          * cw_select_playlist. */
+      }
+   }
 }
 
 static void cw_on_playlist_changed(void *ud)
@@ -1110,8 +1158,10 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
    }
 
    n = companion_core_launch_options(w->core,
-         e ? e->core_path : NULL, e ? e->core_name : NULL,
-         pl_name, true, opts, sizeof(opts) / sizeof(opts[0]));
+         e ? e->core_path : NULL, e ? e->core_name : NULL, pl_name,
+         companion_core_setting_get_bool(w->core, "suggest_loaded_core_first",
+               false),
+         opts, sizeof(opts) / sizeof(opts[0]));
 
    for (i = 0; i < n; i++)
    {
@@ -1569,7 +1619,8 @@ static void cw_scan_directory(ui_companion_win32_wimp_t *w)
    if (SHGetPathFromIDListA(pidl, dir) && dir[0])
    {
       if (companion_core_request_scan(w->core, dir, true,
-               config_get_ptr()->bools.show_hidden_files))
+               companion_core_setting_get_bool(w->core, "show_hidden_files",
+                     true)))
          cw_status_set(w, "Scanning...");
       else
          cw_status_set(w, "Scanning is not available in this build.");
@@ -1908,6 +1959,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                      w->browse_mode = false;
                      cw_entries_rebuild(w);
                   }
+                  if (companion_core_setting_get_bool(w->core, "save_last_tab", false))
+                     companion_core_setting_set(w->core, "last_tab", tab == 1 ? "1" : "0");
                   return 0;
                }
             }
@@ -2253,6 +2306,32 @@ static void *ui_companion_win32_wimp_init(void)
       free(w);
       g_win32_wimp = NULL;
       return NULL;
+   }
+
+   /* Apply the shared companion settings the Qt companion also honours. */
+   {
+      char v[64];
+      if (companion_core_setting_get(w->core, "view_type", v, sizeof(v))
+            && string_is_equal(v, "icons"))
+         cw_set_icon_view(w, true);
+      if (w->view_combo)
+         SendMessageA(w->view_combo, CB_SETCURSEL, w->icon_view ? 1 : 0, 0);
+
+      w->thumb_subdir = COMPANION_THUMB_BOXART;
+      if (companion_core_setting_get(w->core, "icon_view_thumbnail_type",
+               v, sizeof(v)))
+      {
+         if (string_is_equal(v, "screenshot"))
+            w->thumb_subdir = COMPANION_THUMB_SCREENSHOT;
+         else if (string_is_equal(v, "title"))
+            w->thumb_subdir = COMPANION_THUMB_TITLE;
+         else if (string_is_equal(v, "logo"))
+            w->thumb_subdir = COMPANION_THUMB_LOGO;
+      }
+
+      if (companion_core_setting_get_bool(w->core, "save_last_tab", false)
+            && companion_core_setting_get_int(w->core, "last_tab", 0) == 1)
+         cw_browse_enter(w);
    }
 
    companion_core_refresh_playlists(w->core);

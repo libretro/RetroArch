@@ -136,6 +136,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTableView *coresTable;
    char coresContent[PATH_MAX_LENGTH]; /* content to run with the pick, or "" */
    NSInteger coresRows;                /* rows to show (filtered when running) */
+   const char *thumbSubdir;            /* icon_view_thumbnail_type -> repository subdir */
+   BOOL started;                       /* initial_playlist applied once */
    /* Core information pane (right of the entries), shown on demand;
     * rows cached from companion_core_core_info_rows(). */
    NSScrollView *infoScroll;
@@ -163,6 +165,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)deleteEntry:(id)sender;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
+- (void)applySharedSettings;
 - (void)buildCoresWindow;
 - (void)setIconView:(BOOL)icons;
 - (void)gridRun:(NSInteger)row;
@@ -254,7 +257,8 @@ static const companion_callbacks_t cc_callbacks = {
 
 /* Decode the boxart thumbnail for entry @row into an autoreleased
  * NSImage, or nil. Shared by the grid's per-frame decode. */
-static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
+static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
+      const char *subdir)
 {
    char path[PATH_MAX_LENGTH];
    char db_name[NAME_MAX_LENGTH];
@@ -265,7 +269,8 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       return nil;
    strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
    path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(w->core, db_name, COMPANION_THUMB_BOXART,
+   if (!companion_core_thumbnail_path(w->core, db_name,
+            subdir ? subdir : COMPANION_THUMB_BOXART,
             !string_is_empty(e->label) ? e->label : path_basename(e->path),
             e->path, path, sizeof(path)))
       return nil;
@@ -506,6 +511,32 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 {
    if (playlists)
       [playlists reloadData];
+
+   /* Startup: select retroarch_qt.cfg's initial_playlist (History as the
+    * fallback), once, as the Qt companion does. */
+   if (wimp && !started)
+   {
+      char initial[PATH_MAX_LENGTH];
+      size_t i, n  = companion_core_playlist_count(wimp->core);
+      long pick    = -1;
+      const char *hist = config_get_ptr()->paths.path_content_history;
+      started = YES;
+      if (!companion_core_setting_get(wimp->core, "initial_playlist",
+               initial, sizeof(initial)))
+         initial[0] = '\0';
+      for (i = 0; i < n && pick < 0; i++)
+      {
+         const char *p_i = companion_core_playlist_path(wimp->core, i);
+         if (!p_i)
+            continue;
+         if (initial[0] ? string_is_equal(p_i, initial)
+                        : (!string_is_empty(hist) && string_is_equal(p_i, hist)))
+            pick = (long)i;
+      }
+      if (pick >= 0 && playlists)
+         [playlists selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)pick]
+            byExtendingSelection:NO]; /* delegate loads it */
+   }
 }
 
 - (void)reloadEntries
@@ -529,6 +560,8 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 {
    if (!entriesScroll || iconView == icons)
       return;
+   if (started)
+      companion_core_setting_set(wimp->core, "view_type", icons ? "icons" : "list");
    iconView = icons;
    if (icons)
    {
@@ -564,7 +597,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       return;
    if (gridNext < companion_core_entry_count(wimp->core))
    {
-      NSImage *img = cc_thumb_image(wimp, (NSInteger)gridNext);
+      NSImage *img = cc_thumb_image(wimp, (NSInteger)gridNext, thumbSubdir);
       [grid setImage:img forRow:(NSInteger)gridNext];
       gridNext++;
    }
@@ -1103,7 +1136,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    }
    row = [entries selectedRow];
    if (row >= 0)
-      img = cc_thumb_image(wimp, row); /* boxart of the selected entry */
+      img = cc_thumb_image(wimp, row, thumbSubdir); /* selected entry */
    [boxart setImage:img];
 }
 
@@ -1201,6 +1234,30 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 /* Same shape as the platform driver's open panel (ui_cocoa.m): the
  * 10.6+ URL API when present, else the 10.4 selectors through
  * objc_msgSend so a modern SDK does not see the removed declarations. */
+/* Shared companion settings from retroarch_qt.cfg, applied at startup. */
+- (void)applySharedSettings
+{
+   char v[64];
+   if (!wimp)
+      return;
+   thumbSubdir = COMPANION_THUMB_BOXART;
+   if (companion_core_setting_get(wimp->core, "icon_view_thumbnail_type", v, sizeof(v)))
+   {
+      if (string_is_equal(v, "screenshot"))
+         thumbSubdir = COMPANION_THUMB_SCREENSHOT;
+      else if (string_is_equal(v, "title"))
+         thumbSubdir = COMPANION_THUMB_TITLE;
+      else if (string_is_equal(v, "logo"))
+         thumbSubdir = COMPANION_THUMB_LOGO;
+   }
+   if (companion_core_setting_get(wimp->core, "view_type", v, sizeof(v))
+         && string_is_equal(v, "icons"))
+      [self setIconView:YES];
+   if (companion_core_setting_get_bool(wimp->core, "save_last_tab", false)
+         && companion_core_setting_get_int(wimp->core, "last_tab", 0) == 1)
+      [self browseFiles:nil];
+}
+
 - (void)scanDirectory:(id)sender
 {
    NSOpenPanel *panel;
@@ -1234,7 +1291,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       return;
 
    if (companion_core_request_scan(wimp->core, [path UTF8String], true,
-            config_get_ptr()->bools.show_hidden_files))
+            companion_core_setting_get_bool(wimp->core, "show_hidden_files", true)))
       [self setStatus:"Scanning..."];
    else
       [self setStatus:"Scanning is not available in this build."];
@@ -1399,6 +1456,7 @@ static void *ui_companion_cocoa_wimp_init(void)
    ctrl = nil; /* ownership moved into w->controller */
 #endif
 
+   [CC_CTRL(w) applySharedSettings];
    companion_core_refresh_playlists(w->core);
    return w;
 }
