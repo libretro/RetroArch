@@ -7152,11 +7152,13 @@ void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
    PlaylistModel *self = static_cast<PlaylistModel*>(ud);
    if (tag & QT_TAG_ANIM_FRAME)
    {
-      /* An animation frame: not cached, shown at once. */
+      /* An animation frame: not cached, shown at once. fromImage()
+       * copies into the pixmap, so wrap the engine's buffer directly
+       * rather than copying it once more first. */
       if (bits)
       {
          QImage img((const uchar*)bits, w, h, w * 4, QImage::Format_ARGB32);
-         emit self->frameReady(QString::fromUtf8(path), QPixmap::fromImage(img.copy()));
+         emit self->frameReady(QString::fromUtf8(path), QPixmap::fromImage(img));
       }
       return;
    }

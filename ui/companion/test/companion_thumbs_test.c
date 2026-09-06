@@ -518,6 +518,43 @@ static void test_animation(void)
    companion_thumbs_free(t);
 }
 
+/* The scaler: R,G,B,A memory-order input comes out as ARGB words with
+ * no whole-canvas pass; a 4x downscale of a 2-colour checkerboard
+ * averages the four taps (nearest would pick one colour per pixel). */
+static void test_scaler(void)
+{
+   unsigned sw = 64, sh = 64, x, y;
+   uint32_t *src = (uint32_t*)malloc(sw * sh * 4), *out;
+   /* memory order R,G,B,A of pure red: bytes FF 00 00 FF -> LE word 0xFF0000FF */
+   for (y = 0; y < sh; y++)
+      for (x = 0; x < sw; x++)
+         src[y * sw + x] = 0xFF0000FFu;
+   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, true);
+   CHECK(out && out[8 * 16 + 8] == 0xffff0000u, "RGBA-order red -> ARGB red (got 0x%08x)", out ? out[8 * 16 + 8] : 0);
+   free(out);
+   /* the same words read as ARGB are blue */
+   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, false);
+   CHECK(out && out[8 * 16 + 8] == 0xff0000ffu, "ARGB-order 0xFF0000FF is blue (got 0x%08x)", out ? out[8 * 16 + 8] : 0);
+   free(out);
+   /* checkerboard of white and black, 1-px squares, 4x down: grey */
+   for (y = 0; y < sh; y++)
+      for (x = 0; x < sw; x++)
+         src[y * sw + x] = ((x + y) & 1) ? 0xffffffffu : 0xff000000u;
+   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, false);
+   {
+      uint32_t p = out ? out[8 * 16 + 8] : 0;
+      unsigned r = (p >> 16) & 0xff;
+      CHECK(out && r > 0x30 && r < 0xd0, "4-tap downscale averages the checkerboard to grey (got 0x%08x)", p);
+   }
+   free(out);
+   /* enlarging keeps nearest: a 2x2 source to 8x8 has hard edges */
+   src[0] = 0xffff0000u; src[1] = 0xff00ff00u; src[sw] = 0xff0000ffu; src[sw + 1] = 0xffffffffu;
+   out = companion_thumbs_scale_ex(src, 2, 2, 8, 8, 0, false);
+   CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging is nearest (corners 0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
+   free(out);
+   free(src);
+}
+
 static void test_undecodable(void)
 {
    char bad[512];
@@ -602,6 +639,7 @@ int main(int argc, char **argv)
    test_abort();
    test_double_failure_no_uaf();
    test_animation();
+   test_scaler();
    test_undecodable();
    test_many_and_shutdown();
 

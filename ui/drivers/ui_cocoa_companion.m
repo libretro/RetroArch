@@ -200,6 +200,11 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSInteger visFirst, visLast;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
    NSInteger boxartEntry;             /* entry the pane shows / awaits */
+   /* The pane's own bitmap: animation frames are written into its
+    * pixels in place, one rep + image for the animation's life. */
+   NSBitmapImageRep *boxartRep;
+   NSImage *boxartImage;
+   int boxartW, boxartH;
    BOOL syncingSort;                  /* setSortDescriptors: from the core, not a click */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
@@ -251,6 +256,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
 - (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h;
+- (void)boxartBlit:(const uint32_t*)bits width:(int)w height:(int)h;
 - (CGFloat)thumbEdge;
 - (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent;
 - (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len;
@@ -804,6 +810,42 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [self thumbDone:tag bits:bits width:w height:h];
 }
 
+/* Frames arrive at up to the container's rate: keep one rep for the
+ * pane and copy each frame into its pixels (a byte swap into RGBA),
+ * rather than allocating a rep and an image per frame. */
+- (void)boxartBlit:(const uint32_t*)bits width:(int)w height:(int)h
+{
+   unsigned char *dst;
+   int i;
+   if (!boxartRep || boxartW != w || boxartH != h)
+   {
+      RELEASE(boxartRep);
+      RELEASE(boxartImage);
+      boxartRep = [[NSBitmapImageRep alloc]
+         initWithBitmapDataPlanes:NULL pixelsWide:w pixelsHigh:h
+         bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
+         colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:w * 4
+         bitsPerPixel:32];
+      if (!boxartRep)
+         return;
+      boxartImage = [[NSImage alloc] initWithSize:NSMakeSize(w, h)];
+      [boxartImage addRepresentation:boxartRep];
+      boxartW = w;
+      boxartH = h;
+      [boxart setImage:boxartImage];
+   }
+   dst = [boxartRep bitmapData];
+   for (i = 0; i < w * h; i++)
+   {
+      uint32_t p = bits[i];
+      dst[i * 4 + 0] = (unsigned char)((p >> 16) & 0xff);
+      dst[i * 4 + 1] = (unsigned char)((p >>  8) & 0xff);
+      dst[i * 4 + 2] = (unsigned char)( p        & 0xff);
+      dst[i * 4 + 3] = 0xff;
+   }
+   [boxart setNeedsDisplay:YES];
+}
+
 - (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h
 {
    NSInteger row;
@@ -811,7 +853,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    {
       /* The pane: show it if it is still the selected entry's. */
       if ((NSInteger)(tag & ~CC_TAG_BOXART) == boxartEntry && bits && boxart)
-         [boxart setImage:cc_image_from_argb(bits, w, h)];
+         [self boxartBlit:bits width:w height:h];
       return;
    }
    row = (NSInteger)(tag & 0xffffffffu);
@@ -1456,6 +1498,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
    RELEASE(boxartTypes);  RELEASE(playlistIcons); RELEASE(folderIcon);
    RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
+   RELEASE(boxartRep); RELEASE(boxartImage);
    free(rowMap);
    rowMap = NULL;
    string_list_free(infoKeys);
@@ -1999,6 +2042,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    int bw, bh;
 
    [boxart setImage:nil];
+   RELEASE(boxartRep);
+   RELEASE(boxartImage);
+   boxartRep = nil; boxartImage = nil; boxartW = boxartH = 0;
    boxartEntry = -1;
    if (thumbs)
       companion_thumbs_animate_stop(thumbs); /* the old selection's animation */
@@ -2037,7 +2083,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       return;
    bits = companion_thumbs_get(thumbs, path, bw, bh);
    if (bits)
-      [boxart setImage:cc_image_from_argb(bits, bw, bh)];
+      [self boxartBlit:bits width:bw height:bh];
    else
       companion_thumbs_request(thumbs, path, bw, bh,
             (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0xffe8e8e8u);

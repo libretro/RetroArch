@@ -224,6 +224,8 @@ typedef struct ui_companion_win32_wimp
    const char *boxart_subdir; /* boxart pane's type (its own tabs) */
    HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
    HBITMAP boxart_bmp;
+   void *boxart_bits;      /* the DIB's pixels: frames are copied in place */
+   int boxart_bw, boxart_bh; /* its size */
    bool boxart_visible;
    long boxart_entry; /* entry index shown, -1 = none */
    /* Core the info pane currently describes; the pane follows the
@@ -1393,16 +1395,45 @@ static HBITMAP cw_boxart_scale(const struct texture_image *img,
 /* Show the boxart of entry @entry (index into the playlist, or -1 to
  * clear). No-op if the pane already shows it. */
 /* Put engine pixels (bw x bh) into the pane's static control. */
+/* Frames of an animation arrive here at up to the container's rate:
+ * keep one DIB section for the pane and copy each frame into its
+ * pixels, rather than creating and destroying a GDI object per frame.
+ * A new size (the pane was resized, a different aspect) rebuilds it. */
 static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
       int bw, int bh)
 {
-   HBITMAP bmp = cw_dib_from_argb(bits, bw, bh);
-   if (!bmp)
-      return;
-   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
-   if (w->boxart_bmp)
-      DeleteObject(w->boxart_bmp);
-   w->boxart_bmp = bmp;
+   if (!w->boxart_bmp || !w->boxart_bits || w->boxart_bw != bw || w->boxart_bh != bh)
+   {
+      BITMAPINFO bmi;
+      void *dst = NULL;
+      HBITMAP bmp;
+      memset(&bmi, 0, sizeof(bmi));
+      bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+      bmi.bmiHeader.biWidth       = bw;
+      bmi.bmiHeader.biHeight      = -bh; /* top-down */
+      bmi.bmiHeader.biPlanes      = 1;
+      bmi.bmiHeader.biBitCount    = 32;
+      bmi.bmiHeader.biCompression = BI_RGB;
+      bmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, &dst, NULL, 0);
+      if (!bmp || !dst)
+      {
+         if (bmp)
+            DeleteObject(bmp);
+         return;
+      }
+      SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
+      if (w->boxart_bmp)
+         DeleteObject(w->boxart_bmp);
+      w->boxart_bmp  = bmp;
+      w->boxart_bits = dst;
+      w->boxart_bw   = bw;
+      w->boxart_bh   = bh;
+   }
+   /* GdiFlush: the DIB's pixels are written from this thread while GDI
+    * may still be batching a draw of the previous frame from them. */
+   GdiFlush();
+   memcpy(w->boxart_bits, bits, (size_t)bw * bh * 4);
+   InvalidateRect(w->boxart, NULL, FALSE);
 }
 
 /* Boxart pane for @entry: from the engine cache at once, otherwise an
@@ -1439,6 +1470,8 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
       DeleteObject(w->boxart_bmp);
       w->boxart_bmp = NULL;
    }
+   w->boxart_bits = NULL;
+   w->boxart_bw   = w->boxart_bh = 0;
    InvalidateRect(w->boxart, NULL, TRUE);
    if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;

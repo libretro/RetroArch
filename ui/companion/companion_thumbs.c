@@ -28,6 +28,7 @@
 #include "../../gfx/gfx_anim_preview.h"
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -159,11 +160,31 @@ struct companion_thumbs
 
 /* --- scaling (pure) ---------------------------------------------------- */
 
-uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
-      unsigned sh, int dw, int dh, uint32_t bg)
+/* R,G,B,A memory order -> ARGB word. */
+#define CT_RGBA_TO_ARGB(p) \
+   (((p) & 0x0000FF00u) | (((p) & 0xFFu) << 16) | (((p) >> 16) & 0xFFu) | ((p) & 0xFF000000u))
+
+/* Composite one source pixel over @bg (opaque result). */
+static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
+{
+   unsigned a = (p >> 24) & 0xff;
+   if (a == 0xff)
+      return p | 0xff000000u;
+   {
+      unsigned ia = 255 - a;
+      unsigned r  = (((p >> 16) & 0xff) * a + ((bg >> 16) & 0xff) * ia) / 255;
+      unsigned g  = (((p >>  8) & 0xff) * a + ((bg >>  8) & 0xff) * ia) / 255;
+      unsigned b  = (( p        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
+      return 0xff000000u | (r << 16) | (g << 8) | b;
+   }
+}
+
+uint32_t *companion_thumbs_scale_ex(const uint32_t *src, unsigned sw,
+      unsigned sh, int dw, int dh, uint32_t bg, bool src_rgba_order)
 {
    uint32_t *buf;
    int fw, fh, ox, oy, x, y;
+   bool taps4;
 
    if (!src || !sw || !sh || dw < 1 || dh < 1)
       return NULL;
@@ -186,6 +207,9 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
    if (fh < 1) fh = 1;
    ox = (dw - fw) / 2;
    oy = (dh - fh) / 2;
+   /* Four taps when every output pixel covers at least a 2 x 2 source
+    * cell; one tap (nearest) when enlarging or nearly 1:1. */
+   taps4 = (sw >= 2u * (unsigned)fw) && (sh >= 2u * (unsigned)fh);
 
    for (y = 0; y < dh; y++)
    {
@@ -197,32 +221,68 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
          continue;
       }
       {
-         const uint32_t *s = src + (size_t)((y - oy) * sh / fh) * sw;
+         int      sy   = y - oy;
+         unsigned y0   = (unsigned)((uint64_t)sy * sh / fh);
+         unsigned y1   = (unsigned)((uint64_t)(sy + 1) * sh / fh);
+         const uint32_t *ra, *rb;
+         if (y1 <= y0) y1 = y0 + 1;
+         if (y1 > sh)  y1 = sh;
+         /* Taps at a third in from each edge of the cell: for a 4-px
+          * cell rows 1 and 2, for 2 px rows 0 and 1 - always two
+          * distinct rows of different parity, so a 1-px checkerboard
+          * (the worst case for aliasing) really averages. */
+         ra = src + (size_t)(y0 + (y1 - y0 - 1) / 3) * sw;
+         rb = src + (size_t)(y1 - 1 - (y1 - y0 - 1) / 3) * sw;
+         if (!taps4)
+            ra = rb = src + (size_t)y0 * sw;
          for (x = 0; x < dw; x++)
          {
             if (x < ox || x >= ox + fw)
                row[x] = bg;
             else
             {
-               /* Composite the source alpha over @bg so transparent
-                * images sit on the view colour; the result is opaque. */
-               uint32_t p = s[(x - ox) * sw / fw];
-               unsigned a = (p >> 24) & 0xff;
-               if (a == 0xff)
-                  row[x] = p | 0xff000000u;
+               int      sx = x - ox;
+               unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
+               if (taps4)
+               {
+                  unsigned x1 = (unsigned)((uint64_t)(sx + 1) * sw / fw);
+                  unsigned xa, xb;
+                  uint32_t p0, p1, p2, p3, r, g, b, al;
+                  if (x1 <= x0) x1 = x0 + 1;
+                  if (x1 > sw)  x1 = sw;
+                  xa = x0 + (x1 - x0 - 1) / 3;
+                  xb = x1 - 1 - (x1 - x0 - 1) / 3;
+                  p0 = ra[xa]; p1 = ra[xb]; p2 = rb[xa]; p3 = rb[xb];
+                  if (src_rgba_order)
+                  {
+                     p0 = CT_RGBA_TO_ARGB(p0); p1 = CT_RGBA_TO_ARGB(p1);
+                     p2 = CT_RGBA_TO_ARGB(p2); p3 = CT_RGBA_TO_ARGB(p3);
+                  }
+                  /* average the four (including alpha), then composite */
+                  r  = (((p0 >> 16) & 0xff) + ((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + ((p3 >> 16) & 0xff)) >> 2;
+                  g  = (((p0 >>  8) & 0xff) + ((p1 >>  8) & 0xff) + ((p2 >>  8) & 0xff) + ((p3 >>  8) & 0xff)) >> 2;
+                  b  = (( p0        & 0xff) + ( p1        & 0xff) + ( p2        & 0xff) + ( p3        & 0xff)) >> 2;
+                  al = (((p0 >> 24) & 0xff) + ((p1 >> 24) & 0xff) + ((p2 >> 24) & 0xff) + ((p3 >> 24) & 0xff)) >> 2;
+                  row[x] = ct_over((al << 24) | (r << 16) | (g << 8) | b, bg);
+               }
                else
                {
-                  unsigned ia = 255 - a;
-                  unsigned r  = (((p >> 16) & 0xff) * a + ((bg >> 16) & 0xff) * ia) / 255;
-                  unsigned g  = (((p >>  8) & 0xff) * a + ((bg >>  8) & 0xff) * ia) / 255;
-                  unsigned bb = (( p        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
-                  row[x] = 0xff000000u | (r << 16) | (g << 8) | bb;
+                  uint32_t p = ra[x0];
+                  if (src_rgba_order)
+                     p = CT_RGBA_TO_ARGB(p);
+                  row[x] = ct_over(p, bg);
                }
             }
          }
       }
    }
    return buf;
+}
+
+uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
+      unsigned sh, int dw, int dh, uint32_t bg)
+{
+   return companion_thumbs_scale_ex(src, sw, sh, dw, dh, bg, false);
 }
 
 /* A video's still is its first frame, taken through the same windowed
@@ -233,7 +293,7 @@ static uint32_t *ct_decode_video_still(const char *path, int w, int h,
 {
    gfx_anim_preview_t *sess = gfx_anim_preview_open(path, -1);
    const uint32_t *frame;
-   uint32_t *src, *bits = NULL;
+   uint32_t *bits = NULL;
    bool native_argb = false;
    int dur = 0;
    if (!sess)
@@ -245,22 +305,8 @@ static uint32_t *ct_decode_video_still(const char *path, int w, int h,
       gfx_anim_preview_close(sess);
       return NULL;
    }
-   src = (uint32_t*)frame;
-   if (!native_argb)
-   {
-      size_t i, n = (size_t)sess->width * sess->height;
-      src = (uint32_t*)malloc(n * sizeof(uint32_t));
-      if (src)
-         for (i = 0; i < n; i++)
-         {
-            uint32_t px = frame[i];
-            src[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
-         }
-   }
-   if (src)
-      bits = companion_thumbs_scale(src, sess->width, sess->height, w, h, bg);
-   if (src != frame)
-      free(src);
+   bits = companion_thumbs_scale_ex(frame, sess->width, sess->height,
+         w, h, bg, !native_argb);
    gfx_anim_preview_close(sess);
    return bits;
 }
@@ -699,7 +745,7 @@ static void ct_anim_thread(void *ud)
          const uint32_t *frame;
          int duration_ms = 0;
          bool native_argb = false;
-         uint32_t *src, *bits;
+         uint32_t *bits;
          bool stale;
 
          slock_lock(t->lock);
@@ -724,23 +770,10 @@ static void ct_anim_thread(void *ud)
          }
          if (!sess->width || !sess->height)
             break;
-         src = (uint32_t*)frame;
-         if (!native_argb)
-         {
-            /* R,G,B,A memory order -> ARGB words for the scaler */
-            size_t i, n = (size_t)sess->width * sess->height;
-            src = (uint32_t*)malloc(n * sizeof(uint32_t));
-            if (!src)
-               break;
-            for (i = 0; i < n; i++)
-            {
-               uint32_t px = frame[i];
-               src[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
-            }
-         }
-         bits = companion_thumbs_scale(src, sess->width, sess->height, w, h, bg);
-         if (src != frame)
-            free(src);
+         /* The byte order is handled on the sampled pixels only: a
+          * whole-canvas swizzle was 12 ms a frame at 4K. */
+         bits = companion_thumbs_scale_ex(frame, sess->width, sess->height,
+               w, h, bg, !native_argb);
          if (!bits)
             break;
 
