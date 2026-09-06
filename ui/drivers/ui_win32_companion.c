@@ -237,6 +237,7 @@ typedef struct ui_companion_win32_wimp
     * placeholder; pending items decode one per frame while the view
     * is showing. */
    HWND br_up, br_start, br_downloads; /* file-browser buttons (browse mode) */
+   HIMAGELIST hdr_arrows;  /* header sort arrows: 0 up, 1 down (pre-v6 comctl32) */
    HIMAGELIST sys_small;   /* the shell's small image list, for browse rows */
    /* Per browse row: the shell icon index, resolved once by attributes
     * (no disk); size / type / date come from the core, gathered with the
@@ -835,31 +836,111 @@ static void cw_entries_columns(ui_companion_win32_wimp_t *w, bool browse)
    }
 }
 
-/* Sort arrow on the header of the core's current sort column (comctl32
- * 6 draws it; older ones ignore the format bits). */
+/* Two 16 x 16 arrow bitmaps (up, down), drawn with GDI on the button
+ * colour, for the header of a comctl32 without theming (no v6 manifest
+ * in this build): HDF_IMAGE with an image on the right of the caption
+ * is how a pre-XP header shows the sort direction. */
+static HIMAGELIST cw_header_arrows(ui_companion_win32_wimp_t *w)
+{
+   const int S = CW_S(w, 16);
+   int k;
+   if (w->hdr_arrows)
+      return w->hdr_arrows;
+   w->hdr_arrows = ImageList_Create(S, S, ILC_COLOR32, 2, 0);
+   if (!w->hdr_arrows)
+      return NULL;
+   for (k = 0; k < 2; k++)
+   {
+      uint32_t *bits = (uint32_t*)malloc((size_t)S * S * 4);
+      HBITMAP bmp;
+      int i;
+      uint32_t bg = cw_sys_color_argb(COLOR_BTNFACE);
+      if (!bits)
+         break;
+      for (i = 0; i < S * S; i++)
+         bits[i] = bg;
+      bmp = cw_dib_from_argb(bits, S, S);
+      free(bits);
+      if (!bmp)
+         break;
+      {
+         HDC hdc = CreateCompatibleDC(NULL);
+         if (hdc)
+         {
+            HGDIOBJ old   = SelectObject(hdc, bmp);
+            HBRUSH br     = CreateSolidBrush(GetSysColor(COLOR_BTNSHADOW));
+            HPEN pen      = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNSHADOW));
+            HGDIOBJ obr   = SelectObject(hdc, br);
+            HGDIOBJ open  = SelectObject(hdc, pen);
+            POINT tri[3];
+            int cx = S / 2, cy = S / 2, h = S / 4;
+            if (k == 0) /* up */
+            {
+               tri[0].x = cx;     tri[0].y = cy - h;
+               tri[1].x = cx - h; tri[1].y = cy + h / 2;
+               tri[2].x = cx + h; tri[2].y = cy + h / 2;
+            }
+            else        /* down */
+            {
+               tri[0].x = cx;     tri[0].y = cy + h;
+               tri[1].x = cx - h; tri[1].y = cy - h / 2;
+               tri[2].x = cx + h; tri[2].y = cy - h / 2;
+            }
+            Polygon(hdc, tri, 3);
+            SelectObject(hdc, open);
+            SelectObject(hdc, obr);
+            SelectObject(hdc, old);
+            DeleteObject(pen);
+            DeleteObject(br);
+            DeleteDC(hdc);
+         }
+      }
+      ImageList_Add(w->hdr_arrows, bmp, NULL);
+      DeleteObject(bmp);
+   }
+   return w->hdr_arrows;
+}
+
+/* Sort arrow on the header of the core's current sort column: the
+ * themed HDF_SORTUP / SORTDOWN for a v6 comctl32, and an image on the
+ * right of the caption (HDF_IMAGE) for every other one. */
 static void cw_browse_sort_arrow(ui_companion_win32_wimp_t *w)
 {
-#if defined(HDF_SORTUP) && defined(HDF_SORTDOWN)
    HWND hdr = ListView_GetHeader(w->entries);
    int n    = (int)SendMessageA(hdr, HDM_GETITEMCOUNT, 0, 0);
    int cur  = (int)companion_core_browse_sort_column(w->core);
    bool asc = companion_core_browse_sort_ascending(w->core);
+   HIMAGELIST arrows = cw_header_arrows(w);
    int i;
+   if (arrows)
+      SendMessageA(hdr, HDM_SETIMAGELIST, 0, (LPARAM)arrows);
    for (i = 0; i < n; i++)
    {
       HDITEMA it;
       memset(&it, 0, sizeof(it));
-      it.mask = HDI_FORMAT;
+      it.mask = HDI_FORMAT | HDI_IMAGE;
       if (!SendMessageA(hdr, HDM_GETITEMA, (WPARAM)i, (LPARAM)&it))
          continue;
-      it.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN);
+      it.mask  = HDI_FORMAT | HDI_IMAGE;
+      it.fmt  &= ~(HDF_IMAGE | HDF_BITMAP_ON_RIGHT);
+#if defined(HDF_SORTUP) && defined(HDF_SORTDOWN)
+      it.fmt  &= ~(HDF_SORTUP | HDF_SORTDOWN);
+#endif
+      it.iImage = -1;
       if (i == cur)
+      {
+#if defined(HDF_SORTUP) && defined(HDF_SORTDOWN)
          it.fmt |= asc ? HDF_SORTUP : HDF_SORTDOWN;
+#endif
+         if (arrows)
+         {
+            it.fmt   |= HDF_IMAGE | HDF_BITMAP_ON_RIGHT;
+            it.iImage = asc ? 0 : 1;
+         }
+      }
       SendMessageA(hdr, HDM_SETITEMA, (WPARAM)i, (LPARAM)&it);
    }
-#else
-   (void)w;
-#endif
+   InvalidateRect(hdr, NULL, TRUE);
 }
 
 static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
@@ -937,6 +1018,25 @@ static void cw_browse_leave(ui_companion_win32_wimp_t *w)
    ShowWindow(w->br_downloads, SW_HIDE);
    SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_SMALL, (LPARAM)NULL);
    cw_entries_columns(w, false);
+   {
+      /* no arrow on the playlist columns */
+      HWND hdr = ListView_GetHeader(w->entries);
+      int i, n = (int)SendMessageA(hdr, HDM_GETITEMCOUNT, 0, 0);
+      for (i = 0; i < n; i++)
+      {
+         HDITEMA it;
+         memset(&it, 0, sizeof(it));
+         it.mask = HDI_FORMAT;
+         if (SendMessageA(hdr, HDM_GETITEMA, (WPARAM)i, (LPARAM)&it))
+         {
+            it.fmt &= ~(HDF_IMAGE | HDF_BITMAP_ON_RIGHT);
+#if defined(HDF_SORTUP) && defined(HDF_SORTDOWN)
+            it.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN);
+#endif
+            SendMessageA(hdr, HDM_SETITEMA, (WPARAM)i, (LPARAM)&it);
+         }
+      }
+   }
    cw_set_icon_view(w, w->icon_view); /* restore the playlist view type */
    cw_playlists_rebuild(w);
    cw_layout(w);
@@ -3155,6 +3255,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DeleteObject(w->font);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
+   if (w->hdr_arrows)
+      ImageList_Destroy(w->hdr_arrows);
    free(w->rows);
    free(w->thumb_idx);
    free(w->slot_row);

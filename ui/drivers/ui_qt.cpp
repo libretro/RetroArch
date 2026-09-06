@@ -1613,6 +1613,7 @@ void MainWindow::setupModels()
    /* A header click asks the core to re-order its listing (one qsort
     * over an already gathered array); the view itself never sorts. */
    m_fileTableView->setSortingEnabled(true);
+   m_fileTableView->horizontalHeader()->setSortIndicatorShown(true);
    m_fileTableView->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
    m_fileTableView->setAlternatingRowColors(true);
    m_fileTableView->verticalHeader()->setVisible(false);
