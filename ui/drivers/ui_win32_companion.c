@@ -96,7 +96,6 @@
 #define COMPANION_WIN32_INIT_W     1280
 #define COMPANION_WIN32_INIT_H     720
 #define COMPANION_WIN32_ITER_US    2000
-#define COMPANION_WIN32_PANE_W     200   /* initial playlist pane width */
 #define COMPANION_WIN32_PANE_MIN   100
 #define COMPANION_WIN32_SPLIT_W    5     /* draggable gap between panes */
 #define COMPANION_WIN32_MIN_W      480
@@ -111,6 +110,12 @@
 #define COMPANION_WIN32_FOOTER_H   28    /* "N items" + View combo under the list */
 #define COMPANION_WIN32_PL_ICON    16    /* playlist folder icon */
 #define COMPANION_WIN32_DOCS_URL   "https://docs.libretro.com/"
+
+/* Every size above is in 96-dpi logical pixels, as Qt's are; Qt renders
+ * them at the monitor's DPI, so at 200% its 1280x720 window fills a
+ * 2560x1440 screen. Scale ours the same way or the companion comes up
+ * half the size with a font that does not fit its rows. */
+#define CW_S(w, x) MulDiv((x), (w)->dpi, 96)
 #define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
 /* Icon view: one thumbnail decoded per frame from the iterate hook, so a
  * playlist of any size never costs more than one file decode per frame. */
@@ -201,7 +206,9 @@ typedef struct ui_companion_win32_wimp
    HWND core_label, core_combo, core_info_btn, run_btn;
    HWND items_label, view_label, view_combo;
    HWND info_label, boxart_label;
-   HFONT font;              /* DEFAULT_GUI_FONT for every control */
+   HFONT font;              /* the system message font at this DPI */
+   int dpi;                 /* LOGPIXELSX; all layout sizes scale by it */
+   int text_h;              /* font height in px, drives row heights */
    HIMAGELIST pl_icons;     /* folder icon for the playlist list */
    HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
    HBITMAP boxart_bmp;
@@ -487,7 +494,8 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    SetWindowLongA(w->entries, GWL_STYLE, style);
    if (icons)
       SendMessageA(w->entries, LVM_SETICONSPACING, 0,
-            MAKELPARAM(COMPANION_WIN32_THUMB + 24, COMPANION_WIN32_THUMB + 40));
+            MAKELPARAM(COMPANION_WIN32_THUMB + CW_S(w, 24),
+                       COMPANION_WIN32_THUMB + CW_S(w, 40)));
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
@@ -616,26 +624,33 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
    }
 
    /* Keep the pane inside the window as it is resized. */
-   if (w->pane_w > rc.right - COMPANION_WIN32_PANE_MIN - COMPANION_WIN32_SPLIT_W)
-      w->pane_w = rc.right - COMPANION_WIN32_PANE_MIN - COMPANION_WIN32_SPLIT_W;
-   if (w->pane_w < COMPANION_WIN32_PANE_MIN)
-      w->pane_w = COMPANION_WIN32_PANE_MIN;
+   {
+      int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
+      int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
+      if (w->pane_w > rc.right - pane_min - split_w)
+         w->pane_w = rc.right - pane_min - split_w;
+      if (w->pane_w < pane_min)
+         w->pane_w = pane_min;
+   }
 
    {
-      int log_h    = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
+      int log_h    = (w->log_visible && w->log) ? CW_S(w, COMPANION_WIN32_LOG_H) : 0;
       bool r_info  = (w->info_visible && w->info);
       bool r_box   = (w->boxart_visible && w->boxart);
-      int right_w  = (r_info || r_box) ? COMPANION_WIN32_INFO_W : 0;
+      int right_w  = (r_info || r_box) ? CW_S(w, COMPANION_WIN32_INFO_W) : 0;
       int list_h   = rc.bottom - status_h - log_h;
-      int entry_x  = w->pane_w + COMPANION_WIN32_SPLIT_W;
+      int entry_x  = w->pane_w + CW_S(w, COMPANION_WIN32_SPLIT_W);
       int entry_w  = rc.right - entry_x - right_w;
-      const int L  = COMPANION_WIN32_LABEL_H;
-      const int C  = COMPANION_WIN32_CTRL_H;
-      const int P  = 4; /* padding */
+      /* Rows follow the font: a caption is one line, a control a line
+       * plus button chrome. */
+      const int L  = w->text_h + CW_S(w, 4);
+      const int C  = w->text_h + CW_S(w, 10);
+      const int P  = CW_S(w, 4); /* padding */
+      const int TAB_H = w->text_h + CW_S(w, 10);
       int y;
       if (list_h < 0)
          list_h = 0;
-      if (entry_w < COMPANION_WIN32_PANE_MIN)
+      if (entry_w < CW_S(w, COMPANION_WIN32_PANE_MIN))
       {
          right_w = 0;
          r_info  = r_box = false;
@@ -649,55 +664,72 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
        *   [ playlist list ...                ]
        *   Core
        *   [ launch-with combo ][Info][Run]  */
-      y = 0;
-      MoveWindow(w->search_label, P, y, w->pane_w - 2 * P, L, TRUE);
-      y += L;
-      MoveWindow(w->search, P, y, w->pane_w - 2 * P - 56, C, TRUE);
-      MoveWindow(w->clear_btn, w->pane_w - P - 52, y, 52, C, TRUE);
-      y += C + P;
-      MoveWindow(w->browser_label, P, y, w->pane_w - 2 * P, L, TRUE);
-      y += L;
-      MoveWindow(w->tabs, P, y, w->pane_w - 2 * P, COMPANION_WIN32_TAB_H, TRUE);
-      y += COMPANION_WIN32_TAB_H;
+      y = P;
       {
-         int core_h = P + L + C + P;           /* the Core section */
-         int pl_h   = list_h - y - core_h;
-         if (pl_h < 0)
-            pl_h = 0;
-         MoveWindow(w->playlists, P, y, w->pane_w - 2 * P, pl_h, TRUE);
-         y += pl_h + P;
-         MoveWindow(w->core_label, P, y, w->pane_w - 2 * P, L, TRUE);
+         int btn_w = CW_S(w, 56); /* "Clear" */
+         int sm_w  = CW_S(w, 48); /* "Info" / "Run" */
+         MoveWindow(w->search_label, P, y, w->pane_w - 2 * P, L, TRUE);
          y += L;
-         MoveWindow(w->core_combo, P, y, w->pane_w - 2 * P - 100, C, TRUE);
-         MoveWindow(w->core_info_btn, w->pane_w - P - 96, y, 46, C, TRUE);
-         MoveWindow(w->run_btn, w->pane_w - P - 46, y, 46, C, TRUE);
+         MoveWindow(w->search, P, y, w->pane_w - 3 * P - btn_w, C, TRUE);
+         MoveWindow(w->clear_btn, w->pane_w - P - btn_w, y, btn_w, C, TRUE);
+         y += C + P;
+         MoveWindow(w->browser_label, P, y, w->pane_w - 2 * P, L, TRUE);
+         y += L;
+         MoveWindow(w->tabs, P, y, w->pane_w - 2 * P, TAB_H, TRUE);
+         y += TAB_H;
+         {
+            int core_h = P + L + C + P;           /* the Core section */
+            int pl_h   = list_h - y - core_h;
+            if (pl_h < 0)
+               pl_h = 0;
+            MoveWindow(w->playlists, P, y, w->pane_w - 2 * P, pl_h, TRUE);
+            /* One column, the width of the list less the icon. */
+            SendMessageA(w->playlists, LVM_SETCOLUMNWIDTH, 0,
+                  w->pane_w - 2 * P - CW_S(w, COMPANION_WIN32_PL_ICON) - CW_S(w, 24));
+            y += pl_h + P;
+            MoveWindow(w->core_label, P, y, w->pane_w - 2 * P, L, TRUE);
+            y += L;
+            MoveWindow(w->core_combo, P, y, w->pane_w - 4 * P - 2 * sm_w, C, TRUE);
+            MoveWindow(w->core_info_btn, w->pane_w - 2 * P - 2 * sm_w, y, sm_w, C, TRUE);
+            MoveWindow(w->run_btn, w->pane_w - P - sm_w, y, sm_w, C, TRUE);
+         }
       }
 
       /* Centre: the content view with Qt's footer ("N items" left,
        * View combo right). */
       {
-         int fh = COMPANION_WIN32_FOOTER_H;
-         int eh = list_h - fh;
+         int fh   = C + 2 * P;
+         int eh   = list_h - fh;
+         int cb_w = CW_S(w, 110);   /* View combo */
+         int lb_w = CW_S(w, 44);    /* "View" caption */
          if (eh < 0)
             eh = 0;
          MoveWindow(w->entries, entry_x, 0, entry_w, eh, TRUE);
-         MoveWindow(w->items_label, entry_x + P, eh + P, 160, L, TRUE);
-         MoveWindow(w->view_combo, entry_x + entry_w - P - 90, eh + 2, 90, C, TRUE);
-         MoveWindow(w->view_label, entry_x + entry_w - P - 90 - 40, eh + P, 36, L, TRUE);
+         MoveWindow(w->items_label, entry_x + P, eh + P + (C - L) / 2,
+               CW_S(w, 160), L, TRUE);
+         MoveWindow(w->view_combo, entry_x + entry_w - P - cb_w, eh + P, cb_w, C, TRUE);
+         MoveWindow(w->view_label, entry_x + entry_w - 2 * P - cb_w - lb_w,
+               eh + P + (C - L) / 2, lb_w, L, TRUE);
+         /* Name / Core columns share the list width (Qt: name wider). */
+         SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 0, (entry_w * 2) / 3 - CW_S(w, 8));
+         SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 1, entry_w / 3 - CW_S(w, 24));
       }
 
       /* Right column: "Core Info" caption + list on top, "Boxart" caption
        * + image below; each takes the full column when alone. */
       {
          int rx     = entry_x + entry_w;
-         int box_h  = r_box ? (list_h < COMPANION_WIN32_BOXART_H
-                               ? list_h : COMPANION_WIN32_BOXART_H) : 0;
+         int bh     = CW_S(w, COMPANION_WIN32_BOXART_H);
+         int box_h  = r_box ? (list_h < bh ? list_h : bh) : 0;
          int info_h = r_info ? list_h - box_h : 0;
          int iw     = right_w - P;
          if (r_info)
          {
-            MoveWindow(w->info_label, rx + P, 0, iw - P, L, TRUE);
-            MoveWindow(w->info, rx + P, L, iw - P, info_h - L, TRUE);
+            MoveWindow(w->info_label, rx + P, P, iw - P, L, TRUE);
+            MoveWindow(w->info, rx + P, P + L, iw - P, info_h - L - P, TRUE);
+            /* Key column narrow, value column takes the rest. */
+            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 110));
+            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 1, iw - P - CW_S(w, 110) - CW_S(w, 24));
          }
          else
          {
@@ -944,7 +976,7 @@ static bool cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
       GetWindowRect(w->status, &sb);
       status_h = sb.bottom - sb.top;
    }
-   return x >= w->pane_w && x < w->pane_w + COMPANION_WIN32_SPLIT_W
+   return x >= w->pane_w && x < w->pane_w + CW_S(w, COMPANION_WIN32_SPLIT_W)
       && y >= 0 && y < rc.bottom - status_h;
 }
 
@@ -1587,8 +1619,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
       case WM_GETMINMAXINFO:
          {
             MINMAXINFO *mmi      = (MINMAXINFO*)lparam;
-            mmi->ptMinTrackSize.x = COMPANION_WIN32_MIN_W;
-            mmi->ptMinTrackSize.y = COMPANION_WIN32_MIN_H;
+            mmi->ptMinTrackSize.x = w ? CW_S(w, COMPANION_WIN32_MIN_W) : COMPANION_WIN32_MIN_W;
+            mmi->ptMinTrackSize.y = w ? CW_S(w, COMPANION_WIN32_MIN_H) : COMPANION_WIN32_MIN_H;
          }
          return 0;
 
@@ -1650,7 +1682,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
       case WM_MOUSEMOVE:
          if (w && w->splitting)
          {
-            w->pane_w = (int)(short)LOWORD(lparam) - COMPANION_WIN32_SPLIT_W / 2;
+            w->pane_w = (int)(short)LOWORD(lparam) - CW_S(w, COMPANION_WIN32_SPLIT_W) / 2;
             cw_layout(w);
             return 0;
          }
@@ -1956,14 +1988,21 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          wa.right  = GetSystemMetrics(SM_CXSCREEN);
          wa.bottom = GetSystemMetrics(SM_CYSCREEN);
       }
-      sw = wa.right  - wa.left;
-      sh = wa.bottom - wa.top;
-      ww = (COMPANION_WIN32_INIT_W < sw) ? COMPANION_WIN32_INIT_W : sw;
-      wh = (COMPANION_WIN32_INIT_H < sh) ? COMPANION_WIN32_INIT_H : sh;
-      if (ww < COMPANION_WIN32_MIN_W && COMPANION_WIN32_MIN_W < sw)
-         ww = COMPANION_WIN32_MIN_W;
-      if (wh < COMPANION_WIN32_MIN_H && COMPANION_WIN32_MIN_H < sh)
-         wh = COMPANION_WIN32_MIN_H;
+      {
+         /* Qt's 1280x720 is logical; at this DPI it is this many pixels. */
+         int iw = CW_S(w, COMPANION_WIN32_INIT_W);
+         int ih = CW_S(w, COMPANION_WIN32_INIT_H);
+         int mw = CW_S(w, COMPANION_WIN32_MIN_W);
+         int mh = CW_S(w, COMPANION_WIN32_MIN_H);
+         sw = wa.right  - wa.left;
+         sh = wa.bottom - wa.top;
+         ww = (iw < sw) ? iw : sw;
+         wh = (ih < sh) ? ih : sh;
+         if (ww < mw && mw < sw)
+            ww = mw;
+         if (wh < mh && mh < sh)
+            wh = mh;
+      }
       wx = wa.left + (sw - ww) / 2;
       wy = wa.top  + (sh - wh) / 2;
 
@@ -1974,8 +2013,34 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    if (!w->hwnd)
       return false;
 
-   /* The GUI font first, so every control below is created with it. */
-   w->font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+   /* DPI and the system message font at that DPI, before any control is
+    * created. lfMessageFont scales with the display; DEFAULT_GUI_FONT
+    * is a fixed 8pt bitmap that does not. */
+   {
+      HDC hdc = GetDC(NULL);
+      NONCLIENTMETRICSA ncm;
+      TEXTMETRICA tm;
+      w->dpi = hdc ? GetDeviceCaps(hdc, LOGPIXELSY) : 96;
+      if (w->dpi <= 0)
+         w->dpi = 96;
+      memset(&ncm, 0, sizeof(ncm));
+      ncm.cbSize = sizeof(ncm);
+      if (SystemParametersInfoA(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0))
+         w->font = CreateFontIndirectA(&ncm.lfMessageFont);
+      if (!w->font)
+         w->font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+      w->text_h = CW_S(w, 16);
+      if (hdc)
+      {
+         HFONT old = (HFONT)SelectObject(hdc, w->font);
+         if (GetTextMetricsA(hdc, &tm))
+            w->text_h = tm.tmHeight;
+         SelectObject(hdc, old);
+         ReleaseDC(NULL, hdc);
+      }
+      /* Qt's left dock is about 280 logical px wide. */
+      w->pane_w = CW_S(w, 280);
+   }
 
    /* Playlist list: a list view with a folder icon per row, like Qt's. */
    w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
@@ -1986,8 +2051,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    {
       SHFILEINFOA sfi;
       LVCOLUMNA c;
-      w->pl_icons = ImageList_Create(COMPANION_WIN32_PL_ICON,
-            COMPANION_WIN32_PL_ICON, ILC_COLOR32 | ILC_MASK, 1, 1);
+      w->pl_icons = ImageList_Create(CW_S(w, COMPANION_WIN32_PL_ICON),
+            CW_S(w, COMPANION_WIN32_PL_ICON), ILC_COLOR32 | ILC_MASK, 1, 1);
       memset(&sfi, 0, sizeof(sfi));
       /* The shell's folder icon, without touching the filesystem. */
       if (w->pl_icons && SHGetFileInfoA("folder", FILE_ATTRIBUTE_DIRECTORY,
@@ -2082,7 +2147,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->boxart_entry = -1;
 
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
-         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
    if (!w->playlists || !w->entries || !w->status || !w->log || !w->info
@@ -2143,7 +2208,6 @@ static void *ui_companion_win32_wimp_init(void)
 
    g_win32_wimp    = w;
    w->ctx_playlist = (size_t)-1;
-   w->pane_w       = COMPANION_WIN32_PANE_W;
    w->core         = companion_core_new(&cw_callbacks, w);
 
    if (!w->core || !cw_create_window(w))
@@ -2171,6 +2235,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DeleteObject(w->boxart_bmp);
    if (w->pl_icons)
       ImageList_Destroy(w->pl_icons);
+   if (w->font && w->font != (HFONT)GetStockObject(DEFAULT_GUI_FONT))
+      DeleteObject(w->font);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
    if (w->cores_hwnd)
