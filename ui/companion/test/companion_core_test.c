@@ -473,6 +473,47 @@ static void test_sort_then_folders_only(void)
    companion_core_free(c);
 }
 
+/* A view that, on every "listing changed", re-applies the sort it is
+ * showing (Qt's table does this on a model reset). With a sort that
+ * fired the callback even when nothing changed, that recursed until the
+ * stack ran out. The listener counts its depth and stops itself at 3,
+ * so the test reports the loop instead of crashing in it. */
+static int reapply_depth, reapply_max;
+static void on_browse_changed_reapply(void *ud)
+{
+   companion_core_t *c = (companion_core_t*)ud;
+   reapply_depth++;
+   if (reapply_depth > reapply_max)
+      reapply_max = reapply_depth;
+   if (reapply_depth <= 3)
+      companion_core_browse_sort(c, companion_core_browse_sort_column(c),
+            companion_core_browse_sort_ascending(c));
+   reapply_depth--;
+}
+
+static void test_sort_callback_reentrancy(void)
+{
+   companion_callbacks_t cb;
+   companion_core_t *c;
+   char content[512];
+   fixture(content, sizeof(content), "content");
+   memset(&cb, 0, sizeof(cb));
+   cb.on_browse_changed = on_browse_changed_reapply;
+   c = companion_core_new(&cb, NULL);
+   companion_core_set_ud(c, c);          /* the listener sorts this core */
+   reapply_depth = reapply_max = 0;
+   companion_core_browse_open(c, content);
+   wait_browse(c);
+   CHECK(reapply_max <= 1, "listing landed: callback depth %d (a loop would be 3+)", reapply_max);
+   reapply_max = 0;
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, false);
+   CHECK(reapply_max == 1, "one change -> one callback, no recursion (depth %d)", reapply_max);
+   reapply_max = 0;
+   companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, false);
+   CHECK(reapply_max == 0, "same sort again -> no callback at all (depth %d)", reapply_max);
+   companion_core_free(c);
+}
+
 /* Scenario: the click sequences the backends send, in order, the way
  * a user drives the browser - every step must complete and nothing may
  * fault. Run under ASan / TSan this is the regression net for the
@@ -579,6 +620,7 @@ int main(void)
    test_sort_without_metadata();
    test_sort_then_folders_only();
    test_backend_scenario();
+   test_sort_callback_reentrancy();
    test_run_paths();
    test_launch_options();
    teardown();

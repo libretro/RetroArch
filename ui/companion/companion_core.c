@@ -354,6 +354,12 @@ companion_core_t *companion_core_new(const companion_callbacks_t *cb,
    return core;
 }
 
+void companion_core_set_ud(companion_core_t *core, void *ud)
+{
+   if (core)
+      core->ud = ud;
+}
+
 void companion_core_free(companion_core_t *core)
 {
    if (!core)
@@ -2019,6 +2025,11 @@ void companion_core_browse_sort(companion_core_t *core,
       enum companion_browse_column column, bool ascending)
 {
    if (!core)
+      return;
+   /* Unchanged: nothing to do, and no callback. A view that re-applies
+    * its sort when it is told the listing changed would otherwise loop
+    * through this forever (Qt's table does exactly that on a reset). */
+   if (core->browse_sort_col == column && core->browse_sort_desc == !ascending)
       return;
    core->browse_sort_col  = column;
    core->browse_sort_desc = !ascending;

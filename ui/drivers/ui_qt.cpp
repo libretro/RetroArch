@@ -1287,9 +1287,17 @@ void BrowseTableModel::reload()
 
 void BrowseTableModel::sort(int column, Qt::SortOrder order)
 {
-   companion_core_browse_sort(ui_companion_qt_core(),
-         (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column),
-         order == Qt::AscendingOrder);
+   companion_core_t *core = ui_companion_qt_core();
+   enum companion_browse_column col =
+      (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column);
+   bool asc = (order == Qt::AscendingOrder);
+   /* QTableView calls sort() again on every model reset (with the
+    * header's current indicator); the core ignores an unchanged order,
+    * and so do we, or reset -> sort -> changed -> reset would recurse. */
+   if (companion_core_browse_sort_column(core) == col
+         && companion_core_browse_sort_ascending(core) == asc)
+      return;
+   companion_core_browse_sort(core, col, asc);
    /* on_browse_changed -> onBrowseChanged -> reload() */
 }
 
@@ -1890,7 +1898,14 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 /* The core's listing landed (enumerated off the UI thread): show it. */
 void MainWindow::onBrowseChanged()
 {
+   /* Re-entrancy guard: a reset must never come back in here through
+    * the view (sort, selection) while the previous one is on the stack. */
+   static bool in_reload = false;
+   if (in_reload)
+      return;
+   in_reload = true;
    m_browseModel->reload();
+   in_reload = false;
    if (!m_fileTableHeaderState.isEmpty())
       m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
    setCoreActions();

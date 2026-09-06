@@ -91,6 +91,9 @@ typedef struct companion_callbacks
 /* Lifecycle */
 companion_core_t *companion_core_new(const companion_callbacks_t *cb,
       void *ud);
+/* Change the user pointer handed to the callbacks (a backend that
+ * creates the core before the object its callbacks act on). */
+void companion_core_set_ud(companion_core_t *core, void *ud);
 void companion_core_free(companion_core_t *core);
 
 /* Advance pending budgeted work (playlist parse, ...) for at most
