@@ -55,6 +55,7 @@
 #include <shlobj.h>
 
 #include <compat/strl.h>
+#include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <lists/string_list.h>
@@ -231,8 +232,21 @@ typedef struct ui_companion_win32_wimp
     * placeholder; pending items decode one per frame while the view
     * is showing. */
    HIMAGELIST thumbs;
-   size_t thumb_next;      /* next entry to decode */
-   size_t thumb_count;     /* entries in the current list */
+   /* The entry list is a virtual (LVS_OWNERDATA) list view: the control
+    * asks for each row's text and image as it draws (LVN_GETDISPINFO),
+    * so populating it costs one LVM_SETITEMCOUNT however large the
+    * playlist, and thumbnails are decoded only for rows the control has
+    * actually asked to draw - the model the Qt view uses. */
+   size_t *rows;           /* visible row -> entry (or browse) index */
+   size_t row_count;
+   int *thumb_idx;         /* per row: 0 none/placeholder, -1 queued, >0 image */
+   /* Rows whose thumbnail the control wants, oldest first. */
+   size_t *req;
+   size_t req_cap, req_head, req_len;
+   /* Image-list slots recycle in a ring so memory is bounded: slot_row
+    * remembers which row owns a slot so it can be evicted. */
+   size_t *slot_row;
+   size_t slot_cap, slot_used, slot_next;
    bool icon_view;
    /* Which repository subdirectory the icon view and boxart pane show;
     * from desktop_menu_thumbnail_type, boxart default. */
@@ -465,12 +479,25 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
       ImageList_Destroy(w->thumbs);
       w->thumbs = NULL;
    }
-   w->thumb_next  = 0;
-   w->thumb_count = count;
+   /* Forget every decoded / queued thumbnail: the list or its size
+    * changed, so the slots are rebuilt on demand. */
+   if (w->thumb_idx)
+      memset(w->thumb_idx, 0, w->row_count * sizeof(*w->thumb_idx));
+   w->req_len   = w->req_head = 0;
+   w->slot_used = w->slot_next = 0;
+   (void)count;
 
-   /* ILC_COLOR32 is honoured from comctl32 4.71; older ones pick a lower
-    * depth themselves, which is fine for a thumbnail. */
-   w->thumbs = ImageList_Create(T, T, ILC_COLOR32, (int)(count > 0 ? count : 1) + 1, 16);
+   /* Bounded: at most slot_cap decoded thumbnails live in the list at a
+    * time (a few screens' worth); older ones are recycled. ILC_COLOR32 is
+    * honoured from comctl32 4.71; older ones pick a lower depth. */
+   if (!w->slot_cap)
+   {
+      w->slot_cap = 512;
+      w->slot_row = (size_t*)calloc(w->slot_cap, sizeof(*w->slot_row));
+      w->req_cap  = w->slot_cap;
+      w->req      = (size_t*)calloc(w->req_cap, sizeof(*w->req));
+   }
+   w->thumbs = ImageList_Create(T, T, ILC_COLOR32, (int)w->slot_cap + 1, 0);
    if (!w->thumbs)
       return;
 
@@ -492,8 +519,31 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
    SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_NORMAL, (LPARAM)w->thumbs);
 }
 
-/* Decode the next pending thumbnail (one per call). Returns false when
- * nothing is pending. */
+/* Queue a row's thumbnail for decoding (called from LVN_GETDISPINFO when
+ * the control draws a row that has no image yet). Oldest first; a full
+ * queue drops the oldest request - it was scrolled past. */
+static void cw_thumb_request(ui_companion_win32_wimp_t *w, size_t row)
+{
+   size_t at;
+   if (!w->req || row >= w->row_count || w->thumb_idx[row] != 0)
+      return;
+   w->thumb_idx[row] = -1;
+   if (w->req_len == w->req_cap)
+   {
+      /* drop the oldest */
+      size_t old = w->req[w->req_head];
+      if (old < w->row_count && w->thumb_idx[old] == -1)
+         w->thumb_idx[old] = 0;
+      w->req_head = (w->req_head + 1) % w->req_cap;
+      w->req_len--;
+   }
+   at         = (w->req_head + w->req_len) % w->req_cap;
+   w->req[at] = row;
+   w->req_len++;
+}
+
+/* Decode one queued thumbnail into a recycled image-list slot and ask
+ * the control to redraw that row. Returns false when the queue is empty. */
 static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
 {
    char path[PATH_MAX_LENGTH];
@@ -501,26 +551,26 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
    struct texture_image img;
    const struct playlist_entry *e;
    HBITMAP bmp = NULL;
-   int idx = 0;
-   size_t i;
+   size_t row, entry;
+   int slot;
 
-   if (!w->thumbs || w->thumb_next >= w->thumb_count)
+   if (!w->thumbs || !w->req_len)
       return false;
 
-   {
-      /* Row -> entry index via lParam (filtered rows are not
-       * contiguous with entry indices). */
-      LVITEMA row;
-      i = w->thumb_next++;
-      memset(&row, 0, sizeof(row));
-      row.mask  = LVIF_PARAM;
-      row.iItem = (int)i;
-      if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&row))
-         return true;
-      e = companion_core_entry(w->core, (size_t)row.lParam);
-   }
-   if (!e)
+   /* Pop the most recently requested row: it is the one most likely
+    * still on screen (the control asks in draw order, and the user may
+    * have scrolled on since the older ones). */
+   row = w->req[(w->req_head + w->req_len - 1) % w->req_cap];
+   w->req_len--;
+   if (row >= w->row_count || w->thumb_idx[row] != -1)
       return true;
+   entry = w->rows[row];
+   e     = w->browse_mode ? NULL : companion_core_entry(w->core, entry);
+   if (!e)
+   {
+      w->thumb_idx[row] = 0;
+      return true;
+   }
 
    /* Playlist name without .lpl, as the repository is laid out. */
    strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
@@ -536,20 +586,37 @@ static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
       bmp = cw_thumb_bitmap(w, &img, cw_sys_color_argb(COLOR_WINDOW));
       image_texture_free(&img);
    }
-   if (bmp)
+   if (!bmp)
    {
-      idx = ImageList_Add(w->thumbs, bmp, NULL);
-      DeleteObject(bmp);
-      if (idx > 0)
-      {
-         LVITEMA item;
-         memset(&item, 0, sizeof(item));
-         item.mask   = LVIF_IMAGE;
-         item.iItem  = (int)i; /* the visible row we are decoding */
-         item.iImage = idx;
-         SendMessageA(w->entries, LVM_SETITEMA, 0, (LPARAM)&item);
-      }
+      w->thumb_idx[row] = 0; /* nothing to show; the placeholder stays */
+      return true;
    }
+
+   /* Slot: append while there is room, then recycle round-robin, taking
+    * the image away from the row that had it. Index 0 is the placeholder,
+    * so slot s lives at image index s + 1. */
+   if (w->slot_used < w->slot_cap)
+   {
+      slot = (int)w->slot_used++;
+      ImageList_Add(w->thumbs, bmp, NULL);
+   }
+   else
+   {
+      size_t victim;
+      slot   = (int)w->slot_next;
+      w->slot_next = (w->slot_next + 1) % w->slot_cap;
+      victim = w->slot_row[slot];
+      if (victim < w->row_count && w->thumb_idx[victim] == slot + 1)
+      {
+         w->thumb_idx[victim] = 0;
+         SendMessageA(w->entries, LVM_REDRAWITEMS, victim, victim);
+      }
+      ImageList_Replace(w->thumbs, slot + 1, bmp, NULL);
+   }
+   DeleteObject(bmp);
+   w->slot_row[slot]  = row;
+   w->thumb_idx[row]  = slot + 1;
+   SendMessageA(w->entries, LVM_REDRAWITEMS, row, row);
    return true;
 }
 
@@ -573,44 +640,47 @@ static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
    InvalidateRect(w->entries, NULL, TRUE);
 }
 
+/* Size the row map and per-row thumbnail table for @n rows. */
+static bool cw_rows_alloc(ui_companion_win32_wimp_t *w, size_t n)
+{
+   size_t *r  = (size_t*)realloc(w->rows, (n ? n : 1) * sizeof(*r));
+   int *t     = (int*)realloc(w->thumb_idx, (n ? n : 1) * sizeof(*t));
+   if (r) w->rows      = r;
+   if (t) w->thumb_idx = t;
+   if (!r || !t)
+   {
+      w->row_count = 0;
+      return false;
+   }
+   memset(w->thumb_idx, 0, (n ? n : 1) * sizeof(*t));
+   return true;
+}
+
+/* Hand the control its new row count; it draws through LVN_GETDISPINFO. */
+static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
+{
+   w->row_count = n;
+   SendMessageA(w->entries, LVM_SETITEMCOUNT, (WPARAM)n,
+         LVSICF_NOSCROLL);
+   InvalidateRect(w->entries, NULL, TRUE);
+}
+
 static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
 {
-   size_t i, n;
-   LVITEMA item;
+   size_t i, n = companion_core_browse_count(w->core);
 
-   SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
-   cw_thumbs_reset(w, 0);
-   n = companion_core_browse_count(w->core);
-
-   SendMessageA(w->entries, WM_SETREDRAW, FALSE, 0);
+   if (!cw_rows_alloc(w, n))
+      n = 0;
    for (i = 0; i < n; i++)
-   {
-      char label[PATH_MAX_LENGTH];
-      const char *name = companion_core_browse_name(w->core, i);
-      bool is_dir      = companion_core_browse_is_dir(w->core, i);
-
-      /* Trailing slash marks directories in the report view. */
-      if (is_dir && name && strcmp(name, ".."))
-         snprintf(label, sizeof(label), "%s\\", name);
-      else
-         strlcpy(label, name ? name : "", sizeof(label));
-
-      memset(&item, 0, sizeof(item));
-      item.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
-      item.iItem    = (int)i;
-      item.iImage   = 0;
-      item.lParam   = (LPARAM)i;
-      item.pszText  = label;
-      SendMessageA(w->entries, LVM_INSERTITEMA, 0, (LPARAM)&item);
-   }
-   SendMessageA(w->entries, WM_SETREDRAW, TRUE, 0);
+      w->rows[i] = i;            /* browse rows are never filtered */
+   cw_rows_commit(w, n);
+   cw_thumbs_reset(w, n);        /* browse rows show the placeholder */
    cw_status_set(w, companion_core_browse_dir(w->core));
 }
 
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 {
    size_t i, n, row;
-   LVITEMA item;
    char buf[64];
 
    if (!w || !w->entries)
@@ -622,50 +692,30 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
       return;
    }
 
-   SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
    n = companion_core_entry_count(w->core);
-   /* Image list must be installed before items reference image 0; size
-    * it to the full count (an over-estimate under a filter is harmless).
-    * thumb_count is corrected to the visible-row count after the loop. */
-   cw_thumbs_reset(w, n);
 
-   /* Bulk insert without per-item repaint. @row is the visible row (may
-    * lag @i when a filter is active); the entry index rides in lParam. */
-   SendMessageA(w->entries, WM_SETREDRAW, FALSE, 0);
+   /* Visible rows: every entry, or those matching the search filter.
+    * That is the whole cost of populating the view - no per-item
+    * inserts; the control draws rows through LVN_GETDISPINFO. */
+   if (!cw_rows_alloc(w, n))
+      n = 0;
    for (i = 0, row = 0; i < n; i++)
    {
       const struct playlist_entry *e = companion_core_entry(w->core, i);
       const char *label;
       if (!e)
          continue;
-
-      label = !string_is_empty(e->label) ? e->label
-            : (e->path ? e->path : "");
-      if (!cw_filter_match(w, label))
-         continue;
-
-      memset(&item, 0, sizeof(item));
-      item.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
-      item.iItem    = (int)row;
-      item.iSubItem = 0;
-      item.iImage   = 0; /* placeholder until decoded */
-      item.lParam   = (LPARAM)i;
-      item.pszText  = (LPSTR)label;
-      SendMessageA(w->entries, LVM_INSERTITEMA, 0, (LPARAM)&item);
-
-      item.mask     = LVIF_TEXT;
-      item.iSubItem = 1;
-      item.pszText  = (LPSTR)(!string_is_empty(e->core_name)
-            ? e->core_name : "");
-      SendMessageA(w->entries, LVM_SETITEMA, 0, (LPARAM)&item);
-      row++;
+      if (w->filter[0])
+      {
+         label = !string_is_empty(e->label) ? e->label
+               : (e->path ? e->path : "");
+         if (!cw_filter_match(w, label))
+            continue;
+      }
+      w->rows[row++] = i;
    }
-   SendMessageA(w->entries, WM_SETREDRAW, TRUE, 0);
-
-   /* One thumbnail per visible row; the step reads each row's lParam. */
-   w->thumb_count = row;
-   if (w->icon_view)
-      SendMessageA(w->entries, LVM_ARRANGE, LVA_DEFAULT, 0);
+   cw_rows_commit(w, row);
+   cw_thumbs_reset(w, row);
 
    /* Qt selects the first entry of a freshly loaded playlist, so the
     * boxart pane and Core section show something at once. */
@@ -1007,17 +1057,11 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
 /* The playlist-entry index behind the entries' focused row, or -1. */
 static long cw_focused_entry(ui_companion_win32_wimp_t *w)
 {
-   LVITEMA item;
    LRESULT row = SendMessageA(w->entries, LVM_GETNEXTITEM,
          (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
-   if (row < 0 || w->browse_mode)
+   if (row < 0 || w->browse_mode || (size_t)row >= w->row_count)
       return -1;
-   memset(&item, 0, sizeof(item));
-   item.mask  = LVIF_PARAM;
-   item.iItem = (int)row;
-   if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&item))
-      return -1;
-   return (long)item.lParam;
+   return (long)w->rows[row];
 }
 
 static void cw_boxart_toggle(ui_companion_win32_wimp_t *w)
@@ -1358,18 +1402,10 @@ static LRESULT cw_selected_row(ui_companion_win32_wimp_t *w)
  * Returns -1 when nothing is selected. */
 static long cw_selected_entry(ui_companion_win32_wimp_t *w)
 {
-   LVITEMA item;
    LRESULT row = cw_selected_row(w);
-   if (row < 0)
+   if (row < 0 || (size_t)row >= w->row_count)
       return -1;
-   if (w->browse_mode)
-      return (long)row;
-   memset(&item, 0, sizeof(item));
-   item.mask  = LVIF_PARAM;
-   item.iItem = (int)row;
-   if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&item))
-      return -1;
-   return (long)item.lParam;
+   return (long)w->rows[row]; /* browse rows map 1:1 */
 }
 
 static void cw_run_selected(ui_companion_win32_wimp_t *w)
@@ -2050,6 +2086,57 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             {
                switch (hdr->code)
                {
+                  case LVN_GETDISPINFOA: /* ANSI control, ANSI notification */
+                     {
+                        /* Virtual list: text and image for one row, as
+                         * the control draws it. */
+                        LVITEMA *it = &((NMLVDISPINFOA*)lparam)->item;
+                        size_t row  = (size_t)it->iItem;
+                        if (row >= w->row_count)
+                           return 0;
+                        if (it->mask & LVIF_TEXT)
+                        {
+                           const char *s = "";
+                           if (w->browse_mode)
+                           {
+                              const char *name = companion_core_browse_name(w->core, row);
+                              if (it->iSubItem == 0)
+                              {
+                                 if (companion_core_browse_is_dir(w->core, row)
+                                       && name && strcmp(name, ".."))
+                                 {
+                                    snprintf(it->pszText, (size_t)it->cchTextMax,
+                                          "%s\\", name);
+                                    s = NULL; /* already written */
+                                 }
+                                 else
+                                    s = name ? name : "";
+                              }
+                           }
+                           else
+                           {
+                              const struct playlist_entry *e =
+                                 companion_core_entry(w->core, w->rows[row]);
+                              if (e)
+                                 s = (it->iSubItem == 1)
+                                    ? (!string_is_empty(e->core_name) ? e->core_name : "")
+                                    : (!string_is_empty(e->label) ? e->label
+                                          : (e->path ? e->path : ""));
+                           }
+                           if (s)
+                              strlcpy(it->pszText, s, (size_t)it->cchTextMax);
+                        }
+                        if (it->mask & LVIF_IMAGE)
+                        {
+                           int t = w->thumb_idx ? w->thumb_idx[row] : 0;
+                           it->iImage = t > 0 ? t : 0;
+                           /* Ask for it: the control wants this row on
+                            * screen and it has no image yet. */
+                           if (t == 0 && w->icon_view && !w->browse_mode)
+                              cw_thumb_request(w, row);
+                        }
+                        return 0;
+                     }
                   case NM_DBLCLK:
                   case NM_RETURN:
                      cw_run_selected(w);
@@ -2406,7 +2493,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->boxart_visible = true;
 
    w->entries = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
-         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS
+         | LVS_OWNERDATA,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_ENTRIES, inst, NULL);
 
    w->status = CreateWindowExA(0, "msctls_statusbar32", "",
@@ -2527,6 +2615,10 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DeleteObject(w->font);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
+   free(w->rows);
+   free(w->thumb_idx);
+   free(w->req);
+   free(w->slot_row);
    if (w->cores_hwnd)
       DestroyWindow(w->cores_hwnd);
    if (w->cores_class_registered)
@@ -2563,9 +2655,18 @@ static void ui_companion_win32_wimp_iterate(void *data)
       return;
    companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
 
-   /* One thumbnail decode per frame while the icon view is showing. */
-   if (w->icon_view && IsWindowVisible(w->hwnd))
-      cw_thumb_step(w);
+   /* Decode requested thumbnails while the icon view is showing, within
+    * a small per-frame budget (a few decodes) so scrolling fills in fast
+    * without ever stalling a frame. */
+   if (w->icon_view && IsWindowVisible(w->hwnd) && w->req_len)
+   {
+      retro_time_t end = cpu_features_get_time_usec() + 4000;
+      do
+      {
+         if (!cw_thumb_step(w))
+            break;
+      } while (cpu_features_get_time_usec() < end);
+   }
 
    /* A short strcmp per frame: the info pane and the "<version> - <core>"
     * status follow the running core. */
