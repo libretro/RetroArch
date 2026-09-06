@@ -81,6 +81,7 @@
 #endif
 
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
+#define COMPANION_WIN32_CORES_CLASS "RetroArchCompanionCores"
 #define COMPANION_WIN32_TITLE      "RetroArch"
 #define COMPANION_WIN32_ITER_US    2000
 #define COMPANION_WIN32_PANE_W     200   /* initial playlist pane width */
@@ -114,6 +115,9 @@ enum
    IDC_CW_ENTRIES,
    IDC_CW_STATUS,
    IDC_CW_LOG,
+   IDC_CW_CORES,      /* Load Core window: list view */
+   IDC_CW_CORES_OK,
+   IDC_CW_CORES_CANCEL,
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
@@ -140,6 +144,10 @@ typedef struct ui_companion_win32_wimp
    HWND status;      /* msctls_statusbar32 */
    HWND log;         /* read-only multiline EDIT, hidden by default */
    bool log_visible;
+   /* Load Core window (non-modal: a DialogBox would run its own loop). */
+   HWND cores_hwnd;
+   HWND cores_list;
+   bool cores_class_registered;
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
@@ -433,6 +441,219 @@ static void cw_associate_core(ui_companion_win32_wimp_t *w, UINT id)
          companion_core_playlist_path(w->core, sel), core_path);
 }
 
+/* --- Load Core window -------------------------------------------------- */
+
+static void cw_cores_fill(ui_companion_win32_wimp_t *w)
+{
+   size_t i, n;
+   LVITEMA item;
+
+   SendMessageA(w->cores_list, LVM_DELETEALLITEMS, 0, 0);
+   SendMessageA(w->cores_list, WM_SETREDRAW, FALSE, 0);
+
+   n = companion_core_installed_core_count(w->core);
+   for (i = 0; i < n; i++)
+   {
+      const char *name    = companion_core_installed_core_name(w->core, i);
+      const char *version = companion_core_installed_core_version(w->core, i);
+
+      memset(&item, 0, sizeof(item));
+      item.mask     = LVIF_TEXT | LVIF_PARAM;
+      item.iItem    = (int)i;
+      item.lParam   = (LPARAM)i;
+      item.pszText  = (LPSTR)(name ? name : "");
+      SendMessageA(w->cores_list, LVM_INSERTITEMA, 0, (LPARAM)&item);
+
+      item.mask     = LVIF_TEXT;
+      item.iSubItem = 1;
+      item.pszText  = (LPSTR)(version ? version : "");
+      SendMessageA(w->cores_list, LVM_SETITEMA, 0, (LPARAM)&item);
+   }
+
+   SendMessageA(w->cores_list, WM_SETREDRAW, TRUE, 0);
+   if (n)
+      ListView_SetItemState(w->cores_list, 0,
+            LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+}
+
+static void cw_cores_load_selected(ui_companion_win32_wimp_t *w)
+{
+   LVITEMA item;
+   LRESULT idx = SendMessageA(w->cores_list, LVM_GETNEXTITEM,
+         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+   const char *path;
+
+   if (idx < 0)
+      return;
+
+   /* The list may be sorted by the user; the core index rides in lParam. */
+   memset(&item, 0, sizeof(item));
+   item.mask  = LVIF_PARAM;
+   item.iItem = (int)idx;
+   if (!SendMessageA(w->cores_list, LVM_GETITEMA, 0, (LPARAM)&item))
+      return;
+
+   path = companion_core_installed_core_path(w->core, (size_t)item.lParam);
+   ShowWindow(w->cores_hwnd, SW_HIDE);
+   if (companion_core_load_core(w->core, path))
+      cw_status_set(w, "Core loaded.");
+   else
+      cw_status_set(w, "Failed to load the core.");
+}
+
+static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
+      WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+
+   switch (msg)
+   {
+      case WM_SIZE:
+         if (w && w->cores_list)
+         {
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            MoveWindow(w->cores_list, 0, 0, rc.right, rc.bottom - 34, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_OK),
+                  rc.right - 170, rc.bottom - 29, 80, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_CANCEL),
+                  rc.right - 85, rc.bottom - 29, 80, 24, TRUE);
+         }
+         return 0;
+      case WM_CLOSE:
+         ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_DESTROY:
+         win32_modal_window_destroyed(hwnd);
+         break;
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_modal_enter(hwnd);
+         break;
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         win32_modal_exit(hwnd);
+         break;
+      case WM_RA_MODAL_TICK:
+         win32_modal_tick(hwnd);
+         return 0;
+      case WM_TIMER:
+         if (wparam == WIN32_MODAL_TIMER_ID)
+         {
+            win32_modal_tick(hwnd);
+            return 0;
+         }
+         break;
+      case WM_COMMAND:
+         if (!w)
+            break;
+         switch (LOWORD(wparam))
+         {
+            case IDC_CW_CORES_OK:
+            case IDOK:
+               cw_cores_load_selected(w);
+               return 0;
+            case IDC_CW_CORES_CANCEL:
+            case IDCANCEL:
+               ShowWindow(hwnd, SW_HIDE);
+               return 0;
+            default:
+               break;
+         }
+         break;
+      case WM_NOTIFY:
+         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_CORES)
+         {
+            switch (((NMHDR*)lparam)->code)
+            {
+               case NM_DBLCLK:
+               case NM_RETURN:
+                  cw_cores_load_selected(w);
+                  return 0;
+               default:
+                  break;
+            }
+         }
+         break;
+      default:
+         break;
+   }
+   return DefWindowProcA(hwnd, msg, wparam, lparam);
+}
+
+static bool cw_cores_create(ui_companion_win32_wimp_t *w)
+{
+   WNDCLASSA wc;
+   LVCOLUMNA col;
+   HINSTANCE inst = GetModuleHandleA(NULL);
+
+   if (w->cores_hwnd)
+      return true;
+
+   memset(&wc, 0, sizeof(wc));
+   wc.lpfnWndProc   = cw_cores_wndproc;
+   wc.hInstance     = inst;
+   wc.hCursor       = LoadCursorA(NULL, MAKEINTRESOURCEA(32512));
+   wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+   wc.lpszClassName = COMPANION_WIN32_CORES_CLASS;
+   wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
+   if (!RegisterClassA(&wc))
+      return false;
+   w->cores_class_registered = true;
+
+   /* Owned by the companion window so it stays above it and hides with
+    * it; WS_EX_TOOLWINDOW keeps it off the taskbar. */
+   w->cores_hwnd = CreateWindowExA(WS_EX_TOOLWINDOW, COMPANION_WIN32_CORES_CLASS,
+         "Load Core", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+         CW_USEDEFAULT, CW_USEDEFAULT, 420, 400,
+         w->hwnd, NULL, inst, NULL);
+   if (!w->cores_hwnd)
+      return false;
+
+   w->cores_list = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL
+         | LVS_SHOWSELALWAYS | LVS_SORTASCENDING,
+         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES, inst, NULL);
+   CreateWindowExA(0, "BUTTON", "&Load",
+         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
+         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_OK, inst, NULL);
+   CreateWindowExA(0, "BUTTON", "Cancel",
+         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_CANCEL, inst, NULL);
+   if (!w->cores_list)
+      return false;
+
+   SendMessageA(w->cores_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
+         LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+
+   memset(&col, 0, sizeof(col));
+   col.mask     = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+   col.pszText  = (LPSTR)"Name";
+   col.cx       = 280;
+   col.iSubItem = 0;
+   SendMessageA(w->cores_list, LVM_INSERTCOLUMNA, 0, (LPARAM)&col);
+   col.pszText  = (LPSTR)"Version";
+   col.cx       = 110;
+   col.iSubItem = 1;
+   SendMessageA(w->cores_list, LVM_INSERTCOLUMNA, 1, (LPARAM)&col);
+
+   SendMessageA(w->cores_hwnd, WM_SIZE, 0, 0);
+   return true;
+}
+
+static void cw_cores_show(ui_companion_win32_wimp_t *w)
+{
+   if (!cw_cores_create(w))
+   {
+      cw_status_set(w, "Could not open the core list.");
+      return;
+   }
+   cw_cores_fill(w);
+   ShowWindow(w->cores_hwnd, SW_SHOW);
+   SetForegroundWindow(w->cores_hwnd);
+   SetFocus(w->cores_list);
+}
+
 /* SHBrowseForFolder is in shell32 on Windows 95 with the desktop update
  * and in every later release; ANSI entry point, no BIF_NEWDIALOGSTYLE. */
 static void cw_scan_directory(ui_companion_win32_wimp_t *w)
@@ -631,12 +852,14 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                   cw_select_playlist(w);
                return 0;
             case IDM_CW_LOAD_CORE:
+               /* The companion's own picker (installed cores by name /
+                * version), like the Qt Load Core window. */
+               cw_cores_show(w);
+               return 0;
             case IDM_CW_LOAD_CONTENT:
                /* Reuse the platform driver's dialog flow exactly as the
                 * main window menu does. */
-               win32_menu_loop(main_window.hwnd,
-                     LOWORD(wparam) == IDM_CW_LOAD_CORE
-                     ? ID_M_LOAD_CORE : ID_M_LOAD_CONTENT);
+               win32_menu_loop(main_window.hwnd, ID_M_LOAD_CONTENT);
                return 0;
             case IDM_CW_START_CORE:
                if (!companion_core_start_core(w->core))
@@ -839,6 +1062,10 @@ static void ui_companion_win32_wimp_deinit(void *data)
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
    if (!w)
       return;
+   if (w->cores_hwnd)
+      DestroyWindow(w->cores_hwnd);
+   if (w->cores_class_registered)
+      UnregisterClassA(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
    if (w->hwnd)
       DestroyWindow(w->hwnd);
    if (w->class_registered)

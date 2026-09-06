@@ -87,6 +87,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSScrollView *logScroll; /* log pane, hidden until Companion > Log */
    NSTextView *logView;
    BOOL logVisible;
+   /* Load Core window: installed cores by name / version. */
+   NSWindow *coresWindow;
+   NSTableView *coresTable;
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (BOOL)buildWindow;
@@ -104,6 +107,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
 - (void)toggleLog:(id)sender;
+- (void)loadSelectedCore:(id)sender;
+- (void)cancelLoadCore:(id)sender;
 - (void)appendLog:(const char*)msg;
 @end
 
@@ -429,6 +434,18 @@ static const companion_callbacks_t cc_callbacks = {
       RELEASE(entries);
    }
    RELEASE(status);
+   if (coresTable)
+   {
+      [coresTable setDataSource:nil];
+      [coresTable setDelegate:nil];
+      [coresTable setTarget:nil];
+      RELEASE(coresTable);
+   }
+   if (coresWindow)
+   {
+      [coresWindow orderOut:nil];
+      RELEASE(coresWindow);
+   }
    RELEASE(logView);
    RELEASE(logScroll);
    RELEASE(split);
@@ -454,6 +471,8 @@ static const companion_callbacks_t cc_callbacks = {
       return (NSInteger)companion_core_playlist_count(wimp->core);
    if (tv == entries)
       return (NSInteger)companion_core_entry_count(wimp->core);
+   if (tv == coresTable)
+      return (NSInteger)companion_core_installed_core_count(wimp->core);
    return 0;
 }
 
@@ -468,6 +487,10 @@ static const companion_callbacks_t cc_callbacks = {
 
    if (tv == playlists)
       s = companion_core_playlist_name(wimp->core, (size_t)row);
+   else if (tv == coresTable)
+      s = [[col identifier] isEqualToString:@"core"]
+         ? companion_core_installed_core_version(wimp->core, (size_t)row)
+         : companion_core_installed_core_name(wimp->core, (size_t)row);
    else if (tv == entries)
    {
       const struct playlist_entry *e =
@@ -681,13 +704,82 @@ static const companion_callbacks_t cc_callbacks = {
       [self setStatus:"Scanning is not available in this build."];
 }
 
-/* Reuse the platform driver's dialog flow via the main-menu actions
- * that ui_cocoa.m already implements on the app delegate. */
+/* The companion's own Load Core window (like Qt's LoadCoreWindow):
+ * a table of installed cores, Load / Cancel. Non-modal; the tables'
+ * data source is this controller, keyed on the table object. */
 - (void)loadCore:(id)sender
 {
-   id delegate = [[NSApplication sharedApplication] delegate];
-   if ([delegate respondsToSelector:@selector(openCore:)])
-      [delegate performSelector:@selector(openCore:) withObject:sender];
+   if (!wimp)
+      return;
+
+   if (!coresWindow)
+   {
+      NSRect frame       = NSMakeRect(0, 0, 420, 400);
+      NSScrollView *sc   = nil;
+      NSView *content    = nil;
+      NSButton *load     = nil;
+      NSButton *cancel   = nil;
+
+      coresWindow = [[NSWindow alloc] initWithContentRect:frame
+         styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+               | NSWindowStyleMaskResizable)
+         backing:NSBackingStoreBuffered defer:NO];
+      [coresWindow setTitle:@"Load Core"];
+      [coresWindow setReleasedWhenClosed:NO];
+      [coresWindow center];
+      content = [coresWindow contentView];
+
+      coresTable = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 40, 420, 360)
+            scroll:&sc twoColumns:YES]);
+      [[[coresTable tableColumns] objectAtIndex:0] setWidth:280.0];
+      [[[[coresTable tableColumns] objectAtIndex:1] headerCell]
+         setStringValue:@"Version"];
+      [coresTable setDoubleAction:@selector(loadSelectedCore:)];
+      [coresTable setTarget:self];
+      [content addSubview:sc];
+
+      load = [[[NSButton alloc] initWithFrame:NSMakeRect(250, 8, 80, 24)] autorelease_compat];
+      [load setTitle:@"Load"];
+      [load setKeyEquivalent:@"\r"];
+      [load setTarget:self];
+      [load setAction:@selector(loadSelectedCore:)];
+      [load setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
+      [content addSubview:load];
+
+      cancel = [[[NSButton alloc] initWithFrame:NSMakeRect(335, 8, 80, 24)] autorelease_compat];
+      [cancel setTitle:@"Cancel"];
+      [cancel setTarget:self];
+      [cancel setAction:@selector(cancelLoadCore:)];
+      [cancel setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
+      [content addSubview:cancel];
+   }
+
+   [coresTable reloadData];
+   if ([coresTable numberOfRows] > 0)
+      [coresTable selectRowIndexes:[NSIndexSet indexSetWithIndex:0]
+         byExtendingSelection:NO];
+   [coresWindow makeKeyAndOrderFront:nil];
+}
+
+- (void)loadSelectedCore:(id)sender
+{
+   NSInteger row;
+   if (!wimp || !coresTable)
+      return;
+   row = [self actionRowIn:coresTable];
+   if (row < 0)
+      return;
+   [coresWindow orderOut:nil];
+   if (companion_core_load_core(wimp->core,
+            companion_core_installed_core_path(wimp->core, (size_t)row)))
+      [self setStatus:"Core loaded."];
+   else
+      [self setStatus:"Failed to load the core."];
+}
+
+- (void)cancelLoadCore:(id)sender
+{
+   [coresWindow orderOut:nil];
 }
 
 - (void)loadContent:(id)sender
