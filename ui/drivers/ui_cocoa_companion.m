@@ -1769,7 +1769,10 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    }
    else
       [self browseReload];
-   [self refreshBoxart];    /* Qt shows no boxart for a browser selection */
+   /* Qt shows no boxart, and no entry's core, for the browser. */
+   [self refreshBoxart];
+   [self fillCorePopup:-1];
+   [self refreshInfo];
    if (browserTabs && [browserTabs indexOfTabViewItem:[browserTabs selectedTabViewItem]] != 1)
       [browserTabs selectTabViewItemAtIndex:1];
    companion_core_pref_set_last_tab(wimp->core, 1);

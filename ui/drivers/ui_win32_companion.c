@@ -1287,12 +1287,16 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
       return;
    w->boxart_entry = id;
 
+   /* Clear. A static control does not repaint on STM_SETIMAGE NULL by
+    * itself (it keeps drawing the old image until invalidated), so
+    * invalidate it; the old bitmap goes once it is no longer set. */
    SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
    if (w->boxart_bmp)
    {
       DeleteObject(w->boxart_bmp);
       w->boxart_bmp = NULL;
    }
+   InvalidateRect(w->boxart, NULL, TRUE);
    if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;
 
@@ -1757,6 +1761,11 @@ static void cw_browse_enter(ui_companion_win32_wimp_t *w)
    w->browse_mode = true;
    if (w->tabs)
       SendMessageA(w->tabs, TCM_SETCURSEL, 1, 0);
+   /* Qt shows no boxart for the browser: clear now, not when the
+    * listing lands. */
+   cw_boxart_update_path(w, NULL, -1);
+   cw_core_combo_fill(w, -1);
+   cw_info_fill(w);
    ShowWindow(w->br_up, SW_SHOW);
    ShowWindow(w->br_start, SW_SHOW);
    ShowWindow(w->br_downloads, SW_SHOW);
