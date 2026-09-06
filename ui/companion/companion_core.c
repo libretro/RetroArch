@@ -1708,6 +1708,7 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
 {
    settings_t *settings     = config_get_ptr();
    struct string_list *list;
+   char dir_buf[PATH_MAX_LENGTH];
    const char *dir          = path;
 
    if (!core)
@@ -1716,6 +1717,14 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
    if (string_is_empty(dir))
       dir = !string_is_empty(settings->paths.directory_menu_content)
          ? settings->paths.directory_menu_content : NULL;
+
+   /* @path may point into the current listing (descending into one of
+    * its own entries), which is freed below: copy it first. */
+   if (dir)
+   {
+      strlcpy(dir_buf, dir, sizeof(dir_buf));
+      dir = dir_buf;
+   }
 
 #ifdef _WIN32
    /* No directory: the top level on Windows is the list of drives, each
@@ -1914,13 +1923,32 @@ int companion_core_browse_activate(companion_core_t *core, size_t i,
    if (r < 0)
    {
       char parent[PATH_MAX_LENGTH];
+      size_t plen;
       strlcpy(parent, core->browse_dir, sizeof(parent));
 #ifdef _WIN32
       if (strlen(parent) <= 3 && parent[1] == ':')
          parent[0] = '\0'; /* drive root -> the drive list */
       else
 #endif
+      {
          path_parent_dir(parent, strlen(parent));
+         /* path_parent_dir leaves a trailing separator, and turns the
+          * root into "": keep browse_dir canonical (no trailing slash
+          * below the root) so it compares and so "" is never mistaken
+          * for "use the default directory". */
+         plen = strlen(parent);
+#ifndef _WIN32
+         if (!plen)
+            strlcpy(parent, "/", sizeof(parent));
+         else
+#endif
+         if (plen > 1 && (parent[plen - 1] == '/' || parent[plen - 1] == '\\')
+#ifdef _WIN32
+               && !(plen == 3 && parent[1] == ':')
+#endif
+            )
+            parent[plen - 1] = '\0';
+      }
       return companion_core_browse_open(core, parent) ? 0 : -1;
    }
 

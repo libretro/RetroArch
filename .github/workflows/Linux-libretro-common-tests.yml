@@ -119,6 +119,19 @@ jobs:
           tools/companion_thumbs_test.sh tsan
           tools/companion_thumbs_test.sh asan
 
+      - name: Companion core regression test (plain, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The toolkit-free model every desktop companion drives:
+          # playlist listing and All Playlists, the thumbnail path rule,
+          # the file browser, the run / needs-core paths, launch
+          # options - against real .lpl fixtures, with RetroArch's
+          # state replaced by stubs.
+          tools/companion_core_test.sh
+          tools/companion_core_test.sh asan
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

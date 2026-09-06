@@ -39,8 +39,10 @@ if [ "$1" = "--consumers-of" ]; then
    FILES=""
    for h in "$@"; do
       base=$(basename "$h")
+      # Linux-only test harnesses under */test/ are not Win32 / C89
+      # consumers (they have their own scripts under tools/).
       FILES="$FILES $(grep -rl --include='*.c' "#include.*[\"/]$base\"" . \
-         | grep -v '^./deps/' | sed 's#^\./##')"
+         | grep -v '^./deps/' | grep -v '/test/' | sed 's#^\./##')"
    done
    FILES=$(echo $FILES | tr ' ' '\n' | sort -u)
    [ -z "$FILES" ] && { echo "no consumers found for: $*" >&2; exit 2; }
