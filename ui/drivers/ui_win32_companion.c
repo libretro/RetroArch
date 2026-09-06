@@ -86,6 +86,11 @@
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
 #define COMPANION_WIN32_CORES_CLASS "RetroArchCompanionCores"
 #define COMPANION_WIN32_TITLE      "RetroArch"
+/* Startup window size, matching the Qt companion, clamped to the work
+ * area with a floor so it stays usable on sub-720p displays (a 640x480
+ * or 800x600 CRT on the 9x baseline included). */
+#define COMPANION_WIN32_INIT_W     1280
+#define COMPANION_WIN32_INIT_H     720
 #define COMPANION_WIN32_ITER_US    2000
 #define COMPANION_WIN32_PANE_W     200   /* initial playlist pane width */
 #define COMPANION_WIN32_PANE_MIN   100
@@ -1387,10 +1392,32 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       return false;
    w->class_registered = true;
 
-   w->hwnd = CreateWindowExA(0, COMPANION_WIN32_CLASS, COMPANION_WIN32_TITLE,
-         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-         CW_USEDEFAULT, CW_USEDEFAULT, 800, 520,
-         NULL, cw_build_menu(), inst, NULL);
+   {
+      /* Work area (screen minus taskbar); fall back to the full screen
+       * if the call fails, as it can on 9x. */
+      RECT wa;
+      int sw, sh, ww, wh, wx, wy;
+      if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0))
+      {
+         wa.left = wa.top = 0;
+         wa.right  = GetSystemMetrics(SM_CXSCREEN);
+         wa.bottom = GetSystemMetrics(SM_CYSCREEN);
+      }
+      sw = wa.right  - wa.left;
+      sh = wa.bottom - wa.top;
+      ww = (COMPANION_WIN32_INIT_W < sw) ? COMPANION_WIN32_INIT_W : sw;
+      wh = (COMPANION_WIN32_INIT_H < sh) ? COMPANION_WIN32_INIT_H : sh;
+      if (ww < COMPANION_WIN32_MIN_W && COMPANION_WIN32_MIN_W < sw)
+         ww = COMPANION_WIN32_MIN_W;
+      if (wh < COMPANION_WIN32_MIN_H && COMPANION_WIN32_MIN_H < sh)
+         wh = COMPANION_WIN32_MIN_H;
+      wx = wa.left + (sw - ww) / 2;
+      wy = wa.top  + (sh - wh) / 2;
+
+      w->hwnd = CreateWindowExA(0, COMPANION_WIN32_CLASS,
+            COMPANION_WIN32_TITLE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+            wx, wy, ww, wh, NULL, cw_build_menu(), inst, NULL);
+   }
    if (!w->hwnd)
       return false;
 
