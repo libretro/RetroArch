@@ -256,26 +256,110 @@ void companion_core_refresh_playlists(companion_core_t *core)
       core->cb.on_playlists_changed(core->ud);
 }
 
+/* The special playlists that lead the list, in the Qt companion's order:
+ * Favorites, History, Images, Music, Videos. Each is a real .lpl at a
+ * configured path (unlike Qt's synthetic "All Playlists", which is not
+ * a file and is left to the presentation). A path that is empty in the
+ * config is skipped, so the count is not always five. */
+static const char *companion_core_special_path(companion_core_t *core,
+      size_t i)
+{
+   settings_t *settings = config_get_ptr();
+   const char *paths[5];
+   paths[0] = settings->paths.path_content_favorites;
+   paths[1] = settings->paths.path_content_history;
+   paths[2] = settings->paths.path_content_image_history;
+   paths[3] = settings->paths.path_content_music_history;
+   paths[4] = settings->paths.path_content_video_history;
+   (void)core;
+   if (i >= 5)
+      return NULL;
+   return string_is_empty(paths[i]) ? NULL : paths[i];
+}
+
+static enum msg_hash_enums companion_core_special_label(size_t i)
+{
+   switch (i)
+   {
+      case 0: return MENU_ENUM_LABEL_VALUE_FAVORITES_TAB;
+      case 1: return MENU_ENUM_LABEL_VALUE_HISTORY_TAB;
+      case 2: return MENU_ENUM_LABEL_VALUE_IMAGES_TAB;
+      case 3: return MENU_ENUM_LABEL_VALUE_MUSIC_TAB;
+      case 4: return MENU_ENUM_LABEL_VALUE_VIDEO_TAB;
+      default: break;
+   }
+   return MSG_UNKNOWN;
+}
+
+/* How many of the five special playlists are configured (lead the list). */
+static size_t companion_core_special_count(companion_core_t *core)
+{
+   size_t i, n = 0;
+   for (i = 0; i < 5; i++)
+      if (companion_core_special_path(core, i))
+         n++;
+   return n;
+}
+
+/* Map a public playlist index to (special i) or (file index), returning
+ * whether it is special via *is_special. */
+static bool companion_core_playlist_map(companion_core_t *core, size_t idx,
+      size_t *out, bool *is_special)
+{
+   size_t i, seen = 0;
+   for (i = 0; i < 5; i++)
+   {
+      if (!companion_core_special_path(core, i))
+         continue;
+      if (seen == idx)
+      {
+         *is_special = true;
+         *out        = i;
+         return true;
+      }
+      seen++;
+   }
+   idx -= seen;
+   if (core->playlist_files && idx < core->playlist_files->size)
+   {
+      *is_special = false;
+      *out        = idx;
+      return true;
+   }
+   return false;
+}
+
 size_t companion_core_playlist_count(companion_core_t *core)
 {
-   if (!core || !core->playlist_files)
+   size_t n;
+   if (!core)
       return 0;
-   return core->playlist_files->size;
+   n = companion_core_special_count(core);
+   if (core->playlist_files)
+      n += core->playlist_files->size;
+   return n;
 }
 
 const char *companion_core_playlist_name(companion_core_t *core, size_t i)
 {
-   if (!core || !core->playlist_files || !core->playlist_names
-         || i >= core->playlist_files->size)
+   size_t r;
+   bool special;
+   if (!core || !companion_core_playlist_map(core, i, &r, &special))
       return NULL;
-   return core->playlist_names[i];
+   if (special)
+      return msg_hash_to_str(companion_core_special_label(r));
+   return core->playlist_names ? core->playlist_names[r] : NULL;
 }
 
 const char *companion_core_playlist_path(companion_core_t *core, size_t i)
 {
-   if (!core || !core->playlist_files || i >= core->playlist_files->size)
+   size_t r;
+   bool special;
+   if (!core || !companion_core_playlist_map(core, i, &r, &special))
       return NULL;
-   return core->playlist_files->elems[i].data;
+   if (special)
+      return companion_core_special_path(core, r);
+   return core->playlist_files->elems[r].data;
 }
 
 /* --- Selected playlist ----------------------------------------------- */
@@ -319,7 +403,8 @@ bool companion_core_select_playlist_path(companion_core_t *core,
    n = companion_core_playlist_count(core);
    for (i = 0; i < n; i++)
    {
-      if (string_is_equal(path, core->playlist_files->elems[i].data))
+      const char *p_i = companion_core_playlist_path(core, i);
+      if (p_i && string_is_equal(path, p_i))
          return companion_core_begin_playlist(core, path, i);
    }
    return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION);
