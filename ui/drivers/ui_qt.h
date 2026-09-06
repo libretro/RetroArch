@@ -30,6 +30,9 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QPixmap>
+#include <QTimer>
+#include <QHash>
+#include <QPersistentModelIndex>
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
@@ -121,91 +124,9 @@ static inline double lerp(double x, double y, double a, double b, double d)
 }
 
 
-class ThumbnailLoader : public QThread
-{
-   Q_OBJECT
-public:
-   ThumbnailLoader(QObject *parent = 0) : QThread(parent), m_stop(false) {}
-   ~ThumbnailLoader() { stop(); wait(); }
-   void stop() { m_mutex.lock(); m_stop = true; m_cond.wakeOne(); m_mutex.unlock(); }
-   void request(const QModelIndex &index, const QString &path)
-   {
-      m_mutex.lock();
-      /* Store a QPersistentModelIndex, not a QModelIndex: a plain
-       * QModelIndex is only valid until the model changes, and a
-       * decode queued here may not be delivered until after the
-       * playlist has been reset (beginResetModel/endResetModel),
-       * at which point the row it referred to is gone. A persistent
-       * index is kept up to date by the model and goes invalid if
-       * its row is removed, so the wrong row is never signalled. */
-      m_queue.append(qMakePair(QPersistentModelIndex(index), path));
-      m_cond.wakeOne();
-      m_mutex.unlock();
-   }
-   static void cleanupTexturePixels(void *pixels)
-   {
-      free(pixels);
-   }
-   static QImage loadImageRA(const QString &path)
-   {
-      struct texture_image tex;
-      QByteArray pathArray = path.toUtf8();
-
-      tex.width         = 0;
-      tex.height        = 0;
-      tex.pixels        = NULL;
-      tex.supports_rgba = false;
-
-      tex.compressed = NULL;
-
-      if (image_texture_load(&tex, pathArray.constData()))
-      {
-         if (tex.pixels)
-         {
-            /* Transfer pixel ownership to QImage - no copy needed.
-             * QImage will call free() on the buffer when destroyed. */
-            return QImage((unsigned char*)tex.pixels,
-                  tex.width, tex.height,
-                  tex.width * sizeof(uint32_t),
-                  QImage::Format_ARGB32,
-                  cleanupTexturePixels, tex.pixels);
-         }
-
-         /* GPU-native (e.g. BCn) path: image_texture_load succeeded but
-          * handed back compressed blocks rather than an RGBA buffer.
-          * We have no way to display these here, so release them (this
-          * would otherwise leak the compressed struct + mips + storage)
-          * and fall back to Qt's own decoder. */
-         image_texture_free(&tex);
-      }
-
-      /* Fallback to Qt for unsupported formats */
-      return QImage(path);
-   }
-signals:
-   void imageLoaded(const QImage image, const QPersistentModelIndex index, const QString path);
-protected:
-   void run()
-   {
-      for (;;)
-      {
-         m_mutex.lock();
-         while (m_queue.isEmpty() && !m_stop)
-            m_cond.wait(&m_mutex);
-         if (m_stop) { m_mutex.unlock(); return; }
-         QPair<QPersistentModelIndex, QString> item = m_queue.takeFirst();
-         m_mutex.unlock();
-         QImage image = loadImageRA(item.second);
-         if (!image.isNull())
-            emit imageLoaded(image, item.first, item.second);
-      }
-   }
-private:
-   QMutex m_mutex;
-   QWaitCondition m_cond;
-   QList<QPair<QPersistentModelIndex, QString> > m_queue;
-   bool m_stop;
-};
+extern "C" {
+#include "../companion/companion_thumbs.h"
+}
 
 class PlaylistModel : public QAbstractListModel
 {
@@ -219,6 +140,7 @@ public:
    };
 
    PlaylistModel(QObject *parent = 0);
+   ~PlaylistModel();
 
    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
@@ -240,6 +162,16 @@ public:
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
    void setThumbnailCacheLimit(int limit);
+   /* Edge (px) the grid draws thumbnails at; requests are made at this
+    * size so the engine hands back cells that need no further scaling. */
+   void setThumbnailSize(int size);
+   int thumbnailSize() const { return m_thumbSize; }
+   /* Any image at any size through the same engine (the sidebar
+    * thumbnails and the file-browser preview). imageAt() gives the
+    * cached pixmap; requestImage() queues a decode, after which
+    * thumbnailReady(path) is emitted. */
+   bool imageAt(const QString &path, int w, int h, QPixmap *out) const;
+   void requestImage(const QString &path, int w, int h);
    bool isSupportedImage(const QString path) const;
    QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
    /* Repository thumbnail file for a label, ignoring whether the content
@@ -252,9 +184,22 @@ signals:
    void playlistsLoaded();
 
 private slots:
-   void onImageLoaded(const QImage image, const QPersistentModelIndex &index, const QString &path);
+   void pollThumbnails();
+signals:
+   void thumbnailReady(const QString &path);
 
 private:
+   /* Thumbnails come from the shared companion engine (decode threads,
+    * path+size keyed cache, visible-first queue) - the same one the
+    * native Win32 and Cocoa companions draw through. m_cache only holds
+    * QPixmap conversions of engine pixels, keyed path@size. */
+   companion_thumbs_t *m_engine = NULL;
+   int m_thumbSize = 256;
+   QHash<QString, QPersistentModelIndex> m_pendingRows;
+   QTimer m_pollTimer;
+   static void onEngineDone(void *ud, const char *path, int w, int h,
+         uintptr_t tag, const uint32_t *bits);
+   void thumbnailArrived(const QString &path);
    QVector<PlaylistEntry> m_contents;
    /* addPlaylistItems() state: playlists still to load, and the
     * entries collected so far (committed to m_contents in one reset). */
@@ -263,10 +208,10 @@ private:
    bool m_loadingPlaylists = false;
    void appendEntriesFromCore();
    void startNextPendingPlaylist();
-   QCache<QString, QPixmap> m_cache;
-   QSet<QString> m_pendingImages;
+   mutable QCache<QString, QPixmap> m_cache; /* filled lazily from data() */
+   /* stages of imageAt()/data(): one conversion per (path, w, h) */
+   QPixmap *pixmapFor(const QString &path, int w, int h) const;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
-   ThumbnailLoader *m_thumbnailLoader;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
    QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
@@ -613,7 +558,8 @@ private slots:
    void onCurrentItemChanged(const QModelIndex &index);
    void onCurrentItemChanged(const PlaylistEntry &entry);
    void onCurrentFileChanged(const QModelIndex &index);
-   void onPreviewImageLoaded(const QImage image, const QPersistentModelIndex &index, const QString &path);
+   void onThumbnailReady(const QString &path);
+   void showSidebarImage(int idx, const QString &path, bool acceptDrop);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void onContentItemDoubleClicked(const QModelIndex &index);
@@ -696,15 +642,10 @@ private:
    QToolButton *m_stopPushButton;
    QTabWidget *m_browserAndPlaylistTabWidget;
    bool m_pendingRun;
-   QPixmap *m_thumbnailPixmaps[4];
-   /* Background loader for the file-browser preview pane. The
-    * preview is decoded asynchronously so that selecting a large
-    * image in the file table does not block the UI thread on a
-    * full-resolution PNG decode. m_pendingPreviewPath is the path
-    * we last requested; results for any other path are stale and
-    * dropped on arrival. */
-   ThumbnailLoader *m_previewLoader;
-   QString m_pendingPreviewPath;
+   /* Sidebar (four thumbnail widgets) and file-browser preview: the
+    * path each widget is waiting on from the model's engine. */
+   QString m_sidebarPending[4];
+   bool m_sidebarAcceptDrop = false;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
    QStyle *m_defaultStyle;

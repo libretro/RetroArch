@@ -689,6 +689,9 @@ private:
    void refresh();
 
    int m_size = 255;
+public:
+   int gridSize() const { return m_size; }
+private:
    int m_spacing = DEFAULT_GRID_SPACING;
    QVector<QModelIndex> m_visibleIndexes;
    ViewMode m_viewMode = Centered;

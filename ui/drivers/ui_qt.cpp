@@ -142,14 +142,6 @@ enum core_selection
 static AppHandler *app_handler;
 static ui_application_qt_t ui_application;
 
-static QPixmap pixmapFromPathRA(const QString &path)
-{
-   QImage img = ThumbnailLoader::loadImageRA(path);
-   if (!img.isNull())
-      return QPixmap::fromImage(img);
-   return QPixmap(path);
-}
-
 /* Give btn a default action whose text comes from the localization
  * tables, then size btn to fit. The action is parented to btn so
  * Qt cleans it up automatically; the explicit parent is needed
@@ -1305,17 +1297,7 @@ MainWindow::MainWindow(QWidget *parent) :
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
    qRegisterMetaType<PlaylistEntry>("PlaylistEntry");
 
-   memset(m_thumbnailPixmaps, 0, sizeof(m_thumbnailPixmaps));
 
-   /* Background loader for the file-browser preview pane. Decoding
-    * happens off the UI thread; results arrive on the imageLoaded
-    * signal and are filtered by m_pendingPreviewPath so that rapid
-    * selection changes don't flicker stale images in. */
-   m_previewLoader = new ThumbnailLoader(this);
-   connect(m_previewLoader,
-         SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)), this,
-         SLOT(onPreviewImageLoaded(QImage,QPersistentModelIndex,QString)));
-   m_previewLoader->start();
 
    /* Cancel all progress dialogs immediately since
     * they show as soon as they're constructed. */
@@ -1542,6 +1524,9 @@ void MainWindow::setupModels()
    m_fileTableView->setWordWrap(false);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
+   m_playlistModel->setThumbnailSize(m_gridView->gridSize());
+   connect(m_playlistModel, SIGNAL(thumbnailReady(QString)), this,
+         SLOT(onThumbnailReady(QString)));
    m_gridView->setModel(m_proxyModel);
    m_gridView->setSelectionModel(m_tableView->selectionModel());
 }
@@ -1757,10 +1742,6 @@ void MainWindow::setupSignalConnections()
 
 MainWindow::~MainWindow()
 {
-   size_t i;
-   for (i = 0; i < 4; i++)
-      if (m_thumbnailPixmaps[i])
-         delete m_thumbnailPixmaps[i];
    if (m_proxyFileModel)
       delete m_proxyFileModel;
 }
@@ -1904,6 +1885,7 @@ void MainWindow::onZoomValueChanged(int zoom_val)
    else
       new_size  = exp_scale(zoom_val / 100.0, 256, 1024);
    m_gridView->setGridSize(new_size);
+   m_playlistModel->setThumbnailSize(new_size);
    m_lastZoomSliderValue = zoom_val;
 }
 
@@ -2400,13 +2382,10 @@ void MainWindow::onThumbnailDropped(const QImage &image,
    if (path.isNull())
       return;
 
-   if (m_thumbnailPixmaps[idx])
-      delete m_thumbnailPixmaps[idx];
-
-   new_pix                  = new QPixmap(pixmapFromPathRA(path));
-   m_thumbnailPixmaps[idx]  = new_pix;
-
-   setThumbnail(qt_thumbnail_widget_names[idx], *new_pix, true);
+   (void)new_pix;
+   /* The file changed on disk: forget it and show it again. */
+   m_playlistModel->reloadThumbnailPath(path);
+   showSidebarImage(idx, path, true);
 }
 
 QVector<QHash<QString, QString> > MainWindow::getCoreInfo()
@@ -3128,87 +3107,29 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
    const QString &path = entry.path;
    bool acceptDrop     = false;
 
-   for (i = 0; i < 4; i++)
-   {
-      if (m_thumbnailPixmaps[i])
-         delete m_thumbnailPixmaps[i];
-      m_thumbnailPixmaps[i] = NULL;
-   }
-
    if (m_playlistModel->isSupportedImage(path))
    {
-      /* Use thumbnail widgets to show regular image files. These can
-       * be very large (multi-GiB ARGB32 bitmaps after decoding a
-       * high-resolution PNG), so do the decode on the loader thread
-       * and update the panes when it arrives. Until then the panes
-       * show blank, which also clears any image left from a previous
-       * selection. */
-      QPixmap blank;
-
-      m_pendingPreviewPath = path;
-
+      /* A regular image file in the file browser: every pane previews
+       * it. Decoded and scaled by the engine off the UI thread (these
+       * can be multi-GiB after decoding); blank until it lands, which
+       * also clears the previous selection's image. */
       for (i = 0; i < 4; i++)
-         setThumbnail(qt_thumbnail_widget_names[i], blank, false);
-
-      m_previewLoader->request(QModelIndex(), path);
-
-      setCoreActions();
-      return;
+         showSidebarImage((int)i, path, false);
    }
    else
    {
-      /* Clear any pending file-browser preview request: this code
-       * path serves the playlist views, not the file browser, so a
-       * preview result arriving now would be unwanted. */
-      m_pendingPreviewPath = QString();
-
-      for (i = 0; i < 4; i++)
-      {
-         QString name = m_playlistModel->getRepositoryThumbnailPath(
-               entry.dbName, entry.labelNoExt, qt_thumbnail_subdirs[i]);
-         m_thumbnailPixmaps[i] = new QPixmap(pixmapFromPathRA(name));
-      }
-
       if (      m_currentBrowser == BROWSER_TYPE_PLAYLISTS
             && !currentPlaylistIsSpecial())
          acceptDrop = true;
+
+      for (i = 0; i < 4; i++)
+         showSidebarImage((int)i, m_playlistModel->getRepositoryThumbnailPath(
+               entry.dbName, entry.labelNoExt, qt_thumbnail_subdirs[i]),
+               acceptDrop);
    }
-
-   for (i = 0; i < 4; i++)
-      setThumbnail(qt_thumbnail_widget_names[i],
-            *m_thumbnailPixmaps[i], acceptDrop);
-
    setCoreActions();
 }
 
-void MainWindow::onPreviewImageLoaded(const QImage image,
-      const QPersistentModelIndex & /* index */, const QString &path)
-{
-   size_t i;
-
-   /* Drop stale results: if the user moved selection while we were
-    * decoding, the path we just got back isn't what's currently
-    * showing. */
-   if (path != m_pendingPreviewPath)
-      return;
-   if (image.isNull())
-      return;
-
-   for (i = 0; i < 4; i++)
-   {
-      if (m_thumbnailPixmaps[i])
-         delete m_thumbnailPixmaps[i];
-      m_thumbnailPixmaps[i] = NULL;
-   }
-
-   m_thumbnailPixmaps[0] = new QPixmap(QPixmap::fromImage(image));
-   for (i = 1; i < 4; i++)
-      m_thumbnailPixmaps[i] = new QPixmap(*m_thumbnailPixmaps[0]);
-
-   for (i = 0; i < 4; i++)
-      setThumbnail(qt_thumbnail_widget_names[i],
-            *m_thumbnailPixmaps[i], false);
-}
 
 void MainWindow::setThumbnail(QString widgetName,
       QPixmap &pixmap, bool acceptDrop)
@@ -3216,6 +3137,54 @@ void MainWindow::setThumbnail(QString widgetName,
    ThumbnailWidget *thumbnail = findChild<ThumbnailWidget*>(widgetName);
    if (thumbnail)
       thumbnail->setPixmap(pixmap, acceptDrop);
+}
+
+/* Show @path in sidebar widget @idx through the model's engine: from
+ * the cache at once, otherwise blank now and filled in by
+ * onThumbnailReady(). Never decodes on the UI thread. */
+void MainWindow::showSidebarImage(int idx, const QString &path, bool acceptDrop)
+{
+   ThumbnailWidget *tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[idx]);
+   QPixmap pm;
+   int w, h;
+   m_sidebarPending[idx] = path;
+   m_sidebarAcceptDrop   = acceptDrop;
+   if (!tw)
+      return;
+   w = tw->width()  > 32 ? tw->width()  : 256;
+   h = tw->height() > 32 ? tw->height() : 256;
+   if (path.isEmpty() || !m_playlistModel)
+   {
+      setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop);
+      return;
+   }
+   if (m_playlistModel->imageAt(path, w, h, &pm))
+   {
+      setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop);
+      return;
+   }
+   setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop); /* blank */
+   m_playlistModel->requestImage(path, w, h);
+}
+
+void MainWindow::onThumbnailReady(const QString &path)
+{
+   int i;
+   for (i = 0; i < 4; i++)
+   {
+      ThumbnailWidget *tw;
+      QPixmap pm;
+      int w, h;
+      if (m_sidebarPending[i] != path)
+         continue;
+      tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[i]);
+      if (!tw)
+         continue;
+      w = tw->width()  > 32 ? tw->width()  : 256;
+      h = tw->height() > 32 ? tw->height() : 256;
+      if (m_playlistModel->imageAt(path, w, h, &pm))
+         setThumbnail(qt_thumbnail_widget_names[i], pm, m_sidebarAcceptDrop);
+   }
 }
 
 void MainWindow::setCurrentViewType(ViewType viewType)

@@ -96,10 +96,23 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       companion_thumbs_done_cb cb, void *ud, size_t max,
       unsigned budget_us);
 
+/* Change the cache budget (bytes; 0 = the default); evicts down to it
+ * at once. UI thread. */
+void companion_thumbs_set_budget(companion_thumbs_t *t, size_t budget_bytes);
+
+/* Forget every cached size of @path (the file changed - a download
+ * replaced it, say) so the next request decodes it again. A decode in
+ * flight for it still lands with the old pixels; the backend can call
+ * this again afterwards. Returns how many entries were dropped. */
+size_t companion_thumbs_forget(companion_thumbs_t *t, const char *path);
+
 /* Diagnostics / tests. */
 size_t companion_thumbs_cached_count(companion_thumbs_t *t);
 size_t companion_thumbs_cached_bytes(companion_thumbs_t *t);
 size_t companion_thumbs_queued(companion_thumbs_t *t);
+/* Queued + decoding + finished-but-not-yet-polled: while non-zero a
+ * backend must keep polling. */
+size_t companion_thumbs_pending(companion_thumbs_t *t);
 
 /* Letterbox @src (sw x sh ARGB) into a freshly allocated dw x dh ARGB
  * buffer filled with @bg. Pure; exposed for tests and for backends that

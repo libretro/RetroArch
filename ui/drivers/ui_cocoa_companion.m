@@ -178,6 +178,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTextField *searchField;
    NSButton *clearButton, *infoButton, *runButton;
    NSTabView *browserTabs;            /* Playlists | File Browser */
+   NSButton *brUp, *brStart, *brDownloads; /* Qt's browser toolbar */
    NSScrollView *playlistsScroll;
    NSPopUpButton *corePopup;          /* launch-with core, like Qt's */
    NSMutableArray *corePaths;         /* per popup row: core path or "" */
@@ -210,6 +211,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)refreshPlaylists:(id)sender;
 - (void)runSelected:(id)sender;
 - (void)browseFiles:(id)sender;
+- (void)browseUp:(id)sender;
+- (void)browseStart:(id)sender;
+- (void)browseDownloads:(id)sender;
 - (void)browseReload;
 - (void)playlistsDoubleClick:(id)sender;
 - (void)startCore:(id)sender;
@@ -1030,6 +1034,17 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [tab setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))];
    [browserTabs addTabViewItem:tab];
    [content addSubview:browserTabs];
+   brUp        = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP)
+      action:@selector(browseUp:)];
+   brStart     = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES)
+      action:@selector(browseStart:)];
+   brDownloads = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST)
+      action:@selector(browseDownloads:)];
+   KEEP_IVAR(brUp); KEEP_IVAR(brStart); KEEP_IVAR(brDownloads);
+   [brUp setHidden:YES]; [brStart setHidden:YES]; [brDownloads setHidden:YES];
+   [content addSubview:brUp];
+   [content addSubview:brStart];
+   [content addSubview:brDownloads];
 
    coreLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE)];
    KEEP_IVAR(coreLabel);
@@ -1250,7 +1265,18 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       coreY += CC_CTRL_H + 2;
       [coreLabel setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, CC_LABEL_H)];
       coreY += CC_LABEL_H + CC_PAD;
-      /* Tabs fill what is left between the browser label and Core. */
+      /* Tabs fill what is left between the browser label and Core;
+       * under the browser a button row sits at the top of that area. */
+      if (browseMode)
+      {
+         CGFloat bw3 = (leftW - 4 * CC_PAD) / 3;
+         CGFloat by  = y - CC_PAD - CC_CTRL_H;
+         [brUp        setFrame:NSMakeRect(x, by, bw3, CC_CTRL_H)];
+         [brStart     setFrame:NSMakeRect(x + bw3 + CC_PAD, by, bw3, CC_CTRL_H)];
+         [brDownloads setFrame:NSMakeRect(x + 2 * (bw3 + CC_PAD), by, bw3, CC_CTRL_H)];
+         y = by - CC_PAD;
+      }
+      [brUp setHidden:!browseMode]; [brStart setHidden:!browseMode]; [brDownloads setHidden:!browseMode];
       [browserTabs setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, y - CC_PAD - coreY)];
    }
 
@@ -1383,6 +1409,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    RELEASE(playlistsScroll); RELEASE(corePopup); RELEASE(corePaths);
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
    RELEASE(boxartTypes);  RELEASE(playlistIcons); RELEASE(folderIcon);
+   RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
    free(rowMap);
    rowMap = NULL;
    string_list_free(infoKeys);
@@ -1427,17 +1454,15 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    rowCount = 0;
    if (browseMode)
    {
-      /* The browser's content view lists the files: browse indices
-       * [dir_count, count). */
-      size_t dc = companion_core_browse_dir_count(wimp->core);
+      /* The browser's content view is the whole listing, folders
+       * first, like Qt's table. */
       size_t bc = companion_core_browse_count(wimp->core);
-      size_t files = bc > dc ? bc - dc : 0;
-      rowMap = (NSInteger*)malloc((files ? files : 1) * sizeof(NSInteger));
+      rowMap = (NSInteger*)malloc((bc ? bc : 1) * sizeof(NSInteger));
       if (!rowMap)
          return;
-      for (i = 0; i < files; i++)
-         rowMap[i] = (NSInteger)(dc + i);
-      rowCount = (NSInteger)files;
+      for (i = 0; i < bc; i++)
+         rowMap[i] = (NSInteger)i;
+      rowCount = (NSInteger)bc;
       return;
    }
    if (!filter[0])
@@ -1532,10 +1557,21 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          : companion_core_installed_core_name(wimp->core, (size_t)row);
    else if (tv == entries && browseMode)
    {
-      /* Files only; rows map to browse indices past the folders. */
       NSInteger bi = [self entryForRow:row];
       if ([[col identifier] isEqualToString:@"core"])
-         s = "";
+      {
+         /* Qt's Type column: File Folder / <EXT> File */
+         const char *fp = bi >= 0 ? companion_core_browse_path(wimp->core, (size_t)bi) : NULL;
+         if (bi >= 0 && companion_core_browse_is_dir(wimp->core, (size_t)bi))
+            s = "File Folder";
+         else
+         {
+            const char *ext = fp ? path_get_extension(fp) : "";
+            if (ext && *ext)
+               return [[BOXSTRING(ext) uppercaseString] stringByAppendingString:@" File"];
+            s = "File";
+         }
+      }
       else
          s = bi >= 0 ? companion_core_browse_name(wimp->core, (size_t)bi) : "";
    }
@@ -1655,6 +1691,29 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self browseReload];
 }
 
+- (void)browseUp:(id)sender
+{
+   if (browseMode && companion_core_browse_up(wimp->core))
+      [self browseReload];
+}
+
+- (void)browseStart:(id)sender
+{
+   settings_t *st = config_get_ptr();
+   if (browseMode && companion_core_browse_open(wimp->core,
+            !string_is_empty(st->paths.directory_menu_content)
+            ? st->paths.directory_menu_content : NULL))
+      [self browseReload];
+}
+
+- (void)browseDownloads:(id)sender
+{
+   settings_t *st = config_get_ptr();
+   if (browseMode && !string_is_empty(st->paths.directory_core_assets)
+         && companion_core_browse_open(wimp->core, st->paths.directory_core_assets))
+      [self browseReload];
+}
+
 /* Both panes from the current browse listing. */
 - (void)browseReload
 {
@@ -1683,7 +1742,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (!companion_core_browse_count(wimp->core))
       companion_core_browse_open(wimp->core, NULL);
    [self setIconView:NO];   /* the browser is a list */
+   [self layoutViews];      /* the button row appears */
    [self browseReload];
+   [self refreshBoxart];    /* Qt shows no boxart for a browser selection */
    if (browserTabs && [browserTabs indexOfTabViewItem:[browserTabs selectedTabViewItem]] != 1)
       [browserTabs selectTabViewItemAtIndex:1];
    companion_core_pref_set_last_tab(wimp->core, 1);
@@ -1704,6 +1765,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self reloadPlaylists];
       [self rebuildRowMap];
       [entries reloadData];
+      [self layoutViews];
       companion_core_pref_set_last_tab(wimp->core, 0);
    }
 }

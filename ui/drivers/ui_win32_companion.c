@@ -153,6 +153,9 @@ enum
    IDC_CW_CLEAR,      /* "Clear" next to the search box */
    IDC_CW_BROWSER_LABEL,
    IDC_CW_TABS,       /* Playlists / File Browser */
+   IDC_CW_BR_UP,      /* file browser: Up / Start Directory / Downloads */
+   IDC_CW_BR_START,
+   IDC_CW_BR_DOWNLOADS,
    IDC_CW_CORE_LABEL,
    IDC_CW_CORE_COMBO, /* launch-with core selection */
    IDC_CW_CORE_INFO_BTN,
@@ -233,6 +236,9 @@ typedef struct ui_companion_win32_wimp
    /* Icon (grid) view: thumbnails in a 32-bit image list, index 0 the
     * placeholder; pending items decode one per frame while the view
     * is showing. */
+   HWND br_up, br_start, br_downloads; /* file-browser buttons (browse mode) */
+   HIMAGELIST sys_small;   /* the shell's small image list, for browse rows */
+   int *browse_icon;       /* per browse row: shell icon index, -1 unknown */
    HIMAGELIST thumbs;
    /* The entry list is a virtual (LVS_OWNERDATA) list view: the control
     * asks for each row's text and image as it draws (LVN_GETDISPINFO),
@@ -743,15 +749,45 @@ static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
  * content view shows the selected folder's files. Here the left list
  * shows the current folder's subfolders (".." first) and the entries
  * view its files; a folder descends on double-click / Enter. */
+static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry);
+static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons);
+static void cw_layout(ui_companion_win32_wimp_t *w);
+
+/* The report view's columns: Name / Core for playlists, Qt's
+ * Name / Size / Type / Date Modified for the file browser. */
+static void cw_entries_columns(ui_companion_win32_wimp_t *w, bool browse)
+{
+   LVCOLUMNA c;
+   int n = (int)SendMessageA(ListView_GetHeader(w->entries), HDM_GETITEMCOUNT, 0, 0);
+   const char *titles[4];
+   int i, want = browse ? 4 : 2;
+   titles[0] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
+   titles[1] = browse ? "Size" : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE);
+   titles[2] = "Type";
+   titles[3] = "Date Modified";
+   while (n > want)
+      SendMessageA(w->entries, LVM_DELETECOLUMN, (WPARAM)--n, 0);
+   for (i = 0; i < want; i++)
+   {
+      memset(&c, 0, sizeof(c));
+      c.mask    = LVCF_TEXT | LVCF_WIDTH;
+      c.pszText = (LPSTR)titles[i];
+      c.cx      = CW_S(w, i == 0 ? 300 : 120);
+      if (i < n)
+         SendMessageA(w->entries, LVM_SETCOLUMNA, (WPARAM)i, (LPARAM)&c);
+      else
+         SendMessageA(w->entries, LVM_INSERTCOLUMNA, (WPARAM)i, (LPARAM)&c);
+   }
+}
+
 static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
 {
-   size_t i, n  = companion_core_browse_count(w->core);
-   size_t dc    = companion_core_browse_dir_count(w->core);
-   size_t files = (n > dc) ? n - dc : 0;
+   size_t i, n = companion_core_browse_count(w->core);
+   size_t dc   = companion_core_browse_dir_count(w->core);
    const char *dir = companion_core_browse_dir(w->core);
    char buf[64];
 
-   /* Left pane: the folders. */
+   /* Left pane: the folders (".." first). */
    SendMessageA(w->playlists, LVM_DELETEALLITEMS, 0, 0);
    SendMessageA(w->playlists, WM_SETREDRAW, FALSE, 0);
    for (i = 0; i < dc; i++)
@@ -761,32 +797,50 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       memset(&item, 0, sizeof(item));
       item.mask    = LVIF_TEXT | LVIF_IMAGE;
       item.iItem   = (int)i;
-      item.iImage  = 0; /* the shell folder */
+      item.iImage  = 0; /* folder */
       item.pszText = (LPSTR)(name ? name : "");
       SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
    }
    SendMessageA(w->playlists, WM_SETREDRAW, TRUE, 0);
 
-   /* Content view: the files, as virtual rows mapping to browse indices. */
-   if (!cw_rows_alloc(w, files))
-      files = 0;
-   for (i = 0; i < files; i++)
-      w->rows[i] = dc + i;
-   cw_rows_commit(w, files);
-   cw_thumbs_reset(w, files);    /* files show the placeholder */
+   /* Content view: the whole listing, folders first, like Qt's table. */
+   if (!cw_rows_alloc(w, n))
+      n = 0;
+   for (i = 0; i < n; i++)
+      w->rows[i] = i;
+   free(w->browse_icon);
+   w->browse_icon = (int*)malloc((n ? n : 1) * sizeof(int));
+   if (w->browse_icon)
+      for (i = 0; i < n; i++)
+         w->browse_icon[i] = -1;
+   cw_entries_columns(w, true);
+   cw_rows_commit(w, n);
+   cw_thumbs_reset(w, n);
+   /* The browser is a table: Qt shows it as one whatever the playlist
+    * view type. */
+   {
+      LONG style = GetWindowLongA(w->entries, GWL_STYLE);
+      style = (style & ~LVS_TYPEMASK) | LVS_REPORT;
+      SetWindowLongA(w->entries, GWL_STYLE, style);
+      if (w->sys_small)
+         SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_SMALL, (LPARAM)w->sys_small);
+   }
 
    {
       const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
       const char *p1  = strstr(fmt, "%1");
       if (p1)
          snprintf(buf, sizeof(buf), "%.*s%u%s", (int)(p1 - fmt), fmt,
-               (unsigned)files, p1 + 2);
+               (unsigned)n, p1 + 2);
       else
-         snprintf(buf, sizeof(buf), "%u", (unsigned)files);
+         snprintf(buf, sizeof(buf), "%u", (unsigned)n);
    }
    if (w->items_label)
       SetWindowTextA(w->items_label, buf);
    cw_status_set(w, (dir && *dir) ? dir : "Computer");
+
+   /* Qt shows no boxart for a file-browser selection. */
+   cw_boxart_update(w, -1);
 }
 
 /* Leaving the browser: the left pane shows playlists again. */
@@ -795,7 +849,14 @@ static void cw_browse_leave(ui_companion_win32_wimp_t *w)
    if (!w->browse_mode)
       return;
    w->browse_mode = false;
+   ShowWindow(w->br_up, SW_HIDE);
+   ShowWindow(w->br_start, SW_HIDE);
+   ShowWindow(w->br_downloads, SW_HIDE);
+   SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_SMALL, (LPARAM)NULL);
+   cw_entries_columns(w, false);
+   cw_set_icon_view(w, w->icon_view); /* restore the playlist view type */
    cw_playlists_rebuild(w);
+   cw_layout(w);
 }
 
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
@@ -932,6 +993,15 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          y += L;
          MoveWindow(w->tabs, P, y, w->pane_w - 2 * P, TAB_H, TRUE);
          y += TAB_H;
+         if (w->browse_mode)
+         {
+            /* Up | Start Directory | Downloads, three equal buttons. */
+            int bw3 = (w->pane_w - 4 * P) / 3;
+            MoveWindow(w->br_up,        P,               y, bw3, C, TRUE);
+            MoveWindow(w->br_start,     2 * P + bw3,     y, bw3, C, TRUE);
+            MoveWindow(w->br_downloads, 3 * P + 2 * bw3, y, bw3, C, TRUE);
+            y += C + P;
+         }
          {
             int core_h = P + L + C + P;           /* the Core section */
             int pl_h   = list_h - y - core_h;
@@ -1598,6 +1668,10 @@ static void cw_browse_enter(ui_companion_win32_wimp_t *w)
    /* First entry: the content directory, or the drive list / root. */
    if (!companion_core_browse_count(w->core))
       companion_core_browse_open(w->core, NULL);
+   ShowWindow(w->br_up, SW_SHOW);
+   ShowWindow(w->br_start, SW_SHOW);
+   ShowWindow(w->br_downloads, SW_SHOW);
+   cw_layout(w);
    cw_browse_rebuild(w);
 }
 
@@ -2099,6 +2173,29 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             break;
          switch (LOWORD(wparam))
          {
+            case IDC_CW_BR_UP:
+               if (w->browse_mode && companion_core_browse_up(w->core))
+                  cw_browse_rebuild(w);
+               return 0;
+            case IDC_CW_BR_START:
+               if (w->browse_mode)
+               {
+                  settings_t *st = config_get_ptr();
+                  if (companion_core_browse_open(w->core,
+                           !string_is_empty(st->paths.directory_menu_content)
+                           ? st->paths.directory_menu_content : NULL))
+                     cw_browse_rebuild(w);
+               }
+               return 0;
+            case IDC_CW_BR_DOWNLOADS:
+               if (w->browse_mode)
+               {
+                  settings_t *st = config_get_ptr();
+                  if (!string_is_empty(st->paths.directory_core_assets)
+                        && companion_core_browse_open(w->core, st->paths.directory_core_assets))
+                     cw_browse_rebuild(w);
+               }
+               return 0;
             case IDC_CW_CLEAR:
                SetWindowTextA(w->search, ""); /* EN_CHANGE re-filters */
                return 0;
@@ -2249,12 +2346,79 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                            const char *s = "";
                            if (w->browse_mode)
                            {
-                              /* Files only here (folders are in the left
-                               * pane); rows[] maps to the browse index. */
-                              const char *name = companion_core_browse_name(
-                                    w->core, w->rows[row]);
+                              /* Qt's table: Name / Size / Type / Date. */
+                              size_t bi = w->rows[row];
+                              const char *name = companion_core_browse_name(w->core, bi);
+                              const char *fp   = companion_core_browse_path(w->core, bi);
+                              bool is_dir      = companion_core_browse_is_dir(w->core, bi);
+                              bool is_drive    = fp && strlen(fp) <= 3 && fp[1] == ':';
                               if (it->iSubItem == 0)
                                  s = name ? name : "";
+                              else if (name && !strcmp(name, ".."))
+                                 s = "";
+                              else if (it->iSubItem == 2)
+                              {
+                                 if (is_drive)
+                                    s = "Drive";
+                                 else if (is_dir)
+                                    s = "File Folder";
+                                 else
+                                 {
+                                    const char *ext = fp ? path_get_extension(fp) : "";
+                                    if (ext && *ext)
+                                    {
+                                       size_t k;
+                                       snprintf(it->pszText, (size_t)it->cchTextMax, "%s File", ext);
+                                       for (k = 0; it->pszText[k] && it->pszText[k] != ' '; k++)
+                                          it->pszText[k] = (char)toupper((unsigned char)it->pszText[k]);
+                                       s = NULL;
+                                    }
+                                    else
+                                       s = "File";
+                                 }
+                              }
+                              else if (fp)
+                              {
+                                 /* Size / Date from the shell's own view of
+                                  * the file (FindFirstFile: Windows 95). */
+                                 WIN32_FIND_DATAA fd;
+                                 HANDLE h = is_drive ? INVALID_HANDLE_VALUE : FindFirstFileA(fp, &fd);
+                                 if (h != INVALID_HANDLE_VALUE)
+                                 {
+                                    FindClose(h);
+                                    if (it->iSubItem == 1)
+                                    {
+                                       if (is_dir)
+                                          s = "";
+                                       else
+                                       {
+                                          uint64_t sz = ((uint64_t)fd.nFileSizeHigh << 32) | fd.nFileSizeLow;
+                                          if (sz >= 1024u * 1024 * 1024)
+                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f GB", (double)sz / (1024.0 * 1024 * 1024));
+                                          else if (sz >= 1024u * 1024)
+                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%.1f MB", (double)sz / (1024.0 * 1024));
+                                          else
+                                             snprintf(it->pszText, (size_t)it->cchTextMax, "%u KB", (unsigned)((sz + 1023) / 1024));
+                                          s = NULL;
+                                       }
+                                    }
+                                    else
+                                    {
+                                       SYSTEMTIME st, lt;
+                                       FILETIME ft;
+                                       char d[64], t[64];
+                                       FileTimeToLocalFileTime(&fd.ftLastWriteTime, &ft);
+                                       FileTimeToSystemTime(&ft, &st);
+                                       lt = st;
+                                       GetDateFormatA(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &lt, NULL, d, sizeof(d));
+                                       GetTimeFormatA(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &lt, NULL, t, sizeof(t));
+                                       snprintf(it->pszText, (size_t)it->cchTextMax, "%s %s", d, t);
+                                       s = NULL;
+                                    }
+                                 }
+                                 else
+                                    s = "";
+                              }
                            }
                            else
                            {
@@ -2271,11 +2435,40 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         }
                         if (it->mask & LVIF_IMAGE)
                         {
-                           /* Read only: what is on screen is requested
-                            * from the per-frame tick, never from here
-                            * (comctl32 asks for every item at layout). */
-                           int t = w->thumb_idx ? w->thumb_idx[row] : 0;
-                           it->iImage = t > 0 ? t : 0;
+                           if (w->browse_mode)
+                           {
+                              /* The shell's icon for the entry, from the
+                               * system image list; resolved once per row
+                               * and cached (SHGetFileInfo does a lookup
+                               * per call). */
+                              int ic = w->browse_icon ? w->browse_icon[row] : -1;
+                              if (ic < 0 && w->browse_icon)
+                              {
+                                 SHFILEINFOA sfi;
+                                 size_t bi      = w->rows[row];
+                                 const char *fp = companion_core_browse_path(w->core, bi);
+                                 bool is_dir    = companion_core_browse_is_dir(w->core, bi);
+                                 memset(&sfi, 0, sizeof(sfi));
+                                 if (fp && SHGetFileInfoA(fp,
+                                          is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
+                                          &sfi, sizeof(sfi),
+                                          SHGFI_SYSICONINDEX | SHGFI_SMALLICON
+                                          | (is_dir ? 0 : SHGFI_USEFILEATTRIBUTES)))
+                                    ic = sfi.iIcon;
+                                 else
+                                    ic = 0;
+                                 w->browse_icon[row] = ic;
+                              }
+                              it->iImage = ic > 0 ? ic : 0;
+                           }
+                           else
+                           {
+                              /* Read only: what is on screen is requested
+                               * from the per-frame tick, never from here
+                               * (comctl32 asks for every item at layout). */
+                              int t = w->thumb_idx ? w->thumb_idx[row] : 0;
+                              it->iImage = t > 0 ? t : 0;
+                           }
                         }
                         return 0;
                      }
@@ -2612,6 +2805,18 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
             MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), SS_LEFT, IDC_CW_SEARCH_LABEL);
    w->clear_btn     = cw_make(w, "BUTTON", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), BS_PUSHBUTTON, IDC_CW_CLEAR);
+   /* Qt's File Browser toolbar: Up / Start Directory / Downloads. Shown
+    * under the tabs while the browser is up. */
+   w->br_up        = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP), BS_PUSHBUTTON, IDC_CW_BR_UP);
+   w->br_start     = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_FAVORITES), BS_PUSHBUTTON, IDC_CW_BR_START);
+   w->br_downloads = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST), BS_PUSHBUTTON,
+            IDC_CW_BR_DOWNLOADS);
+   ShowWindow(w->br_up, SW_HIDE);
+   ShowWindow(w->br_start, SW_HIDE);
+   ShowWindow(w->br_downloads, SW_HIDE);
    w->browser_label = cw_make(w, "STATIC", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), SS_LEFT,
             IDC_CW_BROWSER_LABEL);
@@ -2767,6 +2972,15 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    cw_info_fill(w);
    cw_core_combo_fill(w, -1);
    w->thumbs_engine = companion_thumbs_new(0, 0);
+   {
+      /* The shell's small image list, shared system-wide: what Explorer
+       * draws, so drives / folders / file types look right and its
+       * transparency is the shell's own. Never destroyed by us. */
+      SHFILEINFOA sfi;
+      memset(&sfi, 0, sizeof(sfi));
+      w->sys_small = (HIMAGELIST)SHGetFileInfoA("C:\\", 0, &sfi, sizeof(sfi),
+            SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+   }
    w->vis_first = w->vis_last = (size_t)-1;
    return true;
 }
@@ -2852,6 +3066,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
    free(w->rows);
    free(w->thumb_idx);
    free(w->slot_row);
+   free(w->browse_icon);
    companion_core_free(w->core);
    if (g_win32_wimp == w)
       g_win32_wimp = NULL;

@@ -159,6 +159,8 @@ size_t companion_core_browse_count(companion_core_t *core);
  * browser shows the first range in its folder pane and the second as
  * the selected folder's content. */
 size_t companion_core_browse_dir_count(companion_core_t *core);
+/* Go to the parent directory (Qt's "Up"); false at the top. */
+bool companion_core_browse_up(companion_core_t *core);
 /* Display name of entry @i (base name; ".." for the parent link). */
 const char *companion_core_browse_name(companion_core_t *core, size_t i);
 /* Full path of entry @i. */

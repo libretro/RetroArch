@@ -99,10 +99,7 @@ QT_EQUIVALENT = {
     # in-core browse listing, and so no folder / file split either.
     'file browser':     None,
     'two-pane browser': None,
-    # Qt's ThumbnailLoader is the model the engine generalises; Qt keeps
-    # its own thread and QCache for now.
-    'thumbnail engine': 'ThumbnailLoader',
-    'thumbnail poll':   'onImageLoaded',
+    # (Qt now draws through the same engine as the natives: no waiver.)
 }
 
 

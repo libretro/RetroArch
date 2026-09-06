@@ -6891,11 +6891,20 @@ QVector<OptionsPage*> FrameThrottleCategory::pages()
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)
 {
-   m_thumbnailLoader    = new ThumbnailLoader(this);
+   /* The shared companion thumbnail engine: threads sized to the
+    * machine, cache budget from the view options. */
+   m_engine = companion_thumbs_new(0, 0);
    setThumbnailCacheLimit(500);
-   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)),
-         this, SLOT(onImageLoaded(QImage,QPersistentModelIndex,QString)));
-   m_thumbnailLoader->start();
+   /* Finished decodes are collected on the UI thread from a timer that
+    * only runs while something is pending. */
+   m_pollTimer.setInterval(16);
+   connect(&m_pollTimer, SIGNAL(timeout()), this, SLOT(pollThumbnails()));
+}
+
+PlaylistModel::~PlaylistModel()
+{
+   if (m_engine)
+      companion_thumbs_free(m_engine); /* joins the decode threads */
 }
 
 int PlaylistModel::rowCount(const QModelIndex & /* parent */) const
@@ -6925,9 +6934,12 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
             return QVariant::fromValue(m_contents.at(index.row()));
          case THUMBNAIL:
             {
-               QPixmap *cachedPreview = m_cache.object(getCurrentTypeThumbnailPath(index));
-               if (cachedPreview)
-                  return *cachedPreview;
+               /* The engine's pixels for this row at the grid's size,
+                * converted to a QPixmap once and kept in m_cache. */
+               QPixmap *pm = pixmapFor(getCurrentTypeThumbnailPath(index),
+                     m_thumbSize, m_thumbSize);
+               if (pm)
+                  return *pm;
             }
             break;
       }
@@ -6977,7 +6989,26 @@ void PlaylistModel::setThumbnailType(const ThumbnailType type)
 
 void PlaylistModel::setThumbnailCacheLimit(int limit)
 {
+   /* The setting is in MB: the engine holds the decoded pixels under
+    * that budget; the QPixmap conversion cache mirrors it in KB. */
+   if (m_engine)
+      companion_thumbs_set_budget(m_engine,
+            (size_t)(limit > 0 ? limit : 64) * 1024 * 1024);
    m_cache.setMaxCost(limit * 1024);
+}
+
+void PlaylistModel::setThumbnailSize(int size)
+{
+   if (size < 16)
+      size = 16;
+   if (size == m_thumbSize)
+      return;
+   m_thumbSize = size;
+   /* Pixmaps at the old size are keyed by it and simply age out; what
+    * was queued at the old size is dropped. */
+   if (m_engine)
+      companion_thumbs_cancel(m_engine);
+   m_pendingRows.clear();
 }
 
 QString PlaylistModel::getThumbnailPath(const QModelIndex &index,
@@ -7070,65 +7101,126 @@ void PlaylistModel::reloadSystemThumbnails(const QString system)
    QString           path          = QDir::cleanPath(QString(path_dir_thumbnails))
 	   + QString("/") + system;
    QList<QString>             keys = m_cache.keys();
-   QList<QString>          pending = m_pendingImages.values();
 
    for (i = 0; i < keys.size(); i++)
    {
       QString key = keys.at(i);
       if (key.startsWith(path))
+      {
          m_cache.remove(key);
-   }
-
-   for (i = 0; i < pending.size(); i++)
-   {
-      QString key = pending.at(i);
-      if (key.startsWith(path))
-         m_pendingImages.remove(key);
+         if (m_engine)
+            companion_thumbs_forget(m_engine,
+                  key.left(key.lastIndexOf(QLatin1Char('@'))).toUtf8().constData());
+      }
    }
 }
 
 void PlaylistModel::reloadThumbnailPath(const QString path)
 {
-   m_cache.remove(path);
-   m_pendingImages.remove(path);
+   QList<QString> keys = m_cache.keys();
+   int i;
+   for (i = 0; i < keys.size(); i++)
+      if (keys.at(i).startsWith(path + QLatin1Char('@')))
+         m_cache.remove(keys.at(i));
+   if (m_engine)
+      companion_thumbs_forget(m_engine, path.toUtf8().constData());
+   m_pendingRows.remove(path);
 }
 
 void PlaylistModel::loadThumbnail(const QModelIndex &index)
 {
    QString path = getCurrentTypeThumbnailPath(index);
-
-   if (!m_pendingImages.contains(path) && !m_cache.contains(path))
-   {
-      m_pendingImages.insert(path);
-      m_thumbnailLoader->request(index, path);
-   }
+   if (!m_engine || path.isEmpty())
+      return;
+   if (companion_thumbs_get(m_engine, path.toUtf8().constData(),
+            m_thumbSize, m_thumbSize))
+      return;                         /* data() serves it from the cache */
+   if (m_pendingRows.contains(path))
+      return;
+   m_pendingRows.insert(path, QPersistentModelIndex(index));
+   companion_thumbs_request(m_engine, path.toUtf8().constData(),
+         m_thumbSize, m_thumbSize, 0, true, 0xffffffffu);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
 }
 
-void PlaylistModel::onImageLoaded(const QImage image,
-		const QPersistentModelIndex &index, const QString &path)
+void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
+      uintptr_t tag, const uint32_t *bits)
 {
-   QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
-   int        cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
-   const int maxCost = m_cache.maxCost();
-   /* If a single decoded image would exceed the entire cache budget,
-    * QCache drops it on insert and it then gets re-decoded on every
-    * scroll. Cap the reported cost at the budget (when caching is
-    * enabled) so the pixmap is retained instead. When the cache is
-    * disabled (maxCost 0) the cost is left as-is and QCache does not
-    * retain it, which is the intended behaviour. */
-   if (maxCost > 0 && cost > maxCost)
-      cost = maxCost;
-   m_cache.insert(path, pixmap, cost);
-   /* index is persistent: it tracks the row across insertions/moves and
-    * reports invalid if that row was removed or the model reset while the
-    * decode was in flight, so a stale row is never signalled. */
+   PlaylistModel *self = static_cast<PlaylistModel*>(ud);
+   (void)w; (void)h; (void)tag; (void)bits;
+   self->thumbnailArrived(QString::fromUtf8(path));
+}
+
+QPixmap *PlaylistModel::pixmapFor(const QString &path, int w, int h) const
+{
+   QString key = path + QLatin1Char('@') + QString::number(w)
+      + QLatin1Char('x') + QString::number(h);
+   QPixmap *pm = m_cache.object(key);
+   const uint32_t *bits;
+   if (pm)
+      return pm;
+   if (!m_engine || path.isEmpty())
+      return NULL;
+   bits = companion_thumbs_get(m_engine, path.toUtf8().constData(), w, h);
+   if (!bits)
+      return NULL;
+   {
+      /* copy(): the engine pointer is only valid until its next call */
+      QImage img((const uchar*)bits, w, h, w * 4, QImage::Format_ARGB32);
+      int cost;
+      pm   = new QPixmap(QPixmap::fromImage(img.copy()));
+      cost = pm->width() * pm->height() * pm->depth() / (8 * 1024);
+      if (m_cache.maxCost() > 0 && cost > m_cache.maxCost())
+         cost = m_cache.maxCost();
+      m_cache.insert(key, pm, cost);
+   }
+   return pm;
+}
+
+bool PlaylistModel::imageAt(const QString &path, int w, int h, QPixmap *out) const
+{
+   QPixmap *pm = pixmapFor(path, w, h);
+   if (!pm)
+      return false;
+   if (out)
+      *out = *pm;
+   return true;
+}
+
+void PlaylistModel::requestImage(const QString &path, int w, int h)
+{
+   if (!m_engine || path.isEmpty() || w < 1 || h < 1)
+      return;
+   companion_thumbs_request(m_engine, path.toUtf8().constData(), w, h, 0,
+         true, 0xffffffffu);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
+}
+
+void PlaylistModel::thumbnailArrived(const QString &path)
+{
+   QPersistentModelIndex index = m_pendingRows.take(path);
+   emit thumbnailReady(path);
+   /* index is persistent: it tracks the row across insertions / moves
+    * and is invalid if that row was removed or the model reset while
+    * the decode was in flight, so a stale row is never signalled. */
    if (index.isValid())
    {
       const QModelIndex modelIndex(index);
       emit dataChanged(modelIndex, modelIndex, { THUMBNAIL });
    }
-   m_pendingImages.remove(path);
 }
+
+void PlaylistModel::pollThumbnails()
+{
+   if (!m_engine)
+      return;
+   companion_thumbs_poll(m_engine, onEngineDone, this, 0, 4000);
+   if (!companion_thumbs_pending(m_engine))
+      m_pollTimer.stop();
+}
+
 
 static inline bool comp_hash_name_key_lower(const QHash<QString,
 		QString> &lhs, const QHash<QString, QString> &rhs)

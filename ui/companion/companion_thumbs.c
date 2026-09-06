@@ -86,6 +86,7 @@ struct companion_thumbs
 
    struct ct_ring urgent, prefetch;
    size_t queued;         /* jobs in either ring */
+   size_t inflight;       /* jobs a worker holds right now */
    unsigned epoch;        /* bumped by cancel(): an in-flight job from an
                            * older epoch no longer holds its entry's
                            * queued flag, so the key can be re-requested;
@@ -405,6 +406,7 @@ static bool ct_next_job(companion_thumbs_t *t, struct ct_job *out)
    if (ct_ring_pop_top(&t->urgent, out) || ct_ring_pop_bottom(&t->prefetch, out))
    {
       t->queued--;
+      t->inflight++;
       return true;
    }
    return false;
@@ -415,6 +417,8 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
       uint32_t *bits)
 {
    struct ct_done *d;
+   if (t->inflight)
+      t->inflight--;
    if (t->done_len == t->done_cap)
    {
       /* Full: grow, or as a last resort drop the oldest (its entry is
@@ -701,6 +705,42 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
    return delivered;
 }
 
+void companion_thumbs_set_budget(companion_thumbs_t *t, size_t budget_bytes)
+{
+   if (!t)
+      return;
+   t->budget = budget_bytes ? budget_bytes : (64u * 1024 * 1024);
+   ct_evict(t, 0);
+}
+
+size_t companion_thumbs_forget(companion_thumbs_t *t, const char *path)
+{
+   size_t i, dropped = 0;
+   if (!t || !t->ht || string_is_empty(path))
+      return 0;
+   for (i = 0; i < t->ht_size; i++)
+   {
+      struct ct_entry *e = t->ht[i];
+      while (e)
+      {
+         struct ct_entry *next = e->chain;
+         if (e->bits && !e->queued && string_is_equal(e->path, path))
+         {
+            ct_lru_remove(t, e);
+            t->cached_bytes -= e->bytes;
+            t->cached_count--;
+            ct_entry_free(t, e);
+            dropped++;
+            /* the chain changed under us: restart this bucket */
+            e = t->ht[i];
+            continue;
+         }
+         e = next;
+      }
+   }
+   return dropped;
+}
+
 size_t companion_thumbs_cached_count(companion_thumbs_t *t) { return t ? t->cached_count : 0; }
 size_t companion_thumbs_cached_bytes(companion_thumbs_t *t) { return t ? t->cached_bytes : 0; }
 size_t companion_thumbs_queued(companion_thumbs_t *t)
@@ -710,6 +750,17 @@ size_t companion_thumbs_queued(companion_thumbs_t *t)
       return 0;
    CT_LOCK(t);
    n = t->queued;
+   CT_UNLOCK(t);
+   return n;
+}
+
+size_t companion_thumbs_pending(companion_thumbs_t *t)
+{
+   size_t n;
+   if (!t)
+      return 0;
+   CT_LOCK(t);
+   n = t->queued + t->inflight + t->done_len;
    CT_UNLOCK(t);
    return n;
 }

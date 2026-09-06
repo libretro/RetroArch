@@ -1789,6 +1789,14 @@ static bool companion_core_browse_has_parent(companion_core_t *core)
    return true;
 }
 
+bool companion_core_browse_up(companion_core_t *core)
+{
+   if (!core || !core->browse || !companion_core_browse_has_parent(core))
+      return false;
+   /* The parent link is public index 0 when there is one. */
+   return companion_core_browse_activate(core, 0, NULL, NULL, NULL, 0) == 0;
+}
+
 size_t companion_core_browse_dir_count(companion_core_t *core)
 {
    size_t i, n;
@@ -1838,9 +1846,24 @@ const char *companion_core_browse_name(companion_core_t *core, size_t i)
    if ((size_t)r >= core->browse->size)
       return NULL;
    {
-      /* A drive root ("C:\") has no basename: show the path itself. */
       const char *p = core->browse->elems[r].data;
       const char *b = path_basename(p);
+#ifdef _WIN32
+      /* A drive root: name it like the Qt companion's tree does, the
+       * volume label and the letter - "SSD-1 (C:)". */
+      if (strlen(p) <= 3 && p[1] == ':')
+      {
+         static char drive_name[64];
+         char label[MAX_PATH];
+         label[0] = '\0';
+         if (!GetVolumeInformationA(p, label, sizeof(label), NULL, NULL,
+                  NULL, NULL, 0))
+            label[0] = '\0';
+         snprintf(drive_name, sizeof(drive_name), "%s (%c:)",
+               label[0] ? label : "Local Disk", p[0]);
+         return drive_name;
+      }
+#endif
       return (b && *b) ? b : p;
    }
 }

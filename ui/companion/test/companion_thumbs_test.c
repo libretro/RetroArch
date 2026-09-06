@@ -252,6 +252,32 @@ static void test_priority_and_cancel(void)
    companion_thumbs_free(t);
 }
 
+static void test_forget_and_budget(void)
+{
+   char p[512];
+   companion_thumbs_t *t = companion_thumbs_new(0, 1);
+   fixture(p, sizeof(p), "forget.tga");
+   write_tga(p, 8, 8, 0xff112233u);
+   ngot = 0;
+   companion_thumbs_request(t, p, 16, 16, 0, true, 0);
+   companion_thumbs_request(t, p, 24, 24, 1, true, 0);
+   drain(t, 2, 2000);
+   CHECK(companion_thumbs_cached_count(t) == 2, "two sizes cached");
+   CHECK(companion_thumbs_forget(t, p) == 2, "forget drops every size");
+   CHECK(companion_thumbs_get(t, p, 16, 16) == NULL, "forgotten");
+   CHECK(companion_thumbs_request(t, p, 16, 16, 2, true, 0), "re-request after forget");
+   drain(t, 1, 2000);
+   CHECK(companion_thumbs_get(t, p, 16, 16) != NULL, "decoded again");
+   /* shrinking the budget evicts at once */
+   companion_thumbs_request(t, p, 32, 32, 3, true, 0);
+   drain(t, 1, 2000);
+   CHECK(companion_thumbs_cached_count(t) == 2, "two again");
+   companion_thumbs_set_budget(t, 32u * 32 * 4);
+   CHECK(companion_thumbs_cached_count(t) == 1, "budget cut evicts LRU (got %u)", (unsigned)companion_thumbs_cached_count(t));
+   CHECK(companion_thumbs_get(t, p, 32, 32) != NULL, "most recent kept");
+   companion_thumbs_free(t);
+}
+
 static void test_undecodable(void)
 {
    char bad[512];
@@ -332,6 +358,7 @@ int main(int argc, char **argv)
    test_decode_and_scale();
    test_lru_budget();
    test_priority_and_cancel();
+   test_forget_and_budget();
    test_undecodable();
    test_many_and_shutdown();
 
