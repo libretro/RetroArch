@@ -40,6 +40,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <utime.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -400,6 +401,64 @@ static void test_browser_sort(void)
    CHECK(string_is_equal(companion_core_browse_name(c, 2), "a.nes"), "type asc: nes < png < sfc (got %s)", companion_core_browse_name(c, 2));
    CHECK(string_is_equal(companion_core_browse_name(c, 3), "cover.png"), "then png (got %s)", companion_core_browse_name(c, 3));
    CHECK(string_is_equal(companion_core_browse_name(c, 4), "b.sfc"), "then sfc by name: b before zz (got %s)", companion_core_browse_name(c, 4));
+
+   /* Date: distinct mtimes set explicitly (the files were written within
+    * the same second), newest first when descending. */
+   {
+      char pa[512], pb[512], pc[512];
+      struct utimbuf ut;
+      fixture(pa, sizeof(pa), "content/a.nes");
+      fixture(pb, sizeof(pb), "content/b.sfc");
+      fixture(pc, sizeof(pc), "content/cover.png");
+      ut.actime = ut.modtime = 1000000000; utime(pa, &ut);   /* oldest */
+      ut.actime = ut.modtime = 1300000000; utime(pb, &ut);
+      ut.actime = ut.modtime = 1200000000; utime(pc, &ut);
+      companion_core_browse_open(c, NULL);
+      wait_browse(c);
+      companion_core_browse_sort(c, COMPANION_BROWSE_SORT_DATE, false);
+      CHECK(string_is_equal(companion_core_browse_name(c, 2), "zz_big.sfc"), "date desc: the just-written file newest (got %s)", companion_core_browse_name(c, 2));
+      CHECK(string_is_equal(companion_core_browse_name(c, 3), "b.sfc"), "then b (1.3e9) (got %s)", companion_core_browse_name(c, 3));
+      CHECK(string_is_equal(companion_core_browse_name(c, 4), "cover.png"), "then cover (1.2e9) (got %s)", companion_core_browse_name(c, 4));
+      CHECK(string_is_equal(companion_core_browse_name(c, 5), "a.nes"), "a.nes oldest last (got %s)", companion_core_browse_name(c, 5));
+      companion_core_browse_sort(c, COMPANION_BROWSE_SORT_DATE, true);
+      CHECK(string_is_equal(companion_core_browse_name(c, 2), "a.nes"), "date asc: oldest first (got %s)", companion_core_browse_name(c, 2));
+   }
+   /* Type: many extensions, grouped and ordered by extension, names
+    * within a group. */
+   {
+      static const char *files[] = { "content/m.zip", "content/k.iso", "content/z.bin", "content/l.iso" };
+      char p[512];
+      int i;
+      for (i = 0; i < 4; i++) { fixture(p, sizeof(p), files[i]); writef(p, "x"); }
+      companion_core_browse_open(c, NULL);
+      wait_browse(c);
+      companion_core_browse_sort(c, COMPANION_BROWSE_SORT_TYPE, true);
+      /* bin < iso < nes < png < sfc < zip */
+      CHECK(string_is_equal(companion_core_browse_name(c, 2), "z.bin"), "type asc: bin first (got %s)", companion_core_browse_name(c, 2));
+      CHECK(string_is_equal(companion_core_browse_name(c, 3), "k.iso"), "iso: k before l (got %s)", companion_core_browse_name(c, 3));
+      CHECK(string_is_equal(companion_core_browse_name(c, 4), "l.iso"), "iso: then l (got %s)", companion_core_browse_name(c, 4));
+      CHECK(string_is_equal(companion_core_browse_name(c, 9), "m.zip"), "zip last (got %s)", companion_core_browse_name(c, 9));
+      companion_core_browse_sort(c, COMPANION_BROWSE_SORT_TYPE, false);
+      CHECK(string_is_equal(companion_core_browse_name(c, 2), "m.zip"), "type desc: zip first (got %s)", companion_core_browse_name(c, 2));
+      /* the four sorts give four different first files */
+      {
+         char first[4][64];
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, true);
+         strlcpy(first[0], companion_core_browse_name(c, 2), 64);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_SIZE, false);
+         strlcpy(first[1], companion_core_browse_name(c, 2), 64);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_TYPE, true);
+         strlcpy(first[2], companion_core_browse_name(c, 2), 64);
+         companion_core_browse_sort(c, COMPANION_BROWSE_SORT_DATE, true);
+         strlcpy(first[3], companion_core_browse_name(c, 2), 64);
+         CHECK(!string_is_equal(first[0], first[1]) && !string_is_equal(first[1], first[2])
+               && !string_is_equal(first[2], first[3]) && !string_is_equal(first[0], first[2]),
+               "each column orders differently: name=%s size=%s type=%s date=%s",
+               first[0], first[1], first[2], first[3]);
+      }
+      /* clean up the extras for the tests after this one */
+      for (i = 0; i < 4; i++) { fixture(p, sizeof(p), files[i]); remove(p); }
+   }
 
    /* the order persists across a re-enumeration */
    companion_core_browse_sort(c, COMPANION_BROWSE_SORT_NAME, false);

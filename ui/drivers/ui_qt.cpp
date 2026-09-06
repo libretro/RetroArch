@@ -1906,8 +1906,24 @@ void MainWindow::onBrowseChanged()
    in_reload = true;
    m_browseModel->reload();
    in_reload = false;
-   if (!m_fileTableHeaderState.isEmpty())
-      m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
+   {
+      QHeaderView *hdr = m_fileTableView->horizontalHeader();
+      companion_core_t *core = ui_companion_qt_core();
+      /* Column widths saved before a navigation come back once; the
+       * saved state also carries a sort indicator, which must not win
+       * over the order the core is actually in (a header click lands
+       * here too, and restoring the old indicator undid every click). */
+      if (!m_fileTableHeaderState.isEmpty())
+      {
+         hdr->restoreState(m_fileTableHeaderState);
+         m_fileTableHeaderState.clear();
+      }
+      hdr->blockSignals(true);
+      hdr->setSortIndicator((int)companion_core_browse_sort_column(core),
+            companion_core_browse_sort_ascending(core)
+            ? Qt::AscendingOrder : Qt::DescendingOrder);
+      hdr->blockSignals(false);
+   }
    setCoreActions();
 }
 

@@ -818,14 +818,48 @@ static void cw_entries_columns(ui_companion_win32_wimp_t *w, bool browse)
    for (i = 0; i < want; i++)
    {
       memset(&c, 0, sizeof(c));
-      c.mask    = LVCF_TEXT | LVCF_WIDTH;
       c.pszText = (LPSTR)titles[i];
       c.cx      = CW_S(w, i == 0 ? 300 : 120);
       if (i < n)
+      {
+         /* An existing column keeps the width the user gave it: the
+          * browser rebuilds on every landing and every sort. */
+         c.mask = LVCF_TEXT;
          SendMessageA(w->entries, LVM_SETCOLUMNA, (WPARAM)i, (LPARAM)&c);
+      }
       else
+      {
+         c.mask = LVCF_TEXT | LVCF_WIDTH;
          SendMessageA(w->entries, LVM_INSERTCOLUMNA, (WPARAM)i, (LPARAM)&c);
+      }
    }
+}
+
+/* Sort arrow on the header of the core's current sort column (comctl32
+ * 6 draws it; older ones ignore the format bits). */
+static void cw_browse_sort_arrow(ui_companion_win32_wimp_t *w)
+{
+#if defined(HDF_SORTUP) && defined(HDF_SORTDOWN)
+   HWND hdr = ListView_GetHeader(w->entries);
+   int n    = (int)SendMessageA(hdr, HDM_GETITEMCOUNT, 0, 0);
+   int cur  = (int)companion_core_browse_sort_column(w->core);
+   bool asc = companion_core_browse_sort_ascending(w->core);
+   int i;
+   for (i = 0; i < n; i++)
+   {
+      HDITEMA it;
+      memset(&it, 0, sizeof(it));
+      it.mask = HDI_FORMAT;
+      if (!SendMessageA(hdr, HDM_GETITEMA, (WPARAM)i, (LPARAM)&it))
+         continue;
+      it.fmt &= ~(HDF_SORTUP | HDF_SORTDOWN);
+      if (i == cur)
+         it.fmt |= asc ? HDF_SORTUP : HDF_SORTDOWN;
+      SendMessageA(hdr, HDM_SETITEMA, (WPARAM)i, (LPARAM)&it);
+   }
+#else
+   (void)w;
+#endif
 }
 
 static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
@@ -862,6 +896,7 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       for (i = 0; i < n; i++)
          w->browse_icon[i] = -1;
    cw_entries_columns(w, true);
+   cw_browse_sort_arrow(w);
    cw_rows_commit(w, n);
    cw_thumbs_reset(w, n);
    /* The browser is a table: Qt shows it as one whatever the playlist
