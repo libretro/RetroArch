@@ -72,10 +72,13 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
 fail=0; n=0
 for f in $FILES; do
    n=$((n+1))
-   # Only real errors, not warnings; and not "file not found" for
-   # optional platform headers this box does not have.
+   # Only real errors, not warnings. A missing header named without a
+   # path (d3dkmthk.h: an optional platform header this box lacks) is
+   # forgiven; a missing header with a path component (../companion/x.h:
+   # a project header) is not - that once let a stale include of a
+   # deleted header through as "ok".
    err=$($CC $FLAGS "$f" 2>&1 | grep -E ' error: ' \
-         | grep -vE 'No such file|file not found' | head -3)
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [win32] $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
@@ -85,7 +88,7 @@ for f in $FILES; do
       *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*) continue;;
    esac
    err=$($C89CC $C89FLAGS "$f" 2>&1 | grep -E ' error: ' \
-         | grep -vE 'No such file|file not found' | head -3)
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
