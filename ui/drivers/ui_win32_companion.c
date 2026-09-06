@@ -53,6 +53,8 @@
 #include <shlobj.h>
 
 #include <compat/strl.h>
+#include <file/file_path.h>
+#include <formats/image.h>
 #include <lists/string_list.h>
 #include <compat/msvc.h>
 #include <string/stdstring.h>
@@ -92,6 +94,9 @@
 #define COMPANION_WIN32_MIN_H      320
 #define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
 #define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
+#define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
+/* Icon view: one thumbnail decoded per frame from the iterate hook, so a
+ * playlist of any size never costs more than one file decode per frame. */
 /* The log edit is trimmed from the front when it passes this, in one
  * cut, so appends stay O(line) instead of the control's O(text). */
 #define COMPANION_WIN32_LOG_MAX    (256 * 1024)
@@ -133,6 +138,8 @@ enum
    IDM_CW_SCAN_DIR,
    IDM_CW_TOGGLE_LOG,
    IDM_CW_TOGGLE_INFO,
+   IDM_CW_VIEW_LIST,
+   IDM_CW_VIEW_ICONS,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -154,6 +161,13 @@ typedef struct ui_companion_win32_wimp
     * running core from the iterate hook (only the shader commands are
     * forwarded to companions, so a load/unload is not an event here). */
    char info_core[PATH_MAX_LENGTH];
+   /* Icon (grid) view: thumbnails in a 32-bit image list, index 0 the
+    * placeholder; pending items decode one per frame while the view
+    * is showing. */
+   HIMAGELIST thumbs;
+   size_t thumb_next;      /* next entry to decode */
+   size_t thumb_count;     /* entries in the current list */
+   bool icon_view;
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
    HWND cores_hwnd;
    HWND cores_list;
@@ -194,6 +208,197 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
    }
 }
 
+/* --- Icon view thumbnails ---------------------------------------------- */
+
+/* A 32-bit BGRA DIB of @w x @h from @bits (ARGB8888 as image_texture
+ * decodes when supports_rgba is false - the Windows byte order). */
+static HBITMAP cw_dib_from_argb(const uint32_t *bits, int w, int h)
+{
+   BITMAPINFO bmi;
+   void *dst = NULL;
+   HBITMAP bmp;
+
+   memset(&bmi, 0, sizeof(bmi));
+   bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
+   bmi.bmiHeader.biWidth       = w;
+   bmi.bmiHeader.biHeight      = -h; /* top-down */
+   bmi.bmiHeader.biPlanes      = 1;
+   bmi.bmiHeader.biBitCount    = 32;
+   bmi.bmiHeader.biCompression = BI_RGB;
+
+   bmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, &dst, NULL, 0);
+   if (bmp && dst)
+      memcpy(dst, bits, (size_t)w * h * 4);
+   return bmp;
+}
+
+/* Letterbox @img into a square of THUMB px, nearest-neighbour: cheap,
+ * and thumbnails are viewed at that size. */
+static HBITMAP cw_thumb_bitmap(const struct texture_image *img, uint32_t bg)
+{
+   uint32_t *buf;
+   HBITMAP bmp;
+   int sw, sh, ox, oy, x, y;
+   const int T = COMPANION_WIN32_THUMB;
+
+   if (!img->pixels || !img->width || !img->height)
+      return NULL;
+   buf = (uint32_t*)malloc((size_t)T * T * sizeof(uint32_t));
+   if (!buf)
+      return NULL;
+
+   if (img->width >= img->height)
+   {
+      sw = T;
+      sh = (int)((unsigned)T * img->height / img->width);
+   }
+   else
+   {
+      sh = T;
+      sw = (int)((unsigned)T * img->width / img->height);
+   }
+   if (sw < 1) sw = 1;
+   if (sh < 1) sh = 1;
+   ox = (T - sw) / 2;
+   oy = (T - sh) / 2;
+
+   for (y = 0; y < T; y++)
+   {
+      uint32_t *row = buf + (size_t)y * T;
+      if (y < oy || y >= oy + sh)
+      {
+         for (x = 0; x < T; x++)
+            row[x] = bg;
+         continue;
+      }
+      {
+         const uint32_t *src = img->pixels
+            + (size_t)((y - oy) * img->height / sh) * img->width;
+         for (x = 0; x < T; x++)
+            row[x] = (x < ox || x >= ox + sw)
+               ? bg
+               : src[(x - ox) * img->width / sw] | 0xff000000u;
+      }
+   }
+
+   bmp = cw_dib_from_argb(buf, T, T);
+   free(buf);
+   return bmp;
+}
+
+static uint32_t cw_sys_color_argb(int index)
+{
+   DWORD c = GetSysColor(index); /* 0x00BBGGRR */
+   return 0xff000000u | ((c & 0xff) << 16) | (c & 0xff00) | ((c >> 16) & 0xff);
+}
+
+/* New image list for the current entry list: placeholder at 0, every
+ * item pointed at it, decoding restarted from the top. */
+static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
+{
+   HBITMAP placeholder;
+   uint32_t *bits;
+   const int T = COMPANION_WIN32_THUMB;
+
+   if (w->thumbs)
+   {
+      SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_NORMAL, (LPARAM)NULL);
+      ImageList_Destroy(w->thumbs);
+      w->thumbs = NULL;
+   }
+   w->thumb_next  = 0;
+   w->thumb_count = count;
+
+   /* ILC_COLOR32 is honoured from comctl32 4.71; older ones pick a lower
+    * depth themselves, which is fine for a thumbnail. */
+   w->thumbs = ImageList_Create(T, T, ILC_COLOR32, (int)(count > 0 ? count : 1) + 1, 16);
+   if (!w->thumbs)
+      return;
+
+   bits = (uint32_t*)malloc((size_t)T * T * sizeof(uint32_t));
+   if (bits)
+   {
+      int i;
+      uint32_t bg = cw_sys_color_argb(COLOR_BTNFACE);
+      for (i = 0; i < T * T; i++)
+         bits[i] = bg;
+      placeholder = cw_dib_from_argb(bits, T, T);
+      free(bits);
+      if (placeholder)
+      {
+         ImageList_Add(w->thumbs, placeholder, NULL);
+         DeleteObject(placeholder);
+      }
+   }
+   SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_NORMAL, (LPARAM)w->thumbs);
+}
+
+/* Decode the next pending thumbnail (one per call). Returns false when
+ * nothing is pending. */
+static bool cw_thumb_step(ui_companion_win32_wimp_t *w)
+{
+   char path[PATH_MAX_LENGTH];
+   char db_name[NAME_MAX_LENGTH];
+   struct texture_image img;
+   const struct playlist_entry *e;
+   HBITMAP bmp = NULL;
+   int idx = 0;
+   size_t i;
+
+   if (!w->thumbs || w->thumb_next >= w->thumb_count)
+      return false;
+
+   i = w->thumb_next++;
+   e = companion_core_entry(w->core, i);
+   if (!e)
+      return true;
+
+   /* Playlist name without .lpl, as the repository is laid out. */
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+
+   memset(&img, 0, sizeof(img));
+   if (companion_core_thumbnail_path(w->core, db_name, COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            e->path, path, sizeof(path))
+         && image_texture_load(&img, path))
+   {
+      bmp = cw_thumb_bitmap(&img, cw_sys_color_argb(COLOR_WINDOW));
+      image_texture_free(&img);
+   }
+   if (bmp)
+   {
+      idx = ImageList_Add(w->thumbs, bmp, NULL);
+      DeleteObject(bmp);
+      if (idx > 0)
+      {
+         LVITEMA item;
+         memset(&item, 0, sizeof(item));
+         item.mask   = LVIF_IMAGE;
+         item.iItem  = (int)i;
+         item.iImage = idx;
+         SendMessageA(w->entries, LVM_SETITEMA, 0, (LPARAM)&item);
+      }
+   }
+   return true;
+}
+
+static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons)
+{
+   LONG style;
+   if (!w || !w->entries)
+      return;
+   w->icon_view = icons;
+   style  = GetWindowLongA(w->entries, GWL_STYLE);
+   style &= ~(LVS_TYPEMASK);
+   style |= icons ? LVS_ICON : LVS_REPORT;
+   SetWindowLongA(w->entries, GWL_STYLE, style);
+   if (icons)
+      SendMessageA(w->entries, LVM_SETICONSPACING, 0,
+            MAKELPARAM(COMPANION_WIN32_THUMB + 24, COMPANION_WIN32_THUMB + 40));
+   InvalidateRect(w->entries, NULL, TRUE);
+}
+
 static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 {
    size_t i, n;
@@ -205,6 +410,7 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 
    SendMessageA(w->entries, LVM_DELETEALLITEMS, 0, 0);
    n = companion_core_entry_count(w->core);
+   cw_thumbs_reset(w, n);
 
    /* Bulk insert without per-item repaint. */
    SendMessageA(w->entries, WM_SETREDRAW, FALSE, 0);
@@ -215,9 +421,10 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
          continue;
 
       memset(&item, 0, sizeof(item));
-      item.mask     = LVIF_TEXT | LVIF_PARAM;
+      item.mask     = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
       item.iItem    = (int)i;
       item.iSubItem = 0;
+      item.iImage   = 0; /* placeholder until decoded */
       item.lParam   = (LPARAM)i;
       item.pszText  = (LPSTR)(!string_is_empty(e->label)
             ? e->label
@@ -960,6 +1167,12 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_TOGGLE_INFO:
                cw_info_toggle(w);
                return 0;
+            case IDM_CW_VIEW_LIST:
+               cw_set_icon_view(w, false);
+               return 0;
+            case IDM_CW_VIEW_ICONS:
+               cw_set_icon_view(w, true);
+               return 0;
             case IDM_CW_CLOSE:
                ShowWindow(hwnd, SW_HIDE);
                return 0;
@@ -1025,6 +1238,9 @@ static HMENU cw_build_menu(void)
    AppendMenuA(file, MF_STRING, IDM_CW_CLOSE,        "&Close Window");
    AppendMenuA(file, MF_STRING, IDM_CW_QUIT,         "E&xit RetroArch");
 
+   AppendMenuA(view, MF_STRING, IDM_CW_VIEW_LIST,    "&List");
+   AppendMenuA(view, MF_STRING, IDM_CW_VIEW_ICONS,   "&Icons");
+   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
    AppendMenuA(view, MF_STRING, IDM_CW_RUN,          "&Run Selected\tEnter");
    AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
@@ -1160,6 +1376,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
    if (!w)
       return;
+   if (w->thumbs)
+      ImageList_Destroy(w->thumbs);
    if (w->cores_hwnd)
       DestroyWindow(w->cores_hwnd);
    if (w->cores_class_registered)
@@ -1195,6 +1413,10 @@ static void ui_companion_win32_wimp_iterate(void *data)
    if (!w)
       return;
    companion_core_iterate(w->core, COMPANION_WIN32_ITER_US);
+
+   /* One thumbnail decode per frame while the icon view is showing. */
+   if (w->icon_view && IsWindowVisible(w->hwnd))
+      cw_thumb_step(w);
 
    /* A short strcmp per frame, only while the pane is shown. */
    if (     w->info_visible
