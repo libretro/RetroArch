@@ -24,9 +24,8 @@
 #include <streams/file_stream.h>
 #include <time.h>          /* struct timespec, for retro_timers.h */
 #include <retro_timers.h>
-#ifdef HAVE_RPNG
-#include <formats/rpng.h>
-#endif
+
+#include "../../gfx/gfx_anim_preview.h"
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 
@@ -141,6 +140,13 @@ struct companion_thumbs
    sthread_t *anim_thread;
    scond_t   *anim_cond;
 #endif
+   /* The open preview session, published by the animation thread while
+    * it plays (under the lock): the UI thread starts and feeds the
+    * preview audio through it from poll(). audio_gen: the animation
+    * whose audio was started, so it starts once. */
+   gfx_anim_preview_t *anim_sess;
+   unsigned anim_sess_gen;
+   unsigned anim_audio_gen;
 };
 
 #ifdef HAVE_THREADS
@@ -219,6 +225,46 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
    return buf;
 }
 
+/* A video's still is its first frame, taken through the same windowed
+ * open the menu uses: image_texture_load would read the whole file
+ * (a two-hour recording) to show one frame; this reads the head. */
+static uint32_t *ct_decode_video_still(const char *path, int w, int h,
+      uint32_t bg)
+{
+   gfx_anim_preview_t *sess = gfx_anim_preview_open(path, -1);
+   const uint32_t *frame;
+   uint32_t *src, *bits = NULL;
+   bool native_argb = false;
+   int dur = 0;
+   if (!sess)
+      return NULL;
+   if (!gfx_anim_preview_feed(sess)
+         || !(frame = gfx_anim_preview_next(sess, &dur, &native_argb))
+         || !sess->width || !sess->height)
+   {
+      gfx_anim_preview_close(sess);
+      return NULL;
+   }
+   src = (uint32_t*)frame;
+   if (!native_argb)
+   {
+      size_t i, n = (size_t)sess->width * sess->height;
+      src = (uint32_t*)malloc(n * sizeof(uint32_t));
+      if (src)
+         for (i = 0; i < n; i++)
+         {
+            uint32_t px = frame[i];
+            src[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+         }
+   }
+   if (src)
+      bits = companion_thumbs_scale(src, sess->width, sess->height, w, h, bg);
+   if (src != frame)
+      free(src);
+   gfx_anim_preview_close(sess);
+   return bits;
+}
+
 /* Decode @path and scale to @w x @h. Runs on a worker; @should_abort
  * (may be NULL) is asked between decode steps so a giant image can be
  * abandoned at shutdown or once nobody wants it. */
@@ -227,6 +273,11 @@ static uint32_t *ct_decode(const char *path, int w, int h, uint32_t bg,
 {
    struct texture_image img;
    uint32_t *bits = NULL;
+   {
+      enum image_type_enum type = image_texture_get_type(path);
+      if (type == IMAGE_TYPE_WEBM || type == IMAGE_TYPE_MP4)
+         return ct_decode_video_still(path, w, h, bg);
+   }
    memset(&img, 0, sizeof(img));
    if (image_texture_load_ex(&img, path, should_abort, ud))
    {
@@ -555,32 +606,6 @@ static void ct_worker(void *ud)
 
 /* --- animation ------------------------------------------------------------ */
 
-/* Is this file something the stream API can play? Cheap gate first
- * (container types with an animation decoder), then for PNG the APNG
- * probe over the head of the buffer, as gfx_thumbnail does. */
-static bool ct_anim_type_ok(enum image_type_enum type, const uint8_t *buf,
-      size_t len)
-{
-   switch (type)
-   {
-      case IMAGE_TYPE_PNG:
-#ifdef HAVE_RPNG
-         {
-            int more = 0;
-            return rpng_is_apng_ex(buf, len < 4096 ? len : 4096, &more);
-         }
-#else
-         return false;
-#endif
-      case IMAGE_TYPE_WEBP:
-      case IMAGE_TYPE_WEBM:
-      case IMAGE_TYPE_MP4:
-         return true;
-      default:
-         return false;
-   }
-}
-
 #ifdef HAVE_THREADS
 /* Push one animation frame (already scaled) for the current
  * animation. Lock held. */
@@ -611,11 +636,15 @@ static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
    d->anim_h    = h;
 }
 
-/* One animation at a time: open the file, open the stream, then loop
- * decoding a frame, scaling it, pushing it, sleeping its duration -
- * until the animation is superseded or the engine quits. Between
- * frames the thread checks for that, so a change lands within one
- * frame duration. */
+/* One animation at a time, played exactly the way RetroArch's File
+ * Browser plays its thumbnail: gfx_anim_preview opens the file as a
+ * sliding window (frames start from the first resident bytes; a tail-
+ * moov MP4 opens from a few MiB; memory admission scales with the
+ * heap), feeds the window ahead of the decoder each frame, and hands
+ * back frames on the container's clock. This thread scales each frame,
+ * pushes it, sleeps its duration - until superseded or quit. The
+ * session is published (t->anim_sess) so the UI thread can start and
+ * feed the preview audio through the mixer on its own ticks. */
 static void ct_anim_thread(void *ud)
 {
    companion_thumbs_t *t = (companion_thumbs_t*)ud;
@@ -626,13 +655,8 @@ static void ct_anim_thread(void *ud)
       uintptr_t tag;
       uint32_t bg;
       unsigned gen;
-      void *buf = NULL;
-      int64_t len = 0;
-      void *stream = NULL;
-      enum image_type_enum type;
-      unsigned fw = 0, fh = 0;
-      int nframes = 0, loops = 0, loops_left;
-      bool native_argb;
+      gfx_anim_preview_t *sess;
+      int loops_left;
 
       slock_lock(t->lock);
       while (!t->quit && !t->anim.wanted)
@@ -642,7 +666,6 @@ static void ct_anim_thread(void *ud)
          slock_unlock(t->lock);
          return;
       }
-      /* take the request */
       strlcpy(path, t->anim.path ? t->anim.path : "", sizeof(path));
       w   = t->anim.w;
       h   = t->anim.h;
@@ -654,34 +677,28 @@ static void ct_anim_thread(void *ud)
 
       if (!path[0])
          continue;
-      type = image_texture_get_type(path);
-      if (type == IMAGE_TYPE_NONE)
+      /* -1: no still-decode verdict to offer; the module probes the
+       * PNG head itself. NULL: a still, or not admitted. */
+      if (!(sess = gfx_anim_preview_open(path, -1)))
          continue;
-      /* Whole file in memory (the stream borrows it). A preview is a
-       * preview: refuse anything over 256 MiB rather than swallow it. */
-      if (!filestream_read_file(path, &buf, &len) || !buf || len <= 0)
-         continue;
-      if (len > (int64_t)256 * 1024 * 1024
-            || !ct_anim_type_ok(type, (const uint8_t*)buf, (size_t)len))
+      loops_left = sess->loop_count; /* 0 = forever */
+
+      slock_lock(t->lock);
+      if (t->quit || t->anim.gen != gen)
       {
-         free(buf);
+         slock_unlock(t->lock);
+         gfx_anim_preview_close(sess);
          continue;
       }
-      stream = image_transfer_anim_stream_new(buf, (size_t)len, type);
-      if (!stream)
-      {
-         free(buf);
-         continue;             /* a still after all */
-      }
-      image_transfer_anim_stream_get_info(stream, type, &fw, &fh, &nframes, &loops);
-      /* Ask for ARGB words directly; if the stream cannot, swizzle. */
-      native_argb = image_transfer_anim_stream_set_argb(stream, type, 1);
-      loops_left  = loops; /* 0 = forever */
+      t->anim_sess     = sess;          /* the UI thread may start audio */
+      t->anim_sess_gen = gen;
+      slock_unlock(t->lock);
 
       for (;;)
       {
          const uint32_t *frame;
          int duration_ms = 0;
+         bool native_argb = false;
          uint32_t *src, *bits;
          bool stale;
 
@@ -691,24 +708,27 @@ static void ct_anim_thread(void *ud)
          if (stale)
             break;
 
-         frame = image_transfer_anim_stream_next(stream, type, &duration_ms);
+         /* keep the window straddling the decoder's frontier */
+         if (!gfx_anim_preview_feed(sess))
+            break;
+
+         frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
          if (!frame)
          {
             if (loops_left > 0 && --loops_left == 0)
                break;
-            image_transfer_anim_stream_rewind(stream, type);
-            frame = image_transfer_anim_stream_next(stream, type, &duration_ms);
+            gfx_anim_preview_rewind(sess);
+            frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
             if (!frame)
                break;
          }
-         if (!fw || !fh)
+         if (!sess->width || !sess->height)
             break;
-         /* the scaler composites ARGB; convert R,G,B,A memory order first
-          * when the stream would not emit ARGB itself */
          src = (uint32_t*)frame;
          if (!native_argb)
          {
-            size_t i, n = (size_t)fw * fh;
+            /* R,G,B,A memory order -> ARGB words for the scaler */
+            size_t i, n = (size_t)sess->width * sess->height;
             src = (uint32_t*)malloc(n * sizeof(uint32_t));
             if (!src)
                break;
@@ -718,7 +738,7 @@ static void ct_anim_thread(void *ud)
                src[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
             }
          }
-         bits = companion_thumbs_scale(src, fw, fh, w, h, bg);
+         bits = companion_thumbs_scale(src, sess->width, sess->height, w, h, bg);
          if (src != frame)
             free(src);
          if (!bits)
@@ -731,12 +751,16 @@ static void ct_anim_thread(void *ud)
             ct_anim_push(t, bits, gen, tag, path, w, h);
          slock_unlock(t->lock);
 
-         if (duration_ms < 10)
-            duration_ms = 10;   /* a 0 ms frame would spin */
          retro_sleep(duration_ms);
       }
-      image_transfer_anim_stream_free(stream, type);
-      free(buf);
+
+      /* Unpublish before closing: the UI thread only touches the
+       * session while it is published, under the lock. */
+      slock_lock(t->lock);
+      if (t->anim_sess == sess)
+         t->anim_sess = NULL;
+      slock_unlock(t->lock);
+      gfx_anim_preview_close(sess);   /* audio too */
    }
 }
 #endif
@@ -750,6 +774,8 @@ void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
    if (!t->lock)
       return;
    slock_lock(t->lock);
+   if (t->anim_sess)
+      gfx_anim_preview_audio_stop(t->anim_sess); /* the previous one, now */
    free(t->anim.path);
    t->anim.path   = strldup(path, strlen(path) + 1);
    t->anim.w      = w;
@@ -780,6 +806,11 @@ void companion_thumbs_animate_stop(companion_thumbs_t *t)
    slock_lock(t->lock);
    t->anim.gen++;
    t->anim.wanted = false;
+   /* Silence at once: the thread closes the session (and its audio)
+    * at its next frame, but the mixer stream should not play on until
+    * then. Under the lock, so the session is still published. */
+   if (t->anim_sess)
+      gfx_anim_preview_audio_stop(t->anim_sess);
    slock_unlock(t->lock);
 #endif
 }
@@ -793,7 +824,7 @@ bool companion_thumbs_animating(companion_thumbs_t *t)
    if (!t->lock)
       return false;
    slock_lock(t->lock);
-   on = t->anim.wanted || (t->anim_thread != NULL && t->anim.path != NULL);
+   on = t->anim.wanted || t->anim_sess != NULL;
    slock_unlock(t->lock);
 #endif
    return on;
@@ -985,6 +1016,31 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
    size_t n, i, delivered = 0;
    if (!t)
       return 0;
+
+#ifdef HAVE_THREADS
+   /* Preview audio lives on the UI thread (the mixer): start it once
+    * the animation thread has published its session, and feed its
+    * window every poll, as gfx_thumbnail_animate does per frame. */
+   if (t->lock)
+   {
+      gfx_anim_preview_t *sess;
+      bool start = false;
+      slock_lock(t->lock);
+      sess = t->anim_sess;
+      if (sess && t->anim_sess_gen == t->anim.gen && t->anim_audio_gen != t->anim.gen)
+      {
+         t->anim_audio_gen = t->anim.gen;
+         start = true;
+      }
+      if (sess && t->anim_sess_gen == t->anim.gen)
+      {
+         if (start)
+            gfx_anim_preview_audio_begin(sess);
+         gfx_anim_preview_audio_feed(sess);
+      }
+      slock_unlock(t->lock);
+   }
+#endif
 
 #ifndef HAVE_THREADS
    /* No workers: decode here, under the budget. */

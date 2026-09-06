@@ -28,6 +28,8 @@ LC=libretro-common
 INC="-I. -I$LC/include"
 DEFS="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_RTGA -DHAVE_RPNG"
 SRCS="ui/companion/companion_thumbs.c \
+      gfx/gfx_anim_preview.c \
+      $LC/memory/mem_stats.c \
       ui/companion/test/companion_thumbs_test.c \
       $LC/formats/image_texture.c \
       $LC/formats/image_transfer.c \

@@ -13,6 +13,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # lets the test drive the animation open directly - upstream of the
 # task queue, downstream of the request plumbing.
 UUT_SRC := $(REPO_ROOT)/gfx/gfx_thumbnail.c
+ANIM_PREVIEW_SRC := $(REPO_ROOT)/gfx/gfx_anim_preview.c
 UUT_OBJ := gfx_thumbnail_uut.o
 
 SOURCES := gfx_thumbnail_anim_test.c \
@@ -75,7 +76,13 @@ $(UUT_OBJ): $(UUT_SRC)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ)
+# The preview session gfx_thumbnail now drives its window feeder and
+# audio through; built with the UUT's flags (same stubs surface).
+ANIM_PREVIEW_OBJ := gfx_anim_preview_uut.o
+$(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
+$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -89,6 +96,6 @@ sweep:
 	@echo "sweep clean"
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(UUT_OBJ)
+	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ)
 
 .PHONY: all sweep clean

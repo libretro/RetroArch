@@ -485,14 +485,15 @@ static void test_animation(void)
    /* animate: frames alternate red / green at ~30 ms */
    ngot = 0;
    companion_thumbs_animate(t, apng, 16, 16, 7, 0);
-   CHECK(drain(t, 6, 4000) >= 6, "at least 6 frames in 4 s (got %u)", (unsigned)ngot);
+   CHECK(drain(t, 10, 4000) >= 10, "at least 10 frames in 4 s (got %u)", (unsigned)ngot);
    for (i = 0; i < ngot; i++)
    {
       CHECK(gots[i].tag == 7 && gots[i].edge == 16, "frame tag / size");
       if (gots[i].centre == 0xffff0000u) reds++;
       else if (gots[i].centre == 0xff00ff00u) greens++;
    }
-   CHECK(reds >= 2 && greens >= 2, "both frames seen (red %d, green %d)", reds, greens);
+   CHECK(reds >= 2 && greens >= 2, "both frames seen, more than once each (red %d, green %d)", reds, greens);
+   CHECK(reds + greens == (int)ngot, "every frame is one of the two (red %d, green %d, total %u)", reds, greens, (unsigned)ngot);
    CHECK(companion_thumbs_animating(t), "reports animating");
 
    /* stop: no more frames after the one in flight */
