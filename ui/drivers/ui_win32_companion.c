@@ -101,6 +101,7 @@
 #define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
 #define COMPANION_WIN32_INFO_W     280   /* core-info pane width when shown */
 #define COMPANION_WIN32_SEARCH_H   24    /* search strip above the entries */
+#define COMPANION_WIN32_BOXART_H   300   /* boxart pane height when shown */
 #define COMPANION_WIN32_THUMB      128   /* icon-view thumbnail edge, px */
 /* Icon view: one thumbnail decoded per frame from the iterate hook, so a
  * playlist of any size never costs more than one file decode per frame. */
@@ -131,6 +132,7 @@ enum
    IDC_CW_LOG,
    IDC_CW_INFO,       /* core information pane: list view */
    IDC_CW_SEARCH,     /* search box above the entries */
+   IDC_CW_BOXART,     /* boxart preview (right column, below info) */
    IDC_CW_CORES,      /* Load Core window: list view */
    IDC_CW_CORES_OK,
    IDC_CW_CORES_CANCEL,
@@ -146,6 +148,7 @@ enum
    IDM_CW_SCAN_DIR,
    IDM_CW_TOGGLE_LOG,
    IDM_CW_TOGGLE_INFO,
+   IDM_CW_TOGGLE_BOXART,
    IDM_CW_VIEW_LIST,
    IDM_CW_VIEW_ICONS,
    IDM_CW_BROWSE_FILES,
@@ -169,6 +172,10 @@ typedef struct ui_companion_win32_wimp
    bool info_visible;
    HWND search;      /* EDIT above the entries; substring filter */
    char filter[128]; /* lower-cased search text, "" = show all */
+   HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
+   HBITMAP boxart_bmp;
+   bool boxart_visible;
+   long boxart_entry; /* entry index shown, -1 = none */
    /* Core the info pane currently describes; the pane follows the
     * running core from the iterate hook (only the shader commands are
     * forwarded to companions, so a load/unload is not an event here). */
@@ -565,11 +572,13 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
 
    {
       int log_h    = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
-      int info_w   = (w->info_visible && w->info) ? COMPANION_WIN32_INFO_W : 0;
+      bool r_info  = (w->info_visible && w->info);
+      bool r_box   = (w->boxart_visible && w->boxart);
+      int right_w  = (r_info || r_box) ? COMPANION_WIN32_INFO_W : 0;
       int search_h = COMPANION_WIN32_SEARCH_H;
       int list_h   = rc.bottom - status_h - log_h;
       int entry_x  = w->pane_w + COMPANION_WIN32_SPLIT_W;
-      int entry_w  = rc.right - entry_x - info_w;
+      int entry_w  = rc.right - entry_x - right_w;
       int entry_h  = list_h - search_h;
       if (list_h < 0)
          list_h = 0;
@@ -577,7 +586,8 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          entry_h = 0;
       if (entry_w < COMPANION_WIN32_PANE_MIN)
       {
-         info_w  = 0;
+         right_w = 0;
+         r_info  = r_box = false;
          entry_w = rc.right - entry_x;
       }
 
@@ -587,8 +597,20 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          MoveWindow(w->search, entry_x, 0, entry_w, search_h, TRUE);
       if (w->entries)
          MoveWindow(w->entries, entry_x, search_h, entry_w, entry_h, TRUE);
-      if (w->info)
-         MoveWindow(w->info, entry_x + entry_w, 0, info_w, list_h, TRUE);
+
+      /* Right column: info on top, boxart below (each takes the full
+       * column when it is the only one shown). */
+      {
+         int rx     = entry_x + entry_w;
+         int box_h  = r_box ? (list_h < COMPANION_WIN32_BOXART_H
+                               ? list_h : COMPANION_WIN32_BOXART_H) : 0;
+         int info_h = r_info ? list_h - box_h : 0;
+         if (w->info)
+            MoveWindow(w->info, rx, 0, r_info ? right_w : 0, info_h, TRUE);
+         if (w->boxart)
+            MoveWindow(w->boxart, rx, info_h, r_box ? right_w : 0, box_h, TRUE);
+      }
+
       if (w->log)
          MoveWindow(w->log, 0, list_h, rc.right, log_h, TRUE);
    }
@@ -636,6 +658,115 @@ static void cw_info_fill(ui_companion_win32_wimp_t *w)
 
    string_list_free(keys);
    string_list_free(values);
+}
+
+/* Scale @img to fit @maxw x @maxh preserving aspect, as a 32-bit DIB. */
+static HBITMAP cw_boxart_scale(const struct texture_image *img,
+      int maxw, int maxh, uint32_t bg)
+{
+   uint32_t *buf;
+   HBITMAP bmp;
+   int dw, dh, x, y;
+
+   if (!img->pixels || !img->width || !img->height || maxw < 1 || maxh < 1)
+      return NULL;
+
+   dw = maxw;
+   dh = (int)((unsigned)maxw * img->height / img->width);
+   if (dh > maxh)
+   {
+      dh = maxh;
+      dw = (int)((unsigned)maxh * img->width / img->height);
+   }
+   if (dw < 1) dw = 1;
+   if (dh < 1) dh = 1;
+
+   buf = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t));
+   if (!buf)
+      return NULL;
+   for (y = 0; y < dh; y++)
+   {
+      const uint32_t *src = img->pixels
+         + (size_t)((unsigned)y * img->height / dh) * img->width;
+      uint32_t *dst = buf + (size_t)y * dw;
+      for (x = 0; x < dw; x++)
+         dst[x] = src[(unsigned)x * img->width / dw] | 0xff000000u;
+   }
+   (void)bg;
+   bmp = cw_dib_from_argb(buf, dw, dh);
+   free(buf);
+   return bmp;
+}
+
+/* Show the boxart of entry @entry (index into the playlist, or -1 to
+ * clear). No-op if the pane already shows it. */
+static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
+{
+   char path[PATH_MAX_LENGTH];
+   char db_name[NAME_MAX_LENGTH];
+   struct texture_image img;
+   const struct playlist_entry *e;
+   RECT rc;
+   HBITMAP bmp = NULL;
+
+   if (!w || !w->boxart || !w->boxart_visible)
+      return;
+   if (entry == w->boxart_entry)
+      return;
+   w->boxart_entry = entry;
+
+   if (entry >= 0 && (e = companion_core_entry(w->core, (size_t)entry)))
+   {
+      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+      path_remove_extension(db_name);
+      memset(&img, 0, sizeof(img));
+      GetClientRect(w->boxart, &rc);
+      if (companion_core_thumbnail_path(w->core, db_name,
+               COMPANION_THUMB_BOXART,
+               !string_is_empty(e->label) ? e->label : path_basename(e->path),
+               e->path, path, sizeof(path))
+            && image_texture_load(&img, path))
+      {
+         bmp = cw_boxart_scale(&img, rc.right - 4, rc.bottom - 4,
+               cw_sys_color_argb(COLOR_BTNFACE));
+         image_texture_free(&img);
+      }
+   }
+
+   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
+   if (w->boxart_bmp)
+      DeleteObject(w->boxart_bmp);
+   w->boxart_bmp = bmp;
+}
+
+/* The playlist-entry index behind the entries' focused row, or -1. */
+static long cw_focused_entry(ui_companion_win32_wimp_t *w)
+{
+   LVITEMA item;
+   LRESULT row = SendMessageA(w->entries, LVM_GETNEXTITEM,
+         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+   if (row < 0 || w->browse_mode)
+      return -1;
+   memset(&item, 0, sizeof(item));
+   item.mask  = LVIF_PARAM;
+   item.iItem = (int)row;
+   if (!SendMessageA(w->entries, LVM_GETITEMA, 0, (LPARAM)&item))
+      return -1;
+   return (long)item.lParam;
+}
+
+static void cw_boxart_toggle(ui_companion_win32_wimp_t *w)
+{
+   if (!w || !w->boxart)
+      return;
+   w->boxart_visible = !w->boxart_visible;
+   ShowWindow(w->boxart, w->boxart_visible ? SW_SHOW : SW_HIDE);
+   cw_layout(w);
+   if (w->boxart_visible)
+   {
+      w->boxart_entry = -2; /* force a refresh */
+      cw_boxart_update(w, cw_focused_entry(w));
+   }
 }
 
 static void cw_info_toggle(ui_companion_win32_wimp_t *w)
@@ -1373,6 +1504,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_TOGGLE_INFO:
                cw_info_toggle(w);
                return 0;
+            case IDM_CW_TOGGLE_BOXART:
+               cw_boxart_toggle(w);
+               return 0;
             case IDM_CW_VIEW_LIST:
                cw_set_icon_view(w, false);
                return 0;
@@ -1408,12 +1542,21 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
       case WM_NOTIFY:
          if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_ENTRIES)
          {
-            switch (((NMHDR*)lparam)->code)
+            NMHDR *hdr = (NMHDR*)lparam;
+            switch (hdr->code)
             {
                case NM_DBLCLK:
                case NM_RETURN:
                   cw_run_selected(w);
                   return 0;
+               case LVN_ITEMCHANGED:
+                  {
+                     NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+                     if ((nm->uChanged & LVIF_STATE)
+                           && (nm->uNewState & LVIS_SELECTED))
+                        cw_boxart_update(w, cw_focused_entry(w));
+                  }
+                  break;
                default:
                   break;
             }
@@ -1453,6 +1596,7 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_INFO,  "Core &Information");
+   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_BOXART, "&Boxart");
 
    {
       HMENU edit = CreatePopupMenu();
@@ -1537,12 +1681,17 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_SEARCH, inst, NULL);
 
+   w->boxart = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
+         WS_CHILD | SS_BITMAP | SS_CENTERIMAGE,
+         0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_BOXART, inst, NULL);
+   w->boxart_entry = -1;
+
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | LVS_REPORT | LVS_NOSORTHEADER | LVS_SINGLESEL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
    if (!w->playlists || !w->entries || !w->status || !w->log || !w->info
-         || !w->search)
+         || !w->search || !w->boxart)
       return false;
 
    SendMessageA(w->info, LVM_SETEXTENDEDLISTVIEWSTYLE,
@@ -1615,6 +1764,8 @@ static void ui_companion_win32_wimp_deinit(void *data)
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
    if (!w)
       return;
+   if (w->boxart_bmp)
+      DeleteObject(w->boxart_bmp);
    if (w->thumbs)
       ImageList_Destroy(w->thumbs);
    if (w->cores_hwnd)

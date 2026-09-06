@@ -135,6 +135,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
     * rows cached from companion_core_core_info_rows(). */
    NSScrollView *infoScroll;
    NSTableView *infoTable;
+   NSImageView *boxart;     /* selected entry's boxart, right pane */
+   BOOL boxartVisible;
    BOOL infoVisible;
    struct string_list *infoKeys;
    struct string_list *infoValues;
@@ -164,6 +166,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)loadSelectedCore:(id)sender;
 - (void)showCoresForContent:(const char*)content;
 - (void)toggleInfo:(id)sender;
+- (void)toggleBoxart:(id)sender;
+- (void)refreshBoxart;
 - (void)refreshInfo;
 - (void)infoFollowCore;
 - (void)cancelLoadCore:(id)sender;
@@ -645,6 +649,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    KEEP_IVAR(infoScroll);
    [[[infoTable tableColumns] objectAtIndex:0] setWidth:100.0];
    [[[[infoTable tableColumns] objectAtIndex:0] headerCell] setStringValue:@""];
+   boxart = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, 280, 300)];
+   [boxart setImageScaling:NSImageScaleProportionallyUpOrDown];
+   [boxart setImageFrameStyle:NSImageFrameGrayBezel];
    [[[infoTable tableColumns] objectAtIndex:1] setWidth:170.0];
    [[[[infoTable tableColumns] objectAtIndex:1] headerCell]
       setStringValue:@"Core Information"];
@@ -708,6 +715,9 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       keyEquivalent:@""];
    [item setTarget:self];
    item = [menu addItemWithTitle:@"Core Information" action:@selector(toggleInfo:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:@"Boxart" action:@selector(toggleBoxart:)
       keyEquivalent:@""];
    [item setTarget:self];
 
@@ -803,6 +813,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       RELEASE(infoTable);
    }
    RELEASE(infoScroll);
+   RELEASE(boxart);
    string_list_free(infoKeys);
    string_list_free(infoValues);
    infoKeys   = NULL;
@@ -903,7 +914,14 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 - (void)tableViewSelectionDidChange:(NSNotification*)note
 {
    int row;
-   if (!wimp || [note object] != playlists)
+   if (!wimp)
+      return;
+   if ([note object] == entries)
+   {
+      [self refreshBoxart];
+      return;
+   }
+   if ([note object] != playlists)
       return;
    browseMode = NO; /* picking a playlist leaves the file browser */
    row = (int)[playlists selectedRow];
@@ -912,6 +930,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    if (companion_core_select_playlist(wimp->core, (size_t)row))
       [self setStatus:"Loading playlist..."];
 }
+
 
 /* NSWindow delegate: closing the companion never quits RetroArch. */
 - (BOOL)windowShouldClose:(id)sender
@@ -1060,6 +1079,43 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    if (infoVisible && wimp
          && strcmp(infoCore, companion_core_current_core_path(wimp->core)))
       [self refreshInfo];
+}
+
+- (void)refreshBoxart
+{
+   NSInteger row;
+   NSImage *img = nil;
+   if (!boxartVisible || !boxart || browseMode)
+   {
+      [boxart setImage:nil];
+      return;
+   }
+   row = [entries selectedRow];
+   if (row >= 0)
+      img = cc_thumb_image(wimp, row); /* boxart of the selected entry */
+   [boxart setImage:img];
+}
+
+- (void)toggleBoxart:(id)sender
+{
+   NSView *content;
+   NSRect b;
+   if (!window || !boxart)
+      return;
+   boxartVisible = !boxartVisible;
+   content = [window contentView];
+   b       = [content bounds];
+   if (boxartVisible)
+   {
+      /* Right edge, above the status line. */
+      [boxart setFrame:NSMakeRect(b.size.width - 280, 20, 280,
+            b.size.height - 40)];
+      [boxart setAutoresizingMask:NSViewMinXMargin | NSViewHeightSizable];
+      [content addSubview:boxart];
+      [self refreshBoxart];
+   }
+   else
+      [boxart removeFromSuperview];
 }
 
 - (void)toggleInfo:(id)sender
