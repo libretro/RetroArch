@@ -1852,6 +1852,25 @@
 /* Only init the WIMP UI for this session if this is enabled */
 #define DEFAULT_DESKTOP_MENU_ENABLE true
 
+/* Desktop companion presentation settings, shared by the Qt, Win32 and
+ * Cocoa companions (formerly the Qt companion's private
+ * retroarch_qt.cfg). */
+#define DEFAULT_DESKTOP_MENU_VIEW_TYPE 0            /* 0 list, 1 icons */
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_TYPE 0       /* 0 boxart, 1 screenshot, 2 title, 3 logo */
+#define DEFAULT_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST false
+#define DEFAULT_DESKTOP_MENU_SAVE_LAST_TAB false
+#define DEFAULT_DESKTOP_MENU_LAST_TAB 0
+#define DEFAULT_DESKTOP_MENU_SAVE_GEOMETRY false
+#define DEFAULT_DESKTOP_MENU_SHOW_WELCOME_SCREEN true
+#define DEFAULT_DESKTOP_MENU_SCAN_FINISH_CONFIRM true
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT 500
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_MAX_SIZE 0   /* 0 = unlimited */
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_QUALITY 0     /* 0 = default */
+#define DEFAULT_DESKTOP_MENU_ICON_VIEW_ZOOM 50
+#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT 0
+#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT 1000
+#define DEFAULT_DESKTOP_MENU_THEME 0                 /* 0 system, 1 dark, 2 custom */
+
 /* Keep track of how long each core+content has been running for over time */
 
 #ifdef __WINRT__

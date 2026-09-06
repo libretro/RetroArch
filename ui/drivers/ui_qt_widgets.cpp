@@ -23,7 +23,6 @@
 #include <QResizeEvent>
 #include <QScreen>
 #include <QScrollBar>
-#include <QSettings>
 #include <QStackedLayout>
 #include <QStyle>
 #include <QStyleOption>
@@ -82,6 +81,24 @@ extern "C" {
 #endif
 
 /* Replace characters unsafe in URLs / file names with '_' */
+
+/* hidden_playlists is a comma-separated list of .lpl file names in
+ * retroarch.cfg (desktop_menu_hidden_playlists); QStringList in and out. */
+static QStringList qt_hidden_playlists(void)
+{
+   const char *v = config_get_ptr()->arrays.desktop_menu_hidden_playlists;
+   if (string_is_empty(v))
+      return QStringList();
+   return QString::fromUtf8(v).split(',', Qt::SkipEmptyParts);
+}
+
+static void qt_set_hidden_playlists(const QStringList &list)
+{
+   QByteArray joined = list.join(',').toUtf8();
+   strlcpy(config_get_ptr()->arrays.desktop_menu_hidden_playlists,
+         joined.constData(),
+         sizeof(config_get_ptr()->arrays.desktop_menu_hidden_playlists));
+}
 
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
@@ -1904,7 +1921,6 @@ static inline bool comp_hash_ui_display_name_key_lower(const QHash<QString,
 PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(parent)
    ,m_mainwindow(mainwindow)
-   ,m_settings(mainwindow->settings())
    ,m_nameLineEdit(new QLineEdit(this))
    ,m_pathLineEdit(new QLineEdit(this))
    ,m_extensionsLineEdit(new QLineEdit(this))
@@ -2533,9 +2549,7 @@ void ViewOptionsDialog::onRejected()
 ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    QWidget(parent)
    ,m_mainwindow(mainwindow)
-   ,m_settings(mainwindow->settings())
    ,m_saveGeometryCheckBox(new QCheckBox(this))
-   ,m_saveDockPositionsCheckBox(new QCheckBox(this))
    ,m_saveLastTabCheckBox(new QCheckBox(this))
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
@@ -2582,9 +2596,6 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY),
          m_saveGeometryCheckBox);
    form->addRow(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS),
-         m_saveDockPositionsCheckBox);
-   form->addRow(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST), m_suggestLoadedCoreFirstCheckBox);
@@ -2616,7 +2627,7 @@ void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
 
       if (filePath.isEmpty())
       {
-         int oldThemeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
+         int oldThemeIndex = m_themeComboBox->findData((int)config_get_ptr()->uints.desktop_menu_theme);
 
          if (m_themeComboBox->count() > oldThemeIndex)
          {
@@ -2642,8 +2653,10 @@ void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
 void ViewOptionsWidget::onHighlightColorChoose()
 {
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
-   QColor currentHighlightColor = m_settings->value("highlight_color",
-         QApplication::palette().highlight().color()).value<QColor>();
+   QColor currentHighlightColor =
+      string_is_empty(config_get_ptr()->arrays.desktop_menu_highlight_color)
+      ? QApplication::palette().highlight().color()
+      : QColor(QString::fromUtf8(config_get_ptr()->arrays.desktop_menu_highlight_color));
    QColor newHighlightColor     = QColorDialog::getColor(
          currentHighlightColor, this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR));
@@ -2654,7 +2667,9 @@ void ViewOptionsWidget::onHighlightColorChoose()
             m_themeComboBox->currentData(Qt::UserRole).toInt());
 
       m_highlightColor = newHighlightColor;
-      m_settings->setValue("highlight_color", m_highlightColor);
+      strlcpy(config_get_ptr()->arrays.desktop_menu_highlight_color,
+            m_highlightColor.name().toUtf8().constData(),
+            sizeof(config_get_ptr()->arrays.desktop_menu_highlight_color));
       highlightPixmap.fill(m_highlightColor);
       m_highlightColorPushButton->setIcon(highlightPixmap);
       m_mainwindow->setTheme(theme);
@@ -2666,24 +2681,26 @@ void ViewOptionsWidget::loadViewOptions()
    int i;
    int themeIndex    = 0;
    int playlistIndex = 0;
+   settings_t *settings                        = config_get_ptr();
    QColor highlightColor                       =
-      m_settings->value("highlight_color",
-            QApplication::palette().highlight().color()).value<QColor>();
+      string_is_empty(settings->arrays.desktop_menu_highlight_color)
+      ? QApplication::palette().highlight().color()
+      : QColor(QString::fromUtf8(settings->arrays.desktop_menu_highlight_color));
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
-   QString initialPlaylist = m_settings->value("initial_playlist",
-         m_mainwindow->getSpecialPlaylistPath(
-            SPECIAL_PLAYLIST_HISTORY)).toString();
+   QString initialPlaylist =
+      string_is_empty(settings->paths.desktop_menu_initial_playlist)
+      ? m_mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)
+      : QString::fromUtf8(settings->paths.desktop_menu_initial_playlist);
 
-   m_saveGeometryCheckBox->setChecked(m_settings->value("save_geometry", false).toBool());
-   m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());
-   m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
-   m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
-   m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
-   m_thumbnailCacheSpinBox->setValue(m_settings->value("thumbnail_cache_limit", 512).toInt());
-   m_thumbnailDropSizeSpinBox->setValue(m_settings->value("thumbnail_max_size", 0).toInt());
+   m_saveGeometryCheckBox->setChecked(settings->bools.desktop_menu_save_geometry);
+   m_saveLastTabCheckBox->setChecked(settings->bools.desktop_menu_save_last_tab);
+   m_showHiddenFilesCheckBox->setChecked(settings->bools.show_hidden_files);
+   m_suggestLoadedCoreFirstCheckBox->setChecked(settings->bools.desktop_menu_suggest_loaded_core_first);
+   m_thumbnailCacheSpinBox->setValue((int)settings->uints.desktop_menu_thumbnail_cache_limit);
+   m_thumbnailDropSizeSpinBox->setValue((int)settings->uints.desktop_menu_thumbnail_max_size);
 
-   themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
+   themeIndex = m_themeComboBox->findData((int)settings->uints.desktop_menu_theme);
 
    if (m_themeComboBox->count() > themeIndex)
       m_themeComboBox->setCurrentIndex(themeIndex);
@@ -2729,19 +2746,29 @@ void ViewOptionsWidget::showOrHideHighlightColor()
 
 void ViewOptionsWidget::saveViewOptions()
 {
-   m_settings->setValue("save_geometry", m_saveGeometryCheckBox->isChecked());
-   m_settings->setValue("save_dock_positions", m_saveDockPositionsCheckBox->isChecked());
-   m_settings->setValue("save_last_tab", m_saveLastTabCheckBox->isChecked());
-   m_settings->setValue("theme", m_mainwindow->getThemeString(static_cast<MainWindow::Theme>(m_themeComboBox->currentData(Qt::UserRole).toInt())));
-   m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
-   m_settings->setValue("highlight_color", m_highlightColor);
-   m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
-   m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
-   m_settings->setValue("thumbnail_cache_limit", m_thumbnailCacheSpinBox->value());
-   m_settings->setValue("thumbnail_max_size", m_thumbnailDropSizeSpinBox->value());
+   /* Into retroarch.cfg's settings_t, shared with the native companions;
+    * RetroArch writes the file on exit. */
+   settings_t *settings = config_get_ptr();
+   QByteArray initial   = m_startupPlaylistComboBox->currentData(Qt::UserRole).toString().toUtf8();
+   QByteArray color     = m_highlightColor.name().toUtf8();
+   QByteArray theme     = m_customThemePath.toUtf8();
+
+   settings->bools.desktop_menu_save_geometry             = m_saveGeometryCheckBox->isChecked();
+   settings->bools.desktop_menu_save_last_tab             = m_saveLastTabCheckBox->isChecked();
+   settings->uints.desktop_menu_theme                     =
+      (unsigned)m_themeComboBox->currentData(Qt::UserRole).toInt();
+   settings->bools.show_hidden_files                      = m_showHiddenFilesCheckBox->isChecked();
+   strlcpy(settings->arrays.desktop_menu_highlight_color, color.constData(),
+         sizeof(settings->arrays.desktop_menu_highlight_color));
+   settings->bools.desktop_menu_suggest_loaded_core_first = m_suggestLoadedCoreFirstCheckBox->isChecked();
+   strlcpy(settings->paths.desktop_menu_initial_playlist, initial.constData(),
+         sizeof(settings->paths.desktop_menu_initial_playlist));
+   settings->uints.desktop_menu_thumbnail_cache_limit     = (unsigned)m_thumbnailCacheSpinBox->value();
+   settings->uints.desktop_menu_thumbnail_max_size        = (unsigned)m_thumbnailDropSizeSpinBox->value();
 
    if (!m_mainwindow->customThemeString().isEmpty())
-      m_settings->setValue("custom_theme", m_customThemePath);
+      strlcpy(settings->paths.desktop_menu_custom_theme, theme.constData(),
+            sizeof(settings->paths.desktop_menu_custom_theme));
 
    m_mainwindow->setThumbnailCacheLimit(m_thumbnailCacheSpinBox->value());
 }
@@ -7809,12 +7836,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       if (row >= 0)
       {
-         QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
+         QStringList hiddenPlaylists = qt_hidden_playlists();
 
          if (!hiddenPlaylists.contains(currentPlaylistFileName))
          {
             hiddenPlaylists.append(currentPlaylistFileName);
-            m_settings->setValue("hidden_playlists", hiddenPlaylists);
+            qt_set_hidden_playlists(hiddenPlaylists);
          }
 
          m_listWidget->setRowHidden(row, true);
@@ -7826,7 +7853,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       if (rowVariant.isValid())
       {
-         QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
+         QStringList hiddenPlaylists = qt_hidden_playlists();
          int row = rowVariant.toInt();
 
          if (row >= 0)
@@ -7838,7 +7865,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             if (hiddenPlaylists.contains(playlistFileName))
             {
                hiddenPlaylists.removeOne(playlistFileName);
-               m_settings->setValue("hidden_playlists", hiddenPlaylists);
+               qt_set_hidden_playlists(hiddenPlaylists);
             }
 
             m_listWidget->setRowHidden(row, false);
@@ -7877,8 +7904,7 @@ void MainWindow::reloadPlaylists()
    settings_t *settings                    = config_get_ptr();
    const char *path_dir_playlist           = settings->paths.directory_playlist;
    QDir playlistDir(path_dir_playlist);
-   QStringList hiddenPlaylists             = m_settings->value(
-         "hidden_playlists").toStringList();
+   QStringList hiddenPlaylists             = qt_hidden_playlists();
 
    QListWidgetItem *currentItem            = m_listWidget->currentItem();
 
@@ -7983,7 +8009,10 @@ void MainWindow::reloadPlaylists()
       {
          bool            foundCurrent = false;
          bool            foundInitial = false;
-         QString      initialPlaylist = m_settings->value("initial_playlist", m_historyPlaylistsItem->data(Qt::UserRole).toString()).toString();
+         QString      initialPlaylist =
+            string_is_empty(config_get_ptr()->paths.desktop_menu_initial_playlist)
+            ? m_historyPlaylistsItem->data(Qt::UserRole).toString()
+            : QString::fromUtf8(config_get_ptr()->paths.desktop_menu_initial_playlist);
          QListWidgetItem *initialItem = NULL;
 
          for (i = 0; i < m_listWidget->count(); i++)

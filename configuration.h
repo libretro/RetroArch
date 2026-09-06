@@ -317,6 +317,21 @@ typedef struct settings
       unsigned menu_rgui_particle_effect;
       unsigned menu_ticker_type;
       unsigned menu_scroll_delay;
+      unsigned desktop_menu_view_type;
+      unsigned desktop_menu_thumbnail_type;
+      unsigned desktop_menu_last_tab;
+      unsigned desktop_menu_thumbnail_cache_limit;
+      unsigned desktop_menu_thumbnail_max_size;
+      unsigned desktop_menu_thumbnail_quality;
+      unsigned desktop_menu_icon_view_zoom;
+      unsigned desktop_menu_all_playlists_list_max_count;
+      unsigned desktop_menu_all_playlists_grid_max_count;
+      unsigned desktop_menu_theme;
+      /* Window geometry, plain ints (was a Qt QByteArray blob). 0 = unset. */
+      unsigned desktop_menu_window_x;
+      unsigned desktop_menu_window_y;
+      unsigned desktop_menu_window_width;
+      unsigned desktop_menu_window_height;
       unsigned menu_content_show_add_entry;
       unsigned menu_content_show_contentless_cores;
       unsigned menu_content_show_netplay;
@@ -887,6 +902,11 @@ typedef struct settings
       bool ui_companion_enable;
       bool ui_companion_toggle;
       bool desktop_menu_enable;
+      bool desktop_menu_suggest_loaded_core_first;
+      bool desktop_menu_save_last_tab;
+      bool desktop_menu_save_geometry;
+      bool desktop_menu_show_welcome_screen;
+      bool desktop_menu_scan_finish_confirm;
 
       /* Cheevos */
       bool cheevos_enable;
@@ -1118,6 +1138,8 @@ typedef struct settings
       char input_joypad_driver[32];
       char midi_driver[32];
       char ui_companion_driver[32];
+      char desktop_menu_hidden_playlists[PATH_MAX_LENGTH]; /* comma-separated .lpl names */
+      char desktop_menu_highlight_color[32];              /* "#rrggbb" */
       char midi_input[32];
       char midi_output[32];
       char ai_service_backend[32];
@@ -1248,6 +1270,8 @@ typedef struct settings
       char path_softfilter_plugin[PATH_MAX_LENGTH];
       char path_core_options[PATH_MAX_LENGTH];
       char path_content_favorites[PATH_MAX_LENGTH];
+      char desktop_menu_initial_playlist[PATH_MAX_LENGTH];
+      char desktop_menu_custom_theme[PATH_MAX_LENGTH];
       char path_content_history[PATH_MAX_LENGTH];
       char path_content_image_history[PATH_MAX_LENGTH];
       char path_content_music_history[PATH_MAX_LENGTH];

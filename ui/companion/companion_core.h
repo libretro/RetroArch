@@ -206,40 +206,26 @@ void companion_core_event_command(companion_core_t *core,
 bool companion_core_request_scan(companion_core_t *core, const char *path,
       bool directory, bool show_hidden_files);
 
-/* --- Companion settings (retroarch_qt.cfg) --------------------------- */
+/* --- Companion settings (retroarch.cfg) ------------------------------- */
 
-/* The desktop companion's own settings live in retroarch_qt.cfg next to
- * retroarch.cfg, written by the Qt companion through QSettings in INI
- * form ("[General]" then key=value lines, no quoting). Every companion
- * reads and writes the same file so a view type, thumbnail type, start
- * playlist or "suggest loaded core first" chosen in one shows up in the
- * others. RetroArch's config_file cannot read that dialect (its key scan
- * treats '=' as part of the key when unspaced), so this is a small
- * dedicated reader/writer. Keys are the ones Qt uses:
- *   view_type                  "list" | "icons"
- *   icon_view_thumbnail_type   "boxart" | "screenshot" | "title" | "logo"
- *   initial_playlist           path of the playlist to open at start
- *   show_hidden_files          true | false
- *   suggest_loaded_core_first  true | false
- *   last_tab / save_last_tab   content-browser tab index and whether kept
- *   hidden_playlists           comma-separated playlist file names
- * Unknown keys (Qt geometry blobs, theme...) are preserved on write. */
+/* The desktop companion's presentation settings live in retroarch.cfg
+ * (settings->*.desktop_menu_*), shared by the Qt, Win32 and Cocoa
+ * companions and saved with the main config. These accessors are the
+ * shape the backends use; values are plain (no toolkit blobs). */
 
-/* Read @key into @s. Returns the length, 0 when absent or unset. */
-size_t companion_core_setting_get(companion_core_t *core, const char *key,
-      char *s, size_t len);
-/* @key as a boolean; @def when absent or not a boolean. */
-bool companion_core_setting_get_bool(companion_core_t *core, const char *key,
-      bool def);
-/* @key as an integer; @def when absent or not numeric. */
-int companion_core_setting_get_int(companion_core_t *core, const char *key,
-      int def);
-/* Set @key (NULL / "" removes it) and rewrite the file, keeping every
- * other key in it. Returns false if the file could not be written. */
-bool companion_core_setting_set(companion_core_t *core, const char *key,
-      const char *value);
-bool companion_core_setting_set_bool(companion_core_t *core, const char *key,
-      bool value);
+/* View: false = list, true = icons. */
+bool companion_core_pref_icon_view(companion_core_t *core);
+void companion_core_pref_set_icon_view(companion_core_t *core, bool icons);
+/* Thumbnail repository subdir for the icon view / boxart pane
+ * (COMPANION_THUMB_BOXART etc.) from desktop_menu_thumbnail_type. */
+const char *companion_core_pref_thumbnail_subdir(companion_core_t *core);
+/* Playlist file to open at startup ("" = use History). */
+const char *companion_core_pref_initial_playlist(companion_core_t *core);
+bool companion_core_pref_suggest_loaded_core_first(companion_core_t *core);
+bool companion_core_pref_show_hidden_files(companion_core_t *core);
+/* Content-browser tab to restore: -1 when not remembering, else 0/1. */
+int companion_core_pref_last_tab(companion_core_t *core);
+void companion_core_pref_set_last_tab(companion_core_t *core, int tab);
 
 /* --- Playlist icons ------------------------------------------------ */
 

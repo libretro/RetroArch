@@ -10503,6 +10503,22 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
+               /* Presentation settings shared by every desktop companion
+                * (formerly the Qt companion's private retroarch_qt.cfg). */
+               {MENU_ENUM_LABEL_DESKTOP_MENU_VIEW_TYPE,                                PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_TYPE,                           PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,                PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SAVE_LAST_TAB,                            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SAVE_GEOMETRY,                            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SHOW_WELCOME_SCREEN,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SCAN_FINISH_CONFIRM,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,                    PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,                       PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,                        PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,                           PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THEME,                                    PARSE_ONLY_UINT,   true},
 #endif
 #ifdef _3DS
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},

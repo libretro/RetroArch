@@ -91,7 +91,6 @@ class QToolButton;
 class QTabWidget;
 class QPixmap;
 class QPaintEvent;
-class QSettings;
 class QCheckBox;
 class QSpinBox;
 class QFormLayout;
@@ -510,7 +509,6 @@ public:
    QTabWidget* browserAndPlaylistTabWidget();
    QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
-   QSettings* settings();
    QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
@@ -707,7 +705,6 @@ private:
     * dropped on arrival. */
    ThumbnailLoader *m_previewLoader;
    QString m_pendingPreviewPath;
-   QSettings *m_settings;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
    QStyle *m_defaultStyle;

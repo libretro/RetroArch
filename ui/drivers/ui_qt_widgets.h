@@ -47,7 +47,6 @@ class QLabel;
 class QLayout;
 class QPaintEvent;
 class QResizeEvent;
-class QSettings;
 class QVBoxLayout;
 /* Forward decls kept unconditional so that callers holding bare
  * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
@@ -835,9 +834,7 @@ private:
    void showOrHideHighlightColor();
 
    MainWindow *m_mainwindow;
-   QSettings *m_settings;
    QCheckBox *m_saveGeometryCheckBox;
-   QCheckBox *m_saveDockPositionsCheckBox;
    QCheckBox *m_saveLastTabCheckBox;
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
@@ -902,7 +899,6 @@ private:
    void loadPlaylistOptions();
 
    MainWindow *m_mainwindow;
-   QSettings *m_settings;
    QLineEdit *m_nameLineEdit;
    QLineEdit *m_pathLineEdit;
    QLineEdit *m_extensionsLineEdit;

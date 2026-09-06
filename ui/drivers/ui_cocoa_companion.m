@@ -521,9 +521,8 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       long pick    = -1;
       const char *hist = config_get_ptr()->paths.path_content_history;
       started = YES;
-      if (!companion_core_setting_get(wimp->core, "initial_playlist",
-               initial, sizeof(initial)))
-         initial[0] = '\0';
+      strlcpy(initial, companion_core_pref_initial_playlist(wimp->core),
+            sizeof(initial));
       for (i = 0; i < n && pick < 0; i++)
       {
          const char *p_i = companion_core_playlist_path(wimp->core, i);
@@ -561,7 +560,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
    if (!entriesScroll || iconView == icons)
       return;
    if (started)
-      companion_core_setting_set(wimp->core, "view_type", icons ? "icons" : "list");
+      companion_core_pref_set_icon_view(wimp->core, icons);
    iconView = icons;
    if (icons)
    {
@@ -1237,24 +1236,12 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
 /* Shared companion settings from retroarch_qt.cfg, applied at startup. */
 - (void)applySharedSettings
 {
-   char v[64];
    if (!wimp)
       return;
-   thumbSubdir = COMPANION_THUMB_BOXART;
-   if (companion_core_setting_get(wimp->core, "icon_view_thumbnail_type", v, sizeof(v)))
-   {
-      if (string_is_equal(v, "screenshot"))
-         thumbSubdir = COMPANION_THUMB_SCREENSHOT;
-      else if (string_is_equal(v, "title"))
-         thumbSubdir = COMPANION_THUMB_TITLE;
-      else if (string_is_equal(v, "logo"))
-         thumbSubdir = COMPANION_THUMB_LOGO;
-   }
-   if (companion_core_setting_get(wimp->core, "view_type", v, sizeof(v))
-         && string_is_equal(v, "icons"))
+   thumbSubdir = companion_core_pref_thumbnail_subdir(wimp->core);
+   if (companion_core_pref_icon_view(wimp->core))
       [self setIconView:YES];
-   if (companion_core_setting_get_bool(wimp->core, "save_last_tab", false)
-         && companion_core_setting_get_int(wimp->core, "last_tab", 0) == 1)
+   if (companion_core_pref_last_tab(wimp->core) == 1)
       [self browseFiles:nil];
 }
 
@@ -1291,7 +1278,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row,
       return;
 
    if (companion_core_request_scan(wimp->core, [path UTF8String], true,
-            companion_core_setting_get_bool(wimp->core, "show_hidden_files", true)))
+            companion_core_pref_show_hidden_files(wimp->core)))
       [self setStatus:"Scanning..."];
    else
       [self setStatus:"Scanning is not available in this build."];

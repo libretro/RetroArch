@@ -1603,6 +1603,8 @@ static struct config_array_setting *populate_settings_array(
 #endif
    SETTING_ARRAY("midi_driver",                  settings->arrays.midi_driver, false, NULL, true);
    SETTING_ARRAY("ui_companion_driver",          settings->arrays.ui_companion_driver, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_hidden_playlists", settings->arrays.desktop_menu_hidden_playlists, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_highlight_color",  settings->arrays.desktop_menu_highlight_color, false, NULL, true);
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
@@ -1743,6 +1745,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_database_path",           settings->paths.path_content_database, false, NULL, true);
    SETTING_PATH("content_favorites_path",          settings->paths.path_content_favorites, false, NULL, true);
    SETTING_PATH("content_history_path",            settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("desktop_menu_initial_playlist",    settings->paths.desktop_menu_initial_playlist, false, NULL, true);
+   SETTING_PATH("desktop_menu_custom_theme",        settings->paths.desktop_menu_custom_theme, false, NULL, true);
    SETTING_PATH("content_image_history_path",      settings->paths.path_content_image_history, false, NULL, true);
    SETTING_PATH("content_music_history_path",      settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",      settings->paths.path_content_video_history, false, NULL, true);

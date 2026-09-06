@@ -1069,8 +1069,7 @@ static void ui_companion_qt_core_on_scan_finished(void *ud)
 
    if (!ui_window.qtWindow)
       return;
-   if (!ui_window.qtWindow->settings()->value(
-            "scan_finish_confirm", true).toBool())
+   if (!config_get_ptr()->bools.desktop_menu_scan_finish_confirm)
       return;
 
    answer = ui_window.qtWindow->showMessageBox(msg_hash_to_str(
@@ -1078,7 +1077,7 @@ static void ui_companion_qt_core_on_scan_finished(void *ud)
          MainWindow::MSGBOX_TYPE_QUESTION_OKCANCEL, Qt::ApplicationModal, true, &dont_ask);
 
    if (answer && dont_ask)
-      ui_window.qtWindow->settings()->setValue("scan_finish_confirm", false);
+      config_get_ptr()->bools.desktop_menu_scan_finish_confirm = false;
 }
 
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
@@ -1244,7 +1243,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_stopPushButton(new QToolButton(this))
    ,m_browserAndPlaylistTabWidget(new QTabWidget(this))
    ,m_pendingRun(false)
-   ,m_settings(NULL)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
    ,m_defaultStyle(NULL)
@@ -1302,7 +1300,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
    settings_t                   *settings = config_get_ptr();
    const char *path_dir_assets            = settings->paths.directory_assets;
-   QString                      configDir = QFileInfo(path_get(RARCH_PATH_CONFIG)).dir().absolutePath();
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
@@ -1353,9 +1350,8 @@ MainWindow::MainWindow(QWidget *parent) :
    m_defaultStyle   = QApplication::style();
    m_defaultPalette = QApplication::palette();
 
-   /* ViewOptionsDialog needs m_settings set before it's constructed */
-   m_settings            = new QSettings(configDir
-         + QString("/retroarch_qt.cfg"), QSettings::IniFormat, this);
+   /* Companion settings live in retroarch.cfg (settings_t) now, shared
+    * with the native companions; retroarch_qt.cfg is no longer used. */
    m_viewOptionsDialog   = new ViewOptionsDialog(this, 0);
    m_playlistEntryDialog = new PlaylistEntryDialog(this, 0);
 
@@ -1557,7 +1553,7 @@ void MainWindow::setupModels()
  * tree so only names are shown. */
 void MainWindow::setupFileSystemBrowser()
 {
-   const bool show_hidden = m_settings->value("show_hidden_files", true).toBool();
+   const bool show_hidden = config_get_ptr()->bools.show_hidden_files;
    const QDir::Filters hidden_filters = show_hidden
       ? (QDir::Hidden | QDir::System)
       : static_cast<QDir::Filter>(0);
@@ -1916,7 +1912,7 @@ void MainWindow::showWelcomeScreen()
    bool dont_ask             = false;
    bool answer               = false;
 
-   if (!m_settings->value("show_welcome_screen", true).toBool())
+   if (!config_get_ptr()->bools.desktop_menu_show_welcome_screen)
       return;
 
    const QString welcome_txt = QString(""
@@ -1947,7 +1943,7 @@ void MainWindow::showWelcomeScreen()
          true, &dont_ask);
 
    if (answer && dont_ask)
-      m_settings->setValue("show_welcome_screen", false);
+      config_get_ptr()->bools.desktop_menu_show_welcome_screen = false;
 }
 
 const QString& MainWindow::customThemeString() const
@@ -2106,7 +2102,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
       return;
 
    companion_core_request_scan(ui_companion_qt_core(), fullpath, true,
-         m_settings->value("show_hidden_files", true).toBool());
+         config_get_ptr()->bools.show_hidden_files);
 #endif
 }
 
@@ -2123,7 +2119,7 @@ void MainWindow::onScanDirectoryClicked()
    dirArray = QDir::toNativeSeparators(dir).toUtf8();
    companion_core_request_scan(ui_companion_qt_core(),
          dirArray.constData(), true,
-         m_settings->value("show_hidden_files", true).toBool());
+         config_get_ptr()->bools.show_hidden_files);
 }
 
 void MainWindow::onQuitRetroArchClicked()
@@ -2297,6 +2293,13 @@ const char *MainWindow::getThemeString(Theme theme)
 
 MainWindow::Theme MainWindow::theme() { return m_currentTheme; }
 
+/* Highlight colour from retroarch.cfg, or Qt's palette highlight. */
+static QString qt_highlight_color(void)
+{
+   const char *c = config_get_ptr()->arrays.desktop_menu_highlight_color;
+   return string_is_empty(c) ? QString("palette(highlight)") : QString::fromUtf8(c);
+}
+
 void MainWindow::setTheme(Theme theme)
 {
    m_currentTheme = theme;
@@ -2307,13 +2310,11 @@ void MainWindow::setTheme(Theme theme)
    {
       case THEME_SYSTEM_DEFAULT:
          qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
-                  m_settings->value("highlight_color",
-                     "palette(highlight)").toString()));
+                  qt_highlight_color()));
          break;
       case THEME_DARK:
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
-                  m_settings->value("highlight_color",
-                     "palette(highlight)").toString()));
+                  qt_highlight_color()));
          break;
       case THEME_CUSTOM:
          qApp->setStyleSheet(m_customThemeString);
@@ -2365,17 +2366,16 @@ QString MainWindow::changeThumbnail(const QImage &image, QString type)
       RARCH_LOG("[Qt] Created directory: \"%s\".\n", dirData);
    }
 
-   if (m_settings->contains("thumbnail_max_size"))
    {
-      int size = m_settings->value("thumbnail_max_size", 0).toInt();
+      int size = (int)config_get_ptr()->uints.desktop_menu_thumbnail_max_size;
 
       if (size != 0 && (image.height() > size ||  image.width() > size))
          scaledImage = image.scaled(size, size,
                Qt::KeepAspectRatio, Qt::SmoothTransformation);
    }
 
-   if (m_settings->contains("thumbnail_quality"))
-      quality = m_settings->value("thumbnail_quality", -1).toInt();
+   if (config_get_ptr()->uints.desktop_menu_thumbnail_quality != 0)
+      quality = (int)config_get_ptr()->uints.desktop_menu_thumbnail_quality;
 
    if (scaledImage.save(thumbPath, "png", quality))
    {
@@ -2782,7 +2782,7 @@ void MainWindow::setCoreActions()
    n = companion_core_launch_options(core,
          entryCorePath.constData(), entryCoreName.constData(),
          playlistName.constData(),
-         m_settings->value("suggest_loaded_core_first", false).toBool(),
+         config_get_ptr()->bools.desktop_menu_suggest_loaded_core_first,
          options, sizeof(options) / sizeof(options[0]));
 
    for (i = 0; i < n; i++)
@@ -3535,7 +3535,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
    QMainWindow::keyPressEvent(event);
 }
 
-QSettings* MainWindow::settings() { return m_settings; }
 
 const char *MainWindow::getCurrentViewTypeString()
 {
@@ -3577,18 +3576,34 @@ ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-   if (m_settings->value("save_geometry", false).toBool())
-      m_settings->setValue("geometry", saveGeometry());
-   if (m_settings->value("save_dock_positions", false).toBool())
-      m_settings->setValue("dock_positions", saveState());
-   if (m_settings->value("save_last_tab", false).toBool())
-      m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
+   /* Persistent state goes into retroarch.cfg (settings_t), shared with
+    * the native companions and written by RetroArch on exit. Geometry is
+    * plain x/y/w/h; the former QByteArray blobs (dock positions, table
+    * headers, options-dialog geometry) are not carried over. */
+   settings_t *settings = config_get_ptr();
 
-   m_settings->setValue("view_type", getCurrentViewTypeString());
-   m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
-   m_settings->setValue("icon_view_zoom", m_lastZoomSliderValue);
-   m_settings->setValue("icon_view_thumbnail_type", getCurrentThumbnailTypeString());
-   m_settings->setValue("options_dialog_geometry", m_viewOptionsDialog->saveGeometry());
+   if (settings->bools.desktop_menu_save_geometry)
+   {
+      QRect g = geometry();
+      settings->uints.desktop_menu_window_x      = (unsigned)(g.x()      < 0 ? 0 : g.x());
+      settings->uints.desktop_menu_window_y      = (unsigned)(g.y()      < 0 ? 0 : g.y());
+      settings->uints.desktop_menu_window_width  = (unsigned)g.width();
+      settings->uints.desktop_menu_window_height = (unsigned)g.height();
+   }
+   if (settings->bools.desktop_menu_save_last_tab)
+      settings->uints.desktop_menu_last_tab =
+         (unsigned)m_browserAndPlaylistTabWidget->currentIndex();
+
+   settings->uints.desktop_menu_view_type      =
+      (getCurrentViewType() == VIEW_TYPE_ICONS) ? 1 : 0;
+   settings->uints.desktop_menu_icon_view_zoom = (unsigned)m_lastZoomSliderValue;
+   switch (getCurrentThumbnailType())
+   {
+      case THUMBNAIL_TYPE_SCREENSHOT:   settings->uints.desktop_menu_thumbnail_type = 1; break;
+      case THUMBNAIL_TYPE_TITLE_SCREEN: settings->uints.desktop_menu_thumbnail_type = 2; break;
+      case THUMBNAIL_TYPE_LOGO:         settings->uints.desktop_menu_thumbnail_type = 3; break;
+      default:                          settings->uints.desktop_menu_thumbnail_type = 0; break;
+   }
 
    QMainWindow::closeEvent(event);
 }
@@ -4459,88 +4474,56 @@ static void qt_companion_build_core_selection_dock(MainWindow *mainwindow,
 #endif
 }
 
-/* Restore persistent state (limits, geometry, theme, view type, last tab). */
-static void qt_companion_restore_settings(MainWindow *mainwindow,
-      QSettings *qsettings)
+/* Restore persistent state (limits, geometry, theme, view type) from
+ * retroarch.cfg - the same settings the native companions read. */
+static void qt_companion_restore_settings(MainWindow *mainwindow)
 {
-   if (qsettings->contains("all_playlists_list_max_count"))
-      mainwindow->setAllPlaylistsListMaxCount(qsettings->value(
-               "all_playlists_list_max_count", 0).toInt());
+   settings_t *settings = config_get_ptr();
 
-   if (qsettings->contains("all_playlists_grid_max_count"))
-      mainwindow->setAllPlaylistsGridMaxCount(qsettings->value(
-               "all_playlists_grid_max_count", 5000).toInt());
+   mainwindow->setAllPlaylistsListMaxCount(
+         (int)settings->uints.desktop_menu_all_playlists_list_max_count);
+   mainwindow->setAllPlaylistsGridMaxCount(
+         (int)settings->uints.desktop_menu_all_playlists_grid_max_count);
+   mainwindow->setThumbnailCacheLimit(
+         (int)settings->uints.desktop_menu_thumbnail_cache_limit);
 
-   if (qsettings->contains("thumbnail_cache_limit"))
-      mainwindow->setThumbnailCacheLimit(qsettings->value(
-               "thumbnail_cache_limit", 500).toInt());
-   else
-      mainwindow->setThumbnailCacheLimit(500);
+   if (     settings->bools.desktop_menu_save_geometry
+         && settings->uints.desktop_menu_window_width  > 0
+         && settings->uints.desktop_menu_window_height > 0)
+      mainwindow->setGeometry(
+            (int)settings->uints.desktop_menu_window_x,
+            (int)settings->uints.desktop_menu_window_y,
+            (int)settings->uints.desktop_menu_window_width,
+            (int)settings->uints.desktop_menu_window_height);
 
-   if (qsettings->contains("geometry"))
-      if (qsettings->contains("save_geometry"))
-         mainwindow->restoreGeometry(qsettings->value(
-                  "geometry").toByteArray());
+   mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
 
-   if (qsettings->contains("options_dialog_geometry"))
-      mainwindow->viewOptionsDialog()->restoreGeometry(
-            qsettings->value("options_dialog_geometry").toByteArray());
+   mainwindow->setIconViewZoom((int)settings->uints.desktop_menu_icon_view_zoom);
 
-   if (qsettings->contains("save_dock_positions"))
-      if (qsettings->contains("dock_positions"))
-         mainwindow->restoreState(qsettings->value(
-                  "dock_positions").toByteArray());
-
-   if (qsettings->contains("file_browser_table_headers"))
-      mainwindow->fileTableView()->horizontalHeader()->restoreState(
-            qsettings->value("file_browser_table_headers").toByteArray());
-   else
-      mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
-
-   if (qsettings->contains("icon_view_zoom"))
-      mainwindow->setIconViewZoom(qsettings->value(
-               "icon_view_zoom", 50).toInt());
-
-   if (qsettings->contains("theme"))
    {
-      QString themeStr        = qsettings->value("theme").toString();
-      MainWindow::Theme theme = mainwindow->getThemeFromString(themeStr);
-
-      if (     qsettings->contains("custom_theme")
-            && theme == MainWindow::THEME_CUSTOM)
+      MainWindow::Theme theme = MainWindow::THEME_SYSTEM_DEFAULT;
+      switch (settings->uints.desktop_menu_theme)
+      {
+         case 1: theme = MainWindow::THEME_DARK;   break;
+         case 2: theme = MainWindow::THEME_CUSTOM; break;
+         default: break;
+      }
+      if (theme == MainWindow::THEME_CUSTOM
+            && !string_is_empty(settings->paths.desktop_menu_custom_theme))
          mainwindow->setCustomThemeFile(
-               qsettings->value("custom_theme").toString());
-
+               QString::fromUtf8(settings->paths.desktop_menu_custom_theme));
       mainwindow->setTheme(theme);
    }
-   else
-      mainwindow->setTheme();
 
-   if (qsettings->contains("view_type"))
+   mainwindow->setCurrentViewType(settings->uints.desktop_menu_view_type == 1
+         ? MainWindow::VIEW_TYPE_ICONS : MainWindow::VIEW_TYPE_LIST);
+
+   switch (settings->uints.desktop_menu_thumbnail_type)
    {
-      QString viewType = qsettings->value("view_type", "list").toString();
-
-      if (viewType == QLatin1String("icons"))
-         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
-      else
-         mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-   }
-   else
-      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-
-   if (qsettings->contains("icon_view_thumbnail_type"))
-   {
-      QString thumbnailType = qsettings->value("icon_view_thumbnail_type",
-            "boxart").toString();
-
-      if (thumbnailType == QLatin1String("screenshot"))
-         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);
-      else if (thumbnailType == QLatin1String("title"))
-         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
-      else if (thumbnailType == QLatin1String("logo"))
-         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);
-      else
-         mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
+      case 1:  mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_SCREENSHOT);   break;
+      case 2:  mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN); break;
+      case 3:  mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_LOGO);         break;
+      default: mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);       break;
    }
 }
 
@@ -4597,7 +4580,6 @@ static void* ui_companion_qt_init(void)
    QStackedWidget *widget                  = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
    QDockWidget *browserAndPlaylistTabDock  = NULL;
-   QSettings *qsettings                    = NULL;
    QListWidget *listWidget                 = NULL;
 
    if (!handle)
@@ -4615,10 +4597,11 @@ static void* ui_companion_qt_init(void)
       desktopRect  = screen->availableGeometry();
 
    mainwindow      = handle->window->qtWindow;
-   qsettings       = mainwindow->settings();
 
-   initialPlaylist = qsettings->value("initial_playlist",
-         mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY)).toString();
+   initialPlaylist = !string_is_empty(
+         config_get_ptr()->paths.desktop_menu_initial_playlist)
+      ? QString::fromUtf8(config_get_ptr()->paths.desktop_menu_initial_playlist)
+      : mainwindow->getSpecialPlaylistPath(SPECIAL_PLAYLIST_HISTORY);
 
    mainwindow->resize(((desktopRect.width()) < (INITIAL_WIDTH) ? (desktopRect.width()) : (INITIAL_WIDTH)),
          ((desktopRect.height()) < (INITIAL_HEIGHT) ? (desktopRect.height()) : (INITIAL_HEIGHT)));
@@ -4654,7 +4637,7 @@ static void* ui_companion_qt_init(void)
    qt_companion_build_thumbnail_docks(mainwindow);
    qt_companion_build_core_selection_dock(mainwindow,
          browserAndPlaylistTabDock);
-   qt_companion_restore_settings(mainwindow, qsettings);
+   qt_companion_restore_settings(mainwindow);
 
    browserAndPlaylistTabWidget = mainwindow->browserAndPlaylistTabWidget();
 
@@ -4665,9 +4648,9 @@ static void* ui_companion_qt_init(void)
          mainwindow, SLOT(onTabWidgetIndexChanged(int)));
 
    /* Setting the last tab must come after setting the view type. */
-   if (qsettings->contains("save_last_tab"))
+   if (config_get_ptr()->bools.desktop_menu_save_last_tab)
    {
-      int lastTabIndex = qsettings->value("last_tab", 0).toInt();
+      int lastTabIndex = (int)config_get_ptr()->uints.desktop_menu_last_tab;
 
       if (     lastTabIndex >= 0
             && browserAndPlaylistTabWidget->count() > lastTabIndex)
@@ -4712,8 +4695,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
       {
          already_started = true;
 
-         if (win_handle->qtWindow->settings()->value(
-                  "show_welcome_screen", true).toBool())
+         if (config_get_ptr()->bools.desktop_menu_show_welcome_screen)
             win_handle->qtWindow->showWelcomeScreen();
       }
    }
