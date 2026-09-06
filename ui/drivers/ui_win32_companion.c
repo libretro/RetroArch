@@ -977,7 +977,6 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       for (i = 0; i < n; i++)
          w->browse_icon[i] = -1;
    cw_entries_columns(w, true);
-   cw_browse_sort_arrow(w);
    cw_rows_commit(w, n);
    cw_thumbs_reset(w, n);
    /* The browser is a table: Qt shows it as one whatever the playlist
@@ -989,6 +988,10 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       if (w->sys_small)
          SendMessageA(w->entries, LVM_SETIMAGELIST, LVSIL_SMALL, (LPARAM)w->sys_small);
    }
+   /* After the row image list: a report-view list view hands its small
+    * image list to its header, so the header's own (the arrows) must be
+    * set afterwards or index 0 / 1 turn into the shell's first icons. */
+   cw_browse_sort_arrow(w);
 
    {
       const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT);
