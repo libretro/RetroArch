@@ -16,6 +16,8 @@
  * owns it.  No server is contacted.
  *
  * Lanes:
+ *  startup   content from the command line: the startup sync runs to
+ *            its end before the core takes the save file.
  *  unload    one sync, pushed once the file on disk is the core's
  *            last save RAM and no core owns it.
  *  no content  unloading with no content running syncs at once, as
@@ -79,10 +81,12 @@ static bool file_holds_pattern(void)
 
 bool __wrap_task_push_cloud_sync(retro_task_callback_t cb, void *cb_data)
 {
-   (void)cb; (void)cb_data;
    n_syncs++;
    last_on_disk = file_holds_pattern();
    last_live    = content_savefile_is_live(srm_path);
+   /* Done at once: a caller that waits for it goes on. */
+   if (cb)
+      cb(NULL, NULL, cb_data, NULL);
    return true;
 }
 
@@ -145,6 +149,15 @@ static void lane_unload(const char *core_path)
    CHECK(!last_live,
          "the sync was pushed while a core still owned the save file");
    printf("[%s] unload\n", failures ? "FAIL" : "ok");
+}
+
+static void lane_startup(void)
+{
+   unsigned before = failures;
+   CHECK(n_syncs == 1, "%u syncs before the content loaded, expected 1", n_syncs);
+   CHECK(!last_live, "the startup sync was pushed after the core took the save file");
+   CHECK(content_running(), "the content did not load after the startup sync");
+   printf("[%s] startup\n", failures == before ? "ok" : "FAIL");
 }
 
 static void lane_no_content(void)
@@ -244,6 +257,7 @@ int main(int argc, char *argv[])
       return 1;
    }
 
+   lane_startup();
    lane_unload(core_path);
    lane_no_content();
 
