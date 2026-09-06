@@ -1633,6 +1633,8 @@ void MainWindow::setupModels()
    m_playlistModel->setThumbnailSize(m_gridView->gridSize());
    connect(m_playlistModel, SIGNAL(thumbnailReady(QString)), this,
          SLOT(onThumbnailReady(QString)));
+   connect(m_playlistModel, SIGNAL(frameReady(QString,QPixmap)), this,
+         SLOT(onFrameReady(QString,QPixmap)));
    m_gridView->setModel(m_proxyModel);
    m_gridView->setSelectionModel(m_tableView->selectionModel());
 }
@@ -3236,6 +3238,7 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
    const QString &path = entry.path;
    bool acceptDrop     = false;
 
+   m_playlistModel->stopAnimation();     /* the old selection's, if any */
    if (m_playlistModel->isSupportedImage(path))
    {
       /* A regular image file in the file browser: every pane previews
@@ -3247,6 +3250,15 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
       m_playlistModel->abandonPending();
       for (i = 0; i < 4; i++)
          showSidebarImage((int)i, path, false);
+      /* And, like RetroArch's File Browser, an animated file plays in
+       * the pane: frames at the first widget's size, shown in every
+       * widget waiting on this path. */
+      {
+         ThumbnailWidget *tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[0]);
+         int w = (tw && tw->width()  > 32) ? tw->width()  : 256;
+         int h = (tw && tw->height() > 32) ? tw->height() : 256;
+         m_playlistModel->animateImage(path, w, h);
+      }
    }
    else
    {
@@ -3297,6 +3309,15 @@ void MainWindow::showSidebarImage(int idx, const QString &path, bool acceptDrop)
    }
    setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop); /* blank */
    m_playlistModel->requestImage(path, w, h);
+}
+
+void MainWindow::onFrameReady(const QString &path, const QPixmap &frame)
+{
+   int i;
+   QPixmap pm = frame;
+   for (i = 0; i < 4; i++)
+      if (m_sidebarPending[i] == path)
+         setThumbnail(qt_thumbnail_widget_names[i], pm, m_sidebarAcceptDrop);
 }
 
 void MainWindow::onThumbnailReady(const QString &path)

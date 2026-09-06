@@ -174,6 +174,10 @@ public:
     * thumbnailReady(path) is emitted. */
    bool imageAt(const QString &path, int w, int h, QPixmap *out) const;
    void requestImage(const QString &path, int w, int h);
+   /* Play @path in the sidebar (APNG / animated WEBP / WEBM / MP4 - a
+    * still plays nothing): frames come as frameReady(path, pixmap). */
+   void animateImage(const QString &path, int w, int h);
+   void stopAnimation();
    /* Drop queued decodes and abandon those in flight (the view moved
     * on); cached images stay. */
    void abandonPending();
@@ -192,6 +196,7 @@ private slots:
    void pollThumbnails();
 signals:
    void thumbnailReady(const QString &path);
+   void frameReady(const QString &path, const QPixmap &frame);
 
 private:
    /* Thumbnails come from the shared companion engine (decode threads,
@@ -576,6 +581,7 @@ private slots:
    void onCurrentItemChanged(const PlaylistEntry &entry);
    void onCurrentFileChanged(const QModelIndex &index);
    void onThumbnailReady(const QString &path);
+   void onFrameReady(const QString &path, const QPixmap &frame);
    void showSidebarImage(int idx, const QString &path, bool acceptDrop);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);

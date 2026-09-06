@@ -7144,12 +7144,39 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
       m_pollTimer.start();
 }
 
+#define QT_TAG_ANIM_FRAME ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+
 void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
       uintptr_t tag, const uint32_t *bits)
 {
    PlaylistModel *self = static_cast<PlaylistModel*>(ud);
-   (void)w; (void)h; (void)tag; (void)bits;
+   if (tag & QT_TAG_ANIM_FRAME)
+   {
+      /* An animation frame: not cached, shown at once. */
+      if (bits)
+      {
+         QImage img((const uchar*)bits, w, h, w * 4, QImage::Format_ARGB32);
+         emit self->frameReady(QString::fromUtf8(path), QPixmap::fromImage(img.copy()));
+      }
+      return;
+   }
    self->thumbnailArrived(QString::fromUtf8(path));
+}
+
+void PlaylistModel::animateImage(const QString &path, int w, int h)
+{
+   if (!m_engine || path.isEmpty() || w < 1 || h < 1)
+      return;
+   companion_thumbs_animate(m_engine, path.toUtf8().constData(), w, h,
+         QT_TAG_ANIM_FRAME, 0xffffffffu);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
+}
+
+void PlaylistModel::stopAnimation()
+{
+   if (m_engine)
+      companion_thumbs_animate_stop(m_engine);
 }
 
 QPixmap *PlaylistModel::pixmapFor(const QString &path, int w, int h) const
@@ -7224,7 +7251,7 @@ void PlaylistModel::pollThumbnails()
    if (!m_engine)
       return;
    companion_thumbs_poll(m_engine, onEngineDone, this, 0, 4000);
-   if (!companion_thumbs_pending(m_engine))
+   if (!companion_thumbs_pending(m_engine) && !companion_thumbs_animating(m_engine))
       m_pollTimer.stop();
 }
 

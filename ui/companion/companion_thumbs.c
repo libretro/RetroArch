@@ -21,6 +21,12 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <formats/image.h>
+#include <streams/file_stream.h>
+#include <time.h>          /* struct timespec, for retro_timers.h */
+#include <retro_timers.h>
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 
@@ -63,11 +69,16 @@ struct ct_job
 
 struct ct_done
 {
-   struct ct_entry *e;
+   struct ct_entry *e;    /* NULL for an animation frame */
    uintptr_t tag;
    uint32_t *bits;        /* NULL: decode failed (or aborted) */
    unsigned epoch;
    bool aborted;          /* abandoned: not delivered, entry dropped */
+   /* animation frame: delivered when anim_gen is current */
+   bool anim;
+   unsigned anim_gen;
+   char *anim_path;
+   int anim_w, anim_h;
 };
 
 /* A ring with both ends usable: urgent jobs are pushed to and popped
@@ -110,6 +121,25 @@ struct companion_thumbs
    sthread_t *workers[4];
    unsigned nworkers;
    bool quit;
+#endif
+
+   /* The one animation: set up by companion_thumbs_animate() under the
+    * lock, played by its own thread, which pushes each frame as a done
+    * record (anim flag) and sleeps the frame's duration. gen changes
+    * on every animate() / stop(): a frame from an older gen is dropped
+    * at poll. */
+   struct
+   {
+      char *path;
+      int w, h;
+      uintptr_t tag;
+      uint32_t bg;
+      unsigned gen;           /* the animation that should be playing */
+      bool wanted;            /* an animate() is pending or playing */
+   } anim;
+#ifdef HAVE_THREADS
+   sthread_t *anim_thread;
+   scond_t   *anim_cond;
 #endif
 };
 
@@ -458,6 +488,10 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
    d->bits    = bits;
    d->epoch   = j->epoch;
    d->aborted = false;
+   d->anim    = false;
+   d->anim_gen = 0;
+   d->anim_path = NULL;
+   d->anim_w  = d->anim_h = 0;
 }
 
 /* --- workers -------------------------------------------------------------- */
@@ -519,6 +553,252 @@ static void ct_worker(void *ud)
 }
 #endif
 
+/* --- animation ------------------------------------------------------------ */
+
+/* Is this file something the stream API can play? Cheap gate first
+ * (container types with an animation decoder), then for PNG the APNG
+ * probe over the head of the buffer, as gfx_thumbnail does. */
+static bool ct_anim_type_ok(enum image_type_enum type, const uint8_t *buf,
+      size_t len)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         {
+            int more = 0;
+            return rpng_is_apng_ex(buf, len < 4096 ? len : 4096, &more);
+         }
+#else
+         return false;
+#endif
+      case IMAGE_TYPE_WEBP:
+      case IMAGE_TYPE_WEBM:
+      case IMAGE_TYPE_MP4:
+         return true;
+      default:
+         return false;
+   }
+}
+
+#ifdef HAVE_THREADS
+/* Push one animation frame (already scaled) for the current
+ * animation. Lock held. */
+static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
+      unsigned gen, uintptr_t tag, const char *path, int w, int h)
+{
+   struct ct_done *d;
+   if (t->done_len == t->done_cap)
+   {
+      size_t nc = t->done_cap * 2;
+      struct ct_done *nd = (struct ct_done*)realloc(t->done, nc * sizeof(*nd));
+      if (!nd)
+      {
+         free(bits);
+         return;
+      }
+      t->done     = nd;
+      t->done_cap = nc;
+   }
+   d            = &t->done[t->done_len++];
+   memset(d, 0, sizeof(*d));
+   d->tag       = tag;
+   d->bits      = bits;
+   d->anim      = true;
+   d->anim_gen  = gen;
+   d->anim_path = strldup(path, strlen(path) + 1);
+   d->anim_w    = w;
+   d->anim_h    = h;
+}
+
+/* One animation at a time: open the file, open the stream, then loop
+ * decoding a frame, scaling it, pushing it, sleeping its duration -
+ * until the animation is superseded or the engine quits. Between
+ * frames the thread checks for that, so a change lands within one
+ * frame duration. */
+static void ct_anim_thread(void *ud)
+{
+   companion_thumbs_t *t = (companion_thumbs_t*)ud;
+   for (;;)
+   {
+      char path[PATH_MAX_LENGTH];
+      int w, h;
+      uintptr_t tag;
+      uint32_t bg;
+      unsigned gen;
+      void *buf = NULL;
+      int64_t len = 0;
+      void *stream = NULL;
+      enum image_type_enum type;
+      unsigned fw = 0, fh = 0;
+      int nframes = 0, loops = 0, loops_left;
+      bool native_argb;
+
+      slock_lock(t->lock);
+      while (!t->quit && !t->anim.wanted)
+         scond_wait_timeout(t->anim_cond, t->lock, 100000);
+      if (t->quit)
+      {
+         slock_unlock(t->lock);
+         return;
+      }
+      /* take the request */
+      strlcpy(path, t->anim.path ? t->anim.path : "", sizeof(path));
+      w   = t->anim.w;
+      h   = t->anim.h;
+      tag = t->anim.tag;
+      bg  = t->anim.bg;
+      gen = t->anim.gen;
+      t->anim.wanted = false;
+      slock_unlock(t->lock);
+
+      if (!path[0])
+         continue;
+      type = image_texture_get_type(path);
+      if (type == IMAGE_TYPE_NONE)
+         continue;
+      /* Whole file in memory (the stream borrows it). A preview is a
+       * preview: refuse anything over 256 MiB rather than swallow it. */
+      if (!filestream_read_file(path, &buf, &len) || !buf || len <= 0)
+         continue;
+      if (len > (int64_t)256 * 1024 * 1024
+            || !ct_anim_type_ok(type, (const uint8_t*)buf, (size_t)len))
+      {
+         free(buf);
+         continue;
+      }
+      stream = image_transfer_anim_stream_new(buf, (size_t)len, type);
+      if (!stream)
+      {
+         free(buf);
+         continue;             /* a still after all */
+      }
+      image_transfer_anim_stream_get_info(stream, type, &fw, &fh, &nframes, &loops);
+      /* Ask for ARGB words directly; if the stream cannot, swizzle. */
+      native_argb = image_transfer_anim_stream_set_argb(stream, type, 1);
+      loops_left  = loops; /* 0 = forever */
+
+      for (;;)
+      {
+         const uint32_t *frame;
+         int duration_ms = 0;
+         uint32_t *src, *bits;
+         bool stale;
+
+         slock_lock(t->lock);
+         stale = t->quit || t->anim.gen != gen;
+         slock_unlock(t->lock);
+         if (stale)
+            break;
+
+         frame = image_transfer_anim_stream_next(stream, type, &duration_ms);
+         if (!frame)
+         {
+            if (loops_left > 0 && --loops_left == 0)
+               break;
+            image_transfer_anim_stream_rewind(stream, type);
+            frame = image_transfer_anim_stream_next(stream, type, &duration_ms);
+            if (!frame)
+               break;
+         }
+         if (!fw || !fh)
+            break;
+         /* the scaler composites ARGB; convert R,G,B,A memory order first
+          * when the stream would not emit ARGB itself */
+         src = (uint32_t*)frame;
+         if (!native_argb)
+         {
+            size_t i, n = (size_t)fw * fh;
+            src = (uint32_t*)malloc(n * sizeof(uint32_t));
+            if (!src)
+               break;
+            for (i = 0; i < n; i++)
+            {
+               uint32_t px = frame[i];
+               src[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+            }
+         }
+         bits = companion_thumbs_scale(src, fw, fh, w, h, bg);
+         if (src != frame)
+            free(src);
+         if (!bits)
+            break;
+
+         slock_lock(t->lock);
+         if (t->quit || t->anim.gen != gen)
+            free(bits);
+         else
+            ct_anim_push(t, bits, gen, tag, path, w, h);
+         slock_unlock(t->lock);
+
+         if (duration_ms < 10)
+            duration_ms = 10;   /* a 0 ms frame would spin */
+         retro_sleep(duration_ms);
+      }
+      image_transfer_anim_stream_free(stream, type);
+      free(buf);
+   }
+}
+#endif
+
+void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
+      int w, int h, uintptr_t tag, uint32_t bg)
+{
+   if (!t || string_is_empty(path) || w < 1 || h < 1)
+      return;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return;
+   slock_lock(t->lock);
+   free(t->anim.path);
+   t->anim.path   = strldup(path, strlen(path) + 1);
+   t->anim.w      = w;
+   t->anim.h      = h;
+   t->anim.tag    = tag;
+   t->anim.bg     = bg;
+   t->anim.gen++;
+   t->anim.wanted = true;
+   if (!t->anim_cond)
+      t->anim_cond = scond_new();
+   if (!t->anim_thread && t->anim_cond)
+      t->anim_thread = sthread_create(ct_anim_thread, t);
+   if (t->anim_cond)
+      scond_signal(t->anim_cond);
+   slock_unlock(t->lock);
+#else
+   (void)path; (void)w; (void)h; (void)tag; (void)bg;
+#endif
+}
+
+void companion_thumbs_animate_stop(companion_thumbs_t *t)
+{
+   if (!t)
+      return;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return;
+   slock_lock(t->lock);
+   t->anim.gen++;
+   t->anim.wanted = false;
+   slock_unlock(t->lock);
+#endif
+}
+
+bool companion_thumbs_animating(companion_thumbs_t *t)
+{
+   bool on = false;
+   if (!t)
+      return false;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return false;
+   slock_lock(t->lock);
+   on = t->anim.wanted || (t->anim_thread != NULL && t->anim.path != NULL);
+   slock_unlock(t->lock);
+#endif
+   return on;
+}
+
 /* --- API ------------------------------------------------------------------ */
 
 companion_thumbs_t *companion_thumbs_new(size_t budget_bytes, unsigned threads)
@@ -577,13 +857,27 @@ void companion_thumbs_free(companion_thumbs_t *t)
       slock_unlock(t->lock);
       for (i = 0; i < t->nworkers; i++)
          sthread_join(t->workers[i]);
+      if (t->anim_thread)
+      {
+         slock_lock(t->lock);
+         if (t->anim_cond)
+            scond_broadcast(t->anim_cond);
+         slock_unlock(t->lock);
+         sthread_join(t->anim_thread);
+      }
+      if (t->anim_cond)
+         scond_free(t->anim_cond);
       if (t->cond)
          scond_free(t->cond);
       slock_free(t->lock);
    }
 #endif
+   free(t->anim.path);
    for (i = 0; i < t->done_len; i++)
+   {
       free(t->done[i].bits);
+      free(t->done[i].anim_path);
+   }
    free(t->done);
    free(t->urgent.v);
    free(t->prefetch.v);
@@ -723,6 +1017,21 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       for (i = 0; i < n; i++)
       {
          struct ct_entry *e = batch[i].e;
+         if (batch[i].anim)
+         {
+            /* An animation frame: only the current animation's. */
+            bool current;
+            CT_LOCK(t);
+            current = (batch[i].anim_gen == t->anim.gen);
+            CT_UNLOCK(t);
+            if (current && cb && batch[i].bits)
+               cb(ud, batch[i].anim_path, batch[i].anim_w, batch[i].anim_h,
+                     batch[i].tag, batch[i].bits);
+            free(batch[i].bits);
+            free(batch[i].anim_path);
+            delivered++;
+            continue;
+         }
          if (e->refs)
             e->refs--;             /* this record's reference */
          if (batch[i].aborted)
@@ -825,6 +1134,8 @@ size_t companion_thumbs_pending(companion_thumbs_t *t)
       return 0;
    CT_LOCK(t);
    n = t->queued + t->inflight + t->done_len;
+   if (t->anim.wanted || t->anim.path)
+      n++;
    CT_UNLOCK(t);
    return n;
 }

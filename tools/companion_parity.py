@@ -73,6 +73,9 @@ FEATURES = {
     # than rebuilding straight after open() (or enumerating itself).
     'async browser':      'companion_core_browse_busy',
     'browser sorting':    'companion_core_browse_sort',
+    # The selected file's animation (APNG / WEBP / WEBM / MP4) plays in
+    # the pane on every backend, as in RetroArch's own File Browser.
+    'animated preview':   'companion_thumbs_animate',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',

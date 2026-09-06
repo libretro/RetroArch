@@ -76,6 +76,7 @@
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
 #include "../companion/companion_thumbs.h"
+#include "../companion/companion_preview.h"
 #include "ui_win32.h"
 
 #ifndef IDI_ICON
@@ -254,6 +255,9 @@ typedef struct ui_companion_win32_wimp
    int *thumb_idx;         /* per row: 0 unknown, -1 requested, -2 none, >0 image */
    unsigned gen;           /* bumped per rebuild; in a request's tag */
    companion_thumbs_t *thumbs_engine;
+   companion_preview_t *preview;   /* animated file preview in the boxart pane */
+   char preview_path[PATH_MAX_LENGTH];
+   long preview_id;
    size_t vis_first, vis_last; /* visible rows last frame */
    /* Image-list slots (recycled ring) holding what is on / near screen;
     * the engine holds the real cache. */
@@ -668,11 +672,44 @@ static bool cw_visible_rows(ui_companion_win32_wimp_t *w, size_t *first,
 /* Per frame: request what is on screen (and about to be), deliver what
  * finished. Cheap when nothing moved: the visible range is compared to
  * last frame's before any row is touched. */
+/* A preview frame is due: into the pane. */
+static void cw_preview_frame(void *ud, const uint32_t *bits, int bw, int bh)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   cw_boxart_show(w, bits, bw, bh);
+}
+
 static void cw_thumb_tick(ui_companion_win32_wimp_t *w)
 {
    size_t first, last, i, span;
    if (!w->thumbs_engine)
       return;
+
+   if (w->preview && w->boxart_visible)
+   {
+      bool was_active = companion_preview_active(w->preview);
+      companion_preview_poll(w->preview, cw_preview_frame, w);
+      if (was_active && !companion_preview_active(w->preview)
+            && w->preview_id == w->boxart_entry)
+      {
+         /* The worker found no animation in it: show it as a still. */
+         RECT rc;
+         int bw, bh;
+         const uint32_t *bits;
+         GetClientRect(w->boxart, &rc);
+         bw = rc.right - 4;
+         bh = rc.bottom - 4;
+         bits = (bw > 0 && bh > 0)
+            ? companion_thumbs_get(w->thumbs_engine, w->preview_path, bw, bh) : NULL;
+         if (bits)
+            cw_boxart_show(w, bits, bw, bh);
+         else if (bw > 0 && bh > 0)
+            companion_thumbs_request(w->thumbs_engine, w->preview_path, bw, bh,
+                  (uintptr_t)w->preview_id | CW_TAG_BOXART, true,
+                  cw_sys_color_argb(COLOR_BTNFACE));
+         w->preview_id = -1;
+      }
+   }
    if (!w->thumbs || !w->icon_view || w->browse_mode)
    {
       /* No grid, but the boxart pane may be waiting on a decode. */
@@ -1425,6 +1462,10 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
       return;
    w->boxart_entry = id;
 
+   /* Whatever was animating in the pane stops with the old selection. */
+   if (w->thumbs_engine)
+      companion_thumbs_animate_stop(w->thumbs_engine);
+
    /* Clear. A static control does not repaint on STM_SETIMAGE NULL by
     * itself (it keeps drawing the old image until invalidated), so
     * invalidate it; the old bitmap goes once it is no longer set. */
@@ -1445,13 +1486,16 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
       return;
    bits = companion_thumbs_get(w->thumbs_engine, path, bw, bh);
    if (bits)
-   {
       cw_boxart_show(w, bits, bw, bh);
-      return;
-   }
-   companion_thumbs_request(w->thumbs_engine, path, bw, bh,
-         (uintptr_t)id | CW_TAG_BOXART, true,
-         cw_sys_color_argb(COLOR_BTNFACE));
+   else
+      companion_thumbs_request(w->thumbs_engine, path, bw, bh,
+            (uintptr_t)id | CW_TAG_BOXART, true,
+            cw_sys_color_argb(COLOR_BTNFACE));
+   /* And, like RetroArch's File Browser, an APNG / animated WEBP /
+    * WEBM / MP4 plays in the pane: frames land through cw_thumb_done
+    * with the same tag. A still animates nothing. */
+   companion_thumbs_animate(w->thumbs_engine, path, bw, bh,
+         (uintptr_t)id | CW_TAG_BOXART, cw_sys_color_argb(COLOR_BTNFACE));
 }
 
 /* Boxart pane for playlist entry @entry (the pane's own type). */
@@ -3167,6 +3211,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    cw_info_fill(w);
    cw_core_combo_fill(w, -1);
    w->thumbs_engine = companion_thumbs_new(0, 0);
+   w->preview       = companion_preview_new();
+   w->preview_id    = -1;
    {
       /* The shell's small image list, shared system-wide: what Explorer
        * draws, so drives / folders / file types look right and its
@@ -3225,6 +3271,11 @@ static void ui_companion_win32_wimp_deinit(void *data)
    if (!w)
       return;
    /* Stop decoding before anything it could touch goes away. */
+   if (w->preview)
+   {
+      companion_preview_free(w->preview); /* stops audio, joins the worker */
+      w->preview = NULL;
+   }
    if (w->thumbs_engine)
    {
       companion_thumbs_free(w->thumbs_engine);

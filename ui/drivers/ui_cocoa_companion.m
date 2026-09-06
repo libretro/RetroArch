@@ -2000,6 +2000,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
    [boxart setImage:nil];
    boxartEntry = -1;
+   if (thumbs)
+      companion_thumbs_animate_stop(thumbs); /* the old selection's animation */
    if (!boxartVisible || !boxart || !thumbs)
       return;
    if (browseMode)
@@ -2035,12 +2037,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       return;
    bits = companion_thumbs_get(thumbs, path, bw, bh);
    if (bits)
-   {
       [boxart setImage:cc_image_from_argb(bits, bw, bh)];
-      return;
-   }
-   companion_thumbs_request(thumbs, path, bw, bh,
-         (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0xffe8e8e8u);
+   else
+      companion_thumbs_request(thumbs, path, bw, bh,
+            (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0xffe8e8e8u);
+   /* Like RetroArch's File Browser: an animated file plays in the pane
+    * (frames arrive in -thumbDone: with the pane's tag). */
+   companion_thumbs_animate(thumbs, path, bw, bh,
+         (uintptr_t)boxartEntry | CC_TAG_BOXART, 0xffe8e8e8u);
    (void)row;
 }
 

@@ -96,6 +96,22 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       companion_thumbs_done_cb cb, void *ud, size_t max,
       unsigned budget_us);
 
+/* Animation: what RetroArch's own File Browser does for the selected
+ * thumbnail - an APNG, animated WEBP, WEBM or MP4 plays its frames on
+ * the container's clock (no audio, as in the menu). One animation at a
+ * time (the pane showing the selection). Frames arrive through
+ * companion_thumbs_poll() as ordinary deliveries for (@path, @w x @h,
+ * @tag), each frame already scaled and letterboxed; the backend blits
+ * them into its pane exactly as it does a still. A still image, or a
+ * type without an animation decoder, produces nothing (the still that
+ * was requested normally stays). Decoding runs on its own thread and
+ * stops on _animate_stop(), a new _animate(), or free(). UI thread. */
+void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
+      int w, int h, uintptr_t tag, uint32_t bg);
+void companion_thumbs_animate_stop(companion_thumbs_t *t);
+/* True while an animation is playing (a backend may keep polling). */
+bool companion_thumbs_animating(companion_thumbs_t *t);
+
 /* Change the cache budget (bytes; 0 = the default); evicts down to it
  * at once. UI thread. */
 void companion_thumbs_set_budget(companion_thumbs_t *t, size_t budget_bytes);

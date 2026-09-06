@@ -40,6 +40,8 @@
 #include <retro_miscellaneous.h>
 
 #include "../companion_thumbs.h"
+#include <encodings/crc32.h>
+#include <zlib.h>
 
 static int fails;
 #define CHECK(cond, ...) do { if (!(cond)) { fails++; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
@@ -73,6 +75,90 @@ static bool write_tga(const char *path, unsigned w, unsigned h, uint32_t argb)
       px[3] = (unsigned char)((argb >> 24) & 0xff);  /* A */
       fwrite(px, 1, 4, f);
    }
+   fclose(f);
+   return true;
+}
+
+/* --- a hand-made two-frame APNG ------------------------------------------ */
+
+static void png_chunk(FILE *f, const char *type, const uint8_t *data, size_t len)
+{
+   uint8_t hdr[8];
+   uint32_t crc;
+   uint32_t n = (uint32_t)len;
+   hdr[0] = (uint8_t)(n >> 24); hdr[1] = (uint8_t)(n >> 16);
+   hdr[2] = (uint8_t)(n >> 8);  hdr[3] = (uint8_t)n;
+   memcpy(hdr + 4, type, 4);
+   fwrite(hdr, 1, 8, f);
+   if (len)
+      fwrite(data, 1, len, f);
+   crc = encoding_crc32(0, (const uint8_t*)type, 4);
+   if (len)
+      crc = encoding_crc32(crc, data, len);
+   hdr[0] = (uint8_t)(crc >> 24); hdr[1] = (uint8_t)(crc >> 16);
+   hdr[2] = (uint8_t)(crc >> 8);  hdr[3] = (uint8_t)crc;
+   fwrite(hdr, 1, 4, f);
+}
+
+static void be32(uint8_t *p, uint32_t v) { p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16); p[2] = (uint8_t)(v >> 8); p[3] = (uint8_t)v; }
+static void be16(uint8_t *p, uint16_t v) { p[0] = (uint8_t)(v >> 8); p[1] = (uint8_t)v; }
+
+/* Solid-colour w x h RGBA rows with filter byte 0, zlib-compressed. */
+static size_t apng_frame_data(uint8_t *out, size_t outcap, unsigned w,
+      unsigned h, uint32_t rgba)
+{
+   size_t raw_len = (size_t)h * (1 + (size_t)w * 4), i, x;
+   uint8_t *raw = (uint8_t*)malloc(raw_len);
+   uLongf dl = (uLongf)outcap;
+   for (i = 0; i < h; i++)
+   {
+      uint8_t *row = raw + i * (1 + (size_t)w * 4);
+      row[0] = 0;
+      for (x = 0; x < w; x++)
+      {
+         row[1 + x * 4 + 0] = (uint8_t)(rgba >> 24);
+         row[1 + x * 4 + 1] = (uint8_t)(rgba >> 16);
+         row[1 + x * 4 + 2] = (uint8_t)(rgba >> 8);
+         row[1 + x * 4 + 3] = (uint8_t)rgba;
+      }
+   }
+   if (compress2(out, &dl, raw, (uLong)raw_len, 6) != Z_OK)
+      dl = 0;
+   free(raw);
+   return (size_t)dl;
+}
+
+/* Two frames, each @delay_ms, looping forever: frame 0 red, frame 1
+ * green (R,G,B,A in the file). */
+static bool write_apng(const char *path, unsigned w, unsigned h, int delay_ms)
+{
+   static const uint8_t sig[8] = { 0x89, 'P', 'N', 'G', 13, 10, 26, 10 };
+   FILE *f = fopen(path, "wb");
+   uint8_t ihdr[13], actl[8], fctl[26], comp[4096], fdat[4100];
+   size_t n;
+   if (!f)
+      return false;
+   fwrite(sig, 1, 8, f);
+   be32(ihdr, w); be32(ihdr + 4, h);
+   ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+   png_chunk(f, "IHDR", ihdr, 13);
+   be32(actl, 2); be32(actl + 4, 0);          /* 2 frames, loop forever */
+   png_chunk(f, "acTL", actl, 8);
+   /* frame 0: fcTL seq 0, then IDAT */
+   memset(fctl, 0, sizeof(fctl));
+   be32(fctl, 0); be32(fctl + 4, w); be32(fctl + 8, h);
+   be16(fctl + 20, (uint16_t)delay_ms); be16(fctl + 22, 1000);
+   png_chunk(f, "fcTL", fctl, 26);
+   n = apng_frame_data(comp, sizeof(comp), w, h, 0xff0000ffu);   /* red */
+   png_chunk(f, "IDAT", comp, n);
+   /* frame 1: fcTL seq 1, fdAT seq 2 */
+   be32(fctl, 1);
+   png_chunk(f, "fcTL", fctl, 26);
+   n = apng_frame_data(comp, sizeof(comp), w, h, 0x00ff00ffu);   /* green */
+   be32(fdat, 2);
+   memcpy(fdat + 4, comp, n);
+   png_chunk(f, "fdAT", fdat, n + 4);
+   png_chunk(f, "IEND", NULL, 0);
    fclose(f);
    return true;
 }
@@ -373,6 +459,64 @@ static void test_double_failure_no_uaf(void)
    companion_thumbs_free(t);
 }
 
+/* Animated preview: an APNG plays through poll() as frame deliveries,
+ * on its clock, scaled like a still; a still PNG produces none; stop
+ * stops. */
+static void test_animation(void)
+{
+   char apng[512], still[512];
+   companion_thumbs_t *t = companion_thumbs_new(0, 1);
+   int reds = 0, greens = 0;
+   size_t i;
+   fixture(apng, sizeof(apng), "anim.png");
+   fixture(still, sizeof(still), "still.png");
+   CHECK(write_apng(apng, 8, 8, 30), "wrote the APNG");
+   /* a plain PNG through the same writer minus animation chunks is
+    * more code than it is worth: a TGA is a still for this purpose */
+   fixture(still, sizeof(still), "still.tga");
+   write_tga(still, 8, 8, 0xff112233u);
+
+   /* the still request works on it as on any PNG */
+   ngot = 0;
+   companion_thumbs_request(t, apng, 16, 16, 1, true, 0);
+   CHECK(drain_tag(t, 1, 3000), "APNG decodes as a still first (frame 0)");
+   CHECK(!gots[0].null && gots[0].centre == 0xffff0000u, "still is frame 0 (red): 0x%08x", gots[0].centre);
+
+   /* animate: frames alternate red / green at ~30 ms */
+   ngot = 0;
+   companion_thumbs_animate(t, apng, 16, 16, 7, 0);
+   CHECK(drain(t, 6, 4000) >= 6, "at least 6 frames in 4 s (got %u)", (unsigned)ngot);
+   for (i = 0; i < ngot; i++)
+   {
+      CHECK(gots[i].tag == 7 && gots[i].edge == 16, "frame tag / size");
+      if (gots[i].centre == 0xffff0000u) reds++;
+      else if (gots[i].centre == 0xff00ff00u) greens++;
+   }
+   CHECK(reds >= 2 && greens >= 2, "both frames seen (red %d, green %d)", reds, greens);
+   CHECK(companion_thumbs_animating(t), "reports animating");
+
+   /* stop: no more frames after the one in flight */
+   companion_thumbs_animate_stop(t);
+   sleep_ms(120);
+   companion_thumbs_poll(t, on_done, NULL, 0, 20000);
+   ngot = 0;
+   sleep_ms(150);
+   companion_thumbs_poll(t, on_done, NULL, 0, 20000);
+   CHECK(ngot == 0, "stopped: no frames (got %u)", (unsigned)ngot);
+
+   /* a still produces no frames */
+   companion_thumbs_animate(t, still, 16, 16, 8, 0);
+   sleep_ms(200);
+   ngot = 0;
+   companion_thumbs_poll(t, on_done, NULL, 0, 20000);
+   CHECK(ngot == 0, "a still animates nothing (got %u)", (unsigned)ngot);
+
+   /* free with an animation running returns */
+   companion_thumbs_animate(t, apng, 16, 16, 9, 0);
+   sleep_ms(50);
+   companion_thumbs_free(t);
+}
+
 static void test_undecodable(void)
 {
    char bad[512];
@@ -456,6 +600,7 @@ int main(int argc, char **argv)
    test_forget_and_budget();
    test_abort();
    test_double_failure_no_uaf();
+   test_animation();
    test_undecodable();
    test_many_and_shutdown();
 
