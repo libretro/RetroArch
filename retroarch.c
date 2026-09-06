@@ -6671,15 +6671,12 @@ int rarch_main(int argc, char *argv[], void *data)
    steam_poll();
 #endif
 
-#ifdef HAVE_QT
-      app_exit = ui_companion_qt.application->exiting;
-#endif
+      /* Whichever desktop companion is active, not Qt specifically. */
+      app_exit = ui_companion_driver_wimp_exiting();
 
       if (ret == -1 || app_exit)
       {
-#ifdef HAVE_QT
-         ui_companion_qt.application->quit();
-#endif
+         ui_companion_driver_wimp_quit();
          break;
       }
    }

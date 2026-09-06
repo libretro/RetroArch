@@ -1139,11 +1139,9 @@ static ui_application_t ui_application_cocoa = {
 
        while (CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE)
              == kCFRunLoopRunHandledSource);
-       if (ret == -1)
+       if (ret == -1 || ui_companion_driver_wimp_exiting())
        {
-#ifdef HAVE_QT
-          application->quit();
-#endif
+          ui_companion_driver_wimp_quit();
           break;
        }
     }

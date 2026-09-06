@@ -250,6 +250,27 @@ void ui_companion_driver_wimp_iterate(void)
 #endif
 }
 
+bool ui_companion_driver_wimp_exiting(void)
+{
+#ifdef HAVE_COMPANION_WIMP
+   uico_driver_state_t *uico_st    = &uico_driver_st;
+   const ui_companion_driver_t *ui = uico_st->wimp;
+   if (ui && ui->application)
+      return ui->application->exiting;
+#endif
+   return false;
+}
+
+void ui_companion_driver_wimp_quit(void)
+{
+#ifdef HAVE_COMPANION_WIMP
+   uico_driver_state_t *uico_st    = &uico_driver_st;
+   const ui_companion_driver_t *ui = uico_st->wimp;
+   if (ui && ui->application && ui->application->quit)
+      ui->application->quit();
+#endif
+}
+
 void ui_companion_driver_init_first(
       bool desktop_menu_enable,
       bool ui_companion_toggle,

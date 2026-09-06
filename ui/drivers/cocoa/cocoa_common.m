@@ -140,11 +140,10 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 {
    int ret = runloop_iterate();
 
-   if (ret == -1)
+   if (ret == -1 || ui_companion_driver_wimp_exiting())
    {
-#ifdef HAVE_QT
-      application->quit();
-#endif
+      ui_companion_driver_wimp_quit();
+      ui_companion_driver_wimp_deinit();
       main_exit(NULL);
       exit(0);
       return;

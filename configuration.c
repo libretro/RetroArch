@@ -1921,7 +1921,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false, false);
 #endif
-#if defined(HAVE_QT) || defined(HAVE_COCOA)
+#ifdef HAVE_COMPANION_WIMP
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
 #endif
    /* GENERATED: single-source setting rows (bool kind emits here) */

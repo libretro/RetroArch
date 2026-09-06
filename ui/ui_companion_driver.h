@@ -228,6 +228,17 @@ bool ui_companion_driver_log_active(void);
  * runloop iteration from the platform's main loop. */
 void ui_companion_driver_wimp_iterate(void);
 
+/* True when the active desktop companion's toolkit application has
+ * asked the process to exit (Qt sets this when its last window closes
+ * with quit-on-close; the native companions never do - they only hide).
+ * The main loops treat it like runloop_iterate() returning -1. */
+bool ui_companion_driver_wimp_exiting(void);
+
+/* Tell the active desktop companion's toolkit application to quit
+ * (Qt: QApplication::quit). No-op for companions without one. Called by
+ * the main loops right before they break out on shutdown. */
+void ui_companion_driver_wimp_quit(void);
+
 /* Desktop companion driver selection (Settings -> Drivers ->
  * Companion UI). */
 const ui_companion_driver_t *ui_companion_wimp_find_driver(const char *ident);

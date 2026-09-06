@@ -1101,7 +1101,7 @@ static enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
          return MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT;
       case ID_M_MUTE_TOGGLE:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE;
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
       case ID_M_TOGGLE_DESKTOP:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE;
 #endif
@@ -1444,7 +1444,8 @@ HMENU win32_resources_create_menu(void)
    win32_append_popup_utf8(window_menu, scale_menu,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE));
 
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
+   /* Any desktop companion (Qt or the native one), not Qt alone. */
    AppendMenuA(window_menu, MF_STRING, ID_M_TOGGLE_DESKTOP,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE));
 #endif
