@@ -1614,7 +1614,13 @@ void MainWindow::setupModels()
     * over an already gathered array); the view itself never sorts. */
    m_fileTableView->setSortingEnabled(true);
    m_fileTableView->horizontalHeader()->setSortIndicatorShown(true);
-   m_fileTableView->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
+   /* Same header rule as Win32 and Cocoa: a new column starts ascending,
+    * the same column again flips; the indicator always shows the core's
+    * order (set from onBrowseChanged whenever a listing lands). */
+   m_fileTableView->horizontalHeader()->setSortIndicator(
+         (int)companion_core_browse_sort_column(ui_companion_qt_core()),
+         companion_core_browse_sort_ascending(ui_companion_qt_core())
+         ? Qt::AscendingOrder : Qt::DescendingOrder);
    m_fileTableView->setAlternatingRowColors(true);
    m_fileTableView->verticalHeader()->setVisible(false);
    m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);

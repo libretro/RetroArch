@@ -200,6 +200,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSInteger visFirst, visLast;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
    NSInteger boxartEntry;             /* entry the pane shows / awaits */
+   BOOL syncingSort;                  /* setSortDescriptors: from the core, not a click */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (ui_companion_cocoa_wimp_t*)wimp;
@@ -218,6 +219,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)browseReload;
 - (void)browseLanded;
 - (void)tableView:(NSTableView*)tv sortDescriptorsDidChange:(NSArray*)old;
+- (void)syncSortIndicator;
 - (void)playlistsDoubleClick:(id)sender;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
@@ -1774,7 +1776,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    NSSortDescriptor *d;
    enum companion_browse_column col = COMPANION_BROWSE_SORT_NAME;
    NSString *key;
-   if (tv != entries || !browseMode || ![[tv sortDescriptors] count])
+   if (tv != entries || !browseMode || syncingSort || ![[tv sortDescriptors] count])
       return;
    d   = [[tv sortDescriptors] objectAtIndex:0];
    key = [d key];
@@ -1785,6 +1787,40 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    /* on_browse_changed -> browseLanded -> browseReload */
 }
 
+/* The header's sort column and arrow follow the core's order - the
+ * same rule as Qt's header and the Win32 header, whether the order came
+ * from a click here or was remembered from before. */
+- (void)syncSortIndicator
+{
+   NSString *key;
+   NSSortDescriptor *d;
+   NSTableColumn *col;
+   switch (companion_core_browse_sort_column(wimp->core))
+   {
+      case COMPANION_BROWSE_SORT_SIZE: key = @"size"; break;
+      case COMPANION_BROWSE_SORT_TYPE: key = @"type"; break;
+      case COMPANION_BROWSE_SORT_DATE: key = @"date"; break;
+      default:                         key = @"name"; break;
+   }
+   d = [NSSortDescriptor sortDescriptorWithKey:key
+         ascending:companion_core_browse_sort_ascending(wimp->core) ? YES : NO];
+   syncingSort = YES;
+   [entries setSortDescriptors:[NSArray arrayWithObject:d]];
+   syncingSort = NO;
+   /* the highlighted column + arrow: the column whose prototype key matches */
+   col = nil;
+   if ([key isEqualToString:@"name"])      col = [[entries tableColumns] objectAtIndex:0];
+   else if ([key isEqualToString:@"type"]) col = [[entries tableColumns] objectAtIndex:1];
+   else                                    col = [entries tableColumnWithIdentifier:key];
+   if (col)
+   {
+      [entries setHighlightedTableColumn:col];
+      [entries setIndicatorImage:[NSImage imageNamed:
+         ([d ascending] ? @"NSAscendingSortIndicator" : @"NSDescendingSortIndicator")]
+         inTableColumn:col];
+   }
+}
+
 /* Both panes from the current browse listing. */
 - (void)browseReload
 {
@@ -1792,6 +1828,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [self rebuildRowMap];
    [playlists reloadData];
    [entries reloadData];
+   [self syncSortIndicator];
    [self setStatus:(dir && *dir) ? dir : "/"];
    {
       char buf[64];
@@ -1844,6 +1881,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       browseMode = NO;
       [[entries tableColumnWithIdentifier:@"size"] setHidden:YES];
       [[entries tableColumnWithIdentifier:@"date"] setHidden:YES];
+      [entries setHighlightedTableColumn:nil];
+      {
+         NSUInteger k;
+         for (k = 0; k < [[entries tableColumns] count]; k++)
+            [entries setIndicatorImage:nil inTableColumn:[[entries tableColumns] objectAtIndex:k]];
+      }
       [self reloadPlaylists];
       [self rebuildRowMap];
       [entries reloadData];
