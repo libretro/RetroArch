@@ -128,8 +128,16 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
 /* --- Commands (never block; work goes to the task queue) ----------- */
 
 /* Load playlist entry @i with its associated core (or the current core
- * when the entry has none). */
+ * when the entry has none). Returns false when it cannot proceed - a
+ * common reason is that the entry needs a core chosen (see
+ * companion_core_entry_needs_core); the caller then opens a picker. */
 bool companion_core_request_load_entry(companion_core_t *core, size_t i);
+/* True when entry @i has no usable core: its own core is empty or
+ * "DETECT" and no core is currently loaded, so the entry cannot run
+ * until the user picks one. Copies the entry's content path into @s
+ * (a picker filters its core list by it). */
+bool companion_core_entry_needs_core(companion_core_t *core, size_t i,
+      char *s, size_t len);
 /* Load arbitrary content. @core_path may be NULL to use the current
  * core; @content_path may be NULL to start the core without content. */
 bool companion_core_request_load(companion_core_t *core,

@@ -128,6 +128,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    /* Load Core window: installed cores by name / version. */
    NSWindow *coresWindow;
    NSTableView *coresTable;
+   char coresContent[PATH_MAX_LENGTH]; /* content to run with the pick, or "" */
+   NSInteger coresRows;                /* rows to show (filtered when running) */
    /* Core information pane (right of the entries), shown on demand;
     * rows cached from companion_core_core_info_rows(). */
    NSScrollView *infoScroll;
@@ -152,11 +154,13 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)deleteEntry:(id)sender;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
+- (void)buildCoresWindow;
 - (void)setIconView:(BOOL)icons;
 - (void)gridRun:(NSInteger)row;
 - (void)iconTick;
 - (void)toggleLog:(id)sender;
 - (void)loadSelectedCore:(id)sender;
+- (void)showCoresForContent:(const char*)content;
 - (void)toggleInfo:(id)sender;
 - (void)refreshInfo;
 - (void)infoFollowCore;
@@ -527,8 +531,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 
 - (void)gridRun:(NSInteger)row
 {
-   if (row < 0)
+   char content[PATH_MAX_LENGTH];
+   if (row < 0 || !wimp)
       return;
+   if (companion_core_entry_needs_core(wimp->core, (size_t)row,
+            content, sizeof(content)))
+   {
+      [self showCoresForContent:content];
+      return;
+   }
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
       [window orderOut:nil];
 }
@@ -829,7 +840,7 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    if (tv == entries)
       return (NSInteger)companion_core_entry_count(wimp->core);
    if (tv == coresTable)
-      return (NSInteger)companion_core_installed_core_count(wimp->core);
+      return coresRows;
    if (tv == infoTable)
       return infoKeys ? (NSInteger)infoKeys->size : 0;
    return 0;
@@ -912,12 +923,20 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 
 - (void)runSelected:(id)sender
 {
+   char content[PATH_MAX_LENGTH];
    NSInteger row;
    if (!wimp)
       return;
    row = [self actionRowIn:entries];
    if (row < 0)
       return;
+   /* No usable core: ask, filtered to what runs this content. */
+   if (companion_core_entry_needs_core(wimp->core, (size_t)row,
+            content, sizeof(content)))
+   {
+      [self showCoresForContent:content];
+      return;
+   }
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
       [window orderOut:nil];
 }
@@ -1117,12 +1136,10 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 /* The companion's own Load Core window (like Qt's LoadCoreWindow):
  * a table of installed cores, Load / Cancel. Non-modal; the tables'
  * data source is this controller, keyed on the table object. */
-- (void)loadCore:(id)sender
+- (void)buildCoresWindow
 {
-   if (!wimp)
+   if (coresWindow || !wimp)
       return;
-
-   if (!coresWindow)
    {
       NSRect frame       = NSMakeRect(0, 0, 420, 400);
       NSScrollView *sc   = nil;
@@ -1163,6 +1180,38 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
       [cancel setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
       [content addSubview:cancel];
    }
+}
+
+- (void)loadCore:(id)sender
+{
+   [self showCoresForContent:NULL];
+}
+
+/* Populate and raise the Load Core window. @content NULL: every core,
+ * a plain "load a core". Non-NULL: the cores that run it first and only
+ * those, and the pick launches that content. */
+- (void)showCoresForContent:(const char*)content
+{
+   if (!wimp)
+      return;
+   [self buildCoresWindow];
+   if (!coresWindow)
+      return;
+
+   if (content && *content)
+   {
+      NSInteger supported;
+      strlcpy(coresContent, content, sizeof(coresContent));
+      supported = (NSInteger)companion_core_installed_cores_supporting(
+            wimp->core, coresContent);
+      coresRows = (supported > 0) ? supported
+         : (NSInteger)companion_core_installed_core_count(wimp->core);
+   }
+   else
+   {
+      coresContent[0] = '\0';
+      coresRows = (NSInteger)companion_core_installed_core_count(wimp->core);
+   }
 
    [coresTable reloadData];
    if ([coresTable numberOfRows] > 0)
@@ -1180,7 +1229,19 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
    if (row < 0)
       return;
    [coresWindow orderOut:nil];
-   if (companion_core_load_core(wimp->core,
+
+   if (coresContent[0])
+   {
+      const char *core_path =
+         companion_core_installed_core_path(wimp->core, (size_t)row);
+      if (companion_core_request_load_content(wimp->core, core_path,
+               coresContent, NULL, NULL, NULL))
+         [window orderOut:nil];
+      else
+         [self setStatus:"Failed to load the content."];
+      coresContent[0] = '\0';
+   }
+   else if (companion_core_load_core(wimp->core,
             companion_core_installed_core_path(wimp->core, (size_t)row)))
       [self setStatus:"Core loaded."];
    else

@@ -172,6 +172,10 @@ typedef struct ui_companion_win32_wimp
    HWND cores_hwnd;
    HWND cores_list;
    bool cores_class_registered;
+   /* When the Load Core window was opened to run a specific content
+    * item (Run on an entry with no core), the content to launch with
+    * the picked core; empty when it is a plain "load a core" request. */
+   char cores_content[PATH_MAX_LENGTH];
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
@@ -664,6 +668,8 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
       cw_status_set(w, "Loading playlist...");
 }
 
+static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
+
 static LRESULT cw_selected_entry(ui_companion_win32_wimp_t *w)
 {
    return SendMessageA(w->entries, LVM_GETNEXTITEM,
@@ -672,9 +678,19 @@ static LRESULT cw_selected_entry(ui_companion_win32_wimp_t *w)
 
 static void cw_run_selected(ui_companion_win32_wimp_t *w)
 {
+   char content[PATH_MAX_LENGTH];
    LRESULT idx = cw_selected_entry(w);
    if (idx < 0)
       return;
+
+   /* No usable core for this entry: ask, filtered to what runs it. */
+   if (companion_core_entry_needs_core(w->core, (size_t)idx,
+            content, sizeof(content)))
+   {
+      cw_cores_show(w, content);
+      return;
+   }
+
    if (companion_core_request_load_entry(w->core, (size_t)idx))
       ShowWindow(w->hwnd, SW_HIDE);
 }
@@ -729,10 +745,22 @@ static void cw_cores_fill(ui_companion_win32_wimp_t *w)
    size_t i, n;
    LVITEMA item;
 
+   size_t supported;
+
    SendMessageA(w->cores_list, LVM_DELETEALLITEMS, 0, 0);
    SendMessageA(w->cores_list, WM_SETREDRAW, FALSE, 0);
 
+   /* When launching specific content, put the cores that can run it
+    * first and show only those; otherwise show every installed core. */
    n = companion_core_installed_core_count(w->core);
+   if (w->cores_content[0])
+   {
+      supported = companion_core_installed_cores_supporting(w->core,
+            w->cores_content);
+      if (supported > 0)
+         n = supported;
+   }
+
    for (i = 0; i < n; i++)
    {
       const char *name    = companion_core_installed_core_name(w->core, i);
@@ -776,7 +804,18 @@ static void cw_cores_load_selected(ui_companion_win32_wimp_t *w)
 
    path = companion_core_installed_core_path(w->core, (size_t)item.lParam);
    ShowWindow(w->cores_hwnd, SW_HIDE);
-   if (companion_core_load_core(w->core, path))
+
+   if (w->cores_content[0])
+   {
+      /* Run the pending content with the chosen core. */
+      if (companion_core_request_load_content(w->core, path,
+               w->cores_content, NULL, NULL, NULL))
+         ShowWindow(w->hwnd, SW_HIDE);
+      else
+         cw_status_set(w, "Failed to load the content.");
+      w->cores_content[0] = '\0';
+   }
+   else if (companion_core_load_core(w->core, path))
       cw_status_set(w, "Core loaded.");
    else
       cw_status_set(w, "Failed to load the core.");
@@ -922,13 +961,17 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
    return true;
 }
 
-static void cw_cores_show(ui_companion_win32_wimp_t *w)
+static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content)
 {
    if (!cw_cores_create(w))
    {
       cw_status_set(w, "Could not open the core list.");
       return;
    }
+   if (content && *content)
+      strlcpy(w->cores_content, content, sizeof(w->cores_content));
+   else
+      w->cores_content[0] = '\0';
    cw_cores_fill(w);
    ShowWindow(w->cores_hwnd, SW_SHOW);
    SetForegroundWindow(w->cores_hwnd);
@@ -1135,7 +1178,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_LOAD_CORE:
                /* The companion's own picker (installed cores by name /
                 * version), like the Qt Load Core window. */
-               cw_cores_show(w);
+               cw_cores_show(w, NULL);
                return 0;
             case IDM_CW_LOAD_CONTENT:
                /* Reuse the platform driver's dialog flow exactly as the

@@ -357,6 +357,25 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
 
 /* --- Commands -------------------------------------------------------- */
 
+bool companion_core_entry_needs_core(companion_core_t *core, size_t i,
+      char *s, size_t len)
+{
+   const char *core_path;
+   const struct playlist_entry *entry = companion_core_entry(core, i);
+
+   if (s && len)
+      s[0] = '\0';
+   if (!entry || string_is_empty(entry->path))
+      return false;
+   if (s && len)
+      strlcpy(s, entry->path, len);
+
+   core_path = entry->core_path;
+   if (string_is_empty(core_path) || string_is_equal(core_path, "DETECT"))
+      core_path = path_get(RARCH_PATH_CORE);
+   return string_is_empty(core_path);
+}
+
 bool companion_core_request_load_entry(companion_core_t *core, size_t i)
 {
    const char *core_path;
