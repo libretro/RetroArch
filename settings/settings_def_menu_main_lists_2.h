@@ -80,7 +80,7 @@ S_ACTION_EX(HELP_LIST,
  * as HAVE_COMPANION_WIMP in ui/ui_companion_driver.h (Qt, Cocoa, or
  * desktop Win32); the string tables always carry this row via the
  * strings pass. */
-#if (defined(HAVE_QT) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_ACTION_EX(SHOW_WIMP,
       "show_wimp", SD_FLAG_NONE, NULL, NULL, CMD_EVENT_UI_COMPANION_TOGGLE,
       "Show Desktop Menu",

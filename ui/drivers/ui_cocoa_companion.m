@@ -89,7 +89,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
  * and calls -setImage:forRow: as they arrive. */
 @interface RACompanionGrid : NSView
 {
-   RACompanionController *owner;
+   RARCH_UNSAFE_UNRETAINED RACompanionController *owner; /* owner holds us; no ARC cycle */
    NSMutableArray *images;
    NSInteger count;
    NSInteger selected;
