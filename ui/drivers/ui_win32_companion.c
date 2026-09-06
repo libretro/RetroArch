@@ -1964,6 +1964,36 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
 
    InitCommonControls();
 
+   /* DPI and the system message font at that DPI, before any control is
+    * created. lfMessageFont scales with the display; DEFAULT_GUI_FONT
+    * is a fixed 8pt bitmap that does not. */
+   {
+      HDC hdc = GetDC(NULL);
+      NONCLIENTMETRICSA ncm;
+      TEXTMETRICA tm;
+      w->dpi = hdc ? GetDeviceCaps(hdc, LOGPIXELSY) : 96;
+      if (w->dpi <= 0)
+         w->dpi = 96;
+      memset(&ncm, 0, sizeof(ncm));
+      ncm.cbSize = sizeof(ncm);
+      if (SystemParametersInfoA(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0))
+         w->font = CreateFontIndirectA(&ncm.lfMessageFont);
+      if (!w->font)
+         w->font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+      w->text_h = CW_S(w, 16);
+      if (hdc)
+      {
+         HFONT old = (HFONT)SelectObject(hdc, w->font);
+         if (GetTextMetricsA(hdc, &tm))
+            w->text_h = tm.tmHeight;
+         SelectObject(hdc, old);
+         ReleaseDC(NULL, hdc);
+      }
+      /* Qt's left dock is about 280 logical px wide. */
+      w->pane_w = CW_S(w, 280);
+   }
+
+
    memset(&wc, 0, sizeof(wc));
    wc.style         = CS_HREDRAW | CS_VREDRAW;
    wc.lpfnWndProc   = cw_wndproc;
@@ -2012,35 +2042,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    }
    if (!w->hwnd)
       return false;
-
-   /* DPI and the system message font at that DPI, before any control is
-    * created. lfMessageFont scales with the display; DEFAULT_GUI_FONT
-    * is a fixed 8pt bitmap that does not. */
-   {
-      HDC hdc = GetDC(NULL);
-      NONCLIENTMETRICSA ncm;
-      TEXTMETRICA tm;
-      w->dpi = hdc ? GetDeviceCaps(hdc, LOGPIXELSY) : 96;
-      if (w->dpi <= 0)
-         w->dpi = 96;
-      memset(&ncm, 0, sizeof(ncm));
-      ncm.cbSize = sizeof(ncm);
-      if (SystemParametersInfoA(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0))
-         w->font = CreateFontIndirectA(&ncm.lfMessageFont);
-      if (!w->font)
-         w->font = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-      w->text_h = CW_S(w, 16);
-      if (hdc)
-      {
-         HFONT old = (HFONT)SelectObject(hdc, w->font);
-         if (GetTextMetricsA(hdc, &tm))
-            w->text_h = tm.tmHeight;
-         SelectObject(hdc, old);
-         ReleaseDC(NULL, hdc);
-      }
-      /* Qt's left dock is about 280 logical px wide. */
-      w->pane_w = CW_S(w, 280);
-   }
 
    /* Playlist list: a list view with a folder icon per row, like Qt's. */
    w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",

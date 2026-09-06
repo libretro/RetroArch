@@ -106,7 +106,12 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 /* Owns the AppKit objects (as ivars, so both MRC and ARC manage them
  * correctly); is the tables' data source / delegate, the window
  * delegate and the menu target. */
+#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
+@interface RACompanionController : NSObject <NSTableViewDataSource,
+   NSTableViewDelegate, NSWindowDelegate, NSMenuDelegate>
+#else
 @interface RACompanionController : NSObject
+#endif
 {
    ui_companion_cocoa_wimp_t *wimp;
    NSWindow *window;
@@ -644,9 +649,15 @@ static NSImage *cc_thumb_image(ui_companion_cocoa_wimp_t *w, NSInteger row)
 
    /* Core information pane: a key / value table that joins the split
     * view as a third pane while shown. */
-   infoTable = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 280, 500)
-         scroll:&infoScroll twoColumns:YES]);
-   KEEP_IVAR(infoScroll);
+   {
+      /* Out-parameters must be locals under ARC (an ivar would be an
+       * __autoreleasing write-back, which clang rejects). */
+      NSScrollView *si = nil;
+      infoTable  = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 280, 500)
+            scroll:&si twoColumns:YES]);
+      infoScroll = si;
+      KEEP_IVAR(infoScroll);
+   }
    [[[infoTable tableColumns] objectAtIndex:0] setWidth:100.0];
    [[[[infoTable tableColumns] objectAtIndex:0] headerCell] setStringValue:@""];
    boxart = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, 280, 300)];
