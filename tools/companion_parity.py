@@ -85,6 +85,10 @@ FEATURES = {
     'rename playlist':    'companion_core_playlist_rename',
     'add files':          'companion_core_playlist_add_files',
     'thumbnail drop':     'companion_core_thumbnail_install',
+    # Qt's View > Core Options, View > Shader Parameters, View > Options
+    'core options':       'companion_core_option_count',
+    'shader parameters':  'companion_core_shader_param_count',
+    'options dialog':     'companion_core_setting_count',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',
@@ -101,6 +105,11 @@ WAIVERS = {
     # source), not a file path, and saves through QImage; the core call
     # takes a path.
     ('qt', 'thumbnail drop'): 'Qt: QImage drop saved via changeThumbnail',
+    # Qt's three dialogs predate the core and read RetroArch directly
+    # (CoreOptionsDialog, ShaderParamsDialog, ViewOptionsWidget).
+    ('qt', 'core options'):      'Qt: CoreOptionsDialog reads runloop core_options directly',
+    ('qt', 'shader parameters'): 'Qt: ShaderParamsDialog reads menu_shader_get directly',
+    ('qt', 'options dialog'):    'Qt: ViewOptionsWidget edits settings directly',
     # ('qt', 'window hand-off'): 'Qt calls it under its own guard',
 }
 

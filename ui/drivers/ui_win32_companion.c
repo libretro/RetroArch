@@ -93,6 +93,9 @@
 
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
 #define COMPANION_WIN32_CORES_CLASS "RetroArchCompanionCores"
+#define COMPANION_WIN32_OPTS_CLASS  "RetroArchCompanionCoreOptions"
+#define COMPANION_WIN32_SHP_CLASS   "RetroArchCompanionShaderParams"
+#define COMPANION_WIN32_SET_CLASS   "RetroArchCompanionOptions"
 #define COMPANION_WIN32_TITLE      "RetroArch"
 /* Startup window size, matching the Qt companion, clamped to the work
  * area with a floor so it stays usable on sub-720p displays (a 640x480
@@ -175,6 +178,19 @@ enum
    IDC_CW_CORES,      /* Load Core window: list view */
    IDC_CW_CORES_OK,
    IDC_CW_CORES_CANCEL,
+   IDC_CW_OPTS_LIST,      /* Core Options window */
+   IDC_CW_OPTS_RESET,
+   IDC_CW_OPTS_RESET_ALL,
+   IDC_CW_OPTS_CLOSE,
+   IDC_CW_SHP_LIST,       /* Shader Parameters window */
+   IDC_CW_SHP_EDIT,
+   IDC_CW_SHP_APPLY,
+   IDC_CW_SHP_RESET,
+   IDC_CW_SHP_CLOSE,
+   IDC_CW_SET_LIST,       /* Options window */
+   IDC_CW_SET_EDIT,
+   IDC_CW_SET_APPLY,
+   IDC_CW_SET_CLOSE,
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
@@ -196,6 +212,9 @@ enum
    IDM_CW_FIND,
    IDM_CW_HELP_DOCS,
    IDM_CW_HELP_ABOUT,
+   IDM_CW_CORE_OPTIONS,
+   IDM_CW_SHADER_PARAMS,
+   IDM_CW_OPTIONS,
    IDM_CW_HELP_CONTRIBUTORS,
    IDM_CW_UNLOAD_CORE,
    IDM_CW_LOAD_CUSTOM_CORE,
@@ -279,6 +298,9 @@ typedef struct ui_companion_win32_wimp
    bool started;   /* initial_playlist applied once after the first list */
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
    HWND cores_hwnd;
+   HWND opts_hwnd, opts_list;          /* Core Options (Qt's dialog) */
+   HWND shp_hwnd, shp_list, shp_edit;  /* Shader Parameters */
+   HWND set_hwnd, set_list, set_edit;  /* Options (Qt's View > Options) */
    HWND cores_list;
    bool cores_class_registered;
    /* When the Load Core window was opened to run a specific content
@@ -1916,6 +1938,476 @@ static LRESULT CALLBACK cw_search_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
    return CallWindowProcA(w ? w->search_proc : DefWindowProcA, hwnd, msg, wparam, lparam);
 }
 
+/* --- Core Options window (Qt's Core Options dialog) -------------------
+ * A two-column report list: option | current value. Double-click (or
+ * Enter) cycles the value; Reset puts the selected option back to its
+ * default, Reset All every one. Values are written when the core
+ * flushes, as the menu's are. */
+
+static void cw_opts_fill(ui_companion_win32_wimp_t *w)
+{
+   size_t i, n;
+   if (!w->opts_list)
+      return;
+   SendMessageA(w->opts_list, LVM_DELETEALLITEMS, 0, 0);
+   n = companion_core_option_count(w->core);
+   for (i = 0; i < n; i++)
+   {
+      LVITEMA it;
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.iItem   = (int)i;
+      it.pszText = (LPSTR)companion_core_option_desc(w->core, i);
+      SendMessageA(w->opts_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      it.iSubItem = 1;
+      it.pszText  = (LPSTR)companion_core_option_value_label(w->core, i,
+            companion_core_option_current(w->core, i));
+      SendMessageA(w->opts_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+   }
+   if (!n)
+   {
+      LVITEMA it;
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.pszText = (LPSTR)"No core options available";
+      SendMessageA(w->opts_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+   }
+}
+
+static void cw_opts_cycle(ui_companion_win32_wimp_t *w, int item)
+{
+   size_t nv;
+   if (item < 0 || (size_t)item >= companion_core_option_count(w->core))
+      return;
+   nv = companion_core_option_value_count(w->core, (size_t)item);
+   if (nv)
+      companion_core_option_set(w->core, (size_t)item,
+            (companion_core_option_current(w->core, (size_t)item) + 1) % nv);
+   cw_opts_fill(w);
+   ListView_SetItemState(w->opts_list, item, LVIS_SELECTED | LVIS_FOCUSED,
+         LVIS_SELECTED | LVIS_FOCUSED);
+}
+
+static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+   switch (msg)
+   {
+      case WM_SIZE:
+         if (w && w->opts_list)
+         {
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            MoveWindow(w->opts_list, 0, 0, rc.right, rc.bottom - 34, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_OPTS_RESET),     5,             rc.bottom - 29, 90, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_OPTS_RESET_ALL), 100,           rc.bottom - 29, 90, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_OPTS_CLOSE),     rc.right - 85, rc.bottom - 29, 80, 24, TRUE);
+         }
+         return 0;
+      case WM_CLOSE:
+         ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_COMMAND:
+         if (!w)
+            break;
+         switch (LOWORD(wparam))
+         {
+            case IDC_CW_OPTS_RESET:
+               {
+                  int sel = (int)SendMessageA(w->opts_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                  if (sel >= 0)
+                     companion_core_option_reset(w->core, (size_t)sel);
+                  cw_opts_fill(w);
+               }
+               return 0;
+            case IDC_CW_OPTS_RESET_ALL:
+               companion_core_option_reset_all(w->core);
+               cw_opts_fill(w);
+               return 0;
+            case IDC_CW_OPTS_CLOSE:
+            case IDCANCEL:
+               ShowWindow(hwnd, SW_HIDE);
+               return 0;
+         }
+         break;
+      case WM_NOTIFY:
+         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_OPTS_LIST)
+         {
+            NMHDR *hdr = (NMHDR*)lparam;
+            if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
+            {
+               int sel = (int)SendMessageA(w->opts_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+               cw_opts_cycle(w, sel);
+               return 0;
+            }
+         }
+         break;
+   }
+   return DefWindowProcA(hwnd, msg, wparam, lparam);
+}
+
+/* Shared shape of the two secondary windows: class, frame, list. */
+static HWND cw_table_window(ui_companion_win32_wimp_t *w, const char *cls,
+      WNDPROC proc, const char *title, int width, HWND *list_out, int list_id)
+{
+   HINSTANCE inst = GetModuleHandleA(NULL);
+   WNDCLASSA wc;
+   HWND hwnd;
+   memset(&wc, 0, sizeof(wc));
+   wc.lpfnWndProc   = proc;
+   wc.hInstance     = inst;
+   wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+   wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+   wc.lpszClassName = cls;
+   RegisterClassA(&wc);
+   hwnd = CreateWindowExA(WS_EX_TOOLWINDOW, cls, title, WS_OVERLAPPEDWINDOW,
+         CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, width), CW_S(w, 420),
+         w->hwnd, NULL, inst, NULL);
+   if (!hwnd)
+      return NULL;
+   *list_out = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+         0, 0, 0, 0, hwnd, (HMENU)(UINT_PTR_COMPAT)list_id, inst, NULL);
+   SendMessageA(*list_out, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT);
+   return hwnd;
+}
+
+static void cw_table_column(ui_companion_win32_wimp_t *w, HWND list, int idx,
+      const char *title, int width)
+{
+   LVCOLUMNA col;
+   memset(&col, 0, sizeof(col));
+   col.mask    = LVCF_TEXT | LVCF_WIDTH;
+   col.pszText = (LPSTR)title;
+   col.cx      = CW_S(w, width);
+   SendMessageA(list, LVM_INSERTCOLUMNA, (WPARAM)idx, (LPARAM)&col);
+}
+
+static void cw_table_button(HWND parent, const char *text, int id, bool def)
+{
+   HINSTANCE inst = GetModuleHandleA(NULL);
+   CreateWindowExA(0, "BUTTON", text,
+         WS_CHILD | WS_VISIBLE | WS_TABSTOP | (def ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON),
+         0, 0, 0, 0, parent, (HMENU)(UINT_PTR_COMPAT)id, inst, NULL);
+}
+
+static void cw_table_font(HWND parent)
+{
+   HFONT f = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+   HWND c  = GetWindow(parent, GW_CHILD);
+   for (; c; c = GetWindow(c, GW_HWNDNEXT))
+      SendMessageA(c, WM_SETFONT, (WPARAM)f, TRUE);
+}
+
+static void cw_opts_show(ui_companion_win32_wimp_t *w)
+{
+   if (!w->opts_hwnd)
+   {
+      w->opts_hwnd = cw_table_window(w, COMPANION_WIN32_OPTS_CLASS, cw_opts_wndproc,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS), 560,
+            &w->opts_list, IDC_CW_OPTS_LIST);
+      if (!w->opts_hwnd)
+         return;
+      cw_table_column(w, w->opts_list, 0, "Option", 330);
+      cw_table_column(w, w->opts_list, 1, "Value", 200);
+      cw_table_button(w->opts_hwnd, "Reset", IDC_CW_OPTS_RESET, false);
+      cw_table_button(w->opts_hwnd, "Reset All", IDC_CW_OPTS_RESET_ALL, false);
+      cw_table_button(w->opts_hwnd, "Close", IDC_CW_OPTS_CLOSE, true);
+      cw_table_font(w->opts_hwnd);
+   }
+   cw_opts_fill(w);
+   ShowWindow(w->opts_hwnd, SW_SHOW);
+   SetForegroundWindow(w->opts_hwnd);
+}
+
+/* --- Shader Parameters window (Qt's Shader Parameters dialog) ---------
+ * parameter | value | range; the selected parameter's value is edited
+ * in the field below and applied with Apply (CMD_EVENT_SHADERS_APPLY_
+ * CHANGES), Reset returns it to its initial value. */
+
+static void cw_shp_fill(ui_companion_win32_wimp_t *w)
+{
+   size_t i, n;
+   if (!w->shp_list)
+      return;
+   SendMessageA(w->shp_list, LVM_DELETEALLITEMS, 0, 0);
+   n = companion_core_shader_param_count(w->core);
+   for (i = 0; i < n; i++)
+   {
+      LVITEMA it;
+      char buf[64];
+      float mn = 0, mx = 0, st = 0, ini = 0;
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.iItem   = (int)i;
+      it.pszText = (LPSTR)companion_core_shader_param_desc(w->core, i);
+      SendMessageA(w->shp_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      snprintf(buf, sizeof(buf), "%g", (double)companion_core_shader_param_current(w->core, i));
+      it.iSubItem = 1; it.pszText = buf;
+      SendMessageA(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+      companion_core_shader_param_range(w->core, i, &mn, &mx, &st, &ini);
+      snprintf(buf, sizeof(buf), "%g .. %g (step %g)", (double)mn, (double)mx, (double)st);
+      it.iSubItem = 2; it.pszText = buf;
+      SendMessageA(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+   }
+   if (!n)
+   {
+      LVITEMA it;
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.pszText = (LPSTR)"No shader parameters";
+      SendMessageA(w->shp_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+   }
+}
+
+static LRESULT CALLBACK cw_shp_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+   switch (msg)
+   {
+      case WM_SIZE:
+         if (w && w->shp_list)
+         {
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            MoveWindow(w->shp_list, 0, 0, rc.right, rc.bottom - 34, TRUE);
+            MoveWindow(w->shp_edit, 5, rc.bottom - 29, 120, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SHP_APPLY), 130, rc.bottom - 29, 80, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SHP_RESET), 215, rc.bottom - 29, 80, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SHP_CLOSE), rc.right - 85, rc.bottom - 29, 80, 24, TRUE);
+         }
+         return 0;
+      case WM_CLOSE:
+         ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_COMMAND:
+         if (!w)
+            break;
+         switch (LOWORD(wparam))
+         {
+            case IDC_CW_SHP_APPLY:
+            case IDOK:
+               {
+                  int sel = (int)SendMessageA(w->shp_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                  char txt[64];
+                  GetWindowTextA(w->shp_edit, txt, sizeof(txt));
+                  if (sel >= 0 && txt[0])
+                     companion_core_shader_param_set(w->core, (size_t)sel, (float)atof(txt));
+                  companion_core_shader_apply(w->core);
+                  cw_shp_fill(w);
+               }
+               return 0;
+            case IDC_CW_SHP_RESET:
+               {
+                  int sel = (int)SendMessageA(w->shp_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                  if (sel >= 0)
+                     companion_core_shader_param_reset(w->core, (size_t)sel);
+                  companion_core_shader_apply(w->core);
+                  cw_shp_fill(w);
+               }
+               return 0;
+            case IDC_CW_SHP_CLOSE:
+            case IDCANCEL:
+               ShowWindow(hwnd, SW_HIDE);
+               return 0;
+         }
+         break;
+      case WM_NOTIFY:
+         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_SHP_LIST
+               && ((NMHDR*)lparam)->code == LVN_ITEMCHANGED)
+         {
+            NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+            if ((nm->uChanged & LVIF_STATE) && (nm->uNewState & LVIS_SELECTED))
+            {
+               char buf[64];
+               snprintf(buf, sizeof(buf), "%g", (double)companion_core_shader_param_current(w->core, (size_t)nm->iItem));
+               SetWindowTextA(w->shp_edit, buf);
+            }
+         }
+         break;
+   }
+   return DefWindowProcA(hwnd, msg, wparam, lparam);
+}
+
+static void cw_shp_show(ui_companion_win32_wimp_t *w)
+{
+   if (!w->shp_hwnd)
+   {
+      HINSTANCE inst = GetModuleHandleA(NULL);
+      w->shp_hwnd = cw_table_window(w, COMPANION_WIN32_SHP_CLASS, cw_shp_wndproc,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS), 600,
+            &w->shp_list, IDC_CW_SHP_LIST);
+      if (!w->shp_hwnd)
+         return;
+      cw_table_column(w, w->shp_list, 0, "Parameter", 280);
+      cw_table_column(w, w->shp_list, 1, "Value", 90);
+      cw_table_column(w, w->shp_list, 2, "Range", 200);
+      w->shp_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
+            0, 0, 0, 0, w->shp_hwnd, (HMENU)IDC_CW_SHP_EDIT, inst, NULL);
+      cw_table_button(w->shp_hwnd, "Apply", IDC_CW_SHP_APPLY, true);
+      cw_table_button(w->shp_hwnd, "Reset", IDC_CW_SHP_RESET, false);
+      cw_table_button(w->shp_hwnd, "Close", IDC_CW_SHP_CLOSE, false);
+      cw_table_font(w->shp_hwnd);
+   }
+   cw_shp_fill(w);
+   ShowWindow(w->shp_hwnd, SW_SHOW);
+   SetForegroundWindow(w->shp_hwnd);
+}
+
+/* --- Options window (Qt's View > Options) ------------------------------
+ * setting | value. Double-click (or Enter) on a bool toggles it, on a
+ * choice cycles it; on a number or text it opens the value for editing
+ * in the field below; Apply sets it through the core. */
+
+static void cw_set_fill(ui_companion_win32_wimp_t *w)
+{
+   size_t i, n;
+   if (!w->set_list)
+      return;
+   SendMessageA(w->set_list, LVM_DELETEALLITEMS, 0, 0);
+   n = companion_core_setting_count(w->core);
+   for (i = 0; i < n; i++)
+   {
+      LVITEMA it;
+      char buf[PATH_MAX_LENGTH];
+      memset(&it, 0, sizeof(it));
+      it.mask    = LVIF_TEXT;
+      it.iItem   = (int)i;
+      it.pszText = (LPSTR)companion_core_setting_label(w->core, i);
+      SendMessageA(w->set_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      companion_core_setting_get(w->core, i, buf, sizeof(buf));
+      if (companion_core_setting_kind(w->core, i) == COMPANION_SETTING_BOOL)
+         strlcpy(buf, buf[0] == '1' ? "Yes" : "No", sizeof(buf));
+      it.iSubItem = 1;
+      it.pszText  = buf;
+      SendMessageA(w->set_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+   }
+}
+
+static void cw_set_activate(ui_companion_win32_wimp_t *w, int item)
+{
+   char buf[PATH_MAX_LENGTH];
+   if (item < 0 || (size_t)item >= companion_core_setting_count(w->core))
+      return;
+   companion_core_setting_get(w->core, (size_t)item, buf, sizeof(buf));
+   switch (companion_core_setting_kind(w->core, (size_t)item))
+   {
+      case COMPANION_SETTING_BOOL:
+         companion_core_setting_set(w->core, (size_t)item, buf[0] == '1' ? "0" : "1");
+         break;
+      case COMPANION_SETTING_CHOICE:
+         {
+            size_t c, n = companion_core_setting_choice_count(w->core, (size_t)item);
+            for (c = 0; c < n; c++)
+               if (string_is_equal(companion_core_setting_choice(w->core, (size_t)item, c), buf))
+                  break;
+            if (n)
+               companion_core_setting_set(w->core, (size_t)item,
+                     companion_core_setting_choice(w->core, (size_t)item, (c + 1) % n));
+         }
+         break;
+      default:
+         SetWindowTextA(w->set_edit, buf);
+         SetFocus(w->set_edit);
+         SendMessageA(w->set_edit, EM_SETSEL, 0, -1);
+         return;
+   }
+   cw_set_fill(w);
+   ListView_SetItemState(w->set_list, item, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+}
+
+static LRESULT CALLBACK cw_set_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+   switch (msg)
+   {
+      case WM_SIZE:
+         if (w && w->set_list)
+         {
+            RECT rc;
+            GetClientRect(hwnd, &rc);
+            MoveWindow(w->set_list, 0, 0, rc.right, rc.bottom - 34, TRUE);
+            MoveWindow(w->set_edit, 5, rc.bottom - 29, rc.right - 190, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SET_APPLY), rc.right - 180, rc.bottom - 29, 85, 24, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_SET_CLOSE), rc.right - 90,  rc.bottom - 29, 85, 24, TRUE);
+         }
+         return 0;
+      case WM_CLOSE:
+         ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_COMMAND:
+         if (!w)
+            break;
+         switch (LOWORD(wparam))
+         {
+            case IDC_CW_SET_APPLY:
+            case IDOK:
+               {
+                  int sel = (int)SendMessageA(w->set_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                  char txt[PATH_MAX_LENGTH];
+                  GetWindowTextA(w->set_edit, txt, sizeof(txt));
+                  if (sel >= 0 && !companion_core_setting_set(w->core, (size_t)sel, txt))
+                     MessageBeep(MB_ICONEXCLAMATION);
+                  cw_set_fill(w);
+               }
+               return 0;
+            case IDC_CW_SET_CLOSE:
+            case IDCANCEL:
+               ShowWindow(hwnd, SW_HIDE);
+               return 0;
+         }
+         break;
+      case WM_NOTIFY:
+         if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_SET_LIST)
+         {
+            NMHDR *hdr = (NMHDR*)lparam;
+            if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
+            {
+               int sel = (int)SendMessageA(w->set_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+               cw_set_activate(w, sel);
+               return 0;
+            }
+            if (hdr->code == LVN_ITEMCHANGED)
+            {
+               NMLISTVIEW *nm = (NMLISTVIEW*)lparam;
+               if ((nm->uChanged & LVIF_STATE) && (nm->uNewState & LVIS_SELECTED))
+               {
+                  char buf[PATH_MAX_LENGTH];
+                  companion_core_setting_get(w->core, (size_t)nm->iItem, buf, sizeof(buf));
+                  SetWindowTextA(w->set_edit, buf);
+               }
+            }
+         }
+         break;
+   }
+   return DefWindowProcA(hwnd, msg, wparam, lparam);
+}
+
+static void cw_set_show(ui_companion_win32_wimp_t *w)
+{
+   if (!w->set_hwnd)
+   {
+      HINSTANCE inst = GetModuleHandleA(NULL);
+      w->set_hwnd = cw_table_window(w, COMPANION_WIN32_SET_CLASS, cw_set_wndproc,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS), 620,
+            &w->set_list, IDC_CW_SET_LIST);
+      if (!w->set_hwnd)
+         return;
+      cw_table_column(w, w->set_list, 0, "Setting", 330);
+      cw_table_column(w, w->set_list, 1, "Value", 260);
+      w->set_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
+            0, 0, 0, 0, w->set_hwnd, (HMENU)IDC_CW_SET_EDIT, inst, NULL);
+      cw_table_button(w->set_hwnd, "Apply", IDC_CW_SET_APPLY, true);
+      cw_table_button(w->set_hwnd, "Close", IDC_CW_SET_CLOSE, false);
+      cw_table_font(w->set_hwnd);
+   }
+   cw_set_fill(w);
+   ShowWindow(w->set_hwnd, SW_SHOW);
+   SetForegroundWindow(w->set_hwnd);
+}
+
 /* Qt's Load Custom Core: a file picker for a core library. */
 static void cw_load_custom_core(ui_companion_win32_wimp_t *w)
 {
@@ -2733,6 +3225,15 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_LOAD_CUSTOM_CORE:
                cw_load_custom_core(w);
                return 0;
+            case IDM_CW_CORE_OPTIONS:
+               cw_opts_show(w);
+               return 0;
+            case IDM_CW_SHADER_PARAMS:
+               cw_shp_show(w);
+               return 0;
+            case IDM_CW_OPTIONS:
+               cw_set_show(w);
+               return 0;
             case IDM_CW_HELP_CONTRIBUTORS:
                cw_contributors_show(w);
                return 0;
@@ -3111,6 +3612,13 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
+   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
+   AppendMenuA(view, MF_STRING, IDM_CW_CORE_OPTIONS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS));
+   AppendMenuA(view, MF_STRING, IDM_CW_SHADER_PARAMS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
+   AppendMenuA(view, MF_STRING, IDM_CW_OPTIONS,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS));
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_INFO,  "Core &Information");
    AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_BOXART, "&Boxart");
 
@@ -3588,6 +4096,12 @@ static void ui_companion_win32_wimp_deinit(void *data)
    }
    if (w->cores_hwnd)
       DestroyWindow(w->cores_hwnd);
+   if (w->opts_hwnd)
+      DestroyWindow(w->opts_hwnd);
+   if (w->shp_hwnd)
+      DestroyWindow(w->shp_hwnd);
+   if (w->set_hwnd)
+      DestroyWindow(w->set_hwnd);
    if (w->cores_class_registered)
       UnregisterClassA(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
    if (w->hwnd)

@@ -191,6 +191,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTextField *searchField;
    NSButton *clearButton, *infoButton, *runButton, *stopButton;
    NSWindow *contributorsWindow;      /* Help > About Contributors */
+   NSWindow *optsWindow;  NSTableView *optsTable;   /* View > Core Options */
+   NSWindow *shpWindow;   NSTableView *shpTable;    /* View > Shader Parameters */
+   NSWindow *setWindow;   NSTableView *setTable;    /* View > Options */
    NSTabView *browserTabs;            /* Playlists | File Browser */
    NSButton *brUp, *brStart, *brDownloads; /* Qt's browser toolbar */
    NSScrollView *playlistsScroll;
@@ -264,6 +267,16 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)focusSearch:(id)sender;
 - (void)searchChanged:(id)sender;
 - (void)openDocs:(id)sender;
+- (void)showCoreOptions:(id)sender;
+- (void)showOptions:(id)sender;
+- (void)settingActivate:(id)sender;
+- (void)applyTheme;
+- (void)optionCycle:(id)sender;
+- (void)optionReset:(id)sender;
+- (void)optionResetAll:(id)sender;
+- (void)showShaderParams:(id)sender;
+- (void)shaderApply:(id)sender;
+- (void)shaderReset:(id)sender;
 - (void)renamePlaylist:(id)sender;
 - (BOOL)renamePlaylistAtRow:(NSInteger)row to:(const char*)newName;
 - (size_t)addPaths:(NSArray*)paths;
@@ -1367,6 +1380,16 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       action:@selector(toggleBoxart:) keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS))
+      action:@selector(showCoreOptions:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS))
+      action:@selector(showShaderParams:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS))
+      action:@selector(showOptions:) keyEquivalent:@","];
+   [item setTarget:self];
+   [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION))
       action:@selector(openDocs:) keyEquivalent:@""];
    [item setTarget:self];
@@ -1409,6 +1432,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [self layoutViews];
    [self statusDefault];
    [self fillCorePopup:-1];
+   [self applyTheme];
    thumbs   = companion_thumbs_new(0, 0);
    visFirst = visLast = -1;
    return YES;
@@ -1608,6 +1632,10 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
    RELEASE(stopButton);
    if (contributorsWindow) { [contributorsWindow orderOut:nil]; RELEASE(contributorsWindow); }
+   if (optsWindow) { [optsWindow orderOut:nil]; RELEASE(optsWindow); }
+   if (shpWindow)  { [shpWindow orderOut:nil];  RELEASE(shpWindow); }
+   if (setWindow)  { [setWindow orderOut:nil];  RELEASE(setWindow); }
+   RELEASE(optsTable); RELEASE(shpTable); RELEASE(setTable);
    RELEASE(boxartRep); RELEASE(boxartImage);
    free(rowMap);
    rowMap = NULL;
@@ -1701,6 +1729,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    if (!wimp)
       return 0;
+   if (tv == optsTable)
+      return (NSInteger)companion_core_option_count(wimp->core);
+   if (tv == shpTable)
+      return (NSInteger)companion_core_shader_param_count(wimp->core);
+   if (tv == setTable)
+      return (NSInteger)companion_core_setting_count(wimp->core);
    if (tv == playlists)
       return browseMode
          ? (NSInteger)companion_core_browse_dir_count(wimp->core)
@@ -1754,6 +1788,40 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (k && *k && v && *v)
          return [NSString stringWithFormat:@"%@ %@", BOXSTRING(k), BOXSTRING(v)];
       s = (k && *k) ? k : v;
+   }
+   else if (tv == optsTable)
+   {
+      if ([[col identifier] isEqualToString:@"val"])
+         s = companion_core_option_value_label(wimp->core, (size_t)row,
+               companion_core_option_current(wimp->core, (size_t)row));
+      else
+         s = companion_core_option_desc(wimp->core, (size_t)row);
+   }
+   else if (tv == shpTable)
+   {
+      NSString *cid = [col identifier];
+      if ([cid isEqualToString:@"pval"])
+         return [NSString stringWithFormat:@"%g", (double)companion_core_shader_param_current(wimp->core, (size_t)row)];
+      if ([cid isEqualToString:@"range"])
+      {
+         float mn = 0, mx = 0, st = 0, ini = 0;
+         companion_core_shader_param_range(wimp->core, (size_t)row, &mn, &mx, &st, &ini);
+         return [NSString stringWithFormat:@"%g .. %g (step %g)", (double)mn, (double)mx, (double)st];
+      }
+      s = companion_core_shader_param_desc(wimp->core, (size_t)row);
+   }
+   else if (tv == setTable)
+   {
+      static char sbuf[PATH_MAX_LENGTH];
+      if ([[col identifier] isEqualToString:@"sval"])
+      {
+         companion_core_setting_get(wimp->core, (size_t)row, sbuf, sizeof(sbuf));
+         if (companion_core_setting_kind(wimp->core, (size_t)row) == COMPANION_SETTING_BOOL)
+            return sbuf[0] == '1' ? @"Yes" : @"No";
+         s = sbuf;
+      }
+      else
+         s = companion_core_setting_label(wimp->core, (size_t)row);
    }
    else if (tv == coresTable)
       s = [[col identifier] isEqualToString:@"core"]
@@ -2734,6 +2802,213 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       return NO;
    files = [[info draggingPasteboard] propertyListForType:NSFilenamesPboardType];
    return [self addPaths:files] > 0;
+}
+
+/* --- Core Options / Shader Parameters windows (Qt's dialogs) ---------- */
+
+/* A window holding one table with the given columns and a row of
+ * buttons; the table's data source and delegate are the controller. */
+- (NSWindow*)makeTableWindow:(const char*)title columns:(NSArray*)titles
+      ids:(NSArray*)ids widths:(NSArray*)widths table:(NSTableView**)tableOut
+      buttons:(NSArray*)buttonTitles actions:(NSArray*)actions
+{
+   NSRect fr = NSMakeRect(0, 0, 600, 420);
+   NSWindow *win = [[NSWindow alloc] initWithContentRect:fr
+      styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask)
+      backing:NSBackingStoreBuffered defer:NO];
+   NSScrollView *sv = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0, 40, 600, 380)] autorelease_compat];
+   NSTableView *tv  = [[[NSTableView alloc] initWithFrame:[[sv contentView] bounds]] autorelease_compat];
+   NSUInteger i;
+   CGFloat x = 8;
+   [win setTitle:BOXSTRING(title)];
+   [win setReleasedWhenClosed:NO];
+   for (i = 0; i < [titles count]; i++)
+   {
+      NSTableColumn *c = [[[NSTableColumn alloc] initWithIdentifier:[ids objectAtIndex:i]] autorelease_compat];
+      [[c headerCell] setStringValue:[titles objectAtIndex:i]];
+      [c setWidth:[[widths objectAtIndex:i] doubleValue]];
+      [tv addTableColumn:c];
+   }
+   [tv setDataSource:self];
+   [tv setDelegate:self];
+   [tv setAllowsMultipleSelection:NO];
+   [tv setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   [sv setDocumentView:tv];
+   [sv setHasVerticalScroller:YES];
+   [sv setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   [[win contentView] addSubview:sv];
+   for (i = 0; i < [buttonTitles count]; i++)
+   {
+      NSButton *b = [self makeButton:[[buttonTitles objectAtIndex:i] UTF8String]
+         action:NSSelectorFromString([actions objectAtIndex:i])];
+      [b setFrame:NSMakeRect(x, 8, 100, 24)];
+      [b setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
+      [[win contentView] addSubview:b];
+      x += 108;
+   }
+   [win center];
+   *tableOut = RETAIN_COMPAT(tv);
+   return win;
+}
+
+- (void)showCoreOptions:(id)sender
+{
+   if (!optsWindow)
+   {
+      optsWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS)
+         columns:[NSArray arrayWithObjects:@"Option", @"Value", nil]
+         ids:[NSArray arrayWithObjects:@"opt", @"val", nil]
+         widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:330.0], [NSNumber numberWithDouble:220.0], nil]
+         table:&optsTable
+         buttons:[NSArray arrayWithObjects:@"Reset", @"Reset All", nil]
+         actions:[NSArray arrayWithObjects:@"optionReset:", @"optionResetAll:", nil]];
+      [optsTable setTarget:self];
+      [optsTable setDoubleAction:@selector(optionCycle:)];
+   }
+   [optsTable reloadData];
+   [optsWindow makeKeyAndOrderFront:nil];
+}
+
+- (void)optionCycle:(id)sender
+{
+   NSInteger row = [optsTable clickedRow] >= 0 ? [optsTable clickedRow] : [optsTable selectedRow];
+   size_t nv;
+   if (!wimp || row < 0)
+      return;
+   nv = companion_core_option_value_count(wimp->core, (size_t)row);
+   if (nv)
+      companion_core_option_set(wimp->core, (size_t)row,
+            (companion_core_option_current(wimp->core, (size_t)row) + 1) % nv);
+   [optsTable reloadData];
+}
+
+- (void)optionReset:(id)sender
+{
+   NSInteger row = [optsTable selectedRow];
+   if (wimp && row >= 0)
+      companion_core_option_reset(wimp->core, (size_t)row);
+   [optsTable reloadData];
+}
+
+- (void)optionResetAll:(id)sender
+{
+   if (wimp)
+      companion_core_option_reset_all(wimp->core);
+   [optsTable reloadData];
+}
+
+- (void)showShaderParams:(id)sender
+{
+   if (!shpWindow)
+   {
+      shpWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
+         columns:[NSArray arrayWithObjects:@"Parameter", @"Value", @"Range", nil]
+         ids:[NSArray arrayWithObjects:@"param", @"pval", @"range", nil]
+         widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:280.0], [NSNumber numberWithDouble:90.0], [NSNumber numberWithDouble:200.0], nil]
+         table:&shpTable
+         buttons:[NSArray arrayWithObjects:@"Apply", @"Reset", nil]
+         actions:[NSArray arrayWithObjects:@"shaderApply:", @"shaderReset:", nil]];
+      [[shpTable tableColumnWithIdentifier:@"pval"] setEditable:YES];
+   }
+   [shpTable reloadData];
+   [shpWindow makeKeyAndOrderFront:nil];
+}
+
+- (void)shaderApply:(id)sender
+{
+   if (wimp)
+      companion_core_shader_apply(wimp->core);
+   [shpTable reloadData];
+}
+
+- (void)shaderReset:(id)sender
+{
+   NSInteger row = [shpTable selectedRow];
+   if (wimp && row >= 0)
+   {
+      companion_core_shader_param_reset(wimp->core, (size_t)row);
+      companion_core_shader_apply(wimp->core);
+   }
+   [shpTable reloadData];
+}
+
+/* Editing the Value column of the shader table sets the parameter. */
+- (void)tableView:(NSTableView*)tv setObjectValue:(id)obj forTableColumn:(NSTableColumn*)col row:(NSInteger)row
+{
+   if (tv == shpTable && wimp && [[col identifier] isEqualToString:@"pval"])
+      companion_core_shader_param_set(wimp->core, (size_t)row, [[obj description] floatValue]);
+   else if (tv == setTable && wimp && [[col identifier] isEqualToString:@"sval"])
+   {
+      if (!companion_core_setting_set(wimp->core, (size_t)row, [[obj description] UTF8String]))
+         NSBeep();
+      [self applyTheme];
+   }
+}
+
+/* --- Options window (Qt's View > Options) ------------------------------
+ * setting | value, the Value column editable; a bool toggles and a
+ * choice cycles on double-click. Each edit sets through the core. */
+- (void)showOptions:(id)sender
+{
+   if (!setWindow)
+   {
+      setWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS)
+         columns:[NSArray arrayWithObjects:@"Setting", @"Value", nil]
+         ids:[NSArray arrayWithObjects:@"setting", @"sval", nil]
+         widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:330.0], [NSNumber numberWithDouble:240.0], nil]
+         table:&setTable
+         buttons:[NSArray array] actions:[NSArray array]];
+      [[setTable tableColumnWithIdentifier:@"sval"] setEditable:YES];
+      [setTable setTarget:self];
+      [setTable setDoubleAction:@selector(settingActivate:)];
+   }
+   [setTable reloadData];
+   [setWindow makeKeyAndOrderFront:nil];
+}
+
+- (void)settingActivate:(id)sender
+{
+   NSInteger row = [setTable clickedRow] >= 0 ? [setTable clickedRow] : [setTable selectedRow];
+   char buf[PATH_MAX_LENGTH];
+   if (!wimp || row < 0)
+      return;
+   companion_core_setting_get(wimp->core, (size_t)row, buf, sizeof(buf));
+   switch (companion_core_setting_kind(wimp->core, (size_t)row))
+   {
+      case COMPANION_SETTING_BOOL:
+         companion_core_setting_set(wimp->core, (size_t)row, buf[0] == '1' ? "0" : "1");
+         break;
+      case COMPANION_SETTING_CHOICE:
+         {
+            size_t c, n = companion_core_setting_choice_count(wimp->core, (size_t)row);
+            for (c = 0; c < n; c++)
+               if (string_is_equal(companion_core_setting_choice(wimp->core, (size_t)row, c), buf))
+                  break;
+            if (n)
+               companion_core_setting_set(wimp->core, (size_t)row,
+                     companion_core_setting_choice(wimp->core, (size_t)row, (c + 1) % n));
+            [self applyTheme];
+         }
+         break;
+      default:
+         [setTable editColumn:1 row:row withEvent:nil select:YES];
+         return;
+   }
+   [setTable reloadData];
+}
+
+/* Qt's dark theme setting, honoured on 10.14+: the companion's windows
+ * take the dark appearance; "System default" follows the system. */
+- (void)applyTheme
+{
+#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 101400 && !defined(GNUSTEP)
+   unsigned theme = config_get_ptr()->uints.desktop_menu_theme;
+   NSAppearance *ap = nil;
+   if (theme == 1 && [NSAppearance respondsToSelector:@selector(appearanceNamed:)])
+      ap = [NSAppearance appearanceNamed:@"NSAppearanceNameDarkAqua"];
+   if ([window respondsToSelector:@selector(setAppearance:)])
+      [window performSelector:@selector(setAppearance:) withObject:ap];
+#endif
 }
 
 - (void)openDocs:(id)sender

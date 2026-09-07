@@ -48,7 +48,10 @@
 #include "../../../configuration.h"
 #include "../../../ui/ui_companion_driver.h"
 #include "../../../ui/companion/companion_core.h"
+#include "../../../runloop.h"
+#include "../../../core_option_manager.h"
 #include <file/file_path.h>
+extern runloop_state_t test_runloop;
 #include "../../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../../ui/drivers/cocoa/apple_platform.h"
 
@@ -490,6 +493,99 @@ int main(int argc, char **argv)
       pump(data, 300);
       CHECK(string_is_equal(companion_core_playlist_name(peek->core, 3), "Sega - Genesis Renamed"), "list shows the new name (got %s)", companion_core_playlist_name(peek->core, 3));
       CHECK([leftTable numberOfRows] == 4, "playlist table reloaded (%ld rows)", (long)[leftTable numberOfRows]);
+   }
+
+   /* --- Core Options and Shader Parameters windows --- */
+   {
+      static struct retro_core_option_v2_definition defs[3];
+      struct retro_core_options_v2 v2;
+      char cfg[600];
+      NSTableView *ot, *st;
+      NSWindow *ow, *sw;
+      id ds;
+      extern int stub_calls_shader_apply;
+      memset(defs, 0, sizeof(defs));
+      defs[0].key = "test_speed"; defs[0].desc = "Speed";
+      defs[0].values[0].value = "slow"; defs[0].values[0].label = "Slow";
+      defs[0].values[1].value = "fast"; defs[0].values[1].label = "Fast";
+      defs[0].default_value = "fast";
+      defs[1].key = "test_color"; defs[1].desc = "Colour";
+      defs[1].values[0].value = "rgb"; defs[1].values[1].value = "mono";
+      defs[1].default_value = "rgb";
+      v2.categories = NULL; v2.definitions = defs;
+      snprintf(cfg, sizeof(cfg), "%s/core.opt", root);
+      test_runloop.core_options = core_option_manager_new(cfg, NULL, &v2, false);
+
+      [ctrl performSelector:NSSelectorFromString(@"showCoreOptions:") withObject:nil];
+      pump(data, 200);
+      ow = [ctrl valueForKey:@"optsWindow"];
+      ot = [ctrl valueForKey:@"optsTable"];
+      CHECK(ow && [ow isVisible] && ot, "Core Options window shown");
+      CHECK([ot numberOfRows] == 2, "2 options listed (%ld)", (long)[ot numberOfRows]);
+      ds = [ot dataSource];
+      {
+         id v = [ds tableView:ot objectValueForTableColumn:[ot tableColumnWithIdentifier:@"val"] row:0];
+         CHECK([[v description] isEqualToString:@"Fast"], "value shows the default label (got %s)", [[v description] UTF8String]);
+      }
+      [ot selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+      [ctrl performSelector:NSSelectorFromString(@"optionCycle:") withObject:nil];
+      {
+         id v = [ds tableView:ot objectValueForTableColumn:[ot tableColumnWithIdentifier:@"val"] row:0];
+         CHECK([[v description] isEqualToString:@"Slow"], "double-click cycles the value (got %s)", [[v description] UTF8String]);
+      }
+      [ctrl performSelector:NSSelectorFromString(@"optionReset:") withObject:nil];
+      CHECK(companion_core_option_current(peek->core, 0) == 1, "Reset restores the default");
+      [ow orderOut:nil];
+
+      [ctrl performSelector:NSSelectorFromString(@"showShaderParams:") withObject:nil];
+      pump(data, 200);
+      sw = [ctrl valueForKey:@"shpWindow"];
+      st = [ctrl valueForKey:@"shpTable"];
+      CHECK(sw && [sw isVisible] && st, "Shader Parameters window shown");
+      CHECK([st numberOfRows] == 2, "2 parameters listed (%ld)", (long)[st numberOfRows]);
+      ds = [st dataSource];
+      {
+         id v = [ds tableView:st objectValueForTableColumn:[st tableColumnWithIdentifier:@"range"] row:0];
+         CHECK([[v description] isEqualToString:@"0 .. 1 (step 0.05)"], "range column (got %s)", [[v description] UTF8String]);
+      }
+      /* edit the Value cell as the table would */
+      [ds tableView:st setObjectValue:@"0.75" forTableColumn:[st tableColumnWithIdentifier:@"pval"] row:0];
+      CHECK(companion_core_shader_param_current(peek->core, 0) == 0.75f, "editing the cell sets the parameter");
+      {
+         int before = stub_calls_shader_apply;
+         [ctrl performSelector:NSSelectorFromString(@"shaderApply:") withObject:nil];
+         CHECK(stub_calls_shader_apply == before + 1, "Apply fires the shader-apply command");
+      }
+      [st selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+      [ctrl performSelector:NSSelectorFromString(@"shaderReset:") withObject:nil];
+      CHECK(companion_core_shader_param_current(peek->core, 0) == 0.5f, "Reset restores the initial value");
+      [sw orderOut:nil];
+      core_option_manager_free(test_runloop.core_options);
+      test_runloop.core_options = NULL;
+   }
+
+   /* --- Options window --- */
+   {
+      NSWindow *ow; NSTableView *ot; id ds;
+      [ctrl performSelector:NSSelectorFromString(@"showOptions:") withObject:nil];
+      pump(data, 200);
+      ow = [ctrl valueForKey:@"setWindow"]; ot = [ctrl valueForKey:@"setTable"];
+      CHECK(ow && [ow isVisible] && ot, "Options window shown");
+      CHECK([ot numberOfRows] == 13, "13 settings listed (%ld)", (long)[ot numberOfRows]);
+      ds = [ot dataSource];
+      test_settings.bools.desktop_menu_save_geometry = false;
+      [ot selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+      [ctrl performSelector:NSSelectorFromString(@"settingActivate:") withObject:nil];
+      CHECK(test_settings.bools.desktop_menu_save_geometry, "double-click toggles a bool");
+      {
+         id v = [ds tableView:ot objectValueForTableColumn:[ot tableColumnWithIdentifier:@"sval"] row:0];
+         CHECK([[v description] isEqualToString:@"Yes"], "bool shows Yes (got %s)", [[v description] UTF8String]);
+      }
+      [ds tableView:ot setObjectValue:@"512" forTableColumn:[ot tableColumnWithIdentifier:@"sval"] row:7];
+      CHECK(test_settings.uints.desktop_menu_thumbnail_cache_limit == 512, "editing a number sets it");
+      [ds tableView:ot setObjectValue:@"Dark" forTableColumn:[ot tableColumnWithIdentifier:@"sval"] row:2];
+      CHECK(test_settings.uints.desktop_menu_theme == 1, "theme set by label");
+      [ow orderOut:nil];
    }
 
    /* --- closing hands the keyboard back --- */

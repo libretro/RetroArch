@@ -32,6 +32,8 @@
 #include <formats/rpng.h>
 #endif
 #include "companion_thumbs.h"
+#include "../../core_option_manager.h"
+#include "../../gfx/video_shader_parse.h"
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
@@ -387,6 +389,334 @@ void companion_core_free(companion_core_t *core)
    free(core->browse_size);
    free(core->browse_mtime);
    free(core);
+}
+
+/* --- Options table (Qt's View > Options) --------------------------------- */
+
+enum { CS_SAVE_GEOMETRY, CS_SAVE_LAST_TAB, CS_THEME, CS_SHOW_HIDDEN,
+       CS_HIGHLIGHT, CS_SUGGEST_LOADED, CS_INITIAL_PLAYLIST,
+       CS_THUMB_CACHE, CS_THUMB_MAX, CS_CUSTOM_THEME, CS_ALL_LIST_MAX,
+       CS_ALL_GRID_MAX, CS_SCAN_CONFIRM, CS_COUNT };
+
+static const char *cs_theme_choices[] = { "System default", "Dark", "Custom" };
+
+static const struct { const char *label; enum companion_setting_kind kind; } cs_rows[CS_COUNT] = {
+   { "Remember window position and size", COMPANION_SETTING_BOOL },
+   { "Remember last tab",                  COMPANION_SETTING_BOOL },
+   { "Theme",                              COMPANION_SETTING_CHOICE },
+   { "Show hidden files and folders",      COMPANION_SETTING_BOOL },
+   { "Highlight color (#rrggbb)",          COMPANION_SETTING_STRING },
+   { "Suggest loaded core first",          COMPANION_SETTING_BOOL },
+   { "Startup playlist",                   COMPANION_SETTING_STRING },
+   { "Thumbnail cache limit (MB)",         COMPANION_SETTING_UINT },
+   { "Dropped thumbnail max size (px, 0 = unlimited)", COMPANION_SETTING_UINT },
+   { "Custom theme file",                  COMPANION_SETTING_STRING },
+   { "All Playlists: max entries (list)",  COMPANION_SETTING_UINT },
+   { "All Playlists: max entries (grid)",  COMPANION_SETTING_UINT },
+   { "Confirm when a scan finishes",       COMPANION_SETTING_BOOL },
+};
+
+size_t companion_core_setting_count(companion_core_t *core)
+{
+   (void)core;
+   return CS_COUNT;
+}
+
+const char *companion_core_setting_label(companion_core_t *core, size_t i)
+{
+   (void)core;
+   return i < CS_COUNT ? cs_rows[i].label : "";
+}
+
+enum companion_setting_kind companion_core_setting_kind(companion_core_t *core, size_t i)
+{
+   (void)core;
+   return i < CS_COUNT ? cs_rows[i].kind : COMPANION_SETTING_STRING;
+}
+
+size_t companion_core_setting_choice_count(companion_core_t *core, size_t i)
+{
+   (void)core;
+   return i == CS_THEME ? 3 : 0;
+}
+
+const char *companion_core_setting_choice(companion_core_t *core, size_t i, size_t c)
+{
+   (void)core;
+   return (i == CS_THEME && c < 3) ? cs_theme_choices[c] : "";
+}
+
+const char *companion_core_setting_get(companion_core_t *core, size_t i, char *s, size_t len)
+{
+   settings_t *st = config_get_ptr();
+   (void)core;
+   if (!s || !len)
+      return "";
+   s[0] = '\0';
+   switch (i)
+   {
+      case CS_SAVE_GEOMETRY:    strlcpy(s, st->bools.desktop_menu_save_geometry ? "1" : "0", len); break;
+      case CS_SAVE_LAST_TAB:    strlcpy(s, st->bools.desktop_menu_save_last_tab ? "1" : "0", len); break;
+      case CS_THEME:            strlcpy(s, cs_theme_choices[st->uints.desktop_menu_theme < 3 ? st->uints.desktop_menu_theme : 0], len); break;
+      case CS_SHOW_HIDDEN:      strlcpy(s, st->bools.show_hidden_files ? "1" : "0", len); break;
+      case CS_HIGHLIGHT:        strlcpy(s, st->arrays.desktop_menu_highlight_color, len); break;
+      case CS_SUGGEST_LOADED:   strlcpy(s, st->bools.desktop_menu_suggest_loaded_core_first ? "1" : "0", len); break;
+      case CS_INITIAL_PLAYLIST: strlcpy(s, st->paths.desktop_menu_initial_playlist, len); break;
+      case CS_THUMB_CACHE:      snprintf(s, len, "%u", st->uints.desktop_menu_thumbnail_cache_limit); break;
+      case CS_THUMB_MAX:        snprintf(s, len, "%u", st->uints.desktop_menu_thumbnail_max_size); break;
+      case CS_CUSTOM_THEME:     strlcpy(s, st->paths.desktop_menu_custom_theme, len); break;
+      case CS_ALL_LIST_MAX:     snprintf(s, len, "%u", st->uints.desktop_menu_all_playlists_list_max_count); break;
+      case CS_ALL_GRID_MAX:     snprintf(s, len, "%u", st->uints.desktop_menu_all_playlists_grid_max_count); break;
+      case CS_SCAN_CONFIRM:     strlcpy(s, st->bools.desktop_menu_scan_finish_confirm ? "1" : "0", len); break;
+      default: break;
+   }
+   return s;
+}
+
+static bool cs_parse_bool(const char *t, bool *out)
+{
+   if (string_is_equal(t, "1") || string_is_equal_case_insensitive(t, "true")
+         || string_is_equal_case_insensitive(t, "yes") || string_is_equal_case_insensitive(t, "on"))
+      *out = true;
+   else if (string_is_equal(t, "0") || string_is_equal_case_insensitive(t, "false")
+         || string_is_equal_case_insensitive(t, "no") || string_is_equal_case_insensitive(t, "off"))
+      *out = false;
+   else
+      return false;
+   return true;
+}
+
+bool companion_core_setting_set(companion_core_t *core, size_t i, const char *text)
+{
+   settings_t *st = config_get_ptr();
+   bool b = false;
+   unsigned u = 0;
+   (void)core;
+   if (!text)
+      return false;
+   if (i < CS_COUNT && cs_rows[i].kind == COMPANION_SETTING_BOOL && !cs_parse_bool(text, &b))
+      return false;
+   if (i < CS_COUNT && cs_rows[i].kind == COMPANION_SETTING_UINT)
+   {
+      char *end = NULL;
+      unsigned long v = strtoul(text, &end, 10);
+      if (!*text || (end && *end))
+         return false;
+      u = (unsigned)v;
+   }
+   switch (i)
+   {
+      case CS_SAVE_GEOMETRY:    st->bools.desktop_menu_save_geometry = b; break;
+      case CS_SAVE_LAST_TAB:    st->bools.desktop_menu_save_last_tab = b; break;
+      case CS_THEME:
+         {
+            size_t c;
+            for (c = 0; c < 3; c++)
+               if (string_is_equal_case_insensitive(text, cs_theme_choices[c]))
+                  break;
+            if (c == 3)
+            {
+               char *end = NULL;
+               unsigned long v = strtoul(text, &end, 10);
+               if (!*text || (end && *end) || v > 2)
+                  return false;
+               c = (size_t)v;
+            }
+            st->uints.desktop_menu_theme = (unsigned)c;
+         }
+         break;
+      case CS_SHOW_HIDDEN:      st->bools.show_hidden_files = b; break;
+      case CS_HIGHLIGHT:        strlcpy(st->arrays.desktop_menu_highlight_color, text, sizeof(st->arrays.desktop_menu_highlight_color)); break;
+      case CS_SUGGEST_LOADED:   st->bools.desktop_menu_suggest_loaded_core_first = b; break;
+      case CS_INITIAL_PLAYLIST: strlcpy(st->paths.desktop_menu_initial_playlist, text, sizeof(st->paths.desktop_menu_initial_playlist)); break;
+      case CS_THUMB_CACHE:      st->uints.desktop_menu_thumbnail_cache_limit = u; break;
+      case CS_THUMB_MAX:        st->uints.desktop_menu_thumbnail_max_size = u; break;
+      case CS_CUSTOM_THEME:     strlcpy(st->paths.desktop_menu_custom_theme, text, sizeof(st->paths.desktop_menu_custom_theme)); break;
+      case CS_ALL_LIST_MAX:     st->uints.desktop_menu_all_playlists_list_max_count = u; break;
+      case CS_ALL_GRID_MAX:     st->uints.desktop_menu_all_playlists_grid_max_count = u; break;
+      case CS_SCAN_CONFIRM:     st->bools.desktop_menu_scan_finish_confirm = b; break;
+      default: return false;
+   }
+   return true;
+}
+
+/* --- Core Options / shader parameters ------------------------------------ */
+
+static core_option_manager_t *companion_core_opts(void)
+{
+   runloop_state_t *st = runloop_state_get_ptr();
+   return st ? st->core_options : NULL;
+}
+
+size_t companion_core_option_count(companion_core_t *core)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   return o ? o->size : 0;
+}
+
+const char *companion_core_option_desc(companion_core_t *core, size_t i)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   if (!o || i >= o->size)
+      return "";
+   return core_option_manager_get_desc(o, i, false);
+}
+
+const char *companion_core_option_info(companion_core_t *core, size_t i)
+{
+   core_option_manager_t *o = companion_core_opts();
+   const char *s;
+   (void)core;
+   if (!o || i >= o->size)
+      return "";
+   s = core_option_manager_get_info(o, i, false);
+   return s ? s : "";
+}
+
+size_t companion_core_option_value_count(companion_core_t *core, size_t i)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   if (!o || i >= o->size || !o->opts[i].vals)
+      return 0;
+   return o->opts[i].vals->size;
+}
+
+const char *companion_core_option_value_label(companion_core_t *core, size_t i, size_t v)
+{
+   core_option_manager_t *o = companion_core_opts();
+   struct core_option *opt;
+   (void)core;
+   if (!o || i >= o->size)
+      return "";
+   opt = &o->opts[i];
+   if (!opt->vals || v >= opt->vals->size)
+      return "";
+   if (opt->val_labels && v < opt->val_labels->size
+         && !string_is_empty(opt->val_labels->elems[v].data))
+      return opt->val_labels->elems[v].data;
+   return opt->vals->elems[v].data;
+}
+
+size_t companion_core_option_current(companion_core_t *core, size_t i)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   if (!o || i >= o->size)
+      return 0;
+   return o->opts[i].index;
+}
+
+void companion_core_option_set(companion_core_t *core, size_t i, size_t v)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   if (!o || i >= o->size || !o->opts[i].vals || v >= o->opts[i].vals->size)
+      return;
+   core_option_manager_set_val(o, i, v, true);
+}
+
+void companion_core_option_reset(companion_core_t *core, size_t i)
+{
+   core_option_manager_t *o = companion_core_opts();
+   (void)core;
+   if (!o || i >= o->size)
+      return;
+   core_option_manager_set_val(o, i, o->opts[i].default_index, true);
+}
+
+void companion_core_option_reset_all(companion_core_t *core)
+{
+   size_t i, n = companion_core_option_count(core);
+   for (i = 0; i < n; i++)
+      companion_core_option_reset(core, i);
+}
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_shader.h"
+#endif
+
+static struct video_shader *companion_core_shader(void)
+{
+#ifdef HAVE_MENU
+   return menu_shader_get();
+#else
+   return NULL;
+#endif
+}
+
+size_t companion_core_shader_param_count(companion_core_t *core)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   return s ? s->num_parameters : 0;
+}
+
+const char *companion_core_shader_param_desc(companion_core_t *core, size_t i)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   if (!s || i >= s->num_parameters)
+      return "";
+   return s->parameters[i].desc[0] ? s->parameters[i].desc : s->parameters[i].id;
+}
+
+bool companion_core_shader_param_range(companion_core_t *core, size_t i,
+      float *min, float *max, float *step, float *initial)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   if (!s || i >= s->num_parameters)
+      return false;
+   if (min)     *min     = s->parameters[i].minimum;
+   if (max)     *max     = s->parameters[i].maximum;
+   if (step)    *step    = s->parameters[i].step;
+   if (initial) *initial = s->parameters[i].initial;
+   return true;
+}
+
+float companion_core_shader_param_current(companion_core_t *core, size_t i)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   if (!s || i >= s->num_parameters)
+      return 0.0f;
+   return s->parameters[i].current;
+}
+
+void companion_core_shader_param_set(companion_core_t *core, size_t i, float v)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   if (!s || i >= s->num_parameters)
+      return;
+   if (v < s->parameters[i].minimum) v = s->parameters[i].minimum;
+   if (v > s->parameters[i].maximum) v = s->parameters[i].maximum;
+   s->parameters[i].current = v;
+}
+
+void companion_core_shader_param_reset(companion_core_t *core, size_t i)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   if (!s || i >= s->num_parameters)
+      return;
+   s->parameters[i].current = s->parameters[i].initial;
+}
+
+const char *companion_core_shader_path(companion_core_t *core)
+{
+   struct video_shader *s = companion_core_shader();
+   (void)core;
+   return (s && s->path[0]) ? s->path : "";
+}
+
+void companion_core_shader_apply(companion_core_t *core)
+{
+   (void)core;
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
 }
 
 /* --- rename / add files / thumbnail install ------------------------------ */

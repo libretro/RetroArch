@@ -13,9 +13,9 @@ FEATS = [
  ("File menu: Load Core",             r"MENU_FILE_LOAD_CORE", r"MENU_FILE_LOAD_CORE|loadCore:", r"IDM_CW_LOAD_CORE\b"),
  ("File menu: Unload Core",           r"MENU_FILE_UNLOAD_CORE", r"unloadCore|UNLOAD_CORE", r"IDM_CW_UNLOAD_CORE"),
  ("File menu: Exit RetroArch",        r"MENU_FILE_EXIT", r"quitRetroArch|MENU_FILE_EXIT", r"IDM_CW_QUIT"),
- ("View: Shader Params",              r"onShaderParamsClicked", r"shaderParams", r"shader"),
- ("View: Core Options",               r"onCoreOptionsClicked", r"coreOptions", r"core_options|CORE_OPTIONS"),
- ("View: Options dialog",             r"MENU_VIEW_OPTIONS\b", r"MENU_VIEW_OPTIONS\b|viewOptions", r"MENU_VIEW_OPTIONS\b|cw_options"),
+ ("View: Shader Params",              r"onShaderParamsClicked", r"showShaderParams", r"IDM_CW_SHADER_PARAMS"),
+ ("View: Core Options",               r"onCoreOptionsClicked", r"showCoreOptions", r"IDM_CW_CORE_OPTIONS"),
+ ("View: Options dialog",             r"MENU_VIEW_OPTIONS\b", r"showOptions", r"IDM_CW_OPTIONS\b"),
  ("Help: About",                      r"MENU_HELP_ABOUT\b", r"aboutRetroArch|orderFrontStandardAboutPanel", r"IDM_CW_HELP_ABOUT\b"),
  ("Help: About contributors",         r"CONTRIBUTORS", r"aboutContributors", r"IDM_CW_HELP_CONTRIBUTORS"),
  ("Playlist context: rename",         r"renamePlaylist|PLAYLIST_RENAME", r"renamePlaylist", r"IDM_CW_RENAME_PLAYLIST"),
@@ -29,11 +29,11 @@ FEATS = [
  ("Load custom core (file picker)",   r"onLoadCustomCoreClicked", r"loadCustomCore|NSOpenPanel", r"cw_load_custom_core"),
  ("Stop content",                     r"onStopClicked", r"stopContent", r"IDC_CW_STOP_BTN"),
  ("Log dock",                         r"LogWidget", r"toggleLog", r"IDC_CW_LOG|cw_log"),
- ("Theme (dark)",                     r"CUSTOM_THEME|setTheme", r"theme", r"theme"),
+ ("Theme (dark)",                     r"CUSTOM_THEME|setTheme", r"applyTheme", r"theme"),
  ("Search filters entries",           r"onSearchLineEditEdited", r"searchChanged", r"IDC_CW_SEARCH"),
  ("Search Enter selects+runs",        r"onSearchEnterPressed", r"searchEnter|runSelected", r"cw_search_proc"),
- ("Core Options dialog",              r"CoreOptionsDialog", r"CoreOptions", r"core_options"),
- ("Shader params dialog",             r"ShaderParamsDialog", r"ShaderParams", r"shader_params"),
+ ("Core Options dialog",              r"CoreOptionsDialog", r"optsTable", r"cw_opts_show"),
+ ("Shader params dialog",             r"ShaderParamsDialog", r"shpTable", r"cw_shp_show"),
 ]
 print("%-40s %-6s %-6s %s" % ("feature", "qt", "cocoa", "win32"))
 gc, gw = [], []

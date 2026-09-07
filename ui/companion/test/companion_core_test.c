@@ -52,6 +52,7 @@
 
 #include "../../../configuration.h"
 #include "../../../runloop.h"
+#include "../../../core_option_manager.h"
 #include "../companion_core.h"
 
 extern settings_t test_settings;
@@ -724,6 +725,95 @@ static void test_rename_add_install(void)
    companion_core_free(c);
 }
 
+/* Core options and shader parameters as the dialogs see them: from a
+ * real core_option_manager built from v2 definitions, and the stub
+ * menu shader. */
+static void test_options_and_shader_params(void)
+{
+   companion_core_t *c = make_core();
+   static struct retro_core_option_v2_definition defs[3];
+   static const struct retro_core_option_v2_definition none = { 0 };
+   struct retro_core_options_v2 v2;
+   char cfg[512];
+   float mn, mx, stp, ini;
+   memset(defs, 0, sizeof(defs));
+   defs[0].key = "test_speed"; defs[0].desc = "Speed"; defs[0].info = "How fast";
+   defs[0].values[0].value = "slow"; defs[0].values[0].label = "Slow";
+   defs[0].values[1].value = "fast"; defs[0].values[1].label = "Fast";
+   defs[0].default_value = "fast";
+   defs[1].key = "test_color"; defs[1].desc = "Colour";
+   defs[1].values[0].value = "rgb"; defs[1].values[1].value = "mono";
+   defs[1].default_value = "rgb";
+   defs[2] = none;
+   v2.categories = NULL;
+   v2.definitions = defs;
+   fixture(cfg, sizeof(cfg), "core.opt");
+   test_runloop.core_options = core_option_manager_new(cfg, NULL, &v2, false);
+   CHECK(test_runloop.core_options != NULL, "option manager built");
+
+   CHECK(companion_core_option_count(c) == 2, "2 options (got %u)", (unsigned)companion_core_option_count(c));
+   CHECK(string_is_equal(companion_core_option_desc(c, 0), "Speed"), "desc (got %s)", companion_core_option_desc(c, 0));
+   CHECK(string_is_equal(companion_core_option_info(c, 0), "How fast"), "info");
+   CHECK(companion_core_option_value_count(c, 0) == 2, "2 values");
+   CHECK(string_is_equal(companion_core_option_value_label(c, 0, 1), "Fast"), "value label (got %s)", companion_core_option_value_label(c, 0, 1));
+   CHECK(string_is_equal(companion_core_option_value_label(c, 1, 1), "mono"), "no label: the value (got %s)", companion_core_option_value_label(c, 1, 1));
+   CHECK(companion_core_option_current(c, 0) == 1, "current is the default (fast)");
+   companion_core_option_set(c, 0, 0);
+   CHECK(companion_core_option_current(c, 0) == 0, "set to slow");
+   companion_core_option_reset(c, 0);
+   CHECK(companion_core_option_current(c, 0) == 1, "reset to the default");
+   companion_core_option_set(c, 0, 5);
+   CHECK(companion_core_option_current(c, 0) == 1, "out-of-range value ignored");
+   companion_core_option_set(c, 1, 1);
+   companion_core_option_reset_all(c);
+   CHECK(companion_core_option_current(c, 1) == 0, "reset all");
+
+   CHECK(companion_core_shader_param_count(c) == 2, "2 shader params");
+   CHECK(string_is_equal(companion_core_shader_param_desc(c, 0), "Scanline strength"), "param desc");
+   CHECK(string_is_equal(companion_core_shader_param_desc(c, 1), "CURV"), "no desc: the id (got %s)", companion_core_shader_param_desc(c, 1));
+   CHECK(companion_core_shader_param_range(c, 0, &mn, &mx, &stp, &ini) && mn == 0.0f && mx == 1.0f && ini == 0.5f, "range");
+   companion_core_shader_param_set(c, 0, 0.75f);
+   CHECK(companion_core_shader_param_current(c, 0) == 0.75f, "set");
+   companion_core_shader_param_set(c, 0, 9.0f);
+   CHECK(companion_core_shader_param_current(c, 0) == 1.0f, "clamped to max");
+   companion_core_shader_param_reset(c, 0);
+   CHECK(companion_core_shader_param_current(c, 0) == 0.5f, "reset to initial");
+   CHECK(string_is_equal(companion_core_shader_path(c), "/shaders/crt.slangp"), "shader path");
+   {
+      extern int stub_calls_shader_apply;
+      int before = stub_calls_shader_apply;
+      companion_core_shader_apply(c);
+      CHECK(stub_calls_shader_apply == before + 1, "apply fires CMD_EVENT_SHADERS_APPLY_CHANGES");
+   }
+   core_option_manager_free(test_runloop.core_options);
+   test_runloop.core_options = NULL;
+   companion_core_free(c);
+}
+
+/* The Options table: every row reads back what it says, sets from
+ * text with type checks, and lands in the settings. */
+static void test_settings_table(void)
+{
+   companion_core_t *c = make_core();
+   char buf[64];
+   size_t i, n = companion_core_setting_count(c);
+   CHECK(n == 13, "13 rows (got %u)", (unsigned)n);
+   for (i = 0; i < n; i++)
+      CHECK(*companion_core_setting_label(c, i) && *companion_core_setting_get(c, i, buf, sizeof(buf)) != 2, "row %u has a label", (unsigned)i);
+   CHECK(companion_core_setting_kind(c, 2) == COMPANION_SETTING_CHOICE && companion_core_setting_choice_count(c, 2) == 3, "theme is a 3-way choice");
+   CHECK(companion_core_setting_set(c, 2, "Dark") && test_settings.uints.desktop_menu_theme == 1, "theme by label");
+   CHECK(companion_core_setting_set(c, 2, "2") && test_settings.uints.desktop_menu_theme == 2, "theme by index");
+   CHECK(!companion_core_setting_set(c, 2, "purple"), "unknown theme refused");
+   CHECK(string_is_equal(companion_core_setting_get(c, 2, buf, sizeof(buf)), "Custom"), "theme reads back (got %s)", buf);
+   CHECK(companion_core_setting_set(c, 0, "true") && test_settings.bools.desktop_menu_save_geometry, "bool from 'true'");
+   CHECK(!companion_core_setting_set(c, 0, "maybe"), "bad bool refused");
+   CHECK(companion_core_setting_set(c, 7, "256") && test_settings.uints.desktop_menu_thumbnail_cache_limit == 256, "uint");
+   CHECK(!companion_core_setting_set(c, 7, "12x"), "bad uint refused");
+   CHECK(companion_core_setting_set(c, 4, "#ff8800") && string_is_equal(test_settings.arrays.desktop_menu_highlight_color, "#ff8800"), "string");
+   CHECK(string_is_equal(companion_core_setting_get(c, 4, buf, sizeof(buf)), "#ff8800"), "string reads back");
+   companion_core_free(c);
+}
+
 static void test_run_paths(void)
 {
    companion_core_t *c = make_core();
@@ -781,6 +871,8 @@ int main(void)
    test_backend_scenario();
    test_sort_callback_reentrancy();
    test_rename_add_install();
+   test_options_and_shader_params();
+   test_settings_table();
    test_run_paths();
    test_launch_options();
    teardown();

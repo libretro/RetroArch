@@ -114,10 +114,44 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    }
 }
 
+/* retroarch_ctl (core_option_manager asks whether a core is running). */
+bool retroarch_ctl(enum rarch_ctl_state state, void *data)
+{
+   (void)state; (void)data;
+   return false;
+}
+
+/* The menu shader, fabricated: two parameters. */
+#include "../../../gfx/video_shader_parse.h"
+static struct video_shader test_shader;
+struct video_shader *menu_shader_get(void)
+{
+   if (!test_shader.num_parameters)
+   {
+      strlcpy(test_shader.path, "/shaders/crt.slangp", sizeof(test_shader.path));
+      test_shader.num_parameters = 2;
+      strlcpy(test_shader.parameters[0].id, "SCANLINE", 64);
+      strlcpy(test_shader.parameters[0].desc, "Scanline strength", 64);
+      test_shader.parameters[0].minimum = 0.0f; test_shader.parameters[0].maximum = 1.0f;
+      test_shader.parameters[0].step = 0.05f; test_shader.parameters[0].initial = 0.5f;
+      test_shader.parameters[0].current = 0.5f;
+      strlcpy(test_shader.parameters[1].id, "CURV", 64);
+      test_shader.parameters[1].desc[0] = '\0';   /* no desc: id shows */
+      test_shader.parameters[1].minimum = 0.0f; test_shader.parameters[1].maximum = 10.0f;
+      test_shader.parameters[1].step = 1.0f; test_shader.parameters[1].initial = 2.0f;
+      test_shader.parameters[1].current = 2.0f;
+   }
+   return &test_shader;
+}
+
+int stub_calls_shader_apply;
+
 bool command_event(enum event_command cmd, void *data)
 {
-   (void)cmd; (void)data;
+   (void)data;
    stub_calls_command++;
+   if (cmd == CMD_EVENT_SHADERS_APPLY_CHANGES)
+      stub_calls_shader_apply++;
    return true;
 }
 

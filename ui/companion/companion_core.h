@@ -477,6 +477,60 @@ bool companion_core_thumbnail_install(companion_core_t *core,
       const char *db_name, const char *type, const char *label,
       const char *image_path, char *out_path, size_t len);
 
+/* --- Options (Qt's View > Options dialog) --------------------------------
+ * The desktop-menu settings that dialog edits, as a typed table every
+ * backend can render as rows: a label, a kind, the current value as a
+ * string, and a setter from a string. Settings are written to the
+ * config by RetroArch as usual. */
+enum companion_setting_kind
+{
+   COMPANION_SETTING_BOOL = 0,   /* "0" / "1" */
+   COMPANION_SETTING_UINT,       /* decimal */
+   COMPANION_SETTING_STRING,     /* free text */
+   COMPANION_SETTING_CHOICE      /* one of companion_core_setting_choice() */
+};
+size_t      companion_core_setting_count(companion_core_t *core);
+const char *companion_core_setting_label(companion_core_t *core, size_t i);
+enum companion_setting_kind companion_core_setting_kind(companion_core_t *core, size_t i);
+/* Current value as text into @s; returns @s. */
+const char *companion_core_setting_get(companion_core_t *core, size_t i, char *s, size_t len);
+/* Set from text (a bool takes 0/1/true/false; a choice its label or
+ * index); false when the text is not acceptable. */
+bool        companion_core_setting_set(companion_core_t *core, size_t i, const char *text);
+size_t      companion_core_setting_choice_count(companion_core_t *core, size_t i);
+const char *companion_core_setting_choice(companion_core_t *core, size_t i, size_t c);
+
+/* --- Core Options (Qt's Core Options dialog) ---------------------------
+ * The running core's options as a flat table: one row per visible
+ * option with a description, its possible values (labels) and the
+ * current one. Indices are into that table for this snapshot; refresh
+ * after a core change. Nothing is toolkit-specific. */
+size_t      companion_core_option_count(companion_core_t *core);
+const char *companion_core_option_desc(companion_core_t *core, size_t i);
+const char *companion_core_option_info(companion_core_t *core, size_t i);
+size_t      companion_core_option_value_count(companion_core_t *core, size_t i);
+const char *companion_core_option_value_label(companion_core_t *core, size_t i, size_t v);
+size_t      companion_core_option_current(companion_core_t *core, size_t i);   /* value index */
+/* Set option @i to value index @v (written when the core flushes, as
+ * the menu does); reset to its default. */
+void        companion_core_option_set(companion_core_t *core, size_t i, size_t v);
+void        companion_core_option_reset(companion_core_t *core, size_t i);
+void        companion_core_option_reset_all(companion_core_t *core);
+
+/* --- Shader parameters (Qt's Shader Parameters dialog) -----------------
+ * The menu shader's parameters: description, range, step, current.
+ * Edits apply through CMD_EVENT_SHADERS_APPLY_CHANGES. */
+size_t      companion_core_shader_param_count(companion_core_t *core);
+const char *companion_core_shader_param_desc(companion_core_t *core, size_t i);
+bool        companion_core_shader_param_range(companion_core_t *core, size_t i,
+      float *min, float *max, float *step, float *initial);
+float       companion_core_shader_param_current(companion_core_t *core, size_t i);
+void        companion_core_shader_param_set(companion_core_t *core, size_t i, float v);
+void        companion_core_shader_param_reset(companion_core_t *core, size_t i);
+/* The shader preset's own path ("" when none), for the dialog's title. */
+const char *companion_core_shader_path(companion_core_t *core);
+void        companion_core_shader_apply(companion_core_t *core);
+
 /* Replace entry @index of playlist file @path with @entry and write. */
 bool companion_core_playlist_update_entry(companion_core_t *core,
       const char *path, size_t index, const struct playlist_entry *entry);

@@ -32,6 +32,8 @@ SRCS="ui/companion/companion_core.c \
       ui/companion/test/companion_core_stubs.c \
       ui/companion/test/companion_core_test.c \
       playlist.c \
+      core_option_manager.c \
+      $LC/lists/nested_list.c \
       $LC/formats/json/rjson.c \
       $LC/formats/image_texture.c \
       $LC/formats/image_transfer.c \
@@ -54,6 +56,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/file/file_path.c \
       $LC/file/file_path_io.c \
       $LC/file/config_file.c \
+      $LC/file/config_file_io.c \
       $LC/file/archive_file.c \
       $LC/file/archive_file_zlib.c \
       $LC/file/retro_dirent.c \
