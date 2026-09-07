@@ -20,6 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <compat/strl.h>
 
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
@@ -28,6 +31,22 @@
 size_t strlcpy(char *s, const char *in, size_t len)
 {
    size_t src_len = strlen(in);
+#ifdef LIBRETRO_STRL_CHECK_OVERLAP
+   /* Test builds: fail the way macOS's fortified libc does on an
+    * overlapping copy (__chk_fail_overlap), so the Linux test suites
+    * catch what only Apple's runtime would otherwise catch. */
+   if (len && src_len)
+   {
+      const char *s_end  = s + (src_len < len - 1 ? src_len : len - 1) + 1;
+      const char *in_end = in + src_len + 1;
+      if (!(s_end <= in || in_end <= s))
+      {
+         fprintf(stderr, "strlcpy: overlapping copy (dst %p, src %p, %u bytes)\n",
+               (void*)s, (const void*)in, (unsigned)src_len);
+         abort();
+      }
+   }
+#endif
    if (len)
    {
       size_t cpy_len = src_len < len - 1 ? src_len : len - 1;

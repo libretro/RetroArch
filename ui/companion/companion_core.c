@@ -1199,6 +1199,14 @@ static bool companion_core_begin_playlist(companion_core_t *core,
       const char *path, size_t index)
 {
    playlist_config_t cfg;
+   char path_buf[PATH_MAX_LENGTH];
+
+   /* @path may be the core's own selected_path (a backend reloading
+    * the shown playlist hands companion_core_selected_playlist_path()
+    * straight back in). Copying that onto itself is an overlapping
+    * strlcpy, which macOS's fortified libc traps. Take a copy first. */
+   strlcpy(path_buf, path ? path : "", sizeof(path_buf));
+   path = path_buf;
 
    companion_core_clear_playlist(core);
    core->selected = index;

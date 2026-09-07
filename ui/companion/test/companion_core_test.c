@@ -720,6 +720,24 @@ static void test_rename_add_install(void)
       CHECK(e && string_is_equal(e->core_path, "DETECT"), "core DETECT");
    }
    CHECK(companion_core_playlist_add_files(c, COMPANION_ALL_PLAYLISTS_TOKEN, paths, 1, NULL, NULL) == 0, "All Playlists takes no files");
+   /* The backends pass the core's own selected path back in: the
+    * reload must not copy that buffer onto itself (an overlapping
+    * strlcpy traps on macOS's fortified libc; this is what the harness
+    * hit on Apple's runner). */
+   {
+      const char *own = companion_core_selected_playlist_path(c);
+      size_t before   = companion_core_entry_count(c);
+      char bsfc[512];
+      const char *one[1];
+      fixture(bsfc, sizeof(bsfc), "content/b.sfc");   /* not in the playlist yet */
+      one[0] = bsfc;
+      CHECK(own && *own, "a playlist is selected");
+      n = companion_core_playlist_add_files(c, own, one, 1, NULL, NULL);
+      CHECK(n == 1, "add through the selected-path alias (got %u)", (unsigned)n);
+      CHECK(iterate_until_loaded(c), "reload landed");
+      CHECK(companion_core_entry_count(c) == before + 1, "entries %u -> %u", (unsigned)before, (unsigned)companion_core_entry_count(c));
+      CHECK(string_is_equal(companion_core_selected_playlist_path(c), own), "selected path intact");
+   }
    /* thumbnail install from a TGA dropped on the boxart pane */
    {
       char img[512];
