@@ -602,6 +602,13 @@ typedef struct
    uint64_t sink_check_consumed;
    int      sink_check_dropped;        /* pipe_dropped at the last check */
    double   sink_check_pipe;           /* pipe occupancy at the last check, in nominal device frames */
+   /* Windows in a row, so far, in which both sides were within the
+    * plausible band of nominal. The sums open on the second: a source
+    * that is off rate at start - a core warming up after load - is a
+    * real measurement of a source that is slow then, and an average
+    * that begins with it carries it for the session. */
+   unsigned sink_settled;
+   int64_t  sink_unsettled_usec;       /* time in windows the source was off the band, since the last settled one */
    int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
    double   sink_sum_offered;
    double   sink_sum_consumed;

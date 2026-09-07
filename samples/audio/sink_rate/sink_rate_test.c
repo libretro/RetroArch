@@ -304,6 +304,44 @@ int main(void)
       st->pipe_threaded = false;
    }
 
+   /* 9. A source that ran slow for its first half minute - a core
+    *    warming up after start - and at nominal since. The estimate is
+    *    over the last sixteen kept windows, so by two minutes in the
+    *    warm-up has aged out and the bias is the clocks', not the
+    *    session average. An all-time average would still carry a third
+    *    of it. */
+   reset(st, true);
+   dev_ppm = 0.0;
+   src_ppm = -1500.0;
+   for (i = 0; i < 30; i++)
+      run_second(st);
+   src_ppm = 0.0;
+   for (i = 0; i < 90; i++)
+      run_second(st);
+   CHECK(fabs(bias_ppm(st)) < 60.0,
+         "a slow start still in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
+
+   /* 9. A source that ran slow for its first half minute - a core
+    *    warming up after load - and at nominal since. The baseline
+    *    opens only once the source has been within the band for two
+    *    windows, so the warm-up is never in the sums and the bias at
+    *    two minutes is the clocks': near zero, against the device
+    *    at nominal. An average that began at start would carry a
+    *    third of the warm-up here - some +370 ppm - and walk down for
+    *    the rest of the session. */
+   reset(st, true);
+   dev_ppm = 0.0;
+   src_ppm = -1500.0;
+   for (i = 0; i < 30; i++)
+      run_second(st);
+   src_ppm = 0.0;
+   for (i = 0; i < 90; i++)
+      run_second(st);
+   printf("   slow start of -1500 ppm for 30 s, then nominal: bias %+.0f ppm at 120 s\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0,
+         "the slow start is in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
+   CHECK(st->sink_applied > 0, "the bias was never applied after the source settled");
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

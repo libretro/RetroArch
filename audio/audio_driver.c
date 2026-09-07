@@ -859,6 +859,8 @@ static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
    audio_st->sink_check_consumed = consumed;
    audio_st->sink_check_dropped  = retro_atomic_load_acquire_int(&audio_st->pipe_dropped);
    audio_st->sink_check_pipe     = audio_driver_sink_pipe_frames(audio_st);
+   audio_st->sink_settled        = 0;
+   audio_st->sink_unsettled_usec = 0;
    audio_st->sink_sum_usec       = 0;
    audio_st->sink_sum_offered    = 0.0;
    audio_st->sink_sum_consumed   = 0.0;
@@ -982,6 +984,42 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
          return;
       }
       audio_st->sink_discarded     = 0;
+
+      /* Not yet settled: a window with the source outside the band a
+       * bias could correct is the source off rate - the core warming
+       * up after load, most often - and is left out of the sums, with
+       * the sums restarting from the next window in the band. Once two
+       * in a row are in it, every kept window counts, so quantised
+       * consumption averages out over the session. A source that never
+       * comes into the band is said so once, with both rates, after a
+       * baseline's worth: with audio sync off that is its clock, the
+       * frame timer or the display, which rate control absorbs. */
+      if (audio_st->sink_settled < 2)
+      {
+         if (fabs(dofr / nominal - 1.0) > AUDIO_SINK_BIAS_PLAUSIBLE)
+         {
+            audio_st->sink_settled       = 0;
+            audio_st->sink_sum_usec      = 0;
+            audio_st->sink_sum_offered   = 0.0;
+            audio_st->sink_sum_consumed  = 0.0;
+            audio_st->sink_unsettled_usec += wdt;
+            if (     audio_st->sink_unsettled_usec >= AUDIO_SINK_BASELINE_USEC
+                  && !audio_st->sink_implausible_warned)
+            {
+               audio_st->sink_implausible_warned = true;
+               RARCH_WARN("[Audio] Sink rate: the source has produced %.1f Hz (%+.0f ppm of %u) against the device's %.1f Hz (%+.0f ppm) for %.0f s. That is the source's clock, not the device's: with audio sync off the core is paced by the frame timer or the display, and rate control absorbs the difference. A bias is for crystals; not biasing resampling (driver \"%s\").\n",
+                     dofr * 1e6 / (double)wdt,
+                     (dofr / nominal - 1.0) * 1e6, rate,
+                     (double)dc * 1e6 / (double)wdt,
+                     ((double)dc / nominal - 1.0) * 1e6,
+                     (double)audio_st->sink_unsettled_usec / 1e6,
+                     audio_driver_get_ident());
+            }
+            return;
+         }
+         audio_st->sink_settled++;
+      }
+      audio_st->sink_unsettled_usec = 0;
       audio_st->sink_sum_usec     += wdt;
       audio_st->sink_sum_offered  += dofr;
       audio_st->sink_sum_consumed += (double)dc;
