@@ -82,12 +82,17 @@ static double dev_adjust_sum;     /* rate adjustments handed to write_raw */
 static unsigned dev_adjust_n;
 
 /* Bring the fill up to now: the hardware drains at DEV_RATE. */
+static double dev_underrun;       /* frames of silence the hardware played */
+
 static void dev_drain_locked(void)
 {
    double t = now_s();
    dev_fill -= (t - dev_last) * DEV_RATE;
    if (dev_fill < 0.0)
+   {
+      dev_underrun -= dev_fill;
       dev_fill = 0.0;
+   }
    dev_last  = t;
 }
 
@@ -197,6 +202,9 @@ static void *consumer(void *arg)
 
 /* --- fixture --------------------------------------------------------- */
 
+static bool sync_on = false;   /* audio sync: the producer's flag and the setting */
+static bool jitter  = false;   /* a core that delivers late now and then */
+
 static bool pipeline_up(size_t ring_bytes)
 {
    audio_driver_state_t *st = &audio_driver_st;
@@ -219,6 +227,7 @@ static bool pipeline_up(size_t ring_bytes)
    st->sink_bias            = 1.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = 48000;
+   config_get_ptr()->bools.audio_sync                 = sync_on;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    st->pipe_lock      = slock_new();
@@ -227,8 +236,9 @@ static bool pipeline_up(size_t ring_bytes)
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
-         | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL
-         | AUDIO_FLAG_NONBLOCK);
+         | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
+   if (!sync_on)
+      AUDIO_FLAGS_SET(st, AUDIO_FLAG_NONBLOCK);
    return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
       && st->state_lock && st->output_samples_buf && st->pipe_scratch;
 }
@@ -243,6 +253,10 @@ int main(int argc, char **argv)
       frames = (unsigned)atoi(argv[1]) * 60;
    if (argc > 2)
       warm   = (unsigned)atoi(argv[2]) * 60;
+   if (argc > 3 && strstr(argv[3], "sync"))
+      sync_on = true;
+   if (argc > 3 && strstr(argv[3], "jitter"))
+      jitter = true;
    double    t0, produced, mean;
 
    if (!pipeline_up(800 * 2 * sizeof(int16_t) * 5))
@@ -261,7 +275,13 @@ int main(int argc, char **argv)
    t0 = now_s();
    for (i = 0; i < frames; i++)
    {
-      sleep_until(t0 + (double)i / 60.0);
+      /* A late frame: one in every 120 takes 60 ms - three frames'
+       * worth - as an unstable core does, and the loop, its schedule
+       * kept, delivers the next two as soon as it can. */
+      if (jitter && i % 120 == 60)
+         sleep_until(t0 + (double)i / 60.0 + 0.060);
+      else
+         sleep_until(t0 + (double)i / 60.0);
       /* The settle: the device fills from empty, the controller pushes
        * to fill it, and the pipe - a large integrator against the
        * controller's gain - takes a few seconds to centre. Measured
@@ -272,6 +292,7 @@ int main(int argc, char **argv)
          dev_adjust_sum = 0.0;
          dev_adjust_n   = 0;
          dev_took       = 0.0;
+         dev_underrun   = 0.0;
          pthread_mutex_unlock(&dev_lock);
       }
       audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
@@ -286,14 +307,39 @@ int main(int argc, char **argv)
 
    produced = (double)(frames - warm) * 800.0;
    pthread_mutex_lock(&dev_lock);
+   printf("   audio sync %s, %s: the hardware played %.1f ms of silence over %.0f s\n",
+         sync_on ? "on " : "off", jitter ? "a core late by 60 ms every 2 s" : "a steady core",
+         dev_underrun * 1000.0 / DEV_RATE, (double)(frames - warm) / 60.0);
    mean = dev_adjust_n ? dev_adjust_sum / dev_adjust_n : 0.0;
    printf("   %u passes; mean rate adjustment %+.0f ppm; device took %.1f%% of %.0f frames\n",
          dev_adjust_n, (mean - 1.0) * 1e6, 100.0 * dev_took / produced, produced);
    CHECK(dev_adjust_n > 0, "the consumer ran");
-   CHECK(fabs(mean - 1.0) < 500e-6,
-         "the mean rate adjustment is within 500 ppm of 1.0: %+.0f ppm", (mean - 1.0) * 1e6);
-   CHECK(dev_took >= produced * 0.995,
-         "the device took at least 99.5%% of what was produced: %.2f%%", 100.0 * dev_took / produced);
+   if (!jitter)
+   {
+      CHECK(fabs(mean - 1.0) < 500e-6,
+            "the mean rate adjustment is within 500 ppm of 1.0: %+.0f ppm", (mean - 1.0) * 1e6);
+      CHECK(dev_took >= produced * 0.995,
+            "the device took at least 99.5%% of what was produced: %.2f%%", 100.0 * dev_took / produced);
+      CHECK(dev_underrun < DEV_RATE * 0.002,
+            "a steady core underran the device: %.1f ms of silence", dev_underrun * 1000.0 / DEV_RATE);
+   }
+   else
+   {
+      /* A late core: the silence is the stalls' own, less the margin,
+       * and no more - the audio that arrives late is not kept, so the
+       * output does not fall behind and the controller is not pinned
+       * against a backlog. With audio sync on the writer waits instead,
+       * the backlog is the game slowing, and nothing is dropped. */
+      double stalls = (double)(frames - warm) / 120.0;
+      CHECK(dev_underrun * 1000.0 / DEV_RATE < stalls * 60.0,
+            "more silence than the stalls themselves: %.1f ms over %.0f stalls", dev_underrun * 1000.0 / DEV_RATE, stalls);
+      if (!sync_on)
+         CHECK(fabs(mean - 1.0) < 4000e-6,
+               "rate control pinned against a backlog of late audio: %+.0f ppm", (mean - 1.0) * 1e6);
+      else
+         CHECK(dev_took >= produced * 0.995,
+               "with audio sync on, late audio was dropped: %.2f%%", 100.0 * dev_took / produced);
+   }
    pthread_mutex_unlock(&dev_lock);
 
    /* The sink estimate, run on the producer with windows of whole
@@ -304,7 +350,8 @@ int main(int argc, char **argv)
    printf("   sink estimate: applied %u time(s), bias %+.0f ppm, source shown at %+.0f ppm\n",
          audio_driver_st.sink_applied, (audio_driver_st.sink_bias - 1.0) * 1e6,
          (audio_driver_st.sink_source_hz / 48000.0 - 1.0) * 1e6);
-   CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
+   if (!jitter)
+      CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
    /* Within the device's period over the short baseline: 96 frames in
     * 3 s is 667 ppm of noise, which the real thirty seconds and the
     * session's sum reduce to tens. */

@@ -2920,14 +2920,51 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          double pipe_frames = (double)retro_spsc_read_avail(&audio_st->pipe_ring)
                / (2 * sizeof(int16_t));
          double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
-         double eff         = (double)audio_st->current_audio->write_avail(
+         /* What the pipe is to hold on purpose, in device bytes. With
+          * a blocking writer nothing: the device's buffer is the
+          * margin and the writer waits on it. With a non-blocking
+          * writer a late frame is dropped, not waited for, so the pipe
+          * holds another buffer's worth ahead of the device - the
+          * setting's worth of margin against a core that delivers
+          * late, at the setting's worth of latency on top of the
+          * device's; within three quarters of the ring. */
+         double target      = config_get_ptr()->bools.audio_sync ? 0.0
+               : (double)audio_st->buffer_size;
+         double ring_max    = (double)audio_st->pipe_ring.capacity
+               / (2 * sizeof(int16_t)) * audio_st->src_ratio_orig * frame_bytes * 0.75;
+         /* Free space as the controller reads it: the device's, plus a
+          * quarter of its buffer so its half-to-full band reads as no
+          * error, plus the pipe target so the pipe holding that much
+          * reads as none either, less what the pipe holds. */
+         double eff;
+         if (target > ring_max)
+            target = ring_max;
+         eff = (double)audio_st->current_audio->write_avail(
                   audio_st->context_audio_data)
-               + (double)audio_st->buffer_size / 4 - pipe_bytes;
+               + (double)audio_st->buffer_size / 4 + target - pipe_bytes;
          if (eff < 0.0)
             eff = 0.0;
          else if (eff > (double)audio_st->buffer_size)
             eff = (double)audio_st->buffer_size;
          retro_atomic_store_release_int(&audio_st->pipe_ctrl_avail, (int)eff);
+
+         /* Late audio is not kept. With a non-blocking writer a core
+          * that stalls leaves the device playing silence for the
+          * stall, then delivers the frames it missed in a burst; kept,
+          * they would play late, the output behind by the stall for
+          * good and the pipe holding it, rate control pinned against
+          * it, the ring filling until it drops. A publish that finds
+          * the pipe already past its target by a frame is that burst,
+          * and is dropped at the door: the stall's silence was already
+          * heard, the audio that arrives after it is heard on time. The
+          * door is half a frame past the target: the pipe is read at
+          * its low point, before the publish, so a healthy one is at
+          * the target within the consumer's jitter, and what a burst
+          * leaves past the door rate control drains within a second. */
+         if (     !config_get_ptr()->bools.audio_sync && !is_fastforward
+               && pipe_bytes > target + (double)audio_st->pipe_pass_int16s
+                     / 4 * audio_st->src_ratio_orig * frame_bytes)
+            return;
       }
       /* The speedup multiplier is measured here, at the core's publish
        * cadence, and handed to the consumer; see
