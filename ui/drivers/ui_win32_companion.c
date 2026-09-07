@@ -2201,7 +2201,14 @@ static void cw_set_fill(ui_companion_win32_wimp_t *w)
       SendMessageA(w->set_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
       companion_core_setting_get(w->core, i, buf, sizeof(buf));
       if (companion_core_setting_kind(w->core, i) == COMPANION_SETTING_BOOL)
-         strlcpy(buf, buf[0] == '1' ? "Yes" : "No", sizeof(buf));
+      {
+         /* the value is read before the buffer is overwritten */
+         bool on = (buf[0] == '1');
+         if (on)
+            strlcpy(buf, "Yes", sizeof(buf));
+         else
+            strlcpy(buf, "No", sizeof(buf));
+      }
       it.iSubItem = 1;
       it.pszText  = buf;
       SendMessageA(w->set_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);

@@ -563,7 +563,7 @@ static const companion_callbacks_t cc_callbacks = {
       RARCH_LOG("[Companion] grid first paint: count=%ld frame=%.0fx%.0f dirty=%.0f,%.0f %.0fx%.0f thumb=%.0f cols=%ld owner=%p wimp=%p\n",
             (long)count, [self frame].size.width, [self frame].size.height,
             dirty.origin.x, dirty.origin.y, dirty.size.width, dirty.size.height,
-            thumb, (long)[self columns], (void*)owner, (void*)w);
+            thumb, (long)[self columns], (BRIDGE void*)owner, (void*)w);
    if (!w || count <= 0)
       return;
 
@@ -2855,13 +2855,15 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    if (!optsWindow)
    {
+      NSTableView *tv = nil;
       optsWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS)
          columns:[NSArray arrayWithObjects:@"Option", @"Value", nil]
          ids:[NSArray arrayWithObjects:@"opt", @"val", nil]
          widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:330.0], [NSNumber numberWithDouble:220.0], nil]
-         table:&optsTable
+         table:&tv
          buttons:[NSArray arrayWithObjects:@"Reset", @"Reset All", nil]
          actions:[NSArray arrayWithObjects:@"optionReset:", @"optionResetAll:", nil]];
+      optsTable = tv;
       [optsTable setTarget:self];
       [optsTable setDoubleAction:@selector(optionCycle:)];
    }
@@ -2901,13 +2903,15 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    if (!shpWindow)
    {
+      NSTableView *tv = nil;
       shpWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS)
          columns:[NSArray arrayWithObjects:@"Parameter", @"Value", @"Range", nil]
          ids:[NSArray arrayWithObjects:@"param", @"pval", @"range", nil]
          widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:280.0], [NSNumber numberWithDouble:90.0], [NSNumber numberWithDouble:200.0], nil]
-         table:&shpTable
+         table:&tv
          buttons:[NSArray arrayWithObjects:@"Apply", @"Reset", nil]
          actions:[NSArray arrayWithObjects:@"shaderApply:", @"shaderReset:", nil]];
+      shpTable = tv;
       [[shpTable tableColumnWithIdentifier:@"pval"] setEditable:YES];
    }
    [shpTable reloadData];
@@ -2952,12 +2956,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    if (!setWindow)
    {
+      NSTableView *tv = nil;
       setWindow = [self makeTableWindow:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS)
          columns:[NSArray arrayWithObjects:@"Setting", @"Value", nil]
          ids:[NSArray arrayWithObjects:@"setting", @"sval", nil]
          widths:[NSArray arrayWithObjects:[NSNumber numberWithDouble:330.0], [NSNumber numberWithDouble:240.0], nil]
-         table:&setTable
+         table:&tv
          buttons:[NSArray array] actions:[NSArray array]];
+      setTable = tv;
       [[setTable tableColumnWithIdentifier:@"sval"] setEditable:YES];
       [setTable setTarget:self];
       [setTable setDoubleAction:@selector(settingActivate:)];
