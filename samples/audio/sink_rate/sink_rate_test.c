@@ -72,6 +72,7 @@ static void run_usec(audio_driver_state_t *st, int64_t usec)
    st->sink_offered_raw += (uint64_t)offered;
    st->sink_offered     += offered / ratio;
    st->sink_accepted    += (uint64_t)(offered * (1.0 - drop_fraction));
+   audio_driver_sink_refused(st);
    audio_driver_sink_update(st, clock_usec);
 }
 static void run_second(audio_driver_state_t *st) { run_usec(st, 1000000); }
@@ -128,7 +129,7 @@ static void s_fast_device(audio_driver_state_t *st)
    run_seconds(st, 262);
    printf("      at 300 s: bias %+.0f ppm, applied %u times\n", bias_ppm(st), st->sink_applied);
    CHECK(fabs(bias_ppm(st) - 120.0) < 40.0, "after five minutes bias %+.0f ppm, expected +120", bias_ppm(st));
-   CHECK(fabs(st->src_ratio_curr - st->sink_bias) < 1e-12, "ratio not set from the bias with rate control off");
+   CHECK(fabs(audio_driver_sink_bias(st) - st->sink_bias) < 1e-7, "the bias the resampler reads is not the bias");
 }
 
 /* The other direction. */
@@ -323,65 +324,29 @@ static void s_slow_start(audio_driver_state_t *st)
 
 /* --- the threaded pipeline ---------------------------------------------- */
 
-/* The ring filling as rate control settles, and draining again. The
- * offered count is taken after the ring, so what it holds is added
- * back; a fill of 400 frames over 20 s must not read as -417 ppm. */
-static void s_pipe_fill_drain(audio_driver_state_t *st)
+/* On the threaded pipeline the source is counted where it is exact:
+ * what the core published into the ring, at the producer, where the
+ * windows close. Neither the ring's occupancy nor what it refused is
+ * in the count, so a window holds whole publishes. Modelled here as
+ * publishes of 800 frames every 1/60 s with a device at +50 ppm: the
+ * bias must find the device, not the burst. The end-to-end run, with
+ * the shipping producer and consumer against a real-time device, is
+ * samples/audio/pipeline_rate_control. */
+static void s_publishes(audio_driver_state_t *st)
 {
-   static int16_t filler[4096 * 2];
    int i;
    reset(st, true);
    st->pipe_threaded = true;
-   retro_spsc_init(&st->pipe_ring, sizeof(filler));
-   for (i = 0; i < 60; i++)
-   {
-      if (i < 20)
-      {
-         retro_spsc_write(&st->pipe_ring, filler, 20 * 2 * sizeof(int16_t));
-         st->sink_offered     -= 20.0;
-         st->sink_offered_raw -= 20;
-      }
-      run_second(st);
-   }
-   printf("      after the fill: bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st)) < 60.0, "the ring filling read as a slow source: bias %+.0f ppm", bias_ppm(st));
-   for (i = 0; i < 20; i++)
-   {
-      int16_t sink[20 * 2];
-      retro_spsc_read(&st->pipe_ring, sink, sizeof(sink));
-      st->sink_offered     += 20.0;
-      st->sink_offered_raw += 20;
-      run_second(st);
-   }
-   printf("      after the drain: bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st)) < 60.0, "the ring draining read as a fast source: bias %+.0f ppm", bias_ppm(st));
-   retro_spsc_free(&st->pipe_ring);
-   st->pipe_threaded = false;
-}
-
-/* The producer dropped frames for want of room: those were never
- * offered, so a window that saw any is not a measurement and is out.
- * A drop of 600 frames once a minute would read as -208 ppm. */
-static void s_producer_drops(audio_driver_state_t *st)
-{
-   int i;
-   reset(st, false);
    dev_ppm = 50.0;
-   run_seconds(st, 40);
-   for (i = 0; i < 240; i++)
+   for (i = 0; i < 300 * 60; i++)
    {
-      if (i % 60 == 0)
-      {
-         retro_atomic_fetch_add_int(&st->pipe_dropped, 600);
-         core_pause_sec = 600.0 / 48000.0;
-      }
-      else
-         core_pause_sec = 0.0;
-      run_second(st);
+      clock_usec += 16667;
+      st->sink_offered += 800.0 * st->src_ratio_orig;
+      audio_driver_sink_update(st, clock_usec);
    }
-   core_pause_sec = 0.0;
    printf("      bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st) - 50.0) < 40.0, "dropped frames read as a slow source: bias %+.0f ppm, expected +50", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 50.0) < 40.0, "publishes measured as a source: bias %+.0f ppm, expected +50", bias_ppm(st));
+   st->pipe_threaded = false;
 }
 
 /* --- modes and lifetimes ---------------------------------------------- */
@@ -417,7 +382,7 @@ static void s_disabled_and_toggled(audio_driver_state_t *st)
    CHECK(st->sink_bias != 1.0, "no bias to drop");
    config_get_ptr()->bools.audio_sink_rate_estimation = false;
    run_second(st);
-   CHECK(st->sink_bias == 1.0 && st->src_ratio_curr == st->src_ratio_orig, "turned off, the bias stayed");
+   CHECK(st->sink_bias == 1.0 && audio_driver_sink_bias(st) == 1.0, "turned off, the bias stayed");
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    run_seconds(st, 120);
    printf("      off then on: bias %+.0f ppm\n", bias_ppm(st));
@@ -534,8 +499,7 @@ static const scenario_t scenarios[] = {
    { "the main thread stalling 50 ms every two minutes",   s_main_thread_stalls },
    { "the device frozen for a window",                     s_device_stall },
    { "a slow start, then nominal",                         s_slow_start },
-   { "the pipeline ring filling and draining",             s_pipe_fill_drain },
-   { "the producer dropping frames",                       s_producer_drops },
+   { "publishes counted at the producer",                  s_publishes },
    { "a blocking writer",                                  s_blocking_writer },
    { "disabled, and toggled off and on",                   s_disabled_and_toggled },
    { "a driver restart",                                   s_driver_restart },

@@ -322,8 +322,6 @@ typedef struct
 {
    double   offered;                   /* sink_offered */
    uint64_t consumed;                  /* frames_consumed() */
-   int      dropped;                   /* pipe_dropped */
-   double   pipe;                      /* pipe occupancy, in nominal device frames */
 } audio_sink_mark_t;
 
 /* A sum of windows: their time, and what the source and the device did. */
@@ -508,11 +506,6 @@ typedef struct
     * half, and the difference is added so a balanced pipe reads as no
     * error. */
    retro_atomic_int_t pipe_ctrl_avail;
-   /* Frames the producer dropped for want of room in the pipe, with a
-    * non-blocking writer. Never offered to the device, so a window of
-    * the sink rate estimate that saw any is not a measurement of the
-    * clocks: the source would read slow by what was dropped. */
-   retro_atomic_int_t pipe_dropped;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
@@ -606,10 +599,11 @@ typedef struct
    /* Sink rate estimation: see audio_driver_sink_update(). Counted
     * where the driver's write() is called, on the thread that flushes;
     * the estimate runs there too. */
-   double   sink_offered;              /* output frames offered to the driver, each
-                                          divided by the ratio in force when it was, so
-                                          the sum is what the source produced at the
-                                          nominal rate, on the host clock */
+   double   sink_offered;              /* the source's count, in frames at the nominal
+                                          ratio: what the core published into the
+                                          pipeline's ring, or off it what was offered
+                                          with the ratio in force divided out. Owned
+                                          by the thread that closes the windows. */
    uint64_t sink_offered_raw;          /* output frames offered, as offered */
    uint64_t sink_accepted;             /* output frames the driver took */
    /* The estimate: windows of a few seconds, each read as a change in
@@ -627,6 +621,11 @@ typedef struct
    unsigned sink_discarded;            /* windows left out in a row */
    unsigned sink_warned;               /* AUDIO_SINK_WARNED_* said once each */
    double   sink_bias;                 /* multiplied into the ratio; 1.0 = none */
+   /* The bias for the thread that resamples, in hundredths of a part
+    * per million: on the threaded pipeline the estimate runs on the
+    * core's thread and the resampler on the audio thread, and a double
+    * is not a single word. */
+   retro_atomic_int_t sink_bias_q;
    double   sink_rate_hz;              /* the device's rate as measured; 0 = unknown */
    double   sink_source_hz;            /* the source's rate at the nominal ratio, as measured */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */

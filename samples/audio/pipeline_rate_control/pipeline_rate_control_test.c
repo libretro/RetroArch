@@ -39,6 +39,10 @@
 #include <boolean.h>
 #include <retro_atomic.h>
 
+/* The sink estimate runs short here - windows of 0.4 s, a baseline of
+ * 3 s - so a seven-second real-time run reaches an application. */
+#define AUDIO_SINK_WINDOW_USEC     400000
+#define AUDIO_SINK_BASELINE_USEC  3000000
 #include "../../../audio/audio_driver.c"
 
 static unsigned failures = 0;
@@ -135,6 +139,21 @@ static size_t dev_write_avail(void *d)
 
 static size_t dev_buffer_size(void *d) { (void)d; return DEV_CAPACITY * 4; }
 
+/* What the hardware has consumed, for the sink estimate: the drain
+ * counted in whole 96-frame periods, as a device counts it. */
+static size_t dev_frames_consumed(void *d)
+{
+   double drained;
+   (void)d;
+   pthread_mutex_lock(&dev_lock);
+   dev_drain_locked();
+   drained = dev_took - dev_fill;
+   pthread_mutex_unlock(&dev_lock);
+   if (drained < 0.0)
+      drained = 0.0;
+   return ((size_t)drained / 96) * 96;
+}
+
 static size_t dev_wait_writable(void *data, size_t len)
 {
    size_t want = len / 4;
@@ -161,7 +180,7 @@ static bool   dev_use_float(void *d)          { (void)d; return false; }
 static audio_driver_t scripted_driver = {
    dev_init, dev_write, dev_stop, dev_start, dev_alive, dev_set_nonblock,
    dev_free, dev_use_float, "scripted", NULL, NULL, dev_write_avail,
-   dev_buffer_size, dev_write_raw, dev_wait_writable
+   dev_buffer_size, dev_write_raw, dev_wait_writable, dev_frames_consumed
 };
 
 /* --- the consumer thread ---------------------------------------------- */
@@ -197,6 +216,9 @@ static bool pipeline_up(size_t ring_bytes)
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
    st->rate_control_delta   = 0.005f;
    st->drc_threshold_int16s = 1600;
+   st->sink_bias            = 1.0;
+   config_get_ptr()->bools.audio_sink_rate_estimation = true;
+   config_get_ptr()->uints.audio_output_sample_rate   = 48000;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    st->pipe_lock      = slock_new();
@@ -273,6 +295,21 @@ int main(int argc, char **argv)
    CHECK(dev_took >= produced * 0.995,
          "the device took at least 99.5%% of what was produced: %.2f%%", 100.0 * dev_took / produced);
    pthread_mutex_unlock(&dev_lock);
+
+   /* The sink estimate, run on the producer with windows of whole
+    * publishes: the clocks match, so it settles, applies, and finds
+    * about nothing. Closed on the consumer it never settled - a window
+    * held a fraction of a burst, thousands of ppm of phase noise - and
+    * the bias stayed at zero for the session. */
+   printf("   sink estimate: applied %u time(s), bias %+.0f ppm, source shown at %+.0f ppm\n",
+         audio_driver_st.sink_applied, (audio_driver_st.sink_bias - 1.0) * 1e6,
+         (audio_driver_st.sink_source_hz / 48000.0 - 1.0) * 1e6);
+   CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
+   /* Within the device's period over the short baseline: 96 frames in
+    * 3 s is 667 ppm of noise, which the real thirty seconds and the
+    * session's sum reduce to tens. */
+   CHECK(fabs(audio_driver_st.sink_bias - 1.0) < 700e-6,
+         "the sink estimate found a clock that is not there: %+.0f ppm", (audio_driver_st.sink_bias - 1.0) * 1e6);
 
    if (failures)
    {
