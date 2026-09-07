@@ -2872,17 +2872,6 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
- *
- * Sizes are in bytes; a field the frontend cannot determine is left at 0.
- */
-struct retro_memory_status
-{
-   uint64_t free;   /**< Physical memory currently available to allocate. */
-   uint64_t total;  /**< Total physical memory installed. */
-};
-
-/**
  * Sets a pointer to arbitrary data for the actively running core.
  *
  * Intended for use as a substitute for global state, which is a common
@@ -2907,6 +2896,17 @@ struct retro_memory_status
  * @see RETRO_ENVIRONMENT_SET_CORE_DATA
  */
 #define RETRO_ENVIRONMENT_GET_CORE_DATA (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
+ *
+ * Sizes are in bytes; a field the frontend cannot determine is left at 0.
+ */
+struct retro_memory_status
+{
+   uint64_t free;   /**< Physical memory currently available to allocate. */
+   uint64_t total;  /**< Total physical memory installed. */
+};
 
 /**@}*/
 
