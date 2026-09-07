@@ -4485,7 +4485,11 @@ double audio_driver_get_buffer_latency_ms(void)
 
 bool audio_driver_take_reinit_request(void)
 {
-   return retro_atomic_exchange_int(&audio_driver_st.reinit_request, 0) != 0;
+   /* fetch-and with zero: the old value, and none left. Exchange
+    * would do, but is not on every backend of retro_atomic.h - the
+    * volatile fallback, which the PS2 and older ARM toolchains take,
+    * has no CAS-class operations; fetch-and is on all of them. */
+   return retro_atomic_fetch_and_int(&audio_driver_st.reinit_request, 0) != 0;
 }
 
 const char *audio_driver_get_ident(void)
