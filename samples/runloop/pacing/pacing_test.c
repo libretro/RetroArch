@@ -38,6 +38,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <retro_common_api.h>
@@ -240,36 +241,41 @@ static void test_sample_filter(void)
 
 static void test_schedule(void)
 {
-   const retro_time_t period = 16683; /* 59.94 Hz */
-   retro_time_t anchor, sleep;
+   const int64_t period = 16683350; /* 59.94 Hz, in nanoseconds */
+   int64_t anchor;
+   retro_time_t sleep;
    unsigned i;
 
-   /* On time: the sleep is what is left, and the anchor is the slot. */
-   anchor = 1000000;
+   /* On time: the sleep is what is left, rounded up to a microsecond,
+    * and the anchor is the slot. */
+   anchor = 1000000000LL;
    sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 12000);
-   check(sleep == period - 12000 && anchor == 1000000 + period,
-         "on time: sleep to the slot, anchor on it");
+   check(sleep == 4684 && anchor == 1000000000LL + period,
+         "on time: sleep to the slot, rounded up, anchor on it");
 
    /* Late by less than a period: no sleep, and the anchor stays on the
     * slot, so the next frame is due a period after it, not after now -
     * the lateness is caught up, not kept. */
-   anchor = 1000000;
-   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + period + 400);
-   check(sleep == 0 && anchor == 1000000 + period,
+   anchor = 1000000000LL;
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 16683 + 400);
+   check(sleep == 0 && anchor == 1000000000LL + period,
          "late by less than a period: anchor stays on the slot");
-   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + period + 400 + 15000);
-   check(sleep == period - 15000 - 400,
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 16683 + 400 + 15000);
+   check(sleep == 1284,
          "the next frame gets a sleep shorter by the lateness");
 
    /* Late by a period or more: a stall; the schedule restarts from now
     * rather than trying to fit two frames into one. */
-   anchor = 1000000;
-   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 3 * period);
-   check(sleep == 0 && anchor == 1000000 + 3 * period,
+   anchor = 1000000000LL;
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 3 * 16683);
+   check(sleep == 0 && anchor == (1000000 + 3 * 16683) * 1000LL,
          "late by a period or more: restart from now");
 
-   /* A sleep that overshoots every frame does not slow the loop: over
-    * 6000 frames the slots are exactly 6000 periods apart. */
+   /* A sleep that overshoots every frame does not slow the loop, and
+    * a period that is not a whole microsecond is kept exactly: over
+    * 6000 frames the slots are exactly 6000 periods apart, to the
+    * nanosecond - a whole-microsecond period would be 2.1 ms behind
+    * by then, 21 ppm. */
    {
       const retro_time_t overshoot = 900;   /* a coalesced nanosleep */
       const retro_time_t work      = 15000; /* the frame's own time  */
@@ -282,8 +288,8 @@ static void test_schedule(void)
          if (sleep > 0)
             now += sleep + overshoot;
       }
-      check(anchor == 6000 * (retro_time_t)period,
-            "6000 overshooting frames land on the 6000th slot");
+      check(anchor == 6000 * period,
+            "6000 overshooting frames land on the 6000th slot, to the nanosecond");
    }
 }
 

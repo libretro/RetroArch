@@ -185,6 +185,11 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   /* The same period and anchor in nanoseconds, for the gap limiter's
+    * schedule: a period rounded to whole microseconds is 21 ppm off
+    * at 59.94 Hz, which the schedule would carry into every frame. */
+   int64_t      frame_limit_minimum_time_ns;
+   int64_t      frame_limit_anchor_ns;
    /* How early the gap limiter's sleep is asked to return, so the
     * remainder can be spun to the deadline: the sleep's observed
     * overshoot, tracked by runloop_pace_margin_update(). */
@@ -438,28 +443,45 @@ static INLINE bool runloop_pace_gap_engages(unsigned pace,
       && !nonblocking && !fastmotion && (scanline_sync || rate_control);
 }
 
-/* The gap limiter's schedule. @anchor is where the last frame was due;
- * the next is due a period after it. Returns the microseconds until
- * then, or 0 when it has passed, and moves @anchor to the slot the
- * frame is taken as filling: the due time when on time or late by less
- * than a period, so the lateness is caught up on the next frame rather
- * than kept; now when late by a period or more, a stall, from which
- * the schedule restarts rather than chases. */
-static INLINE retro_time_t runloop_pace_schedule(retro_time_t *anchor,
-      retro_time_t period, retro_time_t now)
+/* One frame of the content's own time, in nanoseconds, with the same
+ * bounds as runloop_content_frame_time_us(). */
+static INLINE int64_t runloop_content_frame_time_ns(float core_hz)
 {
-   retro_time_t due = *anchor + period;
+   int64_t period = (core_hz > 0.0f)
+         ? (int64_t)(1000000000.0 / (double)core_hz) : 16666667;
+   if (period < 1000000)
+      return 1000000;
+   if (period > 100000000)
+      return 100000000;
+   return period;
+}
+
+/* The gap limiter's schedule, in nanoseconds so that a period that is
+ * not a whole number of microseconds - 16683.35 us at 59.94 Hz - is
+ * kept exactly over any span. @anchor_ns is where the last frame was
+ * due; the next is due a period after it. Returns the microseconds
+ * until then, rounded up, or 0 when it has passed, and moves
+ * @anchor_ns to the slot the frame is taken as filling: the due time
+ * when on time or late by less than a period, so the lateness is caught
+ * up on the next frame rather than kept; now when late by a period or
+ * more, a stall, from which the schedule restarts rather than chases.
+ * The caller spins to @anchor_ns / 1000 after the sleep. */
+static INLINE retro_time_t runloop_pace_schedule(int64_t *anchor_ns,
+      int64_t period_ns, retro_time_t now_us)
+{
+   int64_t now = (int64_t)now_us * 1000;
+   int64_t due = *anchor_ns + period_ns;
    if (now < due)
    {
-      *anchor = due;
-      return due - now;
+      *anchor_ns = due;
+      return (retro_time_t)((due - now + 999) / 1000);
    }
-   if (now - due < period)
+   if (now - due < period_ns)
    {
-      *anchor = due;
+      *anchor_ns = due;
       return 0;
    }
-   *anchor = now;
+   *anchor_ns = now;
    return 0;
 }
 

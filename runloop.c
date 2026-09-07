@@ -4917,12 +4917,18 @@ void runloop_set_frame_limit(
       float fastforward_ratio)
 {
    if (fastforward_ratio < 0.1f)
-      runloop_state.frame_limit_minimum_time = 0;
+   {
+      runloop_state.frame_limit_minimum_time    = 0;
+      runloop_state.frame_limit_minimum_time_ns = 0;
+   }
    else
    {
       float fps = av_info->timing.fps;
       runloop_state.frame_limit_minimum_time = (fps > 0.0f)
          ? (retro_time_t)roundf(1000000.0f / (fps * fastforward_ratio))
+         : 0;
+      runloop_state.frame_limit_minimum_time_ns = (fps > 0.0f)
+         ? (int64_t)(1000000000.0 / ((double)fps * fastforward_ratio))
          : 0;
    }
 }
@@ -5308,6 +5314,7 @@ bool runloop_event_init_core(
 
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
+   runloop_st->frame_limit_anchor_ns    = (int64_t)runloop_st->frame_limit_last_time * 1000;
 
    /* Init runtime log and read current state slot */
    runloop_runtime_log_init(runloop_st);
@@ -5372,6 +5379,10 @@ void runloop_pause_checks(void)
             ((video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : video_refresh_rate));
+      runloop_st->frame_limit_minimum_time_ns = runloop_content_frame_time_ns(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : video_refresh_rate);
    }
    else
    {
@@ -7918,6 +7929,7 @@ end:
 int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
+   int64_t      pace_limit_ns;
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -8061,6 +8073,7 @@ int runloop_iterate(void)
    {
       case RUNLOOP_STATE_QUIT:
          runloop_st->frame_limit_last_time = 0.0;
+         runloop_st->frame_limit_anchor_ns = 0;
          runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
@@ -8161,7 +8174,8 @@ int runloop_iterate(void)
             /* Make sure no stale frame_limit_minimum_time from a prior
              * iteration (e.g. just before menu_pause_libretro was toggled
              * off) leaks into the sleep block below. */
-            runloop_st->frame_limit_minimum_time = 0;
+            runloop_st->frame_limit_minimum_time    = 0;
+            runloop_st->frame_limit_minimum_time_ns = 0;
             goto end;
          }
          else if ((  (settings->bools.video_vsync)
@@ -8171,10 +8185,16 @@ int runloop_iterate(void)
 
          /* Otherwise run menu in video refresh rate speed. */
          if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         {
             runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
                      ((video_st->video_refresh_rate_original)
                      ? video_st->video_refresh_rate_original
                      : settings->floats.video_refresh_rate));
+            runloop_st->frame_limit_minimum_time_ns = runloop_content_frame_time_ns(
+                     (video_st->video_refresh_rate_original)
+                     ? video_st->video_refresh_rate_original
+                     : settings->floats.video_refresh_rate);
+         }
          else
             runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
@@ -8341,6 +8361,7 @@ end:
     * fast-forward limit; replaced by the content frame time when
     * nothing else is pacing at all (see below). */
    pace_limit_min   = runloop_st->frame_limit_minimum_time;
+   pace_limit_ns    = runloop_st->frame_limit_minimum_time_ns;
    /* The vsync bit reads the driver's blocking state, not the setting:
     * fast-forward (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK
     * both put the driver into non-blocking presentation while the
@@ -8435,6 +8456,10 @@ end:
             (video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
+      pace_limit_ns             = runloop_content_frame_time_ns(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
@@ -8448,12 +8473,17 @@ end:
           * schedule is re-anchored so it does not carry a backlog into
           * the first frame after the clock lets go. */
          if (runloop_st->pace & RUNLOOP_PACE_EXTERNAL)
+         {
             runloop_st->frame_limit_last_time = end_frame_time;
+            runloop_st->frame_limit_anchor_ns = (int64_t)end_frame_time * 1000;
+         }
          else
          {
             const retro_time_t to_sleep_us = runloop_pace_schedule(
-                  &runloop_st->frame_limit_last_time,
-                  frame_limit_min, end_frame_time);
+                  &runloop_st->frame_limit_anchor_ns,
+                  pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
+                  end_frame_time);
+            runloop_st->frame_limit_last_time = runloop_st->frame_limit_anchor_ns / 1000;
             if (to_sleep_us > 0)
             {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
@@ -8466,7 +8496,7 @@ end:
                 * overshoot, then spin the remainder to the deadline:
                 * the sleep decides how much is spun, the clock decides
                 * where the frame lands. */
-               const retro_time_t deadline = end_frame_time + to_sleep_us;
+               const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
                retro_time_t now            = end_frame_time;
 #if defined(HAVE_COCOATOUCH)
                /* In the background the loop is not paced at all. */
