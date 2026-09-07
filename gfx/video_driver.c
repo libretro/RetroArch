@@ -5794,6 +5794,14 @@ void video_driver_frame(const void *data, unsigned width,
                   audio_stats.close_to_blocking,
                   audio_stats.samples);
 
+         /* Periods the device played silence for want of audio, from
+          * the driver's own count where it keeps one: the number that
+          * says whether a stutter was heard, against the percentages
+          * above that say how near the buffer came. */
+         if (audio_st->current_audio && audio_st->current_audio->underruns)
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
+
          __len += strlcpy_lit(video_info.stat_text + __len, "LATENCY\n",
                sizeof(video_info.stat_text) - __len);
 

@@ -516,6 +516,15 @@ static enum sinc_int16_quality audio_sinc_int16_quality_map(
    }
 }
 
+size_t audio_driver_get_underruns(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (     audio_st->current_audio && audio_st->current_audio->underruns
+         && audio_st->context_audio_data)
+      return audio_st->current_audio->underruns(audio_st->context_audio_data);
+   return 0;
+}
+
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -529,6 +538,14 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 
    if (audio && audio->free)
    {
+      /* The session's silence, said once, here: the device is being
+       * torn down and nothing is disturbed. Never logged live - a
+       * line at the minimum setting costs a fraction of its margin.
+       * The overlay has the count meanwhile. */
+      size_t n = audio_driver_get_underruns();
+      if (n)
+         RARCH_LOG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
+               audio_driver_get_ident(), (unsigned)n, n == 1 ? "" : "s");
       if (audio_st->context_audio_data)
          audio->free(audio_st->context_audio_data);
       audio_st->context_audio_data = NULL;
@@ -1008,7 +1025,11 @@ static void audio_driver_sink_apply(audio_driver_state_t *audio_st,
    audio_st->sink_bias = r;
    retro_atomic_store_release_int(&audio_st->sink_bias_q, (int)((r - 1.0) * 1e8));
    audio_st->sink_applied++;
-   RARCH_LOG("[Audio] Sink rate: the device takes %.1f Hz against the host clock (%+.0f ppm of %u) and the source produces %.1f Hz (%+.0f ppm) over %.0f s summed, %.0f s in; resampling biased by %+.0f ppm.\n",
+   /* The first application is logged; the rest are on the overlay. A
+    * line every thirty seconds of play is a stall the loop does not
+    * need. */
+   if (audio_st->sink_applied == 1)
+      RARCH_LOG("[Audio] Sink rate: the device takes %.1f Hz against the host clock (%+.0f ppm of %u) and the source produces %.1f Hz (%+.0f ppm) over %.0f s summed, %.0f s in; resampling biased by %+.0f ppm.\n",
          audio_st->sink_rate_hz, audio_driver_sink_ppm(audio_st->sink_rate_hz, (double)rate), rate,
          audio_st->sink_source_hz, audio_driver_sink_ppm(audio_st->sink_source_hz, (double)rate),
          (double)audio_st->sink_kept.usec / 1e6,

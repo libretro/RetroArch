@@ -684,6 +684,9 @@ typedef struct ra_asio
    /* Whether the last period ended in silence for want of audio, so
     * the next audio is faded in. Callback thread only. */
    bool               last_underran;
+   /* Periods that ended in silence for want of audio: one atomic add
+    * on that path, read by the frontend's overlay. */
+   retro_atomic_size_t underruns;
    /* Frames the device has taken: a period per callback, silence
     * included. Written by the callback thread, read by the writer; a
     * single aligned word, and a count only ever compared with itself. */
@@ -845,6 +848,8 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    asio_convert_frames(ad->sample_type, ad->scratch, have, frames,
          buf_l, buf_r, ad->last_underran);
    ad->last_underran = (have < frames);
+   if (have < frames)
+      retro_atomic_fetch_add_size(&ad->underruns, 1);
    ad->consumed     += (size_t)frames;
 }
 
@@ -1338,6 +1343,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
    ad = (ra_asio_t *)calloc(1, sizeof(ra_asio_t));
    if (!ad)
       return NULL;
+   retro_atomic_size_init(&ad->underruns, 0);
 
    /* Register cleanup for process exit — ensures the parked
     * instance is properly torn down even if free() only parks it. */
@@ -1756,6 +1762,12 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
    }
 }
 
+static size_t ra_asio_underruns(void *data)
+{
+   ra_asio_t *ad = (ra_asio_t*)data;
+   return ad ? retro_atomic_load_acquire_size(&ad->underruns) : 0;
+}
+
 static size_t ra_asio_frames_consumed(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
@@ -1828,7 +1840,8 @@ audio_driver_t audio_asio = {
    NULL, /* write_raw — ASIO cannot dynamically adjust sample rate
          * for A/V sync rate control.  Software resampler handles it. */
    ra_asio_wait_writable,
-   ra_asio_frames_consumed
+   ra_asio_frames_consumed,
+   ra_asio_underruns
 };
 
 /* Called from the menu to open the ASIO driver's control panel.

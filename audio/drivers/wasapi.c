@@ -98,7 +98,9 @@ typedef struct
    slock_t            *fifo_lock;
    scond_t            *room_cond;
    retro_atomic_int_t  pump_run;
-   unsigned            underruns;
+   /* Periods the pump filled with silence for want of audio: one
+    * atomic add on that path, read by the frontend's overlay. */
+   retro_atomic_size_t underruns;
    /* Frames the device has consumed, kept by the pump under fifo_lock:
     * exclusive, the periods it released, each taken by the device a
     * period after; shared, the frames released less the engine's
@@ -1390,6 +1392,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w)
       return NULL;
 
+   retro_atomic_size_init(&w->underruns, 0);
    if (mmdevice_com_init())
       w->flags              |= WASAPI_FLG_COM;
    w->device                 = (IMMDevice*)mmdevice_init_device(dev_id, 0 /* eRender */);
@@ -1700,7 +1703,7 @@ static void wasapi_pump_thread(void *data)
          {
             memset(dest, 0, w->engine_buffer_size);
             flags = AUDCLNT_BUFFERFLAGS_SILENT;
-            w->underruns++;
+            retro_atomic_fetch_add_size(&w->underruns, 1);
          }
          /* Each period released is one the device takes; silence
           * counts too, the device's clock does not stop for it. */
@@ -2155,6 +2158,12 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
    return wasapi_write_avail(w);
 }
 
+static size_t wasapi_underruns(void *wh)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   return w ? retro_atomic_load_acquire_size(&w->underruns) : 0;
+}
+
 static size_t wasapi_frames_consumed(void *wh)
 {
 #ifdef HAVE_THREADS
@@ -2188,5 +2197,6 @@ audio_driver_t audio_wasapi = {
    wasapi_buffer_size,
    NULL, /* write_raw */
    wasapi_wait_writable,
-   wasapi_frames_consumed
+   wasapi_frames_consumed,
+   wasapi_underruns
 };

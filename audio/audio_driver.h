@@ -315,6 +315,14 @@ typedef struct audio_driver
     * without the estimate, as before.
     */
    size_t (*frames_consumed)(void *data);
+
+   /* Optional. Periods the device played silence for want of audio
+    * since init: the callback found less than one period in the
+    * buffer and zero-filled it. Counted where it happens, one atomic
+    * add on that path only; never logged from there. Read by the
+    * frontend for the statistics overlay each frame, and once at
+    * driver teardown for the log. NULL when the driver cannot tell. */
+   size_t (*underruns)(void *data);
 } audio_driver_t;
 
 /* A snapshot of the sink estimate's counts, taken when a window opens. */
@@ -963,6 +971,10 @@ audio_driver_state_t *audio_state_get_ptr(void);
 void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
+
+/* Periods the device played silence for want of audio since the driver
+ * was initialised, where the driver counts them; 0 otherwise. */
+size_t audio_driver_get_underruns(void);
 
 /* Whether a driver has asked to be reinitialised since the last call;
  * clears the request. The runloop calls this once a frame, on the main

@@ -374,6 +374,14 @@ static size_t audio_thread_wait_writable(void *data, size_t len)
 /* The wrapped driver's count, for the sink rate estimate: without this
  * the frontend saw the wrapper's NULL and never measured under the
  * threaded pipeline - which is where every reporter runs. */
+static size_t audio_thread_underruns(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->underruns || !thr->driver_data)
+      return 0;
+   return thr->driver->underruns(thr->driver_data);
+}
+
 static size_t audio_thread_frames_consumed(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -459,7 +467,8 @@ static const audio_driver_t audio_thread = {
    audio_thread_buffer_size,
    NULL, /* write_raw */
    audio_thread_wait_writable,
-   audio_thread_frames_consumed
+   audio_thread_frames_consumed,
+   audio_thread_underruns
 };
 
 /**
