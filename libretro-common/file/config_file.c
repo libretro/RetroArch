@@ -375,6 +375,17 @@ static char *config_file_strip_comment(char *str)
          /* Search for the end of the string literal
           * value */
          char *literal_end = strchr(literal_start + 1, '\"');
+         while (literal_end && literal_end[-1] == '\\')
+         {
+            if (literal_end > comment)
+            {
+               comment = strchr(literal_end, '#');
+               if (!comment)
+                  return NULL;
+            }
+
+            literal_end = strchr(literal_end + 1, '\"');
+         }
 
          /* Check whether string literal end occurs
           * *after* the comment character
@@ -425,6 +436,37 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
          size_t idx;
          char *end = strchr(line, '\"');
          idx       = end ? (size_t)(end - line) : strlen(line);
+
+         /* If it's a quote preceded by a backslash, unescape it and find the next (") character */
+         if (end && end[-1] == '\\')
+         {
+            const char* read = end;
+            const char* next_quote;
+
+            /* Only treat the quote as escaped if another (") exists later on the
+             * line; otherwise it terminates the value. This handles values ending in
+             * backslash (\), or where trailing whitespace exists after the quote. */
+            next_quote = strchr(end + 1, '\"');
+            if (next_quote)
+            {
+               do {
+                  /* shift the text to overwrite the last backslash */
+                  --idx;
+                  while (read < next_quote)
+                     line[idx++] = *read++;
+
+                  /* if this quote is not escaped, stop */
+                  if (next_quote[-1] != '\\')
+                     break;
+
+                  /* find the next quote and loop. if one is not found, the last
+                   * escape sequence should be treated as two separate characters
+                   * (\") and the string is considered to be terminated. */
+                  read = next_quote;
+                  next_quote = strchr(read + 1, '\"');
+               } while (next_quote);
+            }
+         }
 
          line[idx] = '\0';
          if (idx)
@@ -2157,13 +2199,38 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    {
       if (!list->readonly && list->key)
       {
+         config_file_dump_put(buf, list->key,
+            list->key_len ? list->key_len : strlen(list->key));
+         config_file_dump_put(buf, " = \"", STRLEN_CONST(" = \""));
+
          /* Lengths were cached when the strings were parsed or set;
           * zero means unknown and falls back to measuring. */
-         config_file_dump_put(buf, list->key,
-               list->key_len ? list->key_len : strlen(list->key));
-         config_file_dump_put(buf, " = \"", STRLEN_CONST(" = \""));
-         config_file_dump_put(buf, list->value,
-               list->value_len ? list->value_len : strlen(list->value));
+         if (list->value_len || list->value[0])
+         {
+            const char *quote = strchr(list->value, '\"');
+            if (!quote)
+            {
+               config_file_dump_put(buf, list->value,
+                  list->value_len ? list->value_len : strlen(list->value));
+            }
+            else
+            {
+               const char* start = list->value;
+               do {
+                  if (quote > start)
+                     config_file_dump_put(buf, start, quote - start);
+
+                  config_file_dump_put(buf, "\\\"", STRLEN_CONST("\\\""));
+
+                  start = quote + 1;
+                  quote = strchr(start, '\"');
+               } while (quote);
+
+               if (*start)
+                  config_file_dump_put(buf, start, strlen(start));
+            }
+         }
+
          config_file_dump_put(buf, "\"\n", STRLEN_CONST("\"\n"));
       }
       list = list->next;
