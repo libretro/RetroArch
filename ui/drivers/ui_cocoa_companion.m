@@ -242,6 +242,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)hideAndFocusRetroArch;
 - (void)focusRetroArchDeferred:(id)unused;
 - (void)windowWillClose:(NSNotification*)note;
+- (void)windowDidResignKey:(NSNotification*)note;
+- (void)scheduleFocusHandback;
 - (void)tableView:(NSTableView*)tv sortDescriptorsDidChange:(NSArray*)old;
 - (void)syncSortIndicator;
 - (void)playlistsDoubleClick:(id)sender;
@@ -1933,16 +1935,24 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    NSWindow *host = nil;
    id rv          = nil;
    (void)unused;
+   if ([window isVisible])
+      return;                     /* re-shown meanwhile: leave it */
    if ([(id)apple_platform respondsToSelector:@selector(hostWindow)])
       host = [(id)apple_platform hostWindow];
    if ([(id)apple_platform respondsToSelector:@selector(renderView)])
       rv = [(id)apple_platform renderView];
    if (!host)
+   {
+      RARCH_LOG("[Companion] focus hand-back: no host window\n");
       return;
+   }
    [host makeKeyAndOrderFront:nil];
    [host makeMainWindow];
    if (rv && [rv isKindOfClass:[NSView class]])
       [host makeFirstResponder:(NSView*)rv];
+   RARCH_LOG("[Companion] focus hand-back: host key=%d main=%d appKey=%s\n",
+         [host isKeyWindow] ? 1 : 0, [host isMainWindow] ? 1 : 0,
+         [NSApp keyWindow] == host ? "host" : ([NSApp keyWindow] ? "other" : "none"));
 }
 
 - (void)windowWillClose:(NSNotification*)note
@@ -1950,7 +1960,32 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if ([note object] != window)
       return;
    [self focusRetroArchDeferred:nil];
-   [self performSelector:@selector(focusRetroArchDeferred:) withObject:nil afterDelay:0.0];
+   [self scheduleFocusHandback];
+}
+
+/* The companion window stopped being key. If it is on its way out (not
+ * visible), the keyboard belongs to RetroArch's window: AppKit's own
+ * choice of the next key window, made while a close is in progress,
+ * has been seen to land on nothing - the mouse still works (it goes to
+ * the window under it) but key events go nowhere. */
+- (void)windowDidResignKey:(NSNotification*)note
+{
+   if ([note object] != window || [window isVisible])
+      return;
+   [self scheduleFocusHandback];
+}
+
+/* Re-assert the hand-back after AppKit's close processing, in every
+ * run-loop mode (the close button's click is dispatched in the event-
+ * tracking mode, where a default-mode timer would wait). Repeated on
+ * three successive passes: the arbitration can run late. */
+- (void)scheduleFocusHandback
+{
+   int i;
+   for (i = 0; i < 3; i++)
+      [self performSelector:@selector(focusRetroArchDeferred:) withObject:nil
+         afterDelay:(0.02 * i) inModes:[NSArray arrayWithObjects:
+            NSDefaultRunLoopMode, NSEventTrackingRunLoopMode, NSModalPanelRunLoopMode, nil]];
 }
 
 - (BOOL)windowShouldClose:(id)sender
