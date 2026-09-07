@@ -56,7 +56,7 @@ enum rcheevos_menu_type
    RCHEEVOS_MENU_INFO,
    RCHEEVOS_MENU_SUBSET_ACHIEVEMENTS,
    RCHEEVOS_MENU_TOGGLE_HARDCORE,
-   RCHEEVOS_MENU_ACTION,
+   RCHEEVOS_MENU_ACTION
 };
 
 static void rcheevos_menu_update_badge(rcheevos_menuitem_t* menuitem, bool download_if_missing);
