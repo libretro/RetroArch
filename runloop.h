@@ -415,14 +415,23 @@ static INLINE retro_time_t runloop_content_frame_time_us(float core_hz)
    return period;
 }
 
-/* Whether the frame limiter should hold the loop at 1.0x because
- * nothing else is: an empty pace record means no vsync, no audio, no
- * scanline lock, and no fast-forward limit to fall back on. Never
- * under fast-forward, where running unthrottled is the point. */
+/* Whether the frame limiter should hold the loop to the display rate
+ * because nothing else is: an empty pace record means no vsync, no
+ * audio, no scanline lock, and no fast-forward limit to fall back on.
+ * With audio rate control, whose resampler follows the loop so the
+ * loop can follow the display; or with Scanline Sync enabled, whose
+ * record bit clears while it recalibrates and which is aiming at the
+ * display rate anyway, so the timer bridges the recalibration rather
+ * than fighting it. Otherwise the content rate is what Sync to Exact
+ * Content Framerate is for, and the loop runs unlimited as
+ * configured. Never under fast-forward, where running unthrottled is
+ * the point. */
 static INLINE bool runloop_pace_gap_engages(unsigned pace,
-      bool nonblocking, bool fastmotion)
+      bool nonblocking, bool fastmotion, bool scanline_sync,
+      bool rate_control)
 {
-   return (pace == RUNLOOP_PACE_NONE) && !nonblocking && !fastmotion;
+   return (pace == RUNLOOP_PACE_NONE)
+      && !nonblocking && !fastmotion && (scanline_sync || rate_control);
 }
 
 /* Whether an interval between iterations is worth averaging into the

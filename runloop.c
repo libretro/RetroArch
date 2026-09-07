@@ -8165,7 +8165,7 @@ int runloop_iterate(void)
             goto end;
          }
          else if ((  (settings->bools.video_vsync)
-                  || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
+                  || (settings->bools.video_scanline_sync))
                && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
             goto end;
 
@@ -8420,25 +8420,21 @@ end:
     * not writing, no scanline lock, and no fast-forward limit to fall
     * back on - frame_limit_minimum_time is zero whenever the ratio is
     * "unlimited", which is the default, so the branch above cannot
-    * engage however slowly the core is running. The loop then spins as
-    * fast as the machine allows: a core with a light frame runs at
-    * hundreds of frames a second, burning a core and drowning the
-    * display in frames nobody asked for. It is not fast-forward - the
-    * user did not ask for it - it is the absence of anyone saying when
-    * the next frame is due.
-    *
-    * So the timer takes it, at the content's own rate: 1.0x, the speed
-    * the core is meant to run at, which is what every other pacing
-    * source would have produced. Only when the record is empty, so it
-    * never competes with one that is doing the job, and never under
-    * fast-forward, which is the case where running unthrottled is the
-    * point. */
+    * engage however slowly the core is running. The timer holds the
+    * loop to the display rate, which audio rate control can follow
+    * and which Scanline Sync is aiming at while it recalibrates. See
+    * runloop_pace_gap_engages() for when it stays out. */
    if (runloop_pace_gap_engages(runloop_st->pace,
             (input_st->flags & INP_FLAG_NONBLOCKING) != 0,
-            (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0))
+            (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0,
+            settings->bools.video_scanline_sync,
+            settings->bools.audio_rate_control))
    {
       runloop_st->pace         |= RUNLOOP_PACE_TIMER;
-      pace_limit_min            = runloop_content_frame_time_us(video_st->core_hz);
+      pace_limit_min            = runloop_content_frame_time_us(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */

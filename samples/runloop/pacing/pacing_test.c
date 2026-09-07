@@ -4,13 +4,14 @@
  * were shipped on the strength of a throwaway model rather than
  * anything that would notice a later change:
  *
- *  - runloop_pace_gap_engages(): the frame limiter holds the loop at
- *    1.0x when nothing else is pacing it at all. The condition that
- *    matters is what it must NOT do - engage while another source is
- *    already holding the loop, or under fast-forward, where running
- *    unthrottled is the point. Both are silent failures: the first
- *    double-paces and the frontend runs slow, the second throttles
- *    fast-forward to 1x and looks like a performance bug.
+ *  - runloop_pace_gap_engages(): the frame limiter holds the loop to
+ *    the display rate when nothing else is pacing it and either audio
+ *    rate control can follow or Scanline Sync is between locks. The
+ *    condition that matters is what it must NOT do - engage while
+ *    another source is already holding the loop, with neither of
+ *    those, or under fast-forward, where running unthrottled is the
+ *    point. All are silent failures: double-pacing runs the frontend
+ *    slow, and a throttled fast-forward looks like a performance bug.
  *
  *  - runloop_content_frame_time_us(): the period those waits use. A
  *    core reports its own rate and is free to report nonsense; zero
@@ -27,8 +28,8 @@
  * versions. Nothing here is a copy: change the header and this test
  * changes with it, which is the point.
  *
- * The gap predicate is checked over every combination of the five pace
- * bits by the two boolean inputs - 128 cases, exhaustive, not a
+ * The gap predicate is checked over every combination of the six pace
+ * bits by the four boolean inputs - 512 cases, exhaustive, not a
  * sample. The period is checked over the rates a core can produce
  * including the degenerate ones, and for monotonicity, since a
  * clamp that inverts is a clamp nobody notices. The sample filter is
@@ -61,46 +62,57 @@ static void check(bool ok, const char *what)
 static void test_gap_predicate(void)
 {
    unsigned pace;
-   int nb, fm;
+   int nb, fm, ss, rc;
    unsigned engaged = 0;
 
    for (pace = 0; pace < 64; pace++)
       for (nb = 0; nb < 2; nb++)
          for (fm = 0; fm < 2; fm++)
-         {
-            bool got  = runloop_pace_gap_engages(pace, nb != 0, fm != 0);
-            bool want = (pace == RUNLOOP_PACE_NONE) && !nb && !fm;
-            char msg[128];
+            for (ss = 0; ss < 2; ss++)
+               for (rc = 0; rc < 2; rc++)
+               {
+                  bool got  = runloop_pace_gap_engages(pace,
+                        nb != 0, fm != 0, ss != 0, rc != 0);
+                  bool want = (pace == RUNLOOP_PACE_NONE)
+                        && !nb && !fm && (ss || rc);
+                  char msg[128];
 
-            if (got)
-               engaged++;
-            snprintf(msg, sizeof(msg),
-                  "pace=0x%02x nonblocking=%d fastmotion=%d -> %d, wanted %d",
-                  pace, nb, fm, (int)got, (int)want);
-            check(got == want, msg);
-         }
+                  if (got)
+                     engaged++;
+                  snprintf(msg, sizeof(msg),
+                        "pace=0x%02x nonblocking=%d fastmotion=%d "
+                        "scanline=%d ratecontrol=%d -> %d, wanted %d",
+                        pace, nb, fm, ss, rc, (int)got, (int)want);
+                  check(got == want, msg);
+               }
 
-   /* Exactly one of the 128 combinations may engage. */
-   check(engaged == 1, "exactly one combination engages the gap limiter");
+   /* Three of the 512 combinations may engage: nothing pacing, not
+    * fast-forwarding, with rate control, Scanline Sync, or both. */
+   check(engaged == 3, "exactly three combinations engage the gap limiter");
 
    /* Named cases, so a failure above reads as something rather than a
     * bit pattern. */
-   check(runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, false),
-         "nothing pacing, not fast-forwarding: engages");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NONE, true, false),
+   check(runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, false, false, true),
+         "nothing pacing, rate control on, not fast-forwarding: engages");
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, false, false, false),
+         "rate control off: the loop runs unlimited as configured");
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NONE, true, false, false, true),
          "fast-forward (nonblocking) must stay unthrottled");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, true),
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, true, false, true),
          "FASTMOTION must stay unthrottled");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_VSYNC, false, false),
+   check(runloop_pace_gap_engages(RUNLOOP_PACE_NONE, false, false, true, false),
+         "Scanline Sync enabled but unlocked, no rate control: bridges the "
+         "recalibration at the display rate");
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_VSYNC, false, false, false, true),
          "vsync already paces: must not double up");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_AUDIO, false, false),
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_AUDIO, false, false, false, true),
          "audio already paces: must not double up");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_TIMER, false, false),
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_TIMER, false, false, false, true),
          "the frame limiter already paces: must not double up");
-   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NOWINDOW, false, false),
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_NOWINDOW, false, false, false, true),
          "the no-window wait already paces: must not double up");
 
-   printf("   gap predicate: 128 combinations, exactly one engages\n");
+   printf("   gap predicate: 512 combinations, exactly three engage\n");
 }
 
 /* --- the frame period -------------------------------------------- */
