@@ -101,6 +101,11 @@ struct companion_core
    /* File the selected playlist was loaded from (select_playlist_path
     * may name a file outside the playlist directory). */
    char selected_path[PATH_MAX_LENGTH];
+   /* Scratch playlist_config_t for opening and parsing playlists.
+    * playlist_init()/playlist_parse_begin() copy it, so one is enough
+    * for the whole core; it stays off the stack because it carries
+    * two path buffers. Used from the UI thread only. */
+   playlist_config_t playlist_cfg;
 
    /* "All Playlists": every playlist file parsed in turn; entries are
     * referenced, not copied, through a (list, index) table sorted by
@@ -934,12 +939,12 @@ static void companion_core_all_add(companion_core_t *core, playlist_t *pl)
 /* Start parsing the next playlist file; false when none is left. */
 static bool companion_core_all_next(companion_core_t *core)
 {
-   playlist_config_t cfg;
+   playlist_config_t *cfg = &core->playlist_cfg;
    while (core->playlist_files && core->all_next < core->playlist_files->size)
    {
       const char *path = core->playlist_files->elems[core->all_next++].data;
-      companion_core_playlist_config_init(&cfg, path);
-      core->pending_parse = playlist_parse_begin(&cfg);
+      companion_core_playlist_config_init(cfg, path);
+      core->pending_parse = playlist_parse_begin(cfg);
       if (core->pending_parse)
          return true;
       /* allocation failure for this one: skip it */
@@ -1198,19 +1203,16 @@ const char *companion_core_playlist_path(companion_core_t *core, size_t i)
 static bool companion_core_begin_playlist(companion_core_t *core,
       const char *path, size_t index)
 {
-   playlist_config_t cfg;
-   char path_buf[PATH_MAX_LENGTH];
-
-   /* @path may be the core's own selected_path (a backend reloading
-    * the shown playlist hands companion_core_selected_playlist_path()
-    * straight back in). Copying that onto itself is an overlapping
-    * strlcpy, which macOS's fortified libc traps. Take a copy first. */
-   strlcpy(path_buf, path ? path : "", sizeof(path_buf));
-   path = path_buf;
+   playlist_config_t *cfg = &core->playlist_cfg;
 
    companion_core_clear_playlist(core);
    core->selected = index;
-   strlcpy(core->selected_path, path, sizeof(core->selected_path));
+   /* @path may be the core's own selected_path (a backend reloading
+    * the shown playlist hands companion_core_selected_playlist_path()
+    * straight back in); a fortified strlcpy() traps on that overlap,
+    * and the buffer already holds the path, so skip the copy. */
+   if (path != core->selected_path)
+      strlcpy(core->selected_path, path, sizeof(core->selected_path));
 
    if (string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
    {
@@ -1222,8 +1224,8 @@ static bool companion_core_begin_playlist(companion_core_t *core,
       return true;
    }
 
-   companion_core_playlist_config_init(&cfg, path);
-   core->pending_parse = playlist_parse_begin(&cfg);
+   companion_core_playlist_config_init(cfg, path);
+   core->pending_parse = playlist_parse_begin(cfg);
 
    /* The parse advances from companion_core_iterate(); a NULL handle
     * here is an allocation failure, reported as an empty playlist. */
@@ -2116,7 +2118,7 @@ size_t companion_core_installed_cores_supporting(companion_core_t *core,
 playlist_t *companion_core_playlist_open(companion_core_t *core,
       const char *path, bool *owned)
 {
-   playlist_config_t cfg;
+   playlist_config_t *cfg = &core->playlist_cfg;
    playlist_t *cached = playlist_get_cached();
 
    if (owned)
@@ -2133,10 +2135,10 @@ playlist_t *companion_core_playlist_open(companion_core_t *core,
    if (cached && string_is_equal(path, playlist_get_conf_path(cached)))
       return cached;
 
-   companion_core_playlist_config_init(&cfg, path);
+   companion_core_playlist_config_init(cfg, path);
    if (owned)
       *owned = true;
-   return playlist_init(&cfg);
+   return playlist_init(cfg);
 }
 
 void companion_core_playlist_release(companion_core_t *core,
@@ -3015,11 +3017,11 @@ void companion_core_notify_refresh(companion_core_t *core)
 playlist_t *companion_core_playlist_open_private(companion_core_t *core,
       const char *path)
 {
-   playlist_config_t cfg;
+   playlist_config_t *cfg = &core->playlist_cfg;
    if (!core || string_is_empty(path))
       return NULL;
-   companion_core_playlist_config_init(&cfg, path);
-   return playlist_init(&cfg);
+   companion_core_playlist_config_init(cfg, path);
+   return playlist_init(cfg);
 }
 
 size_t companion_core_resolve_content_path(companion_core_t *core,
