@@ -60,6 +60,25 @@ extern runloop_state_t test_runloop;
 /* The harness's stand-in for RetroArch_OSX: a window with a render view,
  * so the companion's "hand the keyboard back" path has a real target
  * to make key and first responder. */
+/* RetroArch's RAWindow reads the keyboard in -sendEvent:, which AppKit
+ * calls on the KEY window for key events. This stand-in counts the key
+ * events that reach it: after the companion closes, a posted keystroke
+ * must arrive here or RetroArch has no keyboard. */
+@interface HarnessWindow : NSWindow
+{
+@public
+   int keyEvents;
+}
+@end
+@implementation HarnessWindow
+- (void)sendEvent:(NSEvent*)event
+{
+   if ([event type] == NSKeyDown || [event type] == NSKeyUp)
+      keyEvents++;
+   [super sendEvent:event];
+}
+@end
+
 /* The render view, as CocoaView / the Metal view: takes first responder. */
 @interface HarnessRenderView : NSView
 @end
@@ -69,7 +88,7 @@ extern runloop_state_t test_runloop;
 
 @interface HarnessPlatform : NSObject
 {
-   NSWindow *win;
+   HarnessWindow *win;
    NSView   *rv;
 }
 - (NSWindow *)hostWindow;
@@ -81,7 +100,7 @@ extern runloop_state_t test_runloop;
 {
    if ((self = [super init]))
    {
-      win = [[NSWindow alloc] initWithContentRect:NSMakeRect(50, 50, 640, 480)
+      win = [[HarnessWindow alloc] initWithContentRect:NSMakeRect(50, 50, 640, 480)
          styleMask:(NSTitledWindowMask | NSClosableWindowMask)
          backing:NSBackingStoreBuffered defer:NO];
       rv  = [[HarnessRenderView alloc] initWithFrame:NSMakeRect(0, 0, 640, 480)];
@@ -195,7 +214,14 @@ int main(int argc, char **argv)
    signal(SIGALRM, on_alarm);
    alarm(60);
    [NSApplication sharedApplication];
+   /* A plain executable: become a regular, activatable app (Apple's
+    * AppKit will not give a background process a key window). */
+   if ([NSApp respondsToSelector:@selector(setActivationPolicy:)])
+      [NSApp setActivationPolicy:0 /* NSApplicationActivationPolicyRegular */];
+   [NSApp finishLaunching];
+   [NSApp activateIgnoringOtherApps:YES];
    apple_platform = (id<ApplePlatform>)[[HarnessPlatform alloc] init];
+   [[(id)apple_platform hostWindow] makeKeyAndOrderFront:nil];
 
    companion_test_setup_fixtures(root, sizeof(root));
    test_settings.bools.ui_companion_toggle    = true;
@@ -607,6 +633,25 @@ int main(int argc, char **argv)
       pump(data, 200);
       CHECK(![win isVisible], "companion window closed via performClose");
       CHECK([host isKeyWindow] && [host isMainWindow], "after AppKit's close: RetroArch's window key and main");
+      CHECK([NSApp keyWindow] == host, "NSApp's key window is RetroArch's (got %s)",
+            [NSApp keyWindow] == host ? "host" : ([NSApp keyWindow] ? [[[NSApp keyWindow] title] UTF8String] : "none"));
+      /* The real question: does a keystroke reach RetroArch's window's
+       * -sendEvent: now? AppKit routes key events to the key window. */
+      {
+         HarnessWindow *hw = (HarnessWindow*)host;
+         NSEvent *kd, *ku;
+         int before = hw->keyEvents;
+         kd = [NSEvent keyEventWithType:NSKeyDown location:NSMakePoint(10, 10) modifierFlags:0
+               timestamp:0 windowNumber:[host windowNumber] context:nil
+               characters:@"x" charactersIgnoringModifiers:@"x" isARepeat:NO keyCode:7];
+         ku = [NSEvent keyEventWithType:NSKeyUp location:NSMakePoint(10, 10) modifierFlags:0
+               timestamp:0 windowNumber:[host windowNumber] context:nil
+               characters:@"x" charactersIgnoringModifiers:@"x" isARepeat:NO keyCode:7];
+         [NSApp postEvent:kd atStart:NO];
+         [NSApp postEvent:ku atStart:NO];
+         pump(data, 300);
+         CHECK(hw->keyEvents > before, "a keystroke after the close reaches RetroArch's window (-sendEvent: saw %d key events)", hw->keyEvents - before);
+      }
       /* and the driver can show it again after a real close */
       ui_companion_wimp_cocoa.toggle(data, true);
       pump(data, 200);
