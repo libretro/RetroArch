@@ -649,6 +649,20 @@ static ui_application_t ui_application_cocoa = {
 - (void)keyDown:(NSEvent *)event { }
 - (void)keyUp:(NSEvent *)event { }
 
+/* Another window of this app took the keyboard - the desktop companion,
+ * a panel. Every key that is down right now will be released into that
+ * window, so this window never sees the key-up: the key stays "held" in
+ * apple_key_state, and a held key is exactly what the menu's flush-and-
+ * wait-for-release (menu_st->input_driver_flushing_input) waits on -
+ * for ever, since the release never arrives. That was the desktop
+ * companion's "keyboard does not come back after closing it": the hotkey
+ * that opened it was still down when the companion took the keyboard.
+ * Same treatment as losing the application's active state. */
+- (void)windowDidResignKey:(NSNotification *)notification
+{
+   apple_input_keyboard_reset();
+}
+
 - (void)windowDidBecomeKey:(NSNotification *)notification
 {
    settings_t *settings             = config_get_ptr();

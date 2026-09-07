@@ -52,6 +52,7 @@
 #include "../../version.h"
 #include "../../AUTHORS_c.h"
 #include "../../verbosity.h"
+#include "../../input/drivers_keyboard/keyboard_event_apple.h"
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -3301,6 +3302,13 @@ static void ui_companion_cocoa_wimp_toggle(void *data, bool force)
 
    companion_core_prepare_show_window(w->core);
    [[CC_CTRL(w) window] makeKeyAndOrderFront:nil];
+   /* The keys that opened us (a hotkey, Enter in the menu) will be
+    * released into this window, not RetroArch's: forget them there, or
+    * the menu waits for a release that never comes and the keyboard is
+    * dead after the companion closes. RetroArch's window delegate does
+    * the same on resigning key; this covers a toggle from a non-key
+    * state too. */
+   apple_input_keyboard_reset();
 }
 
 static void ui_companion_cocoa_wimp_iterate(void *data)

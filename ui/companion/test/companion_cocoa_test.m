@@ -115,6 +115,12 @@ extern runloop_state_t test_runloop;
 
 id<ApplePlatform> apple_platform = nil;
 
+/* RetroArch's keyboard state (input/drivers/cocoa_input.m): showing the
+ * companion must forget held keys, or a key released into the
+ * companion stays "down" for RetroArch's menu. */
+int stub_keyboard_resets;
+void apple_input_keyboard_reset(void) { stub_keyboard_resets++; }
+
 /* CocoaView: the driver reaches for +get; return a view in no window,
  * exactly the situation on a Metal build that broke focus before. */
 @implementation CocoaView
@@ -273,6 +279,15 @@ int main(int argc, char **argv)
    win  = [ctrl performSelector:@selector(window)];
    CHECK(win != nil, "controller has a window");
    content = [win contentView];
+   {
+      /* showing the companion takes the keyboard: RetroArch's held keys
+       * must be forgotten, or a release into this window leaves the
+       * menu waiting on a key that is "still down" */
+      int before = stub_keyboard_resets;
+      ui_companion_wimp_cocoa.toggle(data, true);
+      pump(data, 200);
+      CHECK(stub_keyboard_resets > before, "showing the companion resets RetroArch's keyboard state (apple_input_keyboard_reset)");
+   }
 
    /* Playlist lands through iterate */
    pump(data, 400);
