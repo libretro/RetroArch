@@ -191,17 +191,16 @@ static void update_analog_state(gca_pad_data_t *pad)
    }
 }
 
-static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *packet, size_t size)
+static void hidpad_wiiugca_pad_packet_handler(gca_pad_data_t *pad, uint8_t *packet, size_t len)
 {
-   if (size > 9)
+   if (len > 9)
       return;
-
-   memcpy(pad->data, packet, size);
+   memcpy(pad->data, packet, len);
    update_button_state(pad);
    update_analog_state(pad);
 }
 
-static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, uint16_t size)
+static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, uint16_t len)
 {
    uint32_t i;
    gca_device_data_t *device = (gca_device_data_t *)device_data;
@@ -209,7 +208,7 @@ static void hidpad_wiiugca_packet_handler(void *device_data, uint8_t *packet, ui
    if (!device)
       return;
 
-   memcpy(device->data, packet, size);
+   memcpy(device->data, packet, len);
 
    for (i = 1; i < 37; i += 9)
    {

@@ -16,23 +16,27 @@
 #include "pipewire.h"
 
 #include <spa/utils/result.h>
-
 #include <pipewire/pipewire.h>
 
 #include <retro_assert.h>
 
-#include "verbosity.h"
+#include "../../verbosity.h"
 
 
 static void core_error_cb(void *data, uint32_t id, int seq, int res, const char *message)
 {
    pipewire_core_t *pw = (pipewire_core_t*)data;
 
-   RARCH_ERR("[PipeWire]: error id:%u seq:%d res:%d (%s): %s\n",
+   RARCH_ERR("[PipeWire] Error id:%u seq:%d res:%d (%s): %s.\n",
              id, seq, res, spa_strerror(res), message);
 
-   /* stop and exit the thread loop */
-   pw_thread_loop_stop(pw->thread_loop);
+   /* This runs on the loop thread, which cannot stop and join itself;
+    * a stop issued here left the thread finished but never joined, and
+    * the owner's later stop found nothing running and skipped the join.
+    * Record the error and wake whoever is waiting on the loop instead;
+    * the owner stops it at teardown. */
+   pw->error = true;
+   pw_thread_loop_signal(pw->thread_loop, false);
 }
 
 static void core_done_cb(void *data, uint32_t id, int seq)
@@ -42,11 +46,9 @@ static void core_done_cb(void *data, uint32_t id, int seq)
    retro_assert(id == PW_ID_CORE);
 
    pw->last_seq = seq;
+
    if (pw->pending_seq == seq)
-   {
-      /* stop and exit the thread loop */
       pw_thread_loop_signal(pw->thread_loop, false);
-   }
 }
 
 static const struct pw_core_events core_events = {
@@ -55,120 +57,175 @@ static const struct pw_core_events core_events = {
       .error = core_error_cb,
 };
 
-size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
+bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms)
 {
-   uint32_t sample_size = 1;
-   switch (fmt)
-   {
-      case SPA_AUDIO_FORMAT_S8:
-      case SPA_AUDIO_FORMAT_U8:
-         sample_size = 1;
-         break;
-      case SPA_AUDIO_FORMAT_S16_BE:
-      case SPA_AUDIO_FORMAT_S16_LE:
-      case SPA_AUDIO_FORMAT_U16_BE:
-      case SPA_AUDIO_FORMAT_U16_LE:
-         sample_size = 2;
-         break;
-      case SPA_AUDIO_FORMAT_S32_BE:
-      case SPA_AUDIO_FORMAT_S32_LE:
-      case SPA_AUDIO_FORMAT_U32_BE:
-      case SPA_AUDIO_FORMAT_U32_LE:
-      case SPA_AUDIO_FORMAT_F32_BE:
-      case SPA_AUDIO_FORMAT_F32_LE:
-         sample_size = 4;
-         break;
-      default:
-         RARCH_ERR("[PipeWire]: Bad spa_audio_format %d\n", fmt);
-         break;
-   }
-   return sample_size * nchannels;
+   struct timespec abstime;
+   pw_thread_loop_get_time(loop, &abstime, (int64_t)ms * 1000000);
+   /* Zero on a signal; -ETIMEDOUT (or ETIMEDOUT, depending on the
+    * library's sign convention) on the deadline. Anything nonzero is
+    * "no signal came". */
+   return pw_thread_loop_timed_wait_full(loop, &abstime) == 0;
 }
 
-void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+bool pipewire_core_wait_resync(pipewire_core_t *pw)
 {
-   memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
-         sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+   unsigned waited_ms = 0;
 
-   switch (channels)
-   {
-      case 8:
-         position[6] = SPA_AUDIO_CHANNEL_SL;
-         position[7] = SPA_AUDIO_CHANNEL_SR;
-         /* fallthrough */
-      case 6:
-         position[2] = SPA_AUDIO_CHANNEL_FC;
-         position[3] = SPA_AUDIO_CHANNEL_LFE;
-         position[4] = SPA_AUDIO_CHANNEL_RL;
-         position[5] = SPA_AUDIO_CHANNEL_RR;
-         /* fallthrough */
-      case 2:
-         position[0] = SPA_AUDIO_CHANNEL_FL;
-         position[1] = SPA_AUDIO_CHANNEL_FR;
-         break;
-      case 1:
-         position[0] = SPA_AUDIO_CHANNEL_MONO;
-         break;
-      default:
-         RARCH_ERR("[PipeWire]: Internal error: unsupported channel count %d\n", channels);
-   }
-}
-
-void pipewire_wait_resync(pipewire_core_t *pw)
-{
    retro_assert(pw);
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
 
-   for (;;)
+   /* The done callback signals when the daemon has answered the sync.
+    * A daemon that has gone away, or errored - core_error_cb() stops
+    * the loop and signals nobody - never answers, so the wait is
+    * bounded and reports the miss rather than holding the caller. */
+   while (pw->pending_seq != pw->last_seq)
    {
-      pw_thread_loop_wait(pw->thread_loop);
-      if (pw->pending_seq == pw->last_seq)
-         break;
+      if (pw->error)
+         return false;
+      if (pipewire_loop_wait_ms(pw->thread_loop, PIPEWIRE_LOOP_WAIT_STEP_MS))
+         continue;
+      waited_ms += PIPEWIRE_LOOP_WAIT_STEP_MS;
+      if (waited_ms >= PIPEWIRE_SYNC_WAIT_MS)
+      {
+         RARCH_WARN("[PipeWire] The daemon did not answer a sync within %u ms.\n",
+               PIPEWIRE_SYNC_WAIT_MS);
+         return false;
+      }
    }
+   return true;
 }
 
-bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
+/* Upper bound on how long a stream may take to reach the requested
+ * state. A graph that is running the stream gets there in
+ * milliseconds; one that never will - no session manager, no sink to
+ * link to - is what the bound is for. */
+#define PIPEWIRE_SET_ACTIVE_WAIT_SEC 2
+
+bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
 {
    enum pw_stream_state st;
-   const char       *error;
+   enum pw_stream_state want = active ? PW_STREAM_STATE_STREAMING
+                                      : PW_STREAM_STATE_PAUSED;
+   const char       *error   = NULL;
+   int               laps;
 
    retro_assert(loop);
    retro_assert(stream);
 
    pw_thread_loop_lock(loop);
    pw_stream_set_active(stream, active);
-   pw_thread_loop_wait(loop);
+
+   /* The state callback signals the loop on each transition. Wait only
+    * while the stream is still on its way: one already in the target
+    * state raises no further event, an error is final, and a stream
+    * the graph never runs is given up on at the bound rather than
+    * holding the calling thread. */
+   for (laps = 0; laps < PIPEWIRE_SET_ACTIVE_WAIT_SEC * 1000
+         / PIPEWIRE_LOOP_WAIT_STEP_MS; laps++)
+   {
+      st = pw_stream_get_state(stream, &error);
+      if (st == want || st == PW_STREAM_STATE_ERROR)
+         break;
+      pipewire_loop_wait_ms(loop, PIPEWIRE_LOOP_WAIT_STEP_MS);
+   }
+   st = pw_stream_get_state(stream, &error);
    pw_thread_loop_unlock(loop);
 
-   st = pw_stream_get_state(stream, &error);
-   return active ? st == PW_STREAM_STATE_STREAMING : st == PW_STREAM_STATE_PAUSED;
+   if (st != want)
+      RARCH_WARN("[PipeWire] Stream did not reach %s within %d seconds (state: %s%s%s).\n",
+            active ? "streaming" : "paused", PIPEWIRE_SET_ACTIVE_WAIT_SEC,
+            pw_stream_state_as_string(st),
+            error ? ": " : "", error ? error : "");
+
+   return st == want;
 }
 
-bool pipewire_core_init(pipewire_core_t *pw, const char *loop_name)
+bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events)
 {
-   retro_assert(pw);
+   retro_assert(!*pw);
 
-   pw->thread_loop = pw_thread_loop_new(loop_name, NULL);
-   if (!pw->thread_loop)
+   *pw = (pipewire_core_t*)calloc(1, sizeof(pipewire_core_t));
+   if (!*pw)
       return false;
 
-   pw->ctx = pw_context_new(pw_thread_loop_get_loop(pw->thread_loop), NULL, 0);
-   if (!pw->ctx)
+   (*pw)->devicelist = string_list_new();
+   if (!(*pw)->devicelist)
+   {
+      free(*pw);
+      *pw = NULL;
+      return false;
+   }
+
+   pw_init(NULL, NULL);
+
+   (*pw)->thread_loop = pw_thread_loop_new(loop_name, NULL);
+   if (!(*pw)->thread_loop)
       return false;
 
-   if (pw_thread_loop_start(pw->thread_loop) < 0)
+   (*pw)->ctx = pw_context_new(pw_thread_loop_get_loop((*pw)->thread_loop), NULL, 0);
+   if (!(*pw)->ctx)
       return false;
 
-   pw_thread_loop_lock(pw->thread_loop);
-
-   pw->core = pw_context_connect(pw->ctx, NULL, 0);
-   if(!pw->core)
+   if (pw_thread_loop_start((*pw)->thread_loop) < 0)
       return false;
 
-   if (pw_core_add_listener(pw->core,
-                            &pw->core_listener,
-                            &core_events, pw) < 0)
-      return false;
+   pw_thread_loop_lock((*pw)->thread_loop);
+
+   (*pw)->core = pw_context_connect((*pw)->ctx, NULL, 0);
+   if (!(*pw)->core)
+      goto unlock;
+
+   if (pw_core_add_listener((*pw)->core,
+                            &(*pw)->core_listener,
+                            &core_events, *pw) < 0)
+      goto unlock;
+
+   if (events)
+   {
+      (*pw)->registry = pw_core_get_registry((*pw)->core, PW_VERSION_REGISTRY, 0);
+      spa_zero((*pw)->registry_listener);
+      pw_registry_add_listener((*pw)->registry, &(*pw)->registry_listener, events, *pw);
+   }
 
    return true;
+
+unlock:
+   pw_thread_loop_unlock((*pw)->thread_loop);
+   return false;
+}
+
+void pipewire_core_deinit(pipewire_core_t *pw)
+{
+   if (!pw)
+   {
+      pw_deinit();
+      return;
+   }
+
+   if (pw->thread_loop)
+      pw_thread_loop_stop(pw->thread_loop);
+
+   if (pw->registry)
+   {
+      spa_hook_remove(&pw->registry_listener);
+      pw_proxy_destroy((struct pw_proxy*)pw->registry);
+   }
+
+   if (pw->core)
+   {
+      spa_hook_remove(&pw->core_listener);
+      pw_core_disconnect(pw->core);
+   }
+
+   if (pw->ctx)
+      pw_context_destroy(pw->ctx);
+
+   if (pw->thread_loop)
+      pw_thread_loop_destroy(pw->thread_loop);
+
+   if (pw->devicelist)
+      string_list_free(pw->devicelist);
+
+   free(pw);
+   pw_deinit();
 }

@@ -56,7 +56,7 @@ void input_event_osk_append(
       int ptr,
       bool show_symbol_pages,
       const char *word,
-      size_t word_len);
+      size_t len);
 
 void osk_update_last_codepoint(
       unsigned *last_codepoint,

@@ -37,7 +37,7 @@ void autosave_lock(void);
  **/
 void autosave_unlock(void);
 
-bool autosave_init(void);
+bool autosave_init(bool compress_files, unsigned autosave_interval);
 
 void autosave_deinit(void);
 

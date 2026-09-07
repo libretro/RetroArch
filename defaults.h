@@ -81,6 +81,11 @@ struct defaults
 #endif
    int settings_out_latency;
    int settings_in_latency;
+   /* Device-optimal audio output parameters supplied by the
+    * frontend; 0 means the frontend has no opinion and the
+    * built-in defaults apply. */
+   int settings_out_sample_rate;
+   int settings_out_block_frames;
 #ifdef HAVE_MENU
    unsigned menu_materialui_menu_color_theme;
 #endif

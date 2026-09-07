@@ -15,14 +15,12 @@
     schemes will differ after track 1!
 
 ***************************************************************************/
-#ifdef WANT_RAW_DATA_SECTOR
 
-#include <assert.h>
 #include <string.h>
 
-#include <retro_inline.h>
-
 #include <libchdr/cdrom.h>
+
+#ifdef WANT_RAW_DATA_SECTOR
 
 /***************************************************************************
     DEBUGGING
@@ -328,7 +326,7 @@ static INLINE uint8_t ecc_source_byte(const uint8_t *sector, uint32_t offset)
 
 void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, uint8_t *val1, uint8_t *val2)
 {
-   int component;
+	int component;
 	*val1 = *val2 = 0;
 	for (component = 0; component < rowlen; component++)
 	{
@@ -354,7 +352,7 @@ void ecc_compute_bytes(const uint8_t *sector, const uint16_t *row, int rowlen, u
 
 int ecc_verify(const uint8_t *sector)
 {
-   int byte;
+	int byte;
 	/* first verify P bytes */
 	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 	{
@@ -388,7 +386,7 @@ int ecc_verify(const uint8_t *sector)
 
 void ecc_generate(uint8_t *sector)
 {
-   int byte;
+	int byte;
 	/* first verify P bytes */
 	for (byte = 0; byte < ECC_P_NUM_BYTES; byte++)
 		ecc_compute_bytes(sector, poffsets[byte], ECC_P_COMP, &sector[ECC_P_OFFSET + byte], &sector[ECC_P_OFFSET + ECC_P_NUM_BYTES + byte]);

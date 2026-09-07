@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-djgpp-build-container:latest
+      image: reallibretroretroarch/libretro-djgpp-build-container:latest
       options: --user root
 
     steps:
@@ -25,13 +25,13 @@ jobs:
     - name: Compile RA
       run: |
         make -f Makefile.dos -j$(getconf _NPROCESSORS_ONLN) clean
-        make -f Makefile.dos -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
+        make -f Makefile.dos -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1 info all
 
     - name: Get short SHA
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: RA-DOS-dummy-${{ steps.slug.outputs.sha8 }}
         path: |

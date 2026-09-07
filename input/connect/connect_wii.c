@@ -386,6 +386,27 @@ static int wiimote_read_data(struct connect_wii_wiimote_t* wm, uint32_t addr,
  *	with this data.
  */
 
+/* The extension-init sequence below sleeps 100 ms between register
+ * writes, three times, because the Wiimote needs that long to settle
+ * between them. Which thread pays for it depends on the HID driver
+ * that delivered the packet, and one of them is the wrong one:
+ *
+ *   libusb, wiiusb  - a per-adapter poll thread. Correct: the delay
+ *                     costs that device's own thread and nothing else.
+ *   iohidmanager    - the run loop the device was scheduled on, which
+ *                     is CFRunLoopGetCurrent() at init, i.e. the main
+ *                     thread. A handshake there freezes the frontend
+ *                     for about 300 ms.
+ *   btstack         - likewise its packet callback.
+ *
+ * Making that right means a deadline instead of a sleep: record when
+ * the next write may go out, return, and resume from a timer rather
+ * than from the response that a sleep is currently standing in for.
+ * That is a change to the protocol sequence, and the timings here were
+ * arrived at against real hardware ("NEW WAY ... (support clones)"),
+ * so it wants a Wiimote in front of whoever writes it rather than a
+ * plausible-looking rewrite. Recorded here so the next reader starts
+ * from the thread analysis instead of redoing it. */
 static int wiimote_handshake(struct connect_wii_wiimote_t* wm,
       uint8_t event, uint8_t* data, uint16_t len)
 {

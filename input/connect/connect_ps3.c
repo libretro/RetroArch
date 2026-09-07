@@ -98,11 +98,11 @@ static int ds3_set_operational(ds3_instance_t *instance)
    if (     !instance->driver->set_report
          || !instance->driver->get_report)
    {
-      RARCH_ERR("This HID implementation does not support the Sony Sixaxis controller:\n");
+      RARCH_ERR("[Sixaxis] This HID implementation does not support the Sony Sixaxis controller:\n");
       if (!instance->driver->set_report)
-         RARCH_ERR("- set_report implementation is missing\n");
+         RARCH_ERR("[Sixaxis] set_report implementation is missing.\n");
       if (!instance->driver->get_report)
-         RARCH_ERR("- get_report implementation is missing\n");
+         RARCH_ERR("[Sixaxis] get_report implementation is missing.\n");
       return -1;
    }
 
@@ -113,7 +113,7 @@ static int ds3_set_operational(ds3_instance_t *instance)
          sizeof(ds3_activation_packet.buf));
    if (ret < 0)
    {
-      RARCH_LOG("Failed to send activation packet\n");
+      RARCH_LOG("[Sixaxis] Failed to send activation packet.\n");
       return ret;
    }
 
@@ -125,7 +125,7 @@ static int ds3_set_operational(ds3_instance_t *instance)
          SIXAXIS_REPORT_0xF2_SIZE);
    if (ret < 0)
    {
-      RARCH_LOG("Failed to read feature report 0xf2\n");
+      RARCH_LOG("[Sixaxis] Failed to read feature report 0xf2.\n");
       return ret;
    }
 
@@ -137,7 +137,7 @@ static int ds3_set_operational(ds3_instance_t *instance)
          SIXAXIS_REPORT_0xF5_SIZE);
    if (ret < 0)
    {
-      RARCH_LOG("Failed to read feature report 0xf5\n");
+      RARCH_LOG("[Sixaxis] Failed to read feature report 0xf5.\n");
       return ret;
    }
 
@@ -274,13 +274,13 @@ static void *ds3_init(void *handle, uint32_t slot, hid_driver_t *driver)
 
    if (ds3_send_output_report(instance) < 0)
    {
-      RARCH_LOG("Failed to send output report\n");
+      RARCH_LOG("[Sixaxis] Failed to send output report.\n");
       goto error;
    }
 
    if (ds3_set_operational(instance) < 0)
    {
-      RARCH_LOG("Failed to set operational mode\n");
+      RARCH_LOG("[Sixaxis] Failed to set operational mode.\n");
       goto error;
    }
 
@@ -312,7 +312,7 @@ static void ds3_packet_handler(void *device_data,
 
    if (size > sizeof(device->data))
    {
-      RARCH_ERR("[ds3]: Expecting packet to be %ld but was %d\n",
+      RARCH_ERR("[Sixaxis] Expecting packet to be %ld but was %d.\n",
             (long)sizeof(device->data), size);
       return;
    }

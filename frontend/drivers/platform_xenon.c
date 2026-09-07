@@ -44,19 +44,11 @@ static void frontend_xenon_init(void *data)
    usb_init();
    usb_do_poll();
    xenon_ata_init();
-#if 0
-   dvd_init();
-#endif
 }
 
 static void frontend_xenon_shutdown(bool unused)
 {
    (void)unused;
-}
-
-static int frontend_xenon_get_rating(void)
-{
-   return -1;
 }
 
 static void frontend_xenon_get_env(int *argc, char *argv[],
@@ -78,13 +70,10 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_xenon_shutdown,      /* shutdown  */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_xenon_get_rating,    /* get_rating   */
    NULL,                         /* load_content */
    frontend_xenon_get_arch,      /* get_arch       */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem  */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -93,14 +82,13 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "xenon",                      /* ident */
    NULL                          /* get_video_driver */
 };

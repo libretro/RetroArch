@@ -64,8 +64,6 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024 RetroArch. All rights reserved.</string>
-	<key>NSMainNibFile</key>
-	<string>MainMenu_Metal</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>RAPortableInstall</key>

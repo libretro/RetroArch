@@ -285,7 +285,7 @@ static void __card_checksum(u16 *buff,u32 len,u16 *cs1,u16 *cs2)
 
 static s32 __card_putcntrlblock(card_block *card,s32 result)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	if(card->attached) card->result = result;
@@ -297,7 +297,7 @@ static s32 __card_putcntrlblock(card_block *card,s32 result)
 static s32 __card_getcntrlblock(s32 chn,card_block **card)
 {
 	s32 ret;
-	u32 level;
+	u32 level = 0;
 	card_block *rcard = NULL;
 
 	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return CARD_ERROR_FATAL_ERROR;
@@ -333,7 +333,7 @@ static __inline__ struct card_bat* __card_getbatblock(card_block *card)
 static s32 __card_sync(s32 chn)
 {
 	s32 ret;
-	u32 level;
+	u32 level = 0;
 	card_block *card = &cardmap[chn];
 
 	_CPU_ISR_Disable(level);
@@ -346,7 +346,7 @@ static s32 __card_sync(s32 chn)
 
 static void __card_synccallback(s32 chn,s32 result)
 {
-	u32 level;
+	u32 level = 0;
 	card_block *card = &cardmap[chn];
 	_CPU_ISR_Disable(level);
 	LWP_ThreadBroadcast(card->wait_sync_queue);
@@ -1264,7 +1264,7 @@ static void __unlocked_callback(s32 chn,s32 result)
 
 static s32 __card_start(s32 chn,cardcallback tx_cb,cardcallback exi_cb)
 {
-	u32 level;
+	u32 level = 0;
 	card_block *card = NULL;
 	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return CARD_ERROR_NOCARD;
 	card = &cardmap[chn];
@@ -1671,7 +1671,7 @@ static s32 __card_updatedir(s32 chn,cardcallback callback)
 
 static void __card_dounmount(s32 chn,s32 result)
 {
-	u32 level;
+	u32 level = 0;
 	card_block *card;
 
 	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return;
@@ -2188,7 +2188,8 @@ static s32 __dounlock(s32 chn,u32 *key)
 
 s32 CARD_Init(const char *gamecode,const char *company)
 {
-	u32 i,level;
+	u32 i;
+	u32 level = 0;
 
 	if(card_inited) return CARD_ERROR_READY;
 	if(gamecode && strlen(gamecode)<=4) memcpy(card_gamecode,gamecode,4);
@@ -2217,7 +2218,8 @@ s32 CARD_Probe(s32 chn)
 s32 CARD_ProbeEx(s32 chn,s32 *mem_size,s32 *sect_size)
 {
 	s32 ret;
-	u32 level,card_id;
+	u32 card_id;
+	u32 level = 0;
 	card_block *card = NULL;
 	if(chn<EXI_CHANNEL_0 || chn>=EXI_CHANNEL_2) return CARD_ERROR_FATAL_ERROR;
 	card = &cardmap[chn];
@@ -2266,7 +2268,7 @@ s32 CARD_ProbeEx(s32 chn,s32 *mem_size,s32 *sect_size)
 s32 CARD_MountAsync(s32 chn,void *workarea,cardcallback detach_cb,cardcallback attach_cb)
 {
 	s32 ret = CARD_ERROR_READY;
-	u32 level;
+	u32 level = 0;
 	cardcallback attachcb = NULL;
 	card_block *card = NULL;
 	if(!workarea) return CARD_ERROR_NOCARD;
@@ -2950,7 +2952,8 @@ s32 CARD_SetAttributes(s32 chn,s32 fileno,u8 attr)
 
 s32 CARD_SetCompany(const char *company)
 {
-	u32 level,i;
+	u32 i;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	for(i=0;i<2;i++) card_company[i] = 0xff;
@@ -2962,7 +2965,8 @@ s32 CARD_SetCompany(const char *company)
 
 s32 CARD_SetGamecode(const char *gamecode)
 {
-	u32 level,i;
+	u32 i;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	for(i=0;i<4;i++) card_gamecode[i] = 0xff;

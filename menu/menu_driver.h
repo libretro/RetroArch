@@ -41,7 +41,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -58,8 +58,16 @@ RETRO_BEGIN_DECLS
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
+#ifdef __EMSCRIPTEN__
+/* This task reads a variable that is set asynchronously, so the first check might fail.
+ * Check more often because it is cheap and to avoid a long period of missing power info. */
+#define POWERSTATE_CHECK_INTERVAL  1000000
+#else
 #define POWERSTATE_CHECK_INTERVAL  (30 * 1000000)
+#endif
+
 #define DATETIME_CHECK_INTERVAL    1000000
+#define MENU_DRAW_ENTRY_DELAY      30
 
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -106,9 +114,13 @@ enum menu_settings_type
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE,
    MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_SORT_MODE,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_METHOD,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_USE_DB,
+   MENU_SETTING_DROPDOWN_ITEM_SCAN_DB_SELECT,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME,
    MENU_SETTING_DROPDOWN_ITEM_DISK_INDEX,
+   MENU_SETTING_DROPDOWN_ITEM_INPUT_RETROPAD_BIND,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_TYPE,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_DEVICE_INDEX,
    MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE,
@@ -238,9 +250,9 @@ enum menu_settings_type
    MENU_SETTINGS_INPUT_ANALOG_DPAD_MODE,
    MENU_SETTINGS_INPUT_INPUT_REMAP_PORT,
    MENU_SETTINGS_INPUT_BEGIN,
-   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 6,
+   MENU_SETTINGS_INPUT_END = MENU_SETTINGS_INPUT_BEGIN + RARCH_CUSTOM_BIND_LIST_END + 7,
    MENU_SETTINGS_INPUT_DESC_BEGIN,
-   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + ((RARCH_FIRST_CUSTOM_BIND + 8) * MAX_USERS),
+   MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (RARCH_ANALOG_BIND_LIST_END * MAX_USERS),
    MENU_SETTINGS_INPUT_DESC_KBD_BEGIN,
    MENU_SETTINGS_INPUT_DESC_KBD_END = MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + (RARCH_MAX_KEYS * MAX_USERS),
    MENU_SETTINGS_REMAPPING_PORT_BEGIN,
@@ -272,6 +284,9 @@ enum menu_settings_type
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
    MENU_SETTING_ACTION_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
 
+   MENU_SETTING_SCAN_METHOD,
+   MENU_SETTING_SCAN_USE_DB,
+   MENU_SETTING_SCAN_DB_SELECT,
    MENU_SETTING_MANUAL_CONTENT_SCAN_DIR,
    MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME,
@@ -305,6 +320,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
+   MENU_SETTING_ACTION_STATE_SLOT_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -387,9 +403,10 @@ typedef struct menu_ctx_driver
    int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
    void (*update_thumbnail_path)(void *data, unsigned i, char pos);
    void (*update_thumbnail_image)(void *data);
-   void (*refresh_thumbnail_image)(void *data, unsigned i);
+   void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
+   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
@@ -402,6 +419,12 @@ typedef struct menu_ctx_driver
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
+   /* Move the list itself by the given number of mouse wheel
+    * notches, negative towards the top, leaving the selection
+    * where it is. Drivers whose list position *is* the selection
+    * leave this NULL and keep getting MENU_ACTION_UP/DOWN.
+    * Returns false when the driver cannot scroll right now. */
+   bool (*wheel_scroll)(void *userdata, int notches);
 } menu_ctx_driver_t;
 
 typedef struct
@@ -423,6 +446,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
+   int16_t state_slot_run;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory
@@ -448,7 +472,7 @@ typedef struct
       char file_name[NAME_MAX_LENGTH];
    } last_start_content;
 
-   char menu_state_msg[PATH_MAX_LENGTH * 2];
+   char menu_state_msg[MENU_LABEL_MAX_LENGTH];
    /* Scratchpad variables. These are used for instance
     * by the filebrowser when having to store intermediary
     * paths (subdirs/previous dirs/current dir/path, etc).
@@ -459,6 +483,9 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* The Content Downloader directory the user last stepped into. */
+   char core_content_dir[NAME_MAX_LENGTH];
 } menu_handle_t;
 
 struct menu_state
@@ -510,7 +537,7 @@ struct menu_state
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
 #ifdef HAVE_RUNAHEAD
-   enum menu_runahead_mode runahead_mode;
+   unsigned int runahead_mode;
 #endif
 
    /* int16_t alignment */
@@ -531,6 +558,11 @@ struct menu_state
     * since RETRO_ENVIRONMENT_SHUTDOWN will cause
     * RARCH_PATH_CONTENT to be cleared */
    char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
+   /* Path of a configuration file whose load has been deferred
+    * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
+    * config_replace() is performed from runloop_check_state(),
+    * never from within menu iteration */
+   char pending_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
@@ -744,6 +776,14 @@ bool menu_input_key_bind_set_mode(
 #ifdef HAVE_RUNAHEAD
 void menu_update_runahead_mode(void);
 #endif
+
+size_t menu_playlist_random_selection(
+      size_t selection, bool is_explore_list);
+
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

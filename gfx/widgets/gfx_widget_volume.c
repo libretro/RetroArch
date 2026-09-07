@@ -16,10 +16,12 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <file/file_path.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
+#include "../../tasks/tasks_internal.h"
 
 /* Constants */
 #define VOLUME_DURATION 3000
@@ -70,10 +72,10 @@ static gfx_widget_volume_state_t p_w_volume_st = {
    {0},
    0,
    0,
-   COLOR_HEX_TO_FLOAT(0x1A1A1A, 1.0f),
-   COLOR_HEX_TO_FLOAT(0x198AC6, 1.0f),
-   COLOR_HEX_TO_FLOAT(0xF5DD19, 1.0f),
-   COLOR_HEX_TO_FLOAT(0xC23B22, 1.0f),
+   COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_BLUE, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_YELLOW, 1.0f),
+   COLOR_HEX_TO_FLOAT(ICON_COLOR_RED, 1.0f),
    0.0f,
    0.0f,
    0.0f,
@@ -84,7 +86,7 @@ static gfx_widget_volume_state_t p_w_volume_st = {
 
 static void gfx_widget_volume_frame(void* data, void *user_data)
 {
-   static float pure_white[16]             = {
+   float pure_white[16]             = {
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
       1.00, 1.00, 1.00, 1.00,
@@ -110,7 +112,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
       uintptr_t volume_icon                = 0;
       unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;
-      unsigned text_color                  = COLOR_TEXT_ALPHA(0xffffffff, (unsigned)(state->text_alpha*255.0f));
+      unsigned text_color                  = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(state->text_alpha*255.0f));
       unsigned text_color_db               = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(state->text_alpha*255.0f));
 
       unsigned bar_x                       = icon_size;
@@ -344,6 +346,8 @@ static void gfx_widget_volume_layout(
    }
 }
 
+static uint64_t volume_icon_load_gen = 0;
+
 static void gfx_widget_volume_context_reset(bool is_threaded,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
@@ -351,16 +355,28 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char* widgets_png_path)
 {
    size_t i;
-   gfx_widget_volume_state_t *state     = &p_w_volume_st;
+   bool supports_rgba                    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   gfx_widget_volume_state_t *state      = &p_w_volume_st;
+
+   volume_icon_load_gen++;
 
    for (i = 0; i < ICON_LAST; i++)
-      gfx_display_reset_textures_list(ICONS_NAMES[i], menu_png_path, &state->textures[i], TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL);
+   {
+      char texpath[PATH_MAX_LENGTH];
+      fill_pathname_join_special(texpath,
+            menu_png_path, ICONS_NAMES[i], sizeof(texpath));
+      gfx_display_load_icon(texpath, supports_rgba,
+            &state->textures[i], volume_icon_load_gen,
+            &volume_icon_load_gen);
+   }
 }
 
 static void gfx_widget_volume_context_destroy(void)
 {
    size_t i;
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
+
+   volume_icon_load_gen++;
 
    for (i = 0; i < ICON_LAST; i++)
       video_driver_texture_unload(&state->textures[i]);
@@ -376,6 +392,12 @@ static void gfx_widget_volume_free(void)
    state->alpha = 0.0f;
 }
 
+static bool gfx_widget_volume_visible(void)
+{
+   gfx_widget_volume_state_t *state = &p_w_volume_st;
+   return state->alpha > 0.0f;
+}
+
 const gfx_widget_t gfx_widget_volume = {
    NULL, /* init */
    gfx_widget_volume_free,
@@ -383,5 +405,6 @@ const gfx_widget_t gfx_widget_volume = {
    gfx_widget_volume_context_destroy,
    gfx_widget_volume_layout,
    NULL, /* iterate */
-   gfx_widget_volume_frame
+   gfx_widget_volume_frame,
+   gfx_widget_volume_visible
 };

@@ -345,6 +345,9 @@
 					Name="string"
 					Filter="">
 					<File
+						RelativePath="..\..\..\libretro-common\string\rstrtod.c">
+					</File>
+					<File
 						RelativePath="..\..\..\libretro-common\string\stdstring.c">
 					</File>
 				</Filter>

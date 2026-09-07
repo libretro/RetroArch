@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2018 - Andre Leiradella
- *  Copyright (C) 2019-2023 - Brian Weiss
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -26,6 +26,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include <retro_common_api.h>
@@ -42,7 +43,7 @@ RETRO_BEGIN_DECLS
 /* Define this macro to get extra-verbose log for cheevos. */
 #define CHEEVOS_VERBOSE
 
-#define RCHEEVOS_TAG "[RCHEEVOS]: "
+#define RCHEEVOS_TAG "[RCHEEVOS] "
 #define CHEEVOS_FREE(p) do { void* q = (void*)p; if (q) free(q); } while (0)
 
 #ifdef CHEEVOS_VERBOSE
@@ -70,11 +71,26 @@ enum rcheevos_summary_notif
 
 typedef struct rcheevos_menuitem_t
 {
-   rc_client_achievement_t* achievement;
+   union rcheevos_menuitem_source_t {
+      struct rcheevos_menuitem_text_t {
+         const char* label;
+         const char* sublabel;
+      } text;
+      struct rcheevos_menuitem_achievement_t {
+         const rc_client_achievement_t* achievement;
+      } achievement;
+      struct rcheevos_menuitem_action_t {
+         int type; /* enum msg_hash_enums */
+         int label; /* enum msg_hash_enums */
+         int sublabel; /* enum msg_hash_enums */
+         int action; /* enum menu_settings_type */
+      } action;
+   } source;
    uintptr_t menu_badge_texture;
    uint32_t subset_id;
+   int state_label_idx; /* enum msg_hash_enums */
    uint8_t menu_badge_grayscale;
-   enum msg_hash_enums state_label_idx;
+   uint8_t type;
 } rcheevos_menuitem_t;
 
 #endif
@@ -85,8 +101,26 @@ typedef struct rcheevos_locals_t
    rc_libretro_memory_regions_t memory;/* achievement addresses to core memory mappings */
 
 #ifdef HAVE_THREADS
-   enum event_command queued_command; /* action queued by background thread to be run on main thread */
-   bool game_placard_requested;       /* request to display game placard */
+   /* Action queued by a background thread (e.g. the rcheevos
+    * client's HTTP completion thread) to be dispatched on the
+    * main thread by rcheevos_test. Atomic because writers can
+    * be on a worker thread while the main-thread reader is
+    * polling per frame; plain enum access would be a data race
+    * with no memory barrier. */
+   retro_atomic_int_t queued_command;
+
+   /* Bumped on every load lifecycle reset (rcheevos_load and
+    * rcheevos_unload). Captured at rc_client_begin_identify_and_load_game
+    * time and passed through the callback's userdata; the
+    * background callback compares its captured value against the
+    * current value at completion and drops stale completions
+    * whose target rcheevos_locals state has been reset out from
+    * under them. Without this, a load for game A that completes
+    * after the user has closed content and started loading game B
+    * would write FINALIZE_LOAD into queued_command and cause the
+    * main thread to apply game A's finalization to game B's
+    * memory map. */
+   retro_atomic_int_t load_generation;
 #endif
 
    char user_agent_prefix[128];       /* RetroArch/OS version information */
@@ -96,12 +130,21 @@ typedef struct rcheevos_locals_t
    rcheevos_menuitem_t* menuitems;    /* array of items for the achievements quick menu */
    unsigned menuitem_capacity;        /* maximum number of items in the menuitems array */
    unsigned menuitem_count;           /* current number of items in the menuitems array */
+   uint32_t menuitem_info_type;       /* current submenu */
+   uint32_t menuitem_submenu_type;    /* current submenu */
+   uint32_t menuitem_submenu_id;      /* current submenu */
 #endif
 
+   const char* hash_error;            /* message to display if an error occurred identifying the game */
+
    bool hardcore_allowed;             /* prevents enabling hardcore if illegal settings detected */
+   bool hardcore_requires_reload;     /* prevents enabling hardcore until the core is reloaded */
    bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 
    bool core_supports;                /* false if core explicitly disables achievements */
+   bool has_unsupported_achievements; /* true if unsupported achievements were detected */
+   bool badges_loaded;                /* true once all badges have been loaded */
+   bool badges_loading;               /* true if the download queue is running */
 } rcheevos_locals_t;
 
 rcheevos_locals_t* get_rcheevos_locals(void);

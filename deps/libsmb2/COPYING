@@ -1,0 +1,24 @@
+Libsmb2 components fall under two separate licences
+
+
+The lib and include directories
+===============================
+The smb2 client library itself, i.e. the lib and include directories,
+is licenced under GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+A copy of LGPL 2.1 is included in the file LICENCE-LGPL-2.1.txt but can also be downloaded from http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+This is the licence that applies to the libsmb2 library and its use.
+
+
+
+The examples directory
+======================
+The example applications using this library, i.e. the examples directory,
+is licenced under 2-Clause BSD License.
+
+These are executable applications that link with the libsmb2 library.
+
+To avoid any confusion, every source file also contain a licence boilerplate.

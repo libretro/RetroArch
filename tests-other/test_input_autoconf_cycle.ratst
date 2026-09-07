@@ -1,0 +1,31 @@
+[
+{
+  "comment": "Autoconf regression cycle. Device A (0001:0002) is won by TestpadD_alternative on its vid/pid tuple (affinity 30) over TestpadA name-only 20, displaying as 'device name D'; the disconnect notice uses the raw name 'device A'. Device B (0003:0004) matches TestpadB by name. Sequence: connect A and B, disconnect A from port 1, connect device C to port 1 (a DIFFERENT device, so no same-device reconnect-notification suppression - the reconfigure line is deterministic), then disconnect B. Frames stay small: the null video step clock advances slowly, so steps must sit low enough to be reached in the time budget.",
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(0001:0002) Test joypad device A",
+  "frame": 0
+},
+{
+  "action": 1,
+  "param_num": 1,
+  "param_str": "(0003:0004) Test joypad device B",
+  "frame": 30
+},
+{
+  "action": 2,
+  "param_num": 0,
+  "frame": 90
+},
+{
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(0005:0006) Test joypad device C",
+  "frame": 150
+},
+{
+  "action": 2,
+  "param_num": 1,
+  "frame": 210
+}
+]

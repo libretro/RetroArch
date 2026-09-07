@@ -1,0 +1,5 @@
+# OpenAL Soft is an uninstrumented C++ library; its own atomics look
+# like races to TSan. No frame of the drivers or this harness appears
+# in those reports.
+race:libopenal
+thread:libopenal

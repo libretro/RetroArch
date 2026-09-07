@@ -308,7 +308,7 @@ TVariable* TVariable::clone() const
 TFunction::TFunction(const TFunction& copyOf) : TSymbol(copyOf)
 {
     for (unsigned int i = 0; i < copyOf.parameters.size(); ++i) {
-        TParameter param;
+        TParameter param = { nullptr, nullptr, nullptr };
         parameters.push_back(param);
         parameters.back().copyParam(copyOf.parameters[i]);
     }

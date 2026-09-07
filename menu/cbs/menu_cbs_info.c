@@ -20,6 +20,7 @@
 
 #include "../../configuration.h"
 #include "../../audio/audio_driver.h"
+#include "../../msg_hash_lbl_str.h"
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -42,13 +43,15 @@ static int action_info_default(unsigned type, const char *label)
    bool audio_enable_menu_notice = settings->bools.audio_enable_menu_notice;
 #endif
 
+   if (settings->bools.menu_disable_info_button)
+      return 0;
+
    menu_displaylist_info_init(&info);
 
    info.list                    = menu_stack;
    info.directory_ptr           = selection;
    info.enum_idx                = MENU_ENUM_LABEL_INFO_SCREEN;
-   info.label                   = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_INFO_SCREEN));
+   info.label                   = strdup(MENU_ENUM_LABEL_INFO_SCREEN_STR);
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info, settings))
       goto error;

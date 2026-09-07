@@ -71,6 +71,11 @@
                                             * 3 - Late
                                             */
 
+#define RETRO_ENVIRONMENT_SET_SAVE_STATE_DISABLE_UNDO (5 | RETRO_ENVIRONMENT_RETROARCH_START_BLOCK)
+                                            /* bool * --
+                                            * If true, disables the save state save/load undo feature to conserve memory.
+                                            */
+
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO_MASK \
       | DRIVER_MICROPHONE_MASK \
@@ -79,7 +84,6 @@
       | DRIVER_CAMERA_MASK \
       | DRIVER_LOCATION_MASK \
       | DRIVER_MENU_MASK \
-      | DRIVERS_VIDEO_INPUT_MASK \
       | DRIVER_BLUETOOTH_MASK \
       | DRIVER_WIFI_MASK \
       | DRIVER_LED_MASK \
@@ -195,7 +199,7 @@ void retroarch_init_task_queue(void);
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);
-void core_options_reset(void);
+void core_options_reset(const char *label);
 void core_options_flush(void);
 
 /**
@@ -209,7 +213,7 @@ void retroarch_fail(int error_code, const char *error);
 
 bool should_quit_on_close(void);
 
-uint16_t retroarch_get_flags(void);
+uint32_t retroarch_get_flags(void);
 
 RETRO_END_DECLS
 

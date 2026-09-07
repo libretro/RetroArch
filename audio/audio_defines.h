@@ -21,23 +21,11 @@
 
 RETRO_BEGIN_DECLS
 
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-#define AUDIO_MIN_RATIO                0.0625
-
 #define AUDIO_MIXER_MAX_STREAMS        16
 
 #define AUDIO_MIXER_MAX_SYSTEM_STREAMS (AUDIO_MIXER_MAX_STREAMS + 8)
 
-/* Fastforward timing calculations running average samples. Helps with a
-consistent pitch when fast-forwarding. */
-#define AUDIO_FF_EXP_AVG_SAMPLES       16
-
-/* do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
+/* Do not define more than (MAX_SYSTEM_STREAMS - MAX_STREAMS) */
 enum audio_mixer_system_slot
 {
    AUDIO_MIXER_SYSTEM_SLOT_OK = AUDIO_MIXER_MAX_STREAMS,
@@ -161,7 +149,42 @@ enum audio_driver_state_flags
     * @see audio_driver_t::write_avail
     * @see audio_driver_t::buffer_size
     */
-   AUDIO_FLAG_CONTROL      = (1 << 5)
+   AUDIO_FLAG_CONTROL      = (1 << 5),
+
+   /**
+    * Indicates that the audio driver is forcing gain to 0.
+    * Used for temporary rewind and fast-forward muting.
+    */
+   AUDIO_FLAG_MUTED        = (1 << 6),
+   /**
+    * Mirrors the non-blocking state last handed to the driver
+    * (fast-forward, or audio_sync off). Read by the producer side of
+    * the threaded pipeline to decide whether a full ring drops or waits.
+    */
+   AUDIO_FLAG_NONBLOCK     = (1 << 7),
+   /**
+    * The convert/DSP/resample/volume pass runs on the audio thread:
+    * core audio is published into pipe_ring by the frame-end flush and
+    * consumed by audio_driver_pipeline_consume() from the wrapper
+    * thread's loop. Set from the audio_threaded_pipeline setting at
+    * driver init; constant for the driver's lifetime.
+    */
+   AUDIO_FLAG_PIPELINE_THREADED = (1 << 8),
+   /**
+    * The driver is between audio_driver_start() and audio_driver_stop().
+    * The threaded pipeline's producer only waits for ring space while
+    * this is set: with the consumer parked, waiting could never end.
+    */
+   AUDIO_FLAG_STARTED      = (1 << 9),
+   /**
+    * A driver write happened since the runloop last cleared this. Set at
+    * the write sites, whichever path reached them - core audio, or the
+    * frame of silence audio_driver_menu_sample() feeds while the core is
+    * paused with the mixer and thumbnail audio mixed in. Read by the
+    * runloop's pace record so "audio is holding the loop" is a fact
+    * about this iteration rather than a guess about who wrote.
+    */
+   AUDIO_FLAG_WROTE        = (1 << 10)
 };
 
 typedef struct audio_statistics

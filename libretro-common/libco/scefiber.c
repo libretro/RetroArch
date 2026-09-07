@@ -46,8 +46,8 @@ cothread_t co_active(void)
 cothread_t co_create(unsigned int heapsize, void (*coentry)(void))
 {
    int ret;
-   SceFiber* tail_fiber   = malloc(sizeof(SceFiber));
-   char * m_ctxbuf        = malloc(sizeof(char)*heapsize);
+   SceFiber* tail_fiber   = (SceFiber*)malloc(sizeof(SceFiber));
+   char * m_ctxbuf        = (char*)malloc(heapsize * sizeof(char));
    if (!co_active_)
    {
       sceSysmoduleLoadModule(SCE_SYSMODULE_FIBER);

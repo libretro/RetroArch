@@ -28,8 +28,20 @@ static cloud_sync_driver_t cloud_sync_null = {
 
 const cloud_sync_driver_t *cloud_sync_drivers[] = {
    &cloud_sync_webdav,
+#ifdef HAVE_SSL
+   &cloud_sync_google_drive,
+#endif
+#ifdef HAVE_S3
+   &cloud_sync_s3,
+#endif
 #ifdef HAVE_ICLOUD
    &cloud_sync_icloud,
+#endif
+#ifdef HAVE_ICLOUD_DRIVE
+   &cloud_sync_icloud_drive,
+#endif
+#ifdef HAVE_SMBCLIENT
+   &cloud_sync_smb,
 #endif
    &cloud_sync_null,
    NULL
@@ -54,27 +66,24 @@ const char* config_get_cloud_sync_driver_options(void)
    return char_list_new_special(STRING_LIST_CLOUD_SYNC_DRIVERS, NULL);
 }
 
-void cloud_sync_find_driver(
-      settings_t *settings,
-      const char *prefix,
-      bool verbosity_enabled)
+void cloud_sync_find_driver(const char *cloud_sync_driver,
+      const char *prefix, bool verbosity_enabled)
 {
    cloud_sync_driver_state_t
       *cloud_sync_st              = &cloud_sync_driver_st;
    int i                        = (int)driver_find_index(
-         "cloud_sync_driver",
-         settings->arrays.cloud_sync_driver);
+         "cloud_sync_driver", cloud_sync_driver);
 
    if (i >= 0)
       cloud_sync_st->driver       = (const cloud_sync_driver_t*)
          cloud_sync_drivers[i];
    else
    {
-      if (verbosity_enabled && settings->arrays.cloud_sync_driver[0])
+      if (verbosity_enabled && cloud_sync_driver[0])
       {
          unsigned d;
          RARCH_ERR("Couldn't find any %s named \"%s\"\n", prefix,
-               settings->arrays.cloud_sync_driver);
+               cloud_sync_driver);
 
          RARCH_LOG_OUTPUT("Available %ss are:\n", prefix);
          for (d = 0; cloud_sync_drivers[d]; d++)
@@ -96,7 +105,8 @@ bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    return false;
 }
 
-bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_end(cloud_sync_complete_handler_t cb,
+      void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_end)
@@ -104,7 +114,8 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
    return false;
 }
 
-bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_read(const char *path, const char *file,
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_read)
@@ -113,7 +124,7 @@ bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_han
 }
 
 bool cloud_sync_update(const char *path, RFILE *file,
-                       cloud_sync_complete_handler_t cb, void *user_data)
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_update)
@@ -121,7 +132,8 @@ bool cloud_sync_update(const char *path, RFILE *file,
    return false;
 }
 
-bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data)
+bool cloud_sync_free(const char *path,
+      cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_free)

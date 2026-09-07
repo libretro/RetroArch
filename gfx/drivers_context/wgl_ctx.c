@@ -29,6 +29,7 @@
 #include <string.h>
 #include <math.h>
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commdlg.h>
 
@@ -55,7 +56,53 @@
 #endif
 
 #ifdef __WINRT__
-#include "../common/uwpgdi.h"
+#include <GL/gl.h>
+
+#if !defined(_GDI32_)
+#define WINGDIAPI_UWP __declspec(dllimport)
+#else
+#define WINGDIAPI_UWP __declspec(dllexport)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * Undeclared APIs exported by libgallium on UWP
+ */
+
+WINGDIAPI_UWP HGLRC WINAPI wglCreateContext(HDC);
+WINGDIAPI_UWP BOOL  WINAPI wglDeleteContext(HGLRC);
+WINGDIAPI_UWP BOOL  WINAPI wglMakeCurrent(HDC, HGLRC);
+WINGDIAPI_UWP BOOL APIENTRY wglSwapBuffers(HDC hdc);
+WINGDIAPI_UWP PROC APIENTRY wglGetProcAddress(LPCSTR lpszProc);
+WINGDIAPI_UWP BOOL APIENTRY wglShareLists(
+   HGLRC unnamedParam1,
+   HGLRC unnamedParam2
+);
+
+#ifdef __cplusplus
+}
+#endif
+
+#else
+
+/* mingw-w64's wingdi.h declares every other wgl entry point this file
+ * uses - wglCreateContext, wglMakeCurrent, wglShareLists,
+ * wglGetProcAddress - but omits wglSwapBuffers. The Windows SDK does
+ * declare it, so this is a duplicate of an identical declaration
+ * there rather than a conflicting one. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
@@ -150,27 +197,17 @@ static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
 static bool wgl_has_extension(const char *ext, const char *exts)
 {
-   const char *where = strchr(ext, ' ');
-
-   if (where || *ext == '\0')
+   size_t _len;
+   if (!exts || !ext || *ext == '\0' || strchr(ext, ' '))
       return false;
-
-   if (exts)
+   _len = strlen(ext);
    {
-      const char *terminator = NULL;
-      const char *start      = exts;
-
-      for (;;)
+      const char *start;
+      for (start = exts; (start = strstr(start, ext)); start += _len)
       {
-         if (!(where = strstr(start, ext)))
-            break;
-
-         terminator = where + strlen(ext);
-         if (where == start || *(where - 1) == ' ')
-            if (*terminator == ' ' || *terminator == '\0')
-               return true;
-
-         start = terminator;
+         if (   (start       == exts || start[-1]   == ' ')
+             && (start[_len] == ' '  || start[_len] == '\0'))
+            return true;
       }
    }
    return false;
@@ -196,8 +233,8 @@ void create_gl_context(HWND hwnd, bool *quit)
 
    if (win32_hrc)
    {
-      video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
-      RARCH_LOG("[WGL]: Using cached GL context.\n");
+      video_driver_cache_context_ack_set();
+      RARCH_LOG("[WGL] Using cached GL context.\n");
    }
    else
    {
@@ -210,7 +247,7 @@ void create_gl_context(HWND hwnd, bool *quit)
          {
             if (!wglShareLists(win32_hrc, win32_hw_hrc))
             {
-               RARCH_LOG("[WGL]: Failed to share contexts.\n");
+               RARCH_LOG("[WGL] Failed to share contexts.\n");
                *quit    = true;
             }
          }
@@ -323,7 +360,7 @@ void create_gl_context(HWND hwnd, bool *quit)
 
                   if (!win32_hw_hrc)
                   {
-                     RARCH_ERR("[WGL]: Failed to create shared context.\n");
+                     RARCH_ERR("[WGL] Failed to create shared context.\n");
                      *quit = true;
                      break;
                   }
@@ -345,12 +382,12 @@ void create_gl_context(HWND hwnd, bool *quit)
 
          if (!context)
          {
-            RARCH_ERR("[WGL]: Failed to create core context. Falling back to legacy context.\n");
+            RARCH_ERR("[WGL] Failed to create core context. Falling back to legacy context.\n");
             *quit = true;
          }
       }
       else
-         RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
+         RARCH_ERR("[WGL] wglCreateContextAttribsARB not supported.\n");
    }
 
    {
@@ -363,13 +400,46 @@ void create_gl_context(HWND hwnd, bool *quit)
       if (wglGetExtensionsStringARB)
       {
          exts = wglGetExtensionsStringARB(win32_hdc);
-         RARCH_LOG("[WGL]: Extensions: %s\n", exts);
+         RARCH_LOG("[WGL] Extensions: %s\n", exts);
          if (wgl_has_extension("WGL_EXT_swap_control_tear", exts))
          {
-            RARCH_LOG("[WGL]: Adaptive VSync supported.\n");
+            RARCH_LOG("[WGL] Adaptive VSync supported.\n");
             wgl_flags |= WGL_FLAG_ADAPTIVE_VSYNC;
          }
       }
+   }
+
+   /* HDR settings availability for the GL drivers: probe whether the
+    * display is in HDR mode and shape the display flags accordingly,
+    * so the menu offers the HDR options exactly when they can work.
+    * The trio is cleared first (it may be stale from a previous video
+    * driver); the probe's underlying DXGI check re-sets it when the
+    * display supports HDR. OpenGL HDR on Windows is scRGB-only (there
+    * is no WGL HDR10 / metadata API), so the HDR10 support bit is
+    * masked back out. On builds without a D3D driver the probe reports
+    * false and the settings simply stay hidden, as before. */
+   {
+      uint32_t disp_flags = video_driver_get_disp_flags();
+      disp_flags         &= ~(  VIDEO_FLAG_HDR_SUPPORT
+                              | VIDEO_FLAG_HDR10_SUPPORT
+                              | VIDEO_FLAG_SCRGB_SUPPORT);
+      video_driver_set_disp_flags(disp_flags);
+
+      /* The probe lives in win32_common's desktop-only region; UWP
+       * configurations that define HAVE_OPENGL compile this function
+       * (through ANGLE) but must not reference it -- doing so was an
+       * unresolved external at UWP release link. Under WinRT the trio
+       * simply stays cleared here and the d3d drivers manage it. */
+#if !defined(__WINRT__)
+      if (win32_display_hdr_active(win32_get_window()))
+      {
+         disp_flags  = video_driver_get_disp_flags();
+         disp_flags |=  (VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+         disp_flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
+         video_driver_set_disp_flags(disp_flags);
+         RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
+      }
+#endif
    }
 }
 #endif
@@ -438,7 +508,7 @@ static void gfx_ctx_wgl_swap_interval(void *data, int interval)
             return;
 
          if (!p_swap_interval(win32_interval))
-            RARCH_WARN("[WGL]: wglSwapInterval(%i) failed.\n", win32_interval);
+            RARCH_WARN("[WGL] wglSwapInterval(%i) failed.\n", win32_interval);
 #endif
          break;
 
@@ -464,11 +534,9 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef __WINRT__
+         /* gdi32's SwapBuffers only locates and forwards to this, and
+          * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
-#else
-         SwapBuffers(win32_hdc);
-#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -493,6 +561,10 @@ static void gfx_ctx_wgl_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         video_driver_set_disp_flags(video_driver_get_disp_flags()
+               & ~(  VIDEO_FLAG_HDR_SUPPORT
+                   | VIDEO_FLAG_HDR10_SUPPORT
+                   | VIDEO_FLAG_SCRGB_SUPPORT));
          if (win32_hrc)
          {
             uint32_t video_st_flags;
@@ -613,7 +685,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    create_gl_context(uwp_get_corewindow(), &quit);
    if (quit)
    {
-      RARCH_ERR("[UWP WGL]: create_gl_context failed.\n");
+      RARCH_ERR("[WGL UWP] create_gl_context failed.\n");
       free(wgl);
       return NULL;
    }
@@ -627,7 +699,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 {
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
    {
-      RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
+      RARCH_ERR("[WGL] win32_set_video_mode failed.\n");
       gfx_ctx_wgl_destroy(data);
       return false;
    }
@@ -751,6 +823,11 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          if (wgl_flags & WGL_FLAG_ADAPTIVE_VSYNC)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
+#ifndef __WINRT__
+         if (win32_backbuffer_is_scrgb())
+            BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
+#endif
+
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
@@ -810,12 +887,27 @@ static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 
 }
 
-static void gfx_ctx_wgl_get_video_output_prev(void *data) { }
-static void gfx_ctx_wgl_get_video_output_next(void *data) { }
+
+static bool gfx_ctx_wgl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_create_surface(&win32_egl, win32_get_window());
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_wgl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   return egl_destroy_surface(&win32_egl);
+#else
+   return false;
+#endif
+}
 
 /* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
-
 static void win32_get_video_size(void* data,
    unsigned* width, unsigned* height)
 {
@@ -826,22 +918,10 @@ static void win32_get_video_size(void* data,
    height = uwp_get_height();
 }
 
-void win32_get_video_output_size(void* data, unsigned* width, unsigned* height, char* desc, size_t desc_len)
-{
-   win32_get_video_size(data, width, height);
-}
-
 bool win32_suspend_screensaver(void* data, bool enable)
 {
    return true;
 }
-
-float win32_get_refresh_rate(void* data)
-{
-   return 60.0;
-}
-
-#define win32_get_refresh_rate NULL
 
 HWND win32_get_window(void)
 {
@@ -856,6 +936,26 @@ uint8_t win32_get_flags(void) { return g_win32_flags; }
 void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 #endif
 
+/* A minimised window has no client area to present to: SwapBuffers()
+ * returns at once rather than blocking to vblank, so with vsync as the
+ * only pacing the loop would spin. IsIconic() is the direct question
+ * and needs no state of our own.
+ *
+ * Not on WinRT: IsIconic is in neither the app nor the games API
+ * partition, so a UWP build fails to link it, and there is no HWND
+ * there to ask about either - win32_get_window() returns NULL. A UWP
+ * app's visibility arrives as CoreWindow events instead, which this
+ * context does not see; always presentable, as it was before. */
+static bool gfx_ctx_wgl_presentable(void *data)
+{
+   (void)data;
+#ifdef __WINRT__
+   return true;
+#else
+   return !IsIconic(win32_get_window());
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -864,11 +964,11 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_swap_interval,
    gfx_ctx_wgl_set_video_mode,
    win32_get_video_size,
-   win32_get_refresh_rate,
-   win32_get_video_output_size,
-   gfx_ctx_wgl_get_video_output_prev,
-   gfx_ctx_wgl_get_video_output_next,
-   win32_get_metrics,
+   NULL, /* refresh_rate - handled by display server */
+   NULL, /* video_output_size - handled by display server */
+   NULL, /* get_video_output_prev - handled by display server */
+   NULL, /* get_video_output_next - handled by display server */
+   NULL, /* metrics - handled by display server */
    NULL,
    video_driver_update_title,
    win32_check_window,
@@ -887,5 +987,8 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_set_flags,
    gfx_ctx_wgl_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_wgl_create_surface,
+   gfx_ctx_wgl_destroy_surface,
+   gfx_ctx_wgl_presentable
 };

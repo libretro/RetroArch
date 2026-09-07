@@ -81,23 +81,21 @@ int socket_poll(struct pollfd *fds, unsigned nfds, int timeout);
 
 bool socket_wait(int fd, bool *rd, bool *wr, int timeout);
 
-bool socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_signal);
+bool socket_send_all_blocking(int fd, const void *data_, size_t len, bool no_signal);
 
 bool socket_send_all_blocking_with_timeout(int fd,
-      const void *data_, size_t size,
-      int timeout, bool no_signal);
+      const void *data_, size_t len, int timeout, bool no_signal);
 
-ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t size,
+ssize_t socket_send_all_nonblocking(int fd, const void *data_, size_t len,
       bool no_signal);
 
-bool socket_receive_all_blocking(int fd, void *data_, size_t size);
+bool socket_receive_all_blocking(int fd, void *data_, size_t len);
 
 bool socket_receive_all_blocking_with_timeout(int fd,
-      void *data_, size_t size,
-      int timeout);
+      void *data_, size_t len, int timeout);
 
 ssize_t socket_receive_all_nonblocking(int fd, bool *error,
-      void *data_, size_t size);
+      void *data_, size_t len);
 
 bool socket_bind(int fd, void *data);
 

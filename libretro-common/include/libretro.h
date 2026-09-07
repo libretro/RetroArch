@@ -484,6 +484,8 @@ enum retro_language
    RETRO_LANGUAGE_BELARUSIAN          = 32,
    RETRO_LANGUAGE_GALICIAN            = 33,
    RETRO_LANGUAGE_NORWEGIAN           = 34,
+   RETRO_LANGUAGE_IRISH               = 35,
+   RETRO_LANGUAGE_THAI                = 36,
    RETRO_LANGUAGE_LAST,
 
    /** Defined to ensure that <tt>sizeof(retro_language) == sizeof(int)</tt>. Do not use. */
@@ -517,6 +519,9 @@ enum retro_language
 
 /* Video ram lets a frontend peek into a game systems video RAM (VRAM). */
 #define RETRO_MEMORY_VIDEO_RAM   3
+
+/* ROM lets a frontend peek into a game systems ROM. */
+#define RETRO_MEMORY_ROM   4
 
 /** @} */
 
@@ -1679,22 +1684,6 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE (43 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
- * Notifies the frontend of any quirks associated with serialization.
- *
- * Should be set in either \c retro_init or \c retro_load_game, but not both.
- * @param[in, out] data <tt>uint64_t *</tt>.
- * Pointer to the core's serialization quirks.
- * The frontend will set the flags of the quirks it supports
- * and clear the flags of those it doesn't.
- * Behavior is undefined if \c NULL.
- * @return \c true if this environment call is supported.
- * @see retro_serialize
- * @see retro_unserialize
- * @see RETRO_SERIALIZATION_QUIRK
- */
-#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 44
-
-/**
  * The frontend will try to use a "shared" context when setting up a hardware context.
  * Mostly applicable to OpenGL.
  *
@@ -1724,6 +1713,24 @@ enum retro_mod
  * @see file_stream
  */
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Returns a list of frontend-authorized filesystem locations.
+ *
+ * Paths returned by this call must be directly usable with the VFS interface,
+ * for example saf://... on Android.
+ *
+ * @param[out] data <tt>struct retro_vfs_authorized_locations *</tt>.
+ * The frontend owns the returned pointers. The core must copy strings
+ * if it needs to retain them.
+ * If \c data is \c NULL, the frontend should only return whether this
+ * environment callback is available.
+ *
+ * @return \c true if this environment call is available,
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
+#define RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS (93 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Returns an interface that the core can use
@@ -2575,6 +2582,307 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_FILE_BROWSER_START_DIRECTORY 80
 
 /**
+ * Returns the audio sample rate the frontend is targeting, in Hz.
+ * The intended use case is for the core to use the result to select an ideal sample rate.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to the \c unsigned integer in which the frontend will store its target sample rate.
+ * Behavior is undefined if \c data is <tt>NULL</tt>.
+ * @return \c true if this environment call is available,
+ * regardless of the value returned in \c data.
+*/
+#define RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Returns the local player's netplay client index when using frontend-managed
+ * multiplayer/rollback netplay.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Pointer to an unsigned integer where the frontend stores the local client index.
+ * 0 indicates host. Values > 0 indicate connected clients.
+ * @return \\c true if the environment call is available and value was written,
+ * \\c false otherwise.
+*/
+#define RETRO_ENVIRONMENT_GET_NETPLAY_CLIENT_INDEX (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Allocates a region of executable memory, optionally dual-mapped.
+ *
+ * The frontend allocates memory suitable for JIT code generation and returns
+ * it to the core.  The returned mode tells the core how to use the memory:
+ *
+ *  - \c RETRO_EXEC_MEM_MODE_UNRESTRICTED: The platform has no restrictions
+ *    on executable memory.  The core should self-allocate.  Do not call
+ *    this environment with a non-zero size in this mode.
+ *  - \c RETRO_EXEC_MEM_MODE_RWX: Single mapping, read-write-execute.
+ *    \c rx and \c rw point to the same region.
+ *  - \c RETRO_EXEC_MEM_MODE_WX_TOGGLE: Single mapping, write XOR execute.
+ *    \c rx and \c rw point to the same region; the core must toggle
+ *    protections itself (e.g. mprotect) before writing or executing.
+ *  - \c RETRO_EXEC_MEM_MODE_DUAL_MAP: Separate read-execute and read-write
+ *    mappings of the same physical pages.  The core writes through \c rw
+ *    and executes from \c rx.
+ *
+ * Returned memory is page-aligned.  The frontend tracks all allocations
+ * and frees any outstanding ones when the core is unloaded.
+ *
+ * The core sets \c version and \c size before calling.  The frontend fills
+ * in \c mode, \c rx, and \c rw on success.
+ *
+ * If \c size is 0, this is a probe: the frontend returns \c true and sets
+ * \c mode to indicate what kind of memory it would provide, but does not
+ * allocate.  \c rx and \c rw will be NULL.  Cores can use this to decide
+ * whether to take a JIT code path before committing to an allocation.
+ *
+ * @param[in,out] data <tt>struct retro_exec_mem_alloc *</tt>.
+ * @return \c true if the allocation succeeded, \c false otherwise.
+ *         If the frontend does not support this call, returns \c false
+ *         and the core should fall back to managing its own executable memory.
+ * @see retro_exec_mem_alloc
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_ALLOC 83
+
+/**
+ * Frees a region of executable memory previously allocated with
+ * \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * This is optional; the frontend will free all outstanding allocations
+ * when the core is unloaded.  Cores that never need to release memory
+ * mid-session need not call this.
+ *
+ * @param[in] data <tt>struct retro_exec_mem_free *</tt>.
+ * @return \c true if the memory was freed, \c false otherwise.
+ * @see retro_exec_mem_free
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+#define RETRO_ENVIRONMENT_EXEC_MEM_FREE  84
+
+/**
+ * Queries whether the frontend can accept audio samples in 32-bit
+ * native-endian IEEE-754 float format, and, if so, obtains a float
+ * sample-batch callback the core may use in place of the standard
+ * int16 \c retro_audio_sample_batch_t callback.
+ *
+ * Rationale: frontend resamplers and DSP chains operate on float, and
+ * most modern audio drivers expose a native float output path. A core
+ * whose audio is float-native (e.g. one with a float software mixer or
+ * a float decoder) currently has to squash its output down to int16 at
+ * the libretro boundary, only for the frontend to immediately widen it
+ * back to float. Negotiating float output here removes that redundant
+ * int16<->float round-trip on both sides of the boundary.
+ *
+ * On success the frontend sets \c batch in the supplied
+ * \c retro_audio_sample_float_callback. The core may call that function
+ * from within \c retro_run() (or from the audio callback registered via
+ * \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK), passing interleaved stereo
+ * frames of float samples normalized to the range [-1.0, 1.0]. The
+ * return value has the same meaning as \c retro_audio_sample_batch_t.
+ *
+ * Contract:
+ *  - The core must commit to a single output format for the lifetime of
+ *    a loaded game; it must not mix int16 and float batch calls. Perform
+ *    negotiation once, during \c retro_load_game() (after any
+ *    \c RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK call).
+ *  - If this returns \c false the core must keep using the int16
+ *    \c retro_audio_sample_batch_t / \c retro_audio_sample_t callbacks.
+ *  - The \c batch function pointer is owned by the frontend and remains
+ *    valid until \c retro_unload_game().
+ *  - Frontends that do not recognize this call return \c false, so older
+ *    frontends transparently keep the int16 path.
+ *
+ * @param[out] data <tt>struct retro_audio_sample_float_callback *</tt>.
+ * @return \c true if float audio output is supported, \c false otherwise.
+ * @see retro_audio_sample_batch_float_t
+ * @see retro_audio_sample_float_callback
+ */
+#define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT (85 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries how much system memory the frontend has available.
+ *
+ * A core may use this to size large internal allocations (a memory pool,
+ * heap or asset cache) to the running machine instead of to a fixed
+ * compile-time default. The reported values are advisory snapshots: \c free
+ * in particular may include reclaimable cache and can change immediately
+ * after the call, so a core should take a fraction of it and clamp the
+ * result -- it must never assume it can allocate the whole amount.
+ *
+ * Frontends that do not implement this return \c false, in which case the
+ * core is expected to fall back to its own defaults.
+ *
+ * @param[out] data <tt>struct retro_memory_status *</tt>.
+ * @return \c true if the frontend filled in the structure, \c false otherwise.
+ * @see retro_memory_status
+ */
+#define RETRO_ENVIRONMENT_GET_MEMORY_STATUS (86 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Notifies the frontend of any quirks associated with serialization.
+ *
+ * Should be set in either \c retro_init or \c retro_load_game, but not both.
+ * @param[in, out] data <tt>uint64_t *</tt>.
+ * Pointer to the core's serialization quirks.
+ * The frontend will set the flags of the quirks it supports
+ * and clear the flags of those it doesn't.
+ * Behavior is undefined if \c NULL.
+ * @return \c true if this environment call is supported.
+ * @see retro_serialize
+ * @see retro_unserialize
+ * @see RETRO_SERIALIZATION_QUIRK
+ */
+#define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 87
+
+/**
+ * Queries whether the active video driver can present a 10-bit-per-channel
+ * (30-bit) source surface end to end, i.e. whether a frame submitted as
+ * #RETRO_PIXEL_FORMAT_XRGB2101010 reaches the display without the frontend
+ * narrowing it to 8 bits per channel.
+ *
+ * Unlike SET_PIXEL_FORMAT, which accepts XRGB2101010 unconditionally and
+ * transparently down-converts when the driver cannot present 10-bit, this
+ * lets a core discover the real capability so it can avoid pointless work:
+ * a core that has both a 10-bit and an 8-bit output path should prefer the
+ * 8-bit path when this returns \c false, since emitting 10-bit only to have
+ * the frontend narrow it wastes effort and, for content that starts at 8
+ * bits, is a no-op round trip; going straight to 8 bits also rounds rather
+ * than truncates.
+ *
+ * The result may change across a driver reinit (e.g. the user switches
+ * video driver or toggles HDR), so a core that cares should query it when
+ * (re)choosing its pixel format rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if a 10-bit source surface is presented natively, \c false
+ * if XRGB2101010 frames are down-converted to 8-bit.
+ * @return \c true if the environment call is recognised (the value at
+ * \c data is then valid), \c false if it is unsupported (an older frontend);
+ * a core must treat "unsupported" as "no guarantee of native 10-bit".
+ */
+#define RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE (88 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the luminance, in nits, that the frontend treats as SDR paper
+ * white when presenting HDR content.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010: a core
+ * encoding absolute luminance itself has to know where the user expects
+ * ordinary, non-glowing image content to sit, otherwise the whole frame is
+ * either dim or searing.  The value corresponds to the frontend's HDR paper
+ * white setting; typical values are 100-400.
+ *
+ * The user can change it at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it forever.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Set to the paper white luminance in nits.
+ * @return \c true if the call is recognised and the value is valid, \c false
+ * on a frontend that does not implement it; callers should then assume a
+ * sensible default (200 nits).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS (89 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the colour-gamut treatment the frontend applies to SDR content
+ * when presenting HDR.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
+ * emitting that format performs its own Rec.709 -> Rec.2020 rotation, and
+ * has to make the same choice the frontend makes for SDR content, or a
+ * scene will change saturation when the user switches the core between an
+ * SDR format and HDR10.  The values match the frontend's "Colour Boost"
+ * setting:
+ *
+ *   0 Accurate -- proper Rec.709 -> Rec.2020 conversion, no boost
+ *   1 Expanded -- Rec.709 -> a slightly wider space
+ *   2 Wide     -- Rec.709 -> DCI-P3
+ *   3 Super    -- no rotation at all; values stay Rec.709 and the boost
+ *                 comes from the display interpreting them as Rec.2020
+ *
+ * A core should re-query this when it rebuilds its colour tables, since the
+ * user can change it at any time.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 0 (Accurate).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT (90 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries which HDR output mode the frontend is presenting with.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  Both
+ * output modes accept the same PQ Rec.2020 frame, but they do not treat its
+ * primaries identically: an HDR10 swapchain presents the samples as-is,
+ * while an scRGB swapchain converts them and applies a Rec.2020 -> Rec.709
+ * rotation on the way.  A core that encodes its own gamut -- which it must,
+ * to honour #RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT -- therefore has to know
+ * which of the two it is feeding, or its colour choice is undone by that
+ * rotation on one of them.
+ *
+ * Values:
+ *   0  HDR output is off
+ *   1  HDR10 (PQ, Rec.2020 swapchain); samples are presented unchanged
+ *   2  scRGB (linear FP16, Rec.709); the frontend applies Rec.2020 ->
+ *      Rec.709 to the decoded samples
+ *
+ * The user can switch this at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 1 (HDR10), which is the
+ * mode that needs no compensation.
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE (91 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the peak luminance the frontend is presenting to, in cd/m2 (nits).
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
+ * emitting HDR10 encodes absolute luminance itself, so it decides where its
+ * brightest content lands.  #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS says
+ * where ordinary content sits; this says how much room there is above it.  The
+ * gap between the two is the entire headroom a core has for highlights, and
+ * without it a core has to guess - a guess that is too dark on a bright display
+ * and clips on a dim one.
+ *
+ * This is what the *display* can do, not what the content wants, so it is a
+ * ceiling to roll off toward rather than a level to target.  A core should not
+ * assume anything it emits below this value is reproduced exactly; displays
+ * tone map internally, and many report a peak they can only hold over a small
+ * window.
+ *
+ * May be lower than paper white if the user has configured it so.  A core
+ * should treat that as zero headroom and clamp to paper white rather than
+ * producing a negative range.
+ *
+ * The user can change this at any time, so a core should re-query it rather
+ * than caching it indefinitely.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Set to the peak luminance in nits.
+ * @return \c true if the call is recognised, \c false on a frontend that does
+ * not implement it; callers should then fall back to a sensible default.
+ * 1000 nits is a reasonable assumption, being both the HDR10 reference peak
+ * and roughly what mid-range HDR displays achieve.
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
+ *
+ * Sizes are in bytes; a field the frontend cannot determine is left at 0.
+ */
+struct retro_memory_status
+{
+   uint64_t free;   /**< Physical memory currently available to allocate. */
+   uint64_t total;  /**< Total physical memory installed. */
+};
+
+/**
  * Sets a pointer to arbitrary data for the actively running core.
  *
  * Intended for use as a substitute for global state, which is a common
@@ -2585,7 +2893,7 @@ enum retro_mod
  *
  * @see RETRO_ENVIRONMENT_GET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_SET_CORE_DATA (81 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_SET_CORE_DATA (93 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
  * Gets a pointer to arbitrary data for the actively running core.
@@ -2598,7 +2906,7 @@ enum retro_mod
  *
  * @see RETRO_ENVIRONMENT_SET_CORE_DATA
  */
-#define RETRO_ENVIRONMENT_GET_CORE_DATA (82 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_CORE_DATA (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**@}*/
 
@@ -2712,6 +3020,20 @@ struct retro_vfs_dir_handle;
  */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
+/**
+ * Indicates that the file will be read once, from start to finish,
+ * and then closed.
+ *
+ * No mapping or caching is wanted: the caller already keeps the bytes
+ * it asked for, so anything the frontend holds on to beyond the call
+ * is dead weight.  A frontend that buffers its reads may wish to skip
+ * doing so for such a stream, since a whole-file read gains nothing
+ * from being split across a buffer and copied twice.
+ *
+ * Only meaningful together with \c RETRO_VFS_FILE_ACCESS_READ.
+ */
+#define RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK   (1 << 1)
+
 /** @} */
 
 /** @defgroup RETRO_VFS_SEEK_POSITION File Seek Positions
@@ -2776,6 +3098,10 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file
  * @param path The path to open.
  * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
  * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * If \c RETRO_VFS_FILE_ACCESS_WRITE is specified and \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is not specified,
+ * and no file or directory exists at \c path, this function will attempt to create an empty file at \c path.
+ * If either \c RETRO_VFS_FILE_ACCESS_WRITE is not specified or \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is specified,
+ * and no file or directory exists at \c path, this function will return \c NULL without attempting to create a file at \c path.
  * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
  * @return A handle to the opened file,
  * or \c NULL upon failure.
@@ -2847,8 +3173,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle 
  * @param stream The file to set the position of.
  * @param offset The new position, in bytes.
  * @param seek_position The position to seek from.
- * @return The new position,
- * or -1 if there was an error.
+ * @return 0 on success, -1 on failure.
  * @since VFS API v1
  * @see File Seek Positions
  * @see filestream_seek
@@ -2932,6 +3257,19 @@ typedef int (RETRO_CALLCONV *retro_vfs_rename_t)(const char *old_path, const cha
  * @since VFS API v3
  */
 typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
+
+/**
+ * Gets information about the given file (64-bit size).
+ *
+ * @param path The path to the file to query.
+ * @param[out] size The reported size of the file in bytes.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags,
+ * or 0 if \c path doesn't refer to a valid file.
+ * @see RETRO_VFS_STAT
+ * @since VFS API v4
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_stat_64_t)(const char *path, int64_t *size);
 
 /**
  * Creates a directory at the given path.
@@ -3088,6 +3426,10 @@ struct retro_vfs_interface
 
    /** @copydoc retro_vfs_closedir_t */
    retro_vfs_closedir_t closedir;
+
+   /* VFS API v4 */
+   /** @copydoc retro_vfs_stat_64_t */
+   retro_vfs_stat_64_t stat_64;
 };
 
 /**
@@ -3127,6 +3469,33 @@ struct retro_vfs_interface_info
     * and must not be modified or freed by the core.
     * @since VFS API v1 */
    struct retro_vfs_interface *iface;
+};
+
+/**
+ * Represents a single frontend-authorized filesystem location.
+ *
+ * The \c path field must be directly usable through the frontend VFS
+ * interface, for example saf://... on Android.
+ *
+ * The frontend owns all returned pointers. Cores must copy strings if they
+ * need to retain them after the environment callback returns.
+ */
+struct retro_vfs_authorized_location
+{
+   const char *path;
+   const char *label;
+   unsigned flags;
+};
+
+/**
+ * Represents the list of frontend-authorized filesystem locations.
+ *
+ * This is returned by RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS.
+ */
+struct retro_vfs_authorized_locations
+{
+   const struct retro_vfs_authorized_location *locations;
+   size_t count;
 };
 
 /** @} */
@@ -4228,6 +4597,79 @@ struct retro_log_callback
 /** Indicates CPU support for the ASIMD instruction set. */
 #define RETRO_SIMD_ASIMD    (1 << 21)
 
+/** Indicates CPU support for the AVX512 instruction set. */
+#define RETRO_SIMD_AVX512   (1 << 22)
+
+/** Indicates CPU support for the LZCNT instruction (x86 ABM / ARM CLZ). */
+#define RETRO_SIMD_LZCNT    (1 << 23)
+
+/**
+ * Indicates CPU support for the PCLMULQDQ carry-less multiply instruction.
+ *
+ * Distinct from \c RETRO_SIMD_AES: AES-NI is CPUID.1:ECX[25] and
+ * PCLMULQDQ is CPUID.1:ECX[1]. They shipped together on most parts but
+ * hypervisors mask them independently and some early Westmere SKUs had
+ * AES fused off, so one must not be used as a proxy for the other.
+ */
+#define RETRO_SIMD_PCLMUL   (1 << 24)
+
+/**
+ * Indicates CPU support for the ARMv8 CRC32 instructions
+ * (\c crc32b / \c crc32h / \c crc32w / \c crc32x).
+ *
+ * These compute CRC-32/ISO-HDLC, the gzip and PNG polynomial, not
+ * CRC-32C. Optional in ARMv8.0 and mandatory from ARMv8.1, so a
+ * 64-bit ARM CPU does not imply their presence: Apple's A7 through
+ * A10 lack them, for instance.
+ */
+#define RETRO_SIMD_CRC32    (1 << 25)
+
+/**
+ * Indicates CPU support for hardware SHA-512 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA512, optional from Armv8.1 and A64-only.
+ * On x86 it is the SHA512 instruction group enumerated by
+ * CPUID.(EAX=07H,ECX=1):EAX[0], which is separate from the SHA-NI
+ * instructions covering SHA-1 and SHA-256.
+ */
+#define RETRO_SIMD_SHA512   (1 << 26)
+
+/**
+ * Indicates CPU support for hardware SHA-1 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA1; on x86 it is part of SHA-NI, which
+ * covers SHA-1 and SHA-256 in one CPUID bit and therefore always
+ * reports alongside \c RETRO_SIMD_SHA256 there.
+ */
+#define RETRO_SIMD_SHA1     (1 << 27)
+
+/**
+ * Indicates CPU support for hardware SHA-256 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA256; on x86 it is the other half of
+ * SHA-NI. Separate from \c RETRO_SIMD_SHA1 because AArch64 enumerates
+ * the two independently.
+ */
+#define RETRO_SIMD_SHA256   (1 << 28)
+
+/**
+ * Indicates CPU support for the FMA3 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=01H):ECX[12]. They operate on YMM state, so this reports
+ * only where the operating system preserves it, as \c RETRO_SIMD_AVX
+ * does.
+ */
+#define RETRO_SIMD_FMA3     (1 << 29)
+
+/**
+ * Indicates CPU support for the FMA4 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=80000001H):ECX[16], an AMD extension dropped from Zen, and
+ * a different encoding from \c RETRO_SIMD_FMA3 rather than a superset
+ * of it. Gated on the same operating system state.
+ */
+#define RETRO_SIMD_FMA4     (1 << 30)
+
 /** @} */
 
 /**
@@ -4489,15 +4931,18 @@ enum retro_sensor_action
 /* Id values for SENSOR types. */
 
 /**
- * Returns the device's acceleration along its local X axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local X axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity;
+ * a device at rest on a table will have values close to 0, 0, 1.
  *
- * Positive values mean that the device is accelerating to the right.
+ * Positive values mean that the device is accelerating to the right,
  * assuming the user is looking at it head-on.
  */
 #define RETRO_SENSOR_ACCELEROMETER_X 0
 
 /**
- * Returns the device's acceleration along its local Y axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Y axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values mean that the device is accelerating upwards,
  * assuming the user is looking at it head-on.
@@ -4505,7 +4950,8 @@ enum retro_sensor_action
 #define RETRO_SENSOR_ACCELEROMETER_Y 1
 
 /**
- * Returns the the device's acceleration along its local Z axis minus the effect of gravity, in m/s^2.
+ * Returns the device's acceleration along its local Z axis, in g (standard gravity, 9.80665 m/s^2).
+ * Includes the effect of gravity.
  *
  * Positive values indicate forward acceleration towards the user,
  * assuming the user is looking at the device head-on.
@@ -5391,14 +5837,14 @@ typedef bool (RETRO_CALLCONV *retro_set_initial_image_t)(unsigned index, const c
  * on the host's file system.
  *
  * @param index The index of the disk image to get the path of.
- * @param path A buffer to store the path in.
- * @param len The size of \c path, in bytes.
+ * @param s A buffer to store the path in.
+ * @param len The size of \c s, in bytes.
  * @return \c true if the disk image's location was successfully
- * queried and copied into \c path,
+ * queried and copied into \c s,
  * \c false if the index is invalid
  * or the core couldn't locate the disk image.
  */
-typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path, size_t len);
+typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *s, size_t len);
 
 /**
  * Returns a friendly label for the given disk image.
@@ -5414,12 +5860,12 @@ typedef bool (RETRO_CALLCONV *retro_get_image_path_t)(unsigned index, char *path
  * so that the frontend can provide better guidance to the player.
  *
  * @param index The index of the disk image to return a label for.
- * @param label A buffer to store the resulting label in.
- * @param len The length of \c label, in bytes.
+ * @param s A buffer to store the resulting label in.
+ * @param len The length of \c s, in bytes.
  * @return \c true if the disk image at \c index is valid
- * and a label was copied into \c label.
+ * and a label was copied into \c s.
  */
-typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *label, size_t len);
+typedef bool (RETRO_CALLCONV *retro_get_image_label_t)(unsigned index, char *s, size_t len);
 
 /**
  * An interface that the frontend can use to exchange disks
@@ -5655,7 +6101,56 @@ enum retro_pixel_format
     */
    RETRO_PIXEL_FORMAT_RGB565   = 2,
 
-   /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
+   /**
+    * XRGB2101010, native endian.
+    * 32-bit packed: 2 ignored high bits followed by 10-bit R, G, B
+    * (i.e. bits [29:20]=R, [19:10]=G, [9:0]=B; the top 2 bits are ignored).
+    * Intended for cores that decode 10-bit-per-channel content (e.g. HDR10
+    * sources) and want to pass it through without narrowing to 8 bits.
+    *
+    * A frontend is not required to render this natively: if the active video
+    * driver does not support a 10-bit source surface, the frontend transparently
+    * down-converts to XRGB8888, so a core may rely on SET_PIXEL_FORMAT accepting
+    * this value but should not assume the display path is 10-bit end to end.
+    */
+   RETRO_PIXEL_FORMAT_XRGB2101010 = 3,
+
+   /**
+    * HDR10: PQ-encoded Rec.2020, 10 bits per channel, native endian.
+    *
+    * Bit layout is identical to #RETRO_PIXEL_FORMAT_XRGB2101010 -- 2 ignored
+    * high bits then 10-bit R, G, B (bits [29:20]=R, [19:10]=G, [9:0]=B) --
+    * but the *encoding* differs, and that is the whole point of a separate
+    * value: the samples are SMPTE ST.2084 (PQ) over Rec.2020 primaries,
+    * covering 0..10000 nits absolute, exactly as HDR10 video does.
+    *
+    * XRGB2101010 is 10-bit SDR: the frontend treats 1.0 as paper white and
+    * cannot represent anything brighter, so a core has no way to make a
+    * highlight exceed the SDR white level.  With this format the core
+    * chooses absolute luminance per pixel, so specular highlights, muzzle
+    * flashes, explosions and emissive surfaces can sit well above paper
+    * white while the rest of the image stays where it was.
+    *
+    * A frontend that accepts this format MUST pass the samples through to an
+    * HDR10 (PQ / Rec.2020) swapchain without re-encoding them: no inverse
+    * tonemap, no Rec.709->Rec.2020 rotation, no paper-white scaling, since
+    * the core has already applied all of it.  A frontend that cannot present
+    * HDR10 natively must reject the format from SET_PIXEL_FORMAT rather than
+    * silently down-converting -- PQ samples interpreted as SDR look badly
+    * wrong, so the usual transparent narrowing is not safe here.  Cores
+    * should therefore keep an SDR path and fall back when this is refused.
+    *
+    * Cores should query #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS to learn
+    * the luminance the user considers "SDR white" and map their normal
+    * output to it; content authored above that value is what produces the
+    * HDR effect.
+    */
+   RETRO_PIXEL_FORMAT_HDR10_2101010 = 4,
+
+   /** 
+    * @private Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>.
+	* Do not use.
+	*/
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
@@ -7408,6 +7903,46 @@ struct retro_device_power
 
 /** @} */
 
+/** @defgroup Executable Memory Modes
+ * Describes how the frontend provisions executable memory.
+ * @{
+ */
+
+#define RETRO_EXEC_MEM_MODE_UNAVAILABLE  0 /**< No executable memory available */
+#define RETRO_EXEC_MEM_MODE_UNRESTRICTED 1 /**< No restrictions; core should self-allocate */
+#define RETRO_EXEC_MEM_MODE_RWX          2 /**< Single mapping, read-write-execute */
+#define RETRO_EXEC_MEM_MODE_WX_TOGGLE    3 /**< Single mapping, write XOR execute (core toggles) */
+#define RETRO_EXEC_MEM_MODE_DUAL_MAP     4 /**< Separate R-X and R-W mappings of same pages */
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_ALLOC.
+ *
+ * The core fills in \c version and \c size before calling.
+ * The frontend fills in \c mode, \c rx, and \c rw on success.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_ALLOC
+ */
+struct retro_exec_mem_alloc
+{
+   unsigned version;  /**< Set by core (currently 1). */
+   size_t   size;     /**< Set by core: requested bytes.  */
+   unsigned mode;     /**< Set by frontend: one of \c RETRO_EXEC_MEM_MODE_*. */
+   void    *rx;       /**< Set by frontend: execute from this pointer. */
+   void    *rw;       /**< Set by frontend: write through this pointer.
+                           Equal to \c rx when mode is RWX or WX_TOGGLE. */
+};
+
+/**
+ * Parameters for \c RETRO_ENVIRONMENT_EXEC_MEM_FREE.
+ * @see RETRO_ENVIRONMENT_EXEC_MEM_FREE
+ */
+struct retro_exec_mem_free
+{
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call.
+                   The matching \c rw pointer is also accepted. */
+};
+
+/** @} */
+
 /**
  * @defgroup Callbacks
  * @{
@@ -7479,6 +8014,40 @@ typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_t)(const int16_t *data,
       size_t frames);
 
 /**
+ * Renders multiple audio frames in one go, in float format.
+ *
+ * This is the float counterpart of \c retro_audio_sample_batch_t. It is
+ * only valid after the frontend has answered \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT, and must not be
+ * mixed with the int16 callbacks within the same loaded game.
+ *
+ * @param data A pointer to interleaved stereo float sample frames,
+ *     normalized to the range [-1.0, 1.0]. One frame is a left/right
+ *     pair, e.g. <tt>float buf[4] = { l, r, l, r };</tt> is 2 frames.
+ * @param frames The number of frames represented in \c data.
+ *
+ * @return The number of frames that were processed.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT
+ * @see retro_audio_sample_batch_t
+ */
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_float_t)(
+      const float *data, size_t frames);
+
+/**
+ * Float audio sample-batch callback handed to the core in response to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT.
+ *
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT
+ */
+struct retro_audio_sample_float_callback
+{
+   /* Set by the frontend. The core calls this instead of the int16
+    * batch callback once float output has been negotiated. */
+   retro_audio_sample_batch_float_t batch;
+};
+
+/**
  * Polls input.
  *
  * @see retro_set_input_poll()
@@ -7490,6 +8059,9 @@ typedef void (RETRO_CALLCONV *retro_input_poll_t)(void);
  *
  * @param port Which player 'port' to query.
  * @param device Which device to query for. Will be masked with \c RETRO_DEVICE_MASK.
+ * @warning Poll with a base device ID only; passing an ID created via
+ * \c RETRO_DEVICE_SUBCLASS is reserved for future definition, and the masking
+ * noted above is a frontend convenience that must not be relied upon.
  * @param index The input index to retrieve.
  * The exact semantics depend on the device type given in \c device.
  * @param id The ID of which value to query, like \c RETRO_DEVICE_ID_JOYPAD_B.
@@ -7731,7 +8303,7 @@ RETRO_API size_t retro_serialize_size(void);
  * @see retro_serialize_size()
  * @see retro_unserialize()
  */
-RETRO_API bool retro_serialize(void *data, size_t size);
+RETRO_API bool retro_serialize(void *data, size_t len);
 
 /**
  * Unserialize the given state data, and load it into the internal state.
@@ -7740,7 +8312,7 @@ RETRO_API bool retro_serialize(void *data, size_t size);
  *
  * @see retro_serialize()
  */
-RETRO_API bool retro_unserialize(const void *data, size_t size);
+RETRO_API bool retro_unserialize(const void *data, size_t len);
 
 /**
  * Reset all the active cheats to their default disabled state.

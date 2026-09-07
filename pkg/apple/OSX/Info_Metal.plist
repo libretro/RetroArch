@@ -60,12 +60,16 @@
 	<array>
 		<string>_ra_netplay._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Some cores are able to provide camera input to games.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2024 RetroArch. All rights reserved.</string>
-	<key>NSMainNibFile</key>
-	<string>MainMenu_Metal</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local Netplay requires local network</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Some cores can use location.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Some cores are able to provide microphone input to games.</string>
 	<key>NSPrincipalClass</key>

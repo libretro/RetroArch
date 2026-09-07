@@ -145,6 +145,16 @@ static void gfx_ctx_x_vk_swap_interval(void *data, int interval)
    }
 }
 
+static bool gfx_ctx_x_vk_presentable(void *data)
+{
+   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   /* Unmapped is asked of X directly; the swapchain check covers the
+    * moment before it has been torn down or rebuilt. */
+   if (!x11_presentable(data))
+      return false;
+   return x && x->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void gfx_ctx_x_vk_swap_buffers(void *data)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
@@ -152,11 +162,11 @@ static void gfx_ctx_x_vk_swap_buffers(void *data)
    if (x->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       x->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (x->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (x->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&x->vk, x->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&x->vk);
@@ -187,14 +197,14 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
    if (x->is_fullscreen)
    {
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[X/Vulkan]: Resized fullscreen resolution to %dx%d.\n", width, height);
+      RARCH_LOG("[Vulkan] Resized fullscreen resolution to %dx%d.\n", width, height);
    }
 
    /* FIXME/TODO - threading error here */
 
    if (!vulkan_create_swapchain(&x->vk, width, height, x->interval))
    {
-      RARCH_ERR("[X/Vulkan]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       x->vk.swapchain              = VK_NULL_HANDLE;
       return false;
    }
@@ -305,11 +315,11 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
          if (wm_name)
          {
-            RARCH_LOG("[X/Vulkan]: Window manager is %s.\n", wm_name);
+            RARCH_LOG("[Vulkan] Window manager is %s.\n", wm_name);
 
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
-               RARCH_LOG("[X/Vulkan]: Using override-redirect workaround.\n");
+               RARCH_LOG("[Vulkan] Using override-redirect workaround.\n");
                swa.override_redirect = True;
             }
             free(wm_name);
@@ -318,7 +328,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
             swa.override_redirect = True;
       }
       else
-         RARCH_ERR("[X/Vulkan]: Entering true fullscreen failed. Will attempt windowed mode.\n");
+         RARCH_ERR("[Vulkan] Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 #endif
 
@@ -333,9 +343,9 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
       if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[X/Vulkan]: Using Xinerama on screen #%u.\n", g_x11_screen);
+         RARCH_LOG("[Vulkan] Using Xinerama on screen #%u.\n", g_x11_screen);
       else
-         RARCH_LOG("[X/Vulkan]: Xinerama is not active on screen.\n");
+         RARCH_LOG("[Vulkan] Xinerama is not active on screen.\n");
 
       if (fullscreen)
       {
@@ -345,7 +355,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    }
 #endif
 
-   RARCH_LOG("[X/Vulkan]: X = %d, Y = %d, W = %u, H = %u.\n",
+   RARCH_DBG("[Vulkan] X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
@@ -362,7 +372,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       uint32_t                value = 1;
       Atom net_wm_bypass_compositor = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
-      RARCH_LOG("[X/Vulkan]: Requesting compositor bypass.\n");
+      RARCH_LOG("[Vulkan] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
@@ -390,12 +400,19 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
    {
-      RARCH_LOG("[X/Vulkan]: Using true fullscreen.\n");
+      RARCH_LOG("[Vulkan] Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
@@ -407,7 +424,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
        * Attempt using windowed fullscreen. */
 
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[X/Vulkan]: Using windowed fullscreen.\n");
+      RARCH_LOG("[Vulkan] Using windowed fullscreen.\n");
 
       /* We have to move the window to the screen we want
        * to go fullscreen on first.
@@ -428,6 +445,15 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
 
    {
       bool quit, resize;
@@ -474,10 +500,16 @@ error:
    if (vi)
       XFree(vi);
 
-   gfx_ctx_x_vk_destroy_resources(x);
-
-   if (x)
-      free(x);
+   /* Do not destroy `x` here.  The caller in
+    * gfx/drivers/vulkan.c::vulkan_init treats a false return
+    * from set_video_mode as a failure of the in-flight `vk_t`
+    * construction and runs vulkan_free() on it, which calls
+    * ctx_driver->destroy(ctx_data) -- i.e. gfx_ctx_x_vk_destroy()
+    * -- on the very pointer we already freed.  That second call
+    * walks freed memory in gfx_ctx_x_vk_destroy_resources() and
+    * then free()s the same pointer again.  Leave cleanup to the
+    * caller's single normal-path destroy.  Cocoa / Android
+    * already do this; this matches them. */
    g_x11_screen = 0;
 
    return false;
@@ -526,8 +558,20 @@ static void *gfx_ctx_x_vk_get_context_data(void *data)
 
 static uint32_t gfx_ctx_x_vk_get_flags(void *data)
 {
-   uint32_t         flags = 0;
-   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   gfx_ctx_x_vk_data_t *x     = (gfx_ctx_x_vk_data_t*)data;
+   uint32_t flags             = 0;
+   uint8_t present_mode_count = 16;
+   uint8_t i                  = 0;
+
+   /* Check for FIFO_RELAXED_KHR capability */
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (x->vk.context.present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+      {
+         BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+         break;
+      }
+   }
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
@@ -554,7 +598,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    gfx_ctx_x_vk_check_window,
@@ -574,5 +618,8 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
 
    gfx_ctx_x_vk_bind_hw_render,
    gfx_ctx_x_vk_get_context_data,
-   NULL /* make_current */
+   NULL, /* make_current */
+   NULL, /* create_surface */
+   NULL  /* destroy_surface */,
+   gfx_ctx_x_vk_presentable
 };

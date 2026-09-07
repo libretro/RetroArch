@@ -17,6 +17,7 @@
 /* X/EGL context. Mostly used for testing GLES code paths. */
 
 #include <stdint.h>
+#include <compat/strcasestr.h>
 #include <stdlib.h>
 
 #include <string/stdstring.h>
@@ -199,13 +200,13 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
-            unsigned 
+            unsigned
 		  version = xegl->egl.major * 1000 + xegl->egl.minor;
             bool core     = version >= 3001;
 #ifdef GL_DEBUG
             bool debug    = true;
 #else
-            struct retro_hw_render_callback 
+            struct retro_hw_render_callback
 		    *hwr  = video_driver_get_hw_context();
             bool debug    = hwr->debug_context;
 #endif
@@ -304,10 +305,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    swa.colormap                      = g_x11_cmap = XCreateColormap(
 		   g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
 		   vi->visual, AllocNone);
-   swa.event_mask                    = StructureNotifyMask 
+   swa.event_mask                    = StructureNotifyMask
 	                             | KeyPressMask
-                                     | ButtonPressMask 
-				     | ButtonReleaseMask 
+                                     | ButtonPressMask
+				     | ButtonReleaseMask
 				     | KeyReleaseMask
                                      | EnterWindowMask
 				     | LeaveWindowMask;
@@ -324,11 +325,11 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
          if (wm_name)
          {
-            RARCH_LOG("[X/EGL]: Window manager is %s.\n", wm_name);
+            RARCH_LOG("[X/EGL] Window manager is %s.\n", wm_name);
 
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
-               RARCH_LOG("[X/EGL]: Using override-redirect workaround.\n");
+               RARCH_LOG("[X/EGL] Using override-redirect workaround.\n");
                swa.override_redirect = True;
             }
             free(wm_name);
@@ -337,7 +338,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
             swa.override_redirect    = True;
       }
       else
-         RARCH_ERR("[X/EGL]: Entering true fullscreen failed. Will attempt windowed mode.\n");
+         RARCH_ERR("[X/EGL] Entering true fullscreen failed. Will attempt windowed mode.\n");
    }
 #endif
 
@@ -353,9 +354,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 
       if (xinerama_get_coord(g_x11_dpy, g_x11_screen,
                &x_off, &y_off, &new_width, &new_height))
-         RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_x11_screen);
+         RARCH_LOG("[X/EGL] Using Xinerama on screen #%u.\n", g_x11_screen);
       else
-         RARCH_LOG("[X/EGL]: Xinerama is not active on screen.\n");
+         RARCH_LOG("[X/EGL] Xinerama is not active on screen.\n");
 
       if (fullscreen)
       {
@@ -365,7 +366,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    }
 #endif
 
-   RARCH_LOG("[X/EGL]: X = %d, Y = %d, W = %u, H = %u.\n",
+   RARCH_DBG("[X/EGL] X = %d, Y = %d, W = %u, H = %u.\n",
          x_off, y_off, width, height);
 
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
@@ -381,7 +382,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       Atom cardinal                  = XInternAtom(g_x11_dpy, "CARDINAL", False);
       Atom net_wm_bypass_compositor  = XInternAtom(g_x11_dpy, "_NET_WM_BYPASS_COMPOSITOR", False);
 
-      RARCH_LOG("[X/EGL]: Requesting compositor bypass.\n");
+      RARCH_LOG("[X/EGL] Requesting compositor bypass.\n");
       XChangeProperty(g_x11_dpy, g_x11_win, net_wm_bypass_compositor, cardinal, 32, PropModeReplace, (const unsigned char*)&value, 1);
    }
 
@@ -398,12 +399,19 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
    if (true_full)
    {
-      RARCH_LOG("[X/EGL]: Using true fullscreen.\n");
+      RARCH_LOG("[X/EGL] Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
       x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
    }
@@ -414,7 +422,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       /* We attempted true fullscreen, but failed.
        * Attempt using windowed fullscreen. */
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[X/EGL]: Using windowed fullscreen.\n");
+      RARCH_LOG("[X/EGL] Using windowed fullscreen.\n");
 
       /* We have to move the window to the screen we
        * want to go fullscreen on first.
@@ -438,6 +446,15 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
    x11_install_quit_atom();
 
 #ifdef HAVE_EGL
@@ -574,13 +591,35 @@ static uint32_t gfx_ctx_xegl_get_flags(void *data)
    }
    else
    {
+#ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
    }
 
    return flags;
 }
 
 static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags) { }
+
+static bool gfx_ctx_xegl_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   return egl_create_surface(&xegl->egl, (void*)g_x11_win);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_xegl_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   return egl_destroy_surface(&xegl->egl);
+#else
+   return false;
+#endif
+}
 
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
@@ -599,7 +638,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    x11_check_window,
@@ -618,5 +657,8 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_set_flags,
    gfx_ctx_xegl_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_xegl_create_surface,
+   gfx_ctx_xegl_destroy_surface,
+   x11_presentable
 };

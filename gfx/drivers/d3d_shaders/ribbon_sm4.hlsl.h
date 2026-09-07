@@ -13,6 +13,7 @@ SRC(
          float4x4 modelViewProj;
          float2 Outputsize;
          float time;
+         float alpha;
       };
       uniform UBO global;
 
@@ -70,7 +71,7 @@ SRC(
          float3 normal = normalize(cross(x, y));
          float c = 1.0 - dot(normal, up);
          c = (1.0 - cos(c * c)) / 13.0;
-         return  float4(c, c, c, 1.0);
+         return  float4(c, c, c, global.alpha);
    //      return  float4(c, c, c, c);
    //      return float4(1.0, 1.0, 1.0, c);
    //      return float4(1.0, 0.0, 1.0, 1.0);

@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <string/stdstring.h>
+#include <string.h>
+
+#include <compat/strl.h>
 #include <lists/string_list.h>
 #include <array/rbuf.h>
 #include <array/rhmap.h>
@@ -140,31 +142,31 @@ static nested_list_item_t *nested_list_add_item_to_list(nested_list_t *list,
    nested_list_item_t *new_item = NULL;
    nested_list_t *child_list    = NULL;
 
-   if (!list || string_is_empty(id))
-      goto end;
+   if (!list || !id || !*id)
+      return NULL;
 
    num_items = RBUF_LEN(list->items);
 
    /* Ensure that item does not already exist */
    if (RHMAP_HAS_STR(list->item_map, id))
-      goto end;
+      return NULL;
 
    /* Attempt to allocate a buffer slot for the
     * new item */
    if (!RBUF_TRYFIT(list->items, num_items + 1))
-      goto end;
+      return NULL;
 
    /* Create new empty child list */
    child_list = nested_list_init();
    if (!child_list)
-      goto end;
+      return NULL;
 
    /* Create new list item */
    new_item = (nested_list_item_t*)malloc(sizeof(*new_item));
    if (!new_item)
    {
       nested_list_free(child_list);
-      goto end;
+      return NULL;
    }
 
    /* Assign members */
@@ -174,15 +176,26 @@ static nested_list_item_t *nested_list_add_item_to_list(nested_list_t *list,
    new_item->id          = strdup(id);
    new_item->value       = value;
 
+   /* A NULL id would be hashed by the map insert below and would
+    * leave an item in the buffer that no lookup can ever match */
+   if (!new_item->id)
+   {
+      nested_list_free(child_list);
+      free(new_item);
+      return NULL;
+   }
+
    /* Increment item buffer size */
    RBUF_RESIZE(list->items, num_items + 1);
 
    /* Add new item to buffer */
    list->items[num_items] = new_item;
 
-   /* Update map */
-   RHMAP_SET_STR(list->item_map, id, new_item);
-end:
+   /* Update map
+    * > Note: the map must key off the item's own copy of the id,
+    *   not the caller's @id, which is a transient token owned by
+    *   the string_list built in nested_list_add_item() */
+   RHMAP_SET_STR(list->item_map, new_item->id, new_item);
    return new_item;
 }
 
@@ -222,77 +235,55 @@ bool nested_list_add_item(nested_list_t *list,
    struct string_list id_list = {0};
    const char *top_id         = NULL;
    bool success               = false;
-
-   if (!list || string_is_empty(address))
-      goto end;
-
-   /* If delim is NULL or address contains a single
-    * token, then we are adding an item to the top
-    * level list */
-   if (string_is_empty(delim))
+   if (!list || !address || !*address)
+      return false;
+   if (!delim || !*delim)
       top_id = address;
    else
    {
       string_list_initialize(&id_list);
-      if (!string_split_noalloc(&id_list, address, delim) ||
-          (id_list.size < 1))
+      if (  !string_split_noalloc(&id_list, address, delim)
+          || (id_list.size < 1))
          goto end;
-
       if (id_list.size == 1)
          top_id = id_list.elems[0].data;
    }
-
-   if (!string_is_empty(top_id))
+   if (top_id && *top_id)
    {
       if (nested_list_add_item_to_list(list, NULL, top_id, value))
          success = true;
    }
    else
    {
+      size_t i;
       nested_list_t *current_list     = list;
       nested_list_item_t *parent_item = NULL;
       nested_list_item_t *next_item   = NULL;
-      size_t i;
-
-      /* Loop over list item ids */
       for (i = 0; i < id_list.size; i++)
       {
          const char *id = id_list.elems[i].data;
-
-         if (string_is_empty(id))
+         if (!id || !*id)
             goto end;
-
-         /* If this is the last entry in the id list,
-          * then we are adding the item itself */
          if (i == (id_list.size - 1))
          {
             if (nested_list_add_item_to_list(current_list,
                   parent_item, id, value))
                success = true;
-
             break;
          }
-         /* Otherwise, id corresponds to a 'category' */
          else
          {
-            /* Check whether category item already exists */
             next_item = RHMAP_GET_STR(current_list->item_map, id);
-
-            /* Create it, if required */
             if (!next_item)
                next_item = nested_list_add_item_to_list(current_list,
                      parent_item, id, NULL);
-
             if (!next_item)
                break;
-
-            /* Update pointers */
             parent_item  = next_item;
             current_list = next_item->children;
          }
       }
    }
-
 end:
    string_list_deinitialize(&id_list);
    return success;
@@ -345,64 +336,45 @@ nested_list_item_t *nested_list_get_item(nested_list_t *list,
    nested_list_item_t *search_item = NULL;
    struct string_list id_list      = {0};
    const char *top_id              = NULL;
-
-   if (!list || string_is_empty(address))
-      goto end;
-
-   /* If delim is NULL or address contains a single
-    * token, then we are fetching an item from the
-    * top level list */
-   if (string_is_empty(delim))
+   if (!list || !address || !*address)
+      return NULL;
+   if (!delim || !*delim)
       top_id = address;
    else
    {
       string_list_initialize(&id_list);
-      if (!string_split_noalloc(&id_list, address, delim) ||
-          (id_list.size < 1))
+      if (  !string_split_noalloc(&id_list, address, delim)
+          || (id_list.size < 1))
          goto end;
-
       if (id_list.size == 1)
          top_id = id_list.elems[0].data;
    }
-
-   if (!string_is_empty(top_id))
+   if (top_id && *top_id)
       search_item = RHMAP_GET_STR(list->item_map, top_id);
    else
    {
-      /* Otherwise, search 'category' levels */
       nested_list_t *current_list   = list;
       nested_list_item_t *next_item = NULL;
       size_t i;
-
-      /* Loop over list item ids */
       for (i = 0; i < id_list.size; i++)
       {
          const char *id = id_list.elems[i].data;
-
-         if (string_is_empty(id))
+         if (!id || !*id)
             goto end;
-
-         /* If this is the last entry in the id list,
-          * then we are searching for the item itself */
          if (i == (id_list.size - 1))
          {
             search_item = RHMAP_GET_STR(current_list->item_map, id);
             break;
          }
-         /* Otherwise, id corresponds to a 'category' */
          else
          {
             next_item = RHMAP_GET_STR(current_list->item_map, id);
-
             if (!next_item)
                break;
-
-            /* Update pointer */
             current_list = next_item->children;
          }
       }
    }
-
 end:
    string_list_deinitialize(&id_list);
    return search_item;
@@ -482,9 +454,9 @@ nested_list_t *nested_list_item_get_parent_list(nested_list_item_t *list_item)
  */
 nested_list_t *nested_list_item_get_children(nested_list_item_t *list_item)
 {
-   if (!list_item ||
-       !list_item->children ||
-       (RBUF_LEN(list_item->children->items) < 1))
+   if (   !list_item
+       || !list_item->children
+       || (RBUF_LEN(list_item->children->items) < 1))
       return NULL;
 
    return list_item->children;
@@ -504,7 +476,6 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
 {
    if (!list_item)
       return NULL;
-
    return list_item->id;
 }
 
@@ -515,7 +486,7 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * @delim     : delimiter to use when concatenating
  *              individual item ids into a an @address
  *              string
- * @address   : a delimited list of item identifiers,
+ * @s         : a delimited list of item identifiers,
  *              corresponding to item 'levels'
  * @len       : length of supplied @address char array
 
@@ -528,70 +499,67 @@ const char *nested_list_item_get_id(nested_list_item_t *list_item)
  * Returns: true if successful, otherwise false.
  */
 bool nested_list_item_get_address(nested_list_item_t *list_item,
-      const char *delim, char *address, size_t len)
+      const char *delim, char *s, size_t len)
 {
-   nested_list_item_t *current_item = list_item;
-   struct string_list id_list       = {0};
-   bool success                     = false;
-   union string_list_elem_attr attr;
-   size_t i;
-
-   if (!list_item ||
-       string_is_empty(delim) ||
-       !address ||
-       (len < 1))
-      goto end;
-
-   address[0] = '\0';
-   attr.i     = 0;
-
-   /* If this is an item of the top level
-    * list, just copy the item id directly */
-   if (!list_item->parent_item)
-   {
-      strlcpy(address, list_item->id, len);
-      success = true;
-      goto end;
-   }
-
-   /* ...otherwise we have to combine the ids
+   if (  !list_item
+       || !delim
+       || !s
+       || (len < 1))
+      return false;
+   s[0] = '\0';
+   /* We have to combine the IDs
     * of the item and all of its 'ancestors' */
-   string_list_initialize(&id_list);
-
-   /* Fetch all ids */
-   do
+   if (list_item->parent_item)
    {
-      const char *id = current_item->id;
-
-      if (string_is_empty(id) ||
-          !string_list_append(&id_list, id, attr))
-         goto end;
-
-      current_item = current_item->parent_item;
+      size_t i;
+      union string_list_elem_attr attr;
+      struct string_list id_list       = {0};
+      nested_list_item_t *current_item = list_item;
+      string_list_initialize(&id_list);
+      attr.i     = 0;
+      /* Fetch all ids */
+      do
+      {
+         if (!string_list_append(&id_list, current_item->id, attr))
+         {
+            string_list_deinitialize(&id_list);
+            return false;
+         }
+         current_item = current_item->parent_item;
+      } while (current_item);
+      /* Build address string */
+      {
+         size_t _offset = 0;
+         for (i = id_list.size; i > 0; i--)
+         {
+            size_t _len;
+            const char *id = id_list.elems[i - 1].data;
+            _len    = strlcpy(s + _offset, id, len - _offset);
+            _offset += _len;
+            if (_offset >= len)
+            {
+               string_list_deinitialize(&id_list);
+               return false;
+            }
+            if (i > 1)
+            {
+               _len     = strlcpy(s + _offset, delim, len - _offset);
+               _offset += _len;
+               if (_offset >= len)
+               {
+                  string_list_deinitialize(&id_list);
+                  return false;
+               }
+            }
+         }
+      }
+      string_list_deinitialize(&id_list);
    }
-   while (current_item);
-
-   if (id_list.size < 1)
-      goto end;
-
-   /* Build address string */
-   for (i = id_list.size; i > 0; i--)
-   {
-      size_t _len;
-      const char *id = id_list.elems[i - 1].data;
-
-      if (string_is_empty(id))
-         goto end;
-
-      _len = strlcat(address, id, len);
-      if (i > 1)
-         strlcpy(address + _len, delim, len - _len);
-   }
-
-   success = true;
-end:
-   string_list_deinitialize(&id_list);
-   return success;
+   /* If this is an item of the top level
+    * list, just copy the item ID directly */
+   else
+      strlcpy(s, list_item->id, len);
+   return true;
 }
 
 /**

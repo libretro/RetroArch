@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <math.h>
 
 #include <gfx/scaler/scaler.h>
@@ -30,51 +31,108 @@
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/pixconv.h>
 
+/* Byte size of a frame buffer, or 0 if it is not one this scaler can
+ * address.
+ *
+ * Every frame here is described by an int stride, and the passes walk
+ * rows with int arithmetic - scaler_argb8888_vert() forms its row base
+ * as filter_pos[h] * (scaled.stride >> 3), which is an int multiply.
+ * A frame is therefore only usable if its whole byte size fits in an
+ * int, and computing that size has to happen in size_t to find out.
+ *
+ * It did not.  allocate_frames() multiplied the int stride by the int
+ * row count directly, and for a large enough frame that product does
+ * not merely overflow, it wraps to something small and plausible: a
+ * 262144-wide output over an 8192-row input needs 16 GB and asked for
+ * 1 byte, whereupon scaler_ctx_gen_filter() reported success and the
+ * horizontal pass wrote through it:
+ *
+ *   ERROR: AddressSanitizer: heap-buffer-overflow
+ *   WRITE of size 8
+ *     #0 scaler_argb8888_horiz scaler_int.c
+ *     #1 scaler_ctx_scale scaler.c
+ *   0x502000000011 is located 0 bytes after 1-byte region
+ *
+ * Anything that wraps to a large value instead simply fails the
+ * allocation, which was always the harmless half of this. */
+static size_t frame_bytes(size_t stride, size_t rows)
+{
+   if ((stride == 0) || (rows == 0))
+      return 0;
+   if (stride > (size_t)INT_MAX)
+      return 0;
+   if (rows > (size_t)INT_MAX / stride)
+      return 0;
+   return stride * rows;
+}
+
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
-   uint64_t *scaled_frame = NULL;
-   ctx->scaled.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
-   ctx->scaled.width      = ctx->out_width;
-   ctx->scaled.height     = ctx->in_height;
-   scaled_frame           = (uint64_t*)calloc(sizeof(uint64_t),
-            (ctx->scaled.stride * ctx->scaled.height) >> 3);
+   size_t stride;
+   size_t scaled_bytes, input_bytes = 0, output_bytes = 0;
+   size_t off_scaled, off_input, off_output, total;
+   uint8_t *base;
+   void *raw;
 
-   if (!scaled_frame)
+   if (     (ctx->in_width  <= 0) || (ctx->in_height  <= 0)
+         || (ctx->out_width <= 0) || (ctx->out_height <= 0))
       return false;
 
-   ctx->scaled.frame      = scaled_frame;
+   /* Sizes and strides first; nothing is touched until all are known. */
+   stride                 = (((size_t)ctx->out_width + 7) & ~(size_t)7)
+                          * sizeof(uint64_t);
+   if (!(scaled_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+      return false;
+   ctx->scaled.stride     = (int)stride;
+   ctx->scaled.width      = ctx->out_width;
+   ctx->scaled.height     = ctx->in_height;
 
-   if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->in_fmt != SCALER_FMT_ARGB8888
+           && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
-      uint32_t *input_frame = NULL;
-      ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
-      input_frame           = (uint32_t*)calloc(sizeof(uint32_t),
-               (ctx->input.stride * ctx->in_height) >> 2);
-
-      if (!input_frame)
+      stride              = (((size_t)ctx->in_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+      if (!(input_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
          return false;
-
-      ctx->input.frame      = input_frame;
+      ctx->input.stride   = (int)stride;
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
-      uint32_t *output_frame = NULL;
-      ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
-
-      output_frame           = (uint32_t*)calloc(sizeof(uint32_t),
-               (ctx->output.stride * ctx->out_height) >> 2);
-
-      if (!output_frame)
+      stride              = (((size_t)ctx->out_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+      if (!(output_bytes = frame_bytes(stride, (size_t)ctx->out_height)))
          return false;
-
-      ctx->output.frame      = output_frame;
+      ctx->output.stride  = (int)stride;
    }
+
+   /* One block for all three, laid out scaled | input | output with the
+    * regions that are not needed given zero size. Each frame_bytes()
+    * result is at most INT_MAX, so the running total cannot wrap a
+    * size_t on any target with a 32-bit or wider size_t. */
+   off_scaled             = 0;
+   off_input              = SCALER_ARENA_NEXT(off_scaled, scaled_bytes);
+   off_output             = SCALER_ARENA_NEXT(off_input,  input_bytes);
+   total                  = off_output + output_bytes;
+
+   if (!(raw = malloc(total + SCALER_ARENA_SLACK)))
+      return false;
+
+   base                   = SCALER_ARENA_BASE(raw);
+   memset(base, 0, total);
+
+   ctx->frame_arena       = raw;
+   ctx->scaled.frame      = (uint64_t*)(base + off_scaled);
+   if (input_bytes)
+      ctx->input.frame    = (uint32_t*)(base + off_input);
+   if (output_bytes)
+      ctx->output.frame   = (uint32_t*)(base + off_output);
 
    return true;
 }
 
-bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
+static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
 {
    scaler_ctx_gen_reset(ctx);
 
@@ -196,11 +254,38 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
                      break;
                }
                break;
+
+            case SCALER_FMT_XRGB2101010:
+               /* No cross-format direct conversion: every counterpart
+                * here is 8-bit, and the narrowing direction is the
+                * caller's decision to make, not this switch's.  The
+                * same-format case never reaches here (conv_copy is
+                * bound above). */
+               break;
          }
 
          if (!ctx->direct_pixconv)
             return false;
       }
+   }
+   else if (   ctx->in_fmt  == SCALER_FMT_XRGB2101010
+            || ctx->out_fmt == SCALER_FMT_XRGB2101010)
+   {
+      /* 10-bit is filtered natively rather than through the ARGB8888
+       * canonical form: the 8-bit chain saturates to 8 bits at the end,
+       * so routing 10-bit samples through it would discard exactly the
+       * precision the format exists to carry.  Only 10-bit to 10-bit is
+       * offered; mixing with the 8-bit formats would need a conversion
+       * whose direction silently decides what is lost, which is better
+       * left to the caller. */
+      if (ctx->in_fmt != ctx->out_fmt)
+         return false;
+
+      ctx->scaler_horiz = scaler_xrgb2101010_horiz;
+      ctx->scaler_vert  = scaler_xrgb2101010_vert;
+
+      if (!scaler_gen_filter(ctx))
+         return false;
    }
    else
    {
@@ -266,22 +351,60 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
    return true;
 }
 
+/* Fail with nothing left attached.
+ *
+ * The body above bails from a dozen places, several of them after it
+ * has already allocated buffers or bound a scaling function, and it
+ * left all of that behind on the way out.  Two consequences, both
+ * live:
+ *
+ * The buffers leaked.  Only rgui cleaned up after a failure, with a
+ * defensive scaler_ctx_gen_reset() and a comment guessing there might
+ * be leftovers; every other caller - both in tasks/task_image.c, the
+ * gl2/gl3/vulkan readback paths, the camera drivers - simply returned.
+ *
+ * Worse, a context could fail with scaler_horiz and scaler_vert bound
+ * but their filters freed or never validated, and scaler_ctx_scale()
+ * has no way to tell that apart from a working context.  Callers that
+ * ignore the return value - tasks/task_translation.c does, twice -
+ * then scale through it.  Scaling a 1x1 source, where validate_filter()
+ * rejects the generated positions, reads past the end of the source
+ * row:
+ *
+ *   ERROR: AddressSanitizer: stack-buffer-overflow
+ *     #0 scaler_argb8888_horiz scaler_int.c
+ *     #1 scaler_ctx_scale scaler.c
+ *
+ * So release what was allocated and unbind everything.  A failed
+ * context is then inert rather than half-built, and scaler_ctx_scale()
+ * on one is a no-op - see the guard there. */
+bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
+{
+   if (scaler_ctx_gen_filter_internal(ctx))
+      return true;
+
+   scaler_ctx_gen_reset(ctx);
+
+   ctx->scaler_horiz   = NULL;
+   ctx->scaler_vert    = NULL;
+   ctx->scaler_special = NULL;
+   ctx->direct_pixconv = NULL;
+   ctx->in_pixconv     = NULL;
+   ctx->out_pixconv    = NULL;
+   ctx->unscaled       = false;
+
+   return false;
+}
+
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
-   if (ctx->horiz.filter)
-      free(ctx->horiz.filter);
-   if (ctx->horiz.filter_pos)
-      free(ctx->horiz.filter_pos);
-   if (ctx->vert.filter)
-      free(ctx->vert.filter);
-   if (ctx->vert.filter_pos)
-      free(ctx->vert.filter_pos);
-   if (ctx->scaled.frame)
-      free(ctx->scaled.frame);
-   if (ctx->input.frame)
-      free(ctx->input.frame);
-   if (ctx->output.frame)
-      free(ctx->output.frame);
+   /* The typed buffer pointers are views into the two arenas. */
+   if (ctx->filter_arena)
+      free(ctx->filter_arena);
+   if (ctx->frame_arena)
+      free(ctx->frame_arena);
+   ctx->filter_arena        = NULL;
+   ctx->frame_arena         = NULL;
 
    ctx->horiz.filter        = NULL;
    ctx->horiz.filter_len    = 0;
@@ -321,7 +444,37 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    int input_stride        = ctx->in_stride;
    int output_stride       = ctx->out_stride;
 
-   if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+   /* Source and destination are the same size: there is nothing to
+    * filter, only a possible pixel format conversion.
+    * scaler_ctx_gen_filter recognises this, binds direct_pixconv and
+    * returns without generating a filter or setting scaler_horiz /
+    * scaler_vert.  Honour that here: without it the generic path below
+    * finds both function pointers NULL, writes nothing at all, and the
+    * caller gets its output buffer back exactly as it was - which for a
+    * freshly malloc'd buffer means an image of uninitialised memory, or
+    * a fully transparent one where the allocation came from fresh
+    * zeroed pages. */
+   if (ctx->unscaled)
+   {
+      if (ctx->direct_pixconv)
+         ctx->direct_pixconv(output, input,
+               ctx->out_width, ctx->out_height,
+               ctx->out_stride, ctx->in_stride);
+      return;
+   }
+
+   /* Nothing bound to scale with: either scaler_ctx_gen_filter() was
+    * never called on this context, or it failed and unbound itself.
+    * Return before the pixel converters below, which are called
+    * unconditionally on their formats and would run against the
+    * buffers a failure just freed. */
+   if (     !ctx->scaler_special
+         && !ctx->scaler_horiz
+         && !ctx->scaler_vert)
+      return;
+
+   if (       ctx->in_fmt != SCALER_FMT_ARGB8888
+           && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
       ctx->in_pixconv(ctx->input.frame, input,
             ctx->in_width, ctx->in_height,
@@ -331,7 +484,8 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       input_stride      = ctx->input.stride;
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
       output_frame  = ctx->output.frame;
       output_stride = ctx->output.stride;
@@ -349,10 +503,11 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       if (ctx->scaler_horiz)
          ctx->scaler_horiz(ctx, input_frame, input_stride);
       if (ctx->scaler_vert)
-         ctx->scaler_vert (ctx, output, output_stride);
+         ctx->scaler_vert (ctx, output_frame, output_stride);
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
       ctx->out_pixconv(output, ctx->output.frame,
             ctx->out_width, ctx->out_height,
             ctx->out_stride, ctx->output.stride);

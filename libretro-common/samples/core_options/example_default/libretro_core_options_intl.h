@@ -83,6 +83,8 @@ extern "C" {
 
 /* RETRO_LANGUAGE_FINNISH */
 
+/* RETRO_LANGUAGE_THAI */
+
 #ifdef __cplusplus
 }
 #endif

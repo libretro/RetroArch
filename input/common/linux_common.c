@@ -30,15 +30,21 @@
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 
-/* We can assume that pthreads are available on Linux. */
-#include <pthread.h>
 #include <retro_dirent.h>
 #include <streams/file_stream.h>
 #include <string.h>
+#include <string/rstrtod.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
 #define DEFAULT_POLL_RATE 5
+/* The rate comes from the core, through
+ * RETRO_ENVIRONMENT_SET_SENSOR_STATE, so it is whatever a core asks
+ * for. Above 1000 Hz the sleep between reads would round down to zero
+ * and the poll thread would read a sysfs file as fast as the CPU
+ * allows; the sensor cannot answer faster than that anyway, since each
+ * reading is an open/read/close of a file. */
+#define MAX_POLL_RATE     1000
 
 /* TODO/FIXME - static globals */
 static struct termios old_term, new_term;
@@ -159,7 +165,7 @@ bool linux_terminal_disable_input(void)
 
 static void linux_poll_illuminance_sensor(void *data)
 {
-   linux_illuminance_sensor_t *sensor = data;
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t*)data;
 
    if (!data)
       return;
@@ -170,39 +176,56 @@ static void linux_poll_illuminance_sensor(void *data)
         int millilux;
         unsigned poll_rate = sensor->poll_rate;
 
+        if (poll_rate == 0)
+           poll_rate = DEFAULT_POLL_RATE;
+        else if (poll_rate > MAX_POLL_RATE)
+           poll_rate = MAX_POLL_RATE;
+
         /* Don't allow cancellation inside the critical section,
          * as it opens up a file; we don't want to leak it! */
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+        sthread_set_cancel_enable(false);
         lux = linux_read_illuminance_sensor(sensor);
         millilux = (int)(lux * 1000.0);
-        retro_assert(poll_rate != 0);
-
         sensor->millilux = millilux;
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+        sthread_set_cancel_enable(true);
 
         /* Allow cancellation here so that the main thread doesn't block
-         * while waiting for this thread to wake up and exit. */
+         * while waiting for this thread to wake up and exit.
+         *
+         * errno is cleared first because it is only meaningful right
+         * after a call that failed: the sensor read above goes through
+         * open/read/close and leaves its own errno behind, so testing
+         * it after a sleep that succeeded would end the thread on a
+         * stale EINTR from something else entirely. */
+        errno = 0;
         retro_sleep(1000 / poll_rate);
         if (errno == EINTR)
         {
-           RARCH_ERR("Illuminance sensor thread interrupted\n");
+           RARCH_ERR("Illuminance sensor thread interrupted.\n");
            break;
         }
    }
 
-   RARCH_DBG("Illuminance sensor thread for %s exiting\n", sensor->path);
+   RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
 }
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
    RDIR *device = NULL;
-   linux_illuminance_sensor_t *sensor = malloc(sizeof(*sensor));
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t *)
+      malloc(sizeof(*sensor));
 
    if (!sensor)
       goto error;
 
+   device = retro_opendir(IIO_DEVICES_DIR);
+   if (!device)
+      goto error;
+
    sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (sensor->poll_rate > MAX_POLL_RATE)
+      sensor->poll_rate = MAX_POLL_RATE;
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
    sensor->done      = false;
 
@@ -213,7 +236,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
       if (!name)
       {
-         RARCH_ERR("Error reading " IIO_DEVICES_DIR "\n");
+         RARCH_ERR("Error reading " IIO_DEVICES_DIR ".\n");
          goto error;
       }
 
@@ -232,27 +255,23 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
          if (!sensor->thread)
          {
-            RARCH_ERR("Failed to spawn thread for illuminance sensor\n");
+            RARCH_ERR("Failed to spawn thread for illuminance sensor.\n");
             goto error;
          }
 
-         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz\n", sensor->path, sensor->poll_rate);
-
-         goto done;
+         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, sensor->poll_rate);
+         retro_closedir(device);
+         return sensor;
       }
    }
 
 error:
-   RARCH_ERR("Failed to find an illuminance sensor\n");
+   RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR ".\n");
    retro_closedir(device);
 
    free(sensor);
 
    return NULL;
-done:
-   retro_closedir(device);
-
-   return sensor;
 }
 
 void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
@@ -262,15 +281,14 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 
    if (sensor->thread)
    {
-      pthread_t thread = sthread_get_thread_id(sensor->thread);
       sensor->done = true;
 
-      if (pthread_cancel(thread) != 0)
+      if (!sthread_cancel(sensor->thread))
       {
          int err = errno;
          char errmesg[NAME_MAX_LENGTH];
          strerror_r(err, errmesg, sizeof(errmesg));
-         RARCH_ERR("Failed to cancel illuminance sensor thread: %s\n", errmesg);
+         RARCH_ERR("Failed to cancel illuminance sensor thread: %s.\n", errmesg);
          /* this doesn't happen often, it should probably be logged */
       }
 
@@ -301,6 +319,8 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
 
    /* Set a default rate of 5 Hz if none is provided */
    rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (rate > MAX_POLL_RATE)
+      rate = MAX_POLL_RATE;
 
    sensor->poll_rate = rate;
 }
@@ -310,6 +330,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    char buffer[256];
    double illuminance = 0.0;
    RFILE *in_illuminance_input = NULL;
+   int err = 0;
 
    if (!sensor || sensor->path[0] == '\0')
       return -1.0;
@@ -317,29 +338,31 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    in_illuminance_input = filestream_open(sensor->path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!in_illuminance_input)
    {
-      RARCH_ERR("Failed to open %s\n", sensor->path);
-      goto done;
+      RARCH_ERR("Failed to open \"%s\".\n", sensor->path);
+      return -1.0;
    }
 
+   /* Read the illuminance value from the file. If that fails... */
    if (!filestream_gets(in_illuminance_input, buffer, sizeof(buffer)))
-   { /* Read the illuminance value from the file. If that fails... */
-      RARCH_ERR("Illuminance sensor read failed\n");
-      illuminance = -1.0;
-      goto done;
+   {
+      RARCH_ERR("Illuminance sensor read failed.\n");
+      filestream_close(in_illuminance_input);
+      return -1.0;
    }
+
+   filestream_close(in_illuminance_input);
+
+   /* Clear any existing error so we'll know if strtod fails */
+   errno = 0;
 
    /* TODO: This may be locale-sensitive */
-   illuminance = strtod(buffer, NULL);
-   if (errno != 0)
+   illuminance = rstrtod(buffer, NULL);
+   err = errno;
+   if (err != 0)
    {
-      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value\n", buffer);
-      illuminance = -1.0;
-      goto done;
+      RARCH_ERR("Failed to parse input \"%s\" into a floating-point value: %s.\n", buffer, strerror(err));
+      return -1.0;
    }
-
-done:
-   if (in_illuminance_input)
-      filestream_close(in_illuminance_input);
 
    return illuminance;
 }

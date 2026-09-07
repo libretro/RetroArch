@@ -24,6 +24,8 @@ void rc_url_builder_init(rc_api_url_builder_t* builder, rc_buffer_t* buffer, siz
 void rc_url_builder_append(rc_api_url_builder_t* builder, const char* data, size_t len);
 const char* rc_url_builder_finalize(rc_api_url_builder_t* builder);
 
+extern rc_api_host_t g_host;
+
 #define RC_JSON_NEW_FIELD(n) {NULL,NULL,n,sizeof(n)-1,0}
 
 typedef struct rc_json_field_t {
@@ -47,25 +49,32 @@ int rc_json_get_num(int32_t* out, const rc_json_field_t* field, const char* fiel
 int rc_json_get_unum(uint32_t* out, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_float(float* out, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_bool(int* out, const rc_json_field_t* field, const char* field_name);
+int rc_json_get_timet(time_t* out, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_datetime(time_t* out, const rc_json_field_t* field, const char* field_name);
 void rc_json_get_optional_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name, const char* default_value);
 void rc_json_get_optional_num(int32_t* out, const rc_json_field_t* field, const char* field_name, int default_value);
 void rc_json_get_optional_unum(uint32_t* out, const rc_json_field_t* field, const char* field_name, uint32_t default_value);
 void rc_json_get_optional_float(float* out, const rc_json_field_t* field, const char* field_name, float default_value);
 void rc_json_get_optional_bool(int* out, const rc_json_field_t* field, const char* field_name, int default_value);
+void rc_json_get_optional_timet(time_t* out, const rc_json_field_t* field, const char* field_name, time_t default_value);
 int rc_json_get_optional_array(uint32_t* num_entries, rc_json_field_t* iterator, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_string(const char** out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_num(int32_t* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_unum(uint32_t* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_float(float* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_bool(int* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
+int rc_json_get_required_timet(time_t* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_datetime(time_t* out, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_object(rc_json_field_t* fields, size_t field_count, rc_api_response_t* response, rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_unum_array(uint32_t** entries, uint32_t* num_entries, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
+int rc_json_get_optional_unum_array(uint32_t** entries, uint32_t* num_entries, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
+int rc_json_get_required_string_array(const char*** entries, uint32_t* num_entries, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
+int rc_json_get_optional_string_array(const char*** entries, uint32_t* num_entries, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_required_array(uint32_t* num_entries, rc_json_field_t* array_field, rc_api_response_t* response, const rc_json_field_t* field, const char* field_name);
 int rc_json_get_array_entry_object(rc_json_field_t* fields, size_t field_count, rc_json_iterator_t* iterator);
 int rc_json_get_next_object_field(rc_json_iterator_t* iterator, rc_json_field_t* field);
 int rc_json_get_object_string_length(const char* json);
+int rc_json_field_string_matches(const rc_json_field_t* field, const char* text);
 
 void rc_json_extract_filename(rc_json_field_t* field);
 
@@ -74,8 +83,11 @@ void rc_url_builder_append_num_param(rc_api_url_builder_t* builder, const char* 
 void rc_url_builder_append_unum_param(rc_api_url_builder_t* builder, const char* param, uint32_t value);
 void rc_url_builder_append_str_param(rc_api_url_builder_t* builder, const char* param, const char* value);
 
-void rc_api_url_build_dorequest_url(rc_api_request_t* request);
+const char* rc_api_default_host(void);
+void rc_api_url_build_dorequest_url(rc_api_request_t* request, const rc_api_host_t* host);
 int rc_api_url_build_dorequest(rc_api_url_builder_t* builder, const char* api, const char* username, const char* api_token);
+
+const char* rc_api_build_avatar_url(rc_buffer_t* buffer, uint32_t image_type, const char* image_name);
 
 RC_END_C_DECLS
 

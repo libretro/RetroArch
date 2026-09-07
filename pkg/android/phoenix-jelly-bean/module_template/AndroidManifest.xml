@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution"
+    package="com.retroarch.modules.%CORE_NAME%">
+
+    <dist:module dist:title="@string/%CORE_NAME%">
+        <dist:delivery>
+            <dist:on-demand />
+            <dist:install-time>
+                <dist:conditions>
+                    <dist:device-feature dist:name="android.software.leanback"/>
+                </dist:conditions>
+            </dist:install-time>
+        </dist:delivery>
+        <dist:fusing dist:include="true" />
+    </dist:module>
+
+    <application
+      android:hasCode="false"
+      android:extractNativeLibs="true" />
+
+</manifest>

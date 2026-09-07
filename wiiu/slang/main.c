@@ -74,11 +74,6 @@ int main(int argc, const char** argv)
 
       *next++ = '\0';
 
-#if 0
-      while ((*next == '\n') || (*next == '\r'))
-         *next++ = '\0';
-#endif
-
       if(strstr(line, "#version"))
          continue;
 

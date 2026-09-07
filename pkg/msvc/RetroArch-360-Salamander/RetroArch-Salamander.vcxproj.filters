@@ -65,6 +65,9 @@
     <ClCompile Include="..\..\..\libretro-common\file\file_path.c">
       <Filter>Source Files\libretro-common\file</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\libretro-common\string\rstrtod.c">
+      <Filter>Source Files\libretro-common\string</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\libretro-common\string\stdstring.c">
       <Filter>Source Files\libretro-common\string</Filter>
     </ClCompile>

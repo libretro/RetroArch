@@ -100,7 +100,7 @@ bool disk_control_append_enabled(
  *
  * Leaf function.
  *
- * @return true if core supports image labels 
+ * @return true if core supports image labels
  * - get_image_label
  **/
 bool disk_control_image_label_enabled(
@@ -155,7 +155,7 @@ unsigned disk_control_get_image_index(
  **/
 void disk_control_get_image_label(
       disk_control_interface_t *disk_control,
-      unsigned index, char *label, size_t len);
+      unsigned index, char *s, size_t len);
 
 /***********/
 /* Setters */

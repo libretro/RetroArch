@@ -4,7 +4,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <3ds.h>
-#include "ctr/ctr_debug.h"
+#include "../ctr_debug.h"
 
 #define FILE_CHUNK_SIZE 4096
 
@@ -63,7 +63,7 @@ static int isCiaInstalled(u64 titleId, u16 version)
    return 0;
 }
 
-static int deleteCia(u64 TitleId)
+static void deleteCia(u64 TitleId)
 {
    u64 currTitleId = 0;
 

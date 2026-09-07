@@ -23,6 +23,10 @@
 #ifndef __LIBRETRO_SDK_COMPAT_FNMATCH_H__
 #define __LIBRETRO_SDK_COMPAT_FNMATCH_H__
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 #define	FNM_NOMATCH	1
 
 /**
@@ -31,5 +35,7 @@
  * @see https://man7.org/linux/man-pages/man3/fnmatch.3.html
  */
 int rl_fnmatch(const char *pattern, const char *string, int flags);
+
+RETRO_END_DECLS
 
 #endif

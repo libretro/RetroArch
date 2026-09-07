@@ -43,7 +43,6 @@
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
-#include "../../ui/drivers/ui_win32.h"
 
 #include "../../uwp/uwp_func.h"
 
@@ -68,12 +67,6 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
       case PROCESSOR_ARCHITECTURE_AMD64:
          arch = "x64";
          break;
-      case PROCESSOR_ARCHITECTURE_INTEL:
-         arch = "x86";
-         break;
-      case PROCESSOR_ARCHITECTURE_ARM:
-         arch = "ARM";
-         break;
       case PROCESSOR_ARCHITECTURE_ARM64:
          arch = "ARM64";
          break;
@@ -95,18 +88,20 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
          if (server)
          {
             if ((vi.dwBuildNumber >= 14393) && (vi.dwBuildNumber < 17763))
-               _len = strlcpy(s, "Windows Server 2016", len);
+               _len = strlcpy_lit(s, "Windows Server 2016", len);
             else if ((vi.dwBuildNumber >= 17763) && (vi.dwBuildNumber < 20348))
-               _len = strlcpy(s, "Windows Server 2019", len);
-            else if (vi.dwBuildNumber >= 20348)
-               _len = strlcpy(s, "Windows Server 2022", len);
+               _len = strlcpy_lit(s, "Windows Server 2019", len);
+            else if ((vi.dwBuildNumber >= 20348) && (vi.dwBuildNumber < 26100))
+               _len = strlcpy_lit(s, "Windows Server 2022", len);
+		    else if (vi.dwBuildNumber >= 26100)
+				_len = strlcpy_lit(s, "Windows Server 2025", len);
          }
          else
          {
             if ((vi.dwBuildNumber >= 10240) && (vi.dwBuildNumber < 22000))
-               _len = strlcpy(s, "Windows 10", len);
+               _len = strlcpy_lit(s, "Windows 10", len);
             else if (vi.dwBuildNumber >= 22000)
-               _len = strlcpy(s, "Windows 11", len);
+               _len = strlcpy_lit(s, "Windows 11", len);
          }
          break;
       default:
@@ -114,24 +109,24 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
          break;
    }
 
-   if (!string_is_empty(arch))
+   if (arch && *arch)
    {
-      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy_lit(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy_lit(s + _len, " Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
-   if (!string_is_empty(vi.szCSDVersion))
+   if (vi.szCSDVersion && *vi.szCSDVersion)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       _len += strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
-   if (!string_is_empty(uwp_device_family))
+   if (uwp_device_family && *uwp_device_family)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       strlcpy(s + _len, uwp_device_family, len - _len);
    }
    return _len;
@@ -181,10 +176,6 @@ enum frontend_architecture frontend_uwp_get_arch(void)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
          return FRONTEND_ARCH_X86_64;
-      case PROCESSOR_ARCHITECTURE_INTEL:
-         return FRONTEND_ARCH_X86;
-      case PROCESSOR_ARCHITECTURE_ARM:
-         return FRONTEND_ARCH_ARM;
       case PROCESSOR_ARCHITECTURE_ARM64:
          return FRONTEND_ARCH_ARMV8;
       default:
@@ -313,7 +304,7 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-      strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
+      strlcpy_lit(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #endif
 #endif
 
@@ -327,20 +318,9 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #endif
 }
 
-static uint64_t frontend_uwp_get_total_mem(void)
+static enum rarch_display_type frontend_uwp_get_display_type(void)
 {
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullTotalPhys;
-}
-
-static uint64_t frontend_uwp_get_free_mem(void)
-{
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return (mem_info.ullTotalPhys - mem_info.ullAvailPhys);
+   return RARCH_DISPLAY_WIN32;
 }
 
 frontend_ctx_driver_t frontend_ctx_uwp = {
@@ -354,13 +334,10 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                           /* shutdown */
    NULL,                           /* get_name */
    frontend_uwp_get_os,
-   NULL,                            /* get_rating */
    NULL,                            /* content_loaded */
    frontend_uwp_get_arch,           /* get_architecture       */
    frontend_uwp_get_powerstate,
    frontend_uwp_parse_drive_list,
-   frontend_uwp_get_total_mem,      /* get_total_mem          */
-   frontend_uwp_get_free_mem,       /* get_free_mem           */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
@@ -369,14 +346,13 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    uwp_get_cpu_model_name,          /* get_cpu_model_name  */
    uwp_get_language,                /* get_user_language   */
    NULL,                            /* is_narrator_running */
    NULL,                            /* accessibility_speak */
    NULL,                            /* set_gamemode        */
+   frontend_uwp_get_display_type,
    "uwp",                           /* ident               */
    NULL                             /* get_video_driver    */
 };

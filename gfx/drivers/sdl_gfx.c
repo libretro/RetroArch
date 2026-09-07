@@ -98,9 +98,9 @@ static void sdl_init_font(sdl_video_t *vid,
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font,
             *path_font ? path_font : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
-      RARCH_LOG("[SDL]: Could not initialize fonts.\n");
+      RARCH_LOG("[SDL] Could not initialize fonts.\n");
       return;
    }
 
@@ -273,10 +273,10 @@ static void *sdl_gfx_init(const video_info_t *video,
    video_info = SDL_GetVideoInfo();
    full_x     = video_info->current_w;
    full_y     = video_info->current_h;
-   RARCH_LOG("[SDL]: Detecting desktop resolution %ux%u.\n", full_x, full_y);
+   RARCH_LOG("[SDL] Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL]: Creating window @ %ux%u\n", video->width, video->height);
+      RARCH_LOG("[SDL] Creating window @ %ux%u.\n", video->width, video->height);
 
    vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
          SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
@@ -287,7 +287,7 @@ static void *sdl_gfx_init(const video_info_t *video,
 
    if (!vid->screen)
    {
-      RARCH_ERR("[SDL1]: Failed to init SDL surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL] Failed to init SDL surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -332,7 +332,7 @@ static void *sdl_gfx_init(const video_info_t *video,
 
    if (!vid->menu.frame)
    {
-      RARCH_ERR("[SDL1]: Failed to init menu surface: %s\n", SDL_GetError());
+      RARCH_ERR("[SDL] Failed to init menu surface: %s.\n", SDL_GetError());
       goto error;
    }
 
@@ -368,47 +368,43 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (!vid)
+   if (!frame)
       return true;
 
    title[0] = '\0';
 
    video_driver_get_window_title(title, sizeof(title));
 
-   if (vid->menu.active)
-   {
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_LockSurface(vid->screen);
+
+   video_frame_scale(
+         &vid->scaler,
+         vid->screen->pixels,
+         frame,
+         vid->scaler.in_fmt,
+         vid->screen->w,
+         vid->screen->h,
+         vid->screen->pitch,
+         width,
+         height,
+         pitch);
+
 #ifdef HAVE_MENU
-      menu_driver_frame(menu_is_alive, video_info);
-#endif
+   menu_driver_frame(menu_is_alive, video_info);
+
+   if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
-   }
-   else
-   {
-      if (SDL_MUSTLOCK(vid->screen))
-         SDL_LockSurface(vid->screen);
+#endif
 
-      video_frame_scale(
-            &vid->scaler,
-            vid->screen->pixels,
-            frame,
-            vid->scaler.in_fmt,
-            vid->screen->w,
-            vid->screen->h,
-            vid->screen->pitch,
-            width,
-            height,
-            pitch);
+   if (msg)
+      sdl_render_msg(vid, vid->screen,
+            msg, vid->screen->w, vid->screen->h, vid->screen->format,
+            video_info->font_msg_pos_x,
+            video_info->font_msg_pos_y);
 
-
-      if (SDL_MUSTLOCK(vid->screen))
-         SDL_UnlockSurface(vid->screen);
-
-      if (msg)
-         sdl_render_msg(vid, vid->screen,
-         msg, vid->screen->w, vid->screen->h, vid->screen->format,
-         video_info->font_msg_pos_x,
-         video_info->font_msg_pos_y);
-   }
+   if (SDL_MUSTLOCK(vid->screen))
+      SDL_UnlockSurface(vid->screen);
 
    if (title[0])
       SDL_WM_SetCaption(title, NULL);
@@ -535,10 +531,11 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
-   NULL, /* set_hdr_contrast */
-   NULL  /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_expand_gamut */
+   NULL, /* set_hdr_scanlines */
+   NULL  /* set_hdr_subpixel_layout */
 };
 
 static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)
@@ -583,6 +580,8 @@ video_driver_t video_sdl = {
 #endif
    sdl_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: git.libretro.com:5050/libretro-infrastructure/libretro-build-libnx-devkitpro:latest
+      image: reallibretroretroarch/libretro-build-libnx-devkitpro:v4-10-0
       options: --user root
 
     steps:
@@ -30,7 +30,7 @@ jobs:
       id: slug
       run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: RA-libnx-dummy-${{ steps.slug.outputs.sha8 }}
         path: |

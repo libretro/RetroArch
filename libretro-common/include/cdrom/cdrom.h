@@ -74,7 +74,7 @@ unsigned cdrom_msf_to_lba(unsigned char min, unsigned char sec, unsigned char fr
 
 void increment_msf(unsigned char *min, unsigned char *sec, unsigned char *frame);
 
-int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *buf, size_t len);
+int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, size_t len);
 
 int cdrom_write_cue(libretro_vfs_implementation_file *stream, char **out_buf, size_t *out_len, char cdrom_drive, unsigned char *num_tracks, cdrom_toc_t *toc);
 

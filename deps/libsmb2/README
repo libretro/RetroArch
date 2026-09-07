@@ -1,0 +1,413 @@
+Libsmb2 is a userspace client/server library for accessing or serving
+SMB2/SMB3 shares on a network.
+It is high performance and fully async. It supports both zero-copy
+for SMB READ/WRITE commands as well as compounded commands.
+
+Libsmb2 is distributed under the LGPLv2.1 licence.
+
+
+API
+===
+Libsmb2 implements three different APIs for accessing remote SMB shares :
+
+1, High level synchronous posix-like API:
+This is a simple API for accessing a share.
+The functions in this API are modelled to be be similar to the corresponding
+POSIX functions.
+This API is described in libsmb2.h
+
+2, High level async posix-like API:
+This is a high performance, fully non-blocking and async API.
+The functions in this API are modelled to be be similar to the corresponding
+POSIX functions.
+This is the recommended API.
+This API is described in libsmb2.h
+
+3, Low level async RAW API:
+This is a low level API that provides direct access to the SMB2 PDUs
+and data structures.
+This API is described in libsmb2-raw.h
+
+Libsmb2 implements a synchronous API for running an SMB server. You could
+run an async server if you implement the main loop yourself however
+
+SMB URL Format
+==============
+The SMB URL format is currently a small subset of the URL format that is
+defined/used by the Samba project.
+The goal is to eventually support the full URL format, thus making URLs
+interchangeable between Samba utilities and Libsmb2 but we are not there yet.
+
+smb://[<domain>;][<user>@]<server>[:<port>]/<share>[/path][?arg=val[&arg=val]*]
+
+<server> is either a hostname, an IPv4 or an IPv6 address.
+
+Arguments supported by libsmb2 are :
+ sec=<mech>    : Mechanism to use to authenticate to the server. Default
+	         is any available mech, but can be overridden by :
+		 krb5: Use Kerberos using credentials from kinit.
+		 krb5cc: Use Kerberos using credentials from credentials
+	                 cache.
+		 ntlmssp : Only use NTLMSSP
+ vers=<version> : Which SMB version to negotiate:
+                  2: Negotiate any version of SMB2
+                  3: Negotiate any version of SMB3
+		  2.02, 2.10, 3.00, 3.02, 3.1.1 : negotiate a specific version.
+		  Default is to negotiate any SMB2 or SMB3 version.
+  seal          : Enable SMB3 encryption.
+  sign          : Require SMB2/3 signing.
+  timeout       : Timeout in seconds when to cancel a command.
+                  Default it 0: No timeout.
+  ndr32         : DCERPC: only offer NDR32 transfer syntax. (default)
+  ndr64         : DCERPC: only offer NDR64 transfer syntax.
+  ndr3264       : DCERPC: offer both NRD32 and NDR64 transfer syntax.
+  le            : DCERPC: send PDUs in Little-Endian format
+  be            : DCERPC: send PDUs in Big-Endian format
+NOTE:-
+	When using krb5cc mode use smb2_set_domain() and smb2_set_password() in the examples and applications
+
+SMB Server
+==========
+There is an example server implementation in examples/smb2-server-sync.c. The library
+server function is handed an array of function pointers that the library will call
+for each client command. It is up to your implementation to fill out and return
+replies for each according to your use. The example simulates a disk with a few files.
+Your handler will be also be called to pre-authenticate users as part of ntlmssp (krb
+authenticaton not yet implemented). Your application will also be called-back each
+time a client connect to allow your to configure the context prior to negotiation.
+
+Authentication
+==============
+Libsmb2 provides has builtin support for NTLMSSP username/password
+authentication.
+It can also, optionally, be built with (MIT) Kerberos authentication.
+
+Libsmb2 will try to build with Kerberos if these libraries are present.
+You can force a build without Kerberos support by using the flag
+--without-libkrb5 to configure. In this case only NTLMSSP authentication
+will be available.
+
+MIT KERBEROS
+============
+Authentication is implemented using MIT Kerberos and it supports both KRB5
+for authentication against Active Directory as well as NTLMSSP (optional).
+
+MIT Kerberos can be configured to also provide NTLMSSP authentication,
+as an alternative to the builtin NTLMSSP implementation using an
+external mech plugin.
+To use this Kerberos/NTLMSSP module you will need to build and install
+GSS-NTLMSSP from [https://github.com/simo5/gss-ntlmssp]
+If you are uncertain you can skip this module and just use the NTLMSSP
+module that is provided by libsmb2.
+
+NTLM Authentication
+-------------------
+NTLM credentials are stored in a text file of the form :
+DOMAIN:USERNAME:PASSWORD
+with one line per username.
+You need to set up the environment variable NTLM_USER_FILE to point to this
+file.
+You need one entry in this file for each local user account you want to be able
+to use libsmb2 for accessing a remote share.
+
+By default, NTLM authentication will use the username for the current process.
+This can be overridden by specifying a different username in the SMB URL :
+  smb://guest@server/share?sec=ntlmssp
+
+KRB5 Authentication
+-------------------
+Kerberos authentication can be used when the linux workstation as well as
+the file server are part of Active Directory.
+
+You should be able to authenticate to the file server using krb5
+by specifying sec=krb5 in the URL :
+  smb://server/share?sec=krb5
+
+The application needs to set the username, password and the domain fqdn in the context using
+smb2_set_user(), smb2_set_password() and smb2_set_domain() respectively.
+
+
+NTLM Credentials
+================
+This applies to both the builtin NTLMSSP implementation as well as when
+using Kerberos with the NTLMSSP mech plugin.
+
+NTLM credentials are stored in a text file of the form :
+DOMAIN:USERNAME:PASSWORD
+with one line per username.
+You need to set up the environment variable NTLM_USER_FILE to point to this
+file.
+You need one entry in this file for each local user account you want to be able
+to use libsmb2 for accessing a remote share.
+
+By default, NTLM authentication will use the username for the current process.
+This can be overridden by specifying a different username in the SMB URL :
+  smb://guest@server/share?sec=ntlmssp
+
+Alternatively you can provide the username and password from your application
+by calling :
+  smb2_set_user(smb2, <username>);
+  smb2_set_password(smb2, <password>);
+
+(For server, you don't need to set the user, as that is supplied by the client)
+
+SMB2/3 SIGNING
+==============
+Signing is supported with KRB5, with the builtin ntlmssp support and with
+gss-ntlmssp mech plugin.
+
+SMB3 Encryption
+===============
+Encryption is only supported with KRB5 or with the builtin ntlmssp support.
+Encryption is not supported when the gss-ntlmssp mech plugin is used.
+Encryption can be enabled either using the "seal" URL argument or by calling
+  smb3_set_seal(smb2, 1);
+
+BUILDING LIBSMB2
+===============
+
+ Windows
+---------------------------
+
+You have to install CMake (https://cmake.org/) and Visual Studio (https://www.visualstudio.com/)
+to build libsmb2 for Windows (including Universal Windows Platform).
+
+Please follow the next steps to build shared library:
+
+	mkdir build
+	cd build
+	cmake -G "Visual Studio 15 2017" ..
+	cmake --build . --config RelWithDebInfo
+
+Static library: 
+
+	mkdir build
+	cd build
+	cmake -G "Visual Studio 15 2017" -DBUILD_SHARED_LIBS=0 ..
+	cmake --build . --config RelWithDebInfo
+
+ macOS, iOS, tvOS, watchOS
+---------------------------
+
+You can use AMSMB2 (https://github.com/amosavian/AMSMB2) universal framework 
+which incorporates precompiled libsmb2 for Apple devices.
+
+It is written in Swift but can be used in both Swift and Objective-C codes.
+
+If you want to rebuild libsmb2 in AMSMB2, please follow these steps:
+
+	git clone https://github.com/amosavian/AMSMB2
+	cd AMSMB2/buildtools
+	./build.sh
+
+Precompiled binaries don't include Kerberos support by default.
+If you want build libraries with Kerberos support, execute this script instead:
+
+	./build-with-krb5.sh
+
+
+ESP32
+-----
+libsmb2 is pre-configured for the ESP32 micro-controller using the esp-idf
+toolchain (Arduino is not supported). Simply clone this project in the
+'components' directory of the ESP32 project and it will automatically be
+included in the build process.
+
+Raspberry Pi Pico W (RP2040)
+----------------------------
+libsmb2 will compile on the RP2040 using gcc-arm-none-eabi, the pico-sdk
+and FreeRTOS-Kernel. In examples/picow is a CMakeLists.txt that can be
+edited to point at the pico-sdk and FreeRTOS-Kernel, and will then build
+libsmb2 and a sample - this can be used as a starting point.  Inside
+include/picow are some configuration files for lwip, FreeRTOS and any
+applications built with libsmb2.  These can also be used as a starting 
+point and adjusted as needed for your applications.
+
+The only define needed for libsmb2 on the RP2040, other than the RP2040
+defines such as PICO_BOARD=pico_w, is PICO_PLATFORM.
+
+Playstation 2
+------------
+EE, Emotion-Engine, is the main CPU for the PS2.
+To compile libsmb2 for the PS2 EE, first install the PS2 toolchain and
+PS2 SDK and set it up.
+
+To build libsmb2.a, a version of libsmb2 for the EE tcpip stack:
+  $ make -f Makefile.platform clean
+  $ make -f Makefile.platform ps2_ee_install
+
+EE Using IOP Stack, It´s a different of EE
+version for when the LWIP stack is running on the IOP (libsmb2_rpc and linking
+with -lps2ips)
+
+To build libsmb2_rpc.a, a version of libsmb2 for ee with IOP tcpip stack:
+  $ make -f Makefile.platform clean
+  $ make -f Makefile.platform ps2_rpc_install
+
+IOP, IO-Processor is the secondary CPU for the PS2.
+The library is been used to build smb2man.irx module but it doesn´t comes with the library installed, To install libsmb2 for the PS2 IOP and smb2man.irx, first install the PS2 toolchain and PS2SDK and set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform clean
+  $ make -f Makefile.platform ps2_iop_install
+  $ make -f Makefile.platform clean  
+  $ make -f Makefile.platform ps2_irx_install
+
+PlayStation 3
+-------------
+PPU, PowerPC, is the main CPU for the PS3.
+To compile libsmb2 for the PS3 PPU, first install the PS3 toolchain and
+PSL1GHT SDK and set it up.
+
+Then to build libsmb2, run
+  $ cd lib
+  $ make -f Makefile.PS3_PPU install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+PSL1GHT SDK portlibs folder.
+
+PlayStation Vita
+-------------
+ARM® Cortex™ - A9 core (4 core), is the main CPU for the PSVITA.
+To compile libsmb2 for the PSVITA, first install the VitaSDK using
+vdpm 
+
+Then to build libsmb2, run
+  $ make vita_install -f Makefile.platform
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+VitaSDK libs folder.
+
+PlayStation 4
+-------------
+x86_64 is the main CPU for the PS4.
+To compile libsmb2 for the PS4 PPU, first install the PS4 toolchain and
+OpenOrbis SDK and set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform ps4_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+OpenOrbis SDK include folder.
+
+Nintendo 3DS
+-------------
+Nintendo 3DS CPU is a ARM11 MPCore variant.
+To compile libsmb2 for the Nintendo 3DS, first install the devkitPro with libctru to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform 3ds_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+devkitPro 3ds portlibs folder.
+
+Nintendo Switch
+-------------
+Nintendo Switch CPU is a Custom Nvidia Tegra X1.
+To compile libsmb2 for the Nintendo Switch, first install the devkitPro with libnx to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform switch_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+devkitPro switch portlibs folder.
+
+Nintendo Wii
+-------------
+Nintendo Wii CPU is a Broadway PowerPC processor.
+To compile libsmb2 for the Nintendo Wii, first install the devkitPro with libogc using pacman to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform wii_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+devkitPro wii portlibs folder.
+
+Nintendo Gamecube
+-------------
+Nintendo GameCube CPU is a IBM "Gekko" PowerPC CPU.
+To compile libsmb2 for the Gamecube, first install the devkitPro with libogc using pacman to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform gc_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+devkitPro gamecube portlibs folder.
+
+Nintendo DS 
+-------------
+Nintendo DS CPU is both ARM7TDMI and ARM946E-S.
+To compile libsmb2 for the Nintendo DS, first install the devkitPro with libnds using pacman to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform ds_install
+
+The process will copy the resulting libsmb29.a and the include/smb2 headers to your
+devkitPro ds portlibs folder on: lib/arm9.
+
+Nintendo WII-U
+-------------
+Nintendo Wii-U CPU is a IBM "Espresso" PowerPC-based 45 nm, with 4 cores and a clock speed of 1.24 GHz.
+To compile libsmb2 for the Nintendo WII-U, first install the devkitPro with libwut using pacman to set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform wiiu_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+devkitPro wiiu portlibs folder.
+
+Amiga (AmigaOS)
+----------------------
+AmigaOS is Operating system which the main processor is a Microprocessor PowerPC.
+There are 3 versions:
+AmigaOS4(Makefile.AMIGA)
+AmigaOS3(Makefile.AMIGA_OS3)
+AmigaAROS(Makefile.AMIGA_AROS)
+To compile libsmb2 for the AmigaOS, you need to set newlib.library V53.40 or newer (or V53.30 as included in 4.1 FE) and 
+filesysbox.library 54.4 or newer to set it up.
+
+Then to build libsmb2, choose the makefile acording your AmigaOS system and hit
+  $ cd lib
+  $ make -f Makefile.YOUR_AMIGA_OS_USED clean install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers in the bin folder inside of the lib folder  
+NOTE: Amiga AROS is a Open Source version of AmigaOS, So do not build this version unless you are using the AmigaAROS.
+
+Dreamcast (KallistiOS)
+----------------------
+Hitachi SH4 in little-endian mode is the main CPU for the Dreamcast.
+To compile libsmb2 for the Dreamcast, first install the KOS toolchain and
+and set it up.
+
+Then to build libsmb2, run
+  $ make -f Makefile.platform clean dc_install
+
+The process will copy the resulting libsmb2.a and the include/smb2 headers to your
+KallistiOS toolchain install location addons folder.
+NOTE: There is not yet a kos-ports entry for libsmb2 but once a versioned release
+that includes Dreamcast support is created installing from kos-ports will become
+the preferred method of installation.
+
+Xbox (Xbox XDK)
+----------------------
+Xbox CPU is a custom Intel Pentium III Coppermine-based processor which only supports litlle endian values.
+To compile libsmb2 for the Xbox, first install the RXDK from the Team Resurgent.
+
+Then to build libsmb2, go to Xbox folder 
+and open the provided .sln file, Then hit the green button to build:
+
+The process will result a libsmb2.lib. So you can copy the include files
+and the .lib file to your Xbox project.
+
+Xbox 360 (Xbox 360 SDK)
+----------------------
+Xbox 360 CPU is a PPC(PowerPC) Xenon which only supports only big endian values.
+To compile libsmb2 for the Xbox 360, first install the Xbox 360 SDK(with all features), Microsoft Visual C++ 2010 Ultimate and Windows XP(Recommended) or Windows 7.
+
+Then to build libsmb2, go to Xbox 360 folder 
+and open the provided .sln file, Then hit the green button to build:
+
+The process will result a libsmb2.lib. So you can copy the include files
+and the .lib file to your Xbox 360 project.
+
+NOTE: Both ports was based on XBMC-360 port by BDC(Brent De Cartet) and now being updated to libsmb2 standards to best performance.

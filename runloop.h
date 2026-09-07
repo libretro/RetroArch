@@ -80,6 +80,10 @@ enum runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
+   /* A one-shot menu action was performed and the next iteration should
+    * start clean. Not idle: returns to the caller immediately, without
+    * the idle sleep POLLED_AND_SLEEP takes. */
+   RUNLOOP_STATE_POLLED_AND_CONTINUE,
    RUNLOOP_STATE_PAUSE,
    RUNLOOP_STATE_MENU,
    RUNLOOP_STATE_QUIT
@@ -125,9 +129,19 @@ enum runloop_flags
    RUNLOOP_FLAG_PAUSED                            = (1 << 27),
    RUNLOOP_FLAG_IDLE                              = (1 << 28),
    RUNLOOP_FLAG_FOCUSED                           = (1 << 29),
-   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30),
-   RUNLOOP_FLAG_IS_INITED                         = (1 << 31)
+   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30)
+   /* (1 << 31) was RUNLOOP_FLAG_IS_INITED.  Moved out of this word into
+    * an atomic behind the runloop_is_inited_* accessors: it is the only
+    * bit here read off the main thread (the AppIntents entity query runs
+    * on a GCD worker), and the main thread's non-atomic read-modify-
+    * writes of this word would race that read.  Bit left reserved. */
 };
+
+/* Whether retroarch_main_init() has completed.  Written on the main
+ * thread, readable from any thread. */
+void runloop_is_inited_set(void);
+void runloop_is_inited_clear(void);
+bool runloop_is_inited(void);
 
 /* Contains the current retro_fastforwarding_override
  * parameters along with any pending updates triggered
@@ -171,7 +185,44 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   /* The same period and anchor in nanoseconds, for the gap limiter's
+    * schedule: a period rounded to whole microseconds is 21 ppm off
+    * at 59.94 Hz, which the schedule would carry into every frame. */
+   int64_t      frame_limit_minimum_time_ns;
+   int64_t      frame_limit_anchor_ns;
+   /* How early the gap limiter's sleep is asked to return, so the
+    * remainder can be spun to the deadline: the sleep's observed
+    * overshoot, tracked by runloop_pace_margin_update(). */
+   retro_time_t frame_limit_margin;
+   /* When the previous iteration reached the pacing block, and the
+    * smoothed interval between iterations. The pace bits say who
+    * claims to be holding the loop; this says how fast it is actually
+    * going, which is the other half of the same question - a source
+    * that claims the loop while the loop runs at three times the
+    * content rate is not holding anything. */
+   retro_time_t pace_iter_last;
+   retro_time_t pace_period_usec;
+   unsigned     pace;                           /* enum runloop_pace_source bits */
    retro_usec_t frame_time_last;                /* int64_t alignment */
+
+   /* Per-frame scalar state. Kept adjacent to the timing block above so the
+    * whole set the frame loop evaluates every iteration lands in the first
+    * cache lines of the struct, rather than ~348 lines further in behind the
+    * content/system/subsystem blocks. Declaration order only; every access is
+    * by member name. */
+   fastmotion_overrides_t fastmotion_override;  /* float alignment */
+
+   enum rarch_core_type current_core_type;
+   enum rarch_core_type explicit_current_core_type;
+   enum poll_type_override_t core_poll_type_override;
+#if defined(HAVE_RUNAHEAD)
+   enum rarch_core_type last_core_type;
+#endif
+
+   uint32_t flags;
+   int16_t entry_state_slot;
+   uint8_t pending_disk_control_insert;
+   int8_t run_frames_and_pause;
 
    struct retro_core_t        current_core;     /* uint64_t alignment */
 #if defined(HAVE_RUNAHEAD)
@@ -183,7 +234,13 @@ struct runloop
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    char    *secondary_library_path;
 #endif
-   my_list *runahead_save_state_list;
+   /* Embedded directly: was previously a my_list wrapper holding a
+    * single retro_ctx_serialize_info_t* in data[0].  The list machinery
+    * was overkill for one pointer — two extra mallocs at init (the
+    * my_list struct + its 16-slot data array), one extra indirection
+    * per access, and a constructor/destructor function-pointer pair
+    * for what amounts to alloc/free of a data buffer. */
+   retro_ctx_serialize_info_t runahead_savestate_info;
    my_list *input_state_list;
    preempt_t *preempt_data;
 #endif
@@ -252,22 +309,8 @@ struct runloop
    unsigned fastforward_after_frames;
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
-   unsigned entry_state_slot;
    unsigned video_swap_interval_auto;
-
-   fastmotion_overrides_t fastmotion_override; /* float alignment */
-
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
-
-   enum rarch_core_type current_core_type;
-   enum rarch_core_type explicit_current_core_type;
-   enum poll_type_override_t core_poll_type_override;
-#if defined(HAVE_RUNAHEAD)
-   enum rarch_core_type last_core_type;
-#endif
-
-   uint32_t flags;
-   int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
 #ifdef HAVE_SCREENSHOTS
@@ -287,21 +330,190 @@ struct runloop
 
    struct
    {
+      /* TODO/FIXME: Same type for all */
       char *remapfile;
-      char savefile [PATH_MAX_LENGTH*2];
-      char savestate[PATH_MAX_LENGTH*2];
-      char replay   [PATH_MAX_LENGTH*2];
-      char cheatfile[PATH_MAX_LENGTH*2];
-      char ups      [PATH_MAX_LENGTH*2];
-      char bps      [PATH_MAX_LENGTH*2];
-      char ips      [PATH_MAX_LENGTH*2];
-      char xdelta   [PATH_MAX_LENGTH*2];
-      char label    [PATH_MAX_LENGTH*2];
+      char label    [PATH_MAX_LENGTH];
+      char savefile [PATH_MAX_LENGTH];
+      char savestate[PATH_MAX_LENGTH];
+      char replay   [PATH_MAX_LENGTH];
+      char cheatfile[PATH_MAX_LENGTH];
+      char ups      [PATH_MAX_LENGTH];
+      char bps      [PATH_MAX_LENGTH];
+      char ips      [PATH_MAX_LENGTH];
+      char xdelta   [PATH_MAX_LENGTH];
    } name;
 
-   bool missing_bios;
    bool perfcnt_enable;
+   bool paused_hotkey;
+
+   /* True from the moment closing content starts tearing the core
+    * down until the teardown is finished.
+    *
+    * Set and cleared around the existing synchronous teardown, so at
+    * present nothing can observe it as true: the main thread is
+    * inside that teardown for its whole duration and no frame runs.
+    * It is introduced separately, and deliberately inert, because
+    * the work that makes it observable - returning to the frame loop
+    * instead of blocking - is a lifecycle change, and this is the
+    * piece everything else will key off.
+    *
+    * A plain bool rather than a RUNLOOP_FLAG bit: bits 0-30 of that
+    * word are taken and bit 31 was deliberately vacated to avoid a
+    * cross-thread race, so reusing it would undo that reasoning for
+    * no gain. This is main-thread only. */
+   bool content_closing;
+   /* An external clock is calling runloop_iterate(); see
+    * RUNLOOP_PACE_EXTERNAL. Main-thread only, same reasoning. */
+   bool pace_external;
 };
+
+/* Frame pacing sources.
+ *
+ * The loop is held to a rate by whichever of these block on a given
+ * frame. They are not exclusive and they are not prioritised: VSync
+ * blocks in the video driver's present, audio backpressure blocks in
+ * audio_driver_write(), Scanline Sync waits in
+ * video_driver_scanline_after_frame(), and the frame-limit timer sleeps
+ * at the end of runloop_iterate(). Any combination can be live on the
+ * same frame, which is why VSync together with audio_sync stutters -
+ * two hardware clocks holding the same loop - and why the comment at
+ * the RUNLOOP_STATE_MENU throttle special-cases audio backpressure
+ * against the timer.
+ *
+ * runloop_state_t::pace records the composition for the current
+ * frame, computed once in runloop_pace_compute() from the same
+ * conditions each mechanism already tests. It does not yet choose
+ * between them: this is the composition made explicit, so that a
+ * priority can be decided in one place later rather than by adding a
+ * fourth special case in a third file. A bitmask rather than an enum
+ * for exactly that reason - a single value would assert a choice the
+ * loop does not currently make. */
+enum runloop_pace_source
+{
+   RUNLOOP_PACE_NONE     = 0,
+   RUNLOOP_PACE_VSYNC    = (1 << 0), /* display: present blocks          */
+   RUNLOOP_PACE_AUDIO    = (1 << 1), /* audio crystal: write blocks      */
+   RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
+   RUNLOOP_PACE_TIMER    = (1 << 3), /* CPU counter: frame-limit sleep   */
+   RUNLOOP_PACE_NOWINDOW = (1 << 4), /* nothing to present to: wait      */
+   /* The host is calling runloop_iterate() at the content rate from
+    * somewhere it must return quickly to - a Win32 modal size/move
+    * loop, for one. The frame-limit sleep, frame delay, and the
+    * no-window wait yield to that clock rather than stack on it. Set
+    * from runloop_state_t::pace_external. */
+   RUNLOOP_PACE_EXTERNAL = (1 << 5)
+};
+
+/* The three pacing decisions the runloop makes every iteration, here
+ * rather than in runloop.c so samples/runloop/pacing can run the
+ * shipping versions instead of a copy that drifts from them. Each is
+ * pure: no state, no clock, nothing to mock. */
+
+/* One frame of the content's own time, in microseconds. Bounded either
+ * way: a core is free to report a nonsense rate, and neither a busy
+ * loop nor a ten-second stall is a reasonable reading of one frame.
+ * A rate of zero means "unknown", which is taken as 60 Hz. */
+static INLINE retro_time_t runloop_content_frame_time_us(float core_hz)
+{
+   retro_time_t period = (core_hz > 0.0f)
+         ? (retro_time_t)(1000000.0f / core_hz) : 16667;
+   if (period < 1000)
+      return 1000;
+   if (period > 100000)
+      return 100000;
+   return period;
+}
+
+/* Whether the frame limiter should hold the loop to the display rate
+ * because nothing else is: an empty pace record means no vsync, no
+ * audio, no scanline lock, and no fast-forward limit to fall back on.
+ * With audio rate control, whose resampler follows the loop so the
+ * loop can follow the display; or with Scanline Sync enabled, whose
+ * record bit clears while it recalibrates and which is aiming at the
+ * display rate anyway, so the timer bridges the recalibration rather
+ * than fighting it. Otherwise the content rate is what Sync to Exact
+ * Content Framerate is for, and the loop runs unlimited as
+ * configured. Never under fast-forward, where running unthrottled is
+ * the point. */
+static INLINE bool runloop_pace_gap_engages(unsigned pace,
+      bool nonblocking, bool fastmotion, bool scanline_sync,
+      bool rate_control)
+{
+   return (pace == RUNLOOP_PACE_NONE)
+      && !nonblocking && !fastmotion && (scanline_sync || rate_control);
+}
+
+/* One frame of the content's own time, in nanoseconds, with the same
+ * bounds as runloop_content_frame_time_us(). */
+static INLINE int64_t runloop_content_frame_time_ns(float core_hz)
+{
+   int64_t period = (core_hz > 0.0f)
+         ? (int64_t)(1000000000.0 / (double)core_hz) : 16666667;
+   if (period < 1000000)
+      return 1000000;
+   if (period > 100000000)
+      return 100000000;
+   return period;
+}
+
+/* The gap limiter's schedule, in nanoseconds so that a period that is
+ * not a whole number of microseconds - 16683.35 us at 59.94 Hz - is
+ * kept exactly over any span. @anchor_ns is where the last frame was
+ * due; the next is due a period after it. Returns the microseconds
+ * until then, rounded up, or 0 when it has passed, and moves
+ * @anchor_ns to the slot the frame is taken as filling: the due time
+ * when on time or late by less than a period, so the lateness is caught
+ * up on the next frame rather than kept; now when late by a period or
+ * more, a stall, from which the schedule restarts rather than chases.
+ * The caller spins to @anchor_ns / 1000 after the sleep. */
+static INLINE retro_time_t runloop_pace_schedule(int64_t *anchor_ns,
+      int64_t period_ns, retro_time_t now_us)
+{
+   int64_t now = (int64_t)now_us * 1000;
+   int64_t due = *anchor_ns + period_ns;
+   if (now < due)
+   {
+      *anchor_ns = due;
+      return (retro_time_t)((due - now + 999) / 1000);
+   }
+   if (now - due < period_ns)
+   {
+      *anchor_ns = due;
+      return 0;
+   }
+   *anchor_ns = now;
+   return 0;
+}
+
+/* The gap limiter's sleep margin: how early the sleep is asked to
+ * return, so the remainder can be spun to the deadline. It tracks the
+ * sleep's observed overshoot - up at once, since one late sleep is a
+ * frame late; down by a sixteenth a frame, so a single quiet sleep does
+ * not unwind it - and never past a quarter of the period, so the spin
+ * stays a fraction of the frame. */
+static INLINE retro_time_t runloop_pace_margin_update(retro_time_t margin,
+      retro_time_t overshoot, retro_time_t period)
+{
+   if (overshoot < 0)
+      overshoot = 0;
+   if (overshoot > margin)
+      margin = overshoot;
+   else
+      margin -= (margin - overshoot) / 16;
+   if (margin > period / 4)
+      margin = period / 4;
+   return margin;
+}
+
+/* Whether an interval between iterations is worth averaging into the
+ * measured loop rate. Anything past a quarter second is a stall - a
+ * state load, a shader rebuild - not pacing, and one of them drags an
+ * eight-sample average far enough to misreport for several frames.
+ * Nothing that genuinely holds the loop runs slower than 4 Hz. */
+static INLINE bool runloop_pace_sample_usable(retro_time_t delta_us)
+{
+   return delta_us > 0 && delta_us < 250000;
+}
 
 typedef struct runloop runloop_state_t;
 
@@ -394,14 +606,8 @@ float runloop_get_fastforward_ratio(
       struct retro_fastforwarding_override *fastmotion_override);
 
 void runloop_set_video_swap_interval(
-      bool vrr_runloop_enable,
-      bool crt_switching_active,
-      unsigned swap_interval_config,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes,
-      float audio_max_timing_skew,
-      float video_refresh_rate,
-      double input_fps);
+      settings_t *settings);
+
 unsigned runloop_get_video_swap_interval(
       unsigned swap_interval_config);
 
@@ -410,7 +616,20 @@ void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush);
 
-bool secondary_core_ensure_exists(void *data, settings_t *settings);
+/* Status of the asynchronous secondary-core binary copy. Only
+ * RUNAHEAD_COPY_READY means the secondary instance exists and its
+ * function pointers are safe to call; PENDING means the copy task
+ * is still running (callers should skip quietly and retry later,
+ * NOT tear the secondary state down). */
+enum runahead_copy_status
+{
+   RUNAHEAD_COPY_UNAVAILABLE = 0,
+   RUNAHEAD_COPY_PENDING,
+   RUNAHEAD_COPY_READY
+};
+
+enum runahead_copy_status secondary_core_ensure_exists(void *data,
+      settings_t *settings);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);
@@ -425,15 +644,13 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
-bool runloop_get_entry_state_path(char *path, size_t len, unsigned slot);
+bool runloop_get_entry_state_path(char *path, size_t len, int slot);
 
 bool runloop_get_current_savestate_path(char *path, size_t len);
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
 
-bool runloop_get_current_replay_path(char *path, size_t len);
-
-bool runloop_get_replay_path(char *path, size_t len, unsigned slot);
+bool runloop_get_replay_path(char *path, size_t len, int slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);
 
@@ -461,6 +678,15 @@ bool runloop_init_libretro_symbols(
       void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
+
+/**
+ * runloop_is_content_closing:
+ *
+ * True while content is being closed, i.e. while the core is being
+ * torn down.  Currently only ever true inside the synchronous
+ * teardown, where nothing else runs to ask.
+ */
+bool runloop_is_content_closing(void);
 
 RETRO_END_DECLS
 

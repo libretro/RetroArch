@@ -1,0 +1,13 @@
+"project_id": "380544"
+"api_token": "_secret_"
+"base_url": "https://api.crowdin.com"
+"preserve_hierarchy": true
+
+"files":
+  [
+    {
+      "source": "/_core_name_/_us.json",
+      "dest": "/_core_name_/_core_name_.json",
+      "translation": "/_core_name_/_%two_letters_code%.json",
+    },
+  ]

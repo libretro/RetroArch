@@ -90,6 +90,7 @@ static void wl_keyboard_handle_leave(void *data,
    memset(wl->input.key_state, 0, sizeof(wl->input.key_state));
 }
 
+#ifndef WEBOS
 static void wl_keyboard_handle_key(void *data,
       struct wl_keyboard *keyboard,
       uint32_t serial,
@@ -133,6 +134,7 @@ static void wl_keyboard_handle_key(void *data,
          input_keymaps_translate_keysym_to_rk(keysym),
          0, 0, RETRO_DEVICE_KEYBOARD);
 }
+#endif
 
 static void wl_keyboard_handle_modifiers(void *data,
       struct wl_keyboard *keyboard,
@@ -595,6 +597,14 @@ static bool wl_current_outputs_add(gfx_ctx_wayland_data_t *wl,
    {
       surface_output_t *os = (surface_output_t*)
          calloc(1, sizeof(surface_output_t));
+      /* NULL-check: the field writes below NULL-deref on OOM.
+       * Skip this output from the current_outputs list; the
+       * subsequent wl_list_for_each traversal in
+       * wl_current_outputs_remove handles a missing entry
+       * gracefully (the loop simply doesn't find a match and
+       * returns false). */
+      if (!os)
+         return false;
       os->output = oi_found;
       wl_list_insert(&wl->current_outputs, &os->link);
       return true;
@@ -730,7 +740,7 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    int found = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   RARCH_DBG("[Wayland]: Add global %u, interface %s, version %u\n",
+   RARCH_DBG("[Wayland] Add global %u, interface %s, version %u.\n",
          id, interface, version);
 
    if (string_is_equal(interface, wl_compositor_interface.name) && found++)
@@ -739,6 +749,12 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, wp_viewporter_interface.name) && found++)
       wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
             id, &wp_viewporter_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_presentation_interface.name) && found++)
+   {
+      wl->presentation = (struct wp_presentation*)wl_registry_bind(reg,
+         id, &wp_presentation_interface, MIN(version, 2));
+      wp_presentation_add_listener(wl->presentation, &presentation_listener, wl);
+   }
    else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name) && found++)
       wl->fractional_scale_manager = (struct wp_fractional_scale_manager_v1*)
          wl_registry_bind(reg, id, &wp_fractional_scale_manager_v1_interface, MIN(version, 1));
@@ -749,17 +765,30 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       output_info_t *oi = (output_info_t*)
          calloc(1, sizeof(output_info_t));
 
-      od->output    = oi;
-      oi->global_id = id;
-      oi->output    = (struct wl_output*)wl_registry_bind(reg,
-            id, &wl_output_interface, MIN(version, 2));
-      wl_output_add_listener(oi->output, &output_listener, oi);
-      wl_list_insert(&wl->all_outputs, &od->link);
-      wl_display_roundtrip(wl->input.dpy);
+      /* NULL-check both callocs: od->output = oi and
+       * oi->global_id = id NULL-deref on OOM.  Free whichever
+       * succeeded (free(NULL) is a no-op) and skip adding this
+       * output to wl->all_outputs - the compositor will re-emit
+       * wl_registry.global if it needs us to retry, and missing
+       * outputs fall back to sensible defaults downstream. */
+      if (!od || !oi)
+      {
+         free(od);
+         free(oi);
+      }
+      else
+      {
+         od->output    = oi;
+         oi->global_id = id;
+         oi->output    = (struct wl_output*)wl_registry_bind(reg,
+               id, &wl_output_interface, MIN(version, 2));
+         wl_output_add_listener(oi->output, &output_listener, oi);
+         wl_list_insert(&wl->all_outputs, &od->link);
+      }
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
-         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
+         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 6));
    else if (string_is_equal(interface, wl_shm_interface.name) && found++)
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_seat_interface.name) && found++)
@@ -806,9 +835,21 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->single_pixel_manager = (struct wp_single_pixel_buffer_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_single_pixel_buffer_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, xdg_toplevel_icon_manager_v1_interface.name) && found++)
+      wl->xdg_toplevel_icon_manager = (struct xdg_toplevel_icon_manager_v1*)
+         wl_registry_bind(
+            reg, id, &xdg_toplevel_icon_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, xdg_toplevel_tag_manager_v1_interface.name) && found++)
+      wl->xdg_toplevel_tag_manager = (struct xdg_toplevel_tag_manager_v1*)
+         wl_registry_bind(
+            reg, id, &xdg_toplevel_tag_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_tearing_control_manager_v1_interface.name) && found++)
+      wl->tearing_control_manager = (struct wp_tearing_control_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_tearing_control_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
-   RARCH_LOG("[Wayland]: Registered interface %s at version %u\n",
+   RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",
          interface, version);
 }
 
@@ -825,7 +866,23 @@ static void wl_registry_handle_global_remove(void *data,
       {
          if (wl_current_outputs_remove(wl, od->output->output))
             surface_output_removed = true;
+
+         /* wl->current_output points into the output_info_t about to
+          * be freed.  wl_update_scale() below only reassigns it when
+          * it finds a replacement, so on the last output going away --
+          * a single monitor unplugged, or the surface leaving every
+          * output -- it would be left dangling for the next scale
+          * query to read. */
+         if (wl->current_output == od->output)
+            wl->current_output = NULL;
+
          wl_list_remove(&od->link);
+         /* The wl_output proxy is ours from wl_registry_bind() and has
+          * to go back; freeing only the output_info_t leaks it on
+          * every hotplug.  The teardown in
+          * gfx/common/wayland_common.c does destroy it. */
+         if (od->output->output)
+            wl_output_destroy(od->output->output);
          free(od->output);
          free(od);
          break;
@@ -859,11 +916,11 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
       bool null_terminate)
 {
    char temp[PIPE_BUF];
-   void* output_buffer      = NULL;
-   size_t new_buffer_length = 0;
-   ssize_t bytes_read       = 0;
-   size_t pos               = 0;
-   int ready                = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
+   void* output_buffer = NULL;
+   size_t _len         = 0;
+   ssize_t bytes_read  = 0;
+   size_t pos          = 0;
+   int ready           = wl_ioready(fd, IOR_READ, PIPE_MS_TIMEOUT);
 
    if (ready == 0)     /* Pipe timeout? */
       bytes_read = -1;
@@ -873,27 +930,48 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
    {
       if ((bytes_read = read(fd, temp, sizeof(temp))) > 0)
       {
-         pos                   = *total_length;
-         *total_length        += bytes_read;
+         pos              = *total_length;
+         *total_length   += bytes_read;
 
          if (null_terminate)
-            new_buffer_length  = *total_length + 1;
+            _len          = *total_length + 1;
          else
-            new_buffer_length = *total_length;
+            _len          = *total_length;
 
          if (*buffer == NULL)
-            output_buffer      = malloc(new_buffer_length);
+            output_buffer = malloc(_len);
          else
-            output_buffer      = realloc(*buffer, new_buffer_length);
+            output_buffer = realloc(*buffer, _len);
 
          if (output_buffer)
          {
             memcpy((uint8_t*)output_buffer + pos, temp, bytes_read);
 
             if (null_terminate)
-               memset((uint8_t*)output_buffer + (new_buffer_length - 1), 0, 1);
+               memset((uint8_t*)output_buffer + (_len - 1), 0, 1);
 
             *buffer = output_buffer;
+         }
+         else
+         {
+            /* Allocation failed.  Previously this branch silently
+             * dropped the bytes_read data, left *total_length
+             * incremented (so the caller thought the buffer had
+             * grown), and returned a positive bytes_read - the
+             * caller's 'while (wl_read_pipe(...) > 0)' loop then
+             * continued and the next iteration wrote at offset
+             * 'pos = *total_length' which sat past the end of the
+             * still-unchanged *buffer, corrupting whatever lived
+             * there.  On realloc failure *buffer is also left
+             * pointing at the old (smaller) allocation, so the
+             * old data is still valid, but the length accounting
+             * is a lie.
+             *
+             * Restore the invariant by rewinding *total_length
+             * and reporting -1 to the caller so its while-loop
+             * terminates. */
+            *total_length = pos;
+            bytes_read    = -1;
          }
       }
    }
@@ -903,17 +981,16 @@ static ssize_t wl_read_pipe(int fd, void** buffer, size_t* total_length,
 
 static void *wayland_data_offer_receive(
       struct wl_display *display, struct wl_data_offer *offer,
-      size_t *length,
-      const char* mime_type, bool null_terminate)
+      size_t *length, const char* mime_type, bool null_terminate)
 {
    int pipefd[2];
    void *buffer = NULL;
    *length      = 0;
 
    if (!offer)
-      RARCH_WARN("[Wayland]: Invalid data offer\n");
+      RARCH_WARN("[Wayland] Invalid data offer.\n");
    else if (pipe2(pipefd, O_CLOEXEC|O_NONBLOCK) == -1)
-      RARCH_WARN("[Wayland]: Could not read pipe");
+      RARCH_WARN("[Wayland] Could not read pipe.\n");
    else
    {
       wl_data_offer_receive(offer, mime_type, pipefd[1]);
@@ -934,6 +1011,15 @@ static void wl_data_device_handle_data_offer(void *data,
       struct wl_data_device *data_device, struct wl_data_offer *offer)
 {
    data_offer_ctx *offer_data = (data_offer_ctx*)calloc(1, sizeof *offer_data);
+
+   /* NULL-check: the field writes below NULL-deref on OOM.
+    * On failure skip the offer - wl_data_offer_set_user_data
+    * would have attached this pointer for the listener
+    * callbacks to retrieve, so without it the offer just
+    * doesn't get handled by this client.  That's a lost
+    * drag-and-drop operation rather than a crash. */
+   if (!offer_data)
+      return;
 
    offer_data->offer          = offer;
    offer_data->data_device    = data_device;
@@ -996,8 +1082,7 @@ static void wl_data_device_handle_drop(void *data,
    FILE *stream;
    int pipefd[2];
    void *buffer;
-   size_t length;
-   size_t len                 = 0;
+   size_t __len, _len         = 0;
    ssize_t read               = 0;
    char *line                 = NULL;
    char file_list[512][512]   = { 0 };
@@ -1012,7 +1097,7 @@ static void wl_data_device_handle_drop(void *data,
 
    pipe(pipefd);
 
-   buffer = wayland_data_offer_receive(wl->input.dpy, offer_data->offer, &length, FILE_MIME, false);
+   buffer = wayland_data_offer_receive(wl->input.dpy, offer_data->offer, &__len, FILE_MIME, false);
 
    close(pipefd[1]);
    close(pipefd[0]);
@@ -1023,17 +1108,17 @@ static void wl_data_device_handle_drop(void *data,
    wl_data_offer_destroy(offer_data->offer);
    free(offer_data);
 
-   if (!(stream = fmemopen(buffer, length, "r")))
+   if (!(stream = fmemopen(buffer, __len, "r")))
    {
-      RARCH_WARN("[Wayland]: Failed to open DnD buffer\n");
+      RARCH_WARN("[Wayland] Failed to open DnD buffer.\n");
       return;
    }
 
-   RARCH_WARN("[Wayland]: Files opp:\n");
-   while ((read = getline(&line,  &len, stream)) != -1)
+   RARCH_WARN("[Wayland] Files opp:\n");
+   while ((read = getline(&line,  &_len, stream)) != -1)
    {
       line[strcspn(line, "\r\n")] = 0;
-      RARCH_DBG("[Wayland]: > \"%s\"\n", line);
+      RARCH_DBG("[Wayland] > \"%s\".\n", line);
 
       /* TODO/FIXME: Convert from file:// URI, Implement file loading
        * Drag and Drop */
@@ -1118,7 +1203,11 @@ const struct wl_keyboard_listener keyboard_listener = {
    wl_keyboard_handle_keymap,
    wl_keyboard_handle_enter,
    wl_keyboard_handle_leave,
+#ifdef WEBOS
+   wl_keyboard_handle_key_webos,
+#else
    wl_keyboard_handle_key,
+#endif
    wl_keyboard_handle_modifiers,
    wl_keyboard_handle_repeat_info
 };
@@ -1160,23 +1249,33 @@ void flush_wayland_fd(void *data)
    struct pollfd fd             = {0};
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
 
-   wl_display_dispatch_pending(wl->dpy);
-   wl_display_flush(wl->dpy);
-
    fd.fd                        = wl->fd;
    fd.events                    = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
+   while (wl_display_prepare_read(wl->dpy))
+      wl_display_dispatch_pending(wl->dpy);
+
+   wl_display_flush(wl->dpy);
+
    if (poll(&fd, 1, 0) > 0)
    {
+      if (fd.revents & POLLIN)
+      {
+         wl_display_read_events(wl->dpy);
+         wl_display_dispatch_pending(wl->dpy);
+      }
+      else
+         wl_display_cancel_read(wl->dpy);
+
+      if (fd.revents & POLLOUT)
+         wl_display_flush(wl->dpy);
+
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->fd);
          frontend_driver_set_signal_handler_state(1);
       }
-
-      if (fd.revents & POLLIN)
-         wl_display_dispatch(wl->dpy);
-      if (fd.revents & POLLOUT)
-         wl_display_flush(wl->dpy);
    }
+   else
+      wl_display_cancel_read(wl->dpy);
 }

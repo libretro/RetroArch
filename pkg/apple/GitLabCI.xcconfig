@@ -9,5 +9,5 @@
 
 #include "Metal.xcconfig"
 DEVELOPMENT_TEAM=UK699V5ZS8
-OTHER_CFLAGS = $(inherited) -DHAVE_ICLOUD
+OTHER_CFLAGS = $(inherited) -DHAVE_ICLOUD -DHAVE_ICLOUD_DRIVE
 CODE_SIGN_ENTITLEMENTS = RetroArchCI.entitlements

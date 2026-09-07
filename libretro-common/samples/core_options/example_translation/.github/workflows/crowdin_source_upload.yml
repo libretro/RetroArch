@@ -1,0 +1,37 @@
+# Prepare source texts & upload them to Crowdin
+
+name: Crowdin Source Texts Upload
+
+# on change to the English texts
+on:
+  workflow_dispatch
+  push:
+    branches:
+      - master
+    paths:
+      - '<PATH/TO>/libretro_core_options.h'
+
+jobs:
+  upload_source_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 18
+          distribution: zulu
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Upload Source
+        shell: bash
+        env:
+          CROWDIN_API_KEY: ${{ secrets.CROWDIN_API_KEY }}
+        run: |
+          python3 intl/upload_workflow.py $CROWDIN_API_KEY "<CORE_NAME>" "<PATH/TO>/libretro_core_options.h"

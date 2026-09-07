@@ -18,6 +18,8 @@
 #pragma comment(lib, "dinput8")
 #endif
 
+#define WIN32_LEAN_AND_MEAN
+
 #undef DIRECTINPUT_VERSION
 #define DIRECTINPUT_VERSION 0x0800
 
@@ -42,8 +44,6 @@
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
-
-#include <string/stdstring.h>
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -81,7 +81,8 @@ enum dinput_input_flags
    DINP_FLAG_MOUSE_WU_BTN      = (1 << 10),
    DINP_FLAG_MOUSE_WD_BTN      = (1 << 11),
    DINP_FLAG_MOUSE_HWU_BTN     = (1 << 12),
-   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13)
+   DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13),
+   DINP_FLAG_MOUSE_IGNORE      = (1 << 14)
 };
 
 struct dinput_input
@@ -141,7 +142,7 @@ static void *dinput_init(const char *joypad_driver)
    if (!(di = (struct dinput_input*)calloc(1, sizeof(*di))))
       return NULL;
 
-   if (!string_is_empty(joypad_driver))
+   if (joypad_driver && *joypad_driver)
       di->joypad_drv_name = strdup(joypad_driver);
 
 #ifdef __cplusplus
@@ -172,10 +173,10 @@ static void *dinput_init(const char *joypad_driver)
 
    if (di->keyboard)
    {
-      settings_t *settings = config_get_ptr();
-      DWORD flags          = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
-      if (settings->bools.input_nowinkey_enable)
-         flags            |= DISCL_NOWINKEY;
+      bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
+      DWORD flags                = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
+      if (input_nowinkey_enable)
+         flags                  |= DISCL_NOWINKEY;
 
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
@@ -200,40 +201,14 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-static uint16_t dinput_get_active_keyboard_mods()
-{
-   uint16_t mod = 0;
-   if (GetKeyState(VK_SHIFT)   & 0x80)
-      mod |= RETROKMOD_SHIFT;
-   if (GetKeyState(VK_CONTROL) & 0x80)
-      mod |= RETROKMOD_CTRL;
-   if (GetKeyState(VK_MENU)    & 0x80)
-      mod |= RETROKMOD_ALT;
-   if (GetKeyState(VK_CAPITAL) & 0x81)
-      mod |= RETROKMOD_CAPSLOCK;
-   if (GetKeyState(VK_SCROLL)  & 0x81)
-      mod |= RETROKMOD_SCROLLOCK;
-   if (GetKeyState(VK_NUMLOCK) & 0x81)
-      mod |= RETROKMOD_NUMLOCK;
-   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-      mod |= RETROKMOD_META;
-   return mod;
-}
-
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   uint8_t *kb_state       = NULL;
 
    if (!di)
       return;
 
-   kb_state                = &di->state[0];
-
-   for (
-         ; kb_state < di->state + 256
-         ; kb_state++)
-      *kb_state = 0;
+   memset(di->state, 0, sizeof(di->state));
 
    if (di->keyboard)
    {
@@ -241,14 +216,13 @@ static void dinput_poll(void *data)
                   di->keyboard, sizeof(di->state), di->state)))
       {
          IDirectInputDevice8_Acquire(di->keyboard);
+         /* Clear again: GetDeviceState() does not promise to leave the
+          * buffer untouched when it fails, and a partial write would
+          * otherwise be read as live key state. dinput_joypad_poll()
+          * does the same for its own device state. */
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
-         {
-            for (
-                  ; kb_state < di->state + 256
-                  ; kb_state++)
-               *kb_state = 0;
-         }
+            memset(di->state, 0, sizeof(di->state));
       }
       else
       {
@@ -258,31 +232,31 @@ static void dinput_poll(void *data)
 
       /* If both shift keys are pressed simultaneously, the OS will not issue
        * a WM_KEYUP for the first one. That up event will be issued here. */
-      if ((di->flags & DINP_FLAG_SHIFT_L) && !(GetAsyncKeyState(VK_LSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_L) && !(di->state[DIK_LSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_LSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_L;
       }
-      if ((di->flags & DINP_FLAG_SHIFT_R) && !(GetAsyncKeyState(VK_RSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_R) && !(di->state[DIK_RSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_RSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_R;
       }
 
       /* When using alt-tab, the alt key won't get a WM_KEYUP message from the
        * OS. Instead we issue it here when ALT isn't pressed down anymore. */
-      if ((di->flags & DINP_FLAG_ALT_L) && !(GetAsyncKeyState(VK_LMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_L) && !(di->state[DIK_LMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_LALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_L;
       }
-      if ((di->flags & DINP_FLAG_ALT_R) && !(GetAsyncKeyState(VK_RMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_R) && !(di->state[DIK_RMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_RALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_R;
       }
    }
@@ -388,14 +362,21 @@ static void dinput_poll(void *data)
       ScreenToClient((HWND)video_driver_window_get(), &point);
       di->mouse_x = point.x;
       di->mouse_y = point.y;
+
+      /* Ignore application focusing mouse clicks */
+      if (di->flags & DINP_FLAG_MOUSE_IGNORE)
+      {
+         if (mouse_state.rgbButtons[0] || mouse_state.rgbButtons[1])
+            di->flags &= ~(DINP_FLAG_MOUSE_L_BTN | DINP_FLAG_MOUSE_R_BTN);
+         else if (!mouse_state.rgbButtons[0] && !mouse_state.rgbButtons[1])
+            di->flags &= ~DINP_FLAG_MOUSE_IGNORE;
+      }
    }
 }
 
 static bool dinput_mouse_button_pressed(
       struct dinput_input *di, unsigned port, unsigned key)
 {
-   bool result = false;
-
    switch (key)
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -409,24 +390,36 @@ static bool dinput_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
          return (di->flags & DINP_FLAG_MOUSE_B5_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         result        = (di->flags & DINP_FLAG_MOUSE_WU_BTN)  ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_WU_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         result        = (di->flags & DINP_FLAG_MOUSE_WD_BTN)  ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_WD_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         result        = (di->flags & DINP_FLAG_MOUSE_HWU_BTN) ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_HWU_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
+            return true;
+         }
          break;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         result        = (di->flags & DINP_FLAG_MOUSE_HWD_BTN) ? true : false;
-         di->flags    &= ~DINP_FLAG_MOUSE_HWD_BTN;
+         if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
+         {
+            di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
+            return true;
+         }
          break;
    }
 
-   return result;
+   return false;
 }
 
 static int16_t dinput_lightgun_aiming_state(
@@ -891,6 +884,10 @@ bool dinput_handle_message(void *data,
 
    switch (message)
    {
+      case WM_SETFOCUS:
+      case WM_KILLFOCUS:
+         di->flags       |= DINP_FLAG_MOUSE_IGNORE;
+         break;
       case WM_NCLBUTTONDBLCLK:
          di->flags       |= DINP_FLAG_DBCLK_ON_TITLEBAR;
          break;

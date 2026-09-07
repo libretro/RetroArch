@@ -1,3 +1,6 @@
+/* SAL compatibility shim for legacy MSVC and some MinGW-w64 */
+#include "dxsdk_sal_compat.h"
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -9,6 +12,10 @@
 
 #ifndef __D3D12SHADER_H__
 #define __D3D12SHADER_H__
+
+#if defined(__GNUC__)
+#pragma GCC system_header
+#endif
 
 #include "d3dcommon.h"
 

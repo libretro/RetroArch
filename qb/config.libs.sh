@@ -42,6 +42,8 @@ if [ "$OS" = 'BSD' ]; then
    [ -d /usr/local/include ] && add_dirs INCLUDE /usr/local/include
    [ -d /usr/local/lib ] && add_dirs LIBRARY /usr/local/lib
    DYLIB=-lc;
+elif [ "$OS" = 'Darwin' ]; then
+   DYLIB=
 elif [ "$OS" = 'Haiku' ]; then
    DYLIB=""
    CLIB=-lroot
@@ -89,8 +91,14 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_dirs INCLUDE ./deps/7zip
+# The dispmanx video driver is built against the legacy Broadcom VideoCore
+# firmware stack (bcm_host.h, libbcm_host) from /opt/vc, which is absent on
+# the Raspberry Pi 4 and later (they use the open-source Mesa/DRM-KMS path).
+# Without VideoCore the driver cannot compile, so auto-disable it here with a
+# clear notice rather than failing later with "bcm_host.h: No such file".
+if [ "$HAVE_DISPMANX" = 'yes' ] && [ "$HAVE_VIDEOCORE" != 'yes' ]; then
+   HAVE_DISPMANX='no'
+   die : 'Notice: Dispmanx support disabled, VideoCore (bcm_host) was not found.'
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
@@ -137,7 +145,10 @@ if [ "$HAVE_EGL" = 'yes' ]; then
    EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
-check_header '' XDELTA lzma.h
+# .xdelta softpatching is a self-contained VCDIFF decoder in
+# libretro-common now; it has no external dependency, so there is
+# nothing to probe for.
+[ "$HAVE_XDELTA" = 'auto' ] && HAVE_XDELTA='yes'
 check_lib '' SSA '-lfribidi -lass' ass_library_init
 check_lib '' SSE '-msse -msse2'
 check_pkgconf EXYNOS libdrm_exynos
@@ -204,6 +215,9 @@ else
    add_opt NETWORK_CMD no
 fi
 
+check_enabled RWEBM WEBMPLAYER 'the WebM player' 'RWEBM is' false
+check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
+
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
@@ -244,20 +258,153 @@ check_platform Linux RPILED 'The RPI led driver is' true
 check_platform Darwin METAL 'Metal is' true
 
 if [ "$OS" = 'Darwin' ]; then
-   check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
-   check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
-   add_opt CRTSWITCHRES no
-
-   if [ "$HAVE_METAL" = yes ]; then
-      check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
-   else
-      check_lib '' COCOA "-framework AppKit" NSApplicationMain
+   # Detect whether we're building against a pre-10.7 (Lion) macOS target.
+   # Many modern Apple APIs used by RetroArch require 10.7 or later
+   # (Metal, Vulkan/MoltenVK, GCD, NSWindowDelegate protocol, C11
+   # <stdatomic.h>, AVFoundation, @available).  On Tiger/Leopard /
+   # PowerPC / Xcode 3.1 those APIs are absent and builds fail.
+   #
+   # We also compute macos_target_pre_10_11 for code that requires
+   # Xcode 7-era Obj-C features (nullability macros, lightweight
+   # generics) - those need SDK 10.11 / Xcode 7 or newer.
+   #
+   # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
+   # takes priority over sw_vers, because on a cross-build the host
+   # OS version may be newer than the target.
+   macos_target_pre_10_5=no
+   macos_target_pre_10_7=no
+   macos_target_pre_10_11=no
+   macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
+   if [ -z "$macos_target_ver" ] && command -v sw_vers >/dev/null 2>&1; then
+      macos_target_ver="$(sw_vers -productVersion 2>/dev/null)"
+   fi
+   if [ -n "$macos_target_ver" ]; then
+      mt_major=$(printf %s "$macos_target_ver" | cut -d. -f1)
+      mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
+      [ -z "$mt_major" ] && mt_major=0
+      [ -z "$mt_minor" ] && mt_minor=0
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 5 ]; }; then
+         macos_target_pre_10_5=yes
+      fi
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
+         macos_target_pre_10_7=yes
+      fi
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 11 ]; }; then
+         macos_target_pre_10_11=yes
+      fi
+      unset mt_major mt_minor
    fi
 
+   # macOS: the Metal and Vulkan (MoltenVK) defaults differ from what the
+   # generic qb logic produces.
+   #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
+   #     early-outs. Force it on here so the Metal video driver is built,
+   #     unless the user explicitly passed --disable-metal.
+   #   * HAVE_VULKAN is forced on alongside it. Link-time libvulkan is
+   #     not required on Darwin; MoltenVK is loaded dynamically at
+   #     runtime by gfx/common/vulkan_common.c.
+   # Skip the force-on on pre-10.7 targets — Metal is 10.11+ and
+   # MoltenVK is 10.11+, so neither is buildable on Tiger/Leopard.
+   if [ "$macos_target_pre_10_7" = 'no' ]; then
+      [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
+      [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
+   else
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; Metal/Vulkan not forced on (neither is available before 10.11)."
+   fi
+
+   check_platform Darwin COCOA 'Cocoa is' true
+   check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
+   check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
+   add_opt MODELINE no
+   add_opt CRTSWITCHRES no
+
+   # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
+   # C11 <stdatomic.h>, which requires a 10.6/10.7-era SDK or newer.
+   # On Xcode 3.1 / 10.4-10.5 / PowerPC the header doesn't exist and
+   # the driver cannot be compiled.  Auto-disable microphone support
+   # on pre-10.7 targets unless the user passed --enable-microphone.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_MICROPHONE:-}" != 'yes' ] && \
+      [ "$HAVE_MICROPHONE" != 'no' ]; then
+      HAVE_MICROPHONE=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling microphone (requires C11 <stdatomic.h>).  Override with --enable-microphone."
+   fi
+
+   # RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
+   # (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
+   # lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
+   # features requiring SDK 10.11 / iOS 9.0 or newer.  Enable on
+   # iOS/tvOS (any HAVE_COCOATOUCH build is modern enough in
+   # practice) and on macOS 10.11+ targets.  Disable on pre-10.11
+   # macOS where GCC/old-clang can't parse the syntax.
+   if [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+      [ "$macos_target_pre_10_11" = 'no' ]; then
+      HAVE_RETROARCH_PLAYLIST_MANAGER=yes
+   else
+      HAVE_RETROARCH_PLAYLIST_MANAGER=no
+   fi
+
+   # AVFoundation camera + recording drivers.  The framework itself
+   # is Apple-wide, but the RetroArch driver sources (camera/drivers/
+   # avfoundation.m, record/drivers/record_avfoundation.m) use APIs
+   # that landed in macOS 10.7 (AVCaptureSession, dispatch_queue_t
+   # blocks, @autoreleasepool as a statement).  On iOS/tvOS any
+   # HAVE_COCOATOUCH build is modern enough in practice.  On macOS
+   # gate on the same 10.7 threshold we already use for
+   # Metal/Vulkan/microphone.  Also requires the AVFoundation
+   # framework to be present in the SDK (checked immediately below);
+   # we pre-check it here so the version gate and framework gate are
+   # evaluated together before macos_target_ver goes out of scope.
    check_lib '' AVFOUNDATION "-framework AVFoundation"
+   if [ "${USER_AVF:-}" = 'no' ]; then
+      HAVE_AVF=no
+   elif [ "$HAVE_AVFOUNDATION" != 'yes' ]; then
+      HAVE_AVF=no
+      [ "${USER_AVF:-}" = 'yes' ] && \
+         die 1 "Forced AVFoundation enable but -framework AVFoundation is not available in the SDK."
+   elif [ "$HAVE_COCOATOUCH" = 'yes' ] || \
+        [ "$macos_target_pre_10_7" = 'no' ]; then
+      HAVE_AVF=yes
+   else
+      HAVE_AVF=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling AVFoundation camera/recording drivers.  Override with --enable-avf."
+   fi
+
+   # The CoreLocation driver (location/drivers/corelocation.m) is
+   # written for ARC, blocks and @available - a clang-era file.  A
+   # pre-10.7 target is a GCC-era target with none of those, so the
+   # driver is left out there unless the user asks for it.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_CORELOCATION:-}" != 'yes' ] && \
+      [ "$HAVE_CORELOCATION" != 'no' ]; then
+      HAVE_CORELOCATION=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling CoreLocation (requires ARC and blocks).  Override with --enable-corelocation."
+   fi
+
+   # IOHIDManager (the joypad HID driver) is 10.5.  A 10.4 target
+   # leaves it out unless asked; the binary then launches on Tiger
+   # with keyboard and mouse input.
+   if [ "$macos_target_pre_10_5" = 'yes' ] && \
+      [ "${USER_IOHIDMANAGER:-}" != 'yes' ] && \
+      [ "$HAVE_IOHIDMANAGER" != 'no' ]; then
+      HAVE_IOHIDMANAGER=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.5; disabling IOHIDManager joypad support (10.5 API).  Override with --enable-iohidmanager."
+   fi
+
+   unset macos_target_ver macos_target_pre_10_5 macos_target_pre_10_7 macos_target_pre_10_11
+
+   check_lib '' COCOA "-framework AppKit" NSApplicationMain
+
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
    check_lib '' AL "-framework OpenAL" alcOpenDevice
+   # MFi (Made For iPhone) / GameController.framework joypad support.
+   # Used for any modern gamepad on macOS (Xbox, DualShock, DualSense, MFi).
+   # Matches the -DHAVE_MFI default in pkg/apple/BaseConfig.xcconfig.
+   check_lib '' MFI "-framework GameController"
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
@@ -270,9 +417,21 @@ check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
 check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
-check_val '' SDL -lSDL SDL sdl 1.2.10 '' false
-check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' false
+check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
+check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
+check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
+check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
 
+if [ "$HAVE_SDL3" = 'yes' ] && { [ "$HAVE_SDL2" = 'yes' ] || [ "$HAVE_SDL" = 'yes' ]; }; then
+   if [ "$USER_SDL2" = 'yes' ] && [ "$USER_SDL3" != 'yes' ]; then
+      die : 'Notice: SDL2 was explicitly enabled, disabling SDL3 drivers.'
+      HAVE_SDL3=no
+   else
+      die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
+      HAVE_SDL=no
+      HAVE_SDL2=no
+   fi
+fi
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
    HAVE_SDL=no
@@ -286,37 +445,34 @@ check_enabled CXX DISCORD discord 'The C++ compiler is' false
 check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 
 if [ "$HAVE_QT" != 'no' ]; then
+   _have_qt=$HAVE_QT
    if [ "$HAVE_CXX17" = 'yes' ]; then
       check_pkgconf QT6CORE Qt6Core 6.2
       check_pkgconf QT6GUI Qt6Gui 6.2
       check_pkgconf QT6WIDGETS Qt6Widgets 6.2
-      check_pkgconf QT6CONCURRENT Qt6Concurrent 6.2
-      check_pkgconf QT6NETWORK Qt6Network 6.2
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
       # pkg-config is needed to reliably find Qt6 libraries.
 
-      check_enabled QT6CORE QT Qt 'Qt6Core is' true
-      check_enabled QT6GUI QT Qt 'Qt6GUI is' true
-      check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' true
-      check_enabled QT6CONCURRENT QT Qt 'Qt6Concurrent is' true
-      check_enabled QT6NETWORK QT Qt 'Qt6Network is' true
-      #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' true
+      check_enabled QT6CORE QT Qt 'Qt6Core is' user
+      check_enabled QT6GUI QT Qt 'Qt6GUI is' user
+      check_enabled QT6WIDGETS QT Qt 'Qt6Widgets is' user
+      #check_enabled QT6WEBENGINE QT Qt 'Qt6Webengine is' user
 
-      if [ "$HAVE_QT" != yes ]; then
-         die : 'Notice: Qt support disabled, required libraries were not found.'
-      else
+      if [ "$HAVE_QT6CORE" = 'yes' ] && \
+         [ "$HAVE_QT6GUI" = 'yes' ] &&  \
+         [ "$HAVE_QT6WIDGETS" = 'yes' ]
+      then
          HAVE_QT6='yes'
          add_define MAKEFILE HAVE_QT6 1
+         add_define CONFIG HAVE_QT6 1
       fi
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
-      HAVE_QT='auto'
+      HAVE_QT=$_have_qt
       check_pkgconf QT5CORE Qt5Core 5.2
       check_pkgconf QT5GUI Qt5Gui 5.2
       check_pkgconf QT5WIDGETS Qt5Widgets 5.2
-      check_pkgconf QT5CONCURRENT Qt5Concurrent 5.2
-      check_pkgconf QT5NETWORK Qt5Network 5.2
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
       # pkg-config is needed to reliably find Qt5 libraries.
@@ -324,19 +480,15 @@ if [ "$HAVE_QT" != 'no' ]; then
       check_enabled QT5CORE QT Qt 'Qt5Core is' true
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
       check_enabled QT5WIDGETS QT Qt 'Qt5Widgets is' true
-      check_enabled QT5CONCURRENT QT Qt 'Qt5Concurrent is' true
-      check_enabled QT5NETWORK QT Qt 'Qt5Network is' true
       #check_enabled QT5WEBENGINE QT Qt 'Qt5Webengine is' true
+   fi
 
-      if [ "$HAVE_QT" != yes ]; then
-         die : 'Notice: Qt support disabled, required libraries were not found.'
-      fi
+   if [ "$HAVE_QT" != yes ]; then
+      die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
    check_pkgconf OPENSSL openssl 1.0.0
 fi
-
-check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
@@ -395,34 +547,40 @@ check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
 check_lib '' DINPUT -ldinput8
-check_lib '' D3D8 -ld3d8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound
 
 check_enabled DINPUT XINPUT xinput 'Dinput is' true
 
-if [ "$HAVE_D3DX" != 'no' ]; then
-   check_lib '' D3DX8 -ld3dx8
-   check_lib '' D3DX9 -ld3dx9
-fi
-
+check_platform Win32 D3D8  'Direct3D 8 is'  true
 check_platform Win32 D3D10 'Direct3D 10 is' true
 check_platform Win32 D3D11 'Direct3D 11 is' true
 check_platform Win32 D3D12 'Direct3D 12 is' true
-check_platform Win32 D3DX 'Direct3DX is' true
 check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
+check_platform Win32 ASIO 'ASIO is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
-   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
+   # Linux resolves the pad type through hidraw and only falls back to
+   # libusb, so it does not need libusb to be present.
+   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ] || [ "$OS" = 'Linux' ]; then
       add_opt BLISSBOX yes
    else
       add_opt BLISSBOX no
    fi
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
+# Detect the desktop OpenGL libraries whenever OpenGL is enabled, even if
+# OpenGLES is also enabled. Both can be requested together (e.g. distro
+# packaging that wants a feature-complete build), and the desktop GL driver
+# still needs to link against -lGL. Previously this block was skipped as soon
+# as HAVE_OPENGLES=yes, so OPENGL_LIBS was left empty while HAVE_OPENGL stayed
+# 'yes' (when forced via --enable-opengl), causing a link failure that only
+# went away by adding -lGL by hand. check_lib disables OpenGL on its own if
+# the library is not present, so GLES-only systems without desktop GL are
+# unaffected.
+if [ "$HAVE_OPENGL" != 'no' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header '' OPENGL "OpenGL/gl.h"
       check_lib '' OPENGL "-framework OpenGL"
@@ -471,8 +629,6 @@ fi
 
 check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
    'OpenGL and OpenGLES are' false
-
-check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
 check_val '' ZLIB '-lz' '' zlib '' '' false
 check_val '' MPV -lmpv '' mpv '' '' false
@@ -539,6 +695,7 @@ if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
    check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
+   check_val '' XI2 -lXi '' xi '' '' false
 else
    die : 'Notice: X11 not present. Skipping X11 code paths.'
 fi
@@ -557,7 +714,7 @@ check_header '' XSHM X11/Xlib.h X11/extensions/XShm.h
 check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
-check_pkgconf WAYLAND_PROTOS wayland-protocols 1.32
+check_pkgconf WAYLAND_PROTOS wayland-protocols 1.43
 check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
@@ -582,7 +739,8 @@ if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
 
-check_lib '' STRCASESTR "$CLIB" strcasestr
+# strcasestr: not probed - compat_strcasestr is used by name on every
+# platform, so whether the C library has one is irrelevant.
 check_lib '' MMAP "$CLIB" mmap
 check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 
@@ -591,6 +749,12 @@ check_enabled CXX OPENGL_CORE 'OpenGL core' 'The C++ compiler is' false
 check_enabled THREADS VULKAN vulkan 'Threads are' false
 
 if [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Win32' ]; then
+   HAVE_VULKAN=yes
+elif [ "$HAVE_VULKAN" != "no" ] && [ "$OS" = 'Darwin' ]; then
+   # macOS: Vulkan is provided by MoltenVK and is loaded dynamically at
+   # runtime via gfx/common/vulkan_common.c (see vksym.h). Link-time
+   # presence of libvulkan is not required, mirroring the Win32 path above
+   # and matching what pkg/apple/Metal.xcconfig does for the Xcode build.
    HAVE_VULKAN=yes
 else
    check_lib '' VULKAN -lvulkan vkCreateInstance
@@ -656,6 +820,22 @@ check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
 check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
 
+check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
+
+if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   # The slang stack uses the SPIRV-Cross C API, so only the
+   # spirv-cross-c-shared package can satisfy an external build; the
+   # C++ libraries carry no spvc_* symbols.  When it is absent we fall
+   # through to the builtin sources below.
+   check_pkgconf SPIRV_CROSS spirv-cross-c-shared
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
+      HAVE_BUILTINSPIRV_CROSS=yes
+      HAVE_SPIRV_CROSS=yes
+   fi
+fi
+
 if [ "$HAVE_GLSLANG" != no ]; then
    check_header cxx GLSLANG \
       glslang/Public/ShaderLang.h \
@@ -687,13 +867,13 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
-if [ "$HAVE_CRTSWITCHRES" != no ]; then
-   if [ "$HAVE_CXX11" = 'no' ]; then
-      HAVE_CRTSWITCHRES=no
-   else
-      HAVE_CRTSWITCHRES=yes
-   fi
+# The modeline engine is C89 with no libraries of its own, so it is on
+# unless turned off; --disable-crtswitchres, the old name, still turns
+# it off, and the alias follows the real switch either way.
+if [ "$HAVE_CRTSWITCHRES" = no ]; then
+   HAVE_MODELINE=no
 fi
+HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
@@ -738,7 +918,6 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
 
 if [ "$HAVE_CXX11" = 'yes' ]; then
@@ -747,4 +926,33 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    else
       check_platform Win32 SR2 'CRT modeswitching is' true
    fi
+fi
+
+# First try system libsmb2
+check_pkgconf SMBCLIENT libsmb2 0.0
+check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+
+# --enable-libsmb is the umbrella switch for SMB support: it guarantees SMB
+# gets built in without the caller having to know which libsmb2 provider is
+# available.  A system libsmb2 is preferred when pkg-config found one, and
+# the copy bundled in deps/libsmb2 is used otherwise.  --enable-smbclient and
+# --enable-builtinsmbclient remain available for packagers who need to pin a
+# specific provider.
+if [ "$HAVE_LIBSMB" = 'yes' ]; then
+   check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
+fi
+
+if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
+   if [ "$USER_BUILTINSMBCLIENT" = 'no' ]; then
+      die 1 'Error: --enable-libsmb requires a libsmb2, but no system libsmb2 was found and the bundled one is disabled.'
+   fi
+   HAVE_BUILTINSMBCLIENT=yes
+fi
+
+if [ "$HAVE_SMBCLIENT" = "yes" ]; then
+    echo "SMB support enabled (system libsmb2)"
+elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
+    HAVE_BUILTINSMBCLIENT=yes
+    echo "SMB support - building bundled libsmb2"
+    add_dirs INCLUDE ./deps/libsmb2/include
 fi

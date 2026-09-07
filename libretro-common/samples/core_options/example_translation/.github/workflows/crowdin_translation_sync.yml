@@ -1,0 +1,55 @@
+# Download translations form Crowdin & Recreate libretro_core_options_intl.h
+
+name: Crowdin Translation Sync
+
+on:
+  workflow_dispatch
+  schedule:
+  # please choose a random time & weekday to avoid all repos synching at the same time
+    - cron: '<0-59> <0-23> * * 5'  # Fridays at , UTC
+
+jobs:
+  create_intl_file:
+    permissions:
+      contents: write           # 'write' access to repository contents
+      pull-requests: write      # 'write' access to pull requests
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 18
+          distribution: zulu
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - name: Create intl file
+        shell: bash
+        env:
+          CROWDIN_API_KEY: ${{ secrets.CROWDIN_API_KEY }}
+        run: |
+          python3 intl/download_workflow.py $CROWDIN_API_KEY "<CORE_NAME>" "<PATH/TO>/libretro_core_options_intl.h"
+
+      - name: Commit files
+        run: |
+          git config --local user.email "github-actions@github.com"
+          git config --local user.name "github-actions[bot]"
+          git add intl/*_workflow.py "<PATH/TO>/libretro_core_options_intl.h"
+          git commit -m "Fetch translations & Recreate libretro_core_options_intl.h"
+
+      - name: GitHub Push
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+

@@ -34,6 +34,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
+#include <compat/strl.h>
 
 #ifdef HAVE_BB10
 #define MAX_TOUCH 16
@@ -231,18 +232,18 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
    if (controller && controller->type == SCREEN_EVENT_GAMEPAD)
    {
        if (strstr(controller->id, "0-054C-05C4-1.0"))
-           strlcpy(name_buf, "DS4 Controller", sizeof(name_buf));
+           strlcpy_lit(name_buf, "DS4 Controller", sizeof(name_buf));
        else
-           strlcpy(name_buf, "QNX Gamepad", sizeof(name_buf));
+           strlcpy_lit(name_buf, "QNX Gamepad", sizeof(name_buf));
    }
 
-   if (!string_is_empty(name_buf))
+   if (name_buf && *name_buf)
    {
       controller->port = qnx->pads_connected;
 
       input_autoconfigure_connect(
             name_buf,
-            NULL,
+            NULL, NULL,
             "qnx",
             controller->port,
             *controller->vid,
@@ -442,12 +443,6 @@ static void qnx_process_touch_event(
                break;
             }
          }
-#if 0
-         RARCH_LOG("New Touch: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
-         RARCH_LOG("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
-               qnx->touch_map[5]);
-#endif
          break;
 
       case SCREEN_EVENT_MTOUCH_RELEASE:
@@ -471,12 +466,6 @@ static void qnx_process_touch_event(
                break;
             }
          }
-#if 0
-         RARCH_LOG("Release: x:%d, y:%d, id:%d\n", pos[0], pos[1], contact_id);
-         RARCH_LOG("Map: %d %d %d %d %d %d\n", qnx->touch_map[0], qnx->touch_map[1],
-               qnx->touch_map[2], qnx->touch_map[3], qnx->touch_map[4],
-               qnx->touch_map[5]);
-#endif
          break;
 
       case SCREEN_EVENT_MTOUCH_MOVE:
@@ -494,33 +483,10 @@ static void qnx_process_touch_event(
                vp.full_width               = 0;
                vp.full_height              = 0;
 
-#if 0
-               gl_t *gl = (gl_t*)video_driver_get_ptr();
-
-               /*During a move, we can go ~30 pixel into the
-                * bezel which gives negative numbers or
-                * numbers larger than the screen resolution.
-                *
-                * Normalize. */
-               if (pos[0] < 0)
-                  pos[0] = 0;
-               if (pos[0] > gl->full_x)
-                  pos[0] = gl->full_x;
-
-               if (pos[1] < 0)
-                  pos[1] = 0;
-               if (pos[1] > gl->full_y)
-                  pos[1] = gl->full_y;
-#endif
-
                video_driver_translate_coord_viewport_wrap(&vp,
                      pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
                      &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
-#if 0
-               RARCH_LOG("Move: x:%d, y:%d, id:%d\n", pos[0], pos[1],
-                     contact_id);
-#endif
                break;
             }
          }
@@ -590,7 +556,7 @@ static void qnx_handle_screen_event(qnx_input_t *qnx, bps_event_t *event)
                {
                   if (device == qnx->devices[i].handle)
                   {
-                     RARCH_LOG("Device %s: Disconnected.\n",
+                     RARCH_DBG("Device %s: Disconnected.\n",
                            qnx->devices[i].id);
                      qnx_init_controller(qnx, &qnx->devices[i]);
                      break;
@@ -690,7 +656,7 @@ static void *qnx_input_init(const char *joypad_driver)
    qnx_discover_controllers(qnx);
 #else
    /* Initialize Playbook keyboard. */
-   strlcpy(qnx->devices[0].id, "0A5C-8502",
+   strlcpy_lit(qnx->devices[0].id, "0A5C-8502",
          sizeof(qnx->devices[0].id));
    qnx_input_autodetect_gamepad(qnx, &qnx->devices[0]);
    qnx->pads_connected = 1;

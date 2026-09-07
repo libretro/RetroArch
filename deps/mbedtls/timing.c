@@ -36,12 +36,20 @@
 
 #ifndef asm
 #define asm __asm
+#define MBEDTLS_ASM_IS_OURS
 #endif
 
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
 
 #include <windows.h>
 #include <winbase.h>
+
+#if defined(__MINGW32__) || defined(__MINGW64__)
+/* MSYS2/MinGW: provide struct timeval + gettimeofday() for the
+ * fallback timing implementation used when HAVE_HARDCLOCK
+ * isn't defined (e.g., on aarch64-w64-mingw32 / clangarm64). */
+#include <sys/time.h>
+#endif
 
 struct _hr_time
 {
@@ -345,5 +353,11 @@ int mbedtls_timing_get_delay( void *data )
 
     return( 0 );
 }
+
+/* Only take back what we defined; a system header may own it. */
+#ifdef MBEDTLS_ASM_IS_OURS
+#undef asm
+#undef MBEDTLS_ASM_IS_OURS
+#endif
 
 #endif /* MBEDTLS_TIMING_C */

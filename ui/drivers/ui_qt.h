@@ -25,25 +25,30 @@
 #include <QTableView>
 #include <QFrame>
 #include <QWidget>
-#include <QDialog>
 #include <QLabel>
 #include <QRegularExpression>
 #include <QPalette>
 #include <QPlainTextEdit>
-#include <QFutureWatcher>
 #include <QPixmap>
+#include <QTimer>
+#include <QHash>
+#include <QPersistentModelIndex>
+#include <QAbstractTableModel>
+#include <QIcon>
 #include <QImage>
 #include <QPointer>
 #include <QProgressBar>
 #include <QElapsedTimer>
-#include <QSslError>
-#include <QNetworkReply>
-#include <QStyledItemDelegate>
+#include <QTableWidget>
+#include <QVBoxLayout>
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
+#include <QThread>
+#include <QMutex>
+#include <QWaitCondition>
 
-#include "qt/qt_widgets.h"
+#include "ui_qt_widgets.h"
 
 #ifndef CXX_BUILD
 extern "C" {
@@ -57,7 +62,13 @@ extern "C" {
 #include <queues/task_queue.h>
 
 #include "../ui_companion_driver.h"
+#include "../companion/companion_core.h"
+
+/* Shared companion core owned by the running Qt companion; NULL when
+ * the Qt companion has not been initialised. */
+companion_core_t *ui_companion_qt_core(void);
 #include "../../retroarch.h"
+#include <formats/image.h>
 
 #ifndef CXX_BUILD
 }
@@ -65,10 +76,10 @@ extern "C" {
 
 #define ALL_PLAYLISTS_TOKEN "|||ALL|||"
 #define ICON_PATH "/xmb/dot-art/png/"
-#define THUMBNAIL_BOXART "Named_Boxarts"
-#define THUMBNAIL_SCREENSHOT "Named_Snaps"
-#define THUMBNAIL_TITLE "Named_Titles"
-#define THUMBNAIL_LOGO "Named_Logos"
+#define THUMBNAIL_BOXART     COMPANION_THUMB_BOXART
+#define THUMBNAIL_SCREENSHOT COMPANION_THUMB_SCREENSHOT
+#define THUMBNAIL_TITLE      COMPANION_THUMB_TITLE
+#define THUMBNAIL_LOGO       COMPANION_THUMB_LOGO
 
 class QApplication;
 class QCloseEvent;
@@ -85,7 +96,6 @@ class QToolButton;
 class QTabWidget;
 class QPixmap;
 class QPaintEvent;
-class QSettings;
 class QCheckBox;
 class QSpinBox;
 class QFormLayout;
@@ -94,19 +104,8 @@ class QScrollArea;
 class QSlider;
 class QDragEnterEvent;
 class QDropEvent;
-class QNetworkAccessManager;
-class QNetworkReply;
 class QProgressDialog;
-class LoadCoreWindow;
-class MainWindow;
-class ThumbnailWidget;
 class ThumbnailLabel;
-class GridView;
-class ShaderParamsDialog;
-class CoreOptionsDialog;
-class CoreInfoDialog;
-class PlaylistEntryDialog;
-class ViewOptionsDialog;
 
 enum SpecialPlaylist
 {
@@ -126,6 +125,11 @@ static inline double lerp(double x, double y, double a, double b, double d)
    return a + (b - a) * ((double)(d - x) / (double)(y - x));
 }
 
+
+extern "C" {
+#include "../companion/companion_thumbs.h"
+}
+
 class PlaylistModel : public QAbstractListModel
 {
    Q_OBJECT
@@ -133,11 +137,12 @@ class PlaylistModel : public QAbstractListModel
 public:
    enum Roles
    {
-      HASH = Qt::UserRole + 1,
+      ENTRY = Qt::UserRole + 1,
       THUMBNAIL
    };
 
    PlaylistModel(QObject *parent = 0);
+   ~PlaylistModel();
 
    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
@@ -146,6 +151,12 @@ public:
    int rowCount(const QModelIndex &parent = QModelIndex()) const;
    int columnCount(const QModelIndex &parent = QModelIndex()) const;
    void addPlaylistItems(const QStringList &paths, bool add = false);
+   /* True while addPlaylistItems() is still waiting on the companion
+    * core's budgeted parse of one or more playlists. */
+   bool isLoadingPlaylists() const;
+   /* Companion core notification: the requested playlist finished
+    * parsing. Appends its entries and starts the next pending one. */
+   void onCorePlaylistChanged();
    void addDir(QString path, QFlags<QDir::Filter> showHidden);
    void setThumbnailType(const ThumbnailType type);
    void loadThumbnail(const QModelIndex &index);
@@ -153,28 +164,67 @@ public:
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
    void setThumbnailCacheLimit(int limit);
+   /* Edge (px) the grid draws thumbnails at; requests are made at this
+    * size so the engine hands back cells that need no further scaling. */
+   void setThumbnailSize(int size);
+   int thumbnailSize() const { return m_thumbSize; }
+   /* Any image at any size through the same engine (the sidebar
+    * thumbnails and the file-browser preview). imageAt() gives the
+    * cached pixmap; requestImage() queues a decode, after which
+    * thumbnailReady(path) is emitted. */
+   bool imageAt(const QString &path, int w, int h, QPixmap *out) const;
+   void requestImage(const QString &path, int w, int h);
+   /* Play @path in the sidebar (APNG / animated WEBP / WEBM / MP4 - a
+    * still plays nothing): frames come as frameReady(path, pixmap). */
+   void animateImage(const QString &path, int w, int h);
+   void stopAnimation();
+   /* Drop queued decodes and abandon those in flight (the view moved
+    * on); cached images stay. */
+   void abandonPending();
    bool isSupportedImage(const QString path) const;
-   QString getPlaylistThumbnailsDir(const QString playlistName) const;
-   QString getSanitizedThumbnailName(QString label) const;
+   QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
+   /* Repository thumbnail file for a label, ignoring whether the content
+    * itself is an image (the save target / the sidebar images). */
+   QString getRepositoryThumbnailPath(const QString playlistName, const QString labelNoExt, const QString type) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
+   /* Emitted once addPlaylistItems() has populated the model. */
+   void playlistsLoaded();
 
 private slots:
-   void onImageLoaded(const QImage image, const QModelIndex &index, const QString &path);
+   void pollThumbnails();
+signals:
+   void thumbnailReady(const QString &path);
+   void frameReady(const QString &path, const QPixmap &frame);
 
 private:
-   QVector<QHash<QString, QString> > m_contents;
-   QCache<QString, QPixmap> m_cache;
-   QSet<QString> m_pendingImages;
-   QVector<QByteArray> m_imageFormats;
-   QRegularExpression m_fileSanitizerRegex;
+   /* Thumbnails come from the shared companion engine (decode threads,
+    * path+size keyed cache, visible-first queue) - the same one the
+    * native Win32 and Cocoa companions draw through. m_cache only holds
+    * QPixmap conversions of engine pixels, keyed path@size. */
+   companion_thumbs_t *m_engine = NULL;
+   int m_thumbSize = 256;
+   QHash<QString, QPersistentModelIndex> m_pendingRows;
+   QTimer m_pollTimer;
+   static void onEngineDone(void *ud, const char *path, int w, int h,
+         uintptr_t tag, const uint32_t *bits);
+   void thumbnailArrived(const QString &path);
+   QVector<PlaylistEntry> m_contents;
+   /* addPlaylistItems() state: playlists still to load, and the
+    * entries collected so far (committed to m_contents in one reset). */
+   QStringList m_pendingPaths;
+   QVector<PlaylistEntry> m_pendingContents;
+   bool m_loadingPlaylists = false;
+   void appendEntriesFromCore();
+   void startNextPendingPlaylist();
+   mutable QCache<QString, QPixmap> m_cache; /* filled lazily from data() */
+   /* stages of imageAt()/data(): one conversion per (path, w, h) */
+   QPixmap *pixmapFor(const QString &path, int w, int h) const;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
-   QString getThumbnailPath(const QHash<QString, QString> &hash, QString type) const;
+   QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
-   void getPlaylistItems(QString path);
-   void loadImage(const QModelIndex &index, const QString &path);
 };
 
 class ThumbnailWidget : public QStackedWidget
@@ -210,7 +260,6 @@ public slots:
    void setPixmap(const QPixmap &pixmap);
 protected:
    void paintEvent(QPaintEvent *event);
-   void resizeEvent(QResizeEvent *event);
 private:
    void updateMargins();
 
@@ -227,7 +276,6 @@ public:
 signals:
    void itemsSelected(QModelIndexList selectedIndexes);
 protected slots:
-   void columnCountChanged(int oldCount, int newCount);
    void selectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 };
 
@@ -244,7 +292,6 @@ class ListWidget : public QListWidget
    Q_OBJECT
 public:
    ListWidget(QWidget *parent = 0);
-   bool isEditorOpen();
 signals:
    void enterPressed();
    void deletePressed();
@@ -260,9 +307,6 @@ public:
    AppHandler(QObject *parent = 0);
    ~AppHandler();
    void exit();
-
-private slots:
-   void onLastWindowClosed();
 };
 
 class CoreInfoLabel : public QLabel
@@ -314,11 +358,70 @@ public:
    void setThumbnailVerticalAlign(const QString valign);
 };
 
-class FileSystemProxyModel : public QSortFilterProxyModel
+/* The file browser's table, backed by the companion core's browse
+ * listing (enumerated, stat'ed and formatted off the UI thread, shared
+ * by every companion): this class only paints it. Columns are Qt's
+ * Name / Size / Type / Date Modified. A search filter keeps a row map. */
+class BrowseTableModel : public QAbstractTableModel
 {
-protected:
-   virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
+   Q_OBJECT
+public:
+   BrowseTableModel(QObject *parent = 0) : QAbstractTableModel(parent) {}
+   int rowCount(const QModelIndex &parent = QModelIndex()) const;
+   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 4; }
+   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
+   QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+   /* The core listing changed: rebuild the row map and reset. */
+   void reload();
+   void setFilter(const QRegularExpression &re);
+   /* Header click: the core sorts, every companion the same way. */
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+   /* Browse index (into the core listing) behind a table row, or -1. */
+   long browseIndex(const QModelIndex &index) const;
+   QString pathAt(const QModelIndex &index) const;
+   bool isDirAt(const QModelIndex &index) const;
+private:
+   QVector<long> m_rows;   /* table row -> browse index */
+   QRegularExpression m_filter;
+   QIcon m_folderIcon, m_fileIcon, m_driveIcon;
+};
+
+class LoadCoreTableWidget : public QTableWidget
+{
+   Q_OBJECT
+public:
+   LoadCoreTableWidget(QWidget *parent = NULL);
+signals:
+   void enterPressed();
+protected:
+   void keyPressEvent(QKeyEvent *event);
+};
+
+class LoadCoreWindow : public QMainWindow
+{
+   Q_OBJECT
+public:
+   LoadCoreWindow(QWidget *parent = 0);
+   /* @contentPath: when non-empty, only cores that can run it (by
+    * extension, archive members included) are shown. */
+   void initCoreList(const QString &contentPath = QString());
+   void setStatusLabel(QString label);
+signals:
+   void coreLoaded();
+   void windowClosed();
+private slots:
+   void onLoadCustomCoreClicked();
+   void onCoreEnterPressed();
+   void onCellDoubleClicked(int row, int column);
+protected:
+   void keyPressEvent(QKeyEvent *event);
+   void closeEvent(QCloseEvent *event);
+private:
+   void loadCore(const char *path);
+
+   QVBoxLayout m_layout;
+   LoadCoreTableWidget *m_table;
+   QLabel *m_statusLabel;
 };
 
 class MainWindow : public QMainWindow
@@ -360,12 +463,9 @@ public:
    PlaylistModel* playlistModel();
    ListWidget* playlistListWidget();
    QStackedWidget* centralWidget();
-   TableView* contentTableView();
    QTableView* fileTableView();
    FileDropWidget* playlistViews();
-   GridView* contentGridView();
    QWidget* playlistViewsAndFooter();
-   QWidget* searchWidget();
    QLineEdit* searchLineEdit();
    QComboBox* launchWithComboBox();
    QToolButton* startCorePushButton();
@@ -375,23 +475,22 @@ public:
    QTabWidget* browserAndPlaylistTabWidget();
    QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
-   QSettings* settings();
    QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
    Theme getThemeFromString(QString themeString);
-   QString getThemeString(Theme theme);
-   QHash<QString, QString> getSelectedCore();
+   const char *getThemeString(Theme theme);
+   QString getSelectedCorePath();
    void showStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    bool showMessageBox(QString msg, MessageBoxType msgType = MSGBOX_TYPE_INFO, Qt::WindowModality modality = Qt::ApplicationModal, bool showDontAsk = true, bool *dontAsk = NULL);
    bool setCustomThemeFile(QString filePath);
    void setCustomThemeString(QString qss);
    const QString& customThemeString() const;
    void setCurrentViewType(ViewType viewType);
-   QString getCurrentViewTypeString();
+   const char *getCurrentViewTypeString();
    ViewType getCurrentViewType();
    void setCurrentThumbnailType(ThumbnailType thumbnailType);
-   QString getCurrentThumbnailTypeString();
+   const char *getCurrentThumbnailTypeString();
    ThumbnailType getCurrentThumbnailType();
    ThumbnailType getThumbnailTypeFromString(QString thumbnailType);
    void setAllPlaylistsListMaxCount(int count);
@@ -401,31 +500,21 @@ public:
    void addFilesToPlaylist(QStringList files);
    QString getCurrentPlaylistPath();
    QModelIndex getCurrentContentIndex();
-   QHash<QString, QString> getCurrentContentHash();
-   QHash<QString, QString> getFileContentHash(const QModelIndex &index);
+   PlaylistEntry getCurrentContentEntry();
+   PlaylistEntry getFileContentEntry(const QModelIndex &index);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
-   QString getScrubbedString(QString str);
    void setDefaultCustomProperties();
    void setIconViewZoom(int zoomValue);
 
 signals:
-   void thumbnailChanged(const QPixmap &pixmap);
-   void thumbnail2Changed(const QPixmap &pixmap);
-   void thumbnail3Changed(const QPixmap &pixmap);
-   void thumbnail4Changed(const QPixmap &pixmap);
    void gotLogMessage(const QString &msg);
    void gotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
    void gotReloadPlaylists();
    void gotReloadShaderParams();
-   void gotReloadCoreOptions();
    void showErrorMessageDeferred(QString msg);
    void showInfoMessageDeferred(QString msg);
-   void extractArchiveDeferred(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
    void itemChanged();
-   void updateThumbnails();
-   void gridItemChanged(QString title);
-   void gotThumbnailDownload(QString system, QString title);
    void scrollToDownloads(QString path);
    void scrollToDownloadsAgain(QString path);
 
@@ -438,15 +527,11 @@ public slots:
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
    void onRunClicked();
-   void loadContent(const QHash<QString, QString> &contentHash);
+   void loadContent(const PlaylistEntry &entry);
    void onStartCoreClicked();
    void onDropWidgetEnterPressed();
    void selectBrowserDir(QString path);
    void setThumbnail(QString widgetName, QPixmap &pixmap, bool acceptDrop);
-   void onResizeThumbnailOne(QPixmap &pixmap, bool acceptDrop);
-   void onResizeThumbnailTwo(QPixmap &pixmap, bool acceptDrop);
-   void onResizeThumbnailThree(QPixmap &pixmap, bool acceptDrop);
-   void onResizeThumbnailFour(QPixmap &pixmap, bool acceptDrop);
    void appendLogMessage(const QString &msg);
    void onGotLogMessage(const QString &msg);
    void onGotStatusMessage(QString msg, unsigned priority, unsigned duration, bool flush);
@@ -467,7 +552,12 @@ public slots:
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
    void showAbout();
    void showDocs();
-   void onThumbnailPackExtractFinished(bool success);
+   /* companion core download results (see ui_companion_qt_core_callbacks) */
+   void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
+   void onCoreThumbnailPackFinished(int result);
+   void onBrowseChanged();
+   void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
+   void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
@@ -477,16 +567,22 @@ public slots:
    void onThumbnailDropped(const QImage &image, ThumbnailType type);
 
 private slots:
-   void onLoadCoreClicked(const QStringList &extensionFilters = QStringList());
+   void onLoadCoreClicked(const QString &contentPath = QString());
    void onUnloadCoreMenuAction();
    void onTimeout();
    void onCoreLoaded();
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
+   void onPlaylistModelLoaded();
+   void onScanDirectoryClicked();
+   void onQuitRetroArchClicked();
    void onCurrentListItemDataChanged(QListWidgetItem *item);
    void onCurrentItemChanged(const QModelIndex &index);
-   void onCurrentItemChanged(const QHash<QString, QString> &hash);
+   void onCurrentItemChanged(const PlaylistEntry &entry);
    void onCurrentFileChanged(const QModelIndex &index);
+   void onThumbnailReady(const QString &path);
+   void onFrameReady(const QString &path, const QPixmap &frame);
+   void showSidebarImage(int idx, const QString &path, bool acceptDrop);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void onContentItemDoubleClicked(const QModelIndex &index);
@@ -507,31 +603,14 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
-   void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
-   int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
 
-   void onThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onThumbnailDownloadFinished();
-   void onThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onThumbnailDownloadReadyRead();
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
 
-   void onThumbnailPackDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onThumbnailPackDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onThumbnailPackDownloadFinished();
-   void onThumbnailPackDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onThumbnailPackDownloadReadyRead();
    void onThumbnailPackDownloadCanceled();
 
-   void onPlaylistThumbnailDownloadNetworkError(QNetworkReply::NetworkError code);
-   void onPlaylistThumbnailDownloadNetworkSslErrors(const QList<QSslError> &errors);
-   void onPlaylistThumbnailDownloadFinished();
-   void onPlaylistThumbnailDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-   void onPlaylistThumbnailDownloadReadyRead();
    void onPlaylistThumbnailDownloadCanceled();
 
    void startTimer();
@@ -540,7 +619,7 @@ private slots:
 private:
    void setCurrentCoreLabel();
    void getPlaylistFiles();
-   bool updateCurrentPlaylistEntry(const QHash<QString, QString> &contentHash);
+   bool updateCurrentPlaylistEntry(const PlaylistEntry &entry);
    bool addDirectoryFilesToList(QProgressDialog *dialog, QStringList &list, QDir &dir, QStringList &extensions);
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
    bool currentPlaylistIsSpecial();
@@ -548,10 +627,19 @@ private:
    void applySearch();
    void updateItemsCount();
    QString changeThumbnail(const QImage &image, QString type);
+   /* Constructor helpers - keep MainWindow::MainWindow readable by
+    * pulling self-contained chunks of setup out into their own
+    * methods. None take parameters; everything operates on already-
+    * initialised members. */
+   void setupPlaylistFooter();
+   void setupModels();
+   void setupFileSystemBrowser();
+   void setupDockWidgets();
+   void setupSignalConnections();
 
    PlaylistModel *m_playlistModel;
    QSortFilterProxyModel *m_proxyModel;
-   FileSystemProxyModel *m_proxyFileModel;
+   BrowseTableModel *m_browseModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
    QString m_currentCore;
@@ -559,7 +647,6 @@ private:
    QLabel *m_statusLabel;
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
-   QFileSystemModel *m_fileModel;
    ListWidget *m_listWidget;
    QStackedWidget *m_centralWidget;
    TableView *m_tableView;
@@ -576,11 +663,10 @@ private:
    QToolButton *m_stopPushButton;
    QTabWidget *m_browserAndPlaylistTabWidget;
    bool m_pendingRun;
-   QPixmap *m_thumbnailPixmap;
-   QPixmap *m_thumbnailPixmap2;
-   QPixmap *m_thumbnailPixmap3;
-   QPixmap *m_thumbnailPixmap4;
-   QSettings *m_settings;
+   /* Sidebar (four thumbnail widgets) and file-browser preview: the
+    * path each widget is waiting on from the model's engine. */
+   QString m_sidebarPending[4];
+   bool m_sidebarAcceptDrop = false;
    ViewOptionsDialog *m_viewOptionsDialog;
    CoreInfoDialog *m_coreInfoDialog;
    QStyle *m_defaultStyle;
@@ -592,7 +678,6 @@ private:
    QDockWidget *m_logDock;
    QFrame *m_logWidget;
    LogTextEdit *m_logTextEdit;
-   QVector<QByteArray> m_imageFormats;
    QListWidgetItem *m_historyPlaylistsItem;
    QIcon m_folderIcon;
    QString m_customThemeString;
@@ -605,7 +690,6 @@ private:
    ThumbnailType m_thumbnailType;
    QProgressBar *m_gridProgressBar;
    QWidget *m_gridProgressWidget;
-   QHash<QString, QString> m_currentGridHash;
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
@@ -613,25 +697,16 @@ private:
    QElapsedTimer m_statusMessageElapsedTimer;
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QPointer<CoreOptionsDialog> m_coreOptionsDialog;
-   QNetworkAccessManager *m_networkManager;
+   bool m_downloadingPlaylistThumbnails;
 
-   QProgressDialog *m_updateProgressDialog;
-   QFile m_updateFile;
-   QPointer<QNetworkReply> m_updateReply;
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
-   QFile m_thumbnailDownloadFile;
-   QPointer<QNetworkReply> m_thumbnailDownloadReply;
    QStringList m_pendingThumbnailDownloadTypes;
 
    QProgressDialog *m_thumbnailPackDownloadProgressDialog;
-   QFile m_thumbnailPackDownloadFile;
-   QPointer<QNetworkReply> m_thumbnailPackDownloadReply;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
-   QFile m_playlistThumbnailDownloadFile;
-   QPointer<QNetworkReply> m_playlistThumbnailDownloadReply;
-   QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
+   QList<QHash<QString, QString> > m_pendingPlaylistThumbnails;
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
@@ -672,8 +747,6 @@ typedef struct ui_window_qt
 {
    MainWindow *qtWindow;
 } ui_window_qt_t;
-
-QStringList string_split_to_qt(QString str, char delim);
 
 RETRO_END_DECLS
 

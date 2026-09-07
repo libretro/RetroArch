@@ -54,7 +54,7 @@ try:  # catch any exception after crowdin.yaml was changed
     print('convert *.h to *.json')
     for item in os.listdir(dir_path):
         if item.endswith(".h"):
-            subprocess.run(['python3', 'h2json.py', item])
+            subprocess.run(['python3', 'h2json.py', item], check=True)
 
     print('upload source *.json')
     subprocess.run(['java', '-jar', 'crowdin-cli.jar', 'upload', 'sources'])
@@ -69,7 +69,7 @@ try:  # catch any exception after crowdin.yaml was changed
     for file in os.listdir(dir_path):
         if file.startswith('msg_hash_') and file.endswith('.json'):
             print(file)
-            subprocess.run(['python3', 'json2h.py', file])
+            subprocess.run(['python3', 'json2h.py', file], check=True)
 
     print('fetch translation progress')
     subprocess.run(['python3', 'fetch_progress.py'])

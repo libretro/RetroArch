@@ -62,12 +62,28 @@ struct turbo_buttons
    bool mode1_enable[MAX_USERS];
 };
 
+/* Hold button support. */
+struct hold_buttons
+{
+   int32_t hold_pressed[MAX_USERS];  /* Edge detection for toggle */
+   uint16_t enable[MAX_USERS];       /* Bitmask of held buttons */
+   bool frame_enable[MAX_USERS];     /* Hold modifier pressed this frame */
+};
+
+/* Human-readable names for a bind's joypad button and analog axis, supplied
+ * by an autoconfig profile or a config file. Display-only: nothing in the
+ * input poll path ever reads them, so they are held in arrays parallel to the
+ * bind sets rather than inside struct retro_keybind, which is swept in full
+ * several times per frame. Keeping the two pointers out of the bind takes it
+ * from 48 to 28 bytes. */
+struct input_bind_label
+{
+   char     *joykey;
+   char     *joyaxis;
+};
+
 struct retro_keybind
 {
-   /* Human-readable label for the control. */
-   char     *joykey_label;
-   /* Human-readable label for an analog axis. */
-   char     *joyaxis_label;
    /*
     * Joypad axis. Negative and positive axes are both 
     * represented by this variable.
@@ -75,8 +91,6 @@ struct retro_keybind
    uint32_t joyaxis;
    /* Default joy axis binding value for resetting bind to default. */
    uint32_t def_joyaxis;
-   /* Used by input_{push,pop}_analog_dpad(). */
-   uint32_t orig_joyaxis;
 
    enum msg_hash_enums enum_idx;
 
@@ -94,6 +108,7 @@ struct retro_keybind
 };
 
 typedef struct retro_keybind retro_keybind_set[RARCH_BIND_LIST_END];
+typedef struct input_bind_label input_bind_label_set[RARCH_BIND_LIST_END];
 
 typedef struct
 {
@@ -114,6 +129,19 @@ typedef struct input_mapper
    input_bits_t buttons[MAX_USERS];
 } input_mapper_t;
 
+typedef struct
+{
+   unsigned analog_dpad_mode[MAX_USERS];
+   unsigned libretro_device[MAX_USERS];
+   unsigned turbo_mode;
+   unsigned turbo_button;
+   unsigned turbo_period;
+   unsigned turbo_duty_cycle;
+   int turbo_bind;
+   bool turbo_enable;
+   bool turbo_allow_dpad;
+} input_remap_cache_t;
+
 typedef struct input_game_focus_state
 {
    bool enabled;
@@ -128,6 +156,7 @@ typedef struct rarch_joypad_info rarch_joypad_info_t;
 typedef struct input_driver input_driver_t;
 typedef struct input_keyboard_ctx_wait input_keyboard_ctx_wait_t;
 typedef struct turbo_buttons turbo_buttons_t;
+typedef struct hold_buttons hold_buttons_t;
 typedef struct joypad_connection joypad_connection_t;
 
 #endif /* __INPUT_TYPES__H */

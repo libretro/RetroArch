@@ -7,7 +7,7 @@ OBJS   := main.o
 INCLUDES := -I.
 
 CFLAGS   := -O3 -Wall -std=c++14 -DNDEBUG
-LDFLAGS  := -lz
+LDFLAGS  :=
 
 ifneq ($(findstring Linux,$(shell uname -a)),)
 else ifneq ($(findstring Darwin,$(shell uname -a)),)

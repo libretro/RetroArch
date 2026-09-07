@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 #ifdef CXX_BUILD
@@ -31,6 +32,7 @@ extern "C" {
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -40,7 +42,85 @@ extern "C" {
 #include "../../menu/menu_driver.h"
 #endif
 
+#include <queues/task_queue.h>
+
 #include "../input_keymaps.h"
+
+/* Threading model
+ * ---------------
+ * On every Windows video driver that can actually use this input
+ * driver, it is built by the video context driver's input_driver
+ * callback - gfx_ctx_wgl_input_driver() and the w_vk / d3d_common /
+ * gdi equivalents - rather than by the runloop. Under video_threaded
+ * the video driver's init() runs on the video thread
+ * (video_thread_wrapper.c, CMD_INIT), so winraw_init() and therefore
+ * winraw_create_window() run there too.
+ *
+ * There is a second path. A video driver may leave *input NULL, and
+ * video_driver_init_input() then picks the configured driver itself -
+ * on the main thread, since video_driver_init_internal() calls it
+ * after the video thread has been spun up. A winraw window created
+ * that way would not share a thread with the pump and would never see
+ * WM_INPUT. The only Windows driver that takes that path is sdl2,
+ * which sets *input = NULL at sdl2_gfx.c:470, and that combination is
+ * already unusable and warned about for an unrelated reason - see the
+ * note at the end of this comment. Worth knowing if another driver
+ * ever stops providing one.
+ *
+ * That matters because RegisterRawInputDevices() targets wr->window,
+ * a HWND_MESSAGE window, and WM_INPUT is delivered to the queue of the
+ * thread that created it. The pump,
+ * ui_application_win32_process_events(), uses
+ * PeekMessage(&msg, 0, 0, 0, PM_REMOVE), which retrieves messages for
+ * every window belonging to the calling thread - and it runs on the
+ * main thread when video is not threaded (runloop.c) or on the video
+ * thread when it is (win32_check_window()). Either way the pump and
+ * wr->window are on the same thread, so WM_INPUT is dispatched in both
+ * configurations.
+ *
+ * The split that does exist: winraw_callback() runs on whichever
+ * thread owns the window, while winraw_poll() is called from
+ * input_driver_poll() in the runloop, always on the main thread. Every
+ * field the two share crosses a thread boundary. dlt_x/dlt_y,
+ * whl_u/whl_d, pos_pending, abs_pending and abs_x/abs_y are
+ * retro_atomic_int_t for that reason.
+ *
+ * x and y are plain LONG because they have exactly one writer:
+ * winraw_poll(). The wndproc never reads or writes them. It publishes
+ * what it knows - an accumulated delta, a request to sample the system
+ * cursor, or an absolute position - and poll derives the position from
+ * whichever applies, once per frame. abs_ref_x/abs_ref_y are the
+ * wndproc's own copy of the last absolute report, used to turn
+ * successive absolute positions into deltas without reading the
+ * position it does not own.
+ *
+ * It used to be two writers both doing read-modify-write, which was a
+ * lost-update race that atomics would not have fixed - only made to
+ * look synchronised.
+ *
+ * Note also that whoever drains raw input owns it process-wide: the
+ * SDL2 video driver calls RegisterRawInputDevices() and
+ * GetRawInputBuffer() internally, which takes the WM_INPUT stream away
+ * from this driver entirely. See the warning in gfx/drivers/sdl2_gfx.c.
+ *
+ * That cuts both ways, and it is the reason GetRawInputBuffer() is not
+ * used here. It drains the queue for the whole thread, not for one
+ * window, so a drain in winraw_callback() also takes the joystick and
+ * gamepad records that winraw_joypad registered against its own
+ * HWND_MESSAGE window - created on this same thread by
+ * input_driver_init_joypads(), immediately after winraw_init(). This
+ * was tried in d087a820cd and reverted in 7858994d45: forwarding the
+ * RIM_TYPEHID records back to the joypad driver restored pad input, but
+ * keyboard and mouse buttons stayed broken for a reason that was never
+ * established, while mouse coordinates kept working. Anyone trying
+ * again needs to be the single drain point for the entire process,
+ * which means winraw_joypad giving up its own window and its own
+ * GetRawInputData() call, and should know the prize is small: measured
+ * at 8.32 reports per frame with a 1000 Hz mouse at 120 fps, the drain
+ * removes about seven of the roughly seventeen syscalls per frame,
+ * since WM_INPUT is still posted per report and PeekMessage() with
+ * PM_REMOVE has no user-mode fast path.
+ */
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -58,8 +138,28 @@ enum winraw_mouse_flags
 typedef struct
 {
    HANDLE hnd;
-   LONG x, y, dlt_x, dlt_y;
-   LONG whl_u, whl_d;
+   /* Position. Written only by winraw_poll(), on the main thread. The
+    * wndproc never touches these - it publishes what it knows through
+    * the atomics below and poll derives the position from them once
+    * per frame. Two writers doing read-modify-write here was a
+    * lost-update race that no amount of atomicity would have fixed. */
+   LONG x, y;
+   /* Absolute-position reference, touched only by the wndproc. Used to
+    * turn successive MOUSE_MOVE_ABSOLUTE reports into deltas. */
+   LONG abs_ref_x, abs_ref_y;
+   /* Produced by the wndproc, drained once per frame by winraw_poll().
+    * The snapshot in winraw_input_t::mice is single-threaded; only the
+    * g_mice originals are ever accessed concurrently. */
+   retro_atomic_int_t dlt_x, dlt_y;
+   retro_atomic_int_t whl_u, whl_d;
+   /* Set by the wndproc when this mouse needs its position taken from
+    * the system cursor, drained once per frame by winraw_poll(). */
+   retro_atomic_int_t pos_pending;
+   /* Set by the wndproc for a MOUSE_MOVE_ABSOLUTE report, with the
+    * scaled position alongside. Takes precedence over the accumulated
+    * delta, and yields to pos_pending. */
+   retro_atomic_int_t abs_pending;
+   retro_atomic_int_t abs_x, abs_y;
    int device;
    uint8_t flags;
 } winraw_mouse_t;
@@ -83,6 +183,11 @@ typedef struct
 {
    double view_abs_ratio_x;
    double view_abs_ratio_y;
+   /* Raised by the wndproc when an absolute report arrives before the
+    * xy mapping exists. winraw_poll() builds it, because
+    * winraw_init_mouse_xy_mapping() writes the position and the wndproc
+    * no longer owns that. */
+   retro_atomic_int_t map_pending;
    HWND window;
    /* Dummy head for easier iteration */
    struct winraw_pointer_status pointer_head;
@@ -93,11 +198,39 @@ typedef struct
    unsigned mouse_cnt;
    uint8_t kb_keys[SC_LAST];
    uint8_t flags;
+   bool last_focus;
+   bool kb_clear_pending;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
 static bool winraw_focus             = false;
+
+/* Sync internal mouse coordinates with the OS cursor position.
+ * Used after events such as window mode, size, and focus changes */
+static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
+{
+   HWND wnd;
+   POINT p;
+   unsigned i;
+
+   if (!wr || !wr->mouse_cnt)
+      return false;
+
+   wnd = (HWND)video_driver_window_get();
+   if (!wnd || !GetCursorPos(&p))
+      return false;
+
+   ScreenToClient(wnd, &p);
+
+   for (i = 0; i < wr->mouse_cnt; ++i)
+   {
+      g_mice[i].x = (LONG)p.x;
+      g_mice[i].y = (LONG)p.y;
+   }
+
+   return true;
+}
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->kb_keys[rarch_keysym_lut[(enum retro_key)(key)]])
 
@@ -122,44 +255,149 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
    return wnd;
 }
 
-static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
+/* Deferred mouse display-name resolution.
+ *
+ * Resolving a friendly mouse name requires
+ * GetRawInputDeviceInfoA(RIDI_DEVICENAME) followed by CreateFile() +
+ * HidD_GetProductString() on the HID interface. Opening the HID
+ * interface of e.g. a Bluetooth mouse right after a fresh boot can
+ * block for seconds while the device stack is still coming up, and
+ * the result is purely cosmetic (menu display names / log lines), so
+ * this work runs on the task queue instead of the input driver init
+ * path. Win32 queries happen in the task handler; publishing the
+ * names to global input config state happens in the task callback,
+ * which runs on the main thread (same split as the joypad
+ * autoconfig task). */
+
+typedef struct
+{
+   HANDLE hnd;      /* raw input device handle; used for queries only */
+   char name[256];
+} winraw_mouse_name_entry_t;
+
+typedef struct
+{
+   winraw_mouse_name_entry_t *entries;
+   unsigned count;
+} winraw_mouse_names_handle_t;
+
+static void winraw_mouse_names_free(retro_task_t *task)
+{
+   winraw_mouse_names_handle_t *h = NULL;
+   if (!task)
+      return;
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
+   {
+      free(h->entries);
+      free(h);
+   }
+   task->state = NULL;
+}
+
+static void winraw_mouse_names_handler(retro_task_t *task)
 {
    unsigned i;
-   char name[256];
-   UINT name_size = sizeof(name);
+   winraw_mouse_names_handle_t *h = NULL;
 
-   name[0]        = '\0';
+   if (!task)
+      return;
 
-   for (i = 0; i < mouse_cnt; ++i)
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
    {
-      UINT r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME,
-            name, &name_size);
-      if (r == (UINT)-1 || r == 0)
-         name[0]   = '\0';
-
-      if (name[0])
+      for (i = 0; i < h->count; ++i)
       {
-         HANDLE hhid = CreateFile(name,
-               0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         char *name     = h->entries[i].name;
+         /* Reset the in/out size argument every iteration -
+          * GetRawInputDeviceInfoA() may modify it. */
+         UINT name_size = sizeof(h->entries[i].name);
+         UINT r         = GetRawInputDeviceInfoA(h->entries[i].hnd,
+               RIDI_DEVICENAME, name, &name_size);
+         if (r == (UINT)-1 || r == 0)
+            name[0] = '\0';
 
-         if (hhid != INVALID_HANDLE_VALUE)
+         if (name[0])
          {
-            wchar_t prod_buf[128];
-            prod_buf[0]  = '\0';
-            if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
-               wcstombs(name, prod_buf, sizeof(name));
+            HANDLE hhid = CreateFile(name,
+                  0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+            if (hhid != INVALID_HANDLE_VALUE)
+            {
+               wchar_t prod_buf[128];
+               prod_buf[0] = '\0';
+               if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
+                  wcstombs(name, prod_buf, sizeof(h->entries[i].name));
+               CloseHandle(hhid);
+            }
          }
-         CloseHandle(hhid);
+
+         if (!name[0])
+            strlcpy_lit(name, "<name not found>",
+                  sizeof(h->entries[i].name));
       }
-
-      if (!name[0])
-         strlcpy(name, "<name not found>", sizeof(name));
-
-      input_config_set_mouse_display_name(i, name);
-
-      RARCH_LOG("[WinRaw]: Mouse #%u: \"%s\".\n", i, name);
    }
+
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void winraw_mouse_names_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   unsigned i;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!task)
+      return;
+   if (!(h = (winraw_mouse_names_handle_t*)task->state))
+      return;
+
+   /* input_config_set_mouse_display_name() writes global input
+    * config state, so it must run here on the main thread. */
+   for (i = 0; i < h->count; ++i)
+   {
+      input_config_set_mouse_display_name(i, h->entries[i].name);
+      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n",
+            i + 1, h->entries[i].name);
+   }
+}
+
+static void winraw_push_mouse_names_task(
+      winraw_mouse_t *mice, unsigned mouse_cnt)
+{
+   unsigned i;
+   retro_task_t *task             = NULL;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!mouse_cnt)
+      return;
+
+   if (!(h = (winraw_mouse_names_handle_t*)calloc(1, sizeof(*h))))
+      return;
+   if (!(h->entries = (winraw_mouse_name_entry_t*)calloc(
+         mouse_cnt, sizeof(*h->entries))))
+   {
+      free(h);
+      return;
+   }
+   h->count = mouse_cnt;
+   for (i = 0; i < mouse_cnt; ++i)
+      h->entries[i].hnd = mice[i].hnd;
+
+   if (!(task = task_init()))
+   {
+      free(h->entries);
+      free(h);
+      return;
+   }
+
+   task->handler  = winraw_mouse_names_handler;
+   task->state    = h;
+   task->title    = NULL;
+   task->callback = winraw_mouse_names_cb;
+   task->cleanup  = winraw_mouse_names_free;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+
+   task_queue_push(task);
 }
 
 static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
@@ -203,18 +441,22 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       }
    }
 
+   *mouse_cnt = mouse_cnt_r;
+
    /* count is already checked, so this is safe */
    for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
    {
       if (devs[i].dwType == RIM_TYPEMOUSE)
-         mice_r[mouse_cnt_r++].hnd = devs[i].hDevice;
+      {
+         mouse_cnt_r++;
+         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
+      }
    }
 
-   winraw_log_mice_info(mice_r, mouse_cnt_r);
-   free(devs);
-
    *mice      = mice_r;
-   *mouse_cnt = mouse_cnt_r;
+
+   winraw_push_mouse_names_task(mice_r, mouse_cnt_r);
+   free(devs);
 
    return true;
 
@@ -285,51 +527,37 @@ static bool winraw_mouse_button_pressed(
 static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
 {
    struct video_viewport viewport;
+   int mouse_x;
+   int mouse_y;
+   unsigned i;
 
-   if (video_driver_get_viewport_info(&viewport))
+   if (!video_driver_get_viewport_info(&viewport))
+      return;
+
+   /* Default fallback: center of the viewport */
+   mouse_x = viewport.x + viewport.width  / 2;
+   mouse_y = viewport.y + viewport.height / 2;
+
+   /* Sync to OS cursor position; fall back to center if it fails */
+   if (!winraw_sync_mouse_to_cursor(wr))
    {
-      unsigned i;
-      int center_x               = viewport.x + viewport.width / 2;
-      int center_y               = viewport.y + viewport.height / 2;
-
-      for (i = 0; i < wr->mouse_cnt; ++i)
+      for (i = 0; i < wr->mouse_cnt; i++)
       {
-         g_mice[i].x             = center_x;
-         g_mice[i].y             = center_y;
+         g_mice[i].x      = mouse_x;
+         g_mice[i].y      = mouse_y;
       }
-
-      wr->view_abs_ratio_x       = (double)viewport.full_width  / 65535.0f;
-      wr->view_abs_ratio_y       = (double)viewport.full_height / 65535.0f;
-
-      wr->flags                 |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
    }
+
+   wr->view_abs_ratio_x   = (double)viewport.full_width  / 65535.0;
+   wr->view_abs_ratio_y   = (double)viewport.full_height / 65535.0;
+
+   wr->flags             |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
 }
 
 static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
-   POINT crs_pos;
    bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
-
-   /* Used for fixing coordinates after switching resolutions */
-   GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
-
-   if (!EqualRect(&wr->active_rect, &wr->prev_rect))
-   {
-      if (wr->rect_delay < 10)
-      {
-          winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
-          wr->rect_delay ++;
-      }
-      else
-      {
-         int bottom      = wr->prev_rect.bottom;
-         int right       = wr->prev_rect.right;
-         wr->active_rect = wr->prev_rect;
-         winraw_init_mouse_xy_mapping(wr);
-         wr->rect_delay  = 0;
-      }
-   }
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
@@ -337,13 +565,21 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
          state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
-         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
-         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
-         mouse->x      = state->lLastX;
-         mouse->y      = state->lLastY;
+         /* abs_ref_* is this thread's own copy of the last absolute
+          * position, so the delta can be derived without reading the
+          * position that winraw_poll() owns. */
+         retro_atomic_fetch_add_int(&mouse->dlt_x,
+               state->lLastX - mouse->abs_ref_x);
+         retro_atomic_fetch_add_int(&mouse->dlt_y,
+               state->lLastY - mouse->abs_ref_y);
+         mouse->abs_ref_x = state->lLastX;
+         mouse->abs_ref_y = state->lLastY;
+         retro_atomic_store_release_int(&mouse->abs_x, state->lLastX);
+         retro_atomic_store_release_int(&mouse->abs_y, state->lLastY);
+         retro_atomic_store_release_int(&mouse->abs_pending, 1);
       }
       else
-         winraw_init_mouse_xy_mapping(wr);
+         retro_atomic_store_release_int(&wr->map_pending, 1);
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -360,51 +596,42 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          settings_t *settings = config_get_ptr();
          if (     settings->bools.input_overlay_enable
-               && !string_is_empty(settings->paths.path_overlay))
+               && *settings->paths.path_overlay)
             getcursorpos = true;
       }
 
       if (getcursorpos)
       {
-         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
-         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+         retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
+         retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
 
-         if (!GetCursorPos(&crs_pos))
-            RARCH_DBG("[WinRaw]: GetCursorPos failed with error %lu.\n", GetLastError());
-         else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-            RARCH_DBG("[WinRaw]: ScreenToClient failed with error %lu.\n", GetLastError());
+         /* Defer the cursor query to winraw_poll(). GetCursorPos() is an
+          * unconditional kernel transition on every Windows version, and
+          * this runs once per raw input report - about sixteen times per
+          * frame with a 1000 Hz mouse at 60 fps. Only the value in place
+          * at the frame snapshot is ever read, so resolving it once per
+          * frame gives the same result from a fresher sample. */
+         retro_atomic_store_release_int(&mouse->pos_pending, 1);
       }
       else
       {
+         /* This branch moves by delta, so any deferred cursor query or
+          * absolute report from earlier in this frame is superseded. */
+         retro_atomic_store_release_int(&mouse->pos_pending, 0);
+         retro_atomic_store_release_int(&mouse->abs_pending, 0);
+
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
          {
-            InterlockedExchange(&mouse->dlt_x, state->lLastX);
-            InterlockedExchange(&mouse->dlt_y, state->lLastY);
+            retro_atomic_store_release_int(&mouse->dlt_x, state->lLastX);
+            retro_atomic_store_release_int(&mouse->dlt_y, state->lLastY);
          }
          else
          {
-            InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
-            InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+            retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
+            retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
          }
-
-         crs_pos.x = mouse->x + mouse->dlt_x;
-         crs_pos.y = mouse->y + mouse->dlt_y;
-
-         /* Prevent travel outside active window */
-         if (crs_pos.x < wr->active_rect.left)
-            crs_pos.x = wr->active_rect.left;
-         else if (crs_pos.x > wr->active_rect.right)
-            crs_pos.x = wr->active_rect.right;
-
-         if (crs_pos.y < wr->active_rect.top)
-            crs_pos.y = wr->active_rect.top;
-         else if (crs_pos.y > wr->active_rect.bottom)
-            crs_pos.y = wr->active_rect.bottom;
       }
-
-      mouse->x = crs_pos.x;
-      mouse->y = crs_pos.y;
    }
 
    if (swap_mouse_buttons)
@@ -450,9 +677,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    if (state->usButtonFlags & RI_MOUSE_WHEEL)
    {
       if ((SHORT)state->usButtonData > 0)
-         InterlockedExchange(&mouse->whl_u, 1);
+         retro_atomic_store_release_int(&mouse->whl_u, 1);
       else if ((SHORT)state->usButtonData < 0)
-         InterlockedExchange(&mouse->whl_d, 1);
+         retro_atomic_store_release_int(&mouse->whl_d, 1);
    }
 }
 
@@ -513,20 +740,7 @@ static LRESULT CALLBACK winraw_callback(
                   return 0;
             }
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_get_keyboard_mods();
 
             wr->kb_keys[mcode] = down;
             input_keyboard_event(down,
@@ -554,7 +768,7 @@ static LRESULT CALLBACK winraw_callback(
 static void *winraw_init(const char *joypad_driver)
 {
    RAWINPUTDEVICE rid;
-   settings_t *settings = config_get_ptr();
+   bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
    winraw_input_t *wr   = (winraw_input_t *)
       calloc(1, sizeof(winraw_input_t));
 
@@ -581,7 +795,7 @@ static void *winraw_init(const char *joypad_driver)
    rid.hwndTarget  = wr->window;
    rid.usUsagePage = 0x01; /* Generic desktop */
    rid.usUsage     = 0x06; /* Keyboard */
-   if (settings->bools.input_nowinkey_enable)
+   if (input_nowinkey_enable)
       rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    if (!RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
@@ -596,6 +810,29 @@ static void *winraw_init(const char *joypad_driver)
       goto error;
 
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
+
+#ifndef _XBOX
+   /* wr->window was created on this thread, so WM_INPUT is posted to
+    * this thread's queue and only a pump running here will dispatch it.
+    * The pump belongs to whichever thread owns the main window - the
+    * video thread under video_threaded. See the threading note at the
+    * top of this file: every Windows video driver that supports this
+    * input driver builds it from its own context callback, so the two
+    * match, but the video_driver_init_input() fallback runs on the main
+    * thread after the video thread already exists. Say so rather than
+    * leaving the user with silently dead input. */
+   {
+      DWORD self_tid = GetCurrentThreadId();
+      DWORD wnd_tid  = main_window.hwnd
+         ? GetWindowThreadProcessId(main_window.hwnd, NULL) : 0;
+
+      if (wnd_tid && wnd_tid != self_tid)
+         RARCH_ERR("[WinRaw] Raw input window is on thread %lu but the "
+               "message pump runs on thread %lu - WM_INPUT will not be "
+               "dispatched and keyboard/mouse input will not work.\n",
+               (unsigned long)self_tid, (unsigned long)wnd_tid);
+   }
+#endif
 
    return wr;
 
@@ -613,7 +850,7 @@ error:
       rid.hwndTarget  = NULL;
       rid.usUsagePage = 0x01; /* Generic desktop */
       rid.usUsage     = 0x06; /* Keyboard */
-      if (settings->bools.input_nowinkey_enable)
+      if (input_nowinkey_enable)
          rid.dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
       RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));
@@ -630,32 +867,136 @@ error:
 static void winraw_poll(void *data)
 {
    unsigned i;
+   POINT crs_pos          = {0, 0};
+   bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
+
+   /* Fix coordinates after a resolution change. Runs here rather than
+    * in the wndproc so that active_rect, view_abs_ratio_* and the
+    * position all belong to this thread. */
+   GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
+
+   if (!EqualRect(&wr->active_rect, &wr->prev_rect))
+   {
+      if (wr->rect_delay < 10)
+      {
+         winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
+         wr->rect_delay++;
+      }
+      else
+      {
+         wr->active_rect = wr->prev_rect;
+         winraw_init_mouse_xy_mapping(wr);
+         wr->rect_delay  = 0;
+      }
+   }
+   else if (retro_atomic_exchange_int(&wr->map_pending, 0))
+      winraw_init_mouse_xy_mapping(wr);
+
+   /* Sync coordinates when window regains focus */
+   if (winraw_focus && !wr->last_focus)
+      winraw_sync_mouse_to_cursor(wr);
+
+   /* Release any keys still held at the moment focus is lost.
+    *
+    * The wndproc rejects background input (it returns early when
+    * GET_RAWINPUT_CODE_WPARAM() is not RIM_INPUT), so no key-up
+    * ever arrives for a key that was down when the window was
+    * deactivated, and it would stay latched indefinitely.
+    *
+    * The clear is deferred while Alt is still physically down,
+    * which is the case throughout an Alt-Tab. Latch it instead of
+    * testing the focus-loss edge directly, otherwise the edge is
+    * missed on exactly the Alt-Tab case that needs it and the
+    * keys stay latched until focus returns. */
+   if (!winraw_focus && wr->last_focus)
+      wr->kb_clear_pending = true;
+
+   if (wr->kb_clear_pending && !(GetKeyState(VK_MENU) & 0x8000))
+   {
+      /* LAlt is released through input_keyboard_event() rather
+       * than just zeroed, so the keyboard layer observes the
+       * transition and does not treat Alt as held afterwards. */
+      if (wr->kb_keys[SC_LALT])
+         input_keyboard_event(0,
+               input_keymaps_translate_keysym_to_rk(SC_LALT),
+               0, 0, RETRO_DEVICE_KEYBOARD);
+
+      memset(wr->kb_keys, 0, SC_LAST);
+      wr->kb_clear_pending = false;
+   }
+
+   wr->last_focus = winraw_focus;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
+      /* Derive the position. This is the only writer of g_mice[i].x/y.
+       *
+       * The three sources are mutually exclusive and the wndproc marks
+       * which one applies: a deferred cursor query wins, then an
+       * absolute report, then the delta accumulated over the frame.
+       * The cursor query happens at most once per frame however many
+       * reports asked for it or however many mice are attached. */
+      LONG dx;
+      LONG dy;
+
+      /* Clear buttons when not focused */
+      if (!winraw_focus)
+         g_mice[i].flags = 0;
+
+      dx = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_x, 0);
+      dy = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_y, 0);
+
+      if (retro_atomic_exchange_int(&g_mice[i].pos_pending, 0))
+      {
+         if (!crs_pos_valid)
+         {
+            HWND wnd = (HWND)video_driver_window_get();
+            if (!GetCursorPos(&crs_pos))
+               RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
+            else if (!wnd || !ScreenToClient(wnd, &crs_pos))
+               RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
+            else
+               crs_pos_valid = true;
+         }
+         if (crs_pos_valid)
+         {
+            g_mice[i].x = crs_pos.x;
+            g_mice[i].y = crs_pos.y;
+         }
+      }
+      else if (retro_atomic_exchange_int(&g_mice[i].abs_pending, 0))
+      {
+         g_mice[i].x = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_x);
+         g_mice[i].y = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_y);
+      }
+      else if (dx || dy)
+      {
+         LONG nx = g_mice[i].x + dx;
+         LONG ny = g_mice[i].y + dy;
+         /* Prevent travel outside active window */
+         if (nx < wr->active_rect.left)
+            nx = wr->active_rect.left;
+         else if (nx > wr->active_rect.right)
+            nx = wr->active_rect.right;
+
+         if (ny < wr->active_rect.top)
+            ny = wr->active_rect.top;
+         else if (ny > wr->active_rect.bottom)
+            ny = wr->active_rect.bottom;
+
+         g_mice[i].x = nx;
+         g_mice[i].y = ny;
+      }
+
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
-      wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);
-      wr->mice[i].dlt_y   = InterlockedExchange(&g_mice[i].dlt_y, 0);
-      wr->mice[i].whl_u   = InterlockedExchange(&g_mice[i].whl_u, 0);
-      wr->mice[i].whl_d   = InterlockedExchange(&g_mice[i].whl_d, 0);
+      wr->mice[i].dlt_x   = dx;
+      wr->mice[i].dlt_y   = dy;
+      wr->mice[i].whl_u   = retro_atomic_exchange_int(&g_mice[i].whl_u, 0);
+      wr->mice[i].whl_d   = retro_atomic_exchange_int(&g_mice[i].whl_d, 0);
       wr->mice[i].flags   = g_mice[i].flags;
    }
-
-   /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (     !winraw_focus
-         && wr->kb_keys[SC_LALT]
-         && !(GetKeyState(VK_MENU) & 0x8000))
-   {
-      wr->kb_keys[SC_LALT] = 0;
-      input_keyboard_event(0,
-            input_keymaps_translate_keysym_to_rk(SC_LALT),
-            0, 0, RETRO_DEVICE_KEYBOARD);
-   }
-   /* Clear all keyboard key states when unfocused */
-   else if (!winraw_focus && !(GetKeyState(VK_MENU) & 0x8000))
-      memset(wr->kb_keys, 0, SC_LAST);
 }
 
 static int16_t winraw_input_state(
@@ -976,7 +1317,19 @@ bool winraw_handle_message(UINT msg,
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lpar;
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-               joypad_driver_reinit(NULL, NULL);
+            {
+               settings_t *settings = config_get_ptr();
+               /* Name the joypad driver to reinitialise. Passing NULL
+                * here makes input_joypad_init_driver() skip the branch
+                * that honours the configured driver - it is guarded by
+                * 'if (ident && *ident)' - and fall through to
+                * input_joypad_init_first(), which takes whichever entry
+                * of joypad_drivers[] initialises first. The configured
+                * driver is never tried, so a device change silently
+                * swaps it for one earlier in that list. */
+               joypad_driver_reinit(NULL,
+                     settings ? settings->arrays.input_joypad_driver : NULL);
+            }
          }
 #endif
          break;
@@ -988,8 +1341,8 @@ bool winraw_handle_message(UINT msg,
 static void winraw_free(void *data)
 {
    RAWINPUTDEVICE rid;
-   settings_t *settings = config_get_ptr();
-   winraw_input_t *wr   = (winraw_input_t*)data;
+   winraw_input_t *wr         = (winraw_input_t*)data;
+   bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
 
    rid.dwFlags          = RIDEV_REMOVE;
    rid.hwndTarget       = NULL;
@@ -1002,7 +1355,7 @@ static void winraw_free(void *data)
    rid.hwndTarget       = NULL;
    rid.usUsagePage      = 0x01; /* Generic desktop */
    rid.usUsage          = 0x06; /* Keyboard */
-   if (settings->bools.input_nowinkey_enable)
+   if (input_nowinkey_enable)
       rid.dwFlags      |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE));

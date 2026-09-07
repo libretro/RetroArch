@@ -32,9 +32,6 @@ need to be full of platform-specific workarounds.
 */
 
 #if defined (__cplusplus)
-#if 0
-printf("This is C++, version %d.\n", __cplusplus);
-#endif
 /* The expected values would be
  *   199711L, for ISO/IEC 14882:1998 or 14882:2003
  */
@@ -101,13 +98,22 @@ printf("This is C++, version %d.\n", __cplusplus);
 #define __WINRT__ 1
 #endif
 
-/* MSVC obviously has to have some non-standard constants... */
-#if _M_IX86_FP == 1
+/* GCC and clang define __SSE__/__SSE2__ themselves; MSVC reports the
+ * same information through _M_IX86_FP and its architecture macros, so
+ * translate those into the standard spellings.  The inner guards let
+ * clang-cl, which defines both sets, through without redefining. */
+#if defined(_MSC_VER)
+#if (defined(_M_IX86_FP) && _M_IX86_FP >= 1) || defined(_M_AMD64) || defined(_M_X64)
+#ifndef __SSE__
 #define __SSE__ 1
-#elif _M_IX86_FP == 2 || (defined(_M_AMD64) || defined(_M_X64))
-#define __SSE__ 1
+#endif
+#endif
+#if (defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(_M_AMD64) || defined(_M_X64)
+#ifndef __SSE2__
 #define __SSE2__ 1
 #endif
+#endif
+#endif /* _MSC_VER */
 
 #endif
 

@@ -21,8 +21,10 @@
 
 #include <spa/param/audio/format-utils.h>
 #include <spa/utils/ringbuffer.h>
-
 #include <pipewire/pipewire.h>
+
+#include <lists/string_list.h>
+
 
 #define PW_RARCH_APPNAME                   "RetroArch"
 
@@ -31,34 +33,49 @@
 #define PW_RARCH_MEDIA_TYPE_VIDEO          "Video"
 #define PW_RARCH_MEDIA_TYPE_MIDI           "Midi"
 #define PW_RARCH_MEDIA_CATEGORY_PLAYBACK   "Playback"
-#define PW_RARCH_MEDIA_CATEGORY_RECORD	    "Capture"
+#define PW_RARCH_MEDIA_CATEGORY_RECORD     "Capture"
 #define PW_RARCH_MEDIA_ROLE                "Game"
 
 typedef struct pipewire_core
 {
    struct pw_thread_loop *thread_loop;
    struct pw_context *ctx;
+
    struct pw_core *core;
    struct spa_hook core_listener;
    int last_seq, pending_seq;
 
    struct pw_registry *registry;
    struct spa_hook registry_listener;
-   struct pw_client *client;
-   struct spa_hook client_listener;
 
-   bool nonblock;
    struct string_list *devicelist;
+   bool nonblock;
+   /* Set from the core error callback, on the loop thread. The loop
+    * is stopped by its owner at teardown, never from that thread -
+    * stopping from inside it cannot join it and leaves it a zombie -
+    * so this is how the error reaches the waits and the owner. */
+   bool error;
 } pipewire_core_t;
 
-size_t calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels);
+bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events);
 
-void set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS]);
+void pipewire_core_deinit(pipewire_core_t *pw);
 
-void pipewire_wait_resync(pipewire_core_t *pipewire);
+/* Granularity of every bounded wait on the thread loop, and the
+ * bounds themselves. A loop that is running answers in milliseconds;
+ * the bounds are for one that is not. */
+#define PIPEWIRE_LOOP_WAIT_STEP_MS 100
+#define PIPEWIRE_SYNC_WAIT_MS      3000
+#define PIPEWIRE_STREAM_WAIT_MS    1000
 
-bool pipewire_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
+/* Sleep on the loop until it is signalled or ms have passed. Caller
+ * holds the loop lock. Returns false on the deadline. */
+bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms);
 
-bool pipewire_core_init(pipewire_core_t *pipewire, const char *loop_name);
+/* Round-trips a sync to the daemon. Returns false when it did not
+ * answer within PIPEWIRE_SYNC_WAIT_MS. */
+bool pipewire_core_wait_resync(pipewire_core_t *pw);
+
+bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
 
 #endif  /* _RETROARCH_PIPEWIRE */

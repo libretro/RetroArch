@@ -168,6 +168,14 @@ int mbedtls_x509_set_extension( mbedtls_asn1_named_data **head, const char *oid,
 {
     mbedtls_asn1_named_data *cur;
 
+    /* A val_len of SIZE_MAX overflows the (val_len + 1) length
+     * computation below to zero, so a zero-length buffer is allocated
+     * and the subsequent copy overflows the heap (CVE-2024-23775).
+     * Reject it. (size_t)-1 is SIZE_MAX without requiring <stdint.h>,
+     * which this fork's targets do not all provide.) */
+    if( val_len == (size_t) -1 )
+        return( MBEDTLS_ERR_X509_BAD_INPUT_DATA );
+
     if( ( cur = mbedtls_asn1_store_named_data( head, oid, oid_len,
                                        NULL, val_len + 1 ) ) == NULL )
     {

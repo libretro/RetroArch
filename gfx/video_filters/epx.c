@@ -107,22 +107,49 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
       int first, int lsat, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   uint16_t colorA;
+   uint32_t colorA;
    int w;
+   unsigned row = 0;
 
-   for (; height; height--)
+   /* The peeled left and right edges below assume there is a pixel on
+    * either side of the run between them. */
+   if (width < 2)
    {
+      for (; height; height--)
+      {
+         unsigned x;
+         uint32_t *dP1 = (uint32_t *) dst;
+         uint32_t *dP2 = (uint32_t *) (dst + dst_stride);
+         for (x = 0; x < width; x++)
+         {
+            uint32_t colorX = src[x];
+            dP1[x] = dP2[x] = (colorX << 16) + colorX;
+         }
+         src += src_stride;
+         dst += dst_stride << 1;
+      }
+      return;
+   }
+
+   for (; height; height--, row++)
+   {
+      /* uP and lP are the rows either side.  Outside the frame they are
+       * clamped onto this row; first counts from the top of the frame,
+       * not of this worker's slice, so a worker that does not start at
+       * the top can still read back into the preceding rows. */
+      unsigned prevline = (first + row >= 1) ? src_stride : 0;
+      unsigned nextline = (lsat && height <= 1) ? 0 : src_stride;
       uint16_t *sP    = (uint16_t *) src;
-      uint16_t *uP    = (uint16_t *) (src - src_stride);
-      uint16_t *lP    = (uint16_t *) (src + src_stride);
+      uint16_t *uP    = (uint16_t *) (src - prevline);
+      uint16_t *lP    = (uint16_t *) (src + nextline);
       uint32_t *dP1   = (uint32_t *) dst;
       uint32_t *dP2   = (uint32_t *) (dst + dst_stride);
 
       /* left edge */
-      uint16_t colorX = *sP;
-      uint16_t colorC = *++sP;
-      uint16_t colorB = *lP++;
-      uint16_t colorD = *uP++;
+      uint32_t colorX = *sP;
+      uint32_t colorC = *++sP;
+      uint32_t colorB = *lP++;
+      uint32_t colorD = *uP++;
 
       if ((colorX != colorC) && (colorB != colorD))
       {

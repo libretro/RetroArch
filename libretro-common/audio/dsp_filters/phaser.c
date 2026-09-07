@@ -52,12 +52,46 @@ static void phaser_free(void *data)
    free(data);
 }
 
+/* One stereo frame of phasing.  Shared by the float and int16 entry points so
+ * the (inherently floating-point) LFO/allpass math is identical for both. */
+static INLINE void phaser_frame(struct phaser_data *ph,
+      const float in[2], float *out)
+{
+   unsigned c;
+   int s;
+   float m[2], tmp[2];
+
+   for (c = 0; c < 2; c++)
+      m[c] = in[c] + ph->fbout[c] * ph->fb * 0.01f;
+
+   if ((ph->skipcount++ % PHASER_LFO_SKIP_SAMPLES) == 0)
+   {
+      ph->gain = 0.5 * (1.0 + cos(ph->skipcount * ph->lfoskip + ph->phase));
+      ph->gain = (exp(ph->gain * PHASER_LFO_SHAPE) - 1.0) / (exp(PHASER_LFO_SHAPE) - 1);
+      ph->gain = 1.0 - ph->gain * ph->depth;
+   }
+
+   for (s = 0; s < ph->stages; s++)
+   {
+      for (c = 0; c < 2; c++)
+      {
+         tmp[c]        = ph->old[c][s];
+         ph->old[c][s] = ph->gain * tmp[c] + m[c];
+         m[c]          = tmp[c] - ph->gain * ph->old[c][s];
+      }
+   }
+
+   for (c = 0; c < 2; c++)
+   {
+      ph->fbout[c] = m[c];
+      out[c]       = m[c] * ph->drywet + in[c] * (1.0f - ph->drywet);
+   }
+}
+
 static void phaser_process(void *data, struct dspfilter_output *output,
       const struct dspfilter_input *input)
 {
-   unsigned i, c;
-   int s;
-   float m[2], tmp[2];
+   unsigned i;
    struct phaser_data *ph = (struct phaser_data*)data;
    float *out             = output->samples;
 
@@ -67,32 +101,48 @@ static void phaser_process(void *data, struct dspfilter_output *output,
    for (i = 0; i < input->frames; i++, out += 2)
    {
       float in[2] = { out[0], out[1] };
+      phaser_frame(ph, in, out);
+   }
+}
 
-      for (c = 0; c < 2; c++)
-         m[c] = in[c] + ph->fbout[c] * ph->fb * 0.01f;
+/* int16 entry point: bridge through the shared float frame routine so an
+ * int16 chain containing the phaser stays on the deterministic s16 path.
+ * The phaser recomputes its allpass coefficient from cos()/exp() every LFO
+ * step, so a genuinely FPU-free port would only ever be approximate; the
+ * game signal still stays on the integer path, converted here (s16 <-> the
+ * host's normalized [-1,1] float domain) around the coefficient math. */
+static void phaser_process_i16(void *data, struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   unsigned i;
+   struct phaser_data *ph = (struct phaser_data*)data;
+   int16_t *out           = NULL;
 
-      if ((ph->skipcount++ % PHASER_LFO_SKIP_SAMPLES) == 0)
-      {
-         ph->gain = 0.5 * (1.0 + cos(ph->skipcount * ph->lfoskip + ph->phase));
-         ph->gain = (exp(ph->gain * PHASER_LFO_SHAPE) - 1.0) / (exp(PHASER_LFO_SHAPE) - 1);
-         ph->gain = 1.0 - ph->gain * ph->depth;
-      }
+   output->samples        = input->samples;
+   output->frames         = input->frames;
+   out                    = output->samples;
 
-      for (s = 0; s < ph->stages; s++)
-      {
-         for (c = 0; c < 2; c++)
-         {
-            tmp[c] = ph->old[c][s];
-            ph->old[c][s] = ph->gain * tmp[c] + m[c];
-            m[c] = tmp[c] - ph->gain * ph->old[c][s];
-         }
-      }
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      float in[2], o[2];
+      int32_t v;
 
-      for (c = 0; c < 2; c++)
-      {
-         ph->fbout[c] = m[c];
-         out[c] = m[c] * ph->drywet + in[c] * (1.0f - ph->drywet);
-      }
+      in[0] = (float)out[0] * (1.0f / 32768.0f);
+      in[1] = (float)out[1] * (1.0f / 32768.0f);
+
+      phaser_frame(ph, in, o);
+
+      v = (o[0] >= 0.0f) ? (int32_t)(o[0] * 32768.0f + 0.5f)
+                         : (int32_t)(o[0] * 32768.0f - 0.5f);
+      if      (v >  32767) v =  32767;
+      else if (v < -32768) v = -32768;
+      out[0] = (int16_t)v;
+
+      v = (o[1] >= 0.0f) ? (int32_t)(o[1] * 32768.0f + 0.5f)
+                         : (int32_t)(o[1] * 32768.0f - 0.5f);
+      if      (v >  32767) v =  32767;
+      else if (v < -32768) v = -32768;
+      out[1] = (int16_t)v;
    }
 }
 
@@ -130,6 +180,8 @@ static const struct dspfilter_implementation phaser_plug = {
    DSPFILTER_API_VERSION,
    "Phaser",
    "phaser",
+
+   phaser_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

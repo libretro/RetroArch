@@ -1,6 +1,6 @@
 .\" retroarch.6:
 
-.TH  "RETROARCH" "6" "November 1, 2011" "RETROARCH" "System Manager's Manual: retroarch"
+.TH  "RETROARCH" "6" "January 20, 2025" "RETROARCH" "System Manager's Manual: retroarch"
 
 .SH NAME
 
@@ -239,3 +239,54 @@ Disables all kinds of content patching.
 .TP
 \fB-D, --detach\fR
 Detach from the current console. This is currently only relevant for Microsoft Windows.
+
+.SH ENVIRONMENT
+\fBretroarch\fR honors the following environment variables:
+
+.TP
+\fBLIBRETRO_DIRECTORY\fR
+Specify the directory where RetroArch looks for core and info files,
+overriding the value of the "libretro_directory" configuration file
+option.
+
+.TP
+\fBLIBRETRO_ASSETS_DIRECTORY\fR
+Specify the directory where RetroArch looks for assets, overriding
+the value of the "assets_directory" configuration file
+option.
+
+.TP
+\fBLIBRETRO_AUTOCONFIG_DIRECTORY\fR
+Specify the directory where RetroArch looks for controller
+auto-configuration files, overriding the value of the
+"joypad_autoconfig_dir" configuration file option.
+
+.TP
+\fBLIBRETRO_CHEATS_DIRECTORY\fR
+Specify the directory where RetroArch looks for cheat files,
+overriding the value of the "cheat_database_path" configuration file
+option.
+
+.TP
+\fBLIBRETRO_DATABASE_DIRECTORY\fR
+Specify the directory where RetroArch looks for database files,
+overriding the value of the "content_database_path" configuration file
+option.
+
+.TP
+\fBLIBRETRO_SYSTEM_DIRECTORY\fR
+Specify the directory where RetroArch looks for system files,
+overriding the value of the "system_directory" configuration file
+option.
+
+.TP
+\fBLIBRETRO_VIDEO_FILTER_DIRECTORY\fR
+Specify the directory where RetroArch looks for video filters,
+overriding the value of the "video_filter_dir" configuration file
+option.
+
+.TP
+\fBLIBRETRO_VIDEO_SHADER_DIRECTORY\fR
+Specify the directory where RetroArch looks for video shaders,
+overriding the value of the "video_shader_dir" configuration file
+option.

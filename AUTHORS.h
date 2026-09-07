@@ -315,7 +315,7 @@ Mike Swanson (chungy)
 mikeOSX
 minucce
 misson20000
-Mohmoud (esoptron) (Hedonium)
+esoptron
 Monroe88
 Morgane (MorganeAD)
 mprobinson
@@ -499,6 +499,7 @@ Wiktor Strzębała (wiktorek140)
 Woohyun Shin (sinusinu)
 xenomorph-us
 xhp-creations
+Xitee (Xitee1)
 Yari (hyarsan)
 yesfish (huwpascoe)
 Yongwoon Cho (ssangkong)

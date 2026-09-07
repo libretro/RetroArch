@@ -344,7 +344,7 @@ static void __sys_alarmhandler(void *arg)
 #if defined(HW_DOL)
 static void __dohotreset(u32 resetcode)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	_viReg[1] = 0;
@@ -374,7 +374,7 @@ static s32 __call_resetfuncs(s32 final)
 #if defined(HW_DOL)
 static void __doreboot(u32 resetcode,s32 force_menu)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -427,7 +427,7 @@ static void __RSWHandler()
 static void __STMEventHandler(u32 event)
 {
 	s32 ret;
-	u32 level;
+	u32 level = 0;
 
 	if(event==STM_EVENT_RESET) {
 		ret = SYS_ResetButtonDown();
@@ -511,7 +511,7 @@ static void __ipcbuffer_init()
 
 static void __memprotect_init()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -682,7 +682,7 @@ static void __buildchecksum(u16 *buffer,u16 *c1,u16 *c2)
 
 static void* __locksram(u32 loc)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	if(!sramcntrl.locked) {
@@ -937,7 +937,7 @@ u32 __SYS_GetRTC(u32 *gctime)
 
 void __SYS_SetTime(s64 time)
 {
-	u32 level;
+	u32 level = 0;
 	s64 now;
 	s64 *pBootTime = (s64*)0x800030d8;
 
@@ -953,7 +953,7 @@ void __SYS_SetTime(s64 time)
 
 s64 __SYS_GetSystemTime()
 {
-	u32 level;
+	u32 level = 0;
 	s64 now;
 	s64 *pBootTime = (s64*)0x800030d8;
 
@@ -1007,7 +1007,7 @@ void _V_EXPORTNAME(void)
 #if defined(HW_RVL)
 void __SYS_DoPowerCB(void)
 {
-	u32 level;
+	u32 level = 0;
 	powercallback powcb;
 
 	_CPU_ISR_Disable(level);
@@ -1034,7 +1034,7 @@ void __attribute__((weak)) __SYS_PreInit()
 
 void SYS_Init()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -1228,7 +1228,7 @@ void SYS_ResetSystem(s32 reset,u32 reset_code,s32 force_menu)
 
 void SYS_RegisterResetFunc(sys_resetinfo *info)
 {
-	u32 level;
+	u32 level = 0;
 	sys_resetinfo *after;
 	lwp_queue *header = &sys_reset_func_queue;
 
@@ -1239,7 +1239,7 @@ void SYS_RegisterResetFunc(sys_resetinfo *info)
 }
 
 void SYS_UnregisterResetFunc(sys_resetinfo *info) {
-	u32 level;
+	u32 level = 0;
 	lwp_node *n;
 
 	_CPU_ISR_Disable(level);
@@ -1254,7 +1254,7 @@ void SYS_UnregisterResetFunc(sys_resetinfo *info) {
 
 void SYS_SetArena1Lo(void *newLo)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__sysarena1lo = newLo;
@@ -1263,7 +1263,7 @@ void SYS_SetArena1Lo(void *newLo)
 
 void* SYS_GetArena1Lo()
 {
-	u32 level;
+	u32 level = 0;
 	void *arenalo;
 
 	_CPU_ISR_Disable(level);
@@ -1275,7 +1275,7 @@ void* SYS_GetArena1Lo()
 
 void SYS_SetArena1Hi(void *newHi)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__sysarena1hi = newHi;
@@ -1284,7 +1284,7 @@ void SYS_SetArena1Hi(void *newHi)
 
 void* SYS_GetArena1Hi()
 {
-	u32 level;
+	u32 level = 0;
 	void *arenahi;
 
 	_CPU_ISR_Disable(level);
@@ -1296,7 +1296,8 @@ void* SYS_GetArena1Hi()
 
 u32 SYS_GetArena1Size()
 {
-	u32 level,size;
+	u32 size;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	size = ((u32)__sysarena1hi - (u32)__sysarena1lo);
@@ -1321,7 +1322,7 @@ void* SYS_AllocArena1MemLo(u32 size,u32 align)
 #if defined(HW_RVL)
 void SYS_SetArena2Lo(void *newLo)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__sysarena2lo = newLo;
@@ -1330,7 +1331,7 @@ void SYS_SetArena2Lo(void *newLo)
 
 void* SYS_GetArena2Lo()
 {
-	u32 level;
+	u32 level = 0;
 	void *arenalo;
 
 	_CPU_ISR_Disable(level);
@@ -1342,7 +1343,7 @@ void* SYS_GetArena2Lo()
 
 void SYS_SetArena2Hi(void *newHi)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__sysarena2hi = newHi;
@@ -1351,7 +1352,7 @@ void SYS_SetArena2Hi(void *newHi)
 
 void* SYS_GetArena2Hi()
 {
-	u32 level;
+	u32 level = 0;
 	void *arenahi;
 
 	_CPU_ISR_Disable(level);
@@ -1363,7 +1364,8 @@ void* SYS_GetArena2Hi()
 
 u32 SYS_GetArena2Size()
 {
-	u32 level,size;
+	u32 size;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	size = ((u32)__sysarena2hi - (u32)__sysarena2lo);
@@ -1389,7 +1391,8 @@ void* SYS_AllocArena2MemLo(u32 size,u32 align)
 void SYS_ProtectRange(u32 chan,void *addr,u32 bytes,u32 cntrl)
 {
 	u16 rcntrl;
-	u32 pstart,pend,level;
+	u32 pstart, pend;
+	u32 level = 0;
 
 	if(chan<SYS_PROTECTCHANMAX) {
 		pstart = ((u32)addr)&~0x3ff;
@@ -1610,7 +1613,7 @@ s32 SYS_CancelAlarm(syswd_t thealarm)
 
 resetcallback SYS_SetResetCallback(resetcallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	resetcallback old;
 
 	_CPU_ISR_Disable(level);
@@ -1630,7 +1633,7 @@ resetcallback SYS_SetResetCallback(resetcallback cb)
 #if defined(HW_RVL)
 powercallback SYS_SetPowerCallback(powercallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	powercallback old;
 
 	_CPU_ISR_Disable(level);

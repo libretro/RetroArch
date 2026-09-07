@@ -1,0 +1,26 @@
+name: CI iOS (13)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Compile RA
+      run: |
+        set -o pipefail
+        xcodebuild -workspace pkg/apple/RetroArch.xcworkspace -destination generic/platform=iOS -config Release \
+        -scheme "RetroArch iOS Release" -xcconfig pkg/apple/GitHubCI.xcconfig \
+        CODE_SIGNING_ALLOWED=NO \ CODE_SIGNING_REQUIRED=NO \ CODE_SIGN_IDENTITY="" \ PROVISIONING_PROFILE_SPECIFIER="" \
+        -derivedDataPath build

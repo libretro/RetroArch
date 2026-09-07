@@ -1,0 +1,81 @@
+name: CI RGUI pixel format
+
+# RGUI draws into a 16bpp framebuffer, so every menu colour, wallpaper
+# and thumbnail pixel passes through one of the argb32_to_* converters
+# in menu/drivers/rgui.c.  Each one quantises the four 8-bit channels
+# to its target widths and ORs them into their fields, with the widths
+# and the shifts written by hand on separate lines - seven formats,
+# fourteen driver idents, and a dithered twin of each.
+#
+# Nothing else in CI can see a mistake there.  The formats are
+# per-platform: rgb565 belongs to sdl_dingux, sdl_rs90 and xvideo, and
+# no runner boots a 565 menu, so a converter can be wrong for months
+# while every desktop build renders perfectly.  It is not a build
+# break either - a width that outgrows its shift just ORs into the
+# neighbouring field, silently.
+#
+# c6b66c9 did exactly that: it widened green in argb32_to_rgb565 from
+# 5 bits to 6 but left the packing at (g << 6), where 6-bit green
+# needs (g << 5).  Green's top bit landed on red's LSB, the green
+# field became (g & 31) << 1, and green wrapped hard at half scale -
+# mid grey rendered as (139, 0, 131).  It shipped, and came back as
+# #19469, bisected by hand on an Anbernic RG300X.
+#
+# The check lifts the marked pixel format conversion block out of
+# rgui.c and compiles it on its own against two stubs, so it tests the
+# real shipped converters and the real dispatch table.  Field layouts
+# are measured from the converters, not hardcoded, so a new format
+# gets checked the moment its row is added to rgui_pixel_format_map.
+
+on:
+  push:
+    paths:
+      - 'menu/drivers/rgui.c'
+      - 'tools/rgui_pixfmt_check.py'
+      - '.github/workflows/RGUI-Pixel-Format-Check.yml'
+  pull_request:
+    paths:
+      - 'menu/drivers/rgui.c'
+      - 'tools/rgui_pixfmt_check.py'
+      - '.github/workflows/RGUI-Pixel-Format-Check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rgui-pixfmt-check:
+    name: RGUI 8-bit to 16bpp conversion contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: the corrected 6-bit green packed at <<5
+          # passes, c6b66c9's same green packed at <<6 is caught as a
+          # red/green overlap, and a table row wired to another
+          # format's dithered twin is caught as a reach mismatch.
+          #
+          # Both green fixtures are made by forcing the packing shift
+          # either way, so the self-test reports the same thing
+          # whether or not the tree is currently fixed - it is
+          # measuring the checker, not the tree.
+          python3 tools/rgui_pixfmt_check.py --selftest --cc gcc
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # Per driver ident, and for the unknown-ident fallback: the
+          # bits each input channel can change must be disjoint from
+          # every other channel's and contiguous; 0 and 255 must give
+          # an empty and a full field; the field must be monotonic in
+          # the input; and the dithered twin must cover the same bits
+          # and stay within one level of the plain converter.
+          python3 tools/rgui_pixfmt_check.py --cc gcc

@@ -19,8 +19,6 @@
 #include <stddef.h>
 #include <streams/file_stream.h>
 
-#include "../configuration.h"
-
 RETRO_BEGIN_DECLS
 
 /*
@@ -51,8 +49,20 @@ typedef struct
 cloud_sync_driver_state_t *cloud_sync_state_get_ptr(void);
 
 extern cloud_sync_driver_t cloud_sync_webdav;
+#ifdef HAVE_SSL
+extern cloud_sync_driver_t cloud_sync_google_drive;
+#endif
+#ifdef HAVE_S3
+extern cloud_sync_driver_t cloud_sync_s3;
+#endif
 #ifdef HAVE_ICLOUD
 extern cloud_sync_driver_t cloud_sync_icloud;
+#endif
+#ifdef HAVE_ICLOUD_DRIVE
+extern cloud_sync_driver_t cloud_sync_icloud_drive;
+#endif
+#ifdef HAVE_SMBCLIENT
+extern cloud_sync_driver_t cloud_sync_smb;
 #endif
 
 extern const cloud_sync_driver_t *cloud_sync_drivers[];
@@ -66,7 +76,8 @@ extern const cloud_sync_driver_t *cloud_sync_drivers[];
  **/
 const char* config_get_cloud_sync_driver_options(void);
 
-void cloud_sync_find_driver(settings_t *settings, const char *prefix, bool verbosity_enabled);
+void cloud_sync_find_driver(const char *drv, const char *prefix,
+      bool verbosity_enabled);
 
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data);

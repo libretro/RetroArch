@@ -15,18 +15,27 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
+
+    - name: Cocoa companion harness on Apple's AppKit
+      run: |
+        set -o pipefail
+        # The same harness the Linux job runs under GNUstep, built with
+        # Apple's clang against the real Cocoa framework and run on the
+        # runner's window server: key-window arbitration after closing the
+        # companion, the grid, the tables, the dialogs - as AppKit does them.
+        tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
 
     - name: Compile RA
       run: |
         set -o pipefail
-        xcodebuild -workspace pkg/apple/RetroArch.xcworkspace -scheme RetroArch -config Release -xcconfig pkg/apple/GitHubCI.xcconfig -derivedDataPath build | xcpretty --color
+        xcodebuild -workspace pkg/apple/RetroArch.xcworkspace -scheme RetroArch -config Release -xcconfig pkg/apple/GitHubCI.xcconfig -derivedDataPath build
 
     - name: Get short SHA
       id: slug
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v6
       with:
         name: RetroArch-${{ steps.slug.outputs.sha8 }}
         path: |

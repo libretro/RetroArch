@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -59,6 +60,7 @@ const char* rcheevos_get_hash(void);
 int rcheevos_get_richpresence(char *s, size_t len);
 int rcheevos_get_game_badge_url(char *s, size_t len);
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing);
+bool rcheevos_is_badge_available(const char* badge, bool locked);
 
 uint8_t* rcheevos_patch_address(unsigned address);
 

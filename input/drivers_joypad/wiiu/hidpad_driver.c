@@ -69,12 +69,12 @@ static int16_t hidpad_state(
       const struct retro_keybind *binds,
       unsigned port)
 {
-   unsigned i;
    int16_t ret                          = 0;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
    if (hidpad_query_pad(port_idx))
    {
+      int i;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
          /* Auto-binds are per joypad, not per user. */
@@ -88,7 +88,7 @@ static int16_t hidpad_state(
             )
             ret |= ( 1 << i);
          else if (joyaxis != AXIS_NONE &&
-               ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis)) 
+               ((float)abs(wiiu_hid.axis(hid_driver_get_data(), port_idx, joyaxis))
                 / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }

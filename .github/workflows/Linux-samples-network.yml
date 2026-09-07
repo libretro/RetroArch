@@ -1,0 +1,71 @@
+name: CI Linux samples/network
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-network:
+    name: Build and run samples/network
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run webdav_options_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_options
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and drives the OPTIONS
+          # capability probe as shipped over real-world header sets. The
+          # probe has to separate a WebDAV server from a plain HTTP
+          # server that answers OPTIONS, and the target it probes is a
+          # collection, on which PUT is not defined (RFC 4918 9.7.1) -
+          # so PUT's absence from Allow must not fail it. The previous
+          # probe did exactly that, rejecting mod_dav and Koofr
+          # (libretro/RetroArch#19486) while accepting a plain nginx
+          # that happened to list PUT. Covers the DAV header, Allow-only
+          # WebDAV methods, HTTP/2 lowercase field names, plain HTTP
+          # with and without PUT, empty and NULL header lists, and
+          # whole-token matching (PROPFINDX must not match PROPFIND).
+          make clean all SANITIZER=address,undefined
+          test -x webdav_options_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_options_test
+          echo "[pass] webdav_options_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_options_test
+          echo "[pass] webdav_options_test (TSan)"

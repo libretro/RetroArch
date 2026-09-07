@@ -36,12 +36,12 @@
 #include "core.h"
 #include "core_info.h"
 #include "file_path_special.h"
-#include "configuration.h"
 #include "msg_hash.h"
 #include "runloop.h"
 #include "verbosity.h"
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
+#include <compat/strl.h>
 #endif
 
 struct ram_type
@@ -64,22 +64,28 @@ struct autosave_st
 
 enum autosave_flags
 {
-   AUTOSAVE_FLAG_QUIT           = (1 << 0),
-   AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1)
+   AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1),
+   AUTOSAVE_FLAG_DIRTY          = (1 << 2)
 };
 
 struct autosave
 {
    void *buffer;
    const void *retro_buffer;
-   const char *path;
+   char *path;
    slock_t *lock;
    slock_t *cond_lock;
    scond_t *cond;
    sthread_t *thread;
    size_t bufsize;
    unsigned interval;
+   /* Guarded by 'lock'.  AUTOSAVE_FLAG_QUIT is deliberately NOT kept
+    * here: it is guarded by cond_lock, and two locks protecting
+    * different bits of one byte do not protect the byte -- the
+    * read-modify-write covers all of it. */
    uint8_t flags;
+   /* Guarded by cond_lock. */
+   uint8_t quit;
 };
 
 static struct autosave_st autosave_state;
@@ -90,6 +96,16 @@ static struct autosave_st autosave_state;
  * @data            : pointer to autosave object
  *
  * Callback function for (threaded) autosave.
+ *
+ * Performance notes:
+ *  - The dirty flag allows an early-out when the core
+ *    has not touched SRAM since last check, avoiding a
+ *    full memcmp on every wake-up.
+ *  - When a comparison is needed we scan word-at-a-time
+ *    to locate the first differing region, then only
+ *    memcmp/memcpy from that point onward.
+ *  - The file write happens entirely outside the lock,
+ *    so the core is never stalled on disk I/O.
  **/
 static void autosave_thread(void *data)
 {
@@ -97,21 +113,75 @@ static void autosave_thread(void *data)
 
    for (;;)
    {
-      bool differ;
+      bool differ   = false;
+      bool compress = false;
 
       slock_lock(save->lock);
-      differ = memcmp(save->buffer, save->retro_buffer,
-            save->bufsize) != 0;
-      if (differ)
-         memcpy(save->buffer, save->retro_buffer, save->bufsize);
+
+      /* Fast path: if the core hasn't signalled a write
+       * since our last check, skip the expensive memcmp.
+       * Falls back to full comparison if the dirty flag
+       * was never set (conservative default). */
+      if (save->flags & AUTOSAVE_FLAG_DIRTY)
+      {
+         const size_t word_size = sizeof(size_t);
+         const size_t aligned   = save->bufsize / word_size;
+         const size_t remainder = save->bufsize % word_size;
+         const size_t *src_w    = (const size_t*)save->retro_buffer;
+         const size_t *dst_w    = (const size_t*)save->buffer;
+         size_t offset          = 0;
+         size_t i;
+
+         /* Word-at-a-time scan to find first difference.
+          * Avoids touching the entire buffer when only
+          * a small region changed (common for SRAM). */
+         for (i = 0; i < aligned; i++)
+         {
+            if (src_w[i] != dst_w[i])
+            {
+               differ = true;
+               offset = i * word_size;
+               break;
+            }
+         }
+
+         /* Check trailing bytes if no word-level diff found */
+         if (!differ && remainder > 0)
+         {
+            const unsigned char *src_b =
+               (const unsigned char*)save->retro_buffer + aligned * word_size;
+            const unsigned char *dst_b =
+               (const unsigned char*)save->buffer + aligned * word_size;
+            if (memcmp(dst_b, src_b, remainder) != 0)
+            {
+               differ = true;
+               offset = aligned * word_size;
+            }
+         }
+
+         /* Only copy from first difference onward */
+         if (differ)
+            memcpy((unsigned char*)save->buffer + offset,
+                   (const unsigned char*)save->retro_buffer + offset,
+                   save->bufsize - offset);
+
+         /* Clear dirty flag regardless — we've checked */
+         save->flags &= ~AUTOSAVE_FLAG_DIRTY;
+      }
+
+      /* COMPRESS_FILES never changes after autosave_new(), but it
+       * shares the byte with DIRTY, which the main thread sets under
+       * this lock.  Sample it here rather than reading save->flags
+       * again once the lock is dropped. */
+      compress = (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES) != 0;
+
       slock_unlock(save->lock);
 
       if (differ)
       {
          intfstream_t *file = NULL;
 
-         /* Should probably deal with this more elegantly. */
-         if (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES)
+         if (compress)
             file = intfstream_open_rzip_file(save->path,
                   RETRO_VFS_FILE_ACCESS_WRITE);
          else
@@ -129,7 +199,7 @@ static void autosave_thread(void *data)
 
       slock_lock(save->cond_lock);
 
-      if (save->flags & AUTOSAVE_FLAG_QUIT)
+      if (save->quit)
       {
          slock_unlock(save->cond_lock);
          break;
@@ -152,7 +222,7 @@ static void autosave_thread(void *data)
  * autosave_new:
  * @path            : path to autosave file
  * @data            : pointer to buffer
- * @size            : size of @data buffer
+ * @len             : size of @data buffer
  * @interval        : interval at which saves should be performed.
  *
  * Create and initialize autosave object.
@@ -161,7 +231,7 @@ static void autosave_thread(void *data)
  * NULL.
  **/
 static autosave_t *autosave_new(const char *path,
-      const void *data, size_t size,
+      const void *data, size_t len,
       unsigned interval, bool compress)
 {
    void       *buf               = NULL;
@@ -169,16 +239,35 @@ static autosave_t *autosave_new(const char *path,
    if (!handle)
       return NULL;
 
-   handle->flags                 = 0;
-   handle->bufsize               = size;
+   handle->flags                 = AUTOSAVE_FLAG_DIRTY;
+   handle->quit                  = 0;
+   handle->bufsize               = len;
    handle->interval              = interval;
+   handle->buffer                = NULL;
+   handle->lock                  = NULL;
+   handle->cond_lock             = NULL;
+   handle->cond                  = NULL;
+   handle->thread                = NULL;
+
    if (compress)
       handle->flags             |= AUTOSAVE_FLAG_COMPRESS_FILES;
    handle->retro_buffer          = data;
-   handle->path                  = path;
-
-   if (!(buf = malloc(size)))
+   /* Own the path string rather than borrowing it. The caller's
+    * path comes from task_save_files->elems[i].data, freed by
+    * path_deinit_savefile() during the deinit chain. The worker
+    * thread reads handle->path via intfstream_open_*(). Owning
+    * the string keeps the lifetime contract local to
+    * autosave_new/autosave_free rather than depending on top-
+    * level deinit ordering at every call site. */
+   if (!(handle->path = strdup(path)))
    {
+      free(handle);
+      return NULL;
+   }
+
+   if (!(buf = malloc(len)))
+   {
+      free(handle->path);
       free(handle);
       return NULL;
    }
@@ -190,7 +279,35 @@ static autosave_t *autosave_new(const char *path,
    handle->lock                  = slock_new();
    handle->cond_lock             = slock_new();
    handle->cond                  = scond_new();
+
+   if (!handle->lock || !handle->cond_lock || !handle->cond)
+   {
+      RARCH_ERR("[SRAM] Failed to initialize autosave synchronization primitives.\n");
+      if (handle->lock)
+         slock_free(handle->lock);
+      if (handle->cond_lock)
+         slock_free(handle->cond_lock);
+      if (handle->cond)
+         scond_free(handle->cond);
+      free(handle->path);
+      free(handle->buffer);
+      free(handle);
+      return NULL;
+   }
+
    handle->thread                = sthread_create(autosave_thread, handle);
+
+   if (!handle->thread)
+   {
+      RARCH_ERR("[SRAM] Failed to create autosave thread.\n");
+      slock_free(handle->lock);
+      slock_free(handle->cond_lock);
+      scond_free(handle->cond);
+      free(handle->path);
+      free(handle->buffer);
+      free(handle);
+      return NULL;
+   }
 
    return handle;
 }
@@ -199,12 +316,12 @@ static autosave_t *autosave_new(const char *path,
  * autosave_free:
  * @handle          : pointer to autosave object
  *
- * Frees autosave object.
+ * Frees autosave object and all associated resources.
  **/
 static void autosave_free(autosave_t *handle)
 {
    slock_lock(handle->cond_lock);
-   handle->flags |= AUTOSAVE_FLAG_QUIT;
+   handle->quit  = 1;
    slock_unlock(handle->cond_lock);
    scond_signal(handle->cond);
    sthread_join(handle->thread);
@@ -216,19 +333,18 @@ static void autosave_free(autosave_t *handle)
    if (handle->buffer)
       free(handle->buffer);
    handle->buffer = NULL;
+
+   if (handle->path)
+      free(handle->path);
+   handle->path = NULL;
+
+   free(handle);
 }
 
-bool autosave_init(void)
+bool autosave_init(bool compress_files, unsigned autosave_interval)
 {
    unsigned i;
    autosave_t **list          = NULL;
-   settings_t *settings       = config_get_ptr();
-   unsigned autosave_interval = settings->uints.autosave_interval;
-#if defined(HAVE_ZLIB)
-   bool compress_files        = settings->bools.save_file_compression;
-#else
-   bool compress_files        = false;
-#endif
 
    if (autosave_interval < 1 || !task_save_files)
       return false;
@@ -252,7 +368,7 @@ bool autosave_init(void)
 
       core_get_memory(&mem_info);
 
-      if (mem_info.size <= 0)
+      if (mem_info.size == 0)
          continue;
 
       if (!(auto_st = autosave_new(path,
@@ -261,7 +377,7 @@ bool autosave_init(void)
             autosave_interval,
             compress_files)))
       {
-         RARCH_WARN("%s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
+         RARCH_WARN("[SRAM] %s\n", msg_hash_to_str(MSG_AUTOSAVE_FAILED));
          continue;
       }
 
@@ -279,10 +395,7 @@ void autosave_deinit(void)
    {
       autosave_t *handle = autosave_state.list[i];
       if (handle)
-      {
          autosave_free(handle);
-         free(autosave_state.list[i]);
-      }
       autosave_state.list[i] = NULL;
    }
 
@@ -313,6 +426,8 @@ void autosave_lock(void)
  * autosave_unlock:
  *
  * Unlocks autosave.
+ * Also marks all buffers as dirty, since the core
+ * may have written to SRAM while holding the lock.
  **/
 void autosave_unlock(void)
 {
@@ -322,7 +437,34 @@ void autosave_unlock(void)
    {
       autosave_t *handle = autosave_state.list[i];
       if (handle)
+      {
+         handle->flags |= AUTOSAVE_FLAG_DIRTY;
          slock_unlock(handle->lock);
+      }
+   }
+}
+
+/**
+ * autosave_mark_dirty:
+ *
+ * Marks all autosave buffers as dirty so the
+ * autosave thread will compare and flush on
+ * next wake-up.  Call after any SRAM write
+ * that does not go through autosave_lock/unlock.
+ **/
+void autosave_mark_dirty(void)
+{
+   unsigned i;
+
+   for (i = 0; i < autosave_state.num; i++)
+   {
+      autosave_t *handle = autosave_state.list[i];
+      if (handle)
+      {
+         slock_lock(handle->lock);
+         handle->flags |= AUTOSAVE_FLAG_DIRTY;
+         slock_unlock(handle->lock);
+      }
    }
 }
 #endif
@@ -344,8 +486,7 @@ static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
 
 /**
  * content_load_ram_file:
- * @path             : path of RAM state that will be loaded from.
- * @type             : type of memory
+ * @slot             : index into task_save_files
  *
  * Load a RAM state from disk to memory.
  */
@@ -355,6 +496,7 @@ static bool content_load_ram_file(unsigned slot)
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
    void *buf        = NULL;
+   bool success     = false;
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
@@ -363,11 +505,11 @@ static bool content_load_ram_file(unsigned slot)
     * not exist. This is a common enough occurrence
     * that we should check before attempting to
     * invoke the relevant read_file() function */
-   if (    string_is_empty(ram.path)
+   if (    (!ram.path || !*ram.path)
        || !path_is_valid(ram.path))
       return false;
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    /* Always use RZIP interface when reading SRAM
     * files - this will automatically handle uncompressed
     * data */
@@ -381,7 +523,7 @@ static bool content_load_ram_file(unsigned slot)
    {
       if (rc > (ssize_t)mem_info.size)
       {
-         RARCH_WARN("[SRAM]: SRAM is larger than implementation expects, "
+         RARCH_WARN("[SRAM] SRAM is larger than implementation expects, "
                "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
@@ -390,12 +532,13 @@ static bool content_load_ram_file(unsigned slot)
          rc = mem_info.size;
       }
       memcpy(mem_info.data, buf, (size_t)rc);
+      success = true;
    }
 
    if (buf)
       free(buf);
 
-   return true;
+   return success;
 }
 
 /**
@@ -407,21 +550,23 @@ static bool content_load_ram_file(unsigned slot)
  * Attempt to save valuable RAM data somewhere.
  **/
 static bool dump_to_file_desperate(const void *data,
-      size_t size, unsigned type)
+      size_t len, unsigned type)
 {
+   size_t _len;
    char path[PATH_MAX_LENGTH + 256 + 32];
-   path            [0]    = '\0';
+   path[0] = '\0';
+   _len    = fill_pathname_application_data(path,
+            sizeof(path));
 
-   if (fill_pathname_application_data(path,
-            sizeof(path)))
+   if (_len)
    {
-      size_t _len;
       time_t time_;
       struct tm tm_;
+
       time(&time_);
       rtime_localtime(&time_, &tm_);
-      _len  = strlcat(path, "/RetroArch-recovery-", sizeof(path));
-      _len += snprintf(path + _len, sizeof(path) - _len, "%u", type);
+      _len += strlcpy_lit(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
+      _len += snprintf(path + _len, sizeof(path) - _len, "%u-", type);
       strftime(path + _len, sizeof(path) - _len,
             "%Y-%m-%d-%H-%M-%S", &tm_);
 
@@ -434,9 +579,9 @@ static bool dump_to_file_desperate(const void *data,
        * > In this case, we don't want to further
        *   complicate matters by introducing zlib
        *   compression overheads */
-      if (filestream_write_file(path, data, size))
+      if (filestream_write_file(path, data, len))
       {
-         RARCH_WARN("[SRAM]: Succeeded in saving RAM data to \"%s\".\n", path);
+         RARCH_WARN("[SRAM] Succeeded in saving RAM data to \"%s\".\n", path);
          return true;
       }
    }
@@ -446,11 +591,12 @@ static bool dump_to_file_desperate(const void *data,
 
 /**
  * content_save_ram_file:
- * @path             : path of RAM state that shall be written to.
- * @type             : type of memory
+ * @slot             : index into task_save_files
+ * @compress         : whether to use rzip compression
  *
  * Save a RAM state from memory to disk.
- *
+ * Skips the write if the on-disk content already
+ * matches memory (common when autosave has been active).
  */
 static bool content_save_ram_file(unsigned slot, bool compress)
 {
@@ -460,13 +606,48 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
 
-   RARCH_LOG("[SRAM]: %s #%u %s \"%s\".\n",
+   /* Quick check: if the file already exists and matches
+    * current memory contents, skip the write entirely.
+    * This is the common case when autosave has been running. */
+   if (   ram.path && *ram.path
+       &&  path_is_valid(ram.path))
+   {
+      /* Compared in place rather than slurped, in both lanes.  The
+       * old path allocated a second copy of the whole save file
+       * purely to memcmp it and free it, and checked the size only
+       * after the read had already happened - so a save that had
+       * changed size, the one case where the answer is knowable for
+       * free, still paid a full-size allocation and a full-file read
+       * (a full decompress, in the compressed lane).  Cores with
+       * megabytes of save RAM paid that on every save, against a
+       * memory budget that on the handheld targets is the scarce
+       * resource.
+       *
+       * Size first, then compare without owning a copy, stopping at
+       * the first differing byte - which is the case that goes on to
+       * write. */
+#if defined(HAVE_COMPRESSION)
+      if (rzipstream_matches_buf(ram.path, mem_info.data,
+               mem_info.size))
+#else
+      if (filestream_matches_buf(ram.path, mem_info.data,
+               mem_info.size))
+#endif
+      {
+         RARCH_LOG("[SRAM] %s \"%s\" (unchanged, skipping write).\n",
+               msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+               ram.path);
+         return true;
+      }
+   }
+
+   RARCH_LOG("[SRAM] %s #%u %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_RAM_TYPE),
          ram.type,
          msg_hash_to_str(MSG_TO),
          ram.path);
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (compress)
    {
       if (!rzipstream_write_file(
@@ -481,58 +662,44 @@ static bool content_save_ram_file(unsigned slot, bool compress)
          goto fail;
    }
 
-   RARCH_LOG("[SRAM]: %s \"%s\".\n",
+   RARCH_LOG("[SRAM] %s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
          ram.path);
 
    return true;
 
 fail:
-   RARCH_ERR("[SRAM]: %s.\n",
+   RARCH_ERR("[SRAM] %s.\n",
          msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
-   RARCH_WARN("[SRAM]: Attempting to recover ...\n");
+   RARCH_WARN("[SRAM] Attempting to recover...\n");
 
    /* In case the file could not be written to,
     * the fallback function 'dump_to_file_desperate'
     * will be called. */
    if (!dump_to_file_desperate(
             mem_info.data, mem_info.size, ram.type))
-      RARCH_WARN("[SRAM]: Failed ... Cannot recover save file.\n");
+      RARCH_WARN("[SRAM] Failed. Cannot recover save file.\n");
    return false;
 }
 
-bool event_save_files(bool is_sram_used)
+bool event_save_files(bool is_sram_used, bool compress_files,
+      const char *path_cheat_database)
 {
    unsigned i;
-   settings_t *settings            = config_get_ptr();
 #ifdef HAVE_CHEATS
-   const char *path_cheat_database = settings->paths.path_cheat_database;
-#endif
-#if defined(HAVE_ZLIB)
-   bool compress_files             = settings->bools.save_file_compression;
-#else
-   bool compress_files             = false;
-#endif
-
-#ifdef HAVE_CHEATS
-   cheat_manager_save_game_specific_cheats(
-         path_cheat_database);
+   cheat_manager_save_game_specific_cheats(path_cheat_database);
 #endif
    if (!task_save_files || !is_sram_used)
       return false;
-
    for (i = 0; i < task_save_files->size; i++)
-   {
       content_save_ram_file(i, compress_files);
-   }
-
    return true;
 }
 
 bool event_load_save_files(bool is_sram_load_disabled)
 {
    unsigned i;
-   bool success = false;
+   bool ret = false;
 
    if (!task_save_files || is_sram_load_disabled)
       return false;
@@ -541,9 +708,9 @@ bool event_load_save_files(bool is_sram_load_disabled)
     * any type of RAM file is found and
     * processed correctly */
    for (i = 0; i < task_save_files->size; i++)
-      success |= content_load_ram_file(i);
+      ret |= content_load_ram_file(i);
 
-   return success;
+   return ret;
 }
 
 void path_init_savefile_rtc(const char *savefile_path)

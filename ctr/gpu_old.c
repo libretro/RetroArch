@@ -11,7 +11,9 @@
 #include <3ds/gpu/gx.h>
 #include <3ds/gpu/shbin.h>
 
+#define DEPRECATED
 #include "gpu_old.h"
+#undef DEPRECATED
 
 void GPU_Init(Handle *gsphandle)
 {

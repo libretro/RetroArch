@@ -35,7 +35,17 @@
 #define NETPLAY_HOST_STR_LEN     32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
-#define NETPLAY_MITM_SERVERS 6
+/* Upper bound on the LAN discovery result list.
+ *
+ * Discovery responses are unsolicited UDP datagrams (and unsolicited
+ * mDNS records); nothing ties one to a query we sent, and nothing stops
+ * a single peer from answering forever.  Without a ceiling the list is
+ * a remotely driven allocation - roughly 700 bytes per entry - that the
+ * user has no way to stop.  No plausible LAN has more netplay hosts
+ * than this, and the menu is unusable long before it. */
+#define NETPLAY_MAX_DISCOVERED_HOSTS 256
+
+#define NETPLAY_MITM_SERVERS 5
 
 #define NETPLAY_CHAT_MAX_MESSAGES   5
 #define NETPLAY_CHAT_MAX_SIZE       96
@@ -58,6 +68,7 @@ enum rarch_netplay_ctl_state
 #endif
    RARCH_NETPLAY_CTL_REFRESH_CLIENT_INFO,
    RARCH_NETPLAY_CTL_IS_ENABLED,
+   RARCH_NETPLAY_CTL_GET_SELF_CLIENT_NUM,
    RARCH_NETPLAY_CTL_IS_REPLAYING,
    RARCH_NETPLAY_CTL_IS_SERVER,
    RARCH_NETPLAY_CTL_IS_CONNECTED,
@@ -85,7 +96,7 @@ enum rarch_netplay_connection_mode
 {
    NETPLAY_CONNECTION_NONE = 0,
 
-   NETPLAY_CONNECTION_DELAYED_DISCONNECT, 
+   NETPLAY_CONNECTION_DELAYED_DISCONNECT,
    /* The connection is dead, but data
       is still waiting to be forwarded */
 

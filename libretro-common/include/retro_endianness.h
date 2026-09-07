@@ -401,9 +401,9 @@ typedef struct retro_unaligned_uint32_s retro_unaligned_uint32_t;
 typedef struct retro_unaligned_uint64_s retro_unaligned_uint64_t;
 
 /* L-value references to unaligned pointers.  */
-#define retro_unaligned16(p) (((retro_unaligned_uint16_t *)p)->val)
-#define retro_unaligned32(p) (((retro_unaligned_uint32_t *)p)->val)
-#define retro_unaligned64(p) (((retro_unaligned_uint64_t *)p)->val)
+#define retro_unaligned16(p) (((retro_unaligned_uint16_t *)(p))->val)
+#define retro_unaligned32(p) (((retro_unaligned_uint32_t *)(p))->val)
+#define retro_unaligned64(p) (((retro_unaligned_uint64_t *)(p))->val)
 
 /**
  * Reads a 16-bit unsigned integer from the given address

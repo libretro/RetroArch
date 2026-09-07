@@ -39,6 +39,7 @@ typedef struct
    unsigned width;
    unsigned height;
    int swap_interval;
+   bool surface_lost;
 } android_ctx_data_vk_t;
 
 /* FORWARD DECLARATION */
@@ -107,21 +108,23 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    *quit                                = false;
 
-   if (android_app->content_rect.changed)
+   if (retro_atomic_load_acquire_int(&android_app->content_rect.changed))
    {
-      and->vk.flags                    |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-      android_app->content_rect.changed = false;
+      and->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+      retro_atomic_store_release_int(&android_app->content_rect.changed, 0);
    }
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
    *resize    = (and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
-   new_width  = android_app->content_rect.width;
-   new_height = android_app->content_rect.height;
+   new_width  = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.width);
+   new_height = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.height);
 
    if (new_width != *width || new_height != *height)
    {
-      RARCH_LOG("[Android]: Resizing (%u x %u) -> (%u x %u).\n",
+      RARCH_LOG("[Vulkan] Resizing (%ux%u) -> (%ux%u).\n",
               *width, *height, new_width, new_height);
 
       *width  = new_width;
@@ -136,12 +139,14 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
    android_ctx_data_vk_t        *and  = (android_ctx_data_vk_t*)data;
    struct android_app *android_app    = (struct android_app*)g_android;
 
-   and->width                         = android_app->content_rect.width;
-   and->height                        = android_app->content_rect.height;
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
+   and->width  = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.width);
+   and->height = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.height);
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n", and->width, and->height);
    if (!vulkan_create_swapchain(&and->vk, and->width, and->height, and->swap_interval))
    {
-      RARCH_ERR("[Android]: Failed to update swapchain.\n");
+      RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
    }
 
@@ -165,11 +170,60 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
             NULL, android_app->window,
             and->width, and->height, and->swap_interval))
    {
-      RARCH_ERR("[Android]: Failed to create surface.\n");
+      RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
-   RARCH_LOG("[Android]: Native window size: %u x %u.\n",
+   and->surface_lost = false;
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          and->width, and->height);
+   return true;
+}
+
+static bool android_gfx_ctx_vk_create_surface(void *data)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
+
+   /* APP_CMD_INIT_WINDOW can remain pending after startup even though the
+    * Vulkan surface is already active. */
+   if (and && !and->surface_lost
+         && and->vk.vk_surface != VK_NULL_HANDLE)
+   {
+      RARCH_LOG("[Vulkan] Ignoring duplicate Android window initialization.\n");
+      return true;
+   }
+
+   if (!android_app || !android_app->window || !and)
+      return false;
+
+   and->width  = ANativeWindow_getWidth(android_app->window);
+   and->height = ANativeWindow_getHeight(android_app->window);
+
+   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
+            NULL, android_app->window,
+            and->width, and->height, and->swap_interval))
+   {
+      RARCH_ERR("[Vulkan] Failed to recreate Android surface.\n");
+      return false;
+   }
+
+   and->surface_lost = false;
+   RARCH_LOG("[Vulkan] Recreated Android surface: %ux%u.\n",
+         and->width, and->height);
+   return true;
+}
+
+static bool android_gfx_ctx_vk_destroy_surface(void *data)
+{
+   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
+
+   if (!and)
+      return false;
+
+   and->surface_lost = true;
+   if (!vulkan_surface_destroy(&and->vk))
+      return false;
+
    return true;
 }
 
@@ -197,18 +251,30 @@ static bool android_gfx_ctx_vk_bind_api(void *data,
 
 static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { return false; }
 
+static bool android_gfx_ctx_vk_presentable(void *data)
+{
+   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
+   if (!and || and->surface_lost)
+      return false;
+   return and->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
 
+   if (!and || and->surface_lost
+         || and->vk.vk_surface == VK_NULL_HANDLE)
+      return;
+
    if (and->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       and->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (and->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (and->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&and->vk, and->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&and->vk);
@@ -220,7 +286,7 @@ static void android_gfx_ctx_vk_set_swap_interval(void *data, int swap_interval)
 
    if (and->swap_interval != swap_interval)
    {
-      RARCH_LOG("[Vulkan]: Setting swap interval: %u.\n", swap_interval);
+      RARCH_LOG("[Vulkan] Setting swap interval: %u.\n", swap_interval);
       and->swap_interval       = swap_interval;
       if (and->vk.swapchain)
          and->vk.flags        |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
@@ -261,7 +327,7 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    NULL,                                     /* get_video_output_size */
    NULL,                                     /* get_video_output_prev */
    NULL,                                     /* get_video_output_next */
-   android_display_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    NULL,                                     /* update_title */
    android_gfx_ctx_vk_check_window,
@@ -280,5 +346,8 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_set_flags,
    android_gfx_ctx_vk_bind_hw_render,
    android_gfx_ctx_vk_get_context_data,
-   NULL                                      /* make_current */
+   NULL,                                     /* make_current */
+   android_gfx_ctx_vk_create_surface,
+   android_gfx_ctx_vk_destroy_surface,
+   android_gfx_ctx_vk_presentable
 };

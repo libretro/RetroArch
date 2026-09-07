@@ -39,7 +39,12 @@
 
 #ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_simple.cg.h"
+#include "../drivers/gl_shaders/pipeline_snow_heavy.cg.h"
 #include "../drivers/gl_shaders/pipeline_snow.cg.h"
+#include "../drivers/gl_shaders/pipeline_bokeh.cg.h"
+#include "../drivers/gl_shaders/pipeline_snowflake.cg.h"
 #endif
 
 #include "../include/Cg/cg.h"
@@ -51,6 +56,73 @@
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
+
+#if defined(HAVE_OPENGLES)
+#define CG(src)   "" #src
+#define GLSL(src) "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "#version 130\n" \
+                  "#extension GL_OES_standard_derivatives : enable\n" \
+                  "#ifdef GL_ES\n" \
+                  "  #ifdef GL_FRAGMENT_PRECISION_HIGH\n" \
+                  "    precision highp float;\n" \
+                  "  #else\n" \
+                  "    precision mediump float;\n" \
+                  "  #endif\n" \
+                  "#else\n" \
+                  "  precision mediump float;\n" \
+                  "#endif\n" #src
+#else
+#define CG(src)   "" #src
+#define GLSL(src) "" #src
+#define GLSL_STANDARD_DERIVATIVES(src) "" #src
+#endif
+
+#ifndef GLSL_300
+#define GLSL_300(src)   "#version 300 es\n"   #src
+#endif
+
+static const char *stock_cg_gl_program = CG(
+      struct input
+      {
+        float2 tex_coord;
+        float4 color;
+        float4 vertex_coord;
+        uniform float4x4 mvp_matrix;
+        uniform sampler2D texture;
+      };
+
+      struct vertex_data
+      {
+        float2 tex;
+        float4 color;
+      };
+
+      void main_vertex
+      (
+        out float4 oPosition : POSITION,
+        input IN,
+        out vertex_data vert
+      )
+      {
+        oPosition = mul(IN.mvp_matrix, IN.vertex_coord);
+        vert = vertex_data(IN.tex_coord, IN.color);
+      }
+
+      float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR
+      {
+        return vert.color * tex2D(s0, vert.tex);
+      }
+);
+
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
@@ -138,8 +210,6 @@ struct uniform_cg
       cgGLEnableTextureParameter(param); \
    }
 
-#include "../drivers/gl_shaders/opaque.cg.h"
-
 static void gl_cg_set_uniform_parameter(
       void *data,
       struct uniform_info *param,
@@ -171,7 +241,7 @@ static void gl_cg_set_uniform_parameter(
 
       if (param->lookup.add_prefix)
       {
-         size_t _len = strlcpy(ident, "IN.", sizeof(ident));
+         size_t _len = strlcpy_lit(ident, "IN.", sizeof(ident));
          strlcpy(ident + _len, param->lookup.ident, sizeof(ident) - _len);
       }
       location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
@@ -217,26 +287,23 @@ static void gl_cg_set_uniform_parameter(
 }
 
 #ifdef RARCH_CG_DEBUG
-static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
+static void cg_err_handler(CGcontext ctx, CGerror err, void *data)
 {
-   (void)ctx;
-   (void)data;
-
-   switch (error)
+   switch (err)
    {
       case CG_INVALID_PARAM_HANDLE_ERROR:
-         RARCH_ERR("CG: Invalid param handle.\n");
+         RARCH_ERR("[Cg] Invalid param handle.\n");
          break;
 
       case CG_INVALID_PARAMETER_ERROR:
-         RARCH_ERR("CG: Invalid parameter.\n");
+         RARCH_ERR("[Cg] Invalid parameter.\n");
          break;
 
       default:
          break;
    }
 
-   RARCH_ERR("CG error: \"%s\"\n", cgGetErrorString(error));
+   RARCH_ERR("[Cg] Error: \"%s\".\n", cgGetErrorString(err));
 }
 #endif
 
@@ -275,16 +342,18 @@ static bool gl_cg_set_coords(void *shader_data,
       return true;
    }
 
-   if (cg->prg[cg->active_idx].vertex)
+   /* A NULL stream means the caller has nothing for that attribute;
+    * leave it unbound rather than walk a NULL pointer. */
+   if (cg->prg[cg->active_idx].vertex && coords->vertex)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].vertex, cg, coords->vertex, 2);
 
-   if (cg->prg[cg->active_idx].tex)
+   if (cg->prg[cg->active_idx].tex && coords->tex_coord)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].tex, cg, coords->tex_coord, 2);
 
-   if (cg->prg[cg->active_idx].lut_tex)
+   if (cg->prg[cg->active_idx].lut_tex && coords->lut_tex_coord)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].lut_tex, cg, coords->lut_tex_coord, 2);
 
-   if (cg->prg[cg->active_idx].color)
+   if (cg->prg[cg->active_idx].color && coords->color)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].color, cg, coords->color, 4);
 
    return true;
@@ -388,6 +457,13 @@ static void gl_cg_set_params(void *dat, void *shader_data)
       unsigned modulo = cg->shader->pass[cg->active_idx - 1].frame_count_mod;
       if (modulo)
          frame_count %= modulo;
+      else
+         /* fp32 mantissa is 23 bits; integers above 2^24 cannot be
+          * represented exactly. Mask to 24 bits when the shader pass
+          * has not declared its own modulo, so (float)frame_count stays
+          * bit-exact and time-based Cg shaders keep animating beyond
+          * ~77 h of continuous play. */
+         frame_count &= 0xFFFFFFu;
 
       cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_cnt_f, (float)frame_count);
       cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_cnt_v, (float)frame_count);
@@ -442,7 +518,7 @@ static void gl_cg_deinit_progs(void *data)
    if (!cg)
       return;
 
-   RARCH_LOG("[CG]: Destroying programs.\n");
+   RARCH_LOG("[Cg] Destroying programs.\n");
    cgGLUnbindProgram(cg->cgFProf);
    cgGLUnbindProgram(cg->cgVProf);
 
@@ -489,7 +565,7 @@ static void gl_cg_deinit_context_state(void *data)
    cg_shader_data_t *cg = (cg_shader_data_t*)data;
    if (cg->cgCtx)
    {
-      RARCH_LOG("[CG]: Destroying context.\n");
+      RARCH_LOG("[Cg] Destroying context.\n");
       cgDestroyContext(cg->cgCtx);
    }
    cg->cgCtx = NULL;
@@ -566,11 +642,11 @@ static bool gl_cg_compile_program(
 
    if (!program->fprg || !program->vprg)
    {
-      RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+      RARCH_ERR("[Cg] Error: %s.\n", cgGetErrorString(cgGetError()));
       if (listing_f)
-         RARCH_ERR("Fragment:\n%s\n", listing_f);
+         RARCH_ERR("[Cg] Fragment: %s.\n", listing_f);
       else if (listing_v)
-         RARCH_ERR("Vertex:\n%s\n", listing_v);
+         RARCH_ERR("[Cg] Vertex: %s.\n", listing_v);
 
       ret = false;
       goto end;
@@ -602,16 +678,16 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
       if (!semantic)
          continue;
 
-      RARCH_LOG("[CG]: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+      RARCH_LOG("[Cg] Found semantic \"%s\" in prog #%u.\n", semantic, i);
 
       if (
-            string_is_equal(semantic, "TEXCOORD") ||
-            string_is_equal(semantic, "TEXCOORD0")
+               string_is_equal(semantic, "TEXCOORD")
+            || string_is_equal(semantic, "TEXCOORD0")
          )
          cg->prg[i].tex     = param;
       else if (
-            string_is_equal(semantic, "COLOR") ||
-            string_is_equal(semantic, "COLOR0")
+               string_is_equal(semantic, "COLOR")
+            || string_is_equal(semantic, "COLOR0")
             )
             cg->prg[i].color   = param;
       else if (string_is_equal(semantic, "POSITION"))
@@ -639,15 +715,14 @@ static bool gl_cg_load_stock(void *data)
    program_info.is_file  = false;
 
    if (!gl_cg_compile_program(data, 0, &cg->prg[0], &program_info))
-      goto error;
+   {
+      RARCH_ERR("[Cg] Failed to compile passthrough shader, is something wrong with your environment?\n");
+      return false;
+   }
 
    gl_cg_set_program_base_attrib(data, 0);
 
    return true;
-
-error:
-   RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
-   return false;
 }
 
 static bool gl_cg_load_plain(void *data, const char *path)
@@ -664,9 +739,9 @@ static bool gl_cg_load_plain(void *data, const char *path)
 
    cg->shader->passes = 1;
 
-   if (string_is_empty(path))
+   if (!path || !*path)
    {
-      RARCH_LOG("[CG]: Loading stock Cg file.\n");
+      RARCH_LOG("[Cg] Loading stock Cg file.\n");
       cg->prg[1] = cg->prg[0];
    }
    else
@@ -676,7 +751,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
       program_info.combined = path;
       program_info.is_file  = true;
 
-      RARCH_LOG("[CG]: Loading Cg file: %s\n", path);
+      RARCH_LOG("[Cg] Loading Cg file: \"%s\".\n", path);
       strlcpy(cg->shader->pass[0].source.path, path,
             sizeof(cg->shader->pass[0].source.path));
       if (!gl_cg_compile_program(data, 1, &cg->prg[1], &program_info))
@@ -696,7 +771,7 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    program_info.combined = cg->shader->pass[i].source.path;
    program_info.is_file  = true;
 
-   RARCH_LOG("[CG]: Loading Cg shader: \"%s\".\n",
+   RARCH_LOG("[Cg] Loading Cg shader: \"%s\".\n",
          cg->shader->pass[i].source.path);
 
    if (!gl_cg_compile_program(data, i + 1, &cg->prg[i + 1],&program_info))
@@ -713,7 +788,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
    if (!gl_cg_load_stock(cg))
       return false;
 
-   RARCH_LOG("[CG]: Loading Cg meta-shader: %s\n", path);
+   RARCH_LOG("[Cg] Loading Cg meta-shader: \"%s\".\n", path);
 
    cg->shader = (struct video_shader*)calloc(1, sizeof(*cg->shader));
    if (!cg->shader)
@@ -723,13 +798,13 @@ static bool gl_cg_load_preset(void *data, const char *path)
 
    if (!video_shader_load_preset_into_shader(path, cg->shader))
    {
-      RARCH_ERR("Failed to parse CGP file.\n");
+      RARCH_ERR("[Cg] Failed to parse CGP file.\n");
       return false;
    }
 
    if (cg->shader->passes > GFX_MAX_SHADERS - 3)
    {
-      RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n",
+      RARCH_WARN("[Cg] Too many shaders... Capping shader amount to %d.\n",
             GFX_MAX_SHADERS - 3);
       cg->shader->passes = GFX_MAX_SHADERS - 3;
    }
@@ -747,14 +822,14 @@ static bool gl_cg_load_preset(void *data, const char *path)
    {
       if (!gl_cg_load_shader(cg, i))
       {
-         RARCH_ERR("Failed to load shaders ...\n");
+         RARCH_ERR("[Cg] Failed to load shaders.\n");
          return false;
       }
    }
 
    if (!gl2_load_luts(cg->shader, cg->lut_textures))
    {
-      RARCH_ERR("Failed to load lookup textures ...\n");
+      RARCH_ERR("[Cg] Failed to load lookup textures.\n");
       return false;
    }
 
@@ -846,7 +921,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    if (i > 1)
    {
       char pass_str[64];
-      size_t _len = strlcpy(pass_str, "PASSPREV", sizeof(pass_str));
+      size_t _len = strlcpy_lit(pass_str, "PASSPREV", sizeof(pass_str));
       snprintf(pass_str + _len, sizeof(pass_str) - _len, "%u", i);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
    }
@@ -922,35 +997,55 @@ static void gl_cg_init_menu_shaders(void *data)
       return;
 
 #ifdef HAVE_SHADERPIPELINE
-   shader_prog_info.combined = stock_xmb_ribbon_simple;
    shader_prog_info.is_file  = false;
 
+   shader_prog_info.combined = stock_xmb_ribbon;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU,
          &cg->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU);
 
    shader_prog_info.combined = stock_xmb_ribbon_simple;
-   shader_prog_info.is_file  = false;
-
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_2,
          &cg->prg[VIDEO_SHADER_MENU_2],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_2);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_2);
 
-   shader_prog_info.combined = stock_xmb_snow;
-   shader_prog_info.is_file  = false;
-
+   shader_prog_info.combined = stock_xmb_simple_snow;
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_3,
          &cg->prg[VIDEO_SHADER_MENU_3],
          &shader_prog_info);
-   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_3);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_3);
+
+   shader_prog_info.combined = stock_xmb_snow_heavy;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_4,
+         &cg->prg[VIDEO_SHADER_MENU_4],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_4);
+
+   shader_prog_info.combined = stock_xmb_bokeh;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_5,
+         &cg->prg[VIDEO_SHADER_MENU_5],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_5);
+
+   shader_prog_info.combined = stock_xmb_snowflake;
+   gl_cg_compile_program(
+         cg,
+         VIDEO_SHADER_MENU_6,
+         &cg->prg[VIDEO_SHADER_MENU_6],
+         &shader_prog_info);
+   gl_cg_set_program_attributes(cg, VIDEO_SHADER_MENU_6);
 #endif
 }
 
@@ -971,28 +1066,28 @@ static void *gl_cg_init(void *data, const char *path)
 
    if (!cg->cgCtx)
    {
-      RARCH_ERR("Failed to create Cg context.\n");
+      RARCH_ERR("[Cg] Failed to create Cg context.\n");
       goto error;
    }
 
 #ifdef RARCH_CG_DEBUG
    cgGLSetDebugMode(CG_TRUE);
-   cgSetErrorHandler(cg_error_handler, NULL);
+   cgSetErrorHandler(cg_err_handler, NULL);
 #endif
 
    cg->cgFProf = cgGLGetLatestProfile(CG_GL_FRAGMENT);
    cg->cgVProf = cgGLGetLatestProfile(CG_GL_VERTEX);
 
    if (
-         cg->cgFProf == CG_PROFILE_UNKNOWN ||
-         cg->cgVProf == CG_PROFILE_UNKNOWN)
+            cg->cgFProf == CG_PROFILE_UNKNOWN
+         || cg->cgVProf == CG_PROFILE_UNKNOWN)
    {
-      RARCH_ERR("Invalid profile type\n");
+      RARCH_ERR("[Cg] Invalid profile type.\n");
       goto error;
    }
 
-   RARCH_LOG("[CG]: Vertex profile: %s\n",   cgGetProfileString(cg->cgVProf));
-   RARCH_LOG("[CG]: Fragment profile: %s\n", cgGetProfileString(cg->cgFProf));
+   RARCH_LOG("[Cg] Vertex profile: %s.\n",   cgGetProfileString(cg->cgVProf));
+   RARCH_LOG("[Cg] Fragment profile: %s.\n", cgGetProfileString(cg->cgFProf));
    cgGLSetOptimalOptions(cg->cgFProf);
    cgGLSetOptimalOptions(cg->cgVProf);
    cgGLEnableProfile(cg->cgFProf);
@@ -1005,13 +1100,13 @@ static void *gl_cg_init(void *data, const char *path)
       enum rarch_shader_type type =
          video_shader_get_type_from_ext(path_get_extension(path), &is_preset);
 
-      if (!string_is_empty(path) && type != RARCH_SHADER_CG)
+      if (path && *path && type != RARCH_SHADER_CG)
       {
-         RARCH_ERR("[CG]: Invalid shader type, falling back to stock.\n");
+         RARCH_ERR("[Cg] Invalid shader type, falling back to stock.\n");
          path = NULL;
       }
 
-      if (!string_is_empty(path) && is_preset)
+      if (path && *path && is_preset)
       {
          if (!gl_cg_load_preset(cg, path))
             goto error;

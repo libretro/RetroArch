@@ -62,6 +62,12 @@
 #define SUPPORTS_SDL2 false
 #endif
 
+#ifdef HAVE_SDL3
+#define SUPPORTS_SDL3 true
+#else
+#define SUPPORTS_SDL3 false
+#endif
+
 #ifdef HAVE_THREADS
 #define SUPPORTS_THREAD true
 #else
@@ -194,12 +200,6 @@
 #define SUPPORTS_COREAUDIO false
 #endif
 
-#ifdef HAVE_COREAUDIO3
-#define SUPPORTS_COREAUDIO3 true
-#else
-#define SUPPORTS_COREAUDIO3 false
-#endif
-
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
 #define SUPPORTS_OSS true
 #else
@@ -278,10 +278,22 @@
 #define SUPPORTS_ZLIB false
 #endif
 
+#ifdef HAVE_CHD
+#define SUPPORTS_CHD true
+#else
+#define SUPPORTS_CHD false
+#endif
+
 #ifdef HAVE_7ZIP
 #define SUPPORTS_7ZIP true
 #else
 #define SUPPORTS_7ZIP false
+#endif
+
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#define SUPPORTS_ZSTD true
+#else
+#define SUPPORTS_ZSTD false
 #endif
 
 #ifdef HAVE_DYLIB
@@ -338,11 +350,7 @@
 #define SUPPORTS_FREETYPE false
 #endif
 
-#ifdef HAVE_STB_FONT
 #define SUPPORTS_STBFONT true
-#else
-#define SUPPORTS_STBFONT false
-#endif
 
 #ifdef HAVE_NETWORKING
 #define SUPPORTS_NETPLAY true
@@ -350,7 +358,13 @@
 #define SUPPORTS_NETPLAY false
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#ifdef HAVE_SSL
+#define SUPPORTS_SSL true
+#else
+#define SUPPORTS_SSL false
+#endif
+
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 #define SUPPORTS_COCOA true
 #else
 #define SUPPORTS_COCOA false
@@ -390,6 +404,30 @@
 #define SUPPORTS_RTGA true
 #else
 #define SUPPORTS_RTGA false
+#endif
+
+#ifdef HAVE_RWEBP
+#define SUPPORTS_RWEBP true
+#else
+#define SUPPORTS_RWEBP false
+#endif
+
+#ifdef HAVE_RWEBM
+#define SUPPORTS_RWEBM true
+#else
+#define SUPPORTS_RWEBM false
+#endif
+
+#ifdef HAVE_RVP9
+#define SUPPORTS_RVP9 true
+#else
+#define SUPPORTS_RVP9 false
+#endif
+
+#ifdef HAVE_RDDS
+#define SUPPORTS_RDDS true
+#else
+#define SUPPORTS_RDDS false
 #endif
 
 #ifdef HAVE_CORETEXT

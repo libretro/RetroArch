@@ -30,10 +30,11 @@ DEFINES += -DHAVE_THREADS \
 	   -DHAVE_GLSL \
 	   -DHAVE_DYNAMIC \
 	   -DHAVE_RPNG \
+	   -DHAVE_RWEBP \
+	   -DHAVE_RDDS \
 	   -DHAVE_RJPEG \
 	   -DHAVE_OVERLAY \
 	   -DHAVE_ALSA \
-	   -DHAVE_ZLIB \
 	   -D__linux__ \
 	   -DHAVE_DSP_FILTER \
 	   -DHAVE_VIDEO_FILTER \

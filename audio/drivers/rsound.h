@@ -286,7 +286,7 @@ int rsd_stop (rsound_t *rd);
    or there was an unexpected error. This function will block until all data has
    been written to the buffer. This function will return the number of bytes written to the buffer,
    or 0 should it fail (disconnection from server). You will have to restart the stream again should this occur. */
-size_t rsd_write (rsound_t *rd, const void* buf, size_t size);
+size_t rsd_write (rsound_t *rd, const void *s, size_t len);
 
 /* Gets the position of the buffer pointer.
    Not really interesting for normal applications.

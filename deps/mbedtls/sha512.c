@@ -46,36 +46,7 @@
 
 #include "arc4_alt.h"
 
-/*
- * 64-bit integer manipulation macros (big endian)
- */
-#ifndef GET_UINT64_BE
-#define GET_UINT64_BE(n,b,i)                            \
-{                                                       \
-    (n) = ( (uint64_t) (b)[(i)    ] << 56 )       \
-        | ( (uint64_t) (b)[(i) + 1] << 48 )       \
-        | ( (uint64_t) (b)[(i) + 2] << 40 )       \
-        | ( (uint64_t) (b)[(i) + 3] << 32 )       \
-        | ( (uint64_t) (b)[(i) + 4] << 24 )       \
-        | ( (uint64_t) (b)[(i) + 5] << 16 )       \
-        | ( (uint64_t) (b)[(i) + 6] <<  8 )       \
-        | ( (uint64_t) (b)[(i) + 7]       );      \
-}
-#endif /* GET_UINT64_BE */
-
-#ifndef PUT_UINT64_BE
-#define PUT_UINT64_BE(n,b,i)                            \
-{                                                       \
-    (b)[(i)    ] = (unsigned char) ( (n) >> 56 );       \
-    (b)[(i) + 1] = (unsigned char) ( (n) >> 48 );       \
-    (b)[(i) + 2] = (unsigned char) ( (n) >> 40 );       \
-    (b)[(i) + 3] = (unsigned char) ( (n) >> 32 );       \
-    (b)[(i) + 4] = (unsigned char) ( (n) >> 24 );       \
-    (b)[(i) + 5] = (unsigned char) ( (n) >> 16 );       \
-    (b)[(i) + 6] = (unsigned char) ( (n) >>  8 );       \
-    (b)[(i) + 7] = (unsigned char) ( (n)       );       \
-}
-#endif /* PUT_UINT64_BE */
+#include "mbedtls/int_util.h"
 
 void mbedtls_sha512_init( mbedtls_sha512_context *ctx )
 {
@@ -199,9 +170,12 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
 #undef S3
 #define S3(x) (ROTR(x,14) ^ ROTR(x,18) ^ ROTR(x,41))
 
+#undef F0
 #define F0(x,y,z) ((x & y) | (z & (x | y)))
+#undef F1
 #define F1(x,y,z) (z ^ (x & (y ^ z)))
 
+#undef P
 #define P(a,b,c,d,e,f,g,h,x,K)                  \
 {                                               \
     temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
@@ -211,7 +185,7 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
 
     for( i = 0; i < 16; i++ )
     {
-        GET_UINT64_BE( W[i], data, i << 3 );
+        MBEDTLS_GET_UINT64_BE( W[i], data, i << 3 );
     }
 
     for( ; i < 80; i++ )
@@ -252,6 +226,17 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
     ctx->state[6] += G;
     ctx->state[7] += H;
 }
+
+#undef SHR
+#undef ROTR
+#undef S0
+#undef S1
+#undef S2
+#undef S3
+#undef F0
+#undef F1
+#undef P
+
 #endif /* !MBEDTLS_SHA512_PROCESS_ALT */
 
 /*
@@ -319,8 +304,8 @@ void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
          | ( ctx->total[1] <<  3 );
     low  = ( ctx->total[0] <<  3 );
 
-    PUT_UINT64_BE( high, msglen, 0 );
-    PUT_UINT64_BE( low,  msglen, 8 );
+    MBEDTLS_PUT_UINT64_BE( high, msglen, 0 );
+    MBEDTLS_PUT_UINT64_BE( low,  msglen, 8 );
 
     last = (size_t)( ctx->total[0] & 0x7F );
     padn = ( last < 112 ) ? ( 112 - last ) : ( 240 - last );
@@ -328,17 +313,17 @@ void mbedtls_sha512_finish( mbedtls_sha512_context *ctx, unsigned char *output )
     mbedtls_sha512_update( ctx, sha512_padding, padn );
     mbedtls_sha512_update( ctx, msglen, 16 );
 
-    PUT_UINT64_BE( ctx->state[0], output,  0 );
-    PUT_UINT64_BE( ctx->state[1], output,  8 );
-    PUT_UINT64_BE( ctx->state[2], output, 16 );
-    PUT_UINT64_BE( ctx->state[3], output, 24 );
-    PUT_UINT64_BE( ctx->state[4], output, 32 );
-    PUT_UINT64_BE( ctx->state[5], output, 40 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[0], output,  0 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[1], output,  8 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[2], output, 16 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[3], output, 24 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[4], output, 32 );
+    MBEDTLS_PUT_UINT64_BE( ctx->state[5], output, 40 );
 
     if( ctx->is384 == 0 )
     {
-        PUT_UINT64_BE( ctx->state[6], output, 48 );
-        PUT_UINT64_BE( ctx->state[7], output, 56 );
+        MBEDTLS_PUT_UINT64_BE( ctx->state[6], output, 48 );
+        MBEDTLS_PUT_UINT64_BE( ctx->state[7], output, 56 );
     }
 }
 

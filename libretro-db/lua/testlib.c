@@ -16,7 +16,7 @@
 
 struct libretrodb
 {
-	RFILE *fd;
+	intfstream_t *fd;
 	uint64_t root;
 	uint64_t count;
 	uint64_t first_index_offset;
@@ -96,7 +96,7 @@ static int value_provider(void *ctx, struct rmsgpack_dom_value *out)
 
 static int create_db(lua_State *L)
 {
-   RFILE *dst;
+   intfstream_t *dst;
    const char *db_file = luaL_checkstring(L, -2);
 
    if (!lua_isfunction(L, -1))
@@ -106,9 +106,9 @@ static int create_db(lua_State *L)
    }
    lua_setfield(L, LUA_REGISTRYINDEX, "testlib_get_value");
 
-   dst = filestream_open(db_file,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   dst = intfstream_open_file(db_file,
+                              RETRO_VFS_FILE_ACCESS_WRITE,
+                              RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!dst)
    {
       lua_pushstring(L, "Could not open destination file");
@@ -116,7 +116,7 @@ static int create_db(lua_State *L)
    }
 
    libretrodb_create(dst, &value_provider, L);
-   filestream_close(dst);
+   intfstream_close(dst);
 
    return 0;
 }

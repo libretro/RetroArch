@@ -90,7 +90,7 @@ typedef struct fifo_buffer fifo_buffer_t;
  * @return The new queue if successful, \c NULL otherwise.
  * @see fifo_initialize
  */
-fifo_buffer_t *fifo_new(size_t size);
+fifo_buffer_t *fifo_new(size_t len);
 
 /**
  * Initializes an existing FIFO queue with \c size bytes of memory.
@@ -105,7 +105,7 @@ fifo_buffer_t *fifo_new(size_t size);
  * @return \c true if \c buf was initialized with the requested memory,
  * \c false if \c buf is \c NULL or there was an error.
  */
-bool fifo_initialize(fifo_buffer_t *buf, size_t size);
+bool fifo_initialize(fifo_buffer_t *buf, size_t len);
 
 /**
  * Resets the bounds of \c buffer,
@@ -130,7 +130,7 @@ static INLINE void fifo_clear(fifo_buffer_t *buffer)
  * @param in_buf The buffer to read bytes from.
  * @param size The length of \c in_buf, in bytes.
  */
-void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size);
+void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len);
 
 /**
  * Reads \c size bytes from the given queue.
@@ -140,7 +140,7 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t size);
  * @param size The length of \c in_buf, in bytes.
  * @post Upon return, \c buffer will have up to \c size more bytes of space available for writing.
  */
-void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t size);
+void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len);
 
 /**
  * Releases \c buffer and its contents.

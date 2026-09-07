@@ -88,7 +88,8 @@ static cond_st* __lwp_cond_allocate()
 
 static s32 __lwp_cond_waitsupp(cond_t cond,mutex_t mutex,u64 timeout,u8 timedout)
 {
-	u32 status,mstatus,level;
+	u32 status, mstatus;
+	u32 level = 0;
 	cond_st *thecond = __lwp_cond_open(cond);
 
 	if(!thecond) return -1;
@@ -177,7 +178,20 @@ s32 LWP_CondTimedWait(cond_t cond,mutex_t mutex,const struct timespec *abstime)
 	u64 timeout = LWP_THREADQ_NOTIMEOUT;
 	bool timedout = FALSE;
 
-	if(abstime) timeout = __lwp_wd_calc_ticks(abstime);
+	if(abstime) {
+		struct timespec now;
+		clock_gettime(&now);
+		/* If abstime is already in the past __lwp_wd_calc_ticks
+		 * can hand back 0, which __lwp_cond_waitsupp treats as
+		 * "no timeout" - the exact opposite of what the caller
+		 * asked for. POSIX says return ETIMEDOUT immediately. */
+		if(abstime->tv_sec<now.tv_sec
+			|| (abstime->tv_sec==now.tv_sec
+				&& abstime->tv_nsec<=now.tv_nsec))
+			timedout = TRUE;
+		else
+			timeout = __lwp_wd_calc_ticks(abstime);
+	}
 	return __lwp_cond_waitsupp(cond,mutex,timeout,timedout);
 }
 

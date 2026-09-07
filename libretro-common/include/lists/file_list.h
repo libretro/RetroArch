@@ -50,6 +50,33 @@ typedef struct file_list
 
    size_t capacity;
    size_t size;
+   /* Optional destructor for item_file::actiondata.  NULL means the
+    * actiondata is a plain block and free() is enough, which is what
+    * every user outside the menu wants.  The menu sets this because
+    * its actiondata owns further allocations; without it every path
+    * that can destroy a list -- and there are seven, spread across
+    * menu_driver.c, xmb.c and ozone.c -- would have to know how to
+    * take one apart.
+    *
+    * Every file_list_t in tree is either calloc()ed, memset() to zero,
+    * embedded in a calloc()ed handle, or field-initialised in
+    * menu_list_new(), so this defaults to NULL without any caller
+    * change. */
+   void (*actiondata_free)(void *actiondata);
+
+   /* Optional destructor for item_file::userdata, on the same terms as
+    * actiondata_free above.  NULL means the userdata is a plain block
+    * and free() is enough.
+    *
+    * The menu drivers set this because their userdata -- an xmb_node_t
+    * or an ozone_node_t -- owns further allocations.  Without it, the
+    * two of them had to reach every list that could hold a node and
+    * free it themselves before handing the list on, which is what
+    * xmb_free_list_nodes() and ozone_free_list_nodes() exist for; any
+    * path that reached file_list_free_userdata() without that pairing
+    * -- file_list_pop() on the menu stack, among others -- free()d the
+    * node and leaked the strings inside it. */
+   void (*userdata_free)(void *userdata);
 } file_list_t;
 
 void *file_list_get_userdata_at_offset(const file_list_t *list,
@@ -104,6 +131,29 @@ void file_list_free_actiondata(const file_list_t *list, size_t idx);
 
 void file_list_set_alt_at_offset(file_list_t *list, size_t index,
       const char *alt);
+
+/**
+ * @brief sets the label of the entry at the given offset
+ *
+ * The previous label (if any) is freed and replaced with a copy of
+ * the supplied string.
+ *
+ * @param list The list containing the entry
+ * @param index Offset of the entry whose label should be set
+ * @param label Label to copy into the entry
+ */
+/**
+ * Releases entry @index's label and clears the slot.
+ *
+ * The label may be a shared empty string rather than an allocation of
+ * its own, so free()ing it directly is not safe; relabelling from
+ * outside file_list.c goes through here or through
+ * file_list_set_label_at_offset().
+ */
+void file_list_free_label(file_list_t *list, size_t index);
+
+void file_list_set_label_at_offset(file_list_t *list, size_t index,
+      const char *label);
 
 void file_list_sort_on_alt(file_list_t *list);
 

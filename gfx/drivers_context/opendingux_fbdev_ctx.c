@@ -221,6 +221,26 @@ static uint32_t gfx_ctx_opendingux_get_flags(void *data)
    return flags;
 }
 
+static bool gfx_ctx_opendingux_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
+   return egl_create_surface(&viv->egl, viv->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool gfx_ctx_opendingux_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
+   return egl_destroy_surface(&viv->egl);
+#else
+   return false;
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_init,
    gfx_ctx_opendingux_destroy,
@@ -256,5 +276,7 @@ const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev = {
    gfx_ctx_opendingux_set_flags,
    gfx_ctx_opendingux_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   gfx_ctx_opendingux_create_surface,
+   gfx_ctx_opendingux_destroy_surface
 };

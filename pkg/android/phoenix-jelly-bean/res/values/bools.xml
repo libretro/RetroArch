@@ -1,0 +1,3 @@
+<resources>
+  <bool name="document_provider_enabled">false</bool>
+</resources>

@@ -28,7 +28,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-bool msg_queue_initialize(msg_queue_t *queue, size_t size)
+bool msg_queue_initialize(msg_queue_t *queue, size_t len)
 {
    struct queue_elem **elems = NULL;
 
@@ -36,31 +36,31 @@ bool msg_queue_initialize(msg_queue_t *queue, size_t size)
       return false;
 
    if (!(elems = (struct queue_elem**)
-            calloc(size + 1, sizeof(struct queue_elem*))))
+            calloc(len + 1, sizeof(struct queue_elem*))))
       return false;
 
    queue->tmp_msg            = NULL;
    queue->elems              = elems;
    queue->ptr                = 1;
-   queue->size               = size + 1;
+   queue->size               = len + 1;
 
    return true;
 }
 
 /**
  * msg_queue_new:
- * @size              : maximum size of message
+ * @len              : maximum size of message
  *
  * Creates a message queue with maximum size different messages.
  *
  * Returns: NULL if allocation error, pointer to a message queue
  * if successful. Has to be freed manually.
  **/
-msg_queue_t *msg_queue_new(size_t size)
+msg_queue_t *msg_queue_new(size_t len)
 {
    msg_queue_t *queue = (msg_queue_t*)malloc(sizeof(*queue));
 
-   if (!msg_queue_initialize(queue, size))
+   if (!msg_queue_initialize(queue, len))
    {
       if (queue)
          free(queue);

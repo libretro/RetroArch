@@ -64,7 +64,13 @@ static __inline__ bool __lwp_heap_blockin(heap_cntrl *heap,heap_block *block)
 
 static __inline__ bool __lwp_heap_pgsize_valid(u32 pgsize)
 {
-	return (pgsize!=0 && ((pgsize%PPC_ALIGNMENT)==0));
+	/* pg_size must be a power of two AND a multiple of PPC_ALIGNMENT,
+	 * because __lwp_heap_allocate uses (ptr & (pg_size-1)) to compute
+	 * the in-block alignment offset. Non-power-of-two values (e.g.
+	 * 96, 160) would silently produce mis-aligned user pointers. */
+	return (pgsize!=0
+		&& ((pgsize&(pgsize-1))==0)
+		&& ((pgsize%PPC_ALIGNMENT)==0));
 }
 
 static __inline__ u32 __lwp_heap_buildflag(u32 size,u32 flag)

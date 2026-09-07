@@ -1,0 +1,125 @@
+name: CI Linux menu harness
+
+# The menu playlist navigation harness links the SHIPPING RetroArch
+# objects with only main() replaced, so unlike every other sample it
+# needs a full build of the program before it can be built at all.
+#
+# That is why it lives in its own workflow rather than in
+# Linux-samples-tasks: a full build does not fit inside that job's
+# ten-minute budget, and putting it there cancelled the whole job -
+# every other sample with it - rather than just failing its own step.
+# Here it can take the time it needs without being able to take
+# anything else down with it.
+#
+# It also needs a NON-Qt build: with Qt enabled main() lives in
+# ui_qt.o and drags the entire Qt UI in with it.
+
+on:
+  push:
+    paths:
+      - 'menu/**'
+      - 'playlist.c'
+      - 'playlist.h'
+      - 'tasks/task_content*'
+      - 'samples/menu/playlist_nav/**'
+      - '.github/workflows/Linux-menu-harness.yml'
+  pull_request:
+    paths:
+      - 'menu/**'
+      - 'playlist.c'
+      - 'playlist.h'
+      - 'tasks/task_content*'
+      - 'samples/menu/playlist_nav/**'
+      - '.github/workflows/Linux-menu-harness.yml'
+  workflow_dispatch:
+
+jobs:
+  menu-harness:
+    name: Build and run the menu navigation harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential zlib1g-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build RetroArch headless
+        shell: bash
+        run: |
+          set -eu
+          # The harness drives the menu with the null drivers, so
+          # everything that draws or talks to the network is dead
+          # weight here - and building it is the entire cost of this
+          # workflow.  Disabling it takes the build from roughly ten
+          # minutes to about three, and avoids depending on graphics
+          # packages the runner may or may not carry: configure found
+          # X11 and xcb but not libX11-xcb, and the link failed on
+          # -lX11-xcb.
+          #
+          # Qt in particular has to go: with it enabled main() lives
+          # in ui_qt.o, and the harness replaces main().
+          ./configure --disable-qt --disable-x11 \
+                      --disable-opengl --disable-opengl_core \
+                      --disable-opengl1 --disable-vulkan \
+                      --disable-cheevos --disable-networking \
+                      --disable-ffmpeg
+          make -j$(nproc)
+
+      - name: Build and run content_closing_test
+        shell: bash
+        run: |
+          set -eu
+          # The guard that keeps the frame loop out of a core being
+          # torn down (core_run() refusing retro_run() while
+          # content_closing is set) cannot fire in shipped code yet:
+          # closing is still synchronous, so no frame runs during it.
+          # It goes live in the change that first lets frames run
+          # during a close, and if it is wrong the symptom is a call
+          # into an unloaded dylib - so it is driven here directly,
+          # against the real core_run() in a real frontend, rather
+          # than going live untested.
+          #
+          # Shares the non-Qt build made above; adds about a second.
+          samples/runloop/content_closing/build.sh
+          ./samples/runloop/content_closing/content_closing_test
+          make -C samples/runloop/content_closing clean
+
+      - name: Build and run menu_playlist_nav_test
+        shell: bash
+        run: |
+          set -eu
+          # Four field reports came out of the seam between the
+          # playlist reader and the menu - a stale playlist's entries
+          # under a new heading, then a blank list the back button
+          # could not leave, then a list that filled only after the
+          # user pressed something, then #19427's placeholder flashing
+          # on every completed read - and no oracle that stopped at
+          # the reader could see any of them.
+          #
+          # The harness installs a VFS through the seam the frontend
+          # uses for SAF, returning short reads WITH a per-read delay.
+          # Short reads alone reproduce SAF's syscall count but not
+          # its latency, and on local storage the whole playlist still
+          # fits inside one budget slice - which is exactly why none
+          # of the three reports reproduced on a desktop.
+          samples/menu/playlist_nav/build.sh
+          ./samples/menu/playlist_nav/menu_playlist_nav_test
+          make -C samples/menu/playlist_nav clean

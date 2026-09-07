@@ -2,6 +2,8 @@
 #ifndef _BLARGG_SNES_NTSC_IMPLEMENTATION_H
 #define _BLARGG_SNES_NTSC_IMPLEMENTATION_H
 
+#include <stdlib.h>
+
 #include "snes_ntsc.h"
 
 /* Copyright (C) 2006-2007 Shay Green. This module is free software; you
@@ -83,10 +85,18 @@ void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup
 {
 	int merge_fields;
 	int entry;
-	init_t impl;
+	/* Heap-held: init_t carries the resampled kernel and gamma tables,
+	 * a 2.6 KiB frame on stacks whose whole budget is 8 KiB.  The API
+	 * is void, so on allocation failure this returns with the table
+	 * untouched; every in-tree caller calloc()s the snes_ntsc_t, and a
+	 * zeroed table blits black -- the same outcome as the filter
+	 * failing to load. */
+	init_t* impl = (init_t*) malloc( sizeof *impl );
+	if ( !impl )
+		return;
 	if ( !setup )
 		setup = &retroarch_snes_ntsc_composite;
-	init( &impl, setup );
+	init( impl, setup );
 
 	merge_fields = setup->merge_fields;
 	if ( setup->artifacts <= -1 && setup->fringing <= -1 )
@@ -101,22 +111,24 @@ void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup
       int ig = entry >> 4 & 0x1F;
       int ib = entry << 1 & 0x1E;
 
-      float rr = impl.to_float [ir];
-      float gg = impl.to_float [ig];
-      float bb = impl.to_float [ib];
+      float rr = impl->to_float [ir];
+      float gg = impl->to_float [ig];
+      float bb = impl->to_float [ib];
 
       float y, i, q = RGB_TO_YIQ( rr, gg, bb, y, i );
 
-      int r, g, b = YIQ_TO_RGB( y, i, q, impl.to_rgb, int, r, g );
+      int r, g, b = YIQ_TO_RGB( y, i, q, impl->to_rgb, int, r, g );
       snes_ntsc_rgb_t rgb = PACK_RGB( r, g, b );
 
       snes_ntsc_rgb_t* out = ntsc->table [entry];
-      gen_kernel( &impl, y, i, q, out );
+      gen_kernel( impl, y, i, q, out );
       if ( merge_fields )
          merge_kernel_fields( out );
       correct_errors( rgb, out );
    }
+	free( impl );
 }
+
 
 #ifndef SNES_NTSC_NO_BLITTERS
 

@@ -1,0 +1,62 @@
+# tools/overlap_copy_allow.list
+#
+# Allowlist for tools/overlap_copy_check.py: same-buffer copy calls
+# that were audited by hand and are safe by construction. One entry
+# per line: file|function|dst-base|src-base (bases as normalized by
+# the checker). An entry allows that combination anywhere in the
+# file, so line churn never invalidates it; the checker warns about
+# entries that stop matching so this list cannot rot.
+#
+# Every entry below was audited in the e942ee2 sweep. The recurring
+# safe patterns are:
+#  - LZ-style self-copies with explicit disjoint/periodic-chunk
+#    guards (r7z_lzma, encoding_vcdiff, encoding_rlz4, task_patch
+#    BPS TARGET_COPY)
+#  - copies between provably distinct elements/rows/members of one
+#    array or struct (decoder state rotation, dirs[] defaults,
+#    channel/grid structs)
+#  - single-element shifts in correctly-directed loops (netplay chat,
+#    cheat list)
+#  - row-duplication at exactly one stride of distance (ntsc_crt,
+#    sdl_rs90, ctr_svchax cache flush)
+#
+# Exact-alias findings (dst text == src text) are never allowlisted;
+# fix those with memmove, a staging buffer, or an alias-guarded
+# helper instead.
+audio/drivers/wiiu_audio.c|memcpy|offsets|offsets
+cheevos/cheevos_rvz.c|memcpy|block_hashes|block_hashes
+ctr/ctr_svchax.c|memcpy|flush_buffer|flush_buffer
+frontend/drivers/platform_gx.c|strlcpy|g_defaults.dirs|g_defaults.dirs
+frontend/drivers/platform_ps3.c|strlcpy|g_defaults.dirs|g_defaults.dirs
+gfx/drivers/sdl_rs90_gfx.c|memcpy|target|target
+gfx/video_filters/ntsc_crt.c|memcpy|v->out|v->out
+libretro-common/encodings/encoding_rlz4.c|memcpy|to|to
+libretro-common/encodings/encoding_rlz4.c|rlz4_copy_match_blind|dst|dst
+libretro-common/encodings/encoding_vcdiff.c|memcpy|d->out|d->out
+libretro-common/formats/7z/r7z_lzma.c|memcpy|dst|dst
+libretro-common/formats/aac/raac.c|memcpy|c->bs_invf_mode|c->bs_invf_mode
+libretro-common/formats/aac/raac.c|memcpy|c->env_facs_q|c->env_facs_q
+libretro-common/formats/aac/raac.c|memcpy|c->noise_facs_q|c->noise_facs_q
+libretro-common/formats/aac/raac.c|memcpy|c->s_indexmapped|c->s_indexmapped
+libretro-common/formats/aac/raac.c|memcpy|q->W|q->W
+libretro-common/formats/aac/raac.c|memcpy|q->Y|q->Y
+libretro-common/formats/aac/raac.c|memcpy|q->g_temp|q->g_temp
+libretro-common/formats/aac/raac.c|memcpy|q->q_temp|q->q_temp
+libretro-common/formats/aac/raac.c|memcpy|s->d|s->d
+libretro-common/formats/aac/raac.c|raac_decode_cpe|a->ch|a->ch
+libretro-common/formats/aac/raac.c|raac_sbr_copy_grid|s->d|s->d
+libretro-common/formats/mp3/rmp3.c|memcpy|dst|dst
+libretro-common/formats/opus/ropus.c|memcpy|buf|buf
+libretro-common/formats/opus/ropus.c|memcpy|ctrl->PredCoef_Q12|ctrl->PredCoef_Q12
+libretro-common/formats/opus/ropus.c|memcpy|oldBandE|oldBandE
+libretro-common/formats/opus/ropus.c|memcpy|sLPC_Q14|sLPC_Q14
+libretro-common/formats/vp8/rvp8.c|memcpy|v->ru|v->ru
+libretro-common/formats/vp8/rvp8.c|memcpy|v->rv|v->rv
+libretro-common/formats/vp8/rvp8.c|memcpy|v->ry|v->ry
+libretro-common/include/array/rhmap.h|memcpy|((char*)(hdr + 1))|((char*)(hdr + 1))
+menu/cbs/menu_cbs_ok.c|memcpy|cheat_manager_state.cheats|cheat_manager_state.cheats
+network/netplay/netplay_frontend.c|memcpy|chat->messages|chat->messages
+network/netplay/netplay_frontend.c|memcpy|netplay->buffer|netplay->buffer
+tasks/task_patch.c|memcpy|bps.target_data|bps.target_data
+ui/drivers/ui_qt_widgets.cpp|memcpy|menu_shader->pass|menu_shader->pass
+ui/drivers/ui_qt_widgets.cpp|memcpy|video_shader->pass|video_shader->pass

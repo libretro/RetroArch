@@ -70,8 +70,8 @@ static int32_t valid_elf_image (void *addr)
 static uint32_t load_elf_image (void *elfstart)
 {
    int i;
-   Elf32_Phdr *phdrs = NULL;
    Elf32_Ehdr *ehdr  = (Elf32_Ehdr*) elfstart;
+   Elf32_Phdr *phdrs;
 
    if (ehdr->e_phoff == 0 || ehdr->e_phnum == 0)
       return 0;
@@ -88,8 +88,9 @@ static uint32_t load_elf_image (void *elfstart)
       if (phdrs[i].p_type != PT_LOAD)
          continue;
 
-      phdrs[i].p_paddr &= 0x3FFFFFFF;
-      phdrs[i].p_paddr |= 0x80000000;
+      /* Mask the upper 2 bits and force into 0x80000000-range
+       * in a single fold. */
+      phdrs[i].p_paddr = (phdrs[i].p_paddr & 0x3FFFFFFF) | 0x80000000;
 
       if (phdrs[i].p_filesz > phdrs[i].p_memsz)
          return 0;
@@ -108,33 +109,33 @@ static uint32_t load_elf_image (void *elfstart)
 
 static uint32_t load_dol_image(const void *dolstart)
 {
-	uint32_t i;
-   dolheader *dolfile = NULL;
+   uint32_t   i;
+   dolheader *dolfile;
 
-	if (!dolstart)
-		return 0;
+   if (!dolstart)
+      return 0;
 
-	dolfile = (dolheader *) dolstart;
+   dolfile = (dolheader *) dolstart;
 
-	for (i = 0; i < 7; i++)
-	{
-		if ((!dolfile->text_size[i]) || (dolfile->text_start[i] < 0x100))
-			continue;
+   for (i = 0; i < 7; i++)
+   {
+      if ((!dolfile->text_size[i]) || (dolfile->text_start[i] < 0x100))
+         continue;
 
-		memcpy((void *) dolfile->text_start[i], dolstart + dolfile->text_pos[i], dolfile->text_size[i]);
-		sync_before_exec((void *) dolfile->text_start[i], dolfile->text_size[i]);
-	}
+      memcpy((void *) dolfile->text_start[i], dolstart + dolfile->text_pos[i], dolfile->text_size[i]);
+      sync_before_exec((void *) dolfile->text_start[i], dolfile->text_size[i]);
+   }
 
-	for (i = 0; i < 11; i++)
-	{
-		if ((!dolfile->data_size[i]) || (dolfile->data_start[i] < 0x100))
-			continue;
+   for (i = 0; i < 11; i++)
+   {
+      if ((!dolfile->data_size[i]) || (dolfile->data_start[i] < 0x100))
+         continue;
 
-		memcpy((void *) dolfile->data_start[i], dolstart + dolfile->data_pos[i], dolfile->data_size[i]);
-		sync_before_exec((void *) dolfile->data_start[i], dolfile->data_size[i]);
-	}
+      memcpy((void *) dolfile->data_start[i], dolstart + dolfile->data_pos[i], dolfile->data_size[i]);
+      sync_before_exec((void *) dolfile->data_start[i], dolfile->data_size[i]);
+   }
 
-	return dolfile->entry_point;
+   return dolfile->entry_point;
 }
 
 /* if we name this main, GCC inserts the __eabi symbol,
@@ -142,26 +143,23 @@ static uint32_t load_dol_image(const void *dolstart)
 
 void app_booter_main(void)
 {
-	entrypoint exeEntryPoint;
-	uint32_t exeEntryPointAddress = 0;
-	void *exeBuffer = (void*)EXECUTABLE_MEM_ADDR;
+   entrypoint exeEntryPoint;
+   void      *exeBuffer            = (void*)EXECUTABLE_MEM_ADDR;
+   uint32_t   exeEntryPointAddress = (valid_elf_image(exeBuffer) == 1)
+                                     ? load_elf_image(exeBuffer)
+                                     : load_dol_image(exeBuffer);
 
-	if (valid_elf_image(exeBuffer) == 1)
-		exeEntryPointAddress = load_elf_image(exeBuffer);
-	else
-		exeEntryPointAddress = load_dol_image(exeBuffer);
+   exeEntryPoint = (entrypoint) exeEntryPointAddress;
 
-	exeEntryPoint = (entrypoint) exeEntryPointAddress;
+   if (!exeEntryPoint)
+      return;
 
-	if (!exeEntryPoint)
-		return;
+   if (SYSTEM_ARGV->argvMagic == ARGV_MAGIC)
+   {
+      void *new_argv = (void*)(exeEntryPointAddress + 8);
+      memcpy(new_argv, SYSTEM_ARGV, sizeof(struct __argv));
+      sync_before_exec(new_argv, sizeof(struct __argv));
+   }
 
-	if (SYSTEM_ARGV->argvMagic == ARGV_MAGIC)
-	{
-		void *new_argv = (void*)(exeEntryPointAddress + 8);
-		memcpy(new_argv, SYSTEM_ARGV, sizeof(struct __argv));
-		sync_before_exec(new_argv, sizeof(struct __argv));
-	}
-
-	exeEntryPoint();
+   exeEntryPoint();
 }

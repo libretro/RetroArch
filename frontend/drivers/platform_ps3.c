@@ -79,18 +79,6 @@ static bool multiman_detected  = false;
 #endif
 #endif
 
-#ifdef HAVE_MEMINFO
-typedef struct {
-   uint32_t total;
-   uint32_t avail;
-} sys_memory_info_t;
-#ifdef __PSL1GHT__
-#define sys_memory_get_user_memory_size(x) lv2syscall1(352, x)
-#else
-#define sys_memory_get_user_memory_size(x) system_call_1(352, x)
-#endif
-#endif
-
 #ifndef IS_SALAMANDER
 static enum frontend_fork ps3_fork_mode = FRONTEND_FORK_NONE;
 
@@ -257,7 +245,7 @@ static void frontend_ps3_get_env(int *argc, char *argv[],
 #endif
 #endif
 #ifndef IS_SALAMANDER
-   if (params && *argc > 1 && !string_is_empty(argv[1]))
+   if (params && *argc > 1 && (argv[1] && *argv[1]))
 #ifdef HAVE_NETWORKING
    /* If the process was forked for netplay purposes,
       DO NOT touch the arguments. */
@@ -436,16 +424,16 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
 #ifdef HAVE_NETWORKING
-   char *arg_data[NETPLAY_FORK_MAX_ARGS];
+   const char *arg_data[NETPLAY_FORK_MAX_ARGS];
 #else
-   char *arg_data[2];
+   const char *arg_data[2];
 #endif
    char game_path[PATH_MAX_LENGTH];
    bool verbosity = verbosity_is_enabled();
 
    verbosity_enable();
 #else
-   char *arg_data[1];
+   const char *arg_data[1];
 #endif
 
    arg_data[0] = NULL;
@@ -459,7 +447,7 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
       if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS,
             (void*)arg_data))
 #endif
-      if (!string_is_empty(content))
+      if (content && *content)
       {
          strlcpy(game_path, content, sizeof(game_path));
          arg_data[0] = game_path;
@@ -532,11 +520,6 @@ static void frontend_ps3_exitspawn(char *s, size_t len, char *args)
       verbosity_disable();
 #endif
 #endif
-}
-
-static int frontend_ps3_get_rating(void)
-{
-   return 10;
 }
 
 enum frontend_architecture frontend_ps3_get_arch(void)
@@ -634,22 +617,6 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
 #endif
 }
 
-#ifdef HAVE_MEMINFO
-static size_t frontend_ps3_get_mem_total(void)
-{
-   sys_memory_info_t mem_info;
-   sys_memory_get_user_memory_size((u64)&mem_info);
-   return mem_info.total;
-}
-
-static size_t frontend_ps3_get_mem_used(void)
-{
-   sys_memory_info_t mem_info;
-   sys_memory_get_user_memory_size((u64)&mem_info);
-   return mem_info.avail;
-}
-#endif
-
 frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_env,
    frontend_ps3_init,
@@ -665,18 +632,10 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
-   frontend_ps3_get_rating,      /* get_rating */
    NULL,                         /* load_content */
    frontend_ps3_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_ps3_parse_drive_list,/* parse_drive_list */
-#ifdef HAVE_MEMINFO
-   frontend_ps3_get_mem_total,
-   frontend_ps3_get_mem_used,
-#else
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
-#endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -685,14 +644,13 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "ps3",                        /* ident */
    NULL                          /* get_video_driver */
 };

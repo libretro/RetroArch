@@ -16,7 +16,6 @@
 
 /* Vita context. */
 
-#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
 #include "../../retroarch.h"
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
@@ -124,7 +123,7 @@ static bool vita_set_video_mode(void *data,
 #ifdef HAVE_EGL
    if (!egl_create_context(&ctx_vita->egl, ctx_attr_list))
       goto error;
-   if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
+   if (!egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window))
       goto error;
 #endif
 #endif
@@ -212,7 +211,7 @@ static void *vita_init(void *video_driver)
                           &major, &minor, &n, attribs, NULL))
     {
        egl_report_error();
-       printf("[VITA]: EGL error: %d.\n", eglGetError());
+       printf("[VITA] EGL error: %d.\n", eglGetError());
        goto error;
     }
 #endif
@@ -250,6 +249,26 @@ static float vita_get_refresh_rate(void *data)
    return ctx_vita->refresh_rate;
 }
 #endif
+
+static bool vita_create_surface(void *data)
+{
+#ifdef HAVE_EGL
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
+   return egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window);
+#else
+   return false;
+#endif
+}
+
+static bool vita_destroy_surface(void *data)
+{
+#ifdef HAVE_EGL
+   vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
+   return egl_destroy_surface(&ctx_vita->egl);
+#else
+   return false;
+#endif
+}
 
 const gfx_ctx_driver_t vita_ctx = {
    vita_init,
@@ -290,5 +309,7 @@ const gfx_ctx_driver_t vita_ctx = {
    vita_set_flags,
    vita_bind_hw_render,
    NULL,
-   NULL
+   NULL,
+   vita_create_surface,
+   vita_destroy_surface
 };

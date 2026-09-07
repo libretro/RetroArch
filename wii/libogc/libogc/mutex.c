@@ -92,7 +92,11 @@ static mutex_st* __lwp_mutex_allocate()
 		__lwp_objmgr_open(&_lwp_mutex_objects,&lock->object);
 		return lock;
 	}
-	__lwp_thread_dispatchunnest();
+	/* Pre-patch used __lwp_thread_dispatchunnest here while the
+	 * matching helper in cond.c used __lwp_thread_dispatchenable.
+	 * The asymmetry buys nothing - unify on enable so a failed
+	 * alloc behaves the same across primitives. */
+	__lwp_thread_dispatchenable();
 	return NULL;
 }
 
@@ -120,7 +124,10 @@ s32 LWP_MutexInit(mutex_t *mutex,bool use_recursive)
 s32 LWP_MutexDestroy(mutex_t mutex)
 {
 	mutex_st *p = __lwp_mutex_open(mutex);
-	if(!p) return 0;
+	/* Pre-patch returned 0 ("success") for an invalid handle, which
+	 * silently absorbs double-free / corrupt-handle bugs. Match the
+	 * rest of the family (LWP_MutexLock/Unlock) and report failure. */
+	if(!p) return -1;
 
 	if(__lwp_mutex_locked(&p->mutex)) {
 		__lwp_thread_dispatchenable();

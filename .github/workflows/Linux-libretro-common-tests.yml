@@ -1,0 +1,197 @@
+name: CI Linux libretro-common tests
+
+# libretro-common/Makefile.test builds and runs the libcheck unit
+# suites under -fsanitize=address -fsanitize=undefined.  Nothing ran
+# it, which is how three of its suites came to reference sources that
+# had moved and one referenced a library it never linked: a suite that
+# cannot be built reads exactly like a suite that passes.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  libretro-common-tests:
+    name: Build and run libretro-common/Makefile.test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+          # mingw and wine are for the Windows A/W configuration matrix
+          # in Makefile.test.  libretro-common selects between the ANSI
+          # and the wide Win32 entry points three ways and, until these
+          # were installed, no job built two of them: the ANSI branch
+          # was compiled by nothing, so nothing noticed when it stopped
+          # compiling.  wine takes it past a build check - an ANSI build
+          # under wine really does call CreateFileA and
+          # GetFileAttributesA, so the branch is executed rather than
+          # merely parsed.  Both are optional to the recipe: without
+          # them it says which tool is missing and passes, so a
+          # contributor's local run is not blocked.
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run the unit test suites
+        shell: bash
+        working-directory: libretro-common
+        env:
+          # Keep wine quiet and out of $HOME; the first invocation
+          # creates the prefix.
+          WINEDEBUG: "-all"
+          WINEPREFIX: "/tmp/wineprefix"
+        run: |
+          set -eu
+          # The recipe builds each suite, runs it, and collects
+          # coverage, in order -- coverage files collide otherwise.
+          # Any suite failing to build, or any check failing, or any
+          # sanitizer report, fails the job.
+          make -f Makefile.test \
+             LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
+             CFLAGS="$(pkg-config --cflags check)"
+          echo "[pass] libretro-common unit test suites"
+
+      - name: Check VFS backend symbol parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # vfs_implementation_uwp.cpp replaces vfs_implementation.c on
+          # UWP rather than extending it, so a function added to the C
+          # backend and called from the shared file_stream.c compiles
+          # everywhere and fails to link on UWP alone - at the end of a
+          # long MSVC build, on a runner most contributors do not have.
+          # That is how retro_vfs_file_get_mapped_ptr_impl reached the
+          # branch broken.  This is the same check at source level, for
+          # free, on Linux.
+          python3 tools/vfs_backend_parity.py
+
+      - name: Check companion backend feature parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The Qt, Win32 and Cocoa desktop companions share one C core
+          # but each has its own presentation; a backend can quietly omit
+          # a feature (no file browser, no scan, no core picker) and still
+          # build and run, the gap only showing when a user switches
+          # drivers.  Source-level check, for free, on Linux.
+          python3 tools/companion_parity.py
+
+      - name: Companion thumbnail engine regression test (plain, TSan, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The shared thumbnail engine every desktop companion draws
+          # through: real decoder, decode threads, cache, priority,
+          # cancel, shutdown.  Under both sanitizers, since it is the
+          # one piece of threaded code in the companions.
+          tools/companion_thumbs_test.sh
+          tools/companion_thumbs_test.sh tsan
+          tools/companion_thumbs_test.sh asan
+
+      - name: Companion core regression test (plain, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The toolkit-free model every desktop companion drives:
+          # playlist listing and All Playlists, the thumbnail path rule,
+          # the file browser, the run / needs-core paths, launch
+          # options - against real .lpl fixtures, with RetroArch's
+          # state replaced by stubs.
+          tools/companion_core_test.sh
+          tools/companion_core_test.sh asan
+          tools/companion_core_test.sh tsan
+
+      - name: C89 / Win32 syntax gate on the companion sources
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # MSVC 2005 builds these as C89 through griffin. The gate's
+          # second pass needs a 32-bit mingw for the Windows-only unit
+          # (the host gcc has no <windows.h>, which used to make the
+          # pass skip it silently - that is how mixed declarations
+          # reached master).
+          sudo apt-get install -y -qq gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 > /dev/null
+          tools/mingw_syntax_check.sh ui/drivers/ui_win32_companion.c \
+             ui/companion/companion_core.c ui/companion/companion_thumbs.c \
+             gfx/gfx_anim_preview.c
+
+      - name: AUTHORS_c.h in sync with AUTHORS.h
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: python3 tools/gen_authors_c.py --check
+
+      - name: Cocoa companion regression harness (GNUstep AppKit, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_cocoa_companion.m, compiled and linked
+          # against GNUstep's Foundation + AppKit with the real companion
+          # core and the core test's fixtures, driven under Xvfb the way a
+          # user drives it (view popup, File Browser tab, close) and
+          # checked on the AppKit objects themselves.
+          sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
+          tools/companion_cocoa_test.sh
+          # ASan too: the grid's prefetch reaching past the thumbnail
+          # marks only shows under a checking allocator (it crashed the
+          # app on macOS, where Apple's is one).
+          tools/companion_cocoa_test.sh asan
+
+      - name: Win32 companion regression harness (mingw + Wine, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_win32_companion.c, built with mingw and
+          # linked with the real companion core and the core test's
+          # fixtures, run under Wine on Xvfb and driven with the messages
+          # the widgets send; checked on the real controls.
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine xvfb > /dev/null
+          tools/companion_win32_test.sh
+
+      - name: Check stack frame budget
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # PSP and GX threads get 8 KiB of stack (STACKSIZE in
+          # rthreads/psp_pthread.h and rthreads/gx_pthread.h).  Nothing
+          # warns when a local buffer outgrows that: it builds
+          # everywhere and overflows only on a target most contributors
+          # cannot build.  config_file_write() carried a 16 KiB stdio
+          # buffer as a local - twice that stack - on a path reached
+          # from a task handler, and nothing noticed.
+          python3 tools/stack_budget.py

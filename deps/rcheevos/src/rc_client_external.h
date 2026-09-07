@@ -35,6 +35,7 @@ typedef rc_client_async_handle_t* (RC_CCONV *rc_client_external_begin_load_subse
   uint32_t subset_id, rc_client_callback_t callback, void* callback_userdata);
 typedef const rc_client_game_t* (RC_CCONV *rc_client_external_get_game_info_func_t)(void);
 typedef const rc_client_subset_t* (RC_CCONV *rc_client_external_get_subset_info_func_t)(uint32_t subset_id);
+typedef void (RC_CCONV* rc_client_external_get_user_subset_summary_func_t)(uint32_t subset_id, rc_client_user_game_summary_t* summary);
 typedef void (RC_CCONV *rc_client_external_get_user_game_summary_func_t)(rc_client_user_game_summary_t* summary);
 typedef rc_client_async_handle_t* (RC_CCONV *rc_client_external_begin_change_media_func_t)(rc_client_t* client, const char* file_path,
   const uint8_t* data, size_t data_size, rc_client_callback_t callback, void* callback_userdata);
@@ -45,6 +46,7 @@ typedef void (RC_CCONV* rc_client_external_add_game_hash_func_t)(const char* has
 struct rc_client_achievement_list_info_t;
 typedef struct rc_client_achievement_list_info_t* (RC_CCONV *rc_client_external_create_achievement_list_func_t)(int category, int grouping);
 typedef const rc_client_achievement_t* (RC_CCONV *rc_client_external_get_achievement_info_func_t)(uint32_t id);
+typedef const rc_client_achievement_t* (RC_CCONV* rc_client_external_get_next_achievement_info_func_t)(uint32_t id, int grouping);
 
 /* NOTE: rc_client_external_create_leaderboard_list_func_t returns an internal wrapper structure which contains the public list
  * and a destructor function. */
@@ -59,6 +61,11 @@ typedef rc_client_async_handle_t* (RC_CCONV *rc_client_external_begin_fetch_lead
   rc_client_fetch_leaderboard_entries_callback_t callback, void* callback_userdata);
 typedef rc_client_async_handle_t* (RC_CCONV *rc_client_external_begin_fetch_leaderboard_entries_around_user_func_t)(rc_client_t* client,
   uint32_t leaderboard_id, uint32_t count, rc_client_fetch_leaderboard_entries_callback_t callback, void* callback_userdata);
+
+/* NOTE: rc_client_external_create_subset_list_func_t returns an internal wrapper structure which contains the public list
+ * and a destructor function. */
+struct rc_client_subset_list_info_t;
+typedef struct rc_client_subset_list_info_t* (RC_CCONV* rc_client_external_create_subset_list_func_t)();
 
 
 typedef size_t (RC_CCONV *rc_client_external_progress_size_func_t)(void);
@@ -95,12 +102,12 @@ typedef struct rc_client_external_t
   rc_client_external_begin_identify_and_load_game_func_t begin_identify_and_load_game;
   rc_client_external_begin_load_game_func_t begin_load_game;
   rc_client_external_get_game_info_func_t get_game_info;
-  rc_client_external_begin_load_subset_t begin_load_subset;
+  rc_client_external_begin_load_subset_t begin_load_subset; /* DEPRECATED */
   rc_client_external_get_subset_info_func_t get_subset_info;
   rc_client_external_action_func_t unload_game;
   rc_client_external_get_user_game_summary_func_t get_user_game_summary;
-  rc_client_external_begin_change_media_func_t begin_change_media;
-  rc_client_external_begin_load_game_func_t begin_change_media_from_hash;
+  rc_client_external_begin_change_media_func_t begin_identify_and_change_media;
+  rc_client_external_begin_load_game_func_t begin_change_media;
 
   rc_client_external_create_achievement_list_func_t create_achievement_list;
   rc_client_external_get_int_func_t has_achievements;
@@ -129,12 +136,41 @@ typedef struct rc_client_external_t
   rc_client_external_add_game_hash_func_t add_game_hash;
   rc_client_external_set_string_func_t load_unknown_game;
 
+  /* VERSION 3 */
+  rc_client_external_get_user_info_func_t get_user_info_v3;
+  rc_client_external_get_game_info_func_t get_game_info_v3;
+  rc_client_external_get_subset_info_func_t get_subset_info_v3;
+  rc_client_external_get_achievement_info_func_t get_achievement_info_v3;
+  rc_client_external_create_achievement_list_func_t create_achievement_list_v3;
+
+  /* VERSION 4 */
+  rc_client_external_set_int_func_t set_allow_background_memory_reads;
+
+  /* VERSION 5 */
+  rc_client_external_get_user_game_summary_func_t get_user_game_summary_v5;
+  rc_client_external_get_user_subset_summary_func_t get_user_subset_summary;
+
+  /* VERSION 6 */
+  rc_client_external_create_subset_list_func_t create_subset_list;
+
+  /* VERSION 7 */
+  rc_client_external_get_next_achievement_info_func_t get_next_achievement_info;
+
 } rc_client_external_t;
 
-#define RC_CLIENT_EXTERNAL_VERSION 2
+#define RC_CLIENT_EXTERNAL_VERSION 7
 
 void rc_client_add_game_hash(rc_client_t* client, const char* hash, uint32_t game_id);
 void rc_client_load_unknown_game(rc_client_t* client, const char* hash);
+
+/* conversion support */
+
+struct rc_client_external_conversions_t;
+const rc_client_user_t* rc_client_external_convert_v1_user(const rc_client_t* client, const rc_client_user_t* v1_user);
+const rc_client_game_t* rc_client_external_convert_v1_game(const rc_client_t* client, const rc_client_game_t* v1_game);
+const rc_client_subset_t* rc_client_external_convert_v1_subset(const rc_client_t* client, const rc_client_subset_t* v1_subset);
+const rc_client_achievement_t* rc_client_external_convert_v1_achievement(const rc_client_t* client, const rc_client_achievement_t* v1_achievement);
+rc_client_achievement_list_t* rc_client_external_convert_v1_achievement_list(const rc_client_t* client, rc_client_achievement_list_t* v1_achievement_list);
 
 RC_END_C_DECLS
 
