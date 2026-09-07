@@ -43,12 +43,14 @@
 
 #include <defines/cocoa_defines.h>
 #include "cocoa/cocoa_common.h"
+#include "cocoa/apple_platform.h"
 
 #include "../../command.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../msg_hash.h"
 #include "../../version.h"
+#include "../../verbosity.h"
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -496,12 +498,26 @@ static const companion_callbacks_t cc_callbacks = {
 
 - (void)drawRect:(NSRect)dirty
 {
-   NSInteger i;
+   NSInteger i, first, last, cols;
+   CGFloat ch;
+   static int logged = 0;
    ui_companion_cocoa_wimp_t *w = owner ? [owner wimp] : NULL;
-   if (!w)
+   if (!logged++)
+      RARCH_LOG("[Companion] grid first paint: count=%ld frame=%.0fx%.0f dirty=%.0f,%.0f %.0fx%.0f thumb=%.0f cols=%ld owner=%p wimp=%p\n",
+            (long)count, [self frame].size.width, [self frame].size.height,
+            dirty.origin.x, dirty.origin.y, dirty.size.width, dirty.size.height,
+            thumb, (long)[self columns], (void*)owner, (void*)w);
+   if (!w || count <= 0)
       return;
 
-   for (i = 0; i < count; i++)
+   /* Only the rows the dirty rect covers: the list may be 40k entries. */
+   cols  = [self columns];
+   ch    = [self cellHeight];
+   first = (NSInteger)(NSMinY(dirty) / ch) * cols;
+   last  = ((NSInteger)(NSMaxY(dirty) / ch) + 1) * cols - 1;
+   if (first < 0)      first = 0;
+   if (last >= count)  last  = count - 1;
+   for (i = first; i <= last; i++)
    {
       NSRect cell = [self rectForRow:i];
       NSRect trect, label; /* thumbnail box; `thumb` is its edge */
@@ -1639,9 +1655,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (browseMode)
       {
          /* Qt's File Browser: the folder pane. */
+         static int logged = 0;
          if ([[col identifier] isEqualToString:@"icon"])
             return folderIcon;
          s = companion_core_browse_name(wimp->core, (size_t)row);
+         if (!logged++)
+            RARCH_LOG("[Companion] folder pane row %ld col '%s': name=[%s] utf8=%s\n",
+                  (long)row, [[col identifier] UTF8String], s ? s : "(null)",
+                  (s && [NSString stringWithUTF8String:s]) ? "ok" : "INVALID");
       }
       else if ([[col identifier] isEqualToString:@"icon"])
       {
@@ -1737,9 +1758,28 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
  * window (closing, or loading content), as the Qt companion does. */
 - (void)hideAndFocusRetroArch
 {
+   NSWindow *host = nil;
+   id rv          = nil;
    [window orderOut:nil];
-   if ([CocoaView get] && [[CocoaView get] window])
-      [[[CocoaView get] window] makeKeyAndOrderFront:nil];
+   /* RetroArch's window is the one hosting the render view - asked of
+    * the platform, not of CocoaView, which on a Metal build is not the
+    * render view and sits in no window. The render view must be first
+    * responder again too, or key events go nowhere. */
+   if ([(id)apple_platform respondsToSelector:@selector(hostWindow)])
+      host = [(id)apple_platform hostWindow];
+   if ([(id)apple_platform respondsToSelector:@selector(renderView)])
+      rv = [(id)apple_platform renderView];
+   if (!host && rv && [rv respondsToSelector:@selector(window)])
+      host = [rv window];
+   if (!host)
+      host = [[CocoaView get] window];
+   if (host)
+   {
+      [NSApp activateIgnoringOtherApps:YES];
+      [host makeKeyAndOrderFront:nil];
+      if (rv && [rv isKindOfClass:[NSView class]])
+         [host makeFirstResponder:(NSView*)rv];
+   }
 }
 
 - (BOOL)windowShouldClose:(id)sender
