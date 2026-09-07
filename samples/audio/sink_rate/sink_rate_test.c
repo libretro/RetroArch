@@ -260,6 +260,50 @@ int main(void)
       run_second(st);
    CHECK(st->sink_bias == 1.0 && st->sink_applied == 0, "disabled, yet the bias moved");
 
+   /* 8. The threaded pipeline's ring filling as rate control settles:
+    *    offered is counted after the ring, so what the ring took in was
+    *    produced but not yet offered. The source's count is offered
+    *    plus the change in what the ring holds; it must read the clocks
+    *    and not the ring. Here 400 frames - 8 ms, the kind of fill a
+    *    settle leaves - go into the ring over the first 20 s while the
+    *    clocks match; the bias must come out near zero, not the +417
+    *    ppm that corrects a source looking slow by 20 frames a second.
+    *    Then the ring drains again, and the bias must stay there. */
+   reset(st, true);
+   dev_ppm = 0.0;
+   {
+      static int16_t filler[4096 * 2];
+      size_t c;
+      st->pipe_threaded = true;
+      retro_spsc_init(&st->pipe_ring, sizeof(filler));
+      /* The baseline read the ring empty; fill it 20 frames a second
+       * for 20 s - taken from what run_second() offers. */
+      for (i = 0; i < 60; i++)
+      {
+         if (i < 20)
+         {
+            retro_spsc_write(&st->pipe_ring, filler, 20 * 2 * sizeof(int16_t));
+            st->sink_offered -= 20.0;
+            st->sink_offered_raw -= 20;
+         }
+         run_second(st);
+      }
+      CHECK(fabs(bias_ppm(st)) < 60.0,
+            "the ring filling read as a slow source: bias %+.0f ppm", bias_ppm(st));
+      for (c = 0; c < 20; c++)
+      {
+         int16_t sink[20 * 2];
+         retro_spsc_read(&st->pipe_ring, sink, sizeof(sink));
+         st->sink_offered += 20.0;
+         st->sink_offered_raw += 20;
+         run_second(st);
+      }
+      CHECK(fabs(bias_ppm(st)) < 60.0,
+            "the ring draining read as a fast source: bias %+.0f ppm", bias_ppm(st));
+      retro_spsc_free(&st->pipe_ring);
+      st->pipe_threaded = false;
+   }
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

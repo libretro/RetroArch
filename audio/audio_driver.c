@@ -832,6 +832,19 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 #define AUDIO_SINK_BASELINE_USEC    30000000
 #define AUDIO_SINK_CHECK_USEC       4000000
 
+/* The pipe's occupancy in nominal device frames: the core frames it
+ * holds at the nominal ratio. 0 off the threaded pipeline. Read by the
+ * consumer, which is the ring's reader. */
+static double audio_driver_sink_pipe_frames(audio_driver_state_t *audio_st)
+{
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      return (double)retro_spsc_read_avail(&audio_st->pipe_ring)
+            / (2 * sizeof(int16_t)) * audio_st->src_ratio_orig;
+#endif
+   return 0.0;
+}
+
 static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
       int64_t now_usec, uint64_t consumed)
 {
@@ -845,6 +858,7 @@ static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
    audio_st->sink_check_offered  = audio_st->sink_offered;
    audio_st->sink_check_consumed = consumed;
    audio_st->sink_check_dropped  = retro_atomic_load_acquire_int(&audio_st->pipe_dropped);
+   audio_st->sink_check_pipe     = audio_driver_sink_pipe_frames(audio_st);
    audio_st->sink_sum_usec       = 0;
    audio_st->sink_sum_offered    = 0.0;
    audio_st->sink_sum_consumed   = 0.0;
@@ -942,10 +956,20 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       int      dropped = retro_atomic_load_acquire_int(&audio_st->pipe_dropped);
       bool     dropped_any = dropped != audio_st->sink_check_dropped;
       double   nominal = (double)rate * (double)wdt / 1e6;
+      /* What the pipe holds now, in nominal device frames. Offered is
+       * counted after the pipe, so what the pipe took in over the
+       * window was produced but not yet offered, and what it gave up
+       * was offered but produced earlier: the source's count is
+       * offered plus the change in what the pipe holds. Without this,
+       * the pipe filling as rate control settles reads as a slow
+       * source for as long as it fills. */
+      double   pipe_now = audio_driver_sink_pipe_frames(audio_st);
+      dofr            += pipe_now - audio_st->sink_check_pipe;
       audio_st->sink_check_at       = now_usec + AUDIO_SINK_CHECK_USEC;
       audio_st->sink_check_offered  = audio_st->sink_offered;
       audio_st->sink_check_consumed = consumed;
       audio_st->sink_check_dropped  = dropped;
+      audio_st->sink_check_pipe     = pipe_now;
 
       /* Both sides at rate, within two percent, and nothing dropped
        * before it was offered, or the window is not a measurement of

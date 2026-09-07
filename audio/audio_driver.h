@@ -601,6 +601,7 @@ typedef struct
    double   sink_check_offered;        /* offered and consumed at the last check */
    uint64_t sink_check_consumed;
    int      sink_check_dropped;        /* pipe_dropped at the last check */
+   double   sink_check_pipe;           /* pipe occupancy at the last check, in nominal device frames */
    int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
    double   sink_sum_offered;
    double   sink_sum_consumed;
