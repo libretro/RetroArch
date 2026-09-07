@@ -50,6 +50,7 @@
 #include "../../retroarch.h"
 #include "../../msg_hash.h"
 #include "../../version.h"
+#include "../../AUTHORS_c.h"
 #include "../../verbosity.h"
 
 #include "../ui_companion_driver.h"
@@ -179,7 +180,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTextField *searchLabel, *browserLabel, *coreLabel, *infoLabel, *boxartLabel;
    NSTextField *itemsLabel, *zoomLabel;
    NSTextField *searchField;
-   NSButton *clearButton, *infoButton, *runButton;
+   NSButton *clearButton, *infoButton, *runButton, *stopButton;
+   NSWindow *contributorsWindow;      /* Help > About Contributors */
    NSTabView *browserTabs;            /* Playlists | File Browser */
    NSButton *brUp, *brStart, *brDownloads; /* Qt's browser toolbar */
    NSScrollView *playlistsScroll;
@@ -253,6 +255,11 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)focusSearch:(id)sender;
 - (void)searchChanged:(id)sender;
 - (void)openDocs:(id)sender;
+- (void)stopContent:(id)sender;
+- (void)unloadCore:(id)sender;
+- (void)quitRetroArch:(id)sender;
+- (void)aboutRetroArch:(id)sender;
+- (void)aboutContributors:(id)sender;
 - (NSInteger)entryForRow:(NSInteger)row;
 - (void)rebuildRowMap;
 - (void)buildCoresWindow;
@@ -1161,6 +1168,11 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       action:@selector(runWithPopup:)];
    KEEP_IVAR(runButton);
    [content addSubview:runButton];
+   /* Qt's Stop button beside Run: unloads the running core. */
+   stopButton = [self makeButton:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_STOP)
+      action:@selector(stopContent:)];
+   KEEP_IVAR(stopButton);
+   [content addSubview:stopButton];
 
    /* --- Centre: entries (table or grid) over Qt's footer -------------- */
    entries = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 600, 500)
@@ -1282,6 +1294,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_CORE))
       action:@selector(startCore:) keyEquivalent:@""];
    [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE))
+      action:@selector(unloadCore:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT))
+      action:@selector(quitRetroArch:) keyEquivalent:@""];
+   [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:@"Browse Files" action:@selector(browseFiles:) keyEquivalent:@""];
    [item setTarget:self];
@@ -1314,6 +1332,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION))
       action:@selector(openDocs:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
+      action:@selector(aboutRetroArch:) keyEquivalent:@""];
+   [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS))
+      action:@selector(aboutContributors:) keyEquivalent:@""];
    [item setTarget:self];
 
    menuItem = [[NSMenuItem alloc] initWithTitle:@"Companion" action:NULL keyEquivalent:@""];
@@ -1380,9 +1404,10 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    {
       /* Core section at the bottom of the column. */
       CGFloat coreY = CC_STATUS_H + logH + CC_PAD;
-      [corePopup setFrame:NSMakeRect(x, coreY, leftW - 4 * CC_PAD - 2 * 50.0, CC_CTRL_H)];
-      [infoButton setFrame:NSMakeRect(leftW - 2 * CC_PAD - 100.0, coreY, 50.0, CC_CTRL_H)];
-      [runButton setFrame:NSMakeRect(leftW - CC_PAD - 50.0, coreY, 50.0, CC_CTRL_H)];
+      [corePopup setFrame:NSMakeRect(x, coreY, leftW - 5 * CC_PAD - 3 * 50.0, CC_CTRL_H)];
+      [infoButton setFrame:NSMakeRect(leftW - 3 * CC_PAD - 150.0, coreY, 50.0, CC_CTRL_H)];
+      [runButton setFrame:NSMakeRect(leftW - 2 * CC_PAD - 100.0, coreY, 50.0, CC_CTRL_H)];
+      [stopButton setFrame:NSMakeRect(leftW - CC_PAD - 50.0, coreY, 50.0, CC_CTRL_H)];
       coreY += CC_CTRL_H + 2;
       [coreLabel setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, CC_LABEL_H)];
       coreY += CC_LABEL_H + CC_PAD;
@@ -1537,6 +1562,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
    RELEASE(boxartTypes);  RELEASE(playlistIcons); RELEASE(folderIcon);
    RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
+   RELEASE(stopButton);
+   if (contributorsWindow) { [contributorsWindow orderOut:nil]; RELEASE(contributorsWindow); }
    RELEASE(boxartRep); RELEASE(boxartImage);
    free(rowMap);
    rowMap = NULL;
@@ -2463,6 +2490,65 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 }
 
 - (void)searchChanged:(id)sender { }
+
+/* Qt's Stop button and File > Unload Core: the same thing. */
+- (void)stopContent:(id)sender
+{
+   if (!wimp)
+      return;
+   companion_core_unload_core(wimp->core);
+   [self fillCorePopup:-1];
+   [self refreshInfo];
+}
+
+- (void)unloadCore:(id)sender
+{
+   [self stopContent:sender];
+}
+
+- (void)quitRetroArch:(id)sender
+{
+   if (wimp)
+      companion_core_event_command(wimp->core, CMD_EVENT_QUIT);
+}
+
+- (void)aboutRetroArch:(id)sender
+{
+   NSAlert *a = [[[NSAlert alloc] init] autorelease_compat];
+   [a setMessageText:@"RetroArch"];
+   [a setInformativeText:[NSString stringWithFormat:@"%s %s\n%s",
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT), PACKAGE_VERSION,
+      "www.libretro.com"]];
+   [a runModal];
+}
+
+/* Qt's About Contributors: the AUTHORS list in a scrolling text window. */
+- (void)aboutContributors:(id)sender
+{
+   if (!contributorsWindow)
+   {
+      NSRect fr = NSMakeRect(0, 0, 520, 460);
+      NSScrollView *sv;
+      NSTextView *tv;
+      contributorsWindow = [[NSWindow alloc] initWithContentRect:fr
+         styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask)
+         backing:NSBackingStoreBuffered defer:NO];
+      [contributorsWindow setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS))];
+      [contributorsWindow setReleasedWhenClosed:NO];
+      sv = [[[NSScrollView alloc] initWithFrame:fr] autorelease_compat];
+      [sv setHasVerticalScroller:YES];
+      [sv setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      tv = [[[NSTextView alloc] initWithFrame:fr] autorelease_compat];
+      [tv setEditable:NO];
+      [tv setFont:[NSFont userFixedPitchFontOfSize:11.0]];
+      [tv setString:BOXSTRING(retroarch_contributors_list)];
+      [tv setAutoresizingMask:NSViewWidthSizable];
+      [sv setDocumentView:tv];
+      [[contributorsWindow contentView] addSubview:sv];
+      [contributorsWindow center];
+   }
+   [contributorsWindow makeKeyAndOrderFront:nil];
+}
 
 - (void)openDocs:(id)sender
 {

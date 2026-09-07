@@ -51,6 +51,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commctrl.h>
+#include <commdlg.h>
+#include "../../AUTHORS_c.h"
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -160,6 +162,7 @@ enum
    IDC_CW_CORE_COMBO, /* launch-with core selection */
    IDC_CW_CORE_INFO_BTN,
    IDC_CW_RUN_BTN,
+   IDC_CW_STOP_BTN,
    IDC_CW_ITEMS_LABEL,/* "N items" footer */
    IDC_CW_VIEW_LABEL,
    IDC_CW_VIEW_COMBO, /* List / Icons */
@@ -191,6 +194,9 @@ enum
    IDM_CW_FIND,
    IDM_CW_HELP_DOCS,
    IDM_CW_HELP_ABOUT,
+   IDM_CW_HELP_CONTRIBUTORS,
+   IDM_CW_UNLOAD_CORE,
+   IDM_CW_LOAD_CUSTOM_CORE,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -212,7 +218,8 @@ typedef struct ui_companion_win32_wimp
    char filter[128]; /* lower-cased search text, "" = show all */
    HWND search_label, clear_btn;
    HWND browser_label, tabs;
-   HWND core_label, core_combo, core_info_btn, run_btn;
+   HWND core_label, core_combo, core_info_btn, run_btn, stop_btn;
+   WNDPROC search_proc;    /* the EDIT's original procedure */
    HWND items_label, view_label, view_combo;
    HWND info_label, boxart_label;
    HFONT font;              /* the system message font at this DPI */
@@ -1205,10 +1212,11 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
             y += L;
             /* A COMBOBOX's height is its dropped-list height; the closed
              * control stays one row tall regardless. */
-            MoveWindow(w->core_combo, P, y, w->pane_w - 4 * P - 2 * sm_w,
+            MoveWindow(w->core_combo, P, y, w->pane_w - 5 * P - 3 * sm_w,
                   C + 10 * (w->text_h + CW_S(w, 4)), TRUE);
-            MoveWindow(w->core_info_btn, w->pane_w - 2 * P - 2 * sm_w, y, sm_w, C, TRUE);
-            MoveWindow(w->run_btn, w->pane_w - P - sm_w, y, sm_w, C, TRUE);
+            MoveWindow(w->core_info_btn, w->pane_w - 3 * P - 3 * sm_w, y, sm_w, C, TRUE);
+            MoveWindow(w->run_btn, w->pane_w - 2 * P - 2 * sm_w, y, sm_w, C, TRUE);
+            MoveWindow(w->stop_btn, w->pane_w - P - sm_w, y, sm_w, C, TRUE);
          }
       }
 
@@ -1740,6 +1748,80 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
 }
 
 static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
+
+static void cw_run_with_combo(ui_companion_win32_wimp_t *w);
+
+/* The search EDIT's subclass: Enter runs the focused entry, everything
+ * else goes to the control. */
+static LRESULT CALLBACK cw_search_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)GetWindowLongPtrA(hwnd, GWLP_USERDATA);
+   if (w && msg == WM_KEYDOWN && wparam == VK_RETURN)
+   {
+      cw_run_with_combo(w);
+      return 0;
+   }
+   if (w && msg == WM_CHAR && wparam == '\r')
+      return 0;                    /* no beep for the swallowed Enter */
+   return CallWindowProcA(w ? w->search_proc : DefWindowProcA, hwnd, msg, wparam, lparam);
+}
+
+/* Qt's Load Custom Core: a file picker for a core library. */
+static void cw_load_custom_core(ui_companion_win32_wimp_t *w)
+{
+   OPENFILENAMEA ofn;
+   char path[PATH_MAX_LENGTH];
+   path[0] = '\0';
+   memset(&ofn, 0, sizeof(ofn));
+   ofn.lStructSize = sizeof(ofn);
+   ofn.hwndOwner   = w->hwnd;
+   ofn.lpstrFilter = "Core libraries (*.dll)\0*.dll\0All files\0*.*\0";
+   ofn.lpstrFile   = path;
+   ofn.nMaxFile    = sizeof(path);
+   ofn.lpstrTitle  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE);
+   ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+   if (GetOpenFileNameA(&ofn) && path[0])
+      companion_core_load_core(w->core, path);
+}
+
+/* Qt's About Contributors: the AUTHORS list in a read-only edit. */
+static void cw_contributors_show(ui_companion_win32_wimp_t *w)
+{
+   HWND dlg, edit;
+   HINSTANCE inst = GetModuleHandleA(NULL);
+   RECT rc;
+   char *crlf;
+   size_t n, i, j;
+   dlg = CreateWindowExA(WS_EX_DLGMODALFRAME, "STATIC", 
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS),
+         WS_POPUPWINDOW | WS_CAPTION | WS_THICKFRAME | WS_VISIBLE,
+         CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, 520), CW_S(w, 460),
+         w->hwnd, NULL, inst, NULL);
+   if (!dlg)
+      return;
+   GetClientRect(dlg, &rc);
+   edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+         WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
+         0, 0, rc.right, rc.bottom, dlg, NULL, inst, NULL);
+   if (!edit)
+      return;
+   SendMessageA(edit, WM_SETFONT, (WPARAM)GetStockObject(ANSI_FIXED_FONT), TRUE);
+   /* the edit wants CR LF */
+   n    = strlen(retroarch_contributors_list);
+   crlf = (char*)malloc(n * 2 + 1);
+   if (crlf)
+   {
+      for (i = 0, j = 0; i < n; i++)
+      {
+         if (retroarch_contributors_list[i] == '\n')
+            crlf[j++] = '\r';
+         crlf[j++] = retroarch_contributors_list[i];
+      }
+      crlf[j] = '\0';
+      SetWindowTextA(edit, crlf);
+      free(crlf);
+   }
+}
 static long cw_selected_entry(ui_companion_win32_wimp_t *w);
 static void cw_run_selected(ui_companion_win32_wimp_t *w);
 
@@ -2487,6 +2569,19 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDC_CW_RUN_BTN:
                cw_run_with_combo(w);
                return 0;
+            case IDC_CW_STOP_BTN:
+            case IDM_CW_UNLOAD_CORE:
+               /* Qt's Stop / File > Unload Core */
+               companion_core_unload_core(w->core);
+               cw_core_combo_fill(w, cw_focused_entry(w));
+               cw_info_fill(w);
+               return 0;
+            case IDM_CW_LOAD_CUSTOM_CORE:
+               cw_load_custom_core(w);
+               return 0;
+            case IDM_CW_HELP_CONTRIBUTORS:
+               cw_contributors_show(w);
+               return 0;
             case IDC_CW_CORE_INFO_BTN:
                cw_info_toggle(w);
                return 0;
@@ -2804,8 +2899,12 @@ static HMENU cw_build_menu(void)
    HMENU view = CreatePopupMenu();
 
    AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CORE,    "Load &Core...");
+   AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CUSTOM_CORE,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
    AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CONTENT, "&Load Content...");
    AppendMenuA(file, MF_STRING, IDM_CW_START_CORE,   "&Start Core");
+   AppendMenuA(file, MF_STRING, IDM_CW_UNLOAD_CORE,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE));
    AppendMenuA(file, MF_SEPARATOR, 0, NULL);
    AppendMenuA(file, MF_STRING, IDM_CW_BROWSE_FILES, "&Browse Files");
    AppendMenuA(file, MF_STRING, IDM_CW_SCAN_DIR,     "Scan &Directory...");
@@ -2835,6 +2934,8 @@ static HMENU cw_build_menu(void)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION));
       AppendMenuA(help, MF_STRING, IDM_CW_HELP_ABOUT,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
+      AppendMenuA(help, MF_STRING, IDM_CW_HELP_CONTRIBUTORS,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS));
       AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
       AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit,
@@ -3075,6 +3176,9 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
             MENU_ENUM_LABEL_VALUE_QT_INFO), BS_PUSHBUTTON, IDC_CW_CORE_INFO_BTN);
    w->run_btn       = cw_make(w, "BUTTON", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_RUN), BS_PUSHBUTTON, IDC_CW_RUN_BTN);
+   /* Qt's Stop beside Run: unloads the running core. */
+   w->stop_btn      = cw_make(w, "BUTTON", msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_STOP), BS_PUSHBUTTON, IDC_CW_STOP_BTN);
    w->items_label   = cw_make(w, "STATIC", "", SS_LEFT, IDC_CW_ITEMS_LABEL);
    w->view_label    = cw_make(w, "STATIC", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_VIEW), SS_RIGHT, IDC_CW_VIEW_LABEL);
@@ -3158,6 +3262,14 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->search = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
          WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_SEARCH, inst, NULL);
+   if (w->search)
+   {
+      /* Enter in the search box runs the focused entry (Qt's
+       * onSearchEnterPressed); the edit is subclassed for the key. */
+      SetWindowLongPtrA(w->search, GWLP_USERDATA, (LONG_PTR)w);
+      w->search_proc = (WNDPROC)SetWindowLongPtrA(w->search, GWLP_WNDPROC,
+            (LONG_PTR)cw_search_proc);
+   }
 
    w->boxart = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
          WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,

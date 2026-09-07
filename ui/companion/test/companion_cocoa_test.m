@@ -357,7 +357,11 @@ int main(int argc, char **argv)
          { "deleteEntry:",      "context: delete entry" },
          { "associateCore:",    "context: associate core" },
          { "openDocs:",         "Help > Documentation" },
-         { "openDocument:",     "File > Open" },
+         { "aboutRetroArch:",   "Help > About (modal alert)" },
+         { "aboutContributors:","Help > About Contributors (window)" },
+         { "stopContent:",      "Stop button" },
+         { "unloadCore:",       "File > Unload Core" },
+         { "quitRetroArch:",    "File > Exit RetroArch" },
          { "loadContent:",      "load content (file)" },
          { NULL, NULL }
       };
@@ -368,6 +372,7 @@ int main(int argc, char **argv)
          SEL s = NSSelectorFromString([NSString stringWithUTF8String:acts[k].sel]);
          BOOL has = [ctrl respondsToSelector:s];
          const char *dlg = strstr(acts[k].sel, "loadCore") || strstr(acts[k].sel, "scanDirectory")
+                        || strstr(acts[k].sel, "aboutRetroArch") || strstr(acts[k].sel, "quitRetroArch")
                         || strstr(acts[k].sel, "openDoc") || strstr(acts[k].sel, "loadContent")
                         || strstr(acts[k].sel, "startCore") || strstr(acts[k].sel, "run")
                         || strstr(acts[k].sel, "deleteEntry") || strstr(acts[k].sel, "associateCore")
@@ -385,6 +390,35 @@ int main(int argc, char **argv)
             [[ctrl valueForKey:@"browseMode"] boolValue] ? "yes" : "no",
             (long)[(NSTableView*)[entriesScroll documentView] numberOfRows]);
       fflush(stdout);
+   }
+
+   /* --- the menu / button wiring added for Qt parity --- */
+   {
+      extern int stub_calls_command;
+      int before = stub_calls_command;
+      SEL s;
+      s = NSSelectorFromString(@"stopContent:");
+      CHECK([ctrl respondsToSelector:s], "Stop implemented");
+      [ctrl performSelector:s withObject:nil];
+      pump(data, 50);
+      CHECK(stub_calls_command > before, "Stop reaches the core (command_event called)");
+      s = NSSelectorFromString(@"aboutContributors:");
+      CHECK([ctrl respondsToSelector:s], "About Contributors implemented");
+      [ctrl performSelector:s withObject:nil];
+      pump(data, 100);
+      {
+         NSWindow *cw = [ctrl valueForKey:@"contributorsWindow"];
+         CHECK(cw != nil && [cw isVisible], "contributors window shown");
+         if (cw)
+         {
+            NSTextView *tv = find_view([cw contentView], [NSTextView class]);
+            CHECK(tv && [[tv string] length] > 1000, "contributors text present (%lu chars)", tv ? (unsigned long)[[tv string] length] : 0UL);
+            [cw orderOut:nil];
+         }
+      }
+      CHECK([ctrl respondsToSelector:NSSelectorFromString(@"unloadCore:")], "Unload Core implemented");
+      CHECK([ctrl respondsToSelector:NSSelectorFromString(@"quitRetroArch:")], "Exit RetroArch implemented");
+      CHECK([ctrl respondsToSelector:NSSelectorFromString(@"aboutRetroArch:")], "About implemented");
    }
 
    /* --- closing hands the keyboard back --- */

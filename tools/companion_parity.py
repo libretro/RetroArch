@@ -76,6 +76,11 @@ FEATURES = {
     # The selected file's animation (APNG / WEBP / WEBM / MP4) plays in
     # the pane on every backend, as in RetroArch's own File Browser.
     'animated preview':   'companion_thumbs_animate',
+    # Qt's Stop / File > Unload Core, and File > Exit
+    'unload core':        'companion_core_unload_core',
+    'exit retroarch':     'CMD_EVENT_QUIT',
+    # Help > About Contributors: the AUTHORS list in a window
+    'about contributors': 'retroarch_contributors_list',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',

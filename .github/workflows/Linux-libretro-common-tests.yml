@@ -133,6 +133,11 @@ jobs:
           tools/companion_core_test.sh asan
           tools/companion_core_test.sh tsan
 
+      - name: AUTHORS_c.h in sync with AUTHORS.h
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: python3 tools/gen_authors_c.py --check
+
       - name: Cocoa companion regression harness (GNUstep AppKit, headless)
         shell: bash
         working-directory: ${{ github.workspace }}
