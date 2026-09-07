@@ -593,7 +593,8 @@ int main(int argc, char **argv)
       NSWindow *host = [(id)apple_platform hostWindow];
       [win makeKeyAndOrderFront:nil];
       pump(data, 100);
-      [[win delegate] windowShouldClose:win];
+      CHECK([[win delegate] windowShouldClose:win] == YES, "windowShouldClose: lets AppKit close (YES)");
+      [win close];
       pump(data, 200);
       CHECK(![win isVisible], "companion window hidden after close");
       CHECK([host isKeyWindow], "RetroArch's window is key again (keyboard goes to RAWindow -sendEvent:)");
@@ -606,6 +607,13 @@ int main(int argc, char **argv)
       pump(data, 200);
       CHECK(![win isVisible], "companion window closed via performClose");
       CHECK([host isKeyWindow] && [host isMainWindow], "after AppKit's close: RetroArch's window key and main");
+      /* and the driver can show it again after a real close */
+      ui_companion_wimp_cocoa.toggle(data, true);
+      pump(data, 200);
+      CHECK([win isVisible], "toggle shows the closed window again");
+      CHECK([[ctrl valueForKey:@"playlists"] numberOfRows] == 4, "and it still lists the playlists");
+      [win close];
+      pump(data, 100);
    }
 
    ui_companion_wimp_cocoa.deinit(data);

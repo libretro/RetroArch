@@ -1990,8 +1990,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (BOOL)windowShouldClose:(id)sender
 {
-   [self hideAndFocusRetroArch];
-   return NO;
+   /* Let AppKit close it (setReleasedWhenClosed:NO keeps the object;
+    * -show orders it back in). Returning NO and hiding it ourselves
+    * left AppKit believing the window was still open - and still the
+    * key window - so key events went to a hidden window and the
+    * keyboard never came back to RetroArch. The hand-back runs from
+    * windowWillClose: and windowDidResignKey:, which only fire on a
+    * real close. */
+   return YES;
 }
 
 /* Menu / double-click actions */
