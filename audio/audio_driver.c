@@ -973,11 +973,10 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       audio_st->sink_check_dropped  = dropped;
       audio_st->sink_check_pipe     = pipe_now;
 
-      /* Both sides at rate, within two percent, and nothing dropped
+      /* The device at rate within two percent, and nothing dropped
        * before it was offered, or the window is not a measurement of
        * the clocks and is left out. */
       if (     nominal <= 0.0 || dropped_any
-            || dofr < nominal * 0.98 || dofr > nominal * 1.02
             || (double)dc < nominal * 0.98 || (double)dc > nominal * 1.02)
       {
          audio_st->sink_discarded++;
@@ -985,18 +984,27 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       }
       audio_st->sink_discarded     = 0;
 
-      /* Not yet settled: a window with the source outside the band a
-       * bias could correct is the source off rate - the core warming
-       * up after load, most often - and is left out of the sums, with
-       * the sums restarting from the next window in the band. Once two
-       * in a row are in it, every kept window counts, so quantised
-       * consumption averages out over the session. A source that never
-       * comes into the band is said so once, with both rates, after a
-       * baseline's worth: with audio sync off that is its clock, the
-       * frame timer or the display, which rate control absorbs. */
-      if (audio_st->sink_settled < 2)
+      /* The source outside the band a bias could correct is not a
+       * clock: most often the main thread held for some tens of
+       * milliseconds - a load, a state save, a shader built on first
+       * use - which in a four-second window is a source a percent slow
+       * with the device at rate, and would be summed as one. Such a
+       * window is left out whenever it comes. Before the sums have
+       * opened it also restarts them: they open on the second window
+       * in a row with the source in the band, so a core warming up
+       * after load is never in them, and every kept window counts from
+       * there, so quantised consumption averages out over the session.
+       * A source that never comes into the band is said so once, with
+       * both rates, after a baseline's worth: with audio sync off that
+       * is its clock, the frame timer or the display, which rate
+       * control absorbs. */
+      if (fabs(dofr / nominal - 1.0) > AUDIO_SINK_BIAS_PLAUSIBLE)
       {
-         if (fabs(dofr / nominal - 1.0) > AUDIO_SINK_BIAS_PLAUSIBLE)
+         if (audio_st->sink_settled >= 2)
+         {
+            audio_st->sink_discarded++;
+            return;
+         }
          {
             audio_st->sink_settled       = 0;
             audio_st->sink_sum_usec      = 0;
@@ -1022,8 +1030,9 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
             }
             return;
          }
-         audio_st->sink_settled++;
       }
+      if (audio_st->sink_settled < 2)
+         audio_st->sink_settled++;
       audio_st->sink_unsettled_usec = 0;
       audio_st->sink_sum_usec     += wdt;
       audio_st->sink_sum_offered  += dofr;

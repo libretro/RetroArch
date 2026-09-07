@@ -356,6 +356,29 @@ int main(void)
          "the slow start is in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
    CHECK(st->sink_applied > 0, "the bias was never applied after the source settled");
 
+   /* 9b. A stall mid-session: the main thread held for 50 ms - a state
+    *     save, a shader built on first use - with the device at rate.
+    *     In a four-second window that is a source 1.25% slow, which a
+    *     two-percent gate would sum; diluted over thirty windows it is
+    *     -416 ppm, a plausible-looking ratio the bias would then
+    *     correct. The source has to be within the band a bias could
+    *     correct, whenever the window comes, or it is not a clock
+    *     measurement. Clocks matched, the bias must stay near zero. */
+   reset(st, true);
+   dev_ppm = 0.0;
+   for (i = 0; i < 40; i++)
+      run_second(st);
+   for (i = 0; i < 240; i++)
+   {
+      /* One second in 120 carries the 50 ms hole: one window in thirty. */
+      core_pause_sec = (i % 120 == 0) ? 0.05 : 0.0;
+      run_second(st);
+   }
+   core_pause_sec = 0.0;
+   printf("   a 50 ms stall every 120 s mid-session: bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0,
+         "the stalls were summed as a slow source: bias %+.0f ppm", bias_ppm(st));
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);
