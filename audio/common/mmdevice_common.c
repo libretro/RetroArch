@@ -270,7 +270,7 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
             {
                case WM_AUDIO_DEVICE_STATE_CHANGED:
                case WM_AUDIO_DEFAULT_CHANGED:
-                  audio_st->reinit_request = true;
+                  retro_atomic_store_release_int(&audio_st->reinit_request, 1);
                   goto done;
                case WM_QUIT:
                   goto done;

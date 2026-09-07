@@ -312,11 +312,33 @@ int main(void)
    CHECK(stalled_now(), "second stall: not recorded");
    CHECK(worst < 50.0, "second stall: a frame cost %.1f ms", worst);
 
+   /* 5. A driver's reinit request is not acted on by the producer or
+    *    the consumer: neither may run the reinit, which frees the state
+    *    lock they hold and joins the thread they may be. Frames keep
+    *    flowing, command_event() - which the stub aborts on - is never
+    *    reached, and the request is there for the runloop to take, once. */
    STAGE(6);
    retro_atomic_store_release_int(&dev_stalled, 0);
+   retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
+   for (i = 0; i < 20; i++)
+      produce_frame();
+   CHECK(audio_driver_take_reinit_request(), "the request was consumed off the main thread");
+   CHECK(!audio_driver_take_reinit_request(), "the request was not cleared when taken");
+   /* The same on the frame-synchronous path: flush under the state
+    * lock, on this thread. */
    retro_atomic_store_release_int(&consumer_run, 0);
    audio_driver_pipeline_wake();
    pthread_join(cons, NULL);
+   AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
+   audio_driver_st.pipe_threaded = false;
+   retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
+   for (i = 0; i < 20; i++)
+      audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
+            sizeof(frame_audio) / sizeof(int16_t), false, false);
+   CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
+   CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
+
+   STAGE(7);
    pipeline_down();
 
    STAGE(-1);
@@ -325,6 +347,6 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("pipeline stall: consumer takes only what it can deliver; producer drops at once once stalled\n");
+   printf("pipeline stall: consumer takes only what it can deliver; producer drops at once once stalled, and neither takes a reinit request\n");
    return 0;
 }

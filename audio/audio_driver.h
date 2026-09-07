@@ -547,7 +547,11 @@ typedef struct
 
    char resampler_ident[64];
 
-   bool reinit_request;
+   /* A driver's request to be reinitialised - a device change or an
+    * unplug, set from its notification thread. Taken by the runloop
+    * once a frame on the main thread with no audio lock held; see
+    * audio_driver_take_reinit_request(). */
+   retro_atomic_int_t reinit_request;
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
@@ -959,6 +963,14 @@ audio_driver_state_t *audio_state_get_ptr(void);
 void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
+
+/* Whether a driver has asked to be reinitialised since the last call;
+ * clears the request. The runloop calls this once a frame, on the main
+ * thread, holding no audio lock, and acts on it there: the reinit
+ * tears the driver down and up, which frees the state lock and, on
+ * the threaded pipeline, joins the audio thread, so it can be run
+ * neither under the lock nor from that thread. */
+bool audio_driver_take_reinit_request(void);
 
 double audio_driver_get_buffer_latency_ms(void);
 

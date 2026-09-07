@@ -8064,6 +8064,19 @@ int runloop_iterate(void)
                audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
+   /* A driver's request to be reinitialised - a device change or an
+    * unplug - is taken here, once a frame, on the main thread with no
+    * audio lock held: the reinit frees the state lock and joins the
+    * audio thread, so it cannot run from a flush or from that thread. */
+   if (audio_driver_take_reinit_request())
+   {
+      RARCH_LOG("[Audio] Driver reinit requested...\n");
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+#ifdef HAVE_MICROPHONE
+      command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+#endif
+   }
+
    switch ((enum runloop_state_enum)runloop_check_state(
             input_st, audio_st, video_st,
             uico_st,

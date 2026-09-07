@@ -928,7 +928,7 @@ static long asio_cb_message(long selector, long value,
                selector == kAsioResetRequest ? "a reset" : "a buffer size change");
          if (g_asio)
             retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
-         audio_state_get_ptr()->reinit_request = true;
+         retro_atomic_store_release_int(&audio_state_get_ptr()->reinit_request, 1);
          return 1L;
       case kAsioResyncRequest:
          /* The driver lost its place - a system pause, a clock that
