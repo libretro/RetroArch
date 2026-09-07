@@ -861,6 +861,8 @@ static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
    audio_st->sink_check_pipe     = audio_driver_sink_pipe_frames(audio_st);
    audio_st->sink_settled        = 0;
    audio_st->sink_unsettled_usec = 0;
+   audio_st->sink_unsettled_offered  = 0.0;
+   audio_st->sink_unsettled_consumed = 0.0;
    audio_st->sink_sum_usec       = 0;
    audio_st->sink_sum_offered    = 0.0;
    audio_st->sink_sum_consumed   = 0.0;
@@ -1010,12 +1012,16 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
             audio_st->sink_sum_usec      = 0;
             audio_st->sink_sum_offered   = 0.0;
             audio_st->sink_sum_consumed  = 0.0;
-            audio_st->sink_unsettled_usec += wdt;
-            /* Shown meanwhile from this window alone, so the overlay
+            audio_st->sink_unsettled_usec     += wdt;
+            audio_st->sink_unsettled_offered  += dofr;
+            audio_st->sink_unsettled_consumed += (double)dc;
+            /* Shown meanwhile over the unsettled stretch, so the overlay
              * has the rates - and shows the source off the band - while
-             * nothing is being summed. */
-            audio_st->sink_rate_hz       = (double)dc * 1e6 / (double)wdt;
-            audio_st->sink_source_hz     = dofr * 1e6 / (double)wdt;
+             * nothing is being summed, without a single window's swing. */
+            audio_st->sink_rate_hz   = audio_st->sink_unsettled_consumed * 1e6
+                  / (double)audio_st->sink_unsettled_usec;
+            audio_st->sink_source_hz = audio_st->sink_unsettled_offered * 1e6
+                  / (double)audio_st->sink_unsettled_usec;
             if (     audio_st->sink_unsettled_usec >= AUDIO_SINK_BASELINE_USEC
                   && !audio_st->sink_implausible_warned)
             {
@@ -1033,7 +1039,9 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       }
       if (audio_st->sink_settled < 2)
          audio_st->sink_settled++;
-      audio_st->sink_unsettled_usec = 0;
+      audio_st->sink_unsettled_usec     = 0;
+      audio_st->sink_unsettled_offered  = 0.0;
+      audio_st->sink_unsettled_consumed = 0.0;
       audio_st->sink_sum_usec     += wdt;
       audio_st->sink_sum_offered  += dofr;
       audio_st->sink_sum_consumed += (double)dc;

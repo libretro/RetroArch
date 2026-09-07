@@ -613,6 +613,8 @@ typedef struct
     * that begins with it carries it for the session. */
    unsigned sink_settled;
    int64_t  sink_unsettled_usec;       /* time in windows the source was off the band, since the last settled one */
+   double   sink_unsettled_offered;    /* and what was offered and consumed over them, for the rates shown meanwhile */
+   double   sink_unsettled_consumed;
    int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
    double   sink_sum_offered;
    double   sink_sum_consumed;
