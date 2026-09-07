@@ -323,6 +323,70 @@ int main(int argc, char **argv)
       }
    }
 
+   /* --- audit: every user action the controller implements, fired in
+    *     the state a user would fire it from, on the real objects ---
+    * Reported, not asserted: the point is the gap list. */
+   if (getenv("COMPANION_AUDIT"))
+   {
+      struct { const char *sel; const char *note; } acts[] = {
+         { "refreshPlaylists:", "F5 / reload playlists" },
+         { "viewList:",         "View > List" },
+         { "viewIcons:",        "View > Icons" },
+         { "zoomChanged:",      "zoom slider" },
+         { "thumbTypeChanged:", "thumbnail type popup" },
+         { "boxartTypeChanged:","boxart segment" },
+         { "toggleInfo:",       "View > Core Info dock" },
+         { "toggleBoxart:",     "View > Boxart dock" },
+         { "toggleLog:",        "View > Log dock" },
+         { "focusSearch:",      "Edit > Search" },
+         { "searchChanged:",    "search field edited" },
+         { "clearSearch:",      "search Clear" },
+         { "browseFiles:",      "File Browser tab" },
+         { "browseUp:",         "browser Up" },
+         { "browseStart:",      "browser Start Directory" },
+         { "browseDownloads:",  "browser Downloads" },
+         { "playlistsDoubleClick:", "double-click playlist / folder" },
+         { "corePopupChanged:", "core popup changed" },
+         { "runSelected:",      "Run" },
+         { "runWithPopup:",     "run with the popup's core" },
+         { "startCore:",        "Start Core (no content)" },
+         { "loadCore:",         "File > Load Core (picker)" },
+         { "loadSelectedCore:", "picker: Load" },
+         { "cancelLoadCore:",   "picker: Cancel" },
+         { "scanDirectory:",    "Scan Directory" },
+         { "deleteEntry:",      "context: delete entry" },
+         { "associateCore:",    "context: associate core" },
+         { "openDocs:",         "Help > Documentation" },
+         { "openDocument:",     "File > Open" },
+         { "loadContent:",      "load content (file)" },
+         { NULL, NULL }
+      };
+      int k;
+      printf("\n=== Cocoa companion action audit ===\n");
+      for (k = 0; acts[k].sel; k++)
+      {
+         SEL s = NSSelectorFromString([NSString stringWithUTF8String:acts[k].sel]);
+         BOOL has = [ctrl respondsToSelector:s];
+         const char *dlg = strstr(acts[k].sel, "loadCore") || strstr(acts[k].sel, "scanDirectory")
+                        || strstr(acts[k].sel, "openDoc") || strstr(acts[k].sel, "loadContent")
+                        || strstr(acts[k].sel, "startCore") || strstr(acts[k].sel, "run")
+                        || strstr(acts[k].sel, "deleteEntry") || strstr(acts[k].sel, "associateCore")
+                        ? " (skipped: modal / launches / destructive)" : "";
+         printf("  %-24s %-36s %s%s\n", acts[k].sel, acts[k].note,
+               has ? "implemented" : "MISSING", has ? dlg : "");
+         if (has && !*dlg)
+         {
+            [ctrl performSelector:s withObject:nil];
+            pump(data, 60);
+         }
+      }
+      printf("  (state after audit: iconView doc=%s, browseMode=%s, entries rows=%ld)\n",
+            [[[[entriesScroll documentView] class] description] UTF8String],
+            [[ctrl valueForKey:@"browseMode"] boolValue] ? "yes" : "no",
+            (long)[(NSTableView*)[entriesScroll documentView] numberOfRows]);
+      fflush(stdout);
+   }
+
    /* --- closing hands the keyboard back --- */
    {
       NSWindow *host = [(id)apple_platform hostWindow];

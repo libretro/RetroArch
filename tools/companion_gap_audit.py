@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Feature gap audit: what Qt's companion window offers vs what the
+Cocoa and Win32 companions implement. Static (regex evidence per
+feature); pair it with COMPANION_AUDIT=1 tools/companion_cocoa_test.sh,
+which fires every action the Cocoa controller implements on a real
+AppKit under GNUstep. Prints the table and the gap lists; exit 0."""
+import re, sys, os
+root = os.path.join(os.path.dirname(__file__), '..')
+qt  = open(os.path.join(root, 'ui/drivers/ui_qt.cpp')).read()
+cc  = open(os.path.join(root, 'ui/drivers/ui_cocoa_companion.m')).read()
+w32 = open(os.path.join(root, 'ui/drivers/ui_win32_companion.c')).read()
+FEATS = [
+ ("File menu: Load Core",             r"MENU_FILE_LOAD_CORE", r"MENU_FILE_LOAD_CORE|loadCore:", r"MENU_FILE_LOAD_CORE|IDM_CW_LOAD_CORE|cw_load_core"),
+ ("File menu: Unload Core",           r"MENU_FILE_UNLOAD_CORE", r"unloadCore|UNLOAD_CORE", r"UNLOAD_CORE|cw_unload"),
+ ("File menu: Exit RetroArch",        r"MENU_FILE_EXIT", r"quitRetroArch|MENU_FILE_EXIT", r"MENU_FILE_EXIT|IDM_CW_EXIT"),
+ ("View: Shader Params",              r"onShaderParamsClicked", r"shaderParams", r"shader"),
+ ("View: Core Options",               r"onCoreOptionsClicked", r"coreOptions", r"core_options|CORE_OPTIONS"),
+ ("View: Options dialog",             r"MENU_VIEW_OPTIONS\b", r"MENU_VIEW_OPTIONS\b|viewOptions", r"MENU_VIEW_OPTIONS\b|cw_options"),
+ ("Help: About",                      r"MENU_HELP_ABOUT\b", r"HELP_ABOUT|orderFrontStandardAboutPanel", r"HELP_ABOUT"),
+ ("Help: About contributors",         r"CONTRIBUTORS", r"CONTRIBUTORS|contributors", r"CONTRIBUTORS"),
+ ("Playlist context: rename",         r"renamePlaylist|PLAYLIST_RENAME", r"renamePlaylist", r"RENAME|rename_playlist"),
+ ("Playlist context: hide/show",      r"hidePlaylist|HIDE_PLAYLIST", r"hidePlaylist", r"hide_playlist|HIDE"),
+ ("Playlist context: download thumbnails", r"thumbnailPack|DOWNLOAD_THUMBNAILS", r"thumbnail_pack|downloadThumbnails", r"thumbnail_pack|DOWNLOAD_THUMB"),
+ ("Entry context: set core association", r"SET_CORE_ASSOCIATION|associat", r"associateCore", r"associate|ASSOCIATION"),
+ ("Entry context: delete entry",      r"deletePlaylistItem|DELETE_ENTRY|deleteEntry", r"deleteEntry", r"delete_entry|DELETE_ENTRY"),
+ ("Drag & drop files onto playlist",  r"onPlaylistFilesDropped", r"performDragOperation|draggingEntered", r"WM_DROPFILES|DragAcceptFiles"),
+ ("Drag & drop thumbnail onto boxart", r"onThumbnailDropped", r"thumbnailDropped", r"cw_boxart_drop"),
+ ("Scan directory",                   r"onScanDirectoryClicked", r"scanDirectory", r"scan_dir|SCAN"),
+ ("Load custom core (file picker)",   r"onLoadCustomCoreClicked", r"loadCustomCore|NSOpenPanel", r"GetOpenFileName|load_custom"),
+ ("Stop content",                     r"onStopClicked", r"stopContent|stop:", r"STOP|cw_stop"),
+ ("Log dock",                         r"LogWidget", r"toggleLog", r"IDC_CW_LOG|cw_log"),
+ ("Theme (dark)",                     r"CUSTOM_THEME|setTheme", r"theme", r"theme"),
+ ("Search filters entries",           r"onSearchLineEditEdited", r"searchChanged", r"IDC_CW_SEARCH"),
+ ("Search Enter selects+runs",        r"onSearchEnterPressed", r"searchEnter|runSelected", r"VK_RETURN"),
+ ("Status bar progress (scan)",       r"QProgressBar", r"NSProgressIndicator", r"msctls_progress|PROGRESS_CLASS"),
+ ("Core Options dialog",              r"CoreOptionsDialog", r"CoreOptions", r"core_options"),
+ ("Shader params dialog",             r"ShaderParamsDialog", r"ShaderParams", r"shader_params"),
+]
+print("%-40s %-6s %-6s %s" % ("feature", "qt", "cocoa", "win32"))
+gc, gw = [], []
+for f, q, c, w in FEATS:
+    hq, hc, hw = (bool(re.search(x, y)) for x, y in ((q, qt), (c, cc), (w, w32)))
+    print("%-40s %-6s %-6s %s" % (f, "yes" if hq else "-", "yes" if hc else "NO", "yes" if hw else "NO"))
+    if hq and not hc: gc.append(f)
+    if hq and not hw: gw.append(f)
+print("\nCocoa gaps vs Qt (%d):" % len(gc)); [print("  -", g) for g in gc]
+print("Win32 gaps vs Qt (%d):" % len(gw)); [print("  -", g) for g in gw]
