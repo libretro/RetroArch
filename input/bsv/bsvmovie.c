@@ -558,6 +558,24 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       goto exit;
    }
 
+   /* The size fields are serialized independently. Check the
+    * relationships required by the paths that use one size to
+    * allocate and another to read or copy checkpoint data. */
+   if (   compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE
+       && compressed_encoded_size > encoded_size)
+   {
+      RARCH_ERR("[Replay] Uncompressed checkpoint has invalid sizes\n");
+      ret = false;
+      goto exit;
+   }
+   if (   encoding == REPLAY_CHECKPOINT2_ENCODING_RAW
+       && encoded_size > size)
+   {
+      RARCH_ERR("[Replay] Raw checkpoint has invalid sizes\n");
+      ret = false;
+      goto exit;
+   }
+
    if (handle->cur_save_size < size)
    {
       free(handle->cur_save);

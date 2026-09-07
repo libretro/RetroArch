@@ -169,16 +169,20 @@ jobs:
         working-directory: samples/tasks/bsv_replay
         run: |
           set -eu
-          # Regression test for the .bsv replay-file event-count
-          # bounds in input/bsv/bsvmovie.c.  Pre-fix a malformed
+          # Regression test for .bsv replay-file bounds in
+          # input/bsv/bsvmovie.c. Pre-fix a malformed
           # replay file with key_event_count > 128 or
           # input_event_count > 512 caused a heap-buffer-overflow
           # write into bsv_movie_t (a calloc'd struct) with
           # attacker-chosen 8/12-byte payloads at attacker-chosen
           # offsets up to ~500KB.  Build under AddressSanitizer
           # so any reintroduction of the unbounded count is caught
-          # at the bounds level.  If input/bsv/bsvmovie.c amends
-          # the predicate, the verbatim copy in
+          # at the bounds level. It also verifies that an uncompressed
+          # raw checkpoint cannot provide a compressed encoded size
+          # larger than its encoded size or an encoded size larger than
+          # its state size; otherwise a crafted replay could overflow
+          # the state allocation during loading. If input/bsv/bsvmovie.c
+          # amends either predicate, the verbatim copies in
           # bsv_replay_bounds_test.c must follow.
           make clean all SANITIZER=address
           test -x bsv_replay_bounds_test
