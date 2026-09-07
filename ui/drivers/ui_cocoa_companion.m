@@ -216,6 +216,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    unsigned thumbGen;                 /* bumped per grid reload; in tags */
    NSInteger visFirst, visLast;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
+   NSInteger thumbNoneCount;          /* its length: rows beyond it do not exist */
    NSInteger boxartEntry;             /* entry the pane shows / awaits */
    /* The pane's own bitmap: animation frames are written into its
     * pixels in place, one rep + image for the animation's life. */
@@ -775,7 +776,8 @@ static const companion_callbacks_t cc_callbacks = {
    if (thumbs)
       companion_thumbs_cancel(thumbs);
    free(thumbNone);
-   thumbNone = (char*)calloc(n ? n : 1, 1);
+   thumbNone      = (char*)calloc(n ? n : 1, 1);
+   thumbNoneCount = (NSInteger)n;
    visFirst = visLast = -1;
    /* Qt selects the first entry of a freshly loaded playlist. */
    if (n > 0)
@@ -946,7 +948,10 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    row = (NSInteger)(tag & 0xffffffffu);
    if (sizeof(uintptr_t) > 4 && (unsigned)(tag >> 32) != thumbGen)
       return;
-   if (!grid || row < 0 || row >= (NSInteger)companion_core_entry_count(wimp->core))
+   /* Against the array's own length: the entry count can have moved on
+    * since it was allocated (a delivery for the previous list). */
+   if (!grid || row < 0 || row >= thumbNoneCount
+         || row >= (NSInteger)companion_core_entry_count(wimp->core))
       return;
    if (!bits)
    {
@@ -971,6 +976,13 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    char path[PATH_MAX_LENGTH];
    int edge = (int)[self thumbEdge];
    const uint32_t *bits;
+   /* iconTick prefetches a screen either side of the visible range, so
+    * @row can be outside the list. hasImageForRow: answers NO for those
+    * (it is not "no image", it is "no row"), and thumbNone is only as
+    * long as the list: reading thumbNone[row] past the end is what
+    * crashed on macOS under Guard Malloc. */
+   if (row < 0 || row >= thumbNoneCount)
+      return;
    if (!thumbs || !grid || [grid hasImageForRow:row])
       return;
    if (thumbNone && thumbNone[row])
@@ -1021,8 +1033,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
     * queue was full): ask for them again. */
    if (!companion_thumbs_pending(thumbs) && visFirst >= 0)
    {
-      for (i = visFirst; i <= visLast; i++)
-         if (![grid hasImageForRow:i] && !(thumbNone && thumbNone[i]))
+      for (i = visFirst; i <= visLast && i < thumbNoneCount; i++)
+         if (i >= 0 && ![grid hasImageForRow:i] && !(thumbNone && thumbNone[i]))
          {
             visFirst = visLast = -1;
             break;
@@ -1613,7 +1625,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       thumbs = NULL;
    }
    free(thumbNone);
-   thumbNone = NULL;
+   thumbNone      = NULL;
+   thumbNoneCount = 0;
    RELEASE(grid);
    RELEASE(entriesScroll);
    RELEASE(status);
@@ -2594,8 +2607,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    thumbGen++;
    if (thumbs)
       companion_thumbs_cancel(thumbs);
-   if (thumbNone)
-      memset(thumbNone, 0, (size_t)companion_core_entry_count(wimp->core));
+   if (thumbNone && thumbNoneCount > 0)
+      memset(thumbNone, 0, (size_t)thumbNoneCount);
    visFirst = visLast = -1;
 }
 
@@ -2820,8 +2833,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    boxartEntry = -1;
    [self refreshBoxart];
    thumbGen++;
-   if (thumbNone)
-      memset(thumbNone, 0, (size_t)companion_core_entry_count(wimp->core));
+   if (thumbNone && thumbNoneCount > 0)
+      memset(thumbNone, 0, (size_t)thumbNoneCount);
    visFirst = visLast = -1;
    [self setStatus:"Thumbnail updated"];
    return YES;

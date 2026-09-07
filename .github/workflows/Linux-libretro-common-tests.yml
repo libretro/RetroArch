@@ -150,6 +150,10 @@ jobs:
           # checked on the AppKit objects themselves.
           sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
           tools/companion_cocoa_test.sh
+          # ASan too: the grid's prefetch reaching past the thumbnail
+          # marks only shows under a checking allocator (it crashed the
+          # app on macOS, where Apple's is one).
+          tools/companion_cocoa_test.sh asan
 
       - name: Win32 companion regression harness (mingw + Wine, headless)
         shell: bash

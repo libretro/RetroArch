@@ -379,6 +379,37 @@ int main(int argc, char **argv)
       }
    }
 
+   /* --- the icon grid's prefetch must not read past the list ---
+    * iconTick asks for a screen either side of the visible rows, so it
+    * reaches rows that do not exist; thumbNone is only as long as the
+    * list. Under ASan (and Apple's Guard Malloc) reading past it is a
+    * crash - this is what took the app down on macOS. Drive iconTick
+    * repeatedly with a short list, and hit thumbWant: directly with
+    * rows either side of the range. */
+   {
+      SEL sTick = NSSelectorFromString(@"iconTick");
+      SEL sWant = NSSelectorFromString(@"thumbWant:urgent:");
+      NSInteger n = (NSInteger)companion_core_entry_count(peek->core);
+      NSInteger k;
+      CHECK([ctrl respondsToSelector:sTick] && [ctrl respondsToSelector:sWant], "iconTick / thumbWant: present");
+      for (k = 0; k < 8; k++)
+      {
+         [ctrl performSelector:sTick];
+         pump(data, 20);
+      }
+      for (k = -3; k <= n + 3; k++)
+      {
+         NSInvocation *inv = [NSInvocation invocationWithMethodSignature:[ctrl methodSignatureForSelector:sWant]];
+         BOOL urgent = YES;
+         [inv setSelector:sWant]; [inv setTarget:ctrl];
+         [inv setArgument:&k atIndex:2];
+         [inv setArgument:&urgent atIndex:3];
+         [inv invoke];
+      }
+      pump(data, 100);
+      CHECK(1, "prefetch and out-of-range rows leave the thumbnail marks alone (%ld entries)", (long)n);
+   }
+
    /* --- File Browser tab --- */
    [tabs selectTabViewItemAtIndex:1];
    pump(data, 800);

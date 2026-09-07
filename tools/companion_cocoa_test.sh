@@ -56,7 +56,13 @@ EOF
 LC=libretro-common
 INC="-I$SHIM -I. -I$LC/include -Ideps -Igfx/include"
 DEFS="-DRARCH_INTERNAL -DLIBRETRO_STRL_CHECK_OVERLAP -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COCOA -DTARGET_OS_OSX=1 -DHAVE_RPNG -DHAVE_RTGA -DHAVE_COMPANION_WIMP -DCOMPANION_TEST_NO_MAIN -DCOMPANION_CORE_TESTING"
-OBJCFLAGS="$(gnustep-config --objc-flags) -Wall -Wno-unused-parameter -Wno-multichar"
+SAN=""
+case "${1:-}" in
+   asan) SAN="-fsanitize=address -fno-omit-frame-pointer" ;;
+   "")   ;;
+   *)    echo "usage: $0 [asan]" >&2; exit 2 ;;
+esac
+OBJCFLAGS="$(gnustep-config --objc-flags) -Wall -Wno-unused-parameter -Wno-multichar $SAN"
 LDFLAGS="$(gnustep-config --gui-libs) -lpthread -lm -lz"
 
 # C sources shared with the core test (its stubs and fixtures included)
@@ -83,12 +89,12 @@ CSRCS="ui/companion/companion_core.c \
 OBJS=""
 for f in $CSRCS; do
    o="$OUT/$(echo "$f" | tr '/' '_').o"
-   $CC -std=gnu99 -O1 -g -w $INC $DEFS -c "$f" -o "$o"
+   $CC -std=gnu99 -O1 -g -w $SAN $INC $DEFS -c "$f" -o "$o"
    OBJS="$OBJS $o"
 done
 $CC -x objective-c -O1 -g $OBJCFLAGS $INC $DEFS -c ui/drivers/ui_cocoa_companion.m -o "$OUT/driver.o"
 $CC -x objective-c -O1 -g $OBJCFLAGS $INC $DEFS -c ui/companion/test/companion_cocoa_test.m -o "$OUT/test.o"
-$CC -o "$OUT/companion_cocoa_test" "$OUT/driver.o" "$OUT/test.o" $OBJS $LDFLAGS -lobjc -lgnustep-base -lgnustep-gui
+$CC $SAN -o "$OUT/companion_cocoa_test" "$OUT/driver.o" "$OUT/test.o" $OBJS $LDFLAGS -lobjc -lgnustep-base -lgnustep-gui
 
 # Headless: GNUstep needs a display for AppKit; Xvfb provides one.
 # GDB=1 runs under gdb and prints a backtrace on a fault.
@@ -97,7 +103,17 @@ if [ "${GDB:-0}" = 1 ]; then
    RUN="gdb -q -batch -ex run -ex bt -ex quit --args $OUT/companion_cocoa_test"
 fi
 if command -v xvfb-run >/dev/null 2>&1; then
-   xvfb-run -a -s "-screen 0 1280x800x24" $RUN 2>&1 | grep -av "autorelease called without pool"
+   # The status must survive the filter, or a sanitizer abort would
+   # look like a pass (it did: the run that first caught the macOS
+   # heap-buffer-overflow still exited 0 through the pipe).
+   set +e
+   ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+      xvfb-run -a -s "-screen 0 1280x800x24" $RUN > "$OUT/run.log" 2>&1
+   st=$?
+   set -e
+   grep -av "autorelease called without pool" "$OUT/run.log"
+   [ "$st" = 0 ] || echo "(harness exited $st)"
+   exit $st
 
 else
    $RUN
