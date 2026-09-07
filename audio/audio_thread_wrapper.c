@@ -59,6 +59,10 @@ typedef struct audio_thread
    /* Ask the OS for a higher scheduling class from inside the thread. */
    bool raise_priority;
    bool prefer_fast_cores;
+   /* Requested by the main thread; applied to the driver from the audio
+    * thread, the one that makes its other calls. */
+   bool nonblock;
+   bool nonblock_applied;
 } audio_thread_t;
 
 /**
@@ -130,8 +134,10 @@ static void audio_thread_loop(void *data)
 
    for (;;)
    {
+      bool nonblock;
       slock_lock(thr->lock);
 
+      nonblock = thr->nonblock;
       if (!thr->alive)
       {
          scond_signal(thr->cond);
@@ -157,6 +163,12 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
+      if (nonblock != thr->nonblock_applied)
+      {
+         if (thr->driver->set_nonblock_state)
+            thr->driver->set_nonblock_state(thr->driver_data, nonblock);
+         thr->nonblock_applied = nonblock;
+      }
       audio_driver_callback();
    }
 
@@ -325,10 +337,12 @@ static bool audio_thread_start(void *data, bool is_shutdown)
 
 static void audio_thread_set_nonblock_state(void *data, bool state)
 {
-   (void)data;
-   (void)state;
-   /* Ignored, because blocking state is irrelevant
-    * when audio is running on a separate thread. */
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr)
+      return;
+   slock_lock(thr->lock);
+   thr->nonblock = state;
+   slock_unlock(thr->lock);
 }
 
 static bool audio_thread_use_float(void *data)

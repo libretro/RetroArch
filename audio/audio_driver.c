@@ -5322,9 +5322,14 @@ void audio_driver_set_nonblock_state(bool nonblock)
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_NONBLOCK);
    else
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_NONBLOCK);
+   /* The wrapper serving a core's own audio callback keeps its writes
+    * blocking: they are what pace that thread. The pipeline's flush runs
+    * on the same wrapper and relies on the driver honouring the state. */
    if (     audio_st->current_audio
          && audio_st->current_audio->set_nonblock_state
-         && audio_st->context_audio_data)
+         && audio_st->context_audio_data
+         && (   !audio_st->callback.callback
+             || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_PIPELINE_THREADED)))
       audio_st->current_audio->set_nonblock_state(
             audio_st->context_audio_data, nonblock);
 }
@@ -5415,12 +5420,12 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
  * Producer-side entry for one block of int16 stereo core audio. With
  * the threaded pipeline it publishes the block into pipe_ring for the
  * audio thread; otherwise it runs the pipeline inline, exactly as
- * before. When the ring is full the producer waits unless the driver
- * is in its non-blocking state (fast-forward, audio_sync off), in
- * which case the remainder is dropped - the same choice a full device
- * buffer forces on a non-blocking write. This is the only place the
- * main thread ever waits on audio, and it waits on the device draining,
- * not on a lock.
+ * before. When the ring is full the producer waits for a consumer
+ * pass, at any speed: with the driver non-blocking the consumer never
+ * waits on the device, so what it cannot take is dropped, or stretched,
+ * at the write, as on the inline path. This is the only place the main
+ * thread ever waits on audio, and it waits on the device draining, not
+ * on a lock.
  **/
 static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       float slowmotion_ratio, const void *data, size_t samples, bool is_float,
@@ -5571,17 +5576,15 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          if (!len)
             break;
          /* Only wait on a consumer that can make progress: the driver
-          * is started and blocking. A driver reinit from inside
-          * retro_run() (SET_SYSTEM_AV_INFO) creates the wrapper thread
-          * parked until the runloop starts it, and the runloop is us;
+          * is started. A driver reinit from inside retro_run()
+          * (SET_SYSTEM_AV_INFO) creates the wrapper thread parked
+          * until the runloop starts it, and the runloop is us;
           * a wrapper whose device write failed exits its loop and will
           * never drain again, and says so through pipe_consumer_gone.
           * Not through the driver's alive(): the wrapper implements
           * that by parking and resuming its thread, which stops and
           * restarts the device every call. */
-         if (     is_fastforward
-               || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-               || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
+         if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
                || audio_st->pipe_consumer_gone)
             break;
          /* Sleep until the consumer has completed a pass. The
@@ -5718,12 +5721,11 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * arrive at a fifo without room for it - and a driver that frames
     * its output, as the AC-3 path does, then wrote part of a burst. */
    frame_bytes = audio_driver_dev_frame_bytes(audio_st);
-   /* The ratio the flush will use, needed here as well as at the wait
-    * below: the cap and the room asked for have to be the same
-    * arithmetic or the driver is asked to accept more than the cap was
-    * sized for. On this path the fast-forward multiplier is a value the
-    * producer published and does not depend on the frame count passed
-    * to it, so taking it before the cap is the same number as after. */
+   /* The ratio the flush will use, so the cap below is sized for what
+    * the write it turns into produces. On this path the fast-forward
+    * multiplier is a value the producer published and does not depend
+    * on the frame count passed to it, so taking it before the cap is
+    * the same number as after. */
    snap        = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
    out_ratio   = audio_driver_effective_ratio(audio_st,
          (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
@@ -5818,10 +5820,20 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * finding no room threw it away while telling the producer the ring
     * had drained, and paced the frontend at one frame per failed pass. */
    /* What this chunk will produce at the ratio the flush will use -
-    * slow motion and fast-forward's speedup in, the same composition -
-    * so the room waited for is the room the write needs. */
-   out_bytes   = audio_driver_output_bound(out_ratio, have) * frame_bytes;
-   if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
+    * slow motion in, the same composition - so the room waited for is
+    * the room the write needs. Fast-forward's speedup has no term here:
+    * the wait below is skipped at that speed. */
+   out_bytes   = audio_driver_output_bound(
+         audio_driver_effective_ratio(audio_st,
+            (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
+            config_get_ptr()->floats.slowmotion_ratio, 1.0),
+         have) * frame_bytes;
+   /* Not while fast-forwarding: the stretcher already bounds its output
+    * to the room there is, so waiting for a whole chunk would pace this
+    * thread at the emulation speed with no margin and overflow the ring
+    * behind it. At any other speed this wait is what paces the thread. */
+   if (     !(snap & AUDIO_SNAP_FASTMOTION)
+         && !audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
 
    if (audio_st->pipe_channels > 2)
