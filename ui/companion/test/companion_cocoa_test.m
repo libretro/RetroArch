@@ -195,6 +195,37 @@ extern void companion_test_teardown_fixtures(const char *root);
 #include <signal.h>
 static void on_alarm(int sig) { (void)sig; printf("FAIL: harness timed out (hang)\n"); fflush(stdout); _exit(3); }
 
+/* A fault (SIGTRAP is what a libdispatch or runtime assertion raises on
+ * macOS; SIGSEGV / SIGBUS / SIGABRT the rest): print a backtrace so the
+ * CI log says where, then fail. */
+#include <execinfo.h>
+static void on_fault(int sig)
+{
+   void *frames[40];
+   int n = backtrace(frames, 40);
+   printf("FAIL: fault (signal %d); backtrace:\n", sig);
+   fflush(stdout);
+   backtrace_symbols_fd(frames, n, 1);
+   _exit(5);
+}
+
+/* An uncaught Objective-C exception is a trap with no message on macOS
+ * ("Trace/BPT trap"): print what it was and where, then fail. */
+static void on_exception(NSException *e)
+{
+   printf("FAIL: uncaught exception %s: %s\n",
+         [[e name] UTF8String], [[e reason] UTF8String]);
+   if ([e respondsToSelector:@selector(callStackSymbols)])
+   {
+      NSArray *syms = [e performSelector:@selector(callStackSymbols)];
+      NSUInteger i;
+      for (i = 0; i < [syms count] && i < 25; i++)
+         printf("   %s\n", [[syms objectAtIndex:i] UTF8String]);
+   }
+   fflush(stdout);
+   _exit(4);
+}
+
 int main(int argc, char **argv)
 {
    char root[512];
@@ -212,7 +243,13 @@ int main(int argc, char **argv)
 
    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
    signal(SIGALRM, on_alarm);
-   alarm(60);
+   alarm(90);
+   NSSetUncaughtExceptionHandler(on_exception);
+   signal(SIGTRAP, on_fault);
+   signal(SIGSEGV, on_fault);
+   signal(SIGBUS,  on_fault);
+   signal(SIGABRT, on_fault);
+   signal(SIGILL,  on_fault);
    [NSApplication sharedApplication];
    /* A plain executable: become a regular, activatable app (Apple's
     * AppKit will not give a background process a key window). */
@@ -471,8 +508,15 @@ int main(int argc, char **argv)
       s = NSSelectorFromString(@"addPaths:");
       CHECK([ctrl respondsToSelector:s], "addPaths: implemented");
       {
-         size_t added = (size_t)[ctrl performSelector:s withObject:paths];
-         (void)added;
+         /* size_t return: NSInvocation, not performSelector (which is
+          * for id returns) */
+         NSInvocation *inv = [NSInvocation invocationWithMethodSignature:[ctrl methodSignatureForSelector:s]];
+         size_t added = 0;
+         [inv setSelector:s]; [inv setTarget:ctrl];
+         [inv setArgument:&paths atIndex:2];
+         [inv invoke];
+         [inv getReturnValue:&added];
+         printf("  addPaths: returned %u\n", (unsigned)added); fflush(stdout);
       }
       pump(data, 600);
       after = companion_core_entry_count(peek->core);
@@ -493,7 +537,13 @@ int main(int argc, char **argv)
       s = NSSelectorFromString(@"installThumbnailFromPath:");
       CHECK([ctrl respondsToSelector:s], "installThumbnailFromPath: implemented");
       {
-         BOOL ok = (BOOL)(intptr_t)[ctrl performSelector:s withObject:(id)img];
+         NSInvocation *inv = [NSInvocation invocationWithMethodSignature:[ctrl methodSignatureForSelector:s]];
+         const char *ip = img;
+         BOOL ok = NO;
+         [inv setSelector:s]; [inv setTarget:ctrl];
+         [inv setArgument:&ip atIndex:2];
+         [inv invoke];
+         [inv getReturnValue:&ok];
          CHECK(ok, "thumbnail installed from a dropped image");
       }
       {
