@@ -2451,8 +2451,20 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       double fps       = video_state_get_ptr()->av_info.timing.fps;
       size_t per_frame = (fps > 0.0)
             ? (size_t)(audio_driver_st.input / fps) : 1024;
-      size_t bytes     = per_frame * AUDIO_PIPE_RING_FRAMES
-            * 2 * sizeof(int16_t);
+      size_t frames    = per_frame * AUDIO_PIPE_RING_FRAMES;
+      size_t bytes;
+      /* With a non-blocking writer the ring holds a buffer's worth on
+       * purpose - see audio_driver_pipe_target_frames() - on top of
+       * the frames it holds for the pass; the setting says how much
+       * that is, before the driver has said what it made of it. */
+      if (!settings->bools.audio_sync)
+      {
+         size_t latency_frames = (size_t)(audio_driver_st.input * audio_latency / 1000.0);
+         if (latency_frames < per_frame)
+            latency_frames = per_frame;
+         frames       += latency_frames * 2;
+      }
+      bytes            = frames * 2 * sizeof(int16_t);
       if (bytes < 4096)
          bytes         = 4096;
       if (!retro_spsc_init(&audio_driver_st.pipe_ring, bytes))
@@ -2462,6 +2474,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       }
       audio_driver_st.pipe_pass_int16s    = per_frame * 2;
       retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
+      audio_driver_st.pipe_underruns_seen = 0;
+      audio_driver_st.pipe_priming        = true;
       if (audio_driver_st.pipe_pass_int16s > AUDIO_PIPE_SLICE_INT16S)
          audio_driver_st.pipe_pass_int16s = AUDIO_PIPE_SLICE_INT16S;
       if (audio_driver_st.pipe_pass_int16s < 128)
@@ -2906,6 +2920,37 @@ void audio_driver_set_nonblock_state(bool nonblock)
             audio_st->context_audio_data, nonblock);
 }
 
+/* What the pipe ring is to hold on purpose, in core frames. With a
+ * blocking writer nothing: the device's buffer is the margin and the
+ * writer waits on it. With a non-blocking writer a late frame is
+ * dropped, not waited for, so the pipe holds another buffer's worth
+ * ahead of the device - the setting's worth of margin against a core
+ * that delivers late, at the setting's worth of latency on top of the
+ * device's - within what the ring can hold with a publish in flight. */
+static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
+{
+   size_t frame_bytes, target, ring_max;
+   if (config_get_ptr()->bools.audio_sync || !audio_st->buffer_size)
+      return 0;
+   frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+         ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+   target      = (size_t)((double)audio_st->buffer_size / frame_bytes
+         / audio_st->src_ratio_orig);
+   /* Never under one publish: the core delivers a frame at a time, and
+    * a pipe holding less than that between publishes is a device that
+    * runs dry between them whatever its own buffer holds. */
+   if (target < audio_st->pipe_pass_int16s / 2)
+      target = audio_st->pipe_pass_int16s / 2;
+   /* Within the ring less two publishes: one arriving, one of swing
+    * in the fill between the core's publish and the consumer's pass. */
+   ring_max    = audio_st->pipe_ring.capacity / (2 * sizeof(int16_t));
+   if (ring_max > audio_st->pipe_pass_int16s)
+      ring_max -= audio_st->pipe_pass_int16s;
+   else
+      ring_max  = 0;
+   return target < ring_max ? target : ring_max;
+}
+
 /**
  * audio_driver_submit:
  *
@@ -2941,26 +2986,13 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          double pipe_frames = (double)retro_spsc_read_avail(&audio_st->pipe_ring)
                / (2 * sizeof(int16_t));
          double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
-         /* What the pipe is to hold on purpose, in device bytes. With
-          * a blocking writer nothing: the device's buffer is the
-          * margin and the writer waits on it. With a non-blocking
-          * writer a late frame is dropped, not waited for, so the pipe
-          * holds another buffer's worth ahead of the device - the
-          * setting's worth of margin against a core that delivers
-          * late, at the setting's worth of latency on top of the
-          * device's; within three quarters of the ring. */
-         double target      = config_get_ptr()->bools.audio_sync ? 0.0
-               : (double)audio_st->buffer_size;
-         double ring_max    = (double)audio_st->pipe_ring.capacity
-               / (2 * sizeof(int16_t)) * audio_st->src_ratio_orig * frame_bytes * 0.75;
+         double target      = (double)audio_driver_pipe_target_frames(audio_st)
+               * audio_st->src_ratio_orig * frame_bytes;
          /* Free space as the controller reads it: the device's, plus a
           * quarter of its buffer so its half-to-full band reads as no
           * error, plus the pipe target so the pipe holding that much
           * reads as none either, less what the pipe holds. */
-         double eff;
-         if (target > ring_max)
-            target = ring_max;
-         eff = (double)audio_st->current_audio->write_avail(
+         double eff = (double)audio_st->current_audio->write_avail(
                   audio_st->context_audio_data)
                + (double)audio_st->buffer_size / 4 + target - pipe_bytes;
          if (eff < 0.0)
@@ -2969,23 +3001,6 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
             eff = (double)audio_st->buffer_size;
          retro_atomic_store_release_int(&audio_st->pipe_ctrl_avail, (int)eff);
 
-         /* Late audio is not kept. With a non-blocking writer a core
-          * that stalls leaves the device playing silence for the
-          * stall, then delivers the frames it missed in a burst; kept,
-          * they would play late, the output behind by the stall for
-          * good and the pipe holding it, rate control pinned against
-          * it, the ring filling until it drops. A publish that finds
-          * the pipe already past its target by a frame is that burst,
-          * and is dropped at the door: the stall's silence was already
-          * heard, the audio that arrives after it is heard on time. The
-          * door is half a frame past the target: the pipe is read at
-          * its low point, before the publish, so a healthy one is at
-          * the target within the consumer's jitter, and what a burst
-          * leaves past the door rate control drains within a second. */
-         if (     !config_get_ptr()->bools.audio_sync && !is_fastforward
-               && pipe_bytes > target + (double)audio_st->pipe_pass_int16s
-                     / 4 * audio_st->src_ratio_orig * frame_bytes)
-            return;
       }
       /* The speedup multiplier is measured here, at the core's publish
        * cadence, and handed to the consumer; see
@@ -3095,8 +3110,31 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * missed. A timed wait is only a guard against a stopped producer:
     * the wrapper parks this thread when the driver is stopped, so in
     * normal operation nothing here ever times out. */
+   /* The first pass waits for the pipe's target and the device's
+    * buffer, not just a frame: with a non-blocking writer the pipe is
+    * to hold a buffer's worth ahead of a device that starts empty, and
+    * it is cheaper to start that far behind once than to have rate
+    * control build it at half a percent. */
+   {
+      size_t need = 2 * sizeof(int16_t);
+      if (audio_st->pipe_priming)
+      {
+         size_t target = audio_driver_pipe_target_frames(audio_st);
+         if (target)
+         {
+            size_t frame_bytes = 2 * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+                  ? sizeof(float) : sizeof(int16_t));
+            size_t device = (size_t)((double)audio_st->buffer_size / frame_bytes
+                  / audio_st->src_ratio_orig);
+            size_t room   = audio_st->pipe_ring.capacity / (2 * sizeof(int16_t));
+            target += device;
+            if (target > room - audio_st->pipe_pass_int16s / 2)
+               target = room - audio_st->pipe_pass_int16s / 2;
+            need = target * 2 * sizeof(int16_t);
+         }
+      }
    slock_lock(audio_st->pipe_lock);
-   while (retro_spsc_read_avail(&audio_st->pipe_ring) < 2 * sizeof(int16_t))
+   while (retro_spsc_read_avail(&audio_st->pipe_ring) < need)
    {
       unsigned gen;
       /* A wake means the wrapper wants this thread back at its loop -
@@ -3120,6 +3158,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       }
    }
    slock_unlock(audio_st->pipe_lock);
+   audio_st->pipe_priming = false;
+   }
 
    have  = retro_spsc_read_avail(&audio_st->pipe_ring) / sizeof(int16_t);
    have &= ~(size_t)1;
@@ -3139,6 +3179,38 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       cap &= ~(size_t)1;
       if (cap >= 64 && have > cap)
          have = cap;
+   }
+
+   /* Late audio is not kept. A core that stalls leaves the device
+    * playing silence for the stall, then delivers the frames it missed
+    * in a burst; kept, they would play late, the output behind by the
+    * stall for good, rate control pinned against the backlog, the ring
+    * filling until it dropped. When the driver says it has played
+    * silence since the last pass, what the pipe holds past its target
+    * arrived after that silence and is discarded here, on the thread
+    * that reads the ring. On no other occasion is anything dropped:
+    * the pipe's fill swings by a chunk with the phase between the
+    * core's publish and this pass, and a threshold on it alone dropped
+    * healthy audio at some phases and none at others. */
+   if (     audio->underruns && audio_st->context_audio_data
+         && !config_get_ptr()->bools.audio_sync)
+   {
+      size_t seen = audio->underruns(audio_st->context_audio_data);
+      if (seen != audio_st->pipe_underruns_seen)
+      {
+         size_t target = audio_driver_pipe_target_frames(audio_st) * 2 * sizeof(int16_t);
+         size_t held   = retro_spsc_read_avail(&audio_st->pipe_ring);
+         audio_st->pipe_underruns_seen = seen;
+         while (held > target)
+         {
+            size_t take = held - target;
+            if (take > audio_st->pipe_pass_int16s * sizeof(int16_t))
+               take = audio_st->pipe_pass_int16s * sizeof(int16_t);
+            if (!retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch, take))
+               break;
+            held -= take;
+         }
+      }
    }
 
    snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);

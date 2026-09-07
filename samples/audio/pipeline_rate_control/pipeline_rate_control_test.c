@@ -72,7 +72,7 @@ static void sleep_until(double t)
 /* --- the device ------------------------------------------------------ */
 
 #define DEV_RATE     48000.0
-#define DEV_CAPACITY 384          /* frames: 8 ms */
+static size_t DEV_CAPACITY = 384; /* frames: 8 ms; 3072 for a 64 ms default */
 
 static pthread_mutex_t dev_lock = PTHREAD_MUTEX_INITIALIZER;
 static double dev_fill;           /* frames, fractional */
@@ -83,17 +83,32 @@ static unsigned dev_adjust_n;
 
 /* Bring the fill up to now: the hardware drains at DEV_RATE. */
 static double dev_underrun;       /* frames of silence the hardware played */
+static size_t dev_underrun_events;/* times it ran dry, as a driver counts periods */
 
 static void dev_drain_locked(void)
 {
    double t = now_s();
+   double before = dev_fill;
    dev_fill -= (t - dev_last) * DEV_RATE;
    if (dev_fill < 0.0)
    {
       dev_underrun -= dev_fill;
+      if (before > 0.0)
+         dev_underrun_events++;
       dev_fill = 0.0;
    }
    dev_last  = t;
+}
+
+static size_t dev_underruns(void *d)
+{
+   size_t n;
+   (void)d;
+   pthread_mutex_lock(&dev_lock);
+   dev_drain_locked();
+   n = dev_underrun_events;
+   pthread_mutex_unlock(&dev_lock);
+   return n;
 }
 
 static void *dev_init(const char *device, unsigned rate, unsigned latency,
@@ -185,7 +200,8 @@ static bool   dev_use_float(void *d)          { (void)d; return false; }
 static audio_driver_t scripted_driver = {
    dev_init, dev_write, dev_stop, dev_start, dev_alive, dev_set_nonblock,
    dev_free, dev_use_float, "scripted", NULL, NULL, dev_write_avail,
-   dev_buffer_size, dev_write_raw, dev_wait_writable, dev_frames_consumed
+   dev_buffer_size, dev_write_raw, dev_wait_writable, dev_frames_consumed,
+   dev_underruns
 };
 
 /* --- the consumer thread ---------------------------------------------- */
@@ -202,6 +218,7 @@ static void *consumer(void *arg)
 
 /* --- fixture --------------------------------------------------------- */
 
+static double dbg_pipe, dbg_avail, dbg_eff; static unsigned dbg_n;
 static bool sync_on = false;   /* audio sync: the producer's flag and the setting */
 static bool jitter  = false;   /* a core that delivers late now and then */
 
@@ -235,6 +252,7 @@ static bool pipeline_up(size_t ring_bytes)
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
+   st->pipe_priming   = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
    if (!sync_on)
@@ -257,9 +275,18 @@ int main(int argc, char **argv)
       sync_on = true;
    if (argc > 3 && strstr(argv[3], "jitter"))
       jitter = true;
+   /* The 64 ms default buffer: the consumer's chunks are whole
+    * publishes, and the pipe's fill swings by one with the phase
+    * between the core and the consumer. A threshold on that fill
+    * dropped healthy audio at some phases; nothing may be dropped
+    * from a steady core at any phase. */
+   if (argc > 3 && strstr(argv[3], "big"))
+      DEV_CAPACITY = 3072;
    double    t0, produced, mean;
 
-   if (!pipeline_up(800 * 2 * sizeof(int16_t) * 5))
+   /* The ring as the frontend sizes it: three publishes, and with audio
+    * sync off a buffer's worth on top. */
+   if (!pipeline_up((800 * 3 + (sync_on ? 0 : (DEV_CAPACITY > 800 ? DEV_CAPACITY : 800) * 2)) * 2 * sizeof(int16_t)))
    {
       printf("FAIL: could not stand the pipeline up\n");
       return 1;
@@ -295,10 +322,21 @@ int main(int argc, char **argv)
          dev_underrun   = 0.0;
          pthread_mutex_unlock(&dev_lock);
       }
+      if (i >= warm)
+      {
+         dbg_pipe  += (double)retro_spsc_read_avail(&audio_driver_st.pipe_ring) / 4.0;
+         dbg_avail += (double)dev_write_avail(NULL) / 4.0;
+         dbg_eff   += (double)retro_atomic_load_acquire_int(&audio_driver_st.pipe_ctrl_avail) / 4.0;
+         dbg_n++;
+      }
       audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
             sizeof(frame_audio) / sizeof(int16_t), false, false);
       audio_driver_pipeline_signal(&audio_driver_st);
    }
+   if (dbg_n)
+      printf("   pre-publish: pipe %.0f frames, device free %.0f frames, controller free %.0f frames (setpoint %u, target %u)\n",
+            dbg_pipe / dbg_n, dbg_avail / dbg_n, dbg_eff / dbg_n, (unsigned)(DEV_CAPACITY / 2),
+            (unsigned)audio_driver_pipe_target_frames(&audio_driver_st));
    sleep_until(t0 + (double)frames / 60.0 + 0.05);
 
    retro_atomic_store_release_int(&consumer_run, 0);
@@ -307,9 +345,10 @@ int main(int argc, char **argv)
 
    produced = (double)(frames - warm) * 800.0;
    pthread_mutex_lock(&dev_lock);
-   printf("   audio sync %s, %s: the hardware played %.1f ms of silence over %.0f s\n",
+   printf("   %u ms device, audio sync %s, %s: the hardware played %.1f ms of silence over %.0f s, ran dry %u times\n",
+         (unsigned)(DEV_CAPACITY * 1000 / (size_t)DEV_RATE),
          sync_on ? "on " : "off", jitter ? "a core late by 60 ms every 2 s" : "a steady core",
-         dev_underrun * 1000.0 / DEV_RATE, (double)(frames - warm) / 60.0);
+         dev_underrun * 1000.0 / DEV_RATE, (double)(frames - warm) / 60.0, (unsigned)dev_underrun_events);
    mean = dev_adjust_n ? dev_adjust_sum / dev_adjust_n : 0.0;
    printf("   %u passes; mean rate adjustment %+.0f ppm; device took %.1f%% of %.0f frames\n",
          dev_adjust_n, (mean - 1.0) * 1e6, 100.0 * dev_took / produced, produced);
@@ -333,8 +372,11 @@ int main(int argc, char **argv)
       double stalls = (double)(frames - warm) / 120.0;
       CHECK(dev_underrun * 1000.0 / DEV_RATE < stalls * 60.0,
             "more silence than the stalls themselves: %.1f ms over %.0f stalls", dev_underrun * 1000.0 / DEV_RATE, stalls);
+      /* Pinned high is the pipe refilling to its target after the
+       * silence, at rate control's pace; pinned low is a backlog of
+       * late audio it can never drain, which the discard prevents. */
       if (!sync_on)
-         CHECK(fabs(mean - 1.0) < 4000e-6,
+         CHECK(mean - 1.0 > -4000e-6,
                "rate control pinned against a backlog of late audio: %+.0f ppm", (mean - 1.0) * 1e6);
       else
          CHECK(dev_took >= produced * 0.995,

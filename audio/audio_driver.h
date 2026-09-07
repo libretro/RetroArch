@@ -514,6 +514,14 @@ typedef struct
     * half, and the difference is added so a balanced pipe reads as no
     * error. */
    retro_atomic_int_t pipe_ctrl_avail;
+   /* The driver's underrun count as the consumer last saw it; a change
+    * means the device played silence since, and what the pipe holds
+    * past its target is late audio, discarded. Consumer thread only. */
+   size_t   pipe_underruns_seen;
+   /* Whether the consumer's next pass is its first: it waits for the
+    * pipe's target then, not just a frame. Consumer thread only after
+    * init. */
+   bool     pipe_priming;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
