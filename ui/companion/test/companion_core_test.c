@@ -187,6 +187,22 @@ static void setup(void)
    /* favorites / images / music / video left empty: skipped in the list */
 }
 
+/* Exported for other harnesses (companion_cocoa_test): the same
+ * fixtures and stub settings. */
+void companion_test_setup_fixtures(char *out_root, size_t len)
+{
+   setup();
+   if (out_root && len)
+      strlcpy(out_root, root, len);
+}
+
+static void teardown(void);
+void companion_test_teardown_fixtures(const char *r)
+{
+   (void)r;
+   teardown();
+}
+
 static void teardown(void)
 {
    char cmd[600];
@@ -667,6 +683,7 @@ static void test_launch_options(void)
    companion_core_free(c);
 }
 
+#ifndef COMPANION_TEST_NO_MAIN
 int main(void)
 {
    setup();
@@ -691,3 +708,4 @@ int main(void)
    printf("companion_core_test: OK\n");
    return 0;
 }
+#endif /* COMPANION_TEST_NO_MAIN */

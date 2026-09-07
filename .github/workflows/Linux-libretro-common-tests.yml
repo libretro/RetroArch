@@ -133,6 +133,19 @@ jobs:
           tools/companion_core_test.sh asan
           tools/companion_core_test.sh tsan
 
+      - name: Cocoa companion regression harness (GNUstep AppKit, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_cocoa_companion.m, compiled and linked
+          # against GNUstep's Foundation + AppKit with the real companion
+          # core and the core test's fixtures, driven under Xvfb the way a
+          # user drives it (view popup, File Browser tab, close) and
+          # checked on the AppKit objects themselves.
+          sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
+          tools/companion_cocoa_test.sh
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

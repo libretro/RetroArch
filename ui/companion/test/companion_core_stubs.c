@@ -99,7 +99,18 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_IMAGES_TAB:       return "Images";
       case MENU_ENUM_LABEL_VALUE_MUSIC_TAB:        return "Music";
       case MENU_ENUM_LABEL_VALUE_VIDEO_TAB:        return "Videos";
-      default: return "?";
+      case MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST:  return "List";
+      case MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS: return "Icons";
+      default:
+      {
+         /* Distinct per message: a popup drops a second item with the
+          * same title, so identical placeholders would collapse menus. */
+         static char buf[8][32];
+         static unsigned k;
+         char *b = buf[k++ & 7];
+         snprintf(b, 32, "msg#%u", (unsigned)msg);
+         return b;
+      }
    }
 }
 
