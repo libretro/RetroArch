@@ -491,6 +491,11 @@ typedef struct
     * half, and the difference is added so a balanced pipe reads as no
     * error. */
    retro_atomic_int_t pipe_ctrl_avail;
+   /* Frames the producer dropped for want of room in the pipe, with a
+    * non-blocking writer. Never offered to the device, so a window of
+    * the sink rate estimate that saw any is not a measurement of the
+    * clocks: the source would read slow by what was dropped. */
+   retro_atomic_int_t pipe_dropped;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
@@ -595,6 +600,7 @@ typedef struct
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
    double   sink_check_offered;        /* offered and consumed at the last check */
    uint64_t sink_check_consumed;
+   int      sink_check_dropped;        /* pipe_dropped at the last check */
    int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
    double   sink_sum_offered;
    double   sink_sum_consumed;

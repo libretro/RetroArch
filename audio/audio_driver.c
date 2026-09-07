@@ -844,6 +844,7 @@ static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
    audio_st->sink_consumed_at    = consumed;
    audio_st->sink_check_offered  = audio_st->sink_offered;
    audio_st->sink_check_consumed = consumed;
+   audio_st->sink_check_dropped  = retro_atomic_load_acquire_int(&audio_st->pipe_dropped);
    audio_st->sink_sum_usec       = 0;
    audio_st->sink_sum_offered    = 0.0;
    audio_st->sink_sum_consumed   = 0.0;
@@ -938,14 +939,18 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       double   dofr  = audio_st->sink_offered - audio_st->sink_check_offered;
       uint64_t dc    = consumed >= audio_st->sink_check_consumed
             ? consumed - audio_st->sink_check_consumed : 0;
+      int      dropped = retro_atomic_load_acquire_int(&audio_st->pipe_dropped);
+      bool     dropped_any = dropped != audio_st->sink_check_dropped;
       double   nominal = (double)rate * (double)wdt / 1e6;
       audio_st->sink_check_at       = now_usec + AUDIO_SINK_CHECK_USEC;
       audio_st->sink_check_offered  = audio_st->sink_offered;
       audio_st->sink_check_consumed = consumed;
+      audio_st->sink_check_dropped  = dropped;
 
-      /* Both sides at rate, within two percent, or the window is not a
-       * measurement of the clocks and is left out. */
-      if (     nominal <= 0.0
+      /* Both sides at rate, within two percent, and nothing dropped
+       * before it was offered, or the window is not a measurement of
+       * the clocks and is left out. */
+      if (     nominal <= 0.0 || dropped_any
             || dofr < nominal * 0.98 || dofr > nominal * 1.02
             || (double)dc < nominal * 0.98 || (double)dc > nominal * 1.02)
       {
@@ -2473,6 +2478,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       }
       audio_driver_st.pipe_pass_int16s    = per_frame * 2;
       retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
+      retro_atomic_store_release_int(&audio_driver_st.pipe_dropped, 0);
       if (audio_driver_st.pipe_pass_int16s > AUDIO_PIPE_SLICE_INT16S)
          audio_driver_st.pipe_pass_int16s = AUDIO_PIPE_SLICE_INT16S;
       if (audio_driver_st.pipe_pass_int16s < 128)
@@ -3041,6 +3047,9 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          }
          slock_unlock(audio_st->pipe_lock);
       }
+      if (len)
+         retro_atomic_fetch_add_int(&audio_st->pipe_dropped,
+               (int)(len / (2 * sizeof(int16_t))));
       /* No wake here: the consumer is woken once per frame by
        * audio_driver_pipeline_signal(), from the frame end and from the
        * other per-frame producers. Waking per publish would have a core
