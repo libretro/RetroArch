@@ -223,6 +223,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)browseDownloads:(id)sender;
 - (void)browseReload;
 - (void)browseLanded;
+- (void)hideAndFocusRetroArch;
 - (void)tableView:(NSTableView*)tv sortDescriptorsDidChange:(NSArray*)old;
 - (void)syncSortIndicator;
 - (void)playlistsDoubleClick:(id)sender;
@@ -387,9 +388,19 @@ static const companion_callbacks_t cc_callbacks = {
 
 - (NSInteger)columns
 {
-   NSInteger c = (NSInteger)([self bounds].size.width
-         / (thumb + CC_GRID_PAD));
+   /* From the clip view's width when we have one: our own bounds are
+    * zero until the first relayout inside a scroll view. */
+   CGFloat w = [self superview] ? [[self superview] bounds].size.width
+                                : [self bounds].size.width;
+   NSInteger c = (NSInteger)(w / (thumb + CC_GRID_PAD));
    return c < 1 ? 1 : c;
+}
+
+- (void)viewDidMoveToSuperview
+{
+   [super viewDidMoveToSuperview];
+   if ([self superview])
+      [self relayout];
 }
 
 - (CGFloat)cellHeight { return thumb + CC_GRID_PAD + CC_GRID_LABEL; }
@@ -750,7 +761,7 @@ static const companion_callbacks_t cc_callbacks = {
       return;
    }
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
-      [window orderOut:nil];
+      [self hideAndFocusRetroArch];
 }
 
 /* Called from the iterate hook: decode one pending grid thumbnail per
@@ -1095,8 +1106,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [browserTabs setDelegate:(id)self];
    tab = [[[NSTabViewItem alloc] initWithIdentifier:@"playlists"] autorelease_compat];
    [tab setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))];
-   [tab setView:sl];
    [browserTabs addTabViewItem:tab];
+   /* The table is not a tab item's view: it shows playlists under one
+    * tab and folders under the other, so it lives beside the strip and
+    * layoutViews places it. (Making it item 0's view hid it, and showed
+    * an empty pane, whenever the File Browser tab was selected.) */
+   [content addSubview:sl];
    tab = [[[NSTabViewItem alloc] initWithIdentifier:@"files"] autorelease_compat];
    [tab setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))];
    [browserTabs addTabViewItem:tab];
@@ -1365,7 +1380,13 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          y = by - CC_PAD;
       }
       [brUp setHidden:!browseMode]; [brStart setHidden:!browseMode]; [brDownloads setHidden:!browseMode];
-      [browserTabs setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, y - CC_PAD - coreY)];
+      {
+         /* the strip on top, the table filling down to the Core section */
+         CGFloat strip = 28.0;
+         [browserTabs setFrame:NSMakeRect(x, y - CC_PAD - strip, leftW - 2 * CC_PAD, strip)];
+         [playlistsScroll setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD,
+               y - CC_PAD - strip - CC_PAD - coreY)];
+      }
    }
 
    /* Centre. */
@@ -1712,9 +1733,18 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 
 /* NSWindow delegate: closing the companion never quits RetroArch. */
-- (BOOL)windowShouldClose:(id)sender
+/* Hide the companion and hand the keyboard back to RetroArch's own
+ * window (closing, or loading content), as the Qt companion does. */
+- (void)hideAndFocusRetroArch
 {
    [window orderOut:nil];
+   if ([CocoaView get] && [[CocoaView get] window])
+      [[[CocoaView get] window] makeKeyAndOrderFront:nil];
+}
+
+- (BOOL)windowShouldClose:(id)sender
+{
+   [self hideAndFocusRetroArch];
    return NO;
 }
 
@@ -1753,7 +1783,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (r == 0)
          [self setStatus:"Loading..."]; /* entered a directory: lands via callback */
       else if (r == 1)
-         [window orderOut:nil];        /* content loaded */
+         [self hideAndFocusRetroArch]; /* content loaded */
       else if (needs_core)
          [self showCoresForContent:content];
       return;
@@ -1767,7 +1797,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       return;
    }
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
-      [window orderOut:nil];
+      [self hideAndFocusRetroArch];
 }
 
 /* Left pane double-click under the browser: descend into the folder. */
@@ -2269,7 +2299,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          if (companion_core_request_load_content(wimp->core,
                   [[corePaths objectAtIndex:(NSUInteger)idx] UTF8String],
                   e->path, e->label, e->db_name, e->crc32))
-            [window orderOut:nil];
+            [self hideAndFocusRetroArch];
          else
             [self setStatus:"Failed to load the content."];
          return;
@@ -2509,7 +2539,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          companion_core_installed_core_path(wimp->core, (size_t)row);
       if (companion_core_request_load_content(wimp->core, core_path,
                coresContent, NULL, NULL, NULL))
-         [window orderOut:nil];
+         [self hideAndFocusRetroArch];
       else
          [self setStatus:"Failed to load the content."];
       coresContent[0] = '\0';
