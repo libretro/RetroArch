@@ -8442,42 +8442,52 @@ end:
       retro_time_t frame_limit_min = pace_limit_min;
       if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
-         const retro_time_t end_frame_time  = cpu_features_get_time_usec();
-         const retro_time_t to_sleep_us     = (
-               (  runloop_st->frame_limit_last_time
-                + frame_limit_min)
-               - end_frame_time);
-#if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-         /* Emscripten paces through a deferred main loop timeout that
-          * is expressed in whole milliseconds, so it cannot act on a
-          * sub-millisecond remainder. Keep the old truncation there. */
-         const retro_time_t to_sleep        = to_sleep_us / 1000;
-#else
-         const retro_time_t to_sleep        = to_sleep_us;
-#endif
+         const retro_time_t end_frame_time = cpu_features_get_time_usec();
 
          /* Under an external clock the sleep is the caller's; the
-          * schedule is re-anchored below so it does not carry a
-          * backlog into the first frame after the clock lets go. */
-         if (     to_sleep > 0
-               && !(runloop_st->pace & RUNLOOP_PACE_EXTERNAL))
+          * schedule is re-anchored so it does not carry a backlog into
+          * the first frame after the clock lets go. */
+         if (runloop_st->pace & RUNLOOP_PACE_EXTERNAL)
+            runloop_st->frame_limit_last_time = end_frame_time;
+         else
          {
-            /* Combat jitter a bit. */
-            runloop_st->frame_limit_last_time += frame_limit_min;
-
+            const retro_time_t to_sleep_us = runloop_pace_schedule(
+                  &runloop_st->frame_limit_last_time,
+                  frame_limit_min, end_frame_time);
+            if (to_sleep_us > 0)
+            {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-            platform_emscripten_deferred_sleep((int)to_sleep);
+               /* Emscripten paces through a deferred main loop timeout
+                * that is expressed in whole milliseconds, so it cannot
+                * act on a sub-millisecond remainder, nor spin. */
+               platform_emscripten_deferred_sleep((int)(to_sleep_us / 1000));
 #else
+               /* Sleep short by the margin the sleep has been seen to
+                * overshoot, then spin the remainder to the deadline:
+                * the sleep decides how much is spun, the clock decides
+                * where the frame lands. */
+               const retro_time_t deadline = end_frame_time + to_sleep_us;
+               retro_time_t now            = end_frame_time;
 #if defined(HAVE_COCOATOUCH)
-            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+               /* In the background the loop is not paced at all. */
+               if (uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
+                  return 1;
 #endif
-               retro_sleep_us((unsigned)to_sleep_us);
+               if (to_sleep_us > runloop_st->frame_limit_margin)
+               {
+                  const retro_time_t asked = to_sleep_us - runloop_st->frame_limit_margin;
+                  retro_sleep_us((unsigned)asked);
+                  now = cpu_features_get_time_usec();
+                  runloop_st->frame_limit_margin = runloop_pace_margin_update(
+                        runloop_st->frame_limit_margin,
+                        now - (end_frame_time + asked), frame_limit_min);
+               }
+               while (now < deadline)
+                  now = cpu_features_get_time_usec();
 #endif
-
-            return 1;
+               return 1;
+            }
          }
-
-         runloop_st->frame_limit_last_time = end_frame_time;
       }
    }
 

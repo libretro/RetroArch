@@ -185,6 +185,10 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   /* How early the gap limiter's sleep is asked to return, so the
+    * remainder can be spun to the deadline: the sleep's observed
+    * overshoot, tracked by runloop_pace_margin_update(). */
+   retro_time_t frame_limit_margin;
    /* When the previous iteration reached the pacing block, and the
     * smoothed interval between iterations. The pace bits say who
     * claims to be holding the loop; this says how fast it is actually
@@ -432,6 +436,51 @@ static INLINE bool runloop_pace_gap_engages(unsigned pace,
 {
    return (pace == RUNLOOP_PACE_NONE)
       && !nonblocking && !fastmotion && (scanline_sync || rate_control);
+}
+
+/* The gap limiter's schedule. @anchor is where the last frame was due;
+ * the next is due a period after it. Returns the microseconds until
+ * then, or 0 when it has passed, and moves @anchor to the slot the
+ * frame is taken as filling: the due time when on time or late by less
+ * than a period, so the lateness is caught up on the next frame rather
+ * than kept; now when late by a period or more, a stall, from which
+ * the schedule restarts rather than chases. */
+static INLINE retro_time_t runloop_pace_schedule(retro_time_t *anchor,
+      retro_time_t period, retro_time_t now)
+{
+   retro_time_t due = *anchor + period;
+   if (now < due)
+   {
+      *anchor = due;
+      return due - now;
+   }
+   if (now - due < period)
+   {
+      *anchor = due;
+      return 0;
+   }
+   *anchor = now;
+   return 0;
+}
+
+/* The gap limiter's sleep margin: how early the sleep is asked to
+ * return, so the remainder can be spun to the deadline. It tracks the
+ * sleep's observed overshoot - up at once, since one late sleep is a
+ * frame late; down by a sixteenth a frame, so a single quiet sleep does
+ * not unwind it - and never past a quarter of the period, so the spin
+ * stays a fraction of the frame. */
+static INLINE retro_time_t runloop_pace_margin_update(retro_time_t margin,
+      retro_time_t overshoot, retro_time_t period)
+{
+   if (overshoot < 0)
+      overshoot = 0;
+   if (overshoot > margin)
+      margin = overshoot;
+   else
+      margin -= (margin - overshoot) / 16;
+   if (margin > period / 4)
+      margin = period / 4;
+   return margin;
 }
 
 /* Whether an interval between iterations is worth averaging into the

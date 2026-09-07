@@ -236,6 +236,86 @@ static void test_sample_filter(void)
           "everything under\n");
 }
 
+/* --- the schedule --------------------------------------------------- */
+
+static void test_schedule(void)
+{
+   const retro_time_t period = 16683; /* 59.94 Hz */
+   retro_time_t anchor, sleep;
+   unsigned i;
+
+   /* On time: the sleep is what is left, and the anchor is the slot. */
+   anchor = 1000000;
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 12000);
+   check(sleep == period - 12000 && anchor == 1000000 + period,
+         "on time: sleep to the slot, anchor on it");
+
+   /* Late by less than a period: no sleep, and the anchor stays on the
+    * slot, so the next frame is due a period after it, not after now -
+    * the lateness is caught up, not kept. */
+   anchor = 1000000;
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + period + 400);
+   check(sleep == 0 && anchor == 1000000 + period,
+         "late by less than a period: anchor stays on the slot");
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + period + 400 + 15000);
+   check(sleep == period - 15000 - 400,
+         "the next frame gets a sleep shorter by the lateness");
+
+   /* Late by a period or more: a stall; the schedule restarts from now
+    * rather than trying to fit two frames into one. */
+   anchor = 1000000;
+   sleep  = runloop_pace_schedule(&anchor, period, 1000000 + 3 * period);
+   check(sleep == 0 && anchor == 1000000 + 3 * period,
+         "late by a period or more: restart from now");
+
+   /* A sleep that overshoots every frame does not slow the loop: over
+    * 6000 frames the slots are exactly 6000 periods apart. */
+   {
+      const retro_time_t overshoot = 900;   /* a coalesced nanosleep */
+      const retro_time_t work      = 15000; /* the frame's own time  */
+      retro_time_t now             = 0;
+      anchor                       = 0;
+      for (i = 0; i < 6000; i++)
+      {
+         now  += work;
+         sleep = runloop_pace_schedule(&anchor, period, now);
+         if (sleep > 0)
+            now += sleep + overshoot;
+      }
+      check(anchor == 6000 * (retro_time_t)period,
+            "6000 overshooting frames land on the 6000th slot");
+   }
+}
+
+/* --- the sleep margin ------------------------------------------------ */
+
+static void test_margin(void)
+{
+   const retro_time_t period = 16683;
+   retro_time_t margin = 0;
+   unsigned i;
+
+   /* Up at once. */
+   margin = runloop_pace_margin_update(margin, 700, period);
+   check(margin == 700, "one overshoot of 700 us sets the margin to 700");
+   /* Down slowly: sixteen quiet sleeps take off well under all of it. */
+   for (i = 0; i < 16; i++)
+      margin = runloop_pace_margin_update(margin, 0, period);
+   check(margin > 200 && margin < 400,
+         "sixteen quiet sleeps leave the margin at about a third");
+   /* Never negative, never past a quarter period. */
+   check(runloop_pace_margin_update(100, -5000, period) < 100,
+         "a negative overshoot counts as none");
+   check(runloop_pace_margin_update(0, 100000, period) == period / 4,
+         "a huge overshoot is capped at a quarter period");
+   /* Settles on a steady overshoot. */
+   margin = 0;
+   for (i = 0; i < 200; i++)
+      margin = runloop_pace_margin_update(margin, 250 + (i & 1) * 50, period);
+   check(margin >= 250 && margin <= 300,
+         "a 250-300 us overshoot settles the margin between them");
+}
+
 int main(void)
 {
    printf("runloop pacing decisions:\n");
@@ -243,6 +323,8 @@ int main(void)
    test_gap_predicate();
    test_frame_period();
    test_sample_filter();
+   test_schedule();
+   test_margin();
 
    if (failures)
    {
@@ -251,7 +333,8 @@ int main(void)
    }
 
    printf("ok: the gap limiter engages only when nothing else paces and "
-          "fast-forward is off, the period is always a sane frame, and "
-          "a stall never moves the measured rate\n");
+          "fast-forward is off, the period is always a sane frame, a "
+          "stall never moves the measured rate, an overshooting sleep "
+          "never slows the loop, and the margin follows the overshoot\n");
    return 0;
 }
