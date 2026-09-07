@@ -88,6 +88,9 @@
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../defaults.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #include "../driver.h"
 #include "../paths.h"
 #include "../dynamic.h"
@@ -123,6 +126,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/video_crt_switch.h"
+#endif
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.h"
 #endif
@@ -548,9 +554,9 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (memcmp(value, "true", 5) == 0)
+         if (string_is_equal(value, "true"))
             *setting->value.target.boolean = true;
-         else if (memcmp(value, "false", 6) == 0)
+         else if (string_is_equal(value, "false"))
             *setting->value.target.boolean = false;
          break;
       default:
@@ -1136,7 +1142,7 @@ static size_t setting_get_string_representation_int_gpu_index(
             && list->elems[*setting->value.target.integer].data
             && *list->elems[*setting->value.target.integer].data)
       {
-         _len += strlcpy(s + _len, " - ", len - _len);
+         _len += strlcpy_lit(s + _len, " - ", len - _len);
          _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
@@ -1174,6 +1180,11 @@ static int setting_fraction_action_left_default(
          else
             *setting->value.target.fraction = min;
       }
+      /* Within half a step of the minimum is the minimum: the steps
+       * that led here were each a float subtraction, and what lands
+       * a few ulps under 0 prints as -0.000 and is stored as such. */
+      else if (*setting->value.target.fraction < min + half_step)
+         *setting->value.target.fraction = min;
    }
 
    return 0;
@@ -1190,8 +1201,9 @@ static int setting_fraction_action_right_default(
 
    if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
-      float max = setting->max;
-      if (*setting->value.target.fraction > max)
+      float max       = setting->max;
+      float half_step = setting->step * 0.5f;
+      if (*setting->value.target.fraction > max + half_step)
       {
          settings_t *settings = config_get_ptr();
          float          min   = setting->min;
@@ -1201,6 +1213,10 @@ static int setting_fraction_action_right_default(
          else
             *setting->value.target.fraction = max;
       }
+      /* The mirror of the left action: within half a step of the
+       * maximum is the maximum. */
+      else if (*setting->value.target.fraction > max - half_step)
+         *setting->value.target.fraction = max;
    }
 
    return 0;
@@ -1329,7 +1345,7 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
       const char *path = setting->value.target.string;
       if ((setting->type == ST_DIR) && (config_get_ptr()->bools.menu_show_full_paths))
          return strlcpy(s, path, len);
-#if IOS
+#if TARGET_OS_IPHONE
       return fill_pathname_abbreviate_special(s,
             path_basename(path), len);
 #else
@@ -1611,8 +1627,11 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.size                      = sizeof(unsigned int);
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1880,8 +1899,11 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.size                      = size;
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -3097,7 +3119,7 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
@@ -3136,7 +3158,7 @@ static int setting_string_action_start_microphone_device(rarch_setting_t *settin
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
@@ -3366,7 +3388,7 @@ static size_t setting_get_string_representation_state_slot(
    if (!setting)
       return 0;
    if (*setting->value.target.integer == -1)
-      return strlcpy(s, "Auto", len);
+      return strlcpy_lit(s, "Auto", len);
    return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
@@ -3402,9 +3424,9 @@ static size_t setting_get_string_representation_password(
    {
       if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       *setting->value.target.string = '\0';
    }
    return 0;
@@ -3422,11 +3444,11 @@ static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_ty
          case 0:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          case 1:
-            return strlcpy(s, "iPega PG-9017", len);
+            return strlcpy_lit(s, "iPega PG-9017", len);
          case 2:
-            return strlcpy(s, "8-bitty", len);
+            return strlcpy_lit(s, "8-bitty", len);
          case 3:
-            return strlcpy(s, "SNES30 8bitdo", len);
+            return strlcpy_lit(s, "SNES30 8bitdo", len);
       }
    }
    return 0;
@@ -3897,11 +3919,11 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
       switch (*setting->value.target.unsigned_integer)
       {
          case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-            return strlcpy(s, "'-'", len);
+            return strlcpy_lit(s, "'-'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-            return strlcpy(s, "'/'", len);
+            return strlcpy_lit(s, "'/'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-            return strlcpy(s, "'.'", len);
+            return strlcpy_lit(s, "'.'", len);
       }
    }
    return 0;
@@ -4467,9 +4489,9 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 2:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
       }
@@ -4485,13 +4507,13 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_opening_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Circ", len);
+            return strlcpy_lit(s, "Easing Out Circ", len);
          case 2:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 3:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4505,11 +4527,11 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing In Sine", len);
+            return strlcpy_lit(s, "Easing In Sine", len);
          case 2:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4573,11 +4595,11 @@ static size_t setting_get_string_representation_uint_xmb_layout(
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Auto", len);
+            return strlcpy_lit(s, "Auto", len);
          case 1:
-            return strlcpy(s, "Console", len);
+            return strlcpy_lit(s, "Console", len);
          case 2:
-            return strlcpy(s, "Handheld", len);
+            return strlcpy_lit(s, "Handheld", len);
       }
    }
    return 0;
@@ -5229,10 +5251,19 @@ static size_t setting_get_string_representation_uint_video_autoswitch_refresh_ra
 static size_t setting_get_string_representation_uint_video_monitor_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   video_output_info_t outputs[8];
+   int n;
    if (setting && *setting->value.target.unsigned_integer)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
-   return strlcpy(s, "0 (Auto)", len);
+   {
+      unsigned idx = *setting->value.target.unsigned_integer;
+      /* The display server names the head this index lands on */
+      n = video_display_server_list_outputs(outputs, 8);
+      if (n > 0 && idx >= 1 && (int)idx <= n && outputs[idx - 1].name[0])
+         return snprintf(s, len, "%u (%s %ux%u)", idx, outputs[idx - 1].name,
+               outputs[idx - 1].width, outputs[idx - 1].height);
+      return snprintf(s, len, "%u", idx);
+   }
+   return strlcpy_lit(s, "0 (Auto)", len);
 }
 
 static size_t setting_get_string_representation_uint_custom_vp_width(
@@ -5285,12 +5316,36 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
 static int setting_action_asio_control_panel(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   audio_asio_open_control_panel();
+   if (!audio_asio_open_control_panel())
+   {
+      const char *_msg = msg_hash_to_str(MSG_AUDIO_ASIO_NOT_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
    return 0;
 }
 #endif
 
+#ifdef HAVE_ASIO
+/* The pair as the device numbers it for people - 1-2, 3-4 - with the
+ * device's own names for the two when the driver is up to be asked. */
+static size_t setting_get_string_representation_uint_audio_asio_output_channel(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned left;
+   char lname[32], rname[32];
+   if (!setting)
+      return 0;
+   left = *setting->value.target.unsigned_integer;
+   if (     audio_asio_output_channel_name(left, lname, sizeof(lname))
+         && audio_asio_output_channel_name(left + 1, rname, sizeof(rname)))
+      return snprintf(s, len, "%u-%u (%s / %s)", left + 1, left + 2, lname, rname);
+   return snprintf(s, len, "%u-%u", left + 1, left + 2);
+}
+#endif
+
 #ifdef HAVE_WASAPI
+
 static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -5303,22 +5358,22 @@ static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_leng
    {
       case WASAPI_SH_BUFFER_AUDIO_LATENCY:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Audio Latency", len - _len);
+         _len += strlcpy_lit(s + _len, "Audio Latency", len - _len);
          break;
       case WASAPI_SH_BUFFER_DEVICE_PERIOD:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Device Period", len - _len);
+         _len += strlcpy_lit(s + _len, "Device Period", len - _len);
          break;
       case WASAPI_SH_BUFFER_CLIENT_BUFFER:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Client Buffer", len - _len);
+         _len += strlcpy_lit(s + _len, "Client Buffer", len - _len);
          break;
       default:
          _len += snprintf(s + _len, len - _len, "%.1f ms",
                (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
          break;
    }
-   _len += strlcpy(s + _len, ")", len - _len);
+   _len += strlcpy_lit(s + _len, ")", len - _len);
    return _len;
 }
 
@@ -5333,7 +5388,7 @@ static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer
       return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   return strlcpy(s, "Auto", len);
+   return strlcpy_lit(s, "Auto", len);
 }
 #endif
 #endif
@@ -5356,9 +5411,9 @@ static size_t setting_get_string_representation_crt_switch_resolution_super(
    if (!setting)
       return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      return strlcpy(s, "NATIVE", len);
+      return strlcpy_lit(s, "NATIVE", len);
    else if (*setting->value.target.unsigned_integer == 1)
-      return strlcpy(s, "DYNAMIC", len);
+      return strlcpy_lit(s, "DYNAMIC", len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
@@ -6264,7 +6319,7 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6297,7 +6352,7 @@ static int setting_string_action_left_microphone_device(
       mic_device_index = (int)(ptr->size - 1);
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6582,7 +6637,7 @@ static int setting_string_action_right_audio_device(
       audio_device_index = -1;
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6614,7 +6669,7 @@ static int setting_string_action_right_microphone_device(
       mic_device_index = -1;
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6982,6 +7037,26 @@ static size_t setting_get_string_representation_video_frame_delay(
    return _len;
 }
 
+static size_t setting_get_string_representation_uint_video_fse_negotiation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_FSE_RELAXED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED),
+                  len);
+         case VIDEO_FSE_FORCED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_rotation(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -7054,13 +7129,49 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_NONE:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          case CRT_SWITCH_15KHZ:
-            return strlcpy(s, "15 KHz", len);
+            return strlcpy_lit(s, "15 KHz", len);
          case CRT_SWITCH_31KHZ:
-            return strlcpy(s, "31 KHz, Standard", len);
+            return strlcpy_lit(s, "31 KHz, Standard", len);
          case CRT_SWITCH_32_120:
-            return strlcpy(s, "31 KHz, 120Hz", len);
+            return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
-            return strlcpy(s, "INI", len);
+            return strlcpy_lit(s, "INI", len);
+      }
+   }
+   return 0;
+}
+
+#ifdef HAVE_MODELINE
+static int setting_action_crt_switch_write_edid(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH + 64];
+   size_t _len;
+   if (crt_switch_write_edid(path, sizeof(path)))
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_CRT_SWITCH_EDID_WRITTEN), path);
+   else
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CRT_SWITCH_EDID_FAILED), sizeof(msg));
+   runloop_msg_queue_push(msg, _len, 1, 240, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return 0;
+}
+#endif
+
+static size_t setting_get_string_representation_uint_video_sdl_display_server(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SDL_DISPLAY_SERVER_OFF:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case VIDEO_SDL_DISPLAY_SERVER_AUTO:
+            return strlcpy_lit(s, "Auto", len);
+         case VIDEO_SDL_DISPLAY_SERVER_ALWAYS:
+            return strlcpy_lit(s, "Always", len);
       }
    }
    return 0;
@@ -7600,7 +7711,7 @@ static size_t setting_get_string_representation_uint_quit_on_close_content(
          case QUIT_ON_CLOSE_CONTENT_ENABLED:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
          case QUIT_ON_CLOSE_CONTENT_CLI:
-            return strlcpy(s, "CLI", len);
+            return strlcpy_lit(s, "CLI", len);
       }
    }
    return 0;
@@ -7614,18 +7725,18 @@ static size_t setting_get_string_representation_uint_video_scale_integer_axis(
       switch (*setting->value.target.unsigned_integer)
       {
          case VIDEO_SCALE_INTEGER_AXIS_Y_X:
-            return strlcpy(s, "Y + X", len);
+            return strlcpy_lit(s, "Y + X", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
-            return strlcpy(s, "Y + X.5", len);
+            return strlcpy_lit(s, "Y + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
-            return strlcpy(s, "Y.5 + X.5", len);
+            return strlcpy_lit(s, "Y.5 + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_X:
-            return strlcpy(s, "X", len);
+            return strlcpy_lit(s, "X", len);
          case VIDEO_SCALE_INTEGER_AXIS_XHALF:
-            return strlcpy(s, "X.5", len);
+            return strlcpy_lit(s, "X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y:
          default:
-            return strlcpy(s, "Y", len);
+            return strlcpy_lit(s, "Y", len);
       }
    }
    return 0;
@@ -8631,11 +8742,11 @@ static size_t setting_get_string_representation_smb_auth(
    switch (val)
    {
       case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
-         return strlcpy(s, "NTLMSSP", len);
+         return strlcpy_lit(s, "NTLMSSP", len);
       case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
-         return strlcpy(s, "Kerberos", len);
+         return strlcpy_lit(s, "Kerberos", len);
       default:
-         return strlcpy(s, "KRB if available, NTLM if not", len);
+         return strlcpy_lit(s, "KRB if available, NTLM if not", len);
    }
 }
 
@@ -9459,6 +9570,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
+#endif
+#ifdef HAVE_ASIO
+      case MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL:
 #endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
@@ -11358,7 +11472,7 @@ static const setting_desc_t mm_desc_6[] = {
 #include "../settings/settings_def_menu_main_actions_6.h"
 };
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_7[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_10.h in order. */
 #include "../settings/settings_def_menu_main_actions_10.h"
@@ -11370,7 +11484,7 @@ static const setting_desc_t mm_desc_8[] = {
 #include "../settings/settings_def_menu_main_lists_2.h"
 };
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
 static const setting_desc_t quit_lakka_desc[] = {
 /* GENERATED: rows come from settings_def_quit_restart.h in order. */
@@ -11379,7 +11493,7 @@ static const setting_desc_t quit_lakka_desc[] = {
 #endif
 #endif
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #if !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_9[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_7.h in order. */
@@ -11504,7 +11618,7 @@ static const setting_desc_t metal_argbuf_desc[] = {
 };
 #endif
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
 static const setting_desc_t vid_desc_0[] = {
 /* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
 #include "../settings/settings_def_video_suspend_screensaver.h"
@@ -11653,14 +11767,14 @@ static const setting_desc_t vid_desc_15[] = {
 };
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
 static const setting_desc_t vid_desc_16[] = {
 /* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
 #include "../settings/settings_def_video_window_save_position.h"
 };
 #endif
 
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
 static const setting_desc_t vid_desc_17[] = {
 /* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
 #include "../settings/settings_def_video_window_custom_size.h"
@@ -11794,6 +11908,11 @@ static const setting_desc_t video_filter_desc[] = {
 static const setting_desc_t crt_switchres_desc_0[] = {
 /* GENERATED: rows come from settings_def_crt_switchres.h in order. */
 #include "../settings/settings_def_crt_switchres.h"
+};
+
+static const setting_desc_t video_sdl_display_server_desc[] = {
+/* GENERATED: rows come from settings_def_video_sdl_display_server.h in order. */
+#include "../settings/settings_def_video_sdl_display_server.h"
 };
 
 static const setting_desc_t menu_sounds_desc_0[] = {
@@ -12364,7 +12483,7 @@ static const setting_desc_t menu_quit_lakka_desc[] = {
 };
 #endif
 
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_25[] = {
 /* GENERATED: rows come from settings_def_quit_visibility.h in order. */
 #include "../settings/settings_def_quit_visibility.h"
@@ -12379,7 +12498,7 @@ static const setting_desc_t menu_desc_26[] = {
 #endif
 
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_27[] = {
 /* GENERATED: rows come from settings_def_menu_restart_view.h in order. */
 #include "../settings/settings_def_menu_restart_view.h"
@@ -12794,7 +12913,7 @@ static const setting_desc_t user_accounts_desc_0_s0[] = {
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
 static const setting_desc_t user_accounts_desc_0_s1[] = {
 /* GENERATED: rows come from settings_def_accounts_streaming.h in order. */
 #include "../settings/settings_def_accounts_streaming.h"
@@ -12967,7 +13086,7 @@ static void settings_build_main_menu(
 
             ADD_DESC(mm_desc_6);
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
       if (frontend_driver_has_fork())
       {
             ADD_DESC(mm_desc_7);
@@ -12975,7 +13094,7 @@ static void settings_build_main_menu(
 #endif
 
             ADD_DESC(mm_desc_8);
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
       /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
             ADD_DESC(quit_lakka_desc);
@@ -13040,7 +13159,7 @@ static void settings_build_drivers(
    {
 
          unsigned i, j = 0;
-         struct string_options_entry string_options_entries[14] = {{0}};
+         struct string_options_entry string_options_entries[15] = {{0}};
 
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -13183,6 +13302,17 @@ static void settings_build_drivers(
          string_options_entries[j].values          = config_get_midi_driver_options();
 
          j++;
+
+#ifdef HAVE_COMPANION_WIMP
+         string_options_entries[j].target          = settings->arrays.ui_companion_driver;
+         string_options_entries[j].len             = sizeof(settings->arrays.ui_companion_driver);
+         string_options_entries[j].name_enum_idx   = MENU_ENUM_LABEL_UI_COMPANION_DRIVER;
+         string_options_entries[j].SHORT_enum_idx  = MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER;
+         string_options_entries[j].default_value   = config_get_default_ui_companion();
+         string_options_entries[j].values          = config_get_ui_companion_driver_options();
+
+         j++;
+#endif
 
          for (i = 0; i < j; i++)
          {
@@ -14325,7 +14455,7 @@ static void settings_build_video(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
             ADD_DESC(vid_desc_0);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
@@ -14508,7 +14638,7 @@ static void settings_build_video(
             ADD_DESC(vid_desc_15);
 #endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
     defined(HAVE_SDL3)
             ADD_DESC(vid_desc_16);
 #else
@@ -14536,6 +14666,8 @@ static void settings_build_video(
 #endif
 
                   ADD_DESC(rot_desc);
+
+                  ADD_DESC(video_sdl_display_server_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14801,13 +14933,18 @@ ADD_DESC(audio_skew_desc);
 
             ADD_DESC(audio_dsp_desc);
 
+            /* Built whatever driver is running or configured. The
+             * settings list is built once per session, and the audio
+             * output page gates each driver's items on the configured
+             * driver when it lists them; building only the running
+             * driver's rows here left the other driver's items out of
+             * the table for the whole session, so switching driver in
+             * the menu could never show them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(audio_driver_get_ident(), "wasapi"))
             ADD_DESC(audio_wasapi_desc);
 #endif
 
 #ifdef HAVE_ASIO
-      if (string_is_equal(audio_driver_get_ident(), "asio"))
             ADD_DESC(audio_asio_desc);
 #endif
 
@@ -14862,8 +14999,9 @@ static void settings_build_microphone(
 
             ADD_DESC(mic_misc_desc);
 
+            /* As above: built whatever driver is configured, and gated
+             * by the microphone page when it lists them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
             ADD_DESC(mic_wasapi_desc);
 #endif
 
@@ -15149,7 +15287,7 @@ static void settings_build_input_hotkey(
          {
             if (!input_config_bind_map_get_meta(i))
                continue;
-#ifndef HAVE_QT
+#ifndef HAVE_COMPANION_WIMP
             if (i == RARCH_UI_COMPANION_TOGGLE)
                continue;
 #endif
@@ -15567,14 +15705,14 @@ static void settings_build_menu(
 
 #ifdef HAVE_LAKKA
             ADD_DESC(menu_quit_lakka_desc);
-#elif !defined(IOS)
+#elif !TARGET_OS_IPHONE
             ADD_DESC(menu_desc_25);
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
             ADD_DESC(menu_desc_26);
 #else
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
          if (frontend_driver_has_fork())
             ADD_DESC(menu_desc_27);
 #endif
@@ -15995,14 +16133,13 @@ static void settings_build_playlist(
        * sub group. */
                      ADD_DESC(pl_desc_1);
 
-      /* Playlist entry index display and content specific history icon
-       * are currently supported only by Ozone & XMB */
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
       if (   string_is_equal(settings->arrays.menu_driver, "xmb")
           || string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
                         ADD_DESC(pl_desc_2);
       }
-
+#endif
                      ADD_DESC(pl_desc_3);
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -16784,7 +16921,7 @@ static void settings_build_user_accounts(
             ADD_DESC(user_accounts_desc_0_s0);
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
             ADD_DESC(user_accounts_desc_0_s1);
 #endif
 #endif
@@ -17709,16 +17846,16 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
    { mm_desc_5, (uint16_t)ARRAY_SIZE(mm_desc_5) },
    { mm_desc_6, (uint16_t)ARRAY_SIZE(mm_desc_6) },
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
    { mm_desc_7, (uint16_t)ARRAY_SIZE(mm_desc_7) },
 #endif
    { mm_desc_8, (uint16_t)ARRAY_SIZE(mm_desc_8) },
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
    { quit_lakka_desc, (uint16_t)ARRAY_SIZE(quit_lakka_desc) },
 #endif
 #endif
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifndef HAVE_LAKKA
    { mm_desc_9, (uint16_t)ARRAY_SIZE(mm_desc_9) },
 #endif
@@ -17756,7 +17893,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
 #endif
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
@@ -17805,10 +17942,10 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    { vid_desc_15, (uint16_t)ARRAY_SIZE(vid_desc_15) },
 #endif
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
    { vid_desc_16, (uint16_t)ARRAY_SIZE(vid_desc_16) },
 #endif
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
    { vid_desc_17, (uint16_t)ARRAY_SIZE(vid_desc_17) },
 #endif
    { video2_desc_0, (uint16_t)ARRAY_SIZE(video2_desc_0) },
@@ -17828,6 +17965,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_ctx_desc, (uint16_t)ARRAY_SIZE(vid_ctx_desc) },
 #endif
    { rot_desc, (uint16_t)ARRAY_SIZE(rot_desc) },
+   { video_sdl_display_server_desc, (uint16_t)ARRAY_SIZE(video_sdl_display_server_desc) },
    { vid_desc_18, (uint16_t)ARRAY_SIZE(vid_desc_18) },
    { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
    { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },
@@ -18030,14 +18168,14 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef HAVE_LAKKA
    { menu_quit_lakka_desc, (uint16_t)ARRAY_SIZE(menu_quit_lakka_desc) },
 #endif
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
    { menu_desc_25, (uint16_t)ARRAY_SIZE(menu_desc_25) },
 #endif
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
    { menu_desc_26, (uint16_t)ARRAY_SIZE(menu_desc_26) },
 #endif
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
    { menu_desc_27, (uint16_t)ARRAY_SIZE(menu_desc_27) },
 #endif
 #endif
@@ -18193,7 +18331,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { user_accounts_desc_0_s0, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s0) },
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
    { user_accounts_desc_0_s1, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s1) },
 #endif
 #endif

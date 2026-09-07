@@ -574,7 +574,7 @@ static bool screenshot_dump(
       {
          size_t _len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         strlcpy(state->filename       + _len,
+         strlcpy_lit(state->filename       + _len,
                ".png",
                sizeof(state->filename) - _len);
       }
@@ -634,7 +634,7 @@ static bool screenshot_dump(
             size_t _len = strlcpy(state->shotname,
                 path_basename_nocompression(name_base),
                  sizeof(state->shotname));
-            strlcpy(state->shotname       + _len,
+            strlcpy_lit(state->shotname       + _len,
                   ".png",
                   sizeof(state->shotname) - _len);
          }

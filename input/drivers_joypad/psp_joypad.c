@@ -277,6 +277,7 @@ static void psp_joypad_poll(void)
    for (player = 0; player < players_count; player++)
    {
       unsigned j, k;
+      int32_t ret;
       SceCtrlData state_tmp;
       unsigned i  = player;
 #if defined(VITA)
@@ -294,7 +295,7 @@ static void psp_joypad_poll(void)
 #else
       unsigned p  = player;
 #endif
-      int32_t ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
+      ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
       pad_state[i] = 0;
       analog_state[i][0][0] = analog_state[i][0][1] =
@@ -306,8 +307,16 @@ static void psp_joypad_poll(void)
          continue;
 #endif
 #if defined(VITA)
+      /* The touch panels stand in for L2/R2/L3/R3 in-game only.  In
+       * the menu the front panel is the pointer and the rear one is
+       * where the hands rest, and a trigger pressed from either is a
+       * scroll action nobody asked for. */
       if (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITA
-         && input_backtouch_enable)
+         && input_backtouch_enable
+#ifdef HAVE_MENU
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+#endif
+         )
       {
          unsigned i;
          SceTouchData touch_surface = {0};
@@ -368,9 +377,20 @@ static void psp_joypad_poll(void)
    }
 }
 
+/* Whether a pad is connected, as the other joypad drivers report it:
+ * the built-in controls are always there, and on the TV model a port
+ * is connected when a controller is paired to it. */
 static bool psp_joypad_query_pad(unsigned pad)
 {
-   return pad < DEFAULT_MAX_PADS && pad_state[pad];
+   if (pad >= DEFAULT_MAX_PADS)
+      return false;
+#if defined(VITA)
+   if (psp2_model != SCE_KERNEL_MODEL_VITATV)
+      return pad == 0;
+   return curr_ctrl_info.port[pad + 1] != SCE_CTRL_TYPE_UNPAIRED;
+#else
+   return pad == 0;
+#endif
 }
 
 static bool psp_joypad_rumble(unsigned pad,

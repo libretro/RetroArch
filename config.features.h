@@ -200,12 +200,6 @@
 #define SUPPORTS_COREAUDIO false
 #endif
 
-#ifdef HAVE_COREAUDIO3
-#define SUPPORTS_COREAUDIO3 true
-#else
-#define SUPPORTS_COREAUDIO3 false
-#endif
-
 #if defined(HAVE_OSS) || defined(HAVE_OSS_BSD)
 #define SUPPORTS_OSS true
 #else
@@ -370,7 +364,7 @@
 #define SUPPORTS_SSL false
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 #define SUPPORTS_COCOA true
 #else
 #define SUPPORTS_COCOA false

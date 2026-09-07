@@ -44,6 +44,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
+#include <compat/strl.h>
+
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
@@ -699,7 +701,38 @@ void android_input_flush_pending_state(void)
       command_event(CMD_EVENT_SAVE_FILES, NULL);
 
    if (settings->bools.config_save_on_exit)
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      char live_driver[32];
+
+      live_driver[0] = '\0';
+
+      /* A core that forces its own renderer overwrites video_driver
+       * with the forced name and parks the configured one in
+       * cached_driver_id. Writing the config in that state persists the
+       * core's choice as the user's, so a driver picked from the menu
+       * is silently replaced by whatever the last loaded core wanted.
+       * main_exit() restores the cached name before it saves; do the
+       * same here.
+       *
+       * Unlike main_exit(), swap the live value back afterwards: the
+       * activity may be resumed, and the renderer actually in use does
+       * not change just because the app went to the background. */
+      if (video_st->cached_driver_id[0])
+      {
+         strlcpy(live_driver, settings->arrays.video_driver,
+               sizeof(live_driver));
+         configuration_set_string(settings,
+               settings->arrays.video_driver,
+               video_st->cached_driver_id);
+      }
+
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+
+      if (live_driver[0])
+         configuration_set_string(settings,
+               settings->arrays.video_driver, live_driver);
+   }
 }
 
 static void android_input_poll_main_cmd(void)
@@ -1857,9 +1890,9 @@ static void handle_hotplug(android_input_t *android,
          /* if the actual controller has not been mapped yet,
           * then configure Virtual device for now */
          if (strstr(device_name, "Virtual") && android->pads_connected==0)
-            strlcpy (name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
+            strlcpy_lit(name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
          else
-            strlcpy (name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+            strlcpy_lit(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
 
          /* apply the hack only for the first controller
           * store the id for later use
@@ -1890,7 +1923,7 @@ static void handle_hotplug(android_input_t *android,
 
          if ( pad_id2 > 0)
             return;
-         strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+         strlcpy_lit(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
       }
    }
 
@@ -1909,7 +1942,7 @@ static void handle_hotplug(android_input_t *android,
             id = pad_id1;
             return;
          }
-         strlcpy (name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
+         strlcpy_lit(name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
       }
    }
 
@@ -1919,7 +1952,7 @@ static void handle_hotplug(android_input_t *android,
     */
     /* to-do: add DS4 on Bravia ATV */
    else if (strstr(device_name, "NVIDIA"))
-      strlcpy (name_buf, "Android Gamepad", sizeof(name_buf));
+      strlcpy_lit(name_buf, "Android Gamepad", sizeof(name_buf));
 
    /* GPD XD
     * This is a simple hack, basically groups the "back"
@@ -1940,7 +1973,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "GPD XD", sizeof(name_buf));
+         strlcpy_lit(name_buf, "GPD XD", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -1973,7 +2006,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
+         strlcpy_lit(name_buf, "XPERIA Play", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -1996,7 +2029,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
+         strlcpy_lit(name_buf, "ARCHOS GamePad", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -2048,17 +2081,17 @@ static void handle_hotplug(android_input_t *android,
    }
 
    else if (strstr(device_name, "iControlPad-"))
-      strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
+      strlcpy_lit(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
 
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
    {
       if (*port == 0)
-         strlcpy(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
+         strlcpy_lit(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
       else if (*port == 1)
-         strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
+         strlcpy_lit(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
    else if (strstr(device_name, "MOGA"))
-      strlcpy(name_buf, "Moga IME", sizeof(name_buf));
+      strlcpy_lit(name_buf, "Moga IME", sizeof(name_buf));
 
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the
@@ -2521,6 +2554,7 @@ static void android_input_reinit(void)
 static void android_input_poll(void *data)
 {
    int ident;
+   int timeout;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
    settings_t            *settings = config_get_ptr();
@@ -2528,10 +2562,25 @@ static void android_input_poll(void *data)
    /* Apply any text staged by the native (IME) keyboard. */
    android_keyboard_poll();
 
+   /* Backgrounded (APP_CMD_PAUSE/STOP set RUNLOOP_FLAG_IDLE): there is
+    * nothing to do until the OS delivers the next command, and the
+    * looper will wake us for it. Block on it with -1 instead of the
+    * short timeout, the same call android_run_events() makes for the
+    * startup pump. Otherwise the runloop's 10 ms idle sleep has this
+    * poll returning empty a hundred times a second, which is the
+    * opposite of the "avoid draining battery" comment at the flag's
+    * set site, and Android's doze accounting penalises exactly that.
+    * First iteration blocks; once an event has woken us, drain the rest
+    * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
+    * in one call. */
+   timeout = settings->uints.input_block_timeout;
+   if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_IDLE)
+      timeout = -1;
+
    while ((ident =
-            ALooper_pollOnce(settings->uints.input_block_timeout,
-               NULL, NULL, NULL)) >= 0)
+            ALooper_pollOnce(timeout, NULL, NULL, NULL)) >= 0)
    {
+      timeout = 0;
       switch (ident)
       {
          case LOOPER_ID_INPUT:

@@ -16,7 +16,12 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+#ifdef HAVE_COCOATOUCH
+/* Grand Central Dispatch is used by the iOS/tvOS code only; the macOS
+ * path stays on Foundation and CoreFoundation, which every target
+ * release has. */
 #include <dispatch/dispatch.h>
+#endif
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <retro_atomic.h>
@@ -68,15 +73,19 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
-#if IOS
+#if TARGET_OS_IPHONE
 #import <UIKit/UIAccessibility.h>
 extern bool RAIsVoiceOverRunning(void)
 {
    return UIAccessibilityIsVoiceOverRunning();
 }
-#elif OSX
+#elif TARGET_OS_OSX
 #import <AppKit/AppKit.h>
 extern bool RAIsVoiceOverRunning(void)
 {
@@ -92,7 +101,7 @@ extern bool RAIsVoiceOverRunning(void)
 }
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 /* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.  On the
  * 10.5 Leopard SDK the CGDirectDisplay + kCGDisplayRefreshRate
  * symbols come in through <ApplicationServices/ApplicationServices.h>.
@@ -108,11 +117,7 @@ extern bool RAIsVoiceOverRunning(void)
 #endif
 #endif /* OSX */
 
-#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 id<ApplePlatform> apple_platform;
-#else
-id apple_platform;
-#endif
 
 static CocoaView* g_instance;
 
@@ -133,13 +138,22 @@ static CFRunLoopObserverRef iterate_observer;
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   int ret = runloop_iterate();
+   int ret;
 
-   if (ret == -1)
+   /* The desktop companion's per-frame hook: it lands the playlist
+    * parse, the browser's listing, decoded thumbnails and animation
+    * frames, and keeps its status current. Only the Qt-era rarch_main
+    * loop used to call it; this observer is the whole main loop on a
+    * non-Qt build, so without the call the Cocoa companion showed
+    * "Loading playlist..." for ever and nothing else. */
+   ui_companion_driver_wimp_iterate();
+
+   ret = runloop_iterate();
+
+   if (ret == -1 || ui_companion_driver_wimp_exiting())
    {
-#ifdef HAVE_QT
-      application->quit();
-#endif
+      ui_companion_driver_wimp_quit();
+      ui_companion_driver_wimp_deinit();
       main_exit(NULL);
       exit(0);
       return;
@@ -151,7 +165,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    steam_poll();
 #endif
 
-#if !TARGET_OS_TV && !defined(OSX)
+#if !TARGET_OS_TV && !TARGET_OS_OSX
    if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
@@ -186,17 +200,18 @@ void rarch_stop_draw_observer(void)
 
 @implementation CocoaView
 
-#if defined(OSX)
-#ifdef HAVE_COCOA_METAL
+#if TARGET_OS_OSX
+/* CALayerDelegate, asked from 10.7 on when the view hosts a layer (the
+ * Vulkan CAMetalLayer); a plain method that older releases never
+ * call. */
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
-#endif
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
-#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 -(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
       return;
 
@@ -247,7 +262,7 @@ void rarch_stop_draw_observer(void)
       view = [CocoaView new];
       RARCH_AUTORELEASE(view);
       nsview_set_ptr(view);
-#if defined(IOS)
+#if TARGET_OS_IPHONE
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
       {
          float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
@@ -262,7 +277,7 @@ void rarch_stop_draw_observer(void)
 #endif
       }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
          CGDirectDisplayID did = CGMainDisplayID();
@@ -280,13 +295,21 @@ void rarch_stop_draw_observer(void)
    return view;
 }
 
+#if TARGET_OS_OSX
+/* The main-thread half of ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title
+{
+   [[self window] setTitle:title];
+}
+#endif
+
 - (id)init
 {
    self = [super init];
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
+   NSArray *array = [NSArray arrayWithObjects:RARCH_PBOARD_TYPE_COLOR, RARCH_PBOARD_TYPE_FILENAMES, nil];
    [self registerForDraggedTypes:array];
 
    video_driver_display_type_set(RARCH_DISPLAY_OSX);
@@ -398,36 +421,44 @@ void rarch_stop_draw_observer(void)
     return !nonSiriPress;
 }
 
+/* The remote's buttons, as a keyboard event.
+ *
+ * This built an NSDictionary of NSNumber keys to NSArrays of NSNumbers
+ * inside dispatch_once, and then hashed a boxed press type against it
+ * on every press. The mapping is seven compile-time constant pairs; a
+ * switch is the whole of it, with no dictionary to build, nothing to
+ * box per press, no once and no block.
+ *
+ * The two page keys were added under if (@available(tvOS 14.3, *)),
+ * which was guarding the wrong thing: the constants have to exist at
+ * compile time either way - they did, unconditionally, in the block -
+ * and a press type the running system never sends simply never
+ * arrives, so a case for it costs nothing. */
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
 {
-    static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
-            @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
-            @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
-            @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
-            @(UIPressTypeRightArrow): @[ @(RETROK_RIGHT),    @( 0 ) ],
+    unsigned keycode  = 0;
+    unsigned character = 0;
 
-            @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
-            @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
-            @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
-        }];
+    switch (type)
+    {
+        case UIPressTypeUpArrow:    keycode = RETROK_UP;    break;
+        case UIPressTypeDownArrow:  keycode = RETROK_DOWN;  break;
+        case UIPressTypeLeftArrow:  keycode = RETROK_LEFT;  break;
+        case UIPressTypeRightArrow: keycode = RETROK_RIGHT; break;
 
-        if (@available(tvOS 14.3, *))
-        {
-            [dict addEntriesFromDictionary:@{
-                @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-                @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-            }];
-        }
-        map = dict;
-    });
-    NSArray<NSNumber*>* keyvals = map[@(type)];
-    if (!keyvals)
-        return;
-    apple_direct_input_keyboard_event(down, keyvals[0].intValue,
-                                      keyvals[1].intValue, 0, RETRO_DEVICE_KEYBOARD);
+        case UIPressTypeSelect:     keycode = RETROK_z; character = 'z'; break;
+        case UIPressTypeMenu:       keycode = RETROK_x; character = 'x'; break;
+        case UIPressTypePlayPause:  keycode = RETROK_s; character = 's'; break;
+
+        case UIPressTypePageUp:     keycode = RETROK_PAGEUP;   break;
+        case UIPressTypePageDown:   keycode = RETROK_PAGEDOWN; break;
+
+        default:
+            return;
+    }
+
+    apple_direct_input_keyboard_event(down, keycode, character, 0,
+                                      RETRO_DEVICE_KEYBOARD);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses
@@ -543,7 +574,7 @@ void rarch_stop_draw_observer(void)
 
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -573,7 +604,7 @@ void rarch_stop_draw_observer(void)
     NSDragOperation sourceDragMask = [sender draggingSourceOperationMask];
     NSPasteboard           *pboard = [sender draggingPasteboard];
 
-    if ( [[pboard types] containsObject:NSFilenamesPboardType] )
+    if ( [[pboard types] containsObject:RARCH_PBOARD_TYPE_FILENAMES] )
     {
         if (sourceDragMask & NSDragOperationCopy)
             return NSDragOperationCopy;
@@ -757,11 +788,9 @@ void rarch_stop_draw_observer(void)
 #pragma mark - UIViewController Lifecycle
 
 -(void)loadView {
-#if defined(HAVE_COCOA_METAL)
+   /* A plain container; -[RetroArch_iOS setViewType:] installs the
+    * render view the current video driver needs beneath it. */
    self.view       = [UIView new];
-#else
-   self.view       = (BRIDGE GLKView*)glkitview_init();
-#endif
 }
 
 -(void)viewDidLoad {
@@ -841,8 +870,14 @@ void rarch_stop_draw_observer(void)
     if (!settings->bools.gcdwebserver_alert)
         return;
 
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    /* Once per run. dispatch_once is the wrong shape for that even
+     * where it works: it is a barrier for publishing an initialisation
+     * to other threads, and this is UIKit on the main thread showing an
+     * alert. A flag says what is meant. The blocks below stay - they
+     * are UIAlertAction handlers, which the API requires, not GCD. */
+    static bool shown;
+    if (!shown)
+    {
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -868,7 +903,8 @@ void rarch_stop_draw_observer(void)
             struct menu_state *menu_st = menu_state_get_ptr();
             menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
-    });
+        shown = true;
+    }
 #endif
 }
 
@@ -924,7 +960,7 @@ void *cocoa_screen_get_chosen(void)
  * it simply calls straight through, so the non-threaded path is
  * unchanged.
  *
- * The block is scheduled in BOTH kCFRunLoopCommonModes and a private
+ * The job is scheduled in BOTH kCFRunLoopCommonModes and a private
  * runloop mode:
  *  - common modes drain it whenever the main loop is running normally
  *    (e.g. show_mouse from the worker mid-session);
@@ -935,14 +971,64 @@ void *cocoa_screen_get_chosen(void)
  *    from other modes (in particular the RetroArch draw observer) run
  *    reentrantly under the wait.
  * The mode string literal below must stay in sync with the one in
- * video_thread_wrapper.c. */
+ * video_thread_wrapper.c.
+ *
+ * Written without blocks or GCD: -performSelectorOnMainThread:
+ * withObject:waitUntilDone:modes: (Foundation, 10.0) carries the job
+ * over in exactly those modes, and the caller waits on an rthreads
+ * condition so the stall diagnostic keeps its cadence.  That makes the
+ * trampoline buildable by any Objective-C compiler and runnable on
+ * any release. */
+@interface CocoaMainThreadJob : NSObject
+{
+   void (*_func)(void *userdata);
+   void  *_userdata;
+   slock_t *_lock;
+   scond_t *_cond;
+   bool _done;
+}
+- (id)initWithFunc:(void (*)(void *))func userdata:(void *)userdata
+      lock:(slock_t *)lock cond:(scond_t *)cond;
+- (void)run;
+- (bool)isDone;
+@end
+
+@implementation CocoaMainThreadJob
+
+- (id)initWithFunc:(void (*)(void *))func userdata:(void *)userdata
+      lock:(slock_t *)lock cond:(scond_t *)cond
+{
+   self = [super init];
+   if (!self)
+      return self;
+   _func     = func;
+   _userdata = userdata;
+   _lock     = lock;
+   _cond     = cond;
+   _done     = false;
+   return self;
+}
+
+- (void)run
+{
+   _func(_userdata);
+   slock_lock(_lock);
+   _done = true;
+   scond_signal(_cond);
+   slock_unlock(_lock);
+}
+
+- (bool)isDone { return _done; }
+
+@end
+
 void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
 void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
 {
-   dispatch_semaphore_t done;
-   CFRunLoopRef main_loop;
-   CFArrayRef modes;
-   const void *mode_entries[2];
+   CocoaMainThreadJob *job;
+   NSArray *modes;
+   slock_t *lock;
+   scond_t *cond;
 
    if (sthread_is_main_thread())
    {
@@ -950,33 +1036,37 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
       return;
    }
 
-   done            = dispatch_semaphore_create(0);
-   main_loop       = CFRunLoopGetMain();
-   mode_entries[0] = kCFRunLoopCommonModes;
-   mode_entries[1] = CFSTR("com.libretro.RetroArch.MainThreadTrampoline");
-   modes           = CFArrayCreate(kCFAllocatorDefault, mode_entries, 2,
-         &kCFTypeArrayCallBacks);
+   lock  = slock_new();
+   cond  = scond_new();
+   job   = [[CocoaMainThreadJob alloc] initWithFunc:func userdata:userdata
+         lock:lock cond:cond];
+   /* kCFRunLoopCommonModes is toll-free bridged to the NSString the
+    * Foundation call wants, and is the 10.0 spelling of the 10.5
+    * NSRunLoopCommonModes. */
+   modes = [[NSArray alloc] initWithObjects:
+         (BRIDGE NSString *)kCFRunLoopCommonModes,
+         @"com.libretro.RetroArch.MainThreadTrampoline", nil];
 
-   CFRunLoopPerformBlock(main_loop, modes, ^{
-      func(userdata);
-      dispatch_semaphore_signal(done);
-   });
-   CFRunLoopWakeUp(main_loop);
+   /* Foundation retains the job until it has run, so the reference
+    * below is released as soon as the perform is queued. */
+   [job performSelectorOnMainThread:@selector(run) withObject:nil
+         waitUntilDone:NO modes:modes];
+   CFRunLoopWakeUp(CFRunLoopGetMain());
 
    /* Wait for completion.  Waiting forever (with periodic diagnostics)
     * is deliberate: falling back to running func() on this thread after
     * a timeout would risk double-execution once the main thread finally
-    * drains the block, which is far worse than a loggable stall. */
-   while (dispatch_semaphore_wait(done,
-            dispatch_time(DISPATCH_TIME_NOW, (int64_t)5 * NSEC_PER_SEC)))
-      RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled blocks.\n");
+    * drains the job, which is far worse than a loggable stall. */
+   slock_lock(lock);
+   while (![job isDone])
+      if (!scond_wait_timeout(cond, lock, 5000000))
+         RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled jobs.\n");
+   slock_unlock(lock);
 
-   CFRelease(modes);
-#if OS_OBJECT_USE_OBJC
-   RARCH_RELEASE(done);
-#else
-   dispatch_release(done);
-#endif
+   RARCH_RELEASE(modes);
+   RARCH_RELEASE(job);
+   scond_free(cond);
+   slock_free(lock);
 }
 
 /* One condvar-wait iteration for a caller that may be the main thread and
@@ -1005,7 +1095,7 @@ bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
    return true;
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_show_mouse_mainthread_show(void *userdata)
 {
    [NSCursor unhide];
@@ -1047,7 +1137,7 @@ bool cocoa_has_focus(void *data)
 
 void cocoa_show_mouse(void *data, bool state)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     /* NSCursor is AppKit and must be driven from the main thread; with
      * threaded video this can be reached from the video worker thread,
      * so route it through the trampoline (direct call when already on
@@ -1059,7 +1149,7 @@ void cocoa_show_mouse(void *data, bool state)
 #endif
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #if MAC_OS_X_VERSION_10_7
 /* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
 float cocoa_screen_get_backing_scale_factor(void)
@@ -1141,7 +1231,7 @@ float cocoa_screen_get_native_scale(void)
 
 float cocoa_get_refresh_rate(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    /* macOS 10.6+: CGDisplayMode API. */
    CGDirectDisplayID main_id = CGMainDisplayID();
@@ -1267,11 +1357,11 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
        * back to UIScreen.scale when nativeScale is unavailable. */
       float s = cocoa_screen_get_native_scale();
       if (s >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
+         strlcpy_lit(desc, "Super Retina", desc_len);
       else if (s >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
+         strlcpy_lit(desc, "Retina", desc_len);
       else
-         strlcpy(desc, "Standard", desc_len);
+         strlcpy_lit(desc, "Standard", desc_len);
    }
 #else
    /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
@@ -1285,16 +1375,16 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
        * pre-10.7 branch returns 1.0f unconditionally. */
       float s = cocoa_screen_get_backing_scale_factor();
       if (s >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
+         strlcpy_lit(desc, "Retina", desc_len);
       else
-         strlcpy(desc, "Standard", desc_len);
+         strlcpy_lit(desc, "Standard", desc_len);
    }
 #endif
 }
 
 void *nsview_get_ptr(void)
 {
-#if defined(OSX)
+#if TARGET_OS_OSX
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -1329,17 +1419,10 @@ void nsview_set_ptr(CocoaView *p)
 
 CocoaView *cocoaview_get(void)
 {
-#if defined(HAVE_COCOA_METAL)
-    return (CocoaView*)apple_platform.renderView;
-#elif defined(HAVE_COCOA)
-    return g_instance;
-#else
-    /* TODO/FIXME - implement */
-    return NULL;
-#endif
+    return (CocoaView*)[apple_platform renderView];
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value)

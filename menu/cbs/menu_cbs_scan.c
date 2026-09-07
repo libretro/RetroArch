@@ -31,6 +31,9 @@
 #include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifndef BIND_ACTION_SCAN
 #define BIND_ACTION_SCAN(cbs, name) (cbs)->action_scan = (name)
@@ -50,7 +53,7 @@ void handle_dbscan_finished(retro_task_t *task,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char fullpath[PATH_MAX_LENGTH];
@@ -62,7 +65,7 @@ int action_scan_file(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif
@@ -83,7 +86,7 @@ int action_scan_file(const char *path,
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char fullpath[PATH_MAX_LENGTH];
@@ -95,7 +98,7 @@ int action_scan_directory(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif
@@ -248,7 +251,7 @@ static int action_scan_video_font_path(const char *path,
 {
    settings_t *settings       = config_get_ptr();
 
-   strlcpy(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
+   strlcpy_lit(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
 
    /* Same route as the value-change handler: rebuild the OSD font in
     * place, and reinitialise only where a driver keeps its own. */
@@ -267,7 +270,7 @@ static int action_scan_video_xmb_font(const char *path,
 
    /* The menu driver watches this path and rebuilds its fonts on
     * the next frame. */
-   strlcpy(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
+   strlcpy_lit(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
 
    return 0;
 }
@@ -281,7 +284,7 @@ static int action_scan_video_ozone_font(const char *path,
 
    /* The menu driver watches this path and rebuilds its fonts on
     * the next frame. */
-   strlcpy(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
+   strlcpy_lit(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
 
    return 0;
 }

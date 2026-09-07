@@ -659,5 +659,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    NULL,
    gfx_ctx_xegl_create_surface,
-   gfx_ctx_xegl_destroy_surface
+   gfx_ctx_xegl_destroy_surface,
+   x11_presentable
 };

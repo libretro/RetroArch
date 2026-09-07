@@ -47,6 +47,7 @@
 
 #include "../../../network/natt.h"
 #include "../../../network/netplay/netplay.h"
+#include <compat/strl.h>
 
 static unsigned failures = 0;
 
@@ -105,10 +106,10 @@ bool natt_device_next(struct natt_discovery *discovery,
    /* Enough of a device for the handler to accept: a description, a
     * service type, and a loopback address that find_local_address()
     * can connect a UDP socket to in order to learn a local address. */
-   strlcpy(device->desc, "fake-device", sizeof(device->desc));
-   strlcpy(device->service_type, "fake-service",
+   strlcpy_lit(device->desc, "fake-device", sizeof(device->desc));
+   strlcpy_lit(device->service_type, "fake-service",
          sizeof(device->service_type));
-   strlcpy(device->control, "fake-control", sizeof(device->control));
+   strlcpy_lit(device->control, "fake-control", sizeof(device->control));
    device->addr.sin_family      = AF_INET;
    device->addr.sin_port        = htons(1900);
    device->addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);

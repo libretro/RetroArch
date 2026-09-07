@@ -13,7 +13,7 @@ frames along it, reporting the deepest chain from each root. Task
 handlers are the roots that matter: retro_task_regular_gather() runs
 them on the main thread, but a threaded task queue runs them on a
 worker, and on GEKKO that worker has 8 KiB (STACKSIZE in
-rthreads/gx_pthread.h).
+rthreads/rthreads.c).
 
 WHAT THIS IS NOT
 

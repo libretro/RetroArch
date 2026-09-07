@@ -785,7 +785,7 @@ bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
       /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
        * by the decompressor: this is libretro-common API, so a caller
        * can be on a spawned thread, and GEKKO threads get 8 KiB
-       * (STACKSIZE in rthreads/gx_pthread.h).  See the same
+       * (the GEKKO STACKSIZE in rthreads.c).  See the same
        * ceiling and its measured cost in filestream_matches_buf(). */
       uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
       size_t  off = 0;

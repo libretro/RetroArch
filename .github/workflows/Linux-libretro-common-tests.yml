@@ -94,6 +94,94 @@ jobs:
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
 
+      - name: Check companion backend feature parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The Qt, Win32 and Cocoa desktop companions share one C core
+          # but each has its own presentation; a backend can quietly omit
+          # a feature (no file browser, no scan, no core picker) and still
+          # build and run, the gap only showing when a user switches
+          # drivers.  Source-level check, for free, on Linux.
+          python3 tools/companion_parity.py
+
+      - name: Companion thumbnail engine regression test (plain, TSan, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The shared thumbnail engine every desktop companion draws
+          # through: real decoder, decode threads, cache, priority,
+          # cancel, shutdown.  Under both sanitizers, since it is the
+          # one piece of threaded code in the companions.
+          tools/companion_thumbs_test.sh
+          tools/companion_thumbs_test.sh tsan
+          tools/companion_thumbs_test.sh asan
+
+      - name: Companion core regression test (plain, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The toolkit-free model every desktop companion drives:
+          # playlist listing and All Playlists, the thumbnail path rule,
+          # the file browser, the run / needs-core paths, launch
+          # options - against real .lpl fixtures, with RetroArch's
+          # state replaced by stubs.
+          tools/companion_core_test.sh
+          tools/companion_core_test.sh asan
+          tools/companion_core_test.sh tsan
+
+      - name: C89 / Win32 syntax gate on the companion sources
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # MSVC 2005 builds these as C89 through griffin. The gate's
+          # second pass needs a 32-bit mingw for the Windows-only unit
+          # (the host gcc has no <windows.h>, which used to make the
+          # pass skip it silently - that is how mixed declarations
+          # reached master).
+          sudo apt-get install -y -qq gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 > /dev/null
+          tools/mingw_syntax_check.sh ui/drivers/ui_win32_companion.c \
+             ui/companion/companion_core.c ui/companion/companion_thumbs.c \
+             gfx/gfx_anim_preview.c
+
+      - name: AUTHORS_c.h in sync with AUTHORS.h
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: python3 tools/gen_authors_c.py --check
+
+      - name: Cocoa companion regression harness (GNUstep AppKit, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_cocoa_companion.m, compiled and linked
+          # against GNUstep's Foundation + AppKit with the real companion
+          # core and the core test's fixtures, driven under Xvfb the way a
+          # user drives it (view popup, File Browser tab, close) and
+          # checked on the AppKit objects themselves.
+          sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
+          tools/companion_cocoa_test.sh
+          # ASan too: the grid's prefetch reaching past the thumbnail
+          # marks only shows under a checking allocator (it crashed the
+          # app on macOS, where Apple's is one).
+          tools/companion_cocoa_test.sh asan
+
+      - name: Win32 companion regression harness (mingw + Wine, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_win32_companion.c, built with mingw and
+          # linked with the real companion core and the core test's
+          # fixtures, run under Wine on Xvfb and driven with the messages
+          # the widgets send; checked on the real controls.
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine xvfb > /dev/null
+          tools/companion_win32_test.sh
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

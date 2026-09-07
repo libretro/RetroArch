@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include <string/stdstring.h>
+#include <memalign.h>
 #include <lists/file_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -130,6 +131,17 @@
 #define RGUI_SYMBOL_HEIGHT        FONT_HEIGHT
 #define RGUI_SYMBOL_WIDTH_STRIDE  (RGUI_SYMBOL_WIDTH + 1)
 #define RGUI_SYMBOL_HEIGHT_STRIDE (RGUI_SYMBOL_HEIGHT + 1)
+
+/* When the mouse wheel moves, this is the number of rows that
+ * that will be scrolled. */
+#define RGUI_WHEEL_SCROLL_ROWS 3
+
+enum rgui_playlist_mainmenu_selection
+{
+   RGUI_MAINMENU_HISTORY = 0,
+   RGUI_MAINMENU_FAVORITES,
+   RGUI_MAINMENU_LAST
+};
 
 /* Defines all possible entry value types
  * > Note: These are not necessarily 'values',
@@ -299,6 +311,13 @@ typedef struct
 #endif
    } fonts;
 
+   /* Backing storage for frame_buf, background_buf, fs_thumbnail,
+    * mini_thumbnail and mini_left_thumbnail. Their data pointers are
+    * 64-byte aligned views into this block; rgui_buffers_free() releases
+    * all five at once. upscale_buf is separate: it is sized on demand
+    * from the display, not from the menu geometry. */
+   uint16_t *fb_arena;
+
    frame_buf_t frame_buf;
    frame_buf_t background_buf;
    frame_buf_t upscale_buf;
@@ -334,6 +353,9 @@ typedef struct
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
    uint32_t flags;
+   /* Pixel offset of the list, term rows * font_height_stride;
+    * int16_t overflows on playlists past a few thousand entries. */
+   int32_t scroll_y;
    int8_t gfx_thumbnails_prev;
 
    rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
@@ -342,11 +364,14 @@ typedef struct
    uint8_t settings_selection_ptr;
    size_t playlist_selection_ptr;
    size_t playlist_selection[NAME_MAX_LENGTH];
-   int16_t scroll_y;
+   size_t playlist_mainmenu_selection[RGUI_MAINMENU_LAST]; /* History + Favorites */
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
    menu_input_pointer_t pointer;
+
+   char entry_index_str[32];
+   char entry_index_offset;
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
@@ -1470,7 +1495,7 @@ static uint16_t argb32_to_rgb565(uint32_t col)
    g = rgui_quant6(g);
    b = rgui_quant5(b);
    /* Return final value */
-   return (r << 11) | (g << 6) | b;
+   return (r << 11) | (g << 5) | b;
 }
 
 /* All other platforms */
@@ -1593,7 +1618,7 @@ static uint16_t argb32_to_rgb565_dither(uint32_t col,
    r = rgui_quant5_dither(r, x, y);
    g = rgui_quant6_dither(g, x, y);
    b = rgui_quant5_dither(b, x, y);
-   return (r << 11) | (g << 6) | b;
+   return (r << 11) | (g << 5) | b;
 }
 
 /* All other platforms */
@@ -5681,6 +5706,43 @@ static bool gfx_thumbnail_get_label(
    return true;
 }
 
+/*
+ * Moves the list by whole rows while keeping the selection the
+ * same.
+ * Returns true whenever the list is what the wheel drives, even
+ * where it has nowhere to go, so that a notch never steps the
+ * selection. False falls back to that step. */
+static bool rgui_wheel_scroll(void *data, int notches)
+{
+   int start;
+   int bottom;
+   size_t entries_end;
+   rgui_t *rgui = (rgui_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list = menu_st->entries.list;
+
+   if (!rgui || !menu_list)
+      return false;
+
+   /* A fullscreen thumbnail hides the list, and the wheel is
+    * better spent stepping through the playlist behind it. */
+   if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      return false;
+
+   entries_end = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   bottom = (int)entries_end - (int)rgui->term_layout.height;
+   start = (int)menu_st->entries.begin + (notches * RGUI_WHEEL_SCROLL_ROWS);
+   if (start > bottom)
+      start = bottom;
+   if (start < 0)
+      start = 0;
+
+   menu_st->entries.begin = (size_t)start;
+   rgui->scroll_y = start * (int32_t)rgui->font_height_stride;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+   return true;
+}
+
 static void rgui_render(void *data, unsigned width, unsigned height,
       bool is_idle)
 {
@@ -5842,7 +5904,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       if (     (rgui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
             && (bottom > 0))
       {
-         int16_t scroll_y_max   = bottom * rgui->font_height_stride;
+         int32_t scroll_y_max   = bottom * (int32_t)rgui->font_height_stride;
          rgui->scroll_y        += -1 * rgui->pointer.dy;
          if (rgui->scroll_y < 0)
             rgui->scroll_y      = 0;
@@ -6006,6 +6068,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
       size_t timedate_len            = 0;
+      size_t sublabel_len            = 0;
 
       /* Cache mini thumbnail related parameters, if required */
       if (show_mini_thumbnails)
@@ -6447,6 +6510,23 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                   rgui_swap_thumbnails, thumbnail_background, false);
       }
 
+      /* Draw entry index of current selection */
+      if (*rgui->entry_index_str)
+      {
+         size_t len = strlen(rgui->entry_index_str);
+
+         /* Subtract from sublabel width */
+         sublabel_len += len + 1;
+
+         rgui_blit_line(rgui,
+               fb_width,
+               term_end_x - (len * rgui->font_width_stride),
+               sublabel_y,
+               rgui->entry_index_str,
+               rgui->colors.hover_color,
+               rgui->colors.shadow_color);
+      }
+
       /* Print menu sublabel/core name (if required) */
       if (menu_show_sublabels && *rgui->menu_sublabel)
       {
@@ -6456,7 +6536,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = rgui->term_layout.width * rgui->font_width_stride;
+            ticker_smooth.field_width = (rgui->term_layout.width - sublabel_len) * rgui->font_width_stride;
             ticker_smooth.src_str     = rgui->menu_sublabel;
             ticker_smooth.dst_str     = sublabel_buf;
             ticker_smooth.dst_str_len = sizeof(sublabel_buf);
@@ -6468,7 +6548,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          {
             ticker.s                  = sublabel_buf;
             ticker.s_len              = sizeof(sublabel_buf);
-            ticker.len                = rgui->term_layout.width;
+            ticker.len                = rgui->term_layout.width - sublabel_len;
             ticker.str                = rgui->menu_sublabel;
             ticker.selected           = true;
 
@@ -6494,7 +6574,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = rgui->term_layout.width * rgui->font_width_stride;
+            ticker_smooth.field_width = (rgui->term_layout.width - sublabel_len) * rgui->font_width_stride;
             ticker_smooth.src_str     = core_title;
             ticker_smooth.dst_str     = core_title_buf;
             ticker_smooth.dst_str_len = sizeof(core_title_buf);
@@ -6506,7 +6586,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          {
             ticker.s                  = core_title_buf;
             ticker.s_len              = sizeof(core_title_buf);
-            ticker.len                = rgui->term_layout.width;
+            ticker.len                = rgui->term_layout.width - sublabel_len;
             ticker.str                = core_title;
             ticker.selected           = true;
 
@@ -6548,34 +6628,54 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    }
 }
 
-static void rgui_framebuffer_free(frame_buf_t *framebuffer)
-{
-   if (!framebuffer)
-      return;
+/* Region spacing inside the menu buffer arena, in uint16_t elements:
+ * 64 bytes, so every buffer starts on a cache line and consecutive
+ * buffers are never a multiple of 4 KiB apart. */
+#define RGUI_ARENA_ALIGN 32
+#define RGUI_ARENA_NEXT(cur, n) \
+   ((((cur) + (n) + RGUI_ARENA_ALIGN - 1) / RGUI_ARENA_ALIGN) \
+    * RGUI_ARENA_ALIGN + RGUI_ARENA_ALIGN)
 
+/* Only resets the descriptor; the storage belongs to rgui->fb_arena. */
+static void rgui_framebuffer_reset(frame_buf_t *framebuffer)
+{
    framebuffer->width  = 0;
    framebuffer->height = 0;
-
-   if (framebuffer->data)
-      free(framebuffer->data);
    framebuffer->data   = NULL;
 }
 
-static void rgui_thumbnail_free(thumbnail_t *thumbnail)
+static void rgui_thumbnail_reset(thumbnail_t *thumbnail)
 {
-   if (!thumbnail)
-      return;
-
    thumbnail->max_width  = 0;
    thumbnail->max_height = 0;
    thumbnail->width      = 0;
    thumbnail->height     = 0;
    thumbnail->is_valid   = false;
    thumbnail->path[0]    = '\0';
-
-   if (thumbnail->data)
-      free(thumbnail->data);
    thumbnail->data       = NULL;
+}
+
+/* upscale_buf is not part of the arena and is freed by its own user. */
+static void rgui_upscale_buf_free(frame_buf_t *framebuffer)
+{
+   framebuffer->width  = 0;
+   framebuffer->height = 0;
+   if (framebuffer->data)
+      free(framebuffer->data);
+   framebuffer->data   = NULL;
+}
+
+static void rgui_buffers_free(rgui_t *rgui)
+{
+   rgui_framebuffer_reset(&rgui->frame_buf);
+   rgui_framebuffer_reset(&rgui->background_buf);
+   rgui_thumbnail_reset(&rgui->fs_thumbnail);
+   rgui_thumbnail_reset(&rgui->mini_thumbnail);
+   rgui_thumbnail_reset(&rgui->mini_left_thumbnail);
+
+   if (rgui->fb_arena)
+      memalign_free(rgui->fb_arena);
+   rgui->fb_arena = NULL;
 }
 
 bool rgui_is_video_config_equal(
@@ -6784,11 +6884,7 @@ static bool rgui_set_aspect_ratio(
    unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
 
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+   rgui_buffers_free(rgui);
 
    /* Cache new aspect ratio */
    rgui->menu_aspect_ratio = aspect_ratio;
@@ -7076,13 +7172,6 @@ static bool rgui_set_aspect_ratio(
    }
 #endif
 
-   /* Allocate frame buffer */
-   rgui->frame_buf.data = (uint16_t*)calloc(
-         rgui->frame_buf.width * rgui->frame_buf.height, sizeof(uint16_t));
-
-   if (!rgui->frame_buf.data)
-      return false;
-
    /* Configure 'menu display' settings */
    p_disp->framebuf_width  = rgui->frame_buf.width;
    p_disp->framebuf_height = rgui->frame_buf.height;
@@ -7099,25 +7188,15 @@ static bool rgui_set_aspect_ratio(
    rgui->term_layout.start_x      = (rgui->frame_buf.width - (rgui->term_layout.width * rgui->font_width_stride)) / 2;
    rgui->term_layout.start_y      = (rgui->frame_buf.height - (rgui->term_layout.height * rgui->font_height_stride)) / 2;
 
-   /* Allocate background buffer */
+   /* Background buffer matches the frame buffer */
    rgui->background_buf.width     = rgui->frame_buf.width;
    rgui->background_buf.height    = rgui->frame_buf.height;
-   rgui->background_buf.data      = (uint16_t*)calloc(
-         rgui->background_buf.width * rgui->background_buf.height, sizeof(uint16_t));
 
-   if (!rgui->background_buf.data)
-      return false;
-
-   /* Allocate thumbnail buffer */
+   /* Fullscreen thumbnail */
    rgui->fs_thumbnail.max_width   = rgui->frame_buf.width;
    rgui->fs_thumbnail.max_height  = rgui->frame_buf.height - (unsigned)(rgui->font_height_stride * 2.0f) + 2;
-   rgui->fs_thumbnail.data        = (uint16_t*)calloc(
-         rgui->fs_thumbnail.max_width * rgui->fs_thumbnail.max_height, sizeof(uint16_t));
 
-   if (!rgui->fs_thumbnail.data)
-      return false;
-
-   /* Allocate mini thumbnail buffers */
+   /* Mini thumbnails */
    mini_thumbnail_term_width            = (unsigned)((float)rgui->term_layout.width * (2.0f / 5.0f));
    if (mini_thumbnail_term_width > 19)
       mini_thumbnail_term_width         = 19;
@@ -7126,19 +7205,36 @@ static bool rgui_set_aspect_ratio(
 
    rgui->mini_thumbnail.max_width       = rgui->mini_thumbnail_max_width;
    rgui->mini_thumbnail.max_height      = rgui->mini_thumbnail_max_height;
-   rgui->mini_thumbnail.data            = (uint16_t*)calloc(
-         rgui->mini_thumbnail.max_width * rgui->mini_thumbnail.max_height, sizeof(uint16_t));
-
-   if (!rgui->mini_thumbnail.data)
-      return false;
-
    rgui->mini_left_thumbnail.max_width  = rgui->mini_thumbnail_max_width;
    rgui->mini_left_thumbnail.max_height = rgui->mini_thumbnail_max_height;
-   rgui->mini_left_thumbnail.data       = (uint16_t*)calloc(
-         rgui->mini_left_thumbnail.max_width * rgui->mini_left_thumbnail.max_height, sizeof(uint16_t));
 
-   if (!rgui->mini_left_thumbnail.data)
-      return false;
+   /* One block for all five buffers, in the order above. Cursors are
+    * in uint16_t elements. */
+   {
+      size_t n_frame  = (size_t)rgui->frame_buf.width      * rgui->frame_buf.height;
+      size_t n_bg     = (size_t)rgui->background_buf.width * rgui->background_buf.height;
+      size_t n_fs     = (size_t)rgui->fs_thumbnail.max_width   * rgui->fs_thumbnail.max_height;
+      size_t n_mini   = (size_t)rgui->mini_thumbnail.max_width * rgui->mini_thumbnail.max_height;
+      size_t off_frame = 0;
+      size_t off_bg    = RGUI_ARENA_NEXT(off_frame, n_frame);
+      size_t off_fs    = RGUI_ARENA_NEXT(off_bg,    n_bg);
+      size_t off_mini  = RGUI_ARENA_NEXT(off_fs,    n_fs);
+      size_t off_minil = RGUI_ARENA_NEXT(off_mini,  n_mini);
+      size_t total     = off_minil + n_mini;
+      uint16_t *arena  = (uint16_t*)memalign_alloc(64, total * sizeof(uint16_t));
+
+      if (!arena)
+         return false;
+
+      memset(arena, 0, total * sizeof(uint16_t));
+
+      rgui->fb_arena                 = arena;
+      rgui->frame_buf.data           = arena + off_frame;
+      rgui->background_buf.data      = arena + off_bg;
+      rgui->fs_thumbnail.data        = arena + off_fs;
+      rgui->mini_thumbnail.data      = arena + off_mini;
+      rgui->mini_left_thumbnail.data = arena + off_minil;
+   }
 
    /* Trigger background/display update */
    rgui->theme_preset_path[0]       = '\0';
@@ -7324,13 +7420,7 @@ error:
    if (rgui)
    {
       rgui_fonts_free(rgui);
-
-      rgui_framebuffer_free(&rgui->frame_buf);
-      rgui_framebuffer_free(&rgui->background_buf);
-
-      rgui_thumbnail_free(&rgui->fs_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+      rgui_buffers_free(rgui);
    }
 
    if (menu)
@@ -7351,14 +7441,8 @@ static void rgui_free(void *data)
 #endif
 
    rgui_fonts_free(rgui);
-
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
-   rgui_framebuffer_free(&rgui->upscale_buf);
-
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+   rgui_buffers_free(rgui);
+   rgui_upscale_buf_free(&rgui->upscale_buf);
 }
 
 static void rgui_set_texture_frame(video_driver_state_t *video_st,
@@ -8005,7 +8089,6 @@ static void rgui_update_menu_sublabel(rgui_t *rgui, size_t selection)
 static void rgui_navigation_set(void *data, bool scroll)
 {
    size_t start                   = 0;
-   bool menu_show_sublabels       = false;
    struct menu_state *menu_st     = menu_state_get_ptr();
    menu_list_t *menu_list         = menu_st->entries.list;
    size_t end                     = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0)->size : 0;
@@ -8015,10 +8098,15 @@ static void rgui_navigation_set(void *data, bool scroll)
    if (!rgui)
       return;
 
-   menu_show_sublabels            = config_get_ptr()->bools.menu_show_sublabels;
-
    if (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
-      rgui->playlist_selection[rgui->playlist_selection_ptr] = selection;
+   {
+      if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+         rgui->playlist_mainmenu_selection[RGUI_MAINMENU_HISTORY] = selection;
+      else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+         rgui->playlist_mainmenu_selection[RGUI_MAINMENU_FAVORITES] = selection;
+      else
+         rgui->playlist_selection[rgui->playlist_selection_ptr] = selection;
+   }
    else if (rgui->flags & RGUI_FLAG_IS_PLAYLISTS_TAB)
       rgui->playlist_selection_ptr = selection;
    else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS)))
@@ -8027,8 +8115,35 @@ static void rgui_navigation_set(void *data, bool scroll)
    rgui_scan_selected_entry_thumbnail(rgui, false);
 
    rgui->menu_sublabel[0]         = '\0';
-   if (menu_show_sublabels && selection < end)
+   if (config_get_ptr()->bools.menu_show_sublabels && selection < end)
       rgui_update_menu_sublabel(rgui, selection);
+
+   /* Update entry index text */
+   rgui->entry_index_str[0]       = '\0';
+   if (     config_get_ptr()->bools.playlist_show_entry_idx
+         && ((rgui->flags & RGUI_FLAG_IS_PLAYLIST) || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)))
+   {
+      size_t entry_idx_selection = selection + 1;
+      size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+      unsigned entry_idx_offset  = rgui->entry_index_offset;
+      bool show_entry_idx        = true;
+
+      if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+      {
+         if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
+            entry_idx_selection -= entry_idx_offset;
+         else
+            show_entry_idx = false;
+
+         if (list_size >= entry_idx_offset)
+            list_size           -= entry_idx_offset;
+      }
+
+      if (show_entry_idx)
+         snprintf(rgui->entry_index_str, sizeof(rgui->entry_index_str),
+               "%lu/%lu", (unsigned long)entry_idx_selection,
+                          (unsigned long)list_size);
+   }
 
    if (!scroll)
       return;
@@ -8173,12 +8288,18 @@ static void rgui_populate_entries(
    /* Cancel any pending thumbnail load operations */
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
-   if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
+   if (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
-         menu_st->selection_ptr = rgui->playlist_selection[rgui->playlist_selection_ptr];
+      {
+         if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+            menu_st->selection_ptr = rgui->playlist_mainmenu_selection[RGUI_MAINMENU_HISTORY];
+         else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+            menu_st->selection_ptr = rgui->playlist_mainmenu_selection[RGUI_MAINMENU_FAVORITES];
+         else
+            menu_st->selection_ptr = rgui->playlist_selection[rgui->playlist_selection_ptr];
+      }
    }
    else if (rgui->flags & RGUI_FLAG_IS_PLAYLISTS_TAB)
    {
@@ -8194,6 +8315,51 @@ static void rgui_populate_entries(
    }
 
    rgui_navigation_set(data, true);
+
+   /* Determine whether to show entry index */
+   rgui->entry_index_str[0] = '\0';
+   if (     settings->bools.playlist_show_entry_idx
+         && ((rgui->flags & RGUI_FLAG_IS_PLAYLIST) || (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)))
+   {
+      menu_list_t *menu_list     = menu_st->entries.list;
+      size_t entry_idx_selection = menu_st->selection_ptr + 1;
+      size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+      unsigned entry_idx_offset  = 0;
+      bool show_entry_idx        = true;
+
+      if (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
+      {
+         if (string_is_equal(path, MENU_ENUM_LABEL_GOTO_EXPLORE_STR))
+            show_entry_idx = false;
+         else
+         {
+            /* Skip header items (Search Name + Add Additional Filter + Save as View + Delete this View) */
+            menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            menu_entry_get(&entry, 0, 0, NULL, true);
+
+            if (entry.type == MENU_SETTINGS_LAST + 1 || entry.type == FILE_TYPE_PLAIN)
+               entry_idx_offset = 1;
+            else if (entry.type == FILE_TYPE_RDB)
+               entry_idx_offset = 2;
+         }
+
+         if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
+            entry_idx_selection -= entry_idx_offset;
+         else
+            show_entry_idx = false;
+
+         if (list_size >= entry_idx_offset)
+            list_size           -= entry_idx_offset;
+      }
+
+      rgui->entry_index_offset = entry_idx_offset;
+
+      if (show_entry_idx)
+         snprintf(rgui->entry_index_str, sizeof(rgui->entry_index_str),
+            "%lu/%lu", (unsigned long)entry_idx_selection,
+                       (unsigned long)list_size);
+   }
 
    /* If aspect ratio lock is enabled, must restore
     * content video settings when accessing the video
@@ -8646,6 +8812,10 @@ static void rgui_toggle(void *userdata, bool menu_on)
    /* Reset */
    rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
 
+   /* Forget history playlist selection in order to
+    * focus back on the same launched entry. */
+   rgui->playlist_mainmenu_selection[0] = 0;
+
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
@@ -9068,5 +9238,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_update_savestate_thumbnail_image,
    NULL,                               /* pointer_down */
    rgui_pointer_up,
-   rgui_menu_entry_action
+   rgui_menu_entry_action,
+   rgui_wheel_scroll
 };

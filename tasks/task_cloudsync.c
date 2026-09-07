@@ -34,6 +34,7 @@
 #include "../paths.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
+#include <compat/strl.h>
 
 #define CSPFX "[CloudSync] "
 
@@ -1443,15 +1444,15 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
       char title[128];
-      size_t _len = strlcpy(title, "Cloud Sync finished", sizeof(title));
+      size_t _len = strlcpy_lit(title, "Cloud Sync finished", sizeof(title));
       if (sync_state->failures || sync_state->conflicts)
-         _len += strlcpy(title + _len, " with ", sizeof(title) - _len);
+         _len += strlcpy_lit(title + _len, " with ", sizeof(title) - _len);
       if (sync_state->failures)
-         _len += strlcpy(title + _len, "failures", sizeof(title) - _len);
+         _len += strlcpy_lit(title + _len, "failures", sizeof(title) - _len);
       if (sync_state->failures && sync_state->conflicts)
-         _len += strlcpy(title + _len, " and ", sizeof(title) - _len);
+         _len += strlcpy_lit(title + _len, " and ", sizeof(title) - _len);
       if (sync_state->conflicts)
-         strlcpy(title + _len, "conflicts", sizeof(title) - _len);
+         strlcpy_lit(title + _len, "conflicts", sizeof(title) - _len);
       task_free_title(task);
       task_set_title(task, strdup(title));
 
@@ -1610,7 +1611,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    sync_state->start_time          = cpu_features_get_time_usec();
    sync_state->conflict_resolution = conflict_resolution;
 
-   strlcpy(task_title, "Cloud Sync in progress", sizeof(task_title));
+   strlcpy_lit(task_title, "Cloud Sync in progress", sizeof(task_title));
 
    task->state    = sync_state;
    task->title    = strdup(task_title);

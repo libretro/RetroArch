@@ -258,6 +258,36 @@ int64_t filestream_get_size(RFILE *stream)
    return output;
 }
 
+int64_t filestream_get_sparse_granularity(RFILE *stream)
+{
+   if (!stream)
+      return 0;
+
+   /* Same reasoning as filestream_punch_hole: only the built-in
+    * implementation has a descriptor to ask about. */
+   if (filestream_open_cb != NULL)
+      return 0;
+
+   return retro_vfs_file_get_sparse_granularity_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
+}
+
+int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len)
+{
+   if (!stream)
+      return -1;
+
+   /* Only the built-in implementation can do this: a frontend-supplied
+    * VFS handle need not be a file, and the interface exposes no
+    * descriptor to punch through. Reporting -1 lets the caller fall back
+    * to writing zeroes. */
+   if (filestream_open_cb != NULL)
+      return -1;
+
+   return retro_vfs_file_punch_hole_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, offset, len);
+}
+
 int64_t filestream_truncate(RFILE *stream, int64_t length)
 {
    int64_t output;
@@ -1230,7 +1260,7 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 {
    /* The scan window is heap rather than a local: at char buf[4096]
     * this was a 4368-byte frame, over half of the 8 KiB a GEKKO
-    * thread gets (STACKSIZE in rthreads/gx_pthread.h).  Shrinking it
+    * thread gets (the GEKKO STACKSIZE in rthreads.c).  Shrinking it
     * instead would have been the cheaper change and the wrong one -
     * the window is how far a single conversion may reach, so a
     * smaller one fails differently on long input rather than merely
@@ -1705,13 +1735,10 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
    {
       /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
        * thread stack in the tree rather than by throughput.  GEKKO
-       * threads get 8 KiB (STACKSIZE in rthreads/gx_pthread.h), 3DS
-       * 32 KiB (ctr_pthread.h) and Vita 64 KiB - and this is
-       * libretro-common API, so a caller on a spawned thread is not
-       * hypothetical.  (psp_pthread.h declares 8 KiB too, but nothing
-       * includes it: rthreads.c reaches for gx_pthread.h under GEKKO
-       * and ctr_pthread.h under _3DS, and PSP falls through to plain
-       * pthreads.  The 8 KiB floor is GEKKO's.)
+       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS and PSP
+       * 32 KiB and Vita 64 KiB - and this is libretro-common API, so
+       * a caller on a spawned thread is not hypothetical.  The 8 KiB
+       * floor is GEKKO's.
        *
        * Bigger reads are faster, and at or above the VFS's own 64 KiB
        * stdio buffer they skip it entirely: measured on the unchanged
@@ -2096,15 +2123,85 @@ error:
 bool filestream_write_file(const char *path, const void *data, int64_t size)
 {
    int64_t ret   = 0;
+   /* Everything this stream will ever write is in 'data' already, so
+    * ask for the descriptor path where one exists: one write for the
+    * whole buffer instead of a copy through a stdio buffer and a
+    * flush at close. */
    RFILE *file   = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!file)
       return false;
    ret = filestream_write(file, data, size);
    if (filestream_close(file) != 0)
       free(file);
    return (ret == size);
+}
+
+bool filestream_write_file_atomic(const char *path,
+      const void *data, int64_t size)
+{
+   int64_t  ret       = 0;
+   size_t   path_len  = 0;
+   char    *temp_path = NULL;
+   RFILE   *file      = NULL;
+
+   if (!path || !*path)
+      return false;
+
+   path_len  = strlen(path);
+   temp_path = (char*)malloc(path_len + sizeof(".tmp"));
+   if (!temp_path)
+      return false;
+   memcpy(temp_path, path, path_len);
+   memcpy(temp_path + path_len, ".tmp", sizeof(".tmp"));
+
+   file = filestream_open(temp_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+   if (!file)
+   {
+      free(temp_path);
+      return false;
+   }
+
+   ret = filestream_write(file, data, size);
+
+   /* A buffered write reports a full disk at close, not at write,
+    * so both have to agree before the rename goes ahead. */
+   if (filestream_close(file) != 0)
+   {
+      free(file);
+      filestream_delete(temp_path);
+      free(temp_path);
+      return false;
+   }
+
+   if (ret != size)
+   {
+      filestream_delete(temp_path);
+      free(temp_path);
+      return false;
+   }
+
+   if (filestream_rename(temp_path, path) == 0)
+   {
+      free(temp_path);
+      return true;
+   }
+
+   /* POSIX rename replaces the destination; the Win32 one refuses an
+    * existing destination, so it needs the target gone first. */
+   filestream_delete(path);
+   if (filestream_rename(temp_path, path) == 0)
+   {
+      free(temp_path);
+      return true;
+   }
+
+   filestream_delete(temp_path);
+   free(temp_path);
+   return false;
 }
 
 char *filestream_getline(RFILE *stream)

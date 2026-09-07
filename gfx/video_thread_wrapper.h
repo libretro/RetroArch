@@ -281,6 +281,12 @@ typedef struct thread_video
 
    bool alive;
    bool focus;
+   /* The context's answer to "have you anything to present to", polled
+    * on the video thread after each frame beside alive and focus, and
+    * read from the main thread under thr->lock. The context data
+    * belongs to the video thread; asking it directly from the runloop
+    * would read a swapchain handle while this thread rebuilds it. */
+   bool presentable;
    bool suppress_screensaver;
    bool has_windowed;
    bool nonblock;
@@ -323,6 +329,13 @@ uintptr_t video_thread_texture_handle(void *data,
  * Must be called from the main thread before freeing GPU resources
  * that an in-flight frame might reference.  No-op on non-threaded
  * video or when called from the video thread. */
+/* The context's last answer to "have you anything to present to",
+ * polled on the video thread after each frame and published under
+ * thr->lock. False only when the wrapper is active and the context
+ * said so; true in every other case, including when there is no
+ * wrapper, so callers need no threading test of their own. */
+bool video_thread_presentable(void);
+
 void video_thread_wait_idle(void);
 
 RETRO_END_DECLS

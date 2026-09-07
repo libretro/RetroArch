@@ -76,6 +76,10 @@ typedef struct rtt_font
    int units_per_em;
    int loca_long;
    int cmap_format;
+   /* maxp.maxPoints: the largest simple-glyph point count in the font,
+    * which sizes the outline scratch carved into each render's block
+    * (0 when maxp is the CFF short form, leaving per-glyph fallback). */
+   int max_points;
 } rtt_font_t;
 
 /* ------------------------------------------------------------------ */
@@ -218,7 +222,7 @@ static void rtt__select_cmap(rtt_font_t *f, uint32_t cmap, uint32_t cmap_len)
 static int rtt_init(rtt_font_t *f, const uint8_t *data, size_t size,
       int fontstart)
 {
-   uint32_t cmap, cmap_len = 0, maxp, head, hhea, dummy;
+   uint32_t cmap, cmap_len = 0, maxp, maxp_len = 0, head, hhea, dummy;
 
    memset(f, 0, sizeof(*f));
    if (!data || fontstart < 0 || (size_t)fontstart >= size)
@@ -232,7 +236,7 @@ static int rtt_init(rtt_font_t *f, const uint8_t *data, size_t size,
    cmap    = rtt__find_table(f, (uint32_t)fontstart, "cmap", &cmap_len);
    head    = rtt__find_table(f, (uint32_t)fontstart, "head", &dummy);
    hhea    = rtt__find_table(f, (uint32_t)fontstart, "hhea", &dummy);
-   maxp    = rtt__find_table(f, (uint32_t)fontstart, "maxp", &dummy);
+   maxp    = rtt__find_table(f, (uint32_t)fontstart, "maxp", &maxp_len);
    f->hmtx = rtt__find_table(f, (uint32_t)fontstart, "hmtx", &f->hmtx_len);
    f->glyf = rtt__find_table(f, (uint32_t)fontstart, "glyf", &f->glyf_len);
    f->loca = rtt__find_table(f, (uint32_t)fontstart, "loca", &f->loca_len);
@@ -245,6 +249,7 @@ static int rtt_init(rtt_font_t *f, const uint8_t *data, size_t size,
    f->units_per_em = rtt__u16(f, head + 18);
    f->loca_long    = (int16_t)rtt__u16(f, head + 50) != 0;
    f->num_glyphs   = rtt__u16(f, maxp + 4);
+   f->max_points   = maxp_len >= 8 ? (int)rtt__u16(f, maxp + 6) : 0;
    f->num_hmetrics = rtt__u16(f, hhea + 34);
 
    if (f->units_per_em <= 0 || f->num_glyphs <= 0)
@@ -456,6 +461,12 @@ typedef struct rtt__raster
 {
    float *acc;   /* (w + 2) * h delta cells */
    int   *rowmax; /* per-row dirty extent (exclusive), for resolve */
+   /* outline scratch for simple glyphs, carved behind rowmax: point
+    * flags and coordinates for up to pts_cap points */
+   uint8_t *pts_flags;
+   float   *pts_xs;
+   float   *pts_ys;
+   int      pts_cap;
    int    w;
    int    h;
    /* font units -> device transform (y flipped inside emit) */
@@ -941,6 +952,7 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
       uint8_t *flags = NULL;
       float   *xs    = NULL;
       float   *ys    = NULL;
+      uint8_t *own   = NULL;
       int ok = 0;
 
       if (ncont == 0)
@@ -952,11 +964,25 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
       inslen = rtt__u16(f, g + 10 + 2 * (uint32_t)ncont);
       p      = g + 12 + 2 * (uint32_t)ncont + inslen;
 
-      flags = (uint8_t*)malloc((size_t)npts);
-      xs    = (float*)malloc(sizeof(float) * (size_t)npts);
-      ys    = (float*)malloc(sizeof(float) * (size_t)npts);
-      if (!flags || !xs || !ys)
-         goto simple_done;
+      if (npts <= r->pts_cap)
+      {
+         /* the render's block already holds room for this glyph */
+         flags = r->pts_flags;
+         xs    = r->pts_xs;
+         ys    = r->pts_ys;
+      }
+      else
+      {
+         /* a glyph beyond what maxp promised: one block of its own */
+         size_t o_xs = ((size_t)npts + 63) & ~(size_t)63;
+         size_t o_ys = o_xs + ((sizeof(float) * (size_t)npts + 63) & ~(size_t)63);
+         own   = (uint8_t*)malloc(o_ys + sizeof(float) * (size_t)npts);
+         if (!own)
+            goto simple_done;
+         flags = own;
+         xs    = (float*)(own + o_xs);
+         ys    = (float*)(own + o_ys);
+      }
 
       /* flags, run-length encoded */
       for (i = 0; i < npts; )
@@ -1103,9 +1129,7 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
       ok = 1;
 
 simple_done:
-      free(flags);
-      free(xs);
-      free(ys);
+      free(own);
       return ok;
    }
    else
@@ -1202,7 +1226,7 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
    rtt__raster_t r;
    rtt__xform_t  ident;
    int bx0, by0, bx1, by1, y;
-   size_t cells;
+   size_t cells, scratch_pts, o_flags, o_xs, o_ys;
 
    if (!dst || out_w <= 0 || out_h <= 0)
       return;
@@ -1225,8 +1249,13 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
    r.cy = r.sy0 = 0.0f;
 
    cells = (size_t)(out_w + 2) * (size_t)out_h;
-   /* one allocation: float cells + per-row dirty extents */
-   r.acc = (float*)calloc(cells + (size_t)out_h, sizeof(float));
+   /* one allocation: float cells, per-row dirty extents, then the
+    * outline scratch sized from maxp so no glyph allocates on its own */
+   scratch_pts = f->max_points > 0 ? (size_t)f->max_points : 0;
+   o_flags     = (cells + (size_t)out_h) * sizeof(float);
+   o_xs        = o_flags + ((scratch_pts + 63) & ~(size_t)63);
+   o_ys        = o_xs + ((scratch_pts * sizeof(float) + 63) & ~(size_t)63);
+   r.acc = (float*)malloc(o_ys + scratch_pts * sizeof(float));
    if (!r.acc)
    {
       for (y = 0; y < out_h; y++)
@@ -1234,7 +1263,14 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
                (size_t)out_w * esz);
       return;
    }
-   r.rowmax = (int*)(r.acc + cells);
+   /* only the cells and extents start zeroed; the outline scratch is
+    * written before it is read */
+   memset(r.acc, 0, o_flags);
+   r.rowmax    = (int*)(r.acc + cells);
+   r.pts_flags = (uint8_t*)r.acc + o_flags;
+   r.pts_xs    = (float*)((uint8_t*)r.acc + o_xs);
+   r.pts_ys    = (float*)((uint8_t*)r.acc + o_ys);
+   r.pts_cap   = (int)scratch_pts;
 
    ident.a = ident.d = 1.0f;
    ident.b = ident.c = 0.0f;

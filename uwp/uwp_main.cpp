@@ -52,6 +52,7 @@
 #include "../verbosity.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
+#include <compat/strl.h>
 
 using namespace RetroArchUWP;
 
@@ -1148,7 +1149,7 @@ extern "C" {
 
       if (split.size >= 2)
       {
-         _len += strlcpy(lang_iso + _len, "_", sizeof(lang_iso) - _len);
+         _len += strlcpy_lit(lang_iso + _len, "_", sizeof(lang_iso) - _len);
          strlcpy(lang_iso       + _len,
                split.elems[split.size >= 3 ? 2 : 1].data,
                sizeof(lang_iso) - _len);

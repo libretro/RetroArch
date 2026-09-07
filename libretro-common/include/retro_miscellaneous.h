@@ -22,6 +22,9 @@
 
 #ifndef __RARCH_MISCELLANEOUS_H
 #define __RARCH_MISCELLANEOUS_H
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define RARCH_MAX_SUBSYSTEMS 20
 #define RARCH_MAX_SUBSYSTEM_ROMS 10
@@ -49,7 +52,7 @@
 #include <compat/msvc.h>
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <sys/param.h>
 #endif
 

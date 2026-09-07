@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <memalign.h>
 
 #ifdef _3DS
 #include <3ds/types.h>
@@ -555,6 +556,9 @@ static void video_thread_loop(void *data)
          bool               alive = false;
          bool               focus = false;
          bool        has_windowed = false;
+         /* True unless the context says otherwise, so a driver without
+          * the hook keeps pacing exactly as it did. */
+         bool         presentable = true;
 
          vp.x                     = 0;
          vp.y                     = 0;
@@ -582,7 +586,7 @@ static void video_thread_loop(void *data)
 
                /* video_driver_build_info() resolves userdata from
                 * video_driver_st, and video_thread_free() clears
-                * VIDEO_FLAG_THREAD_WRAPPER_ACTIVE before this thread
+                * thread_wrapper_active before this thread
                 * stops, so a frame built inside that window would carry
                 * the thread_video_t wrapper instead of the real driver
                 * data.  This thread knows its own. */
@@ -604,6 +608,10 @@ static void video_thread_loop(void *data)
                      focus = thr->driver->focus(thr->driver_data);
                   if (thr->driver->has_windowed)
                      has_windowed = thr->driver->has_windowed(thr->driver_data);
+                  /* Direct: this is the video thread, which owns the
+                   * context, and the dispatching call would read back
+                   * the value published here on the previous frame. */
+                  presentable = video_context_driver_presentable_direct();
                }
             }
             else
@@ -618,6 +626,7 @@ static void video_thread_loop(void *data)
          slock_lock(thr->lock);
          thr->alive         = alive;
          thr->focus         = focus;
+         thr->presentable   = presentable;
          thr->has_windowed  = has_windowed;
          thr->vp            = vp;
          /* Statistics. The viewport maths ran on this thread during
@@ -863,10 +872,13 @@ static bool video_thread_init(thread_video_t *thr,
       max_size              *= info.rgb32 ?
          sizeof(uint32_t) : sizeof(uint16_t);
 
+      /* The main thread copies every core frame in here and the video
+       * thread reads it back for upload; a cache-line start keeps both
+       * copies on aligned rows for the usual pitches. */
 #ifdef _3DS
       thr->frame.buffer      = linearMemAlign(max_size, 0x80);
 #else
-      thr->frame.buffer      = (uint8_t*)malloc(max_size);
+      thr->frame.buffer      = (uint8_t*)memalign_alloc(64, max_size);
 #endif
       if (!thr->frame.buffer)
          return false;
@@ -985,8 +997,6 @@ static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
-
    if (thr)
    {
       if (thr->thread)
@@ -1006,11 +1016,18 @@ static void video_thread_free(void *data)
             thr->driver->free(thr->driver_data);
       }
 
+      /* After the join, not before it: the video thread reads this
+       * from inside driver frame callbacks, so clearing it while that
+       * thread still runs is a write racing those reads - and it
+       * briefly tells the rest of the frontend the wrapper is gone
+       * while its thread is still presenting. */
+      video_state_get_ptr()->thread_wrapper_active = false;
+
       free(thr->texture.frame);
 #ifdef _3DS
       linearFree(thr->frame.buffer);
 #else
-      free(thr->frame.buffer);
+      memalign_free(thr->frame.buffer);
 #endif
       free(thr->alpha_mod);
 
@@ -1023,6 +1040,14 @@ static void video_thread_free(void *data)
       RARCH_LOG(
          "Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
          thr->hit_count, thr->miss_count);
+
+      /* video_init_thread() pointed the video state at the vtable
+       * embedded in this struct. Point it back at the wrapped driver's
+       * static vtable before the struct goes away, so a later
+       * video_driver_free_internal() reading current_video sees a live
+       * driver, as it does without threading. */
+      if (video_state_get_ptr()->current_video == &thr->video_thread)
+         video_state_get_ptr()->current_video = (video_driver_t*)thr->driver;
 
       free(thr);
    }
@@ -1631,7 +1656,7 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
     * thread wrapper here, so without the flag set get_ident() would
     * resolve to "Thread wrapper" instead of the wrapped driver ("glcore"),
     * causing shader-backend detection to fail. */
-   video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+   video_state_get_ptr()->thread_wrapper_active = true;
    if (!video_thread_init(thr, info, input, input_data))
    {
       /* video_thread is a member of thr, not a static vtable, so leaving
@@ -1662,7 +1687,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
     * driver reinit, is_threaded may already reflect the new
     * configuration while video_st->data still points to the
     * previous (possibly non-threaded) driver's private state. */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return false;
 
    thr = (thread_video_t*)video_st->data;
@@ -1698,7 +1723,7 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
     * the previous driver's private state.  Fall back to calling
     * func directly (same contract as the "already on video
     * thread" branch below). */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return func(data);
 
    thr = (thread_video_t*)video_st->data;
@@ -1735,6 +1760,20 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
  * Must be called from the main thread.  No-op if the video
  * thread is not running or if called from the video thread
  * itself (would deadlock). */
+bool video_thread_presentable(void)
+{
+   bool ret;
+   thread_video_t *thr;
+   if (!video_driver_thread_wrapper_active())
+      return true;
+   if (!(thr = (thread_video_t*)video_driver_get_ptr()))
+      return true;
+   slock_lock(thr->lock);
+   ret = thr->presentable;
+   slock_unlock(thr->lock);
+   return ret;
+}
+
 void video_thread_wait_idle(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -1744,7 +1783,7 @@ void video_thread_wait_idle(void)
     * when the threaded video wrapper is actually active.  With
     * non-threaded video, video_st->data points to the raw
     * driver's private state. */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return;
 
    thr = (thread_video_t*)video_st->data;

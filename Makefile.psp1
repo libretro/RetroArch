@@ -52,7 +52,7 @@ ifeq ($(HAVE_STATIC_DUMMY),1)
 else
   LIBS += -lretro_psp1
 endif
-LIBS += -lstdc++ -lpspgu -lpspgum -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread
+LIBS += -lstdc++ -lpspgu -lpspgum -lpspaudio -lpspfpu -lpsppower -lpsprtc
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS

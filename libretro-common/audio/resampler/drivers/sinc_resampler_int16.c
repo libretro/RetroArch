@@ -49,6 +49,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memalign.h>
 #include <math.h>
 
 #include <audio/sinc_resampler_int16.h>
@@ -94,6 +95,9 @@ enum sinc_i16_window
 
 typedef struct rarch_sinc_resampler_int16
 {
+   /* buffer_l owns one block that also holds the table and, on NEON,
+    * the coefficient scratch; each region starts on a 64-byte boundary
+    * from the rings' start and the others are views. */
    int32_t  *phase_table; /* Q1.30 coefficients (+ interleaved deltas for Kaiser) */
    int16_t  *buffer_l;    /* 2 * taps int16 ring (doubled to stay contiguous)     */
    int16_t  *buffer_r;
@@ -449,11 +453,7 @@ void sinc_resampler_int16_free(void *re_)
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
    if (re)
    {
-      free(re->phase_table);
-      free(re->buffer_l);
-#ifdef SINC_I16_KAISER_FISSION
-      free(re->coef_scratch);
-#endif
+      memalign_free(re->buffer_l);
    }
    free(re);
 }
@@ -465,7 +465,7 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
    unsigned sidelobes = 0;
    int      window  = SINC_I16_WINDOW_LANCZOS;
    int      stride;
-   size_t   phase_elems;
+   size_t   phase_elems, o_table, o_coef, len;
    int      phases;
    rarch_sinc_resampler_int16_t *re =
       (rarch_sinc_resampler_int16_t*)calloc(1, sizeof(*re));
@@ -536,16 +536,23 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
    phases      = 1 << re->phase_bits;
    phase_elems = (size_t)phases * re->taps * stride;
 
-   re->phase_table = (int32_t*)malloc(sizeof(int32_t) * phase_elems);
-   re->buffer_l    = (int16_t*)calloc(4 * re->taps, sizeof(int16_t));
-   if (!re->phase_table || !re->buffer_l)
-      goto error;
-   re->buffer_r    = re->buffer_l + 2 * re->taps;
-
+   /* The two rings first, then the table, then (NEON) the coefficient
+    * scratch, out of one block; the rings start zeroed as before. The
+    * block is owned through buffer_l. */
+   o_table  = (sizeof(int16_t) * 4 * re->taps + 63) & ~(size_t)63;
+   o_coef   = o_table + ((sizeof(int32_t) * phase_elems + 63) & ~(size_t)63);
+   len      = o_coef;
 #ifdef SINC_I16_KAISER_FISSION
-   re->coef_scratch = (int32_t*)malloc(sizeof(int32_t) * (re->taps + 4u));
-   if (!re->coef_scratch)
+   len     += sizeof(int32_t) * (re->taps + 4u);
+#endif
+   re->buffer_l    = (int16_t*)memalign_alloc(128, len);
+   if (!re->buffer_l)
       goto error;
+   memset(re->buffer_l, 0, sizeof(int16_t) * 4 * re->taps);
+   re->buffer_r    = re->buffer_l + 2 * re->taps;
+   re->phase_table = (int32_t*)((uint8_t*)re->buffer_l + o_table);
+#ifdef SINC_I16_KAISER_FISSION
+   re->coef_scratch = (int32_t*)((uint8_t*)re->buffer_l + o_coef);
 #endif
 
    if (window == SINC_I16_WINDOW_KAISER)

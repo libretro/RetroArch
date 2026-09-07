@@ -34,6 +34,9 @@
 #include "../drivers_keyboard/keyboard_event_apple.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/ui_companion_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef HAVE_COREMOTION
 #import <CoreMotion/CoreMotion.h>
@@ -67,7 +70,7 @@ typedef struct icade_map
 /*
  * FORWARD DECLARATIONS
  */
-#ifdef OSX
+#if TARGET_OS_OSX
 float cocoa_screen_get_backing_scale_factor(void);
 #endif
 
@@ -416,7 +419,7 @@ static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    float   backing_scale_factor = cocoa_screen_get_backing_scale_factor();
 #else
    int     backing_scale_factor = 1;
@@ -469,7 +472,7 @@ static int16_t cocoa_lightgun_aiming_state(
    int16_t x = apple->window_pos_x;
    int16_t y = apple->window_pos_y;
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    x *= cocoa_screen_get_backing_scale_factor();
    y *= cocoa_screen_get_backing_scale_factor();
 #endif
@@ -608,7 +611,7 @@ static int16_t cocoa_input_state(
          case RETRO_DEVICE_ID_MOUSE_X:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
-#ifdef IOS
+#if TARGET_OS_IPHONE
                return apple->window_pos_x;
 #else
                return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
@@ -618,7 +621,7 @@ static int16_t cocoa_input_state(
          case RETRO_DEVICE_ID_MOUSE_Y:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
-#ifdef IOS
+#if TARGET_OS_IPHONE
                return apple->window_pos_y;
 #else
                return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
@@ -1051,7 +1054,7 @@ static void cocoa_input_keypress_vibrate(void)
 }
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_input_grab_mouse(void *data, bool state)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
@@ -1097,7 +1100,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#if defined(OSX) || TARGET_OS_IOS
+#if TARGET_OS_OSX || TARGET_OS_IOS
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */

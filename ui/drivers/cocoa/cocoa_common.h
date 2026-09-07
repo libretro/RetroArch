@@ -37,7 +37,7 @@
  * dispserv_apple.m's resolution-switching code) branch on this
  * macro.  Defined here so every translation unit sees the same
  * answer. */
-#if defined(OSX) && defined(MAC_OS_X_VERSION_10_6) && \
+#if TARGET_OS_OSX && defined(MAC_OS_X_VERSION_10_6) && \
     (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
      MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
 #define RARCH_HAS_CGDISPLAYMODE_API 1
@@ -59,6 +59,9 @@
 #endif
 
 #include "../../../retroarch.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen
@@ -110,9 +113,9 @@ void get_ios_version(int *major, int *minor);
 @interface CocoaView : NSView
 
 + (CocoaView*)get;
-#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
-- (void)display;
-#endif
+/* Sets the title of the window this view is in; the target of a
+ * performSelectorOnMainThread: from ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title;
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 @property(nonatomic,readwrite,retain) CADisplayLink *displayLink API_AVAILABLE(macos(14.0));

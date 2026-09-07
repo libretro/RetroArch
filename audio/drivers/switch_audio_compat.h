@@ -34,6 +34,9 @@ typedef CondVar compat_condvar;
    condvarInit(condvar)
 #define compat_condvar_wait(condvar, mutex) \
    condvarWait(condvar, mutex)
+/* Timed wait; ns is the bound in nanoseconds. */
+#define compat_condvar_wait_timeout(condvar, mutex, ns) \
+   condvarWaitTimeout(condvar, mutex, ns)
 #define compat_condvar_wake_all(condvar) \
    condvarWakeAll(condvar)
 
@@ -80,6 +83,9 @@ typedef trn_condvar_t compat_condvar;
    trn_condvar_create(condvar)
 #define compat_condvar_wait(condvar, mutex) \
    trn_condvar_wait(condvar, mutex, -1)
+/* Timed wait; ns is the bound in nanoseconds. */
+#define compat_condvar_wait_timeout(condvar, mutex, ns) \
+   trn_condvar_wait(condvar, mutex, (ns))
 #define compat_condvar_wake_all(condvar) \
    trn_condvar_signal(condvar, -1)
 

@@ -268,6 +268,7 @@ static const struct
    char s_d9a51d02[18];
    char s_12e77e8f[12];
    char s_98760b94[40];
+   char s_b81eb68d[22];
    char s_af6007a1[17];
    char s_da068369[16];
    char s_daead8a5[7];
@@ -294,6 +295,7 @@ static const struct
    char s_d2d4c381[29];
    char s_a95aa0fc[34];
    char s_49b0b12a[7];
+   char s_532d60d5[42];
    char s_13d32d54[23];
    char s_91e41658[16];
    char s_30375dfa[28];
@@ -301,6 +303,8 @@ static const struct
    char s_8c7495e3[16];
    char s_ad7c73f6[16];
    char s_30acd6fb[22];
+   char s_35dcde4f[41];
+   char s_ce7da552[49];
    char s_04b30c51[20];
    char s_e5aeacf9[21];
    char s_24976a5b[35];
@@ -602,6 +606,7 @@ static const struct
    char s_dd6afca3[22];
    char s_4bcbcc14[47];
    char s_e97bb565[18];
+   char s_47e8dc21[40];
    char s_da7a38eb[20];
 #ifdef _3DS
    char s_9db0c321[28];
@@ -2029,6 +2034,7 @@ static const struct
    char s_0a008a9d[9];
    char s_9c6ed9ca[18];
    char s_68664e16[40];
+   char s_9ad2e88b[39];
    char s_d4aabe7f[21];
    char s_4674fab3[12];
    char s_904219cb[21];
@@ -2180,6 +2186,9 @@ static const struct
    char s_44e1c38f[28];
    char s_57047267[9];
    char s_6665b7fc[64];
+   char s_2e6ad26e[8];
+   char s_43e9897c[38];
+   char s_7fbf0860[9];
    char s_f417f6f1[23];
    char s_020e2bc5[18];
    char s_59f183c8[24];
@@ -2255,6 +2264,7 @@ static const struct
    char s_69b801ef[19];
    char s_a40653a7[40];
    char s_52e3d6ea[41];
+   char s_c992346c[35];
    char s_580e244f[7];
    char s_a9c8430e[15];
    char s_f5911f43[35];
@@ -2420,6 +2430,8 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[80];
    char s_5832a2c2[132];
+   char s_6f6e337b[468];
+   char s_f47e544f[288];
    char s_20cc6597[108];
    char s_21b0bad3[48];
    char s_66e9521c[77];
@@ -2447,8 +2459,14 @@ static const struct
    char s_8a24406f[39];
    char s_8c6b0fea[50];
    char s_5977d6d8[50];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[175];
    char s_cb67f2a4[35];
    char s_3c3598a9[49];
+   char s_3bac47bd_0[500];
+   char s_3bac47bd_1[20];
+   char s_90e7db40_0[500];
+   char s_90e7db40_1[80];
    char s_4b78ee7f[88];
    char s_aed11d67[133];
    char s_dbe6e749[98];
@@ -2627,6 +2645,8 @@ static const struct
    char s_a68d6d11[75];
    char s_74022c02[121];
    char s_8abad013[78];
+   char s_0a53120f_0[500];
+   char s_0a53120f_1[6];
    char s_a39ca959[78];
    char s_16b9856e[38];
    char s_0ef5e125[31];
@@ -3415,6 +3435,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[32];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[241];
    char s_f2963d2d[32];
    char s_4c592ae1[114];
    char s_52ac4fb9[135];
@@ -3486,6 +3507,8 @@ static const struct
    char s_43946ee5[75];
    char s_5492b73d[50];
    char s_01e5fbea[345];
+   char s_0653bf6a_0[500];
+   char s_0653bf6a_1[4];
    char s_123f401f[129];
    char s_0d96ed73[45];
    char s_9f0fd076[131];
@@ -3535,6 +3558,7 @@ static const struct
    char s_7968f59d[53];
    char s_8cee3615[211];
    char s_58c80718[347];
+   char s_894ecb9a[400];
    char s_67d549fd[41];
    char s_afac733c[38];
    char s_3aaf6bf1[155];
@@ -3635,6 +3659,7 @@ static const struct
    char s_25e53d33[39];
    char s_26cce51e[26];
    char s_07dd4745[20];
+   char s_72293658[109];
    char s_aaaaf898[30];
    char s_4173591b[12];
    char s_c2b63d3e[16];
@@ -3760,6 +3785,8 @@ static const struct
    char s_5eafa434[39];
    char s_7f1e25bf[36];
    char s_ed9e4f6f[218];
+   char s_ecbaddbe[69];
+   char s_c860f446[74];
    char s_30da3845[30];
    char s_d50c6bf1[32];
    char s_64a038aa[29];
@@ -4684,6 +4711,7 @@ static const struct
    "Ic\303\264ne de l\342\200\231app",
    "Ressources ",
    "Ouvrir le panneau de configuration ASIO",
+   "Canaux de sortie ASIO",
    "Taille des blocs",
    "P\303\251riph\303\251rique ",
    "Audio ",
@@ -4710,6 +4738,7 @@ static const struct
    "Respecter le mode silencieux",
    "Couper le son pour le rembobinage",
    "Audio ",
+   "Estimation du taux de consommation (sink)",
    "\303\211tat : Non disponible",
    "\303\211tat : Lecture",
    "\303\211tat : Lecture (en boucle)",
@@ -4717,6 +4746,8 @@ static const struct
    "Etat : Arr\303\252t\303\251",
    "Synchronisation",
    "Synchronisation audio",
+   "Pipeline sur plusieurs fils d'ex\303\251cution",
+   "Augmenter la priorit\303\251 du fil d'ex\303\251cution audio",
    "Gain de volume (dB)",
    "Mode exclusif WASAPI",
    "Format de virgule flottante WASAPI",
@@ -5021,6 +5052,7 @@ static const struct
    "Super r\303\251solution CRT",
    "Fr\303\251quence de rafra\303\256chissement personnalis\303\251e",
    "Centrage vertical",
+   "\303\211crire l'EDID pour le pr\303\251r\303\251glage CRT",
    "Centrage horizontal",
 #ifdef _3DS
    "2D (Effet grille de pixels)",
@@ -6463,6 +6495,7 @@ static const struct
    "Syst\303\250me",
    "Capturer l'\303\251cran",
    "T\303\242ches sur plusieurs fils d'ex\303\251cution",
+   "Privil\303\251gier les c\305\223urs de performance",
    "Miniature principale",
    "Miniatures ",
    "Miniature principale",
@@ -6616,6 +6649,9 @@ static const struct
    "Retard d'images automatique",
    "effectif",
    "\303\211chantillon de temps par image dans un \303\251tat stable uniquement",
+   "Forc\303\251e",
+   "N\303\251gociation du plein \303\251cran exclusif",
+   "Relax\303\251e",
    "Affichage plein \303\251cran",
    "Mode plein \303\251cran",
    "Largeur en plein \303\251cran",
@@ -6692,6 +6728,7 @@ static const struct
    "Mise \303\240 l'\303\251chelle",
    "Synchronisation \303\240 la ligne de balayage",
    "Simulation de ligne de balayage roulante",
+   "Changement de mode d'affichage SDL",
    "Vid\303\251o",
    "Shaders vid\303\251o",
    "Retarder le chargement des shaders",
@@ -6876,6 +6913,17 @@ static const struct
    "Les ressources de menu utilis\303\251s par RetroArch sont conserv\303\251s dans ce dossier.",
    "Ouvrir le panneau de configuration du pilote ASIO pour configurer les r\303\251glages de routage"
    " et de m\303\251moire tampon du p\303\251riph\303\251rique.",
+   "Quelles deux sorties RetroArch utilise sur le p\303\251riph\303\251rique audio. Un p\303\251riph"
+   "\303\251rique ASIO liste ses sorties par paires num\303\251rot\303\251es\302\240; sur un p\303"
+   "\251riph\303\251rique poss\303\251dant plus de deux sorties, la premi\303\250re paire ne corresp"
+   "ond pas toujours \303\240 celle de vos enceintes ou de votre casque. Choisir la paire correspond"
+   "ant aux prises utilis\303\251es pour l'\303\251coute, telles qu'indiqu\303\251es par le p\303"
+   "\251riph\303\251rique. Les p\303\251riph\303\251riques \303\240 deux sorties n'affichent que les"
+   " sorties 1 et 2.",
+   "Nombre d'images que le pilote audio traite par bloc. 0 demande au pilote d'utiliser la valeur pr"
+   "opre au p\303\251riph\303\251rique, ce qui convient \303\240 la plupart des configurations ; une"
+   " taille de bloc plus importante privil\303\251gie la stabilit\303\251 (en \303\251vitant les cou"
+   "pures) au d\303\251triment de la latence.",
    "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
    "io. Cette option d\303\251pend du pilote.",
    "Pilote audio \303\240 utiliser. (Red\303\251marrage requis)",
@@ -6930,8 +6978,34 @@ static const struct
    "Couper tout le son en mode silencieux.",
    "Coupe automatiquement le son lors du rembobinage.",
    "Modifier les r\303\251glages de l'entr\303\251e/sortie audio.",
+   "Mesure \303\240 quelle vitesse le p\303\251riph\303\251rique audio consomme r\303\251ellement de"
+   "s \303\251chantillons par rapport \303\240 l'horloge syst\303\250me et coupe le r\303\251\303"
+   "\251chantillonneur de cette quantit\303\251. Le cristal de chaque carte son est d\303\251cal\303"
+   "\251 de quelques parties par million ; Avec la synchronisation d\303\251sactiv\303\251e, rien d'"
+   "autre ne le corrige et le tampon d\303\251rive lentement dans un probl\303\250me qu'aucune taill"
+   "e de tampon ne gu\303\251rit. La correction est minuscule et inaudible. Avec la synchronisation "
+   "sur le c\305\223ur cela suit d\303\251j\303\240",
+   " le p\303\251riph\303\251rique et rien n'est appliqu\303\251. Seuls les pilotes qui signalent la"
+   " consommation y participent ; La superposition \303\240 l'\303\251cran indique le taux sous la f"
+   "orme 'Sink'.",
    "Synchroniser l'audio. Recommand\303\251.",
    "Modifier les r\303\251glages de synchronisation audio.",
+   "Le r\303\251\303\251chantillonnage, le filtrage et le mixage audio sont effectu\303\251s sur le "
+   "fil d'ex\303\251cution audio plut\303\264t qu'au sein de chaque image. On obtient ainsi la m\303"
+   "\252me latence que pour le chemin synchrone aux images, quel que soit le r\303\251glage de laten"
+   "ce audio, tout en mesurant le contr\303\264le de cadence au rythme propre du p\303\251riph\303"
+   "\251rique et en sortant le r\303\251\303\251chantillonneur du budget allou\303\251 \303\240 l'im"
+   "age. Les pilotes audio incapables de sortir le p\303\251riph\303\251rique de veille continuent d"
+   "'utiliser le chemin sy",
+   "nchrone aux images.",
+   "Demande au syst\303\250me d'exploitation de planifier le fil d'ex\303\251cution audio avec une p"
+   "riorit\303\251 sup\303\251rieure \303\240 celle du reste de l'interface graphique, afin de r\303"
+   "\251duire le risque qu'une image gourmande en ressources ne prive le p\303\251riph\303\251rique "
+   "audio de donn\303\251es. Cela permet d'obtenir une latence audio plus faible sur les syst\303"
+   "\250mes qui le prennent en charge ; si le syst\303\250me refuse, la priorit\303\251 par d\303"
+   "\251faut est conserv\303\251e et rien d'autre ne change. Cette mesure s'applique au fil d'ex\303"
+   "\251cution audio sur",
+   " lequel s'ex\303\251cutent le pipeline multithread et les callbacks audio principaux.",
    "Volume sonore (en dB). 0 dB correspond au volume normal, et aucun gain n'est appliqu\303\251.",
    "Autoriser le pilote WASAPI \303\240 prendre le contr\303\264le exclusif du p\303\251riph\303\251"
    "rique audio. Si d\303\251sactiv\303\251, le mode partag\303\251 sera utilis\303\251.",
@@ -7199,6 +7273,14 @@ static const struct
    "Utiliser une fr\303\251quence de rafra\303\256chissement personnalis\303\251e sp\303\251cifi\303"
    "\251e dans le fichier de configuration si n\303\251cessaire.",
    "Parcourez ces options si l'image n'est pas centr\303\251e correctement \303\240 l'\303\251cran.",
+   "\303\211crit un bloc EDID d\303\251crivant le pr\303\251r\303\251glage CRT s\303\251lectionn\303"
+   "\251 dans le dossier de configuration. Charg\303\251 en tant qu'EDID de firmware sous Linux (drm"
+   ".edid_firmware) ou comme EDID de substitution sous Windows, il permet \303\240 un \303\251cran d"
+   "\303\251pourvu de DDC de communiquer ses limites de synchronisation, assurant ainsi que le syst"
+   "\303\250me d\303\251marre avec une fr\303\251quence d'affichage compatible avec le CRT. Aucune i"
+   "nstallation n'est effectu\303\251e ; le journal indique l'emplacement du fichier et la mani\303"
+   "\250re de l'util",
+   "iser.",
    "Parcourez ces options si l'image n'est pas centr\303\251e correctement \303\240 l'\303\251cran.",
    "Affiche les recherches pr\303\251c\303\251dentes.",
    "Affiche les bases de donn\303\251es.",
@@ -8504,6 +8586,9 @@ static const struct
    "Voir les informations sp\303\251cifiques \303\240 l'appareil.",
    "Capturer une image de l'\303\251cran.",
    "Effectue des t\303\242ches sur un fil d'ex\303\251cution distinct.",
+   "Maintenir les fils d'ex\303\251cution principal et audio sur les c\305\223urs de processeur les "
+   "plus rapides d'un processeur \303\240 architecture hybride. N'a aucun effet sur les processeurs "
+   "dont tous les c\305\223urs sont identiques. Prend effet au red\303\251marrage.",
    "Type de miniatures \303\240 afficher.",
    "Les images de pochettes, de capture d'\303\251cran et de miniatures d'\303\251cran de titre sont"
    " conserv\303\251es dans ce dossier.",
@@ -8632,6 +8717,13 @@ static const struct
    "nce rapide, temps par image dans une enveloppe de coh\303\251rence). Le r\303\251sultat du diagn"
    "ostic devient un v\303\251ritable signal au prix d'une convergence plus lente apr\303\250s le ch"
    "argement de contenu.",
+   "Dans quelle mesure demander au pilote d'activer le mode plein \303\251cran exclusif lorsque le m"
+   "ode plein \303\251cran fen\303\252tr\303\251 est d\303\251sactiv\303\251. 'Relax\303\251e' se co"
+   "ntente d'une simple demande que le pilote peut refuser ; avec le pilote Vulkan, il s'agit d'une "
+   "requ\303\252te que le pilote ignore parfois, laissant la swapchain sur le chemin d'affichage ind"
+   "\303\251pendant (independent-flip path) du compositeur. 'Forc\303\251e' impose explicitement le "
+   "mode exclusif et le maintient. N\303\251cessite l'extension VK_EXT_full_screen_exclusi",
+   "ve.",
    "Affichage en plein \303\251cran. Peut \303\252tre chang\303\251 lors de l'ex\303\251cution, et p"
    "eut \303\252tre remplac\303\251 par une option en ligne de commande.",
    "Modifier les r\303\251glages du mode plein \303\251cran.",
@@ -8743,6 +8835,11 @@ static const struct
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
    "t en rendant chaque partie de l'\303\251cran en fonction du nombre de sous-images disponibles.",
+   "Permet \303\240 la fen\303\252tre SDL de basculer entre les modes d'affichage qu'elle r\303\251p"
+   "ertorie. 'Auto' n'utilise cette fonction que lorsque le serveur d'affichage natif ne peut pas ch"
+   "anger de mode. 'Toujours' supplante le serveur natif : CRT SwitchRes s\303\251lectionne alors un"
+   " mode parmi ceux de la liste, y compris ceux dont les timings sont inconnus, et les timings CRT "
+   "personnalis\303\251s ne sont pas disponibles.",
    "Modifier les r\303\251glages de sortie vid\303\251o.",
    "Activer le pipeline de shader vid\303\251o.",
    "Retarder le chargement automatique des shaders (en ms). Peut r\303\251soudre des probl\303\250me"
@@ -8918,6 +9015,8 @@ static const struct
    "Application des changements de cheats.",
    "Application du patch : %s",
    "Appliquer le shader",
+   "ASIO n'est pas encore le pilote audio actif. Red\303\251marrer RetroArch pour ouvrir son panneau"
+   " de configuration.",
    "Volume du mixeur audio global",
    "Son coup\303\251.",
    "Son r\303\251activ\303\251.",
@@ -9060,6 +9159,9 @@ static const struct
    "Incoh\303\251rence de la somme de contr\303\264le CRC32 entre le fichier du contenu et sa somme "
    "de contr\303\264le enregistr\303\251e dans l'en-t\303\252te du fichier de relecture. Replay tr"
    "\303\250s susceptible de se d\303\251synchroniser lors de la lecture.",
+   "Impossible d'\303\251crire un EDID pour le pr\303\251r\303\251glage CRT s\303\251lectionn\303"
+   "\251.",
+   "EDID \303\251crit dans %s. Consultez le journal pour savoir comment le charger.",
    "Temps personnalis\303\251 attribu\303\251",
    "D\303\251compression d\303\251j\303\240 en cours.",
    "\303\211chec \303\240 la d\303\251compression.",
@@ -9501,7 +9603,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215972u
+      (sizeof(msg_hash_fr_blob) == (220729u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10164,6 +10266,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -10190,6 +10293,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -10197,6 +10301,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -10498,6 +10604,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
@@ -11924,6 +12031,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12075,6 +12183,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -12150,6 +12261,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -12315,6 +12427,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12340,8 +12454,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12520,6 +12637,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
@@ -13307,6 +13425,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13378,6 +13497,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -13426,6 +13546,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -13526,6 +13647,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
@@ -13651,6 +13773,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_CRT_SWITCH_EDID_FAILED,
+   (uint32_t)MSG_CRT_SWITCH_EDID_WRITTEN,
    (uint32_t)MSG_CUSTOM_TIMING_GIVEN,
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,

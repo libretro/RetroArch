@@ -38,6 +38,7 @@
 
 #ifndef asm
 #define asm __asm
+#define MBEDTLS_ASM_IS_OURS
 #endif
 
 #if defined(MBEDTLS_HAVE_X86_64)
@@ -460,5 +461,11 @@ int mbedtls_aesni_setkey_enc( unsigned char *rk,
 }
 
 #endif /* MBEDTLS_HAVE_X86_64 */
+
+/* Only take back what we defined; a system header may own it. */
+#ifdef MBEDTLS_ASM_IS_OURS
+#undef asm
+#undef MBEDTLS_ASM_IS_OURS
+#endif
 
 #endif /* MBEDTLS_AESNI_C */

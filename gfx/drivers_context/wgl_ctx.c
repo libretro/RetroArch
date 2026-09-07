@@ -86,6 +86,23 @@ WINGDIAPI_UWP BOOL APIENTRY wglShareLists(
 }
 #endif
 
+#else
+
+/* mingw-w64's wingdi.h declares every other wgl entry point this file
+ * uses - wglCreateContext, wglMakeCurrent, wglShareLists,
+ * wglGetProcAddress - but omits wglSwapBuffers. The Windows SDK does
+ * declare it, so this is a duplicate of an identical declaration
+ * there rather than a conflicting one. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
@@ -517,11 +534,9 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef __WINRT__
+         /* gdi32's SwapBuffers only locates and forwards to this, and
+          * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
-#else
-         SwapBuffers(win32_hdc);
-#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -921,6 +936,26 @@ uint8_t win32_get_flags(void) { return g_win32_flags; }
 void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 #endif
 
+/* A minimised window has no client area to present to: SwapBuffers()
+ * returns at once rather than blocking to vblank, so with vsync as the
+ * only pacing the loop would spin. IsIconic() is the direct question
+ * and needs no state of our own.
+ *
+ * Not on WinRT: IsIconic is in neither the app nor the games API
+ * partition, so a UWP build fails to link it, and there is no HWND
+ * there to ask about either - win32_get_window() returns NULL. A UWP
+ * app's visibility arrives as CoreWindow events instead, which this
+ * context does not see; always presentable, as it was before. */
+static bool gfx_ctx_wgl_presentable(void *data)
+{
+   (void)data;
+#ifdef __WINRT__
+   return true;
+#else
+   return !IsIconic(win32_get_window());
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -954,5 +989,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL,
    NULL,
    gfx_ctx_wgl_create_surface,
-   gfx_ctx_wgl_destroy_surface
+   gfx_ctx_wgl_destroy_surface,
+   gfx_ctx_wgl_presentable
 };

@@ -139,7 +139,11 @@ static bool g_quit = false;
 static void power_callback(void) { g_quit = true; }
 #endif
 
-static void reset_cb(unsigned int a, void *b) { g_menu = true; }
+#ifdef EXTERNAL_LIBOGC
+static void reset_cb(u32 a, void *b) { (void)a; (void)b; g_menu = true; }
+#else
+static void reset_cb(void) { g_menu = true; }
+#endif
 
 #ifdef HW_RVL
 static inline void gx_mouse_info(uint32_t joybutton, unsigned port)

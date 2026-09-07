@@ -968,7 +968,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
 
       vk->fse_supported = false;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
          {
@@ -981,7 +981,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       /* Note whether the extension was enabled; the actual entrypoint is
        * loaded below, after the device exists. */
       vk->set_hdr_metadata = NULL;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_hdr_metadata"))
          {
@@ -1028,6 +1028,20 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       RARCH_ERR("[Vulkan] Failed to load device symbols.\n");
       return false;
    }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Resolve the explicit acquire/release now the device exists. Only
+    * used under VIDEO_FSE_FORCED; NULL otherwise and never called. */
+   vk->fse_acquire = NULL;
+   vk->fse_release = NULL;
+   if (vk->fse_supported)
+   {
+      vk->fse_acquire = vkGetDeviceProcAddr(vk->context.device,
+               "vkAcquireFullScreenExclusiveModeEXT");
+      vk->fse_release = vkGetDeviceProcAddr(vk->context.device,
+               "vkReleaseFullScreenExclusiveModeEXT");
+   }
+#endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Now that the device exists, resolve vkSetHdrMetadataEXT if the
@@ -1470,6 +1484,13 @@ end:
 
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Exclusive mode is bound to the swapchain; release it first. */
+   if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
+      ((PFN_vkReleaseFullScreenExclusiveModeEXT)vk->fse_release)(
+            vk->context.device, vk->swapchain);
+   vk->fse_acquired = false;
+#endif
    unsigned i;
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
@@ -1801,7 +1822,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
          {
             VkMetalSurfaceCreateInfoEXT surf_info;
             PFN_vkCreateMetalSurfaceEXT create;
@@ -1947,7 +1968,12 @@ retry:
 #ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan] Failed to create new swapchain.\n");
 #endif
-         retro_sleep(20);
+         /* No wait here. A window with no swapchain is paced by the
+          * runloop, which asks the context driver whether it has
+          * anything to present (gfx_ctx_driver_t::presentable) and
+          * waits a frame when it has not - one throttle, at the layer
+          * that knows what else is already holding the loop. A sleep
+          * in here would stack on top of it. */
          return;
       }
 
@@ -2038,6 +2064,11 @@ retry:
          /* Do nothing. */
          break;
       case VK_ERROR_OUT_OF_DATE_KHR:
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+      case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:
+         /* Alt-tab or a mode switch under Forced negotiation. Same
+          * recovery as out-of-date: rebuild and re-acquire. */
+#endif
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
@@ -2107,13 +2138,24 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   /* Relaxed: ALLOWED is a hint and the driver may decline - and on
+    * NVIDIA it does, leaving the swapchain on DWM's independent-flip
+    * path with the setting silently inert (PresentMon reports
+    * "Hardware Composed: Independent Flip" in both windowed-fullscreen
+    * states). Forced: APPLICATION_CONTROLLED, followed by an explicit
+    * vkAcquireFullScreenExclusiveModeEXT once the swapchain exists. */
+   bool fse_forced                         =
+         !video_windowed_fullscreen
+      && settings->uints.video_fse_negotiation == VIDEO_FSE_FORCED;
    HMONITOR hmonitor;
    VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
       NULL,
       video_windowed_fullscreen
          ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+         : (fse_forced
+               ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+               : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT)
    };
    VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
@@ -2697,6 +2739,26 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }
    }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   vk->fse_acquired = false;
+   if (fse_forced && vk->fse_supported && vk->fse_acquire)
+   {
+      VkResult res = ((PFN_vkAcquireFullScreenExclusiveModeEXT)
+            vk->fse_acquire)(vk->context.device, vk->swapchain);
+      if (res == VK_SUCCESS)
+      {
+         vk->fse_acquired = true;
+         RARCH_LOG("[Vulkan] Exclusive fullscreen acquired.\n");
+      }
+      else
+         /* Not fatal: the swapchain still works on the compositor
+          * path, which is where Relaxed would have left it anyway. */
+         RARCH_WARN("[Vulkan] Exclusive fullscreen requested but "
+               "vkAcquireFullScreenExclusiveModeEXT returned %d; "
+               "continuing without it.\n", (int)res);
+   }
+#endif
 
    /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
 #ifndef __APPLE__

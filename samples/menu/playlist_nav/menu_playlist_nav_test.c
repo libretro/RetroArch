@@ -40,6 +40,7 @@
 #include <boolean.h>
 #include <lists/file_list.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 #include <vfs/vfs_implementation.h>
 
 #include "../../../msg_hash_lbl_str.h"
@@ -72,6 +73,7 @@ static char fixture_dir[512];
 static char path_n64[640];
 static char path_nes[640];
 static char path_based[640];
+static char path_lvw[640];
 
 /* ------------------------------------------------------------------ */
 /* SAF stand-in: short reads, so a playlist read yields               */
@@ -180,8 +182,19 @@ static bool write_playlist_with_base(const char *path,
    return true;
 }
 
-/* ------------------------------------------------------------------ */
-/* Driving the real menu                                              */
+/* A saved Explore view, the shape explore_action_saveview_complete()
+ * writes.  The Playlists screen lists it from the same directory walk
+ * that finds the .lpl files. */
+static bool write_view(const char *path)
+{
+   FILE *f = fopen(path, "wb");
+   if (!f)
+      return false;
+   fprintf(f, "{\n  \"filter_name\": \"metroid\",\n"
+              "  \"filter_equal\": {\n    \"genre\": \"Platform\"\n  }\n}\n");
+   fclose(f);
+   return true;
+}
 /* ------------------------------------------------------------------ */
 
 static file_list_t *selection_buf(void)
@@ -226,10 +239,11 @@ static size_t open_playlists_screen(void)
    return buf->size;
 }
 
-/* Selects the entry whose path ends in @leaf and presses OK on it,
- * through the real dispatcher and whatever action_ok the menu bound
- * to that entry.  This is what a tap on a playlist does. */
-static bool select_and_press_ok(const char *leaf)
+/* Presses OK on the first entry whose path (or, for entries that
+ * carry a file path in the label slot, whose label) contains
+ * @needle, through the real dispatcher and whatever action_ok the
+ * menu bound to that entry. */
+static bool press_ok_on_match(const char *needle, bool match_label)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    file_list_t *buf           = selection_buf();
@@ -240,8 +254,8 @@ static bool select_and_press_ok(const char *leaf)
 
    for (i = 0; i < buf->size; i++)
    {
-      const char *path = buf->list[i].path;
-      if (path && strstr(path, leaf))
+      const char *s = match_label ? buf->list[i].label : buf->list[i].path;
+      if (s && strstr(s, needle))
       {
          menu_entry_t entry;
          menu_st->selection_ptr = i;
@@ -262,6 +276,13 @@ static bool select_and_press_ok(const char *leaf)
       }
    }
    return false;
+}
+
+/* Selects the entry whose path ends in @leaf and presses OK on it.
+ * This is what a tap on a playlist does. */
+static bool select_and_press_ok(const char *leaf)
+{
+   return press_ok_on_match(leaf, false);
 }
 
 /* One frame of the real menu, which is what pumps a pending read. */
@@ -460,6 +481,73 @@ static void lane_based_playlist_loads_once(void)
 
 /* ------------------------------------------------------------------ */
 
+/* Regression: a saved Explore view pressed on the Playlists screen
+ * must push the deferred Explore list carrying the view's .lvw path.
+ * These entries are appended under MENU_ENUM_LABEL_GOTO_EXPLORE with
+ * the .lvw path in the LABEL slot (explore_get_view_path() reads it
+ * back off the stack), so any dispatch that re-resolves the entry by
+ * its label string misses every ok_dl_map row and falls through to
+ * the archive/file browser - the menu came up showing root drives.
+ * Broken for every driver without a sidebar; XMB/Ozone horizontal
+ * lists never route through this callback, which is why only they
+ * still worked. */
+static void lane_saved_view_opens_explore(void)
+{
+#ifdef HAVE_LIBRETRODB
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
+   struct item_file *top      = NULL;
+
+   CHECK(open_playlists_screen() > 0, "the Playlists screen was empty");
+   CHECK(press_ok_on_match(".lvw", true),
+         "no saved-view entry listed - the .lvw fixture was not "
+         "picked up, or menu_content_show_explore is off");
+
+   top = &menu_stack->list[menu_stack->size - 1];
+   CHECK(top->label && string_is_equal(top->label,
+            MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR),
+         "pressing a saved Explore view pushed \"%s\" instead of the "
+         "deferred Explore list - the dispatcher resolved the entry "
+         "by its label string, which for a saved view is the .lvw "
+         "path, and fell through to the archive/file browser",
+         top->label ? top->label : "(null)");
+   CHECK(top->path && string_is_equal(top->path, path_lvw),
+         "the pushed list carries \"%s\", not the view's .lvw path - "
+         "explore_get_view_path() cannot load the view from it",
+         top->path ? top->path : "(null)");
+   CHECK(top->type == MENU_EXPLORE_TAB,
+         "the pushed list has type %u, not MENU_EXPLORE_TAB - "
+         "menu_displaylist_explore() will not treat it as a view",
+         top->type);
+
+   /* The plain Explore entry has the canonical label and no live
+    * .lvw path; it must still resolve to the same list, and with
+    * the label the view-path check downstream excludes. */
+   CHECK(open_playlists_screen() > 0, "back to Playlists failed");
+   CHECK(press_ok_on_match(MENU_ENUM_LABEL_GOTO_EXPLORE_STR, true),
+         "no plain Explore entry to press OK on");
+   top = &menu_stack->list[menu_stack->size - 1];
+   CHECK(top->label && string_is_equal(top->label,
+            MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR),
+         "the plain Explore entry pushed \"%s\"",
+         top->label ? top->label : "(null)");
+   CHECK(top->path && string_is_equal(top->path,
+            MENU_ENUM_LABEL_GOTO_EXPLORE_STR),
+         "the plain Explore entry pushed path \"%s\" - "
+         "explore_get_view_path() would mistake it for a view",
+         top->path ? top->path : "(null)");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] saved-view-opens-explore lane\n");
+#else
+   fprintf(stderr,
+         "[skip] saved-view-opens-explore lane (no HAVE_LIBRETRODB)\n");
+#endif
+}
+
+/* ------------------------------------------------------------------ */
+
 int main(int argc, char *argv[])
 {
    char cmd[700];
@@ -477,9 +565,11 @@ int main(int argc, char *argv[])
    snprintf(path_n64, sizeof(path_n64), "%s/n64.lpl", fixture_dir);
    snprintf(path_nes, sizeof(path_nes), "%s/nes.lpl", fixture_dir);
    snprintf(path_based, sizeof(path_based), "%s/based.lpl", fixture_dir);
+   snprintf(path_lvw, sizeof(path_lvw), "%s/Metroidvania.lvw", fixture_dir);
    if (   !write_playlist(path_n64, "/games/n64", 1500)
        || !write_playlist(path_nes, "/games/nes", 1500)
-       || !write_playlist_with_base(path_based, "/games/based", 1500))
+       || !write_playlist_with_base(path_based, "/games/based", 1500)
+       || !write_view(path_lvw))
       return 1;
 
 
@@ -540,6 +630,7 @@ int main(int argc, char *argv[])
    lane_frames_alone_finish_the_read();
    lane_switch_shows_requested();
    lane_based_playlist_loads_once();
+   lane_saved_view_opens_explore();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "

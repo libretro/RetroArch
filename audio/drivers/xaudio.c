@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <boolean.h>
 
 #include <compat/msvc.h>
@@ -598,10 +599,15 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
       {
          XAUDIO2_BUFFER xa2buffer;
 
+         /* A period with no completion is a voice that has stopped, not
+          * a device gone: the bytes already staged stay staged and are
+          * submitted on the next write that finds a slot, and this one
+          * returns what it took. A failed submit below is what -1 is
+          * for. */
          while (retro_atomic_load_acquire_int(&handle->buffers)
                == MAX_BUFFERS - 1)
             if (!(WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) == WAIT_OBJECT_0))
-               return -1;
+               return (ssize_t)_len;
 
          xa2buffer.Flags      = 0;
          xa2buffer.AudioBytes = handle->bufsize;
@@ -689,11 +695,49 @@ static void xa_free(void *data)
    free(xa);
 }
 
+/* Sleep on the event the voice's OnBufferEnd callback sets until at
+ * least len bytes fit across the queued buffers, capped at half the
+ * total so the wait always ends. Returns the free space then, or 0 when
+ * the event stays silent past the timeout. */
+static size_t xa_wait_writable(void *data, size_t len)
+{
+   xa_t *xa          = (xa_t*)data;
+   xaudio2_t *handle = xa->xa;
+   size_t total      = handle->bufsize * (size_t)(MAX_BUFFERS - 1);
+   size_t avail;
+   int    laps       = 8;
+
+   if (len > total / 2)
+      len = total / 2;
+
+   for (;;)
+   {
+      avail = xaudio2_write_available(handle);
+      if (avail >= len)
+         return avail;
+      /* Each wait is bounded; this bounds the loop, for a voice that
+       * keeps completing buffers but never frees enough. */
+      if (--laps < 0)
+         return 0;
+      if (WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) != WAIT_OBJECT_0)
+         return 0;
+   }
+}
+
 static size_t xa_write_avail(void *data)
 {
    xa_t *xa = (xa_t*)data;
    return xaudio2_write_available(xa->xa);
 }
+
+/* No frames_consumed(): XAudio2 exposes no device clock. SamplesPlayed
+ * counts our samples rendered and pauses whenever the voice runs dry -
+ * for a stretch with a non-blocking writer, for a moment between bursts
+ * even with a blocking one - while the device runs on. On a pin that
+ * reads +11 ppm through asio, WASAPI exclusive and WASAPI shared it read
+ * -1569 non-blocking and -1480 climbing to -754 blocking: a count
+ * diluting over a growing baseline, not a clock. The sink rate estimate
+ * leaves xaudio alone; dsound and wasapi report on the same devices. */
 
 static size_t xa_buffer_size(void *data)
 {
@@ -725,5 +769,6 @@ audio_driver_t audio_xa = {
    xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   xa_wait_writable
 };

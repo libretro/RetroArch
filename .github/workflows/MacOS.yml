@@ -17,6 +17,15 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - name: Cocoa companion harness on Apple's AppKit
+      run: |
+        set -o pipefail
+        # The same harness the Linux job runs under GNUstep, built with
+        # Apple's clang against the real Cocoa framework and run on the
+        # runner's window server: key-window arbitration after closing the
+        # companion, the grid, the tables, the dialogs - as AppKit does them.
+        tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
+
     - name: Compile RA
       run: |
         set -o pipefail

@@ -13,7 +13,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <Availability.h>
 #else
 #include <AvailabilityMacros.h>
@@ -29,7 +29,7 @@
 
 #include "../gfx/display_servers/dispserv_apple.m"
 
-#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
 #ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
@@ -46,8 +46,9 @@
 #include "../gfx/drivers_context/cocoa_vk_ctx.m"
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include "../ui/drivers/ui_cocoa.m"
+#include "../ui/drivers/ui_cocoa_companion.m"
 #else
 #include "../ui/drivers/ui_cocoatouch.m"
 #endif
@@ -62,18 +63,6 @@
 
 #if defined(__APPLE__) && defined(__MACH__)
 #include "../frontend/drivers/platform_darwin.m"
-#endif
-
-#ifdef HAVE_COREAUDIO3
-#include "../audio/drivers/coreaudio3.m"
-#endif
-
-#if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
-#if defined(OSX)
-#include "../audio/drivers/coreaudio_mic_macos.m"
-#else
-#include "../audio/drivers/coreaudio_mic_ios.m"
-#endif
 #endif
 
 #ifdef HAVE_CORELOCATION
@@ -99,4 +88,7 @@
 
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD_DRIVE)
 #include "../network/cloud_sync/icloud_drive.m"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif

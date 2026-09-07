@@ -32,14 +32,15 @@
 #import "cocoa/RetroArchPlaylistManager.h"
 #endif
 
-#if defined(HAVE_COCOA_METAL)
-#include "../../gfx/common/metal_view.h"
+#ifdef HAVE_METAL
+#include "../../gfx/drivers/metal.h"
 #endif
 
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
 #ifdef HAVE_MICROPHONE
 #include "../../audio/microphone_driver.h"
+#include "cocoa/cocoa_audio_session.h"
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
@@ -66,6 +67,9 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay_private.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #import <AVFoundation/AVFoundation.h>
@@ -95,12 +99,7 @@
 #include "SDL.h"
 #endif
 
-#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
-id<ApplePlatform> apple_platform;
-#else
-static id apple_platform;
-#endif
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
@@ -144,23 +143,47 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
    return list;
 }
 
+/* nil restores the primary icon, which is what "Default" means here, so
+ * the nil is deliberate - but it has to be written down. ARC
+ * zero-initialises a strong local; MRC, which is how the Makefile
+ * builds this file, leaves it indeterminate, so asking for "Default"
+ * passed whatever was on the stack to setAlternateIconName:. */
 static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
 {
-   NSString *str;
+   NSString *str = nil;
    if (!string_is_equal(iconName, "Default"))
       str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
 }
 
+/* Main thread only: the sole caller is materialui's icon draw, which
+ * runs from the menu's frame.
+ *
+ * The cache used to be created under dispatch_once, which read as a
+ * thread-safety guarantee the rest of the function does not make - the
+ * very next lines mutate the dictionary with no synchronisation at
+ * all, so were this ever reached from two threads the once would be
+ * the one part that was safe. A plain lazy create says what is true:
+ * one thread, so neither the create nor the mutation needs guarding.
+ *
+ * +dictionaryWithCapacity: hands back an autoreleased object, which is
+ * wrong for something a static holds across calls: this file is built
+ * MRC by the Makefile - it is not in the -fobjc-arc list at Makefile:275
+ * - so the pool drains at the end of the run loop pass that created it
+ * and every later call messages freed memory. Under Xcode, where
+ * griffin_objc.m is ARC, the strong static retains it and the same
+ * code is fine, which is why this has sat here. -initWithCapacity: is
+ * +1 owned and correct in both: the object is kept for the process
+ * lifetime deliberately, as the dock indicator in dispserv_apple.m is. */
 static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
 {
    static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
-   static dispatch_once_t once;
-   dispatch_once(&once, ^{
-      textures = [NSMutableDictionary dictionaryWithCapacity:6];
-   });
+   NSString *iconName;
 
-   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures)
+      textures = [[NSMutableDictionary alloc] initWithCapacity:6];
+
+   iconName = [NSString stringWithUTF8String:icon];
    if (!textures[iconName])
    {
       UIImage *img = [UIImage imageNamed:iconName];
@@ -504,7 +527,7 @@ enum
 
 @end
 
-#ifdef HAVE_COCOA_METAL
+#ifdef HAVE_VULKAN
 @implementation MetalLayerView
 
 + (Class)layerClass {
@@ -586,7 +609,7 @@ enum
 
    switch (vt)
    {
-#ifdef HAVE_COCOA_METAL
+#ifdef HAVE_VULKAN
        case APPLE_VIEW_TYPE_VULKAN:
          /* +new returns a +1 object; that retain transfers into
           * _renderView and satisfies the ivar's ownership invariant
@@ -596,6 +619,8 @@ enum
          _renderView.multipleTouchEnabled = YES;
 #endif
          break;
+#endif
+#ifdef HAVE_METAL
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
@@ -622,7 +647,6 @@ enum
          return;
    }
 
-   _renderView.translatesAutoresizingMaskIntoConstraints = NO;
    UIView *rootView = [CocoaView get].view;
    [rootView addSubview:_renderView];
 #if TARGET_OS_IOS
@@ -641,10 +665,23 @@ enum
       _renderView.userInteractionEnabled = YES;
    }
 #endif
-   [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
-   [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
-   [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
-   [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   /* Layout anchors are iOS 9; the view is asked whether it has them
+    * and pinned to the container's edges either way. */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 90000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
+   if ([_renderView respondsToSelector:@selector(topAnchor)])
+   {
+      _renderView.translatesAutoresizingMaskIntoConstraints = NO;
+      [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
+      [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
+      [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
+      [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   }
+   else
+#endif
+   {
+      _renderView.frame            = rootView.bounds;
+      _renderView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+   }
    [_renderView layoutIfNeeded];
 }
 
@@ -652,13 +689,18 @@ enum
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
-#ifdef HAVE_COCOA_METAL
-   MetalView *metalView = (MetalView*) _renderView;
-   CGFloat scale        = [[UIScreen mainScreen] scale];
-   [metalView setDrawableSize:CGSizeMake(
-         _renderView.bounds.size.width * scale,
-         _renderView.bounds.size.height * scale
-         )];
+#ifdef HAVE_METAL
+   /* Only the MTKView has a drawable size to set; the GLKView and
+    * the CAMetalLayer-backed Vulkan view size themselves. */
+   if (_vt == APPLE_VIEW_TYPE_METAL)
+   {
+      MetalView *metalView = (MetalView*) _renderView;
+      CGFloat scale        = [[UIScreen mainScreen] scale];
+      [metalView setDrawableSize:CGSizeMake(
+            _renderView.bounds.size.width * scale,
+            _renderView.bounds.size.height * scale
+            )];
+   }
 #endif
 }
 
@@ -688,6 +730,52 @@ enum
    return _documentsDirectory;
 }
 
+/* The record-category half of the session, for the microphone driver;
+ * see cocoa_audio_session.h. Moved here from the driver, which is C. */
+bool cocoa_audio_session_begin_record(unsigned preferred_rate,
+      unsigned *actual_rate)
+{
+   AVAudioSession *session = [AVAudioSession sharedInstance];
+   NSError *error = nil;
+   AVAudioSessionCategoryOptions options =
+      AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+
+#if TARGET_OS_IOS
+   /* PlayAndRecord routes output to the receiver on iPhone unless
+    * DefaultToSpeaker is set, which would make game audio quiet and thin
+    * the moment a core asks for a microphone. tvOS has no receiver to be
+    * routed to and marks the option unavailable, so it is iOS-only -
+    * TARGET_OS_IPHONE covers tvOS as well and is too broad to gate it. */
+   options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+#endif
+
+   /* AllowBluetooth (HFP) is deliberately not requested: it would make a
+    * paired headset's microphone available, but only by dragging the whole
+    * route down to narrowband mono. Keeping A2DP alone leaves game audio
+    * at full quality on the headset and takes input from the built-in mic,
+    * which is the better trade for an emulator. It is also the option
+    * deprecated in the iOS 26 SDK in favour of AllowBluetoothHFP. */
+   [session setCategory:AVAudioSessionCategoryPlayAndRecord
+            withOptions:options
+                  error:&error];
+   if (error)
+   {
+      RARCH_ERR("[Cocoa] AVAudioSession record category: %s\n",
+            [[error localizedDescription] UTF8String]);
+      return false;
+   }
+
+   /* Let the system negotiate the rate rather than restricting it. */
+   [session setPreferredSampleRate:preferred_rate error:&error];
+   if (error)
+      RARCH_WARN("[Cocoa] AVAudioSession preferred sample rate %u: %s\n",
+            preferred_rate, [[error localizedDescription] UTF8String]);
+
+   if (actual_rate)
+      *actual_rate = (unsigned)[session sampleRate];
+   return true;
+}
+
 - (void)handleAudioSessionInterruption:(NSNotification *)notification
 {
    NSNumber *type = notification.userInfo[AVAudioSessionInterruptionTypeKey];
@@ -706,7 +794,23 @@ enum
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
+      /* The system deactivated the session when the interruption
+       * began - a call, Siri, another app's playback - and does not
+       * reactivate it for us; the units must not be restarted into a
+       * dead session. Resume only when the system says to, and make
+       * the session active first. */
+      NSNumber *opts = notification.userInfo[AVAudioSessionInterruptionOptionKey];
+      NSError  *error = nil;
       RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
+      if (     [opts isKindOfClass:[NSNumber class]]
+            && !([opts unsignedIntegerValue] & AVAudioSessionInterruptionOptionShouldResume))
+      {
+         RARCH_DBG("[Cocoa] AudioSession Interruption Ended without ShouldResume; leaving audio stopped.\n");
+         return;
+      }
+      if (![[AVAudioSession sharedInstance] setActive:YES error:&error])
+         RARCH_ERR("[Cocoa] AVAudioSession setActive:YES after interruption: %s\n",
+               [[error localizedDescription] UTF8String]);
       audio_driver_start(false);
 #ifdef HAVE_MICROPHONE
       microphone_driver_start();
@@ -1489,6 +1593,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* init */
    NULL, /* deinit */
    NULL, /* toggle */
+   NULL, /* iterate */
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */

@@ -26,6 +26,8 @@ jobs:
         timeout-minutes: 5
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
+          pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
+          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -42,6 +44,50 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Video modeline engine goldens and C89 lane
+        shell: bash
+        run: |
+          set -eu
+          # The engine in gfx/modeline/ replaced the SwitchRes 2.2.1
+          # library; tools/modeline_gold.ref is the reference output of
+          # the same matrix run through that library. The scoring and
+          # timing arithmetic are compared bit-for-bit: any drift in
+          # modeline_create/compare/adjust, the presets or the list
+          # logic shows up here as a diff rather than as a CRT that
+          # loses sync in the field.
+          C89="-std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long"
+          C89="$C89 -Werror=declaration-after-statement -Wno-variadic-macros"
+          C89="$C89 -D_GNU_SOURCE"
+          INC="-Ilibretro-common/include -I. -Ideps"
+          # Binaries and outputs go to a scratch dir, never the tree.
+          T=$(mktemp -d)
+          gcc $C89 $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold"
+          "$T/modeline_gold" > "$T/modeline_gold.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold.out"
+          echo "[pass] modeline goldens (C89)"
+          gcc -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all \
+             -std=gnu89 -D_GNU_SOURCE $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold_san"
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             "$T/modeline_gold_san" > "$T/modeline_gold_san.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold_san.out"
+          echo "[pass] modeline goldens (ASan/UBSan)"
+          rm -rf "$T"
+          # The consumer and the X11 apply path are C89 too; the
+          # full C89_BUILD covers them only after a complete build.
+          DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE"
+          DEF="$DEF -DHAVE_X11 -DHAVE_XRANDR -DHAVE_CONFIGFILE -DHAVE_DYNAMIC"
+          for f in gfx/modeline/modeline_core.c \
+                   gfx/modeline/modeline_monitor.c \
+                   gfx/modeline/modeline_list.c \
+                   gfx/modeline/modeline_ini.c \
+                   gfx/video_crt_switch.c \
+                   gfx/display_servers/dispserv_x11.c; do
+             gcc $C89 $INC $DEF -c "$f" -o /dev/null
+          done
+          echo "[pass] modeline C89 syntax check"
 
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash
@@ -419,6 +465,100 @@ jobs:
           test -x display_servers_test
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
+
+      - name: Live mode switching on an Xorg dummy server (X11 + SDL)
+        shell: bash
+        run: |
+          set -eu
+          # The stubbed display_servers_test proves the driver issues
+          # the right RandR calls; this proves a real X server accepts
+          # them.  Xorg's 'dummy' driver honours XRRCreateMode /
+          # XRRAddOutputMode / XRRSetCrtcConfig with arbitrary timings
+          # (Xvfb's RandR shim returns success and lists nothing, so it
+          # cannot stand in).  The X11 sample runs the modeline engine
+          # end to end - generate a 15 kHz timing, put it on the wire
+          # through dispserv_x11, read the crtc back and compare every
+          # field, switch again, restore - and the SDL sample switches
+          # a real SDL2 window among the listed modes through
+          # dispserv_sdl2 (and dispserv_sdl3 on an SDL3 build), for the
+          # modeline path and the menu picker.
+          # The Win32 build runs after them under Wine.
+          sudo Xorg :99 -config samples/gfx/display_servers_x11_live/xorg-dummy.conf \
+             -logfile /tmp/xorg-dummy.log -noreset -nolisten tcp -ac \
+             > /tmp/xorg-dummy.out 2>&1 &
+          XORG_PID=$!
+          for i in $(seq 1 30); do
+             DISPLAY=:99 xrandr >/dev/null 2>&1 && break
+             sleep 0.5
+          done
+          DISPLAY=:99 xrandr | head -3
+          export DISPLAY=:99
+          # SDL3's X11 backend makes a window fullscreen through the
+          # window manager and reverts the mode switch when none
+          # answers; a light one runs for the SDL samples.
+          openbox > /tmp/openbox.out 2>&1 &
+          sleep 1
+          (cd samples/gfx/display_servers_x11_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                timeout 120 ./display_servers_x11_live_test)
+          echo "[pass] display_servers_x11_live_test"
+          (cd samples/gfx/display_servers_sdl2_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl2_live_test)
+          echo "[pass] display_servers_sdl2_live_test"
+          # The SDL3 server against an SDL3 built from a pinned release
+          # (the runner image ships no libsdl3-dev): video and events
+          # only, X11 backend.
+          SDL3_VER=3.2.20
+          if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
+             curl -sL -o /tmp/sdl3.tar.gz \
+                "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
+             tar -C /tmp -xzf /tmp/sdl3.tar.gz
+             cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=OFF -DSDL_CAMERA=OFF \
+                -DSDL_WAYLAND=OFF -DSDL_X11=ON -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF \
+                -DSDL_VULKAN=OFF -DSDL_RENDER=OFF -DCMAKE_INSTALL_PREFIX=/opt/sdl3 \
+                > /tmp/sdl3-cmake.log
+             ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
+             sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
+          fi
+          (cd samples/gfx/display_servers_sdl3_live \
+             && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
+             && LD_LIBRARY_PATH=/opt/sdl3/lib \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl3_live_test)
+          echo "[pass] display_servers_sdl3_live_test"
+          # The Win32 server, its vendor timing paths and the engine
+          # cross-built with mingw-w64 and run under Wine on the same
+          # display: Wine backs EnumDisplaySettingsExA and
+          # ChangeDisplaySettingsExA with the server's RandR modes, so
+          # the CDS listed-mode switch is real; ADL, ATI legacy and
+          # PowerStrip are linked and must decline.
+          (cd samples/gfx/display_servers_win32_live \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_live_test.exe)
+          echo "[pass] display_servers_win32_live_test (Wine)"
+          # The vendor timing paths against stand-ins: a mock
+          # atiadlxx.dll that re-plugs the monitor after a forced set,
+          # a scratch HKLM key for the ATI legacy registry layout, a
+          # TPShidden window answering PowerStrip's messages.
+          (cd samples/gfx/display_servers_win32_vendor \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_vendor_test.exe)
+          echo "[pass] display_servers_win32_vendor_test (Wine)"
+          # The server must be back on its desktop mode with nothing
+          # generated left behind.
+          xrandr | head -3
+          if xrandr | grep -q 'RA-'; then
+             echo "generated modes left on the server"; exit 1
+          fi
+          pkill openbox || true
+          sudo kill "$XORG_PID" || true
 
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash

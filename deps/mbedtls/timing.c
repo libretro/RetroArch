@@ -36,6 +36,7 @@
 
 #ifndef asm
 #define asm __asm
+#define MBEDTLS_ASM_IS_OURS
 #endif
 
 #if defined(_WIN32) && !defined(EFIX64) && !defined(EFI32)
@@ -352,5 +353,11 @@ int mbedtls_timing_get_delay( void *data )
 
     return( 0 );
 }
+
+/* Only take back what we defined; a system header may own it. */
+#ifdef MBEDTLS_ASM_IS_OURS
+#undef asm
+#undef MBEDTLS_ASM_IS_OURS
+#endif
 
 #endif /* MBEDTLS_TIMING_C */

@@ -1204,7 +1204,10 @@ static bool content_file_extract_from_archive(
       char **err_string)
 {
    const char *tmp_path_ptr = NULL;
+   size_t _len;
+   unsigned i;
    char tmp_path[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
 
    tmp_path[0]  = '\0';
 
@@ -1212,19 +1215,52 @@ static bool content_file_extract_from_archive(
    RARCH_LOG("[Content] Core requires uncompressed content - "
          "extracting archive to temporary directory...\n");
 
+   /* The member is written under a directory of our own rather than
+    * straight into the cache or content directory.  Extraction keeps
+    * the member's own basename - savefile and savestate paths are
+    * derived from it, so a uniquified file name would silently move
+    * a user's saves - and a name that is already taken beside the
+    * archive would otherwise be overwritten here and deleted again
+    * on teardown, taking an unrelated file with it.  A directory of
+    * our own makes the collision impossible instead of detecting it.
+    *
+    * The cache directory is the parent when one is configured;
+    * otherwise the archive's own directory is, which is the only
+    * location known to exist and be writable at this point. */
+   if (content_ctx->directory_cache && *content_ctx->directory_cache)
+   {
+      strlcpy(tmp_dir, content_ctx->directory_cache, sizeof(tmp_dir));
+      fill_pathname_slash(tmp_dir, sizeof(tmp_dir));
+   }
+   else
+      fill_pathname_basedir(tmp_dir, *content_path, sizeof(tmp_dir));
+
+   _len = strlen(tmp_dir);
+
+   /* First name not already on disk wins.  A stale directory from a
+    * previous run - a crash between extraction and teardown - is
+    * therefore stepped over rather than reused, so its contents can
+    * never be mistaken for this load's content. */
+   for (i = 0; i < 1024; i++)
+   {
+      snprintf(tmp_dir + _len, sizeof(tmp_dir) - _len,
+            ".extract-%u", i);
+      if (!path_is_valid(tmp_dir))
+         break;
+   }
+
+   if (i == 1024 || !path_mkdir(tmp_dir))
+      goto error;
+
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         *content_path, valid_exts,
-         (!content_ctx->directory_cache || !*content_ctx->directory_cache) ?
-               NULL : content_ctx->directory_cache,
+         *content_path, valid_exts, tmp_dir,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-            *content_path);
-      *err_string = strdup(msg);
-      return false;
+      /* Only ever removes the directory created just above, and it
+       * is empty on this path, so nothing else can be caught by it. */
+      filestream_delete(tmp_dir);
+      goto error;
    }
 
    /* Add path of extracted file to temporary content
@@ -1234,6 +1270,10 @@ static bool content_file_extract_from_archive(
          p_content->content_list, tmp_path)))
       return false;
 
+   /* The directory follows its own file in the list, so teardown
+    * empties it before removing it. */
+   content_file_list_append_temporary(p_content->content_list, tmp_dir);
+
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
@@ -1242,6 +1282,16 @@ static bool content_file_extract_from_archive(
          tmp_path);
 
    return true;
+
+error:
+   /* tmp_path is spent on this path - whatever the extraction left in
+    * it is unused - so it carries the message rather than a second
+    * buffer of its size sitting in the frame for the error case. */
+   snprintf(tmp_path, sizeof(tmp_path), "%s: \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+         *content_path);
+   *err_string = strdup(tmp_path);
+   return false;
 }
 #endif
 
@@ -1507,7 +1557,7 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcpy(new_basedir + _len,
+                     strlcpy_lit(new_basedir + _len,
                            "VFSCACHE\\",
                            sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);

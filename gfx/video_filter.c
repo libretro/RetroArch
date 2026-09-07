@@ -140,7 +140,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    struct config_file_userdata userdata;
    char key[64], name[64];
    name[0] = '\0';
-   strlcpy(key, "filter", sizeof(key));
+   strlcpy_lit(key, "filter", sizeof(key));
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
    {

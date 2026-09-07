@@ -192,6 +192,11 @@ typedef struct glsl_shader_data
    struct cache_vbo vbo[GFX_MAX_SHADERS];
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
    struct video_shader *shader;
+   /* Staging for set_coords on draws of more than four vertices (font
+    * runs, the menu ribbon), grown on demand and kept for the shader's
+    * lifetime; it was malloc'd and freed on every such draw. */
+   GLfloat *coord_scratch;
+   size_t   coord_scratch_cap;
 } glsl_shader_data_t;
 
 /* TODO/FIXME - static globals */
@@ -743,25 +748,25 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    if (frame->texture < 0)
    {
-      strlcpy(uni + _len, "Texture", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "Texture", sizeof(uni) - _len);
       frame->texture = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->tex_coord < 0)
    {
-      strlcpy(uni + _len, "TexCoord", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TexCoord", sizeof(uni) - _len);
       frame->tex_coord = gl_glsl_get_attrib(glsl, prog, uni);
    }
 
    if (frame->input_size < 0)
    {
-      strlcpy(uni + _len, "InputSize",   sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "InputSize",   sizeof(uni) - _len);
       frame->input_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->texture_size < 0)
    {
-      strlcpy(uni + _len, "TextureSize", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TextureSize", sizeof(uni) - _len);
       frame->texture_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
@@ -921,6 +926,7 @@ static void gl_glsl_deinit(void *data)
    gl_glsl_destroy_resources(glsl);
    input_state_get_ptr()->shader_uses_sensors = false;
 
+   free(glsl->coord_scratch);
    free(glsl);
 }
 
@@ -1735,10 +1741,15 @@ static bool gl_glsl_set_coords(void *shader_data,
 
       elems        *= coords->vertices * sizeof(GLfloat);
 
-      buffer        = (GLfloat*)malloc(elems);
-
-      if (!buffer)
-         return false;
+      if (elems > glsl->coord_scratch_cap)
+      {
+         GLfloat *grown = (GLfloat*)realloc(glsl->coord_scratch, elems);
+         if (!grown)
+            return false;
+         glsl->coord_scratch     = grown;
+         glsl->coord_scratch_cap = elems;
+      }
+      buffer        = glsl->coord_scratch;
    }
 
 #if defined(VITA)
@@ -1784,9 +1795,6 @@ static bool gl_glsl_set_coords(void *shader_data,
             &glsl->vbo[glsl->active_idx].len_primary,
             buffer, size,
             attribs, attribs_size);
-
-   if (buffer != short_buffer)
-      free(buffer);
 
    return true;
 }

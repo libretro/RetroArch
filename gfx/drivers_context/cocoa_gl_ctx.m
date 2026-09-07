@@ -25,7 +25,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#ifdef OSX
+#if TARGET_OS_OSX
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
@@ -64,7 +64,7 @@ enum cocoa_ctx_flags
 
 typedef struct cocoa_ctx_data
 {
-#ifndef OSX
+#if !TARGET_OS_OSX
    int fast_forward_skips;
 #endif
    unsigned width;
@@ -146,7 +146,7 @@ static void cocoa_gl_gfx_ctx_set_flags(void *data, uint32_t flags)
       cocoa_ctx->flags |= COCOA_CTX_FLAG_CORE_HW_CTX_ENABLE;
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 void cocoa_gl_gfx_ctx_update(void)
 {
    [g_ctx    update];
@@ -189,7 +189,7 @@ void glkitview_bind_fbo(void)
 #endif
 
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_gl_gfx_ctx_destroy_mainthread(void *userdata)
 {
    [g_ctx clearDrawable];
@@ -204,7 +204,7 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 
    if (!cocoa_ctx)
       return;
-#ifdef OSX
+#if TARGET_OS_OSX
    /* clearCurrentContext operates on the CALLING thread's current-
     * context slot and must stay here (the render thread); clearDrawable
     * detaches the NSView and is AppKit, so it is marshaled to the main
@@ -258,34 +258,35 @@ static void cocoa_gl_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-/* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
- * Therefore, make specialized version of this function instead of
- * going through a selector for every call. */
-static void cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
-      unsigned* width, unsigned* height)
-{
-   CocoaView *g_view               = cocoaview_get();
-   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
-   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
-}
-#elif defined(OSX)
+#if TARGET_OS_OSX
+/* The view's frame is in points; a Retina backing store has more
+ * pixels than points. -convertRectToBacking: is 10.7, so the view is
+ * asked once - the answer cannot change while the process runs - and
+ * the answer kept, rather than probed per call or decided by the build
+ * SDK, which left a binary built on an old SDK blurry on every Retina
+ * Mac and one built on a new SDK unable to run anywhere older. */
 static void cocoa_gl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
+   static int backing              = -1;
    CocoaView *g_view               = cocoaview_get();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
+
+   if (backing < 0)
+      backing = [g_view respondsToSelector:@selector(convertRectToBacking:)];
+
+   if (backing)
+   {
+      /* Declared for pre-10.7 SDKs by the category in cocoa_defines.h;
+       * only sent where the view answered for it above. */
+      NSRect bounds                = NSMakeRect(0, 0,
+            CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+      cgrect                       = NSRectToCGRect(
+            [g_view convertRectToBacking:bounds]);
+   }
+
+   *width                          = CGRectGetWidth(cgrect);
+   *height                         = CGRectGetHeight(cgrect);
 }
 #else
 /* iOS */
@@ -304,11 +305,7 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
  * exposed directly. */
 static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
 {
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
-#else
    cocoa_gl_gfx_ctx_get_video_size(NULL, width, height);
-#endif
 }
 
 /* Publish the current backing size for cross-thread readers.
@@ -361,7 +358,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 
    cocoa_ctx->flags           |= COCOA_CTX_FLAG_USE_HW_CTX;
 
-#ifdef OSX
+#if TARGET_OS_OSX
    if (enable)
       [g_hw_ctx makeCurrentContext];
    else
@@ -395,7 +392,7 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 {
    unsigned interval             = (unsigned)i;
-#ifdef OSX
+#if TARGET_OS_OSX
    GLint value                   = interval ? 1 : 0;
    [g_ctx setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #else
@@ -412,7 +409,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 
 static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    [g_ctx flushBuffer];
    [g_hw_ctx  flushBuffer];
 #else
@@ -441,13 +438,11 @@ static bool cocoa_gl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
    return true;
 }
 
-#ifdef OSX
-#if defined(HAVE_COCOA_METAL)
+#if TARGET_OS_OSX
 static void cocoa_gl_gfx_ctx_init_mainthread(void *userdata)
 {
    [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
 }
-#endif
 
 typedef struct
 {
@@ -471,26 +466,17 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
    unsigned width              = args->width;
    unsigned height             = args->height;
    bool fullscreen             = args->fullscreen;
-#if defined(HAVE_COCOA_METAL)
    gfx_ctx_mode_t mode;
-   NSView *g_view              = apple_platform.renderView;
-#elif defined(HAVE_COCOA)
-   CocoaView *g_view           = (CocoaView*)nsview_get_ptr();
-#endif
+   NSView *g_view              = [apple_platform renderView];
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-#ifndef HAVE_COCOA_METAL
-   static bool
-      has_went_fullscreen      = false;
-#endif
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
-   /* NOTE: setWantsBestResolutionOpenGLSurface only
-    * available on MacOS X 10.7 and up.
-    * Deprecated as of MacOS X 10.14. */
-#if MAC_OS_X_VERSION_10_7
-   [g_view setWantsBestResolutionOpenGLSurface:YES];
-#endif
+   /* Render at the backing store's resolution rather than at point
+    * size. 10.7, deprecated in 10.14 and still honoured; asked of the
+    * view rather than of the build SDK. */
+   if ([g_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+      [g_view setWantsBestResolutionOpenGLSurface:YES];
 
    {
       NSOpenGLPixelFormat *fmt;
@@ -506,58 +492,71 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
          (NSOpenGLPixelFormatAttribute)0
       };
 
+      /* NSOpenGLPFAOpenGLProfile is 10.7 and the 4.1 core profile
+       * 10.10, but all three are plain integers in the attribute
+       * array - 99, 0x3200, 0x4100 - so the request is spelled out
+       * and made unconditionally. A system that does not know the
+       * attribute, or cannot give that profile, fails the pixel
+       * format; the retry below drops the request and takes the
+       * legacy profile, which is what the build-SDK gates used to
+       * decide in advance and get wrong in both directions. */
       switch (g_gl_major)
       {
          case 3:
-#if MAC_OS_X_VERSION_10_7
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion3_2Core;
-#endif
+            attributes[6] = (NSOpenGLPixelFormatAttribute)99;
+            attributes[7] = (NSOpenGLPixelFormatAttribute)0x3200;
             break;
          case 4:
-#if MAC_OS_X_VERSION_10_10
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion4_1Core;
-#endif
+            attributes[6] = (NSOpenGLPixelFormatAttribute)99;
+            attributes[7] = (NSOpenGLPixelFormatAttribute)0x4100;
             break;
       }
 
       fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
-      /* If pixel-format creation failed with NSOpenGLPFAAllowOfflineRenderers
-       * (added in 10.5 - some drivers on early 10.5 builds could reject it
-       * even though the SDK exposed the constant), retry without it.  The
-       * previous guard here was #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050,
-       * which meant "compile this fallback only when targeting pre-10.5" -
-       * the opposite of what was intended and unreachable in practice since
-       * the static `attributes` array above already references
-       * NSOpenGLPFAAllowOfflineRenderers unconditionally, so the file
-       * demands a 10.5+ SDK (MAC_OS_X_VERSION_MAX_ALLOWED >= 1050) just
-       * to compile.  The fallback is now always available at runtime and
-       * only exercised when the first -initWithAttributes: returns nil. */
+      /* Two things the system in front of us may refuse. The core
+       * profile asked for above is one: a 10.5 or 10.6 system has no
+       * NSOpenGLPFAOpenGLProfile at all, and a 10.7 to 10.9 one has
+       * no 4.1 core, so the pixel format comes back nil and the
+       * request is dropped for a legacy context. The other is
+       * NSOpenGLPFAAllowOfflineRenderers, which some early 10.5
+       * drivers rejected even though the SDK had the constant.
+       * Dropped in that order, since a caller that asked for GL 3 or
+       * 4 would rather lose offline renderers than the profile. */
+      if (fmt == nil && attributes[6])
+      {
+         attributes[6]  = (NSOpenGLPixelFormatAttribute)0;
+         attributes[7]  = (NSOpenGLPixelFormatAttribute)0;
+         fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      }
+
       if (fmt == nil)
       {
          attributes[3]  = (NSOpenGLPixelFormatAttribute)0;
          fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       }
 
+      /* A context must never be released while still attached to the
+       * view (or current on the render thread).  -destroy guarantees
+       * that on the normal reinit path; should -set_video_mode ever be
+       * reached with g_ctx/g_hw_ctx still live, detach them before
+       * RELEASE, exactly as -destroy_mainthread does.  The caller has
+       * already cleared the render thread's current context.  Under
+       * ARC RELEASE() is an assignment of nil to a strong static, which
+       * still releases, so this applies to both memory models. */
+      [g_ctx clearDrawable];
+      if (g_hw_ctx)
+         [g_hw_ctx clearDrawable];
+      RELEASE(g_ctx);
+      RELEASE(g_hw_ctx);
+
       if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       {
-         /* In the normal reinit flow -destroy runs before -set_video_mode
-          * and both statics are already nil here; guard defensively so an
-          * MRR build does not leak the previous +1 if that invariant ever
-          * breaks (e.g. a future caller that re-inits without tearing
-          * down first).  Safe when already nil under both ARC and MRR. */
-         RELEASE(g_ctx);
-         RELEASE(g_hw_ctx);
          g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:g_hw_ctx];
       }
       else
-      {
-         RELEASE(g_ctx);
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
-      }
 
       RELEASE(fmt);
    }
@@ -575,134 +574,14 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
          [win setColorSpace:[NSColorSpace sRGBColorSpace]];
    }
 
-#ifdef HAVE_COCOA_METAL
+   /* Window and full-screen surgery lives with the application
+    * delegate, which knows whether the system has native full-screen
+    * or needs the borderless-window mode. */
    mode.width           = width;
    mode.height          = height;
    mode.fullscreen      = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
-#else
-   /* Hand-rolled fullscreen for the non-Metal path.
-    *
-    * The previous implementation called -[NSView enterFullScreenMode:
-    * withOptions:], which internally captures all displays and moves
-    * the view into an AppKit-manufactured NSWindow.  That replacement
-    * window is a plain NSWindow, not RAWindow, so -[RAWindow sendEvent:]
-    * (the event-pump override that feeds cocoa_input, added in commit
-    * 23a945639) stops firing while fullscreen, and keystrokes / mouse
-    * clicks get dropped.
-    *
-    * Instead, create our own borderless RAWindow covering the chosen
-    * screen, move the CocoaView into it, and show it above the menu
-    * bar.  Because the fullscreen window is itself an RAWindow, our
-    * sendEvent: override keeps firing.  SDL, GLFW, and similar
-    * libraries use this same pattern for pre-Lion fullscreen on macOS.
-    *
-    * Extra constraint: on 10.5 Leopard, -[NSWindow setStyleMask:]
-    * doesn't exist, so we can't toggle the existing window's style
-    * between titled and borderless - the new-window approach is the
-    * only option that works on every macOS version we target.
-    *
-    * HAVE_COCOA_METAL is unaffected: that path goes through
-    * -[apple_platform setVideoMode:] above, which drives the native
-    * -[NSWindow toggleFullScreen:] API on 10.7+. */
-   static NSWindow *saved_windowed_window = NULL;
-   static NSWindow *fullscreen_window     = NULL;
-   static NSRect    saved_view_frame;
-
-   if (fullscreen)
-   {
-      if (!has_went_fullscreen)
-      {
-         NSScreen *screen        = (BRIDGE NSScreen *)cocoa_screen_get_chosen();
-         NSRect    screen_frame  = [screen frame];
-         /* Look up RAWindow at runtime rather than pulling its
-          * @interface out of ui_cocoa.m into a shared header. */
-         Class     ra_window_cls = NSClassFromString(@"RAWindow");
-
-         /* Remember where the view lived so we can put it back on exit. */
-         saved_windowed_window   = [[g_view window] retain];
-         saved_view_frame        = [g_view frame];
-
-         /* Build the fullscreen host window.  NSBorderlessWindowMask is
-          * 0 on every macOS version, identical 10.5 through modern.
-          * Raising above NSMainMenuWindowLevel is belt-and-braces once
-          * the menu bar is hidden below. */
-         fullscreen_window = [[ra_window_cls alloc]
-               initWithContentRect:screen_frame
-                         styleMask:NSBorderlessWindowMask
-                           backing:NSBackingStoreBuffered
-                             defer:NO];
-         [fullscreen_window setLevel:NSMainMenuWindowLevel + 1];
-         [fullscreen_window setOpaque:YES];
-         [fullscreen_window setHidesOnDeactivate:YES];
-
-         /* Hide menu bar + Dock.  Only valid when fullscreening onto
-          * screen 0 (the screen that owns the menu bar); on a
-          * secondary screen the menu bar stays put and hiding it would
-          * mangle the primary screen. */
-         if ([[NSScreen screens] count] > 0
-               && [screen isEqual:[[NSScreen screens] objectAtIndex:0]])
-            [NSMenu setMenuBarVisible:NO];
-
-         /* Move the CocoaView from the windowed window into the
-          * fullscreen window.  Retain across the move so the view
-          * isn't released by removeFromSuperview... if it happened
-          * to hold the last reference. */
-         [g_view retain];
-         [g_view removeFromSuperviewWithoutNeedingDisplay];
-         [[fullscreen_window contentView] addSubview:g_view];
-         /* -[NSWindow contentView] returns id on the 10.5-10.9 SDKs,
-          * which means GCC can resolve -bounds either to -[NSView
-          * bounds] (NSRect) or -[CALayer bounds] (CGRect).  On 32-bit
-          * Darwin those are distinct incompatible structs, so the
-          * implicit CGRect -> NSRect (setFrame:'s parameter) coercion
-          * fails to compile.  Cast the receiver to NSView* so the
-          * right -bounds wins.  Same fix class as 8e428f4e67. */
-         [g_view setFrame:[(NSView*)[fullscreen_window contentView] bounds]];
-         [g_view release];
-
-         /* Order the windowed window out, bring the fullscreen window
-          * up, and route keystrokes to the view. */
-         [saved_windowed_window orderOut:nil];
-         [fullscreen_window makeKeyAndOrderFront:nil];
-         [fullscreen_window makeFirstResponder:g_view];
-
-         cocoa_show_mouse(data, false);
-      }
-   }
-   else
-   {
-      if (has_went_fullscreen && fullscreen_window)
-      {
-         /* Put the view back in the windowed window. */
-         [g_view retain];
-         [g_view removeFromSuperviewWithoutNeedingDisplay];
-         [[saved_windowed_window contentView] addSubview:g_view];
-         [g_view setFrame:saved_view_frame];
-         [g_view release];
-
-         /* Restore the menu bar, tear down the fullscreen window,
-          * bring the windowed window back. */
-         [NSMenu setMenuBarVisible:YES];
-
-         [fullscreen_window orderOut:nil];
-         [fullscreen_window release];
-         fullscreen_window = NULL;
-
-         [saved_windowed_window makeKeyAndOrderFront:nil];
-         [saved_windowed_window makeFirstResponder:g_view];
-         [saved_windowed_window release];
-         saved_windowed_window = NULL;
-
-         cocoa_show_mouse(data, true);
-      }
-
-      [[g_view window] setContentSize:NSMakeSize(width, height)];
-   }
-
-   has_went_fullscreen = fullscreen;
-#endif
 
    /* Seed/refresh the published backing size while still on the main
     * thread, so a threaded-video worker never observes the initial 0x0
@@ -719,6 +598,14 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    args.width      = width;
    args.height     = height;
    args.fullscreen = fullscreen;
+
+   /* Current-context state is per-thread, so this has to happen here
+    * on the render thread and not inside the main-thread body: with
+    * threaded video, +currentContext on the main thread would never
+    * report g_ctx, and a previous context still live here would be
+    * released while current.  Harmless when nothing is current; g_ctx
+    * is re-bound below. */
+   [GLContextClass clearCurrentContext];
 
    cocoa_main_thread_sync(cocoa_gl_gfx_ctx_set_video_mode_mainthread, &args);
 
@@ -737,26 +624,22 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
-#ifndef OSX
+#if !TARGET_OS_OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
 
-#if defined(HAVE_COCOA_METAL)
    /* setViewType creates/attaches the render view (AppKit); marshal to
     * the main thread when the underlying driver init runs on the video
     * worker thread. */
    cocoa_main_thread_sync(cocoa_gl_gfx_ctx_init_mainthread, NULL);
-#endif
 
    return cocoa_ctx;
 }
 #else
-#if defined(HAVE_COCOA_METAL)
 static void cocoa_gl_gfx_ctx_init_es_mainthread(void *userdata)
 {
    [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
 }
-#endif
 
 /* EAGLContext creation and the GLKView association are UIKit-adjacent
  * and are kept on the main thread; binding the context current happens
@@ -820,20 +703,17 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
-#ifndef OSX
+#if !TARGET_OS_OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
 
    switch (cocoagl_api)
    {
       case GFX_CTX_OPENGL_ES_API:
-#if defined(HAVE_COCOA_METAL)
-         /* The Metal build supports both the OpenGL
-          * and Metal video drivers.  setViewType creates/attaches the
-          * render view (UIKit); marshal to the main thread when the
-          * underlying driver init runs on the video worker thread. */
+         /* setViewType creates/attaches the render view (UIKit);
+          * marshal to the main thread when the underlying driver init
+          * runs on the video worker thread. */
          cocoa_main_thread_sync(cocoa_gl_gfx_ctx_init_es_mainthread, NULL);
-#endif
          break;
       case GFX_CTX_NONE:
       default:
@@ -844,12 +724,10 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 }
 #endif
 
-#ifdef HAVE_COCOA_METAL
 static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    return true;
 }
-#endif
 
 static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
@@ -859,6 +737,28 @@ static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
     * thread_get_video_output_size calls the poke / ctx hook
     * directly, bypassing dispserv_apple. */
    cocoa_get_video_output_size(width, height, desc, desc_len);
+}
+
+/* A miniaturised window has nothing behind it to present to:
+ * -flushBuffer returns at once rather than blocking to the display's
+ * refresh, so with vsync as the only pacing the loop would spin.
+ * AppKit keeps the state, so there is none of ours to keep, and it is
+ * asked of the window rather than tracked through notifications.
+ *
+ * macOS only: on iOS and tvOS the system stops the CADisplayLink when
+ * the app leaves the foreground, so there is no loop to pace, and
+ * UIWindow has no equivalent of -isMiniaturized. */
+static bool cocoa_gl_gfx_ctx_presentable(void *data)
+{
+#if TARGET_OS_OSX
+   CocoaView *g_view = cocoaview_get();
+   (void)data;
+   if (g_view)
+      return ![[g_view window] isMiniaturized];
+#else
+   (void)data;
+#endif
+   return true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
@@ -875,17 +775,13 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* translate_aspect */
-#ifdef OSX
+#if TARGET_OS_OSX
    video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif
    cocoa_gl_gfx_ctx_check_window,
-#if defined(HAVE_COCOA_METAL)
    cocoa_gl_gfx_ctx_set_resize,
-#else
-   NULL, /* set_resize */
-#endif
    cocoa_has_focus,
    cocoa_gl_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
@@ -906,5 +802,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_context_data */
    NULL, /* make_current */
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL, /* destroy_surface */
+   cocoa_gl_gfx_ctx_presentable
 };

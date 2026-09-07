@@ -194,6 +194,7 @@ typedef ID3D11InfoQueue*                D3D11InfoQueue;
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
+#include <compat/strl.h>
 
 HRESULT WINAPI D3D11CreateDevice(
       IDXGIAdapter*   pAdapter,
@@ -2389,12 +2390,12 @@ static bool d3d11_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d11_init_shader(d3d11->device, vs_src, 0,
                   _path, "main", NULL, NULL, desc, countof(desc),
                   &ds->passes[i].shader, ds->feat_level_hint);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d11_init_shader(d3d11->device, ps_src, 0, _path,
                   NULL, "main", NULL, NULL, 0,
                   &ds->passes[i].shader, ds->feat_level_hint);
@@ -2722,13 +2723,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char *vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          d3d11_init_shader(d3d11->device, vs_src, 0,
                _path, "main", NULL, NULL, desc, countof(desc),
                &d3d11->pass[i].shader, feat_level_hint);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
          d3d11_init_shader(d3d11->device, ps_src, 0, _path,
                NULL, "main", NULL, NULL, 0,

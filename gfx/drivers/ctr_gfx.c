@@ -923,7 +923,7 @@ static const char *ctr_texture_path(unsigned id)
 
             _len = strlcpy(texture_path,
                   state_path, sizeof(texture_path));
-            strlcpy(texture_path       + _len,
+            strlcpy_lit(texture_path       + _len,
                   ".png",
                   sizeof(texture_path) - _len);
             return path_basename_nocompression(texture_path);
@@ -978,7 +978,7 @@ static bool ctr_update_state_date_from_file(void *data)
 
 error:
   ctr->state_data_exist = false;
-  strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+  strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
@@ -1370,7 +1370,7 @@ static void ctr_render_bottom_screen(void *data)
                   &params);
 
             _len = strlcpy(str_path, dir_assets, sizeof(str_path));
-            strlcpy(str_path       + _len,
+            strlcpy_lit(str_path       + _len,
                   "\n/bottom_menu.png",
                   sizeof(str_path) - _len);
 
@@ -1733,7 +1733,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->idle_timestamp             = 0;
    ctr->state_slot                 = settings->ints.state_slot;
 
-   strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+   strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
 
    ctr->rgb32                      = video->rgb32;
    ctr->texture_width              = video->input_scale * RARCH_SCALE_BASE;

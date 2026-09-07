@@ -309,7 +309,10 @@ static const struct
 #endif
 #ifdef _3DS
    char s_22a46583[31];
+   char s_a4d079f8[18];
+   char s_3f3d3a01[19];
    char s_6651ce29[28];
+   char s_04fed26b[18];
    char s_17813ad9[20];
    char s_1131883a[15];
 #endif
@@ -446,6 +449,7 @@ static const struct
    char s_ce5f3353[22];
    char s_6155456e[18];
    char s_e4e54370[14];
+   char s_40bca412[28];
    char s_e78c87a1[32];
    char s_f33a0acb[34];
    char s_8b47a498[21];
@@ -971,6 +975,7 @@ static const struct
    char s_a497674d[24];
    char s_7dea99f5[22];
    char s_da90bf11[21];
+   char s_abd11e88[14];
    char s_83f3b962[29];
    char s_328b6ccc[14];
    char s_69694866[27];
@@ -1032,6 +1037,9 @@ static const struct
    char s_68d27147[11];
    char s_f02f73fc[26];
    char s_3a0a3fef[13];
+   char s_1b6ed818[18];
+   char s_89a75c21[19];
+   char s_9439ec8b[18];
    char s_1e09db79[16];
    char s_0d2d8eef[11];
    char s_400523e5[22];
@@ -1569,6 +1577,7 @@ static const struct
    char s_ab4776a4[23];
    char s_ae4fb605[25];
    char s_a81b969f[36];
+   char s_f0ba9657[13];
    char s_35dc82a3[18];
    char s_f128ee26[34];
    char s_198913d1[54];
@@ -1838,6 +1847,7 @@ static const struct
    char s_c7bc8298[33];
    char s_e63b035a[19];
    char s_d21d875b[14];
+   char s_ae86fed0[17];
    char s_b12ae22e[20];
    char s_b2d073c7[18];
    char s_1cbc2657[16];
@@ -2021,6 +2031,7 @@ static const struct
    char s_b9d37039[174];
    char s_d0a04fe4[12];
    char s_c682e4e2[12];
+   char s_cf6bc52a[21];
    char s_05c5a263[14];
    char s_ed22c5f1[20];
    char s_49f9815b[18];
@@ -2290,6 +2301,7 @@ static const struct
    char s_680226fd[39];
    char s_6fb18a2a[48];
    char s_16a53432[59];
+   char s_d774fd60[30];
    char s_96bda3d0[50];
    char s_4f627df2[38];
    char s_af2a7718[40];
@@ -2299,6 +2311,7 @@ static const struct
    char s_5ac97310[53];
    char s_547057db[36];
    char s_cd5f01df[23];
+   char s_5a446688[31];
    char s_d4d3746a[110];
    char s_f6dc4041[70];
    char s_7c7bb683[156];
@@ -2482,6 +2495,7 @@ static const struct
    char s_8d99673a[37];
    char s_7fd5ef69[77];
    char s_7d9ab595[49];
+   char s_752f291c[41];
    char s_9eb26572[35];
    char s_50707595[66];
    char s_976074ee[119];
@@ -3124,6 +3138,7 @@ static const struct
    char s_907ef7cc[36];
    char s_b0a46506[54];
    char s_f6492edc[37];
+   char s_22a05685[63];
 #endif
    char s_f3bfa8b9[81];
    char s_5fe2cee5[62];
@@ -3400,6 +3415,7 @@ static const struct
    char s_5e0b473a[14];
    char s_44ce4afe[49];
    char s_fa1942bb[30];
+   char s_c95a9db6[23];
    char s_5aeda955[46];
    char s_839395b2[26];
    char s_3267601f[55];
@@ -3870,6 +3886,8 @@ static const struct
    char s_94fc1cd0[14];
    char s_2aaf8414[16];
    char s_28a4c280[24];
+   char s_ae2838e7[24];
+   char s_f5c32889[22];
    char s_d085ad84[46];
    char s_4f18c9d0[50];
    char s_4f3bb585[50];
@@ -4407,7 +4425,10 @@ static const struct
 #endif
 #ifdef _3DS
    "Nedre sk\303\244rmens Tillg\303\245ngsmapp",
+   "Teckenf\303\244rg: Bl\303\245",
+   "Teckenf\303\244rg: Gr\303\266n",
    "F\303\244rgopacitet f\303\266r typsnitt",
+   "Teckenf\303\244rg: R\303\266d",
    "Typsnittsaktivering",
    "Typsnittsskala",
 #endif
@@ -4544,6 +4565,7 @@ static const struct
    "L\303\244s in konfiguration",
    "Konfigurationsfil",
    "Konfiguration",
+   "Spara minimal konfiguration",
    "Spara konfiguration vid Avsluta",
    "Bekr\303\244fta st\303\244ngning av inneh\303\245ll",
    "Bekr\303\244fta avslutning",
@@ -5069,6 +5091,7 @@ static const struct
    "S\303\266k igenom inuti arkiv",
    "S\303\266k igenom rekursivt",
    "Starta genoms\303\266kning",
+   "M\303\245lspellista",
    "Namn f\303\266r anpassad spellista",
    "<Automatiskt>",
    "Validera befintliga poster",
@@ -5130,6 +5153,9 @@ static const struct
    "Kioskl\303\244ge",
    "Stryp menyns bildfrekvens",
    "Filhanterare",
+   "Teckenf\303\244rg: Bl\303\245",
+   "Teckenf\303\244rg: Gr\303\266n",
+   "Teckenf\303\244rg: R\303\266d",
    "Genomskinlighet",
    "Ljusstyrka",
    "Horisontell animering",
@@ -5676,6 +5702,7 @@ static const struct
    "Visa 'K\303\244rnalternativ'",
    "Visa 'Repris-kontroller'",
    "Visa '\303\205terst\303\244ll k\303\244rnassociation'",
+   "Visa 'Reset'",
    "Visa '\303\205teruppta'",
    "Visa 'Spara tillst\303\245nd'-undermeny",
    "Visa 'Spara \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog'",
@@ -5945,6 +5972,7 @@ static const struct
    "N\303\244tverksinst\303\244llningar f\303\266r SMB",
    "SMB-utdelningsnamn",
    "SMB-utdelning",
+   "SMB-underkatalog",
    "Tidsgr\303\244ns f\303\266r SMB",
    "SMB-anv\303\244ndarnamn",
    "SMB-arbetsgrupp",
@@ -6130,6 +6158,7 @@ static const struct
    "fekt.",
    "Videofilter",
    "Videofilter",
+   "Videofilter aktivera",
    "Flimmerfilter",
    "Ta bort videofilter",
    "Sk\303\244rmmeddelanden",
@@ -6442,6 +6471,7 @@ static const struct
    "Till\303\245t k\303\244rnor att komma \303\245t kameran.",
    "Kameradrivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
    "Adressbitmask n\303\244r minnesstorlek f\303\266r s\303\266kning < 8-bitars.",
+   "L\303\244gg till ett fusk i listan.",
    "Till\303\244mpa fusk automatiskt n\303\244r spelet l\303\244ses in.",
    "Till\303\244mpa fusk direkt efter v\303\244xling.",
    "Fusk\303\244ndringar kommer aktiveras direkt.",
@@ -6451,6 +6481,7 @@ static const struct
    "L\303\244s in en fuskfil och l\303\244gg till i befintliga fusk.",
    "Spara aktuella fusk som en fuskfil.",
    "Fuskposition i listan.",
+   "Ladda om alla befintliga fusk.",
    "Efter varje iteration kommer \342\200\235Minnesadress\342\200\235 att \303\266kas med detta tal "
    "g\303\245nger \342\200\235S\303\266kstorlek f\303\266r minne\342\200\235.",
    "Efter varje iteration kommer \342\200\235V\303\244rde\342\200\235 att \303\266kas med denna m"
@@ -6734,6 +6765,7 @@ static const struct
    "L\303\244s mer om hur programmet fungerar.",
    "Underh\303\245ll en spellista med nyligen anv\303\244nda spel, bilder, musik och videor.",
    "Typ av miniatyrbild f\303\266r spellisteikon att visa.",
+   "Visa mer information om detta inneh\303\245ll.",
    "Visar lista med systeminformation.",
    "Byt till senaste anv\303\244nda skivan vid start av flerskivsinneh\303\245ll.",
    "Anv\303\244nd angiven analog spak f\303\266r D-Pad-inmatning. L\303\244get 'Tvingad' \303\245sid"
@@ -7746,6 +7778,7 @@ static const struct
    "Serverns IP-adress eller v\303\244rdnamn.",
    "Konfigurera inst\303\244llningar f\303\266r SMB-n\303\244tverksdelning.",
    "V\303\244lj standardtidsgr\303\244ns i sekunder.",
+   "Arbetsgrupp eller dom\303\244nnamn. Valfritt i vissa inst\303\244llningar.",
 #endif
    "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
    "Sortera sparade filer i mappar med namn efter anv\303\244nd k\303\244rna.",
@@ -8161,6 +8194,7 @@ static const struct
    "Fusk raderat.",
    "Misslyckades med att starta s\303\266kning efter fusk.",
    "Startade s\303\266kning efter fusk.",
+   "Alla fusk laddades om.",
    "Misslyckades med att l\303\244gga till matchningar.",
    "Lade till %u matchningar.",
    "Slut p\303\245 plats. Maximalt antal samtidiga fusk \303\244r 100.",
@@ -8664,6 +8698,8 @@ static const struct
    "Startar om...",
    "St\303\244nger ner...",
    "Version av libretro API",
+   "Videofilter: Inaktivera",
+   "Videofilter: Aktivera",
    "Videouppdateringsfrekvens \303\244ndrad till %s Hz.",
    "Misslyckades med att st\303\244nga virtuell skivsl\303\244de.",
    "Misslyckades med att mata ut virtuell skivsl\303\244de.",
@@ -8682,7 +8718,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (166211u
+      (sizeof(msg_hash_sv_blob) == (166513u
 #ifdef ANDROID
        + 361u
 #endif
@@ -8702,7 +8738,10 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #ifdef _3DS
        + 31u
+       + 18u
+       + 19u
        + 28u
+       + 18u
        + 20u
        + 15u
 #endif
@@ -8812,6 +8851,7 @@ typedef char msg_hash_sv_blob_check[
        + 33u
        + 19u
        + 14u
+       + 17u
        + 20u
        + 18u
        + 16u
@@ -8991,6 +9031,7 @@ typedef char msg_hash_sv_blob_check[
        + 36u
        + 54u
        + 37u
+       + 63u
 #endif
 #ifdef HAVE_LAKKA
        + 55u
@@ -9367,7 +9408,10 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
 #endif
@@ -9504,6 +9548,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_MINIMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
@@ -10029,6 +10074,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
@@ -10090,6 +10136,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -10626,6 +10675,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESTART_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
@@ -10895,6 +10945,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -11078,6 +11129,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
@@ -11347,6 +11399,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
@@ -11356,6 +11409,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_RELOAD_CHEATS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
@@ -11539,6 +11593,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
@@ -12181,6 +12236,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -12457,6 +12513,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_CHEAT_DELETE_SUCCESS,
    (uint32_t)MSG_CHEAT_INIT_FAIL,
    (uint32_t)MSG_CHEAT_INIT_SUCCESS,
+   (uint32_t)MSG_CHEAT_RELOAD_ALL_SUCCESS,
    (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
    (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
    (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
@@ -12927,6 +12984,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VERSION_OF_LIBRETRO_API,
+   (uint32_t)MSG_VIDEO_FILTER_ENABLE_OFF,
+   (uint32_t)MSG_VIDEO_FILTER_ENABLE_ON,
    (uint32_t)MSG_VIDEO_REFRESH_RATE_CHANGED,
    (uint32_t)MSG_VIRTUAL_DISK_TRAY_CLOSE,
    (uint32_t)MSG_VIRTUAL_DISK_TRAY_EJECT,

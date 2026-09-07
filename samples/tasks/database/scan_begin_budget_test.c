@@ -48,6 +48,7 @@
 #include "../../../playlist.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include <compat/strl.h>
 
 #define SCAN_TIMEOUT_SECONDS 300
 
@@ -350,13 +351,13 @@ static bool configure_scan(const char *content_dir, const char *dat_path,
       return false;
    /* For the CUSTOM type the setter only records the type; the name
     * itself lives in the menu-backed buffer. */
-   strlcpy(manual_content_scan_get_system_name_custom_ptr(), "ScanBench",
+   strlcpy_lit(manual_content_scan_get_system_name_custom_ptr(), "ScanBench",
          manual_content_scan_get_system_name_custom_size());
    if (!manual_content_scan_set_menu_scan_use_db(
             MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE))
       return false;
 
-   strlcpy(manual_content_scan_get_file_exts_custom_ptr(), "bin",
+   strlcpy_lit(manual_content_scan_get_file_exts_custom_ptr(), "bin",
          manual_content_scan_get_file_exts_custom_size());
    strlcpy(manual_content_scan_get_dat_file_path_ptr(), dat_path,
          manual_content_scan_get_dat_file_path_size());

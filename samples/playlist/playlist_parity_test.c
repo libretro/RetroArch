@@ -56,6 +56,7 @@
 /* ------------------------------------------------------------------ */
 
 #include "../../core_info.h"
+#include <compat/strl.h>
 
 bool core_info_find(const char *core_path, core_info_t **core_info)
 {
@@ -682,7 +683,7 @@ static void lane_budgeted_autofix(void)
    config_defaults(&config, path);
    config.capacity      = 8192;
    config.autofix_paths = true;
-   strlcpy(config.base_content_directory, "/mnt/newgames",
+   strlcpy_lit(config.base_content_directory, "/mnt/newgames",
          sizeof(config.base_content_directory));
 
    blocking = playlist_init(&config);

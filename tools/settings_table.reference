@@ -188,6 +188,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -212,7 +213,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -240,6 +240,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -249,6 +250,9 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	1
+bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -425,6 +429,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -478,6 +483,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -832,6 +838,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -856,7 +863,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -884,6 +890,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -893,6 +900,9 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	1
+bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -1067,6 +1077,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1120,6 +1131,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -1432,6 +1444,11 @@ bool	input_sensors_enable	1	1
 bool	ui_companion_enable	1	0
 bool	ui_companion_start_on_boot	1	1
 bool	desktop_menu_enable	1	1
+bool	desktop_menu_suggest_loaded_core_first	1	0
+bool	desktop_menu_save_last_tab	1	0
+bool	desktop_menu_save_geometry	1	0
+bool	desktop_menu_show_welcome_screen	1	1
+bool	desktop_menu_scan_finish_confirm	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -1475,6 +1492,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -1499,7 +1517,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -1528,6 +1545,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -1537,6 +1555,9 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	1
+bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -1712,6 +1733,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1765,7 +1787,22 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
+uint	desktop_menu_view_type	1	0
+uint	desktop_menu_thumbnail_type	1	0
+uint	desktop_menu_last_tab	1	0
+uint	desktop_menu_thumbnail_cache_limit	1	500
+uint	desktop_menu_thumbnail_max_size	1	0
+uint	desktop_menu_thumbnail_quality	1	0
+uint	desktop_menu_icon_view_zoom	1	50
+uint	desktop_menu_all_playlists_list_max_count	1	0
+uint	desktop_menu_all_playlists_grid_max_count	1	0
+uint	desktop_menu_theme	1	0
+uint	desktop_menu_window_x	1	0
+uint	desktop_menu_window_y	1	0
+uint	desktop_menu_window_width	1	0
+uint	desktop_menu_window_height	1	0
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
 uint	video_scale_integer_axis	1	0

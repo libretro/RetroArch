@@ -299,6 +299,7 @@ static const struct
    char s_8c7495e3[17];
    char s_ad7c73f6[15];
    char s_30acd6fb[15];
+   char s_ce7da552[32];
    char s_04b30c51[25];
    char s_e5aeacf9[23];
    char s_24976a5b[22];
@@ -1168,6 +1169,7 @@ static const struct
    char s_b4c3612a[36];
    char s_f638f238[17];
    char s_f3358a59[32];
+   char s_f8098721[53];
    char s_0d7d9688[41];
    char s_b00815b8[15];
    char s_1ef8917a[23];
@@ -2024,6 +2026,7 @@ static const struct
    char s_d9b00fbd[28];
    char s_9c6ed9ca[19];
    char s_68664e16[17];
+   char s_9ad2e88b[29];
    char s_d4aabe7f[19];
    char s_4674fab3[10];
    char s_904219cb[19];
@@ -2420,6 +2423,7 @@ static const struct
    char s_f7cc6630[25];
    char s_310ec7bd[71];
    char s_5832a2c2[103];
+   char s_f47e544f[242];
    char s_20cc6597[86];
    char s_21b0bad3[47];
    char s_66e9521c[82];
@@ -2984,6 +2988,7 @@ static const struct
    char s_7de5d198[61];
    char s_3b573ee6[29];
    char s_dc1d6cc7[49];
+   char s_28543dcf[76];
    char s_aebcb136[141];
    char s_8b636a26[34];
    char s_8f707459[41];
@@ -3363,10 +3368,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[55];
    char s_69c0e487[50];
+   char s_706ff4dc[270];
    char s_a0d1a85c[72];
    char s_b5966528[209];
    char s_907ef7cc[34];
    char s_b0a46506[45];
+   char s_04624c88[156];
    char s_91976dbe[46];
    char s_f6492edc[43];
    char s_9bb85635[227];
@@ -3410,6 +3417,7 @@ static const struct
    char s_ffd591e0[33];
    char s_a51ab538[23];
    char s_55d6cc44[37];
+   char s_5a8f7fb9[225];
    char s_f2963d2d[29];
    char s_4c592ae1[94];
    char s_52ac4fb9[108];
@@ -4710,6 +4718,7 @@ static const struct
    "Stan: zatrzymane",
    "Synchronizacja",
    "Synchronizacja",
+   "Zwi\304\231ksz priorytet w\304\205tku audio",
    "Poziom g\305\202o\305\233no\305\233ci (dB)",
    "Wy\305\202\304\205czny tryb WASAPI",
    "Format WASAPI ruchomy",
@@ -5579,6 +5588,7 @@ static const struct
    "Poka\305\274 'Uruchom ponownie RetroArch'",
    "Poka\305\274 'Zamknij'",
    "Poka\305\274 etykiety podrz\304\231dne menu",
+   "Poka\305\274 podedtykiety menu tylko dla aktualnego wyboru",
    "Playlisty odtwarzane jednym klikni\304\231ciem",
    "D\305\272wi\304\231ki menu",
    "W\305\202\304\205cz d\305\272wi\304\231k 'BGM'",
@@ -6447,6 +6457,7 @@ static const struct
    "Sterownik kontekstowy wideo",
    "Zr\303\263b zrzut ekranu",
    "W\304\205tkowe zadania",
+   "Preferuj rdzenie wydajno\305\233ci",
    "G\305\202\303\263wna miniatura",
    "Miniatury",
    "G\305\202\303\263wna miniatura",
@@ -6873,6 +6884,10 @@ static const struct
    "Zasoby menu u\305\274ywane przez RetroArch s\304\205 przechowywane w tym katalogu.",
    "Otw\303\263rz panel sterowania sterownika ASIO, aby skonfigurowa\304\207 ustawienia routingu i b"
    "uforu urz\304\205dzenia.",
+   "Liczba klatek, kt\303\263r\304\205 przesuwa sterownik audio na blok. 0 pyta sterownik o w\305"
+   "\202asn\304\205 warto\305\233\304\207 urz\304\205dzenia, co jest chciane w wi\304\231kszo\305"
+   "\233ci konfiguracji; wi\304\231kszy blok ma wi\304\231ksze op\303\263\305\272nienie, ale ma wi"
+   "\304\231ksz\304\205 odporno\305\233\304\207 na braki d\305\272wi\304\231ku.",
    "Zast\304\205p domy\305\233lne urz\304\205dzenie audio u\305\274ywane przez sterownik. Zale\305"
    "\274ne od sterownika.",
    "Sterownik audio do u\305\274ycia. (Wymagany restart)",
@@ -7786,6 +7801,7 @@ static const struct
    "Poka\305\274 opcj\304\231 'Uruchom ponownie RetroArch' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Zamkni\304\231cie\".",
    "Poka\305\274 dodatkowe informacje dla element\303\263w menu.",
+   "Wy\305\233wietlaj podetykiet\304\231 tylko dla aktualnego pod\305\233wietlonego wpisu w menu.",
    "Pomi\305\204 menu 'Uruchom' przy uruchamianiu wpis\303\263w na playli\305\233cie. Wci\305\233nij"
    " D-Pad podczas trzymania OK, aby uzyska\304\207 dost\304\231p do menu 'Uruchom'.",
    "Zmie\305\204 ustawienia d\305\272wi\304\231ku menu.",
@@ -8420,6 +8436,10 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Wybierz uwierzytelnianie u\305\274ywane w twoim \305\233rodowisku.",
    "Przegl\304\205daj pliki na skonfigurowanym zasobie SMB.",
+   "W\305\202\304\205cz dost\304\231p do zasob\303\263w sieciowych SMB. Ethernet jest bardzo zalecan"
+   "y zamiast Wi-Fi, aby uzyska\304\207 niezawodne po\305\202\304\205czenie. Uwaga: przynosi efekt p"
+   "rzy nast\304\231pnym przegl\304\205daniu zasobu, i tre\305\233\304\207, kt\303\263ra ju\305\274 "
+   "dzia\305\202a z zasobu zostaje przy swoim aktualnym po\305\202\304\205czeniu.",
    "Wybierz maksymaln\304\205 liczb\304\231 po\305\202\304\205cze\305\204 u\305\274ywanych w twoim "
    "\305\233rodowisku.",
    "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
@@ -8427,6 +8447,9 @@ static const struct
    "\233ci jest domy\305\233lnie wy\305\202\304\205czony, wi\304\231c has\305\202o jest wymagane.",
    "Adres IP serwera lub nazwa hosta.",
    "Konfiguruj ustawienia sieciowego zasobu SMB.",
+   "Nazwa zasobu sieciowego, do kt\303\263rego chcesz uzyska\304\207 dost\304\231p. Pozostaw pusty, "
+   "aby pokaza\304\207 ka\305\274dy zas\303\263b na serwerze i wybra\304\207 jeden podczas przegl"
+   "\304\205dania.",
    "\305\232cie\305\274ka podkatalogu na zasobie. Opcjonalna.",
    "Wybierz domy\305\233lny limit czasu w sekundach.",
    "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
@@ -8478,6 +8501,9 @@ static const struct
    "Zobacz informacje o urz\304\205dzeniu.",
    "Zr\303\263b zdj\304\231cie ekranu.",
    "Wykonuj zadania w oddzielnym w\304\205tku.",
+   "U\305\274ywaj najszybszych rdzeni CPU do utrzymywania g\305\202\303\263wnych w\304\205tk\303\263"
+   "w audio i wideo na procesorach z mieszanymi rdzeniami. Nie ma efektu na procesorach, w kt\303"
+   "\263rych wszystkie rdzenie s\304\205 takie same. Przynosi efekt po restarcie.",
    "Typ wy\305\233wietlanej miniatury.",
    "Grafika ramki, zrzut ekranu i miniaturki ekranu tytu\305\202owego s\304\205 przechowywane w tym "
    "katalogu.",
@@ -9482,7 +9508,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188451u
+      (sizeof(msg_hash_pl_blob) == (189108u
 #ifdef ANDROID
        + 385u
 #endif
@@ -9814,10 +9840,12 @@ typedef char msg_hash_pl_blob_check[
        + 33u
        + 55u
        + 50u
+       + 270u
        + 72u
        + 209u
        + 34u
        + 45u
+       + 156u
        + 46u
        + 43u
        + 227u
@@ -10187,6 +10215,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -11056,6 +11085,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -11911,6 +11941,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12307,6 +12338,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12869,6 +12901,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13248,10 +13281,12 @@ static const uint32_t msg_hash_pl_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
@@ -13295,6 +13330,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,

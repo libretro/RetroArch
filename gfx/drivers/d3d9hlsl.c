@@ -587,16 +587,16 @@ static void hlsl_uniform_map_from_bytecode(
    for (i = 0; i < TEXTURES - 1; i++)
    {
       size_t _len = strlcpy(attr, prev_names[i], sizeof(attr));
-      strlcpy(attr + _len, ".video_size",   sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".video_size",   sizeof(attr) - _len);
       map->prev_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
-      strlcpy(attr + _len, ".texture_size", sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".texture_size", sizeof(attr) - _len);
       map->prev_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
-      strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".texture",      sizeof(attr) - _len);
       map->prev_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       /* Fallback: decomposed sampler name */
       if (map->prev_texture[i] < 0)
       {
-         strlcpy(attr + _len, "__texture",  sizeof(attr) - _len);
+         strlcpy_lit(attr + _len, "__texture",  sizeof(attr) - _len);
          map->prev_texture[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       }
    }
@@ -604,16 +604,16 @@ static void hlsl_uniform_map_from_bytecode(
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       size_t _len = snprintf(attr, sizeof(attr), "PASS%u", i + 1);
-      strlcpy(attr + _len, ".video_size",   sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".video_size",   sizeof(attr) - _len);
       map->pass_video_size[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
-      strlcpy(attr + _len, ".texture_size", sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".texture_size", sizeof(attr) - _len);
       map->pass_texture_size[i] = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
-      strlcpy(attr + _len, ".texture",      sizeof(attr) - _len);
+      strlcpy_lit(attr + _len, ".texture",      sizeof(attr) - _len);
       map->pass_texture[i]      = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       /* Fallback: decomposed sampler name */
       if (map->pass_texture[i] < 0)
       {
-         strlcpy(attr + _len, "__texture",  sizeof(attr) - _len);
+         strlcpy_lit(attr + _len, "__texture",  sizeof(attr) - _len);
          map->pass_texture[i]   = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, attr, NULL, NULL);
       }
    }

@@ -782,7 +782,7 @@ build-static-retroarch-dummy-psp:
     - "cp -f pkg/psp1/PIC1.PNG ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
 
 build-static-retroarch-vita:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest-20260905
   stage: prepare-for-static-cores
   before_script:
     - export NUMPROC=$(($(nproc)/3))
@@ -808,7 +808,7 @@ build-static-retroarch-vita:
     - "mv .retroarch-precompiled-gl/ retroarch-precompiled-gl/"
 
 build-static-retroarch-dummy-vita:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-vita:latest-20260905
   stage: build
   variables:
     MEDIA_PATH: .media
@@ -991,7 +991,7 @@ build-static-retroarch-ctr-legacy:
   needs: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.ctr -j$NUMPROC ||:"
+    - "make -f Makefile.ctr -j$NUMPROC USE_CTRULIB_2=0 ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"

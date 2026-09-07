@@ -35,6 +35,8 @@ typedef struct rsd
    /* Bound for the blocking wait in rs_write, one callback period.
     * See the note there. */
    int64_t wait_us;
+   /* The fifo's capacity in bytes: what buffer_size() reports. */
+   size_t fifo_size;
 
    bool nonblock;
    bool is_paused;
@@ -75,14 +77,37 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
    rsd->cond_lock = slock_new();
    rsd->cond      = scond_new();
 
-   rsd->buffer    = fifo_new(1024 * 4);
-
    channels       = 2;
    format         = RSD_S16_NE;
 
-   rsd_set_param(rd, RSD_CHANNELS, &channels);
-   rsd_set_param(rd, RSD_SAMPLERATE, &rate);
-   rsd_set_param(rd, RSD_LATENCY, &latency);
+   /* Two stages: the fifo here, which the writer fills and rate control
+    * measures and holds half full, and librsound's own buffer behind
+    * it, which its callback pulls from the fifo to keep full. The fifo
+    * holds the latency setting, in bytes of int16 stereo, and is what
+    * is reported; librsound is asked for what is left of the setting
+    * after half the fifo - half of it, floored at 16 ms or the setting
+    * - so the two add up to the setting. The fifo was a fixed 4 KiB,
+    * 21 ms at 48 kHz, whatever the setting, and librsound was asked
+    * for the whole setting on top of it. */
+   {
+      unsigned server_latency = latency / 2;
+      unsigned floor_ms       = latency < 16 ? latency : 16;
+      if (server_latency < floor_ms)
+         server_latency       = floor_ms;
+      rsd->fifo_size          = ((size_t)rate * latency / 1000)
+            * channels * sizeof(int16_t);
+      if (rsd->fifo_size < 1024 * 4)
+         rsd->fifo_size       = 1024 * 4;
+      rsd->buffer             = fifo_new(rsd->fifo_size);
+      rsd_set_param(rd, RSD_CHANNELS, &channels);
+      rsd_set_param(rd, RSD_SAMPLERATE, &rate);
+      rsd_set_param(rd, RSD_LATENCY, &server_latency);
+      RARCH_LOG("[RSound] %u ms setting: a %u-byte fifo (%u ms, rate control holds it about half full) in front of a %u ms server buffer; about %u ms from write to the server.\n",
+            latency, (unsigned)rsd->fifo_size,
+            (unsigned)(rsd->fifo_size / (channels * sizeof(int16_t)) * 1000 / rate),
+            server_latency,
+            (unsigned)(rsd->fifo_size / (channels * sizeof(int16_t)) * 1000 / rate / 2 + server_latency));
+   }
 
    if (device)
       rsd_set_param(rd, RSD_HOST, (void*)device);
@@ -114,6 +139,11 @@ error:
    return NULL;
 }
 
+/* How many period-long waits a blocked write or wait_writable() may
+ * take before giving up on the server making room. rsound_err_cb
+ * covers a server that fails; this covers one that merely stops. */
+#define RSOUND_WAIT_LAPS 8
+
 static ssize_t rs_write(void *data, const void *buf, size_t len)
 {
    size_t _len;
@@ -136,6 +166,8 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
    }
    else
    {
+      int laps = RSOUND_WAIT_LAPS;
+
       _len = 0;
       while (_len < len && !rsd->has_error)
       {
@@ -166,6 +198,10 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
                scond_wait_timeout(rsd->cond, rsd->cond_lock,
                      rsd->wait_us);
                slock_unlock(rsd->cond_lock);
+               /* And bounded overall: a server that stops draining
+                * without erroring ends the write with what went. */
+               if (--laps < 0)
+                  break;
             }
          }
          else
@@ -242,7 +278,48 @@ static size_t rs_write_avail(void *data)
 }
 
 /* TODO/FIXME - implement? */
-static size_t rs_buffer_size(void *data) { return 1024 * 4; }
+/* The fifo: the stage the writer fills and write_avail() measures.
+ * librsound's buffer behind it is kept full by its callback and adds
+ * on top. */
+static size_t rs_buffer_size(void *data)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   return rsd ? rsd->fifo_size : 0;
+}
+
+/* Sleep on the condition librsound's audio callback signals after every
+ * pull until at least len bytes fit in the fifo, capped at half the
+ * reported buffer so the wait always ends. Timed, for the same reason
+ * rs_write()'s wait is: the error callback's signal can be lost. Returns
+ * the free space then, or 0 once librsound has reported an error. */
+static size_t rs_wait_writable(void *data, size_t len)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   size_t avail;
+   int laps = RSOUND_WAIT_LAPS;
+
+   if (len > rs_buffer_size(data) / 2)
+      len = rs_buffer_size(data) / 2;
+
+   for (;;)
+   {
+      if (rsd->has_error)
+         return 0;
+      rsd_callback_lock(rsd->rd);
+      avail = FIFO_WRITE_AVAIL(rsd->buffer);
+      rsd_callback_unlock(rsd->rd);
+      if (avail >= len)
+         return avail;
+      slock_lock(rsd->cond_lock);
+      scond_wait_timeout(rsd->cond, rsd->cond_lock, rsd->wait_us);
+      slock_unlock(rsd->cond_lock);
+      /* No room after this many waits: the server is not draining and
+       * has not said so; the pass is handed back rather than waited
+       * on further. */
+      if (--laps < 0)
+         return 0;
+   }
+}
 static bool rs_use_float(void *data) { return false; }
 
 audio_driver_t audio_rsound = {
@@ -259,5 +336,6 @@ audio_driver_t audio_rsound = {
    NULL,
    rs_write_avail,
    rs_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   rs_wait_writable
 };

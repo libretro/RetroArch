@@ -349,10 +349,10 @@ static int rsnd_send_header_info(rsound_t *rd)
 
    /* Here we embed in the rest of the WAV header for it to be somewhat valid */
 
-   strlcpy(header, "RIFF", sizeof(header));
+   strlcpy_lit(header, "RIFF", sizeof(header));
    SET32(header, 4, 0);
-   strlcpy(header+8, "WAVE", sizeof(header));
-   strlcpy(header+12, "fmt ", sizeof(header));
+   strlcpy_lit(header+8, "WAVE", sizeof(header));
+   strlcpy_lit(header+12, "fmt ", sizeof(header));
 
    temp32 = 16;
    LSB32(temp32);
@@ -398,7 +398,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    LSB16(temp_bits);
    SET16(header, FRAMESIZE, temp_bits);
 
-   strlcpy(header + 36, "data", sizeof(header));
+   strlcpy_lit(header + 36, "data", sizeof(header));
 
    /* Do not care about cksize here (impossible to know beforehand).
     * It is used by the server for format. */

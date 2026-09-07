@@ -25,7 +25,7 @@
 #include "../../config.h"
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <CoreText/CoreText.h>
 #include <CoreGraphics/CoreGraphics.h>
 #else
@@ -34,6 +34,9 @@
 
 
 #include "../font_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
@@ -406,20 +409,14 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
       return true;
    }
 
-   CTFontGetBoundingRectsForGlyphs(face,
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
-         kCTFontOrientationDefault,
-#else
-         kCTFontDefaultOrientation,
-#endif
+   /* kCTFontDefaultOrientation was renamed kCTFontOrientationDefault
+    * in 10.8; both are zero and both still work, so the value goes in
+    * rather than either name, and no SDK version decides which of the
+    * two spellings this file is allowed to say. */
+   CTFontGetBoundingRectsForGlyphs(face, (CTFontOrientation)0,
          glyphs, &bounds, 1);
 
-   CTFontGetAdvancesForGlyphs(face,
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
-         kCTFontOrientationDefault,
-#else
-         kCTFontDefaultOrientation,
-#endif
+   CTFontGetAdvancesForGlyphs(face, (CTFontOrientation)0,
          glyphs, &advance, 1);
 
    /* Set up glyph metrics using cached ascent */

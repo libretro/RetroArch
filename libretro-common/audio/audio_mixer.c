@@ -103,6 +103,15 @@
 #define AUDIO_MIXER_MAX_VOICES      8
 #define AUDIO_MIXER_TEMP_BUFFER 8192
 
+/* A stream voice's decode scratch and resampled buffer come out of one
+ * 64-byte aligned block: the scratch first, then one 64-byte pad, then
+ * the buffer. The scratch is exactly 32 KiB in the float path and 16
+ * KiB in the s16 path, so without the pad the two would be a multiple
+ * of 4 KiB apart and the resampler, which reads one while writing the
+ * other, would stall on low-address-bit aliasing. Element counts. */
+#define AUDIO_MIXER_STREAM_BUF_OFFSET(elem_size) \
+   (AUDIO_MIXER_TEMP_BUFFER + 64 / (elem_size))
+
 struct audio_mixer_sound
 {
    enum audio_mixer_type type;
@@ -640,7 +649,15 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    struct resampler_data info;
    void* data                         = NULL;
    const retro_resampler_t* resampler = NULL;
-   float ratio                        = (double)s_rate / (double)rate;
+   float ratio;
+
+   /* A zero on either side leaves nothing to resample toward: the
+    * mixer has not been given its rate, or the source header claims
+    * none. The resampler run on such a ratio emits frames the output
+    * estimate never accounted for, past the end of the buffer. */
+   if (!s_rate || !rate)
+      return false;
+   ratio = (double)s_rate / (double)rate;
 
    if (!retro_resampler_realloc(&data, &resampler,
          resampler_ident, quality, ratio))
@@ -992,7 +1009,12 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
    size_t alloc_samples;
    size_t pad;
    void  *re    = NULL;
-   double ratio = (double)s_rate / (double)rate;
+   double ratio;
+
+   /* As in one_shot_resample(): no rate on either side, no resample. */
+   if (!s_rate || !rate)
+      return false;
+   ratio = (double)s_rate / (double)rate;
 
    re = sinc_resampler_int16_init((ratio < 1.0) ? ratio : 1.0,
          audio_mixer_i16_quality(quality));
@@ -1737,6 +1759,10 @@ static bool audio_mixer_play_stream(
 
    if (rate != s_rate)
    {
+      /* A source claiming no rate, or a mixer not yet given one,
+       * cannot be brought to the output rate; see one_shot_resample(). */
+      if (!s_rate || !rate)
+         goto error;
       ratio = (double)s_rate / (double)rate;
 
       if (!retro_resampler_realloc(&resampler_data,
@@ -1752,24 +1778,21 @@ static bool audio_mixer_play_stream(
     * function to return the number of samples they will output given a
     * count of input samples. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
-   sbuf                            = (float*)memalign_alloc(16,
-         (((samples + 16) + 15) & ~15) * sizeof(float));
-   voice->types.stream.decode_buf  = (float*)memalign_alloc(16,
-         AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
+   voice->types.stream.decode_buf  = (float*)memalign_alloc(64,
+         (AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(float))
+          + (((samples + 16) + 15) & ~15)) * sizeof(float));
 
-   if (!sbuf || !voice->types.stream.decode_buf)
+   if (!voice->types.stream.decode_buf)
    {
-      /* error: only frees the transfer, and neither buffer is on the
-       * voice yet in the sbuf case, so release them here.  One of the
-       * two having succeeded is newly possible now that there are two
-       * of them. */
-      memalign_free(sbuf);
-      memalign_free(voice->types.stream.decode_buf);
-      voice->types.stream.decode_buf = NULL;
+      /* error: only frees the transfer. */
       if (resamp && resampler_data)
          resamp->free(resampler_data);
       goto error;
    }
+   /* The resampled buffer is a view into the decode block; release
+    * frees the block through decode_buf. */
+   sbuf = voice->types.stream.decode_buf
+        + AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(float));
 
    voice->types.stream.resampler      = resamp;
    voice->types.stream.resampler_data = resampler_data;
@@ -1794,14 +1817,13 @@ static void audio_mixer_release_stream(audio_mixer_voice_t* voice,
       audio_transfer_free(voice->types.stream.stream, type);
    if (voice->types.stream.resampler && voice->types.stream.resampler_data)
       voice->types.stream.resampler->free(voice->types.stream.resampler_data);
-   if (voice->types.stream.buffer)
-      memalign_free(voice->types.stream.buffer);
+   /* buffer and buffer_s16 are views into the decode blocks. */
    if (voice->types.stream.decode_buf)
       memalign_free(voice->types.stream.decode_buf);
-   if (voice->types.stream.buffer_s16)
-      memalign_free(voice->types.stream.buffer_s16);
+   voice->types.stream.buffer = NULL;
    if (voice->types.stream.decode_buf_s16)
       memalign_free(voice->types.stream.decode_buf_s16);
+   voice->types.stream.buffer_s16 = NULL;
    if (voice->types.stream.resampler_int16)
       sinc_resampler_int16_free(voice->types.stream.resampler_int16);
 }
@@ -1865,6 +1887,8 @@ static bool audio_mixer_play_stream_s16(
 
    if (rate != s_rate)
    {
+      if (!s_rate || !rate)
+         goto error;
       ratio      = (double)s_rate / (double)rate;
       resamp_i16 = sinc_resampler_int16_init(
             (ratio < 1.0) ? ratio : 1.0,
@@ -1874,22 +1898,20 @@ static bool audio_mixer_play_stream_s16(
    }
 
    samples     = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
-   sbuf        = memalign_alloc(16,
-         (((samples + 16) + 15) & ~15) * sizeof(int16_t));
-   voice->types.stream.decode_buf_s16 = (int16_t*)memalign_alloc(16,
-         AUDIO_MIXER_TEMP_BUFFER * sizeof(int16_t));
+   voice->types.stream.decode_buf_s16 = (int16_t*)memalign_alloc(64,
+         (AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(int16_t))
+          + (((samples + 16) + 15) & ~15)) * sizeof(int16_t));
 
-   if (!sbuf || !voice->types.stream.decode_buf_s16)
+   if (!voice->types.stream.decode_buf_s16)
    {
-      /* Neither buffer is on the voice yet in the sbuf case, and either
-       * one of the two may have succeeded; release both here. */
-      memalign_free(sbuf);
-      memalign_free(voice->types.stream.decode_buf_s16);
-      voice->types.stream.decode_buf_s16 = NULL;
       if (resamp_i16)
          sinc_resampler_int16_free(resamp_i16);
       goto error;
    }
+   /* The resampled buffer is a view into the decode block; release
+    * frees the block through decode_buf_s16. */
+   sbuf = voice->types.stream.decode_buf_s16
+        + AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(int16_t));
 
    voice->types.stream.resampler       = NULL;
    voice->types.stream.resampler_data  = NULL;

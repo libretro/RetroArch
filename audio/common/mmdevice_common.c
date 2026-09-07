@@ -113,7 +113,7 @@ HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
 #endif
    {
       *ppvObject = This;
-      InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+      retro_atomic_inc_int(&((MyNotificationClient*)This)->refCount);
       return S_OK;
    }
    *ppvObject = NULL;
@@ -122,15 +122,20 @@ HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
 
 ULONG STDMETHODCALLTYPE IMM_AddRef(IMMNotificationClient *This)
 {
-   return InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+   return (ULONG)(retro_atomic_fetch_add_int(
+            &((MyNotificationClient*)This)->refCount, 1) + 1);
 }
 
 ULONG STDMETHODCALLTYPE IMM_Release(IMMNotificationClient *This)
 {
-   LONG ref = InterlockedDecrement(&((MyNotificationClient*)This)->refCount);
+   /* Release-decrement: the object's last use by another thread must
+    * be ordered before the free() here. Plain InterlockedDecrement is
+    * a full barrier on x86/x64 but not on ARM. */
+   LONG ref = (LONG)(retro_atomic_fetch_sub_int(
+            &((MyNotificationClient*)This)->refCount, 1) - 1);
    if (ref == 0)
       free(This);
-   return ref;
+   return (ULONG)ref;
 }
 
 /* IMMNotificationClient methods */
@@ -241,7 +246,7 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
       goto cleanup;
 
    client->lpVtbl   = &notificationVtbl;
-   client->refCount = 1;
+   retro_atomic_int_init(&client->refCount, 1);
 
    _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(enumerator,
          (IMMNotificationClient*)client);
@@ -265,7 +270,7 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
             {
                case WM_AUDIO_DEVICE_STATE_CHANGED:
                case WM_AUDIO_DEFAULT_CHANGED:
-                  audio_st->reinit_request = true;
+                  retro_atomic_store_release_int(&audio_st->reinit_request, 1);
                   goto done;
                case WM_QUIT:
                   goto done;
@@ -293,6 +298,29 @@ cleanup:
 #endif
 }
 
+bool mmdevice_com_init(void)
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   /* S_OK and S_FALSE both take a reference on the thread's apartment
+    * and must be balanced.  RPC_E_CHANGED_MODE means the thread is
+    * already in an STA: COM is usable from it and nothing is ours to
+    * release. */
+   return SUCCEEDED(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+#else
+   return false;
+#endif
+}
+
+void mmdevice_com_uninit(bool init)
+{
+#if !defined(_XBOX) && !defined(__WINRT__)
+   if (init)
+      CoUninitialize();
+#else
+   (void)init;
+#endif
+}
+
 static const char *mmdevice_data_flow_name(unsigned data_flow)
 {
    switch (data_flow)
@@ -315,6 +343,12 @@ const char *mmdevice_hresult_name(int hr)
    switch (hr)
    {
       /* Standard error codes */
+      case CO_E_NOTINITIALIZED:
+         return "CO_E_NOTINITIALIZED";
+      case RPC_E_CHANGED_MODE:
+         return "RPC_E_CHANGED_MODE";
+      case REGDB_E_CLASSNOTREG:
+         return "REGDB_E_CLASSNOTREG";
       case E_INVALIDARG:
          return "E_INVALIDARG";
       case E_NOINTERFACE:
@@ -479,14 +513,16 @@ error:
 
 size_t mmdevice_get_samplerate(int id)
 {
+   size_t _len       = 0;
+   bool com          = mmdevice_com_init();
    IMMDevice *device = (IMMDevice*)mmdevice_handle(id, 0 /* eRender */);
    if (device)
    {
-      size_t _len = mmdevice_samplerate(device);
+      _len = mmdevice_samplerate(device);
       RELEASE(device);
-      return _len;
    }
-   return 0;
+   mmdevice_com_uninit(com);
+   return _len;
 }
 
 void *mmdevice_init_device(const char *id, unsigned data_flow)
@@ -633,10 +669,14 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
    bool br                         = false;
    char *dev_id_str                = NULL;
    char *dev_name_str              = NULL;
+   bool com                        = mmdevice_com_init();
    struct string_list *sl          = string_list_new();
 
    if (!sl)
+   {
+      mmdevice_com_uninit(com);
       return NULL;
+   }
 
    attr.i = 0;
 #ifdef __cplusplus
@@ -693,6 +733,7 @@ void *mmdevice_list_new(const void *u, unsigned data_flow)
 
    RELEASE(collection);
    RELEASE(enumerator);
+   mmdevice_com_uninit(com);
    return sl;
 
 error:
@@ -715,5 +756,6 @@ error:
    if (sl)
       string_list_free(sl);
 
+   mmdevice_com_uninit(com);
    return NULL;
 }

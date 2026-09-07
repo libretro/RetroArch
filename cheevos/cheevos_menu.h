@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2018 - Andre Leiradella
- *  Copyright (C) 2019-2021 - Brian Weiss
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -30,9 +30,11 @@ RETRO_BEGIN_DECLS
 
 void rcheevos_menu_populate(void* data, bool cheevos_enable,
       bool cheevos_hardcore_mode_enable);
-void rcheevos_menu_populate_hardcore_pause_submenu(void* data, bool cheevos_hardcore_mode_enable);
 size_t rcheevos_menu_get_state(unsigned menu_offset, char *s, size_t len);
 size_t rcheevos_menu_get_sublabel(unsigned menu_offset, char *s, size_t len);
+size_t rcheevos_menu_get_help_text(unsigned menu_offset, char* s, size_t len);
+size_t rcheevos_menu_get_submenu_title(char* s, size_t len);
+void rcheevos_menu_populate_submenu(void* data);
 uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset);
 void rcheevos_menu_reset_badges(void);
 void rcheevos_menu_update_badge_references(const char* badge_name);

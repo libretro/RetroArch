@@ -34,6 +34,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
+#include <compat/strl.h>
 
 #ifdef HAVE_BB10
 #define MAX_TOUCH 16
@@ -231,9 +232,9 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
    if (controller && controller->type == SCREEN_EVENT_GAMEPAD)
    {
        if (strstr(controller->id, "0-054C-05C4-1.0"))
-           strlcpy(name_buf, "DS4 Controller", sizeof(name_buf));
+           strlcpy_lit(name_buf, "DS4 Controller", sizeof(name_buf));
        else
-           strlcpy(name_buf, "QNX Gamepad", sizeof(name_buf));
+           strlcpy_lit(name_buf, "QNX Gamepad", sizeof(name_buf));
    }
 
    if (name_buf && *name_buf)
@@ -655,7 +656,7 @@ static void *qnx_input_init(const char *joypad_driver)
    qnx_discover_controllers(qnx);
 #else
    /* Initialize Playbook keyboard. */
-   strlcpy(qnx->devices[0].id, "0A5C-8502",
+   strlcpy_lit(qnx->devices[0].id, "0A5C-8502",
          sizeof(qnx->devices[0].id));
    qnx_input_autodetect_gamepad(qnx, &qnx->devices[0]);
    qnx->pads_connected = 1;

@@ -383,15 +383,37 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    RARCH_LOG("[SDL2] Available displays:\n");
-   for (i = 0; i < SDL_GetNumVideoDisplays(); ++i)
    {
-      SDL_DisplayMode mode;
+      bool any_refresh = false;
 
-      if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
-         RARCH_LOG("[SDL2] \tDisplay #%i mode: unknown.\n", i);
-      else
-         RARCH_LOG("[SDL2] \tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
-                   mode.refresh_rate);
+      for (i = 0; i < SDL_GetNumVideoDisplays(); ++i)
+      {
+         SDL_DisplayMode mode;
+
+         if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
+            RARCH_LOG("[SDL2] \tDisplay #%i mode: unknown.\n", i);
+         else
+         {
+            RARCH_LOG("[SDL2] \tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
+                      mode.refresh_rate);
+            if (mode.refresh_rate > 0)
+               any_refresh = true;
+         }
+      }
+
+      /* A display that reports no refresh rate has no vertical blank to
+       * present against - an offscreen or dummy video driver, or a
+       * remote session. SDL still grants SDL_RENDERER_PRESENTVSYNC on
+       * one, and SDL_GetRendererInfo still reports it as granted, so
+       * nothing in the flags gives this away: the present simply
+       * returns immediately and the frontend runs as fast as the
+       * machine allows while believing the display is pacing it. Said
+       * here because it cannot be inferred later; the statistics
+       * overlay's Pacing line shows the measured rate beside the claim
+       * for the same reason. */
+      if (video->vsync && !any_refresh)
+         RARCH_WARN("[SDL2] Vsync was requested but no display reports a "
+               "refresh rate; presentation will not pace the frontend.\n");
    }
 
    if (!video->fullscreen)

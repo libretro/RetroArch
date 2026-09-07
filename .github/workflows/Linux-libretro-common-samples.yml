@@ -125,6 +125,7 @@ jobs:
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
             audio_mixer_loop_test
+            audio_mixer_rate_guard_test
           )
 
           # Targets that are built but deliberately not executed, each

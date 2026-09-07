@@ -153,7 +153,7 @@ enum vulkan_wsi_type
    VULKAN_WSI_DISPLAY,
    VULKAN_WSI_MVK_MACOS,
    VULKAN_WSI_MVK_IOS,
-   VULKAN_WSI_SDL3,
+   VULKAN_WSI_SDL3
 };
 
 enum vulkan_context_flags
@@ -167,7 +167,7 @@ enum vulkan_context_flags
    /* Whether HDR colorspaces are supported by the instance */
    VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
    /* scRGB mode: RGBA16F swapchain with extended linear sRGB colour space */
-   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6),
+   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6)
 };
 
 enum vulkan_emulated_mailbox_flags
@@ -267,6 +267,15 @@ typedef struct gfx_ctx_vulkan_data
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
+   /* Set once VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT has
+    * been acquired on the current swapchain, so it is released before
+    * that swapchain is destroyed. */
+   bool fse_acquired;
+   /* PFN_vkVoidFunction rather than the extension's own typedefs: this
+    * header is included by every Vulkan context and by shader_vulkan.c,
+    * most of which never see vulkan_win32.h. Cast at the call site. */
+   PFN_vkVoidFunction fse_acquire;
+   PFN_vkVoidFunction fse_release;
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
     * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display

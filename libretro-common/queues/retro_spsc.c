@@ -258,3 +258,18 @@ void retro_spsc_read_end(retro_spsc_t *q, size_t bytes)
    retro_atomic_store_release_size(&q->tail,
          retro_atomic_load_acquire_size(&q->tail) + bytes);
 }
+
+size_t retro_spsc_skip(retro_spsc_t *q, size_t bytes)
+{
+   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t avail = head - tail;
+
+   if (bytes > avail)
+      bytes = avail;
+   if (bytes == 0)
+      return 0;
+
+   retro_atomic_store_release_size(&q->tail, tail + bytes);
+   return bytes;
+}

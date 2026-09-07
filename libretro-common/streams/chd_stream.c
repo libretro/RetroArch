@@ -296,7 +296,7 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
    if (err == CHDERR_NONE)
    {
       md->track = 1;
-      strlcpy(md->type, "DVD", sizeof(md->type));
+      strlcpy_lit(md->type, "DVD", sizeof(md->type));
       return true;
    }
 

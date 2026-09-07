@@ -1,7 +1,17 @@
 
 #ifdef WANT_GLSLANG
 
-/* Builtin glslang: compile RetroArch wrapper + vendored library sources */
+/* Builtin glslang: RetroArch wrapper + vendored library sources.
+ *
+ * THIS TRANSLATION UNIT MUST STAY FREE OF <windows.h>.  The wrapper
+ * (glslang.cpp) includes only the minimal glslang_compile.h C ABI
+ * header for exactly this reason.  windows.h breaks the amalgamation
+ * in either position: before the vendored sources, its function-like
+ * min()/max() macros mangle glslang's std::numeric_limits uses;
+ * after them, its BOOL/INT/UINT/FLOAT typedefs collide with the
+ * global token enumerators of glslang's generated parser
+ * (glslang_tab.cpp).  A tripwire at the end of this file enforces
+ * the invariant at compile time on every Windows lane. */
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #ifdef strtoull
@@ -10,16 +20,14 @@
 #endif
 
 #include "../gfx/drivers_shader/glslang.cpp"
+
 #include "../deps/glslang/glslang/SPIRV/GlslangToSpv.cpp"
 #include "../deps/glslang/glslang/SPIRV/InReadableOrder.cpp"
 #include "../deps/glslang/glslang/SPIRV/Logger.cpp"
 #include "../deps/glslang/glslang/SPIRV/SpvBuilder.cpp"
-
 #include "../deps/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp"
 #include "../deps/glslang/glslang/glslang/GenericCodeGen/Link.cpp"
-
 #include "../deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp"
-
 #include "../deps/glslang/glslang/glslang/MachineIndependent/attribute.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/Constant.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp"
@@ -42,7 +50,6 @@
 #include "../deps/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/Versions.cpp"
-
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/Pp.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpAtom.cpp"
 #include "../deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpContext.cpp"
@@ -58,4 +65,11 @@
 /* Prebuilt glslang: only compile RetroArch wrapper, link external library */
 #include "../gfx/drivers_shader/glslang.cpp"
 
+#endif
+
+/* Tripwire for the invariant above: if any include chain in this
+ * translation unit ever reaches <windows.h> again, fail the build
+ * here with a diagnosis instead of hundreds of cascade errors. */
+#if defined(_WINDOWS_) || defined(_MINWINDEF_) || defined(_WINDEF_)
+#error "windows.h leaked into griffin_glslang.cpp; its min/max macros and BOOL/INT/UINT/FLOAT typedefs conflict with the vendored glslang sources. Keep RetroArch platform headers out of this TU (see header comment)."
 #endif

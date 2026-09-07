@@ -271,6 +271,7 @@ if [ "$OS" = 'Darwin' ]; then
    # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
    # takes priority over sw_vers, because on a cross-build the host
    # OS version may be newer than the target.
+   macos_target_pre_10_5=no
    macos_target_pre_10_7=no
    macos_target_pre_10_11=no
    macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
@@ -282,6 +283,10 @@ if [ "$OS" = 'Darwin' ]; then
       mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
       [ -z "$mt_major" ] && mt_major=0
       [ -z "$mt_minor" ] && mt_minor=0
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 5 ]; }; then
+         macos_target_pre_10_5=yes
+      fi
       if [ "$mt_major" -lt 10 ] || \
          { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
          macos_target_pre_10_7=yes
@@ -298,15 +303,11 @@ if [ "$OS" = 'Darwin' ]; then
    #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
    #     early-outs. Force it on here so the Metal video driver is built,
    #     unless the user explicitly passed --disable-metal.
-   #   * HAVE_VULKAN must be set to 'yes' before the COCOA_METAL check
-   #     below, which decides which AppKit glue to compile based on
-   #     whether Metal/Vulkan is in play. Link-time libvulkan is not
-   #     required on Darwin; MoltenVK is loaded dynamically at runtime
-   #     by gfx/common/vulkan_common.c.
+   #   * HAVE_VULKAN is forced on alongside it. Link-time libvulkan is
+   #     not required on Darwin; MoltenVK is loaded dynamically at
+   #     runtime by gfx/common/vulkan_common.c.
    # Skip the force-on on pre-10.7 targets — Metal is 10.11+ and
    # MoltenVK is 10.11+, so neither is buildable on Tiger/Leopard.
-   # That also keeps HAVE_COCOA_METAL off, which in turn avoids code
-   # paths that use the 10.6+ NSWindowDelegate protocol.
    if [ "$macos_target_pre_10_7" = 'no' ]; then
       [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
       [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
@@ -317,6 +318,7 @@ if [ "$OS" = 'Darwin' ]; then
    check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
+   add_opt MODELINE no
    add_opt CRTSWITCHRES no
 
    # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
@@ -371,13 +373,30 @@ if [ "$OS" = 'Darwin' ]; then
       die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling AVFoundation camera/recording drivers.  Override with --enable-avf."
    fi
 
-   unset macos_target_ver macos_target_pre_10_7 macos_target_pre_10_11
-
-   if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
-      check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
-   else
-      check_lib '' COCOA "-framework AppKit" NSApplicationMain
+   # The CoreLocation driver (location/drivers/corelocation.m) is
+   # written for ARC, blocks and @available - a clang-era file.  A
+   # pre-10.7 target is a GCC-era target with none of those, so the
+   # driver is left out there unless the user asks for it.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_CORELOCATION:-}" != 'yes' ] && \
+      [ "$HAVE_CORELOCATION" != 'no' ]; then
+      HAVE_CORELOCATION=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling CoreLocation (requires ARC and blocks).  Override with --enable-corelocation."
    fi
+
+   # IOHIDManager (the joypad HID driver) is 10.5.  A 10.4 target
+   # leaves it out unless asked; the binary then launches on Tiger
+   # with keyboard and mouse input.
+   if [ "$macos_target_pre_10_5" = 'yes' ] && \
+      [ "${USER_IOHIDMANAGER:-}" != 'yes' ] && \
+      [ "$HAVE_IOHIDMANAGER" != 'no' ]; then
+      HAVE_IOHIDMANAGER=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.5; disabling IOHIDManager joypad support (10.5 API).  Override with --enable-iohidmanager."
+   fi
+
+   unset macos_target_ver macos_target_pre_10_5 macos_target_pre_10_7 macos_target_pre_10_11
+
+   check_lib '' COCOA "-framework AppKit" NSApplicationMain
 
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
@@ -804,12 +823,11 @@ check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
 check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
 
 if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   # The slang stack uses the SPIRV-Cross C API, so only the
+   # spirv-cross-c-shared package can satisfy an external build; the
+   # C++ libraries carry no spvc_* symbols.  When it is absent we fall
+   # through to the builtin sources below.
    check_pkgconf SPIRV_CROSS spirv-cross-c-shared
-
-   if [ "$HAVE_SPIRV_CROSS" = no ]; then
-      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
-      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
-   fi
 
    if [ "$HAVE_SPIRV_CROSS" = no ]; then
       die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
@@ -849,13 +867,13 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
-if [ "$HAVE_CRTSWITCHRES" != no ]; then
-   if [ "$HAVE_CXX11" = 'no' ]; then
-      HAVE_CRTSWITCHRES=no
-   else
-      HAVE_CRTSWITCHRES=yes
-   fi
+# The modeline engine is C89 with no libraries of its own, so it is on
+# unless turned off; --disable-crtswitchres, the old name, still turns
+# it off, and the alias follows the real switch either way.
+if [ "$HAVE_CRTSWITCHRES" = no ]; then
+   HAVE_MODELINE=no
 fi
+HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false

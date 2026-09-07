@@ -299,6 +299,10 @@ typedef struct gfx_ctx_wayland_data
    bool activated;
    bool reported_display_size;
    bool swap_complete;
+   /* The in-flight frame callback. A webOS surface outlives its
+    * context, so teardown has to cancel this one or the compositor
+    * delivers done into freed memory. */
+   struct wl_callback *frame_cb;
 } gfx_ctx_wayland_data_t;
 
 typedef struct wl_present_feedback

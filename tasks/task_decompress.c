@@ -18,6 +18,7 @@
 #include <file/archive_file.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "tasks_internal.h"
 #include "../file_path_special.h"
@@ -31,6 +32,19 @@ static int file_decompressed_target_file(const char *name,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
    return 0;
+}
+
+/* path_mkdir() for an extraction target, remembering the last
+ * directory it confirmed so a run of members in the same directory
+ * costs one probe instead of one per member. */
+static bool task_decompress_mkdir(decompress_state_t *dec, const char *dir)
+{
+   if (string_is_equal(dec->last_dir, dir))
+      return true;
+   if (!path_mkdir(dir))
+      return false;
+   strlcpy(dec->last_dir, dir, sizeof(dec->last_dir));
+   return true;
 }
 
 /* Rejects archive member names that could escape the intended
@@ -130,7 +144,7 @@ static int file_decompressed_subdir(const char *name,
    fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    /* Make directory */
-   if (path_mkdir(path_dir))
+   if (task_decompress_mkdir(userdata->dec, path_dir))
    {
       /* Start the decode rather than driving it to completion here.
        * Whatever is left is parked in the transfer and finished by
@@ -151,7 +165,7 @@ static int file_decompressed_subdir(const char *name,
     * NULL-safe. */
    if (userdata->dec->callback_error)
    {
-      _len  = strlcpy(userdata->dec->callback_error,
+      _len  = strlcpy_lit(userdata->dec->callback_error,
             "Failed to deflate ",
             CALLBACK_ERROR_SIZE);
       _len += strlcpy(
@@ -184,7 +198,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
    path_basedir_wrapper(path);
 
-   if (path_mkdir(path))
+   if (task_decompress_mkdir(dec, path))
    {
       fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
@@ -198,7 +212,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    /* NULL-check: see twin in file_archived for reasoning. */
    if (dec->callback_error)
    {
-      _len  = strlcpy(dec->callback_error, "Failed to deflate ",
+      _len  = strlcpy_lit(dec->callback_error, "Failed to deflate ",
               CALLBACK_ERROR_SIZE);
       _len += strlcpy(dec->callback_error + _len,
               path, CALLBACK_ERROR_SIZE     - _len);

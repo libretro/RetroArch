@@ -720,8 +720,18 @@ bool file_watch_poll(file_watch_t *watch)
    if (!watch)
       return false;
 
-   /* This runs on the frame loop; the idle cost per directory is one
-    * zero-timeout wait on the completion event. */
+   /* This runs on the frame loop, so the idle path is checked rather
+    * than waited on. A zero-timeout WaitForSingleObject() is not a
+    * cheap test: it has no user-mode fast path on any Windows version
+    * and enters the kernel through NtWaitForSingleObject() whatever
+    * the object's state, so polling one per directory per frame is a
+    * syscall per directory per frame. HasOverlappedIoCompleted() reads
+    * OVERLAPPED::Internal directly, which the I/O manager writes when
+    * the operation completes, and costs a load.
+    *
+    * The two are interchangeable here. The event is manual-reset and
+    * file_watch_arm() resets it explicitly before re-issuing, so
+    * nothing relied on the wait clearing it. */
    for (i = 0; i < watch->dir_count; i++)
    {
       file_watch_dir_t *d = &watch->dirs[i];
@@ -729,7 +739,7 @@ bool file_watch_poll(file_watch_t *watch)
 
       if (!d->dir || d->dir == INVALID_HANDLE_VALUE)
          continue;
-      if (WaitForSingleObject(d->evt, 0) != WAIT_OBJECT_0)
+      if (!HasOverlappedIoCompleted(&d->ovl))
          continue;
 
       if (GetOverlappedResult(d->dir, &d->ovl, &bytes, FALSE))

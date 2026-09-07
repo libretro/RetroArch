@@ -21,10 +21,40 @@
 #endif
 #include <stdlib.h>
 
+#include <boolean.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
+/**
+ * mmdevice_com_init:
+ *
+ * Brings COM up on the calling thread for the MMDevice API.  The
+ * audio drivers run on whichever thread the frontend hands them, and
+ * a freshly created worker thread has no apartment: CoCreateInstance
+ * on it fails with CO_E_NOTINITIALIZED.
+ *
+ * Returns true when this call took a reference on the thread's
+ * apartment and must be balanced with mmdevice_com_uninit() once
+ * every COM object obtained on the thread has been released.
+ * Returns false when there is nothing to balance: the thread already
+ * has COM in another apartment (usable as it is), or COM could not be
+ * brought up at all, which the following CoCreateInstance reports.
+ **/
+bool mmdevice_com_init(void);
+
+/**
+ * mmdevice_com_uninit:
+ *
+ * Releases the apartment reference taken by mmdevice_com_init() when
+ * @init is the value it returned; a no-op for false.
+ **/
+void mmdevice_com_uninit(bool init);
+
+/**
+ * Lists the active endpoints of @data_flow.  Self-contained: brings
+ * COM up on the calling thread for its own duration if needed.
+ */
 void *mmdevice_list_new(const void *u, unsigned data_flow);
 
 /**
@@ -39,14 +69,24 @@ char* mmdevice_name(void *data);
 size_t mmdevice_samplerate(void *data);
 
 /**
- * Gets the handle of the IMMDevice.
+ * Gets the handle of the IMMDevice.  The caller must hold COM on the
+ * calling thread (see mmdevice_com_init()) for as long as it keeps
+ * the returned device.
  */
 void *mmdevice_handle(int id, unsigned data_flow);
 
+/**
+ * Self-contained like mmdevice_list_new().
+ */
 size_t mmdevice_get_samplerate(int id);
 
 const char *mmdevice_hresult_name(int hr);
 
+/**
+ * Opens endpoint @id (or the default) of @data_flow.  The caller must
+ * hold COM on the calling thread (see mmdevice_com_init()) from before
+ * this call until the returned device is released.
+ */
 void *mmdevice_init_device(const char *id, unsigned data_flow);
 
 /**

@@ -40,28 +40,7 @@
 
 #include "arc4_alt.h"
 
-/*
- * 32-bit integer manipulation macros (little endian)
- */
-#ifndef GET_UINT32_LE
-#define GET_UINT32_LE(n,b,i)                            \
-{                                                       \
-    (n) = ( (uint32_t) (b)[(i)    ]       )             \
-        | ( (uint32_t) (b)[(i) + 1] <<  8 )             \
-        | ( (uint32_t) (b)[(i) + 2] << 16 )             \
-        | ( (uint32_t) (b)[(i) + 3] << 24 );            \
-}
-#endif
-
-#ifndef PUT_UINT32_LE
-#define PUT_UINT32_LE(n,b,i)                                    \
-{                                                               \
-    (b)[(i)    ] = (unsigned char) ( ( (n)       ) & 0xFF );    \
-    (b)[(i) + 1] = (unsigned char) ( ( (n) >>  8 ) & 0xFF );    \
-    (b)[(i) + 2] = (unsigned char) ( ( (n) >> 16 ) & 0xFF );    \
-    (b)[(i) + 3] = (unsigned char) ( ( (n) >> 24 ) & 0xFF );    \
-}
-#endif
+#include "mbedtls/int_util.h"
 
 void mbedtls_md5_init( mbedtls_md5_context *ctx )
 {
@@ -101,22 +80,22 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
 {
     uint32_t X[16], A, B, C, D;
 
-    GET_UINT32_LE( X[ 0], data,  0 );
-    GET_UINT32_LE( X[ 1], data,  4 );
-    GET_UINT32_LE( X[ 2], data,  8 );
-    GET_UINT32_LE( X[ 3], data, 12 );
-    GET_UINT32_LE( X[ 4], data, 16 );
-    GET_UINT32_LE( X[ 5], data, 20 );
-    GET_UINT32_LE( X[ 6], data, 24 );
-    GET_UINT32_LE( X[ 7], data, 28 );
-    GET_UINT32_LE( X[ 8], data, 32 );
-    GET_UINT32_LE( X[ 9], data, 36 );
-    GET_UINT32_LE( X[10], data, 40 );
-    GET_UINT32_LE( X[11], data, 44 );
-    GET_UINT32_LE( X[12], data, 48 );
-    GET_UINT32_LE( X[13], data, 52 );
-    GET_UINT32_LE( X[14], data, 56 );
-    GET_UINT32_LE( X[15], data, 60 );
+    MBEDTLS_GET_UINT32_LE( X[ 0], data,  0 );
+    MBEDTLS_GET_UINT32_LE( X[ 1], data,  4 );
+    MBEDTLS_GET_UINT32_LE( X[ 2], data,  8 );
+    MBEDTLS_GET_UINT32_LE( X[ 3], data, 12 );
+    MBEDTLS_GET_UINT32_LE( X[ 4], data, 16 );
+    MBEDTLS_GET_UINT32_LE( X[ 5], data, 20 );
+    MBEDTLS_GET_UINT32_LE( X[ 6], data, 24 );
+    MBEDTLS_GET_UINT32_LE( X[ 7], data, 28 );
+    MBEDTLS_GET_UINT32_LE( X[ 8], data, 32 );
+    MBEDTLS_GET_UINT32_LE( X[ 9], data, 36 );
+    MBEDTLS_GET_UINT32_LE( X[10], data, 40 );
+    MBEDTLS_GET_UINT32_LE( X[11], data, 44 );
+    MBEDTLS_GET_UINT32_LE( X[12], data, 48 );
+    MBEDTLS_GET_UINT32_LE( X[13], data, 52 );
+    MBEDTLS_GET_UINT32_LE( X[14], data, 56 );
+    MBEDTLS_GET_UINT32_LE( X[15], data, 60 );
 #undef  S
 #define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 #undef P
@@ -130,6 +109,7 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
     C = ctx->state[2];
     D = ctx->state[3];
 
+#undef F
 #define F(x,y,z) (z ^ (x & (y ^ z)))
 
     P( A, B, C, D,  0,  7, 0xD76AA478 );
@@ -219,6 +199,10 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
     ctx->state[2] += C;
     ctx->state[3] += D;
 }
+
+#undef S
+#undef P
+
 #endif /* !MBEDTLS_MD5_PROCESS_ALT */
 
 /*
@@ -284,8 +268,8 @@ void mbedtls_md5_finish( mbedtls_md5_context *ctx, unsigned char output[16] )
          | ( ctx->total[1] <<  3 );
     low  = ( ctx->total[0] <<  3 );
 
-    PUT_UINT32_LE( low,  msglen, 0 );
-    PUT_UINT32_LE( high, msglen, 4 );
+    MBEDTLS_PUT_UINT32_LE( low,  msglen, 0 );
+    MBEDTLS_PUT_UINT32_LE( high, msglen, 4 );
 
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
@@ -293,10 +277,10 @@ void mbedtls_md5_finish( mbedtls_md5_context *ctx, unsigned char output[16] )
     mbedtls_md5_update( ctx, md5_padding, padn );
     mbedtls_md5_update( ctx, msglen, 8 );
 
-    PUT_UINT32_LE( ctx->state[0], output,  0 );
-    PUT_UINT32_LE( ctx->state[1], output,  4 );
-    PUT_UINT32_LE( ctx->state[2], output,  8 );
-    PUT_UINT32_LE( ctx->state[3], output, 12 );
+    MBEDTLS_PUT_UINT32_LE( ctx->state[0], output,  0 );
+    MBEDTLS_PUT_UINT32_LE( ctx->state[1], output,  4 );
+    MBEDTLS_PUT_UINT32_LE( ctx->state[2], output,  8 );
+    MBEDTLS_PUT_UINT32_LE( ctx->state[3], output, 12 );
 }
 
 #endif /* !MBEDTLS_MD5_ALT */

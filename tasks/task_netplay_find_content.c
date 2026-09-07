@@ -48,6 +48,9 @@
 #ifdef HAVE_NETWORKING
 
 #include "../network/netplay/netplay.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 enum
 {
@@ -546,7 +549,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
          {
             const char *content_path        = (state->state & STATE_RELOAD) ?
                data->current.content_path : data->content_paths.elems[0].data;
-#if IOS
+#if TARGET_OS_IPHONE
             char tmp[PATH_MAX_LENGTH];
             fill_pathname_expand_special(tmp, content_path, sizeof(tmp));
             content_path = tmp;

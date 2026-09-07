@@ -340,6 +340,11 @@ static int16_t sdl3_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
+         /* While a text box is open, Ctrl is the clipboard-paste
+          * modifier (see sdl3_paste_clipboard), so ignore acting
+          * on it here. */
+         if ((id == RETROK_LCTRL || id == RETROK_RCTRL) && input_state_get_ptr()->keyboard_line.enabled)
+            return 0;
          return (id && id < RETROK_LAST) && sdl3_key_pressed(sdl, id);
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)

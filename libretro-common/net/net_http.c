@@ -170,6 +170,11 @@ struct http_t
 {
    net_http_sink_t sink;
    void *sink_data;
+   /* The transport stage that failed (a literal such as
+    * "ssl_connect_failed") and the library code that went with it,
+    * for net_http_failure().  NULL/0 until something fails. */
+   const char *fail_stage;
+   int fail_code;
    bool err;
 
    struct conn_pool_entry *conn;
@@ -199,16 +204,22 @@ struct http_connection_t
 };
 
 static void net_http_log_transport_state(
-      const struct http_t *state, const char *stage, ssize_t io_len)
+      struct http_t *state, const char *stage, ssize_t io_len)
 {
 #if defined(DEBUG)
-   const char *method = "GET";
-   const char *domain = "<null>";
-   const char *path   = "<null>";
    int port           = 0;
    int fd             = -1;
    int connected      = 0;
-
+   const char *method = "GET";
+   const char *domain = "<null>";
+   const char *path   = "<null>";
+#endif
+   /* Keep the first failure: a connect that fails on one address and
+    * then another says the same thing twice, while a later stage
+    * failing because of an earlier one says less. */
+   if (state && !state->fail_stage)
+      state->fail_stage = stage;
+#if defined(DEBUG)
    if (state)
    {
       method = state->request.method ? state->request.method : "GET";
@@ -239,10 +250,6 @@ static void net_http_log_transport_state(
          errno,
          strerror(errno));
    fflush(stderr);
-#else
-   (void)state;
-   (void)stage;
-   (void)io_len;
 #endif
 }
 
@@ -1130,6 +1137,9 @@ static bool net_http_connect(struct http_t *state)
    struct addrinfo *addr = NULL, *next_addr = NULL;
    struct conn_pool_entry *conn = state->conn;
    struct dns_cache_entry *dns_entry;
+#ifdef HAVE_SSL
+   bool timeout          = true;
+#endif
 
    /* net_http_dns_cache_find() is not a read-only lookup: it calls
     * net_http_dns_cache_remove_expired(), which unlinks entries,
@@ -1182,7 +1192,7 @@ static bool net_http_connect(struct http_t *state)
           https://github.com/libretro/RetroArch/issues/14742 */
 
          /* Temp fix, don't use new timeout/poll code for cheevos http requests */
-         bool timeout = true;
+         timeout = true;
 #ifdef _WIN32
          if (!strcmp(state->request.domain, "retroachievements.org"))
             timeout = false;
@@ -1190,6 +1200,8 @@ static bool net_http_connect(struct http_t *state)
 
          if (ssl_socket_connect(conn->ssl_ctx, next_addr, timeout, true) < 0)
          {
+            if (!state->fail_stage)
+               state->fail_code = ssl_socket_last_error(conn->ssl_ctx);
             net_http_log_transport_state(state, "ssl_connect_failed", -1);
             ssl_socket_close(conn->ssl_ctx);
             ssl_socket_free(conn->ssl_ctx);
@@ -2485,4 +2497,11 @@ void net_http_delete(struct http_t *state)
 bool net_http_error(struct http_t *state)
 {
    return (state->err || state->response.status < 200 || state->response.status > 299);
+}
+
+const char *net_http_failure(struct http_t *state, int *code)
+{
+   if (code)
+      *code = state ? state->fail_code : 0;
+   return state ? state->fail_stage : NULL;
 }

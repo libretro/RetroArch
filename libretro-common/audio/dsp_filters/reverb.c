@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdint.h>
 #include <retro_inline.h>
 #include <libretro_dspfilter.h>
 
@@ -138,11 +139,6 @@ struct revmodel
    struct comb combL[numcombs];
    struct allpass allpassL[numallpasses];
 
-   float *bufcomb[numcombs];
-   float *bufallpass[numallpasses];
-
-   int64_t *bufcomb_i[numcombs];
-   int64_t *bufallpass_i[numallpasses];
    int32_t gain_q, wet1_q, dry_q;
 
    float gain;
@@ -277,7 +273,21 @@ static void revmodel_setmode(struct revmodel *rev, float value)
    revmodel_update(rev);
 }
 
-static void revmodel_init(struct revmodel *rev,int srate)
+/* Region spacing inside the delay-line arena, in bytes. Every delay line
+ * starts on a 64-byte boundary so the comb and allpass loops never share
+ * a cache line between two lines. */
+#define REVERB_ARENA_ALIGN 64
+#define REVERB_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + REVERB_ARENA_ALIGN - 1) / REVERB_ARENA_ALIGN) \
+    * REVERB_ARENA_ALIGN)
+
+/* Lay out one channel's delay lines (float line and int64 Q16 mirror
+ * per comb and allpass) starting at byte offset cur inside base. With
+ * base NULL only the sizes are recorded and the cursor advanced, so one
+ * pass measures the arena and a second carves it. Returns the cursor
+ * after the last line. */
+static size_t revmodel_carve(struct revmodel *rev, int srate,
+      uint8_t *base, size_t cur)
 {
    unsigned c;
    static const int comb_lengths[8]    = { 1116,1188,1277,1356,1422,1491,1557,1617 };
@@ -287,24 +297,29 @@ static void revmodel_init(struct revmodel *rev,int srate)
    for (c = 0; c < numcombs; ++c)
    {
       unsigned bufsize         = (unsigned)(r * comb_lengths[c]);
-      rev->bufcomb[c]          = (float*)calloc(bufsize, sizeof(float));
-      rev->combL[c].buffer     = rev->bufcomb[c];
       rev->combL[c].bufsize    = bufsize;
-      rev->bufcomb_i[c]        = (int64_t*)calloc(bufsize, sizeof(int64_t));
-      rev->combL[c].buffer_i   = rev->bufcomb_i[c];
+      rev->combL[c].buffer     = base ? (float*)(base + cur) : NULL;
+      cur                      = REVERB_ARENA_NEXT(cur, bufsize * sizeof(float));
+      rev->combL[c].buffer_i   = base ? (int64_t*)(base + cur) : NULL;
+      cur                      = REVERB_ARENA_NEXT(cur, bufsize * sizeof(int64_t));
    }
 
    for (c = 0; c < numallpasses; ++c)
    {
       unsigned bufsize          = (unsigned)(r * allpass_lengths[c]);
-      rev->bufallpass[c]        = (float*)calloc(bufsize, sizeof(float));
-      rev->allpassL[c].buffer   = rev->bufallpass[c];
       rev->allpassL[c].bufsize  = bufsize;
       rev->allpassL[c].feedback = 0.5f;
-      rev->bufallpass_i[c]      = (int64_t*)calloc(bufsize, sizeof(int64_t));
-      rev->allpassL[c].buffer_i = rev->bufallpass_i[c];
+      rev->allpassL[c].buffer   = base ? (float*)(base + cur) : NULL;
+      cur                       = REVERB_ARENA_NEXT(cur, bufsize * sizeof(float));
+      rev->allpassL[c].buffer_i = base ? (int64_t*)(base + cur) : NULL;
+      cur                       = REVERB_ARENA_NEXT(cur, bufsize * sizeof(int64_t));
    }
 
+   return cur;
+}
+
+static void revmodel_init(struct revmodel *rev)
+{
    revmodel_setwet(rev, initialwet);
    revmodel_setroomsize(rev, initialroom);
    revmodel_setdry(rev, initialdry);
@@ -316,29 +331,18 @@ static void revmodel_init(struct revmodel *rev,int srate)
 struct reverb_data
 {
    struct revmodel left, right;
+   /* All 48 delay lines of both channels live in this one block; the
+    * comb and allpass buffer pointers are views into it. */
+   uint8_t *arena;
 };
 
 static void reverb_free(void *data)
 {
-   unsigned i;
    struct reverb_data *rev = (struct reverb_data*)data;
-
-   for (i = 0; i < numcombs; i++)
-   {
-      free(rev->left.bufcomb[i]);
-      free(rev->right.bufcomb[i]);
-      free(rev->left.bufcomb_i[i]);
-      free(rev->right.bufcomb_i[i]);
-   }
-
-   for (i = 0; i < numallpasses; i++)
-   {
-      free(rev->left.bufallpass[i]);
-      free(rev->right.bufallpass[i]);
-      free(rev->left.bufallpass_i[i]);
-      free(rev->right.bufallpass_i[i]);
-   }
-   free(data);
+   if (!rev)
+      return;
+   free(rev->arena);
+   free(rev);
 }
 
 static void reverb_process(void *data, struct dspfilter_output *output,
@@ -386,10 +390,23 @@ static void *reverb_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    float drytime, wettime, damping, roomwidth, roomsize;
+   size_t arena_len;
    struct reverb_data *rev = (struct reverb_data*)
       calloc(1, sizeof(*rev));
    if (!rev)
       return NULL;
+
+   /* Measure both channels, then carve them out of one zeroed block. */
+   arena_len  = revmodel_carve(&rev->left,  info->input_rate, NULL, 0);
+   arena_len  = revmodel_carve(&rev->right, info->input_rate, NULL, arena_len);
+   rev->arena = (uint8_t*)calloc(1, arena_len);
+   if (!rev->arena)
+   {
+      free(rev);
+      return NULL;
+   }
+   arena_len  = revmodel_carve(&rev->left,  info->input_rate, rev->arena, 0);
+   revmodel_carve(&rev->right, info->input_rate, rev->arena, arena_len);
 
    config->get_float(userdata, "drytime", &drytime, 0.43f);
    config->get_float(userdata, "wettime", &wettime, 0.4f);
@@ -397,8 +414,8 @@ static void *reverb_init(const struct dspfilter_info *info,
    config->get_float(userdata, "roomwidth", &roomwidth, 0.56f);
    config->get_float(userdata, "roomsize", &roomsize, 0.56f);
 
-   revmodel_init(&rev->left,info->input_rate);
-   revmodel_init(&rev->right,info->input_rate);
+   revmodel_init(&rev->left);
+   revmodel_init(&rev->right);
 
    revmodel_setdamp(&rev->left, damping);
    revmodel_setdry(&rev->left, drytime);

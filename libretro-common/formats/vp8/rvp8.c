@@ -1844,12 +1844,50 @@ static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t 
 
 void rvp8_abort(rvp8_dec *s)
 {
-   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
-   free(s->yb); free(s->ub); free(s->vb);
-   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
-   free(s->above_nz_dc); free(s->above_bmodes);
-   free(s->fancy_uv);
+   free(s->arena);
    memset(s, 0, sizeof(*s));
+}
+
+/* Region spacing inside the per-frame arena, in bytes. The three planes
+ * are written by every predictor and read back by the loop filter and
+ * the chroma upsampler, so each starts on a 64-byte boundary. */
+#define RVP8_ARENA_ALIGN 64
+#define RVP8_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + RVP8_ARENA_ALIGN - 1) / RVP8_ARENA_ALIGN) \
+    * RVP8_ARENA_ALIGN)
+
+/* Lay the per-frame scratch buffers out over base (measure only when
+ * base is NULL). The per-MB maps and the above-row context come first
+ * and are the region that must be zero at frame start; the chroma
+ * interpolation scratch and the three planes follow and are always
+ * written before they are read. Returns the byte offset of the first
+ * plane through *zero_len (the length of the zeroed prefix) and the
+ * total length as the return value. */
+static size_t rvp8_arena_carve(rvp8_dec *s, uint8_t *base,
+      size_t *zero_len)
+{
+   int    mbw = s->mbw, mbh = s->mbh, w = s->w;
+   size_t cur = 0;
+#define RVP8_CARVE(field, bytes) \
+   do { \
+      s->field = base ? base + cur : NULL; \
+      cur      = RVP8_ARENA_NEXT(cur, (size_t)(bytes)); \
+   } while (0)
+   RVP8_CARVE(seg_map_buf,  mbw * mbh);
+   RVP8_CARVE(skip_lf_buf,  mbw * mbh);
+   RVP8_CARVE(bpred_buf,    mbw * mbh);
+   RVP8_CARVE(above_nz_y,   mbw * 4);
+   RVP8_CARVE(above_nz_u,   mbw * 2);
+   RVP8_CARVE(above_nz_v,   mbw * 2);
+   RVP8_CARVE(above_nz_dc,  mbw);
+   RVP8_CARVE(above_bmodes, mbw * 4);
+   *zero_len = cur;
+   RVP8_CARVE(fancy_uv,     (size_t)w * 2);
+   RVP8_CARVE(yb,           (size_t)s->ys  * mbh * 16);
+   RVP8_CARVE(ub,           (size_t)s->uvs * mbh * 8);
+   RVP8_CARVE(vb,           (size_t)s->uvs * mbh * 8);
+#undef RVP8_CARVE
+   return cur;
 }
 
 /* Parse the frame + picture headers, size all buffers, initialize the
@@ -1881,21 +1919,16 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    uint8_t  save_mvc[2][19], save_ym[4], save_uvm[3];
    int      save_reflfd[4], save_modelfd[4];
    void    *save_mbinfo;
+   uint8_t *save_arena;
+   size_t   save_arena_len, arena_len, zero_len;
 
-   /* Free any per-frame buffers from a previous decode on this state
-    * (the persistent video decoder reuses one rvp8_dec across frames).
-    * The reference frames live in the wrapper, not here, so freeing these
-    * scratch buffers is safe. Persistent probability/delta/mbinfo state is
-    * saved and restored around the memset below. */
-   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
-   free(s->yb); free(s->ub); free(s->vb);
-   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
-   free(s->above_nz_dc); free(s->above_bmodes);
-   free(s->fancy_uv);
-   s->seg_map_buf = s->skip_lf_buf = s->bpred_buf = NULL;
-   s->yb = s->ub = s->vb = NULL;
-   s->above_nz_y = s->above_nz_u = s->above_nz_v = NULL;
-   s->above_nz_dc = s->above_bmodes = s->fancy_uv = NULL;
+   /* The per-frame scratch arena of a previous decode on this state (the
+    * persistent video decoder reuses one rvp8_dec across frames) is kept
+    * and reused below when it is large enough. The reference frames live
+    * in the wrapper, not here. Persistent probability/delta/mbinfo state
+    * is saved and restored around the memset below. */
+   save_arena     = s->arena;
+   save_arena_len = s->arena_len;
 
    save_is_inter = s->is_inter;
    save_w = s->w; save_h = s->h;
@@ -1920,6 +1953,8 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    }
 
    memset(s, 0, sizeof(*s));
+   s->arena     = save_arena;
+   s->arena_len = save_arena_len;
 
    if (save_is_inter)
    {
@@ -2217,30 +2252,29 @@ tp_ok:
       s->tbr[i] = tbr[i];
    s->my = 0;
 
-   s->seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   s->skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   s->bpred_buf   = (uint8_t*)calloc(mbw * mbh, 1);
-   s->yb = (uint8_t*)calloc(s->ys * mbh * 16, 1);
-   s->ub = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
-   s->vb = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
-   s->above_nz_y   = (uint8_t*)calloc(mbw * 4, 1);
-   s->above_nz_u   = (uint8_t*)calloc(mbw * 2, 1);
-   s->above_nz_v   = (uint8_t*)calloc(mbw * 2, 1);
-   s->above_nz_dc  = (uint8_t*)calloc(mbw, 1);
-   s->above_bmodes = (uint8_t*)calloc(mbw * 4, 1);
-   s->fancy_uv     = (uint8_t*)malloc((size_t)w * 2); /* NULL tolerated */
+   /* Size the arena for this frame's geometry; a previous frame's block
+    * is reused when it is big enough, otherwise it is replaced. The maps
+    * and above-row context at the front must start zeroed, the planes
+    * are set to 127 below. */
+   arena_len = rvp8_arena_carve(s, NULL, &zero_len);
+   if (arena_len > s->arena_len)
+   {
+      free(s->arena);
+      s->arena_len = 0;
+      if (!(s->arena = (uint8_t*)malloc(arena_len)))
+      {
+         rvp8_abort(s);
+         return -1;
+      }
+      s->arena_len = arena_len;
+   }
+   rvp8_arena_carve(s, s->arena, &zero_len);
+   memset(s->arena, 0, zero_len);
    /* Per-MB info for inter prediction (allocated once; persists across the
     * frame). The persistent decoder may pass one in via s->mb_info; if not
     * present and this is an inter frame, allocate it here. */
    if (s->is_inter && !s->mb_info)
       s->mb_info = calloc((size_t)mbw * mbh, sizeof(rvp8_mbinfo));
-   if (!s->yb || !s->ub || !s->vb
-         || !s->above_nz_y || !s->above_nz_u || !s->above_nz_v
-         || !s->above_nz_dc || !s->above_bmodes)
-   {
-      rvp8_abort(s);
-      return -1;
-   }
    memset(s->yb, 127, s->ys * mbh * 16);
    memset(s->ub, 127, s->uvs * mbh * 8);
    memset(s->vb, 127, s->uvs * mbh * 8);
@@ -3741,7 +3775,9 @@ struct rvp8_video
    int      w, h, mbw, mbh, ys, uvs;
    int      have_refs;
    /* three reference frames (last, golden, altref), each a full padded
-    * plane set matching the decoder's yb/ub/vb geometry. */
+    * plane set matching the decoder's yb/ub/vb geometry. All nine planes
+    * are carved out of ref_arena; the pointers are views into it. */
+   uint8_t *ref_arena;
    uint8_t *ry[3], *ru[3], *rv[3];
    size_t   ysz, uvsz;
 };
@@ -3749,11 +3785,11 @@ struct rvp8_video
 static void rvp8_video_free_refs(rvp8_video *v)
 {
    int i;
+   free(v->ref_arena);
+   v->ref_arena = NULL;
    for (i = 0; i < 3; i++)
-   {
-      free(v->ry[i]); free(v->ru[i]); free(v->rv[i]);
       v->ry[i] = v->ru[i] = v->rv[i] = NULL;
-   }
+   v->have_refs = 0;
 }
 
 rvp8_video *rvp8_video_open(void)
@@ -3766,29 +3802,29 @@ void rvp8_video_close(rvp8_video *v)
 {
    if (!v) return;
    rvp8_video_free_refs(v);
-   /* Free the decoder's per-frame scratch buffers from the last decode. */
-   free(v->s.seg_map_buf); free(v->s.skip_lf_buf); free(v->s.bpred_buf);
-   free(v->s.yb); free(v->s.ub); free(v->s.vb);
-   free(v->s.above_nz_y); free(v->s.above_nz_u); free(v->s.above_nz_v);
-   free(v->s.above_nz_dc); free(v->s.above_bmodes);
-   free(v->s.fancy_uv);
+   /* Free the decoder's per-frame scratch arena from the last decode. */
+   free(v->s.arena);
    free(v->s.mb_info);
    free(v);
 }
 
-/* Allocate the reference planes once the dimensions are known. */
+/* Allocate the reference planes once the dimensions are known: nine
+ * planes out of one block, each starting on a 64-byte boundary. */
 static int rvp8_video_alloc_refs(rvp8_video *v)
 {
-   int i;
+   int    i;
+   size_t cur = 0;
+   size_t ysz  = RVP8_ARENA_NEXT(0, (size_t)v->ys  * v->mbh * 16);
+   size_t uvsz = RVP8_ARENA_NEXT(0, (size_t)v->uvs * v->mbh * 8);
    v->ysz  = (size_t)v->ys  * v->mbh * 16;
    v->uvsz = (size_t)v->uvs * v->mbh * 8;
+   if (!(v->ref_arena = (uint8_t*)malloc(3 * (ysz + 2 * uvsz))))
+      return -1;
    for (i = 0; i < 3; i++)
    {
-      v->ry[i] = (uint8_t*)malloc(v->ysz);
-      v->ru[i] = (uint8_t*)malloc(v->uvsz);
-      v->rv[i] = (uint8_t*)malloc(v->uvsz);
-      if (!v->ry[i] || !v->ru[i] || !v->rv[i])
-         return -1;
+      v->ry[i] = v->ref_arena + cur; cur += ysz;
+      v->ru[i] = v->ref_arena + cur; cur += uvsz;
+      v->rv[i] = v->ref_arena + cur; cur += uvsz;
    }
    return 0;
 }
@@ -3817,6 +3853,9 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
          ;
       rvp8_filter_rows(&v->s, 0, v->s.mbh);
 
+      /* A key frame with a new geometry retires the old reference set. */
+      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
+         rvp8_video_free_refs(v);
       v->w = v->s.w; v->h = v->s.h; v->mbw = v->s.mbw; v->mbh = v->s.mbh;
       v->ys = v->s.ys; v->uvs = v->s.uvs;
       if (!v->have_refs)

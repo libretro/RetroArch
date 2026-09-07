@@ -28,6 +28,7 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#include <compat/strl.h>
 #endif
 
 #define LOAD_CONTENT_ANIMATION_FADE_IN_DURATION   466.0f
@@ -461,7 +462,7 @@ bool gfx_widget_start_load_content_animation(void)
          state->content_name_len = strlcpy(state->content_name,
                core_info->display_name, sizeof(state->content_name));
       else
-         state->content_name_len = strlcpy(state->content_name,
+         state->content_name_len = strlcpy_lit(state->content_name,
                "RetroArch", sizeof(state->content_name));
    }
 
@@ -475,7 +476,7 @@ bool gfx_widget_start_load_content_animation(void)
                core_info->display_name, sizeof(state->system_name));
       /* Otherwise, just use 'RetroArch' as a fallback */
       else
-         state->system_name_len = strlcpy(state->system_name,
+         state->system_name_len = strlcpy_lit(state->system_name,
                "RetroArch", sizeof(state->system_name));
    }
 
@@ -540,7 +541,7 @@ bool gfx_widget_start_load_content_animation(void)
     *   use default 'retroarch' icon as a fallback */
    if (!state->has_icon)
    {
-      strlcpy(state->icon_file, "retroarch.png", sizeof(state->icon_file));
+      strlcpy_lit(state->icon_file, "retroarch.png", sizeof(state->icon_file));
       fill_pathname_join_special(state->icon_path,
             state->icon_directory, state->icon_file,
             sizeof(state->icon_path));

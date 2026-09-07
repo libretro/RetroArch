@@ -38,6 +38,13 @@
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
 #define DEFAULT_POLL_RATE 5
+/* The rate comes from the core, through
+ * RETRO_ENVIRONMENT_SET_SENSOR_STATE, so it is whatever a core asks
+ * for. Above 1000 Hz the sleep between reads would round down to zero
+ * and the poll thread would read a sysfs file as fast as the CPU
+ * allows; the sensor cannot answer faster than that anyway, since each
+ * reading is an open/read/close of a file. */
+#define MAX_POLL_RATE     1000
 
 /* TODO/FIXME - static globals */
 static struct termios old_term, new_term;
@@ -169,18 +176,28 @@ static void linux_poll_illuminance_sensor(void *data)
         int millilux;
         unsigned poll_rate = sensor->poll_rate;
 
+        if (poll_rate == 0)
+           poll_rate = DEFAULT_POLL_RATE;
+        else if (poll_rate > MAX_POLL_RATE)
+           poll_rate = MAX_POLL_RATE;
+
         /* Don't allow cancellation inside the critical section,
          * as it opens up a file; we don't want to leak it! */
         sthread_set_cancel_enable(false);
         lux = linux_read_illuminance_sensor(sensor);
         millilux = (int)(lux * 1000.0);
-        retro_assert(poll_rate != 0);
-
         sensor->millilux = millilux;
         sthread_set_cancel_enable(true);
 
         /* Allow cancellation here so that the main thread doesn't block
-         * while waiting for this thread to wake up and exit. */
+         * while waiting for this thread to wake up and exit.
+         *
+         * errno is cleared first because it is only meaningful right
+         * after a call that failed: the sensor read above goes through
+         * open/read/close and leaves its own errno behind, so testing
+         * it after a sleep that succeeded would end the thread on a
+         * stale EINTR from something else entirely. */
+        errno = 0;
         retro_sleep(1000 / poll_rate);
         if (errno == EINTR)
         {
@@ -207,6 +224,8 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
    sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (sensor->poll_rate > MAX_POLL_RATE)
+      sensor->poll_rate = MAX_POLL_RATE;
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
    sensor->done      = false;
 
@@ -300,6 +319,8 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
 
    /* Set a default rate of 5 Hz if none is provided */
    rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (rate > MAX_POLL_RATE)
+      rate = MAX_POLL_RATE;
 
    sensor->poll_rate = rate;
 }

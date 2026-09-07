@@ -85,19 +85,41 @@ static void* ui_application_win32_initialize(void)
    return NULL;
 }
 
+static void ui_application_win32_dispatch(MSG *msg)
+{
+   bool translated_accelerator = main_window.hwnd == msg->hwnd && TranslateAccelerator(msg->hwnd, window_accelerators, msg) != 0;
+
+   if (!translated_accelerator)
+   {
+      TranslateMessage(msg);
+      DispatchMessage(msg);
+   }
+}
+
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-   {
-      bool translated_accelerator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
 
-      if (!translated_accelerator)
-      {
-         TranslateMessage(&msg);
-         DispatchMessage(&msg);
-      }
+   /* Called from a run loop iteration that a modal size/move or menu
+    * loop is driving from its timer (win32_common.c). That loop has
+    * the mouse captured and reads its own movement and button-up from
+    * the queue; taking those here would leave it tracking nothing.
+    * Everything else - keyboard, raw input, WM_TIMER, posted commands
+    * - is dispatched as usual. Ranges are numeric so that they do not
+    * move with the SDK's idea of WM_MOUSELAST. */
+   if (g_win32_flags & WIN32_CMN_FLAG_MODAL_TICK)
+   {
+      while (PeekMessage(&msg, 0, 0x0000, 0x009F, PM_REMOVE))
+         ui_application_win32_dispatch(&msg);
+      while (PeekMessage(&msg, 0, 0x00B0, 0x01FF, PM_REMOVE))
+         ui_application_win32_dispatch(&msg);
+      while (PeekMessage(&msg, 0, 0x0210, 0xFFFF, PM_REMOVE))
+         ui_application_win32_dispatch(&msg);
+      return;
    }
+
+   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+      ui_application_win32_dispatch(&msg);
 }
 
 static ui_application_t ui_application_win32 = {
@@ -1079,7 +1101,7 @@ static enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
          return MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT;
       case ID_M_MUTE_TOGGLE:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE;
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
       case ID_M_TOGGLE_DESKTOP:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE;
 #endif
@@ -1224,7 +1246,7 @@ void win32_localize_menu(HMENU menu)
          {
             size_t _len = strlcpy(ellipsis_buf, new_label,
                   sizeof(ellipsis_buf));
-            strlcpy(ellipsis_buf + _len, "...",
+            strlcpy_lit(ellipsis_buf + _len, "...",
                   sizeof(ellipsis_buf) - _len);
             new_label  = ellipsis_buf;
             new_label2 = ellipsis_buf;
@@ -1422,7 +1444,8 @@ HMENU win32_resources_create_menu(void)
    win32_append_popup_utf8(window_menu, scale_menu,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE));
 
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
+   /* Any desktop companion (Qt or the native one), not Qt alone. */
    AppendMenuA(window_menu, MF_STRING, ID_M_TOGGLE_DESKTOP,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE));
 #endif
@@ -1577,6 +1600,7 @@ ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_toggle,
+   NULL, /* iterate */
    ui_companion_win32_event_command,
    NULL,
    NULL,

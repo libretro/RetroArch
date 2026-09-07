@@ -4,6 +4,8 @@
 *.exe
 *.bmpobj
 *.binobj
+*.shbin
+*.shbin.s
 *.so
 *.so.*
 *.dll
@@ -263,6 +265,11 @@ gfx/common/wayland/webos-surface-group.c
 gfx/common/wayland/webos-surface-group.h
 gfx/common/wayland/tearing-control-v1.h
 gfx/common/wayland/tearing-control-v1.c
+
+# samples/: built harness executables and objects. Each directory's
+# test is <dir>_test; nothing built there is source.
+samples/**/*_test
+samples/**/*.o
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

@@ -73,7 +73,6 @@ void android_app_set_window_settings(bool notch_write_over,
 
 #ifdef HAVE_LAKKA_SWITCH
 #include "lakka-switch.h"
-   }
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -83,9 +82,13 @@ void android_app_set_window_settings(bool notch_write_over,
 #if __APPLE__
 #include "ui/drivers/cocoa/apple_platform.h"
 #endif
+#include "ui/ui_companion_driver.h"
 
 #ifdef HAVE_LAKKA
 #include <time.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /* Compile-time upper bounds for setting array sizes.
@@ -150,7 +153,6 @@ enum audio_driver_enum
    AUDIO_AUDIOIO,
    AUDIO_OSS,
    AUDIO_ALSA,
-   AUDIO_ALSATHREAD,
    AUDIO_TINYALSA,
    AUDIO_ROAR,
    AUDIO_AL,
@@ -165,7 +167,6 @@ enum audio_driver_enum
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
-   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -183,7 +184,6 @@ enum audio_driver_enum
 enum microphone_driver_enum
 {
    MICROPHONE_ALSA = AUDIO_NULL + 1,
-   MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
    MICROPHONE_SDL3,
    MICROPHONE_WASAPI,
@@ -548,9 +548,10 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_PIPEWIRE)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PIPEWIRE;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was AUDIO_ALSATHREAD when built with threads. That driver is gone and
+ * the threaded pipeline, on by default, does what it did from the audio
+ * thread - and more, since the resampler moves off the frame too. */
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 #elif defined(HAVE_TINYALSA)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
@@ -560,8 +561,6 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
-#elif defined(HAVE_COREAUDIO3)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_WASAPI)
@@ -598,10 +597,11 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #if defined(HAVE_WASAPI)
 /* The default mic driver on Windows is WASAPI if it's available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-/* The default mic driver on Linux is the threaded ALSA driver, if available. */
-static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was MICROPHONE_ALSATHREAD when built with threads. That driver is
+ * gone: the frontend's threaded capture, on by default, does what its
+ * worker did - and for every microphone driver that can wait on its
+ * device, not just this one. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
 #elif defined(HAVE_PIPEWIRE)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_PIPEWIRE;
@@ -689,7 +689,7 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_WAYLAND)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
@@ -799,7 +799,7 @@ static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 
 #if (defined(_3DS) || defined(DINGUX)) && defined(HAVE_RGUI)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
-#elif defined(IOS) && !TARGET_OS_TV
+#elif TARGET_OS_IPHONE && !TARGET_OS_TV
 #define MENU_DEFAULT_DRIVER (ios_running_on_ipad() ? MENU_OZONE : MENU_MATERIALUI)
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
@@ -955,16 +955,12 @@ const char *config_get_default_audio(void)
          return "oss";
       case AUDIO_ALSA:
          return "alsa";
-      case AUDIO_ALSATHREAD:
-         return "alsathread";
       case AUDIO_TINYALSA:
          return "tinyalsa";
       case AUDIO_ROAR:
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
-      case AUDIO_COREAUDIO3:
-         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:
@@ -1009,7 +1005,10 @@ const char *config_get_default_audio(void)
          return "dsp";
       case AUDIO_SWITCH:
 #if defined(HAVE_LIBNX)
-         return "switch_audren_thread";
+         /* Was "switch_audren_thread". That driver is gone and this one
+          * reaches the same decoupling through the threaded pipeline,
+          * which also takes the resampler off the frame. */
+         return "switch_audren";
 #else
          return "switch";
 #endif
@@ -1042,8 +1041,6 @@ const char *config_get_default_microphone(void)
    {
       case MICROPHONE_ALSA:
          return "alsa";
-      case MICROPHONE_ALSATHREAD:
-         return "alsathread";
       case MICROPHONE_PIPEWIRE:
          return "pipewire";
       case MICROPHONE_WASAPI:
@@ -1605,6 +1602,9 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("microphone_resampler",         settings->arrays.microphone_resampler, false, NULL, true);
 #endif
    SETTING_ARRAY("midi_driver",                  settings->arrays.midi_driver, false, NULL, true);
+   SETTING_ARRAY("ui_companion_driver",          settings->arrays.ui_companion_driver, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_hidden_playlists", settings->arrays.desktop_menu_hidden_playlists, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_highlight_color",  settings->arrays.desktop_menu_highlight_color, false, NULL, true);
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
@@ -1625,9 +1625,9 @@ static struct config_array_setting *populate_settings_array(
       static char reserved_keys[MAX_USERS][32];
       for (i = 0; i < MAX_USERS; i++)
       {
-         size_t _len  = strlcpy(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
+         size_t _len  = strlcpy_lit(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
          _len += snprintf(reserved_keys[i] + _len, sizeof(reserved_keys[i]) - _len, "%u", i + 1);
-         strlcpy(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
+         strlcpy_lit(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
          SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
       }
    }
@@ -1745,6 +1745,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_database_path",           settings->paths.path_content_database, false, NULL, true);
    SETTING_PATH("content_favorites_path",          settings->paths.path_content_favorites, false, NULL, true);
    SETTING_PATH("content_history_path",            settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("desktop_menu_initial_playlist",    settings->paths.desktop_menu_initial_playlist, false, NULL, true);
+   SETTING_PATH("desktop_menu_custom_theme",        settings->paths.desktop_menu_custom_theme, false, NULL, true);
    SETTING_PATH("content_image_history_path",      settings->paths.path_content_image_history, false, NULL, true);
    SETTING_PATH("content_music_history_path",      settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",      settings->paths.path_content_video_history, false, NULL, true);
@@ -1923,7 +1925,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_NETWORKGAMEPAD
    SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false, false);
 #endif
-#if defined(HAVE_QT) || defined(HAVE_COCOA)
+#ifdef HAVE_COMPANION_WIMP
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
 #endif
    /* GENERATED: single-source setting rows (bool kind emits here) */
@@ -2045,6 +2047,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -2757,6 +2760,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -3421,6 +3425,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4133,6 +4138,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4726,6 +4732,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -5302,6 +5309,7 @@ void config_set_defaults(void *data)
    const char *def_menu             = config_get_default_menu();
 #endif
    const char *def_camera           = config_get_default_camera();
+   const char *def_ui_companion     = config_get_default_ui_companion();
    const char *def_bluetooth        = config_get_default_bluetooth();
    const char *def_wifi             = config_get_default_wifi();
    const char *def_led              = config_get_default_led();
@@ -5379,6 +5387,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.camera_driver,
             def_camera);
+   if (def_ui_companion)
+      configuration_set_string(settings,
+            settings->arrays.ui_companion_driver,
+            def_ui_companion);
    if (def_bluetooth)
       configuration_set_string(settings,
             settings->arrays.bluetooth_driver,
@@ -5854,7 +5866,7 @@ void config_set_defaults(void *data)
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -5872,7 +5884,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -5890,7 +5902,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -5908,7 +5920,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_image_history));
 
       if (!*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -5926,7 +5938,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -6098,7 +6110,7 @@ static config_file_t *open_default_config_file(void)
 
       RARCH_LOG("[Config] Created new config file in: \"%s\".\n", conf_path);
    }
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
    {
@@ -6481,10 +6493,29 @@ static bool config_load_file(global_t *global,
          *bool_settings[i].ptr = tmp;
    }
 
+   /* audio_threaded_pipeline briefly held off/automatic/on rather than
+    * a plain bool, and wrote that as a number. A bool is always saved
+    * as "true" or "false", so a numeric value here is that older
+    * three-way one: automatic (1) means the pipeline was never asked
+    * for and reads as the default, on (2) means it was. The value is
+    * rewritten in the settings, so the next save records it as a
+    * bool and this stops applying. */
+   {
+      const struct config_entry_list *entry =
+            (const struct config_entry_list*)config_get_entry(conf,
+                  "audio_threaded_pipeline");
+
+      if (entry && entry->value[0] >= '0' && entry->value[0] <= '9'
+            && entry->value[1] == '\0')
+         configuration_set_bool(settings,
+               settings->bools.audio_threaded_pipeline,
+               (entry->value[0] == '2'));
+   }
+
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          bool tmp_bool = false;
@@ -6532,23 +6563,23 @@ static bool config_load_file(global_t *global,
 
    {
       char prefix[64];
-      size_t _len    = strlcpy(prefix, "input_player", sizeof(prefix));
+      size_t _len    = strlcpy_lit(prefix, "input_player", sizeof(prefix));
       size_t old_len = _len;
       for (i = 0; i < MAX_USERS; i++)
       {
          _len  = old_len;
          _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-         strlcpy(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
 
-         strlcpy(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
 
-         strlcpy(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], prefix);
 
-         strlcpy(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], prefix);
       }
 
@@ -6609,7 +6640,7 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-#if !IOS
+#if !TARGET_OS_IPHONE
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
@@ -6717,7 +6748,7 @@ static bool config_load_file(global_t *global,
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -6734,7 +6765,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -6751,7 +6782,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -6768,7 +6799,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_image_history));
 
       if (*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -6785,7 +6816,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -6813,7 +6844,7 @@ static bool config_load_file(global_t *global,
       }
    }
 
-#if defined(__APPLE__) && defined(OSX)
+#if defined(__APPLE__) && TARGET_OS_OSX
    if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
          || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&
@@ -7076,6 +7107,7 @@ static bool config_load_file(global_t *global,
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
       fprintf(f, "0\n");
       fclose(f);
+   }
    }
 #endif
 
@@ -7795,16 +7827,16 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(s + _len, "up", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "up", sizeof(s) - _len);
          break;
       case HAT_DOWN_MASK:
-         strlcpy(s + _len, "down", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "down", sizeof(s) - _len);
          break;
       case HAT_LEFT_MASK:
-         strlcpy(s + _len, "left", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "left", sizeof(s) - _len);
          break;
       case HAT_RIGHT_MASK:
-         strlcpy(s + _len, "right", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "right", sizeof(s) - _len);
          break;
       default:
          break;
@@ -7822,7 +7854,7 @@ static void save_keybind_joykey(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -7843,10 +7875,10 @@ static void save_keybind_joykey_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
    if (label->joykey && *label->joykey)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joykey);
    }
 }
@@ -7860,7 +7892,7 @@ static void save_keybind_axis(config_file_t *conf,
    char key[64];
    char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -7889,10 +7921,10 @@ static void save_keybind_axis_label(config_file_t *conf,
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
    if (label->joyaxis && *label->joyaxis)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joyaxis);
    }
 }
@@ -7905,7 +7937,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcpy(key + _len, "_mbtn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_mbtn", sizeof(key) - _len);
 
    switch (bind->mbutton)
    {
@@ -7949,7 +7981,7 @@ void input_config_get_prefix(char *s, char len, char user, bool meta)
    {
       /* Meta binds are only for the first user. */
       if (user == 0)
-         strlcpy(s, "input", len);
+         strlcpy_lit(s, "input", len);
    }
    else
       snprintf(s, len, "input_player%u", user + 1);
@@ -8152,7 +8184,7 @@ void config_get_autoconf_profile_filename(
    }
    /* Generate autoconfig file path */
    _len = strlcpy(s, sanitised_name, len);
-   strlcpy(s + _len, ".cfg", len - _len);
+   strlcpy_lit(s + _len, ".cfg", len - _len);
 }
 
 /**
@@ -8783,7 +8815,7 @@ bool config_save_file(const char *path)
 
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
 
-      _len = strlcpy(cfg, "input_device_p",     sizeof(cfg));
+      _len = strlcpy_lit(cfg, "input_device_p",     sizeof(cfg));
       strlcpy(cfg + _len, formatted_number,     sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device[i] != defaults->uints.input_device[i])
@@ -8791,31 +8823,31 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
-      _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+      _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
-      strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_mouse_index[i] != defaults->uints.input_mouse_index[i])
          config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
          config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_analog_dpad_mode[i] != defaults->uints.input_analog_dpad_mode[i])
          config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device_reservation_type[i] != defaults->uints.input_device_reservation_type[i])
          config_set_int(conf, cfg, settings->uints.input_device_reservation_type[i]);
@@ -8851,7 +8883,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
@@ -9349,7 +9381,7 @@ int8_t config_save_overrides(enum override_type type,
 
          if (!string_is_equal(base, cur))
          {
-#if IOS
+#if TARGET_OS_IPHONE
             if (string_is_equal(path_settings[i].ident, "libretro_directory"))
                continue;
 #endif
@@ -9372,19 +9404,19 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_device[i]
                != overrides->uints.input_device[i])
          {
-            size_t _len = strlcpy(cfg, "input_device_p", sizeof(cfg));
+            size_t _len = strlcpy_lit(cfg, "input_device_p", sizeof(cfg));
             strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
-         _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+         _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
          _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])
          {
-            strlcpy(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
@@ -9392,7 +9424,7 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_joypad_index[i]
                != overrides->uints.input_joypad_index[i])
          {
-            strlcpy(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
          }
@@ -9400,7 +9432,7 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_device_reservation_type[i]
                != overrides->uints.input_device_reservation_type[i])
          {
-            strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device_reservation_type[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
          }
@@ -9608,14 +9640,14 @@ bool input_remapping_load_file(void *data, const char *path)
       char formatted_number[4];
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
       {
@@ -9700,15 +9732,15 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
    }
@@ -9814,14 +9846,14 @@ bool input_remapping_save_file(const char *path)
          RARCH_ERR("[Config] Unexpectedly high number of users.");
          break;
       }
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
@@ -9901,15 +9933,15 @@ bool input_remapping_save_file(const char *path)
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, input_config_get_device(i));
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }

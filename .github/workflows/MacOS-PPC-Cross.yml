@@ -1,0 +1,93 @@
+name: CI macOS PowerPC (cross)
+
+# Builds the macOS (Cocoa + OpenGL) frontend for 32-bit PowerPC with a
+# GCC 14 cross compiler on Linux, against the 10.5 SDK, once for a
+# 10.4 deployment target and once for 10.5.  This is the
+# compiler-compatibility leg for the Apple code: no clang, no ARC, no
+# blocks, no GCD, and nothing newer than Leopard in the SDK.  Whatever
+# the Xcode 3 / PowerPC project would reject, this rejects first.
+#
+# Toolchain: VariantXYZ's GCC 14.2 powerpc-apple-darwin8 image (GCC
+# with the Objective-C front end, cctools-port ld/as, dsymutil), see
+# https://github.com/VariantXYZ/gcc-powerpc-apple-darwin8.
+#
+# The audit step lists every import the binary makes that the 10.4u
+# SDK does not export; for the 10.4 target that list must be empty,
+# which is what makes the binary launch on Tiger.
+
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  TARGET: powerpc-apple-darwin8
+  SDKROOT: /usr/local/MacOSX10.5.sdk
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-MacOSXSDK10.5
+      options: --user root
+    strategy:
+      fail-fast: false
+      matrix:
+        deployment_target: ["10.4", "10.5"]
+    env:
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure
+      run: |
+        $TARGET-gcc --version | head -n 1
+        ./configure --host=$TARGET \
+          --disable-qt --disable-sdl --disable-sdl2 --disable-ffmpeg \
+          --disable-x11 --disable-wayland --disable-egl \
+          --disable-pulse --disable-alsa --disable-jack --disable-oss \
+          --disable-udev --disable-v4l2 --disable-libusb \
+          --disable-freetype --disable-flac --disable-discord \
+          --disable-translate --disable-microphone --disable-avf \
+          --disable-mfi --disable-slang --disable-spirv_cross \
+          --disable-glslang --disable-crtswitchres --disable-al \
+          --disable-cdrom
+
+    - name: Compile RA
+      run: |
+        make ARCH=ppc -j$(getconf _NPROCESSORS_ONLN)
+        file retroarch
+        $TARGET-otool -l retroarch | grep -A2 LC_VERSION_MIN_MACOSX
+
+    - name: Audit imports against the 10.4u SDK
+      if: matrix.deployment_target == '10.4'
+      run: |
+        set -e
+        cd /usr/local
+        wget -q https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.4u.sdk.tar.xz
+        tar xJf MacOSX10.4u.sdk.tar.xz && rm MacOSX10.4u.sdk.tar.xz
+        cd "$GITHUB_WORKSPACE"
+        SDK4=/usr/local/MacOSX10.4u.sdk
+        $TARGET-nm -u retroarch | sed 's/^ *//' | sort -u > undef.txt
+        ( find $SDK4/usr/lib -name '*.dylib' ; \
+          find $SDK4/System/Library/Frameworks -type f -path '*/Versions/*' ! -path '*/Headers/*' ! -path '*/Resources/*' ) \
+          | while read -r lib; do $TARGET-nm -g -arch ppc "$lib" 2>/dev/null | awk 'NF==3 {print $3} NF==2 {print $2}'; done \
+          | sort -u > sdk4.txt
+        echo "Imports absent from the 10.4u SDK:"
+        comm -23 undef.txt sdk4.txt | grep -v '^_OBJC_CLASS_\$_\|^\.objc_class_name_' | tee missing.txt
+        test ! -s missing.txt
+
+    - name: Get short SHA
+      id: slug
+      run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: RetroArch-macOS-ppc-${{ matrix.deployment_target }}-${{ steps.slug.outputs.sha8 }}
+        path: retroarch

@@ -81,6 +81,7 @@
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
+#include <compat/strl.h>
 #endif
 
 #define D3D12_MAX_GPU_COUNT 16
@@ -2712,10 +2713,10 @@ static bool d3d12_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
 
             desc.BlendState.RenderTarget[0].RenderTargetWriteMask =
@@ -3070,11 +3071,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char *vs_src     = d3d12->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d12->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
          /* TODO/FIXME - add error handling? */
          d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
          /* TODO/FIXME - add error handling? */
          d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
 

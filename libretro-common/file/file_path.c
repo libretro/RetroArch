@@ -424,12 +424,34 @@ size_t fill_pathname_slash(char *s, size_t len)
  * E.g..: s = "/tmp/some_dir", in_basename = "/some_content/foo.c",
  * replace = ".asm" => s = "/tmp/some_dir/foo.c.asm"
  **/
+/* Appends @in to the @_len bytes already in @s and returns the new
+ * length, never more than @len - 1.
+ *
+ * strlcpy() reports the length of its *source*, so an accumulator that
+ * adds the return value passes @len as soon as one part does not fit.
+ * The 'len - _len' handed to the next call then underflows to a huge
+ * size_t, and that call writes at 's + _len' -- already past the end --
+ * with no effective bound.  Clamping on the way in keeps the size
+ * argument sane, and on the way out keeps the accumulator inside the
+ * buffer for whatever the caller does next. */
+static size_t path_strlcat(char *s, size_t _len, const char *in, size_t len)
+{
+   if (!len)
+      return 0;
+   if (_len > len - 1)
+      _len   = len - 1;
+   _len      += strlcpy(s + _len, in, len - _len);
+   if (_len > len - 1)
+      _len    = len - 1;
+   return _len;
+}
+
 size_t fill_pathname_dir(char *s, const char *in_basename,
       const char *replace, size_t len)
 {
    size_t _len  = fill_pathname_slash(s, len);
-   _len        += strlcpy(s + _len, path_basename(in_basename), len - _len);
-   _len        += strlcpy(s + _len, replace, len - _len);
+   _len         = path_strlcat(s, _len, path_basename(in_basename), len);
+   _len         = path_strlcat(s, _len, replace, len);
    return _len;
 }
 
@@ -542,7 +564,14 @@ size_t fill_pathname_parent_dir(char *s,
    if (s == in_dir)
       _len = strlen(s);
    else
+   {
+      /* strlcpy() reports the length of @in_dir, so a truncated copy
+       * leaves _len past the end of @s; path_parent_dir() would then
+       * scan back from outside the buffer. */
       _len = strlcpy(s, in_dir, len);
+      if (len && _len > len - 1)
+         _len = len - 1;
+   }
    return path_parent_dir(s, _len);
 }
 
@@ -980,20 +1009,39 @@ void fill_pathname_resolve_relative(char *s,
 size_t fill_pathname_join(char *s, const char *dir,
       const char *path, size_t len)
 {
-   size_t _len = 0;
-   if (s != dir)
-      _len = strlcpy(s, dir, len);
-   if (*s)
-      _len = fill_pathname_slash(s, len);
-   _len   += strlcpy(s + _len, path, len - _len);
-   return _len;
+   size_t _len = strlen(dir);
+
+   /* memmove() lands @dir in @s whether or not the two are the
+    * same buffer, so the copy needs no aliasing test of its own.
+    * Losing that test is what keeps @s written before it is read:
+    * a "@s might already be @dir" branch leaves a path on which
+    * the separator test below inspects a caller buffer that
+    * nothing has written yet, which is what the copy is for.
+    * It also covers a partial overlap, which the pointer compare
+    * never did.
+    *
+    * strlcpy() reports the length of its source, so the clamp is
+    * what a truncated copy leaves behind rather than what was
+    * asked for - @s + @_len stays inside the buffer. */
+   if (len)
+   {
+      if (_len > len - 1)
+         _len  = len - 1;
+      memmove(s, dir, _len);
+      s[_len]  = '\0';
+   }
+   else
+      _len     = 0;
+
+   if (_len)
+      _len     = fill_pathname_slash(s, len);
+   return _len + strlcpy(s + _len, path, len - _len);
 }
 
 /* fill_pathname_join_special() is a macro alias of
  * fill_pathname_join() - see file_path.h. Historically it was a
- * separate function that skipped the @s != @dir alias guard (one
- * pointer compare ahead of two strlcpy calls - never a measurable
- * saving), which made any aliased call undefined: strlcpy aborts
+ * separate function whose copy could not take an overlapping @s
+ * and @dir, which made any aliased call undefined: strlcpy aborts
  * via __chk_fail_overlap under fortified libc on macOS while the
  * portable fallback hides the defect on other platforms.
  * libretro-common is vendored into cores that never see RetroArch's
@@ -1008,8 +1056,8 @@ size_t fill_pathname_join_special_ext(char *s,
    size_t _len = fill_pathname_join(s, dir, path, len);
    if (*s)
       _len     = fill_pathname_slash(s, len);
-   _len       += strlcpy(s + _len, last, len - _len);
-   _len       += strlcpy(s + _len, ext,  len - _len);
+   _len        = path_strlcat(s, _len, last, len);
+   _len        = path_strlcat(s, _len, ext,  len);
    return _len;
 }
 
@@ -1033,12 +1081,15 @@ size_t fill_pathname_join_delim(char *s, const char *dir,
       _len     = strlen(dir);
    else
       _len     = strlcpy(s, dir, len);
-   if (len - _len < 2)
-      return _len;
+   /* _len is the length of @dir, which strlcpy() reports whether or not
+    * it fit, so this has to be a bounds check and not a subtraction that
+    * can wrap. */
+   if (_len + 2 > len)
+      return (len > 0) ? len - 1 : 0;
    s[_len++]   = delim;
    s[_len  ]   = '\0';
    if (path)
-      _len    += strlcpy(s + _len, path, len - _len);
+      _len     = path_strlcat(s, _len, path, len);
    return _len;
 }
 

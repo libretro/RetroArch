@@ -46,6 +46,12 @@ S_BOOL(crt_switch_custom_refresh_enable, CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRES
       false, SD_FLAG_NONE, 0, 0,
       "Custom Refresh Rate",
       "Use a custom refresh rate specified in the configuration file if needed.")
+#if defined(HAVE_MODELINE) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_ACTION_EX(CRT_SWITCH_WRITE_EDID,
+      "crt_switch_write_edid", SD_FLAG_ADVANCED, setting_action_crt_switch_write_edid, NULL, 0,
+      "Write EDID for CRT Preset",
+      "Write an EDID block describing the selected CRT preset to the config directory. Loaded as a firmware EDID on Linux (drm.edid_firmware) or an EDID override on Windows it lets a display without DDC report its sync limits, so the system boots at a rate the CRT can show. Nothing is installed; the log says where the file is and how to use it.")
+#endif
 S_BOOL(crt_switch_hires_menu, CRT_SWITCH_HIRES_MENU,
       "crt_switch_hires_menu",
       false, SD_FLAG_NONE, 0, 0,

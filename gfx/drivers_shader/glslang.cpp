@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "glslang.hpp"
+#include "glslang_compile.h"
 
 #ifdef HAVE_BUILTINGLSLANG
 #include "../../deps/glslang/glslang/glslang/Public/ShaderLang.h"
@@ -163,28 +163,15 @@ SlangProcess::SlangProcess()
    Resources.limits.generalConstantMatrixVectorIndexing        = true;
 }
 
-bool glslang::compile_spirv(const std::string &source, Stage stage,
+static bool glslang_compile_spirv_impl(const char *src, EShLanguage language,
       std::vector<uint32_t> *spirv)
 {
    static SlangProcess process;
    SlangProcessHolder process_holder;
-   TProgram program;
+   glslang::TProgram program;
 
-   EShLanguage language;
-   switch (stage)
-   {
-      case StageVertex:         language = EShLangVertex;         break;
-      case StageTessControl:    language = EShLangTessControl;    break;
-      case StageTessEvaluation: language = EShLangTessEvaluation; break;
-      case StageGeometry:       language = EShLangGeometry;       break;
-      case StageFragment:       language = EShLangFragment;       break;
-      case StageCompute:        language = EShLangCompute;        break;
-      default:                  return false;
-   }
+   glslang::TShader shader(language);
 
-   TShader shader(language);
-
-   const char *src = source.c_str();
    shader.setStrings(&src, 1);
 
    glslang::TShader::ForbidIncluder forbid_include =
@@ -218,6 +205,46 @@ bool glslang::compile_spirv(const std::string &source, Stage stage,
       return false;
    }
 
-   GlslangToSpv(*program.getIntermediate(language), *spirv);
+   glslang::GlslangToSpv(*program.getIntermediate(language), *spirv);
+   return true;
+}
+
+extern "C" bool glslang_compile_spirv(const char *source,
+      enum glslang_compile_stage stage,
+      uint32_t **spirv, size_t *spirv_len)
+{
+   EShLanguage language;
+   std::vector<uint32_t> words;
+
+   *spirv     = NULL;
+   *spirv_len = 0;
+
+   if (!source)
+      return false;
+
+   switch (stage)
+   {
+      case GLSLANG_COMPILE_STAGE_VERTEX:
+         language = EShLangVertex;
+         break;
+      case GLSLANG_COMPILE_STAGE_FRAGMENT:
+         language = EShLangFragment;
+         break;
+      default:
+         return false;
+   }
+
+   if (!glslang_compile_spirv_impl(source, language, &words))
+      return false;
+
+   if (words.empty())
+      return false;
+
+   *spirv = (uint32_t*)malloc(words.size() * sizeof(uint32_t));
+   if (!*spirv)
+      return false;
+
+   memcpy(*spirv, words.data(), words.size() * sizeof(uint32_t));
+   *spirv_len = words.size();
    return true;
 }

@@ -43,13 +43,19 @@ typedef struct rvp8_dec
    rvp8_bool br;
    rvp8_bool tbr[8];                 /* token partitions                    */
    uint8_t   cprob[4][8][3][11];
+   /* One block holding every per-frame scratch buffer below, sized from
+    * the frame geometry; the named pointers are views into it. It is
+    * kept across rvp8_begin() calls on the same state and only replaced
+    * when a frame needs more than arena_len bytes. */
+   uint8_t  *arena;
+   size_t    arena_len;
    uint8_t  *seg_map_buf;
    uint8_t  *skip_lf_buf;
    uint8_t  *bpred_buf;
    uint8_t  *yb, *ub, *vb;
    uint8_t  *above_nz_y, *above_nz_u, *above_nz_v, *above_nz_dc;
    uint8_t  *above_bmodes;
-   uint8_t  *fancy_uv;               /* 2*w chroma-interp scratch (or NULL) */
+   uint8_t  *fancy_uv;               /* 2*w chroma-interp scratch           */
    int       swap_rb;                /* upsample emits memory-order R,G,B,A
                                         words (ABGR32 on LE) instead of the
                                         default ARGB when nonzero          */

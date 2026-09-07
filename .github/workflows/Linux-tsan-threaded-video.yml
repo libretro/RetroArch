@@ -1,0 +1,161 @@
+name: CI Linux TSan [Threaded video]
+
+# Builds RetroArch with -fsanitize=thread and runs it headless with
+# video_threaded = "true", which is the configuration none of the other
+# jobs cover and the only one where the video thread exists at all.
+#
+# Why a separate job from Linux-asan-ubsan.yml: ASan and TSan cannot be
+# linked into the same binary, and the ASan job deliberately runs
+# unthreaded (video_threaded = "false") because its purpose is memory
+# errors on the simplest path. Threading bugs are invisible there --
+# the second thread is never created.
+#
+# What this reaches that nothing else does: the video thread wrapper's
+# command and frame handoff, every driver frame() call running off the
+# main thread, and the state the runloop and the video thread share --
+# window title, alive/focus/presentable, viewport and statistics. Two
+# real races were found this way and fixed (the window title handoff,
+# and the runloop asking a context for presentability while the video
+# thread rebuilt its swapchain); this job is what keeps them fixed.
+#
+# Soft-fail for now, like the ASan job's smoke tier was on its first
+# iterations: TSan reports races inside libSDL2 itself that RetroArch
+# neither causes nor can fix (see the suppression file written below),
+# and the baseline wants a few green runs before it gates.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-tsan-threaded-video:
+    name: Build with TSan and run with threaded video
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        # Same set as Linux-asan-ubsan.yml. libtsan ships with the gcc
+        # on the runner image, so nothing sanitizer-specific is needed.
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure
+        # Same trimmed surface as the ASan job, for the same reason:
+        # a finding should be a RetroArch bug rather than noise from a
+        # vendored subsystem. --enable-sdl2 is explicit because the run
+        # below selects sdl2, and a silent fallback to another driver
+        # would quietly stop exercising the threaded path this job is
+        # for.
+        run: |
+          ./configure \
+            --disable-menu \
+            --disable-discord \
+            --disable-cheevos \
+            --disable-networking \
+            --enable-sdl2
+
+      - name: Build with -fsanitize=thread
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread
+          test -x retroarch
+          file retroarch
+
+      - name: Run headless with video_threaded = true
+        continue-on-error: true
+        run: |
+          set -eu
+
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          # A 1x1 PNG for the imageviewer core, as in the ASan job.
+          python3 - <<'PY'
+          import binascii, struct
+          def chunk(t, d):
+              c = t + d
+              return struct.pack(">I", len(d)) + c + struct.pack(">I", binascii.crc32(c))
+          png  = b"\x89PNG\r\n\x1a\n"
+          png += chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+          png += chunk(b"IDAT", b"\x08\xd7\x63\xf8\xcf\xc0\x00\x00\x03\x01\x01\x00\x18\xdd\x8d\xb0")
+          png += chunk(b"IEND", b"")
+          open("/tmp/test.png", "wb").write(png)
+          PY
+
+          # Races inside libSDL2 itself: no RetroArch frame appears on
+          # either access, so there is nothing here to fix. Suppressed
+          # by object so a real race in our own SDL-facing code is
+          # still reported.
+          cat > /tmp/tsan.supp <<'EOF'
+          race:libSDL2-2.0.so
+          EOF
+
+          mkdir -p /tmp/tsan-cfg
+          cat > /tmp/tsan-cfg/retroarch.cfg <<EOF
+          video_driver = "sdl2"
+          audio_driver = "null"
+          video_threaded = "true"
+          video_fullscreen = "false"
+          video_windowed_fullscreen = "false"
+          EOF
+
+          set +e
+          DISPLAY=:99 \
+          TSAN_OPTIONS="halt_on_error=0 history_size=4 suppressions=/tmp/tsan.supp" \
+          timeout 300 ./retroarch \
+            -c /tmp/tsan-cfg/retroarch.cfg \
+            -L cores/libretro-imageviewer/image_core.so \
+            /tmp/test.png \
+            --max-frames=400 \
+            --verbose \
+            > /tmp/tsan.out 2> /tmp/tsan.err
+          rc=$?
+          set -e
+
+          echo "exit=${rc}"
+          echo "=== stderr (last 200) ==="
+          tail -200 /tmp/tsan.err || true
+
+          # The video thread has to have existed, or the run proved
+          # nothing at all and a green result would be misleading.
+          if ! grep -q "ra-video\|[Tt]hreaded video" /tmp/tsan.out /tmp/tsan.err; then
+            echo "[WARN] no sign of the video thread; the threaded path may not have run"
+          fi
+
+          n=$(grep -c "WARNING: ThreadSanitizer" /tmp/tsan.err || true)
+          echo "ThreadSanitizer reports: ${n}"
+          if [ "${n}" -gt 0 ]; then
+            echo ""
+            echo "[INFO] ThreadSanitizer finding(s):"
+            grep "SUMMARY: ThreadSanitizer" /tmp/tsan.err || true
+          fi

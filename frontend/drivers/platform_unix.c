@@ -264,10 +264,12 @@ static void android_app_set_input(struct android_app *android_app,
    android_app->pendingInputQueue = inputQueue;
    ticket                         = android_app->cmd_seq;
 
-   if (android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
+   if (     !android_app->app_thread_exited
+         && android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
       ticket = ++android_app->cmd_seq;
 
-   while ((int)(android_app->done_seq - ticket) < 0)
+   while (   !android_app->app_thread_exited
+          && (int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
@@ -288,17 +290,20 @@ static void android_app_set_window(struct android_app *android_app,
    slock_lock(android_app->mutex);
    ticket = android_app->cmd_seq;
 
-   if (     android_app->pendingWindow
+   if (     !android_app->app_thread_exited
+         && android_app->pendingWindow
          && android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW))
       ticket = ++android_app->cmd_seq;
 
    android_app->pendingWindow = window;
 
-   if (     window
+   if (     !android_app->app_thread_exited
+         && window
          && android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW))
       ticket = ++android_app->cmd_seq;
 
-   while ((int)(android_app->done_seq - ticket) < 0)
+   while (   !android_app->app_thread_exited
+          && (int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
@@ -330,7 +335,8 @@ static void android_app_set_activity_state(
 
    slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd && acked)
+   while (   !android_app->app_thread_exited
+          && android_app->activityState != cmd && acked)
       acked = scond_wait_timeout(android_app->cond, android_app->mutex,
             ANDROID_ACTIVITY_STATE_TIMEOUT_US);
    acked = (android_app->activityState == cmd);
@@ -347,9 +353,21 @@ static void android_app_set_activity_state(
  * that: overrunning it buys nothing and turns a slow exit into an ANR. */
 #define ANDROID_DESTROY_TIMEOUT_US (5 * 1000 * 1000)
 
+/* App thread that onDestroy() gave up waiting for. It is still running
+ * rarch_main() against the process-wide statics (task queue, drivers,
+ * runloop), so a second app thread must not start until it has left. */
+static sthread_t *android_app_orphan_thread = NULL;
+
 static void android_app_free(struct android_app* android_app)
 {
    bool acked;
+
+   /* onDestroy() hands this whatever android_app_create() returned, and
+    * that is NULL when the create failed.  The other four callbacks
+    * that take the struct already tolerate it; this one dereferenced
+    * it. */
+   if (!android_app)
+      return;
 
    /* Nothing ever wrote APP_CMD_DESTROY, so destroyRequested was dead
     * and the app thread was never told to stop - while this function
@@ -382,6 +400,7 @@ static void android_app_free(struct android_app* android_app)
    {
       RARCH_ERR("[Android] App thread did not acknowledge destroy; "
             "skipping teardown.\n");
+      android_app_orphan_thread = android_app->thread;
       return;
    }
 
@@ -440,7 +459,7 @@ void android_run_lifecycle_hook(struct android_app *android_app,
    if (string_is_empty(base))
       return;
 
-   strlcpy(cmd, "sh ", sizeof(cmd));
+   strlcpy_lit(cmd, "sh ", sizeof(cmd));
    fill_pathname_join_special(cmd + 3, base, name, sizeof(cmd) - 3);
 
    if (!path_is_valid(cmd + 3))
@@ -612,6 +631,7 @@ static void jni_thread_destruct(void *value)
 
 static void android_app_entry(void *data)
 {
+   struct android_app *android_app = (struct android_app*)data;
    char arguments[]  = "retroarch";
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
@@ -619,14 +639,52 @@ static void android_app_entry(void *data)
    sthread_setname("ra-main");
 
    rarch_main(argc, argv, data);
+
+   /* Only two paths return here rather than exiting the process: an
+    * init failure inside rarch_main() before its own shutdown
+    * machinery runs, and the framework-destroy unwind (which
+    * android_app_free() is already waiting out). This thread is the
+    * sole consumer of the command pipe, so from here on no posted
+    * command can ever be acknowledged: retire every outstanding
+    * ticket and mark the consumer gone, or the next synchronous
+    * lifecycle callback - surfaceDestroyed() into
+    * android_app_set_window(NULL) - parks the Java UI thread on the
+    * condvar until ActivityManager declares an ANR. The struct
+    * outlives this thread on every path: android_app_free() joins
+    * before freeing and deliberately leaks it when it orphans the
+    * thread instead. */
+   slock_lock(android_app->mutex);
+   android_app->app_thread_exited = 1;
+   android_app->done_seq          = android_app->cmd_seq;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
         void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
-   struct android_app *android_app =
-      (struct android_app*)calloc(1, sizeof(*android_app));
+   bool started;
+   struct android_app *android_app;
+
+   /* The activity can be recreated in the same process while the app
+    * thread of the previous one is still unwinding. Two rarch_main()
+    * instances share every static in the process, and the second one
+    * to run task_queue_deinit() joins a worker the first has already
+    * joined and freed, which bionic reports as an invalid pthread_t
+    * and aborts on. Nothing on the app thread ever waits for the UI
+    * thread, so the orphan always finishes on its own; waiting for it
+    * here is the only ordering under which the new instance starts
+    * from quiescent statics. */
+   if (android_app_orphan_thread)
+   {
+      RARCH_WARN("[Android] Waiting for the previous app thread "
+            "to exit before starting a new one.\n");
+      sthread_join(android_app_orphan_thread);
+      android_app_orphan_thread = NULL;
+   }
+
+   android_app = (struct android_app*)calloc(1, sizeof(*android_app));
 
    if (!android_app)
    {
@@ -653,6 +711,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->cond)
          scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       RARCH_ERR("Failed to allocate android_app locks.\n");
       return NULL;
    }
@@ -681,6 +740,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       slock_free(android_app->mutex);
       scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       return NULL;
    }
 
@@ -702,15 +762,49 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       slock_free(android_app->mutex);
       scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       RARCH_ERR("Failed to spawn android_app thread.\n");
       return NULL;
    }
 
-   /* Wait for thread to start. */
+   /* Wait for the thread to start, or to leave without ever having
+    * started.  'running' is set in frontend_unix_init(), a long way
+    * into rarch_main(); an init failure before that point returns from
+    * android_app_entry() with it still clear, and this wait - the only
+    * one on this condvar with neither a timeout nor an
+    * app_thread_exited test - then parks the Java UI thread inside
+    * ANativeActivity_onCreate() until ActivityManager kills the
+    * process.  The app thread sets the flag and broadcasts on its way
+    * out, so take that as the other way this wait can end.
+    *
+    * 'running' is what decides the outcome, not the flag: a thread
+    * that started and then exited quickly can set both before the
+    * wait is even entered, and that is a successful create. */
    slock_lock(android_app->mutex);
-   while (!android_app->running)
+   while (!android_app->running && !android_app->app_thread_exited)
       scond_wait(android_app->cond, android_app->mutex);
+   started = (android_app->running != 0);
    slock_unlock(android_app->mutex);
+
+   if (!started)
+   {
+      /* Nothing was initialised, so there is no teardown to
+       * orchestrate - and no reason to hand the framework an
+       * android_app it would keep delivering lifecycle callbacks to.
+       * The thread has released the mutex and touches nothing after
+       * that, so the join completes and the struct is ours to free. */
+      RARCH_ERR("[Android] App thread exited before it started.\n");
+      sthread_join(android_app->thread);
+      close(android_app->msgread);
+      close(android_app->msgwrite);
+      if (android_app->savedState)
+         free(android_app->savedState);
+      scond_free(android_app->cond);
+      slock_free(android_app->mutex);
+      free(android_app);
+      g_android_early = NULL;
+      return NULL;
+   }
 
    return android_app;
 }
@@ -1114,11 +1208,37 @@ static void android_env_derive_audio(JNIEnv *env, jobject activity)
    (*env)->DeleteLocalRef(env, am);
 }
 
-/* External storage location for absent SDCARD / EXTERNAL extras,
+/* getExternalFilesDir(null) for an absent EXTERNAL extra: the
+ * app-external files directory the Java launcher used to pass,
+ * /storage/emulated/0/Android/data/<package>/files.  The framework
+ * creates the directory on this call if it does not exist yet. */
+static void android_env_derive_app_storage(JNIEnv *env, jobject activity)
+{
+   jclass activity_class;
+   jmethodID get_external_files_dir;
+   jobject dir;
+
+   activity_class         = (*env)->GetObjectClass(env, activity);
+   get_external_files_dir = (*env)->GetMethodID(env, activity_class,
+         "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getExternalFilesDir lookup"))
+      return;
+   dir = (*env)->CallObjectMethod(env, activity,
+         get_external_files_dir, (jobject)NULL);
+   if (android_env_exception(env, "getExternalFilesDir") || !dir)
+      return;
+   /* android_env_file_path releases dir. */
+   android_env_file_path(env, dir,
+         internal_storage_app_path, sizeof(internal_storage_app_path));
+}
+
+/* External storage locations for absent SDCARD / EXTERNAL extras,
  * following the Java launcher: scoped-storage devices without all-files
- * access use the app's external media dir (created on demand) with the
- * app-external files path as fallback; everything else uses the shared
- * storage root. */
+ * access use the app's external media dir (created on demand) for the
+ * shared location; everything else uses the shared storage root.  The
+ * app-external location comes from getExternalFilesDir, with the
+ * shared location as a last resort. */
 static void android_env_derive_storage(JNIEnv *env, jobject activity)
 {
    int32_t sdk           = 0;
@@ -1146,7 +1266,7 @@ static void android_env_derive_storage(JNIEnv *env, jobject activity)
       }
    }
 
-   if (sdk >= 30 && !all_files_access)
+   if (sdk >= 30 && !all_files_access && !*internal_storage_path)
    {
       /* Scoped storage: app external media dir, created on demand. */
       jclass activity_class      = (*env)->GetObjectClass(env, activity);
@@ -1198,6 +1318,8 @@ static void android_env_derive_storage(JNIEnv *env, jobject activity)
    }
    (*env)->DeleteLocalRef(env, env_class);
 
+   if (!*internal_storage_app_path)
+      android_env_derive_app_storage(env, activity);
    if (*internal_storage_path && !*internal_storage_app_path)
       strlcpy(internal_storage_app_path, internal_storage_path,
             sizeof(internal_storage_app_path));
@@ -2169,7 +2291,7 @@ const char *retroarch_get_webos_version(char *s, size_t len,
       /* fallback to nyx os_info.json */
       f = fopen("/var/run/nyx/os_info.json", "r");
       if (!f)
-         return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
+         return strlcpy_lit(s, "webOS (unknown)", len), "webOS (unknown)";
 
       /* read whole file into buffer */
       char buf[4096];
@@ -2254,7 +2376,7 @@ const char *retroarch_get_webos_version(char *s, size_t len,
    fclose(f);
 
    if (pretty[0] == '\0')
-      strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+      strlcpy_lit(pretty, "webOS (unknown)", sizeof(pretty));
 
    return strlcpy(s, pretty, len), pretty;
 }
@@ -2267,7 +2389,7 @@ static size_t frontend_unix_get_os(char *s,
 #ifdef ANDROID
    int rel;
    frontend_android_get_version(major, minor, &rel);
-   _len = strlcpy(s, "Android", len);
+   _len = strlcpy_lit(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
@@ -2276,21 +2398,21 @@ static size_t frontend_unix_get_os(char *s,
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   _len = strlcpy(s, "FreeBSD", len);
+   _len = strlcpy_lit(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   _len = strlcpy(s, "NetBSD", len);
+   _len = strlcpy_lit(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   _len = strlcpy(s, "OpenBSD", len);
+   _len = strlcpy_lit(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   _len = strlcpy(s, "DragonFly BSD", len);
+   _len = strlcpy_lit(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   _len = strlcpy(s, "BSD", len);
+   _len = strlcpy_lit(s, "BSD", len);
 #elif defined(__HAIKU__)
-   _len = strlcpy(s, "Haiku", len);
+   _len = strlcpy_lit(s, "Haiku", len);
 #elif defined(WEBOS)
    _len = strlcpy(s, retroarch_get_webos_version(s, len, major, minor), len);
 #else
-   _len = strlcpy(s, "Linux", len);
+   _len = strlcpy_lit(s, "Linux", len);
 #endif
 #endif
    return _len;
@@ -2847,7 +2969,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay_set    = true;
       g_defaults.overlay_enable = false;
-      strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
+      strlcpy_lit(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
    }
 #else
    char base_path[PATH_MAX] = {0};
@@ -2863,15 +2985,15 @@ static void frontend_unix_get_env(int *argc,
    if (xdg)
    {
       size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
-      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
-      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
    else
-      strlcpy(base_path, "retroarch", sizeof(base_path));
+      strlcpy_lit(base_path, "retroarch", sizeof(base_path));
 #endif
 
    if (libretro_directory && *libretro_directory)
@@ -3401,6 +3523,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    jstring jstr          = NULL;
 
    int volume_count = 0;
+   /* The shared-storage path already appended below, so the volume
+    * loop does not list the primary volume a second time. */
+   const char *listed_storage_path = "";
 
    if (!env || !g_android)
       return 0;
@@ -3435,13 +3560,17 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         listed_storage_path = internal_storage_path;
       }
       else
+      {
          menu_entries_append(list,
                "/storage/emulated/0",
                msg_hash_to_str(MSG_REMOVABLE_STORAGE),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         listed_storage_path = "/storage/emulated/0";
+      }
    }
 
    if (!g_android->is_play_store_build)
@@ -3500,7 +3629,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   sizeof(aux_path));
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
-         if (*aux_path)
+         /* The primary volume is the shared-storage entry appended
+          * above; listing it again only duplicates the path. */
+         if (*aux_path && !string_is_equal(aux_path, listed_storage_path))
             menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
@@ -3541,20 +3672,20 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    if (xdg)
    {
       size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
-      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
-      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
 #endif
 
    {
-      size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
+      size_t _len = strlcpy_lit(udisks_media_path, "/run/media", sizeof(udisks_media_path));
       if (user)
       {
-         _len += strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         _len += strlcpy_lit(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
          strlcpy(udisks_media_path + _len, user, sizeof(udisks_media_path) - _len);
       }
    }

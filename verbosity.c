@@ -79,8 +79,21 @@
 #include "verbosity.h"
 #include "file_path_special.h"
 
-#ifdef HAVE_QT
+#ifdef RARCH_INTERNAL
+/* Defines HAVE_COMPANION_WIMP when a desktop companion (Qt, native
+ * Win32, native Cocoa) is in the build; its log view mirrors the log. */
 #include "ui/ui_companion_driver.h"
+#endif
+
+/* The companion copy of a log line is formatted from a copy of the
+ * argument list so the platform sink below still sees an untouched one.
+ * C89 has no va_copy; gcc/clang spell the same thing __va_copy. */
+#ifndef va_copy
+# ifdef __va_copy
+#  define va_copy(dst, src) __va_copy(dst, src)
+# else
+#  define va_copy(dst, src) ((dst) = (src))
+# endif
 #endif
 
 #ifdef RARCH_INTERNAL
@@ -277,7 +290,35 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE       *fp    = main_verbosity_st.fp;
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
 
-#if defined(HAVE_QT) || defined(__WINRT__)
+#ifdef HAVE_COMPANION_WIMP
+      /* Mirror the line into the desktop companion's log view, when one
+       * is open. Orthogonal to the platform sink: it formats from a copy
+       * of the arguments and the normal output below still happens. */
+      if (ui_companion_driver_log_active())
+      {
+         char buffer[1024];
+         int r;
+         va_list ap_cp;
+         va_copy(ap_cp, ap);
+         buffer[0] = '\0';
+         r = vsnprintf(buffer, sizeof(buffer), fmt, ap_cp);
+         va_end(ap_cp);
+         if (r < 0)
+         {
+            buffer[sizeof(buffer) - 1] = '\0';
+            if (buffer[0] != '\0')
+               buffer[sizeof(buffer) - 2] = '\n';
+            else
+            {
+               buffer[0] = '\n';
+               buffer[1] = '\0';
+            }
+         }
+         ui_companion_driver_log_msg(buffer);
+      }
+#endif
+
+#if defined(__WINRT__)
       {
          char buffer[1024];
          int r;
@@ -299,13 +340,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             fprintf(fp, "%s %s", tag_v, buffer);
             fflush(fp);
          }
-
-#if defined(HAVE_QT)
-         ui_companion_driver_log_msg(buffer);
-#endif
-#if defined(__WINRT__)
          OutputDebugStringA(buffer);
-#endif
       }
 
 #else

@@ -55,7 +55,7 @@
 #include "../video_thread_wrapper.h"
 #endif
 
-#include "../common/metal/metal_shader_types.h"
+#include "metal.h"
 #include "../gfx_display.h"
 #include "../drivers_shader/slang_process.h"
 
@@ -347,8 +347,6 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 
 #pragma mark - Driver Classes
 
-#include "../common/metal_view.h"
-
 @interface FrameView : NSObject
 
 @property(nonatomic, readonly) RPixelFormat format;
@@ -498,7 +496,7 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 #include <TargetConditionals.h>
 #if defined(TARGET_OS_TV) && TARGET_OS_TV
 #  define METAL_HDR_AVAILABLE 0
-#elif defined(OSX) && defined(__MAC_11_0)
+#elif TARGET_OS_OSX && defined(__MAC_11_0)
 #  define METAL_HDR_AVAILABLE 1
 #elif defined(HAVE_COCOATOUCH) && defined(__IPHONE_16_0)
 #  define METAL_HDR_AVAILABLE 1
@@ -581,7 +579,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
  * so HDR support flags won't be announced on older OSes. */
 static bool metal_display_supports_edr(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    if (@available(macOS 10.15, *))
    {
       NSScreen *screen = [NSScreen mainScreen];
@@ -621,8 +619,6 @@ static bool metal_display_supports_edr(void)
  * COMMON
  */
 
-static NSString *RPixelStrings[RPixelFormatCount];
-
 static NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
    if (   format == RPixelFormatB5G6R5Unorm
@@ -631,25 +627,42 @@ static NSUInteger RPixelFormatToBPP(RPixelFormat format)
    return 4;
 }
 
+/* For -debugDescription, i.e. for a human with a debugger.
+ *
+ * This filled a file-scope array on first call, under dispatch_once
+ * with a block. There was nothing to initialise: every value is a
+ * compile-time constant, and an NSString literal is a constant object
+ * the compiler puts in __DATA - it is not allocated, not refcounted,
+ * and needs no first call to bring it into being. So the once was
+ * guarding the assignment of constants into a mutable global that only
+ * existed to hold them.
+ *
+ * Nor was it about speed. dispatch_once's fast path is an acquire load
+ * and a compare, which is what a plain flag costs too, and the only
+ * caller is a debug description - a human in a debugger, or a log line
+ * - never a frame. A switch is free of all of it: no global, no token,
+ * no block, no bounds check separate from the default, and thread-safe
+ * by construction rather than by a barrier. */
 static NSString *NSStringFromRPixelFormat(RPixelFormat format)
 {
-   static dispatch_once_t onceToken;
-   dispatch_once(&onceToken, ^{
-
-#define STRING(literal) RPixelStrings[literal] = @#literal
-      STRING(RPixelFormatInvalid);
-      STRING(RPixelFormatB5G6R5Unorm);
-      STRING(RPixelFormatBGRA4Unorm);
-      STRING(RPixelFormatBGRA8Unorm);
-      STRING(RPixelFormatBGRX8Unorm);
-      STRING(RPixelFormatBGR10A2Unorm);
-#undef STRING
-
-   });
-
-   if (format >= RPixelFormatCount)
-      format = RPixelFormatInvalid;
-   return RPixelStrings[format];
+   switch (format)
+   {
+      case RPixelFormatBGRA4Unorm:
+         return @"RPixelFormatBGRA4Unorm";
+      case RPixelFormatB5G6R5Unorm:
+         return @"RPixelFormatB5G6R5Unorm";
+      case RPixelFormatBGRA8Unorm:
+         return @"RPixelFormatBGRA8Unorm";
+      case RPixelFormatBGRX8Unorm:
+         return @"RPixelFormatBGRX8Unorm";
+      case RPixelFormatBGR10A2Unorm:
+         return @"RPixelFormatBGR10A2Unorm";
+      case RPixelFormatInvalid:
+      case RPixelFormatCount:
+      default:
+         break;
+   }
+   return @"RPixelFormatInvalid";
 }
 
 static matrix_float4x4 make_matrix_float4x4(const float *v)
@@ -725,7 +738,6 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 @implementation Context
 {
-   dispatch_semaphore_t _inflightSemaphore;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
    id<CAMetalDrawable> _drawable;
@@ -812,10 +824,9 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    {
       int i;
 
-      _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
       _device                    = d;
       _layer                     = layer;
-#ifdef OSX
+#if TARGET_OS_OSX
       _layer.framebufferOnly     = NO;
       _layer.displaySyncEnabled  = YES;
 #endif
@@ -1073,14 +1084,14 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    _layer.displaySyncEnabled = displaySyncEnabled;
 #endif
 }
 
 - (bool)displaySyncEnabled
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    return _layer.displaySyncEnabled;
 #else
    return NO;
@@ -1481,7 +1492,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                                                 width:w
                                                                height:h
                                                             mipmapped:NO];
-#ifdef OSX
+#if TARGET_OS_OSX
       td.storageMode = MTLStorageModeManaged;
 #else
       td.storageMode = MTLStorageModeShared;
@@ -1831,7 +1842,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
    [cre endEncoding];
 
-#ifdef OSX
+#if TARGET_OS_OSX
    /* Force a CPU-visible copy for Managed storage so getBytes works. */
    id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
    [bce synchronizeResource:dst];
@@ -2478,7 +2489,7 @@ static float metal_hdr_pq_to_nits(float pq)
 
    if (_blitCommandBuffer)
    {
-#ifdef OSX
+#if TARGET_OS_OSX
       if (_captureEnabled)
       {
          id<MTLBlitCommandEncoder> bce = [_blitCommandBuffer blitCommandEncoder];
@@ -2589,7 +2600,7 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)commitRanges
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    BufferNode *n;
    for (n = _head; n != nil; n = n.next)
    {

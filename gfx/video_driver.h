@@ -42,7 +42,7 @@
 
 #include "video_defines.h"
 
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
 #include "video_crt_switch.h"
 #endif
 
@@ -125,7 +125,14 @@ enum video_driver_state_flags
    VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
    VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20),
    VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21),
-   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE               = (1 << 22)
+   /* Free. The wrapper-active state lives in
+    * video_driver_state_t::thread_wrapper_active, not in this word:
+    * the video thread reads it (through
+    * video_driver_thread_wrapper_active(), from inside driver frame
+    * callbacks) while the main thread read-modify-writes this word for
+    * unrelated bits, and a bit in a shared word cannot be read from
+    * another thread without the lock the write side takes. */
+   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED        = (1 << 22)
 };
 
 enum video_driver_scanline
@@ -613,6 +620,21 @@ typedef struct gfx_ctx_driver
     * underlying graphics context/device. Returns true on success, or if no
     * window surface is bound, and false on error. */
    bool (*destroy_surface)(void *data);
+
+   /* Optional. False while the context has nothing to present to - a
+    * minimised or zero-sized window, a surface the compositor has
+    * suspended, a swapchain that could not be created. swap_buffers()
+    * still has to be called and still does the right thing; this only
+    * tells the layer above that the frame went nowhere, so that it can
+    * pace the loop itself instead of the context sleeping inside the
+    * frame path where the frontend's own pacing cannot see it.
+    *
+    * A NULL entry means "always presentable", which is what every
+    * driver that does not implement it did before.
+    *
+    * Placed last so drivers using positional initializers leave it
+    * NULL without shifting any other vtable slot. */
+   bool (*presentable)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -860,7 +882,7 @@ typedef struct video_driver
 
 typedef struct
 {
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
    videocrt_switch_t crt_switch_st;     /* double alignment */
 #endif
    struct retro_system_av_info av_info; /* double alignment */
@@ -880,6 +902,13 @@ typedef struct
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_THREADS
+   /* Whether the threaded video wrapper is installed. Its own storage
+    * rather than a bit in ::flags, because the video thread reads it
+    * while the main thread writes other bits of that word; see the
+    * comment on VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED. Written by
+    * the main thread only, once the wrapper is built and once it has
+    * been torn down and the thread joined. */
+   bool thread_wrapper_active;
    slock_t *display_lock;
    slock_t *context_lock;
 #endif
@@ -1436,6 +1465,14 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate);
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
+
+/* False while the context has nothing to present to; see the
+ * presentable member of gfx_ctx_driver_t. */
+bool video_context_driver_presentable(void);
+
+/* The same question asked of the context itself; only for callers
+ * running on the thread that owns it. */
+bool video_context_driver_presentable_direct(void);
 
 void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver);
 

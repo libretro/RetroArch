@@ -13,7 +13,7 @@
  */
 
 #import <TargetConditionals.h>
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #else
 #import <AppKit/AppKit.h>
@@ -25,23 +25,19 @@
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../configuration.h"
-/* For NSWindowStyleMaskTitled polyfill on pre-10.12 SDKs */
+/* RARCH_RELEASE, and the NSWindowStyleMask* polyfills the
+ * fullscreen check below still uses. */
 #include <defines/cocoa_defines.h>
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #import <AppKit/AppKit.h>
-/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.
- * On earlier SDKs (including the 10.5 Leopard SDK used by Xcode 3.1
- * on PowerPC), the same types are reachable through the
- * ApplicationServices umbrella. */
+/* ApplicationServices on every SDK rather than <CoreGraphics/CoreGraphics.h>
+ * on some. The CoreGraphics umbrella is 10.8 and later; the
+ * ApplicationServices one re-exports the same types and has since
+ * 10.0, so one include reaches them everywhere and the SDK the build
+ * happens to use stops deciding. */
 #include <AvailabilityMacros.h>
-#if defined(MAC_OS_X_VERSION_10_8) && \
-    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
-     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
-#import <CoreGraphics/CoreGraphics.h>
-#else
 #import <ApplicationServices/ApplicationServices.h>
-#endif
 /* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
  * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
  * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
@@ -51,7 +47,7 @@
  * pre-10.6 targets rather than port to both. */
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static bool apple_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    settings_t *settings      = config_get_ptr();
@@ -63,63 +59,100 @@ static bool apple_display_server_set_window_opacity(void *data, unsigned opacity
    return true;
 }
 
-#ifdef RARCH_HAS_CGDISPLAYMODE_API
-/* Uses GCD (dispatch_once) and Obj-C blocks, both 10.6+. */
+/* The dock tile's progress bar.
+ *
+ * Built once, on first use. That used to be dispatch_once() with an
+ * Objective-C block, which put the function behind a 10.6 gate - and
+ * behind RARCH_HAS_CGDISPLAYMODE_API, a macro about the display-mode
+ * API that happened to also mean "10.6 SDK", so the feature was
+ * absent from builds for reasons unrelated to anything it does.
+ * Neither the once nor the block earned that. dispatch_once's fast
+ * path is an acquire load and a compare; a plain flag is a load and a
+ * compare, and the acquire is for publishing to another thread, which
+ * does not arise here: this runs from a task callback on the main
+ * thread, and every call below it is AppKit, which must be on the
+ * main thread anyway. The block is worse than the once, being a
+ * compiler feature rather than a runtime one - GCC 4.0, which is what
+ * Xcode 3.1 has, cannot parse it at all.
+ *
+ * NSDockTile is 10.5, so -dockTile is asked for rather than assumed,
+ * and the tile is held as id so no SDK needs to declare the class.
+ * On 10.4 the selector is absent, the function reports failure once
+ * and the frontend carries on without a dock progress bar, which is
+ * what it did on those systems when this was compiled out. */
 static bool apple_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    static NSProgressIndicator *indicator;
-   static dispatch_once_t once;
-   dispatch_once(&once, ^{
-      NSDockTile *dockTile = [NSApp dockTile];
-      NSImageView *iv = [[NSImageView alloc] init];
-      [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
-      [dockTile setContentView:iv];
+   static bool tried;
 
-      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, [dockTile size].width, 20)];
-      [indicator setIndeterminate:NO];
-      [indicator setMinValue:0];
-      [indicator setMaxValue:100];
-      [indicator setDoubleValue:0];
+   if (!tried)
+   {
+      tried = true;
 
-      // Create a custom view for the dock tile
-      [iv addSubview:indicator];
+      if ([NSApp respondsToSelector:@selector(dockTile)])
+      {
+         id dock_tile    = [NSApp performSelector:@selector(dockTile)];
+         NSImageView *iv = [[NSImageView alloc] init];
+         /* -[NSDockTile size] returns a struct, which performSelector:
+          * cannot carry, and the class is not declared on a 10.4 SDK so
+          * it cannot be sent directly either. KVC boxes NSSize, which
+          * gets it across without either. The tile has been 128x128
+          * since dock tiles existed, so a nil there is not worth
+          * failing over. */
+         NSValue *size_v = [dock_tile valueForKey:@"size"];
+         NSSize size     = size_v ? [size_v sizeValue] : NSMakeSize(128, 128);
 
-      /* This file is compiled under BOTH build systems:
-       *   - qb/top-level Makefile:  MRC (not in the per-file ARC
-       *     override list at Makefile:275 alongside metal.o /
-       *     mfi_joypad.o / coreaudio3.o).
-       *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
-       *     #include's this file into a TU compiled with
-       *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
-       *
-       * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
-       * and addSubview: each retain their own reference, so those are
-       * legitimately owned; the +1 from alloc+init is ours to release
-       * before the local goes out of scope, or it leaks for the app's
-       * lifetime.  Under ARC, the compiler inserts the matching release
-       * at block scope exit automatically.
-       *
-       * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
-       * Raw '[iv release]' is a compile error under ARC
-       * ('ARC forbids explicit message send of release') which the
-       * Xcode build would have flagged immediately.
-       *
-       * 'indicator' is intentionally kept +1 - it's a file-scope static
-       * initialised inside dispatch_once, and holding that +1 across
-       * the app lifetime is how we keep it referenced for the
-       * subsequent setDoubleValue / setHidden calls outside the
-       * block. */
-      RARCH_RELEASE(iv);
-   });
+         [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
+         [dock_tile performSelector:@selector(setContentView:) withObject:iv];
+
+         indicator = [[NSProgressIndicator alloc]
+               initWithFrame:NSMakeRect(0, 0, size.width, 20)];
+         [indicator setIndeterminate:NO];
+         [indicator setMinValue:0];
+         [indicator setMaxValue:100];
+         [indicator setDoubleValue:0];
+
+         [iv addSubview:indicator];
+
+         /* This file is compiled under BOTH build systems:
+          *   - qb/top-level Makefile:  MRC (not in the per-file ARC
+          *     override list at Makefile:275 alongside metal.o /
+          *     mfi_joypad.o).
+          *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
+          *     #include's this file into a TU compiled with
+          *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
+          *
+          * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
+          * and addSubview: each retain their own reference, so those are
+          * legitimately owned; the +1 from alloc+init is ours to release
+          * before the local goes out of scope, or it leaks for the app's
+          * lifetime.  Under ARC, the compiler inserts the matching release
+          * at scope exit automatically.
+          *
+          * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
+          * Raw '[iv release]' is a compile error under ARC
+          * ('ARC forbids explicit message send of release') which the
+          * Xcode build would have flagged immediately.
+          *
+          * 'indicator' is intentionally kept +1 - it is a file-scope
+          * static holding that +1 across the app lifetime, which is how
+          * it stays referenced for the setDoubleValue / setHidden calls
+          * below. */
+         RARCH_RELEASE(iv);
+      }
+   }
+
+   if (!indicator)
+      return false;
+
    if (finished)
       [indicator setDoubleValue:(double)-1];
    else
       [indicator setDoubleValue:(double)progress];
    [indicator setHidden:finished];
-   [[NSApp dockTile] display];
+   [[NSApp performSelector:@selector(dockTile)] performSelector:@selector(display)];
    return true;
 }
-#endif /* RARCH_HAS_CGDISPLAYMODE_API */
 
 static bool apple_display_server_set_window_decorations(void *data, bool on)
 {
@@ -127,6 +160,13 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
    NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
    if (windowed_full)
+      return false;
+   /* -setStyleMask: is 10.6; before that a window's style is fixed at
+    * creation and there is nothing to toggle, so it is asked for rather
+    * than sent. The constant needs no such care: cocoa_defines.h maps
+    * NSWindowStyleMaskTitled to NSTitledWindowMask, its name before
+    * 10.12, and that one is 10.0. */
+   if (![window respondsToSelector:@selector(setStyleMask:)])
       return false;
    if (on)
       [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
@@ -136,7 +176,7 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
 }
 #endif
 
-#if defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -249,7 +289,7 @@ static bool apple_display_server_set_resolution(void *data,
       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
    return true;
 }
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -280,7 +320,7 @@ static void *apple_display_server_get_resolution_list(
    struct video_display_config *conf = NULL;
    double currentRate;
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
@@ -553,7 +593,7 @@ static enum rotation apple_display_server_get_screen_orientation(void *data)
 
 typedef struct
 {
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    CGDisplayModeRef original_mode;
    CGDirectDisplayID display_id;
 #endif
@@ -565,7 +605,7 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
@@ -584,7 +624,7 @@ static void *apple_display_server_init(void)
          && settings->floats.video_refresh_rate >= 10.0f
          && settings->floats.video_refresh_rate <= 250.0f)
       {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view && view.displayLink)
@@ -598,7 +638,7 @@ static void *apple_display_server_init(void)
 #endif
                view.displayLink.preferredFramesPerSecond = hz;
          }
-#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view)
@@ -623,7 +663,7 @@ static void apple_display_server_destroy(void *data)
    if (!apple)
       return;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Restore original display mode */
    if (apple->original_mode)
    {
@@ -661,20 +701,16 @@ static void apple_display_server_get_video_output_size(void *data,
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
-#ifdef OSX
+#if TARGET_OS_OSX
    apple_display_server_set_window_opacity,
-#ifdef RARCH_HAS_CGDISPLAYMODE_API
    apple_display_server_set_window_progress,
-#else
-   NULL, /* set_window_progress (needs 10.6+ GCD/blocks) */
-#endif
    apple_display_server_set_window_decorations,
 #else
    NULL, /* set_window_opacity */
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
 #endif
-#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
    apple_display_server_set_resolution,
 #else
    NULL,
@@ -694,5 +730,17 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
    "apple"
 };

@@ -46,6 +46,7 @@
 #endif
 
 #include "runtime_file.h"
+#include <compat/strl.h>
 
 /* JSON Stuff... */
 
@@ -616,7 +617,7 @@ size_t runtime_log_get_runtime_str(runtime_log_t *runtime_log,
             runtime_log->runtime.hours, runtime_log->runtime.minutes,
             runtime_log->runtime.seconds);
    else
-      _len += strlcpy(s + _len, " 00:00:00", len - _len);
+      _len += strlcpy_lit(s + _len, " 00:00:00", len - _len);
    return _len;
 }
 

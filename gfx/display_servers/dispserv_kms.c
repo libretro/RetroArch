@@ -233,9 +233,89 @@ static bool kms_display_server_set_window_opacity(void *data, unsigned opacity)
 static uint32_t kms_display_server_get_flags(void *data)
 {
    uint32_t             flags   = 0;
-   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+   BIT32_SET(flags, DISPSERV_CTX_MODELINE);
 
    return flags;
+}
+
+/* Modeline application on KMS: the engine generates freely (no OS
+ * mode list to score against) and set hands the timing to the DRM
+ * context through the CRT consumer's drmModeModeInfo mirror, then
+ * asks the video driver for a mode set. No driver REINIT. */
+static int kms_display_server_modeline_list_outputs(void *data,
+      video_output_info_t *out, int max)
+{
+   if (!g_drm_connector || !g_drm_mode || max < 1)
+      return 0;
+   memset(out, 0, sizeof(*out));
+   out->id      = (int)g_drm_connector->connector_id;
+   out->width   = g_drm_mode->hdisplay;
+   out->height  = g_drm_mode->vdisplay;
+   out->primary = true;
+   snprintf(out->name, sizeof(out->name), "connector-%u",
+         g_drm_connector->connector_id);
+   return 1;
+}
+
+static bool kms_display_server_modeline_open(void *data,
+      const video_modeline_disp_t *ds)
+{
+   return true;
+}
+
+static void kms_display_server_modeline_close(void *data) { }
+
+static unsigned kms_display_server_modeline_caps(void *data)
+{
+   return MODELINE_CAPS_ADD;
+}
+
+static int kms_display_server_modeline_enum(void *data,
+      video_modeline_t *modes, int max)
+{
+   return 0;
+}
+
+static bool kms_display_server_modeline_add(void *data,
+      video_modeline_t *mode)
+{
+   mode->type |= MODELINE_TIMING_DRMKMS;
+   return true;
+}
+
+static bool kms_display_server_modeline_set(void *data,
+      video_modeline_t *mode)
+{
+#ifdef HAVE_MODELINE
+   video_driver_state_t *video_st = video_state_get_ptr();
+   videocrt_switch_t *p_switch    = &video_st->crt_switch_st;
+
+   p_switch->clock       = (uint32_t)(mode->pclock / 1000);
+   p_switch->hdisplay    = mode->width;
+   p_switch->hsync_start = mode->hbegin;
+   p_switch->hsync_end   = mode->hend;
+   p_switch->htotal      = mode->htotal;
+   p_switch->vdisplay    = mode->height;
+   p_switch->vsync_start = mode->vbegin;
+   p_switch->vsync_end   = mode->vend;
+   p_switch->vtotal      = mode->vtotal;
+   p_switch->vrefresh    = mode->refresh;
+   p_switch->hskew       = 0;
+   p_switch->vscan       = 0;
+   p_switch->interlace   = mode->interlace;
+   p_switch->doublescan  = mode->doublescan;
+   p_switch->hsync       = mode->hsync;
+   p_switch->vsync       = mode->vsync;
+
+   return video_driver_set_video_mode(mode->width, mode->height, true);
+#else
+   return false;
+#endif
+}
+
+static bool kms_display_server_modeline_flush(void *data)
+{
+   return true;
 }
 
 static float kms_display_server_get_refresh_rate(void *data)
@@ -273,5 +353,17 @@ const video_display_server_t dispserv_kms = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    kms_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   kms_display_server_modeline_list_outputs,
+   kms_display_server_modeline_open,
+   kms_display_server_modeline_close,
+   kms_display_server_modeline_caps,
+   kms_display_server_modeline_enum,
+   kms_display_server_modeline_add,
+   kms_display_server_modeline_add, /* update: same no-op */
+   kms_display_server_modeline_add, /* delete: same no-op */
+   kms_display_server_modeline_set,
+   kms_display_server_modeline_flush,
    "kms"
 };

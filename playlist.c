@@ -40,6 +40,10 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef PLAYLIST_ENTRIES
@@ -176,7 +180,7 @@ size_t playlist_config_set_base_content_directory(
    {
       config->autofix_paths = path && *path;
       if (config->autofix_paths)
-#if IOS
+#if TARGET_OS_IPHONE
          return fill_pathname_abbreviate_special(
                config->base_content_directory, path,
                sizeof(config->base_content_directory));
@@ -1469,7 +1473,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 {
    bool resolve_symlinks = true;
 
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[PATH_MAX_LENGTH];
 
    fill_pathname_expand_special(tmp, s, sizeof(tmp));
@@ -1520,13 +1524,13 @@ void playlist_resolve_path(enum playlist_file_mode mode,
  **/
 bool playlist_content_path_is_valid(const char *path)
 {
-#ifdef IOS
+#if TARGET_OS_IPHONE
    char expanded_path[PATH_MAX_LENGTH];
 #endif
    /* Sanity check */
    if (!path || !*path)
       return false;
-#ifdef IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(expanded_path, path, sizeof(expanded_path));
    path = expanded_path;
 #endif
@@ -1942,7 +1946,6 @@ error:
    return false;
 }
 
-static bool playlist_replace_file(const char *from, const char *to);
 
 void playlist_write_runtime_file(playlist_t *playlist)
 {
@@ -1970,7 +1973,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
             playlist->config.path);
       return;
    }
-   strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
 
    if (!(file = intfstream_open_file(write_path,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
@@ -2099,7 +2102,7 @@ end:
    /* Only now does the new content replace the old one.  If anything
     * above failed, the temporary is discarded and what is on disk is
     * exactly what it was. */
-   if (wrote_ok && playlist_replace_file(write_path, playlist->config.path))
+   if (wrote_ok && filestream_rename(write_path, playlist->config.path) == 0)
       RARCH_DBG("[Playlist] Runtime written to file: \"%s\".\n",
             playlist->config.path);
    else
@@ -2146,45 +2149,6 @@ static void playlist_cached_after_write(playlist_t *written)
    }
 }
 
-/* Move @from onto @to, replacing whatever is there.
- *
- * POSIX rename() replaces atomically and that is the whole point of
- * this, so try it first and take the single-syscall path where it
- * works.  Windows' rename() refuses when the destination exists, so
- * there the original is moved aside first: at every instant either the
- * destination or the saved copy is a complete file, and if the second
- * move fails the original is put back.  A failure anywhere leaves the
- * existing playlist untouched, which is the outcome that matters. */
-static bool playlist_replace_file(const char *from, const char *to)
-{
-   char saved[PATH_MAX_LENGTH];
-   size_t _len;
-
-   if (filestream_rename(from, to) == 0)
-      return true;
-
-   /* Either the destination exists and this platform will not replace
-    * it, or the move itself failed.  Try moving the original aside. */
-   _len = strlcpy(saved, to, sizeof(saved));
-   if (_len + STRLEN_CONST(".old") >= sizeof(saved))
-      return false;
-   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
-
-   filestream_delete(saved);          /* a leftover from a previous run */
-   if (filestream_rename(to, saved) != 0)
-      return false;                   /* original untouched; give up   */
-
-   if (filestream_rename(from, to) == 0)
-   {
-      filestream_delete(saved);
-      return true;
-   }
-
-   /* Put the original back rather than leave nothing behind. */
-   filestream_rename(saved, to);
-   return false;
-}
-
 void playlist_write_file(playlist_t *playlist)
 {
    size_t i, _len;
@@ -2227,7 +2191,7 @@ void playlist_write_file(playlist_t *playlist)
             playlist->config.path);
       return;
    }
-   strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
 
 #if defined(HAVE_COMPRESSION)
    if (playlist->config.compress)
@@ -2606,7 +2570,7 @@ end:
    /* Only now does the new content replace the old one.  If anything
     * above failed, the temporary is discarded and the playlist on disk
     * is exactly what it was. */
-   if (wrote_ok && playlist_replace_file(write_path, playlist->config.path))
+   if (wrote_ok && filestream_rename(write_path, playlist->config.path) == 0)
    {
       RARCH_LOG("[Playlist] Written to file: \"%s\".\n",
             playlist->config.path);
@@ -4585,7 +4549,7 @@ void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir
 {
    bool current_string_empty;
    bool new_string_empty;
-#if IOS
+#if TARGET_OS_IPHONE
    char _tmpbuf[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
    content_dir = _tmpbuf;
@@ -4652,7 +4616,7 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 {
    bool current_string_empty;
    bool new_string_empty;
-#if IOS
+#if TARGET_OS_IPHONE
    char _tmpbuf[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(_tmpbuf, dat_file_path, sizeof(_tmpbuf));
    dat_file_path = _tmpbuf;

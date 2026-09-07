@@ -17,6 +17,9 @@
 #include "../../location_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 @interface CoreLocationManager : NSObject <CLLocationManagerDelegate>
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property (assign) double latitude;

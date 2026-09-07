@@ -302,6 +302,14 @@ static bool process_inner(struct ssl_state *state, bool blocking)
    return true;
 }
 
+int ssl_socket_last_error(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   if (!state)
+      return 0;
+   return br_ssl_engine_last_error(&state->sc.eng);
+}
+
 int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {

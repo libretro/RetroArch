@@ -266,7 +266,7 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[9];
    char s_98760b94[30];
-   char s_af6007a1[17];
+   char s_af6007a1[18];
    char s_da068369[12];
    char s_daead8a5[7];
    char s_48c208ee[21];
@@ -297,6 +297,8 @@ static const struct
    char s_8c7495e3[15];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_35dcde4f[21];
+   char s_ce7da552[40];
    char s_04b30c51[12];
    char s_e5aeacf9[22];
    char s_24976a5b[34];
@@ -2012,6 +2014,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[14];
    char s_68664e16[23];
+   char s_9ad2e88b[32];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2394,6 +2397,7 @@ static const struct
    char s_f7cc6630[30];
    char s_310ec7bd[75];
    char s_5832a2c2[118];
+   char s_f47e544f[244];
    char s_20cc6597[99];
    char s_21b0bad3[57];
    char s_66e9521c[79];
@@ -2422,6 +2426,8 @@ static const struct
    char s_5977d6d8[55];
    char s_cb67f2a4[34];
    char s_3c3598a9[56];
+   char s_3bac47bd[397];
+   char s_90e7db40[405];
    char s_4b78ee7f[52];
    char s_aed11d67[129];
    char s_dbe6e749[98];
@@ -3386,6 +3392,7 @@ static const struct
    char s_ffd591e0[53];
    char s_a51ab538[26];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[150];
    char s_f2963d2d[33];
    char s_4c592ae1[89];
    char s_52ac4fb9[107];
@@ -4616,7 +4623,7 @@ static const struct
    "\303\215cone do aplicativo",
    "Recursos",
    "Abrir Painel de Controle ASIO",
-   "Bloquear quadros",
+   "Quadros por bloco",
    "Dispositivo",
    "\303\201udio",
    "Plugin DSP de \303\241udio",
@@ -4647,6 +4654,8 @@ static const struct
    "Estado: Parado",
    "Sincroniza\303\247\303\243o",
    "Sincroniza\303\247\303\243o",
+   "Pipeline multithread",
+   "Aumentar prioridade da thread de \303\241udio",
    "Volume (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de ponto flutuante",
@@ -6377,6 +6386,7 @@ static const struct
    "Sistema",
    "Capturar tela",
    "Paralelismo de tarefas",
+   "Priorizar n\303\272cleo de desempenho",
    "Miniatura principal",
    "Miniaturas",
    "Miniatura principal",
@@ -6780,6 +6790,10 @@ static const struct
    "Os ativos do menu usados pelo RetroArch s\303\243o armazenados neste diret\303\263rio.",
    "Abra o painel de controle do driver ASIO para configurar o roteamento de dispositivos e as confi"
    "gura\303\247\303\265es de buffer.",
+   "Define a quantidade de quadros que o driver de \303\241udio percorre por bloco. \"0\" pergunta a"
+   "o driver pelo valor do pr\303\263prio dispositivo, que \303\251 o que a maioria das configura"
+   "\303\247\303\265es quer; um bloco maior troca lat\303\252ncia pela prote\303\247\303\243o contra"
+   " falhas.",
    "Substitui o dispositivo de \303\241udio padr\303\243o utilizado pelo driver de \303\241udio. Ist"
    "o depende do driver.",
    "Driver de \303\241udio a ser usado. (Requer reinicializa\303\247\303\243o)",
@@ -6829,6 +6843,16 @@ static const struct
    "Altera as configura\303\247\303\265es da entrada/sa\303\255da de \303\241udio.",
    "Sincroniza o \303\241udio. Recomendado.",
    "Altera as configura\303\247\303\265es de sincroniza\303\247\303\243o de \303\241udio.",
+   "Reamostra, filtra e combina o \303\241udio na thread de \303\241udio em vez de quadro a quadro. "
+   "Mesma lat\303\252ncia do caminho de quadro s\303\255ncrono em qualquer configura\303\247\303\243"
+   "o da \"Lat\303\252ncia de \303\201udio\", com o controle de taxa calculado no ritmo do pr\303"
+   "\263prio dispositivo e a reamostragem fora do recurso de quadro. Os drivers de \303\241udio que "
+   "n\303\243o podem ser ativados no dispositivo mant\303\252m o caminho de quadro s\303\255ncrono.",
+   "Pede para o sistema operacional processar a thread de \303\241udio na frente das outras, ent\303"
+   "\243o um quadro pesado tem menos probabilidade de frustrar o dispositivo de \303\241udio. Permit"
+   "e que a \"Lat\303\252ncia de \303\201udio\" seja mais baixa em sistemas que aprovam; um sistema "
+   "que recusa mant\303\251m a prioridade padr\303\243o. Aplica-se na thread de \303\241udio da \"Pi"
+   "peline multithread\" e nas chamadas de retorno do n\303\272cleo em execu\303\247\303\243o.",
    "Volume do \303\241udio (em dB). O volume padr\303\243o \303\251 0 dB.",
    "Permite ao driver WASAPI obter controle exclusivo do dispositivo de \303\241udio. Se desativado,"
    " o modo compartilhado ser\303\241 utilizado.",
@@ -8302,6 +8326,8 @@ static const struct
    "Mostra as informa\303\247\303\265es espec\303\255ficas do dispositivo.",
    "Salva uma imagem da tela.",
    "Executar tarefas em linhas de processamento paralelas.",
+   "Mant\303\251m as threads de \303\241udio e as principais nos n\303\272cleos mais r\303\241pidos "
+   "da CPU. N\303\243o funciona em processadores com n\303\272cleos iguais. Requer rein\303\255cio.",
    "Tipo de miniatura a ser exibida.",
    "Arte das caixas, captura de tela e miniaturas de tela s\303\243o armazenadas neste diret\303\263"
    "rio.",
@@ -9260,7 +9286,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193818u
+      (sizeof(msg_hash_pt_br_blob) == (195108u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9963,6 +9989,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -11677,6 +11705,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12059,6 +12088,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12086,6 +12116,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -13050,6 +13082,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,

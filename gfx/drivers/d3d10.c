@@ -66,6 +66,7 @@
 #endif
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#include <compat/strl.h>
 #endif
 
 #ifdef __WINRT__
@@ -1889,12 +1890,12 @@ static bool d3d10_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d10_init_shader(d3d10->device, vs_src, 0,
                   _path, "main", NULL, NULL, desc, countof(desc),
                   &ds->passes[i].shader);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d10_init_shader(d3d10->device, ps_src, 0, _path,
                   NULL, "main", NULL, NULL, 0,
                   &ds->passes[i].shader);
@@ -2093,13 +2094,13 @@ static bool d3d10_gfx_set_shader(void* data,
          const char *vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, vs_src, 0,
                _path, "main", NULL, NULL, desc,
                countof(desc), &d3d10->pass[i].shader);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, ps_src,
                0, _path, NULL, "main",

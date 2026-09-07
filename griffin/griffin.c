@@ -30,6 +30,9 @@
 
 #define VFS_FRONTEND
 #include <retro_environment.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CINTERFACE
 
@@ -209,11 +212,10 @@ ACHIEVEMENTS
 #endif
 
 /* rcheevos doesn't actually spawn and manage threads, RC_NO_THREADS
- * simply disables the mutexes that provide thread safety. */
+ * simply disables the mutexes that provide thread safety. rc_compat
+ * carries its own native mutexes for GEKKO (recursive LWP) and 3DS
+ * (RecursiveLock), so threaded builds keep their locks there too. */
 #if !defined(HAVE_THREADS)
-#define RC_NO_THREADS 1
-#elif defined(GEKKO) || defined(_3DS)
- /* Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c) */
 #define RC_NO_THREADS 1
 #endif
 #define RC_CLIENT_SUPPORTS_HASH 1
@@ -404,12 +406,32 @@ VIDEO SHADERS
 
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.c"
+#include "../gfx/drivers_shader/slang_cache.c"
+#include "../gfx/drivers_shader/slang_process.c"
 #endif
 
-/* Must mirror the guard on shader_gl3.cpp in griffin_cpp.cpp exactly:
+/* Must mirror the guard this file carried in griffin_cpp.cpp exactly:
+ * shader_vulkan.c calls vulkan_common.c and the Vulkan symbol wrapper,
+ * neither of which is in the build unless HAVE_VULKAN is set.  HAVE_SLANG
+ * alone is a real configuration (MSVC lanes ship D3D + slang without
+ * Vulkan) and compiling this file there produces unresolved externals at
+ * link time, not a compile error. */
+#if defined(HAVE_VULKAN) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/shader_vulkan.c"
+#endif
+
+/* Must mirror the guard on shader_gl3.c in griffin_cpp.cpp exactly:
  * that is the only consumer of spirv_opengl_lower(). */
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/spirv_opengl.c"
+#endif
+
+/* Guard copied verbatim from the one this file carried in
+ * griffin_cpp.cpp; shader_gl3.c calls the gl3 driver's helpers and
+ * spirv_opengl_lower(), both of which are inside the same pair of
+ * defines. */
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/shader_gl3.c"
 #endif
 
 #ifdef HAVE_CG
@@ -575,6 +597,7 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
+#include "../gfx/display_servers/dispserv_sdl2.c"
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -810,7 +833,7 @@ INPUT
 #include "../deps/libShake/src/common/error.c"
 #include "../deps/libShake/src/common/helpers.c"
 #include "../deps/libShake/src/common/presets.c"
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include "../deps/libShake/src/osx/shake.c"
 #elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../deps/libShake/src/linux/shake.c"
@@ -965,9 +988,6 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
-#ifdef HAVE_THREADS
-#include "../audio/drivers/ctr_dsp_thread_audio.c"
-#endif
 #endif
 
 #ifdef HAVE_XAUDIO
@@ -979,6 +999,7 @@ AUDIO
 #include "../input/drivers/sdl3_input.c"
 #include "../gfx/drivers/sdl3_gfx.c"
 #include "../gfx/common/sdl3_common.c"
+#include "../gfx/display_servers/dispserv_sdl3.c"
 #include "../audio/drivers/sdl3_audio.c"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/sdl3_gl_ctx.c"
@@ -1055,12 +1076,24 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_core.c"
+#include "../gfx/modeline/modeline_monitor.c"
+#include "../gfx/modeline/modeline_list.c"
+#include "../gfx/modeline/modeline_ini.c"
+#include "../gfx/modeline/modeline_edid.c"
 #include "../gfx/video_crt_switch.c"
+#ifdef _WIN32
+#include "../gfx/display_servers/win32_modeline_resync.c"
+#include "../gfx/display_servers/win32_modeline_adl.c"
+#include "../gfx/display_servers/win32_modeline_ati.c"
+#include "../gfx/display_servers/win32_modeline_pstrip.c"
+#endif
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
+#include "../gfx/gfx_anim_preview.c"
 
 /* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
  * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
@@ -1180,6 +1213,7 @@ FILE
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/nested_list.c"
+#include "../libretro-common/memory/mempool.c"
 #include "../libretro-common/lists/file_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/file/file_watch.c"
@@ -1293,6 +1327,7 @@ UI
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
+#include "../ui/drivers/ui_win32_companion.c"
 #endif
 
 /*============================================================
@@ -1313,6 +1348,10 @@ RETROARCH
 #endif
 #include "../command.c"
 #include "../ui/ui_companion_driver.c"
+#ifdef HAVE_COMPANION_WIMP
+#include "../ui/companion/companion_core.c"
+#include "../ui/companion/companion_thumbs.c"
+#endif
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1465,6 +1504,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)

@@ -88,6 +88,9 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <lists/dir_list.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -677,10 +680,16 @@ bool midi_driver_set_all_sounds_off(void)
     * MIDI is not used. Frame Delay also breaks if MIDI sounds
     * are "set off", which happens on menu toggle, therefore
     * skip this if WASAPI is used and Frame Delay is active.. */
-   if (memcmp(audio_state_get_ptr()->current_audio->ident, "wasapi", 6) == 0)
    {
-      if (video_state_get_ptr()->frame_delay_target > 0 || config_get_ptr()->bools.video_scanline_sync)
-         return false;
+      /* audio_driver_get_ident(), not current_audio->ident: with the
+       * threaded pipeline the latter is "audio-thread" and this check
+       * silently stopped applying. */
+      const char *ident = audio_driver_get_ident();
+      if (ident && memcmp(ident, "wasapi", 6) == 0)
+      {
+         if (video_state_get_ptr()->frame_delay_target > 0 || config_get_ptr()->bools.video_scanline_sync)
+            return false;
+      }
    }
 #endif
 
@@ -1294,6 +1303,12 @@ static size_t find_driver_nonempty(
          return strlcpy(s, cloud_sync_drivers[i]->ident, len);
    }
 #endif
+   else if (!strcmp(label, "ui_companion_driver"))
+   {
+      const char *ident = ui_companion_wimp_find_ident(i);
+      if (ident)
+         return strlcpy(s, ident, len);
+   }
    return 0;
 }
 
@@ -1549,7 +1564,7 @@ void driver_set_nonblock_state(void)
    unsigned swap_interval      = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
    bool video_driver_active    = (video_st->flags  & VIDEO_FLAG_ACTIVE) ? true : false;
-   bool audio_driver_active    = (audio_st->flags  & AUDIO_FLAG_ACTIVE) ? true : false;
+   bool audio_driver_active    = (AUDIO_FLAGS_GET(audio_st)  & AUDIO_FLAG_ACTIVE) ? true : false;
    bool runloop_force_nonblock = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) ? true : false;
 
    /* Only apply non-block-state for video if we're using vsync. */
@@ -1568,13 +1583,7 @@ void driver_set_nonblock_state(void)
    }
 
    if (audio_driver_active && audio_st->context_audio_data)
-      audio_st->current_audio->set_nonblock_state(
-            audio_st->context_audio_data,
-            audio_sync ? enable : true);
-
-   audio_st->chunk_size = enable
-      ? audio_st->chunk_nonblock_size
-      : audio_st->chunk_block_size;
+      audio_driver_set_nonblock_state(audio_sync ? enable : true);
 }
 
 void drivers_init(
@@ -1682,20 +1691,18 @@ void drivers_init(
       audio_driver_init_internal(
             settings,
             audio_st->callback.callback != NULL);
-      if (     audio_st->current_audio
-            && audio_st->current_audio->device_list_new
-            && audio_st->context_audio_data)
-         audio_st->devices_list = (struct string_list*)
-            audio_st->current_audio->device_list_new(
-                  audio_st->context_audio_data);
+      /* Whether or not init succeeded: the list is how the user gets
+       * out of a failed device choice. */
+      audio_driver_refresh_devices_list();
    }
 
 #ifdef HAVE_MICROPHONE
    if (flags & DRIVER_MICROPHONE_MASK)
    {
       microphone_driver_init_internal(settings);
-      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
-         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
+      /* Whether or not init succeeded, as for audio: the list is how
+       * the user gets out of a failed device choice. */
+      microphone_driver_refresh_devices_list();
    }
 #endif
 
@@ -1884,7 +1891,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * No-op when threaded video is not active. */
    if (     (flags & DRIVER_VIDEO_AND_INPUT_MASK)
          && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+         && video_st->thread_wrapper_active)
       video_thread_wait_idle();
 #endif
 
@@ -2024,7 +2031,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    }
 #endif
 
-#if defined(HAVE_CRTSWITCHRES)
+#if defined(HAVE_MODELINE)
    /* Switchres deinit */
    if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
       crt_destroy_modes(&video_st->crt_switch_st);
@@ -2042,7 +2049,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    video_driver_cached_frame_invalidate();
 
    /* Audio */
-   audio_state_get_ptr()->flags        &= ~AUDIO_FLAG_ACTIVE;
+   AUDIO_FLAGS_CLEAR(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
    audio_state_get_ptr()->current_audio = NULL;
 
    if (input_st)
@@ -2262,27 +2269,27 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
             {
-               _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
             }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
             {
                if (_len > 0)
-                  _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
+                  _len += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             {
                if (_len > 0)
-                  _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               strlcpy(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
+                  _len += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
+               strlcpy_lit(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
             }
 
             exts = ext_shaders;
@@ -2343,6 +2350,17 @@ static struct string_list *string_list_new_special(
          for (i = 0; camera_drivers[i]; i++)
          {
             const char *opt  = camera_drivers[i]->ident;
+            *len            += strlen(opt) + 1;
+
+            string_list_append(s, opt, attr);
+         }
+         break;
+      case STRING_LIST_UI_COMPANION_DRIVERS:
+         for (i = 0; ; i++)
+         {
+            const char *opt  = ui_companion_wimp_find_ident(i);
+            if (!opt)
+               break;
             *len            += strlen(opt) + 1;
 
             string_list_append(s, opt, attr);
@@ -4197,7 +4215,7 @@ bool command_event(enum event_command cmd, void *data)
                /* Same barrier as driver_uninit(): never free widget GPU
                 * resources while the video thread may still reference them. */
                if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-                     && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+                     && video_st->thread_wrapper_active)
                   video_thread_wait_idle();
 #endif
                /* Full teardown (not persisting): a real user toggle-off
@@ -4338,53 +4356,17 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
+      /* Plain stop and start. These used to be gated on the menu's
+       * pause and menu-sound settings because the menu toggle issued
+       * them; it no longer does, and the gate also disabled them for
+       * the callers that mean it, such as the 3DS sleep and wake hooks. */
       case CMD_EVENT_AUDIO_STOP:
-         {
-            bool menu_pause_libretro = false;
-            bool audio_enable_menu   = false;
-
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-            audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
-#endif
-#ifdef HAVE_NETWORKING
-            menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
-                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
-#else
-            menu_pause_libretro      = settings->bools.menu_pause_libretro;
-#endif
-
-            if (audio_enable_menu || !menu_pause_libretro)
-               return false;
-
-            if (!audio_driver_stop())
-               return false;
-         }
+         if (!audio_driver_stop())
+            return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         {
-            bool menu_pause_libretro = false;
-            bool audio_enable_menu   = false;
-
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-            audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
-#endif
-#ifdef HAVE_NETWORKING
-            menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
-                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
-#else
-            menu_pause_libretro      = settings->bools.menu_pause_libretro;
-#endif
-
-            if (audio_enable_menu && !menu_pause_libretro)
-               return false;
-
-            if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
-               return false;
-         }
+         if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+            return false;
          break;
 #ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_STOP:
@@ -4704,11 +4686,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
-            struct retro_hw_render_callback *hwr = NULL;
-            video_driver_state_t
-               *video_st                         = video_state_get_ptr();
-            rarch_system_info_t *sys_info        = &runloop_st->system;
-            
             /* Restore unpaused state. The recursive command_event call
              * here re-enters this dispatcher; the UNPAUSE branch is
              * deliberately small (clears flags, resumes audio) and
@@ -4970,7 +4947,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
          {
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
             bool ui_companion_toggle = settings->bools.ui_companion_toggle;
 #else
@@ -5307,7 +5284,9 @@ bool command_event(enum event_command cmd, void *data)
          runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
-#ifdef HAVE_MENU
+         /* Audio is not stopped or started around the menu any more;
+          * see the menu toggle. Only the microphone follows the pause. */
+#if defined(HAVE_MENU) && defined(HAVE_MICROPHONE)
          {
 #ifdef HAVE_NETWORKING
             bool menu_pause_libretro = settings->bools.menu_pause_libretro
@@ -5315,21 +5294,10 @@ bool command_event(enum event_command cmd, void *data)
 #else
             bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
-
             if (menu_pause_libretro)
-            {
-               command_event(CMD_EVENT_AUDIO_STOP, NULL);
-#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
-#endif
-            }
             else
-            {
-               command_event(CMD_EVENT_AUDIO_START, NULL);
-#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
-#endif
-            }
          }
 #endif
          break;
@@ -5602,7 +5570,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!video_driver_has_windowed())
                return false;
 
-            audio_st->flags |= AUDIO_FLAG_SUSPENDED;
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
             video_driver_modify_disp_flags(VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE, 0);
 
             /* we toggled manually, write the new value to settings */
@@ -5641,7 +5609,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             video_driver_modify_disp_flags(0, VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE);
-            audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
@@ -5836,7 +5804,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
          {
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
             bool ui_companion_toggle = settings->bools.ui_companion_toggle;
 #else
@@ -6386,7 +6354,21 @@ void main_exit(void *args)
    video_driver_restore_cached(settings);
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* Do not want display widgets to live any more. */
+   /* Do not want display widgets to live any more.
+    *
+    * The widget flags are read by gfx_widgets_frame(), which runs on
+    * the video thread under threaded video, so the thread is brought
+    * to a stop first - clearing the bit under it is a write racing
+    * those reads, which ThreadSanitizer catches on the exit path about
+    * one run in three. No-op when the wrapper is not active. */
+#ifdef HAVE_THREADS
+   {
+      video_driver_state_t *video_st_exit = video_state_get_ptr();
+      if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st_exit)
+            && video_st_exit->thread_wrapper_active)
+         video_thread_wait_idle();
+   }
+#endif
    dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 #ifdef HAVE_MENU
@@ -6623,7 +6605,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
    video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
-   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
+   AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
 
    {
       int i;
@@ -6659,7 +6641,7 @@ int rarch_main(int argc, char *argv[], void *data)
    settings = config_get_ptr();
 
    ui_companion_driver_init_first(
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
          settings->bools.desktop_menu_enable,
          settings->bools.ui_companion_toggle,
 #else
@@ -6680,9 +6662,7 @@ int rarch_main(int argc, char *argv[], void *data)
    {
       int ret;
       bool app_exit     = false;
-#ifdef HAVE_QT
-      ui_companion_qt.application->process_events();
-#endif
+      ui_companion_driver_wimp_iterate();
       ret = runloop_iterate();
 
       task_queue_check();
@@ -6691,18 +6671,20 @@ int rarch_main(int argc, char *argv[], void *data)
    steam_poll();
 #endif
 
-#ifdef HAVE_QT
-      app_exit = ui_companion_qt.application->exiting;
-#endif
+      /* Whichever desktop companion is active, not Qt specifically. */
+      app_exit = ui_companion_driver_wimp_exiting();
 
       if (ret == -1 || app_exit)
       {
-#ifdef HAVE_QT
-         ui_companion_qt.application->quit();
-#endif
+         ui_companion_driver_wimp_quit();
          break;
       }
    }
+
+   /* Close the desktop companion window while its message pump and the
+    * drivers are still alive; leaving it for main_exit's teardown lets a
+    * native (Win32) companion window outlive the pump and hang. */
+   ui_companion_driver_wimp_deinit();
 
    main_exit(data);
 #endif
@@ -6881,9 +6863,21 @@ void libretro_free_system_info(struct retro_system_info *sysinfo)
    if (!sysinfo)
       return;
 
-   free((void*)sysinfo->library_name);
-   free((void*)sysinfo->library_version);
-   free((void*)sysinfo->valid_extensions);
+   /* The three strings are not owned here and never were.  Both paths
+    * that fill this struct leave pointers that cannot be free()d:
+    * libretro_get_system_info() copies into the fixed buffers inside
+    * runloop_state and assigns their addresses, and the core's own
+    * retro_get_system_info() returns its static literals, as do the
+    * MSG_UNKNOWN and "v0" fallbacks applied after it.  free()ing them
+    * is a free() of something malloc() never returned:
+    *
+    *   AddressSanitizer: SEGV in __asan::Allocator::Deallocate
+    *     #5 libretro_free_system_info retroarch.c
+    *     #6 menu_driver_ctl menu/menu_driver.c
+    *
+    * Clearing the struct is the whole of what this has to do.  Both
+    * callers already memset() it straight afterwards, which is what
+    * kept the missing ownership from being obvious. */
    memset(sysinfo, 0, sizeof(*sysinfo));
 }
 
@@ -6896,7 +6890,7 @@ static void retroarch_print_features(void)
 
    frontend_driver_attach_console();
 
-   _len  = strlcpy(buf, "Features:\n", sizeof(buf));
+   _len  = strlcpy_lit(buf, "Features:\n", sizeof(buf));
 #ifdef HAVE_DYLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYLIB,           "Dylib",           "External filter and plugin support");
 #endif
@@ -7022,9 +7016,6 @@ static void retroarch_print_features(void)
 #endif
 #ifdef HAVE_COREAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
-#endif
-#ifdef HAVE_COREAUDIO3
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
 #endif
 #ifdef HAVE_JACK
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_JACK,            "JACK",            "Audio driver");
@@ -7430,7 +7421,7 @@ static void retroarch_parse_input_libretro_path(
    /* Check if path is a directory */
    if (
        ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-#if defined(IOS) || defined(OSX)
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
        && !string_ends_with(path, ".framework")
 #endif
        )
@@ -7529,7 +7520,7 @@ static void retroarch_parse_input_libretro_path(
       _len = strlcpy(tmp_path, path, sizeof(tmp_path));
       if (!string_ends_with_size(tmp_path, "_libretro",
                _len, STRLEN_CONST("_libretro")))
-         strlcpy(tmp_path       + _len,
+         strlcpy_lit(tmp_path       + _len,
                "_libretro",
                sizeof(tmp_path) - _len);
       if (  !core_info_find(tmp_path, &core_info)
@@ -7670,7 +7661,7 @@ static bool retroarch_parse_input_and_config(
       {
          _len += strlcpy(p_rarch->launch_arguments        + _len,
                argv[i], sizeof(p_rarch->launch_arguments) - _len);
-         _len += strlcpy(p_rarch->launch_arguments        + _len,
+         _len += strlcpy_lit(p_rarch->launch_arguments        + _len,
                " ",     sizeof(p_rarch->launch_arguments) - _len);
       }
       string_trim_whitespace_left(p_rarch->launch_arguments);
@@ -8470,7 +8461,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
    video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
-   audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
+   AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
@@ -8525,7 +8516,7 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[384];
          const char *cpu_model  = frontend_driver_get_cpu_model_name();
-         size_t _len = strlcpy(str_output,
+         size_t _len = strlcpy_lit(str_output,
                "=== Build =================================================\n",
                sizeof(str_output));
 
@@ -8768,7 +8759,7 @@ bool retroarch_main_init(int argc, char *argv[])
           * No-op when threaded video is not active. */
          video_driver_state_t *video_st = video_state_get_ptr();
          if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-               && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+               && video_st->thread_wrapper_active)
             video_thread_wait_idle();
 #endif
          menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
@@ -8993,6 +8984,12 @@ void retroarch_init_task_queue(void)
    net_http_init();
 #endif
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
+#ifdef HAVE_THREADS
+   /* The main thread runs the emulation loop; on a mixed-core part
+    * keep it off the slow cluster when asked. */
+   if (settings->bools.thread_prefer_fast_cores)
+      sthread_prefer_fast_cores();
+#endif
 
 #ifdef DEBUG
    /* With Threaded Tasks off, task handlers run on the thread that
@@ -9450,9 +9447,9 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
          _len += strlcpy(s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
-         _len += strlcpy(s + _len, ": Clang/LLVM (", len - _len);
+         _len += strlcpy_lit(s + _len, ": Clang/LLVM (", len - _len);
          _len += strlcpy(s + _len, __clang_version__, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
 #elif defined(__GNUC__)
          _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
          _len += snprintf(s + _len, len - _len, ": GCC (%d.%d.%d)",

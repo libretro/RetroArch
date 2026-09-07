@@ -35,6 +35,12 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
+#include <retro_timers.h>
+#include <features/features_cpu.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 #ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 #endif
@@ -187,6 +193,28 @@ static void d3dkmt_init(void)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
+      /* Optional: only the phase anchor depends on it, and
+       * d3dkmt_wait_vblank() reports its absence so the caller can
+       * fall back. Not part of the guard below for that reason. */
+      pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
+            GetProcAddress(GetModuleHandle("gdi32.dll"),
+                  "D3DKMTWaitForVerticalBlankEvent");
+
+      /* Both exports are WDDM, so they are absent under XDDM - there
+       * are no D3DKMT entry points in gdi32 before Vista at all.
+       * pD3DKMTGetScanLine is null-checked at its two use sites;
+       * pD3DKMTOpenAdapterFromHdc was not, and it is called inside the
+       * loop below, so a missing export was a call through NULL on the
+       * first display device. Leave the scanline state zeroed and let
+       * d3dkmt_scanline_get() report -1, which
+       * video_driver_scanline_before_frame() already treats as
+       * unsupported. */
+      if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
+      {
+         memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+         video_driver_scanline_init();
+         return;
+      }
 
       while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
       {
@@ -217,9 +245,26 @@ static void d3dkmt_init(void)
          sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
          d3dkmt_adapter.sl     = sl;
       }
+
+      {
+         D3DKMT_WAITFORVERTICALBLANKEVENT vb = {0};
+         vb.hAdapter           = d3dkmt_adapter_hAdapter;
+         vb.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
+         /* hDevice is documented optional and is not needed to wait on
+          * a VidPn source. */
+         d3dkmt_adapter.vb     = vb;
+      }
    }
 
    video_driver_scanline_init();
+}
+
+bool d3dkmt_wait_vblank(void)
+{
+   if (!pD3DKMTWaitForVerticalBlankEvent || !d3dkmt_adapter.vb.hAdapter)
+      return false;
+   return (pD3DKMTWaitForVerticalBlankEvent(&d3dkmt_adapter.vb)
+         == STATUS_SUCCESS);
 }
 
 int d3dkmt_scanline_get(void)
@@ -504,6 +549,323 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    *height                        = video_st->av_info.geometry.base_height;
 }
 
+/* Published RETROKMOD_* mask, written only by
+ * win32_update_keyboard_mods() from the thread that owns the main
+ * window's message queue, read from anywhere. */
+static retro_atomic_int_t win32_kb_mods;
+
+/* GetKeyState and GetKeyboardState read the same per-thread
+ * synchronous key table, but only GetKeyboardState exposes it in its
+ * documented form: a 256-byte array with 0x80 for down and 0x01 for
+ * toggled. GetKeyState repacks those bits into a SHORT in which only
+ * bit 15 is contractual.
+ *
+ * Every implementation happens to also set bit 7 on the down value,
+ * so the 0x80 mask this code used to apply did work - user.exe
+ * 4.10.2222 (Windows 98 SE, 16-bit) builds it with mov bx,0xff80,
+ * user32 5.1.2600.2180 (XP SP2, x86) with or edi,0xff80, and user32
+ * 10.0.26100.7462 (24H2, x64) with or ax,0xff80. Three unrelated
+ * implementations, twenty-six years, no shared code, same constant.
+ * It is still undocumented, and GetAsyncKeyState in those same three
+ * binaries returns 0x8000 with bit 7 clear, so the mask is not even
+ * consistent between the two calls. Use the documented byte form.
+ *
+ * One call is also cheaper, and more so the older the target. On NT
+ * the GetKeyState cache covers virtual-key codes below 0x20 only, so
+ * VK_NUMLOCK, VK_SCROLL, VK_LWIN and VK_RWIN each took an
+ * unconditional kernel transition per key. On 9x user32 does not
+ * implement either function: both are four-byte stubs that select a
+ * thunk ordinal and jump into 16-bit user.exe through FT_Thunk, so
+ * every query was a 32->16 transition. There GetKeyboardState is a
+ * flat 256-byte copy of the table in its native layout while
+ * GetKeyState is the call doing extra work to repack it.
+ *
+ * The table is per-thread and is only advanced as that thread
+ * dispatches keyboard messages, so this must run on the thread owning
+ * the main window. Every caller below is a window procedure for that
+ * window, or window creation on the same thread. Everyone else reads
+ * the published value through win32_get_keyboard_mods(). */
+uint16_t win32_update_keyboard_mods(void)
+{
+   BYTE ks[256];
+   uint16_t mod = 0;
+
+   if (!GetKeyboardState(ks))
+      return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
+
+   if (ks[VK_SHIFT]   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (ks[VK_CONTROL] & 0x80)
+      mod |= RETROKMOD_CTRL;
+   if (ks[VK_MENU]    & 0x80)
+      mod |= RETROKMOD_ALT;
+   if (ks[VK_CAPITAL] & 0x01)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (ks[VK_SCROLL]  & 0x01)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (ks[VK_NUMLOCK] & 0x01)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((ks[VK_LWIN] | ks[VK_RWIN]) & 0x80)
+      mod |= RETROKMOD_META;
+
+   retro_atomic_store_release_int(&win32_kb_mods, (int)mod);
+   return mod;
+}
+
+uint16_t win32_get_keyboard_mods(void)
+{
+   return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
+}
+
+#if !defined(_XBOX)
+/* A title bar drag, a border resize, or an open menu enters a modal
+ * loop inside DefWindowProc that does not return until the user lets
+ * go. The run loop lives on this thread, so for that whole time no
+ * frame runs, no audio is written, and the frame limiter falls behind
+ * by the length of the drag.
+ *
+ * The loop does dispatch posted messages, so for its duration a helper
+ * thread sleeps at the content rate on the high resolution timer and
+ * posts a tick; the tick runs one iteration with RUNLOOP_PACE_EXTERNAL
+ * set, which makes the iteration return as soon as the frame is out
+ * instead of sleeping until the next one. Content and audio keep their
+ * rate, and the loop has the mouse back within a frame's work, not a
+ * frame's period. Where there is no thread to be had the fallback is
+ * WM_TIMER, whose coarse cadence still beats a freeze.
+ *
+ * Every API here dates from Windows 95; the constants an older SDK
+ * lacks are defined below. */
+
+#ifndef USER_TIMER_MINIMUM
+#define USER_TIMER_MINIMUM 0x0000000A
+#endif
+#ifndef WM_ENTERMENULOOP
+#define WM_ENTERMENULOOP 0x0211
+#endif
+#ifndef WM_EXITMENULOOP
+#define WM_EXITMENULOOP 0x0212
+#endif
+#ifndef WM_ENTERSIZEMOVE
+#define WM_ENTERSIZEMOVE 0x0231
+#endif
+#ifndef WM_EXITSIZEMOVE
+#define WM_EXITSIZEMOVE 0x0232
+#endif
+
+typedef struct
+{
+#ifdef HAVE_THREADS
+   sthread_t *thread;
+   /* Signalled to start a clock session; the thread parks on it
+    * between sessions rather than being created per drag, which
+    * would also leave retro_sleep()'s per-thread timer handle behind
+    * each time. Both events auto-reset. */
+   HANDLE wake;
+   HANDLE parked;
+#endif
+   HWND hwnd;
+   /* Set once a tick is posted and cleared when it is consumed, so a
+    * main thread that falls behind gets one message, not a backlog. */
+   retro_atomic_int_t pending;
+   retro_atomic_int_t stop;
+   retro_atomic_int_t quit;
+   /* Size/move and menu loops can nest (a menu opened from the system
+    * menu of a window being sized is the one case), so arm on the
+    * first entry and disarm on the last exit. */
+   uint8_t depth;
+} win32_modal_t;
+
+static win32_modal_t win32_modal;
+
+#ifdef HAVE_THREADS
+static void win32_modal_clock(void *data)
+{
+   win32_modal_t *m = (win32_modal_t*)data;
+
+   for (;;)
+   {
+      retro_time_t next;
+
+      WaitForSingleObject(m->wake, INFINITE);
+      if (retro_atomic_load_acquire_int(&m->quit))
+         break;
+
+      next = cpu_features_get_time_usec();
+      while (!retro_atomic_load_acquire_int(&m->stop))
+      {
+         /* core_hz is written on the main thread and only read here;
+          * a torn read costs one oddly timed tick, nothing worse. */
+         retro_time_t period = runloop_content_frame_time_us(
+               video_state_get_ptr()->core_hz);
+         retro_time_t now    = cpu_features_get_time_usec();
+         retro_time_t wait;
+
+         next += period;
+         wait  = next - now;
+         if (wait > 0)
+            retro_sleep_us((unsigned)wait);
+         else
+            next = now; /* fell behind: no burst, just resume */
+
+         if (retro_atomic_cas_int(&m->pending, 0, 1))
+            PostMessage(m->hwnd, WM_RA_MODAL_TICK, 0, 0);
+      }
+
+      SetEvent(m->parked);
+   }
+}
+
+/* One thread for the life of the process, created on first use. NULL
+ * on any failure, in which case the WM_TIMER fallback is used. */
+static sthread_t *win32_modal_thread_get(win32_modal_t *m)
+{
+   if (m->thread)
+      return m->thread;
+
+   if (!m->wake   && !(m->wake   = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return NULL;
+   if (!m->parked && !(m->parked = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return NULL;
+
+   retro_atomic_store_release_int(&m->quit, 0);
+   return (m->thread = sthread_create(win32_modal_clock, m));
+}
+#endif
+
+void win32_modal_enter(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+
+   if (m->depth++)
+      return;
+
+   /* With threaded video this window, and so this loop, belong to the
+    * video thread; the run loop is elsewhere and is not blocked. */
+   if (video_driver_is_threaded())
+      return;
+
+   m->hwnd = hwnd;
+   retro_atomic_store_release_int(&m->pending, 0);
+   retro_atomic_store_release_int(&m->stop, 0);
+   runloop_state_get_ptr()->pace_external = true;
+   g_win32_flags |= WIN32_CMN_FLAG_MODAL_TIMER;
+
+#ifdef HAVE_THREADS
+   if (win32_modal_thread_get(m))
+   {
+      SetEvent(m->wake);
+      return;
+   }
+#endif
+   SetTimer(hwnd, WIN32_MODAL_TIMER_ID, USER_TIMER_MINIMUM, NULL);
+}
+
+/* Stops the clock whatever the nesting depth: the last exit message,
+ * a quit from inside a tick, and a window going away mid-drag all
+ * end here. */
+static void win32_modal_stop(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+
+   m->depth = 0;
+   if (!(g_win32_flags & WIN32_CMN_FLAG_MODAL_TIMER))
+      return;
+
+#ifdef HAVE_THREADS
+   if (m->thread)
+   {
+      /* The clock is inside a sleep of at most one frame; once it has
+       * parked it cannot post again until the next wake. */
+      retro_atomic_store_release_int(&m->stop, 1);
+      WaitForSingleObject(m->parked, INFINITE);
+   }
+   else
+#endif
+      KillTimer(hwnd, WIN32_MODAL_TIMER_ID);
+
+   /* A tick that was posted before the stop is still in the queue;
+    * the flag clear below makes it a no-op when it arrives. */
+   g_win32_flags &= ~WIN32_CMN_FLAG_MODAL_TIMER;
+   runloop_state_get_ptr()->pace_external = false;
+}
+
+void win32_modal_exit(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+
+   if (!m->depth || --m->depth)
+      return;
+   win32_modal_stop(hwnd);
+}
+
+/* The window is going away. Any session is ended and the thread, if
+ * one was ever started, is joined. */
+void win32_modal_window_destroyed(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+   /* Only the window whose loop is being clocked ends the session;
+    * another window closing during a drag is none of our business. */
+   if (m->hwnd == hwnd)
+      win32_modal_stop(hwnd);
+}
+
+static void win32_modal_deinit(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+
+   win32_modal_stop(hwnd);
+#ifdef HAVE_THREADS
+   if (m->thread)
+   {
+      retro_atomic_store_release_int(&m->quit, 1);
+      SetEvent(m->wake);
+      sthread_join(m->thread);
+      m->thread = NULL;
+   }
+   if (m->wake)
+   {
+      CloseHandle(m->wake);
+      m->wake   = NULL;
+   }
+   if (m->parked)
+   {
+      CloseHandle(m->parked);
+      m->parked = NULL;
+   }
+#endif
+}
+
+void win32_modal_tick(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+   int ret;
+
+   retro_atomic_store_release_int(&m->pending, 0);
+
+   if (!(g_win32_flags & WIN32_CMN_FLAG_MODAL_TIMER))
+      return;
+
+   /* The iteration pumps this thread's queue, and a tick pulled out
+    * there would land here again, inside the iteration it belongs to. */
+   if (g_win32_flags & WIN32_CMN_FLAG_MODAL_TICK)
+      return;
+
+   /* A quit that was already accepted is reported by the main loop's
+    * own next iteration; repeating it here would run the shutdown
+    * work once per tick until the loop lets go. */
+   if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+      return;
+
+   g_win32_flags |= WIN32_CMN_FLAG_MODAL_TICK;
+   ret            = runloop_iterate();
+   task_queue_check();
+   g_win32_flags &= ~WIN32_CMN_FLAG_MODAL_TICK;
+
+   if (ret == -1)
+      win32_modal_stop(hwnd);
+}
+#endif /* !defined(_XBOX) */
+
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -537,20 +899,7 @@ static LRESULT CALLBACK wnd_proc_common(
          {
             uint16_t mod          = 0;
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
@@ -562,12 +911,32 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+#if !defined(_XBOX)
+         win32_modal_deinit(hwnd);
+#endif
          g_win32_flags |= WIN32_CMN_FLAG_QUIT;
          *quit          = true;
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
          break;
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_modal_enter(hwnd);
+         break;
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         win32_modal_exit(hwnd);
+         break;
+      case WM_RA_MODAL_TICK:
+         win32_modal_tick(hwnd);
+         break;
+      case WM_TIMER:
+         if (wparam == WIN32_MODAL_TIMER_ID)
+            win32_modal_tick(hwnd);
+         break;
+#endif
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
          if (     wparam != SIZE_MAXHIDE
@@ -749,20 +1118,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -797,6 +1153,14 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+      case WM_RA_MODAL_TICK:
+#endif
 #ifdef HAVE_THREADS
       case WM_BROWSER_OPEN_RESULT:
       case WM_BROWSER_CANCELLED:
@@ -882,6 +1246,14 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+      case WM_RA_MODAL_TICK:
+#endif
 #ifdef HAVE_THREADS
       case WM_BROWSER_OPEN_RESULT:
       case WM_BROWSER_CANCELLED:
@@ -1050,20 +1422,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1106,6 +1465,14 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_SIZE:
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+      case WM_RA_MODAL_TICK:
+#endif
 #ifdef HAVE_THREADS
       case WM_BROWSER_OPEN_RESULT:
       case WM_BROWSER_CANCELLED:
@@ -1966,6 +2333,11 @@ bool win32_set_video_mode(void *data,
 
    if (g_win32_flags & WIN32_CMN_FLAG_QUIT)
       return false;
+
+   /* Seed the published mask so the lock states are not reported as
+    * clear until the first key event reaches the window procedure. */
+   win32_update_keyboard_mods();
+
    return true;
 }
 #endif
@@ -1991,6 +2363,13 @@ void win32_destroy_window(void)
 #endif
 #endif
    main_window.hwnd = NULL;
+   /* video_st->window is a copy of this handle taken by
+    * win32_window_create(). Nothing else clears it - video_driver.c
+    * only resets it at the top of the next
+    * video_driver_init_internal() - so without this the two disagree
+    * from here until the next video driver init, and
+    * video_driver_window_get() hands out a destroyed HWND in between. */
+   video_driver_window_set(0);
 }
 
 /* --- HDR (scRGB) pixel format support -------------------------------

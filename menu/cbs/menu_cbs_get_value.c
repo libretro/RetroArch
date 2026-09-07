@@ -60,6 +60,9 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -102,7 +105,7 @@ static size_t menu_action_setting_audio_mixer_stream_volume(
    if (offset >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
       return 0;
    _len  = snprintf(s, len, "%.2f", audio_driver_mixer_get_stream_volume(offset));
-   _len += strlcpy(s + _len, " dB", len - _len);
+   _len += strlcpy_lit(s + _len, " dB", len - _len);
    return _len;
 }
 #endif
@@ -453,10 +456,10 @@ static size_t menu_action_setting_disp_set_label_core_updater_entry(
          if ((core_info->flags & CORE_INFO_FLAG_IS_LOCKED))
          {
             *w   = (unsigned)STRLEN_CONST("[#!]");
-            return strlcpy(s, "[#!]", len);
+            return strlcpy_lit(s, "[#!]", len);
          }
          *w   = (unsigned)STRLEN_CONST("[#]");
-         return strlcpy(s, "[#]", len);
+         return strlcpy_lit(s, "[#]", len);
       }
    }
    return 0;
@@ -487,7 +490,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_entry(
        && (core_info->flags & CORE_INFO_FLAG_IS_LOCKED))
    {
       *w   = (unsigned)STRLEN_CONST("[!]");
-      return strlcpy(s, "[!]", len);
+      return strlcpy_lit(s, "[!]", len);
    }
    *s   = '\0';
    *w   = 0;
@@ -530,7 +533,7 @@ static size_t menu_action_setting_disp_set_label_core_manager_steam_entry(
          if (dlc_installed)
          {
             *w = (unsigned)STRLEN_CONST("[#]");
-            return strlcpy(s, "[#]", len);
+            return strlcpy_lit(s, "[#]", len);
          }
       }
    }
@@ -619,7 +622,7 @@ static size_t menu_action_setting_disp_set_label_cpu_policy(
 
    if (d->affected_cpus)
    {
-      _len += strlcpy(s2 + _len, " [CPU(s) ",      len2 - _len);
+      _len += strlcpy_lit(s2 + _len, " [CPU(s) ",      len2 - _len);
       _len += strlcpy(s2 + _len, d->affected_cpus, len2 - _len);
       s2[  _len] = ']' ;
       s2[++_len] = '\0';
@@ -654,9 +657,9 @@ static size_t menu_action_cpu_managed_freq_label(
    }
 
    if (freq == 1)
-      return strlcpy(s, "Min.", len);
+      return strlcpy_lit(s, "Min.", len);
    else if (freq == ~0U)
-      return strlcpy(s, "Max.", len);
+      return strlcpy_lit(s, "Max.", len);
    return snprintf(s, len, "%u MHz", freq / 1000);
 }
 
@@ -801,9 +804,9 @@ static size_t menu_action_setting_disp_set_label_input_desc(
          if (remap_idx < RARCH_FIRST_CUSTOM_BIND)
             return _len;
          else if (remap_idx % 2 == 0)
-            return strlcpy(s + _len, "+", len - _len);
+            return strlcpy_lit(s + _len, "+", len - _len);
          else
-            return strlcpy(s + _len, "-", len - _len);
+            return strlcpy_lit(s + _len, "-", len - _len);
       }
    }
    /* If descriptor was not found, set this instead */
@@ -844,7 +847,7 @@ static size_t menu_action_setting_disp_set_label_input_desc_kbd(
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
       /* TODO/FIXME - Localize */
-      _len  = strlcpy(s, "Keyboard ", len);
+      _len  = strlcpy_lit(s, "Keyboard ", len);
       _len += strlcpy(s + _len, key_descriptors[key_id].desc, len - _len);
    }
    else
@@ -1243,7 +1246,7 @@ static size_t menu_action_setting_disp_set_label_menu_file_directory(
       char *s2, size_t len2)
 {
    size_t _len = 0;
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[256];
    fill_pathname_abbreviate_special(tmp, path, sizeof(tmp));
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,
@@ -1939,6 +1942,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER:
          case MENU_ENUM_LABEL_RECORD_DRIVER:
          case MENU_ENUM_LABEL_MIDI_DRIVER:
+         case MENU_ENUM_LABEL_UI_COMPANION_DRIVER:
          case MENU_ENUM_LABEL_LOCATION_DRIVER:
          case MENU_ENUM_LABEL_CAMERA_DRIVER:
          case MENU_ENUM_LABEL_BLUETOOTH_DRIVER:
@@ -2411,7 +2415,8 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       switch (cbs->enum_idx)
       {
-         case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU:
 #ifdef HAVE_CHEEVOS
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_cheevos_entry);

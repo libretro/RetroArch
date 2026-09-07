@@ -19,6 +19,12 @@
 
 #include <retro_common_api.h>
 
+/* One-cycle alias: builds that still pass the old switch get the
+ * in-tree modeline engine. */
+#if defined(HAVE_CRTSWITCHRES) && !defined(HAVE_MODELINE)
+#define HAVE_MODELINE
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum
@@ -102,6 +108,15 @@ enum video_rotation_type
    VIDEO_ROTATION_270_DEG
 };
 
+/* How hard to push for exclusive fullscreen where the platform lets the
+ * application decide (VK_EXT_full_screen_exclusive on Windows Vulkan). */
+enum video_fse_negotiation
+{
+   VIDEO_FSE_RELAXED = 0, /* hint only; the driver may decline */
+   VIDEO_FSE_FORCED,      /* take it explicitly and hold it    */
+   VIDEO_FSE_LAST
+};
+
 enum autoswitch_refresh_rate
 {
    AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN = 0,
@@ -183,11 +198,6 @@ typedef struct gfx_ctx_flags
 {
    uint32_t flags;
 } gfx_ctx_flags_t;
-
-struct Size2D
-{
-   unsigned width, height;
-};
 
 enum gfx_ctx_api
 {

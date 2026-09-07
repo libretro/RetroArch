@@ -29,6 +29,7 @@
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
+#include <compat/strl.h>
 
 static int failures;
 static int pushes;
@@ -131,8 +132,8 @@ static void test_two_concurrent_task_bars(void)
       return;
    }
 
-   strlcpy(title_a, "Downloading: database-rdb.zip", sizeof(title_a));
-   strlcpy(title_b, "Extracting database-rdb.zip",   sizeof(title_b));
+   strlcpy_lit(title_a, "Downloading: database-rdb.zip", sizeof(title_a));
+   strlcpy_lit(title_b, "Extracting database-rdb.zip",   sizeof(title_b));
 
    harness_task_init(&task_a, 1, title_a, 80, true);
    harness_task_init(&task_b, 2, title_b, 24, true);
@@ -205,7 +206,7 @@ static void test_title_churn(bool alternative)
    }
 
    /* Multi-byte title, and one with nothing to wrap on. */
-   strlcpy(title,
+   strlcpy_lit(title,
          "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e\xe3\x81\xae\xe3\x83\xa1"
          "\xe3\x83\x83\xe3\x82\xbb\xe3\x83\xbc\xe3\x82\xb8", sizeof(title));
    task_push(&task);

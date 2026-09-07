@@ -123,7 +123,7 @@ static bool vita_set_video_mode(void *data,
 #ifdef HAVE_EGL
    if (!egl_create_context(&ctx_vita->egl, ctx_attr_list))
       goto error;
-   if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
+   if (!egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window))
       goto error;
 #endif
 #endif
@@ -254,7 +254,7 @@ static bool vita_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
-   return egl_create_surface(&ctx_vita->egl, ctx_vita->native_window);
+   return egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window);
 #else
    return false;
 #endif

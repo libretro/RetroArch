@@ -134,6 +134,20 @@ static void sdl3_vk_ctx_swap_interval(void *data, int interval)
    }
 }
 
+static bool sdl3_vk_ctx_presentable(void *data)
+{
+   gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
+   if (!sdl)
+      return false;
+   /* Minimised or hidden is asked of SDL directly; the swapchain check
+    * covers the moment before it has been torn down or rebuilt. */
+   if (     sdl->win
+         && (SDL_GetWindowFlags(sdl->win)
+            & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN)))
+      return false;
+   return sdl->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void sdl3_vk_ctx_swap_buffers(void *data)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
@@ -141,11 +155,11 @@ static void sdl3_vk_ctx_swap_buffers(void *data)
    if (sdl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       sdl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (sdl->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (sdl->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&sdl->vk, sdl->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&sdl->vk);
@@ -302,5 +316,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
     * do the same. */
    NULL,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   sdl3_vk_ctx_presentable
 };
