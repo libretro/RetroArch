@@ -173,6 +173,34 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 400 ./pipeline_stall_test
           echo "[pass] pipeline_stall_test (TSan)"
 
+      - name: Build and run pipeline_rate_control_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/pipeline_rate_control
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and runs the threaded pipeline's
+          # shipping producer, consumer and rate controller against a
+          # device whose 8 ms buffer drains at exactly 48000 frames a
+          # second of wall-clock time, fed one 800-frame video frame every
+          # 1/60 s on an absolute schedule, audio sync off. The clocks
+          # match, so the right ratio is 1.0: after a four-second settle
+          # the mean rate adjustment over three seconds must be within
+          # 500 ppm of it, and the device must have taken 99.5% of what
+          # was produced. Rate control on the pipeline samples pipe and
+          # device together, at the producer; reading the device alone,
+          # which the consumer holds between half and full, pins the
+          # ratio at a bound and the pipe overflows behind it. Real time,
+          # so a loaded runner can shift the mean; the tolerance is ten
+          # times the settled residual.
+          make clean all SANITIZER=address,undefined
+          test -x pipeline_rate_control_test
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./pipeline_rate_control_test
+          echo "[pass] pipeline_rate_control_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 240 ./pipeline_rate_control_test
+          echo "[pass] pipeline_rate_control_test (TSan)"
+
       - name: Build and run ff_speedup_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/ff_speedup

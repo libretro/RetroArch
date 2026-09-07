@@ -472,6 +472,25 @@ typedef struct
    /* Upper bound on input samples per consumer pass: one video frame's
     * worth, capped to a slice. */
    size_t   pipe_pass_int16s;
+   /* Rate control's fill on the threaded pipeline, as free space in
+    * device bytes, sampled by the producer before each publish and
+    * read by the consumer's controller; -1 before the first sample.
+    *
+    * The device's own fill cannot be the control variable here: the
+    * consumer waits for half the device's buffer and writes half, so
+    * that fill sits between half and full whatever the clocks do, and a
+    * controller reading it - at any point of the pass - sees a constant
+    * error and pins the ratio at a bound. What the clocks move is the
+    * pipe ring in front of the device: a production surplus collects
+    * there, a deficit empties it. So the fill is the two together, the
+    * pipe's frames counted at the device's rate, and it is read where
+    * the frame-synchronous path read it, once a frame on the core's
+    * thread before the frame is published - the pipe at its low point,
+    * the device wherever it is. The device's mean free space over the
+    * pass is a quarter of its buffer, the controller's setpoint is
+    * half, and the difference is added so a balanced pipe reads as no
+    * error. */
+   retro_atomic_int_t pipe_ctrl_avail;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main

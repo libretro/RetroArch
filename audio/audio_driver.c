@@ -743,8 +743,13 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 
    write_idx              =
          audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   avail                  = (int)audio_st->current_audio->write_avail(
-         audio_st->context_audio_data);
+   /* On the threaded pipeline the producer sampled the fill; see
+    * pipe_ctrl_avail. Until it has, the device's own. */
+   avail                  = audio_st->pipe_threaded
+         ? retro_atomic_load_acquire_int(&audio_st->pipe_ctrl_avail) : -1;
+   if (avail < 0)
+      avail               = (int)audio_st->current_audio->write_avail(
+            audio_st->context_audio_data);
    /* Never above the buffer: a driver that counts a stage in
     * write_avail() it left out of buffer_size() would otherwise push
     * the direction term past +1, and the controller with it. The
@@ -2467,6 +2472,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          return false;
       }
       audio_driver_st.pipe_pass_int16s    = per_frame * 2;
+      retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
       if (audio_driver_st.pipe_pass_int16s > AUDIO_PIPE_SLICE_INT16S)
          audio_driver_st.pipe_pass_int16s = AUDIO_PIPE_SLICE_INT16S;
       if (audio_driver_st.pipe_pass_int16s < 128)
@@ -2950,6 +2956,27 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
 #endif
          return;
+      }
+      /* Rate control's fill, before this frame goes in; see
+       * pipe_ctrl_avail. */
+      if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
+            && audio_st->current_audio->write_avail
+            && audio_st->context_audio_data
+            && audio_st->buffer_size)
+      {
+         size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         double pipe_frames = (double)retro_spsc_read_avail(&audio_st->pipe_ring)
+               / (2 * sizeof(int16_t));
+         double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
+         double eff         = (double)audio_st->current_audio->write_avail(
+                  audio_st->context_audio_data)
+               + (double)audio_st->buffer_size / 4 - pipe_bytes;
+         if (eff < 0.0)
+            eff = 0.0;
+         else if (eff > (double)audio_st->buffer_size)
+            eff = (double)audio_st->buffer_size;
+         retro_atomic_store_release_int(&audio_st->pipe_ctrl_avail, (int)eff);
       }
       /* The speedup multiplier is measured here, at the core's publish
        * cadence, and handed to the consumer; see
