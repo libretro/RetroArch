@@ -111,6 +111,15 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
  * draws each (thumbnail letterboxed above a one-line label). One
  * NSImage per row is cached; the controller decodes them one per frame
  * and calls -setImage:forRow: as they arrive. */
+/* The boxart pane: an image dropped on it becomes the selected entry's
+ * thumbnail of the pane's type (Qt's ThumbnailWidget). */
+@interface RACompanionBoxart : NSImageView
+{
+@public
+   RARCH_UNSAFE_UNRETAINED id owner;
+}
+@end
+
 @interface RACompanionGrid : NSView
 {
    RARCH_UNSAFE_UNRETAINED RACompanionController *owner; /* owner holds us; no ARC cycle */
@@ -255,6 +264,15 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)focusSearch:(id)sender;
 - (void)searchChanged:(id)sender;
 - (void)openDocs:(id)sender;
+- (void)renamePlaylist:(id)sender;
+- (BOOL)renamePlaylistAtRow:(NSInteger)row to:(const char*)newName;
+- (size_t)addPaths:(NSArray*)paths;
+- (void)addFiles:(id)sender;
+- (BOOL)installThumbnailFromPath:(const char*)imagePath;
+- (NSDragOperation)tableView:(NSTableView*)tv validateDrop:(id)info
+      proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)op;
+- (BOOL)tableView:(NSTableView*)tv acceptDrop:(id)info row:(NSInteger)row
+      dropOperation:(NSTableViewDropOperation)op;
 - (void)stopContent:(id)sender;
 - (void)unloadCore:(id)sender;
 - (void)quitRetroArch:(id)sender;
@@ -365,6 +383,23 @@ static const companion_callbacks_t cc_callbacks = {
 };
 
 /* --- Controller ------------------------------------------------------- */
+
+@implementation RACompanionBoxart
+- (NSDragOperation)draggingEntered:(id)sender
+{
+   NSPasteboard *pb = [sender draggingPasteboard];
+   if ([[pb types] containsObject:NSFilenamesPboardType])
+      return NSDragOperationCopy;
+   return NSDragOperationNone;
+}
+- (BOOL)performDragOperation:(id)sender
+{
+   NSArray *files = [[sender draggingPasteboard] propertyListForType:NSFilenamesPboardType];
+   if (![files count] || !owner)
+      return NO;
+   return [owner installThumbnailFromPath:[[files objectAtIndex:0] UTF8String]];
+}
+@end
 
 @implementation RACompanionGrid
 
@@ -1261,7 +1296,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [boxartTypes setAction:@selector(boxartTypeChanged:)];
    [content addSubview:boxartTypes];
    boxartSubdir = COMPANION_THUMB_BOXART;
-   boxart = [[NSImageView alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
+   boxart = [[RACompanionBoxart alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
+   ((RACompanionBoxart*)boxart)->owner = self;
+   [boxart registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
    [boxart setImageScaling:NSImageScaleProportionallyUpOrDown];
    [boxart setImageFrameStyle:NSImageFrameGrayBezel];
    [content addSubview:boxart];
@@ -1352,12 +1389,19 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    item = [entriesMenu addItemWithTitle:@"Delete Entry" action:@selector(deleteEntry:) keyEquivalent:@""];
    [item setTarget:self];
    [entries setMenu:entriesMenu];
+   [entries registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+   item = [entriesMenu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES))
+      action:@selector(addFiles:) keyEquivalent:@""];
+   [item setTarget:self];
 
    playlistsMenu = [[NSMenu alloc] initWithTitle:@""];
    assocMenu     = [[NSMenu alloc] initWithTitle:@"Associate Core"];
    [assocMenu setDelegate:self];
    item = [playlistsMenu addItemWithTitle:@"Associate Core" action:NULL keyEquivalent:@""];
    [item setSubmenu:assocMenu];
+   item = [playlistsMenu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST))
+      action:@selector(renamePlaylist:) keyEquivalent:@""];
+   [item setTarget:self];
    item = [playlistsMenu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:) keyEquivalent:@""];
    [item setTarget:self];
    [playlists setMenu:playlistsMenu];
@@ -2548,6 +2592,148 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [contributorsWindow center];
    }
    [contributorsWindow makeKeyAndOrderFront:nil];
+}
+
+/* --- Qt's rename / add files / drops ------------------------------------- */
+
+/* Rename the selected playlist: a sheet with a text field; the core
+ * moves the file and refreshes the list (special playlists refused). */
+- (void)renamePlaylist:(id)sender
+{
+   NSInteger row = [playlists selectedRow];
+   const char *path;
+   NSAlert *a;
+   NSTextField *field;
+   char name[NAME_MAX_LENGTH];
+   if (!wimp || browseMode || row < 0)
+      return;
+   path = companion_core_playlist_path(wimp->core, (size_t)row);
+   if (!path || string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
+      return;
+   fill_pathname(name, path_basename(path), "", sizeof(name));
+   a = [[[NSAlert alloc] init] autorelease_compat];
+   [a setMessageText:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST))];
+   [a addButtonWithTitle:@"OK"];
+   [a addButtonWithTitle:@"Cancel"];
+   field = [[[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 300, 24)] autorelease_compat];
+   [field setStringValue:BOXSTRING(name)];
+   /* 10.5+ (and not GNUstep): the field sits in the alert */
+   if ([a respondsToSelector:@selector(setAccessoryView:)])
+      [a performSelector:@selector(setAccessoryView:) withObject:field];
+   if ([a runModal] != NSAlertFirstButtonReturn)
+      return;
+   [self renamePlaylistAtRow:row to:[[field stringValue] UTF8String]];
+}
+
+/* The rename itself (the harness calls this without the sheet). */
+- (BOOL)renamePlaylistAtRow:(NSInteger)row to:(const char*)newName
+{
+   const char *path;
+   if (!wimp || row < 0 || !newName || !*newName)
+      return NO;
+   path = companion_core_playlist_path(wimp->core, (size_t)row);
+   if (!path)
+      return NO;
+   if (!companion_core_playlist_rename(wimp->core, path, newName, NULL, 0))
+   {
+      [self setStatus:"Could not rename the playlist"];
+      return NO;
+   }
+   return YES;   /* on_playlists_changed reloads the list */
+}
+
+/* Add @paths (files or directories) to the selected playlist. */
+- (size_t)addPaths:(NSArray*)paths
+{
+   const char *pl = wimp ? companion_core_selected_playlist_path(wimp->core) : NULL;
+   const char **cp;
+   NSUInteger i, n = [paths count];
+   size_t added;
+   char msg[96];
+   if (!pl || browseMode || !n)
+      return 0;
+   cp = (const char**)malloc(n * sizeof(char*));
+   if (!cp)
+      return 0;
+   for (i = 0; i < n; i++)
+      cp[i] = [[paths objectAtIndex:i] UTF8String];
+   added = companion_core_playlist_add_files(wimp->core, pl, cp, (size_t)n, NULL, NULL);
+   free((void*)cp);
+   snprintf(msg, sizeof(msg), "%u file(s) added", (unsigned)added);
+   [self setStatus:msg];
+   return added;
+}
+
+- (void)addFiles:(id)sender
+{
+   NSOpenPanel *panel = [NSOpenPanel openPanel];
+   [panel setCanChooseDirectories:YES];
+   [panel setCanChooseFiles:YES];
+   [panel setAllowsMultipleSelection:YES];
+   [panel setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES))];
+   if ([panel runModal] != 1)
+      return;
+   {
+      NSArray *urls = [panel performSelector:@selector(URLs)];
+      NSMutableArray *paths = [NSMutableArray array];
+      NSUInteger i;
+      for (i = 0; i < [urls count]; i++)
+         [paths addObject:[[urls objectAtIndex:i] path]];
+      [self addPaths:paths];
+   }
+}
+
+/* An image dropped on the boxart pane: the selected entry's thumbnail
+ * of the pane's type (Qt's changeThumbnail), then shown again. */
+- (BOOL)installThumbnailFromPath:(const char*)imagePath
+{
+   NSInteger row;
+   const struct playlist_entry *e;
+   char db_name[NAME_MAX_LENGTH], out[PATH_MAX_LENGTH];
+   if (!wimp || browseMode || !imagePath || image_texture_get_type(imagePath) == IMAGE_TYPE_NONE)
+      return NO;
+   row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
+   if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
+      return NO;
+   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+   path_remove_extension(db_name);
+   if (!companion_core_thumbnail_install(wimp->core, db_name,
+            boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
+            !string_is_empty(e->label) ? e->label : path_basename(e->path),
+            imagePath, out, sizeof(out)))
+   {
+      [self setStatus:"Could not save the thumbnail"];
+      return NO;
+   }
+   if (thumbs)
+      companion_thumbs_forget(thumbs, out);   /* the file changed on disk */
+   boxartEntry = -1;
+   [self refreshBoxart];
+   thumbGen++;
+   if (thumbNone)
+      memset(thumbNone, 0, (size_t)companion_core_entry_count(wimp->core));
+   visFirst = visLast = -1;
+   [self setStatus:"Thumbnail updated"];
+   return YES;
+}
+
+/* NSTableView drop support (files onto the entries table). */
+- (NSDragOperation)tableView:(NSTableView*)tv validateDrop:(id)info
+      proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)op
+{
+   (void)row; (void)op; (void)info;
+   return (tv == entries && !browseMode) ? NSDragOperationCopy : NSDragOperationNone;
+}
+
+- (BOOL)tableView:(NSTableView*)tv acceptDrop:(id)info row:(NSInteger)row
+      dropOperation:(NSTableViewDropOperation)op
+{
+   NSArray *files;
+   (void)row; (void)op;
+   if (tv != entries || browseMode)
+      return NO;
+   files = [[info draggingPasteboard] propertyListForType:NSFilenamesPboardType];
+   return [self addPaths:files] > 0;
 }
 
 - (void)openDocs:(id)sender

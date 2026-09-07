@@ -23,8 +23,12 @@ trap 'rm -rf "$OUT"' EXIT
 
 LC=libretro-common
 INC="-I. -I$LC/include -Ideps -Igfx/include"
-DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DCOMPANION_CORE_TESTING"
+DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DHAVE_RTGA -DCOMPANION_CORE_TESTING"
 SRCS="ui/companion/companion_core.c \
+      ui/companion/companion_thumbs.c \
+      gfx/gfx_anim_preview.c \
+      $LC/memory/mem_stats.c \
+      $LC/formats/tga/rtga.c \
       ui/companion/test/companion_core_stubs.c \
       ui/companion/test/companion_core_test.c \
       playlist.c \
@@ -35,6 +39,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/formats/png/rpng.c \
       $LC/formats/png/rpng_apng.c \
       $LC/formats/png/rpng_encode.c \
+      $LC/file/rpng_file.c \
       $LC/memmap/memmap.c \
       $LC/streams/file_stream.c \
       $LC/streams/file_stream_transforms.c \

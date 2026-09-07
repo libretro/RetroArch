@@ -103,6 +103,26 @@ static void writef(const char *path, const char *text)
    fclose(f);
 }
 
+#include <formats/image.h>
+static void write_tga_rgba(const char *path, unsigned w, unsigned h, uint32_t argb)
+{
+   FILE *f = fopen(path, "wb");
+   uint8_t hdr[18];
+   unsigned i;
+   if (!f) return;
+   memset(hdr, 0, sizeof(hdr));
+   hdr[2] = 2; hdr[12] = (uint8_t)w; hdr[13] = (uint8_t)(w >> 8);
+   hdr[14] = (uint8_t)h; hdr[15] = (uint8_t)(h >> 8); hdr[16] = 32; hdr[17] = 0x28;
+   fwrite(hdr, 1, 18, f);
+   for (i = 0; i < w * h; i++)
+   {
+      uint8_t px[4];
+      px[0] = (uint8_t)argb; px[1] = (uint8_t)(argb >> 8); px[2] = (uint8_t)(argb >> 16); px[3] = (uint8_t)(argb >> 24);
+      fwrite(px, 1, 4, f);
+   }
+   fclose(f);
+}
+
 static void fixture(char *out, size_t len, const char *rel)
 {
    snprintf(out, len, "%s/%s", root, rel);
@@ -641,6 +661,69 @@ static void test_backend_scenario(void)
    companion_core_free(c);
 }
 
+/* Rename: only within the playlists directory; not over an existing
+ * name; the list refreshes. Add files: files and directories (walked),
+ * label from the file name, db_name from the playlist. Thumbnail
+ * install: a PNG lands at the repository path, downscaled to the
+ * setting. */
+static void test_rename_add_install(void)
+{
+   companion_core_t *c = make_core();
+   char gen[512], out[PATH_MAX_LENGTH], hist[512], p[512], sub[512];
+   const char *paths[2];
+   size_t n;
+   companion_core_refresh_playlists(c);
+   fixture(gen, sizeof(gen), "playlists/Sega - Mega Drive - Genesis.lpl");
+   fixture(hist, sizeof(hist), "history.lpl");
+   CHECK(!companion_core_playlist_rename(c, hist, "Other", out, sizeof(out)), "history (outside the dir) cannot be renamed");
+   CHECK(!companion_core_playlist_rename(c, gen, "Nintendo - Nintendo Entertainment System", out, sizeof(out)), "not over an existing playlist");
+   CHECK(!companion_core_playlist_rename(c, gen, "a/b", out, sizeof(out)), "no path separators");
+   CHECK(companion_core_playlist_rename(c, gen, "Sega - Genesis", out, sizeof(out)), "rename");
+   CHECK(string_ends_with(out, "playlists/Sega - Genesis.lpl"), "new path %s", out);
+   CHECK(path_is_valid(out) && !path_is_valid(gen), "file moved");
+   CHECK(string_is_equal(companion_core_playlist_name(c, 3), "Sega - Genesis"), "list refreshed (got %s)", companion_core_playlist_name(c, 3));
+   /* add: one file and one directory (content/sub has c.gb) */
+   fixture(p, sizeof(p), "content/a.nes");
+   fixture(sub, sizeof(sub), "content/sub");
+   paths[0] = p; paths[1] = sub;
+   n = companion_core_playlist_add_files(c, out, paths, 2, NULL, NULL);
+   CHECK(n == 2, "added a.nes and sub/c.gb (got %u)", (unsigned)n);
+   CHECK(companion_core_select_playlist_path(c, out) && iterate_until_loaded(c), "reload the renamed playlist");
+   CHECK(companion_core_entry_count(c) == 4, "2 + 2 entries (got %u)", (unsigned)companion_core_entry_count(c));
+   {
+      /* entries are shown in the file's order; the two added are last */
+      const struct playlist_entry *e = NULL;
+      size_t k;
+      for (k = 0; k < companion_core_entry_count(c); k++)
+         if (string_is_equal(companion_core_entry(c, k)->label, "a"))
+            e = companion_core_entry(c, k);
+      CHECK(e != NULL, "added entry 'a' present");
+      CHECK(e && string_is_equal(e->label, "a"), "label is the file name without extension (got %s)", e ? e->label : "-");
+      CHECK(e && string_is_equal(e->db_name, "Sega - Genesis.lpl"), "db_name is the playlist (got %s)", e ? e->db_name : "-");
+      CHECK(e && string_is_equal(e->core_path, "DETECT"), "core DETECT");
+   }
+   CHECK(companion_core_playlist_add_files(c, COMPANION_ALL_PLAYLISTS_TOKEN, paths, 1, NULL, NULL) == 0, "All Playlists takes no files");
+   /* thumbnail install from a TGA dropped on the boxart pane */
+   {
+      char img[512];
+      fixture(img, sizeof(img), "drop.tga");
+      write_tga_rgba(img, 64, 32, 0xff336699u);
+      test_settings.uints.desktop_menu_thumbnail_max_size = 16;
+      CHECK(companion_core_thumbnail_install(c, "Sega - Genesis", COMPANION_THUMB_BOXART,
+               "a", img, out, sizeof(out)), "install");
+      CHECK(string_ends_with(out, "Sega - Genesis/Named_Boxarts/a.png"), "at the repository path: %s", out);
+      CHECK(path_is_valid(out), "png written");
+      {
+         struct texture_image ti;
+         memset(&ti, 0, sizeof(ti));
+         CHECK(image_texture_load(&ti, out) && ti.width == 16 && ti.height == 8, "downscaled to max size 16 (got %ux%u)", ti.width, ti.height);
+         image_texture_free(&ti);
+      }
+      test_settings.uints.desktop_menu_thumbnail_max_size = 0;
+   }
+   companion_core_free(c);
+}
+
 static void test_run_paths(void)
 {
    companion_core_t *c = make_core();
@@ -697,6 +780,7 @@ int main(void)
    test_sort_then_folders_only();
    test_backend_scenario();
    test_sort_callback_reentrancy();
+   test_rename_add_install();
    test_run_paths();
    test_launch_options();
    teardown();

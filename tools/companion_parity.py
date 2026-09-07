@@ -81,6 +81,10 @@ FEATURES = {
     'exit retroarch':     'CMD_EVENT_QUIT',
     # Help > About Contributors: the AUTHORS list in a window
     'about contributors': 'retroarch_contributors_list',
+    # Qt's playlist rename, "Add Files" / file drop, thumbnail drop
+    'rename playlist':    'companion_core_playlist_rename',
+    'add files':          'companion_core_playlist_add_files',
+    'thumbnail drop':     'companion_core_thumbnail_install',
     'file browser':       'companion_core_browse_open',
     'pick core on run':   'companion_core_entry_needs_core',
     'window hand-off':    'companion_core_prepare_show_window',
@@ -89,6 +93,14 @@ FEATURES = {
 # (backend, feature) pairs that are intentionally absent, with a reason.
 # Empty for now: all three backends implement every feature above.
 WAIVERS = {
+    # Qt's "Add Files" is its own dialog (name, extension filter, core
+    # choice, archive filter, progress) over companion_core_playlist_push;
+    # the natives' plain add-files call is the drop semantics only.
+    ('qt', 'add files'):      'Qt: PlaylistEntryDialog over companion_core_playlist_push',
+    # Qt's thumbnail drop receives image data (a QImage from any drag
+    # source), not a file path, and saves through QImage; the core call
+    # takes a path.
+    ('qt', 'thumbnail drop'): 'Qt: QImage drop saved via changeThumbnail',
     # ('qt', 'window hand-off'): 'Qt calls it under its own guard',
 }
 

@@ -178,6 +178,8 @@ enum
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
+   IDM_CW_RENAME_PLAYLIST,
+   IDM_CW_ADD_FILES,
    IDM_CW_CLOSE,
    IDM_CW_QUIT,
    IDM_CW_START_CORE,
@@ -1748,6 +1750,154 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
 }
 
 static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
+static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, const char *path, long id);
+
+/* Files dropped on the window (Qt's FileDropWidget / ThumbnailWidget):
+ * an image dropped over the boxart pane becomes the selected entry's
+ * thumbnail of the pane's type; anything else goes into the selected
+ * playlist (directories walked). */
+static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
+{
+   POINT pt;
+   RECT rc;
+   UINT i, n = DragQueryFileA(drop, 0xFFFFFFFF, NULL, 0);
+   char **paths;
+   bool over_boxart = false;
+
+   if (!n)
+   {
+      DragFinish(drop);
+      return;
+   }
+   if (DragQueryPoint(drop, &pt) && w->boxart && w->boxart_visible)
+   {
+      ClientToScreen(w->hwnd, &pt);
+      GetWindowRect(w->boxart, &rc);
+      over_boxart = PtInRect(&rc, pt) ? true : false;
+   }
+   paths = (char**)calloc(n, sizeof(char*));
+   if (!paths)
+   {
+      DragFinish(drop);
+      return;
+   }
+   for (i = 0; i < n; i++)
+   {
+      paths[i] = (char*)malloc(PATH_MAX_LENGTH);
+      if (paths[i])
+         DragQueryFileA(drop, i, paths[i], PATH_MAX_LENGTH);
+   }
+   DragFinish(drop);
+
+   if (over_boxart && paths[0] && image_texture_get_type(paths[0]) != IMAGE_TYPE_NONE
+         && !w->browse_mode)
+   {
+      long entry = cw_focused_entry(w);
+      const struct playlist_entry *e = entry >= 0
+         ? companion_core_entry(w->core, (size_t)entry) : NULL;
+      if (e)
+      {
+         char db_name[NAME_MAX_LENGTH], out[PATH_MAX_LENGTH];
+         strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+         path_remove_extension(db_name);
+         if (companion_core_thumbnail_install(w->core, db_name,
+                  w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
+                  !string_is_empty(e->label) ? e->label : path_basename(e->path),
+                  paths[0], out, sizeof(out)))
+         {
+            /* the file changed on disk: forget it and show it again */
+            if (w->thumbs_engine)
+               companion_thumbs_forget(w->thumbs_engine, out);
+            w->boxart_entry = -2;
+            cw_boxart_update(w, entry);
+            cw_thumbs_reset(w, w->row_count);
+            cw_status_set(w, "Thumbnail updated");
+         }
+         else
+            cw_status_set(w, "Could not save the thumbnail");
+      }
+   }
+   else if (!w->browse_mode)
+   {
+      const char *pl = companion_core_selected_playlist_path(w->core);
+      size_t added   = pl ? companion_core_playlist_add_files(w->core, pl,
+            (const char *const *)paths, n, NULL, NULL) : 0;
+      char msg[96];
+      snprintf(msg, sizeof(msg), "%u file(s) added", (unsigned)added);
+      cw_status_set(w, added ? msg : "Nothing added (select a playlist first)");
+   }
+   for (i = 0; i < n; i++)
+      free(paths[i]);
+   free(paths);
+}
+
+/* Qt's "Add Files...": a multi-select picker into the selected playlist. */
+static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
+{
+   OPENFILENAMEA ofn;
+   char *buf = (char*)calloc(1, 65536);
+   const char *pl = companion_core_selected_playlist_path(w->core);
+   if (!buf || !pl || w->browse_mode)
+   {
+      free(buf);
+      return;
+   }
+   memset(&ofn, 0, sizeof(ofn));
+   ofn.lStructSize = sizeof(ofn);
+   ofn.hwndOwner   = w->hwnd;
+   ofn.lpstrFilter = "All files\0*.*\0";
+   ofn.lpstrFile   = buf;
+   ofn.nMaxFile    = 65536;
+   ofn.lpstrTitle  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES);
+   ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY
+                   | OFN_ALLOWMULTISELECT | OFN_EXPLORER;
+   if (GetOpenFileNameA(&ofn) && buf[0])
+   {
+      /* dir\0file1\0file2\0\0, or a single full path */
+      char dir[PATH_MAX_LENGTH];
+      const char *p = buf + strlen(buf) + 1;
+      const char **paths = NULL;
+      size_t n = 0, cap = 0;
+      char full[PATH_MAX_LENGTH];
+      if (!*p)
+      {
+         paths = (const char**)malloc(sizeof(char*));
+         paths[0] = buf;
+         n = 1;
+      }
+      else
+      {
+         strlcpy(dir, buf, sizeof(dir));
+         while (*p)
+         {
+            char *fp;
+            fill_pathname_join_special(full, dir, p, sizeof(full));
+            fp = strldup(full, strlen(full) + 1);
+            if (n == cap)
+            {
+               cap = cap ? cap * 2 : 8;
+               paths = (const char**)realloc((void*)paths, cap * sizeof(char*));
+            }
+            paths[n++] = fp;
+            p += strlen(p) + 1;
+         }
+      }
+      {
+         size_t added = companion_core_playlist_add_files(w->core, pl, paths, n, NULL, NULL);
+         char msg[96];
+         snprintf(msg, sizeof(msg), "%u file(s) added", (unsigned)added);
+         cw_status_set(w, msg);
+      }
+      if (n > 1 || (n == 1 && paths[0] != buf))
+      {
+         size_t i;
+         for (i = 0; i < n; i++)
+            free((void*)paths[i]);
+      }
+      free((void*)paths);
+   }
+   free(buf);
+}
 
 static void cw_run_with_combo(ui_companion_win32_wimp_t *w);
 
@@ -2381,6 +2531,8 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
    {
       AppendMenuA(menu, MF_STRING, IDM_CW_RUN,          "&Run");
       AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
+      AppendMenuA(menu, MF_STRING, IDM_CW_ADD_FILES,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES));
       AppendMenuA(menu, MF_STRING, IDM_CW_DELETE_ENTRY, "&Delete Entry");
    }
    else if (from == w->playlists)
@@ -2414,6 +2566,8 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
          AppendMenuA(menu, MF_POPUP, (UINT_PTR_COMPAT)assoc,
                "&Associate Core");
       }
+      AppendMenuA(menu, MF_STRING, IDM_CW_RENAME_PLAYLIST,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST));
       AppendMenuA(menu, MF_STRING, IDM_CW_REFRESH, "Re&fresh Playlists");
    }
 
@@ -2651,6 +2805,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_ASSOC_DETECT:
                cw_associate_core(w, IDM_CW_ASSOC_DETECT);
                return 0;
+            case IDM_CW_RENAME_PLAYLIST:
+               {
+                  /* in-place edit of the selected playlist's label;
+                   * LVN_ENDLABELEDIT applies it through the core */
+                  LRESULT sel = SendMessageA(w->playlists, LVM_GETNEXTITEM,
+                        (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+                  if (sel >= 0 && !w->browse_mode)
+                  {
+                     SetFocus(w->playlists);
+                     SendMessageA(w->playlists, LVM_EDITLABELA, (WPARAM)sel, 0);
+                  }
+               }
+               return 0;
+            case IDM_CW_ADD_FILES:
+               cw_add_files_dialog(w);
+               return 0;
             case IDM_CW_REFRESH:
                companion_core_refresh_playlists(w->core);
                return 0;
@@ -2694,6 +2864,11 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                break;
          }
          break;
+
+      case WM_DROPFILES:
+         if (w)
+            cw_drop_files(w, (HDROP)wparam);
+         return 0;
 
       case WM_CONTEXTMENU:
          if (w && ((HWND)wparam == w->entries || (HWND)wparam == w->playlists))
@@ -2847,6 +3022,23 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         && (nm->uNewState & LVIS_SELECTED))
                      cw_select_playlist(w);
                }
+               else if (hdr->code == LVN_ENDLABELEDITA)
+               {
+                  /* Qt's rename: the core moves the file; the list
+                   * refreshes from the callback. FALSE keeps the old
+                   * text when it is refused. */
+                  NMLVDISPINFOA *di = (NMLVDISPINFOA*)lparam;
+                  const char *path;
+                  if (!di->item.pszText || !*di->item.pszText)
+                     return FALSE;
+                  path = companion_core_playlist_path(w->core, (size_t)di->item.iItem);
+                  if (path && companion_core_playlist_rename(w->core, path,
+                           di->item.pszText, NULL, 0))
+                     return TRUE;
+                  return FALSE;
+               }
+               else if (hdr->code == LVN_BEGINLABELEDITA)
+                  return w->browse_mode ? TRUE : FALSE; /* TRUE cancels */
             }
             else if (hdr->idFrom == IDC_CW_BOXART_TABS)
             {
@@ -3058,7 +3250,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    /* Playlist list: a list view with a folder icon per row, like Qt's. */
    w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER
-         | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+         | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_EDITLABELS,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_PLAYLISTS, inst, NULL);
    if (w->playlists)
    {
@@ -3275,6 +3467,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_BOXART, inst, NULL);
    w->boxart_entry = -1;
+   DragAcceptFiles(w->hwnd, TRUE);
 
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SINGLESEL,

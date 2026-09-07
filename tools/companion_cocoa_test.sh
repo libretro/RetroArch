@@ -55,7 +55,7 @@ EOF
 
 LC=libretro-common
 INC="-I$SHIM -I. -I$LC/include -Ideps -Igfx/include"
-DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COCOA -DTARGET_OS_OSX=1 -DHAVE_RPNG -DHAVE_COMPANION_WIMP -DCOMPANION_TEST_NO_MAIN -DCOMPANION_CORE_TESTING"
+DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COCOA -DTARGET_OS_OSX=1 -DHAVE_RPNG -DHAVE_RTGA -DHAVE_COMPANION_WIMP -DCOMPANION_TEST_NO_MAIN -DCOMPANION_CORE_TESTING"
 OBJCFLAGS="$(gnustep-config --objc-flags) -Wall -Wno-unused-parameter -Wno-multichar"
 LDFLAGS="$(gnustep-config --gui-libs) -lpthread -lm -lz"
 
@@ -68,7 +68,7 @@ CSRCS="ui/companion/companion_core.c \
        playlist.c \
        $LC/formats/json/rjson.c $LC/formats/image_texture.c $LC/formats/image_transfer.c \
        $LC/formats/data_transfer.c $LC/formats/png/rpng.c $LC/formats/png/rpng_apng.c \
-       $LC/formats/png/rpng_encode.c $LC/memmap/memmap.c $LC/memory/mem_stats.c \
+       $LC/formats/png/rpng_encode.c $LC/file/rpng_file.c $LC/formats/tga/rtga.c $LC/memmap/memmap.c $LC/memory/mem_stats.c \
        $LC/streams/file_stream.c $LC/streams/file_stream_transforms.c $LC/streams/interface_stream.c \
        $LC/streams/memory_stream.c $LC/streams/rzip_stream.c $LC/streams/trans_stream.c \
        $LC/streams/trans_stream_pipe.c $LC/streams/trans_stream_zlib.c $LC/streams/trans_stream_deflate.c \

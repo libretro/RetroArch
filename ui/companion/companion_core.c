@@ -28,6 +28,10 @@
 #endif
 #include <ctype.h>
 #include <time.h>
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
+#include "companion_thumbs.h"
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/archive_file.h>
@@ -335,6 +339,8 @@ static void companion_core_migrate_qt_cfg(void)
    filestream_delete(path);
 }
 
+const char *companion_core_selected_playlist_path(companion_core_t *core);
+bool companion_core_select_playlist_path(companion_core_t *core, const char *path);
 static void companion_core_browse_worker_stop(companion_core_t *core);
 static void companion_core_browse_poll(companion_core_t *core);
 static long companion_core_browse_real(companion_core_t *core, size_t i);
@@ -381,6 +387,154 @@ void companion_core_free(companion_core_t *core)
    free(core->browse_size);
    free(core->browse_mtime);
    free(core);
+}
+
+/* --- rename / add files / thumbnail install ------------------------------ */
+
+bool companion_core_playlist_rename(companion_core_t *core,
+      const char *path, const char *new_name, char *out_path, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   char basedir[PATH_MAX_LENGTH], dir_playlist[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH];
+   const char *ext;
+   size_t l;
+   if (!core || string_is_empty(path) || string_is_empty(new_name))
+      return false;
+   if (strchr(new_name, '/') || strchr(new_name, '\\'))
+      return false;
+   strlcpy(basedir, path, sizeof(basedir));
+   path_basedir(basedir);
+   strlcpy(dir_playlist, settings->paths.directory_playlist, sizeof(dir_playlist));
+   fill_pathname_slash(dir_playlist, sizeof(dir_playlist));
+   /* Special playlists (history etc.) live outside: not renamable. */
+   if (!string_is_equal_case_insensitive(basedir, dir_playlist))
+      return false;
+   ext = path_get_extension(path);
+   l   = strlcpy(new_path, basedir, sizeof(new_path));
+   l  += strlcpy(new_path + l, new_name, sizeof(new_path) - l);
+   if (ext && *ext && l + 1 < sizeof(new_path))
+   {
+      new_path[l++] = '.';
+      strlcpy(new_path + l, ext, sizeof(new_path) - l);
+   }
+   if (path_is_valid(new_path))
+      return false;                /* a playlist by that name exists */
+   if (filestream_rename(path, new_path) != 0)
+      return false;
+   if (out_path)
+      strlcpy(out_path, new_path, len);
+   companion_core_refresh_playlists(core);
+   return true;
+}
+
+static size_t companion_core_add_one(companion_core_t *core,
+      playlist_t *pl, const char *path, const char *db_name,
+      const char *core_path, const char *core_name, int depth)
+{
+   size_t added = 0;
+   if (path_is_directory(path))
+   {
+      struct string_list *list;
+      size_t i;
+      if (depth > 32)
+         return 0;
+      list = dir_list_new(path, NULL, true, false, false, false);
+      if (!list)
+         return 0;
+      for (i = 0; i < list->size; i++)
+         added += companion_core_add_one(core, pl, list->elems[i].data,
+               db_name, core_path, core_name, depth + 1);
+      string_list_free(list);
+      return added;
+   }
+   if (!path_is_valid(path))
+      return 0;
+   {
+      char label[NAME_MAX_LENGTH];
+      fill_pathname(label, path_basename(path), "", sizeof(label));
+      if (companion_core_playlist_push(core, pl, path, label,
+               core_path ? core_path : "DETECT",
+               core_name ? core_name : "DETECT", db_name))
+         added++;
+   }
+   return added;
+}
+
+size_t companion_core_playlist_add_files(companion_core_t *core,
+      const char *playlist_path, const char *const *paths, size_t n,
+      const char *core_path, const char *core_name)
+{
+   playlist_t *pl;
+   char db_name[NAME_MAX_LENGTH];
+   size_t i, added = 0;
+   if (!core || string_is_empty(playlist_path) || !paths || !n)
+      return 0;
+   if (string_is_equal(playlist_path, COMPANION_ALL_PLAYLISTS_TOKEN))
+      return 0;
+   pl = companion_core_playlist_open_private(core, playlist_path);
+   if (!pl)
+      return 0;
+   strlcpy(db_name, path_basename(playlist_path), sizeof(db_name));
+   for (i = 0; i < n; i++)
+      if (paths[i] && *paths[i])
+         added += companion_core_add_one(core, pl, paths[i], db_name,
+               core_path, core_name, 0);
+   companion_core_playlist_release(core, pl, true, added > 0);
+   if (added && string_is_equal(companion_core_selected_playlist_path(core), playlist_path))
+      companion_core_select_playlist_path(core, playlist_path); /* reload */
+   return added;
+}
+
+bool companion_core_thumbnail_install(companion_core_t *core,
+      const char *db_name, const char *type, const char *label,
+      const char *image_path, char *out_path, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   char dir[PATH_MAX_LENGTH], dst[PATH_MAX_LENGTH];
+   struct texture_image img;
+   uint32_t *bits = NULL;
+   unsigned w, h;
+   bool ok;
+   if (!core || string_is_empty(image_path) || string_is_empty(db_name)
+         || string_is_empty(type) || string_is_empty(label))
+      return false;
+   /* the repository path, which also names the directory */
+   if (!companion_core_thumbnail_path(core, db_name, type, label, NULL,
+            dst, sizeof(dst)))
+      return false;
+   strlcpy(dir, dst, sizeof(dir));
+   path_basedir(dir);
+   if (!path_is_directory(dir) && !path_mkdir(dir))
+      return false;
+   memset(&img, 0, sizeof(img));
+   if (!image_texture_load(&img, image_path) || !img.pixels || !img.width || !img.height)
+   {
+      image_texture_free(&img);
+      return false;
+   }
+   w = img.width;
+   h = img.height;
+   {
+      unsigned max = settings->uints.desktop_menu_thumbnail_max_size;
+      if (max && (w > max || h > max))
+      {
+         /* fit inside max x max, keep aspect */
+         unsigned nw = w >= h ? max : (unsigned)((uint64_t)w * max / h);
+         unsigned nh = h >= w ? max : (unsigned)((uint64_t)h * max / w);
+         if (nw < 1) nw = 1;
+         if (nh < 1) nh = 1;
+         bits = companion_thumbs_scale(img.pixels, w, h, (int)nw, (int)nh, 0);
+         w = nw;
+         h = nh;
+      }
+   }
+   ok = rpng_save_image_argb(dst, bits ? bits : img.pixels, w, h, w * sizeof(uint32_t));
+   free(bits);
+   image_texture_free(&img);
+   if (ok && out_path)
+      strlcpy(out_path, dst, len);
+   return ok;
 }
 
 /* --- "All Playlists" aggregation ---------------------------------------- */

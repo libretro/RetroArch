@@ -3151,15 +3151,9 @@ void MainWindow::onCurrentListItemDataChanged(QListWidgetItem *item)
 void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
 {
    char old_path[PATH_MAX_LENGTH];
-   char new_path[PATH_MAX_LENGTH];
-   char old_basedir[PATH_MAX_LENGTH];
-   char dir_playlist[PATH_MAX_LENGTH];
    char old_name_buf[PATH_MAX_LENGTH];
-   const char *ext               = NULL;
+   char new_path[PATH_MAX_LENGTH];
    QString oldName;
-   QString newPath;
-   settings_t *settings          = config_get_ptr();
-   const char *path_dir_playlist = settings->paths.directory_playlist;
 
    if (!item)
       return;
@@ -3167,55 +3161,24 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
    strlcpy(old_path,
          item->data(Qt::UserRole).toString().toUtf8().constData(),
          sizeof(old_path));
-
    /* completeBaseName(): strip directory and extension */
    fill_pathname(old_name_buf, path_basename(old_path), "",
          sizeof(old_name_buf));
    oldName = QString::fromUtf8(old_name_buf);
-
-   /* Compare the playlist's directory with path_dir_playlist
-    * case-insensitively to match Qt's QDir == QDir behaviour
-    * on Windows. */
-   strlcpy(old_basedir, old_path, sizeof(old_basedir));
-   path_basedir(old_basedir);
-   strlcpy(dir_playlist, path_dir_playlist, sizeof(dir_playlist));
-   fill_pathname_slash(dir_playlist, sizeof(dir_playlist));
-
-   if (!string_is_equal_case_insensitive(old_basedir, dir_playlist))
-   {
-      /* Special playlists (history etc.) can't have an association.
-       * Set the old name back if user tried to rename one. */
-      item->setText(oldName);
-      return;
-   }
 
    /* Block this signal because setData() would trigger
     * an infinite loop here */
    disconnect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)),
          this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));
 
-   /* Build new path: basedir + newName + "." + extension */
-   ext = path_get_extension(old_path);
-   {
-      QByteArray newNameUtf8 = newName.toUtf8();
-      size_t _len = strlcpy(new_path, old_basedir, sizeof(new_path));
-      _len += strlcpy(new_path + _len, newNameUtf8.constData(),
-            sizeof(new_path) - _len);
-      if (ext && *ext)
-      {
-         _len += strlcpy_lit(new_path + _len, ".", sizeof(new_path) - _len);
-         strlcpy(new_path + _len, ext, sizeof(new_path) - _len);
-      }
-   }
-
-   newPath = QString::fromUtf8(new_path);
-   item->setData(Qt::UserRole, newPath);
-
-   if (filestream_rename(old_path, new_path) != 0)
-   {
-      RARCH_ERR("[Qt] Could not rename playlist.\n");
+   /* The rules (only inside the playlists directory - special
+    * playlists keep their name - never over an existing one) and the
+    * move live in the core, shared with the native companions. */
+   if (companion_core_playlist_rename(ui_companion_qt_core(), old_path,
+            newName.toUtf8().constData(), new_path, sizeof(new_path)))
+      item->setData(Qt::UserRole, QString::fromUtf8(new_path));
+   else
       item->setText(oldName);
-   }
 
    connect(m_listWidget, SIGNAL(itemChanged(QListWidgetItem*)),
          this, SLOT(onCurrentListItemDataChanged(QListWidgetItem*)));

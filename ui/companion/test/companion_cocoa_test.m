@@ -48,6 +48,7 @@
 #include "../../../configuration.h"
 #include "../../../ui/ui_companion_driver.h"
 #include "../../../ui/companion/companion_core.h"
+#include <file/file_path.h>
 #include "../../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../../ui/drivers/cocoa/apple_platform.h"
 
@@ -419,6 +420,76 @@ int main(int argc, char **argv)
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"unloadCore:")], "Unload Core implemented");
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"quitRetroArch:")], "Exit RetroArch implemented");
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"aboutRetroArch:")], "About implemented");
+   }
+
+   /* --- rename / add files / thumbnail drop, through the controller --- */
+   {
+      char p1[600], p2[600], img[600], out[600];
+      NSMutableArray *paths = [NSMutableArray array];
+      size_t before, after;
+      SEL s;
+      /* back to the playlists tab and the Genesis playlist (row 3) */
+      [tabs selectTabViewItemAtIndex:0];
+      pump(data, 200);
+      companion_core_select_playlist(peek->core, 3);
+      pump(data, 500);
+      before = companion_core_entry_count(peek->core);
+      CHECK(before == 2, "Genesis has 2 entries (got %u)", (unsigned)before);
+      snprintf(p1, sizeof(p1), "%s/content/a.nes", root);
+      snprintf(p2, sizeof(p2), "%s/content/sub", root);
+      [paths addObject:[NSString stringWithUTF8String:p1]];
+      [paths addObject:[NSString stringWithUTF8String:p2]];
+      s = NSSelectorFromString(@"addPaths:");
+      CHECK([ctrl respondsToSelector:s], "addPaths: implemented");
+      {
+         size_t added = (size_t)[ctrl performSelector:s withObject:paths];
+         (void)added;
+      }
+      pump(data, 600);
+      after = companion_core_entry_count(peek->core);
+      CHECK(after == before + 2, "drop of a file and a directory added 2 (got %u)", (unsigned)after);
+
+      /* thumbnail drop onto the pane for the selected entry */
+      snprintf(img, sizeof(img), "%s/drop2.tga", root);
+      {
+         FILE *f = fopen(img, "wb");
+         uint8_t hdr[18]; int i;
+         memset(hdr, 0, 18); hdr[2] = 2; hdr[12] = 8; hdr[14] = 8; hdr[16] = 32; hdr[17] = 0x28;
+         fwrite(hdr, 1, 18, f);
+         for (i = 0; i < 64; i++) { uint8_t px[4] = { 0x33, 0x66, 0x99, 0xff }; fwrite(px, 1, 4, f); }
+         fclose(f);
+      }
+      [(NSTableView*)[entriesScroll documentView] selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+      pump(data, 100);
+      s = NSSelectorFromString(@"installThumbnailFromPath:");
+      CHECK([ctrl respondsToSelector:s], "installThumbnailFromPath: implemented");
+      {
+         BOOL ok = (BOOL)(intptr_t)[ctrl performSelector:s withObject:(id)img];
+         CHECK(ok, "thumbnail installed from a dropped image");
+      }
+      {
+         const struct playlist_entry *e = companion_core_entry(peek->core, 0);
+         char db[128];
+         strlcpy(db, e->db_name, sizeof(db)); path_remove_extension(db);
+         companion_core_thumbnail_path(peek->core, db, COMPANION_THUMB_BOXART, e->label, e->path, out, sizeof(out));
+         CHECK(path_is_valid(out), "png exists at the repository path: %s", out);
+      }
+
+      /* rename through the core-backed method */
+      s = NSSelectorFromString(@"renamePlaylistAtRow:to:");
+      CHECK([ctrl respondsToSelector:s], "rename implemented");
+      {
+         NSMethodSignature *sig = [ctrl methodSignatureForSelector:s];
+         NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+         NSInteger row = 3; const char *nm = "Sega - Genesis Renamed"; BOOL ok = NO;
+         [inv setSelector:s]; [inv setTarget:ctrl];
+         [inv setArgument:&row atIndex:2]; [inv setArgument:&nm atIndex:3];
+         [inv invoke]; [inv getReturnValue:&ok];
+         CHECK(ok, "rename accepted");
+      }
+      pump(data, 300);
+      CHECK(string_is_equal(companion_core_playlist_name(peek->core, 3), "Sega - Genesis Renamed"), "list shows the new name (got %s)", companion_core_playlist_name(peek->core, 3));
+      CHECK([leftTable numberOfRows] == 4, "playlist table reloaded (%ld rows)", (long)[leftTable numberOfRows]);
    }
 
    /* --- closing hands the keyboard back --- */

@@ -450,6 +450,33 @@ playlist_t *companion_core_playlist_open(companion_core_t *core,
 /* Write @playlist to disk if @write, then free it if @owned. */
 void companion_core_playlist_release(companion_core_t *core,
       playlist_t *playlist, bool owned, bool write);
+/* Rename playlist file @path to @new_name (no directory, no extension)
+ * within the playlists directory, as Qt's rename does: special
+ * playlists (history, favorites - outside that directory) cannot be
+ * renamed. Writes @out_path (the new file) on success. */
+bool companion_core_playlist_rename(companion_core_t *core,
+      const char *path, const char *new_name, char *out_path, size_t len);
+
+/* Add content to playlist file @playlist_path, as Qt's drop / "Add
+ * files" does: each of @paths that is a file is pushed (label = file
+ * name without extension, db_name = the playlist's name); a directory
+ * is walked recursively. @core_path / @core_name may be NULL (DETECT).
+ * Returns the number added; the playlist is written once at the end
+ * and on_playlist_changed fires if it is the one shown. */
+size_t companion_core_playlist_add_files(companion_core_t *core,
+      const char *playlist_path, const char *const *paths, size_t n,
+      const char *core_path, const char *core_name);
+
+/* Install an image dropped on a thumbnail pane as entry's thumbnail of
+ * @type (COMPANION_THUMB_*), as Qt's changeThumbnail does: decoded,
+ * downscaled to desktop_menu_thumbnail_max_size if set, written as
+ * PNG under the repository path (directories created). Writes the
+ * file path to @out_path on success. @image_path is a file; the
+ * caller's engine should forget() that path afterwards. */
+bool companion_core_thumbnail_install(companion_core_t *core,
+      const char *db_name, const char *type, const char *label,
+      const char *image_path, char *out_path, size_t len);
+
 /* Replace entry @index of playlist file @path with @entry and write. */
 bool companion_core_playlist_update_entry(companion_core_t *core,
       const char *path, size_t index, const struct playlist_entry *entry);
