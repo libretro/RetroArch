@@ -1,15 +1,17 @@
-/* Sink rate estimation: the frontend's slow, integral rate term.
+/* Sink rate estimation: the frontend's slow, integral rate term, put
+ * through its paces.
  *
  * A scripted driver on a synthetic clock, the estimator driven with
- * the same clock, so the run is instant and every figure exact. The
+ * the same clock, so every run is instant and every figure exact. The
  * device counts what it took in whole 480-frame periods, as a shared
- * WASAPI engine does - the count is only known to a period, 2500 ppm
- * of noise over four seconds, 330 over thirty - and the writer refuses
- * half a percent of what it is offered, as a non-blocking writer
- * against a small buffer does. Both were missing from the first
- * harness, and both were what the field showed: a bias of +1867 ppm
- * against a device measured at +11, and readings of -16045 and -5061
- * ppm from a device surely within a hundred. */
+ * WASAPI engine does; the writer can refuse a fraction of what it is
+ * offered, as a non-blocking writer against a small buffer does; the
+ * core can pause, run off rate, or warm up; the threaded pipeline's
+ * ring can fill and drain; the main thread can stall. Each scenario
+ * is one of those, from a field report or a harness that found it,
+ * and asserts what the estimator must do about it.
+ *
+ * Includes audio/audio_driver.c so the shipping estimator runs. */
 
 #include <stdio.h>
 #include <string.h>
@@ -18,14 +20,18 @@
 #include "../../../audio/audio_driver.c"
 
 static unsigned failures = 0;
-#define CHECK(cond, ...) do { if (!(cond)) { printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
+#define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
 
-static double   dev_ppm       = 0.0;
+/* --- the device and the source ---------------------------------------- */
+
+static double   dev_ppm       = 0.0;     /* the device's clock against the host's */
 static int64_t  clock_usec    = 0;
-static bool     dev_frozen    = false;
+static bool     dev_frozen    = false;   /* the device stopped consuming */
 static size_t   dev_frozen_at = 0;
-static unsigned dev_quantum   = 480;
-static double   drop_fraction = 0.0;
+static unsigned dev_quantum   = 480;     /* it counts in whole periods */
+static double   drop_fraction = 0.0;     /* the writer refuses this much */
+static double   core_pause_sec = 0.0;    /* per second: time the core produced nothing */
+static double   src_ppm       = 0.0;     /* the source's own clock, apart from the ratio */
 
 static size_t dev_frames_consumed(void *data)
 {
@@ -53,28 +59,27 @@ static audio_driver_t scripted = {
    dev_buffer_size, NULL, NULL, dev_frames_consumed
 };
 
-/* One second of synthetic time in which the frontend offered 48000 x
- * bias frames - what the resampler produces - and the driver took all
- * but the drop fraction; then the estimator runs. The write sites do
- * this accounting in the frontend; here it is done as they do. */
-static double core_pause_sec = 0.0;  /* per second: time the core produced nothing */
-/* The source's own rate against the host clock, apart from the
- * resampler's ratio. Zero is a source that produces exactly nominal;
- * a real one need not - a core that misses frames, or is paced by a
- * display that is not quite its nominal rate, produces measurably
- * less or more per host second, and the estimator sees that as part
- * of the ratio it corrects. */
-static double src_ppm = 0.0;
-static void run_second(audio_driver_state_t *st)
+/* A span of synthetic time, as the write sites account for it: the
+ * frontend offered 48000 x ratio frames a second, the driver took all
+ * but the refused fraction, and the estimator ran. */
+static void run_usec(audio_driver_state_t *st, int64_t usec)
 {
    double ratio   = st->src_ratio_curr / st->src_ratio_orig;
-   double offered = 48000.0 * ratio * (1.0 + src_ppm / 1e6)
+   double span    = (double)usec / 1e6;
+   double offered = 48000.0 * span * ratio * (1.0 + src_ppm / 1e6)
          * (1.0 - core_pause_sec);
-   clock_usec           += 1000000;
+   clock_usec           += usec;
    st->sink_offered_raw += (uint64_t)offered;
    st->sink_offered     += offered / ratio;
    st->sink_accepted    += (uint64_t)(offered * (1.0 - drop_fraction));
    audio_driver_sink_update(st, clock_usec);
+}
+static void run_second(audio_driver_state_t *st) { run_usec(st, 1000000); }
+static void run_seconds(audio_driver_state_t *st, int n)
+{
+   int i;
+   for (i = 0; i < n; i++)
+      run_second(st);
 }
 
 static void reset(audio_driver_state_t *st, bool control)
@@ -86,13 +91,14 @@ static void reset(audio_driver_state_t *st, bool control)
    st->src_ratio_curr    = 1.0;
    st->sink_bias         = 1.0;
    st->rate_control_delta = 0.005f;
-   /* A non-blocking writer: the source has its own clock. The blocking
-    * case is its own test below. */
+   /* A non-blocking writer: the source has its own clock. */
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_NONBLOCK);
    if (control)
       AUDIO_FLAGS_SET(st, AUDIO_FLAG_CONTROL);
    clock_usec     = 0;
+   dev_ppm        = 0.0;
    dev_frozen     = false;
+   dev_quantum    = 480;
    drop_fraction  = 0.0;
    core_pause_sec = 0.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
@@ -101,116 +107,150 @@ static void reset(audio_driver_state_t *st, bool control)
 }
 
 static double bias_ppm(const audio_driver_state_t *st) { return (st->sink_bias - 1.0) * 1e6; }
+static double dev_meas_ppm(const audio_driver_state_t *st) { return (st->sink_rate_hz / 48000.0 - 1.0) * 1e6; }
+static double src_meas_ppm(const audio_driver_state_t *st) { return (st->sink_source_hz / 48000.0 - 1.0) * 1e6; }
 
-int main(void)
+/* --- the clocks ------------------------------------------------------- */
+
+/* A device 120 ppm fast, counting in periods, rate control off. Nothing
+ * before thirty seconds; the first application within a period's worth
+ * of noise over thirty seconds; after five minutes within 40. */
+static void s_fast_device(audio_driver_state_t *st)
 {
-   audio_driver_state_t *st = &audio_driver_st;
-   int i;
-
-   /* 1. A device 120 ppm fast, counting in 480-frame periods, rate
-    *    control off. Nothing is applied before thirty seconds; the
-    *    first application is within the period's worth of noise over
-    *    thirty seconds - 333 ppm - and after five minutes the baseline
-    *    has grown enough that it is within 40. */
    reset(st, false);
    dev_ppm = 120.0;
-   for (i = 0; i < 29; i++)
-      run_second(st);
+   run_seconds(st, 29);
    CHECK(st->sink_applied == 0 && st->sink_bias == 1.0, "a bias was applied before thirty seconds");
-   for (; i < 34; i++)
-      run_second(st);
-   printf("   +120 ppm device, 480-frame periods: after %d s bias %+.0f ppm, measured %.1f Hz\n",
-         i, bias_ppm(st), st->sink_rate_hz);
-   CHECK(st->sink_applied >= 1, "no bias applied by 34 s");
+   run_seconds(st, 9);
+   printf("      at 38 s: bias %+.0f ppm, device measured %+.0f ppm\n", bias_ppm(st), dev_meas_ppm(st));
+   CHECK(st->sink_applied >= 1, "no bias applied by 38 s");
    CHECK(fabs(bias_ppm(st) - 120.0) < 400.0, "first application %+.0f ppm, off by more than a period's worth", bias_ppm(st));
-   for (; i < 300; i++)
-      run_second(st);
-   printf("   after %d s: bias %+.0f ppm, measured %.1f Hz, applied %u times\n",
-         i, bias_ppm(st), st->sink_rate_hz, st->sink_applied);
+   run_seconds(st, 262);
+   printf("      at 300 s: bias %+.0f ppm, applied %u times\n", bias_ppm(st), st->sink_applied);
    CHECK(fabs(bias_ppm(st) - 120.0) < 40.0, "after five minutes bias %+.0f ppm, expected +120", bias_ppm(st));
    CHECK(fabs(st->src_ratio_curr - st->sink_bias) < 1e-12, "ratio not set from the bias with rate control off");
+}
 
-   /* 2. The same device with a writer that refuses half a percent of
-    *    what it is offered. The ratio is built on offered frames, so the
-    *    bias still finds the device; the refused frames are warned
-    *    about, not chased. Before this it read the refusal as a device
-    *    5000 ppm fast and sped the resampler up to match. */
+/* The other direction. */
+static void s_slow_device(audio_driver_state_t *st)
+{
+   reset(st, false);
+   dev_ppm = -80.0;
+   run_seconds(st, 300);
+   printf("      bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) + 80.0) < 40.0, "bias %+.0f ppm, expected -80", bias_ppm(st));
+}
+
+/* Two hours: the sums are doubles over a session, and must neither
+ * drift nor lose the crystal. */
+static void s_long_session(audio_driver_state_t *st)
+{
+   reset(st, false);
+   dev_ppm = 37.0;
+   run_seconds(st, 7200);
+   printf("      after two hours: bias %+.0f ppm, applied %u times\n", bias_ppm(st), st->sink_applied);
+   CHECK(fabs(bias_ppm(st) - 37.0) < 5.0, "after two hours bias %+.0f ppm, expected +37", bias_ppm(st));
+}
+
+/* The estimator is driven from every write; a core writing per frame
+ * and one writing per second must measure the same clock. */
+static void s_write_cadence(audio_driver_state_t *st)
+{
+   double per_frame, per_second;
+   int i;
+   reset(st, false);
+   dev_ppm = 120.0;
+   for (i = 0; i < 300 * 60; i++)
+      run_usec(st, 16667);
+   per_frame = bias_ppm(st);
+   reset(st, false);
+   dev_ppm = 120.0;
+   run_seconds(st, 300);
+   per_second = bias_ppm(st);
+   printf("      per frame %+.0f ppm, per second %+.0f ppm\n", per_frame, per_second);
+   CHECK(fabs(per_frame - per_second) < 30.0, "the write cadence changed the estimate: %+.0f vs %+.0f", per_frame, per_second);
+}
+
+/* --- what is not a clock ---------------------------------------------- */
+
+/* A writer refusing half a percent: the ratio is on offered frames, so
+ * the bias still finds the device; the refusal is warned about once. */
+static void s_refused_frames(audio_driver_state_t *st)
+{
    reset(st, false);
    dev_ppm = 120.0;
    drop_fraction = 0.005;
-   for (i = 0; i < 300; i++)
-      run_second(st);
-   printf("   +120 ppm device, 0.5%% refused: bias %+.0f ppm, drop warning %s\n",
-         bias_ppm(st), st->sink_drop_warned ? "raised" : "not raised");
+   run_seconds(st, 300);
+   printf("      bias %+.0f ppm, drop warning %s\n", bias_ppm(st),
+         (st->sink_warned & AUDIO_SINK_WARNED_DROPPED) ? "raised" : "not raised");
    CHECK(fabs(bias_ppm(st) - 120.0) < 40.0, "with refused frames the bias is %+.0f ppm, expected +120", bias_ppm(st));
-   CHECK(st->sink_drop_warned, "half a percent refused for five minutes and no warning");
+   CHECK(st->sink_warned & AUDIO_SINK_WARNED_DROPPED, "half a percent refused for five minutes and no warning");
+}
 
-   /* 3. A device 80 ppm slow: the other direction. */
-   reset(st, false);
-   dev_ppm = -80.0;
-   for (i = 0; i < 300; i++)
-      run_second(st);
-   printf("   -80 ppm device: bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st) + 80.0) < 40.0, "bias %+.0f ppm, expected -80", bias_ppm(st));
-
-   /* 4. A ratio too far off to be a crystal: refused, not clamped.
-    *
-    *    This used to assert the clamp, and the clamp is what made
-    *    CoreAudio crackle about a minute in: a bias of 2000 ppm empties
-    *    a 64 ms buffer in thirty-two seconds, and the first application
-    *    lands at sixty. No crystal is 5000 ppm out - a ratio like this
-    *    means the two counts are not measuring the same thing - so the
-    *    only safe reading is to leave the resampler alone. The rate is
-    *    still measured and still reported, which is what a mismeasuring
-    *    driver needs in order to be found. */
+/* Too far off to be a crystal: refused, never clamped, and the rate is
+ * still measured and shown so a mismeasuring driver can be found. */
+static void s_implausible_device(audio_driver_state_t *st)
+{
    reset(st, false);
    dev_ppm = 5000.0;
-   for (i = 0; i < 120; i++)
-      run_second(st);
-   printf("   +5000 ppm device: bias %+.0f ppm (refused as implausible)\n", bias_ppm(st));
-   CHECK(fabs(st->sink_bias - 1.0) < 1e-9,
-         "bias %.6f, expected no bias at all", st->sink_bias);
-   CHECK(st->sink_rate_hz > 48000.0,
-         "the rate must still be measured and reported, got %.1f", st->sink_rate_hz);
+   run_seconds(st, 120);
+   printf("      +5000 ppm: bias %+.0f ppm, device shown at %+.0f ppm\n", bias_ppm(st), dev_meas_ppm(st));
+   CHECK(fabs(st->sink_bias - 1.0) < 1e-9, "bias %.6f, expected none at all", st->sink_bias);
+   CHECK(fabs(dev_meas_ppm(st) - 5000.0) < 500.0, "the rate must still be measured and shown, got %+.0f", dev_meas_ppm(st));
+   CHECK(st->sink_warned & AUDIO_SINK_WARNED_IMPLAUSIBLE, "no refusal was logged");
 
-   /* 4b. Either side of the plausibility line, so the line itself is
-    *     covered rather than just the far side of it. */
    reset(st, false);
    dev_ppm = 400.0;
-   for (i = 0; i < 300; i++)
-      run_second(st);
-   printf("   +400 ppm device: bias %+.0f ppm (inside the plausible range)\n", bias_ppm(st));
-   CHECK(bias_ppm(st) > 200.0, "a 400 ppm device must still be corrected, got %+.0f", bias_ppm(st));
+   run_seconds(st, 300);
+   printf("      +400 ppm: bias %+.0f ppm (inside the band)\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 400.0) < 60.0, "+400 ppm: bias %+.0f, expected +400", bias_ppm(st));
 
    reset(st, false);
    dev_ppm = 900.0;
-   for (i = 0; i < 300; i++)
-      run_second(st);
-   printf("   +900 ppm device: bias %+.0f ppm (outside it)\n", bias_ppm(st));
-   CHECK(fabs(st->sink_bias - 1.0) < 1e-9,
-         "a 900 ppm ratio is not a crystal; expected no bias, got %.6f", st->sink_bias);
+   run_seconds(st, 300);
+   printf("      +900 ppm: bias %+.0f ppm (outside it)\n", bias_ppm(st));
+   CHECK(st->sink_bias == 1.0, "+900 ppm: bias %+.0f, expected refused", bias_ppm(st));
+}
 
-   /* 5. Rate control on, with a non-blocking writer: the fill sits
-    *    pinned full and rate control says "slow" by its whole delta
-    *    forever - the buffer, not the clock. Its adjustment is in the
-    *    ratio the frontend resamples by and is divided out of the
-    *    offered count; the bias must still find the device's +150 ppm,
-    *    where before it walked to the clamp absorbing the mean. */
+/* A source paced at the display's rate rather than its own - video
+ * sync off, a 60.00 Hz panel against a 59.94 core - is +1000 ppm for
+ * the whole session. It never comes into the band, no bias is ever
+ * applied, the rates are shown, and it is said once. */
+static void s_source_at_display_rate(audio_driver_state_t *st)
+{
+   reset(st, false);
+   dev_ppm = 20.0;
+   src_ppm = 1000.0;
+   run_seconds(st, 180);
+   printf("      bias %+.0f ppm, source shown at %+.0f ppm, device at %+.0f\n",
+         bias_ppm(st), src_meas_ppm(st), dev_meas_ppm(st));
+   CHECK(st->sink_bias == 1.0 && st->sink_applied == 0, "a display-paced source was biased: %+.0f ppm", bias_ppm(st));
+   CHECK(fabs(src_meas_ppm(st) - 1000.0) < 100.0, "the source's rate is not shown: %+.0f", src_meas_ppm(st));
+   CHECK(st->sink_warned & AUDIO_SINK_WARNED_UNSETTLED, "a source off the band for three minutes was never said");
+}
+
+/* Rate control on with a non-blocking writer: its adjustment sits at
+ * its bound and is in the ratio; divided out of the offered count, the
+ * bias must still find the device's +150. */
+static void s_rate_control_pinned(audio_driver_state_t *st)
+{
+   int i;
    reset(st, true);
    dev_ppm = 150.0;
    for (i = 0; i < 300; i++)
    {
-      /* What compute_rate_adjust() would set: orig x adjust x bias. */
       st->src_ratio_curr = st->src_ratio_orig * (1.0 - 0.005) * st->sink_bias;
       run_second(st);
    }
-   printf("   rate control pinned slow, +150 ppm device: bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st) - 150.0) < 40.0, "bias %+.0f ppm, expected +150; rate control's pinned adjustment leaked in", bias_ppm(st));
+   printf("      bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 150.0) < 40.0, "bias %+.0f ppm, expected +150; rate control's adjustment leaked in", bias_ppm(st));
+}
 
-   /* 5b. Save-state loads: the core pauses half a second every ten,
-    *     the device plays on. Those windows are excluded, and the bias
-    *     still finds the device. Before, the 1.5%% shortfall read as a
-    *     device 15000 ppm fast and the bias hit the clamp. */
+/* The core pauses half a second every ten - save states loading - and
+ * the device plays on. Those windows are out; the bias finds +120. */
+static void s_core_pauses(audio_driver_state_t *st)
+{
+   int i;
    reset(st, false);
    dev_ppm = 120.0;
    for (i = 0; i < 300; i++)
@@ -218,294 +258,308 @@ int main(void)
       core_pause_sec = (i % 10 == 0) ? 0.5 : 0.0;
       run_second(st);
    }
-   printf("   +120 ppm device with a half-second pause every ten: bias %+.0f ppm\n", bias_ppm(st));
+   core_pause_sec = 0.0;
+   printf("      bias %+.0f ppm\n", bias_ppm(st));
    CHECK(fabs(bias_ppm(st) - 120.0) < 40.0, "bias %+.0f ppm, expected +120; pauses leaked into the ratio", bias_ppm(st));
+}
 
-   /* 6. A stall in the middle - the device frozen for a check window -
-    *    starts the baseline over and moves nothing. */
+/* The main thread held for 50 ms once every two minutes - a state save,
+ * a shader built on first use - with the device at rate. In a window
+ * that is a source 1.25% slow; diluted it is -416 ppm, plausible. The
+ * source has to be within the band in every kept window. */
+static void s_main_thread_stalls(audio_driver_state_t *st)
+{
+   int i;
    reset(st, false);
-   dev_ppm = 100.0;
-   for (i = 0; i < 40; i++)
-      run_second(st);
-   {
-      double before = st->sink_bias;
-      dev_frozen_at = dev_frames_consumed(NULL);
-      dev_frozen    = true;
-      for (i = 0; i < 5; i++)
-         run_second(st);
-      CHECK(st->sink_bias == before, "a stalled window moved the bias");
-      CHECK(st->sink_discarded >= 1, "a stalled window was not discarded");
-      dev_frozen = false;
-   }
-
-   /* 6b. A blocking writer: the core runs as fast as the resampler
-    *     drains, so the source's rate is the device's over the ratio and
-    *     carries no clock. A bias set from it feeds back - the field
-    *     showed the source climbing +2300 to +3450 ppm with the bias at
-    *     the clamp. The rate is measured; the bias is not set. */
-   reset(st, false);
-   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_NONBLOCK);
-   dev_ppm = 120.0;
-   for (i = 0; i < 120; i++)
-      run_second(st);
-   printf("   blocking writer, +120 ppm device: measured %.1f Hz, bias %+.0f ppm\n", st->sink_rate_hz, bias_ppm(st));
-   CHECK(fabs(st->sink_rate_hz - 48005.76) < 5.0, "blocking: the rate was not measured (%.1f)", st->sink_rate_hz);
-   CHECK(st->sink_bias == 1.0, "blocking: a bias was applied, %+.0f ppm", bias_ppm(st));
-
-   /* 7. Disabled: nothing at all. */
-   reset(st, false);
-   config_get_ptr()->bools.audio_sink_rate_estimation = false;
-   dev_ppm = 120.0;
-   for (i = 0; i < 60; i++)
-      run_second(st);
-   CHECK(st->sink_bias == 1.0 && st->sink_applied == 0, "disabled, yet the bias moved");
-
-   /* 8. The threaded pipeline's ring filling as rate control settles:
-    *    offered is counted after the ring, so what the ring took in was
-    *    produced but not yet offered. The source's count is offered
-    *    plus the change in what the ring holds; it must read the clocks
-    *    and not the ring. Here 400 frames - 8 ms, the kind of fill a
-    *    settle leaves - go into the ring over the first 20 s while the
-    *    clocks match; the bias must come out near zero, not the +417
-    *    ppm that corrects a source looking slow by 20 frames a second.
-    *    Then the ring drains again, and the bias must stay there. */
-   reset(st, true);
-   dev_ppm = 0.0;
-   {
-      static int16_t filler[4096 * 2];
-      size_t c;
-      st->pipe_threaded = true;
-      retro_spsc_init(&st->pipe_ring, sizeof(filler));
-      /* The baseline read the ring empty; fill it 20 frames a second
-       * for 20 s - taken from what run_second() offers. */
-      for (i = 0; i < 60; i++)
-      {
-         if (i < 20)
-         {
-            retro_spsc_write(&st->pipe_ring, filler, 20 * 2 * sizeof(int16_t));
-            st->sink_offered -= 20.0;
-            st->sink_offered_raw -= 20;
-         }
-         run_second(st);
-      }
-      CHECK(fabs(bias_ppm(st)) < 60.0,
-            "the ring filling read as a slow source: bias %+.0f ppm", bias_ppm(st));
-      for (c = 0; c < 20; c++)
-      {
-         int16_t sink[20 * 2];
-         retro_spsc_read(&st->pipe_ring, sink, sizeof(sink));
-         st->sink_offered += 20.0;
-         st->sink_offered_raw += 20;
-         run_second(st);
-      }
-      CHECK(fabs(bias_ppm(st)) < 60.0,
-            "the ring draining read as a fast source: bias %+.0f ppm", bias_ppm(st));
-      retro_spsc_free(&st->pipe_ring);
-      st->pipe_threaded = false;
-   }
-
-   /* 9. A source that ran slow for its first half minute - a core
-    *    warming up after start - and at nominal since. The estimate is
-    *    over the last sixteen kept windows, so by two minutes in the
-    *    warm-up has aged out and the bias is the clocks', not the
-    *    session average. An all-time average would still carry a third
-    *    of it. */
-   reset(st, true);
-   dev_ppm = 0.0;
-   src_ppm = -1500.0;
-   for (i = 0; i < 30; i++)
-      run_second(st);
-   src_ppm = 0.0;
-   for (i = 0; i < 90; i++)
-      run_second(st);
-   CHECK(fabs(bias_ppm(st)) < 60.0,
-         "a slow start still in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
-
-   /* 9. A source that ran slow for its first half minute - a core
-    *    warming up after load - and at nominal since. The baseline
-    *    opens only once the source has been within the band for two
-    *    windows, so the warm-up is never in the sums and the bias at
-    *    two minutes is the clocks': near zero, against the device
-    *    at nominal. An average that began at start would carry a
-    *    third of the warm-up here - some +370 ppm - and walk down for
-    *    the rest of the session. */
-   reset(st, true);
-   dev_ppm = 0.0;
-   src_ppm = -1500.0;
-   for (i = 0; i < 30; i++)
-      run_second(st);
-   src_ppm = 0.0;
-   for (i = 0; i < 90; i++)
-      run_second(st);
-   printf("   slow start of -1500 ppm for 30 s, then nominal: bias %+.0f ppm at 120 s\n", bias_ppm(st));
-   /* And while it was slow, the rates were still shown - from the
-    * window alone - so the overlay had the source off the band. */
-   reset(st, true);
-   dev_ppm = 0.0;
-   src_ppm = -1500.0;
-   for (i = 0; i < 12; i++)
-      run_second(st);
-   CHECK(st->sink_rate_hz > 0.0 && st->sink_source_hz > 0.0
-         && st->sink_source_hz < 47950.0,
-         "unsettled, the rates are not shown: device %.1f source %.1f",
-         st->sink_rate_hz, st->sink_source_hz);
-   src_ppm = 0.0;
-   for (i = 0; i < 90; i++)
-      run_second(st);
-   CHECK(fabs(bias_ppm(st)) < 60.0,
-         "the slow start is in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
-   CHECK(st->sink_applied > 0, "the bias was never applied after the source settled");
-
-   /* 9b. A stall mid-session: the main thread held for 50 ms - a state
-    *     save, a shader built on first use - with the device at rate.
-    *     In a four-second window that is a source 1.25% slow, which a
-    *     two-percent gate would sum; diluted over thirty windows it is
-    *     -416 ppm, a plausible-looking ratio the bias would then
-    *     correct. The source has to be within the band a bias could
-    *     correct, whenever the window comes, or it is not a clock
-    *     measurement. Clocks matched, the bias must stay near zero. */
-   reset(st, true);
-   dev_ppm = 0.0;
-   for (i = 0; i < 40; i++)
-      run_second(st);
+   run_seconds(st, 40);
    for (i = 0; i < 240; i++)
    {
-      /* One second in 120 carries the 50 ms hole: one window in thirty. */
       core_pause_sec = (i % 120 == 0) ? 0.05 : 0.0;
       run_second(st);
    }
    core_pause_sec = 0.0;
-   printf("   a 50 ms stall every 120 s mid-session: bias %+.0f ppm\n", bias_ppm(st));
-   CHECK(fabs(bias_ppm(st)) < 60.0,
-         "the stalls were summed as a slow source: bias %+.0f ppm", bias_ppm(st));
+   printf("      bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0, "the stalls were summed as a slow source: bias %+.0f ppm", bias_ppm(st));
+}
 
+/* The device frozen for a window - a stall - moves nothing and is left
+ * out; the estimate goes on from the next window. */
+static void s_device_stall(audio_driver_state_t *st)
+{
+   double before;
+   reset(st, false);
+   dev_ppm = 100.0;
+   run_seconds(st, 40);
+   before        = st->sink_bias;
+   dev_frozen_at = dev_frames_consumed(NULL);
+   dev_frozen    = true;
+   run_seconds(st, 5);
+   CHECK(st->sink_bias == before, "a stalled window moved the bias");
+   CHECK(st->sink_discarded >= 1, "a stalled window was not left out");
+   dev_frozen = false;
+   run_seconds(st, 200);
+   printf("      bias %+.0f ppm after the stall\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 100.0) < 40.0, "after a stall the bias is %+.0f, expected +100", bias_ppm(st));
+}
+
+/* A source slow for its first half minute - a core warming up after
+ * load - then at nominal. The sums open only once the source has been
+ * in the band for two windows, so the warm-up is never in them. */
+static void s_slow_start(audio_driver_state_t *st)
+{
+   reset(st, false);
+   src_ppm = -1500.0;
+   run_seconds(st, 12);
+   CHECK(st->sink_rate_hz > 0.0 && src_meas_ppm(st) < -1000.0,
+         "unsettled, the rates are not shown or wrong: device %.1f source %+.0f ppm", st->sink_rate_hz, src_meas_ppm(st));
+   run_seconds(st, 18);
+   src_ppm = 0.0;
+   run_seconds(st, 90);
+   printf("      bias %+.0f ppm at 120 s, source shown at %+.0f ppm\n", bias_ppm(st), src_meas_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0, "the slow start is in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
+   CHECK(st->sink_applied > 0, "the bias was never applied after the source settled");
+   CHECK(fabs(src_meas_ppm(st)) < 100.0, "the shown source still carries the warm-up: %+.0f ppm", src_meas_ppm(st));
+}
+
+/* --- the threaded pipeline ---------------------------------------------- */
+
+/* The ring filling as rate control settles, and draining again. The
+ * offered count is taken after the ring, so what it holds is added
+ * back; a fill of 400 frames over 20 s must not read as -417 ppm. */
+static void s_pipe_fill_drain(audio_driver_state_t *st)
+{
+   static int16_t filler[4096 * 2];
+   int i;
+   reset(st, true);
+   st->pipe_threaded = true;
+   retro_spsc_init(&st->pipe_ring, sizeof(filler));
+   for (i = 0; i < 60; i++)
+   {
+      if (i < 20)
+      {
+         retro_spsc_write(&st->pipe_ring, filler, 20 * 2 * sizeof(int16_t));
+         st->sink_offered     -= 20.0;
+         st->sink_offered_raw -= 20;
+      }
+      run_second(st);
+   }
+   printf("      after the fill: bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0, "the ring filling read as a slow source: bias %+.0f ppm", bias_ppm(st));
+   for (i = 0; i < 20; i++)
+   {
+      int16_t sink[20 * 2];
+      retro_spsc_read(&st->pipe_ring, sink, sizeof(sink));
+      st->sink_offered     += 20.0;
+      st->sink_offered_raw += 20;
+      run_second(st);
+   }
+   printf("      after the drain: bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st)) < 60.0, "the ring draining read as a fast source: bias %+.0f ppm", bias_ppm(st));
+   retro_spsc_free(&st->pipe_ring);
+   st->pipe_threaded = false;
+}
+
+/* The producer dropped frames for want of room: those were never
+ * offered, so a window that saw any is not a measurement and is out.
+ * A drop of 600 frames once a minute would read as -208 ppm. */
+static void s_producer_drops(audio_driver_state_t *st)
+{
+   int i;
+   reset(st, false);
+   dev_ppm = 50.0;
+   run_seconds(st, 40);
+   for (i = 0; i < 240; i++)
+   {
+      if (i % 60 == 0)
+      {
+         retro_atomic_fetch_add_int(&st->pipe_dropped, 600);
+         core_pause_sec = 600.0 / 48000.0;
+      }
+      else
+         core_pause_sec = 0.0;
+      run_second(st);
+   }
+   core_pause_sec = 0.0;
+   printf("      bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 50.0) < 40.0, "dropped frames read as a slow source: bias %+.0f ppm, expected +50", bias_ppm(st));
+}
+
+/* --- modes and lifetimes ---------------------------------------------- */
+
+/* A blocking writer: the core runs as fast as the resampler drains, so
+ * the source carries no clock of its own and a bias would feed back.
+ * The rate is measured and shown; nothing is applied. */
+static void s_blocking_writer(audio_driver_state_t *st)
+{
+   reset(st, false);
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_NONBLOCK);
+   dev_ppm = 120.0;
+   run_seconds(st, 120);
+   printf("      measured %+.0f ppm, bias %+.0f ppm\n", dev_meas_ppm(st), bias_ppm(st));
+   CHECK(fabs(dev_meas_ppm(st) - 120.0) < 60.0, "blocking: the rate was not measured (%+.0f)", dev_meas_ppm(st));
+   CHECK(st->sink_bias == 1.0, "blocking: a bias was applied, %+.0f ppm", bias_ppm(st));
+}
+
+/* Off: nothing at all, and no rates shown. Turned off mid-session the
+ * bias is dropped at once; turned back on, it is measured afresh. */
+static void s_disabled_and_toggled(audio_driver_state_t *st)
+{
+   reset(st, false);
+   config_get_ptr()->bools.audio_sink_rate_estimation = false;
+   dev_ppm = 120.0;
+   run_seconds(st, 60);
+   CHECK(st->sink_bias == 1.0 && st->sink_applied == 0, "disabled, yet the bias moved");
+   CHECK(st->sink_rate_hz == 0.0, "disabled, yet a rate is shown");
+
+   reset(st, false);
+   dev_ppm = 120.0;
+   run_seconds(st, 120);
+   CHECK(st->sink_bias != 1.0, "no bias to drop");
+   config_get_ptr()->bools.audio_sink_rate_estimation = false;
+   run_second(st);
+   CHECK(st->sink_bias == 1.0 && st->src_ratio_curr == st->src_ratio_orig, "turned off, the bias stayed");
+   config_get_ptr()->bools.audio_sink_rate_estimation = true;
+   run_seconds(st, 120);
+   printf("      off then on: bias %+.0f ppm\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 120.0) < 60.0, "turned back on, the bias is %+.0f, expected +120 afresh", bias_ppm(st));
+}
+
+/* A driver reinit starts the estimate over - the counts are the new
+ * driver's - and the bias stands until re-derived. */
+static void s_driver_restart(audio_driver_state_t *st)
+{
+   double before;
+   reset(st, false);
+   dev_ppm = 90.0;
+   run_seconds(st, 120);
+   before = st->sink_bias;
+   st->sink_started = 0;          /* what init does, with the counts */
+   st->sink_offered = 0.0; st->sink_offered_raw = 0; st->sink_accepted = 0;
+   clock_usec += 500000;
+   run_second(st);
+   CHECK(st->sink_bias == before, "a restart dropped the bias before it was re-derived");
+   run_seconds(st, 200);
+   printf("      bias %+.0f ppm after the restart\n", bias_ppm(st));
+   CHECK(fabs(bias_ppm(st) - 90.0) < 40.0, "after a restart the bias is %+.0f, expected +90", bias_ppm(st));
+}
+
+/* --- the buffer it corrects ------------------------------------------- */
+
+/* From a CoreAudio field report: a 10.7 ms buffer, the device at +47,
+ * the source at -442, audio breaking up about a minute in, when the
+ * first bias lands. The buffer is modelled: it is empty long before
+ * any bias exists, so whatever broke it was not the correction - and
+ * the correction, when it comes, is what would hold it. */
+static void s_small_buffer_report(audio_driver_state_t *st)
+{
+   const double cap = 0.0107 * 48000.0;
+   int sink_on, i;
+   for (sink_on = 0; sink_on < 2; sink_on++)
+   {
+      double level = cap * 0.5;
+      int    unders = 0, first = -1;
+      reset(st, false);
+      dev_ppm = 47.0;
+      src_ppm = -442.0;
+      for (i = 0; i < 180; i++)
+      {
+         double ratio, delivered, consumed;
+         if (sink_on)
+            run_second(st);
+         else
+            clock_usec += 1000000;
+         ratio     = st->src_ratio_curr / st->src_ratio_orig;
+         delivered = 48000.0 * ratio * (1.0 + src_ppm / 1e6);
+         consumed  = 48000.0 * (1.0 + dev_ppm / 1e6);
+         level    += delivered - consumed;
+         if (level < 0.0)
+         {
+            unders++;
+            if (first < 0)
+               first = i + 1;
+            level = 0.0;
+         }
+         else if (level > cap)
+            level = cap;
+      }
+      printf("      estimation %s: first underrun at %d s, %d underrunning second(s), bias %+.0f ppm\n",
+            sink_on ? "on " : "off", first, unders, bias_ppm(st));
+      CHECK(first > 0 && first < 30, "expected the buffer to drain before any bias could be applied, first underrun at %d s", first);
+      if (sink_on)
+         CHECK(bias_ppm(st) > 300.0, "the correction should have found the mismatch, got %+.0f ppm", bias_ppm(st));
+   }
+}
+
+/* A correction every thirty seconds holds only a buffer that lasts
+ * thirty seconds of the mismatch; a smaller one is said so, once. */
+static void s_cadence_warning(audio_driver_state_t *st)
+{
+   struct { size_t bytes; double ppm; const char *what; int want; } cases[] = {
+      { (size_t)(0.0107 * 48000) * 4, 490.0, "10.7 ms, 490 ppm apart", 1 },
+      { (size_t)(0.0107 * 48000) * 4,  11.0, "10.7 ms, 11 ppm apart",  0 },
+      { (size_t)(0.200  * 48000) * 4, 490.0, "200 ms, 490 ppm apart",  0 }
+   };
+   size_t c;
+   for (c = 0; c < sizeof(cases) / sizeof(cases[0]); c++)
+   {
+      int fired;
+      reset(st, false);
+      st->buffer_size = cases[c].bytes;
+      dev_ppm = cases[c].ppm;
+      run_seconds(st, 120);
+      fired = (st->sink_warned & AUDIO_SINK_WARNED_TOO_SLOW) != 0;
+      printf("      %-24s -> %s\n", cases[c].what, fired ? "too small for the cadence" : "the cadence can hold it");
+      CHECK(fired == cases[c].want, "%s: expected the warning to %sfire", cases[c].what, cases[c].want ? "" : "not ");
+   }
+}
+
+/* --- the runner ------------------------------------------------------- */
+
+typedef struct
+{
+   const char *name;
+   void (*run)(audio_driver_state_t *st);
+} scenario_t;
+
+static const scenario_t scenarios[] = {
+   { "a device 120 ppm fast, counting in periods",        s_fast_device },
+   { "a device 80 ppm slow",                               s_slow_device },
+   { "two hours at +37 ppm",                               s_long_session },
+   { "written per frame and per second",                   s_write_cadence },
+   { "a writer refusing half a percent",                   s_refused_frames },
+   { "ratios too far off to be a crystal",                 s_implausible_device },
+   { "a source paced at the display's rate",               s_source_at_display_rate },
+   { "rate control pinned at its bound",                   s_rate_control_pinned },
+   { "the core pausing half a second every ten",           s_core_pauses },
+   { "the main thread stalling 50 ms every two minutes",   s_main_thread_stalls },
+   { "the device frozen for a window",                     s_device_stall },
+   { "a slow start, then nominal",                         s_slow_start },
+   { "the pipeline ring filling and draining",             s_pipe_fill_drain },
+   { "the producer dropping frames",                       s_producer_drops },
+   { "a blocking writer",                                  s_blocking_writer },
+   { "disabled, and toggled off and on",                   s_disabled_and_toggled },
+   { "a driver restart",                                   s_driver_restart },
+   { "the CoreAudio small-buffer report",                  s_small_buffer_report },
+   { "the correction's cadence against the buffer",        s_cadence_warning },
+};
+
+int main(void)
+{
+   size_t i;
+   printf("sink rate estimation, %u scenarios:\n", (unsigned)(sizeof(scenarios) / sizeof(scenarios[0])));
+   for (i = 0; i < sizeof(scenarios) / sizeof(scenarios[0]); i++)
+   {
+      unsigned before = failures;
+      printf("   %s\n", scenarios[i].name);
+      scenarios[i].run(&audio_driver_st);
+      if (failures != before)
+         printf("      -> FAILED\n");
+   }
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
-
-   /* 10. Does the bias cause pops, or prevent them?
-    *
-    *     From a field report on CoreAudio: an 8 ms latency setting
-    *     giving a 10.7 ms device buffer, the device measured at +47 ppm
-    *     - an ordinary crystal - and the source at -442 ppm. Audio
-    *     broke up about a minute in, which is also about when the first
-    *     bias lands, so the bias was the obvious suspect.
-    *
-    *     The buffer is modelled here rather than the estimator alone:
-    *     each second the source delivers at its rate times the
-    *     resampler's ratio and the device takes at its own, and the
-    *     level moves by the difference. An underrun is a pop. The point
-    *     is to separate "the correction broke it" from "it was already
-    *     draining and the correction is what stops it".  */
-   {
-      const double cap  = 0.0107 * 48000.0;   /* the reported 10.7 ms */
-      int sink_on;
-
-      for (sink_on = 0; sink_on < 2; sink_on++)
-      {
-         double level    = cap * 0.5;
-         int    unders   = 0;
-         int    first    = -1;
-
-         reset(st, false);
-         dev_ppm = 47.0;
-         src_ppm = -442.0;
-         if (!sink_on)
-         {
-            /* Estimation off: nothing ever moves the ratio. */
-            st->sink_bias = 1.0;
-         }
-
-         for (i = 0; i < 180; i++)
-         {
-            double ratio, delivered, consumed;
-            if (sink_on)
-               run_second(st);
-            else
-               clock_usec += 1000000;
-
-            ratio     = st->src_ratio_curr / st->src_ratio_orig;
-            delivered = 48000.0 * ratio * (1.0 + src_ppm / 1e6);
-            consumed  = 48000.0 * (1.0 + dev_ppm / 1e6);
-            level    += delivered - consumed;
-
-            if (level < 0.0)
-            {
-               unders++;
-               if (first < 0)
-                  first = i + 1;
-               level = 0.0;
-            }
-            else if (level > cap)
-               level = cap;
-         }
-
-         if (first < 0)
-            printf("   %-20s no underruns in 180 s, bias %+.0f ppm\n",
-                  sink_on ? "estimation on:" : "estimation off:", bias_ppm(st));
-         else
-            printf("   %-20s first underrun at %d s, %d underrunning second(s), bias %+.0f ppm\n",
-                  sink_on ? "estimation on:" : "estimation off:",
-                  first, unders, bias_ppm(st));
-
-         /* The finding, asserted so it cannot quietly stop being true:
-          * the buffer is empty long before the first correction exists.
-          * A 490 ppm mismatch drains 10.7 ms from half full in about
-          * eleven seconds, and the earliest a bias can be applied is
-          * thirty. Whatever breaks up the audio here, it is not the
-          * correction - it has not happened yet. */
-         CHECK(first > 0 && first < 30,
-               "%s: expected the buffer to drain before any bias could be "
-               "applied, first underrun at %d s",
-               sink_on ? "estimation on" : "estimation off", first);
-         if (sink_on)
-            CHECK(bias_ppm(st) > 300.0,
-                  "the correction should have found the mismatch, got %+.0f ppm",
-                  bias_ppm(st));
-      }
-   }
-
-
-   /* 11. The correction's cadence against the buffer it corrects.
-    *
-    *     Thirty seconds between corrections is a floor, not a choice: a
-    *     device that counts in whole periods is only known to a period,
-    *     so applying sooner would apply noise. A buffer that empties
-    *     inside that floor therefore cannot be held by this mechanism,
-    *     and the frontend says so once rather than pretending. Checked
-    *     both ways round, since a warning that always fires is no more
-    *     use than one that never does. */
-   {
-      struct { size_t bytes; double ppm; const char *what; int want; } cases[] = {
-         /* 10.7 ms of int16 stereo at 48 kHz, the field report's buffer */
-         { (size_t)(0.0107 * 48000) * 4, 490.0,
-           "10.7 ms buffer, 490 ppm apart", 1 },
-         /* the same buffer, a mismatch small enough to outlast the cadence */
-         { (size_t)(0.0107 * 48000) * 4, 11.0,
-           "10.7 ms buffer, 11 ppm apart",  0 },
-         /* a roomy buffer with the same large mismatch */
-         { (size_t)(0.200  * 48000) * 4, 490.0,
-           "200 ms buffer, 490 ppm apart",  0 }
-      };
-      size_t c;
-
-      for (c = 0; c < sizeof(cases) / sizeof(cases[0]); c++)
-      {
-         double buffer_sec = (double)cases[c].bytes / 4.0 / 48000.0;
-         double drain_sec  = (buffer_sec * 0.5) / (cases[c].ppm / 1e6);
-         int    fires      = drain_sec < 30.0;
-
-         printf("   %-32s half drains in %5.1f s -> %s\n",
-               cases[c].what, drain_sec,
-               fires ? "too small for the cadence" : "the cadence can hold it");
-         CHECK(fires == cases[c].want,
-               "%s: expected the warning to %sfire", cases[c].what,
-               cases[c].want ? "" : "not ");
-      }
-   }
-
-   printf("sink rate: measured through period-quantised counts and refused frames, converged, implausible ratios refused, rate control's pinned adjustment and pauses kept out\n");
+   printf("sink rate: every scenario measures the clocks and nothing else\n");
    return 0;
 }

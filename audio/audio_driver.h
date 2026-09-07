@@ -317,6 +317,23 @@ typedef struct audio_driver
    size_t (*frames_consumed)(void *data);
 } audio_driver_t;
 
+/* A snapshot of the sink estimate's counts, taken when a window opens. */
+typedef struct
+{
+   double   offered;                   /* sink_offered */
+   uint64_t consumed;                  /* frames_consumed() */
+   int      dropped;                   /* pipe_dropped */
+   double   pipe;                      /* pipe occupancy, in nominal device frames */
+} audio_sink_mark_t;
+
+/* A sum of windows: their time, and what the source and the device did. */
+typedef struct
+{
+   int64_t  usec;
+   double   offered;
+   double   consumed;
+} audio_sink_sum_t;
+
 typedef struct
 {
    double src_ratio_orig;
@@ -590,46 +607,28 @@ typedef struct
     * where the driver's write() is called, on the thread that flushes;
     * the estimate runs there too. */
    double   sink_offered;              /* output frames offered to the driver, each
-                                          divided by the bias in force when it was, so
-                                          the sum is what would have been offered
-                                          unbiased: the source's rate on the host clock */
-   uint64_t sink_accepted;             /* output frames the driver took */
+                                          divided by the ratio in force when it was, so
+                                          the sum is what the source produced at the
+                                          nominal rate, on the host clock */
    uint64_t sink_offered_raw;          /* output frames offered, as offered */
-   double   sink_offered_at;           /* the three at the baseline's start */
-   uint64_t sink_accepted_at;
-   uint64_t sink_offered_raw_at;
-   uint64_t sink_consumed_at;          /* frames_consumed() at the baseline's start */
-   int64_t  sink_baseline_start;       /* usec; 0 = not started */
-   int64_t  sink_check_at;             /* usec; the next plausibility check */
+   uint64_t sink_accepted;             /* output frames the driver took */
+   /* The estimate: windows of a few seconds, each read as a change in
+    * the counts above and in the device's consumption, kept when it
+    * measures the clocks and summed; the bias is the summed ratio.
+    * See audio_driver_sink_update(). */
+   int64_t  sink_started;              /* usec; 0 = not started */
+   int64_t  sink_window_at;            /* usec; when the open window closes */
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
-   double   sink_check_offered;        /* offered and consumed at the last check */
-   uint64_t sink_check_consumed;
-   int      sink_check_dropped;        /* pipe_dropped at the last check */
-   double   sink_check_pipe;           /* pipe occupancy at the last check, in nominal device frames */
-   /* Windows in a row, so far, in which both sides were within the
-    * plausible band of nominal. The sums open on the second: a source
-    * that is off rate at start - a core warming up after load - is a
-    * real measurement of a source that is slow then, and an average
-    * that begins with it carries it for the session. */
-   unsigned sink_settled;
-   int64_t  sink_unsettled_usec;       /* time in windows the source was off the band, since the last settled one */
-   double   sink_unsettled_offered;    /* and what was offered and consumed over them, for the rates shown meanwhile */
-   double   sink_unsettled_consumed;
-   int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
-   double   sink_sum_offered;
-   double   sink_sum_consumed;
+   audio_sink_mark_t sink_at_window;   /* the counts when the open window opened */
+   audio_sink_sum_t  sink_kept;        /* the windows summed for the bias */
+   audio_sink_sum_t  sink_pending;     /* windows since the last kept one, for the rates shown meanwhile */
+   unsigned sink_settled;              /* kept windows in a row, up to 2, after which the sums stand */
+   unsigned sink_applied;              /* times the bias has been set */
+   unsigned sink_discarded;            /* windows left out in a row */
+   unsigned sink_warned;               /* AUDIO_SINK_WARNED_* said once each */
    double   sink_bias;                 /* multiplied into the ratio; 1.0 = none */
    double   sink_rate_hz;              /* the device's rate as measured; 0 = unknown */
    double   sink_source_hz;            /* the source's rate at the nominal ratio, as measured */
-   double   sink_adjust_sum;           /* DRC adjusts over the baseline, for the mean */
-   unsigned sink_adjust_n;
-   unsigned sink_applied;              /* times the bias has been set from a baseline */
-   unsigned sink_discarded;            /* windows discarded in a row */
-   bool     sink_drop_warned;
-   /* Said once when a measured ratio is too far off to be a crystal. */
-   bool     sink_implausible_warned;
-   /* Said once when the buffer empties faster than corrections arrive. */
-   bool     sink_too_slow_warned;
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
    /* Set by audio_driver_frame_end() so the next flush recomputes the
