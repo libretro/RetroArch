@@ -1179,8 +1179,19 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * The state (last_flush_time, avg_flush_delta) lives on audio_st and the
  * arithmetic is identical regardless of caller, so it is float/int16
  * agnostic: a session may move between the two paths mid-fast-forward and the
- * wall-clock series stays continuous.  Returns 1.0 (no adjustment) on the
- * first flush, seeding last_flush_time for the next one. */
+ * wall-clock series stays continuous.  The first flush of a fast-forward
+ * seeds the average at the 1.0x delta and returns 1.0, so the
+ * multiplier starts from unity and follows the measured speed from
+ * there; audio_driver_ff_mult_reset() arms that seed again once
+ * fast-forward is released, so the idle time between two fast-forwards
+ * is never read as one enormous flush interval.
+ *
+ * With the threaded pipeline the flush runs on the audio thread, whose
+ * cadence is set by the device draining, not by the core: a flush
+ * interval there is the previous ratio played back, and measuring it
+ * would only confirm whatever the last multiplier was. The producer
+ * measures instead, at its own publish cadence on the core's thread,
+ * and hands the result to the consumer in pipe_ff_mult_q16. */
 /* Bound a resampler ratio against the capacity of the output scratch.
  *
  * Neither struct resampler_data nor struct resampler_data_int16 carries an
@@ -1238,12 +1249,12 @@ static double audio_driver_fastforward_ratio_mult(
 {
    const retro_time_t flush_time = cpu_features_get_time_usec();
    double mult                   = 1.0;
+   /* What we should see if the speed was 1.0x, converted to microsecs. */
+   const double expected_flush_delta =
+         (input_frames / audio_st->input * 1000000);
 
    if (audio_st->last_flush_time > 0)
    {
-      /* What we should see if the speed was 1.0x, converted to microsecs. */
-      const double expected_flush_delta =
-            (input_frames / audio_st->input * 1000000);
       const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
       audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
             (flush_time - audio_st->last_flush_time) / n;
@@ -1253,9 +1264,30 @@ static double audio_driver_fastforward_ratio_mult(
             MIN(AUDIO_MAX_RATIO,
                audio_st->avg_flush_delta / expected_flush_delta));
    }
+   else
+      audio_st->avg_flush_delta = (retro_time_t)expected_flush_delta;
 
    audio_st->last_flush_time = flush_time;
    return mult;
+}
+
+static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
+{
+   audio_st->last_flush_time = 0;
+}
+
+/* The speedup multiplier for a flush: measured here on the inline
+ * pipeline, where the flush runs at the core's cadence; taken from the
+ * producer's measurement on the threaded one. */
+static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
+      size_t input_frames)
+{
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      return (double)retro_atomic_load_acquire_int(
+            &audio_st->pipe_ff_mult_q16) / 65536.0;
+#endif
+   return audio_driver_fastforward_ratio_mult(audio_st, input_frames);
 }
 
 /* Frames of headroom deliberately resampled beyond what the device
@@ -1667,11 +1699,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          i16_ratio = audio_st->src_ratio_curr;
          if (is_slowmotion)
             i16_ratio *= slowmotion_ratio;
+         if (!is_fastforward && !audio_st->pipe_threaded)
+            audio_driver_ff_mult_reset(audio_st);
          if (is_fastforward)
          {
             if (config_get_ptr()->bools.audio_fastforward_speedup)
-               i16_ratio *= audio_driver_fastforward_ratio_mult(
-                     audio_st, rs_frames);
+               i16_ratio *= audio_driver_ff_mult(audio_st, rs_frames);
             /* Without speedup the device is pinned near full and the
              * write below drops most of the output; resample only what
              * it can accept.  See audio_driver_ff_discard_bound. */
@@ -1990,10 +2023,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
 
+   if (!is_fastforward && !audio_st->pipe_threaded)
+      audio_driver_ff_mult_reset(audio_st);
+
    if (is_fastforward)
    {
       if (config_get_ptr()->bools.audio_fastforward_speedup)
-         src_data.ratio *= audio_driver_fastforward_ratio_mult(
+         src_data.ratio *= audio_driver_ff_mult(
                audio_st, src_data.input_frames);
       /* Without speedup the device is pinned near full and the write
        * below drops most of the output; resample only what it can
@@ -2438,6 +2474,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.pipe_pass_int16s   &= ~(size_t)1;
       audio_driver_st.pipe_gen            = 0;
       audio_driver_st.pipe_stalled        = false;
+      retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
       if (!audio_driver_st.pipe_lock)
          audio_driver_st.pipe_lock        = slock_new();
       if (!audio_driver_st.pipe_cond)
@@ -2914,6 +2951,17 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
 #endif
          return;
       }
+      /* The speedup multiplier is measured here, at the core's publish
+       * cadence, and handed to the consumer; see
+       * audio_driver_fastforward_ratio_mult(). Measured before the ring
+       * write so a block the full ring drops still counts as the time
+       * the core took to produce it. */
+      if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+         retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+               (int)(audio_driver_fastforward_ratio_mult(audio_st, samples >> 1)
+                  * 65536.0));
+      else
+         audio_driver_ff_mult_reset(audio_st);
       while (len)
       {
          unsigned gen;

@@ -173,6 +173,28 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 400 ./pipeline_stall_test
           echo "[pass] pipeline_stall_test (TSan)"
 
+      - name: Build and run ff_speedup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/ff_speedup
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c with the clock replaced by a
+          # counter. The fast-forward speedup multiplier must follow the
+          # core's cadence on both pipelines: measured at the flush inline,
+          # and by the producer at its publish cadence on the threaded
+          # pipeline, where the consumer's own flush interval is the device
+          # draining the previous chunk and would only confirm the previous
+          # multiplier. Re-entry after an idle spell must start from unity
+          # rather than read the idle time as one flush interval.
+          make clean all SANITIZER=address,undefined
+          test -x ff_speedup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 ./ff_speedup_test
+          echo "[pass] ff_speedup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./ff_speedup_test
+          echo "[pass] ff_speedup_test (TSan)"
+
       - name: Build and run device_list_driver_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/device_list_driver
