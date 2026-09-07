@@ -151,6 +151,18 @@ jobs:
           sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
           tools/companion_cocoa_test.sh
 
+      - name: Win32 companion regression harness (mingw + Wine, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_win32_companion.c, built with mingw and
+          # linked with the real companion core and the core test's
+          # fixtures, run under Wine on Xvfb and driven with the messages
+          # the widgets send; checked on the real controls.
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine xvfb > /dev/null
+          tools/companion_win32_test.sh
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

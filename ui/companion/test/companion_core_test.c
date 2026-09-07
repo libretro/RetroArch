@@ -40,7 +40,12 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <sys/utime.h>
+#else
 #include <utime.h>
+#endif
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -66,6 +71,15 @@ static int fails;
 #define CHECK(cond, ...) do { if (!(cond)) { fails++; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
 static char root[512];
+#ifdef _WIN32
+#include <direct.h>
+static void mkdirp(const char *p) { _mkdir(p); }
+static void sleep_briefly_ms(long ns) { Sleep((DWORD)(ns / 1000000 + 1)); }
+#else
+static void mkdirp(const char *p) { mkdir(p, 0755); }
+static void sleep_briefly_ms(long ns) { struct timespec ts; ts.tv_sec = 0; ts.tv_nsec = ns; nanosleep(&ts, NULL); }
+#endif
+
 static int  playlist_changed, playlists_changed, browse_changed;
 
 static void on_playlists_changed(void *ud) { (void)ud; playlists_changed++; }
@@ -83,14 +97,12 @@ static bool wait_browse(companion_core_t *core)
       companion_core_iterate(core, 1000);
       if (browse_changed == before)
       {
-         struct timespec ts = { 0, 200000 };
-         nanosleep(&ts, NULL);
+         sleep_briefly_ms(200000);
       }
    }
    return browse_changed != before;
 }
 
-static void mkdirp(const char *p) { mkdir(p, 0755); }
 
 static void writef(const char *path, const char *text)
 {
@@ -388,8 +400,7 @@ static void test_browser(void)
    CHECK(wait_browse(c), "the later open lands");
    CHECK(string_is_equal(companion_core_browse_dir(c), content), "and it is content, not sub");
    {
-      struct timespec ts = { 0, 20000000 };
-      nanosleep(&ts, NULL);
+      sleep_briefly_ms(20000000);
       companion_core_iterate(c, 1000);
    }
    CHECK(browse_changed == 1, "the superseded open never delivered (callbacks: %d)", browse_changed);
@@ -443,7 +454,12 @@ static void test_browser_sort(void)
     * the same second), newest first when descending. */
    {
       char pa[512], pb[512], pc[512];
+#ifdef _WIN32
+      struct _utimbuf ut;
+#define utime _utime
+#else
       struct utimbuf ut;
+#endif
       fixture(pa, sizeof(pa), "content/a.nes");
       fixture(pb, sizeof(pb), "content/b.sfc");
       fixture(pc, sizeof(pc), "content/cover.png");
