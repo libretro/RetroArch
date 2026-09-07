@@ -138,7 +138,17 @@ static CFRunLoopObserverRef iterate_observer;
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
     CFRunLoopActivity activity, void *info)
 {
-   int ret = runloop_iterate();
+   int ret;
+
+   /* The desktop companion's per-frame hook: it lands the playlist
+    * parse, the browser's listing, decoded thumbnails and animation
+    * frames, and keeps its status current. Only the Qt-era rarch_main
+    * loop used to call it; this observer is the whole main loop on a
+    * non-Qt build, so without the call the Cocoa companion showed
+    * "Loading playlist..." for ever and nothing else. */
+   ui_companion_driver_wimp_iterate();
+
+   ret = runloop_iterate();
 
    if (ret == -1 || ui_companion_driver_wimp_exiting())
    {

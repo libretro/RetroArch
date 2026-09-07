@@ -198,10 +198,42 @@ def main():
               file=sys.stderr)
         return 1
 
+    if check_main_loops():
+        return 1
     print('companion parity: %d features, all %d backends agree'
           % (len(FEATURES), len(BACKENDS)))
     return 0
 
 
+
+
+# --- the platforms' real main loops call the companion's iterate -----
+# Every companion is asynchronous on the far side of
+# ui_companion_driver_wimp_iterate(): the playlist parse, the browser
+# listing, thumbnails, animation frames, status. A platform main loop
+# that does not call it shows "Loading playlist..." for ever. The
+# generic loop (retroarch.c) covers Win32 and Qt; the non-Qt Mac build's
+# main loop is the CFRunLoop observer in cocoa_common.m, which once
+# lacked the call (the Qt-era rarch_main had it, under #ifdef HAVE_QT).
+def _loop_calls_iterate(path, func):
+    src = open(path).read()
+    m = re.search(r'static void %s\b.*?\n\}\n' % re.escape(func), src, re.S)
+    body = m.group(0) if m else ''
+    return 'ui_companion_driver_wimp_iterate()' in body
+
+
+def check_main_loops():
+    _loops = [
+        ('ui/drivers/cocoa/cocoa_common.m', 'rarch_draw_observer'),
+    ]
+    _missing = [f for p, f in _loops if not _loop_calls_iterate(p, f)]
+    if _missing:
+        print("error: main loop(s) that never call ui_companion_driver_wimp_iterate(): %s" % ', '.join(_missing), file=sys.stderr)
+        sys.exit(1)
+    print("main loops iterate the companion: ok")
+    return 0
+
+
 if __name__ == '__main__':
     sys.exit(main())
+
