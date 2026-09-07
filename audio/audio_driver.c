@@ -1003,6 +1003,11 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
             audio_st->sink_sum_offered   = 0.0;
             audio_st->sink_sum_consumed  = 0.0;
             audio_st->sink_unsettled_usec += wdt;
+            /* Shown meanwhile from this window alone, so the overlay
+             * has the rates - and shows the source off the band - while
+             * nothing is being summed. */
+            audio_st->sink_rate_hz       = (double)dc * 1e6 / (double)wdt;
+            audio_st->sink_source_hz     = dofr * 1e6 / (double)wdt;
             if (     audio_st->sink_unsettled_usec >= AUDIO_SINK_BASELINE_USEC
                   && !audio_st->sink_implausible_warned)
             {

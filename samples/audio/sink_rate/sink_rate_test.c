@@ -338,6 +338,20 @@ int main(void)
    for (i = 0; i < 90; i++)
       run_second(st);
    printf("   slow start of -1500 ppm for 30 s, then nominal: bias %+.0f ppm at 120 s\n", bias_ppm(st));
+   /* And while it was slow, the rates were still shown - from the
+    * window alone - so the overlay had the source off the band. */
+   reset(st, true);
+   dev_ppm = 0.0;
+   src_ppm = -1500.0;
+   for (i = 0; i < 12; i++)
+      run_second(st);
+   CHECK(st->sink_rate_hz > 0.0 && st->sink_source_hz > 0.0
+         && st->sink_source_hz < 47950.0,
+         "unsettled, the rates are not shown: device %.1f source %.1f",
+         st->sink_rate_hz, st->sink_source_hz);
+   src_ppm = 0.0;
+   for (i = 0; i < 90; i++)
+      run_second(st);
    CHECK(fabs(bias_ppm(st)) < 60.0,
          "the slow start is in the estimate two minutes on: bias %+.0f ppm", bias_ppm(st));
    CHECK(st->sink_applied > 0, "the bias was never applied after the source settled");
