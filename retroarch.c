@@ -5134,6 +5134,8 @@ bool command_event(enum event_command cmd, void *data)
          config_set_defaults(global_get_ptr());
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+         /* Same as at quit: the companion's live layout first. */
+         ui_companion_event_command(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
 #if !defined(HAVE_DYNAMIC)
          config_save_file_salamander();
 #endif
@@ -9522,6 +9524,11 @@ bool retroarch_main_quit(void)
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
+
+   /* Let the desktop companion snapshot its window/dock layout into
+    * settings_t before the config is written below; its own
+    * deinit runs only after the run loop has left, too late. */
+   ui_companion_event_command(CMD_EVENT_QUIT);
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);

@@ -2530,8 +2530,50 @@ void ViewOptionsDialog::showDialog()
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif
+   if (!isVisible())
+      restoreGeometry();
    show();
    activateWindow();
+}
+
+void ViewOptionsDialog::persistGeometry()
+{
+   settings_t *settings = config_get_ptr();
+   QRect g;
+   if (!settings->bools.desktop_menu_save_geometry || !isVisible() || isMinimized())
+      return;
+   g = geometry();
+   if (g.width() <= 0 || g.height() <= 0)
+      return;
+   snprintf(settings->arrays.desktop_menu_options_window,
+         sizeof(settings->arrays.desktop_menu_options_window), "%d,%d,%d,%d",
+         g.x() < 0 ? 0 : g.x(), g.y() < 0 ? 0 : g.y(), g.width(), g.height());
+}
+
+void ViewOptionsDialog::restoreGeometry()
+{
+   settings_t *settings = config_get_ptr();
+   int x = 0, y = 0, w = 0, h = 0;
+   if (!settings->bools.desktop_menu_save_geometry)
+      return;
+   if (sscanf(settings->arrays.desktop_menu_options_window, "%d,%d,%d,%d",
+            &x, &y, &w, &h) != 4)
+      return;
+   if (w <= 0 || h <= 0 || w > 32767 || h > 32767 || x < 0 || y < 0)
+      return;
+   setGeometry(x, y, w, h);
+}
+
+void ViewOptionsDialog::resizeEvent(QResizeEvent *event)
+{
+   QDialog::resizeEvent(event);
+   persistGeometry();
+}
+
+void ViewOptionsDialog::moveEvent(QMoveEvent *event)
+{
+   QDialog::moveEvent(event);
+   persistGeometry();
 }
 
 void ViewOptionsDialog::hideDialog() { reject(); }

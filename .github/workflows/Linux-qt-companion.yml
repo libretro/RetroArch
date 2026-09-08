@@ -1,0 +1,63 @@
+name: CI Linux Qt companion (persistence)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  qt-companion-persist:
+    # Builds a Qt-enabled RetroArch with the null video/audio/input
+    # drivers and runs tools/companion_qt_persist_test.sh: the desktop
+    # companion's window geometry and dock layout must reach
+    # retroarch.cfg when RetroArch quits with the companion window still
+    # open, and a saved layout must restore and re-save identically.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential pkg-config zlib1g-dev qt6-base-dev libgl-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Configure
+        run: |
+          ./configure --enable-qt --disable-x11 --disable-wayland \
+            --disable-opengl --disable-opengles --disable-vulkan \
+            --disable-sdl2 --disable-sdl --disable-alsa --disable-pulse \
+            --disable-ffmpeg --disable-networking --disable-cheevos \
+            --disable-discord --disable-cdrom --disable-flac --disable-mpv \
+            --disable-libusb --disable-udev --disable-v4l2 --disable-freetype \
+            --disable-caca --disable-sixel --disable-microphone --disable-ssl \
+            --disable-bluetooth --disable-wifi --disable-oss --disable-jack \
+            --disable-roar --disable-al --disable-xvideo --disable-kms \
+            --disable-egl --disable-dispmanx --disable-videocore \
+            --disable-crtswitchres --disable-update_cores --disable-hid \
+            --disable-dbus
+      - name: Build
+        run: make -j$(getconf _NPROCESSORS_ONLN)
+      - name: Companion persistence regression
+        timeout-minutes: 10
+        run: tools/companion_qt_persist_test.sh

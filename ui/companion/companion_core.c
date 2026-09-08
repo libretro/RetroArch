@@ -3194,6 +3194,78 @@ void companion_core_log_message(companion_core_t *core, const char *msg)
       core->cb.on_log_message(core->ud, msg);
 }
 
+/* --- Dock layout rows ----------------------------------------------- */
+
+static const char * const companion_dock_area_names[] = {
+   "left", "right", "top", "bottom", "float"
+};
+
+size_t companion_dock_row_format(char *s, size_t len,
+      const companion_dock_state_t *st)
+{
+   int w = st->width, h = st->height;
+   if (w <= 1 || w > 32767) w = 0;
+   if (h <= 1 || h > 32767) h = 0;
+   return (size_t)snprintf(s, len, "%s,%d,%d,%d,%s,%d",
+         companion_dock_area_names[st->area <= COMPANION_DOCK_FLOAT
+            ? st->area : COMPANION_DOCK_FLOAT],
+         st->shown ? 1 : 0, w, h,
+         string_is_empty(st->tabbed_with) ? "-" : st->tabbed_with,
+         st->raised ? 1 : 0);
+}
+
+bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
+{
+   char buf[64];
+   char *tok = buf;
+   int n     = 0;
+   bool area_ok = false;
+
+   if (string_is_empty(s))
+      return false;
+   strlcpy(buf, s, sizeof(buf));
+   memset(st, 0, sizeof(*st));
+   st->shown = true;
+   /* Comma-split by hand: strtok_r is not on MSVC, strtok is not
+    * re-entrant. */
+   while (tok)
+   {
+      char *next = strchr(tok, ',');
+      if (next)
+         *next++ = '\0';
+      switch (n)
+      {
+         case 0:
+         {
+            unsigned i;
+            for (i = 0; i <= COMPANION_DOCK_FLOAT; i++)
+               if (string_is_equal(tok, companion_dock_area_names[i]))
+               {
+                  st->area = (enum companion_dock_area)i;
+                  area_ok  = true;
+               }
+            break;
+         }
+         case 1: st->shown  = (atoi(tok) != 0); break;
+         case 2: st->width  = atoi(tok);        break;
+         case 3: st->height = atoi(tok);        break;
+         case 4:
+            if (!string_is_equal(tok, "-"))
+               strlcpy(st->tabbed_with, tok, sizeof(st->tabbed_with));
+            break;
+         case 5: st->raised = (atoi(tok) != 0); break;
+         default: break;
+      }
+      tok = next;
+      n++;
+   }
+   if (n < 2 || !area_ok)
+      return false;
+   if (st->width  <= 1 || st->width  > 32767) st->width  = 0;
+   if (st->height <= 1 || st->height > 32767) st->height = 0;
+   return true;
+}
+
 void companion_core_notify_refresh(companion_core_t *core)
 {
    if (core && core->cb.on_notify_refresh)

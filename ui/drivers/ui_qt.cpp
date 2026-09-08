@@ -183,153 +183,163 @@ static void qt_dock_configure(QDockWidget *dock,
 
 /* Dock layout persistence. One plain row per dock in retroarch.cfg:
  *
- *    <area>,<shown>,<size>[,<tab>]     e.g.  right,1,320,2
+ *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>
+ *    e.g.  right,1,320,400,boxart,0
  *
- * area  left | right | top | bottom | float
- * shown 1 visible, 0 hidden
- * size  the dock's width (left/right) or height (top/bottom) in
- *       logical pixels; 0 = leave the default
- * tab   for the tabbed thumbnail group only: which tab is raised
+ * area        left | right | top | bottom | float
+ * shown       1 visible, 0 hidden
+ * width,      the dock's size in logical pixels; 0 = keep the default
+ * height
+ * tabbed_with the key of the dock this one is tabbed onto (a dock
+ *             earlier in the list), or "-" when it stands alone
+ * raised      1 when this is the tab on top of its group
  *
- * This replaces the QMainWindow::saveState() byte-array blob the old
- * retroarch_qt.cfg carried. It cannot express every arrangement that
- * blob could (nested splits, a floating dock's screen rect), but it is
- * readable, survives docks being added or renamed, and the native
- * companions can honour the same rows. */
-static const char *qt_dock_area_name(Qt::DockWidgetArea area)
+ * (Row format and parser: companion_dock_row_* in ui/companion.)
+ * Every dock has its own row, the four thumbnail docks included, so
+ * pulling Screenshots out of the thumbnail tabs into its own dock is
+ * remembered. Docks are re-added to their saved side in list order,
+ * which is also the stacking order within a side, then tabbed as saved,
+ * then sized. This replaces the QMainWindow::saveState() byte-array blob
+ * the old retroarch_qt.cfg carried: readable, survives docks being added
+ * or renamed, and the native companions can honour the same rows. What
+ * it still does not capture is a floating dock's screen rect (it comes
+ * back floating at Qt's default spot). */
+#define QT_DOCK_COUNT 9
+
+struct qt_dock_key
+{
+   const char *key;         /* the tabbed_with token */
+   const char *object_name; /* QDockWidget::objectName() */
+};
+
+static const struct qt_dock_key qt_dock_keys[QT_DOCK_COUNT] = {
+   { "search",      "searchDock"                },
+   { "playlists",   "browserAndPlaylistTabDock" },
+   { "core",        "coreSelectionDock"         },
+   { "boxart",      "thumbnailDock"             },
+   { "title",       "thumbnail2Dock"            },
+   { "screenshot",  "thumbnail3Dock"            },
+   { "logo",        "thumbnail4Dock"            },
+   { "core_info",   "coreInfoDock"              },
+   { "log",         "logDock"                   }
+};
+
+/* settings_t row for dock @i (same order as qt_dock_keys). */
+static char *qt_dock_row(settings_t *settings, int i, size_t *len)
+{
+   char *rows[QT_DOCK_COUNT] = {
+      settings->arrays.desktop_menu_dock_search,
+      settings->arrays.desktop_menu_dock_playlists,
+      settings->arrays.desktop_menu_dock_core,
+      settings->arrays.desktop_menu_dock_boxart,
+      settings->arrays.desktop_menu_dock_title,
+      settings->arrays.desktop_menu_dock_screenshot,
+      settings->arrays.desktop_menu_dock_logo,
+      settings->arrays.desktop_menu_dock_core_info,
+      settings->arrays.desktop_menu_dock_log
+   };
+   *len = sizeof(settings->arrays.desktop_menu_dock_search);
+   return rows[i];
+}
+
+static enum companion_dock_area qt_dock_area_to_core(Qt::DockWidgetArea area)
 {
    switch (area)
    {
-      case Qt::LeftDockWidgetArea:   return "left";
-      case Qt::RightDockWidgetArea:  return "right";
-      case Qt::TopDockWidgetArea:    return "top";
-      case Qt::BottomDockWidgetArea: return "bottom";
+      case Qt::RightDockWidgetArea:  return COMPANION_DOCK_RIGHT;
+      case Qt::TopDockWidgetArea:    return COMPANION_DOCK_TOP;
+      case Qt::BottomDockWidgetArea: return COMPANION_DOCK_BOTTOM;
       default:                       break;
    }
-   return "";
+   return COMPANION_DOCK_LEFT;
 }
 
-static Qt::DockWidgetArea qt_dock_area_from_name(const char *s)
+static Qt::DockWidgetArea qt_dock_area_from_core(enum companion_dock_area area)
 {
-   if (string_is_equal(s, "left"))   return Qt::LeftDockWidgetArea;
-   if (string_is_equal(s, "right"))  return Qt::RightDockWidgetArea;
-   if (string_is_equal(s, "top"))    return Qt::TopDockWidgetArea;
-   if (string_is_equal(s, "bottom")) return Qt::BottomDockWidgetArea;
-   return Qt::NoDockWidgetArea;
-}
-
-static bool qt_dock_area_is_horizontal(Qt::DockWidgetArea area)
-{
-   return area == Qt::LeftDockWidgetArea || area == Qt::RightDockWidgetArea;
-}
-
-/* Format @dock's placement into @s. @tab < 0 for a lone dock. */
-static void qt_dock_state_write(QMainWindow *win, QDockWidget *dock,
-      int tab, char *s, size_t len)
-{
-   Qt::DockWidgetArea area = win->dockWidgetArea(dock);
-   int size                = qt_dock_area_is_horizontal(area)
-      ? dock->width() : dock->height();
-   /* A dock that was never laid out reports a bogus size; 0 means
-    * "keep the default" on restore. */
-   if (size <= 1)
-      size = 0;
-   if (tab >= 0)
-      snprintf(s, len, "%s,%d,%d,%d",
-            dock->isFloating() ? "float" : qt_dock_area_name(area),
-            dock->isVisible() ? 1 : 0, size, tab);
-   else
-      snprintf(s, len, "%s,%d,%d",
-            dock->isFloating() ? "float" : qt_dock_area_name(area),
-            dock->isVisible() ? 1 : 0, size);
-}
-
-struct qt_dock_state
-{
-   Qt::DockWidgetArea area;
-   bool  floating;
-   bool  shown;
-   int   size;
-   int   tab;
-};
-
-/* Parse a row; false when it is empty or not one of ours. */
-static bool qt_dock_state_parse(const char *s, struct qt_dock_state *st)
-{
-   char buf[32];
-   char *tok = buf;
-   int   n   = 0;
-
-   if (string_is_empty(s))
-      return false;
-   strlcpy(buf, s, sizeof(buf));
-   st->area     = Qt::NoDockWidgetArea;
-   st->floating = false;
-   st->shown    = true;
-   st->size     = 0;
-   st->tab      = 0;
-   /* Comma-split by hand: strtok_r is not on MSVC, strtok is not
-    * re-entrant. */
-   while (tok)
+   switch (area)
    {
-      char *next = strchr(tok, ',');
-      if (next)
-         *next++ = '\0';
-      switch (n)
-      {
-         case 0:
-            if (string_is_equal(tok, "float"))
-               st->floating = true;
-            else
-               st->area = qt_dock_area_from_name(tok);
+      case COMPANION_DOCK_RIGHT:  return Qt::RightDockWidgetArea;
+      case COMPANION_DOCK_TOP:    return Qt::TopDockWidgetArea;
+      case COMPANION_DOCK_BOTTOM: return Qt::BottomDockWidgetArea;
+      default:                    break;
+   }
+   return Qt::LeftDockWidgetArea;
+}
+
+static int qt_dock_index_of(const char *key)
+{
+   int i;
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      if (string_is_equal(key, qt_dock_keys[i].key))
+         return i;
+   return -1;
+}
+
+/* Format @dock's placement into @s (companion_dock_row_format). @docks
+ * is the full list so the tabbed_with partner can be looked up. */
+static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
+      int self, char *s, size_t len)
+{
+   companion_dock_state_t st;
+   QDockWidget *dock = docks[self];
+   int i;
+
+   memset(&st, 0, sizeof(st));
+   st.area   = dock->isFloating() ? COMPANION_DOCK_FLOAT
+      : qt_dock_area_to_core(win->dockWidgetArea(dock));
+   st.shown  = dock->isVisible();
+   st.width  = dock->width();
+   st.height = dock->height();
+
+   if (!dock->isFloating())
+   {
+      /* Tab partner: the earliest dock in our order that shares the
+       * tab bar, so chains always hang off an earlier row. */
+      QList<QDockWidget*> tabs = win->tabifiedDockWidgets(dock);
+      for (i = 0; i < self; i++)
+         if (docks[i] && tabs.contains(docks[i]))
+         {
+            strlcpy(st.tabbed_with, qt_dock_keys[i].key, sizeof(st.tabbed_with));
             break;
-         case 1: st->shown = (atoi(tok) != 0);        break;
-         case 2: st->size  = atoi(tok);               break;
-         case 3: st->tab   = atoi(tok);               break;
-         default: break;
-      }
-      tok = next;
-      n++;
-   }
-   if (n < 2 || (!st->floating && st->area == Qt::NoDockWidgetArea))
-      return false;
-   if (st->size < 0 || st->size > 32767)
-      st->size = 0;
-   return true;
-}
-
-/* Place @dock as @st says. A dock whose area is unchanged is left
- * where the default layout put it (that keeps the left column's
- * playlists/core split and the thumbnail tabs intact); one that moved
- * is re-added to its saved side. Sizes are collected into the
- * horizontal / vertical resize lists and applied once by the caller. */
-static void qt_dock_state_apply(QMainWindow *win, QDockWidget *dock,
-      const struct qt_dock_state *st,
-      QList<QDockWidget*> &hdocks, QList<int> &hsizes,
-      QList<QDockWidget*> &vdocks, QList<int> &vsizes)
-{
-   if (st->floating)
-      dock->setFloating(true);
-   else
-   {
-      if (win->dockWidgetArea(dock) != st->area)
-         win->addDockWidget(st->area, dock);
-      dock->setFloating(false);
-      if (st->size > 0 && st->shown)
+         }
+      /* isVisible() is true for every tab of a group; only the raised
+       * one has a visible region. */
+      st.raised = !tabs.isEmpty() && dock->isVisible()
+            && !dock->visibleRegion().isEmpty();
+      /* A tab that is not raised is not laid out - its size is stale,
+       * and the group's size is the leader's anyway. Store 0 so the
+       * restore does not ask resizeDocks() for three conflicting sizes
+       * of one slot (which made the layout drift on every launch). */
+      if (!string_is_empty(st.tabbed_with))
+         st.width = st.height = 0;
+      else if (!tabs.isEmpty())
       {
-         if (qt_dock_area_is_horizontal(st->area))
+         /* Group leader: resizeDocks() sizes the whole slot, tab bar
+          * included, while height() is the dock alone - saving the bare
+          * height shrank the group by one tab bar per launch. The dock
+          * tab bars are direct QTabBar children of the main window,
+          * sitting flush against the group (below by default). */
+         QList<QTabBar*> bars = win->findChildren<QTabBar*>();
+         QRect dg             = dock->geometry();
+         for (i = 0; i < bars.count(); i++)
          {
-            hdocks << dock;
-            hsizes << st->size;
-         }
-         else
-         {
-            vdocks << dock;
-            vsizes << st->size;
+            QTabBar *tb = bars.at(i);
+            QRect   tg;
+            if (tb->parentWidget() != win || !tb->isVisible())
+               continue;
+            tg = tb->geometry();
+            if (tg.left() > dg.right() || tg.right() < dg.left())
+               continue;
+            if (     (tg.top() >= dg.bottom() && tg.top() <= dg.bottom() + 4)
+                  || (tg.bottom() <= dg.top() && tg.bottom() >= dg.top() - 4))
+            {
+               st.height += tb->height();
+               break;
+            }
          }
       }
    }
-   dock->setVisible(st->shown);
+   companion_dock_row_format(s, len, &st);
 }
 
 /* %1 is a placeholder for palette(highlight) or the equivalent chosen by the user */
@@ -1527,8 +1537,10 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
    ,m_playlistThumbnailDownloadWasCanceled(false)
+   ,m_hasBeenShown(false)
    ,m_pendingDirScrollPath()
    ,m_thumbnailTimer(new QTimer(this))
+   ,m_persistTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -1950,6 +1962,10 @@ void MainWindow::setupSignalConnections()
 
    m_thumbnailTimer->setSingleShot(true);
    connect(m_thumbnailTimer, SIGNAL(timeout()), this, SLOT(updateVisibleItems()));
+
+   m_persistTimer->setSingleShot(true);
+   m_persistTimer->setInterval(250);
+   connect(m_persistTimer, SIGNAL(timeout()), this, SLOT(persistSettings()));
 
    /* TODO: Handle scroll and resize differently. */
    connect(m_gridView, SIGNAL(visibleItemsChangedMaybe()),
@@ -3815,8 +3831,10 @@ void MainWindow::persistSettings()
    settings_t *settings = config_get_ptr();
 
    /* A window that is minimised, or was never shown, has no geometry
-    * worth keeping; the last real one is already in settings_t. */
+    * worth keeping; the last real one is already in settings_t. A window
+    * hidden with F5 still reports the geometry it had, so that is kept. */
    if (     settings->bools.desktop_menu_save_geometry
+         && m_hasBeenShown
          && !isMinimized()
          && width() > 0 && height() > 0)
    {
@@ -3830,7 +3848,11 @@ void MainWindow::persistSettings()
       settings->uints.desktop_menu_last_tab =
          (unsigned)m_browserAndPlaylistTabWidget->currentIndex();
 
-   if (settings->bools.desktop_menu_save_dock_positions)
+   /* Dock rows only while the window is on screen: with the window
+    * hidden every dock reports hidden, which would come back as an empty
+    * window next launch. The last on-screen snapshot stays. */
+   if (     settings->bools.desktop_menu_save_dock_positions
+         && isVisible() && !isMinimized())
       saveDockLayout();
 
    settings->uints.desktop_menu_view_type      =
@@ -3845,112 +3867,174 @@ void MainWindow::persistSettings()
    }
 }
 
-/* One row per dock (see qt_dock_state_write). The four thumbnail docks
- * are tabbed together and share one row; the raised tab is the member
- * whose visible region is not empty (isVisible() is true for every tab). */
+/* One row per dock (see qt_dock_state_write). */
 void MainWindow::saveDockLayout()
 {
    settings_t *settings = config_get_ptr();
-   static const char * const thumb_names[4] = {
-      "thumbnailDock", "thumbnail2Dock", "thumbnail3Dock", "thumbnail4Dock"
-   };
-   QDockWidget *dock;
-   int i, tab = 0;
+   QDockWidget *docks[QT_DOCK_COUNT];
+   int i;
 
-   if ((dock = findChild<QDockWidget*>("searchDock")))
-      qt_dock_state_write(this, dock, -1, settings->arrays.desktop_menu_dock_search,
-            sizeof(settings->arrays.desktop_menu_dock_search));
-   if ((dock = findChild<QDockWidget*>("browserAndPlaylistTabDock")))
-      qt_dock_state_write(this, dock, -1, settings->arrays.desktop_menu_dock_playlists,
-            sizeof(settings->arrays.desktop_menu_dock_playlists));
-   if ((dock = findChild<QDockWidget*>("coreSelectionDock")))
-      qt_dock_state_write(this, dock, -1, settings->arrays.desktop_menu_dock_core,
-            sizeof(settings->arrays.desktop_menu_dock_core));
-   if ((dock = findChild<QDockWidget*>("coreInfoDock")))
-      qt_dock_state_write(this, dock, -1, settings->arrays.desktop_menu_dock_core_info,
-            sizeof(settings->arrays.desktop_menu_dock_core_info));
-   if ((dock = findChild<QDockWidget*>("logDock")))
-      qt_dock_state_write(this, dock, -1, settings->arrays.desktop_menu_dock_log,
-            sizeof(settings->arrays.desktop_menu_dock_log));
-
-   for (i = 1; i < 4; i++)
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      docks[i] = findChild<QDockWidget*>(qt_dock_keys[i].object_name);
+   for (i = 0; i < QT_DOCK_COUNT; i++)
    {
-      QDockWidget *d = findChild<QDockWidget*>(thumb_names[i]);
-      if (d && d->isVisible() && !d->visibleRegion().isEmpty())
-         tab = i;
+      size_t len;
+      char  *row = qt_dock_row(settings, i, &len);
+      if (docks[i])
+         qt_dock_state_write(this, docks, i, row, len);
    }
-   if ((dock = findChild<QDockWidget*>(thumb_names[0])))
-      qt_dock_state_write(this, dock, tab, settings->arrays.desktop_menu_dock_thumbnails,
-            sizeof(settings->arrays.desktop_menu_dock_thumbnails));
 }
 
 /* Inverse of saveDockLayout(); runs once at startup from
- * qt_companion_restore_settings() after every dock has been built. */
+ * qt_companion_restore_settings() after every dock has been built.
+ * Docks with a row are re-added to their saved side in list order (so
+ * the default tabbing / splits are undone and rebuilt from the rows),
+ * tabbed onto their saved partner, sized, and the saved tab raised. */
 void MainWindow::restoreDockLayout()
 {
    settings_t *settings = config_get_ptr();
-   static const char * const thumb_names[4] = {
-      "thumbnailDock", "thumbnail2Dock", "thumbnail3Dock", "thumbnail4Dock"
-   };
-   struct { const char *name; const char *row; } rows[5] = {
-      { "searchDock",                settings->arrays.desktop_menu_dock_search    },
-      { "browserAndPlaylistTabDock", settings->arrays.desktop_menu_dock_playlists },
-      { "coreSelectionDock",         settings->arrays.desktop_menu_dock_core      },
-      { "coreInfoDock",              settings->arrays.desktop_menu_dock_core_info },
-      { "logDock",                   settings->arrays.desktop_menu_dock_log       }
-   };
+   QDockWidget *docks[QT_DOCK_COUNT];
+   companion_dock_state_t st[QT_DOCK_COUNT];
+   bool have[QT_DOCK_COUNT];
    QList<QDockWidget*> hdocks, vdocks;
    QList<int>          hsizes, vsizes;
-   struct qt_dock_state st;
-   QDockWidget *thumbs[4];
    int i;
 
-   for (i = 0; i < 5; i++)
+   for (i = 0; i < QT_DOCK_COUNT; i++)
    {
-      QDockWidget *dock = findChild<QDockWidget*>(rows[i].name);
-      if (dock && qt_dock_state_parse(rows[i].row, &st))
-         qt_dock_state_apply(this, dock, &st, hdocks, hsizes, vdocks, vsizes);
+      size_t len;
+      docks[i] = findChild<QDockWidget*>(qt_dock_keys[i].object_name);
+      have[i]  = docks[i]
+         && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st[i]);
    }
 
-   for (i = 0; i < 4; i++)
-      thumbs[i] = findChild<QDockWidget*>(thumb_names[i]);
-   if (thumbs[0] && thumbs[1] && thumbs[2] && thumbs[3]
-         && qt_dock_state_parse(settings->arrays.desktop_menu_dock_thumbnails, &st))
+   /* Pass 1: placement. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
    {
-      /* The group moves as one: re-add the members to the new side and
-       * tab them again, then raise the saved tab. */
-      bool moved = !st.floating && dockWidgetArea(thumbs[0]) != st.area;
-      qt_dock_state_apply(this, thumbs[0], &st, hdocks, hsizes, vdocks, vsizes);
-      for (i = 1; i < 4; i++)
+      if (!have[i])
+         continue;
+      if (st[i].area == COMPANION_DOCK_FLOAT)
+         docks[i]->setFloating(true);
+      else
       {
-         if (st.floating)
-            thumbs[i]->setVisible(false);   /* one floating window, not four */
-         else
-         {
-            if (moved)
-            {
-               addDockWidget(st.area, thumbs[i]);
-               tabifyDockWidget(thumbs[0], thumbs[i]);
-            }
-            thumbs[i]->setVisible(st.shown);
-         }
+         /* Re-adding an already-docked widget moves it: this is what
+          * takes a thumbnail dock out of the default tab group. */
+         addDockWidget(qt_dock_area_from_core(st[i].area), docks[i]);
+         docks[i]->setFloating(false);
       }
-      if (!st.floating && st.tab >= 0 && st.tab < 4)
-         thumbs[st.tab]->raise();
    }
 
+   /* Pass 2: tabs, only onto an earlier dock that is (now) docked on
+    * the same side - whether that partner got there from its own row
+    * or from the default layout. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      int t;
+      if (!have[i] || st[i].area == COMPANION_DOCK_FLOAT)
+         continue;
+      t = qt_dock_index_of(st[i].tabbed_with);
+      if (     t >= 0 && t < i && docks[t]
+            && !docks[t]->isFloating()
+            && dockWidgetArea(docks[t]) == qt_dock_area_from_core(st[i].area))
+         tabifyDockWidget(docks[t], docks[i]);
+   }
+
+   /* Pass 3: visibility and sizes. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      if (!have[i])
+         continue;
+      docks[i]->setVisible(st[i].shown);
+      if (     st[i].area == COMPANION_DOCK_FLOAT || !st[i].shown
+            || !string_is_empty(st[i].tabbed_with)) /* follows its leader */
+         continue;
+      if (st[i].width > 0)
+      {
+         hdocks << docks[i];
+         hsizes << st[i].width;
+      }
+      if (st[i].height > 0)
+      {
+         vdocks << docks[i];
+         vsizes << st[i].height;
+      }
+   }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    if (!hdocks.isEmpty())
       resizeDocks(hdocks, hsizes, Qt::Horizontal);
    if (!vdocks.isEmpty())
       resizeDocks(vdocks, vsizes, Qt::Vertical);
 #endif
+
+   /* Pass 4: raise the saved tab of each group (after visibility, so
+    * a raise is not undone by a later show). */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      if (     have[i] && st[i].area != COMPANION_DOCK_FLOAT
+            && st[i].shown && st[i].raised)
+         docks[i]->raise();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
    persistSettings();
    QMainWindow::closeEvent(event);
+}
+
+/* Live persistence. RetroArch writes retroarch.cfg from
+ * retroarch_main_quit(), which runs inside the run loop *before* the
+ * companion driver is deinitialised; a persist that only happens in
+ * closeEvent / deinit therefore lands after the file is written and the
+ * saved values are whatever was loaded at startup ("everything is
+ * reset on next launch" unless the user closed the window first). So
+ * the window keeps settings_t current as it goes: every move, resize,
+ * show or hide of the window or of a dock arms a short debounce that
+ * re-snapshots. Nothing is snapshotted while the window is not shown
+ * (that would overwrite the saved rows with the not-yet-laid-out
+ * defaults before restore has been seen on screen) or while minimised. */
+void MainWindow::schedulePersistSettings()
+{
+   if (!isVisible() || isMinimized())
+      return;
+   m_persistTimer->start();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+   QMainWindow::resizeEvent(event);
+   schedulePersistSettings();
+}
+
+void MainWindow::moveEvent(QMoveEvent *event)
+{
+   QMainWindow::moveEvent(event);
+   schedulePersistSettings();
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+   QMainWindow::showEvent(event);
+   m_hasBeenShown = true;
+   schedulePersistSettings();
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+   if (qobject_cast<QDockWidget*>(obj))
+   {
+      switch (event->type())
+      {
+         case QEvent::Resize:
+         case QEvent::Move:
+         case QEvent::Show:
+         case QEvent::Hide:
+         case QEvent::ParentChange:
+            schedulePersistSettings();
+            break;
+         default:
+            break;
+      }
+   }
+   return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::onContributorsClicked()
@@ -4859,6 +4943,14 @@ static void qt_companion_restore_settings(MainWindow *mainwindow)
    if (settings->bools.desktop_menu_save_dock_positions)
       mainwindow->restoreDockLayout();
 
+   {
+      /* Watch every dock so a later move / resize / hide re-snapshots. */
+      QList<QDockWidget*> docks = mainwindow->findChildren<QDockWidget*>();
+      int i;
+      for (i = 0; i < docks.count(); i++)
+         docks.at(i)->installEventFilter(mainwindow);
+   }
+
    mainwindow->setIconViewZoom((int)settings->uints.desktop_menu_icon_view_zoom);
 
    {
@@ -5048,6 +5140,7 @@ static void ui_companion_qt_toggle(void *data, bool force)
       win_handle->qtWindow->activateWindow();
       win_handle->qtWindow->raise();
       win_handle->qtWindow->show();
+      win_handle->qtWindow->schedulePersistSettings();
 
       if (companion_core_video_started_fullscreen(handle->core))
          win_handle->qtWindow->lower();
@@ -5083,6 +5176,15 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 
    switch (cmd)
    {
+      /* RetroArch is about to write retroarch.cfg (quit, or "Save
+       * Current Configuration"). Snapshot the live layout synchronously
+       * so the write sees it - the debounce timer may not have fired
+       * yet, and closeEvent/deinit run after the write. */
+      case CMD_EVENT_QUIT:
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+         if (win_handle && win_handle->qtWindow)
+            win_handle->qtWindow->persistSettings();
+         break;
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
 #if defined(HAVE_MENU)

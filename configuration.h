@@ -1168,16 +1168,22 @@ typedef struct settings
       char input_android_physical_keyboard[NAME_MAX_LENGTH];
 #endif
       char audio_device[NAME_MAX_LENGTH];
-      /* Desktop companion dock layout, one plain row per dock (or tabbed
-       * group): "<area>,<shown>,<size>[,<tab>]" - see ui/drivers/ui_qt.cpp
-       * qt_dock_state_*. Toolkit-neutral so the native companions can
-       * honour the same rows. */
-      char desktop_menu_dock_search[32];
-      char desktop_menu_dock_playlists[32];
-      char desktop_menu_dock_core[32];
-      char desktop_menu_dock_thumbnails[32];
-      char desktop_menu_dock_core_info[32];
-      char desktop_menu_dock_log[32];
+      /* Desktop companion dock layout, one plain row per dock:
+       * "<area>,<shown>,<width>,<height>,<tabbed_with>,<raised>" - see
+       * ui/drivers/ui_qt.cpp qt_dock_state_*. Toolkit-neutral so the
+       * native companions can honour the same rows. */
+      char desktop_menu_dock_search[48];
+      char desktop_menu_dock_playlists[48];
+      char desktop_menu_dock_core[48];
+      char desktop_menu_dock_boxart[48];
+      char desktop_menu_dock_title[48];
+      char desktop_menu_dock_screenshot[48];
+      char desktop_menu_dock_logo[48];
+      char desktop_menu_dock_core_info[48];
+      char desktop_menu_dock_log[48];
+      /* The companion's View Options window: "x,y,w,h", honoured when
+       * desktop_menu_save_geometry is on. */
+      char desktop_menu_options_window[48];
       char camera_device[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING

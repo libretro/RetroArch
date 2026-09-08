@@ -867,7 +867,15 @@ public slots:
    void hideDialog();
 private slots:
    void onRejected();
+protected:
+   /* The dialog's own geometry rides in desktop_menu_options_window
+    * ("x,y,w,h"), kept live like the main window's, when Remember Window
+    * Geometry is on. */
+   void resizeEvent(QResizeEvent *event);
+   void moveEvent(QMoveEvent *event);
 private:
+   void persistGeometry();
+   void restoreGeometry();
 #ifdef HAVE_MENU
    void addCategory(QWidget *widget, QString name, QString icon);
    void addCategory(OptionsCategory *category);

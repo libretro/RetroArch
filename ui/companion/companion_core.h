@@ -592,6 +592,50 @@ void companion_core_prepare_show_window(companion_core_t *core);
  * stay behind the video window then). */
 bool companion_core_video_started_fullscreen(companion_core_t *core);
 
+/* --- Dock layout rows ----------------------------------------------- */
+
+/* A companion's dock (pane) placement, one plain retroarch.cfg row per
+ * dock (desktop_menu_dock_<name>):
+ *
+ *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>
+ *    e.g.  right,1,320,400,boxart,0
+ *
+ * area        left | right | top | bottom | float
+ * shown       1 visible, 0 hidden
+ * width,      the dock's size in logical pixels, 0 = keep the default
+ * height
+ * tabbed_with the name of the dock this one is tabbed onto, "-" if none
+ * raised      1 when it is the tab on top of its group
+ *
+ * Shared so every backend reads and writes the same rows. Older
+ * three/four-field rows (area,shown,size[,tab]) still parse: size lands
+ * in width and the rest defaults. */
+enum companion_dock_area
+{
+   COMPANION_DOCK_LEFT = 0,
+   COMPANION_DOCK_RIGHT,
+   COMPANION_DOCK_TOP,
+   COMPANION_DOCK_BOTTOM,
+   COMPANION_DOCK_FLOAT
+};
+
+typedef struct companion_dock_state
+{
+   enum companion_dock_area area;
+   int  width;
+   int  height;
+   char tabbed_with[16]; /* empty when standing alone */
+   bool shown;
+   bool raised;
+} companion_dock_state_t;
+
+/* Format @st into @s; returns the length written. */
+size_t companion_dock_row_format(char *s, size_t len,
+      const companion_dock_state_t *st);
+/* Parse a row into @st; false when empty or not a dock row. Sizes
+ * outside 2..32767 become 0 (default). */
+bool companion_dock_row_parse(const char *s, companion_dock_state_t *st);
+
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 
 void companion_core_status_message(companion_core_t *core,

@@ -1616,9 +1616,13 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("desktop_menu_dock_search",     settings->arrays.desktop_menu_dock_search, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_playlists",  settings->arrays.desktop_menu_dock_playlists, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_core",       settings->arrays.desktop_menu_dock_core, false, NULL, true);
-   SETTING_ARRAY("desktop_menu_dock_thumbnails", settings->arrays.desktop_menu_dock_thumbnails, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_boxart",     settings->arrays.desktop_menu_dock_boxart, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_title",      settings->arrays.desktop_menu_dock_title, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_screenshot", settings->arrays.desktop_menu_dock_screenshot, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_logo",       settings->arrays.desktop_menu_dock_logo, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_core_info",  settings->arrays.desktop_menu_dock_core_info, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_log",        settings->arrays.desktop_menu_dock_log, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_options_window",  settings->arrays.desktop_menu_options_window, false, NULL, true);
 #endif
    SETTING_ARRAY("audio_device",                 settings->arrays.audio_device, false, NULL, true);
    SETTING_ARRAY("audio_resampler",              settings->arrays.audio_resampler, false, NULL, true);

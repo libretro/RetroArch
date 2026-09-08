@@ -990,6 +990,69 @@ static void test_launch_options(void)
 }
 
 #ifndef COMPANION_TEST_NO_MAIN
+/* Dock layout rows (desktop_menu_dock_*): the plain-text replacement
+ * for the old Qt saveState blob. Regression for the "Save Dock
+ * Positions" reports: every dock has its own row, tab partners and the
+ * raised tab survive a round trip, old short rows still parse, and
+ * garbage is rejected rather than placing a dock somewhere odd. */
+static void test_dock_rows(void)
+{
+   companion_dock_state_t st, back;
+   char row[64];
+
+   memset(&st, 0, sizeof(st));
+   st.area   = COMPANION_DOCK_RIGHT;
+   st.shown  = true;
+   st.width  = 320;
+   st.height = 400;
+   strlcpy(st.tabbed_with, "boxart", sizeof(st.tabbed_with));
+   st.raised = true;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "right,1,320,400,boxart,1") == 0, "format: %s", row);
+   CHECK(companion_dock_row_parse(row, &back), "parse formatted row");
+   CHECK(back.area == COMPANION_DOCK_RIGHT && back.shown && back.width == 320
+         && back.height == 400 && strcmp(back.tabbed_with, "boxart") == 0
+         && back.raised, "round trip keeps every field");
+
+   /* Standalone hidden dock at the bottom: "-" partner, not raised. */
+   memset(&st, 0, sizeof(st));
+   st.area = COMPANION_DOCK_BOTTOM; st.height = 160;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "bottom,0,0,160,-,0") == 0, "hidden standalone: %s", row);
+   CHECK(companion_dock_row_parse(row, &back) && !back.shown
+         && back.tabbed_with[0] == '\0' && back.height == 160, "hidden round trip");
+
+   /* Floating. */
+   memset(&st, 0, sizeof(st));
+   st.area = COMPANION_DOCK_FLOAT; st.shown = true; st.width = 200; st.height = 300;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(companion_dock_row_parse(row, &back) && back.area == COMPANION_DOCK_FLOAT
+         && back.width == 200, "floating round trip: %s", row);
+
+   /* Sizes a dock reports before it is laid out (0/1) and absurd ones
+    * are written and read as 0 = default. */
+   memset(&st, 0, sizeof(st));
+   st.area = COMPANION_DOCK_LEFT; st.shown = true; st.width = 1; st.height = 99999;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "left,1,0,0,-,0") == 0, "bogus sizes become default: %s", row);
+   CHECK(companion_dock_row_parse("left,1,1,40000,-,0", &back)
+         && back.width == 0 && back.height == 0, "bogus sizes rejected on parse");
+
+   /* The first shipped format (area,shown,size[,tab]) still parses:
+    * size is the width, everything else defaults. */
+   CHECK(companion_dock_row_parse("right,1,320,2", &back)
+         && back.area == COMPANION_DOCK_RIGHT && back.shown && back.width == 320
+         && back.tabbed_with[0] == '\0' && !back.raised, "old four-field row");
+   CHECK(companion_dock_row_parse("left,0,280", &back)
+         && !back.shown && back.width == 280, "old three-field row");
+
+   /* Not ours: empty, a lone word, unknown area. */
+   CHECK(!companion_dock_row_parse("", &back), "empty row rejected");
+   CHECK(!companion_dock_row_parse(NULL, &back), "NULL row rejected");
+   CHECK(!companion_dock_row_parse("left", &back), "one field rejected");
+   CHECK(!companion_dock_row_parse("sideways,1,10,10,-,0", &back), "unknown area rejected");
+}
+
 int main(void)
 {
    setup();
@@ -1010,6 +1073,7 @@ int main(void)
    test_hidden_playlists();
    test_run_paths();
    test_launch_options();
+   test_dock_rows();
    teardown();
    if (fails)
    {

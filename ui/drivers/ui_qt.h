@@ -548,6 +548,11 @@ public slots:
    void persistSettings();
    void saveDockLayout();
    void restoreDockLayout();
+   /* Arm the debounce that re-runs persistSettings() shortly after the
+    * window or a dock moved, resized, was shown or hidden - so settings_t
+    * always holds the live layout and any config write (quit from the
+    * RetroArch menu, "Save Current Configuration", ...) sees it. */
+   void schedulePersistSettings();
    void onIconViewClicked();
    void onListViewClicked();
    void onBoxartThumbnailClicked();
@@ -717,9 +722,11 @@ private:
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
+   bool m_hasBeenShown;
    QString m_pendingDirScrollPath;
 
    QTimer *m_thumbnailTimer;
+   QTimer *m_persistTimer;
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -735,6 +742,10 @@ private:
 protected:
    void closeEvent(QCloseEvent *event);
    void keyPressEvent(QKeyEvent *event);
+   void resizeEvent(QResizeEvent *event);
+   void moveEvent(QMoveEvent *event);
+   void showEvent(QShowEvent *event);
+   bool eventFilter(QObject *obj, QEvent *event);
 };
 
 Q_DECLARE_METATYPE(ThumbnailWidget)
