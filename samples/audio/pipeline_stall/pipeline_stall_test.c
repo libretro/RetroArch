@@ -186,6 +186,9 @@ static bool pipeline_up(size_t ring_bytes)
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
+   /* Audio paces the frontend here: the producer blocking on the ring
+    * is the contract under test. */
+   config_get_ptr()->bools.audio_sync = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED);
    return st->pipe_lock && st->pipe_cond && st->pipe_data_cond

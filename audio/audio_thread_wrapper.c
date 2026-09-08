@@ -65,6 +65,22 @@ typedef struct audio_thread
    bool nonblock_applied;
 } audio_thread_t;
 
+/* Hands the main thread's requested blocking state to the driver. Called
+ * on the audio thread only, the one that makes the driver's other calls. */
+static void audio_thread_apply_nonblock(audio_thread_t *thr)
+{
+   bool nonblock;
+   slock_lock(thr->lock);
+   nonblock = thr->nonblock;
+   slock_unlock(thr->lock);
+   if (nonblock != thr->nonblock_applied)
+   {
+      if (thr->driver->set_nonblock_state)
+         thr->driver->set_nonblock_state(thr->driver_data, nonblock);
+      thr->nonblock_applied = nonblock;
+   }
+}
+
 /**
  * The thread that manages the life of the audio driver.
  * The wrapped audio driver lives and dies with this function.
@@ -134,10 +150,8 @@ static void audio_thread_loop(void *data)
 
    for (;;)
    {
-      bool nonblock;
       slock_lock(thr->lock);
 
-      nonblock = thr->nonblock;
       if (!thr->alive)
       {
          scond_signal(thr->cond);
@@ -163,17 +177,14 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      if (nonblock != thr->nonblock_applied)
-      {
-         if (thr->driver->set_nonblock_state)
-            thr->driver->set_nonblock_state(thr->driver_data, nonblock);
-         thr->nonblock_applied = nonblock;
-      }
+      audio_thread_apply_nonblock(thr);
       audio_driver_callback();
    }
 
    audio_driver_pipeline_consumer_exit();
    thr->driver->free(thr->driver_data);
+   /* Every forwarder tests this before reaching the driver. */
+   thr->driver_data = NULL;
 }
 
 /**
@@ -446,8 +457,19 @@ static ssize_t audio_thread_write(void *data, const void *s, size_t len)
    audio_thread_t *thr = (audio_thread_t*)data;
    if (!thr)
       return 0;
+   /* Parked: the device is stopped and refuses writes, which is not the
+    * thread dying. The pause tail reaches here from the main thread. */
+   if (thr->stopped || !thr->driver_data)
+      return 0;
+   /* This thread spends nearly all its time inside the pipeline pass
+    * below the loop top, so a state changed during the pass has to reach
+    * the driver here, ahead of the write that must honour it. */
+   if (sthread_isself(thr->thread))
+      audio_thread_apply_nonblock(thr);
    _len = thr->driver->write(thr->driver_data, s, len);
-   if (_len < 0)
+   /* Only this thread's own failed write ends it; a write made from
+    * another thread says nothing about the device this one is serving. */
+   if (_len < 0 && sthread_isself(thr->thread))
    {
       slock_lock(thr->lock);
       thr->alive = false;

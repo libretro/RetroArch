@@ -1584,6 +1584,19 @@ static void audio_driver_sink_apply(audio_driver_state_t *audio_st,
 
 /* Refused frames: the driver took less than was offered. Said once, on
  * the thread that writes, whose counts these are. */
+/* Frames the bound drops at normal speed count as offered and refused;
+ * a write would have dropped them the same way. */
+static void audio_driver_sink_bound_dropped(audio_driver_state_t *audio_st,
+      size_t in_frames, double ratio)
+{
+   double out = (double)in_frames * ratio;
+   if (out <= 0.0)
+      return;
+   audio_st->sink_offered_raw += (uint64_t)out;
+   if (!audio_st->pipe_threaded)
+      audio_st->sink_offered  += (double)in_frames * audio_st->src_ratio_orig;
+}
+
 static void audio_driver_sink_refused(audio_driver_state_t *audio_st)
 {
    uint64_t offered  = audio_st->sink_offered_raw;
@@ -3548,6 +3561,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                           && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
                      && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
                {
+                  unsigned before = rs_frames;
                   rs_frames = (unsigned)audio_driver_ff_discard_bound(
                         audio_st, i16_ratio, rs_frames);
                   /* What the bound left over is the tail of a continuous
@@ -3556,6 +3570,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                    * flush. See audio_driver_ff_carry_append(). */
                   if (carry_have && ff_defer)
                      carry_used = rs_frames;
+                  else if (!is_fastforward)
+                     audio_driver_sink_bound_dropped(audio_st,
+                           before - rs_frames, i16_ratio);
                }
             }
 
@@ -4008,12 +4025,16 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                     && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
                && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
          {
+            size_t before         = src_data.input_frames;
             src_data.input_frames = audio_driver_ff_discard_bound(
                   audio_st, src_data.ratio, src_data.input_frames);
             /* The tail stays in the carry rather than being dropped; see
              * the s16 arm above. */
             if (carry_have && ff_defer)
                carry_used = src_data.input_frames;
+            else if (!is_fastforward)
+               audio_driver_sink_bound_dropped(audio_st,
+                     before - src_data.input_frames, src_data.ratio);
          }
       }
 
@@ -5318,20 +5339,24 @@ void audio_driver_jump_fade_end(bool ramped)
 void audio_driver_set_nonblock_state(bool nonblock)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (nonblock)
-      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_NONBLOCK);
-   else
-      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_NONBLOCK);
    /* The wrapper serving a core's own audio callback keeps its writes
     * blocking: they are what pace that thread. The pipeline's flush runs
     * on the same wrapper and relies on the driver honouring the state. */
-   if (     audio_st->current_audio
+   bool handed = audio_st->current_audio
          && audio_st->current_audio->set_nonblock_state
          && audio_st->context_audio_data
          && (   !audio_st->callback.callback
-             || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_PIPELINE_THREADED)))
+             || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_PIPELINE_THREADED));
+   if (handed)
       audio_st->current_audio->set_nonblock_state(
             audio_st->context_audio_data, nonblock);
+   /* The flag says what the driver is doing, so a driver kept blocking
+    * reads as blocking: the discard bound and the carry are for writes
+    * that would otherwise truncate. */
+   if (nonblock && handed)
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_NONBLOCK);
+   else
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_NONBLOCK);
 }
 
 #ifdef HAVE_THREADS
@@ -5594,9 +5619,12 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
           * never drain again, and says so through pipe_consumer_gone.
           * Not through the driver's alive(): the wrapper implements
           * that by parking and resuming its thread, which stops and
-          * restarts the device every call. */
+          * restarts the device every call. Nor with audio sync off at
+          * normal speed: video paces the frontend, and a full ring
+          * drops the surplus here. */
          if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
-               || audio_st->pipe_consumer_gone)
+               || audio_st->pipe_consumer_gone
+               || (!is_fastforward && !config_get_ptr()->bools.audio_sync))
             break;
          /* Sleep until the consumer has completed a pass. The
           * generation is read under the lock before re-checking the
