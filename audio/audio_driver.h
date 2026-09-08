@@ -687,6 +687,18 @@ typedef struct
     * pipe's target then, not just a frame. Consumer thread only after
     * init. */
    bool     pipe_priming;
+   /* Bytes ever published into and taken out of pipe_ring, each counted
+    * by its own thread. pipe_discard_to is a position in that stream,
+    * set under pipe_lock: what was published before a pause is stale
+    * behind the tail, and the consumer takes it out unplayed. */
+   size_t   pipe_published;
+   size_t   pipe_consumed;
+   size_t   pipe_discard_to;
+   /* Where the core's audio resumes after a pause, set under pipe_lock
+    * by the producer: the consumer arms the resume ramp on reaching it
+    * and never takes a chunk across it. */
+   size_t   pipe_fade_in_at;
+   bool     pipe_fade_in_set;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
@@ -754,6 +766,9 @@ typedef struct
     * audio_driver_pause_fade(). */
    float                 last_out[2];
    unsigned              fade_in_frames;
+   /* A resume ramp owed to the core's first audio after the pause; the
+    * menu's silence in between must not spend it. */
+   bool                  fade_in_pending;
    /* Frames of the ramp down still to emit at a fast-forward edge, and the
     * level it started from. Counted across flushes rather than spent on one:
     * a flush can be a handful of frames, and a ramp squeezed into that is as

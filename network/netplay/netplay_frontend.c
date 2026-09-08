@@ -50,6 +50,7 @@
 
 #include "../../autosave.h"
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 #include "../../command.h"
 #include "../../content.h"
 #include "../../core.h"
@@ -9569,6 +9570,14 @@ void deinit_netplay(void)
       net_st->flags            &= ~(NET_DRIVER_ST_FLAG_NETPLAY_ENABLED
                                 |   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT);
 
+#ifdef HAVE_MENU
+      /* The runloop holds the core behind the menu again from the next
+       * iteration; end its audio as the menu's open would have. */
+      if (     (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            && config_get_ptr()->bools.menu_pause_libretro)
+         audio_driver_pause_fade(true);
+#endif
+
 #if HAVE_RUNAHEAD
       /* Reinitialize preemptive frames if we're disabling
        * netplay mid-session. Skip if the core isn't running:
@@ -9753,6 +9762,15 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
          net_st->core_netpacket_interface->start)
       net_st->core_netpacket_interface->start(0,
             netplay_netpacket_send_cb, netplay_netpacket_poll_receive_cb);
+
+#ifdef HAVE_MENU
+   /* The core runs behind the menu while netplay forbids pausing; bring
+    * its audio back as the menu's close would. */
+   if (     (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         && settings->bools.menu_pause_libretro
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+      audio_driver_pause_fade(false);
+#endif
 
    return true;
 

@@ -4930,6 +4930,21 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         /* The teardown drops the record that the core is held. */
+         {
+            bool core_held = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+#ifdef HAVE_MENU
+            if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
+                  && settings->bools.menu_pause_libretro
+#ifdef HAVE_NETWORKING
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+#endif
+               )
+               core_held = true;
+#endif
+            if (core_held)
+               audio_driver_pause_fade(true);
+         }
 #ifdef HAVE_MENU
          menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #endif

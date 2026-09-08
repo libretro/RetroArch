@@ -226,7 +226,7 @@ static double produce_frame(void)
 {
    double t0 = now_ms();
    audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-         sizeof(frame_audio) / sizeof(int16_t), false, false, false);
+         sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
    audio_driver_pipeline_signal(&audio_driver_st);
    return now_ms() - t0;
 }
@@ -340,7 +340,7 @@ int main(void)
    retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
    for (i = 0; i < 20; i++)
       audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-            sizeof(frame_audio) / sizeof(int16_t), false, false, false);
+            sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
    CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
    CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
 
