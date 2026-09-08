@@ -266,6 +266,9 @@ typedef struct video_shader_ctx_params
    unsigned out_width;
    unsigned out_height;
    unsigned frame_counter;
+   /* Presents the display had seen before this frame's first one; see
+    * video_frame_info_t::swap_count. Zero when the caller has none. */
+   unsigned swap_counter;
    unsigned fbo_info_cnt;
 } video_shader_ctx_params_t;
 

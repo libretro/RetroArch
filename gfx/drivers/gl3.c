@@ -4452,6 +4452,10 @@ static void gl3_renderchain_render(
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      /* Intermediate passes of the same present: the outer frame's
+       * count, read from the shared state since video_info does not
+       * reach this far in. */
+      params.swap_counter  = (unsigned int)video_thread_swap_count();
       params.info          = tex_info;
       params.prev_info     = gl->chain.prev_info;
       params.feedback_info = feedback_info;
@@ -4518,6 +4522,7 @@ static void gl3_renderchain_render(
    params.out_width     = gl->vp.width;
    params.out_height    = gl->vp.height;
    params.frame_counter = (unsigned int)frame_count;
+   params.swap_counter  = (unsigned int)video_thread_swap_count();
    params.info          = tex_info;
    params.prev_info     = gl->chain.prev_info;
    params.feedback_info = feedback_info;
@@ -4862,6 +4867,7 @@ static bool gl3_frame(void *data, const void *frame,
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      params.swap_counter  = (unsigned int)video_info->swap_count;
       params.info          = &gl->chain.tex_info;
       params.prev_info     = gl->chain.prev_info;
       params.feedback_info = &feedback_info;

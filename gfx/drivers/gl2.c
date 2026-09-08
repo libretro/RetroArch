@@ -1593,6 +1593,10 @@ static void gl2_renderchain_render(
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      /* Intermediate passes of the same present: the outer frame's
+       * count, read from the shared state since video_info does not
+       * reach this far in. */
+      params.swap_counter  = (unsigned int)video_thread_swap_count();
       params.info          = tex_info;
       params.prev_info     = gl->prev_info;
       params.feedback_info = feedback_info;
@@ -1665,6 +1669,8 @@ static void gl2_renderchain_render(
    params.out_width     = gl->vp.width;
    params.out_height    = gl->vp.height;
    params.frame_counter = (unsigned int)frame_count;
+   /* Last pass of the same present; see above. */
+   params.swap_counter  = (unsigned int)video_thread_swap_count();
    params.info          = tex_info;
    params.prev_info     = gl->prev_info;
    params.feedback_info = feedback_info;
@@ -4257,6 +4263,7 @@ static bool gl2_frame(void *data, const void *frame,
    params.out_width        = gl->vp.width;
    params.out_height       = gl->vp.height;
    params.frame_counter    = (unsigned int)frame_count;
+   params.swap_counter    = (unsigned int)video_info->swap_count;
    params.info             = &gl->tex_info;
    params.prev_info        = gl->prev_info;
    params.feedback_info    = &feedback_info;
