@@ -452,6 +452,11 @@
  * of slower convergence after content load. */
 #define DEFAULT_FRAME_TIME_SAMPLE_GATED false
 
+/* Measure the refresh-rate estimate from the display's reported present
+ * times rather than the frame loop. Off: the estimate keeps measuring
+ * exactly what it always has. */
+#define DEFAULT_FRAME_TIME_SAMPLE_FROM_DISPLAY false
+
 /* When true, drains the 'Estimated Screen Refresh Rate' sample
  * buffer after fast-forward, save state, or load state -- events
  * whose timing doesn't reflect normal frame cadence and would

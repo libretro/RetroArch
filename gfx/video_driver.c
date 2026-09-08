@@ -5281,6 +5281,33 @@ void video_driver_frame(const void *data, unsigned width,
       frame_time                                = new_time - fps_time;
       fps_time                                  = new_time;
 
+      /* Measure the estimate from the display rather than the frame
+       * loop, when asked and when something can report it. The delta
+       * between consecutive reported presents is the display's period
+       * with the core's cadence and the loop's own jitter removed. Not
+       * under the threaded wrapper: the video thread owns the query
+       * there, and this thread's frame boundaries are not presents.
+       * A report that has not moved (compositor bypassed, driver
+       * cannot say yet) leaves the loop measurement in place. */
+      if (     settings->bools.video_frame_time_sample_from_display
+            && !video_st->thread_wrapper_active
+            && video_st->poke
+            && video_st->poke->get_last_present_time)
+      {
+         retro_time_t present = video_st->poke->get_last_present_time(
+               video_st->data);
+
+         if (present > 0)
+         {
+            if (     video_st->last_present_time > 0
+                  && present > video_st->last_present_time)
+               frame_time = present - video_st->last_present_time;
+            video_st->last_present_time = present;
+         }
+      }
+      else
+         video_st->last_present_time = 0;
+
       /* Frame-time sampling.  Two modes:
        *
        *   1. Legacy (default; video_frame_time_sample_gated == false):

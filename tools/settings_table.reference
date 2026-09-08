@@ -262,6 +262,7 @@ bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
 bool	android_input_disconnect_workaround	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0
@@ -913,6 +914,7 @@ bool	video_window_show_decorations	1	1
 bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0
@@ -1571,6 +1573,7 @@ bool	video_window_show_decorations	1	1
 bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0

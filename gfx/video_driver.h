@@ -930,6 +930,10 @@ typedef struct
    uint64_t frame_count;
    /* See video_frame_info_t::swap_count. */
    uint64_t swap_count;
+   /* Display timestamp of the previous present, when the refresh-rate
+    * estimate is measured from the display rather than the frame loop;
+    * 0 when it is not, or before the driver reports one. */
+   retro_time_t last_present_time;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;

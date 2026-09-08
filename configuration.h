@@ -580,6 +580,7 @@ typedef struct settings
       bool video_force_aspect;
       bool video_frame_delay_auto;
       bool video_frame_time_sample_gated;
+      bool video_frame_time_sample_from_display;
       bool video_crop_overscan;
       bool video_aspect_ratio_auto;
       bool video_dingux_ipu_keep_aspect;

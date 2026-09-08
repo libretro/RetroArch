@@ -676,6 +676,7 @@
 #define MENU_ENUM_LABEL_VIDEO_DRIVER_NULL_STR "null"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_REMOVE_STR "video_filter_remove"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER_STR "video_filter_flicker"
+#define MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY_STR "video_frame_time_sample_from_display"
 #define MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED_STR "video_frame_time_sample_gated"
 #define MENU_ENUM_LABEL_VIDEO_GAMMA_STR "video_gamma"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED_STR "video_refresh_rate_polled"
