@@ -27,6 +27,13 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
+      || defined(__HAIKU__)
+#include <sys/stat.h>
+#define CONFIG_CREDENTIALS_RESTRICT_PERMS 1
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -936,6 +943,11 @@ struct config_path_setting
 #ifdef HAVE_CONFIGFILE
 static void config_parse_file(global_t *global);
 static size_t config_get_credentials_path(char *s, size_t len);
+static bool config_save_credentials(
+      const struct config_array_setting *array_settings,
+      int array_settings_size,
+      const struct config_path_setting *path_settings,
+      int path_settings_size);
 #endif
 
 struct defaults g_defaults;
@@ -6405,6 +6417,29 @@ static bool config_load_file(global_t *global,
          RARCH_LOG("[Config] Loading config: \"%s\".\n", path);
    }
 
+   /* Merge credentials from separate file.
+    * Credentials are stored in retroarch-keychain.cfg alongside
+    * the main config to keep sensitive data (passwords,
+    * tokens, keys) out of retroarch.cfg.
+    * Merged before any --appendconfig files so that an
+    * explicit override on the command line still wins. */
+   {
+      char credentials_path[PATH_MAX_LENGTH];
+      credentials_path[0] = '\0';
+      config_get_credentials_path(credentials_path,
+            sizeof(credentials_path));
+      if (!string_is_empty(credentials_path)
+            && path_is_valid(credentials_path))
+      {
+         bool result = config_append_file(conf, credentials_path);
+         RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
+               credentials_path);
+         if (!result)
+            RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
+                  credentials_path);
+      }
+   }
+
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
    {
       char tmp_append_path[PATH_MAX_LENGTH];
@@ -6488,27 +6523,6 @@ static bool config_load_file(global_t *global,
       if (!string_is_equal(old_overlay_path, new_overlay_path))
          retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_OVERLAY_PRESET, NULL);
 #endif
-   }
-
-   /* Merge credentials from separate file.
-    * Credentials are stored in credentials.cfg alongside
-    * the main config to keep sensitive data (passwords,
-    * tokens, keys) out of retroarch.cfg. */
-   {
-      char credentials_path[PATH_MAX_LENGTH];
-      credentials_path[0] = '\0';
-      config_get_credentials_path(credentials_path,
-            sizeof(credentials_path));
-      if (!string_is_empty(credentials_path)
-            && path_is_valid(credentials_path))
-      {
-         bool result = config_append_file(conf, credentials_path);
-         RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
-               credentials_path);
-         if (!result)
-            RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
-                  credentials_path);
-      }
    }
 
    /* Special case for perfcnt_enable */
@@ -8462,27 +8476,32 @@ static size_t config_get_credentials_path(char *s, size_t len)
          sizeof(config_directory));
 
    return fill_pathname_join_special(s, config_directory,
-         "credentials.cfg", len);
+         "retroarch-keychain.cfg", len);
 }
 
 /**
  * config_save_credentials:
+ * @array_settings      : string settings table (from populate_settings_array)
+ * @array_settings_size : number of entries in @array_settings
+ * @path_settings       : path settings table (from populate_settings_path)
+ * @path_settings_size  : number of entries in @path_settings
  *
  * Writes only sensitive settings (passwords, tokens, keys)
- * to a separate credentials.cfg file.
+ * to a separate retroarch-keychain.cfg file. The tables are the ones
+ * config_save_file() has already built, so nothing is
+ * re-populated here.
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_credentials(void)
+static bool config_save_credentials(
+      const struct config_array_setting *array_settings,
+      int array_settings_size,
+      const struct config_path_setting *path_settings,
+      int path_settings_size)
 {
    unsigned i;
    bool ret                                          = false;
    char credentials_path[PATH_MAX_LENGTH];
-   struct config_array_setting     *array_settings   = NULL;
-   struct config_path_setting      *path_settings    = NULL;
-   settings_t                      *settings         = config_st;
-   int array_settings_size                           = sizeof(settings->arrays) / sizeof(settings->arrays.placeholder);
-   int path_settings_size                            = sizeof(settings->paths)  / sizeof(settings->paths.placeholder);
    config_file_t                   *conf             = NULL;
 
    credentials_path[0] = '\0';
@@ -8497,9 +8516,6 @@ bool config_save_credentials(void)
    if (!conf)
       return false;
 
-   array_settings = populate_settings_array(settings, &array_settings_size);
-   path_settings  = populate_settings_path(settings, &path_settings_size);
-
    if (array_settings && (array_settings_size > 0))
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
@@ -8510,8 +8526,6 @@ bool config_save_credentials(void)
                array_settings[i].ident,
                array_settings[i].ptr);
       }
-      free(array_settings);
-      array_settings = NULL;
    }
 
    if (path_settings && (path_settings_size > 0))
@@ -8524,15 +8538,24 @@ bool config_save_credentials(void)
                path_settings[i].ident,
                path_settings[i].ptr);
       }
-      free(path_settings);
-      path_settings = NULL;
    }
 
    ret = config_file_write(conf, credentials_path, true);
    config_file_free(conf);
 
    if (ret)
+   {
+#ifdef CONFIG_CREDENTIALS_RESTRICT_PERMS
+      /* The file holds plaintext secrets: make it owner-only.
+       * config_file_write() creates it with the process umask,
+       * which is usually world-readable. Not fatal on failure
+       * (e.g. FAT/exFAT media), the write itself succeeded. */
+      if (chmod(credentials_path, S_IRUSR | S_IWUSR) != 0)
+         RARCH_WARN("[Config] Could not restrict permissions on \"%s\".\n",
+               credentials_path);
+#endif
       RARCH_LOG("[Config] Saved credentials to \"%s\".\n", credentials_path);
+   }
    else
       RARCH_ERR("[Config] Failed to save credentials to \"%s\".\n", credentials_path);
 
@@ -8719,8 +8742,10 @@ bool config_save_file(const char *path)
 
    /* Save credentials to a separate file.
     * Only strip sensitive fields from retroarch.cfg
-    * when credentials.cfg was written successfully. */
-   credentials_saved = config_save_credentials();
+    * when retroarch-keychain.cfg was written successfully. */
+   credentials_saved = config_save_credentials(
+         array_settings, array_settings_size,
+         path_settings,  path_settings_size);
    if (!credentials_saved)
       RARCH_WARN("[Config] Credentials save failed, "
             "keeping sensitive fields in main config.\n");
@@ -8735,9 +8760,9 @@ bool config_save_file(const char *path)
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
 
-         /* Sensitive settings are stored in credentials.cfg.
+         /* Sensitive settings are stored in retroarch-keychain.cfg.
           * Unset removes stale values from existing configs.
-          * Only strip when credentials.cfg was written OK. */
+          * Only strip when retroarch-keychain.cfg was written OK. */
          if (   credentials_saved
              && (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
          {
@@ -8830,9 +8855,9 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
-         /* Sensitive settings are stored in credentials.cfg.
+         /* Sensitive settings are stored in retroarch-keychain.cfg.
           * Unset removes stale values from existing configs.
-          * Only strip when credentials.cfg was written OK. */
+          * Only strip when retroarch-keychain.cfg was written OK. */
          if (   credentials_saved
              && (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
          {
@@ -9502,7 +9527,7 @@ int8_t config_save_overrides(enum override_type type,
              * config, forcing users to reauthenticate per override.
              * Originally applied to cheevos credentials, now
              * generalized to all sensitive settings via
-             * credentials.cfg. */
+             * retroarch-keychain.cfg. */
             if (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
                continue;
             config_set_string(conf, array_overrides[i].ident,
@@ -9518,7 +9543,7 @@ int8_t config_save_overrides(enum override_type type,
          const char *base = path_settings[i].ptr;
          char        cur_buf[PATH_MAX_LENGTH];
 
-         /* Sensitive settings are managed via credentials.cfg */
+         /* Sensitive settings are managed via retroarch-keychain.cfg */
          if (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
             continue;
 
