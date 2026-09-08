@@ -985,16 +985,26 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
    {
       int64_t  span = wdt;
       double   sum  = offered;
+      double   took = taken;
       unsigned i;
       for (i = 0; i < AUDIO_SINK_BAND_WINDOWS; i++)
       {
          span += audio_st->sink_recent_usec[i];
          sum  += audio_st->sink_recent_offered[i];
+         took += audio_st->sink_recent_consumed[i];
       }
-      audio_st->sink_recent_usec[audio_st->sink_recent_head]    = wdt;
-      audio_st->sink_recent_offered[audio_st->sink_recent_head] = offered;
+      audio_st->sink_recent_usec[audio_st->sink_recent_head]     = wdt;
+      audio_st->sink_recent_offered[audio_st->sink_recent_head]  = offered;
+      audio_st->sink_recent_consumed[audio_st->sink_recent_head] = taken;
       audio_st->sink_recent_head = (audio_st->sink_recent_head + 1) % AUDIO_SINK_BAND_WINDOWS;
-      kept = fabs(sum / ((double)rate * (double)span / 1e6) - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE;
+      /* The source within the band a bias could correct, and the
+       * ratio itself within it: the ratio carries rate control's
+       * adjustment, which is the point - a steady one migrates into
+       * the bias - but a window in which rate control sat at its
+       * bound, filling a buffer or a pipe, is not a clock. */
+      kept = fabs(sum / ((double)rate * (double)span / 1e6) - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE
+          && sum > 0.0
+          && fabs(took / sum - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE;
    }
 
    if (kept)
@@ -1039,11 +1049,14 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
     * is said so once: with audio sync off that is its clock. */
    if (     audio_st->sink_kept.usec == 0
          && audio_st->sink_pending.usec >= AUDIO_SINK_BASELINE_USEC)
-      audio_driver_sink_log_refused(audio_st, rate,
-            audio_driver_sink_ppm(audio_st->sink_rate_hz, (double)rate),
+   {
+      double dev_ppm = audio_driver_sink_ppm(audio_st->sink_rate_hz, (double)rate);
+      audio_driver_sink_log_refused(audio_st, rate, dev_ppm,
             audio_driver_sink_ppm(audio_st->sink_source_hz, (double)rate),
             audio_driver_sink_ppm(audio_st->sink_rate_hz, audio_st->sink_source_hz),
-            AUDIO_SINK_WARNED_UNSETTLED);
+            fabs(dev_ppm) > AUDIO_SINK_BIAS_PLAUSIBLE * 1e6
+               ? AUDIO_SINK_WARNED_IMPLAUSIBLE : AUDIO_SINK_WARNED_UNSETTLED);
+   }
 }
 
 /* Sets the bias from the sums, every baseline's worth of summed time. */
@@ -1174,8 +1187,9 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       audio_st->sink_discarded = 0;
       memset(&audio_st->sink_kept,    0, sizeof(audio_st->sink_kept));
       memset(&audio_st->sink_pending, 0, sizeof(audio_st->sink_pending));
-      memset(audio_st->sink_recent_usec,    0, sizeof(audio_st->sink_recent_usec));
-      memset(audio_st->sink_recent_offered, 0, sizeof(audio_st->sink_recent_offered));
+      memset(audio_st->sink_recent_usec,     0, sizeof(audio_st->sink_recent_usec));
+      memset(audio_st->sink_recent_offered,  0, sizeof(audio_st->sink_recent_offered));
+      memset(audio_st->sink_recent_consumed, 0, sizeof(audio_st->sink_recent_consumed));
       audio_st->sink_recent_head = 0;
       audio_driver_sink_mark(audio_st, &audio_st->sink_at_window, consumed);
       return;

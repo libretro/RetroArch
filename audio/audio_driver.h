@@ -638,6 +638,7 @@ typedef struct
     * carries back. Over a few windows it cancels; a stall does not. */
    int64_t  sink_recent_usec[4];
    double   sink_recent_offered[4];
+   double   sink_recent_consumed[4];
    unsigned sink_recent_head;
    audio_sink_sum_t  sink_kept;        /* the windows summed for the bias */
    audio_sink_sum_t  sink_pending;     /* windows since the last kept one, for the rates shown meanwhile */
