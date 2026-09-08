@@ -219,11 +219,29 @@ typedef struct ui_companion_win32_wimp
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
-   /* Splitter between the playlist pane and the entries. */
+   /* Splitters: the playlist pane / entries gap (pane_w is the left
+    * column's width), the entries / right column gap (right_w), the
+    * Core Info / thumbnail gap in the right column (info_h and box_h,
+    * both 0 = share the column equally) and the gap above the log
+    * (log_h). All in pixels at this DPI; the dock rows they come from
+    * and go to are logical (see cw_grid_apply / cw_grid_store). */
    int pane_w;
-   bool splitting;
+   int right_w;
+   int info_h, box_h;
+   int log_h;
+   int splitting;  /* CW_SPLIT_* being dragged, 0 = none */
+   bool info_first; /* Core Info above the thumbnails, as Qt's default */
    bool class_registered;
 } ui_companion_win32_wimp_t;
+
+enum
+{
+   CW_SPLIT_NONE = 0,
+   CW_SPLIT_LEFT,   /* left column | entries */
+   CW_SPLIT_RIGHT,  /* entries | right column */
+   CW_SPLIT_INFO,   /* Core Info / thumbnails, in the right column */
+   CW_SPLIT_LOG     /* panes / log */
+};
 
 /* One driver instance; the WNDPROC needs to find it. */
 static ui_companion_win32_wimp_t *g_win32_wimp = NULL;
@@ -1065,6 +1083,130 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
    cw_status_default(w);
 }
 
+/* Logical (96-dpi) pixels of the dock rows <-> pixels at this DPI. */
+#define CW_TO_LOGICAL(w, x) MulDiv((x), 96, (w)->dpi)
+
+/* Take the pane layout from the shared dock rows (the same rows the Qt
+ * companion saves and restores): column widths, which of Core Info /
+ * the thumbnail pane / the log is shown, their order and heights, the
+ * raised thumbnail tab. companion_dock_grid_read() maps the rows onto
+ * this fixed grid; when it has nothing to apply the Qt defaults stay
+ * (both right panes shown, Core Info on top, log hidden). Runs once,
+ * from init, after every control exists. */
+static void cw_grid_apply(ui_companion_win32_wimp_t *w)
+{
+   companion_dock_grid_t g;
+   if (!companion_dock_grid_read(config_get_ptr(), &g))
+      return;
+   if (g.left_w > 0)
+      w->pane_w  = CW_S(w, g.left_w);
+   if (g.right_w > 0)
+      w->right_w = CW_S(w, g.right_w);
+   if (g.info_h > 0 && g.thumbs_h > 0)
+   {
+      w->info_h = CW_S(w, g.info_h);
+      w->box_h  = CW_S(w, g.thumbs_h);
+   }
+   if (g.log_h > 0)
+      w->log_h   = CW_S(w, g.log_h);
+   w->info_first     = g.info_first;
+   w->info_visible   = g.info_shown;
+   w->boxart_visible = g.thumbs_shown;
+   w->log_visible    = g.log_shown;
+   if (w->info)
+      ShowWindow(w->info, w->info_visible ? SW_SHOW : SW_HIDE);
+   if (w->boxart)
+      ShowWindow(w->boxart, w->boxart_visible ? SW_SHOW : SW_HIDE);
+   if (w->log)
+      ShowWindow(w->log, w->log_visible ? SW_SHOW : SW_HIDE);
+   if (w->boxart_tabs)
+      SendMessageA(w->boxart_tabs, TCM_SETCURSEL, (WPARAM)g.thumb_tab, 0);
+   switch (g.thumb_tab)
+   {
+      case 1:  w->boxart_subdir = COMPANION_THUMB_TITLE;      break;
+      case 2:  w->boxart_subdir = COMPANION_THUMB_SCREENSHOT; break;
+      case 3:  w->boxart_subdir = COMPANION_THUMB_LOGO;       break;
+      default: w->boxart_subdir = COMPANION_THUMB_BOXART;     break;
+   }
+}
+
+/* The inverse: the layout on screen back into the dock rows, in
+ * logical pixels, so the Qt companion (or this one next launch) opens
+ * to it. The left column's three sections are measured off their
+ * controls, as Qt's three left docks are. */
+static void cw_grid_store(ui_companion_win32_wimp_t *w)
+{
+   companion_dock_grid_t g;
+   RECT r, rs;
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.desktop_menu_save_dock_positions)
+      return;
+   memset(&g, 0, sizeof(g));
+   g.left_w       = CW_TO_LOGICAL(w, w->pane_w);
+   g.right_w      = CW_TO_LOGICAL(w, w->right_w);
+   g.log_h        = CW_TO_LOGICAL(w, w->log_h);
+   g.info_shown   = w->info_visible;
+   g.thumbs_shown = w->boxart_visible;
+   g.log_shown    = w->log_visible;
+   g.info_first   = w->info_first;
+   if (w->boxart_tabs)
+      g.thumb_tab = (int)SendMessageA(w->boxart_tabs, TCM_GETCURSEL, 0, 0);
+   if (g.thumb_tab < 0 || g.thumb_tab > 3)
+      g.thumb_tab = 0;
+   /* Right column heights as laid out: the caption's top to the
+    * control's bottom, either pane alone is the whole column. */
+   if (w->info_visible && w->info && w->info_label)
+   {
+      GetWindowRect(w->info_label, &r);
+      GetWindowRect(w->info, &rs);
+      g.info_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
+   }
+   if (w->boxart_visible && w->boxart && w->boxart_label)
+   {
+      GetWindowRect(w->boxart_label, &r);
+      GetWindowRect(w->boxart, &rs);
+      g.thumbs_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
+   }
+   if (w->search_label && w->search)
+   {
+      GetWindowRect(w->search_label, &r);
+      GetWindowRect(w->search, &rs);
+      g.search_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
+   }
+   if (w->browser_label && w->playlists)
+   {
+      GetWindowRect(w->browser_label, &r);
+      GetWindowRect(w->playlists, &rs);
+      g.playlists_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
+   }
+   if (w->core_label && w->run_btn)
+   {
+      GetWindowRect(w->core_label, &r);
+      GetWindowRect(w->run_btn, &rs);
+      g.core_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
+   }
+   companion_dock_grid_write(settings, &g);
+}
+
+/* The window's screen rectangle into desktop_menu_window_* (logical
+ * pixels, as Qt's), under "Remember Window Geometry"; only a window
+ * that is up and not minimised has one worth keeping. */
+static void cw_geometry_store(ui_companion_win32_wimp_t *w)
+{
+   settings_t *settings = config_get_ptr();
+   RECT r;
+   if (     !settings->bools.desktop_menu_save_geometry || !w->hwnd
+         || !IsWindowVisible(w->hwnd) || IsIconic(w->hwnd)
+         || !GetWindowRect(w->hwnd, &r))
+      return;
+   if (r.right <= r.left || r.bottom <= r.top)
+      return;
+   settings->uints.desktop_menu_window_x      = (unsigned)(r.left < 0 ? 0 : CW_TO_LOGICAL(w, r.left));
+   settings->uints.desktop_menu_window_y      = (unsigned)(r.top  < 0 ? 0 : CW_TO_LOGICAL(w, r.top));
+   settings->uints.desktop_menu_window_width  = (unsigned)CW_TO_LOGICAL(w, r.right - r.left);
+   settings->uints.desktop_menu_window_height = (unsigned)CW_TO_LOGICAL(w, r.bottom - r.top);
+}
+
 static void cw_layout(ui_companion_win32_wimp_t *w)
 {
    RECT rc, sb;
@@ -1093,13 +1235,11 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
    }
 
    {
-      int log_h    = (w->log_visible && w->log) ? CW_S(w, COMPANION_WIN32_LOG_H) : 0;
+      int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
+      int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
       bool r_info  = (w->info_visible && w->info);
       bool r_box   = (w->boxart_visible && w->boxart);
-      int right_w  = (r_info || r_box) ? CW_S(w, COMPANION_WIN32_INFO_W) : 0;
-      int list_h   = rc.bottom - status_h - log_h;
-      int entry_x  = w->pane_w + CW_S(w, COMPANION_WIN32_SPLIT_W);
-      int entry_w  = rc.right - entry_x - right_w;
+      int log_h, right_w, list_h, entry_x, entry_w;
       /* Rows follow the font: a caption is one line, a control a line
        * plus button chrome. */
       const int L  = w->text_h + CW_S(w, 4);
@@ -1107,6 +1247,26 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       const int P  = CW_S(w, 4); /* padding */
       const int TAB_H = w->text_h + CW_S(w, 10);
       int y;
+      /* The log and the right column take the sizes they were last
+       * dragged or restored to, clamped so the entries keep their
+       * minimum. */
+      if (w->log_h <= 0)
+         w->log_h   = CW_S(w, COMPANION_WIN32_LOG_H);
+      if (w->right_w <= 0)
+         w->right_w = CW_S(w, COMPANION_WIN32_INFO_W);
+      if (w->log_h > rc.bottom - status_h - pane_min - split_w)
+         w->log_h   = rc.bottom - status_h - pane_min - split_w;
+      if (w->log_h < pane_min)
+         w->log_h   = pane_min;
+      if (w->right_w > rc.right - w->pane_w - 2 * split_w - pane_min)
+         w->right_w = rc.right - w->pane_w - 2 * split_w - pane_min;
+      if (w->right_w < pane_min)
+         w->right_w = pane_min;
+      log_h   = (w->log_visible && w->log) ? w->log_h + split_w : 0;
+      right_w = (r_info || r_box) ? w->right_w + split_w : 0;
+      list_h  = rc.bottom - status_h - log_h;
+      entry_x = w->pane_w + split_w;
+      entry_w = rc.right - entry_x - right_w;
       if (list_h < 0)
          list_h = 0;
       if (entry_w < CW_S(w, COMPANION_WIN32_PANE_MIN))
@@ -1198,18 +1358,50 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 1, entry_w / 3 - CW_S(w, 24));
       }
 
-      /* Right column: "Core Info" caption + list on top, "Boxart" caption
-       * + image below; each takes the full column when alone. */
+      /* Right column: a "Core Info" caption + list and a "Boxart"
+       * caption + tabs + image, one above the other in the order the
+       * dock rows say (Core Info on top by default, as Qt's), a
+       * draggable gap between them; each takes the full column when
+       * alone. */
       {
-         int rx     = entry_x + entry_w;
-         /* Qt's Core Info and Boxart docks share the column equally. */
-         int box_h  = r_box ? (r_info ? list_h / 2 : list_h) : 0;
-         int info_h = r_info ? list_h - box_h : 0;
-         int iw     = right_w - P;
+         int rx     = entry_x + entry_w + split_w;
+         int box_h, info_h, info_y, box_y;
+         int iw     = w->right_w;
+         if (r_info && r_box)
+         {
+            /* Both: the dragged / restored heights as a ratio of the
+             * column, equal halves when there are none. */
+            int col = list_h - split_w;
+            if (w->info_h > 0 && w->box_h > 0)
+               info_h = (int)((long)col * w->info_h / (w->info_h + w->box_h));
+            else
+               info_h = col / 2;
+            if (info_h < pane_min)
+               info_h = pane_min;
+            if (info_h > col - pane_min)
+               info_h = col - pane_min;
+            box_h  = col - info_h;
+            if (w->info_first)
+            {
+               info_y = 0;
+               box_y  = info_h + split_w;
+            }
+            else
+            {
+               box_y  = 0;
+               info_y = box_h + split_w;
+            }
+         }
+         else
+         {
+            info_h = r_info ? list_h : 0;
+            box_h  = r_box  ? list_h : 0;
+            info_y = box_y = 0;
+         }
          if (r_info)
          {
-            MoveWindow(w->info_label, rx + P, P, iw - P, L, TRUE);
-            MoveWindow(w->info, rx + P, P + L, iw - P, info_h - L - P, TRUE);
+            MoveWindow(w->info_label, rx, info_y + P, iw - P, L, TRUE);
+            MoveWindow(w->info, rx, info_y + P + L, iw - P, info_h - L - P, TRUE);
             /* One text column; wide enough that long firmware lines
              * scroll horizontally rather than truncate, as Qt's do. */
             SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 800));
@@ -1222,10 +1414,10 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
          if (r_box)
          {
             int tab_h = w->text_h + CW_S(w, 10);
-            MoveWindow(w->boxart_label, rx + P, info_h, iw - P, L, TRUE);
-            MoveWindow(w->boxart_tabs, rx + P, info_h + L, iw - P, tab_h, TRUE);
-            MoveWindow(w->boxart, rx + P, info_h + L + tab_h, iw - P,
-                  box_h - L - tab_h, TRUE);
+            MoveWindow(w->boxart_label, rx, box_y + P, iw - P, L, TRUE);
+            MoveWindow(w->boxart_tabs, rx, box_y + P + L, iw - P, tab_h, TRUE);
+            MoveWindow(w->boxart, rx, box_y + P + L + tab_h, iw - P,
+                  box_h - P - L - tab_h, TRUE);
          }
          else
          {
@@ -1239,8 +1431,16 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       }
 
       if (w->log)
-         MoveWindow(w->log, 0, list_h, rc.right, log_h, TRUE);
+         MoveWindow(w->log, 0, list_h + split_w, rc.right,
+               log_h > split_w ? log_h - split_w : 0, TRUE);
    }
+
+   /* Keep the shared rows current so a quit from RetroArch's own menu
+    * writes what is on screen (retroarch.cfg is written before the
+    * companion is torn down); nothing while hidden or minimised, a
+    * hidden window has no layout worth keeping. */
+   if (IsWindowVisible(w->hwnd) && !IsIconic(w->hwnd))
+      cw_grid_store(w);
 }
 
 /* Core information pane: the rows companion_core_core_info_rows()
@@ -1572,21 +1772,108 @@ static void cw_log_toggle(ui_companion_win32_wimp_t *w)
    cw_layout(w);
 }
 
-/* The only client area not covered by a child control is the splitter
- * gap (and the status bar), so a mouse message reaching the frame is on
- * the splitter. */
-static bool cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
+/* Which splitter gap a client point is in, CW_SPLIT_NONE when none. The
+ * gaps are the client area no child control covers: the vertical gap
+ * after the left column, the one before the right column, the
+ * horizontal gap between the two right-column panes and the one above
+ * the log; each only when what it separates is shown. Read off the
+ * controls so this always agrees with cw_layout(). */
+static int cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
+{
+   RECT rc, r;
+   int status_h = 0;
+   int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
+   int list_h;
+   bool r_info  = (w->info_visible && w->info);
+   bool r_box   = (w->boxart_visible && w->boxart);
+
+   GetClientRect(w->hwnd, &rc);
+   if (w->status)
+   {
+      GetWindowRect(w->status, &r);
+      status_h = r.bottom - r.top;
+   }
+   list_h = rc.bottom - status_h;
+   if (w->log_visible && w->log)
+   {
+      list_h -= w->log_h + split_w;
+      if (y >= list_h && y < list_h + split_w && x >= 0 && x < rc.right)
+         return CW_SPLIT_LOG;
+   }
+   if (y < 0 || y >= list_h)
+      return CW_SPLIT_NONE;
+   if (x >= w->pane_w && x < w->pane_w + split_w)
+      return CW_SPLIT_LEFT;
+   if (r_info || r_box)
+   {
+      int rx = rc.right - w->right_w - split_w;
+      if (x >= rx && x < rx + split_w)
+         return CW_SPLIT_RIGHT;
+      if (x >= rx + split_w && r_info && r_box)
+      {
+         /* Between the two panes: just past whichever is on top. */
+         HWND top = w->info_first ? w->info : w->boxart;
+         POINT pt;
+         GetWindowRect(top, &r);
+         pt.x = r.left; pt.y = r.bottom;
+         ScreenToClient(w->hwnd, &pt);
+         if (y >= pt.y && y < pt.y + CW_S(w, 4) + split_w)
+            return CW_SPLIT_INFO;
+      }
+   }
+   return CW_SPLIT_NONE;
+}
+
+/* Move the splitter being dragged to the pointer; cw_layout() clamps. */
+static void cw_splitter_drag(ui_companion_win32_wimp_t *w, int x, int y)
 {
    RECT rc, sb;
    int status_h = 0;
+   int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
    GetClientRect(w->hwnd, &rc);
    if (w->status)
    {
       GetWindowRect(w->status, &sb);
       status_h = sb.bottom - sb.top;
    }
-   return x >= w->pane_w && x < w->pane_w + CW_S(w, COMPANION_WIN32_SPLIT_W)
-      && y >= 0 && y < rc.bottom - status_h;
+   switch (w->splitting)
+   {
+      case CW_SPLIT_LEFT:
+         w->pane_w  = x - split_w / 2;
+         break;
+      case CW_SPLIT_RIGHT:
+         w->right_w = rc.right - x - split_w / 2;
+         break;
+      case CW_SPLIT_LOG:
+         w->log_h   = rc.bottom - status_h - y - split_w / 2;
+         break;
+      case CW_SPLIT_INFO:
+      {
+         int list_h = rc.bottom - status_h
+            - ((w->log_visible && w->log) ? w->log_h + split_w : 0);
+         int col    = list_h - split_w;
+         int top_h  = y - split_w / 2;
+         int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
+         if (top_h < pane_min)
+            top_h = pane_min;
+         if (top_h > col - pane_min)
+            top_h = col - pane_min;
+         if (w->info_first)
+         {
+            w->info_h = top_h;
+            w->box_h  = col - top_h;
+         }
+         else
+         {
+            w->box_h  = top_h;
+            w->info_h = col - top_h;
+         }
+         break;
+      }
+      default:
+         break;
+   }
+   cw_layout(w);
 }
 
 /* --- companion_core -> Win32 callbacks -------------------------------- */
@@ -3011,7 +3298,13 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
    {
       case WM_SIZE:
          cw_layout(w);
+         if (w)
+            cw_geometry_store(w);
          return 0;
+      case WM_MOVE:
+         if (w)
+            cw_geometry_store(w);
+         break;
 
       case WM_GETMINMAXINFO:
          {
@@ -3049,43 +3342,52 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          if (w && (HWND)wparam == hwnd && LOWORD(lparam) == HTCLIENT)
          {
             POINT pt;
+            int sp;
             GetCursorPos(&pt);
             ScreenToClient(hwnd, &pt);
-            if (w->splitting || cw_on_splitter(w, pt.x, pt.y))
+            sp = w->splitting ? w->splitting : cw_on_splitter(w, pt.x, pt.y);
+            if (sp != CW_SPLIT_NONE)
             {
-               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(32644))); /* IDC_SIZEWE */
+               /* IDC_SIZEWE for the column gaps, IDC_SIZENS for the
+                * horizontal ones. */
+               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(
+                     (sp == CW_SPLIT_LEFT || sp == CW_SPLIT_RIGHT) ? 32644 : 32645)));
                return TRUE;
             }
          }
          break;
       case WM_LBUTTONDOWN:
-         if (w && cw_on_splitter(w, (int)(short)LOWORD(lparam),
-                  (int)(short)HIWORD(lparam)))
+         if (w)
          {
-            w->splitting = true;
-            SetCapture(hwnd);
-            return 0;
+            int sp = cw_on_splitter(w, (int)(short)LOWORD(lparam),
+                  (int)(short)HIWORD(lparam));
+            if (sp != CW_SPLIT_NONE)
+            {
+               w->splitting = sp;
+               SetCapture(hwnd);
+               return 0;
+            }
          }
          break;
       case WM_MOUSEMOVE:
          if (w && w->splitting)
          {
-            w->pane_w = (int)(short)LOWORD(lparam) - CW_S(w, COMPANION_WIN32_SPLIT_W) / 2;
-            cw_layout(w);
+            cw_splitter_drag(w, (int)(short)LOWORD(lparam),
+                  (int)(short)HIWORD(lparam));
             return 0;
          }
          break;
       case WM_LBUTTONUP:
          if (w && w->splitting)
          {
-            w->splitting = false;
+            w->splitting = CW_SPLIT_NONE;
             ReleaseCapture();
             return 0;
          }
          break;
       case WM_CAPTURECHANGED:
          if (w)
-            w->splitting = false;
+            w->splitting = CW_SPLIT_NONE;
          break;
 
       case WM_COMMAND:
@@ -3730,6 +4032,28 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       }
       wx = wa.left + (sw - ww) / 2;
       wy = wa.top  + (sh - wh) / 2;
+      {
+         /* "Remember Window Geometry": the rectangle the Qt companion
+          * or this one last had, in logical pixels, kept inside the
+          * work area so a window saved on a monitor that is gone is
+          * still reachable. */
+         settings_t *settings = config_get_ptr();
+         if (     settings->bools.desktop_menu_save_geometry
+               && settings->uints.desktop_menu_window_width  > 0
+               && settings->uints.desktop_menu_window_height > 0)
+         {
+            ww = CW_S(w, (int)settings->uints.desktop_menu_window_width);
+            wh = CW_S(w, (int)settings->uints.desktop_menu_window_height);
+            wx = CW_S(w, (int)settings->uints.desktop_menu_window_x);
+            wy = CW_S(w, (int)settings->uints.desktop_menu_window_y);
+            if (ww > sw) ww = sw;
+            if (wh > sh) wh = sh;
+            if (wx + ww > wa.right)  wx = wa.right  - ww;
+            if (wy + wh > wa.bottom) wy = wa.bottom - wh;
+            if (wx < wa.left) wx = wa.left;
+            if (wy < wa.top)  wy = wa.top;
+         }
+      }
 
       w->hwnd = CreateWindowExA(0, COMPANION_WIN32_CLASS,
             COMPANION_WIN32_TITLE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
@@ -3922,9 +4246,11 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->boxart_label  = cw_make(w, "STATIC", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), SS_LEFT, IDC_CW_BOXART_LABEL);
 
-   /* Qt shows the Core Info and Boxart docks by default. */
+   /* Qt shows the Core Info and Boxart docks by default, Core Info on
+    * top. */
    w->info_visible   = true;
    w->boxart_visible = true;
+   w->info_first     = true;
 
    w->entries = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS
@@ -4051,6 +4377,9 @@ static void *ui_companion_win32_wimp_init(void)
    w->thumb_subdir = companion_core_pref_thumbnail_subdir(w->core);
    if (companion_core_pref_last_tab(w->core) == 1)
       cw_browse_enter(w);
+   /* The pane layout the dock rows describe, then lay out to it. */
+   cw_grid_apply(w);
+   cw_layout(w);
 
    companion_core_refresh_playlists(w->core);
    return w;
@@ -4154,8 +4483,25 @@ static void ui_companion_win32_wimp_iterate(void *data)
 static void ui_companion_win32_wimp_event_command(void *data,
       enum event_command cmd)
 {
-   (void)data;
-   (void)cmd;
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
+   if (!w || !w->hwnd)
+      return;
+   switch (cmd)
+   {
+      /* RetroArch is about to write retroarch.cfg (quit, or "Save
+       * Current Configuration"): put the layout on screen into
+       * settings_t first, as the Qt companion does. */
+      case CMD_EVENT_QUIT:
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+         if (IsWindowVisible(w->hwnd) && !IsIconic(w->hwnd))
+         {
+            cw_grid_store(w);
+            cw_geometry_store(w);
+         }
+         break;
+      default:
+         break;
+   }
 }
 
 static void ui_companion_win32_wimp_notify_refresh(void *data)

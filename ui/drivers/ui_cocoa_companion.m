@@ -184,6 +184,11 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSImageView *boxart;     /* selected entry's boxart, right pane */
    BOOL boxartVisible;
    BOOL infoVisible;
+   BOOL infoFirst;          /* Core Info above the thumbnails, as Qt's default */
+   /* Pane sizes from the shared dock rows (points; 0 = default): the
+    * two columns, the two right-column panes (a ratio when both are
+    * shown) and the log. */
+   CGFloat paneLeftW, paneRightW, paneInfoH, paneBoxH, paneLogH;
    struct string_list *infoKeys;
    struct string_list *infoValues;
    char infoCore[PATH_MAX_LENGTH];
@@ -258,6 +263,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
 - (void)applySharedSettings;
+- (void)gridApply;
+- (void)gridStore;
+- (void)geometryStore;
 - (void)layoutViews;
 - (void)fillCorePopup:(NSInteger)entryRow;
 - (const char*)popupCorePath;
@@ -1161,6 +1169,34 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [window setMinSize:NSMakeSize(640, 400)];
    [window setReleasedWhenClosed:NO];
    [window center];
+   {
+      /* "Remember Window Geometry": the frame the Qt companion or this
+       * one last had (logical pixels, top-left origin as Qt's), kept
+       * inside the screen so a frame saved on a monitor that is gone is
+       * still reachable. */
+      settings_t *settings = config_get_ptr();
+      if (     settings->bools.desktop_menu_save_geometry
+            && settings->uints.desktop_menu_window_width  > 0
+            && settings->uints.desktop_menu_window_height > 0)
+      {
+         NSRect vis = [[NSScreen mainScreen] visibleFrame];
+         NSRect r;
+         r.size.width  = (CGFloat)settings->uints.desktop_menu_window_width;
+         r.size.height = (CGFloat)settings->uints.desktop_menu_window_height;
+         if (r.size.width  > vis.size.width)  r.size.width  = vis.size.width;
+         if (r.size.height > vis.size.height) r.size.height = vis.size.height;
+         r.origin.x    = (CGFloat)settings->uints.desktop_menu_window_x;
+         r.origin.y    = screen.size.height
+            - (CGFloat)settings->uints.desktop_menu_window_y - r.size.height;
+         if (r.origin.x + r.size.width  > vis.origin.x + vis.size.width)
+            r.origin.x = vis.origin.x + vis.size.width  - r.size.width;
+         if (r.origin.y + r.size.height > vis.origin.y + vis.size.height)
+            r.origin.y = vis.origin.y + vis.size.height - r.size.height;
+         if (r.origin.x < vis.origin.x) r.origin.x = vis.origin.x;
+         if (r.origin.y < vis.origin.y) r.origin.y = vis.origin.y;
+         [window setFrame:[window frameRectForContentRect:r] display:NO];
+      }
+   }
    content = [window contentView];
 
    /* --- Left column: Search / Content Browser (tabs) / Core ----------- */
@@ -1353,8 +1389,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [boxart setImageScaling:NSImageScaleProportionallyUpOrDown];
    [boxart setImageFrameStyle:NSImageFrameGrayBezel];
    [content addSubview:boxart];
-   infoVisible   = YES; /* Qt shows both docks by default */
+   infoVisible   = YES; /* Qt shows both docks by default, Core Info on top */
    boxartVisible = YES;
+   infoFirst     = YES;
 
    /* Log pane (hidden until Companion > Log). */
    logScroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, CC_STATUS_H, frame.size.width, 120)];
@@ -1498,18 +1535,30 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 - (void)layoutViews
 {
    NSRect b;
-   CGFloat W, H, top, y, x, leftW, rightW, cx, cw;
-   CGFloat logH = logVisible ? 120.0 : 0.0;
+   CGFloat W, H, top, y, x, leftW, rightW, cx, cw, logH;
    if (!window)
       return;
    b     = [[window contentView] bounds];
    W     = b.size.width;
    H     = b.size.height;
    top   = H - CC_PAD;
-   leftW = CC_PANE_W;
-   rightW = (infoVisible || boxartVisible) ? CC_PANE_W : 0.0;
-   if (W - leftW - rightW < 300.0)
+   /* Column widths and the log height from the dock rows (or the Qt
+    * defaults), clamped so the entries keep some room. */
+   leftW  = paneLeftW  > 0 ? paneLeftW  : CC_PANE_W;
+   rightW = paneRightW > 0 ? paneRightW : CC_PANE_W;
+   logH   = paneLogH   > 0 ? paneLogH   : 120.0;
+   if (leftW > W - 300.0 - CC_PANE_W)
+      leftW = W - 300.0 - CC_PANE_W;
+   if (leftW < 100.0)
+      leftW = 100.0;
+   if (rightW > W - leftW - 300.0)
+      rightW = W - leftW - 300.0;
+   if (!(infoVisible || boxartVisible) || rightW < 100.0)
       rightW = 0.0;
+   if (logH > H - CC_STATUS_H - 200.0)
+      logH = H - CC_STATUS_H - 200.0;
+   if (!logVisible)
+      logH = 0.0;
 
    [status setFrame:NSMakeRect(4, 0, W - 8, CC_STATUS_H)];
    if (logVisible)
@@ -1575,17 +1624,47 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          [grid relayout];
    }
 
-   /* Right column: Core Info on top, Boxart below, 50/50 like Qt. */
+   /* Right column: Core Info and the thumbnail pane, one above the
+    * other in the order the dock rows say (Core Info on top by default,
+    * as Qt's), at the rows' heights as a ratio of the column, equal
+    * halves when there are none; either alone takes the whole column. */
    x = W - rightW + CC_PAD;
    {
       CGFloat colTop = top;
       CGFloat colBot = CC_STATUS_H + logH + CC_PAD;
       CGFloat colH   = colTop - colBot;
-      CGFloat infoH  = boxartVisible ? (infoVisible ? colH / 2 : 0) : colH;
-      CGFloat boxH   = colH - infoH;
+      CGFloat infoH, boxH, infoBot, boxBot;
       CGFloat w      = rightW - 2 * CC_PAD;
       BOOL showInfo  = rightW > 0 && infoVisible;
       BOOL showBox   = rightW > 0 && boxartVisible;
+      if (showInfo && showBox)
+      {
+         if (paneInfoH > 0 && paneBoxH > 0)
+            infoH = colH * paneInfoH / (paneInfoH + paneBoxH);
+         else
+            infoH = colH / 2;
+         if (infoH < 80.0)
+            infoH = 80.0;
+         if (infoH > colH - 80.0)
+            infoH = colH - 80.0;
+         boxH = colH - infoH;
+         if (infoFirst)
+         {
+            boxBot  = colBot;
+            infoBot = colBot + boxH;
+         }
+         else
+         {
+            infoBot = colBot;
+            boxBot  = colBot + infoH;
+         }
+      }
+      else
+      {
+         infoH = showInfo ? colH : 0;
+         boxH  = showBox  ? colH : 0;
+         infoBot = boxBot = colBot;
+      }
       [infoLabel  setHidden:!showInfo];
       [infoScroll setHidden:!showInfo];
       [boxartLabel setHidden:!showBox];
@@ -1593,20 +1672,125 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [boxart     setHidden:!showBox];
       if (showInfo)
       {
-         [infoLabel  setFrame:NSMakeRect(x, colTop - CC_LABEL_H, w, CC_LABEL_H)];
-         [infoScroll setFrame:NSMakeRect(x, colTop - infoH + CC_PAD, w, infoH - CC_LABEL_H - CC_PAD)];
+         [infoLabel  setFrame:NSMakeRect(x, infoBot + infoH - CC_LABEL_H, w, CC_LABEL_H)];
+         [infoScroll setFrame:NSMakeRect(x, infoBot + CC_PAD, w, infoH - CC_LABEL_H - CC_PAD)];
       }
       if (showBox)
       {
-         CGFloat by = colBot;
-         [boxartLabel setFrame:NSMakeRect(x, by + boxH - CC_LABEL_H, w, CC_LABEL_H)];
-         [boxartTypes setFrame:NSMakeRect(x, by + boxH - CC_LABEL_H - CC_CTRL_H, w, CC_CTRL_H)];
-         [boxart      setFrame:NSMakeRect(x, by, w, boxH - CC_LABEL_H - CC_CTRL_H - CC_PAD)];
+         [boxartLabel setFrame:NSMakeRect(x, boxBot + boxH - CC_LABEL_H, w, CC_LABEL_H)];
+         [boxartTypes setFrame:NSMakeRect(x, boxBot + boxH - CC_LABEL_H - CC_CTRL_H, w, CC_CTRL_H)];
+         [boxart      setFrame:NSMakeRect(x, boxBot, w, boxH - CC_LABEL_H - CC_CTRL_H - CC_PAD)];
       }
    }
+
+   /* Keep the shared rows current so a quit from RetroArch's own menu
+    * writes what is on screen; nothing while the window is not up. */
+   if ([window isVisible] && ![window isMiniaturized])
+      [self gridStore];
 }
 
-- (void)windowDidResize:(NSNotification*)note { [self layoutViews]; }
+/* The pane layout from the shared dock rows (the same rows the Qt
+ * companion saves and restores): column widths, which of Core Info /
+ * the thumbnail pane / the log is shown, their order and heights, the
+ * raised thumbnail tab. companion_dock_grid_read() maps the rows onto
+ * this fixed grid; when it has nothing to apply the Qt defaults stay.
+ * Runs once, from applySharedSettings. */
+- (void)gridApply
+{
+   companion_dock_grid_t g;
+   if (!companion_dock_grid_read(config_get_ptr(), &g))
+      return;
+   paneLeftW  = (CGFloat)g.left_w;
+   paneRightW = (CGFloat)g.right_w;
+   if (g.info_h > 0 && g.thumbs_h > 0)
+   {
+      paneInfoH = (CGFloat)g.info_h;
+      paneBoxH  = (CGFloat)g.thumbs_h;
+   }
+   paneLogH      = (CGFloat)g.log_h;
+   infoFirst     = g.info_first ? YES : NO;
+   infoVisible   = g.info_shown ? YES : NO;
+   boxartVisible = g.thumbs_shown ? YES : NO;
+   if (g.log_shown != (logVisible ? true : false))
+      [self toggleLog:nil];
+   if (boxartTypes)
+      [boxartTypes setSelectedSegment:(NSInteger)g.thumb_tab];
+   switch (g.thumb_tab)
+   {
+      case 1:  boxartSubdir = COMPANION_THUMB_TITLE;      break;
+      case 2:  boxartSubdir = COMPANION_THUMB_SCREENSHOT; break;
+      case 3:  boxartSubdir = COMPANION_THUMB_LOGO;       break;
+      default: boxartSubdir = COMPANION_THUMB_BOXART;     break;
+   }
+   [self layoutViews];
+}
+
+/* The inverse: the layout on screen back into the dock rows so the Qt
+ * companion (or this one next launch) opens to it. The left column's
+ * three sections are measured off their views, as Qt's three left
+ * docks are; the two right panes from their caption's top to their
+ * view's bottom. */
+- (void)gridStore
+{
+   companion_dock_grid_t g;
+   settings_t *settings = config_get_ptr();
+   NSRect a, b;
+   if (!settings->bools.desktop_menu_save_dock_positions || !window)
+      return;
+   memset(&g, 0, sizeof(g));
+   g.left_w       = (int)(paneLeftW  > 0 ? paneLeftW  : CC_PANE_W);
+   g.right_w      = (int)(paneRightW > 0 ? paneRightW : CC_PANE_W);
+   g.log_h        = (int)(paneLogH   > 0 ? paneLogH   : 120.0);
+   g.info_shown   = infoVisible   ? true : false;
+   g.thumbs_shown = boxartVisible ? true : false;
+   g.log_shown    = logVisible    ? true : false;
+   g.info_first   = infoFirst     ? true : false;
+   if (boxartTypes)
+      g.thumb_tab = (int)[boxartTypes selectedSegment];
+   if (g.thumb_tab < 0 || g.thumb_tab > 3)
+      g.thumb_tab = 0;
+   if (infoVisible && ![infoScroll isHidden])
+   {
+      a = [infoLabel frame]; b = [infoScroll frame];
+      g.info_h = (int)(a.origin.y + a.size.height - b.origin.y);
+   }
+   if (boxartVisible && ![boxart isHidden])
+   {
+      a = [boxartLabel frame]; b = [boxart frame];
+      g.thumbs_h = (int)(a.origin.y + a.size.height - b.origin.y);
+   }
+   a = [searchLabel frame]; b = [searchField frame];
+   g.search_h    = (int)(a.origin.y + a.size.height - b.origin.y);
+   a = [browserLabel frame]; b = [playlistsScroll frame];
+   g.playlists_h = (int)(a.origin.y + a.size.height - b.origin.y);
+   a = [coreLabel frame]; b = [runButton frame];
+   g.core_h      = (int)(a.origin.y + a.size.height - b.origin.y);
+   companion_dock_grid_write(settings, &g);
+}
+
+/* The window's frame into desktop_menu_window_* (logical pixels,
+ * top-left origin, as Qt's), under "Remember Window Geometry"; only a
+ * window that is up and not minimised has one worth keeping. */
+- (void)geometryStore
+{
+   settings_t *settings = config_get_ptr();
+   NSRect r, screen;
+   if (     !settings->bools.desktop_menu_save_geometry || !window
+         || ![window isVisible] || [window isMiniaturized])
+      return;
+   r      = [window contentRectForFrameRect:[window frame]];
+   screen = [([window screen] ? [window screen] : [NSScreen mainScreen]) frame];
+   if (r.size.width <= 0 || r.size.height <= 0)
+      return;
+   settings->uints.desktop_menu_window_x      = (unsigned)(r.origin.x < 0 ? 0 : r.origin.x);
+   settings->uints.desktop_menu_window_y      = (unsigned)(screen.size.height - r.origin.y - r.size.height < 0
+         ? 0 : screen.size.height - r.origin.y - r.size.height);
+   settings->uints.desktop_menu_window_width  = (unsigned)r.size.width;
+   settings->uints.desktop_menu_window_height = (unsigned)r.size.height;
+}
+
+- (void)windowDidResize:(NSNotification*)note { [self layoutViews]; [self geometryStore]; }
+- (void)windowDidMove:(NSNotification*)note   { [self geometryStore]; }
 
 /* NSMenuDelegate (10.3+): rebuild the core list each time it opens so a
  * core installed while the window is up shows without a restart. */
@@ -2512,6 +2696,8 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self setIconView:YES];
    if (companion_core_pref_last_tab(wimp->core) == 1)
       [self browseFiles:nil];
+   /* The pane layout the dock rows describe. */
+   [self gridApply];
 }
 
 /* --- Qt-layout actions -------------------------------------------------- */
@@ -3497,8 +3683,22 @@ static void ui_companion_cocoa_wimp_iterate(void *data)
 static void ui_companion_cocoa_wimp_event_command(void *data,
       enum event_command cmd)
 {
-   (void)data;
-   (void)cmd;
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
+   if (!w || !w->controller)
+      return;
+   switch (cmd)
+   {
+      /* RetroArch is about to write retroarch.cfg (quit, or "Save
+       * Current Configuration"): put the layout on screen into
+       * settings_t first, as the Qt companion does. */
+      case CMD_EVENT_QUIT:
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
+         [CC_CTRL(w) gridStore];
+         [CC_CTRL(w) geometryStore];
+         break;
+      default:
+         break;
+   }
 }
 
 static void ui_companion_cocoa_wimp_notify_refresh(void *data)

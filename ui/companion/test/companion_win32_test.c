@@ -317,12 +317,135 @@ int main(void)
       }
    }
 
+   /* Dock rows: the layout on screen is written back in the shared
+    * format (with "Save Dock Positions" on), and a second driver built
+    * from a saved layout - the one Tatsuya79 arranged in Qt: Screenshots
+    * above Title Screen, Core Info hidden, a wider left column, the log
+    * shown - opens to it: the thumbnail pane on the Screenshots tab,
+    * Core Info hidden, the log up, the columns at the saved widths. */
+   {
+      RECT ri, rb;
+      HWND info = GetDlgItem(hwnd, IDC_CW_INFO), boxart = GetDlgItem(hwnd, IDC_CW_BOXART);
+      test_settings.bools.desktop_menu_save_dock_positions = true;
+      SendMessageA(hwnd, WM_SIZE, 0, 0);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,0") != NULL,
+            "Core Info row: shown, right, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_boxart, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,1") != NULL,
+            "boxart row: raised tab, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
+      CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,1") != NULL,
+            "title row tabbed onto boxart (%s)", test_settings.arrays.desktop_menu_dock_title);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,0,", 9) == 0,
+            "log row hidden (%s)", test_settings.arrays.desktop_menu_dock_log);
+      GetWindowRect(info, &ri); GetWindowRect(boxart, &rb);
+      CHECK(ri.bottom <= rb.top, "Core Info above the thumbnails by default");
+   }
    /* close: the window hides */
    SendMessageA(hwnd, WM_CLOSE, 0, 0);
    pump(data, 200);
    CHECK(!IsWindowVisible(hwnd), "companion window hidden after close");
-
    ui_companion_wimp_win32.deinit(data);
+
+   {
+      void *d2;
+      struct wimp_peek *p2;
+      HWND h2, info, boxart, log, btabs, pl;
+      RECT rb, rl, rp;
+      strlcpy(test_settings.arrays.desktop_menu_dock_search,     "left,1,340,60,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_playlists,  "left,1,340,500,-,0,1", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core,       "left,1,340,40,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_title,      "right,1,300,210,-,0,1", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,420,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
+      test_settings.bools.desktop_menu_save_geometry     = true;
+      test_settings.uints.desktop_menu_window_x          = 20;
+      test_settings.uints.desktop_menu_window_y          = 30;
+      test_settings.uints.desktop_menu_window_width      = 1000;
+      test_settings.uints.desktop_menu_window_height     = 600;
+      d2 = ui_companion_wimp_win32.init();
+      CHECK(d2 != NULL, "second driver init from a saved layout");
+      if (d2)
+      {
+         p2     = (struct wimp_peek*)d2;
+         h2     = p2->hwnd;
+         info   = GetDlgItem(h2, IDC_CW_INFO);
+         boxart = GetDlgItem(h2, IDC_CW_BOXART);
+         log    = GetDlgItem(h2, IDC_CW_LOG);
+         btabs  = GetDlgItem(h2, IDC_CW_BOXART_TABS);
+         pl     = GetDlgItem(h2, IDC_CW_PLAYLISTS);
+         ui_companion_wimp_win32.toggle(d2, true);
+         pump(d2, 400);
+         CHECK(!IsWindowVisible(info), "Core Info hidden as its row says");
+         CHECK(IsWindowVisible(boxart) && IsWindowVisible(log), "thumbnails and log shown as their rows say");
+         CHECK(SendMessageA(btabs, TCM_GETCURSEL, 0, 0) == 2, "Screenshots tab raised: the topmost split-out dock (%d)", (int)SendMessageA(btabs, TCM_GETCURSEL, 0, 0));
+         GetWindowRect(h2, &rp);
+         CHECK(rp.right - rp.left == 1000 && rp.bottom - rp.top == 600 && rp.left == 20 && rp.top == 30,
+               "window geometry restored (%ld,%ld %ldx%ld)", (long)rp.left, (long)rp.top, (long)(rp.right - rp.left), (long)(rp.bottom - rp.top));
+         GetWindowRect(pl, &rp); GetWindowRect(boxart, &rb); GetWindowRect(log, &rl);
+         CHECK(rp.right - rp.left > 300, "left column at the saved 340 (playlists %ld wide)", (long)(rp.right - rp.left));
+         CHECK(rb.right - rb.left >= 280 && rb.right - rb.left <= 300, "right column at the saved 300 (thumbnails %ld wide)", (long)(rb.right - rb.left));
+         CHECK(rl.bottom - rl.top >= 140 && rl.bottom - rl.top <= 150, "log at the saved 150 (%ld)", (long)(rl.bottom - rl.top));
+         /* Re-saved as shown: nothing lost in the round trip. */
+         SendMessageA(h2, WM_SIZE, 0, 0);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
+               "screenshot row re-saved raised in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0,
+               "Core Info row re-saved hidden (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,0,150,", 15) == 0,
+               "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
+         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_x == 20,
+               "window geometry re-saved (%u,%u %ux%u)", test_settings.uints.desktop_menu_window_x, test_settings.uints.desktop_menu_window_y,
+               test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
+         /* Core Info back on via the View menu: below the thumbnails,
+          * where the rows put it. */
+         SendMessageA(h2, WM_COMMAND, IDM_CW_TOGGLE_INFO, 0);
+         pump(d2, 100);
+         GetWindowRect(info, &rp); GetWindowRect(boxart, &rb);
+         CHECK(IsWindowVisible(info) && rb.bottom <= rp.top, "Core Info shown below the thumbnails (thumbs bottom %ld, info top %ld)", (long)rb.bottom, (long)rp.top);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
+               "rows: Core Info slot 1, thumbnails slot 0 (%s / %s)", test_settings.arrays.desktop_menu_dock_core_info, test_settings.arrays.desktop_menu_dock_screenshot);
+         /* Splitters: a drag on the gap after the left column widens
+          * it and the rows follow; a drag on the gap between the two
+          * right panes moves their split. */
+         {
+            RECT rb2;
+            int gx, gy, before;
+            POINT pt;
+            GetWindowRect(pl, &rp);
+            before = rp.right - rp.left;
+            gx = before + 2 * 4 + 2; /* just past the column: the gap */
+            gy = 50;
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(gx, gy));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(gx + 60, gy));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(gx + 60, gy));
+            pump(d2, 50);
+            GetWindowRect(pl, &rp);
+            CHECK(rp.right - rp.left >= before + 50, "left splitter drag widened the column (%d -> %ld)", before, (long)(rp.right - rp.left));
+            CHECK(strncmp(test_settings.arrays.desktop_menu_dock_playlists, "left,1,4", 8) == 0,
+                  "playlists row follows the drag (%s)", test_settings.arrays.desktop_menu_dock_playlists);
+            /* Both right panes up, thumbnails on top: the gap sits just
+             * under the thumbnail image. */
+            GetWindowRect(boxart, &rb2);
+            pt.x = rb2.left + 10; pt.y = rb2.bottom + 2;
+            ScreenToClient(h2, &pt);
+            before = rb2.bottom - rb2.top;
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(pt.x, pt.y));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(pt.x, pt.y + 80));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(pt.x, pt.y + 80));
+            pump(d2, 50);
+            GetWindowRect(boxart, &rb2);
+            CHECK(rb2.bottom - rb2.top >= before + 60, "pane splitter drag grew the top pane (%d -> %ld)", before, (long)(rb2.bottom - rb2.top));
+         }
+         ui_companion_wimp_win32.deinit(d2);
+      }
+   }
+
    companion_test_teardown_fixtures(root);
    if (fails)
    {

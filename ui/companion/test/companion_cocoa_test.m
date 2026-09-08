@@ -825,7 +825,104 @@ int main(int argc, char **argv)
       pump(data, 100);
    }
 
+   /* Dock rows: the layout on screen is written back in the shared
+    * format (with "Save Dock Positions" on) - Core Info above the
+    * thumbnail pane, boxart the raised tab, log hidden - and a second
+    * driver built from a saved layout (the one Tatsuya79 arranged in
+    * Qt: Screenshots above Title Screen, Core Info hidden, wider left
+    * column, log shown, a saved window frame) opens to it. */
+   {
+      NSRect fi, fb;
+      ui_companion_wimp_cocoa.toggle(data, true);
+      pump(data, 200);
+      test_settings.bools.desktop_menu_save_dock_positions = true;
+      [ctrl performSelector:NSSelectorFromString(@"layoutViews")];
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,0") != NULL,
+            "Core Info row: shown, right, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_boxart, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,1") != NULL,
+            "boxart row: raised tab, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
+      CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,1") != NULL,
+            "title row tabbed onto boxart (%s)", test_settings.arrays.desktop_menu_dock_title);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,0,", 9) == 0,
+            "log row hidden (%s)", test_settings.arrays.desktop_menu_dock_log);
+      fi = [[ctrl valueForKey:@"infoScroll"] frame];
+      fb = [[ctrl valueForKey:@"boxart"] frame];
+      CHECK(fi.origin.y >= fb.origin.y + fb.size.height, "Core Info above the thumbnails by default");
+      [win close];
+      pump(data, 100);
+   }
    ui_companion_wimp_cocoa.deinit(data);
+   {
+      void *d2;
+      struct wimp_peek *p2;
+      id c2;
+      NSWindow *w2;
+      NSRect r, fi, fb, fl, fp;
+      strlcpy(test_settings.arrays.desktop_menu_dock_search,     "left,1,340,60,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_playlists,  "left,1,340,500,-,0,1", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core,       "left,1,340,40,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_title,      "right,1,300,210,-,0,1", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,420,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
+      test_settings.bools.desktop_menu_save_geometry = true;
+      test_settings.uints.desktop_menu_window_x      = 20;
+      test_settings.uints.desktop_menu_window_y      = 30;
+      test_settings.uints.desktop_menu_window_width  = 1000;
+      test_settings.uints.desktop_menu_window_height = 600;
+      d2 = ui_companion_wimp_cocoa.init();
+      CHECK(d2 != NULL, "second driver init from a saved layout");
+      if (d2)
+      {
+         p2 = (struct wimp_peek*)d2;
+         c2 = (id)p2->controller;
+         w2 = [c2 valueForKey:@"window"];
+         ui_companion_wimp_cocoa.toggle(d2, true);
+         pump(d2, 300);
+         CHECK([[c2 valueForKey:@"infoScroll"] isHidden], "Core Info hidden as its row says");
+         CHECK(![[c2 valueForKey:@"boxart"] isHidden] && [[c2 valueForKey:@"logVisible"] boolValue],
+               "thumbnails and log shown as their rows say");
+         CHECK([[c2 valueForKey:@"boxartTypes"] selectedSegment] == 2,
+               "Screenshots tab raised: the topmost split-out dock (%ld)", (long)[[c2 valueForKey:@"boxartTypes"] selectedSegment]);
+         r = [w2 contentRectForFrameRect:[w2 frame]];
+         CHECK(r.size.width == 1000 && r.size.height == 600, "window size restored (%.0fx%.0f)", r.size.width, r.size.height);
+         fp = [[c2 valueForKey:@"playlistsScroll"] frame];
+         fb = [[c2 valueForKey:@"boxart"] frame];
+         fl = [[c2 valueForKey:@"logScroll"] frame];
+         CHECK(fp.size.width > 300, "left column at the saved 340 (playlists %.0f wide)", fp.size.width);
+         CHECK(fb.size.width >= 280 && fb.size.width <= 300, "right column at the saved 300 (thumbnails %.0f wide)", fb.size.width);
+         CHECK(fl.size.height == 150, "log at the saved 150 (%.0f)", fl.size.height);
+         [c2 performSelector:NSSelectorFromString(@"layoutViews")];
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
+               "screenshot row re-saved raised in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0,
+               "Core Info row re-saved hidden (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,0,150,", 15) == 0,
+               "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
+         [c2 performSelector:NSSelectorFromString(@"geometryStore")];
+         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_height == 600,
+               "window geometry re-saved (%ux%u)", test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
+         /* Core Info back on via the View menu: below the thumbnails,
+          * where the rows put it. */
+         [c2 performSelector:NSSelectorFromString(@"toggleInfo:") withObject:nil];
+         pump(d2, 100);
+         fi = [[c2 valueForKey:@"infoScroll"] frame];
+         fb = [[c2 valueForKey:@"boxart"] frame];
+         CHECK(![[c2 valueForKey:@"infoScroll"] isHidden] && fi.origin.y + fi.size.height <= fb.origin.y,
+               "Core Info shown below the thumbnails (info top %.0f, thumbs bottom %.0f)", fi.origin.y + fi.size.height, fb.origin.y);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
+               "rows: Core Info slot 1, thumbnails slot 0 (%s / %s)", test_settings.arrays.desktop_menu_dock_core_info, test_settings.arrays.desktop_menu_dock_screenshot);
+         [w2 close];
+         pump(d2, 100);
+         ui_companion_wimp_cocoa.deinit(d2);
+      }
+   }
    companion_test_teardown_fixtures(root);
    [pool drain];
    if (fails)
