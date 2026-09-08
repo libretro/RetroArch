@@ -597,9 +597,9 @@ bool companion_core_video_started_fullscreen(companion_core_t *core);
 /* A companion's dock (pane) placement, one plain retroarch.cfg row per
  * dock (desktop_menu_dock_<name>):
  *
- *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>[,<x>,<y>]
- *    e.g.  right,1,320,400,boxart,0
- *          float,1,300,200,-,0,640,120
+ *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>,<order>[,<x>,<y>]
+ *    e.g.  right,1,320,400,boxart,0,0
+ *          float,1,300,200,-,0,0,640,120
  *
  * area        left | right | top | bottom | float
  * shown       1 visible, 0 hidden
@@ -607,12 +607,28 @@ bool companion_core_video_started_fullscreen(companion_core_t *core);
  * height
  * tabbed_with the name of the dock this one is tabbed onto, "-" if none
  * raised      1 when it is the tab on top of its group
+ * order       the dock's slot on its side, counted from the top (left
+ *             and right sides) or the left (top and bottom): 0 is the
+ *             first slot. Tabs share their group's slot. Two docks on
+ *             one side keep their stacking order across a restart
+ *             through this field alone, so a row that has it wins over
+ *             the built-in order of the dock list.
  * x, y        screen position of a floating dock (logical pixels);
  *             written only for area float, ignored otherwise
  *
- * Shared so every backend reads and writes the same rows. Older
- * three/four-field rows (area,shown,size[,tab]) still parse: size lands
- * in width and the rest defaults. */
+ * Shared so every backend reads and writes the same rows. The field
+ * count tells the rows apart: six or eight fields is a row from before
+ * order existed (order 0, x,y at fields 7-8), seven or nine is the
+ * current shape. Older three/four-field rows (area,shown,size[,tab])
+ * still parse: size lands in width and the rest defaults.
+ *
+ * The native companions (Win32, Cocoa) lay their panes out on a fixed
+ * grid - a left column, the entries, a right column, the log - so they
+ * honour what fits that grid: the right column's two panes (Core Info
+ * and the thumbnail group) in the order rows say and with the heights
+ * rows say, which pane and which thumbnail tab is shown, the left and
+ * right column widths, the log's visibility and height. A left/right
+ * dock they cannot move stays in its column. */
 enum companion_dock_area
 {
    COMPANION_DOCK_LEFT = 0,
@@ -622,6 +638,22 @@ enum companion_dock_area
    COMPANION_DOCK_FLOAT
 };
 
+/* The docks every companion has, in row order; also the built-in
+ * stacking order a row without an order field falls back to. */
+enum companion_dock_id
+{
+   COMPANION_DOCK_SEARCH = 0,
+   COMPANION_DOCK_PLAYLISTS,
+   COMPANION_DOCK_CORE,
+   COMPANION_DOCK_BOXART,
+   COMPANION_DOCK_TITLE,
+   COMPANION_DOCK_SCREENSHOT,
+   COMPANION_DOCK_LOGO,
+   COMPANION_DOCK_CORE_INFO,
+   COMPANION_DOCK_LOG,
+   COMPANION_DOCK_COUNT
+};
+
 typedef struct companion_dock_state
 {
    enum companion_dock_area area;
@@ -629,10 +661,19 @@ typedef struct companion_dock_state
    int  height;
    int  x;               /* floating docks only */
    int  y;
+   int  order;           /* slot on its side, from the top / left */
    char tabbed_with[16]; /* empty when standing alone */
    bool shown;
    bool raised;
 } companion_dock_state_t;
+
+/* The tabbed_with token of dock @id ("boxart", "core_info", ...). */
+const char *companion_dock_key(enum companion_dock_id id);
+/* The retroarch.cfg row of dock @id (settings->arrays.desktop_menu_dock_*)
+ * and its buffer size, so every backend reads and writes the same
+ * settings_t fields. Returns NULL for an id out of range. */
+char *companion_dock_row(struct settings *settings,
+      enum companion_dock_id id, size_t *len);
 
 /* Format @st into @s; returns the length written. */
 size_t companion_dock_row_format(char *s, size_t len,
@@ -640,6 +681,46 @@ size_t companion_dock_row_format(char *s, size_t len,
 /* Parse a row into @st; false when empty or not a dock row. Sizes
  * outside 2..32767 become 0 (default). */
 bool companion_dock_row_parse(const char *s, companion_dock_state_t *st);
+
+/* The rows as the fixed pane grid the native companions lay out: a
+ * left column (Search, Playlists, Core, always in that order), the
+ * entries, a right column holding Core Info and the thumbnail pane
+ * (one pane with a tab per thumbnail type) in either order, and the
+ * log along the bottom. Sizes are logical pixels, 0 = the backend's
+ * default; the two right-column heights are a ratio when both panes
+ * are shown. */
+typedef struct companion_dock_grid
+{
+   int left_w;        /* left column width */
+   int right_w;       /* right column width */
+   int search_h;      /* left column sections, top to bottom */
+   int playlists_h;
+   int core_h;
+   int info_h;        /* Core Info pane height */
+   int thumbs_h;      /* thumbnail pane height */
+   int log_h;         /* log pane height */
+   int thumb_tab;     /* raised thumbnail tab: 0 boxart, 1 title,
+                         2 screenshot, 3 logo (companion_dock_id order) */
+   bool info_shown;
+   bool thumbs_shown;
+   bool log_shown;
+   bool info_first;   /* Core Info above the thumbnails */
+} companion_dock_grid_t;
+
+/* Fill @g from the dock rows. False when the rows are not to be
+ * applied (desktop_menu_save_dock_positions off, or no row parses):
+ * @g is then the default grid (everything shown but the log, Core
+ * Info on top, every size 0). A row that does not fit the grid maps
+ * to the nearest thing that does: a floating or left-side Core Info
+ * still shows in the right column; a thumbnail dock split out of the
+ * tab group is the raised tab when it is the first shown one. */
+bool companion_dock_grid_read(struct settings *settings,
+      companion_dock_grid_t *g);
+/* Write @g back as rows (when desktop_menu_save_dock_positions is
+ * on), in the shape the Qt companion reads: the raised thumbnail tab
+ * carries the pane's size, the other three are tabbed onto boxart. */
+void companion_dock_grid_write(struct settings *settings,
+      const companion_dock_grid_t *g);
 
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 

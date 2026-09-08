@@ -1008,17 +1008,17 @@ static void test_dock_rows(void)
    strlcpy(st.tabbed_with, "boxart", sizeof(st.tabbed_with));
    st.raised = true;
    companion_dock_row_format(row, sizeof(row), &st);
-   CHECK(strcmp(row, "right,1,320,400,boxart,1") == 0, "format: %s", row);
+   CHECK(strcmp(row, "right,1,320,400,boxart,1,0") == 0, "format: %s", row);
    CHECK(companion_dock_row_parse(row, &back), "parse formatted row");
    CHECK(back.area == COMPANION_DOCK_RIGHT && back.shown && back.width == 320
          && back.height == 400 && strcmp(back.tabbed_with, "boxart") == 0
-         && back.raised, "round trip keeps every field");
+         && back.raised && back.order == 0, "round trip keeps every field");
 
    /* Standalone hidden dock at the bottom: "-" partner, not raised. */
    memset(&st, 0, sizeof(st));
    st.area = COMPANION_DOCK_BOTTOM; st.height = 160;
    companion_dock_row_format(row, sizeof(row), &st);
-   CHECK(strcmp(row, "bottom,0,0,160,-,0") == 0, "hidden standalone: %s", row);
+   CHECK(strcmp(row, "bottom,0,0,160,-,0,0") == 0, "hidden standalone: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && !back.shown
          && back.tabbed_with[0] == '\0' && back.height == 160, "hidden round trip");
 
@@ -1027,7 +1027,7 @@ static void test_dock_rows(void)
    st.area = COMPANION_DOCK_FLOAT; st.shown = true; st.width = 200; st.height = 300;
    st.x = 640; st.y = 120;
    companion_dock_row_format(row, sizeof(row), &st);
-   CHECK(strcmp(row, "float,1,200,300,-,0,640,120") == 0, "floating row: %s", row);
+   CHECK(strcmp(row, "float,1,200,300,-,0,0,640,120") == 0, "floating row: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && back.area == COMPANION_DOCK_FLOAT
          && back.width == 200 && back.x == 640 && back.y == 120,
          "floating round trip keeps x,y: %s", row);
@@ -1035,7 +1035,7 @@ static void test_dock_rows(void)
     * from before positions were saved parses with x = y = 0. */
    st.area = COMPANION_DOCK_RIGHT;
    companion_dock_row_format(row, sizeof(row), &st);
-   CHECK(strcmp(row, "right,1,200,300,-,0") == 0, "docked row has no x,y: %s", row);
+   CHECK(strcmp(row, "right,1,200,300,-,0,0") == 0, "docked row has no x,y: %s", row);
    CHECK(companion_dock_row_parse("float,1,200,300,-,0", &back)
          && back.area == COMPANION_DOCK_FLOAT && back.x == 0 && back.y == 0,
          "old floating row parses");
@@ -1047,9 +1047,40 @@ static void test_dock_rows(void)
    memset(&st, 0, sizeof(st));
    st.area = COMPANION_DOCK_LEFT; st.shown = true; st.width = 1; st.height = 99999;
    companion_dock_row_format(row, sizeof(row), &st);
-   CHECK(strcmp(row, "left,1,0,0,-,0") == 0, "bogus sizes become default: %s", row);
+   CHECK(strcmp(row, "left,1,0,0,-,0,0") == 0, "bogus sizes become default: %s", row);
    CHECK(companion_dock_row_parse("left,1,1,40000,-,0", &back)
          && back.width == 0 && back.height == 0, "bogus sizes rejected on parse");
+
+   /* The slot order on a side: two docks stacked on the right keep
+    * which is above which. Written for docked and floating rows alike,
+    * and the field count tells a row with it from one without: a
+    * six-field docked row and an eight-field floating row predate it
+    * (order 0, and the floating row's x,y still land where they were),
+    * an out-of-range order becomes 0. */
+   memset(&st, 0, sizeof(st));
+   st.area = COMPANION_DOCK_RIGHT; st.shown = true; st.height = 500; st.order = 1;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "right,1,0,500,-,0,1") == 0, "order written: %s", row);
+   CHECK(companion_dock_row_parse(row, &back) && back.order == 1
+         && back.height == 500 && back.x == 0, "order round trip");
+   st.area = COMPANION_DOCK_FLOAT; st.x = 33; st.y = 44;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "float,1,0,500,-,0,1,33,44") == 0, "floating row with order: %s", row);
+   CHECK(companion_dock_row_parse(row, &back) && back.order == 1
+         && back.x == 33 && back.y == 44, "floating order round trip");
+   CHECK(companion_dock_row_parse("right,1,320,400,boxart,1", &back)
+         && back.order == 0 && back.width == 320 && back.raised,
+         "six-field row from before order parses with order 0");
+   CHECK(companion_dock_row_parse("float,1,300,200,-,0,100,60", &back)
+         && back.order == 0 && back.x == 100 && back.y == 60,
+         "eight-field floating row keeps its x,y");
+   CHECK(companion_dock_row_parse("right,1,0,0,-,0,42", &back) && back.order == 0,
+         "out-of-range order becomes 0");
+   CHECK(companion_dock_row_parse("right,1,0,0,-,0,-1", &back) && back.order == 0,
+         "negative order becomes 0");
+   CHECK(strcmp(companion_dock_key(COMPANION_DOCK_CORE_INFO), "core_info") == 0
+         && strcmp(companion_dock_key(COMPANION_DOCK_LOG), "log") == 0
+         && companion_dock_key(COMPANION_DOCK_COUNT)[0] == '\0', "dock keys");
 
    /* The first shipped format (area,shown,size[,tab]) still parses:
     * size is the width, everything else defaults. */
@@ -1064,6 +1095,94 @@ static void test_dock_rows(void)
    CHECK(!companion_dock_row_parse(NULL, &back), "NULL row rejected");
    CHECK(!companion_dock_row_parse("left", &back), "one field rejected");
    CHECK(!companion_dock_row_parse("sideways,1,10,10,-,0", &back), "unknown area rejected");
+}
+
+/* The rows as the native companions' fixed grid: the Qt layout
+ * Tatsuya79 reported (Screenshots above Title Screen, both split out
+ * of the tab group, Core Info hidden) reads as a right column showing
+ * the thumbnail pane on the Screenshots tab at the taller dock's
+ * height; the grid writes back rows Qt reads as that layout; a row
+ * that does not fit the grid maps to the nearest thing that does. */
+static void test_dock_grid(void)
+{
+   companion_dock_grid_t g;
+   settings_t *settings = config_get_ptr();
+   size_t len;
+   int i;
+
+   settings->bools.desktop_menu_save_dock_positions = false;
+   CHECK(!companion_dock_grid_read(settings, &g) && g.info_shown && g.thumbs_shown
+         && !g.log_shown && g.info_first && g.thumb_tab == 0 && g.left_w == 0,
+         "grid: setting off gives the default grid");
+   settings->bools.desktop_menu_save_dock_positions = true;
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+      companion_dock_row(settings, (enum companion_dock_id)i, &len)[0] = '\0';
+   CHECK(!companion_dock_grid_read(settings, &g), "grid: no rows gives the default grid");
+
+   strlcpy(settings->arrays.desktop_menu_dock_search,     "left,1,300,60,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_playlists,  "left,1,300,500,-,0,1", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_core,       "left,1,300,40,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_title,      "right,1,340,210,-,0,1", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_screenshot, "right,1,340,420,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
+   CHECK(companion_dock_grid_read(settings, &g), "grid: reported layout reads");
+   CHECK(g.left_w == 300 && g.search_h == 60 && g.playlists_h == 500 && g.core_h == 40,
+         "grid: left column %d / %d,%d,%d", g.left_w, g.search_h, g.playlists_h, g.core_h);
+   CHECK(!g.info_shown && g.thumbs_shown && g.log_shown && g.log_h == 150
+         && !g.info_first, "grid: Core Info hidden (and below when shown), thumbnails and log shown");
+   CHECK(g.thumb_tab == 2 && g.thumbs_h == 420 && g.right_w == 340,
+         "grid: first split-out dock is the tab (%d), tallest sizes the pane (%d x %d)",
+         g.thumb_tab, g.right_w, g.thumbs_h);
+
+   /* Qt's default plus Core Info moved below the thumbnails, title
+    * raised: order decides which pane is on top. */
+   strlcpy(settings->arrays.desktop_menu_dock_boxart,     "right,1,0,0,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_title,      "right,1,320,400,boxart,1,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_screenshot, "right,1,0,0,boxart,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_logo,       "right,1,0,0,boxart,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_core_info,  "float,1,300,200,-,0,1,10,20", 64);
+   CHECK(companion_dock_grid_read(settings, &g) && g.info_shown && !g.info_first
+         && g.thumb_tab == 1 && g.thumbs_h == 400 && g.info_h == 200 && g.right_w == 320,
+         "grid: raised tab, order below, floating Core Info lands in the column");
+
+   /* Write back and read again: a fixed point. */
+   companion_dock_grid_write(settings, &g);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_title, "right,1,320,400,boxart,1,0") == 0,
+         "grid: raised tab row: %s", settings->arrays.desktop_menu_dock_title);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_screenshot, "right,1,0,0,boxart,0,0") == 0,
+         "grid: other tab row: %s", settings->arrays.desktop_menu_dock_screenshot);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_core_info, "right,1,320,200,-,0,1") == 0,
+         "grid: Core Info row: %s", settings->arrays.desktop_menu_dock_core_info);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "bottom,1,0,150,-,0,0") == 0,
+         "grid: log row: %s", settings->arrays.desktop_menu_dock_log);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_core, "left,1,300,40,-,0,2") == 0,
+         "grid: core row: %s", settings->arrays.desktop_menu_dock_core);
+   {
+      companion_dock_grid_t back;
+      CHECK(companion_dock_grid_read(settings, &back)
+            && memcmp(&back, &g, sizeof(g)) == 0, "grid: write/read fixed point");
+   }
+   /* A hidden pane keeps its slot, so it comes back where it was. */
+   g.thumbs_shown = false;
+   companion_dock_grid_write(settings, &g);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_core_info, "right,1,320,200,-,0,1") == 0
+         && strcmp(settings->arrays.desktop_menu_dock_boxart, "right,0,0,0,-,0,0") == 0,
+         "grid: hidden group keeps its slot above Core Info: %s / %s",
+         settings->arrays.desktop_menu_dock_core_info,
+         settings->arrays.desktop_menu_dock_boxart);
+   {
+      companion_dock_grid_t back;
+      CHECK(companion_dock_grid_read(settings, &back) && !back.thumbs_shown
+            && !back.info_first, "grid: hidden group read back below-Core-Info order");
+   }
+   settings->bools.desktop_menu_save_dock_positions = false;
+   g.log_shown = true;
+   companion_dock_grid_write(settings, &g);
+   CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "bottom,1,0,150,-,0,0") == 0,
+         "grid: nothing written with the setting off");
 }
 
 int main(void)
@@ -1087,6 +1206,7 @@ int main(void)
    test_run_paths();
    test_launch_options();
    test_dock_rows();
+   test_dock_grid();
    teardown();
    if (fails)
    {

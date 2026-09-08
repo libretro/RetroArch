@@ -183,8 +183,8 @@ static void qt_dock_configure(QDockWidget *dock,
 
 /* Dock layout persistence. One plain row per dock in retroarch.cfg:
  *
- *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>
- *    e.g.  right,1,320,400,boxart,0
+ *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>,<order>[,<x>,<y>]
+ *    e.g.  right,1,320,400,boxart,0,0
  *
  * area        left | right | top | bottom | float
  * shown       1 visible, 0 hidden
@@ -193,53 +193,39 @@ static void qt_dock_configure(QDockWidget *dock,
  * tabbed_with the key of the dock this one is tabbed onto (a dock
  *             earlier in the list), or "-" when it stands alone
  * raised      1 when this is the tab on top of its group
+ * order       the dock's slot on its side, from the top (left/right) or
+ *             the left (top/bottom); tabs share their group's slot
+ * x, y        a floating dock's screen position
  *
- * (Row format and parser: companion_dock_row_* in ui/companion.)
+ * (Row format and parser: companion_dock_row_* in ui/companion; the
+ * dock list and its keys are companion_dock_id / companion_dock_key.)
  * Every dock has its own row, the four thumbnail docks included, so
  * pulling Screenshots out of the thumbnail tabs into its own dock is
- * remembered. Docks are re-added to their saved side in list order,
- * which is also the stacking order within a side, then tabbed as saved,
- * then sized. This replaces the QMainWindow::saveState() byte-array blob
- * the old retroarch_qt.cfg carried: readable, survives docks being added
- * or renamed, and the native companions can honour the same rows. What
- * it still does not capture is a floating dock's screen rect (it comes
- * back floating at Qt's default spot). */
-#define QT_DOCK_COUNT 9
+ * remembered. Docks are re-added to their saved side in slot order
+ * (order field, then list order), which is what stacks them the way
+ * they were, then tabbed as saved, then sized. This replaces the
+ * QMainWindow::saveState() byte-array blob the old retroarch_qt.cfg
+ * carried: readable, survives docks being added or renamed, and the
+ * native companions honour the same rows. */
+#define QT_DOCK_COUNT COMPANION_DOCK_COUNT
 
-struct qt_dock_key
-{
-   const char *key;         /* the tabbed_with token */
-   const char *object_name; /* QDockWidget::objectName() */
+/* QDockWidget::objectName() of each companion_dock_id. */
+static const char * const qt_dock_object_names[QT_DOCK_COUNT] = {
+   "searchDock",
+   "browserAndPlaylistTabDock",
+   "coreSelectionDock",
+   "thumbnailDock",
+   "thumbnail2Dock",
+   "thumbnail3Dock",
+   "thumbnail4Dock",
+   "coreInfoDock",
+   "logDock"
 };
 
-static const struct qt_dock_key qt_dock_keys[QT_DOCK_COUNT] = {
-   { "search",      "searchDock"                },
-   { "playlists",   "browserAndPlaylistTabDock" },
-   { "core",        "coreSelectionDock"         },
-   { "boxart",      "thumbnailDock"             },
-   { "title",       "thumbnail2Dock"            },
-   { "screenshot",  "thumbnail3Dock"            },
-   { "logo",        "thumbnail4Dock"            },
-   { "core_info",   "coreInfoDock"              },
-   { "log",         "logDock"                   }
-};
-
-/* settings_t row for dock @i (same order as qt_dock_keys). */
+/* settings_t row for dock @i. */
 static char *qt_dock_row(settings_t *settings, int i, size_t *len)
 {
-   char *rows[QT_DOCK_COUNT] = {
-      settings->arrays.desktop_menu_dock_search,
-      settings->arrays.desktop_menu_dock_playlists,
-      settings->arrays.desktop_menu_dock_core,
-      settings->arrays.desktop_menu_dock_boxart,
-      settings->arrays.desktop_menu_dock_title,
-      settings->arrays.desktop_menu_dock_screenshot,
-      settings->arrays.desktop_menu_dock_logo,
-      settings->arrays.desktop_menu_dock_core_info,
-      settings->arrays.desktop_menu_dock_log
-   };
-   *len = sizeof(settings->arrays.desktop_menu_dock_search);
-   return rows[i];
+   return companion_dock_row(settings, (enum companion_dock_id)i, len);
 }
 
 static enum companion_dock_area qt_dock_area_to_core(Qt::DockWidgetArea area)
@@ -270,9 +256,85 @@ static int qt_dock_index_of(const char *key)
 {
    int i;
    for (i = 0; i < QT_DOCK_COUNT; i++)
-      if (string_is_equal(key, qt_dock_keys[i].key))
+      if (string_is_equal(key, companion_dock_key((enum companion_dock_id)i)))
          return i;
    return -1;
+}
+
+/* Where along its side a docked dock sits: the top edge on the left and
+ * right sides, the left edge on the top and bottom. */
+static int qt_dock_along_side(QMainWindow *win, QDockWidget *dock)
+{
+   QRect g = dock->geometry();
+   switch (win->dockWidgetArea(dock))
+   {
+      case Qt::TopDockWidgetArea:
+      case Qt::BottomDockWidgetArea:
+         return g.left();
+      default:
+         break;
+   }
+   return g.top();
+}
+
+/* A docked dock with a geometry of its own: shown, and either standing
+ * alone or the raised tab of its group. isVisible() is true for every
+ * tab of a group, but only the raised one is laid out - the others
+ * keep whatever geometry they last had, which can be off-screen. */
+static bool qt_dock_laid_out(QDockWidget *dock)
+{
+   return dock->isVisible() && !dock->isFloating()
+      && !dock->visibleRegion().isEmpty();
+}
+
+/* The slot of @self on its side: how many distinct positions of laid-out
+ * docks on that side lie before it. A tab that is not raised, or a
+ * hidden dock, has no position of its own: it takes its group's when a
+ * tab of the group is laid out, else the slot after the last (where it
+ * would land if shown). */
+static int qt_dock_slot(QMainWindow *win, QDockWidget * const *docks,
+      int self)
+{
+   QDockWidget *dock       = docks[self];
+   Qt::DockWidgetArea area = win->dockWidgetArea(dock);
+   int pos                 = 0;
+   int order               = 0;
+   bool have_pos           = qt_dock_laid_out(dock);
+   int i, j;
+
+   if (have_pos)
+      pos = qt_dock_along_side(win, dock);
+   else
+   {
+      QList<QDockWidget*> tabs = win->tabifiedDockWidgets(dock);
+      for (i = 0; i < tabs.count(); i++)
+         if (qt_dock_laid_out(tabs.at(i)))
+         {
+            pos      = qt_dock_along_side(win, tabs.at(i));
+            have_pos = true;
+            break;
+         }
+   }
+   /* Count the distinct positions before ours (all of them when we
+    * have none); tabs of one group share one. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      int p;
+      if (     !docks[i] || i == self || !qt_dock_laid_out(docks[i])
+            || win->dockWidgetArea(docks[i]) != area)
+         continue;
+      p = qt_dock_along_side(win, docks[i]);
+      if (have_pos && p >= pos)
+         continue;
+      for (j = 0; j < i; j++)
+         if (     docks[j] && j != self && qt_dock_laid_out(docks[j])
+               && win->dockWidgetArea(docks[j]) == area
+               && qt_dock_along_side(win, docks[j]) == p)
+            break;
+      if (j == i)
+         order++;
+   }
+   return order;
 }
 
 /* Format @dock's placement into @s (companion_dock_row_format). @docks
@@ -290,6 +352,8 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
    st.shown  = dock->isVisible();
    st.width  = dock->width();
    st.height = dock->height();
+   if (!dock->isFloating())
+      st.order = qt_dock_slot(win, docks, self);
    if (dock->isFloating())
    {
       /* Client-area position, to match the setGeometry() that restores
@@ -308,22 +372,31 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
       for (i = 0; i < self; i++)
          if (docks[i] && tabs.contains(docks[i]))
          {
-            strlcpy(st.tabbed_with, qt_dock_keys[i].key, sizeof(st.tabbed_with));
+            strlcpy(st.tabbed_with, companion_dock_key((enum companion_dock_id)i),
+                  sizeof(st.tabbed_with));
             break;
          }
-      /* isVisible() is true for every tab of a group; only the raised
-       * one has a visible region. */
-      st.raised = !tabs.isEmpty() && dock->isVisible()
-            && !dock->visibleRegion().isEmpty();
-      /* A tab that is not raised is not laid out - its size is stale,
-       * and the group's size is the leader's anyway. Store 0 so the
-       * restore does not ask resizeDocks() for three conflicting sizes
-       * of one slot (which made the layout drift on every launch). */
-      if (!string_is_empty(st.tabbed_with))
+      st.raised = !tabs.isEmpty() && qt_dock_laid_out(dock);
+      /* Only a laid-out dock has a size worth keeping: a tab that is
+       * not raised keeps a stale geometry, and its group's size is the
+       * raised tab's anyway. Store 0 so the restore does not ask
+       * resizeDocks() for several conflicting sizes of one slot (which
+       * made the layout drift on every launch). */
+      if (!qt_dock_laid_out(dock))
+      {
+         /* A hidden dock keeps the size its row already has, so the
+          * size it was last shown at survives a spell hidden. */
+         companion_dock_state_t old;
          st.width = st.height = 0;
+         if (!dock->isVisible() && companion_dock_row_parse(s, &old))
+         {
+            st.width  = old.width;
+            st.height = old.height;
+         }
+      }
       else if (!tabs.isEmpty())
       {
-         /* Group leader: resizeDocks() sizes the whole slot, tab bar
+         /* The raised tab: resizeDocks() sizes the whole slot, tab bar
           * included, while height() is the dock alone - saving the bare
           * height shrank the group by one tab bar per launch. The dock
           * tab bars are direct QTabBar children of the main window,
@@ -3884,7 +3957,7 @@ void MainWindow::saveDockLayout()
    int i;
 
    for (i = 0; i < QT_DOCK_COUNT; i++)
-      docks[i] = findChild<QDockWidget*>(qt_dock_keys[i].object_name);
+      docks[i] = findChild<QDockWidget*>(qt_dock_object_names[i]);
    for (i = 0; i < QT_DOCK_COUNT; i++)
    {
       size_t len;
@@ -3905,23 +3978,53 @@ void MainWindow::restoreDockLayout()
    QDockWidget *docks[QT_DOCK_COUNT];
    companion_dock_state_t st[QT_DOCK_COUNT];
    bool have[QT_DOCK_COUNT];
+   int order[QT_DOCK_COUNT];
    QList<QDockWidget*> hdocks, vdocks;
    QList<int>          hsizes, vsizes;
-   int i;
+   int i, p;
 
    for (i = 0; i < QT_DOCK_COUNT; i++)
    {
       size_t len;
-      docks[i] = findChild<QDockWidget*>(qt_dock_keys[i].object_name);
+      docks[i] = findChild<QDockWidget*>(qt_dock_object_names[i]);
       have[i]  = docks[i]
          && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st[i]);
    }
 
-   /* Pass 1: placement. */
-   for (i = 0; i < QT_DOCK_COUNT; i++)
+   /* Pass 1: placement, in slot order. addDockWidget() appends to the
+    * end of a side, so adding the docks of a side from its first slot
+    * to its last stacks them the way they were saved; two docks on one
+    * side whose rows say otherwise would come back in list order. */
    {
-      if (!have[i])
-         continue;
+      int seq[QT_DOCK_COUNT];
+      int n = 0;
+      for (i = 0; i < QT_DOCK_COUNT; i++)
+      {
+         int j;
+         if (!have[i])
+            continue;
+         /* Insertion by (area, order), list order breaking ties. */
+         for (j = n; j > 0; j--)
+         {
+            int k = seq[j - 1];
+            if (     st[k].area < st[i].area
+                  || (st[k].area == st[i].area && st[k].order <= st[i].order))
+               break;
+            seq[j] = k;
+         }
+         seq[j] = i;
+         n++;
+      }
+      for (i = 0; i < n; i++)
+         order[i] = seq[i];
+      for (; i < QT_DOCK_COUNT; i++)
+         order[i] = -1;
+   }
+   for (p = 0; p < QT_DOCK_COUNT; p++)
+   {
+      i = order[p];
+      if (i < 0)
+         break;
       if (st[i].area == COMPANION_DOCK_FLOAT)
       {
          docks[i]->setFloating(true);
@@ -3974,8 +4077,9 @@ void MainWindow::restoreDockLayout()
       if (!have[i])
          continue;
       docks[i]->setVisible(st[i].shown);
-      if (     st[i].area == COMPANION_DOCK_FLOAT || !st[i].shown
-            || !string_is_empty(st[i].tabbed_with)) /* follows its leader */
+      /* A size of 0 follows the slot (the raised tab of the group
+       * carries the group's size, whichever row it is). */
+      if (st[i].area == COMPANION_DOCK_FLOAT || !st[i].shown)
          continue;
       if (st[i].width > 0)
       {

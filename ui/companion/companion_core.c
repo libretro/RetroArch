@@ -3203,6 +3203,40 @@ static const char * const companion_dock_area_names[] = {
    "left", "right", "top", "bottom", "float"
 };
 
+static const char * const companion_dock_key_names[COMPANION_DOCK_COUNT] = {
+   "search", "playlists", "core", "boxart", "title", "screenshot",
+   "logo", "core_info", "log"
+};
+
+const char *companion_dock_key(enum companion_dock_id id)
+{
+   if ((unsigned)id >= COMPANION_DOCK_COUNT)
+      return "";
+   return companion_dock_key_names[id];
+}
+
+char *companion_dock_row(struct settings *settings,
+      enum companion_dock_id id, size_t *len)
+{
+   if (!settings || (unsigned)id >= COMPANION_DOCK_COUNT)
+      return NULL;
+   *len = sizeof(settings->arrays.desktop_menu_dock_search);
+   switch (id)
+   {
+      case COMPANION_DOCK_SEARCH:     return settings->arrays.desktop_menu_dock_search;
+      case COMPANION_DOCK_PLAYLISTS:  return settings->arrays.desktop_menu_dock_playlists;
+      case COMPANION_DOCK_CORE:       return settings->arrays.desktop_menu_dock_core;
+      case COMPANION_DOCK_BOXART:     return settings->arrays.desktop_menu_dock_boxart;
+      case COMPANION_DOCK_TITLE:      return settings->arrays.desktop_menu_dock_title;
+      case COMPANION_DOCK_SCREENSHOT: return settings->arrays.desktop_menu_dock_screenshot;
+      case COMPANION_DOCK_LOGO:       return settings->arrays.desktop_menu_dock_logo;
+      case COMPANION_DOCK_CORE_INFO:  return settings->arrays.desktop_menu_dock_core_info;
+      case COMPANION_DOCK_LOG:        return settings->arrays.desktop_menu_dock_log;
+      default:                        break;
+   }
+   return NULL;
+}
+
 size_t companion_dock_row_format(char *s, size_t len,
       const companion_dock_state_t *st)
 {
@@ -3210,12 +3244,13 @@ size_t companion_dock_row_format(char *s, size_t len,
    size_t n;
    if (w <= 1 || w > 32767) w = 0;
    if (h <= 1 || h > 32767) h = 0;
-   n = (size_t)snprintf(s, len, "%s,%d,%d,%d,%s,%d",
+   n = (size_t)snprintf(s, len, "%s,%d,%d,%d,%s,%d,%d",
          companion_dock_area_names[st->area <= COMPANION_DOCK_FLOAT
             ? st->area : COMPANION_DOCK_FLOAT],
          st->shown ? 1 : 0, w, h,
          string_is_empty(st->tabbed_with) ? "-" : st->tabbed_with,
-         st->raised ? 1 : 0);
+         st->raised ? 1 : 0,
+         (st->order < 0 || st->order >= COMPANION_DOCK_COUNT) ? 0 : st->order);
    /* A floating dock is a window of its own: keep where it was. */
    if (st->area == COMPANION_DOCK_FLOAT && n < len)
       n += (size_t)snprintf(s + n, len - n, ",%d,%d",
@@ -3227,8 +3262,11 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
 {
    char buf[64];
    char *tok = buf;
+   /* Fields by position; a row with six or eight of them predates the
+    * order field, so its x,y sit one place earlier. */
+   const char *f[9];
    int n     = 0;
-   bool area_ok = false;
+   unsigned i;
 
    if (string_is_empty(s))
       return false;
@@ -3237,46 +3275,232 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
    st->shown = true;
    /* Comma-split by hand: strtok_r is not on MSVC, strtok is not
     * re-entrant. */
-   while (tok)
+   while (tok && n < 9)
    {
       char *next = strchr(tok, ',');
       if (next)
          *next++ = '\0';
-      switch (n)
-      {
-         case 0:
-         {
-            unsigned i;
-            for (i = 0; i <= COMPANION_DOCK_FLOAT; i++)
-               if (string_is_equal(tok, companion_dock_area_names[i]))
-               {
-                  st->area = (enum companion_dock_area)i;
-                  area_ok  = true;
-               }
-            break;
-         }
-         case 1: st->shown  = (atoi(tok) != 0); break;
-         case 2: st->width  = atoi(tok);        break;
-         case 3: st->height = atoi(tok);        break;
-         case 4:
-            if (!string_is_equal(tok, "-"))
-               strlcpy(st->tabbed_with, tok, sizeof(st->tabbed_with));
-            break;
-         case 5: st->raised = (atoi(tok) != 0); break;
-         case 6: st->x      = atoi(tok);        break;
-         case 7: st->y      = atoi(tok);        break;
-         default: break;
-      }
-      tok = next;
-      n++;
+      f[n++] = tok;
+      tok    = next;
    }
-   if (n < 2 || !area_ok)
+   if (n < 2)
       return false;
+   for (i = 0; i <= COMPANION_DOCK_FLOAT; i++)
+      if (string_is_equal(f[0], companion_dock_area_names[i]))
+         break;
+   if (i > COMPANION_DOCK_FLOAT)
+      return false;
+   st->area  = (enum companion_dock_area)i;
+   st->shown = (atoi(f[1]) != 0);
+   if (n > 2)
+      st->width = atoi(f[2]);
+   if (n > 3)
+   {
+      /* Four-field rows from the first shipped format carried the
+       * thumbnail group's raised tab index there; that is not a size
+       * and is dropped. */
+      if (n == 4)
+         n = 3;
+      else
+         st->height = atoi(f[3]);
+   }
+   if (n > 4 && !string_is_equal(f[4], "-"))
+      strlcpy(st->tabbed_with, f[4], sizeof(st->tabbed_with));
+   if (n > 5)
+      st->raised = (atoi(f[5]) != 0);
+   if (n == 7 || n == 9)
+   {
+      st->order = atoi(f[6]);
+      if (n == 9)
+      {
+         st->x = atoi(f[7]);
+         st->y = atoi(f[8]);
+      }
+   }
+   else if (n == 8)
+   {
+      st->x = atoi(f[6]);
+      st->y = atoi(f[7]);
+   }
    if (st->width  <= 1 || st->width  > 32767) st->width  = 0;
    if (st->height <= 1 || st->height > 32767) st->height = 0;
    if (st->x < 0 || st->x > 32767) st->x = 0;
    if (st->y < 0 || st->y > 32767) st->y = 0;
+   if (st->order < 0 || st->order >= COMPANION_DOCK_COUNT) st->order = 0;
    return true;
+}
+
+bool companion_dock_grid_read(struct settings *settings,
+      companion_dock_grid_t *g)
+{
+   companion_dock_state_t st[COMPANION_DOCK_COUNT];
+   bool have[COMPANION_DOCK_COUNT];
+   int i;
+   int order_info    = 0;
+   int order_thumbs  = 0;
+   int first_thumb   = -1;
+   int first_order   = 0;
+   bool raised_seen  = false;
+   bool any          = false;
+
+   memset(g, 0, sizeof(*g));
+   g->info_shown   = true;
+   g->thumbs_shown = true;
+   g->info_first   = true;
+   if (!settings || !settings->bools.desktop_menu_save_dock_positions)
+      return false;
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+   {
+      size_t len;
+      const char *row = companion_dock_row(settings,
+            (enum companion_dock_id)i, &len);
+      have[i] = companion_dock_row_parse(row, &st[i]);
+      any    |= have[i];
+   }
+   if (!any)
+      return false;
+
+   /* Left column: the widest shown row is the column. */
+   for (i = COMPANION_DOCK_SEARCH; i <= COMPANION_DOCK_CORE; i++)
+      if (have[i] && st[i].shown && st[i].area == COMPANION_DOCK_LEFT
+            && st[i].width > g->left_w)
+         g->left_w = st[i].width;
+   if (have[COMPANION_DOCK_SEARCH])
+      g->search_h    = st[COMPANION_DOCK_SEARCH].height;
+   if (have[COMPANION_DOCK_PLAYLISTS])
+      g->playlists_h = st[COMPANION_DOCK_PLAYLISTS].height;
+   if (have[COMPANION_DOCK_CORE])
+      g->core_h      = st[COMPANION_DOCK_CORE].height;
+
+   /* Core Info. */
+   if (have[COMPANION_DOCK_CORE_INFO])
+   {
+      const companion_dock_state_t *s = &st[COMPANION_DOCK_CORE_INFO];
+      g->info_shown = s->shown;
+      g->info_h     = s->height;
+      if (s->area != COMPANION_DOCK_FLOAT && s->width > g->right_w)
+         g->right_w = s->width;
+      order_info    = s->order;
+   }
+
+   /* Thumbnails: the group is shown when any of its docks is; the
+    * raised dock (else the topmost shown standalone one) is the tab, and
+    * the dock with a size is the one laid out, so it sizes the pane. */
+   g->thumbs_shown = false;
+   for (i = COMPANION_DOCK_BOXART; i <= COMPANION_DOCK_LOGO; i++)
+   {
+      const companion_dock_state_t *s;
+      if (!have[i])
+         continue;
+      s = &st[i];
+      if (!s->shown)
+         continue;
+      if (!g->thumbs_shown)
+      {
+         g->thumbs_shown = true;
+         order_thumbs    = s->order;
+      }
+      else if (s->order < order_thumbs)
+         order_thumbs    = s->order;
+      if (s->area != COMPANION_DOCK_FLOAT && s->width > g->right_w)
+         g->right_w = s->width;
+      if (s->height > g->thumbs_h)
+         g->thumbs_h = s->height;
+      if (s->raised && !raised_seen)
+      {
+         raised_seen  = true;
+         g->thumb_tab = i - COMPANION_DOCK_BOXART;
+      }
+      else if (string_is_empty(s->tabbed_with)
+            && (first_thumb < 0 || s->order < first_order))
+      {
+         first_thumb = i - COMPANION_DOCK_BOXART;
+         first_order = s->order;
+      }
+   }
+   if (!raised_seen && first_thumb >= 0)
+      g->thumb_tab = first_thumb;
+   /* Which pane is on top, hidden or not: a hidden pane keeps its
+    * place for when it is shown again, as the Qt restore keeps a
+    * hidden dock's slot. */
+   if (have[COMPANION_DOCK_CORE_INFO])
+      g->info_first = order_info <= order_thumbs;
+
+   /* Log. */
+   if (have[COMPANION_DOCK_LOG])
+   {
+      g->log_shown = st[COMPANION_DOCK_LOG].shown;
+      g->log_h     = st[COMPANION_DOCK_LOG].height;
+   }
+   return true;
+}
+
+void companion_dock_grid_write(struct settings *settings,
+      const companion_dock_grid_t *g)
+{
+   companion_dock_state_t st;
+   int i;
+   int order_info   = 0;
+   int order_thumbs = 0;
+
+   if (!settings || !settings->bools.desktop_menu_save_dock_positions)
+      return;
+   if (g->info_first)
+      order_thumbs = 1;
+   else
+      order_info   = 1;
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+   {
+      size_t len;
+      char *row = companion_dock_row(settings, (enum companion_dock_id)i, &len);
+      memset(&st, 0, sizeof(st));
+      st.shown = true;
+      switch (i)
+      {
+         case COMPANION_DOCK_SEARCH:
+            st.width  = g->left_w;
+            st.height = g->search_h;
+            break;
+         case COMPANION_DOCK_PLAYLISTS:
+            st.width  = g->left_w;
+            st.height = g->playlists_h;
+            st.order  = 1;
+            break;
+         case COMPANION_DOCK_CORE:
+            st.width  = g->left_w;
+            st.height = g->core_h;
+            st.order  = 2;
+            break;
+         case COMPANION_DOCK_CORE_INFO:
+            st.area   = COMPANION_DOCK_RIGHT;
+            st.shown  = g->info_shown;
+            st.width  = g->right_w;
+            st.height = g->info_h;
+            st.order  = order_info;
+            break;
+         case COMPANION_DOCK_LOG:
+            st.area   = COMPANION_DOCK_BOTTOM;
+            st.shown  = g->log_shown;
+            st.height = g->log_h;
+            break;
+         default:
+            st.area   = COMPANION_DOCK_RIGHT;
+            st.shown  = g->thumbs_shown;
+            st.order  = order_thumbs;
+            st.raised = (i - COMPANION_DOCK_BOXART) == g->thumb_tab;
+            if (st.raised)
+            {
+               st.width  = g->right_w;
+               st.height = g->thumbs_h;
+            }
+            if (i != COMPANION_DOCK_BOXART)
+               strlcpy(st.tabbed_with,
+                     companion_dock_key(COMPANION_DOCK_BOXART),
+                     sizeof(st.tabbed_with));
+            break;
+      }
+      companion_dock_row_format(row, len, &st);
+   }
 }
 
 void companion_core_notify_refresh(companion_core_t *core)
