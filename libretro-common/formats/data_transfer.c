@@ -354,21 +354,15 @@ bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need)
 
    if (need <= a->committed)
       return true;
+   /* Past half the address space no allocator can say yes, and asking
+    * one is a sanitizer report, not a NULL; refused here. Below it the
+    * doubling cannot overflow. */
+   if (need > ((size_t)-1) / 2)
+      return false;
 
    nc = a->cap ? a->cap : (256 * 1024);
    while (nc < need)
-   {
-      size_t nx = nc * 2;
-      /* No power of two at or above 'need' fits in a size_t: ask for
-       * exactly what was wanted and let realloc refuse it.  Left
-       * unchecked the doubling reaches 0 and the loop never ends. */
-      if (nx <= nc)
-      {
-         nc = need;
-         break;
-      }
-      nc = nx;
-   }
+      nc *= 2;
    if (!(nb = (uint8_t*)realloc(a->base, nc)))
       return false;
    a->base      = nb;
