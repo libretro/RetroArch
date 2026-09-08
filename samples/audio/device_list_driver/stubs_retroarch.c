@@ -53,6 +53,13 @@ settings_t *config_get_ptr(void)
 static runloop_state_t runloop_st;
 runloop_state_t *runloop_state_get_ptr(void) { return &runloop_st; }
 uint32_t runloop_get_flags(void) { return 0; }
+float runloop_get_fastforward_ratio(settings_t *settings,
+      struct retro_fastforwarding_override *fastmotion_override)
+{
+   if (fastmotion_override->fastforward && fastmotion_override->ratio >= 0.0f)
+      return fastmotion_override->ratio;
+   return settings->floats.fastforward_ratio;
+}
 
 static recording_state_t recording_st;
 recording_state_t *recording_state_get_ptr(void) { return &recording_st; }

@@ -709,6 +709,12 @@ typedef struct
     * value. The consumer's own cadence is the device's, so it cannot
     * measure how fast the core is running; only the producer can. */
    retro_atomic_int_t pipe_ff_mult_q16;
+   /* The rest of the producer's estimate, for the stretcher: its speed
+    * multiplier in Q16, the averaged flush interval in microseconds, and
+    * whether the last fast-forward edge anchored it. */
+   retro_atomic_int_t pipe_stretch_mult_q16;
+   retro_atomic_int_t pipe_flush_delta_us;
+   retro_atomic_int_t pipe_ff_anchored;
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;
@@ -812,6 +818,9 @@ typedef struct
    unsigned     stretch_ff_settle;
    bool         stretch_ff_anchored;
    bool         stretch_was_ff;
+   /* The flush's own copy: on the threaded pipeline the estimator's
+    * edge runs on the producer and the stretcher's on the consumer. */
+   bool         stretch_was_ff_out;
 
    /* Rate-limit state for the DRC compute.
     *
