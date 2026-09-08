@@ -2551,6 +2551,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    ,m_mainwindow(mainwindow)
    ,m_saveGeometryCheckBox(new QCheckBox(this))
    ,m_saveLastTabCheckBox(new QCheckBox(this))
+   ,m_saveDockPositionsCheckBox(new QCheckBox(this))
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
    ,m_thumbnailCacheSpinBox(new QSpinBox(this))
@@ -2595,6 +2596,9 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY),
          m_saveGeometryCheckBox);
+   form->addRow(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS),
+         m_saveDockPositionsCheckBox);
    form->addRow(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB), m_saveLastTabCheckBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES), m_showHiddenFilesCheckBox);
@@ -2695,6 +2699,7 @@ void ViewOptionsWidget::loadViewOptions()
 
    m_saveGeometryCheckBox->setChecked(settings->bools.desktop_menu_save_geometry);
    m_saveLastTabCheckBox->setChecked(settings->bools.desktop_menu_save_last_tab);
+   m_saveDockPositionsCheckBox->setChecked(settings->bools.desktop_menu_save_dock_positions);
    m_showHiddenFilesCheckBox->setChecked(settings->bools.show_hidden_files);
    m_suggestLoadedCoreFirstCheckBox->setChecked(settings->bools.desktop_menu_suggest_loaded_core_first);
    m_thumbnailCacheSpinBox->setValue((int)settings->uints.desktop_menu_thumbnail_cache_limit);
@@ -2755,6 +2760,7 @@ void ViewOptionsWidget::saveViewOptions()
 
    settings->bools.desktop_menu_save_geometry             = m_saveGeometryCheckBox->isChecked();
    settings->bools.desktop_menu_save_last_tab             = m_saveLastTabCheckBox->isChecked();
+   settings->bools.desktop_menu_save_dock_positions       = m_saveDockPositionsCheckBox->isChecked();
    settings->uints.desktop_menu_theme                     =
       (unsigned)m_themeComboBox->currentData(Qt::UserRole).toInt();
    settings->bools.show_hidden_files                      = m_showHiddenFilesCheckBox->isChecked();

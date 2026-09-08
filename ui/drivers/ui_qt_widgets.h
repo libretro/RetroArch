@@ -839,6 +839,7 @@ private:
    MainWindow *m_mainwindow;
    QCheckBox *m_saveGeometryCheckBox;
    QCheckBox *m_saveLastTabCheckBox;
+   QCheckBox *m_saveDockPositionsCheckBox;
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
    QSpinBox *m_thumbnailCacheSpinBox;

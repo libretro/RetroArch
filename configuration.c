@@ -1594,6 +1594,14 @@ static struct config_array_setting *populate_settings_array(
 
    /* Arrays */
    SETTING_ARRAY("audio_driver",                 settings->arrays.audio_driver, false, NULL, true);
+#ifdef HAVE_COMPANION_WIMP
+   SETTING_ARRAY("desktop_menu_dock_search",     settings->arrays.desktop_menu_dock_search, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_playlists",  settings->arrays.desktop_menu_dock_playlists, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_core",       settings->arrays.desktop_menu_dock_core, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_thumbnails", settings->arrays.desktop_menu_dock_thumbnails, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_core_info",  settings->arrays.desktop_menu_dock_core_info, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_log",        settings->arrays.desktop_menu_dock_log, false, NULL, true);
+#endif
    SETTING_ARRAY("audio_device",                 settings->arrays.audio_device, false, NULL, true);
    SETTING_ARRAY("audio_resampler",              settings->arrays.audio_resampler, false, NULL, true);
 #ifdef HAVE_MICROPHONE
@@ -1927,6 +1935,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #ifdef HAVE_COMPANION_WIMP
    SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
+   SETTING_BOOL("desktop_menu_save_dock_positions", &settings->bools.desktop_menu_save_dock_positions, true, DEFAULT_DESKTOP_MENU_SAVE_DOCK_POSITIONS, false);
 #endif
    /* GENERATED: single-source setting rows (bool kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

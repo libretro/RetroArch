@@ -296,6 +296,8 @@ static void companion_core_migrate_qt_cfg(void)
          settings->uints.desktop_menu_last_tab = (unsigned)strtoul(eq, NULL, 10);
       else if (string_is_equal(line, "save_geometry"))
          settings->bools.desktop_menu_save_geometry = QT_BOOL(eq);
+      else if (string_is_equal(line, "save_dock_positions"))
+         settings->bools.desktop_menu_save_dock_positions = QT_BOOL(eq);
       else if (string_is_equal(line, "show_welcome_screen"))
          settings->bools.desktop_menu_show_welcome_screen = QT_BOOL(eq);
       else if (string_is_equal(line, "scan_finish_confirm"))

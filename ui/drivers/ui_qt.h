@@ -546,6 +546,8 @@ public slots:
     * from the driver's deinit, so a window that was only ever hidden
     * (F5) or still open when RetroArch quit is saved too. */
    void persistSettings();
+   void saveDockLayout();
+   void restoreDockLayout();
    void onIconViewClicked();
    void onListViewClicked();
    void onBoxartThumbnailClicked();

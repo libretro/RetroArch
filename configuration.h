@@ -906,6 +906,7 @@ typedef struct settings
       bool desktop_menu_suggest_loaded_core_first;
       bool desktop_menu_save_last_tab;
       bool desktop_menu_save_geometry;
+      bool desktop_menu_save_dock_positions;
       bool desktop_menu_show_welcome_screen;
       bool desktop_menu_scan_finish_confirm;
 
@@ -1167,6 +1168,16 @@ typedef struct settings
       char input_android_physical_keyboard[NAME_MAX_LENGTH];
 #endif
       char audio_device[NAME_MAX_LENGTH];
+      /* Desktop companion dock layout, one plain row per dock (or tabbed
+       * group): "<area>,<shown>,<size>[,<tab>]" - see ui/drivers/ui_qt.cpp
+       * qt_dock_state_*. Toolkit-neutral so the native companions can
+       * honour the same rows. */
+      char desktop_menu_dock_search[32];
+      char desktop_menu_dock_playlists[32];
+      char desktop_menu_dock_core[32];
+      char desktop_menu_dock_thumbnails[32];
+      char desktop_menu_dock_core_info[32];
+      char desktop_menu_dock_log[32];
       char camera_device[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING

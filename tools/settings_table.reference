@@ -1359,6 +1359,7 @@ bool	rgui_show_start_screen	0	1
 bool	netplay_start_as_spectator	0	0
 bool	network_remote_enable	0	0
 bool	ui_companion_toggle	0	0
+bool	desktop_menu_save_dock_positions	1	0
 bool	video_fullscreen	1	0
 bool	video_windowed_fullscreen	1	1
 bool	video_vsync	1	1
