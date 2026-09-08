@@ -10770,6 +10770,8 @@ unsigned menu_displaylist_build_list(
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, false },
+                     /* Governs the estimate on the row above; lives beside it. */
+                     { MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY, PARSE_ONLY_BOOL, false },
                   };
                   count += menu_displaylist_parse_settings_rows(list, settings,
                         dl_rows_10, (unsigned)ARRAY_SIZE(dl_rows_10));
@@ -12537,7 +12539,6 @@ unsigned menu_displaylist_build_list(
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO,       PARSE_ONLY_FLOAT, true},
-               {MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED, PARSE_ONLY_BOOL,  true},
                /* Auto-reset toggle is redundant when gated sampling
                 * is active (no contamination enters the buffer to
