@@ -130,20 +130,6 @@
  * cut, so appends stay O(line) instead of the control's O(text). */
 #define COMPANION_WIN32_LOG_MAX    (256 * 1024)
 
-/* Pre-Win98 SDKs lack these; the messages themselves date from 95. */
-#ifndef WM_ENTERMENULOOP
-#define WM_ENTERMENULOOP 0x0211
-#endif
-#ifndef WM_EXITMENULOOP
-#define WM_EXITMENULOOP 0x0212
-#endif
-#ifndef WM_ENTERSIZEMOVE
-#define WM_ENTERSIZEMOVE 0x0231
-#endif
-#ifndef WM_EXITSIZEMOVE
-#define WM_EXITSIZEMOVE 0x0232
-#endif
-
 /* Control / command IDs. Kept clear of the ID_M_* range in ui_win32.h. */
 #include "ui_win32_companion_ids.h"
 
@@ -2779,27 +2765,6 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
       case WM_CLOSE:
          ShowWindow(hwnd, SW_HIDE);
          return 0;
-      case WM_DESTROY:
-         win32_modal_window_destroyed(hwnd);
-         break;
-      case WM_ENTERSIZEMOVE:
-      case WM_ENTERMENULOOP:
-         win32_modal_enter(hwnd);
-         break;
-      case WM_EXITSIZEMOVE:
-      case WM_EXITMENULOOP:
-         win32_modal_exit(hwnd);
-         break;
-      case WM_RA_MODAL_TICK:
-         win32_modal_tick(hwnd);
-         return 0;
-      case WM_TIMER:
-         if (wparam == WIN32_MODAL_TIMER_ID)
-         {
-            win32_modal_tick(hwnd);
-            return 0;
-         }
-         break;
       case WM_COMMAND:
          if (!w)
             break;
@@ -3078,33 +3043,6 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          /* Closing the companion never quits RetroArch. */
          ShowWindow(hwnd, SW_HIDE);
          return 0;
-
-      case WM_DESTROY:
-         win32_modal_window_destroyed(hwnd);
-         break;
-
-      /* Dragging or sizing this window, or browsing its menu bar, runs a
-       * modal loop inside DefWindowProc on the main thread. Clock the
-       * run loop through it exactly as the main window does, or
-       * RetroArch's video stops for the duration. */
-      case WM_ENTERSIZEMOVE:
-      case WM_ENTERMENULOOP:
-         win32_modal_enter(hwnd);
-         break;
-      case WM_EXITSIZEMOVE:
-      case WM_EXITMENULOOP:
-         win32_modal_exit(hwnd);
-         break;
-      case WM_RA_MODAL_TICK:
-         win32_modal_tick(hwnd);
-         return 0;
-      case WM_TIMER:
-         if (wparam == WIN32_MODAL_TIMER_ID)
-         {
-            win32_modal_tick(hwnd);
-            return 0;
-         }
-         break;
 
       /* Splitter */
       case WM_SETCURSOR:

@@ -70,39 +70,10 @@ enum win32_common_flags
    WIN32_CMN_FLAG_TASKBAR_CREATED = (1 << 2),
    WIN32_CMN_FLAG_RESTORE_DESKTOP = (1 << 3),
    WIN32_CMN_FLAG_INITED          = (1 << 4),
-   WIN32_CMN_FLAG_SWAP_MOUSE_BTNS = (1 << 5),
-   /* The window is inside a modal size/move or menu loop owned by
-    * DefWindowProc, and a timer is driving the run loop from within
-    * it. */
-   WIN32_CMN_FLAG_MODAL_TIMER     = (1 << 6),
-   /* A run loop iteration started from that timer is in progress. */
-   WIN32_CMN_FLAG_MODAL_TICK      = (1 << 7)
+   WIN32_CMN_FLAG_SWAP_MOUSE_BTNS = (1 << 5)
 };
 
 extern uint8_t g_win32_flags;
-
-#if !defined(_XBOX)
-/* Modal size/move and menu loops (DefWindowProc runs them on this
- * thread and returns only when they end) are clocked so the run loop
- * keeps iterating: WM_ENTERSIZEMOVE / WM_ENTERMENULOOP -> _enter,
- * WM_EXITSIZEMOVE / WM_EXITMENULOOP -> _exit, and the ticks arrive as
- * WM_RA_MODAL_TICK or as WM_TIMER with WIN32_MODAL_TIMER_ID -> _tick.
- * Any top-level window on the main thread - the companion window
- * included - must route these, or dragging it freezes RetroArch.
- * Chosen not to collide with anything else that might use timers or
- * WM_APP messages on those windows. */
-#ifndef WM_APP
-#define WM_APP 0x8000
-#endif
-#define WIN32_MODAL_TIMER_ID 0x5241
-#define WM_RA_MODAL_TICK     (WM_APP + 0x52)
-
-void win32_modal_enter(HWND hwnd);
-void win32_modal_exit(HWND hwnd);
-void win32_modal_tick(HWND hwnd);
-/* Ends the session if @hwnd is the window being clocked. */
-void win32_modal_window_destroyed(HWND hwnd);
-#endif
 
 #if !defined(_XBOX)
 extern unsigned g_win32_resize_width;

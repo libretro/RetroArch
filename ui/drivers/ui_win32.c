@@ -100,24 +100,6 @@ static void ui_application_win32_process_events(void)
 {
    MSG msg;
 
-   /* Called from a run loop iteration that a modal size/move or menu
-    * loop is driving from its timer (win32_common.c). That loop has
-    * the mouse captured and reads its own movement and button-up from
-    * the queue; taking those here would leave it tracking nothing.
-    * Everything else - keyboard, raw input, WM_TIMER, posted commands
-    * - is dispatched as usual. Ranges are numeric so that they do not
-    * move with the SDK's idea of WM_MOUSELAST. */
-   if (g_win32_flags & WIN32_CMN_FLAG_MODAL_TICK)
-   {
-      while (PeekMessage(&msg, 0, 0x0000, 0x009F, PM_REMOVE))
-         ui_application_win32_dispatch(&msg);
-      while (PeekMessage(&msg, 0, 0x00B0, 0x01FF, PM_REMOVE))
-         ui_application_win32_dispatch(&msg);
-      while (PeekMessage(&msg, 0, 0x0210, 0xFFFF, PM_REMOVE))
-         ui_application_win32_dispatch(&msg);
-      return;
-   }
-
    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
       ui_application_win32_dispatch(&msg);
 }

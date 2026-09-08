@@ -51,10 +51,6 @@
 ui_window_win32_t main_window;
 static int stub_menu_loop_calls;
 LRESULT win32_menu_loop(HWND hwnd, WPARAM wparam) { (void)hwnd; (void)wparam; stub_menu_loop_calls++; return 0; }
-void win32_modal_enter(HWND h) { (void)h; }
-void win32_modal_exit(HWND h) { (void)h; }
-void win32_modal_tick(HWND h) { (void)h; }
-void win32_modal_window_destroyed(HWND h) { (void)h; }
 
 extern settings_t test_settings;
 extern runloop_state_t test_runloop;
