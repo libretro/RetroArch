@@ -436,6 +436,7 @@ typedef struct
       uint32_t                   rotation;
       uint32_t                   total_subframes;
       uint32_t                   current_subframe;
+      uint32_t                   swap_count;
       float                      core_aspect;
       float                      core_aspect_rot;
 #ifdef HAVE_DXGI_HDR
@@ -2355,6 +2356,7 @@ static bool d3d11_shader_load_step(void *data,
                &d3d11->pass[i].core_aspect_rot,
                &d3d11->pass[i].total_subframes,
                &d3d11->pass[i].current_subframe,
+               &d3d11->pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d11->pass[i].hdr_mode,
                &d3d11->pass[i].paper_white_nits,
@@ -2700,6 +2702,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d11->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d11->pass[i].total_subframes, /* TotalSubFrames */
             &d3d11->pass[i].current_subframe,/* CurrentSubFrame */
+            &d3d11->pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
             &d3d11->pass[i].hdr_mode,        /* HDRMode */
             &d3d11->pass[i].paper_white_nits,/* BrightnessNits */
@@ -4636,6 +4639,7 @@ static bool d3d11_gfx_frame(
               d3d11->pass[i].total_subframes = video_info->shader_subframes;
 
            d3d11->pass[i].current_subframe = 1;  
+           d3d11->pass[i].swap_count       = (uint32_t)video_info->swap_count;
          }
 
 #ifdef HAVE_DXGI_HDR
@@ -5370,6 +5374,7 @@ static bool d3d11_gfx_frame(
             {
                d3d11->pass[m].total_subframes = video_info->shader_subframes;
                d3d11->pass[m].current_subframe = k+1;
+               d3d11->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
          if (!d3d11_gfx_frame(d3d11, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
