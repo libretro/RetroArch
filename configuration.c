@@ -937,10 +937,34 @@ struct config_path_setting
 static void config_parse_file(global_t *global);
 static size_t config_get_credentials_path(char *s, size_t len);
 static bool config_save_credentials(
+      config_file_t *main_conf,
       const struct config_array_setting *array_settings,
       int array_settings_size,
       const struct config_path_setting *path_settings,
       int path_settings_size);
+
+/* Every ident that is marked SETTING_*_SENSITIVE in any build.
+ * Kept unconditional so a build without a feature still moves
+ * that feature's secrets out of retroarch.cfg instead of
+ * carrying them over as unknown entries. */
+static const char *config_sensitive_keys[] = {
+   "cheevos_username",
+   "cheevos_password",
+   "cheevos_token",
+   "webdav_username",
+   "webdav_password",
+   "google_drive_refresh_token",
+   "access_key_id",
+   "secret_access_key",
+   "youtube_stream_key",
+   "twitch_stream_key",
+   "facebook_stream_key",
+   "kick_stream_key",
+   "smb_client_username",
+   "smb_client_password",
+   "netplay_password",
+   "netplay_spectate_password"
+};
 #endif
 
 struct defaults g_defaults;
@@ -8484,6 +8508,8 @@ static size_t config_get_credentials_path(char *s, size_t len)
 
 /**
  * config_save_credentials:
+ * @main_conf           : loaded retroarch.cfg, source for secrets the
+ *                        current build has no setting for
  * @array_settings      : string settings table (from populate_settings_array)
  * @array_settings_size : number of entries in @array_settings
  * @path_settings       : path settings table (from populate_settings_path)
@@ -8497,6 +8523,7 @@ static size_t config_get_credentials_path(char *s, size_t len)
  * Returns: true (1) on success, otherwise returns false (0).
  **/
 static bool config_save_credentials(
+      config_file_t *main_conf,
       const struct config_array_setting *array_settings,
       int array_settings_size,
       const struct config_path_setting *path_settings,
@@ -8540,6 +8567,23 @@ static bool config_save_credentials(
          config_set_path(conf,
                path_settings[i].ident,
                path_settings[i].ptr);
+      }
+   }
+
+   /* Secrets for features compiled out of this build have no
+    * settings entry above; carry them over from retroarch.cfg
+    * as-is so they are not lost when it is stripped. */
+   if (main_conf)
+   {
+      for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+      {
+         const struct config_entry_list *entry;
+         const char *key = config_sensitive_keys[i];
+         if (config_get_entry(conf, key))
+            continue;
+         entry = config_get_entry(main_conf, key);
+         if (entry && entry->value)
+            config_set_string(conf, key, entry->value);
       }
    }
 
@@ -8743,10 +8787,17 @@ bool config_save_file(const char *path)
    /* Save credentials to a separate file.
     * Only strip sensitive fields from retroarch.cfg
     * when retroarch-keychain.cfg was written successfully. */
-   credentials_saved = config_save_credentials(
+   credentials_saved = config_save_credentials(conf,
          array_settings, array_settings_size,
          path_settings,  path_settings_size);
-   if (!credentials_saved)
+   if (credentials_saved)
+   {
+      /* Strip by key name, not by settings table, so entries
+       * belonging to features this build lacks go too. */
+      for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+         config_unset(conf, config_sensitive_keys[i]);
+   }
+   else
       RARCH_WARN("[Config] Credentials save failed, "
             "keeping sensitive fields in main config.\n");
 
@@ -8760,15 +8811,11 @@ bool config_save_file(const char *path)
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
 
-         /* Sensitive settings are stored in retroarch-keychain.cfg.
-          * Unset removes stale values from existing configs.
-          * Only strip when retroarch-keychain.cfg was written OK. */
+         /* Sensitive settings live in retroarch-keychain.cfg and
+          * were already stripped from conf by key name. */
          if (   credentials_saved
              && (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
-         {
-            config_unset(conf, path_settings[i].ident);
             continue;
-         }
 
          if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
          {
@@ -8855,15 +8902,11 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
-         /* Sensitive settings are stored in retroarch-keychain.cfg.
-          * Unset removes stale values from existing configs.
-          * Only strip when retroarch-keychain.cfg was written OK. */
+         /* Sensitive settings live in retroarch-keychain.cfg and
+          * were already stripped from conf by key name. */
          if (   credentials_saved
              && (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
-         {
-            config_unset(conf, array_settings[i].ident);
             continue;
-         }
          if (   !array_settings[i].override
              || !retroarch_override_setting_is_set(array_settings[i].override, NULL))
          {
