@@ -172,6 +172,10 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    BOOL logVisible;
    /* Load Core window: installed cores by name / version. */
    NSWindow *coresWindow;
+   /* The Core popup's last real pick, put back when the Load Core
+    * window the "Load Core..." item opened goes away (Qt's
+    * last_launch_with_index); -1 = none. */
+   NSInteger coreLastIndex;
    NSTableView *coresTable;
    char coresContent[PATH_MAX_LENGTH]; /* content to run with the pick, or "" */
    NSInteger coresRows;                /* rows to show (filtered when running) */
@@ -278,6 +282,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)statusDefault;
 - (void)tabChanged:(id)sender;
 - (void)corePopupChanged:(id)sender;
+- (void)coresDismiss;
 - (void)focusSearch:(id)sender;
 - (void)searchChanged:(id)sender;
 - (void)openDocs:(id)sender;
@@ -1896,6 +1901,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (coresWindow)
    {
       [coresWindow orderOut:nil];
+      [coresWindow setDelegate:nil];
       RELEASE(coresWindow);
    }
    RELEASE(logView);
@@ -2199,6 +2205,11 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (void)windowWillClose:(NSNotification*)note
 {
+   if (coresWindow && [note object] == coresWindow)
+   {
+      [self coresDismiss];
+      return;
+   }
    if ([note object] != window)
       return;
    [self focusRetroArchDeferred:nil];
@@ -2750,6 +2761,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [[corePopup lastItem] setTag:COMPANION_LAUNCH_LOAD_CORE];
    [corePaths addObject:@""];
    [corePopup selectItemAtIndex:0];
+   coreLastIndex = 0;
 }
 
 /* Core the popup names, or the running core's path. */
@@ -2767,7 +2779,37 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    return wimp ? companion_core_current_core_path(wimp->core) : "";
 }
 
-- (void)corePopupChanged:(id)sender { [self refreshInfo]; }
+/* "Load Core..." is an action, not a pick: it opens the Load Core
+ * window, as in Qt, and the popup goes back to its last pick when that
+ * window is dismissed (-coresDismiss). */
+- (void)corePopupChanged:(id)sender
+{
+   NSInteger idx = corePopup ? [corePopup indexOfSelectedItem] : -1;
+   if (idx >= 0 && [[corePopup itemAtIndex:idx] tag] == COMPANION_LAUNCH_LOAD_CORE)
+   {
+      [self showCoresForContent:NULL];
+      return;
+   }
+   coreLastIndex = idx;
+   [self refreshInfo];
+}
+
+/* Every way out of the Load Core window (Load, Cancel, the close box)
+ * comes through here. */
+- (void)coresDismiss
+{
+   NSInteger idx;
+   if (coresWindow && [coresWindow isVisible])
+      [coresWindow orderOut:nil];
+   idx = corePopup ? [corePopup indexOfSelectedItem] : -1;
+   if (     idx >= 0 && coreLastIndex >= 0
+         && coreLastIndex < [corePopup numberOfItems]
+         && [[corePopup itemAtIndex:idx] tag] == COMPANION_LAUNCH_LOAD_CORE)
+   {
+      [corePopup selectItemAtIndex:coreLastIndex];
+      [self refreshInfo];
+   }
+}
 
 /* Run with the popup's choice (Qt's Run button). */
 - (void)runWithPopup:(id)sender
@@ -3487,6 +3529,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          backing:NSBackingStoreBuffered defer:NO];
       [coresWindow setTitle:@"Load Core"];
       [coresWindow setReleasedWhenClosed:NO];
+      [coresWindow setDelegate:self];
       [coresWindow center];
       content = [coresWindow contentView];
 
@@ -3562,7 +3605,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    row = [self actionRowIn:coresTable];
    if (row < 0)
       return;
-   [coresWindow orderOut:nil];
+   [self coresDismiss];
 
    if (coresContent[0])
    {
@@ -3584,7 +3627,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (void)cancelLoadCore:(id)sender
 {
-   [coresWindow orderOut:nil];
+   [self coresDismiss];
 }
 
 - (void)loadContent:(id)sender

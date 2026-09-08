@@ -341,6 +341,31 @@ int main(void)
       GetWindowRect(info, &ri); GetWindowRect(boxart, &rb);
       CHECK(ri.bottom <= rb.top, "Core Info above the thumbnails by default");
    }
+   /* The Core combo's "Load Core..." item is an action, as in Qt: picking
+    * it opens the Load Core window, and dismissing that puts the combo
+    * back on its last real pick. */
+   {
+      HWND combo = GetDlgItem(hwnd, IDC_CW_CORE_COMBO);
+      LRESULT n  = SendMessageA(combo, CB_GETCOUNT, 0, 0);
+      HWND cores;
+      CHECK(n >= 2 && SendMessageA(combo, CB_GETITEMDATA, (WPARAM)(n - 1), 0) == COMPANION_LAUNCH_LOAD_CORE,
+            "combo's last item is Load Core... (%ld items)", (long)n);
+      SendMessageA(combo, CB_SETCURSEL, (WPARAM)(n - 2), 0);
+      SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDC_CW_CORE_COMBO, CBN_SELCHANGE), (LPARAM)combo);
+      SendMessageA(combo, CB_SETCURSEL, (WPARAM)(n - 1), 0);
+      SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(IDC_CW_CORE_COMBO, CBN_SELCHANGE), (LPARAM)combo);
+      pump(data, 200);
+      cores = FindWindowA(NULL, "Load Core");
+      CHECK(cores && IsWindowVisible(cores), "picking Load Core... opens the Load Core window");
+      if (cores)
+      {
+         SendMessageA(cores, WM_COMMAND, IDC_CW_CORES_CANCEL, 0);
+         pump(data, 100);
+         CHECK(!IsWindowVisible(cores), "Cancel hides it");
+      }
+      CHECK(SendMessageA(combo, CB_GETCURSEL, 0, 0) == n - 2, "combo back on its last pick (%ld)", (long)SendMessageA(combo, CB_GETCURSEL, 0, 0));
+   }
+
    /* close: the window hides */
    SendMessageA(hwnd, WM_CLOSE, 0, 0);
    pump(data, 200);

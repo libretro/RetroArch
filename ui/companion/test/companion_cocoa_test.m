@@ -825,6 +825,28 @@ int main(int argc, char **argv)
       pump(data, 100);
    }
 
+   /* The Core popup's "Load Core..." item is an action, as in Qt: picking
+    * it opens the Load Core window, and dismissing that puts the popup
+    * back on its last real pick. */
+   {
+      NSPopUpButton *pop = [ctrl valueForKey:@"corePopup"];
+      NSInteger n        = [pop numberOfItems];
+      NSWindow *cw;
+      CHECK(n >= 2 && [[pop itemAtIndex:n - 1] tag] == COMPANION_LAUNCH_LOAD_CORE,
+            "popup's last item is Load Core... (%ld items)", (long)n);
+      [pop selectItemAtIndex:n - 2];
+      [ctrl performSelector:NSSelectorFromString(@"corePopupChanged:") withObject:pop];
+      [pop selectItemAtIndex:n - 1];
+      [ctrl performSelector:NSSelectorFromString(@"corePopupChanged:") withObject:pop];
+      pump(data, 200);
+      cw = [ctrl valueForKey:@"coresWindow"];
+      CHECK(cw && [cw isVisible], "picking Load Core... opens the Load Core window");
+      [ctrl performSelector:NSSelectorFromString(@"cancelLoadCore:") withObject:nil];
+      pump(data, 100);
+      CHECK(!(cw && [cw isVisible]), "Cancel hides it");
+      CHECK([pop indexOfSelectedItem] == n - 2, "popup back on its last pick (%ld)", (long)[pop indexOfSelectedItem]);
+   }
+
    /* Dock rows: the layout on screen is written back in the shared
     * format (with "Save Dock Positions" on) - Core Info above the
     * thumbnail pane, boxart the raised tab, log hidden - and a second

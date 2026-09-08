@@ -216,6 +216,10 @@ typedef struct ui_companion_win32_wimp
     * item (Run on an entry with no core), the content to launch with
     * the picked core; empty when it is a plain "load a core" request. */
    char cores_content[PATH_MAX_LENGTH];
+   /* The Core combo's last real pick, put back when the Load Core
+    * window the "Load Core..." item opened goes away (Qt's
+    * last_launch_with_index); -1 = none. */
+   int combo_last;
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
@@ -2742,6 +2746,7 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
                (LPARAM)COMPANION_LAUNCH_LOAD_CORE);
    }
    SendMessageA(w->core_combo, CB_SETCURSEL, 0, 0);
+   w->combo_last = 0;
 }
 
 /* Core path the Core combo currently names: the running / entry / default
@@ -3037,6 +3042,23 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
 
    switch (msg)
    {
+      case WM_SHOWWINDOW:
+         /* Every way out of the window (Load, Cancel, the close box)
+          * hides it: if the Core combo is sitting on "Load Core...",
+          * put its last real pick back, as Qt does when its Load Core
+          * window closes. */
+         if (!wparam && w && w->core_combo && w->combo_last >= 0)
+         {
+            LRESULT idx = SendMessageA(w->core_combo, CB_GETCURSEL, 0, 0);
+            if (     idx >= 0
+                  && SendMessageA(w->core_combo, CB_GETITEMDATA, (WPARAM)idx, 0)
+                     == COMPANION_LAUNCH_LOAD_CORE)
+            {
+               SendMessageA(w->core_combo, CB_SETCURSEL, (WPARAM)w->combo_last, 0);
+               cw_info_fill(w);
+            }
+         }
+         break;
       case WM_SIZE:
          if (w && w->cores_list)
          {
@@ -3465,7 +3487,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                return 0;
             case IDC_CW_CORE_COMBO:
                if (HIWORD(wparam) == CBN_SELCHANGE)
-                  cw_info_fill(w);
+               {
+                  /* "Load Core..." is an action, not a pick: it opens
+                   * the Load Core window, as in Qt, and the combo goes
+                   * back to its last pick when that window closes. */
+                  LRESULT idx = SendMessageA(w->core_combo, CB_GETCURSEL, 0, 0);
+                  LRESULT sel = (idx >= 0)
+                     ? SendMessageA(w->core_combo, CB_GETITEMDATA, (WPARAM)idx, 0)
+                     : COMPANION_LAUNCH_ASK;
+                  if (sel == COMPANION_LAUNCH_LOAD_CORE)
+                     cw_cores_show(w, NULL);
+                  else
+                  {
+                     w->combo_last = (int)idx;
+                     cw_info_fill(w);
+                  }
+               }
                return 0;
             case IDC_CW_THUMB_COMBO:
                if (HIWORD(wparam) == CBN_SELCHANGE)
