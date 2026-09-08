@@ -7586,8 +7586,9 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
              * steps down from there. */
             if (setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX_DESC)
             {
+               /* The same fallback the list builder counts down from. */
                float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
-                     ? setting->max : 0.0f;
+                     ? setting->max : 9999.00f;
                float v   = max - ((float)idx * setting->step);
                float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
                      ? setting->min : 0.0f;

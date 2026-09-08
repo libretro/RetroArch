@@ -7258,15 +7258,32 @@ static bool config_load_file(global_t *global,
       settings->uints.audio_fastforward_lowpass = AUDIO_FASTFORWARD_LOWPASS_OFF;
 
    /* Migrate the pre-enum fast-forward audio bools. Only applied when the
-    * new key is absent, so an explicit audio_fastforward_mode always wins. */
-   if (!config_get_entry(conf, "audio_fastforward_mode"))
+    * new key is absent, so an explicit audio_fastforward_mode always wins.
+    * Old bools must fully determine the mode, including DISCARD. */
+   if (     !config_get_entry(conf, "audio_fastforward_mode")
+         && (config_get_entry(conf, "audio_fastforward_mute")
+         ||  config_get_entry(conf, "audio_fastforward_speedup")))
    {
-      bool old_val = false;
+      bool old_val         = false;
+      const char *mode_str = "discard";
+
+      settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_DISCARD;
+
       if (config_get_bool(conf, "audio_fastforward_mute", &old_val) && old_val)
+      {
          settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_MUTE;
+         mode_str = "mute";
+      }
       else if (config_get_bool(conf, "audio_fastforward_speedup", &old_val)
             && old_val)
+      {
          settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_SPEEDUP;
+         mode_str = "speedup";
+      }
+
+      RARCH_LOG("[Config] Migrated \"audio_fastforward_mute\"/"
+            "\"audio_fastforward_speedup\" to \"audio_fastforward_mode\" = \"%s\".\n",
+            mode_str);
    }
 
    if (conf)
