@@ -396,12 +396,14 @@ endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
 
-ifeq ($(HAVE_AUDIO_TIMESTRETCH), 1)
+# Fast-forward audio processing is on unless a platform sets these to 0
+# before including this file, or configure wrote 0 to config.mk.
+ifneq ($(HAVE_AUDIO_TIMESTRETCH), 0)
 DEFINES += -DHAVE_AUDIO_TIMESTRETCH
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/audio_time_stretch.o
 endif
 
-ifeq ($(HAVE_AUDIO_LOWPASS), 1)
+ifneq ($(HAVE_AUDIO_LOWPASS), 0)
 DEFINES += -DHAVE_AUDIO_LOWPASS
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/audio_low_pass.o
 endif

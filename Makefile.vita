@@ -50,10 +50,7 @@ else
 	HAVE_ONLINE_UPDATER     := 1
 	HAVE_NEON		:= 1
 	HAVE_DSP_FILTER		:= 1
-	# WSOLA rings are ~290KB; not worth it on Vita.  The low-pass beside
-	# it is 168 bytes of state, so it stays.
 	HAVE_AUDIO_TIMESTRETCH	:= 0
-	HAVE_AUDIO_LOWPASS     := 1
 	HAVE_VIDEO_FILTER	:= 1
 	HAVE_SCREENSHOTS	:= 1
 	HAVE_FILTERS_BUILTIN	:= 1

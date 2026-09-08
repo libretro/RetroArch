@@ -96,10 +96,7 @@ else
 	HAVE_CHEATS = 1
 	HAVE_VIDEO_FILTER = 1
 	HAVE_DSP_FILTER = 1
-	# WSOLA rings are ~290KB; not worth it on 3DS.  The low-pass beside
-	# it is 168 bytes of state, so it stays.
 	HAVE_AUDIO_TIMESTRETCH = 0
-	HAVE_AUDIO_LOWPASS = 1
 	HAVE_CONFIGFILE = 1
 	HAVE_OVERLAY = 1
 	HAVE_GFX_WIDGETS = 1
