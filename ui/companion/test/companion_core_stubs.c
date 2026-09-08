@@ -79,9 +79,38 @@ void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 
-/* No cores installed: the core-info world is empty. */
+/* No cores installed by default: the core-info world is empty. A test
+ * that needs installed cores sets stub_core_count (up to 80): that many
+ * fixture cores, "Fixture Core 01".. with version "1.0", then show up
+ * in core_info_get_list(). */
+size_t stub_core_count = 0;
+static core_info_t stub_cores[80];
+static char stub_core_names[80][20];
+static core_info_list_t stub_core_list;
 bool core_info_find(const char *core_path, core_info_t **core_info) { (void)core_path; if (core_info) *core_info = NULL; return false; }
-bool core_info_get_list(core_info_list_t **list) { if (list) *list = NULL; return false; }
+bool core_info_get_list(core_info_list_t **list)
+{
+   size_t i;
+   if (!list)
+      return false;
+   *list = NULL;
+   if (!stub_core_count)
+      return false;
+   if (stub_core_count > 80)
+      stub_core_count = 80;
+   for (i = 0; i < stub_core_count; i++)
+   {
+      snprintf(stub_core_names[i], sizeof(stub_core_names[i]), "Fixture Core %02u", (unsigned)(i + 1));
+      stub_cores[i].display_name    = stub_core_names[i];
+      stub_cores[i].display_version = (char*)"1.0";
+      stub_cores[i].path            = (char*)"/nonexistent/fixture_core.so";
+   }
+   stub_core_list.list       = stub_cores;
+   stub_core_list.count      = stub_core_count;
+   stub_core_list.info_count = stub_core_count;
+   *list = &stub_core_list;
+   return true;
+}
 bool core_info_init_current_core(void) { return false; }
 void core_info_list_get_supported_cores(core_info_list_t *l, const char *p,
       const core_info_t **infos, size_t *num) { (void)l; (void)p; if (infos) *infos = NULL; if (num) *num = 0; }

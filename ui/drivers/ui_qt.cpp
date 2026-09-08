@@ -209,6 +209,11 @@ static void qt_dock_configure(QDockWidget *dock,
  * native companions honour the same rows. */
 #define QT_DOCK_COUNT COMPANION_DOCK_COUNT
 
+/* The Load Core picker never opens smaller than this (logical px);
+ * the same floor the Win32 and Cocoa pickers use. */
+#define LOAD_CORE_WINDOW_MIN_W 420
+#define LOAD_CORE_WINDOW_MIN_H 400
+
 /* QDockWidget::objectName() of each companion_dock_id. */
 static const char * const qt_dock_object_names[QT_DOCK_COUNT] = {
    "searchDock",
@@ -3784,11 +3789,9 @@ void MainWindow::onUnloadCoreMenuAction()
 
 void MainWindow::onLoadCoreClicked(const QString &contentPath)
 {
+   /* Shown first so its frame is real, then sized and placed by
+    * initCoreList() from the list it holds. */
    m_loadCoreWindow->show();
-   m_loadCoreWindow->resize(width() / 2, height());
-   m_loadCoreWindow->setGeometry(QStyle::alignedRect(
-            Qt::LeftToRight, Qt::AlignCenter, m_loadCoreWindow->size(),
-            geometry()));
    m_loadCoreWindow->initCoreList(contentPath);
 }
 
@@ -5539,7 +5542,6 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
    companion_core_t *core  = ui_companion_qt_core();
    QByteArray contentArray = contentPath.toUtf8();
    QScreen *desktop        = qApp->primaryScreen();
-   QRect desktopRect       = desktop->availableGeometry();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION);
@@ -5590,9 +5592,64 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
    m_table->selectRow(0);
    m_table->setAlternatingRowColors(true);
 
-   resize(((desktopRect.width()) < (contentsMargins().left()
-            + m_table->horizontalHeader()->length()
-            + contentsMargins().right()) ? (desktopRect.width()) : (contentsMargins().left()
-            + m_table->horizontalHeader()->length()
-            + contentsMargins().right())), height());
+   /* Size and place the window: big enough to show every row and both
+    * columns without a scrollbar when the screen allows it, clamped to
+    * the work area of the screen the companion is on otherwise, centred
+    * over the companion (companion_place_window: the same rule the
+    * Win32 and Cocoa pickers use). The need is measured off the table
+    * (vertical header, columns, frame, a vertical scrollbar's worth in
+    * case the height gets clamped) plus the button row, the status bar
+    * and the window frame; the last column takes any spare width. */
+   {
+      QWidget *owner       = parentWidget() ? parentWidget() : this;
+      QScreen *screen      = QGuiApplication::screenAt(
+            owner->frameGeometry().center());
+      QRect avail_rect     = (screen ? screen : desktop)->availableGeometry();
+      QRect frame          = frameGeometry();
+      QRect client         = geometry();
+      int frame_w          = frame.width()  - client.width();
+      int frame_h          = frame.height() - client.height();
+      int frame_l          = client.x() - frame.x();
+      int frame_t          = client.y() - frame.y();
+      int rows_h           = 0;
+      int spacing          = m_layout.spacing();
+      int button_h         = m_layout.itemAt(1)
+         ? m_layout.itemAt(1)->sizeHint().height() : 32;
+      int table_w, table_h, need_w, need_h;
+      companion_rect_t avail, ownr, out;
+
+      if (spacing < 0)
+         spacing = style()->pixelMetric(QStyle::PM_LayoutVerticalSpacing);
+
+      for (i = 0; i < count; i++)
+         if (!m_table->isRowHidden((int)i))
+            rows_h += m_table->rowHeight((int)i);
+      table_w = m_table->verticalHeader()->width()
+         + m_table->horizontalHeader()->length()
+         + 2 * m_table->frameWidth()
+         + style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+      table_h = m_table->horizontalHeader()->height() + rows_h
+         + 2 * m_table->frameWidth();
+      need_w  = table_w + contentsMargins().left() + contentsMargins().right()
+         + m_layout.contentsMargins().left() + m_layout.contentsMargins().right()
+         + frame_w;
+      need_h  = table_h + spacing + button_h
+         + m_layout.contentsMargins().top() + m_layout.contentsMargins().bottom()
+         + statusBar()->sizeHint().height()
+         + contentsMargins().top() + contentsMargins().bottom()
+         + frame_h;
+      m_table->horizontalHeader()->setStretchLastSection(true);
+
+      avail.x = avail_rect.x(); avail.y = avail_rect.y();
+      avail.w = avail_rect.width(); avail.h = avail_rect.height();
+      ownr.x  = owner->frameGeometry().x();
+      ownr.y  = owner->frameGeometry().y();
+      ownr.w  = owner->frameGeometry().width();
+      ownr.h  = owner->frameGeometry().height();
+      companion_place_window(&avail, &ownr, need_w, need_h,
+            LOAD_CORE_WINDOW_MIN_W, LOAD_CORE_WINDOW_MIN_H, &out);
+      /* out is the frame rectangle; setGeometry() takes the client. */
+      setGeometry(out.x + frame_l, out.y + frame_t,
+            out.w - frame_w, out.h - frame_h);
+   }
 }

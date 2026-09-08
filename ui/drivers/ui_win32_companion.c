@@ -93,6 +93,11 @@
 
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
 #define COMPANION_WIN32_CORES_CLASS "RetroArchCompanionCores"
+/* The Load Core picker: its button strip, and the size it never opens
+ * below (logical px; the same floor as the Qt and Cocoa pickers). */
+#define COMPANION_WIN32_CORES_STRIP 34
+#define COMPANION_WIN32_CORES_MIN_W 420
+#define COMPANION_WIN32_CORES_MIN_H 400
 #define COMPANION_WIN32_OPTS_CLASS  "RetroArchCompanionCoreOptions"
 #define COMPANION_WIN32_SHP_CLASS   "RetroArchCompanionShaderParams"
 #define COMPANION_WIN32_SET_CLASS   "RetroArchCompanionOptions"
@@ -2954,6 +2959,90 @@ static void cw_associate_core(ui_companion_win32_wimp_t *w, UINT id)
 
 /* --- Load Core window -------------------------------------------------- */
 
+/* Size and place the picker: both columns at their content width, every
+ * one of the @rows rows visible without a scrollbar when the work area
+ * allows it, clamped to the work area otherwise, centred over the
+ * companion window (companion_place_window: the same rule the Qt and
+ * Cocoa pickers use). The need is the list's columns plus a vertical
+ * scrollbar's worth in case the height is clamped, its header and rows,
+ * the button strip and the window frame; the Version column takes any
+ * spare width. */
+static void cw_cores_place(ui_companion_win32_wimp_t *w, size_t rows)
+{
+   RECT wa, owner, item, hdr, frame;
+   HWND header;
+   int name_w, ver_w, row_h = 0, hdr_h = 0;
+   int list_w, list_h;
+   companion_rect_t avail, ownr, out;
+
+   if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0))
+   {
+      wa.left = wa.top = 0;
+      wa.right  = GetSystemMetrics(SM_CXSCREEN);
+      wa.bottom = GetSystemMetrics(SM_CYSCREEN);
+   }
+   SendMessageA(w->cores_list, LVM_SETCOLUMNWIDTH, 0, LVSCW_AUTOSIZE);
+   SendMessageA(w->cores_list, LVM_SETCOLUMNWIDTH, 1, LVSCW_AUTOSIZE);
+   name_w = (int)SendMessageA(w->cores_list, LVM_GETCOLUMNWIDTH, 0, 0);
+   ver_w  = (int)SendMessageA(w->cores_list, LVM_GETCOLUMNWIDTH, 1, 0);
+   if (name_w < CW_S(w, 200))
+   {
+      name_w = CW_S(w, 200);
+      SendMessageA(w->cores_list, LVM_SETCOLUMNWIDTH, 0, (LPARAM)name_w);
+   }
+   if (ver_w < CW_S(w, 90))
+      ver_w = CW_S(w, 90);
+   if (rows)
+   {
+      memset(&item, 0, sizeof(item));
+      item.left = LVIR_BOUNDS;
+      if (SendMessageA(w->cores_list, LVM_GETITEMRECT, 0, (LPARAM)&item))
+         row_h = item.bottom - item.top;
+   }
+   if (row_h <= 0)
+      row_h = w->text_h + CW_S(w, 4);
+   header = (HWND)SendMessageA(w->cores_list, LVM_GETHEADER, 0, 0);
+   if (header && GetWindowRect(header, &hdr))
+      hdr_h = hdr.bottom - hdr.top;
+   if (hdr_h <= 0)
+      hdr_h = w->text_h + CW_S(w, 8);
+   list_w = name_w + ver_w + GetSystemMetrics(SM_CXVSCROLL)
+      + 2 * GetSystemMetrics(SM_CXEDGE) + CW_S(w, 4);
+   list_h = hdr_h + (int)rows * row_h + 2 * GetSystemMetrics(SM_CYEDGE) + CW_S(w, 4);
+
+   frame.left = frame.top = 0;
+   frame.right  = list_w;
+   frame.bottom = list_h + CW_S(w, COMPANION_WIN32_CORES_STRIP);
+   AdjustWindowRectEx(&frame, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_STYLE),
+         FALSE, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_EXSTYLE));
+
+   avail.x = wa.left; avail.y = wa.top;
+   avail.w = wa.right - wa.left; avail.h = wa.bottom - wa.top;
+   if (w->hwnd && GetWindowRect(w->hwnd, &owner) && !IsIconic(w->hwnd))
+   {
+      ownr.x = owner.left; ownr.y = owner.top;
+      ownr.w = owner.right - owner.left; ownr.h = owner.bottom - owner.top;
+   }
+   else
+      ownr = avail;
+   companion_place_window(&avail, &ownr,
+         frame.right - frame.left, frame.bottom - frame.top,
+         CW_S(w, COMPANION_WIN32_CORES_MIN_W), CW_S(w, COMPANION_WIN32_CORES_MIN_H),
+         &out);
+   SetWindowPos(w->cores_hwnd, NULL, out.x, out.y, out.w, out.h,
+         SWP_NOZORDER | SWP_NOACTIVATE);
+   /* The Version column takes what is left of the client width. */
+   {
+      RECT rc;
+      GetClientRect(w->cores_list, &rc);
+      if (rc.right - name_w > ver_w)
+         SendMessageA(w->cores_list, LVM_SETCOLUMNWIDTH, 1,
+               (LPARAM)(rc.right - name_w));
+      else
+         SendMessageA(w->cores_list, LVM_SETCOLUMNWIDTH, 1, (LPARAM)ver_w);
+   }
+}
+
 static void cw_cores_fill(ui_companion_win32_wimp_t *w)
 {
    size_t i, n;
@@ -2997,6 +3086,7 @@ static void cw_cores_fill(ui_companion_win32_wimp_t *w)
    if (n)
       ListView_SetItemState(w->cores_list, 0,
             LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+   cw_cores_place(w, n);
 }
 
 static void cw_cores_load_selected(ui_companion_win32_wimp_t *w)
@@ -3063,12 +3153,16 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
          if (w && w->cores_list)
          {
             RECT rc;
+            int strip = CW_S(w, COMPANION_WIN32_CORES_STRIP);
+            int bw    = CW_S(w, 80);
+            int bh    = CW_S(w, 24);
+            int gap   = CW_S(w, 5);
             GetClientRect(hwnd, &rc);
-            MoveWindow(w->cores_list, 0, 0, rc.right, rc.bottom - 34, TRUE);
+            MoveWindow(w->cores_list, 0, 0, rc.right, rc.bottom - strip, TRUE);
             MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_OK),
-                  rc.right - 170, rc.bottom - 29, 80, 24, TRUE);
+                  rc.right - 2 * (bw + gap), rc.bottom - bh - gap, bw, bh, TRUE);
             MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_CANCEL),
-                  rc.right - 85, rc.bottom - 29, 80, 24, TRUE);
+                  rc.right - bw - gap, rc.bottom - bh - gap, bw, bh, TRUE);
          }
          return 0;
       case WM_CLOSE:
@@ -3135,7 +3229,8 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
     * it; WS_EX_TOOLWINDOW keeps it off the taskbar. */
    w->cores_hwnd = CreateWindowExA(WS_EX_TOOLWINDOW, COMPANION_WIN32_CORES_CLASS,
          "Load Core", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-         CW_USEDEFAULT, CW_USEDEFAULT, 420, 400,
+         CW_USEDEFAULT, CW_USEDEFAULT,
+         CW_S(w, COMPANION_WIN32_CORES_MIN_W), CW_S(w, COMPANION_WIN32_CORES_MIN_H),
          w->hwnd, NULL, inst, NULL);
    if (!w->cores_hwnd)
       return false;

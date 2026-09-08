@@ -1185,6 +1185,46 @@ static void test_dock_grid(void)
          "grid: nothing written with the setting off");
 }
 
+/* The Load Core picker's placement: it takes the size that shows every
+ * row without a scrollbar when the screen allows, is clamped to the
+ * work area otherwise (Qt opened taller than the screen), never
+ * shrinks below its minimum (Win32 opened at 420x400 whatever the
+ * list), and is centred over the companion window but kept on
+ * screen. */
+static void test_place_window(void)
+{
+   companion_rect_t avail = { 0, 0, 1920, 1040 };
+   companion_rect_t owner = { 320, 160, 1280, 720 };
+   companion_rect_t r;
+
+   /* Fits: the needed size, centred over the owner. */
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.w == 520 && r.h == 640 && r.x == 320 + (1280 - 520) / 2
+         && r.y == 160 + (720 - 640) / 2, "fits: needed size centred (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   /* Taller than the screen: clamped to the work area less the margin,
+    * pulled back on screen. */
+   companion_place_window(&avail, &owner, 520, 3000, 420, 400, &r);
+   CHECK(r.h == 1040 - 32 && r.y == 16, "taller than the screen: clamped and on screen (%d %d)", r.h, r.y);
+   /* Smaller than the minimum grows to it. */
+   companion_place_window(&avail, &owner, 200, 100, 420, 400, &r);
+   CHECK(r.w == 420 && r.h == 400, "below minimum grows to it (%dx%d)", r.w, r.h);
+   /* Owner half off the screen: the window still lands inside it. */
+   owner.x = 1500; owner.y = 900;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.x + r.w <= 1920 - 16 && r.y + r.h <= 1040 - 16 && r.x >= 16 && r.y >= 16,
+         "owner off the edge: window kept on screen (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   /* A work area with an origin (second monitor / dock on the left). */
+   avail.x = 1920; avail.y = 40; owner.x = 2000; owner.y = 100;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.x >= 1936 && r.y >= 56 && r.x + r.w <= 1920 + 1920 - 16,
+         "offset work area respected (%d,%d)", r.x, r.y);
+   /* A screen smaller than the minimum: the minimum still wins so the
+    * controls stay usable. */
+   avail.x = avail.y = 0; avail.w = 400; avail.h = 300; owner.x = owner.y = 0;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.w == 420 && r.h == 400, "tiny screen: minimum kept (%dx%d)", r.w, r.h);
+}
+
 int main(void)
 {
    setup();
@@ -1207,6 +1247,7 @@ int main(void)
    test_launch_options();
    test_dock_rows();
    test_dock_grid();
+   test_place_window();
    teardown();
    if (fails)
    {

@@ -722,6 +722,27 @@ bool companion_dock_grid_read(struct settings *settings,
 void companion_dock_grid_write(struct settings *settings,
       const companion_dock_grid_t *g);
 
+/* --- Secondary window placement ------------------------------------- */
+
+/* A rectangle in screen coordinates: x,y the top-left corner, w,h the
+ * size. */
+typedef struct companion_rect
+{
+   int x, y, w, h;
+} companion_rect_t;
+
+/* Where a secondary window (the Load Core picker) goes: as large as it
+ * needs to be to show everything (@need, the window's frame size that
+ * fits every row and column without a scrollbar), never smaller than
+ * @min, never larger than the available screen area @avail less a
+ * margin, centred over the companion window @owner and then moved so
+ * it lies inside @avail. The same rule on every backend, so the picker
+ * opens at the same place and size for the same cores. Sizes and
+ * positions are in the backend's own units (pixels or points). */
+void companion_place_window(const companion_rect_t *avail,
+      const companion_rect_t *owner, int need_w, int need_h,
+      int min_w, int min_h, companion_rect_t *out);
+
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 
 void companion_core_status_message(companion_core_t *core,

@@ -134,6 +134,7 @@ void apple_input_keyboard_reset(void) { stub_keyboard_resets++; }
 @end
 
 extern settings_t test_settings;
+extern size_t stub_core_count;
 
 /* The driver under test (its global driver struct). */
 extern ui_companion_driver_t ui_companion_wimp_cocoa;
@@ -832,6 +833,7 @@ int main(int argc, char **argv)
       NSPopUpButton *pop = [ctrl valueForKey:@"corePopup"];
       NSInteger n        = [pop numberOfItems];
       NSWindow *cw;
+      stub_core_count = 12; /* a dozen fixture cores to size the picker to */
       CHECK(n >= 2 && [[pop itemAtIndex:n - 1] tag] == COMPANION_LAUNCH_LOAD_CORE,
             "popup's last item is Load Core... (%ld items)", (long)n);
       [pop selectItemAtIndex:n - 2];
@@ -841,6 +843,46 @@ int main(int argc, char **argv)
       pump(data, 200);
       cw = [ctrl valueForKey:@"coresWindow"];
       CHECK(cw && [cw isVisible], "picking Load Core... opens the Load Core window");
+      if (cw)
+      {
+         /* Sized to its list and kept on the screen: no smaller than
+          * the 420x400 floor, inside the visible frame, every row
+          * visible (the table no taller than its clip view), centred
+          * over the companion. */
+         NSRect f   = [cw frame];
+         NSRect vis = [([cw screen] ? [cw screen] : [NSScreen mainScreen]) visibleFrame];
+         NSRect wf  = [win frame];
+         NSTableView *ct = [ctrl valueForKey:@"coresTable"];
+         NSRect tf  = [ct frame];
+         NSRect cf  = [[ct superview] frame];
+         CHECK(f.size.width >= 420 && f.size.height >= 400, "picker no smaller than 420x400 (%.0fx%.0f)", f.size.width, f.size.height);
+         CHECK(NSContainsRect(vis, f), "picker inside the visible frame");
+         CHECK([ct numberOfRows] == 12 && tf.size.height <= cf.size.height + 1,
+               "12 rows shown with no scrolling (table %.0f in clip %.0f)", tf.size.height, cf.size.height);
+         CHECK([[[ct tableColumns] objectAtIndex:0] width] + [[[ct tableColumns] objectAtIndex:1] width] <= cf.size.width + 1,
+               "columns fit the table (%.0f + %.0f in %.0f)", [[[ct tableColumns] objectAtIndex:0] width], [[[ct tableColumns] objectAtIndex:1] width], cf.size.width);
+         CHECK(fabs((f.origin.x + f.size.width / 2) - (wf.origin.x + wf.size.width / 2)) <= 8
+               || f.origin.x <= vis.origin.x + 16 || f.origin.x + f.size.width >= vis.origin.x + vis.size.width - 16,
+               "picker centred over the companion (mid %.0f vs %.0f)", f.origin.x + f.size.width / 2, wf.origin.x + wf.size.width / 2);
+      }
+      [ctrl performSelector:NSSelectorFromString(@"cancelLoadCore:") withObject:nil];
+      pump(data, 100);
+      /* Eighty cores on an 800-tall screen: the picker is clamped to the
+       * visible frame and the list scrolls. */
+      stub_core_count = 80;
+      [ctrl performSelector:NSSelectorFromString(@"loadCore:") withObject:nil];
+      pump(data, 200);
+      cw = [ctrl valueForKey:@"coresWindow"];
+      if (cw)
+      {
+         NSRect f   = [cw frame];
+         NSRect vis = [([cw screen] ? [cw screen] : [NSScreen mainScreen]) visibleFrame];
+         NSTableView *ct = [ctrl valueForKey:@"coresTable"];
+         CHECK([cw isVisible] && NSContainsRect(vis, f), "80 rows: picker clamped to the visible frame (%.0f tall in %.0f)", f.size.height, vis.size.height);
+         CHECK([ct numberOfRows] == 80 && [ct frame].size.height > [[ct superview] frame].size.height,
+               "80 rows: the list scrolls instead");
+      }
+      stub_core_count = 0;
       [ctrl performSelector:NSSelectorFromString(@"cancelLoadCore:") withObject:nil];
       pump(data, 100);
       CHECK(!(cw && [cw isVisible]), "Cancel hides it");

@@ -56,6 +56,7 @@ extern settings_t test_settings;
 extern runloop_state_t test_runloop;
 extern int stub_calls_command;
 extern int stub_calls_shader_apply;
+extern size_t stub_core_count;
 extern ui_companion_driver_t ui_companion_wimp_win32;
 extern void companion_test_setup_fixtures(char *root, size_t len);
 extern void companion_test_teardown_fixtures(const char *root);
@@ -348,6 +349,7 @@ int main(void)
       HWND combo = GetDlgItem(hwnd, IDC_CW_CORE_COMBO);
       LRESULT n  = SendMessageA(combo, CB_GETCOUNT, 0, 0);
       HWND cores;
+      stub_core_count = 12; /* a dozen fixture cores to size the picker to */
       CHECK(n >= 2 && SendMessageA(combo, CB_GETITEMDATA, (WPARAM)(n - 1), 0) == COMPANION_LAUNCH_LOAD_CORE,
             "combo's last item is Load Core... (%ld items)", (long)n);
       SendMessageA(combo, CB_SETCURSEL, (WPARAM)(n - 2), 0);
@@ -359,11 +361,57 @@ int main(void)
       CHECK(cores && IsWindowVisible(cores), "picking Load Core... opens the Load Core window");
       if (cores)
       {
+         /* Sized to its list and kept on the work area: no smaller than
+          * the 420x400 floor, inside the screen, every row visible with
+          * no vertical scrollbar, no horizontal one either, and centred
+          * over the companion. */
+         RECT rc, wa, ow, lr;
+         HWND list = GetDlgItem(cores, IDC_CW_CORES);
+         LRESULT rows = SendMessageA(list, LVM_GETITEMCOUNT, 0, 0);
+         LONG style;
+         GetWindowRect(cores, &rc); GetWindowRect(hwnd, &ow);
+         SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
+         CHECK(rc.right - rc.left >= 420 && rc.bottom - rc.top >= 400,
+               "picker no smaller than 420x400 (%ldx%ld)", (long)(rc.right - rc.left), (long)(rc.bottom - rc.top));
+         CHECK(rc.left >= wa.left && rc.top >= wa.top && rc.right <= wa.right && rc.bottom <= wa.bottom,
+               "picker inside the work area (%ld,%ld-%ld,%ld in %ld,%ld-%ld,%ld)",
+               (long)rc.left, (long)rc.top, (long)rc.right, (long)rc.bottom, (long)wa.left, (long)wa.top, (long)wa.right, (long)wa.bottom);
+         pump(data, 100);
+         style = GetWindowLongA(list, GWL_STYLE);
+         CHECK(rows > 0 && !(style & WS_VSCROLL) && !(style & WS_HSCROLL),
+               "%ld rows shown with no scrollbar (style 0x%lx)", (long)rows, (long)style);
+         GetClientRect(list, &lr);
+         CHECK(SendMessageA(list, LVM_GETCOLUMNWIDTH, 0, 0) + SendMessageA(list, LVM_GETCOLUMNWIDTH, 1, 0) <= lr.right,
+               "columns fit the list (%ld + %ld in %ld)", (long)SendMessageA(list, LVM_GETCOLUMNWIDTH, 0, 0), (long)SendMessageA(list, LVM_GETCOLUMNWIDTH, 1, 0), (long)lr.right);
+         CHECK(abs(((int)rc.left + (int)rc.right) / 2 - ((int)ow.left + (int)ow.right) / 2) <= 8
+               || rc.left == wa.left + 16 || rc.right == wa.right - 16,
+               "picker centred over the companion (picker mid %ld, companion mid %ld)",
+               (long)((rc.left + rc.right) / 2), (long)((ow.left + ow.right) / 2));
          SendMessageA(cores, WM_COMMAND, IDC_CW_CORES_CANCEL, 0);
          pump(data, 100);
          CHECK(!IsWindowVisible(cores), "Cancel hides it");
       }
       CHECK(SendMessageA(combo, CB_GETCURSEL, 0, 0) == n - 2, "combo back on its last pick (%ld)", (long)SendMessageA(combo, CB_GETCURSEL, 0, 0));
+      /* Eighty cores on an 800-tall screen: the picker is clamped to the
+       * work area and the list scrolls rather than the window running
+       * off the screen. */
+      stub_core_count = 80;
+      SendMessageA(hwnd, WM_COMMAND, IDM_CW_LOAD_CORE, 0);
+      pump(data, 200);
+      if (cores)
+      {
+         RECT rc, wa;
+         HWND list = GetDlgItem(cores, IDC_CW_CORES);
+         GetWindowRect(cores, &rc);
+         SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
+         CHECK(IsWindowVisible(cores) && rc.top >= wa.top && rc.bottom <= wa.bottom,
+               "80 rows: picker clamped to the work area (%ld-%ld in %ld-%ld)", (long)rc.top, (long)rc.bottom, (long)wa.top, (long)wa.bottom);
+         CHECK(SendMessageA(list, LVM_GETITEMCOUNT, 0, 0) == 80 && (GetWindowLongA(list, GWL_STYLE) & WS_VSCROLL),
+               "80 rows: the list scrolls instead");
+         SendMessageA(cores, WM_COMMAND, IDC_CW_CORES_CANCEL, 0);
+         pump(data, 50);
+      }
+      stub_core_count = 0;
    }
 
    /* close: the window hides */

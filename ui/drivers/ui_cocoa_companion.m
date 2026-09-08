@@ -283,6 +283,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)tabChanged:(id)sender;
 - (void)corePopupChanged:(id)sender;
 - (void)coresDismiss;
+- (void)placeCoresWindow;
 - (void)focusSearch:(id)sender;
 - (void)searchChanged:(id)sender;
 - (void)openDocs:(id)sender;
@@ -3594,7 +3595,82 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if ([coresTable numberOfRows] > 0)
       [coresTable selectRowIndexes:[NSIndexSet indexSetWithIndex:0]
          byExtendingSelection:NO];
+   [self placeCoresWindow];
    [coresWindow makeKeyAndOrderFront:nil];
+}
+
+/* Size and place the picker: the Name column at its widest name, every
+ * row visible without a scrollbar when the screen allows it, clamped
+ * to the visible frame of the companion's screen otherwise, centred
+ * over the companion window (companion_place_window: the same rule the
+ * Qt and Win32 pickers use, in top-down coordinates; Cocoa's run
+ * bottom-up so the frame is flipped on the way in and out). The need
+ * is the two columns plus a scroller's worth in case the height is
+ * clamped, the header and the rows, the button strip and the window
+ * frame; the Version column takes any spare width. */
+- (void)placeCoresWindow
+{
+   NSScreen *scr;
+   NSRect screen, vis, owner, frame, r;
+   NSTableColumn *nameCol, *verCol;
+   NSFont *font;
+   CGFloat name_w = 200.0, ver_w = 90.0, row_h, hdr_h, list_w, list_h;
+   NSInteger i, rows;
+   companion_rect_t avail, ownr, out;
+
+   if (!coresWindow || !coresTable || !wimp)
+      return;
+   scr = [window screen] ? [window screen] : [NSScreen mainScreen];
+   if (!scr)
+      return;
+   screen  = [scr frame];
+   vis     = [scr visibleFrame];
+   owner   = [window frame];
+   nameCol = [[coresTable tableColumns] objectAtIndex:0];
+   verCol  = [[coresTable tableColumns] objectAtIndex:1];
+   font    = [[nameCol dataCell] font];
+   if (!font)
+      font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+   rows    = [coresTable numberOfRows];
+   for (i = 0; i < rows; i++)
+   {
+      const char *name = companion_core_installed_core_name(wimp->core, (size_t)i);
+      NSSize sz;
+      if (!name || !*name)
+         continue;
+      sz = [BOXSTRING(name) sizeWithAttributes:
+         [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName]];
+      if (sz.width + 12.0 > name_w)
+         name_w = sz.width + 12.0;
+   }
+   [nameCol setWidth:name_w];
+   row_h  = [coresTable rowHeight] + [coresTable intercellSpacing].height;
+   hdr_h  = [coresTable headerView] ? [[coresTable headerView] frame].size.height : 23.0;
+   list_w = name_w + ver_w + 16.0 /* scroller */ + 2.0;
+   list_h = hdr_h + (CGFloat)rows * row_h + 2.0;
+   r      = NSMakeRect(0, 0, list_w, list_h + 40.0 /* the button strip */);
+   frame  = [NSWindow frameRectForContentRect:r styleMask:[coresWindow styleMask]];
+
+   /* Top-down: y counted from the top of the screen. */
+   avail.x = (int)vis.origin.x;
+   avail.y = (int)(screen.size.height - (vis.origin.y + vis.size.height));
+   avail.w = (int)vis.size.width;
+   avail.h = (int)vis.size.height;
+   ownr.x  = (int)owner.origin.x;
+   ownr.y  = (int)(screen.size.height - (owner.origin.y + owner.size.height));
+   ownr.w  = (int)owner.size.width;
+   ownr.h  = (int)owner.size.height;
+   companion_place_window(&avail, &ownr,
+         (int)frame.size.width, (int)frame.size.height, 420, 400, &out);
+   frame = NSMakeRect((CGFloat)out.x,
+         screen.size.height - (CGFloat)(out.y + out.h),
+         (CGFloat)out.w, (CGFloat)out.h);
+   [coresWindow setFrame:frame display:NO];
+   /* The Version column takes what is left of the table's width. */
+   {
+      CGFloat tw = [coresTable frame].size.width;
+      [verCol setWidth:(tw - name_w > ver_w) ? tw - name_w : ver_w];
+   }
 }
 
 - (void)loadSelectedCore:(id)sender

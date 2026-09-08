@@ -3503,6 +3503,33 @@ void companion_dock_grid_write(struct settings *settings,
    }
 }
 
+void companion_place_window(const companion_rect_t *avail,
+      const companion_rect_t *owner, int need_w, int need_h,
+      int min_w, int min_h, companion_rect_t *out)
+{
+   /* Keep a little of the screen visible around the window. */
+   int margin = 16;
+   int max_w  = avail->w - 2 * margin;
+   int max_h  = avail->h - 2 * margin;
+   if (max_w < min_w) max_w = min_w;
+   if (max_h < min_h) max_h = min_h;
+   out->w = need_w;
+   out->h = need_h;
+   if (out->w < min_w) out->w = min_w;
+   if (out->h < min_h) out->h = min_h;
+   if (out->w > max_w) out->w = max_w;
+   if (out->h > max_h) out->h = max_h;
+   /* Centred over the owner, inside the available area. */
+   out->x = owner->x + (owner->w - out->w) / 2;
+   out->y = owner->y + (owner->h - out->h) / 2;
+   if (out->x + out->w > avail->x + avail->w - margin)
+      out->x = avail->x + avail->w - margin - out->w;
+   if (out->y + out->h > avail->y + avail->h - margin)
+      out->y = avail->y + avail->h - margin - out->h;
+   if (out->x < avail->x + margin) out->x = avail->x + margin;
+   if (out->y < avail->y + margin) out->y = avail->y + margin;
+}
+
 void companion_core_notify_refresh(companion_core_t *core)
 {
    if (core && core->cb.on_notify_refresh)
