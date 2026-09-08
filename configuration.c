@@ -6429,11 +6429,17 @@ static bool config_load_file(global_t *global,
             && path_is_valid(credentials_path))
       {
          bool result = config_append_file(conf, credentials_path);
-         RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
-               credentials_path);
-         if (!result)
-            RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
+         /* The first load runs before file logging is up; logging
+          * here would go to the console. Same gate as the append
+          * blocks below. */
+         if (!first_load)
+         {
+            RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
                   credentials_path);
+            if (!result)
+               RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
+                     credentials_path);
+         }
       }
    }
 
