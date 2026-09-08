@@ -215,8 +215,25 @@ typedef struct thread_video
     * counted rather than rejected because the cocoa trampoline drained
     * by video_thread_pump_wait() can re-enter the wrapper on the waiting
     * thread; a second distinct thread is the case that breaks, and
-    * cond_reply_waiters checks for it in debug builds. */
+    * cond_reply_waiters checks for it in debug builds. cond_user below
+    * is what keeps a second thread out. */
    scond_t *cond_reply;
+   /* cond_user: the poster slot. User-side commands come from more than
+    * one thread -- the main thread uploads an achievement badge while a
+    * task thread takes the screenshot the same unlock asked for -- and
+    * two of them in the single slot at once means one reply satisfies
+    * both waiters, and the video thread then runs a packet whose payload
+    * points into a stack frame that has already returned. So a poster
+    * holds the slot from send to reply; the wait pumps the cocoa
+    * trampoline like the reply wait does, because the holder's command
+    * may be blocked on the main thread. user_owner/user_depth only keep
+    * an owner from deadlocking on its own slot; a nested post is not
+    * serviceable (see video_thread_user_acquire()). The video thread
+    * never takes the slot: a wrapper entry reached from driver->frame()
+    * runs inline via inline_reply before the acquire. */
+   scond_t *cond_user;
+   uintptr_t user_owner;
+   unsigned user_depth;
    /* cond_ring: ring progress (frame.pending / frame.busy changing),
     * broadcast by the video thread when it claims or completes a slot.
     * Any number of waiters, each re-testing its own predicate. */

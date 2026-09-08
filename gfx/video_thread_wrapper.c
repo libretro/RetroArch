@@ -186,6 +186,47 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
    slock_unlock(thr->lock);
 }
 
+/* user -> thread: take the poster slot. Waits while another thread's
+ * command is in flight, until its reply has been consumed.
+ *
+ * A main-thread waiter pumps the cocoa trampoline here as it does in
+ * video_thread_wait_reply(): the slot holder's command may itself be
+ * blocked in cocoa_main_thread_sync() waiting on the main thread, so a
+ * plain wait here would close the cycle.
+ *
+ * The slot is counted rather than exclusive so that a re-entry from the
+ * owning thread does not deadlock on itself. That is the only thing the
+ * depth buys: a command posted from inside the trampoline while the
+ * worker is blocked in cocoa_main_thread_sync() has nobody to service
+ * it and overwrites the mailbox under the outstanding command, which is
+ * the same failure this slot exists to prevent. Nested posting is a bug
+ * in the caller, not a supported path. */
+static void video_thread_user_acquire(thread_video_t *thr)
+{
+   uintptr_t self = sthread_get_current_thread_id();
+
+   slock_lock(thr->lock);
+   while (thr->user_depth && thr->user_owner != self)
+   {
+      if (!video_thread_pump_wait(thr->cond_user, thr->lock))
+         scond_wait(thr->cond_user, thr->lock);
+   }
+   thr->user_owner = self;
+   thr->user_depth++;
+   slock_unlock(thr->lock);
+}
+
+static void video_thread_user_release(thread_video_t *thr)
+{
+   slock_lock(thr->lock);
+   if (--thr->user_depth == 0)
+   {
+      thr->user_owner = 0;
+      scond_broadcast(thr->cond_user);
+   }
+   slock_unlock(thr->lock);
+}
+
 /* user -> thread */
 static bool video_thread_handle_packet(thread_video_t *thr,
       const thread_packet_t *incoming);
@@ -205,8 +246,11 @@ static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, threa
       thr->inline_reply = NULL;
       return;
    }
+
+   video_thread_user_acquire(thr);
    video_thread_send_packet(thr, pkt);
    video_thread_wait_reply(thr, pkt);
+   video_thread_user_release(thr);
 }
 
 static void thread_update_driver_state(thread_video_t *thr)
@@ -1094,6 +1138,8 @@ static bool video_thread_init(thread_video_t *thr,
       return false;
    if (!(thr->cond_thread = scond_new()))
       return false;
+   if (!(thr->cond_user   = scond_new()))
+      return false;
 
    {
       unsigned i;
@@ -1280,6 +1326,7 @@ static void video_thread_free(void *data)
       scond_free(thr->cond_reply);
       scond_free(thr->cond_ring);
       scond_free(thr->cond_thread);
+      scond_free(thr->cond_user);
 
       RARCH_LOG(
          "Threaded video stats: Frames pushed: %u, Frames dropped: %u, Frames repeated: %llu.\n",
@@ -2022,10 +2069,15 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
    /* Aliveness is tested inside the send, under the lock it already
     * takes.  Reading thr->alive here instead would race the worker's
     * write in video_thread_loop(). */
+   video_thread_user_acquire(thr);
    if (!video_thread_send_packet_if_alive(thr, &pkt))
+   {
+      video_thread_user_release(thr);
       return func(data);
+   }
 
    video_thread_wait_reply(thr, &pkt);
+   video_thread_user_release(thr);
 
    return pkt.data.custom_command.return_value;
 }
