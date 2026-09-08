@@ -3659,7 +3659,7 @@ ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
    return THUMBNAIL_TYPE_BOXART;
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::persistSettings()
 {
    /* Persistent state goes into retroarch.cfg (settings_t), shared with
     * the native companions and written by RetroArch on exit. Geometry is
@@ -3667,7 +3667,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
     * headers, options-dialog geometry) are not carried over. */
    settings_t *settings = config_get_ptr();
 
-   if (settings->bools.desktop_menu_save_geometry)
+   /* A window that is minimised, or was never shown, has no geometry
+    * worth keeping; the last real one is already in settings_t. */
+   if (     settings->bools.desktop_menu_save_geometry
+         && !isMinimized()
+         && width() > 0 && height() > 0)
    {
       QRect g = geometry();
       settings->uints.desktop_menu_window_x      = (unsigned)(g.x()      < 0 ? 0 : g.x());
@@ -3689,7 +3693,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
       case THUMBNAIL_TYPE_LOGO:         settings->uints.desktop_menu_thumbnail_type = 3; break;
       default:                          settings->uints.desktop_menu_thumbnail_type = 0; break;
    }
+}
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+   persistSettings();
    QMainWindow::closeEvent(event);
 }
 
@@ -4296,6 +4304,11 @@ static void ui_companion_qt_deinit(void *data)
 
    if (!handle)
       return;
+
+   /* Runs before main_exit() writes retroarch.cfg, so what the window
+    * looked like when RetroArch quit - or when it was last hidden with
+    * F5 - is what gets saved. closeEvent alone only covered the X button. */
+   handle->window->qtWindow->persistSettings();
 
    /* why won't deleteLater() here call the destructor? */
    delete handle->window->qtWindow;

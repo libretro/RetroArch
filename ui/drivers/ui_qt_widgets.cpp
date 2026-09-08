@@ -7139,7 +7139,7 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
       return;
    m_pendingRows.insert(path, QPersistentModelIndex(index));
    companion_thumbs_request(m_engine, path.toUtf8().constData(),
-         m_thumbSize, m_thumbSize, 0, true, 0xffffffffu);
+         m_thumbSize, m_thumbSize, 0, true, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();
 }
@@ -7170,7 +7170,7 @@ void PlaylistModel::animateImage(const QString &path, int w, int h)
    if (!m_engine || path.isEmpty() || w < 1 || h < 1)
       return;
    companion_thumbs_animate(m_engine, path.toUtf8().constData(), w, h,
-         QT_TAG_ANIM_FRAME, 0xffffffffu);
+         QT_TAG_ANIM_FRAME, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();
 }
@@ -7229,7 +7229,7 @@ void PlaylistModel::requestImage(const QString &path, int w, int h)
    if (!m_engine || path.isEmpty() || w < 1 || h < 1)
       return;
    companion_thumbs_request(m_engine, path.toUtf8().constData(), w, h, 0,
-         true, 0xffffffffu);
+         true, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();
 }

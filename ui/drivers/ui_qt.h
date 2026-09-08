@@ -541,6 +541,11 @@ public slots:
    void onGotReloadShaderParams();
    void onGotReloadCoreOptions();
    void showWelcomeScreen();
+   /* Write the window's persistent state (geometry, last tab, view and
+    * thumbnail type, zoom) into settings_t. Called from closeEvent and
+    * from the driver's deinit, so a window that was only ever hidden
+    * (F5) or still open when RetroArch quit is saved too. */
+   void persistSettings();
    void onIconViewClicked();
    void onListViewClicked();
    void onBoxartThumbnailClicked();

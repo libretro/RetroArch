@@ -1023,7 +1023,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    }
    companion_thumbs_request(thumbs, path, edge, edge,
          CC_TAG(row, thumbGen),
-         urgent ? true : false, 0xffffffffu);
+         urgent ? true : false, 0x00000000u);
 }
 
 /* Per frame: request what the grid shows (topmost served first), prefetch
@@ -2426,11 +2426,11 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self boxartBlit:bits width:bw height:bh];
    else
       companion_thumbs_request(thumbs, path, bw, bh,
-            (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0xffe8e8e8u);
+            (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0x00000000u);
    /* Like RetroArch's File Browser: an animated file plays in the pane
     * (frames arrive in -thumbDone: with the pane's tag). */
    companion_thumbs_animate(thumbs, path, bw, bh,
-         (uintptr_t)boxartEntry | CC_TAG_BOXART, 0xffe8e8e8u);
+         (uintptr_t)boxartEntry | CC_TAG_BOXART, 0x00000000u);
    (void)row;
 }
 

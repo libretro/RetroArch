@@ -187,10 +187,16 @@ struct companion_thumbs
 #define CT_RGBA_TO_ARGB(p) \
    (((p) & 0x0000FF00u) | (((p) & 0xFFu) << 16) | (((p) >> 16) & 0xFFu) | ((p) & 0xFF000000u))
 
-/* Composite one source pixel over @bg (opaque result). */
+/* Composite one source pixel over @bg (opaque result). A @bg with a
+ * zero alpha byte means "keep transparency": the source pixel is
+ * returned as-is, straight alpha and all, and the letterbox is filled
+ * with @bg (transparent), so the backend's own window / cell background
+ * shows through. */
 static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
 {
    unsigned a = (p >> 24) & 0xff;
+   if (!(bg & 0xff000000u))
+      return p;
    if (a == 0xff)
       return p | 0xff000000u;
    {

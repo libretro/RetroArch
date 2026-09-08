@@ -79,7 +79,10 @@ const uint32_t *companion_thumbs_get(companion_thumbs_t *t,
  * most-recent-first ahead of every non-urgent one; non-urgent ones
  * (prefetch) are served oldest-first after them. A key already cached
  * or already queued is ignored (returns false). @bg is the ARGB colour
- * the letterbox is filled with. UI thread. */
+ * the letterbox is filled with and translucent pixels are composited
+ * over; a @bg with alpha 0 (e.g. 0) keeps the image's own alpha and a
+ * transparent letterbox instead, for backends that draw the thumbnail
+ * over their own (themed) background. UI thread. */
 bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
       int w, int h, uintptr_t tag, bool urgent, uint32_t bg);
 

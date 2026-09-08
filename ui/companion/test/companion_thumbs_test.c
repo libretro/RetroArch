@@ -286,13 +286,37 @@ static void test_decode_and_scale(void)
       CHECK(r && r[15 * 60 + 30] == 0xff00ff00u, "rect centre is image");
    }
 
+   /* Transparent bg (alpha 0): the letterbox is transparent and the
+    * image keeps its own alpha - what the Qt / Cocoa backends ask for so
+    * the themed cell background shows through instead of a white box. */
+   ngot = 0;
+   companion_thumbs_request(t, tall, 50, 50, 6, true, 0x00000000u);
+   CHECK(drain(t, 1, 2000) == 1, "transparent delivered");
+   {
+      const uint32_t *r = companion_thumbs_get(t, tall, 50, 50);
+      /* 20x80 into 50x50 fits by height: a 12x50 image around x = 25. */
+      CHECK(r != NULL, "transparent cached");
+      CHECK(r && r[0] == 0x00000000u, "transparent corner is clear 0x%08x", r ? r[0] : 0);
+      CHECK(r && r[25 * 50 + 25] == 0xff00ff00u, "transparent centre keeps the opaque image");
+      /* The pure scaler agrees on a translucent source pixel. */
+      {
+         uint32_t px = 0x80102030u;
+         uint32_t *o = companion_thumbs_scale(&px, 1, 1, 1, 1, 0x00000000u);
+         CHECK(o && o[0] == 0x80102030u, "translucent pixel kept as-is 0x%08x", o ? o[0] : 0);
+         free(o);
+         o = companion_thumbs_scale(&px, 1, 1, 1, 1, 0xffffffffu);
+         CHECK(o && (o[0] >> 24) == 0xff, "opaque bg still composites");
+         free(o);
+      }
+   }
+
    /* Cached now: get() serves it, request() declines. */
    bits = companion_thumbs_get(t, red, 32, 32);
    CHECK(bits && bits[0] == 0xffff0000u, "cache get");
    CHECK(!companion_thumbs_request(t, red, 32, 32, 3, true, 0), "cached key not re-queued");
    CHECK(companion_thumbs_get(t, red, 33, 33) == NULL, "other edge is a different key");
-   CHECK(companion_thumbs_cached_count(t) == 3, "three cached");
-   CHECK(companion_thumbs_cached_bytes(t) == 32u * 32 * 4 + 40u * 40 * 4 + 60u * 30 * 4, "cached bytes");
+   CHECK(companion_thumbs_cached_count(t) == 4, "four cached");
+   CHECK(companion_thumbs_cached_bytes(t) == 32u * 32 * 4 + 40u * 40 * 4 + 60u * 30 * 4 + 50u * 50 * 4, "cached bytes");
 
    companion_thumbs_free(t);
 }
