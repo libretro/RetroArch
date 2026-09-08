@@ -27,13 +27,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 
-#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
-      || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
-      || defined(__HAIKU__)
-#include <sys/stat.h>
-#define CONFIG_CREDENTIALS_RESTRICT_PERMS 1
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -8545,15 +8538,12 @@ static bool config_save_credentials(
 
    if (ret)
    {
-#ifdef CONFIG_CREDENTIALS_RESTRICT_PERMS
       /* The file holds plaintext secrets: make it owner-only.
-       * config_file_write() creates it with the process umask,
-       * which is usually world-readable. Not fatal on failure
-       * (e.g. FAT/exFAT media), the write itself succeeded. */
-      if (chmod(credentials_path, S_IRUSR | S_IWUSR) != 0)
+       * Not fatal on failure (e.g. FAT/exFAT media), the write
+       * itself succeeded. */
+      if (!path_set_private(credentials_path))
          RARCH_WARN("[Config] Could not restrict permissions on \"%s\".\n",
                credentials_path);
-#endif
       RARCH_LOG("[Config] Saved credentials to \"%s\".\n", credentials_path);
    }
    else

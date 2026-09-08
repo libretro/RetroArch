@@ -683,6 +683,19 @@ int path_stat(const char *path);
 
 bool path_is_valid(const char *path);
 
+/**
+ * path_set_private:
+ * @path               : file
+ *
+ * Restricts @path to the owning user (0600 on POSIX). Use for files
+ * that hold secrets. A no-op that returns true on platforms where
+ * the location is already private or has no permission model.
+ *
+ * @return true if the permissions are restricted (or nothing needed
+ * doing), false if the platform supports it and it failed.
+ **/
+bool path_set_private(const char *path);
+
 int64_t path_get_size(const char *path);
 
 bool is_path_accessible_using_standard_io(const char *path);

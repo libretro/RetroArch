@@ -91,6 +91,19 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size);
 
 int retro_vfs_mkdir_impl(const char *dir);
 
+/**
+ * retro_vfs_restrict_permissions_impl:
+ * @path : file to restrict
+ *
+ * Makes @path readable and writable by the owning user only, for
+ * files that hold secrets. On platforms without per-user file
+ * permissions (Windows profile directories, single-user consoles,
+ * Android SAF) there is nothing to do and the call succeeds.
+ *
+ * Returns: 0 on success, -1 on failure.
+ **/
+int retro_vfs_restrict_permissions_impl(const char *path);
+
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *dir, bool include_hidden);
 
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *dirstream);

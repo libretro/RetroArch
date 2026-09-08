@@ -128,6 +128,11 @@ bool path_is_valid(const char *path)
    return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
+bool path_set_private(const char *path)
+{
+   return retro_vfs_restrict_permissions_impl(path) == 0;
+}
+
 int64_t path_get_size(const char *path)
 {
    int64_t filesize = 0;
