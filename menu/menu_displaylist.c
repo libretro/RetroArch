@@ -10821,6 +10821,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,     PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #ifdef HAVE_D3DKMT
@@ -10859,6 +10860,13 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS:
                      build_list[i].checked = video_vsync && frame_latency;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY:
+                     /* Only where a repeat can happen at all: this is
+                      * what paces one. */
+                     build_list[i].checked = *video_driver_get_threaded()
+                        && !video_driver_is_hw_context()
+                        && config_get_ptr()->bools.video_threaded_present_repeat;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT:
                      /* Only where threaded video is on and can be honoured:

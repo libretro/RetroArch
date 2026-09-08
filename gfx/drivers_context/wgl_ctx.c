@@ -31,6 +31,10 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+/* For DWM_TIMING_INFO only; the entry point itself is resolved at
+ * runtime, so dwmapi is not linked. Header-only, present since the
+ * Vista SDK. */
+#include <dwmapi.h>
 #include <commdlg.h>
 
 #include <dynamic/dylib.h>
@@ -956,6 +960,51 @@ static bool gfx_ctx_wgl_presentable(void *data)
 #endif
 }
 
+/* When the last vertical blank happened, from the compositor, on the QPC
+ * clock cpu_features_get_time_usec() keeps here. DWM reports it rather
+ * than estimating from a scanline, and composition is on for windowed
+ * and for the borderless-fullscreen path Windows gives GL, which is
+ * where this is wanted. A context that bypasses the compositor gets a
+ * timestamp that stops advancing; the presenter treats a report older
+ * than its own clock reading as absent and paces on the clock, so no
+ * check is needed here beyond what it already does. */
+typedef HRESULT (WINAPI *wgl_dwm_timing_fn)(HWND, DWM_TIMING_INFO*);
+
+static retro_time_t gfx_ctx_wgl_last_present_time(void *data)
+{
+   DWM_TIMING_INFO info;
+   static wgl_dwm_timing_fn get_timing;
+   static bool             resolved;
+   static LARGE_INTEGER    freq;
+
+   (void)data;
+
+   /* dwmapi is not linked: it does not exist before Vista and the tree
+    * still builds for older targets. Resolved once, as the D3DKMT entry
+    * points in win32_common.c are. */
+   if (!resolved)
+   {
+      HMODULE dwm = LoadLibrary("dwmapi.dll");
+      resolved    = true;
+      if (dwm)
+         get_timing = (wgl_dwm_timing_fn)GetProcAddress(dwm,
+               "DwmGetCompositionTimingInfo");
+   }
+   if (!get_timing)
+      return 0;
+
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (FAILED(get_timing(NULL, &info)))
+      return 0;
+   if (!info.qpcVBlank)
+      return 0;
+   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
+      return 0;
+   return (retro_time_t)((info.qpcVBlank / freq.QuadPart * 1000000)
+        + (info.qpcVBlank % freq.QuadPart * 1000000 / freq.QuadPart));
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -990,5 +1039,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL,
    gfx_ctx_wgl_create_surface,
    gfx_ctx_wgl_destroy_surface,
-   gfx_ctx_wgl_presentable
+   gfx_ctx_wgl_presentable,
+   gfx_ctx_wgl_last_present_time
 };

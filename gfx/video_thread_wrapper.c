@@ -636,7 +636,8 @@ static void video_thread_schedule_next(thread_video_t *thr)
    retro_time_t base = 0;
    retro_time_t next;
 
-   if (thr->driver_data && thr->poke && thr->poke->get_last_present_time)
+   if (     thr->present_timing_ask
+         && thr->driver_data && thr->poke && thr->poke->get_last_present_time)
       base = thr->poke->get_last_present_time(thr->driver_data);
    thr->phase_from_display = base > 0 && base <= now;
    if (!thr->phase_from_display)
@@ -793,6 +794,8 @@ static void video_thread_loop(void *data)
                      ? (retro_time_t)(1000000.0f * (float)presents / hz) : 0;
                   thr->present_repeat = video_info->retain_output;
                   thr->present_group  = (unsigned)presents;
+                  thr->present_timing_ask =
+                     video_info->present_timing_from_display;
                }
                else
                   thr->present_repeat = false;

@@ -4021,6 +4021,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->swap_count               = video_st->swap_count;
    video_info->retain_output               = false;
    video_info->threaded_present_repeat     = settings->bools.video_threaded_present_repeat;
+   video_info->present_timing_from_display = settings->bools.video_present_timing_from_display;
    video_info->scan_subframes              = settings->bools.video_scan_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
    video_info->hard_sync_frames            = settings->uints.video_hard_sync_frames;

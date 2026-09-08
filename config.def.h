@@ -504,6 +504,11 @@
 #define DEFAULT_VIDEO_THREADED false
 #endif
 
+/* Pace repeated frames from the display's own report of when a present
+ * reached it, where the driver or context can say. Off falls back to the
+ * frontend clock, which is also what happens with no reporter. */
+#define DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY true
+
 /* With threaded video, keep presenting the last frame at the display's
  * cadence while the core is late, instead of leaving the last present
  * on screen for longer. Needs a driver that can repeat a frame cheaply

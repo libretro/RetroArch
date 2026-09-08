@@ -592,6 +592,7 @@ typedef struct settings
       bool video_scan_subframes;
       bool video_threaded;
       bool video_threaded_present_repeat;
+      bool video_present_timing_from_display;
       bool video_font_enable;
       bool video_disable_composition;
       bool video_post_filter_record;

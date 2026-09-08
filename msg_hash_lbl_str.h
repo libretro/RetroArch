@@ -1652,6 +1652,7 @@
 #define MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM_STR "video_overscan_correction_bottom"
 #define MENU_ENUM_LABEL_VIDEO_OVERSCAN_CORRECTION_TOP_STR "video_overscan_correction_top"
 #define MENU_ENUM_LABEL_VIDEO_POST_FILTER_RECORD_STR "video_post_filter_record"
+#define MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY_STR "video_present_timing_from_display"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY_STR "video_record_quality"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_THREADS_STR "video_record_threads"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_STR "video_refresh_rate"

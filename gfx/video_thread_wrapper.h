@@ -201,6 +201,9 @@ typedef struct thread_video
    float driver_refresh_rate;
    /* Swaps one repeat makes: the group the retained frame made. */
    unsigned present_group;
+   /* Whether to ask the driver when its last present reached the
+    * display; the setting, carried across with the frame. */
+   bool present_timing_ask;
    bool present_repeat;
    /* A main-thread present_last() asks for one repeat at the next
     * opportunity rather than waiting for the deadline. */
