@@ -2564,6 +2564,23 @@ static bool dirent_check_err(libretro_vfs_implementation_dir *rdir)
 #endif
 }
 
+int retro_vfs_restrict_permissions_impl(const char *path)
+{
+#if defined(_WIN32) || defined(VITA) || defined(PSP) || defined(PS2) \
+      || defined(__PS3__) || defined(GEKKO) || defined(WIIU) \
+      || defined(_3DS) || defined(HAVE_LIBNX) || defined(__CELLOS_LV2__) \
+      || defined(ORBIS) || defined(DJGPP) || defined(EMSCRIPTEN) \
+      || defined(ANDROID) || TARGET_OS_IPHONE || TARGET_OS_TV
+   /* No per-user permission model the frontend controls: Windows
+    * profile directories and mobile app sandboxes are already
+    * private, consoles are single-user. */
+   (void)path;
+   return 0;
+#else
+   return chmod(path, S_IRUSR | S_IWUSR) == 0 ? 0 : -1;
+#endif
+}
+
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       const char *name, bool include_hidden)
 {
