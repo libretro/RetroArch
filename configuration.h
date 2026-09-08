@@ -1172,15 +1172,15 @@ typedef struct settings
        * "<area>,<shown>,<width>,<height>,<tabbed_with>,<raised>" - see
        * ui/drivers/ui_qt.cpp qt_dock_state_*. Toolkit-neutral so the
        * native companions can honour the same rows. */
-      char desktop_menu_dock_search[48];
-      char desktop_menu_dock_playlists[48];
-      char desktop_menu_dock_core[48];
-      char desktop_menu_dock_boxart[48];
-      char desktop_menu_dock_title[48];
-      char desktop_menu_dock_screenshot[48];
-      char desktop_menu_dock_logo[48];
-      char desktop_menu_dock_core_info[48];
-      char desktop_menu_dock_log[48];
+      char desktop_menu_dock_search[64];
+      char desktop_menu_dock_playlists[64];
+      char desktop_menu_dock_core[64];
+      char desktop_menu_dock_boxart[64];
+      char desktop_menu_dock_title[64];
+      char desktop_menu_dock_screenshot[64];
+      char desktop_menu_dock_logo[64];
+      char desktop_menu_dock_core_info[64];
+      char desktop_menu_dock_log[64];
       /* The companion's View Options window: "x,y,w,h", honoured when
        * desktop_menu_save_geometry is on. */
       char desktop_menu_options_window[48];

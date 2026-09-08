@@ -1022,12 +1022,25 @@ static void test_dock_rows(void)
    CHECK(companion_dock_row_parse(row, &back) && !back.shown
          && back.tabbed_with[0] == '\0' && back.height == 160, "hidden round trip");
 
-   /* Floating. */
+   /* Floating: the only kind of row that carries a screen position. */
    memset(&st, 0, sizeof(st));
    st.area = COMPANION_DOCK_FLOAT; st.shown = true; st.width = 200; st.height = 300;
+   st.x = 640; st.y = 120;
    companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "float,1,200,300,-,0,640,120") == 0, "floating row: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && back.area == COMPANION_DOCK_FLOAT
-         && back.width == 200, "floating round trip: %s", row);
+         && back.width == 200 && back.x == 640 && back.y == 120,
+         "floating round trip keeps x,y: %s", row);
+   /* Docked rows never grow the position fields, and a floating row
+    * from before positions were saved parses with x = y = 0. */
+   st.area = COMPANION_DOCK_RIGHT;
+   companion_dock_row_format(row, sizeof(row), &st);
+   CHECK(strcmp(row, "right,1,200,300,-,0") == 0, "docked row has no x,y: %s", row);
+   CHECK(companion_dock_row_parse("float,1,200,300,-,0", &back)
+         && back.area == COMPANION_DOCK_FLOAT && back.x == 0 && back.y == 0,
+         "old floating row parses");
+   CHECK(companion_dock_row_parse("float,1,200,300,-,0,-5,99999", &back)
+         && back.x == 0 && back.y == 0, "off-screen position becomes 0");
 
    /* Sizes a dock reports before it is laid out (0/1) and absurd ones
     * are written and read as 0 = default. */

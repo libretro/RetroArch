@@ -597,8 +597,9 @@ bool companion_core_video_started_fullscreen(companion_core_t *core);
 /* A companion's dock (pane) placement, one plain retroarch.cfg row per
  * dock (desktop_menu_dock_<name>):
  *
- *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>
+ *    <area>,<shown>,<width>,<height>,<tabbed_with>,<raised>[,<x>,<y>]
  *    e.g.  right,1,320,400,boxart,0
+ *          float,1,300,200,-,0,640,120
  *
  * area        left | right | top | bottom | float
  * shown       1 visible, 0 hidden
@@ -606,6 +607,8 @@ bool companion_core_video_started_fullscreen(companion_core_t *core);
  * height
  * tabbed_with the name of the dock this one is tabbed onto, "-" if none
  * raised      1 when it is the tab on top of its group
+ * x, y        screen position of a floating dock (logical pixels);
+ *             written only for area float, ignored otherwise
  *
  * Shared so every backend reads and writes the same rows. Older
  * three/four-field rows (area,shown,size[,tab]) still parse: size lands
@@ -624,6 +627,8 @@ typedef struct companion_dock_state
    enum companion_dock_area area;
    int  width;
    int  height;
+   int  x;               /* floating docks only */
+   int  y;
    char tabbed_with[16]; /* empty when standing alone */
    bool shown;
    bool raised;

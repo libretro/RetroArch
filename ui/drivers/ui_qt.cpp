@@ -290,6 +290,15 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
    st.shown  = dock->isVisible();
    st.width  = dock->width();
    st.height = dock->height();
+   if (dock->isFloating())
+   {
+      /* Client-area position, to match the setGeometry() that restores
+       * it (pos() is the frame corner: saving that walked the dock by
+       * one frame width per launch). */
+      QRect g = dock->geometry();
+      st.x    = g.x();
+      st.y    = g.y();
+   }
 
    if (!dock->isFloating())
    {
@@ -3914,7 +3923,27 @@ void MainWindow::restoreDockLayout()
       if (!have[i])
          continue;
       if (st[i].area == COMPANION_DOCK_FLOAT)
+      {
          docks[i]->setFloating(true);
+         /* Its own window: put it back where it was, clamped so a
+          * position saved on a monitor that is gone stays reachable. */
+         if (st[i].width > 0 && st[i].height > 0)
+         {
+            QRect r(st[i].x, st[i].y, st[i].width, st[i].height);
+            QScreen *screen = QGuiApplication::screenAt(r.topLeft());
+            if (!screen)
+               screen = QGuiApplication::primaryScreen();
+            if (screen)
+            {
+               QRect avail = screen->availableGeometry();
+               if (r.right()  > avail.right())  r.moveRight(avail.right());
+               if (r.bottom() > avail.bottom()) r.moveBottom(avail.bottom());
+               if (r.left()   < avail.left())   r.moveLeft(avail.left());
+               if (r.top()    < avail.top())    r.moveTop(avail.top());
+            }
+            docks[i]->setGeometry(r);
+         }
+      }
       else
       {
          /* Re-adding an already-docked widget moves it: this is what

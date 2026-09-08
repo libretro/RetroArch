@@ -3204,14 +3204,20 @@ size_t companion_dock_row_format(char *s, size_t len,
       const companion_dock_state_t *st)
 {
    int w = st->width, h = st->height;
+   size_t n;
    if (w <= 1 || w > 32767) w = 0;
    if (h <= 1 || h > 32767) h = 0;
-   return (size_t)snprintf(s, len, "%s,%d,%d,%d,%s,%d",
+   n = (size_t)snprintf(s, len, "%s,%d,%d,%d,%s,%d",
          companion_dock_area_names[st->area <= COMPANION_DOCK_FLOAT
             ? st->area : COMPANION_DOCK_FLOAT],
          st->shown ? 1 : 0, w, h,
          string_is_empty(st->tabbed_with) ? "-" : st->tabbed_with,
          st->raised ? 1 : 0);
+   /* A floating dock is a window of its own: keep where it was. */
+   if (st->area == COMPANION_DOCK_FLOAT && n < len)
+      n += (size_t)snprintf(s + n, len - n, ",%d,%d",
+            st->x < 0 ? 0 : st->x, st->y < 0 ? 0 : st->y);
+   return n;
 }
 
 bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
@@ -3254,6 +3260,8 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
                strlcpy(st->tabbed_with, tok, sizeof(st->tabbed_with));
             break;
          case 5: st->raised = (atoi(tok) != 0); break;
+         case 6: st->x      = atoi(tok);        break;
+         case 7: st->y      = atoi(tok);        break;
          default: break;
       }
       tok = next;
@@ -3263,6 +3271,8 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
       return false;
    if (st->width  <= 1 || st->width  > 32767) st->width  = 0;
    if (st->height <= 1 || st->height > 32767) st->height = 0;
+   if (st->x < 0 || st->x > 32767) st->x = 0;
+   if (st->y < 0 || st->y > 32767) st->y = 0;
    return true;
 }
 
