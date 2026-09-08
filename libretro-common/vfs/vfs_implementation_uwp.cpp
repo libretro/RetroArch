@@ -488,6 +488,14 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
+int retro_vfs_restrict_permissions_impl(const char* path)
+{
+    /* UWP app data is already private to the package; there is no
+     * per-user permission model to tighten. Nothing to do. */
+    (void)path;
+    return 0;
+}
+
 /* The first run parameter is used to avoid error checking
  * when doing recursion.
  * Unlike the initial implementation, this can move folders
