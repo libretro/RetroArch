@@ -804,7 +804,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    if (!vulkan_context_init_gpu(vk))
       return false;
 
-   vkGetPhysicalDeviceFeatures(vk->context.gpu, &features);
+   /* pEnabledFeatures is an opt-in request list: enable individual
+    * features here only when a code path needs them. Blanket-enabling
+    * everything the GPU reports (notably robustBufferAccess) changes
+    * shader UBO read semantics on some drivers. */
 
    if (!cached_device_vk && iface && iface->create_device)
    {
