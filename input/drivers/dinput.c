@@ -267,6 +267,7 @@ static void dinput_poll(void *data)
       DIMOUSESTATE2 mouse_state;
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       bool swap_mouse_buttons   = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
+      bool acquired             = true;
 
       point.x                   = 0;
       point.y                   = 0;
@@ -294,6 +295,7 @@ static void dinput_poll(void *data)
                   ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
                   ; rgb_buttons_ptr++)
                *rgb_buttons_ptr = 0;
+            acquired = false;
          }
       }
 
@@ -357,11 +359,22 @@ static void dinput_poll(void *data)
          di->flags    &= ~DINP_FLAG_MOUSE_B5_BTN;
 
       /* No simple way to get absolute coordinates
-       * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
-      GetCursorPos(&point);
-      ScreenToClient((HWND)video_driver_window_get(), &point);
-      di->mouse_x = point.x;
-      di->mouse_y = point.y;
+       * for RETRO_DEVICE_POINTER. Just use Win32 APIs.
+       *
+       * Only do so while the DirectInput mouse is acquired. The device
+       * is opened with DISCL_FOREGROUND, so acquisition fails whenever
+       * the window is not in the foreground (minimized, another window
+       * on top, the Qt desktop menu focused). GetCursorPos() does not
+       * care about focus, so without this gate the menu kept tracking
+       * the desktop cursor through an unfocused window and fired hover
+       * sounds while buttons and keyboard were correctly blocked. */
+      if (acquired)
+      {
+         GetCursorPos(&point);
+         ScreenToClient((HWND)video_driver_window_get(), &point);
+         di->mouse_x = point.x;
+         di->mouse_y = point.y;
+      }
 
       /* Ignore application focusing mouse clicks */
       if (di->flags & DINP_FLAG_MOUSE_IGNORE)
