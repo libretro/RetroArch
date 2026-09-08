@@ -5297,16 +5297,23 @@ void video_driver_frame(const void *data, unsigned width,
          retro_time_t present = video_st->poke->get_last_present_time(
                video_st->data);
 
+         video_st->frame_time_from_display = false;
          if (present > 0)
          {
             if (     video_st->last_present_time > 0
                   && present > video_st->last_present_time)
+            {
                frame_time = present - video_st->last_present_time;
+               video_st->frame_time_from_display = true;
+            }
             video_st->last_present_time = present;
          }
       }
       else
-         video_st->last_present_time = 0;
+      {
+         video_st->last_present_time       = 0;
+         video_st->frame_time_from_display = false;
+      }
 
       /* Frame-time sampling.  Two modes:
        *
@@ -5798,7 +5805,7 @@ void video_driver_frame(const void *data, unsigned width,
                " Scale X/Y:  %2.2f/%2.2f\n"
                " Refresh:  %7.2f hz\n"
                " FrameRate:%7.2f fps\n"
-               " FrameTime:%7.2f ms\n"
+               " FrameTime:%7.2f ms (%s)\n"
                " -Deviation:%6.2f %%\n"
                " Frames:  %8" PRIu64"\n"
                " -Dropped:  %6u\n"
@@ -5826,6 +5833,7 @@ void video_driver_frame(const void *data, unsigned width,
                video_info.refresh_rate,
                last_fps,
                frame_time / 1000.0f,
+               video_st->frame_time_from_display ? "display" : "loop",
                100.0f * stddev,
                video_st->frame_count,
                video_st->frame_drop_count);

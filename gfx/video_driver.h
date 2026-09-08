@@ -934,6 +934,9 @@ typedef struct
     * estimate is measured from the display rather than the frame loop;
     * 0 when it is not, or before the driver reports one. */
    retro_time_t last_present_time;
+   /* Where the most recent frame-time sample came from: the display's
+    * reported present times (true) or the frame loop (false). Stats. */
+   bool frame_time_from_display;
    uint8_t *record_gpu_buffer;
 #ifdef HAVE_VIDEO_FILTER
    rarch_softfilter_t *state_filter;
