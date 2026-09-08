@@ -2418,7 +2418,13 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
 #ifdef HAVE_CHEEVOS
    addCategory(new AchievementsCategory(this));
 #endif
+#ifdef HAVE_NETWORKING
+   /* Netplay and updater settings do not exist in a build without
+    * networking; NetplayPage constructs CheckBoxes straight from the
+    * setting lookups, which are NULL then (crashed the offscreen
+    * companion test's --disable-networking build at startup). */
    addCategory(new NetworkCategory(this));
+#endif
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));

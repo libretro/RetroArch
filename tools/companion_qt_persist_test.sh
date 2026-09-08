@@ -31,7 +31,13 @@ row()  { grep "^$1 = " "$CFG" | sed 's/^[^=]*= "\(.*\)"$/\1/' || true; }
 run_ra() {
    QT_QPA_PLATFORM=offscreen HOME="$OUT" XDG_RUNTIME_DIR="$OUT" \
       timeout -s KILL 120 "$RA" -c "$CFG" --max-frames=120 --menu \
-      > "$OUT/run.log" 2>&1 || fail "retroarch exited with status $? (see run.log)"
+      > "$OUT/run.log" 2>&1 || {
+         rc=$?
+         fail "retroarch exited with status $rc"
+         echo "--- last 40 lines of run.log ---" >&2
+         tail -n 40 "$OUT/run.log" >&2
+         echo "--------------------------------" >&2
+      }
 }
 
 # ---- pass 1: fresh config, companion shown on boot, nothing saved yet ----
