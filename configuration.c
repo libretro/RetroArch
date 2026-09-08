@@ -964,7 +964,8 @@ static const char *config_sensitive_keys[] = {
    "smb_client_password",
    "netplay_password",
    "netplay_spectate_password",
-   "kiosk_mode_password"
+   "kiosk_mode_password",
+   "content_show_settings_password"
 };
 #endif
 
@@ -1812,7 +1813,7 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_video_directory",         settings->paths.directory_content_video_history, true, NULL, true);
 
 #ifdef HAVE_MENU
-   SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
    SETTING_PATH_SENSITIVE("kiosk_mode_password", settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("menu_wallpaper",                settings->paths.path_menu_wallpaper, false, NULL, true);
 #ifdef HAVE_RGUI
