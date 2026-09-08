@@ -641,13 +641,16 @@ void companion_core_option_reset_all(companion_core_t *core)
       companion_core_option_reset(core, i);
 }
 
-#ifdef HAVE_MENU
+/* menu_shader_get() is only compiled when a shader stack is; without
+ * one the companions simply have no shader parameters to show. */
+#if defined(HAVE_MENU) && (defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL))
+#define COMPANION_HAVE_SHADERS 1
 #include "../../menu/menu_shader.h"
 #endif
 
 static struct video_shader *companion_core_shader(void)
 {
-#ifdef HAVE_MENU
+#ifdef COMPANION_HAVE_SHADERS
    return menu_shader_get();
 #else
    return NULL;

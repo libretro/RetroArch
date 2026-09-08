@@ -744,8 +744,14 @@ protected:
  * and HAVE_CG/GLSL/SLANG/HLSL in the .cpp; gate the declarations to
  * match so moc does not emit metaobject code for a class that has
  * no defined methods. Forward declarations above keep external
- * pointer-typed members valid. */
-#ifdef HAVE_MENU
+ * pointer-typed members valid.
+ *
+ * The shader-preset editor also needs a shader stack: its definitions
+ * in ui_qt_widgets.cpp are under the same test, and so must this
+ * declaration be, or moc emits metaobject code that references methods
+ * no translation unit defines (a Qt build with no OpenGL/Vulkan dev
+ * packages - the CI Qt companion job - failed to link this way). */
+#if defined(HAVE_MENU) && (defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL))
 
 class ShaderPass
 {
@@ -818,7 +824,7 @@ protected:
    void paintEvent(QPaintEvent *event);
 };
 
-#endif /* HAVE_MENU - shader-preset editor */
+#endif /* HAVE_MENU + shader stack - shader-preset editor */
 
 class ViewOptionsWidget : public QWidget
 {
