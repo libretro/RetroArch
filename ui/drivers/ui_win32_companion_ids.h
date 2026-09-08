@@ -52,8 +52,8 @@ enum
    IDC_CW_INFO_LABEL,
    IDC_CW_BOXART_LABEL,
    IDC_CW_CORES,      /* Load Core window: list view */
-   IDC_CW_CORES_OK,
-   IDC_CW_CORES_CANCEL,
+   IDC_CW_CORES_CUSTOM, /* its "Load Custom Core..." button */
+   IDC_CW_CORES_STATUS, /* its status bar: "<version> - <core>" */
    IDC_CW_OPTS_LIST,      /* Core Options window */
    IDC_CW_OPTS_RESET,
    IDC_CW_OPTS_RESET_ALL,

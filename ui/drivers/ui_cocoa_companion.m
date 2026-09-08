@@ -172,6 +172,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    BOOL logVisible;
    /* Load Core window: installed cores by name / version. */
    NSWindow *coresWindow;
+   NSTextField *coresStatus;   /* its "<version> - <core>" */
    /* The Core popup's last real pick, put back when the Load Core
     * window the "Load Core..." item opened goes away (Qt's
     * last_launch_with_index); -1 = none. */
@@ -339,6 +340,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)refreshInfo;
 - (void)infoFollowCore;
 - (void)cancelLoadCore:(id)sender;
+- (void)loadCustomCore:(id)sender;
 - (void)appendLog:(const char*)msg;
 @end
 
@@ -1420,6 +1422,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE))
       action:@selector(loadCore:) keyEquivalent:@""];
    [item setTarget:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE))
+      action:@selector(loadCustomCore:) keyEquivalent:@""];
+   [item setTarget:self];
    item = [menu addItemWithTitle:@"Load Content..." action:@selector(loadContent:) keyEquivalent:@""];
    [item setTarget:self];
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_START_CORE))
@@ -1903,6 +1908,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    {
       [coresWindow orderOut:nil];
       [coresWindow setDelegate:nil];
+      RELEASE(coresStatus);
       RELEASE(coresWindow);
    }
    RELEASE(logView);
@@ -3543,21 +3549,64 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [coresTable setTarget:self];
       [content addSubview:sc];
 
-      load = [[[NSButton alloc] initWithFrame:NSMakeRect(250, 8, 80, 24)] autorelease_compat];
-      [load setTitle:@"Load"];
-      [load setKeyEquivalent:@"\r"];
+      /* Qt's LoadCoreWindow chrome: "Load Custom Core..." at the bottom
+       * left, "<version> - <core>" at the bottom right; a double-click
+       * or Return loads the row, Escape closes. Return and Escape ride
+       * on two zero-size buttons with those key equivalents: the window
+       * has no responder of ours in its chain to take cancelOperation:,
+       * and a key-equivalent button need not be visible, only present. */
+      load = [[[NSButton alloc] initWithFrame:NSMakeRect(8, 8, 150, 24)] autorelease_compat];
+      [load setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE))];
+      [load setBezelStyle:NSRoundedBezelStyle];
       [load setTarget:self];
-      [load setAction:@selector(loadSelectedCore:)];
-      [load setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
+      [load setAction:@selector(loadCustomCore:)];
+      [load setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
       [content addSubview:load];
 
-      cancel = [[[NSButton alloc] initWithFrame:NSMakeRect(335, 8, 80, 24)] autorelease_compat];
-      [cancel setTitle:@"Cancel"];
+      coresStatus = [self makeLabel:""];
+      KEEP_IVAR(coresStatus);
+      [coresStatus setAlignment:NSTextAlignmentRight];
+      [coresStatus setFrame:NSMakeRect(170, 12, 242, 18)];
+      [coresStatus setAutoresizingMask:NSViewMinXMargin | NSViewWidthSizable | NSViewMaxYMargin];
+      [content addSubview:coresStatus];
+
+      cancel = [[[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)] autorelease_compat];
+      [cancel setKeyEquivalent:@"\r"];
+      [cancel setTarget:self];
+      [cancel setAction:@selector(loadSelectedCore:)];
+      [content addSubview:cancel];
+      cancel = [[[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 0, 0)] autorelease_compat];
+      [cancel setKeyEquivalent:@"\033"];
       [cancel setTarget:self];
       [cancel setAction:@selector(cancelLoadCore:)];
-      [cancel setAutoresizingMask:NSViewMinXMargin | NSViewMaxYMargin];
       [content addSubview:cancel];
    }
+}
+
+/* Qt's Load Custom Core: pick a core library from disk and load it;
+ * from the Load Core window, which goes away on success. */
+- (void)loadCustomCore:(id)sender
+{
+   NSOpenPanel *panel = [NSOpenPanel openPanel];
+   NSString *path;
+   if (!wimp)
+      return;
+   [panel setCanChooseDirectories:NO];
+   [panel setCanChooseFiles:YES];
+   [panel setAllowsMultipleSelection:NO];
+   [panel setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE))];
+   if ([panel runModal] != 1)
+      return;
+   path = [[[panel performSelector:@selector(URLs)] objectAtIndex:0] path];
+   if (!path || ![path length])
+      return;
+   if (companion_core_load_core(wimp->core, [path UTF8String]))
+   {
+      [self coresDismiss];
+      [self setStatus:"Core loaded."];
+   }
+   else
+      [self setStatus:"Failed to load the core."];
 }
 
 - (void)loadCore:(id)sender
@@ -3596,6 +3645,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [coresTable selectRowIndexes:[NSIndexSet indexSetWithIndex:0]
          byExtendingSelection:NO];
    [self placeCoresWindow];
+   if (coresStatus)
+   {
+      char buf[NAME_MAX_LENGTH + 32];
+      const char *core = companion_core_current_core_name(wimp->core);
+      snprintf(buf, sizeof(buf), "%s - %s", PACKAGE_VERSION,
+            (core && *core) ? core : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
+      [coresStatus setStringValue:BOXSTRING(buf)];
+   }
    [coresWindow makeKeyAndOrderFront:nil];
 }
 

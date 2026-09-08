@@ -212,6 +212,7 @@ typedef struct ui_companion_win32_wimp
    bool started;   /* initial_playlist applied once after the first list */
    /* Load Core window (non-modal: a DialogBox would run its own loop). */
    HWND cores_hwnd;
+   HWND cores_status;  /* its status bar */
    HWND opts_hwnd, opts_list;          /* Core Options (Qt's dialog) */
    HWND shp_hwnd, shp_list, shp_edit;  /* Shader Parameters */
    HWND set_hwnd, set_list, set_edit;  /* Options (Qt's View > Options) */
@@ -2635,21 +2636,26 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
 }
 
 /* Qt's Load Custom Core: a file picker for a core library. */
-static void cw_load_custom_core(ui_companion_win32_wimp_t *w)
+/* Qt's Load Custom Core: pick a core library from disk and load it.
+ * From the File menu (@owner the companion) and from the Load Core
+ * window's button (@owner that window, which goes away on success). */
+static void cw_load_custom_core(ui_companion_win32_wimp_t *w, HWND owner)
 {
    OPENFILENAMEA ofn;
    char path[PATH_MAX_LENGTH];
    path[0] = '\0';
    memset(&ofn, 0, sizeof(ofn));
    ofn.lStructSize = sizeof(ofn);
-   ofn.hwndOwner   = w->hwnd;
+   ofn.hwndOwner   = owner;
    ofn.lpstrFilter = "Core libraries (*.dll)\0*.dll\0All files\0*.*\0";
    ofn.lpstrFile   = path;
    ofn.nMaxFile    = sizeof(path);
    ofn.lpstrTitle  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE);
    ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
-   if (GetOpenFileNameA(&ofn) && path[0])
-      companion_core_load_core(w->core, path);
+   if (GetOpenFileNameA(&ofn) && path[0]
+         && companion_core_load_core(w->core, path)
+         && owner == w->cores_hwnd)
+      ShowWindow(w->cores_hwnd, SW_HIDE);
 }
 
 /* Qt's About Contributors: the AUTHORS list in a read-only edit. */
@@ -2959,6 +2965,15 @@ static void cw_associate_core(ui_companion_win32_wimp_t *w, UINT id)
 
 /* --- Load Core window -------------------------------------------------- */
 
+/* The picker's status bar height (0 until it exists). */
+static int cw_cores_status_height(ui_companion_win32_wimp_t *w)
+{
+   RECT r;
+   if (!w->cores_status || !GetWindowRect(w->cores_status, &r))
+      return 0;
+   return r.bottom - r.top;
+}
+
 /* Size and place the picker: both columns at their content width, every
  * one of the @rows rows visible without a scrollbar when the work area
  * allows it, clamped to the work area otherwise, centred over the
@@ -3012,7 +3027,8 @@ static void cw_cores_place(ui_companion_win32_wimp_t *w, size_t rows)
 
    frame.left = frame.top = 0;
    frame.right  = list_w;
-   frame.bottom = list_h + CW_S(w, COMPANION_WIN32_CORES_STRIP);
+   frame.bottom = list_h + CW_S(w, COMPANION_WIN32_CORES_STRIP)
+      + cw_cores_status_height(w);
    AdjustWindowRectEx(&frame, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_STYLE),
          FALSE, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_EXSTYLE));
 
@@ -3074,8 +3090,11 @@ static void cw_cores_fill(ui_companion_win32_wimp_t *w)
       item.iItem    = (int)i;
       item.lParam   = (LPARAM)i;
       item.pszText  = (LPSTR)(name ? name : "");
-      SendMessageA(w->cores_list, LVM_INSERTITEMA, 0, (LPARAM)&item);
-
+      /* LVS_SORTASCENDING files the row by name: the version goes on
+       * the row the insert reports, not on row i. */
+      item.iItem    = (int)SendMessageA(w->cores_list, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      if (item.iItem < 0)
+         continue;
       item.mask     = LVIF_TEXT;
       item.iSubItem = 1;
       item.pszText  = (LPSTR)(version ? version : "");
@@ -3152,17 +3171,20 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
       case WM_SIZE:
          if (w && w->cores_list)
          {
+            /* Qt's LoadCoreWindow: the table, "Load Custom Core..." at
+             * the bottom left, a status bar. */
             RECT rc;
-            int strip = CW_S(w, COMPANION_WIN32_CORES_STRIP);
-            int bw    = CW_S(w, 80);
-            int bh    = CW_S(w, 24);
-            int gap   = CW_S(w, 5);
+            int strip    = CW_S(w, COMPANION_WIN32_CORES_STRIP);
+            int bw       = CW_S(w, 130);
+            int bh       = CW_S(w, 24);
+            int gap      = CW_S(w, 5);
+            int status_h = cw_cores_status_height(w);
             GetClientRect(hwnd, &rc);
-            MoveWindow(w->cores_list, 0, 0, rc.right, rc.bottom - strip, TRUE);
-            MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_OK),
-                  rc.right - 2 * (bw + gap), rc.bottom - bh - gap, bw, bh, TRUE);
-            MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_CANCEL),
-                  rc.right - bw - gap, rc.bottom - bh - gap, bw, bh, TRUE);
+            if (w->cores_status)
+               SendMessageA(w->cores_status, WM_SIZE, 0, 0);
+            MoveWindow(w->cores_list, 0, 0, rc.right, rc.bottom - status_h - strip, TRUE);
+            MoveWindow(GetDlgItem(hwnd, IDC_CW_CORES_CUSTOM),
+                  gap, rc.bottom - status_h - bh - gap, bw, bh, TRUE);
          }
          return 0;
       case WM_CLOSE:
@@ -3173,11 +3195,12 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
             break;
          switch (LOWORD(wparam))
          {
-            case IDC_CW_CORES_OK:
             case IDOK:
                cw_cores_load_selected(w);
                return 0;
-            case IDC_CW_CORES_CANCEL:
+            case IDC_CW_CORES_CUSTOM:
+               cw_load_custom_core(w, hwnd);
+               return 0;
             case IDCANCEL:
                ShowWindow(hwnd, SW_HIDE);
                return 0;
@@ -3194,6 +3217,14 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
                case NM_RETURN:
                   cw_cores_load_selected(w);
                   return 0;
+               case LVN_KEYDOWN:
+                  /* Escape closes, as Qt's does. */
+                  if (((NMLVKEYDOWN*)lparam)->wVKey == VK_ESCAPE)
+                  {
+                     ShowWindow(hwnd, SW_HIDE);
+                     return 0;
+                  }
+                  break;
                default:
                   break;
             }
@@ -3239,14 +3270,21 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL
          | LVS_SHOWSELALWAYS | LVS_SORTASCENDING,
          0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES, inst, NULL);
-   CreateWindowExA(0, "BUTTON", "&Load",
-         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_DEFPUSHBUTTON,
-         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_OK, inst, NULL);
-   CreateWindowExA(0, "BUTTON", "Cancel",
-         WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
-         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_CANCEL, inst, NULL);
+   {
+      HWND b = CreateWindowExA(0, "BUTTON",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE),
+            WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
+            0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_CUSTOM, inst, NULL);
+      if (b && w->font)
+         SendMessageA(b, WM_SETFONT, (WPARAM)w->font, TRUE);
+   }
+   w->cores_status = CreateWindowExA(0, "msctls_statusbar32", "",
+         WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
+         0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_STATUS, inst, NULL);
    if (!w->cores_list)
       return false;
+   if (w->font)
+      SendMessageA(w->cores_list, WM_SETFONT, (WPARAM)w->font, TRUE);
 
    SendMessageA(w->cores_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
          LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
@@ -3278,6 +3316,17 @@ static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content)
    else
       w->cores_content[0] = '\0';
    cw_cores_fill(w);
+   if (w->cores_status)
+   {
+      /* Qt's picker shows "<version> - <core>" at the right of its
+       * status bar; two leading tabs right-align a status-bar part. */
+      char buf[NAME_MAX_LENGTH + 34];
+      const char *core = companion_core_current_core_name(w->core);
+      snprintf(buf, sizeof(buf), "\t\t%s - %s", PACKAGE_VERSION,
+            (core && *core) ? core
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
+      SendMessageA(w->cores_status, SB_SETTEXTA, 0, (LPARAM)buf);
+   }
    ShowWindow(w->cores_hwnd, SW_SHOW);
    SetForegroundWindow(w->cores_hwnd);
    SetFocus(w->cores_list);
@@ -3563,7 +3612,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                cw_info_fill(w);
                return 0;
             case IDM_CW_LOAD_CUSTOM_CORE:
-               cw_load_custom_core(w);
+               cw_load_custom_core(w, w->hwnd);
                return 0;
             case IDM_CW_CORE_OPTIONS:
                cw_opts_show(w);
@@ -4552,7 +4601,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DestroyWindow(w->hwnd);
    if (w->class_registered)
       UnregisterClassA(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
-   w->hwnd = w->entries = w->cores_hwnd = NULL;
+   w->hwnd = w->entries = w->cores_hwnd = w->cores_status = NULL;
 
    if (w->boxart_bmp)
       DeleteObject(w->boxart_bmp);

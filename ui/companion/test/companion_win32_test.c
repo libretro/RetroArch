@@ -46,6 +46,7 @@
 #include "../../../ui/ui_companion_driver.h"
 #include "../../../ui/companion/companion_core.h"
 #include "../../../ui/drivers/ui_win32.h"
+#include "../../../version.h"
 
 /* --- stubs for what the driver reaches into RetroArch for --------------- */
 ui_window_win32_t main_window;
@@ -383,11 +384,33 @@ int main(void)
          GetClientRect(list, &lr);
          CHECK(SendMessageA(list, LVM_GETCOLUMNWIDTH, 0, 0) + SendMessageA(list, LVM_GETCOLUMNWIDTH, 1, 0) <= lr.right,
                "columns fit the list (%ld + %ld in %ld)", (long)SendMessageA(list, LVM_GETCOLUMNWIDTH, 0, 0), (long)SendMessageA(list, LVM_GETCOLUMNWIDTH, 1, 0), (long)lr.right);
+         /* Qt's chrome: no Load / Cancel buttons, a "Load Custom
+          * Core..." button and a "<version> - <core>" status bar; and
+          * every row carries its version (the list sorts on insert,
+          * so the version has to land on the row the insert reports). */
+         {
+            char buf[128];
+            LVITEMA it;
+            HWND custom = GetDlgItem(cores, IDC_CW_CORES_CUSTOM);
+            HWND sb     = GetDlgItem(cores, IDC_CW_CORES_STATUS);
+            CHECK(custom && IsWindowVisible(custom), "Load Custom Core... button present");
+            CHECK(!FindWindowExA(cores, NULL, "BUTTON", "&Load") && !FindWindowExA(cores, NULL, "BUTTON", "Cancel"),
+                  "no Load / Cancel buttons");
+            buf[0] = '\0';
+            if (sb)
+               SendMessageA(sb, SB_GETTEXTA, 0, (LPARAM)buf);
+            CHECK(sb && strstr(buf, PACKAGE_VERSION " - ") != NULL, "status bar shows '<version> - <core>' (%s)", buf);
+            memset(&it, 0, sizeof(it));
+            it.iSubItem = 1; it.pszText = buf; it.cchTextMax = sizeof(buf);
+            buf[0] = '\0';
+            SendMessageA(list, LVM_GETITEMTEXTA, (WPARAM)(rows - 1), (LPARAM)&it);
+            CHECK(strcmp(buf, "1.0") == 0, "last row carries its version (got '%s')", buf);
+         }
          CHECK(abs(((int)rc.left + (int)rc.right) / 2 - ((int)ow.left + (int)ow.right) / 2) <= 8
                || rc.left == wa.left + 16 || rc.right == wa.right - 16,
                "picker centred over the companion (picker mid %ld, companion mid %ld)",
                (long)((rc.left + rc.right) / 2), (long)((ow.left + ow.right) / 2));
-         SendMessageA(cores, WM_COMMAND, IDC_CW_CORES_CANCEL, 0);
+         SendMessageA(cores, WM_COMMAND, IDCANCEL, 0);
          pump(data, 100);
          CHECK(!IsWindowVisible(cores), "Cancel hides it");
       }
@@ -408,7 +431,7 @@ int main(void)
                "80 rows: picker clamped to the work area (%ld-%ld in %ld-%ld)", (long)rc.top, (long)rc.bottom, (long)wa.top, (long)wa.bottom);
          CHECK(SendMessageA(list, LVM_GETITEMCOUNT, 0, 0) == 80 && (GetWindowLongA(list, GWL_STYLE) & WS_VSCROLL),
                "80 rows: the list scrolls instead");
-         SendMessageA(cores, WM_COMMAND, IDC_CW_CORES_CANCEL, 0);
+         SendMessageA(cores, WM_COMMAND, IDCANCEL, 0);
          pump(data, 50);
       }
       stub_core_count = 0;

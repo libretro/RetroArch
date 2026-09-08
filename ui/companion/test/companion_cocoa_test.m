@@ -46,6 +46,7 @@
 #include <retro_miscellaneous.h>
 
 #include "../../../configuration.h"
+#include "../../../version.h"
 #include "../../../ui/ui_companion_driver.h"
 #include "../../../ui/companion/companion_core.h"
 #include "../../../runloop.h"
@@ -861,6 +862,28 @@ int main(int argc, char **argv)
                "12 rows shown with no scrolling (table %.0f in clip %.0f)", tf.size.height, cf.size.height);
          CHECK([[[ct tableColumns] objectAtIndex:0] width] + [[[ct tableColumns] objectAtIndex:1] width] <= cf.size.width + 1,
                "columns fit the table (%.0f + %.0f in %.0f)", [[[ct tableColumns] objectAtIndex:0] width], [[[ct tableColumns] objectAtIndex:1] width], cf.size.width);
+         /* Qt's chrome: no Load / Cancel buttons, a "Load Custom
+          * Core..." button and a "<version> - <core>" status text. */
+         {
+            NSArray *subs = [[cw contentView] subviews];
+            NSUInteger k;
+            BOOL sawLoad = NO, sawCancel = NO, sawCustom = NO;
+            NSTextField *st = [ctrl valueForKey:@"coresStatus"];
+            for (k = 0; k < [subs count]; k++)
+            {
+               id v = [subs objectAtIndex:k];
+               if (![v isKindOfClass:[NSButton class]])
+                  continue;
+               if ([[v title] isEqualToString:@"Load"])   sawLoad   = YES;
+               if ([[v title] isEqualToString:@"Cancel"]) sawCancel = YES;
+               if ([[v title] isEqualToString:[NSString stringWithUTF8String:
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE)]])
+                  sawCustom = YES;
+            }
+            CHECK(!sawLoad && !sawCancel && sawCustom, "no Load / Cancel, a Load Custom Core... button");
+            CHECK([ctrl respondsToSelector:NSSelectorFromString(@"loadCustomCore:")], "loadCustomCore: implemented");
+            CHECK(st && [[st stringValue] hasPrefix:[NSString stringWithUTF8String:PACKAGE_VERSION " - "]], "status shows '<version> - <core>' (%s)", [[st stringValue] UTF8String]);
+         }
          CHECK(fabs((f.origin.x + f.size.width / 2) - (wf.origin.x + wf.size.width / 2)) <= 8
                || f.origin.x <= vis.origin.x + 16 || f.origin.x + f.size.width >= vis.origin.x + vis.size.width - 16,
                "picker centred over the companion (mid %.0f vs %.0f)", f.origin.x + f.size.width / 2, wf.origin.x + wf.size.width / 2);
