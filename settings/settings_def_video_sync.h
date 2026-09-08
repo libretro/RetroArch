@@ -66,7 +66,7 @@ S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       "video_present_timing_from_display",
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Pace Repeats From The Display",
-      "Time repeated frames from when the display says a present actually reached it, rather than from the frontend's own clock. Available where the driver or its context can report it (Direct3D 11/12 through DXGI, Vulkan with VK_GOOGLE_display_timing, OpenGL on X11 with GLX_OML_sync_control); the clock is used everywhere else, and wherever the report goes stale. Turn off to always use the clock.")
+      "Time repeated frames from when the display says a present actually reached it, rather than from the frontend's own clock. Applies where the video driver can report it; the clock is used everywhere else, and wherever the report goes stale. Turn off to always use the clock.")
 S_INT(video_max_frame_latency, VIDEO_MAX_FRAME_LATENCY,
       "video_max_frame_latency",
       DEFAULT_MAX_FRAME_LATENCY, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, -1, MAXIMUM_MAX_FRAME_LATENCY, 1, -1, setting_action_ok_uint, NULL,

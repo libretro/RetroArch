@@ -6780,10 +6780,20 @@ static unsigned vulkan_present_last(void *data)
 
 static retro_time_t vulkan_get_last_present_time(void *data)
 {
+   retro_time_t t;
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context)
       return 0;
-   return vulkan_last_present_time(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context));
+   /* The device's own report first, where it has one; failing that,
+    * whatever the window system context can say. On Windows that is
+    * the compositor's vertical blank, which covers drivers that do not
+    * expose display timing. */
+   t = vulkan_last_present_time(VULKAN_CTX_DATA_FROM_CONTEXT(vk->context));
+   if (t > 0)
+      return t;
+   if (vk->ctx_driver && vk->ctx_driver->last_present_time)
+      return vk->ctx_driver->last_present_time(vk->ctx_data);
+   return 0;
 }
 
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)

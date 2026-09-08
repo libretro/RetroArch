@@ -117,6 +117,17 @@ bool is_running_on_xbox(void);
 
 bool win32_has_focus(void *data);
 
+/* When the compositor last saw a vertical blank, on the QPC clock
+ * cpu_features_get_time_usec() keeps here, from
+ * DwmGetCompositionTimingInfo; 0 when DWM cannot say (pre-Vista, or
+ * composition off). A reported timestamp, not a scanline estimate, and
+ * valid for any presentation that goes through the compositor - which
+ * on current Windows is every windowed and borderless swapchain, GL
+ * and Vulkan alike. A context that bypasses the compositor gets a
+ * timestamp that stops advancing, which callers already treat as
+ * absent. dwmapi is resolved at runtime and not linked. */
+retro_time_t win32_dwm_last_vblank_time(void);
+
 #ifdef HAVE_CLIP_WINDOW
 void win32_clip_window(bool grab);
 #endif

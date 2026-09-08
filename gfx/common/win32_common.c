@@ -29,6 +29,11 @@
 #define IDI_ICON 1
 
 #include <windows.h>
+#ifndef _XBOX
+/* DWM_TIMING_INFO for win32_dwm_last_vblank_time(); the entry point is
+ * resolved at runtime, dwmapi is not linked. */
+#include <dwmapi.h>
+#endif
 #endif /* !defined(_XBOX) */
 #include <math.h>
 #include <wchar.h>
@@ -1679,6 +1684,45 @@ void win32_clip_window(bool state)
 }
 #endif
 
+
+typedef HRESULT (WINAPI *win32_dwm_timing_fn)(HWND, DWM_TIMING_INFO*);
+
+retro_time_t win32_dwm_last_vblank_time(void)
+{
+#ifdef _XBOX
+   return 0;
+#else
+   DWM_TIMING_INFO info;
+   static win32_dwm_timing_fn get_timing;
+   static bool                resolved;
+   static LARGE_INTEGER       freq;
+
+   /* dwmapi does not exist before Vista and the tree still builds for
+    * older targets, so the entry point is resolved once at runtime, as
+    * the D3DKMT ones above are. */
+   if (!resolved)
+   {
+      HMODULE dwm = LoadLibrary("dwmapi.dll");
+      resolved    = true;
+      if (dwm)
+         get_timing = (win32_dwm_timing_fn)GetProcAddress(dwm,
+               "DwmGetCompositionTimingInfo");
+   }
+   if (!get_timing)
+      return 0;
+
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (FAILED(get_timing(NULL, &info)))
+      return 0;
+   if (!info.qpcVBlank)
+      return 0;
+   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
+      return 0;
+   return (retro_time_t)((info.qpcVBlank / freq.QuadPart * 1000000)
+        + (info.qpcVBlank % freq.QuadPart * 1000000 / freq.QuadPart));
+#endif
+}
 
 #ifdef _XBOX
 static HWND GetForegroundWindow(void) { return main_window.hwnd; }

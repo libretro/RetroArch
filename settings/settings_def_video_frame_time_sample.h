@@ -10,7 +10,7 @@ S_BOOL(video_frame_time_sample_from_display, VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLA
       "video_frame_time_sample_from_display",
       DEFAULT_FRAME_TIME_SAMPLE_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Sample Frame Time From The Display",
-      "Measure 'Estimated Screen Refresh Rate' from the display's own report of when each present reached it, instead of from the frontend's frame loop. Removes the core's cadence and the frame loop's own jitter from the measurement. Needs a driver that can report it (Direct3D 11/12, Vulkan with VK_GOOGLE_display_timing, OpenGL on Windows or X11); the frame loop is measured otherwise.")
+      "Measure 'Estimated Screen Refresh Rate' from the display's own report of when each present reached it, instead of from the frontend's frame loop. Removes the core's cadence and the frame loop's own jitter from the measurement. Applies where the video driver can report it; the frame loop is measured otherwise.")
 S_BOOL_EX(video_frame_time_sample_gated, VIDEO_FRAME_TIME_SAMPLE_GATED,
       "video_frame_time_sample_gated",
       DEFAULT_FRAME_TIME_SAMPLE_GATED, SD_FLAG_NONE, 0, 0,

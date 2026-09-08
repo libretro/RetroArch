@@ -316,6 +316,16 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
 
 static void gfx_ctx_w_vk_set_flags(void *data, uint32_t flags) { }
 
+/* The compositor's vertical blank: on current Windows a Vulkan swapchain
+ * presents through DXGI under DWM, so this is the same signal the D3D
+ * drivers read from their swapchain, and it does not need the ICD to
+ * expose display timing - which NVIDIA's Windows driver does not. */
+static retro_time_t gfx_ctx_w_vk_last_present_time(void *data)
+{
+   (void)data;
+   return win32_dwm_last_vblank_time();
+}
+
 const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_init,
    gfx_ctx_w_vk_destroy,
@@ -350,5 +360,6 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    NULL,                            /* make_current */
    NULL,                            /* create_surface */
    NULL                             /* destroy_surface */,
-   gfx_ctx_w_vk_presentable
+   gfx_ctx_w_vk_presentable,
+   gfx_ctx_w_vk_last_present_time
 };
