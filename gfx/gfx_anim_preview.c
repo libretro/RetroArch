@@ -615,10 +615,10 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       params.avail               = p->audio_hi;
       if (!audio_driver_mixer_add_stream(&params))
       {
+         /* buf_owner transfers on the call in every outcome: the
+          * mixer has already released w. */
          free(params.basename);
          p->audio_hi = 0;
-         /* the mixer did not take the window: release it ourselves */
-         gfx_anim_preview_audio_win_release(w);
          return;
       }
       free(params.basename);
