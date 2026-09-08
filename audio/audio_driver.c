@@ -5554,13 +5554,24 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
        * audio_driver_fastforward_ratio_mult(). Measured before the ring
        * write so a block the full ring drops still counts as the time
        * the core took to produce it. */
-      if (is_fastforward && config_get_ptr()->uints.audio_fastforward_mode
-            == FASTFORWARD_AUDIO_SPEEDUP)
-         retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
-               (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
-                  * 65536.0));
-      else
-         audio_driver_ff_mult_reset(audio_st);
+      {
+         unsigned ff_mode = config_get_ptr()->uints.audio_fastforward_mode;
+         bool need_mult   = is_fastforward
+               && ff_mode == FASTFORWARD_AUDIO_SPEEDUP;
+#ifdef HAVE_AUDIO_TIMESTRETCH
+         /* The stretcher paces on this at every speed: the same
+          * condition as need_mult in audio_driver_flush(). */
+         if (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
+            need_mult = true;
+#endif
+         /* Reset at normal speed, as the inline path does. */
+         if (!is_fastforward || !need_mult)
+            audio_driver_ff_mult_reset(audio_st);
+         if (need_mult)
+            retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+                  (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
+                     * 65536.0));
+      }
       while (len)
       {
          unsigned gen;
