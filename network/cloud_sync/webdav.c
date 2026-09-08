@@ -374,12 +374,16 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    int             count     = 0;
    size_t          total     = 0;
 
+   /* Skip scheme and host to get at the path.  strchr() returns NULL
+    * once the slashes run out, which happens for a URL that is only a
+    * scheme, so check before stepping past it again. */
    do
    {
       path++;
-      path = strchr(path, '/');
+      if (!(path = strchr(path, '/')))
+         return NULL;
       count++;
-   } while (count < 3 && *path != '\0');
+   } while (count < 3);
 
    response = webdav_create_digest_response(method, path);
    __len    = snprintf(nonceCount, sizeof(nonceCount),
