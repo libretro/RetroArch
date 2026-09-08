@@ -963,7 +963,8 @@ static const char *config_sensitive_keys[] = {
    "smb_client_username",
    "smb_client_password",
    "netplay_password",
-   "netplay_spectate_password"
+   "netplay_spectate_password",
+   "kiosk_mode_password"
 };
 #endif
 
@@ -1812,7 +1813,7 @@ static struct config_path_setting *populate_settings_path(
 
 #ifdef HAVE_MENU
    SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
-   SETTING_PATH("kiosk_mode_password",           settings->paths.kiosk_mode_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("kiosk_mode_password", settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("menu_wallpaper",                settings->paths.path_menu_wallpaper, false, NULL, true);
 #ifdef HAVE_RGUI
    SETTING_PATH("rgui_menu_theme_preset",        settings->paths.path_rgui_theme_preset, false, NULL, true);
