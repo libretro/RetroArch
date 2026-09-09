@@ -309,15 +309,17 @@ void video_thread_hw_free(thread_video_t *thr)
    thr->frame.hw_ring = NULL;
 }
 
+/* Vulkan hardware cores run under the wrapper whenever the wrapper runs:
+ * the ring gives them what the swapchain gave them unthreaded, and a
+ * core that honoured the interface there honours it here. Other
+ * hardware contexts have no ring yet and stay unthreaded. */
 bool video_thread_hw_allowed(void)
 {
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (!settings || !settings->bools.video_threaded_hw_vulkan)
-      return false;
    if (video_st->hw_render.context_type != RETRO_HW_CONTEXT_VULKAN)
       return false;
-   return string_is_equal(settings->arrays.video_driver, "vulkan");
+   return settings && string_is_equal(settings->arrays.video_driver, "vulkan");
 }
 
 #else /* !HAVE_VULKAN */
