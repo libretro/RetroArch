@@ -720,6 +720,10 @@ uint16_t win32_get_keyboard_mods(void)
 
 static uint8_t win32_sizemove_depth;
 static bool    win32_sizemove_stopped_audio;
+/* The routed window changed size since the last present. A move never
+ * invalidates the client area - the compositor keeps the last buffer -
+ * so a plain drag presents nothing at all. */
+static bool    win32_sizemove_dirty;
 static HWND    win32_sizemove_timer_hwnd;
 
 void win32_sizemove_enter(HWND hwnd)
@@ -738,6 +742,7 @@ void win32_sizemove_enter(HWND hwnd)
    if (!(runloop_state_get_ptr()->flags & RUNLOOP_FLAG_PAUSED))
       win32_sizemove_stopped_audio = audio_driver_stop();
 
+   win32_sizemove_dirty = false;
    if (SetTimer(hwnd, WIN32_SIZEMOVE_TIMER_ID, 16, NULL))
       win32_sizemove_timer_hwnd = hwnd;
 }
@@ -771,10 +776,14 @@ void win32_sizemove_abort(void)
    win32_sizemove_timer_hwnd    = NULL;
    win32_sizemove_depth         = 0;
    win32_sizemove_stopped_audio = false;
+   win32_sizemove_dirty         = false;
 }
 
 /* WM_TIMER with WIN32_SIZEMOVE_TIMER_ID, delivered on the thread that
- * owns the driver. The same two calls the run loop makes per frame and
+ * owns the driver. Presents only after a resize: with vsync on, a
+ * present blocks for a refresh, and one per tick starved the modal
+ * loop on D3D12 and Vulkan (drag lagged the mouse, picture refreshed
+ * late). Then the same two calls the run loop makes per frame and
  * nothing else: the driver's alive() is where win32_check_window()
  * consumes WIN32_CMN_FLAG_RESIZED and arms the swapchain resize, and
  * video_driver_cached_frame() then presents the last frame into the
@@ -786,6 +795,9 @@ void win32_sizemove_tick(void)
 
    if (!win32_sizemove_depth || video_driver_is_threaded())
       return;
+   if (!win32_sizemove_dirty)
+      return;
+   win32_sizemove_dirty = false;
    if (video_st->current_video && video_st->data)
       video_st->current_video->alive(video_st->data);
    video_driver_cached_frame();
@@ -874,6 +886,9 @@ static LRESULT CALLBACK wnd_proc_common(
                g_win32_resize_width  = LOWORD(lparam);
                g_win32_resize_height = HIWORD(lparam);
                g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
+#if !defined(_XBOX)
+               win32_sizemove_dirty  = true;
+#endif
             }
          }
          *quit = true;
