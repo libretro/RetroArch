@@ -4916,45 +4916,42 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    }
 }
 
-/* The facts runloop_pace_decide() reads, from this iteration's state.
- * Read here, in one place, so the shadow decision and the paths see
- * the same iteration. */
-static void runloop_pace_gather(runloop_pace_inputs_t *in,
-      settings_t *settings, bool menu_early_exit)
+/* The facts the pace decision reads, from this iteration's state, as
+ * one word. Read here, in one place, so every path sees the same
+ * iteration. */
+static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
+      bool menu_early_exit)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
    audio_driver_state_t *audio_st = audio_state_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
-   in->vsync           = settings->bools.video_vsync;
-   in->nonblocking     = (input_st->flags & INP_FLAG_NONBLOCKING) != 0;
-   in->force_nonblock  = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) != 0;
-   in->fastmotion      = (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0;
-   in->paused          = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) != 0;
-   in->focused         = (runloop_st->flags & RUNLOOP_FLAG_FOCUSED) != 0;
+   runloop_pace_facts_t f         = 0;
+   if (settings->bools.video_vsync)                        f |= PACE_FACT_VSYNC;
+   if (input_st->flags & INP_FLAG_NONBLOCKING)             f |= PACE_FACT_NONBLOCKING;
+   if (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK)    f |= PACE_FACT_FORCE_NONBLOCK;
+   if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)        f |= PACE_FACT_FASTMOTION;
+   if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)            f |= PACE_FACT_PAUSED;
+   if (runloop_st->flags & RUNLOOP_FLAG_FOCUSED)           f |= PACE_FACT_FOCUSED;
 #ifdef HAVE_MENU
-   in->menu_alive      = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
-#else
-   in->menu_alive      = false;
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)   f |= PACE_FACT_MENU_ALIVE;
 #endif
-   in->menu_early_exit = menu_early_exit;
-   in->vrr             = settings->bools.vrr_runloop_enable;
+   if (menu_early_exit)                                    f |= PACE_FACT_MENU_EARLY_EXIT;
+   if (settings->bools.vrr_runloop_enable)                 f |= PACE_FACT_VRR;
 #ifdef HAVE_THREADS
-   in->wrapper_active  = video_st->thread_wrapper_active;
-   in->display_pacing  = settings->bools.video_threaded_display_pacing;
-#else
-   in->wrapper_active  = false;
-   in->display_pacing  = false;
+   if (video_st->thread_wrapper_active)                    f |= PACE_FACT_WRAPPER;
+   if (settings->bools.video_threaded_display_pacing)      f |= PACE_FACT_DISPLAY_PACING;
 #endif
-   in->audio_holding   =    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-                         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-                         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE);
-   in->scanline_sync   = settings->bools.video_scanline_sync;
-   in->scanline_locked = video_st->scanline[SCANLINE_NEXT] != 0;
-   in->rate_control    = settings->bools.audio_rate_control;
-   in->presentable     = video_context_driver_presentable();
-   in->external        = runloop_st->pace_external;
-   in->frame_limit     = runloop_st->frame_limit_minimum_time != 0;
+   if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))  f |= PACE_FACT_AUDIO_HOLDING;
+   if (settings->bools.video_scanline_sync)                f |= PACE_FACT_SCANLINE_SYNC;
+   if (video_st->scanline[SCANLINE_NEXT])                  f |= PACE_FACT_SCANLINE_LOCKED;
+   if (settings->bools.audio_rate_control)                 f |= PACE_FACT_RATE_CONTROL;
+   if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
+   if (runloop_st->pace_external)                          f |= PACE_FACT_EXTERNAL;
+   if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;
+   return f;
 }
 
 size_t runloop_pace_string(char *s, size_t len)
@@ -8005,7 +8002,7 @@ int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
    int64_t      pace_limit_ns;
-   runloop_pace_inputs_t pace_in;
+   runloop_pace_facts_t  pace_facts;
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -8241,8 +8238,8 @@ int runloop_iterate(void)
          {
             /* Returns before the pace block: record what holds this
              * path - vsync if it is blocking, nothing otherwise. */
-            runloop_pace_gather(&pace_in, settings, true);
-            runloop_st->pace = runloop_pace_decide(&pace_in);
+            pace_facts       = runloop_pace_gather(settings, true);
+            runloop_st->pace = runloop_pace_decide(pace_facts);
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
             return 0;
          }
@@ -8454,9 +8451,9 @@ end:
     * runloop_pace_decide() in runloop.h, and the table in
     * samples/runloop/pacing that pins it row by row. The audio write
     * flag is read by the gather and cleared here. */
-   runloop_pace_gather(&pace_in, settings, false);
+   pace_facts       = runloop_pace_gather(settings, false);
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
-   runloop_st->pace = runloop_pace_sources(&pace_in);
+   runloop_st->pace = runloop_pace_sources(pace_facts);
 
    /* Nothing to present to - a minimised or zero-sized window, a
     * surface the compositor has suspended, a swapchain that could not
@@ -8465,7 +8462,7 @@ end:
     * the rest of the pacing, and only when nothing else holds the
     * loop - audio still blocks with the window hidden, and fast-forward
     * is meant to run unthrottled. */
-   if (runloop_pace_no_window(runloop_st->pace, &pace_in))
+   if (runloop_pace_no_window(runloop_st->pace, pace_facts))
       runloop_st->pace |= RUNLOOP_PACE_NOWINDOW;
 
    if (runloop_st->pace & RUNLOOP_PACE_NOWINDOW)
@@ -8486,8 +8483,11 @@ end:
     * cannot engage however slowly the core is running. The timer holds
     * the loop to the display rate, which audio rate control can follow
     * and which Scanline Sync is aiming at while it recalibrates. */
-   if (runloop_pace_gap_engages(runloop_st->pace, pace_in.nonblocking,
-            pace_in.fastmotion, pace_in.scanline_sync, pace_in.rate_control))
+   if (runloop_pace_gap_engages(runloop_st->pace,
+            (pace_facts & PACE_FACT_NONBLOCKING)   != 0,
+            (pace_facts & PACE_FACT_FASTMOTION)    != 0,
+            (pace_facts & PACE_FACT_SCANLINE_SYNC) != 0,
+            (pace_facts & PACE_FACT_RATE_CONTROL)  != 0))
    {
       runloop_st->pace         |= RUNLOOP_PACE_TIMER;
       pace_limit_min            = runloop_content_frame_time_us(

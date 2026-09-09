@@ -525,35 +525,38 @@ static INLINE bool runloop_pace_sample_usable(retro_time_t delta_us)
    return delta_us > 0 && delta_us < 250000;
 }
 
-/* Everything the pace decision reads, gathered once per iteration.
- * Each field is one fact about this iteration, named for what it
- * means rather than where it lives: fast-forward is nonblocking (the
- * input flag the drivers follow) and fastmotion (the runloop's own
- * flag) because the two differ for a few frames while fast-forward
- * engages, and the existing sources test different ones. */
-typedef struct
+/* Everything the pace decision reads, gathered once per iteration into
+ * one word. Each bit is one fact about this iteration, named for what
+ * it means rather than where it lives: fast-forward is NONBLOCKING
+ * (the input flag the drivers follow) and FASTMOTION (the runloop's
+ * own flag) because the two differ for a few frames while fast-forward
+ * engages, and the sources test different ones. */
+enum runloop_pace_fact
 {
-   bool vsync;            /* the vsync setting */
-   bool nonblocking;      /* INP_FLAG_NONBLOCKING: drivers in non-blocking mode */
-   bool force_nonblock;   /* RUNLOOP_FLAG_FORCE_NONBLOCK */
-   bool fastmotion;       /* RUNLOOP_FLAG_FASTMOTION */
-   bool paused;           /* RUNLOOP_FLAG_PAUSED */
-   bool focused;          /* RUNLOOP_FLAG_FOCUSED */
-   bool menu_alive;
-   bool menu_early_exit;  /* VRR on with menu throttle off: the menu path
-                             returns before the pace block */
-   bool vrr;              /* Sync to Exact Content Framerate */
-   bool wrapper_active;   /* threaded video wrapper installed */
-   bool display_pacing;   /* Threaded Video Display Pacing setting */
-   bool audio_holding;    /* the audio driver is active, blocking, and
-                             wrote this iteration */
-   bool scanline_sync;    /* the setting */
-   bool scanline_locked;  /* a target scanline exists */
-   bool rate_control;     /* audio rate control */
-   bool presentable;      /* the context has a surface to present to */
-   bool external;         /* an external clock drives the iteration */
-   bool frame_limit;      /* frame_limit_minimum_time is non-zero */
-} runloop_pace_inputs_t;
+   PACE_FACT_VSYNC           = (1 << 0),  /* the vsync setting */
+   PACE_FACT_NONBLOCKING     = (1 << 1),  /* INP_FLAG_NONBLOCKING */
+   PACE_FACT_FORCE_NONBLOCK  = (1 << 2),  /* RUNLOOP_FLAG_FORCE_NONBLOCK */
+   PACE_FACT_FASTMOTION      = (1 << 3),  /* RUNLOOP_FLAG_FASTMOTION */
+   PACE_FACT_PAUSED          = (1 << 4),  /* RUNLOOP_FLAG_PAUSED */
+   PACE_FACT_FOCUSED         = (1 << 5),  /* RUNLOOP_FLAG_FOCUSED */
+   PACE_FACT_MENU_ALIVE      = (1 << 6),
+   PACE_FACT_MENU_EARLY_EXIT = (1 << 7),  /* VRR on, menu throttle off: the
+                                             menu path returns before the
+                                             pace block */
+   PACE_FACT_VRR             = (1 << 8),  /* Sync to Exact Content Framerate */
+   PACE_FACT_WRAPPER         = (1 << 9),  /* threaded video wrapper installed */
+   PACE_FACT_DISPLAY_PACING  = (1 << 10), /* Threaded Video Display Pacing */
+   PACE_FACT_AUDIO_HOLDING   = (1 << 11), /* audio active, blocking, and
+                                             wrote this iteration */
+   PACE_FACT_SCANLINE_SYNC   = (1 << 12), /* the setting */
+   PACE_FACT_SCANLINE_LOCKED = (1 << 13), /* a target scanline exists */
+   PACE_FACT_RATE_CONTROL    = (1 << 14), /* audio rate control */
+   PACE_FACT_PRESENTABLE     = (1 << 15), /* the context has a surface */
+   PACE_FACT_EXTERNAL        = (1 << 16), /* an external clock drives it */
+   PACE_FACT_FRAME_LIMIT     = (1 << 17)  /* frame_limit_minimum_time != 0 */
+};
+
+typedef unsigned runloop_pace_facts_t;
 
 /* The pace decision as one pure function of those facts: which sources
  * hold the loop this iteration, as RUNLOOP_PACE_* bits. It reproduces,
@@ -566,35 +569,38 @@ typedef struct
  * which the caller applies after, because each has an effect beyond
  * the bits - the wait ends the iteration, the gap limiter sets the
  * period the timer sleeps to. */
-static INLINE unsigned runloop_pace_sources(const runloop_pace_inputs_t *in)
+static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
 {
    unsigned pace = RUNLOOP_PACE_NONE;
-   bool vsync_holds = in->vsync && !in->nonblocking && !in->force_nonblock;
+   bool vsync_holds =    (f & PACE_FACT_VSYNC)
+                      && !(f & PACE_FACT_NONBLOCKING)
+                      && !(f & PACE_FACT_FORCE_NONBLOCK);
 
    /* The menu path's early return: vsync if it is blocking, nothing
     * else, and no timer. */
-   if (in->menu_alive && in->menu_early_exit)
+   if ((f & PACE_FACT_MENU_ALIVE) && (f & PACE_FACT_MENU_EARLY_EXIT))
       return vsync_holds ? RUNLOOP_PACE_VSYNC : RUNLOOP_PACE_NONE;
 
-   if (in->external)
+   if (f & PACE_FACT_EXTERNAL)
       pace |= RUNLOOP_PACE_EXTERNAL;
    if (vsync_holds)
       pace |= RUNLOOP_PACE_VSYNC;
-   if (in->wrapper_active && in->display_pacing
-         && !in->nonblocking && !in->fastmotion)
+   if ((f & PACE_FACT_WRAPPER) && (f & PACE_FACT_DISPLAY_PACING)
+         && !(f & PACE_FACT_NONBLOCKING) && !(f & PACE_FACT_FASTMOTION))
       pace |= RUNLOOP_PACE_DISPLAY;
-   if (in->audio_holding)
+   if (f & PACE_FACT_AUDIO_HOLDING)
       pace |= RUNLOOP_PACE_AUDIO;
-   if (in->scanline_sync && in->scanline_locked && !in->nonblocking)
+   if (     (f & PACE_FACT_SCANLINE_SYNC) && (f & PACE_FACT_SCANLINE_LOCKED)
+         && !(f & PACE_FACT_NONBLOCKING))
       pace |= RUNLOOP_PACE_SCANLINE;
    {
       bool display_paces = (pace & RUNLOOP_PACE_DISPLAY) != 0;
-      if (in->frame_limit
-            && (   in->vrr
-                || in->fastmotion
-                || (!display_paces && in->menu_alive
-                    && (!in->vsync || !in->focused))
-                || (!display_paces && in->paused)))
+      if ((f & PACE_FACT_FRAME_LIMIT)
+            && (   (f & PACE_FACT_VRR)
+                || (f & PACE_FACT_FASTMOTION)
+                || (!display_paces && (f & PACE_FACT_MENU_ALIVE)
+                    && (!(f & PACE_FACT_VSYNC) || !(f & PACE_FACT_FOCUSED)))
+                || (!display_paces && (f & PACE_FACT_PAUSED))))
          pace |= RUNLOOP_PACE_TIMER;
    }
    return pace;
@@ -603,24 +609,27 @@ static INLINE unsigned runloop_pace_sources(const runloop_pace_inputs_t *in)
 /* Whether nothing display-side can hold the loop because there is
  * nothing to present to; the caller waits a frame and returns. */
 static INLINE bool runloop_pace_no_window(unsigned sources,
-      const runloop_pace_inputs_t *in)
+      runloop_pace_facts_t f)
 {
    return   !(sources & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
                        | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
-         && !in->nonblocking && !in->presentable;
+         && !(f & PACE_FACT_NONBLOCKING) && !(f & PACE_FACT_PRESENTABLE);
 }
 
 /* The whole decision, for the table and for anything that only needs
  * the bits. */
-static INLINE unsigned runloop_pace_decide(const runloop_pace_inputs_t *in)
+static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
 {
-   unsigned pace = runloop_pace_sources(in);
-   if (in->menu_alive && in->menu_early_exit)
+   unsigned pace = runloop_pace_sources(f);
+   if ((f & PACE_FACT_MENU_ALIVE) && (f & PACE_FACT_MENU_EARLY_EXIT))
       return pace;
-   if (runloop_pace_no_window(pace, in))
+   if (runloop_pace_no_window(pace, f))
       return pace | RUNLOOP_PACE_NOWINDOW;
-   if (runloop_pace_gap_engages(pace, in->nonblocking, in->fastmotion,
-            in->scanline_sync, in->rate_control))
+   if (runloop_pace_gap_engages(pace,
+            (f & PACE_FACT_NONBLOCKING)   != 0,
+            (f & PACE_FACT_FASTMOTION)    != 0,
+            (f & PACE_FACT_SCANLINE_SYNC) != 0,
+            (f & PACE_FACT_RATE_CONTROL)  != 0))
       pace |= RUNLOOP_PACE_TIMER;
    return pace;
 }
