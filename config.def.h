@@ -526,9 +526,8 @@
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
 /* Let a Direct3D 11 hardware core run under threaded video, recording
- * on a deferred context the video thread replays. Off: such cores run
- * unthreaded. Off by default because a deferred context cannot map for
- * reading or read GPU queries, and a core that does either breaks. */
+ * on a deferred context behind a proxy that the video thread replays.
+ * Off: such cores run unthreaded. */
 #define DEFAULT_VIDEO_THREADED_HW_D3D11 false
 
 /* Let an OpenGL hardware core run under threaded video, on a context of

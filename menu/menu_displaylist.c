@@ -10873,8 +10873,8 @@ unsigned menu_displaylist_build_list(
                         && !video_driver_is_hw_context()
                         && config_get_ptr()->bools.video_threaded_present_repeat;
                      break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_HW_OPENGL:
                   case MENU_ENUM_LABEL_VIDEO_THREADED_HW_D3D11:
+                  case MENU_ENUM_LABEL_VIDEO_THREADED_HW_OPENGL:
                      build_list[i].checked = *video_driver_get_threaded();
                      break;
                   case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:

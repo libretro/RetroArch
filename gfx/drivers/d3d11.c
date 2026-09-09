@@ -68,6 +68,7 @@
 #include <libretro.h>
 #include <libretro_d3d11.h>
 #include "../common/d3dcompiler_common.h"
+#include "../common/d3d11_deferred_proxy.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
@@ -6205,11 +6206,19 @@ static bool d3d11_hw_ring_context_new(void *data, void **ctx)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    D3D11DeviceContext deferred = NULL;
+   D3D11DeviceContext proxy;
    if (!d3d11 || !d3d11->device || !ctx)
       return false;
    if (FAILED(d3d11->device->lpVtbl->CreateDeferredContext(d3d11->device, 0, &deferred)))
       return false;
-   *ctx = deferred;
+   /* The core gets a proxy in front of the deferred context; the proxy
+    * rewrites the one map a deferred context rejects and the cores do
+    * not know to avoid. See d3d11_deferred_proxy.c. */
+   proxy = d3d11_deferred_proxy_new(deferred);
+   Release(deferred); /* the proxy holds its own reference */
+   if (!proxy)
+      return false;
+   *ctx = proxy;
    return true;
 }
 
@@ -6227,6 +6236,8 @@ static bool d3d11_hw_ring_capture(void *data, unsigned slot,
       const void *source, unsigned format)
 {
    d3d11_video_t *d3d11        = (d3d11_video_t*)data;
+   /* The proxy is what the core holds; its bookkeeping must see the
+    * FinishCommandList, so the calls go through it. */
    D3D11DeviceContext deferred = (D3D11DeviceContext)source;
    D3D11ShaderResourceView view = NULL;
    D3D11Texture2D texture       = NULL;

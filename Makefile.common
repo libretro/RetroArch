@@ -1852,7 +1852,8 @@ endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o
+   OBJ += gfx/drivers/d3d11.o \
+          gfx/common/d3d11_deferred_proxy.o
    DEFINES += -DHAVE_D3D11
 endif
 

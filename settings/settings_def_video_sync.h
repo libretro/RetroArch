@@ -71,7 +71,7 @@ S_BOOL(video_threaded_hw_d3d11, VIDEO_THREADED_HW_D3D11,
       "video_threaded_hw_d3d11",
       DEFAULT_VIDEO_THREADED_HW_D3D11, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
       "Threaded Video For Direct3D 11 Cores",
-      "Run cores that render on the GPU with Direct3D 11 under Threaded Video, recording on a context of their own that the video thread replays. A core that reads back from the GPU - mapping a resource for reading, or reading a query - cannot do so on such a context and will misbehave; leave off for those. Off: such cores run unthreaded, as before.")
+      "Run cores that render on the GPU with Direct3D 11 under Threaded Video, recording on a context of their own that the video thread replays. Experimental. A core that reads back from the GPU, or needs the Direct3D 11.1 context interfaces, cannot do so on that context; leave off for those. Off: such cores run unthreaded, as before.")
 S_BOOL(video_threaded_hw_opengl, VIDEO_THREADED_HW_OPENGL,
       "video_threaded_hw_opengl",
       DEFAULT_VIDEO_THREADED_HW_OPENGL, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,

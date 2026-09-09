@@ -100,7 +100,9 @@ typedef struct
        * a build with only OpenGL. */
       struct retro_hw_render_interface        base;
    } iface;
-   /* Direct3D 11: the core's deferred context, the driver's object. */
+   /* OpenGL: the driver's handle for the core's context; Direct3D 11:
+    * the proxy in front of the core's deferred context. Both from
+    * hw_ring_context_new. */
    void *core_ctx;
    const struct retro_hw_render_interface *real;
    hw_slot_t slot[VIDEO_THREAD_HW_RING];
@@ -298,7 +300,7 @@ bool video_thread_get_hw_render_interface(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
    const struct retro_hw_render_interface *real = NULL;
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D12)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11)
    hw_ring_t *ring;
 #endif
 
@@ -363,13 +365,14 @@ bool video_thread_get_hw_render_interface(void *data,
          if (!ring->core_ctx
                && !thr->poke->hw_ring_context_new(thr->driver_data, &ring->core_ctx))
             return false;
-         ring->api                    = HW_API_D3D11;
-         ring->real                   = real;
-         /* Device and compiler pass through; the context is the core's
-          * own deferred one, never the video thread's immediate one. */
-         ring->iface.d3d11            = *(const struct retro_hw_render_interface_d3d11*)real;
-         ring->iface.d3d11.handle     = thr;
-         ring->iface.d3d11.context    = (ID3D11DeviceContext*)ring->core_ctx;
+         ring->api                 = HW_API_D3D11;
+         ring->real                = real;
+         /* Device and compiler pass through; the context is the proxy
+          * over the core's own deferred one, never the video thread's
+          * immediate one. */
+         ring->iface.d3d11         = *(const struct retro_hw_render_interface_d3d11*)real;
+         ring->iface.d3d11.handle  = thr;
+         ring->iface.d3d11.context = (ID3D11DeviceContext*)ring->core_ctx;
          *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d11;
          return true;
 #endif
@@ -432,12 +435,6 @@ int video_thread_hw_publish(thread_video_t *thr)
    if (!ring)
       return -1;
    published = ring->index;
-   if (ring->api == HW_API_GL)
-   {
-      /* Fence the core's rendering into the slot, on its context. */
-      if (!thr->poke->hw_ring_capture(thr->driver_data, published, NULL, 0))
-         return -1;
-   }
 #ifdef HAVE_D3D11
    if (ring->api == HW_API_D3D11)
    {
@@ -449,6 +446,12 @@ int video_thread_hw_publish(thread_video_t *thr)
          return -1;
    }
 #endif
+   if (ring->api == HW_API_GL)
+   {
+      /* Fence the core's rendering into the slot, on its context. */
+      if (!thr->poke->hw_ring_capture(thr->driver_data, published, NULL, 0))
+         return -1;
+   }
 #ifdef HAVE_D3D12
    if (ring->api == HW_API_D3D12)
    {
@@ -575,9 +578,11 @@ bool video_thread_hw_allowed(void)
 #endif
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:
-         /* Behind a setting: the core records on a deferred context,
-          * which cannot map for reading or query the GPU, and a core
-          * that does either breaks there. */
+         /* Behind a setting: the core records on a deferred context
+          * through a proxy that rewrites the one map such a context
+          * rejects. The proxy refuses the 11.1+ context interfaces, and
+          * a deferred context cannot map for reading or read a query;
+          * a core needing any of those is the reason to leave it off. */
          return settings->bools.video_threaded_hw_d3d11
             && string_is_equal(settings->arrays.video_driver, "d3d11");
 #endif
