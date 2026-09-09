@@ -682,46 +682,6 @@ size_t companion_dock_row_format(char *s, size_t len,
  * outside 2..32767 become 0 (default). */
 bool companion_dock_row_parse(const char *s, companion_dock_state_t *st);
 
-/* The rows as the fixed pane grid the native companions lay out: a
- * left column (Search, Playlists, Core, always in that order), the
- * entries, a right column holding Core Info and the thumbnail pane
- * (one pane with a tab per thumbnail type) in either order, and the
- * log along the bottom. Sizes are logical pixels, 0 = the backend's
- * default; the two right-column heights are a ratio when both panes
- * are shown. */
-typedef struct companion_dock_grid
-{
-   int left_w;        /* left column width */
-   int right_w;       /* right column width */
-   int search_h;      /* left column sections, top to bottom */
-   int playlists_h;
-   int core_h;
-   int info_h;        /* Core Info pane height */
-   int thumbs_h;      /* thumbnail pane height */
-   int log_h;         /* log pane height */
-   int thumb_tab;     /* raised thumbnail tab: 0 boxart, 1 title,
-                         2 screenshot, 3 logo (companion_dock_id order) */
-   bool info_shown;
-   bool thumbs_shown;
-   bool log_shown;
-   bool info_first;   /* Core Info above the thumbnails */
-} companion_dock_grid_t;
-
-/* Fill @g from the dock rows. False when the rows are not to be
- * applied (desktop_menu_save_dock_positions off, or no row parses):
- * @g is then the default grid (everything shown but the log, Core
- * Info on top, every size 0). A row that does not fit the grid maps
- * to the nearest thing that does: a floating or left-side Core Info
- * still shows in the right column; a thumbnail dock split out of the
- * tab group is the raised tab when it is the first shown one. */
-bool companion_dock_grid_read(struct settings *settings,
-      companion_dock_grid_t *g);
-/* Write @g back as rows (when desktop_menu_save_dock_positions is
- * on), in the shape the Qt companion reads: the raised thumbnail tab
- * carries the pane's size, the other three are tabbed onto boxart. */
-void companion_dock_grid_write(struct settings *settings,
-      const companion_dock_grid_t *g);
-
 /* --- Secondary window placement ------------------------------------- */
 
 /* A rectangle in screen coordinates: x,y the top-left corner, w,h the

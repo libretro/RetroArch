@@ -1137,94 +1137,6 @@ static void test_place_window(void)
    CHECK(r.w == 420 && r.h == 400, "tiny screen: minimum kept (%dx%d)", r.w, r.h);
 }
 
-/* The rows as the native companions' fixed grid: the Qt layout
- * Tatsuya79 reported (Screenshots above Title Screen, both split out
- * of the tab group, Core Info hidden) reads as a right column showing
- * the thumbnail pane on the Screenshots tab at the taller dock's
- * height; the grid writes back rows Qt reads as that layout; a row
- * that does not fit the grid maps to the nearest thing that does. */
-static void test_dock_grid(void)
-{
-   companion_dock_grid_t g;
-   settings_t *settings = config_get_ptr();
-   size_t len;
-   int i;
-
-   settings->bools.desktop_menu_save_dock_positions = false;
-   CHECK(!companion_dock_grid_read(settings, &g) && g.info_shown && g.thumbs_shown
-         && !g.log_shown && g.info_first && g.thumb_tab == 0 && g.left_w == 0,
-         "grid: setting off gives the default grid");
-   settings->bools.desktop_menu_save_dock_positions = true;
-   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
-      companion_dock_row(settings, (enum companion_dock_id)i, &len)[0] = '\0';
-   CHECK(!companion_dock_grid_read(settings, &g), "grid: no rows gives the default grid");
-
-   strlcpy(settings->arrays.desktop_menu_dock_search,     "left,1,300,60,-,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_playlists,  "left,1,300,500,-,0,1", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_core,       "left,1,300,40,-,0,2", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_title,      "right,1,340,210,-,0,1", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_screenshot, "right,1,340,420,-,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
-   CHECK(companion_dock_grid_read(settings, &g), "grid: reported layout reads");
-   CHECK(g.left_w == 300 && g.search_h == 60 && g.playlists_h == 500 && g.core_h == 40,
-         "grid: left column %d / %d,%d,%d", g.left_w, g.search_h, g.playlists_h, g.core_h);
-   CHECK(!g.info_shown && g.thumbs_shown && g.log_shown && g.log_h == 150
-         && !g.info_first, "grid: Core Info hidden (and below when shown), thumbnails and log shown");
-   CHECK(g.thumb_tab == 2 && g.thumbs_h == 420 && g.right_w == 340,
-         "grid: first split-out dock is the tab (%d), tallest sizes the pane (%d x %d)",
-         g.thumb_tab, g.right_w, g.thumbs_h);
-
-   /* Qt's default plus Core Info moved below the thumbnails, title
-    * raised: order decides which pane is on top. */
-   strlcpy(settings->arrays.desktop_menu_dock_boxart,     "right,1,0,0,-,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_title,      "right,1,320,400,boxart,1,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_screenshot, "right,1,0,0,boxart,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_logo,       "right,1,0,0,boxart,0,0", 64);
-   strlcpy(settings->arrays.desktop_menu_dock_core_info,  "float,1,300,200,-,0,1,10,20", 64);
-   CHECK(companion_dock_grid_read(settings, &g) && g.info_shown && !g.info_first
-         && g.thumb_tab == 1 && g.thumbs_h == 400 && g.info_h == 200 && g.right_w == 320,
-         "grid: raised tab, order below, floating Core Info lands in the column");
-
-   /* Write back and read again: a fixed point. */
-   companion_dock_grid_write(settings, &g);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_title, "right,1,320,400,boxart,1,0") == 0,
-         "grid: raised tab row: %s", settings->arrays.desktop_menu_dock_title);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_screenshot, "right,1,0,0,boxart,0,0") == 0,
-         "grid: other tab row: %s", settings->arrays.desktop_menu_dock_screenshot);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_core_info, "right,1,320,200,-,0,1") == 0,
-         "grid: Core Info row: %s", settings->arrays.desktop_menu_dock_core_info);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "bottom,1,0,150,-,0,0") == 0,
-         "grid: log row: %s", settings->arrays.desktop_menu_dock_log);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_core, "left,1,300,40,-,0,2") == 0,
-         "grid: core row: %s", settings->arrays.desktop_menu_dock_core);
-   {
-      companion_dock_grid_t back;
-      CHECK(companion_dock_grid_read(settings, &back)
-            && memcmp(&back, &g, sizeof(g)) == 0, "grid: write/read fixed point");
-   }
-   /* A hidden pane keeps its slot, so it comes back where it was. */
-   g.thumbs_shown = false;
-   companion_dock_grid_write(settings, &g);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_core_info, "right,1,320,200,-,0,1") == 0
-         && strcmp(settings->arrays.desktop_menu_dock_boxart, "right,0,0,0,-,0,0") == 0,
-         "grid: hidden group keeps its slot above Core Info: %s / %s",
-         settings->arrays.desktop_menu_dock_core_info,
-         settings->arrays.desktop_menu_dock_boxart);
-   {
-      companion_dock_grid_t back;
-      CHECK(companion_dock_grid_read(settings, &back) && !back.thumbs_shown
-            && !back.info_first, "grid: hidden group read back below-Core-Info order");
-   }
-   settings->bools.desktop_menu_save_dock_positions = false;
-   g.log_shown = true;
-   companion_dock_grid_write(settings, &g);
-   CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "bottom,1,0,150,-,0,0") == 0,
-         "grid: nothing written with the setting off");
-}
-
 /* The dock layout model (ui/companion/companion_dock.c): the same
  * placement, sizing and hit-testing Qt's QMainWindow gives the Qt
  * companion, for the native companions to render. */
@@ -1436,7 +1348,6 @@ int main(void)
    test_launch_options();
    test_dock_rows();
    test_place_window();
-   test_dock_grid();
    test_dock_model();
    teardown();
    if (fails)
