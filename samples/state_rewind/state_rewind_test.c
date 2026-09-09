@@ -93,8 +93,9 @@ static bool roundtrip(const uint8_t *oldb, const uint8_t *newb, size_t block_siz
    memcpy(work, newb, block_size);
    plen = state_manager_raw_compress(oldb, newb, block_size, patch);
    CHECK(plen <= maxp, "patch of %u bytes exceeds the maximum %u", (unsigned)plen, (unsigned)maxp);
-   state_manager_raw_decompress(patch, work);
-   ok = memcmp(work, oldb, block_size) == 0;
+   ok = state_manager_raw_decompress(patch, plen, work, block_size);
+   CHECK(ok, "a valid patch was refused");
+   ok = ok && memcmp(work, oldb, block_size) == 0;
    if (patch_len_out) *patch_len_out = plen;
    free(patch); free(work);
    return ok;
@@ -207,7 +208,7 @@ static void t_codec_property_seeded(void)
 
 /* SM-02: a forged patch must not write past the block. Locked once the
  * bounded decoder lands; until then reported, not failed. */
-static bool decoder_bounded = false;
+static bool decoder_bounded = true;
 /* SM-03: entries must count the retained records exactly, including
  * the one dropped when the head folds to the start of the ring. Locked
  * once that accounting lands. */
@@ -351,13 +352,71 @@ static void t_decompress_oob(void)
    patch[3] = 0; patch[4] = 0; patch[5] = 0;
    if (decoder_bounded)
    {
-      state_manager_raw_decompress(patch, work);
+      bool ok = state_manager_raw_decompress(patch, sizeof(patch), work, bs);
+      CHECK(!ok, "a patch running past the block was accepted");
       for (i = 0; i < pad_len; i++)
          if (pad[i] != 0xEE) { CHECK(0, "the decoder wrote into the pad at %u", (unsigned)i); break; }
+      for (i = 0; i < bs; i++)
+         if (work[i] != 0x11) { CHECK(0, "a refused patch changed the block at %u", (unsigned)i); break; }
    }
    else
       printf("      (decoder not yet bounded: case reported, not run)\n");
    free(work);
+}
+
+/* A malformed record must fail whole: a valid patch with one late
+ * token corrupted leaves every byte as it was, and a truncated record
+ * is refused rather than read past. */
+static void t_decompress_atomic(void)
+{
+   size_t bs = 4096, plen, i;
+   uint8_t *a = block_alloc(bs, 0), *b = block_alloc(bs, 1);
+   uint8_t *patch = (uint8_t*)malloc(state_manager_raw_maxsize(bs));
+   uint8_t *work  = (uint8_t*)malloc(bs);
+   uint16_t *p16;
+   printf("   decompress_oob_atomic: a late token forged, a record truncated\n");
+   for (i = 0; i < bs; i++) a[i] = (uint8_t)(i * 3);
+   memcpy(b, a, bs);
+   for (i = 0; i < bs / 2; i += 97) ((uint16_t*)b)[i] ^= 0x0F0F;   /* several dirty runs */
+   plen = state_manager_raw_compress(a, b, bs, patch);
+   /* Forge the skip of the last run so it points past the block. */
+   p16 = (uint16_t*)patch;
+   {
+      size_t w = plen / 2, last_skip = 0, at = 0;
+      while (at < w)
+      {
+         uint16_t n = p16[at];
+         if (n) { last_skip = at + 1; at += 2 + n; }
+         else { if (!(p16[at + 1] | p16[at + 2])) break; at += 3; }
+      }
+      p16[last_skip] = 0xFFFF;
+   }
+   memcpy(work, b, bs);
+   CHECK(!state_manager_raw_decompress(patch, plen, work, bs), "a forged late skip was accepted");
+   CHECK(memcmp(work, b, bs) == 0, "a refused patch was partly applied");
+   /* Truncated: the record ends before its terminator. */
+   memcpy(work, b, bs);
+   plen = state_manager_raw_compress(a, b, bs, patch);
+   CHECK(!state_manager_raw_decompress(patch, plen - 6, work, bs), "a record without its terminator was accepted");
+   CHECK(memcmp(work, b, bs) == 0, "a truncated record was partly applied");
+   /* Seeded mutations: never a crash, never a write outside, and a
+    * record that decodes restores old exactly or is refused. */
+   {
+      unsigned it;
+      for (it = 0; it < 300; it++)
+      {
+         size_t pos;
+         plen = state_manager_raw_compress(a, b, bs, patch);
+         pos  = rnd() % plen;
+         patch[pos] ^= (uint8_t)(rnd() | 1);
+         memcpy(work, b, bs);
+         if (state_manager_raw_decompress(patch, plen, work, bs))
+            ; /* decoded inside the block; whatever it restored is inside it */
+         else
+            CHECK(memcmp(work, b, bs) == 0, "mutation %u: refused but changed the block", it);
+      }
+   }
+   free(a); free(b); free(patch); free(work);
 }
 
 int main(void)
@@ -374,6 +433,7 @@ int main(void)
    t_drop_oldest();
    t_init_oom_guard();
    t_decompress_oob();
+   t_decompress_atomic();
    if (!entries_exact && entries_drift)
       printf("   (entries drifted on %u wrapped runs: accounting not yet locked)\n", entries_drift);
    if (failures)

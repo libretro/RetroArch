@@ -337,20 +337,66 @@ static size_t state_manager_raw_compress(const void *src,
  * If the given arguments do not match a previous call to
  * state_manager_raw_compress(), anything at all can happen.
  */
-static void state_manager_raw_decompress(const void *patch, void *data)
+/* Applies a patch to 'data', a block of 'len' bytes. Two passes: the
+ * first walks every token and checks that each run of changed words
+ * and each skip stays inside the block and that the record ends inside
+ * 'patch_len' bytes; the second writes. A record that fails the first
+ * pass changes nothing and returns false, so a corrupted ring cannot
+ * write past the block, nor leave it half-applied. */
+static bool state_manager_raw_decompress(const void *patch, size_t patch_len,
+      void *data, size_t len)
 {
-   uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
+   const uint16_t *p       = patch16;
+   size_t patch_words      = patch_len / sizeof(uint16_t);
+   size_t words            = len / sizeof(uint16_t);
+   size_t at               = 0;
+   uint16_t *out16         = (uint16_t*)data;
 
    for (;;)
    {
-      uint16_t numchanged  = *(patch16++);
+      uint16_t numchanged;
+      if ((size_t)(p - patch16) >= patch_words)
+         return false;
+      numchanged = *p++;
+      if (numchanged)
+      {
+         uint16_t skip;
+         if ((size_t)(p - patch16) + 1 + numchanged > patch_words)
+            return false;
+         skip = *p++;
+         if (skip > words - at)
+            return false;
+         at += skip;
+         if (numchanged > words - at)
+            return false;
+         at += numchanged;
+         p  += numchanged;
+      }
+      else
+      {
+         uint32_t numunchanged;
+         if ((size_t)(p - patch16) + 2 > patch_words)
+            return false;
+         numunchanged = p[0] | ((uint32_t)p[1] << 16);
+         if (!numunchanged)
+            break;
+         p += 2;
+         if (numunchanged > words - at)
+            return false;
+         at += numunchanged;
+      }
+   }
+
+   for (p = patch16;;)
+   {
+      uint16_t numchanged = *(p++);
 
       if (numchanged)
       {
          uint16_t i;
 
-         out16       += *patch16++;
+         out16       += *p++;
 
          /* We could do memcpy, but it seems that memcpy has a
           * constant-per-call overhead that actually shows up.
@@ -358,21 +404,22 @@ static void state_manager_raw_decompress(const void *patch, void *data)
           * Our average size in here seems to be 8 or something.
           * Therefore, we do something with lower overhead. */
          for (i = 0; i < numchanged; i++)
-            out16[i]  = patch16[i];
+            out16[i]  = p[i];
 
-         patch16     += numchanged;
+         p           += numchanged;
          out16       += numchanged;
       }
       else
       {
-         uint32_t numunchanged = patch16[0] | (patch16[1] << 16);
+         uint32_t numunchanged = p[0] | ((uint32_t)p[1] << 16);
 
          if (!numunchanged)
             break;
-         patch16 += 2;
+         p       += 2;
          out16   += numunchanged;
       }
    }
+   return true;
 }
 
 /* The start offsets point to 'nextstart' of any given compressed frame.
@@ -528,12 +575,20 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
       return false;
 
    start                        = read_size_t(state->head - sizeof(size_t));
-   state->head                  = state->data + start;
+   if (start + sizeof(size_t) > state->capacity)
+      return false;
    compressed                   = state->data + start + sizeof(size_t);
    out                          = state->thisblock;
 
-   state_manager_raw_decompress(compressed, out);
+   /* The record runs from its start to the size_t that pointed here;
+    * a record that does not decode inside that, or inside the block,
+    * is the end of the ring's usable history. */
+   if (!state_manager_raw_decompress(compressed,
+            (size_t)(state->head - sizeof(size_t) - compressed), out,
+            state->blocksize))
+      return false;
 
+   state->head                  = state->data + start;
    state->entries--;
    return true;
 }
