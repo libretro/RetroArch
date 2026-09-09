@@ -72,7 +72,7 @@
 #define MAX_VARIABLES 64
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((!video_driver_is_hw_context() && !video_driver_render_context_is_main_thread_only() && (((video_st->threaded)) ? true : false)))
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (((!video_driver_is_hw_context() || video_thread_hw_allowed()) && !video_driver_render_context_is_main_thread_only() && (((video_st->threaded)) ? true : false)))
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
 #endif
@@ -756,6 +756,26 @@ typedef struct video_poke_interface
     * this, so repeats land on the display's cadence rather than a
     * timer's. */
    retro_time_t (*get_last_present_time)(void *data);
+
+   /* Hardware-rendered cores under the threaded wrapper. The wrapper
+    * keeps its own ring of the core's frames - image, semaphores,
+    * command buffers - and these let it drive the driver with one of
+    * them from the video thread and know when the driver is done with
+    * it. All optional; a driver without them keeps hardware cores on
+    * the unthreaded path. The image/semaphore/command pointers are the
+    * driver's own API types behind void: retro_vulkan_image,
+    * VkSemaphore, VkCommandBuffer for the Vulkan driver. */
+   bool (*hw_ring_install)(void *data, const void *image,
+         const void *semaphores, unsigned num_semaphores,
+         unsigned src_queue_family,
+         const void *cmd, unsigned num_cmd);
+   /* A fence the wrapper owns: created unsignalled, signalled by
+    * hw_ring_fence_signal after the frame the driver just submitted,
+    * waited and reset by hw_ring_fence_wait from any thread. */
+   bool (*hw_ring_fence_new)(void *data, void **fence);
+   void (*hw_ring_fence_free)(void *data, void *fence);
+   void (*hw_ring_fence_signal)(void *data, void *fence);
+   void (*hw_ring_fence_wait)(void *data, void *fence);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -1090,6 +1110,8 @@ bool video_driver_is_threaded(void);
  * core setting SET_HW_RENDER and the video driver reinit that follows,
  * and it is this one that decides who owns driver resources. */
 bool video_driver_thread_wrapper_active(void);
+/* A hardware core may run under the wrapper: see video_thread_hw.h. */
+bool video_thread_hw_allowed(void);
 #else
 #define video_driver_is_threaded() (false)
 #define video_driver_thread_wrapper_active() (false)

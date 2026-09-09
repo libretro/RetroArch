@@ -525,6 +525,11 @@
  * times. Off: the fixed-timer pacing threaded video always had. */
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
+/* Let a Vulkan hardware-rendered core run under threaded video, on the
+ * wrapper's own ring of its frames. Off: hardware cores run unthreaded
+ * whatever Threaded Video is set to, as they always have. */
+#define DEFAULT_VIDEO_THREADED_HW_VULKAN false
+
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */

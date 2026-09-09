@@ -334,6 +334,9 @@ typedef struct thread_video
       struct
       {
          uint64_t count;
+         /* Hardware-rendered frame: the HW ring slot it lives in, -1
+          * for a software frame. See hw_ring below. */
+         int hw_slot;
          uint8_t *buffer;
          unsigned width;
          unsigned height;
@@ -360,6 +363,13 @@ typedef struct thread_video
        * buffer publishes it without a copy; any other push clears the
        * reservation first. Guarded by 'lock'. */
       int lent;
+      /* Hardware-rendered cores. The core's sync index space is this
+       * ring, not the swapchain: VIDEO_THREAD_HW_RING slots each hold a
+       * copy of what the core handed over for one frame and a fence
+       * the video thread signals after driving the driver with it.
+       * Opaque here so this header needs no API types; see
+       * video_thread_hw.c. */
+      void *hw_ring;
       unsigned lent_width;
       unsigned lent_height;
       uint64_t zero_copy_count;

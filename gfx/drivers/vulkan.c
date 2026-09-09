@@ -6778,6 +6778,75 @@ static unsigned vulkan_present_last(void *data)
    return done;
 }
 
+/* The threaded wrapper's hardware ring, see video_poke_interface_t.
+ * Install writes the same driver state the core's set_image and
+ * set_command_buffers calls write, from the video thread, which owns
+ * that state under the wrapper. */
+static bool vulkan_hw_ring_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk)
+      return false;
+   vulkan_set_image(vk, (const struct retro_vulkan_image*)image,
+         num_semaphores, (const VkSemaphore*)semaphores, src_queue_family);
+   vulkan_set_command_buffers(vk, num_cmd, (const VkCommandBuffer*)cmd);
+   return true;
+}
+
+static bool vulkan_hw_ring_fence_new(void *data, void **fence)
+{
+   VkFenceCreateInfo info;
+   VkFence f = VK_NULL_HANDLE;
+   vk_t *vk  = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
+      return false;
+   memset(&info, 0, sizeof(info));
+   info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   if (vkCreateFence(vk->context->device, &info, NULL, &f) != VK_SUCCESS)
+      return false;
+   *fence = (void*)(uintptr_t)f;
+   return true;
+}
+
+static void vulkan_hw_ring_fence_free(void *data, void *fence)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
+      return;
+   vkDestroyFence(vk->context->device, (VkFence)(uintptr_t)fence, NULL);
+}
+
+/* An empty submission that signals the fence: it completes after every
+ * submission before it on the queue, so after the frame just made. */
+static void vulkan_hw_ring_fence_signal(void *data, void *fence)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
+      return;
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   vkQueueSubmit(vk->context->queue, 0, NULL, (VkFence)(uintptr_t)fence);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+}
+
+/* Fences need no queue and no lock: waiting and resetting one is safe
+ * from any thread, and the wrapper is the only user of these. */
+static void vulkan_hw_ring_fence_wait(void *data, void *fence)
+{
+   VkFence f;
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
+      return;
+   f = (VkFence)(uintptr_t)fence;
+   vkWaitForFences(vk->context->device, 1, &f, VK_TRUE, UINT64_MAX);
+   vkResetFences(vk->context->device, 1, &f);
+}
+
 static retro_time_t vulkan_get_last_present_time(void *data)
 {
    retro_time_t t;
@@ -9289,7 +9358,12 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_supports_texture_format,
    vulkan_load_texture_compressed,
    vulkan_present_last,
-   vulkan_get_last_present_time
+   vulkan_get_last_present_time,
+   vulkan_hw_ring_install,
+   vulkan_hw_ring_fence_new,
+   vulkan_hw_ring_fence_free,
+   vulkan_hw_ring_fence_signal,
+   vulkan_hw_ring_fence_wait
 };
 
 static void vulkan_get_poke_interface(void *data,

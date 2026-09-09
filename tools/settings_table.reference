@@ -68,6 +68,7 @@ bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_hw_vulkan	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1
@@ -722,6 +723,7 @@ bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_hw_vulkan	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1
@@ -1373,6 +1375,7 @@ bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
 bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
+bool	video_threaded_hw_vulkan	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1

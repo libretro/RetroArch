@@ -38,6 +38,8 @@
 
 #include <retro_assert.h>
 
+#include "video_thread_hw.h"
+
 /* cond_reply is woken with scond_signal() and carries one command's
  * reply, so at most one thread may wait on it; see the note in
  * video_thread_wrapper.h. Every wait on cond_reply is bracketed by
@@ -332,6 +334,8 @@ static bool video_thread_handle_packet(
          if (     thr->driver
                && thr->driver->font_backend)
             font_driver_free_osd_for(thr->driver_data);
+         /* The hardware ring's fences belong to the device. */
+         video_thread_hw_free(thr);
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;
@@ -774,15 +778,33 @@ static void video_thread_loop(void *data)
                   && video_info->shader_subframes <= 1;
 
                render_start = cpu_features_get_time_usec();
-               ret = thr->driver->frame(thr->driver_data,
-                  thr->frame.slot[slot].buffer,
-                  thr->frame.slot[slot].width,
-                  thr->frame.slot[slot].height,
-                  thr->frame.slot[slot].count,
-                  thr->frame.slot[slot].pitch,
-                  *thr->frame.slot[slot].msg
-                     ? thr->frame.slot[slot].msg : NULL,
-                  video_info);
+               if (thr->frame.slot[slot].hw_slot >= 0)
+               {
+                  /* A hardware frame: the driver reads the core's
+                   * image and command buffers from its own state,
+                   * which this thread now fills from the ring slot. */
+                  video_thread_hw_before_frame(thr, thr->frame.slot[slot].hw_slot);
+                  ret = thr->driver->frame(thr->driver_data,
+                     RETRO_HW_FRAME_BUFFER_VALID,
+                     thr->frame.slot[slot].width,
+                     thr->frame.slot[slot].height,
+                     thr->frame.slot[slot].count,
+                     thr->frame.slot[slot].pitch,
+                     *thr->frame.slot[slot].msg
+                        ? thr->frame.slot[slot].msg : NULL,
+                     video_info);
+                  video_thread_hw_after_frame(thr, thr->frame.slot[slot].hw_slot);
+               }
+               else
+                  ret = thr->driver->frame(thr->driver_data,
+                     thr->frame.slot[slot].buffer,
+                     thr->frame.slot[slot].width,
+                     thr->frame.slot[slot].height,
+                     thr->frame.slot[slot].count,
+                     thr->frame.slot[slot].pitch,
+                     *thr->frame.slot[slot].msg
+                        ? thr->frame.slot[slot].msg : NULL,
+                     video_info);
 
                slock_unlock(thr->frame.lock);
 
@@ -975,6 +997,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    unsigned slot       = 0;
+   int hw_slot         = -1;
    bool dropped        = false;
    bool zero_copy      = false;
    thread_video_t *thr = (thread_video_t*)data;
@@ -1028,6 +1051,19 @@ static bool video_thread_frame(void *data, const void *frame_,
          if (!scond_wait_timeout(thr->cond_ring, thr->lock, delta))
             break;
       }
+   }
+
+   /* A hardware-rendered frame: there is no pixel data to copy, the
+    * core's image lives in the HW ring. Publish the HW slot the core
+    * just filled through whichever ring slot is free. */
+   hw_slot = -1;
+   if (frame_ == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      hw_slot = video_thread_hw_publish(thr);
+      frame_  = NULL;
+      /* No ring: the driver cannot take a hardware frame from this
+       * thread. frame_ is NULL now, which this function treats as a
+       * dupe, rather than read as pixels. */
    }
 
    /* A frame rendered straight into the lent slot: publish that slot,
@@ -1118,6 +1154,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].width  = width;
       thr->frame.slot[slot].height = height;
       thr->frame.slot[slot].count  = frame_count;
+      thr->frame.slot[slot].hw_slot = hw_slot;
       thr->frame.slot[slot].pitch  = copy_stride;
 
       /* Hand the caller's video_frame_info_t across with the frame data.
@@ -2002,7 +2039,7 @@ static const video_poke_interface_t thread_poke = {
    thread_grab_mouse_toggle,
    thread_get_current_shader,
    thread_get_current_software_framebuffer,
-   NULL, /* get_hw_render_interface */
+   video_thread_get_hw_render_interface,
    thread_set_hdr_menu_nits,
    thread_set_hdr_paper_white_nits,
    thread_set_hdr_expand_gamut,

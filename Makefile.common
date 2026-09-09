@@ -1171,6 +1171,7 @@ endif
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
           gfx/video_thread_wrapper.o \
+          gfx/video_thread_hw.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
