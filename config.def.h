@@ -501,12 +501,15 @@
 #define DEFAULT_SWAP_INTERVAL 1
 
 /* Threaded video: the core runs on one thread and the video driver
- * presents on another. On by default: it keeps the display's cadence
- * through core stutter, overlaps the core with the shader chain and
- * present, and with display pacing on costs no latency the direct path
- * would not. Hardware-rendered cores run threaded on every API that
- * has a ring. */
+ * presents on another. Off by default, as it has always been; the
+ * Switch keeps its own default. When it is on, hardware-rendered cores
+ * follow it on every API that has a ring, with no setting of their
+ * own. */
+#if defined(HAVE_LIBNX)
 #define DEFAULT_VIDEO_THREADED true
+#else
+#define DEFAULT_VIDEO_THREADED false
+#endif
 
 /* Pace repeated frames from the display's own report of when a present
  * reached it, where the driver or context can say. Off falls back to the
