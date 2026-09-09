@@ -507,6 +507,7 @@ typedef struct video_frame_info
     * re-rendering. Off unless a presenter is going to repeat frames. */
    bool retain_output;
    bool threaded_present_repeat;
+   bool threaded_display_pacing;
    bool present_timing_from_display;
 } video_frame_info_t;
 

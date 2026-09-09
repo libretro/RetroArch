@@ -520,6 +520,11 @@
  * (poke->present_last); ignored under BFI and shader sub-frames. */
 #define DEFAULT_VIDEO_THREADED_PRESENT_REPEAT false
 
+/* With threaded video, pace the core from the display: start each frame
+ * as late as the next refresh allows given measured core and render
+ * times. Off: the fixed-timer pacing threaded video always had. */
+#define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
+
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */

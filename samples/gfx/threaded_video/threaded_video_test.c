@@ -768,6 +768,58 @@ static void lane_command_runs_once(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: display pacing holds the runloop to the display's cadence     */
+/*   With the null driver, core and render both take ~0, so the pacer  */
+/*   should release each frame just under a period after the last one  */
+/*   and nothing should be dropped: N frames take about N periods.     */
+/* ------------------------------------------------------------------ */
+
+static void lane_display_pacing(void)
+{
+   unsigned had = failures;
+   settings_t *settings = config_get_ptr();
+   retro_time_t t0, took, expect;
+   unsigned dropped_before, dropped_after, n = 60;
+
+   settings->bools.video_threaded_display_pacing = true;
+   set_threaded_via_setting(true);
+   run_frames(10);
+   expect_wrapper(true, "display-pacing lane");
+   video_thread_wait_idle();
+
+   {
+      thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+      dropped_before = thr->miss_count;
+      t0 = cpu_features_get_time_usec();
+      run_frames(n);
+      took = cpu_features_get_time_usec() - t0;
+      video_thread_wait_idle();
+      dropped_after = thr->miss_count;
+   }
+
+   /* refresh_rate is what the harness config sets; the wrapper paces
+    * on it since the null driver reports none. Allow the margin the
+    * pacer keeps plus scheduler slop. */
+   expect = (retro_time_t)(1000000.0 * n / settings->floats.video_refresh_rate);
+   (void)settings;
+   CHECK(took > expect * 3 / 4,
+         "display pacing did not hold the runloop: %u frames in %.1f ms, expected ~%.1f",
+         n, took / 1000.0, expect / 1000.0);
+   CHECK(took < expect * 3 / 2,
+         "display pacing held the runloop too long: %u frames in %.1f ms, expected ~%.1f",
+         n, took / 1000.0, expect / 1000.0);
+   CHECK(dropped_after == dropped_before,
+         "display pacing dropped %u frames", dropped_after - dropped_before);
+
+   settings->bools.video_threaded_display_pacing = false;
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] display-pacing lane (%u frames in %.1f ms)\n",
+            n, took / 1000.0);
+}
+
+/* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
 {
@@ -855,6 +907,7 @@ int main(int argc, char *argv[])
    lane_reentrant_from_frame();
    lane_display_phase();
    lane_command_runs_once();
+   lane_display_pacing();
 
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */

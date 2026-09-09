@@ -62,6 +62,11 @@ S_BOOL(video_threaded_present_repeat, VIDEO_THREADED_PRESENT_REPEAT,
       DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Threaded Video Frame Repeat",
       "With Threaded Video, keep presenting the last frame at the display's refresh rate while the core falls behind, instead of leaving the previous present on screen. Keeps Black Frame Insertion and refresh-rate shader effects steady through core stutter. Needs a video driver that can repeat a frame (Vulkan, Direct3D 11); not applied with shader sub-frames.")
+S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,
+      "video_threaded_display_pacing",
+      DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Threaded Video Display Pacing",
+      "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. Off: the timer paces, as before.")
 S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       "video_present_timing_from_display",
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

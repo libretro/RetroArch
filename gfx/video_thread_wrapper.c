@@ -720,6 +720,11 @@ static void video_thread_loop(void *data)
          struct video_viewport vp;
          uint64_t        presents = 0;
          float       refresh_rate = 0.0f;
+         retro_time_t render_start = 0;
+         retro_time_t render_took  = 0;
+         retro_time_t   new_period = 0;
+         bool           new_repeat = false;
+         bool              new_ask = false;
          bool           ret_frame = false;
          bool               alive = false;
          bool               focus = false;
@@ -768,6 +773,7 @@ static void video_thread_loop(void *data)
                   && thr->poke && thr->poke->present_last
                   && video_info->shader_subframes <= 1;
 
+               render_start = cpu_features_get_time_usec();
                ret = thr->driver->frame(thr->driver_data,
                   thr->frame.slot[slot].buffer,
                   thr->frame.slot[slot].width,
@@ -780,22 +786,23 @@ static void video_thread_loop(void *data)
 
                slock_unlock(thr->frame.lock);
 
-               ret_frame = ret;
+               ret_frame  = ret;
+               render_took = cpu_features_get_time_usec() - render_start;
                if (ret)
                {
                   /* The presenter's clock: this frame just went out,
-                   * and the next one is due a display period later. */
+                   * and the next one is due a display period later.
+                   * driver_refresh_rate is this thread's own value. */
                   float hz = thr->driver_refresh_rate > 0.0f
                      ? thr->driver_refresh_rate : video_info->refresh_rate;
                   presents = video_driver_presents_per_frame(video_info);
                   /* A repeat replays the whole group, so it is due a
-                   * group's worth of display periods later. */
-                  thr->present_period = hz > 0.0f
+                   * group's worth of display periods later. Stored to
+                   * the shared fields below, under the lock. */
+                  new_period = hz > 0.0f
                      ? (retro_time_t)(1000000.0f * (float)presents / hz) : 0;
-                  thr->present_repeat = video_info->retain_output;
-                  thr->present_group  = (unsigned)presents;
-                  thr->present_timing_ask =
-                     video_info->present_timing_from_display;
+                  new_repeat = video_info->retain_output;
+                  new_ask    = video_info->present_timing_from_display;
                }
                else
                   thr->present_repeat = false;
@@ -841,6 +848,21 @@ static void video_thread_loop(void *data)
           * consistently through video_thread_swap_count(). */
          video_state_get_ptr()->swap_count += presents;
          thr->driver_refresh_rate = refresh_rate;
+         if (ret_frame)
+         {
+            /* The presenter's and the pacer's inputs, all under the
+             * lock the main thread reads them with. */
+            thr->present_period     = new_period;
+            thr->present_repeat     = new_repeat;
+            thr->present_group      = (unsigned)presents;
+            thr->present_timing_ask = new_ask;
+         }
+         /* Moving average, weighted to the recent; a swap that blocks
+          * on vblank makes this the render-plus-wait time, which is
+          * the right thing to reserve against. */
+         if (ret_frame)
+            thr->render_time = thr->render_time
+               ? (thr->render_time * 7 + render_took) / 8 : render_took;
          /* Under the lock: the phase it records is read by the overlay
           * from the main thread. */
          if (ret_frame)
@@ -974,6 +996,17 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_lock(thr->lock);
 
+   /* Time since the last handoff returned: the core's frame plus the
+    * runloop around it, which is what display pacing has to reserve. */
+   if (thr->run_start)
+   {
+      retro_time_t took = cpu_features_get_time_usec() - thr->run_start;
+      thr->core_time    = thr->core_time
+         ? (thr->core_time * 7 + took) / 8 : took;
+   }
+   if (video_info)
+      thr->display_pacing = video_info->threaded_display_pacing;
+
    if (!thr->nonblock)
    {
       retro_time_t target_frame_time =
@@ -1096,9 +1129,43 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (!dropped)
       thr->hit_count++;
 
+   /* Display pacing: hold the runloop here so the next core frame
+    * starts as late as its display slot allows. The frame just pushed
+    * is due at next_present; the one after it at next_present + period.
+    * Reserve the render time the video thread measures, the core time
+    * measured here, and a margin, and wait until then. A frame that
+    * still runs long is repeated by the presenter, not missed. Skipped
+    * in nonblock (fast-forward) and while the menu is up, where the
+    * drain above already serialises. */
+   if (     thr->display_pacing
+         && !thr->nonblock
+#ifdef HAVE_MENU
+         && !thr->texture.enable
+#endif
+         && thr->present_period > 0
+         && thr->next_present > 0)
+   {
+      retro_time_t now    = cpu_features_get_time_usec();
+      retro_time_t reserve = thr->render_time + thr->core_time;
+      retro_time_t margin  = reserve / 8;
+      retro_time_t target;
+      if (margin < 500)
+         margin = 500;
+      target = thr->next_present + thr->present_period - reserve - margin;
+      /* Never hold longer than a period: the estimate can be wrong. */
+      if (target > now + thr->present_period)
+         target = now + thr->present_period;
+      while (now < target)
+      {
+         scond_wait_timeout(thr->cond_ring, thr->lock, target - now);
+         now = cpu_features_get_time_usec();
+      }
+   }
+
    slock_unlock(thr->lock);
 
    thr->last_time = cpu_features_get_time_usec();
+   thr->run_start = thr->last_time;
 
    return true;
 }
@@ -2140,6 +2207,26 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase)
    *display_phase = thr->phase_from_display;
    slock_unlock(thr->lock);
    return armed;
+}
+
+bool video_thread_pacing_stats(bool *display_pacing,
+      retro_time_t *core_time, retro_time_t *render_time)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+   *display_pacing = false;
+   *core_time      = 0;
+   *render_time    = 0;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
+      return false;
+   slock_lock(thr->lock);
+   *display_pacing = thr->display_pacing;
+   *core_time      = thr->core_time;
+   *render_time    = thr->render_time;
+   slock_unlock(thr->lock);
+   return true;
 }
 
 uint64_t video_thread_swap_count(void)

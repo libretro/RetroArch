@@ -204,6 +204,15 @@ typedef struct thread_video
    /* Whether to ask the driver when its last present reached the
     * display; the setting, carried across with the frame. */
    bool present_timing_ask;
+   /* Display pacing. render_time is the video thread's moving average
+    * of driver->frame() and is read under 'lock'; core_time is the main
+    * thread's moving average of the time between one frame handoff's
+    * return and the next handoff's arrival, and run_start is when the
+    * last handoff returned. Both main-thread only. */
+   retro_time_t render_time;
+   retro_time_t core_time;
+   retro_time_t run_start;
+   bool display_pacing;
    bool present_repeat;
    /* A main-thread present_last() asks for one repeat at the next
     * opportunity rather than waiting for the deadline. */
@@ -407,6 +416,12 @@ uintptr_t video_thread_texture_handle(void *data,
 bool video_thread_presentable(void);
 
 bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase);
+
+/* Display pacing statistics: whether it is on, and the core and render
+ * times it is reserving, in microseconds. Under the lock. Returns
+ * whether the wrapper is up at all. */
+bool video_thread_pacing_stats(bool *display_pacing,
+      retro_time_t *core_time, retro_time_t *render_time);
 
 /* video_st->swap_count is written by the video thread while the wrapper
  * is installed; this reads it under the wrapper's lock. Without the

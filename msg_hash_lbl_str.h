@@ -1677,6 +1677,7 @@
 #define MENU_ENUM_LABEL_VIDEO_STREAM_QUALITY_STR "video_stream_quality"
 #define MENU_ENUM_LABEL_VIDEO_SWAP_INTERVAL_STR "video_swap_interval"
 #define MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS_STR "video_synchronization_settings"
+#define MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING_STR "video_threaded_display_pacing"
 #define MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT_STR "video_threaded_present_repeat"
 #define MENU_ENUM_LABEL_VIDEO_VFILTER_STR "video_vfilter"
 #define MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X_STR "video_viewport_bias_portrait_x"

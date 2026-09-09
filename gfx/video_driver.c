@@ -4021,6 +4021,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->swap_count               = video_st->swap_count;
    video_info->retain_output               = false;
    video_info->threaded_present_repeat     = settings->bools.video_threaded_present_repeat;
+   video_info->threaded_display_pacing     = settings->bools.video_threaded_display_pacing;
    video_info->present_timing_from_display = settings->bools.video_present_timing_from_display;
    video_info->scan_subframes              = settings->bools.video_scan_subframes;
    video_info->hard_sync                   = settings->bools.video_hard_sync;
@@ -5971,6 +5972,15 @@ void video_driver_frame(const void *data, unsigned width,
                      " Repeat:     %llu (%s phase)\n",
                      (unsigned long long)repeats,
                      display_phase ? "display" : "timer");
+         }
+         {
+            bool display_pacing;
+            retro_time_t core_time, render_time;
+            if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
+                  && display_pacing)
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Core Start: display (core %.2f ms, render %.2f ms)\n",
+                     core_time / 1000.0f, render_time / 1000.0f);
          }
 #endif
 
