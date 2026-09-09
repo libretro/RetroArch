@@ -120,4 +120,56 @@ arm "ios"        apple      "-D__APPLE__ -DTARGET_OS_IPHONE=1"
 arm "dos/djgpp"  ""         "-D__DJGPP__ -D__unix__"
 arm "linux"      ""         ""
 
+
+# The video drivers and the threaded wrapper compile under more than
+# one API and one threading model, and the desktop job builds one of
+# each. The OpenGL ring's sync objects went in under a guard the
+# desktop build satisfied and the GLES builds did not, and every GLES
+# target - Android, Emscripten, Vita, PS4 - went red at once; a
+# threadless build had been broken for longer than anyone noticed, on
+# calls that compile against a prototype and fail only at link.
+# These lanes are the ones a desktop build does not exercise.
+echo
+echo "== video drivers: API and threading combinations =="
+
+GLINC="-Igfx/include"
+GLDEFS="-DHAVE_OPENGL -DHAVE_GLSL -DHAVE_FBO -DHAVE_REWIND -DHAVE_OVERLAY"
+check "gl2: GLES2 (android/emscripten/vita/ps4)" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL $GLINC" gfx/drivers/gl2.c
+check "gl2: GLES3" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl2.c
+check "gl2: desktop" \
+   "$GLDEFS $GLINC" gfx/drivers/gl2.c
+check "hw ring: OpenGL only" \
+   "-DHAVE_OPENGL $GLINC" gfx/video_thread_hw.c
+check "hw ring: GLES only" \
+   "-DHAVE_OPENGLES -DHAVE_OPENGLES2 $GLINC" gfx/video_thread_hw.c
+check "hw ring: Vulkan only" \
+   "-DHAVE_VULKAN $GLINC" gfx/video_thread_hw.c
+check "hw ring: no hardware API" \
+   "$GLINC" gfx/video_thread_hw.c
+
+# Without threads: the wrapper is not built, and callers must compile
+# against the macro stand-ins, not the wrapper's prototypes. Syntax
+# only here; the link is the threadless job's.
+NOTHREADS=$(echo "$BASE" | sed 's/-DHAVE_THREADS//')
+check_nothreads() {
+   name="$1"; shift
+   defs="$1"; shift
+   for tu in "$@"; do
+      if ! out=$($CC $WARN $INC $NOTHREADS $defs -fsyntax-only "$tu" 2>&1); then
+         echo "FAIL  $name"
+         echo "      $tu"
+         echo "$out" | sed 's/^/      /' | head -12
+         fail=1
+      fi
+   done
+   [ "$fail" = 1 ] || echo "ok    $name"
+}
+check_nothreads "no threads: gl2"          "$GLDEFS $GLINC"       gfx/drivers/gl2.c
+check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driver.c
+check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD" retroarch.c
+check_nothreads "no threads: audio_driver" "$GLINC"               audio/audio_driver.c
+check_nothreads "no threads: linux input"  "$GLINC"               input/common/linux_common.c
+
 exit $fail
