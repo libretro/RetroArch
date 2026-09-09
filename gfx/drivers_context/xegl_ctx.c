@@ -543,6 +543,17 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 #endif
 }
 
+static void gfx_ctx_xegl_release_current(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   if (xegl)
+      egl_release_current(&xegl->egl);
+#else
+   (void)data;
+#endif
+}
+
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
 #ifdef HAVE_EGL
@@ -660,5 +671,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    gfx_ctx_xegl_create_surface,
    gfx_ctx_xegl_destroy_surface,
-   x11_presentable
+   x11_presentable,
+   NULL, /* last_present_time */
+   gfx_ctx_xegl_release_current
 };

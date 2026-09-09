@@ -521,6 +521,14 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
    s->in_flight = true;
 }
 
+static void hw_context_free_cb(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   hw_ring_t *ring     = (hw_ring_t*)thr->frame.hw_ring;
+   thr->poke->hw_ring_context_free(thr->driver_data, ring->core_ctx);
+   ring->core_ctx = NULL;
+}
+
 void video_thread_hw_free(thread_video_t *thr)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
@@ -540,7 +548,12 @@ void video_thread_hw_free(thread_video_t *thr)
 #endif
    }
    if (ring->core_ctx && thr->poke && thr->poke->hw_ring_context_free)
-      thr->poke->hw_ring_context_free(thr->driver_data, ring->core_ctx);
+   {
+      /* The core's context is the main thread's, and giving it up
+       * must happen there: this runs on the video thread, inside the
+       * free command the main thread is waiting on. */
+      video_thread_call_on_waiter(hw_context_free_cb, thr);
+   }
    free(ring);
    thr->frame.hw_ring = NULL;
 }

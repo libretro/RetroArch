@@ -3261,12 +3261,21 @@ static bool gl2_hw_ring_context_new(void *data, void **ctx)
    return true;
 }
 
+/* Called on the thread that holds the core's context - the main
+ * thread - before the driver is freed. The context is given up here,
+ * where it is current; the driver's own bind would make the video
+ * thread's context current here instead. Without the hook the context
+ * driver's teardown copes with a still-current context, which GLX and
+ * WGL define. */
 static void gl2_hw_ring_context_free(void *data, void *ctx)
 {
    gl2_t *gl = (gl2_t*)data;
    (void)ctx;
-   if (gl)
-      gl->flags &= ~GL2_FLAG_HW_RING;
+   if (!gl)
+      return;
+   gl->flags &= ~GL2_FLAG_HW_RING;
+   if (gl->ctx_driver && gl->ctx_driver->release_current)
+      gl->ctx_driver->release_current(gl->ctx_data);
 }
 
 /* Main thread, the core's context: the FBO for the ring slot, which is

@@ -83,6 +83,9 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 void egl_terminate(EGLDisplay dpy);
 
 void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
+/* Make no context current on the calling thread; see
+ * gfx_ctx_driver_t::release_current. */
+void egl_release_current(egl_ctx_data_t *egl);
 
 void egl_swap_buffers(void *data);
 

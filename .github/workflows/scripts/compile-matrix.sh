@@ -145,6 +145,12 @@ check "gl3: desktop" \
    "$GL3DEFS $GLINC" gfx/drivers/gl3.c
 check "gl3: GLES3" \
    "$GL3DEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl3.c
+# gl3 is not in the C89 job's configuration, so its C89 lane is here.
+# The flags the Makefile's C89_BUILD lane uses, _GNU_SOURCE included:
+# -ansi hides the C99 math names otherwise.
+C89="-std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-statement -Wno-long-long -Wno-variadic-macros -D_GNU_SOURCE -DC89_BUILD"
+check "gl3: desktop, C89" \
+   "$GL3DEFS $GLINC $C89" gfx/drivers/gl3.c
 check "hw ring: OpenGL only" \
    "-DHAVE_OPENGL $GLINC" gfx/video_thread_hw.c
 check "hw ring: GLES only" \

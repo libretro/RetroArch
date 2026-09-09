@@ -1089,6 +1089,25 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    return false;
 }
 
+static void gfx_ctx_x_release_current(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (!x)
+      return;
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+         if (g_x11_dpy)
+            glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
@@ -1246,8 +1265,9 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* destroy_surface */
    x11_presentable,
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-   gfx_ctx_x_last_present_time
+   gfx_ctx_x_last_present_time,
 #else
-   NULL
+   NULL,
 #endif
+   gfx_ctx_x_release_current
 };

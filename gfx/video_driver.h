@@ -658,6 +658,15 @@ typedef struct gfx_ctx_driver
     * get_last_present_time() poke for the presenter. Also placed last,
     * for the same reason as presentable. */
    retro_time_t (*last_present_time)(void *data);
+
+   /* Make no context current on the calling thread. The threaded
+    * wrapper's hardware ring binds the core's context on the main
+    * thread with bind_hw_render(true) and, at teardown, gives it up
+    * here rather than with bind_hw_render(false), which would bind the
+    * driver's own context - the video thread's - on the main thread.
+    * Optional; the ring lets the context driver's teardown handle a
+    * still-current context when it is missing. Placed last, as above. */
+   void (*release_current)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode

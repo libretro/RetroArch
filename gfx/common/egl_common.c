@@ -372,6 +372,13 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
          enable ? egl->hw_ctx : egl->ctx);
 }
 
+void egl_release_current(egl_ctx_data_t *egl)
+{
+   if (!egl || egl->dpy == EGL_NO_DISPLAY)
+      return;
+   _egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+}
+
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;

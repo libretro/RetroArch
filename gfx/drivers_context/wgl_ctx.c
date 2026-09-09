@@ -783,6 +783,21 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    return false;
 }
 
+static void gfx_ctx_wgl_release_current(void *data)
+{
+   (void)data;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         wglMakeCurrent(NULL, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    switch (win32_api)
@@ -1005,5 +1020,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_create_surface,
    gfx_ctx_wgl_destroy_surface,
    gfx_ctx_wgl_presentable,
-   gfx_ctx_wgl_last_present_time
+   gfx_ctx_wgl_last_present_time,
+   gfx_ctx_wgl_release_current
 };

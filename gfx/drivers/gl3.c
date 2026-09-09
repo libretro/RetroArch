@@ -358,12 +358,18 @@ void gl3_framebuffer_copy_partial(
       float rx, float ry)
 {
    GLuint vbo;
-   const float quad_data[16] = {
+   /* C89: an aggregate initializer must be constant, and rx/ry are
+    * not; the four corners are set after declaration. */
+   float quad_data[16] = {
       0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx,   0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx,   ry,
+      1.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f, 0.0f,
+      1.0f, 1.0f, 0.0f, 0.0f,
    };
+   quad_data[6]  = rx;
+   quad_data[11] = ry;
+   quad_data[14] = rx;
+   quad_data[15] = ry;
 
    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
    glActiveTexture(GL_TEXTURE2);
@@ -4223,12 +4229,14 @@ static void gl3_update_cpu_texture(gl3_t *gl,
 static void gl3_draw_menu_texture(gl3_t *gl,
       unsigned width, unsigned height)
 {
-   const float vbo_data[32] = {
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+   /* C89: the alpha is not a constant; set after declaration. */
+   float vbo_data[32] = {
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
    };
+   vbo_data[7] = vbo_data[15] = vbo_data[23] = vbo_data[31] = gl->menu_texture_alpha;
 
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
@@ -5715,12 +5723,21 @@ static bool gl3_hw_ring_context_new(void *data, void **ctx)
    return true;
 }
 
+/* Called on the thread that holds the core's context - the main
+ * thread - before the driver is freed. The context is given up here,
+ * where it is current; the driver's own bind would make the video
+ * thread's context current here instead. Without the hook the context
+ * driver's teardown copes with a still-current context, which GLX and
+ * WGL define. */
 static void gl3_hw_ring_context_free(void *data, void *ctx)
 {
    gl3_t *gl = (gl3_t*)data;
    (void)ctx;
-   if (gl)
-      gl->flags &= ~GL3_FLAG_HW_RING;
+   if (!gl)
+      return;
+   gl->flags &= ~GL3_FLAG_HW_RING;
+   if (gl->ctx_driver && gl->ctx_driver->release_current)
+      gl->ctx_driver->release_current(gl->ctx_data);
 }
 
 static uintptr_t gl3_hw_ring_framebuffer(void *data, unsigned slot)
