@@ -18,7 +18,8 @@ jobs:
       - name: Dependencies
         timeout-minutes: 5
         run: |
-          pkgs="build-essential"
+          # The gl2 arms compile against the desktop GL and EGL headers.
+          pkgs="build-essential libgl-dev libegl-dev libgles-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
