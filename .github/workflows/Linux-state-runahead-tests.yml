@@ -1,0 +1,60 @@
+name: CI Linux state_manager + runahead tests
+
+# The rewind codec and ring, and the run-ahead core-copy protocol,
+# driven directly by harnesses that include or extract the shipping
+# code: samples/state_rewind and samples/runahead. Plain, then under
+# ASan and UBSan with halt_on_error.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - state_manager.c
+      - state_manager.h
+      - runahead.c
+      - runahead.h
+      - runloop.h
+      - samples/state_rewind/**
+      - samples/runahead/**
+      - libretro-common/queues/task_queue.c
+      - .github/workflows/Linux-state-runahead-tests.yml
+  pull_request:
+    branches: [master]
+    paths:
+      - state_manager.c
+      - state_manager.h
+      - runahead.c
+      - runahead.h
+      - runloop.h
+      - samples/state_rewind/**
+      - samples/runahead/**
+      - libretro-common/queues/task_queue.c
+      - .github/workflows/Linux-state-runahead-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: state_rewind
+        run: make -C samples/state_rewind clean check
+      - name: runahead
+        run: make -C samples/runahead clean check
+
+  sanitize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASAN_OPTIONS: abort_on_error=1:detect_leaks=1:print_stacktrace=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v5
+      - name: state_rewind (ASan + UBSan)
+        run: make -C samples/state_rewind clean check SANITIZER=address,undefined
+      - name: runahead (ASan + UBSan)
+        run: make -C samples/runahead clean check SANITIZER=address,undefined
