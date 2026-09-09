@@ -8451,15 +8451,25 @@ end:
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
       /* Identical to the condition the sleep below used inline. */
+      /* The menu and pause clauses put the timer on the loop where
+       * nothing else holds it. Under display pacing the handover
+       * holds it there too, at the display's rate: with the core
+       * paced by Display alone the menu read Display+Timer, two clocks
+       * anchored on the same frame, the timer's by a sleep and a spin.
+       * Those two clauses stand aside for display pacing, so the menu
+       * is paced by the same clock as the content. Fast-forward and
+       * VRR keep the timer; neither holds the handover. */
+      bool display_paces = (runloop_st->pace & RUNLOOP_PACE_DISPLAY) != 0;
       if (   (frame_limit_min)
           && (   (vrr_runloop_enable)
               || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
 #ifdef HAVE_MENU
-              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
+              || (   !display_paces
+                  && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
                   && (!(settings->bools.video_vsync)
                       || !(runloop_st->flags & RUNLOOP_FLAG_FOCUSED)))
 #endif
-              || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
+              || (!display_paces && (runloop_st->flags & RUNLOOP_FLAG_PAUSED))))
          runloop_st->pace |= RUNLOOP_PACE_TIMER;
    }
 
