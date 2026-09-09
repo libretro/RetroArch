@@ -900,6 +900,16 @@ static void lane_display_pacing(void)
    set_threaded_via_setting(true);
    run_frames(10);
    expect_wrapper(true, "display-pacing lane");
+   /* The hold is for gameplay: it stands down while the menu is up,
+    * where the command drain already serialises, and the menu driver
+    * re-enables its texture every iteration it is alive. Close it for
+    * the measurement. Until the runloop's gap limiter was told to stay
+    * out under display pacing, the limiter paced these frames and this
+    * lane passed without the hold ever running. */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "display-pacing lane: menu still up");
+   run_frames(3);
    video_thread_wait_idle();
 
    {
@@ -928,6 +938,10 @@ static void lane_display_pacing(void)
 
    settings->bools.video_threaded_display_pacing = false;
    set_threaded_via_setting(false);
+
+   /* Back to the menu for the lanes that follow. */
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
 
    if (failures == had)
       fprintf(stderr, "[pass] display-pacing lane (%u frames in %.1f ms)\n",

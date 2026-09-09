@@ -110,6 +110,8 @@ static void test_gap_predicate(void)
          "audio already paces: must not double up");
    check(!runloop_pace_gap_engages(RUNLOOP_PACE_TIMER, false, false, false, true),
          "the frame limiter already paces: must not double up");
+   check(!runloop_pace_gap_engages(RUNLOOP_PACE_DISPLAY, false, false, false, true),
+         "display pacing keeps the gap limiter out");
    check(!runloop_pace_gap_engages(RUNLOOP_PACE_NOWINDOW, false, false, false, true),
          "the no-window wait already paces: must not double up");
 

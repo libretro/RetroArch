@@ -5950,6 +5950,8 @@ void video_driver_frame(const void *data, unsigned width,
                plen += strlcpy(pbuf + plen, plen ? "+Audio" : "Audio", sizeof(pbuf) - plen);
             if (pace & RUNLOOP_PACE_SCANLINE)
                plen += strlcpy(pbuf + plen, plen ? "+Scanline" : "Scanline", sizeof(pbuf) - plen);
+            if (pace & RUNLOOP_PACE_DISPLAY)
+               plen += strlcpy(pbuf + plen, plen ? "+Display" : "Display", sizeof(pbuf) - plen);
             if (pace & RUNLOOP_PACE_TIMER)
                plen += strlcpy(pbuf + plen, plen ? "+Timer" : "Timer", sizeof(pbuf) - plen);
             if (pace & RUNLOOP_PACE_NOWINDOW)

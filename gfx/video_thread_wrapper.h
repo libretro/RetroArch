@@ -228,6 +228,9 @@ typedef struct thread_video
     * last handoff returned. Both main-thread only. */
    retro_time_t render_time;
    retro_time_t core_time;
+   /* Fast-forward, from the frame info at the push: the hold stands
+    * down for it. Distinct from nonblock, which vsync-off also sets. */
+   bool fast_forward;
    retro_time_t run_start;
    bool display_pacing;
    bool present_repeat;

@@ -1102,7 +1102,10 @@ static bool video_thread_frame(void *data, const void *frame_,
          ? (thr->core_time * 7 + took) / 8 : took;
    }
    if (video_info)
+   {
       thr->display_pacing = video_info->threaded_display_pacing;
+      thr->fast_forward   = video_info->input_driver_nonblock_state;
+   }
 
    if (!thr->nonblock)
    {
@@ -1275,10 +1278,15 @@ static bool video_thread_frame(void *data, const void *frame_,
     * Reserve the render time the video thread measures, the core time
     * measured here, and a margin, and wait until then. A frame that
     * still runs long is repeated by the presenter, not missed. Skipped
-    * in nonblock (fast-forward) and while the menu is up, where the
-    * drain above already serialises. */
+    * in fast-forward and while the menu is up, where the drain above
+    * already serialises. Fast-forward, not the driver's nonblock state:
+    * that state is also set with vsync off, and a core paced to the
+    * display's vblank with a non-blocking present is the point - the
+    * frame goes out on the next scanout, and the core should have
+    * started as late as that allowed. With this on nonblock, vsync off
+    * silently turned display pacing off. */
    if (     thr->display_pacing
-         && !thr->nonblock
+         && !thr->fast_forward
 #ifdef HAVE_MENU
          && !thr->texture.enable
 #endif

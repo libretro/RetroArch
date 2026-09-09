@@ -8386,6 +8386,16 @@ end:
          && !(input_st->flags & INP_FLAG_NONBLOCKING)
          && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
       runloop_st->pace |= RUNLOOP_PACE_VSYNC;
+#ifdef HAVE_THREADS
+   /* Threaded video's display pacing holds the loop at the handover;
+    * see RUNLOOP_PACE_DISPLAY. Not in fast-forward, where the handover
+    * does not hold either. */
+   if (     video_st->thread_wrapper_active
+         && settings->bools.video_threaded_display_pacing
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      runloop_st->pace |= RUNLOOP_PACE_DISPLAY;
+#endif
    /* The live blocking state, not the audio_sync setting. Fast-forward
     * puts the driver into non-blocking mode for a few frames while
     * audio_sync stays true, and during those frames audio is not

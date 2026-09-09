@@ -401,7 +401,17 @@ enum runloop_pace_source
     * loop, for one. The frame-limit sleep, frame delay, and the
     * no-window wait yield to that clock rather than stack on it. Set
     * from runloop_state_t::pace_external. */
-   RUNLOOP_PACE_EXTERNAL = (1 << 5)
+   RUNLOOP_PACE_EXTERNAL = (1 << 5),
+   /* Threaded video's display pacing: the frame handover holds this
+    * thread until the core's next run is due, from the presenter's
+    * next vblank and the measured core and render times. It is the
+    * loop's pace whenever it is on, and it needs the gap limiter to
+    * stay out: a timer anchored on the last frame fires first, the
+    * core then runs on the timer's schedule, the handover measures a
+    * full period of "core time", reserves all of it, and holds for
+    * nothing - which is what happened, and read as "Pacing: Timer" with
+    * display pacing on. */
+   RUNLOOP_PACE_DISPLAY  = (1 << 6)
 };
 
 /* The three pacing decisions the runloop makes every iteration, here
