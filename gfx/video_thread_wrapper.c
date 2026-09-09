@@ -957,8 +957,16 @@ static void video_thread_loop(void *data)
                retro_time_t lat = thr->last_present_end - thr->frame.slot[slot].pushed_at;
                thr->latency_avg = thr->latency_avg
                   ? (thr->latency_avg * 7 + lat) / 8 : lat;
-               if (lat > thr->latency_max)
-                  thr->latency_max = lat;
+               /* The worst over the last couple of seconds, not since
+                * launch: a hitch at content load or a menu trip stood
+                * on the line for the whole session otherwise, and said
+                * nothing about the pacing now. */
+               if (lat > thr->latency_max
+                     || thr->last_present_end - thr->latency_max_at > 2000000)
+               {
+                  thr->latency_max    = lat;
+                  thr->latency_max_at = thr->last_present_end;
+               }
                thr->latency_from_display = thr->phase_from_display;
             }
          }
@@ -1278,8 +1286,11 @@ static bool video_thread_frame(void *data, const void *frame_,
     * Reserve the render time the video thread measures, the core time
     * measured here, and a margin, and wait until then. A frame that
     * still runs long is repeated by the presenter, not missed. Skipped
-    * in fast-forward and while the menu is up, where the drain above
-    * already serialises. Fast-forward, not the driver's nonblock state:
+    * in fast-forward only. In the menu it holds too, to the display's
+    * period rather than the content's: with the gap limiter standing
+    * aside for display pacing, nothing else paces the menu, and it ran
+    * unthrottled the moment the content stopped. Fast-forward, not the
+    * driver's nonblock state:
     * that state is also set with vsync off, and a core paced to the
     * display's vblank with a non-blocking present is the point - the
     * frame goes out on the next scanout, and the core should have
@@ -1287,9 +1298,6 @@ static bool video_thread_frame(void *data, const void *frame_,
     * silently turned display pacing off. */
    if (     thr->display_pacing
          && !thr->fast_forward
-#ifdef HAVE_MENU
-         && !thr->texture.enable
-#endif
          && thr->present_period > 0
          && thr->next_present > 0)
    {
@@ -1314,6 +1322,11 @@ static bool video_thread_frame(void *data, const void *frame_,
        * schedule restarts from the presenter's next vblank rather than
        * carrying a backlog. */
       content = (fps > 1.0) ? (retro_time_t)(1000000.0 / fps) : period;
+#ifdef HAVE_MENU
+      /* The menu is not content: it runs at the display's rate. */
+      if (thr->texture.enable)
+         content = period;
+#endif
       if (thr->content_due <= 0 || thr->content_due < now - content)
          thr->content_due = thr->next_present;
       else

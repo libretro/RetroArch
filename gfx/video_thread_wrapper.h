@@ -219,6 +219,7 @@ typedef struct thread_video
    retro_time_t last_present_end;
    retro_time_t latency_avg;
    retro_time_t latency_max;
+   retro_time_t latency_max_at;
    bool         latency_from_display;
 
    /* Display pacing. render_time is the video thread's moving average

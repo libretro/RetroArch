@@ -894,7 +894,8 @@ static void lane_font_marshal(void)
  * core's period on the display's grid: at 120 Hz a 60 fps core is due
  * every other vblank, and a hold that released it every vblank ran it
  * at four times speed on a real 120 Hz panel. */
-static void display_pacing_measure(float display_hz, unsigned n)
+static void display_pacing_measure(float display_hz, unsigned n,
+      float expect_fps, const char *what)
 {
    settings_t *settings = config_get_ptr();
    thread_video_t *thr  = (thread_video_t*)video_state_get_ptr()->data;
@@ -913,19 +914,18 @@ static void display_pacing_measure(float display_hz, unsigned n)
    dropped_after = thr->miss_count;
    settings->floats.video_refresh_rate = saved;
 
-   /* The core is 60 fps whatever the display does. */
-   expect = (retro_time_t)(1000000.0 * n / 60.0);
+   expect = (retro_time_t)(1000000.0 * n / expect_fps);
    CHECK(took > expect * 3 / 4,
-         "display pacing at %.0f Hz did not hold the runloop: %u frames in %.1f ms, expected ~%.1f",
-         display_hz, n, took / 1000.0, expect / 1000.0);
+         "display pacing, %s at %.0f Hz, did not hold the runloop: %u frames in %.1f ms, expected ~%.1f",
+         what, display_hz, n, took / 1000.0, expect / 1000.0);
    CHECK(took < expect * 3 / 2,
-         "display pacing at %.0f Hz held the runloop too long: %u frames in %.1f ms, expected ~%.1f",
-         display_hz, n, took / 1000.0, expect / 1000.0);
+         "display pacing, %s at %.0f Hz, held the runloop too long: %u frames in %.1f ms, expected ~%.1f",
+         what, display_hz, n, took / 1000.0, expect / 1000.0);
    CHECK(dropped_after - dropped_before <= 2,
-         "display pacing at %.0f Hz dropped %u frames", display_hz,
+         "display pacing, %s at %.0f Hz, dropped %u frames", what, display_hz,
          dropped_after - dropped_before);
-   fprintf(stderr, "   display pacing at %.0f Hz: %u frames in %.1f ms\n",
-         display_hz, n, took / 1000.0);
+   fprintf(stderr, "   display pacing, %s at %.0f Hz: %u frames in %.1f ms\n",
+         what, display_hz, n, took / 1000.0);
 }
 
 static void lane_display_pacing(void)
@@ -950,12 +950,20 @@ static void lane_display_pacing(void)
    run_frames(3);
    video_thread_wait_idle();
 
-   display_pacing_measure(60.0f, 60);
-   display_pacing_measure(120.0f, 60);
+   /* The core is 60 fps whatever the display does. */
+   display_pacing_measure(60.0f, 60, 60.0f, "content");
+   display_pacing_measure(120.0f, 60, 60.0f, "content");
 
-   /* Back to the menu for the lanes that follow. */
+   /* Back to the menu for the lanes that follow - and the menu is
+    * paced too, to the display's rate: with the gap limiter standing
+    * aside for display pacing, the hold is the only thing between the
+    * menu and running unthrottled. */
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(menu_is_up(), "display-pacing lane: menu did not reopen");
+#ifdef HAVE_MENU
+   display_pacing_measure(120.0f, 60, 120.0f, "menu");
+#endif
    settings->bools.video_threaded_display_pacing = saved_pacing;
 
    if (failures == had)
