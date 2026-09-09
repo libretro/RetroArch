@@ -120,6 +120,28 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_wait_writable_test
           echo "[pass] alsa_wait_writable_test (TSan)"
 
+      - name: Build and run alsa_lifecycle_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/alsa_lifecycle
+        run: |
+          set -eu
+          # Links the shipping audio/drivers/alsa.c against the null PCM
+          # and scripts the libasound calls that decide stop/start and
+          # the blocking write - can_pause, pause, drop, prepare, writei,
+          # wait, recover - via -Wl,--wrap. alive() must follow stop()
+          # and start() on a device that can pause, one that cannot, and
+          # one that says it can and refuses; the blocking write must
+          # write first, wait only on EAGAIN, and never without a bound.
+          make clean all SANITIZER=address,undefined
+          test -x alsa_lifecycle_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./alsa_lifecycle_test
+          echo "[pass] alsa_lifecycle_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_lifecycle_test
+          echo "[pass] alsa_lifecycle_test (TSan)"
+
       - name: Build and run tinyalsa_write_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/tinyalsa_write

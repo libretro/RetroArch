@@ -380,7 +380,11 @@ typedef struct alsa
     * still holds, it is what the device has consumed. */
    uint64_t frames_written;
    bool nonblock;
+   /* Stopped, as the frontend sees it: alive() is its inverse. Held
+    * says how: the stream paused with its buffer kept, or dropped,
+    * its buffer discarded, to be prepared again on start. */
    bool is_paused;
+   bool held;
 } alsa_t;
 
 static bool alsa_use_float(void *data)
@@ -421,26 +425,32 @@ error:
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
+/* Stopped is a state of this driver, not of the hardware: alive() is
+ * false after stop() and true after start() on every device. A device
+ * that can pause holds its buffer across the stop; one that cannot,
+ * or whose pause fails when asked - a USB gadget, the Pulse and
+ * PipeWire plugins - has its buffer dropped, and the stream is
+ * prepared again on start and started by the first write. The
+ * frontend's ring is the source of truth for what was queued. */
 static bool alsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
+   int ret;
    if (!alsa->is_paused)
       return true;
 
-   if (     alsa->stream_info.can_pause
-         && alsa->is_paused)
+   if (alsa->held)
+      ret = snd_pcm_pause(alsa->pcm, 0);
+   else
+      ret = snd_pcm_prepare(alsa->pcm);
+   if (ret < 0)
    {
-      int ret = snd_pcm_pause(alsa->pcm, 0);
-
-      if (ret < 0)
-      {
-         RARCH_ERR("[ALSA] Failed to unpause: %s.\n",
-               snd_strerror(ret));
-         return false;
-      }
-
-      alsa->is_paused = false;
+      RARCH_ERR("[ALSA] Failed to %s: %s.\n",
+            alsa->held ? "unpause" : "prepare", snd_strerror(ret));
+      return false;
    }
+   alsa->is_paused = false;
+   alsa->held      = false;
    return true;
 }
 
@@ -540,20 +550,24 @@ static bool alsa_alive(void *data)
 static bool alsa_stop(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
+   int ret;
    if (alsa->is_paused)
-	  return true;
+      return true;
 
-   if (alsa->stream_info.can_pause
-         && !alsa->is_paused)
+   if (alsa->stream_info.can_pause && snd_pcm_pause(alsa->pcm, 1) == 0)
    {
-      int ret = snd_pcm_pause(alsa->pcm, 1);
-
-      if (ret < 0)
-         return false;
-
       alsa->is_paused = true;
+      alsa->held      = true;
+      return true;
    }
-
+   ret = snd_pcm_drop(alsa->pcm);
+   if (ret < 0)
+   {
+      RARCH_ERR("[ALSA] Failed to stop: %s.\n", snd_strerror(ret));
+      return false;
+   }
+   alsa->is_paused = true;
+   alsa->held      = false;
    return true;
 }
 
