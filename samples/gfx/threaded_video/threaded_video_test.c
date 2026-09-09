@@ -36,6 +36,7 @@
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/video_thread_wrapper.h"
+#include "../../../gfx/font_driver.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../verbosity.h"
@@ -768,6 +769,120 @@ static void lane_command_runs_once(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: font init and free reach the video thread as context-local   */
+/*   A renderer's is_threaded argument means "you are not on the      */
+/*   context thread, bind it yourself"; the GL renderers answer it    */
+/*   with make_current(), and on free that unbinds the context from   */
+/*   the calling thread. The font driver marshals both calls to the   */
+/*   video thread under the wrapper, so they must arrive there with   */
+/*   is_threaded false - otherwise the deferred free unbinds the      */
+/*   worker's own context and every frame after it goes nowhere.      */
+/*   This renderer keeps a context flag the way GLX does: is_threaded */
+/*   on init binds it, is_threaded on free releases it.               */
+/* ------------------------------------------------------------------ */
+
+static bool      fontlane_context_bound;
+static uintptr_t fontlane_init_thread;
+static uintptr_t fontlane_free_thread;
+static int       fontlane_init_threaded;
+static int       fontlane_free_threaded;
+static unsigned  fontlane_frees;
+
+static void *fontlane_renderer_init(void *data, const char *font_path,
+      float font_size, bool is_threaded)
+{
+   (void)data; (void)font_path; (void)font_size;
+   fontlane_init_thread   = sthread_get_current_thread_id();
+   fontlane_init_threaded = is_threaded;
+   if (is_threaded)
+      fontlane_context_bound = true;
+   return malloc(1);
+}
+
+static void fontlane_renderer_free(void *data, bool is_threaded)
+{
+   fontlane_free_thread   = sthread_get_current_thread_id();
+   fontlane_free_threaded = is_threaded;
+   fontlane_frees++;
+   if (is_threaded)
+      fontlane_context_bound = false;
+   free(data);
+}
+
+static const font_renderer_t fontlane_renderer = {
+   fontlane_renderer_init,
+   fontlane_renderer_free,
+   NULL,
+   "harness",
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL
+};
+
+static void lane_font_marshal(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   uintptr_t worker;
+   font_data_t *font;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "font lane");
+   thr    = (thread_video_t*)video_st->data;
+   worker = sthread_get_thread_id(thr->thread);
+
+   /* The worker owns its context throughout. */
+   fontlane_context_bound = true;
+
+   /* Built from the main thread as the menu drivers do it. */
+   fontlane_init_threaded = -1;
+   font = font_driver_init_first(video_st->data, NULL, 12.0f,
+         true, true, &fontlane_renderer);
+   CHECK(font != NULL, "font init failed");
+   CHECK(fontlane_init_thread == worker,
+         "renderer init did not run on the video thread");
+   CHECK(fontlane_init_threaded == 0,
+         "renderer init reached the video thread with is_threaded set");
+
+   /* Retired from a render path, released after the frames that
+    * could still read it have gone out - the path 0e45cec310 added. */
+   fontlane_free_threaded = -1;
+   fontlane_frees         = 0;
+   font_driver_free_deferred(font);
+   run_frames(4);
+   video_thread_wait_idle();
+   CHECK(fontlane_frees == 1, "deferred free ran %u times", fontlane_frees);
+   CHECK(fontlane_free_thread == worker,
+         "deferred free did not run on the video thread");
+   CHECK(fontlane_free_threaded == 0,
+         "deferred free reached the video thread with is_threaded set");
+   CHECK(fontlane_context_bound,
+         "the video thread lost its context to a font free");
+
+   /* The immediate path, as teardown and the queue-full fallback use. */
+   font = font_driver_init_first(video_st->data, NULL, 12.0f,
+         true, true, &fontlane_renderer);
+   CHECK(font != NULL, "second font init failed");
+   fontlane_free_threaded = -1;
+   font_driver_free(font);
+   CHECK(fontlane_free_thread == worker,
+         "immediate free did not run on the video thread");
+   CHECK(fontlane_free_threaded == 0,
+         "immediate free reached the video thread with is_threaded set");
+   CHECK(fontlane_context_bound,
+         "the video thread lost its context to an immediate font free");
+
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] font-marshal lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: display pacing holds the runloop to the display's cadence     */
 /*   With the null driver, core and render both take ~0, so the pacer  */
 /*   should release each frame just under a period after the last one  */
@@ -961,6 +1076,7 @@ int main(int argc, char *argv[])
    lane_reentrant_from_frame();
    lane_display_phase();
    lane_command_runs_once();
+   lane_font_marshal();
    lane_display_pacing();
    lane_zero_copy();
 

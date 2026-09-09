@@ -123,3 +123,17 @@ jobs:
           samples/menu/playlist_nav/build.sh
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
+
+      - name: Build and run threaded_video_test
+        shell: bash
+        run: |
+          set -eu
+          # The threaded video wrapper against the real runloop, on the
+          # same non-Qt menu build: the runtime toggle, reinit under the
+          # wrapper, the command mailbox, presenter repeats, and the
+          # font init/free marshalling - the last of which is where a
+          # deferred font free unbound the video thread's GL context on
+          # X11 and left every frame after it black.
+          samples/gfx/threaded_video/build.sh
+          ./samples/gfx/threaded_video/threaded_video_test 3
+          make -C samples/gfx/threaded_video clean

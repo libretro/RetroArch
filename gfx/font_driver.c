@@ -1295,7 +1295,12 @@ static void font_driver_release_renderer_state(
       font_free_cmd_t cmd;
       cmd.renderer      = renderer;
       cmd.renderer_data = renderer_data;
-      cmd.is_threaded   = is_threaded;
+      /* The renderer's is_threaded means "not on the context thread,
+       * bind it yourself": the GL renderers answer it with
+       * make_current(), and on release that unbinds the context from
+       * the calling thread. This call runs on the video thread, whose
+       * context is already current and must stay so. */
+      cmd.is_threaded   = false;
       video_thread_texture_handle(&cmd, font_driver_free_wrap);
       return;
    }
@@ -1444,9 +1449,11 @@ font_data_t *font_driver_init_first(
     * the wrapper is gone. */
    if (     threading_hint
          && video_driver_thread_wrapper_active())
+      /* Runs on the video thread, where the context is current;
+       * is_threaded would make a GL renderer rebind it from there. */
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, backend, font_init_first,
-            is_threaded);
+            false);
    else
 #endif
    ok = font_init_first(&font_driver, &font_handle,
