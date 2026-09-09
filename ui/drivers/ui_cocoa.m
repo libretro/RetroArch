@@ -1769,8 +1769,12 @@ static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    switch (cmd)
    {
+      /* Notifications only: the desktop companion (wimp driver)
+       * snapshots its layout on these, nothing is dispatched. */
       case CMD_EVENT_SHADERS_APPLY_CHANGES:
       case CMD_EVENT_SHADER_PRESET_LOADED:
+      case CMD_EVENT_QUIT:
+      case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          break;
       default: {
          id performer = [[CommandPerformer alloc] initWithData:data command:cmd];
