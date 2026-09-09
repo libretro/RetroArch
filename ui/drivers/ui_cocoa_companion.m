@@ -306,7 +306,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)dockStore;
 - (void)geometryStore;
 - (const char*)paneTitle:(int)pane;
-- (int)paneViews:(int)pane into:(NSView**)views max:(int)max;
+- (int)paneViews:(int)pane into:(NSView* RARCH_UNSAFE_UNRETAINED *)views max:(int)max;
 - (void)layoutPane:(int)pane in:(NSRect)r;
 - (void)showPane:(int)pane shown:(BOOL)show;
 - (void)floatPane:(int)pane;
@@ -357,7 +357,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (BOOL)renamePlaylistAtRow:(NSInteger)row to:(const char*)newName;
 - (size_t)addPaths:(NSArray*)paths;
 - (void)addFiles:(id)sender;
-- (BOOL)installThumbnailFromPath:(const char*)imagePath;
 - (NSDragOperation)tableView:(NSTableView*)tv validateDrop:(id)info
       proposedRow:(NSInteger)row proposedDropOperation:(NSTableViewDropOperation)op;
 - (BOOL)tableView:(NSTableView*)tv acceptDrop:(id)info row:(NSInteger)row
@@ -374,7 +373,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
 - (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h;
-- (void)boxartBlit:(const uint32_t*)bits width:(int)w height:(int)h;
 - (CGFloat)thumbEdge;
 - (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent;
 - (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len;
@@ -1663,7 +1661,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 }
 
 /* Every view of a pane, in a fixed order. */
-- (int)paneViews:(int)pane into:(NSView**)views max:(int)max
+- (int)paneViews:(int)pane into:(NSView* RARCH_UNSAFE_UNRETAINED *)views max:(int)max
 {
    int n = 0;
 #define CC_ADD(v) do { if ((v) && n < max) views[n++] = (v); } while (0)
@@ -1702,7 +1700,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    CGFloat x = r.origin.x + CC_PAD, w = r.size.width - 2 * CC_PAD;
    CGFloat h = r.size.height - 2 * CC_PAD;
    NSView *parent = nil;
-   NSView *vs[8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
    BOOL flipped;
    if ([self paneViews:pane into:vs max:8] > 0)
       parent = [vs[0] superview];
@@ -1759,7 +1757,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 /* Move pane @pane's views into @parent. */
 - (void)reparentPane:(int)pane to:(NSView*)parent
 {
-   NSView *vs[8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
    int i, n = [self paneViews:pane into:vs max:8];
    for (i = 0; i < n; i++)
       if ([vs[i] superview] != parent)
@@ -1773,7 +1771,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (void)setPane:(int)pane hidden:(BOOL)hidden
 {
-   NSView *vs[8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
    int i, n = [self paneViews:pane into:vs max:8];
    for (i = 0; i < n; i++)
    {
