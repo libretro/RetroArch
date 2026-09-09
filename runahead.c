@@ -194,8 +194,17 @@ void runahead_set_load_content_info(void *data,
    runloop_st->load_content_info = clone_retro_ctx_load_content_info(ctx);
 }
 
-/* RUNAHEAD - SECONDARY CORE  */
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+/* RUNAHEAD - SECONDARY CORE
+ *
+ * A secondary instance is a second copy of the core's binary loaded
+ * beside the first, so it exists only where the core is a dynamic
+ * library: HAVE_DYNAMIC. A build that can load libraries but links
+ * its core statically (HAVE_DYLIB without HAVE_DYNAMIC) has no binary
+ * to copy, and every part of the secondary path is compiled out of it
+ * together - creation, teardown, deserialize, and the run loop's use
+ * of it - so run-ahead there is the single-instance method
+ * throughout. Every gate below is the same test. */
+#if defined(HAVE_DYNAMIC)
 /* enum runahead_copy_status lives in runloop.h (shared with the
  * secondary_core_ensure_exists() callers) */
 static void runahead_copy_reset(bool delete_file);
@@ -837,7 +846,7 @@ static enum runahead_copy_status secondary_core_create(
       }
    }
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+#if defined(HAVE_DYNAMIC)
    runahead_clear_controller_port_map(runloop_st);
 #endif
 
@@ -848,7 +857,7 @@ error:
    return RUNAHEAD_COPY_UNAVAILABLE;
 }
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+#if defined(HAVE_DYNAMIC)
 enum runahead_copy_status secondary_core_ensure_exists(void *data,
       settings_t *settings)
 {
@@ -940,7 +949,22 @@ void runahead_remember_controller_port_device(void *data,
 }
 
 #else
-void runahead_secondary_core_destroy(void *data) { }
+/* No secondary instance in this build: the callers that would use
+ * one get 'unavailable' and stay on the single-instance method, and
+ * the port map they keep for it has nothing to remember. */
+void runahead_secondary_core_destroy(void *data) { (void)data; }
+enum runahead_copy_status secondary_core_ensure_exists(void *data,
+      settings_t *settings)
+{
+   (void)data; (void)settings;
+   return RUNAHEAD_COPY_UNAVAILABLE;
+}
+void runahead_clear_controller_port_map(void *data) { (void)data; }
+void runahead_remember_controller_port_device(void *data,
+      long port, long device)
+{
+   (void)data; (void)port; (void)device;
+}
 #endif
 
 static void mylist_resize(my_list *list,
@@ -1473,7 +1497,7 @@ static bool runahead_load_state(runloop_state_t *runloop_st)
    return ret;
 }
 
-#if HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC)
 static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_t *settings)
 {
    retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
@@ -1521,13 +1545,13 @@ void runahead_run(void *data,
    int frame_number        = 0;
    bool last_frame         = false;
    bool suspended_frame    = false;
-#if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+#if defined(HAVE_DYNAMIC)
    const bool have_dynamic = true;
    settings_t *settings    = config_get_ptr();
 #else
    const bool have_dynamic = false;
 #endif
-#if HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC)
    enum runahead_copy_status sec_status = RUNAHEAD_COPY_UNAVAILABLE;
 #else
    const enum runahead_copy_status sec_status = RUNAHEAD_COPY_UNAVAILABLE;
@@ -1583,7 +1607,7 @@ void runahead_run(void *data,
 
    runloop_st->runahead_last_frame_count  = frame_count;
 
-#if HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC)
    if (     use_secondary
          && have_dynamic
          && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE))
@@ -1670,7 +1694,7 @@ void runahead_run(void *data,
    }
    else
    {
-#if HAVE_DYNAMIC
+#if defined(HAVE_DYNAMIC)
       /* sec_status == RUNAHEAD_COPY_READY here (checked above) */
 
       /* run main core with video suspended */

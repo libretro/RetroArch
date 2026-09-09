@@ -177,4 +177,14 @@ check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_C
 check_nothreads "no threads: audio_driver" "$GLINC"               audio/audio_driver.c
 check_nothreads "no threads: linux input"  "$GLINC"               input/common/linux_common.c
 
+echo "== run-ahead: the dynamic-library gates =="
+# The secondary instance exists only with HAVE_DYNAMIC; a build that
+# can load libraries but links its core statically (HAVE_DYLIB alone)
+# compiles the secondary path out and keeps the callers linking.
+RADEFS="-DHAVE_REWIND -DHAVE_RUNAHEAD -DHAVE_DYNAMIC_EXTENSIONS"
+check "runahead: neither"          "$RADEFS"                            runahead.c
+check "runahead: HAVE_DYLIB only"  "$RADEFS -DHAVE_DYLIB"               runahead.c
+check "runahead: HAVE_DYNAMIC"     "$RADEFS -DHAVE_DYNAMIC"             runahead.c
+check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahead.c
+
 exit $fail
