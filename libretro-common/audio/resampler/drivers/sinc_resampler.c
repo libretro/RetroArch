@@ -674,6 +674,18 @@ static void resampler_sinc_free(void *data)
    free(resamp);
 }
 
+/* The rings, the ring pointer and the phase; the table stands. */
+static void resampler_sinc_reset(void *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)data;
+   if (!resamp)
+      return;
+   memset(resamp->buffer_l, 0, sizeof(float) * 2 * resamp->taps);
+   memset(resamp->buffer_r, 0, sizeof(float) * 2 * resamp->taps);
+   resamp->ptr  = 0;
+   resamp->time = 0;
+}
+
 static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
       double cutoff,
       float *phase_table, int phases, int taps, int calculate_delta)
@@ -980,7 +992,8 @@ retro_resampler_t sinc_resampler = {
    resampler_sinc_free,
    RESAMPLER_API_VERSION,
    "sinc",
-   "sinc"
+   "sinc",
+   resampler_sinc_reset
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)

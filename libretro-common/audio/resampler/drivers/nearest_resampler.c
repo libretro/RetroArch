@@ -74,11 +74,19 @@ static void *resampler_nearest_init(const struct resampler_config *config,
    return re;
 }
 
+static void resampler_nearest_reset(void *re_)
+{
+   rarch_nearest_resampler_t *re = (rarch_nearest_resampler_t*)re_;
+   if (re)
+      re->fraction = 0;
+}
+
 retro_resampler_t nearest_resampler = {
    resampler_nearest_init,
    resampler_nearest_process,
    resampler_nearest_free,
    RESAMPLER_API_VERSION,
    "nearest",
-   "nearest"
+   "nearest",
+   resampler_nearest_reset
 };

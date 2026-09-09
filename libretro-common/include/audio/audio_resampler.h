@@ -156,6 +156,13 @@ typedef void (*resampler_free_t)(void *data);
 /* Processes input data. */
 typedef void (*resampler_process_t)(void *_data, struct resampler_data *data);
 
+/* Forgets the stream's history - the sample rings, the phase, the
+ * fractional position - leaving the configuration: tables, taps,
+ * quality. What a fresh init() would hold before its first process(),
+ * without the allocation, so a stream can be resumed after a gap
+ * on the thread that resamples. */
+typedef void (*resampler_reset_t)(void *data);
+
 typedef struct retro_resampler
 {
    resampler_init_t     init;
@@ -171,6 +178,10 @@ typedef struct retro_resampler
    /* Computer-friendly short version of ident.
     * Lower case, no spaces and special characters, etc. */
    const char *short_ident;
+
+   /* Optional; last, so an implementation that does not set it is
+    * NULL here, and the caller re-creates the state instead. */
+   resampler_reset_t    reset;
 } retro_resampler_t;
 
 typedef struct audio_frame_float

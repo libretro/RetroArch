@@ -537,11 +537,27 @@ static void resampler_CC_free(void *re_)
    (void)re_;
 }
 
+static void resampler_CC_reset(void *re_)
+{
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   int i;
+   if (!re)
+      return;
+   for (i = 0; i < 4; i++)
+   {
+      re->buffer[i].l = 0.0;
+      re->buffer[i].r = 0.0;
+   }
+   /* The starting distance init chose for the direction. */
+   re->distance = (re->process == resampler_CC_upsample) ? 2.0 : 0.0;
+}
+
 retro_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
    resampler_CC_free,
    RESAMPLER_API_VERSION,
    "CC",
-   "cc"
+   "cc",
+   resampler_CC_reset
 };

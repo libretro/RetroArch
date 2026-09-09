@@ -2202,10 +2202,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    {
       if (audio_st->resampler_bypassed)
       {
+         /* The history is stale after a bypass; forgotten in place
+          * where the backend can, on this thread with no allocator,
+          * or the state re-created where it cannot. */
          audio_st->resampler_bypassed = false;
-         retro_resampler_realloc(&audio_st->resampler_data,
-               &audio_st->resampler, audio_st->resampler_ident,
-               audio_st->resampler_quality, audio_st->src_ratio_orig);
+         if (audio_st->resampler && audio_st->resampler->reset
+               && audio_st->resampler_data)
+            audio_st->resampler->reset(audio_st->resampler_data);
+         else
+            retro_resampler_realloc(&audio_st->resampler_data,
+                  &audio_st->resampler, audio_st->resampler_ident,
+                  audio_st->resampler_quality, audio_st->src_ratio_orig);
       }
       if (audio_st->resampler_data)
          audio_st->resampler->process(audio_st->resampler_data, &src_data);

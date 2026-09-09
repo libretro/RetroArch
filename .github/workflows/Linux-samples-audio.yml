@@ -237,6 +237,21 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 240 ./pipeline_rate_control_test
           echo "[pass] pipeline_rate_control_test (TSan)"
 
+      - name: Build and run resampler_reset_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/resampler_reset
+        run: |
+          set -eu
+          # Every resampler backend's reset(): after it the stream
+          # continues as a freshly initialised backend would, to the
+          # sample, at the ratios the frontend meets - and the reset
+          # makes no allocation, counted through wrapped malloc, calloc
+          # and memalign_alloc.
+          make clean all SANITIZER=address,undefined
+          test -x resampler_reset_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 ./resampler_reset_test
+          echo "[pass] resampler_reset_test (ASan)"
+
       - name: Build and run ff_speedup_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/ff_speedup
