@@ -1351,6 +1351,7 @@ RETROARCH
 #ifdef HAVE_COMPANION_WIMP
 #include "../ui/companion/companion_core.c"
 #include "../ui/companion/companion_thumbs.c"
+#include "../ui/companion/companion_dock.c"
 #endif
 #include "../libretro-common/queues/task_queue.c"
 

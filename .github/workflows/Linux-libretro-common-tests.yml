@@ -150,6 +150,7 @@ jobs:
           sudo apt-get install -y -qq gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 > /dev/null
           tools/mingw_syntax_check.sh ui/drivers/ui_win32_companion.c \
              ui/companion/companion_core.c ui/companion/companion_thumbs.c \
+             ui/companion/companion_dock.c \
              gfx/gfx_anim_preview.c
 
       - name: AUTHORS_c.h in sync with AUTHORS.h

@@ -26,6 +26,7 @@ DEFS="-DRARCH_INTERNAL -DLIBRETRO_STRL_CHECK_OVERLAP -DHAVE_MENU -DHAVE_GLSL -DH
 
 CSRCS="ui/companion/companion_core.c \
        ui/companion/companion_thumbs.c \
+       ui/companion/companion_dock.c \
        gfx/gfx_anim_preview.c \
        ui/companion/test/companion_core_stubs.c \
        ui/companion/test/companion_core_test.c \

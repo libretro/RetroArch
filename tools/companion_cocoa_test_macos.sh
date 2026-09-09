@@ -20,6 +20,7 @@ DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_GLSL -DHAVE_CONFIGFILE -DHAVE_THREADS 
 
 CSRCS="ui/companion/companion_core.c \
        ui/companion/companion_thumbs.c \
+       ui/companion/companion_dock.c \
        gfx/gfx_anim_preview.c \
        ui/companion/test/companion_core_stubs.c \
        ui/companion/test/companion_core_test.c \

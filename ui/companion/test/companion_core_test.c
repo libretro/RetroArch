@@ -1097,6 +1097,46 @@ static void test_dock_rows(void)
    CHECK(!companion_dock_row_parse("sideways,1,10,10,-,0", &back), "unknown area rejected");
 }
 
+/* The Load Core picker's placement: it takes the size that shows every
+ * row without a scrollbar when the screen allows, is clamped to the
+ * work area otherwise (Qt opened taller than the screen), never
+ * shrinks below its minimum (Win32 opened at 420x400 whatever the
+ * list), and is centred over the companion window but kept on
+ * screen. */
+static void test_place_window(void)
+{
+   companion_rect_t avail = { 0, 0, 1920, 1040 };
+   companion_rect_t owner = { 320, 160, 1280, 720 };
+   companion_rect_t r;
+
+   /* Fits: the needed size, centred over the owner. */
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.w == 520 && r.h == 640 && r.x == 320 + (1280 - 520) / 2
+         && r.y == 160 + (720 - 640) / 2, "fits: needed size centred (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   /* Taller than the screen: clamped to the work area less the margin,
+    * pulled back on screen. */
+   companion_place_window(&avail, &owner, 520, 3000, 420, 400, &r);
+   CHECK(r.h == 1040 - 32 && r.y == 16, "taller than the screen: clamped and on screen (%d %d)", r.h, r.y);
+   /* Smaller than the minimum grows to it. */
+   companion_place_window(&avail, &owner, 200, 100, 420, 400, &r);
+   CHECK(r.w == 420 && r.h == 400, "below minimum grows to it (%dx%d)", r.w, r.h);
+   /* Owner half off the screen: the window still lands inside it. */
+   owner.x = 1500; owner.y = 900;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.x + r.w <= 1920 - 16 && r.y + r.h <= 1040 - 16 && r.x >= 16 && r.y >= 16,
+         "owner off the edge: window kept on screen (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   /* A work area with an origin (second monitor / dock on the left). */
+   avail.x = 1920; avail.y = 40; owner.x = 2000; owner.y = 100;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.x >= 1936 && r.y >= 56 && r.x + r.w <= 1920 + 1920 - 16,
+         "offset work area respected (%d,%d)", r.x, r.y);
+   /* A screen smaller than the minimum: the minimum still wins so the
+    * controls stay usable. */
+   avail.x = avail.y = 0; avail.w = 400; avail.h = 300; owner.x = owner.y = 0;
+   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
+   CHECK(r.w == 420 && r.h == 400, "tiny screen: minimum kept (%dx%d)", r.w, r.h);
+}
+
 /* The rows as the native companions' fixed grid: the Qt layout
  * Tatsuya79 reported (Screenshots above Title Screen, both split out
  * of the tab group, Core Info hidden) reads as a right column showing
@@ -1185,44 +1225,193 @@ static void test_dock_grid(void)
          "grid: nothing written with the setting off");
 }
 
-/* The Load Core picker's placement: it takes the size that shows every
- * row without a scrollbar when the screen allows, is clamped to the
- * work area otherwise (Qt opened taller than the screen), never
- * shrinks below its minimum (Win32 opened at 420x400 whatever the
- * list), and is centred over the companion window but kept on
- * screen. */
-static void test_place_window(void)
-{
-   companion_rect_t avail = { 0, 0, 1920, 1040 };
-   companion_rect_t owner = { 320, 160, 1280, 720 };
-   companion_rect_t r;
+/* The dock layout model (ui/companion/companion_dock.c): the same
+ * placement, sizing and hit-testing Qt's QMainWindow gives the Qt
+ * companion, for the native companions to render. */
+#include "../companion_dock.h"
 
-   /* Fits: the needed size, centred over the owner. */
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.w == 520 && r.h == 640 && r.x == 320 + (1280 - 520) / 2
-         && r.y == 160 + (720 - 640) / 2, "fits: needed size centred (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
-   /* Taller than the screen: clamped to the work area less the margin,
-    * pulled back on screen. */
-   companion_place_window(&avail, &owner, 520, 3000, 420, 400, &r);
-   CHECK(r.h == 1040 - 32 && r.y == 16, "taller than the screen: clamped and on screen (%d %d)", r.h, r.y);
-   /* Smaller than the minimum grows to it. */
-   companion_place_window(&avail, &owner, 200, 100, 420, 400, &r);
-   CHECK(r.w == 420 && r.h == 400, "below minimum grows to it (%dx%d)", r.w, r.h);
-   /* Owner half off the screen: the window still lands inside it. */
-   owner.x = 1500; owner.y = 900;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.x + r.w <= 1920 - 16 && r.y + r.h <= 1040 - 16 && r.x >= 16 && r.y >= 16,
-         "owner off the edge: window kept on screen (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
-   /* A work area with an origin (second monitor / dock on the left). */
-   avail.x = 1920; avail.y = 40; owner.x = 2000; owner.y = 100;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.x >= 1936 && r.y >= 56 && r.x + r.w <= 1920 + 1920 - 16,
-         "offset work area respected (%d,%d)", r.x, r.y);
-   /* A screen smaller than the minimum: the minimum still wins so the
-    * controls stay usable. */
-   avail.x = avail.y = 0; avail.w = 400; avail.h = 300; owner.x = owner.y = 0;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.w == 420 && r.h == 400, "tiny screen: minimum kept (%dx%d)", r.w, r.h);
+static int dock_slot_of(const companion_dock_layout_t *l, enum companion_dock_id p)
+{
+   enum companion_dock_area side;
+   int idx;
+   return companion_dock_find(l, p, &side, &idx) ? idx : -1;
+}
+
+static void test_dock_model(void)
+{
+   companion_dock_layout_t l, back;
+   companion_dock_geometry_t g;
+   companion_dock_metrics_t m;
+   companion_rect_t client = { 0, 0, 1280, 720 };
+   companion_dock_hit_t hit;
+   companion_dock_drop_t drop;
+   settings_t *settings = config_get_ptr();
+   enum companion_dock_area side;
+   int idx, i;
+
+   m.gap = 5; m.strip_h = 20; m.tab_h = 22; m.min_pane = 60;
+   m.def_side = 280; m.def_bar = 150; m.def_slot = 200;
+
+   /* The default is Qt's: three left, a four-tab group above Core Info
+    * on the right, the log hidden below. */
+   companion_dock_default(&l);
+   CHECK(l.nslots[COMPANION_DOCK_LEFT] == 3 && l.nslots[COMPANION_DOCK_RIGHT] == 2
+         && l.nslots[COMPANION_DOCK_BOTTOM] == 1 && !l.shown[COMPANION_DOCK_LOG]
+         && l.slots[COMPANION_DOCK_RIGHT][0].n == 4
+         && companion_dock_raised(&l, COMPANION_DOCK_TITLE) == COMPANION_DOCK_BOXART,
+         "dock: default layout");
+
+   /* Layout: every shown pane gets a rect, tabs share their slot,
+    * hidden log takes no room, the content sits between the sides. */
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(g.laid_out[COMPANION_DOCK_SEARCH] && g.laid_out[COMPANION_DOCK_BOXART]
+         && !g.laid_out[COMPANION_DOCK_TITLE] && !g.laid_out[COMPANION_DOCK_LOG]
+         && g.laid_out[COMPANION_DOCK_CORE_INFO], "dock: laid-out set");
+   CHECK(g.content.x == 285 && g.content.w == 1280 - 2 * 285 && g.content.h == 720,
+         "dock: content between the sides (%d,%d %dx%d)", g.content.x, g.content.y, g.content.w, g.content.h);
+   CHECK(g.tabbar[COMPANION_DOCK_BOXART].h == 22 && g.tabbar[COMPANION_DOCK_CORE_INFO].h == 0
+         && g.strip[COMPANION_DOCK_BOXART].h == 20
+         && g.pane[COMPANION_DOCK_CORE_INFO].y > g.pane[COMPANION_DOCK_BOXART].y,
+         "dock: tab bar on the group only, Core Info below the thumbnails");
+   CHECK(g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h == 720,
+         "dock: the last slot reaches the bottom (%d)", g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h);
+   CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size + l.slots[COMPANION_DOCK_RIGHT][1].size + 5 == 720,
+         "dock: sizes written back (%d + %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
+   CHECK(g.ngaps == 2 + 2 + 1, "dock: two side gaps, two between the left slots, one on the right (%d)", g.ngaps);
+
+   /* Hit testing: the strip, a tab, a gap. */
+   companion_dock_hit_test(&l, &g, &m, g.strip[COMPANION_DOCK_BOXART].x + 4, g.strip[COMPANION_DOCK_BOXART].y + 4, &hit);
+   CHECK(hit.kind == COMPANION_DOCK_HIT_STRIP && hit.pane == COMPANION_DOCK_BOXART, "dock: hit the thumbnail strip");
+   companion_dock_hit_test(&l, &g, &m, g.tabbar[COMPANION_DOCK_BOXART].x + g.tabbar[COMPANION_DOCK_BOXART].w * 3 / 8,
+         g.tabbar[COMPANION_DOCK_BOXART].y + 4, &hit);
+   CHECK(hit.kind == COMPANION_DOCK_HIT_TAB && hit.pane == COMPANION_DOCK_TITLE, "dock: hit the second tab (%d)", (int)hit.pane);
+   companion_dock_hit_test(&l, &g, &m, 282, 300, &hit);
+   CHECK(hit.kind == COMPANION_DOCK_HIT_GAP && g.gaps[hit.gap].side == COMPANION_DOCK_LEFT
+         && g.gaps[hit.gap].index == -1, "dock: hit the left edge gap");
+
+   /* Dragging that gap widens the left side; the next layout honours it. */
+   companion_dock_drag_gap(&l, &g, &m, &client, hit.gap, 340);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(l.side_size[COMPANION_DOCK_LEFT] == 340 && g.content.x == 345, "dock: left side dragged to 340 (%d)", g.content.x);
+   /* And the gap between the right slots moves the split. */
+   for (i = 0; i < g.ngaps; i++)
+      if (g.gaps[i].side == COMPANION_DOCK_RIGHT && g.gaps[i].index == 0)
+         break;
+   CHECK(i < g.ngaps, "dock: gap between the right slots found");
+   companion_dock_drag_gap(&l, &g, &m, &client, i, 500);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size >= 495 && l.slots[COMPANION_DOCK_RIGHT][0].size <= 500
+         && g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h == 720,
+         "dock: right split dragged (%d / %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
+
+   /* Tatsuya79's layout by edits: Screenshots out of the group into a
+    * slot above Title Screen, which comes out too; Boxart and Logo stay
+    * grouped; Core Info hidden. */
+   companion_dock_place(&l, COMPANION_DOCK_SCREENSHOT, COMPANION_DOCK_RIGHT, 0);
+   companion_dock_place(&l, COMPANION_DOCK_TITLE, COMPANION_DOCK_RIGHT, 1);
+   companion_dock_set_shown(&l, COMPANION_DOCK_CORE_INFO, false);
+   CHECK(l.nslots[COMPANION_DOCK_RIGHT] == 4 && dock_slot_of(&l, COMPANION_DOCK_SCREENSHOT) == 0
+         && dock_slot_of(&l, COMPANION_DOCK_TITLE) == 1 && dock_slot_of(&l, COMPANION_DOCK_BOXART) == 2
+         && l.slots[COMPANION_DOCK_RIGHT][2].n == 2 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3,
+         "dock: split out and stacked (%d slots)", l.nslots[COMPANION_DOCK_RIGHT]);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(g.laid_out[COMPANION_DOCK_SCREENSHOT] && g.laid_out[COMPANION_DOCK_TITLE]
+         && g.pane[COMPANION_DOCK_SCREENSHOT].y < g.pane[COMPANION_DOCK_TITLE].y
+         && !g.laid_out[COMPANION_DOCK_CORE_INFO], "dock: Screenshots above Title Screen, Core Info gone");
+
+   /* Rows: what the Qt companion writes, read back identical. */
+   settings->bools.desktop_menu_save_dock_positions = true;
+   companion_dock_to_rows(settings, &l);
+   CHECK(strncmp(settings->arrays.desktop_menu_dock_screenshot, "right,1,", 8) == 0
+         && strstr(settings->arrays.desktop_menu_dock_screenshot, ",-,0,0") != NULL
+         && strstr(settings->arrays.desktop_menu_dock_title, ",-,0,1") != NULL
+         && strstr(settings->arrays.desktop_menu_dock_logo, ",boxart,0,2") != NULL
+         && strncmp(settings->arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0
+         && strstr(settings->arrays.desktop_menu_dock_core_info, ",-,0,3") != NULL,
+         "dock: rows (%s / %s / %s / %s)", settings->arrays.desktop_menu_dock_screenshot,
+         settings->arrays.desktop_menu_dock_title, settings->arrays.desktop_menu_dock_logo,
+         settings->arrays.desktop_menu_dock_core_info);
+   CHECK(companion_dock_from_rows(settings, &back), "dock: rows read back");
+   CHECK(memcmp(&back.nslots, &l.nslots, sizeof(l.nslots)) == 0
+         && memcmp(back.area, l.area, sizeof(l.area)) == 0
+         && memcmp(back.shown, l.shown, sizeof(l.shown)) == 0
+         && back.side_size[COMPANION_DOCK_LEFT] == 340
+         && back.slots[COMPANION_DOCK_RIGHT][0].size == l.slots[COMPANION_DOCK_RIGHT][0].size
+         && back.slots[COMPANION_DOCK_RIGHT][2].n == 2
+         && companion_dock_raised(&back, COMPANION_DOCK_LOGO) == COMPANION_DOCK_BOXART,
+         "dock: rows round trip is a fixed point");
+   /* The rows Qt itself writes for that layout (from the persist test)
+    * read into the same shape. */
+   strlcpy(settings->arrays.desktop_menu_dock_search,     "left,1,289,59,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_playlists,  "left,1,289,531,-,0,1", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_core,       "left,1,289,77,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_title,      "right,1,186,224,-,0,1", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_screenshot, "right,1,186,449,-,0,0", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_logo,       "right,0,0,0,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+   strlcpy(settings->arrays.desktop_menu_dock_log,        "bottom,0,0,0,-,0,0", 64);
+   CHECK(companion_dock_from_rows(settings, &back) && dock_slot_of(&back, COMPANION_DOCK_SCREENSHOT) == 0
+         && dock_slot_of(&back, COMPANION_DOCK_TITLE) == 1 && !back.shown[COMPANION_DOCK_BOXART]
+         && back.side_size[COMPANION_DOCK_RIGHT] == 186 && back.slots[COMPANION_DOCK_RIGHT][0].size == 449,
+         "dock: Qt's rows for the layout read into it");
+
+   /* Drops: the middle of a pane tabs onto it, its thirds slot before
+    * and after, the client's edge band a side's end, elsewhere floats. */
+   companion_dock_default(&l);
+   companion_dock_layout(&l, &m, &client, &g);
+   companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG,
+         g.pane[COMPANION_DOCK_CORE_INFO].x + 10,
+         g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h / 2, &drop);
+   CHECK(drop.kind == COMPANION_DOCK_DROP_TAB && drop.onto == COMPANION_DOCK_CORE_INFO, "dock: drop mid-pane tabs");
+   companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG,
+         g.strip[COMPANION_DOCK_CORE_INFO].x + 10, g.strip[COMPANION_DOCK_CORE_INFO].y + 2, &drop);
+   CHECK(drop.kind == COMPANION_DOCK_DROP_SLOT && drop.side == COMPANION_DOCK_RIGHT && drop.index == 1,
+         "dock: drop on the top third slots before (%d)", drop.index);
+   companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG, 640, 715, &drop);
+   CHECK(drop.kind == COMPANION_DOCK_DROP_SLOT && drop.side == COMPANION_DOCK_BOTTOM, "dock: drop on the bottom band");
+   companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG, 640, 360, &drop);
+   CHECK(drop.kind == COMPANION_DOCK_DROP_FLOAT, "dock: drop mid-content floats");
+   {
+      companion_rect_t fr = { 100, 100, 300, 200 };
+      companion_dock_apply_drop(&l, COMPANION_DOCK_LOG, &drop, &fr);
+      CHECK(l.area[COMPANION_DOCK_LOG] == COMPANION_DOCK_FLOAT && l.shown[COMPANION_DOCK_LOG]
+            && l.floats[COMPANION_DOCK_LOG].w == 300 && l.nslots[COMPANION_DOCK_BOTTOM] == 0,
+            "dock: floated and shown, bottom side emptied");
+      companion_dock_to_rows(settings, &l);
+      CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "float,1,300,200,-,0,0,100,100") == 0,
+            "dock: floating row (%s)", settings->arrays.desktop_menu_dock_log);
+   }
+   /* Tabifying onto a standalone makes a group; raising picks the tab;
+    * placing back out shrinks it; detaching the raised member keeps
+    * the group's raised index valid. */
+   companion_dock_tabify(&l, COMPANION_DOCK_LOG, COMPANION_DOCK_CORE_INFO);
+   CHECK(companion_dock_is_tabbed(&l, COMPANION_DOCK_CORE_INFO)
+         && companion_dock_raised(&l, COMPANION_DOCK_CORE_INFO) == COMPANION_DOCK_LOG, "dock: tabified and raised");
+   companion_dock_raise(&l, COMPANION_DOCK_CORE_INFO);
+   CHECK(companion_dock_raised(&l, COMPANION_DOCK_LOG) == COMPANION_DOCK_CORE_INFO, "dock: raise");
+   companion_dock_place(&l, COMPANION_DOCK_CORE_INFO, COMPANION_DOCK_LEFT, 99);
+   CHECK(!companion_dock_is_tabbed(&l, COMPANION_DOCK_LOG) && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3
+         && companion_dock_find(&l, COMPANION_DOCK_CORE_INFO, &side, &idx) && side == COMPANION_DOCK_LEFT
+         && companion_dock_raised(&l, COMPANION_DOCK_LOG) == COMPANION_DOCK_LOG,
+         "dock: placed out of the group to the left's end");
+   /* Moving a slot down its own side lands where asked. */
+   companion_dock_place(&l, COMPANION_DOCK_SEARCH, COMPANION_DOCK_LEFT, 3);
+   CHECK(dock_slot_of(&l, COMPANION_DOCK_SEARCH) == 2 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3
+         && dock_slot_of(&l, COMPANION_DOCK_PLAYLISTS) == 0, "dock: moved down its own side (%d)", dock_slot_of(&l, COMPANION_DOCK_SEARCH));
+
+   /* A side whose panes are all hidden takes no room. */
+   companion_dock_default(&l);
+   for (i = COMPANION_DOCK_BOXART; i <= COMPANION_DOCK_CORE_INFO; i++)
+      companion_dock_set_shown(&l, (enum companion_dock_id)i, false);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(g.content.x + g.content.w == 1280, "dock: hidden right side takes no room (%d)", g.content.x + g.content.w);
+   /* A tiny client keeps the content's minimum. */
+   client.w = 200; client.h = 100;
+   companion_dock_default(&l);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(g.content.w >= 60 && g.content.h >= 60, "dock: tiny client keeps the content (%dx%d)", g.content.w, g.content.h);
+   settings->bools.desktop_menu_save_dock_positions = false;
 }
 
 int main(void)
@@ -1246,8 +1435,9 @@ int main(void)
    test_run_paths();
    test_launch_options();
    test_dock_rows();
-   test_dock_grid();
    test_place_window();
+   test_dock_grid();
+   test_dock_model();
    teardown();
    if (fails)
    {

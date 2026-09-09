@@ -28,6 +28,7 @@ INC="-I. -I$LC/include -Ideps -Igfx/include"
 DEFS="-DRARCH_INTERNAL -DLIBRETRO_STRL_CHECK_OVERLAP -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DHAVE_RTGA -DHAVE_GLSL -DCOMPANION_CORE_TESTING"
 SRCS="ui/companion/companion_core.c \
       ui/companion/companion_thumbs.c \
+      ui/companion/companion_dock.c \
       gfx/gfx_anim_preview.c \
       $LC/memory/mem_stats.c \
       $LC/formats/tga/rtga.c \
