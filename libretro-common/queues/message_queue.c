@@ -106,28 +106,47 @@ bool msg_queue_deinitialize(msg_queue_t *queue)
  * @prio              : priority level of the message
  * @duration          : how many times the message can be pulled
  *                      before it vanishes (E.g. show a message for
- *                      3 seconds @ 60fps = 180 duration).
+ *                      3 seconds @ 60fps = 180 duration). Zero is
+ *                      taken as one.
  *
- * Push a new message onto the queue.
+ * Push a new message onto the queue. Silent when the queue is full
+ * or an allocation fails; msg_queue_try_push() says so instead.
  **/
-void msg_queue_push(msg_queue_t *queue, const char *msg,
+bool msg_queue_try_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration,
-      char *title,
+      const char *title,
       enum message_queue_icon icon, enum message_queue_category category)
 {
    size_t tmp_ptr = 0;
    struct queue_elem *new_elem = NULL;
 
    if (!queue || queue->ptr >= queue->size)
-      return;
+      return false;
 
+   /* Everything the node needs is allocated before the heap is
+    * touched, so a failure leaves the queue as it was. */
    if (!(new_elem = (struct queue_elem*)malloc(sizeof(struct queue_elem))))
-      return;
+      return false;
+   new_elem->msg   = NULL;
+   new_elem->title = NULL;
+   if (msg && !(new_elem->msg = strdup(msg)))
+   {
+      free(new_elem);
+      return false;
+   }
+   if (title && !(new_elem->title = strdup(title)))
+   {
+      free(new_elem->msg);
+      free(new_elem);
+      return false;
+   }
 
-   new_elem->duration            = duration;
+   /* A duration is pulls: a message asked for none at all is shown
+    * once and gone, not kept until something replaces it. Nothing in
+    * the tree asks for zero; a core's message shorter than a frame
+    * rounds to it. */
+   new_elem->duration            = duration ? duration : 1;
    new_elem->prio                = prio;
-   new_elem->msg                 = msg   ? strdup(msg)   : NULL;
-   new_elem->title               = title ? strdup(title) : NULL;
    new_elem->icon                = icon;
    new_elem->category            = category;
 
@@ -148,6 +167,15 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
 
       tmp_ptr >>= 1;
    }
+   return true;
+}
+
+void msg_queue_push(msg_queue_t *queue, const char *msg,
+      unsigned prio, unsigned duration,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{
+   msg_queue_try_push(queue, msg, prio, duration, title, icon, category);
 }
 
 /**

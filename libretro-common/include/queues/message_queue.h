@@ -95,6 +95,14 @@ bool msg_queue_initialize(msg_queue_t *queue, size_t len);
  *
  * Push a new message onto the queue.
  **/
+/* As msg_queue_push(), and says whether the message went in: false
+ * when the queue is full or an allocation failed, and then the queue
+ * is as it was. */
+bool msg_queue_try_push(msg_queue_t *queue, const char *msg,
+      unsigned prio, unsigned duration,
+      const char *title,
+      enum message_queue_icon icon, enum message_queue_category category);
+
 void msg_queue_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration,
       char *title,
