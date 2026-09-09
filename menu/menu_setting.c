@@ -11795,14 +11795,14 @@ static const setting_desc_t vid_desc_15[] = {
 };
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3) && !defined(WEBOS)
 static const setting_desc_t vid_desc_16[] = {
 /* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
 #include "../settings/settings_def_video_window_save_position.h"
 };
 #endif
 
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3) && !defined(WEBOS))
 static const setting_desc_t vid_desc_17[] = {
 /* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
 #include "../settings/settings_def_video_window_custom_size.h"
@@ -14667,7 +14667,7 @@ static void settings_build_video(
 #endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    defined(HAVE_SDL3) && !defined(WEBOS)
             ADD_DESC(vid_desc_16);
 #else
             ADD_DESC(vid_desc_17);

@@ -11237,7 +11237,7 @@ unsigned menu_displaylist_build_list(
          {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    defined(HAVE_SDL3) && !defined(WEBOS)
             bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
             bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
@@ -11245,7 +11245,7 @@ unsigned menu_displaylist_build_list(
             static menu_displaylist_build_info_selective_t build_list[] = {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    defined(HAVE_SDL3) && !defined(WEBOS)
                {MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,      PARSE_ONLY_BOOL,  true },
 #else
                {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },

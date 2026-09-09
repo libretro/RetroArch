@@ -656,6 +656,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+#elif defined(WEBOS) && defined(HAVE_SDL3)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL3;
 #elif defined(WEBOS) && defined(HAVE_WAYLAND)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 #elif defined(__EMSCRIPTEN__)

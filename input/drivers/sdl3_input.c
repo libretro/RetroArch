@@ -33,6 +33,11 @@
 
 #include "../../gfx/common/sdl3_common.h"
 
+#ifdef WEBOS
+#include <SDL3/SDL_webOS.h>
+#include <dlfcn.h>
+#endif
+
 /* OVERLAY_MAX_TOUCH */
 #define SDL3_MAX_TOUCH 16
 
@@ -77,6 +82,75 @@ typedef struct sdl3_input
    } touches[SDL3_MAX_TOUCH];
 } sdl3_input_t;
 
+#ifdef WEBOS
+enum sdl_webos_special_key
+{
+   sdl_webos_spkey_back,
+   sdl_webos_spkey_return,
+   sdl_webos_spkey_up,
+   sdl_webos_spkey_down,
+   sdl_webos_spkey_left,
+   sdl_webos_spkey_right,
+   sdl_webos_spkey_size,
+};
+
+static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
+
+/* Set after a real typing key while the OSK/line editor is open. Magic
+ * Remote arrows/OK/digits must leave this false so the OSK grid stays
+ * under remote control. */
+static bool sdl_webos_phys_kbd_typing = false;
+
+/* One-shot sticky keys: webOS often delivers KEYDOWN+KEYUP in the same
+ * poll, so SDL_GetKeyboardState is already clear when the menu reads input. */
+static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
+{
+   if (sdl_webos_special_keymap[slot])
+   {
+      sdl_webos_special_keymap[slot] = 0;
+      return true;
+   }
+   return false;
+}
+
+static bool sdl_webos_is_remote_nav_scancode(SDL_Scancode scancode)
+{
+   switch ((int)scancode)
+   {
+      case SDL_SCANCODE_UP:
+      case SDL_SCANCODE_DOWN:
+      case SDL_SCANCODE_LEFT:
+      case SDL_SCANCODE_RIGHT:
+      case SDL_SCANCODE_RETURN:
+      case SDL_SCANCODE_ESCAPE:
+      case SDL_SCANCODE_PAGEUP:
+      case SDL_SCANCODE_PAGEDOWN:
+      case SDL_WEBOS_SCANCODE_BACK:
+      case SDL_WEBOS_SCANCODE_RED:
+      case SDL_WEBOS_SCANCODE_GREEN:
+      case SDL_WEBOS_SCANCODE_YELLOW:
+      case SDL_WEBOS_SCANCODE_BLUE:
+      case SDL_WEBOS_SCANCODE_EXIT:
+         return true;
+      default:
+         return false;
+   }
+}
+
+/* Keys that mean a physical BT keyboard is in use (not Magic Remote). */
+static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
+{
+   if (sdl_webos_is_remote_nav_scancode(scancode))
+      return false;
+
+   /* Remote digit row inserts text but must not switch to caret mode. */
+   if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_0)
+      return false;
+
+   return true;
+}
+#endif
+
 /* Rebuilt on SDL_EVENT_KEYMAP_CHANGED (e.g. system layout switch). */
 static void sdl3_build_scancode_lut(sdl3_input_t *sdl)
 {
@@ -117,10 +191,57 @@ static void *sdl3_input_init(const char *joypad_driver)
 
 static bool sdl3_key_pressed(sdl3_input_t *sdl, int key)
 {
+   SDL_Scancode sym = 0;
+
+   if (!key)
+      return false;
+
+#ifdef WEBOS
+   if (key == RETROK_BACKSPACE
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_back))
+      return true;
+   /* Sticky pulse (Magic Remote) → OSK grid / OK. Held BT keys must not
+    * also report as menu joypad while the line editor owns them. */
+   if (key == RETROK_RETURN
+         || key == RETROK_UP
+         || key == RETROK_DOWN
+         || key == RETROK_LEFT
+         || key == RETROK_RIGHT)
+   {
+      enum sdl_webos_special_key slot = sdl_webos_spkey_return;
+
+      if (key == RETROK_UP)
+         slot = sdl_webos_spkey_up;
+      else if (key == RETROK_DOWN)
+         slot = sdl_webos_spkey_down;
+      else if (key == RETROK_LEFT)
+         slot = sdl_webos_spkey_left;
+      else if (key == RETROK_RIGHT)
+         slot = sdl_webos_spkey_right;
+
+      if (sdl_webos_sticky_pressed(slot))
+         return true;
+
+      if (input_state_get_ptr()
+            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+         return false;
+   }
+   if (key == RETROK_F1 && sdl->kb_state[SDL_WEBOS_SCANCODE_EXIT])
+      return true;
+   if (key == RETROK_x && sdl->kb_state[SDL_WEBOS_SCANCODE_RED])
+      return true;
+   if (key == RETROK_z && sdl->kb_state[SDL_WEBOS_SCANCODE_GREEN])
+      return true;
+   if (key == RETROK_s && sdl->kb_state[SDL_WEBOS_SCANCODE_YELLOW])
+      return true;
+   if (key == RETROK_a && sdl->kb_state[SDL_WEBOS_SCANCODE_BLUE])
+      return true;
+#endif
+
    /* The keyboard state array is refreshed by SDL while pumping
     * window events - it stays empty until a focused SDL3 window
     * exists (i.e. the SDL3 video driver is running). */
-   SDL_Scancode sym = sdl->key_scancode_lut[key];
+   sym = sdl->key_scancode_lut[key];
 
    if ((int)sym >= sdl->kb_num_keys)
       return false;
@@ -245,14 +366,35 @@ static int16_t sdl3_input_state(
                   return sdl->mouse_l;
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return sdl->mouse_r;
+#ifdef WEBOS
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  /* Note: webOS wheel is reversed */
+                  if (sdl->mouse_wd != 0)
+                  {
+                      sdl->mouse_wd = 0;
+                      return 1;
+                  }
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (sdl->mouse_wu != 0)
+                  {
+                      sdl->mouse_wu = 0;
+                      return 1;
+                  }
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
+                   * RETRO_DEVICE_MOUSE stays relative for cores. */
+                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
+                        ? sdl->mouse_abs_x : sdl->mouse_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
+                        ? sdl->mouse_abs_y : sdl->mouse_y;
+#else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  return sdl->mouse_wr;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  return sdl->mouse_wl;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_x;
@@ -261,6 +403,11 @@ static int16_t sdl3_input_state(
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_y;
                   return sdl->mouse_y;
+#endif
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  return sdl->mouse_wr;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  return sdl->mouse_wl;
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
@@ -667,6 +814,25 @@ static void sdl3_paste_clipboard(void)
    SDL_free(text);
 }
 
+#ifdef WEBOS
+bool SDL_webOSCursorVisibility(bool visible)
+{
+   static bool (*fn)(bool visible) = NULL;
+   static bool dlsym_called                = false;
+   if (!dlsym_called)
+   {
+      fn                                   = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
+      dlsym_called                         = true;
+   }
+   if (!fn)
+   {
+      SDL_ShowCursor();
+      return true;
+   }
+   return fn(visible);
+}
+#endif
+
 static void sdl3_input_poll(void *data)
 {
    SDL_Event event;
@@ -695,6 +861,83 @@ static void sdl3_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.key);
 
+#ifdef WEBOS
+         input_driver_state_t *input_st = input_state_get_ptr();
+         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
+         if (!osk_active)
+            sdl_webos_phys_kbd_typing = false;
+
+         switch ((int) event.key.scancode)
+         {
+            case SDL_WEBOS_SCANCODE_BACK:
+               /* Because webOS is sending DOWN/UP at the same time,
+                  we save this flag for later */
+               sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_EVENT_KEY_DOWN;
+               code = RETROK_BACKSPACE;
+               break;
+            case SDL_WEBOS_SCANCODE_RED:
+               code = RETROK_x;
+               break;
+            case SDL_WEBOS_SCANCODE_GREEN:
+               code = RETROK_z;
+               break;
+            case SDL_WEBOS_SCANCODE_YELLOW:
+               code = RETROK_s;
+               break;
+            case SDL_WEBOS_SCANCODE_BLUE:
+               code = RETROK_a;
+               break;
+            case SDL_WEBOS_SCANCODE_EXIT:
+               code = RETROK_F1;
+               break;
+            case SDL_SCANCODE_UP:
+            case SDL_SCANCODE_DOWN:
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_RIGHT:
+               /* Default: Magic Remote → OSK grid. After BT typing keys,
+                * ←/→ move the caret and ↑/↓ act as home/end. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
+               {
+                  if (event.type == SDL_EVENT_KEY_DOWN)
+                  {
+                     if (event.key.scancode == SDL_SCANCODE_UP)
+                        sdl_webos_special_keymap[sdl_webos_spkey_up] = 1;
+                     else if (event.key.scancode == SDL_SCANCODE_DOWN)
+                        sdl_webos_special_keymap[sdl_webos_spkey_down] = 1;
+                     else if (event.key.scancode == SDL_SCANCODE_LEFT)
+                        sdl_webos_special_keymap[sdl_webos_spkey_left] = 1;
+                     else
+                        sdl_webos_special_keymap[sdl_webos_spkey_right] = 1;
+                  }
+                  continue;
+               }
+               break;
+            case SDL_SCANCODE_RETURN:
+               /* Default: remote OK → OSK select. After BT typing → save. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
+               {
+                  if (event.type == SDL_EVENT_KEY_DOWN)
+                     sdl_webos_special_keymap[sdl_webos_spkey_return] = 1;
+                  continue;
+               }
+               break;
+            default:
+               break;
+         }
+
+         /* Letters / numpad / backspace / punctuation ⇒ BT keyboard session.
+          * Remote digit row is excluded (see sdl_webos_scancode_enables_phys_kbd). */
+         if (osk_active
+               && event.type == SDL_EVENT_KEY_DOWN
+               && sdl_webos_scancode_enables_phys_kbd(event.key.scancode))
+            sdl_webos_phys_kbd_typing = true;
+
+         /* Disable cursor when using the buttons */
+         if (code && code != RETROK_RETURN)
+            SDL_webOSCursorVisibility(false);
+
+#endif
          /* Allow pasting the clipboard. */
          if (     event.type == SDL_EVENT_KEY_DOWN
                && event.key.key == SDLK_V
@@ -704,9 +947,18 @@ static void sdl3_input_poll(void *data)
             sdl3_paste_clipboard();
             continue;
          }
+            uint32_t character = sdl3_translate_control_key(code, mod);
+#ifdef WEBOS
+            if (code == RETROK_RETURN || code == RETROK_KP_ENTER)
+               character = '\r';
+
+            /* Numpad Enter is never sent by the Magic Remote; always save. */
+            if (code == RETROK_KP_ENTER)
+               sdl_webos_phys_kbd_typing = true;
+#endif
 
          input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN,
-               code, sdl3_translate_control_key(code, mod), mod,
+               code, character, mod,
                RETRO_DEVICE_KEYBOARD);
       }
       else if (event.type == SDL_EVENT_TEXT_INPUT)

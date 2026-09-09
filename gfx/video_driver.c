@@ -4748,7 +4748,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
     (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    defined(HAVE_SDL3) && !defined(WEBOS)
          bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
          bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
