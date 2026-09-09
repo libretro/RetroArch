@@ -6836,15 +6836,18 @@ static void vulkan_hw_ring_fence_signal(void *data, void *fence)
 
 /* Fences need no queue and no lock: waiting and resetting one is safe
  * from any thread, and the wrapper is the only user of these. */
-static void vulkan_hw_ring_fence_wait(void *data, void *fence)
+static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    VkFence f;
    vk_t *vk = (vk_t*)data;
    if (!vk || !vk->context || !fence)
-      return;
+      return true;
    f = (VkFence)(uintptr_t)fence;
-   vkWaitForFences(vk->context->device, 1, &f, VK_TRUE, UINT64_MAX);
+   if (vkWaitForFences(vk->context->device, 1, &f, VK_TRUE,
+            (uint64_t)timeout_us * 1000) != VK_SUCCESS)
+      return false;
    vkResetFences(vk->context->device, 1, &f);
+   return true;
 }
 
 static retro_time_t vulkan_get_last_present_time(void *data)

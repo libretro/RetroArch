@@ -6318,11 +6318,12 @@ static void d3d11_hw_ring_fence_signal(void *data, void *fence)
       SetEvent((HANDLE)fence);
 }
 
-static void d3d11_hw_ring_fence_wait(void *data, void *fence)
+static bool d3d11_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    (void)data;
-   if (fence)
-      WaitForSingleObject((HANDLE)fence, INFINITE);
+   if (!fence)
+      return true;
+   return WaitForSingleObject((HANDLE)fence, (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
 }
 
 static void d3d11_hw_ring_free(d3d11_video_t *d3d11)

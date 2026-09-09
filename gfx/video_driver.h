@@ -785,11 +785,16 @@ typedef struct video_poke_interface
          const void *cmd, unsigned num_cmd);
    /* A fence the wrapper owns: created unsignalled, signalled by
     * hw_ring_fence_signal after the frame the driver just submitted,
-    * waited and reset by hw_ring_fence_wait from any thread. */
+    * waited and reset by hw_ring_fence_wait from any thread. The wait
+    * is bounded: it returns true once the fence has signalled and been
+    * reset, false when timeout_us passed first, and the wrapper calls
+    * it again. Bounded because the waiting thread is the main thread,
+    * and on Cocoa the video thread may need the main thread to run a
+    * job before it can signal; an unbounded wait there is a deadlock. */
    bool (*hw_ring_fence_new)(void *data, void **fence);
    void (*hw_ring_fence_free)(void *data, void *fence);
    void (*hw_ring_fence_signal)(void *data, void *fence);
-   void (*hw_ring_fence_wait)(void *data, void *fence);
+   bool (*hw_ring_fence_wait)(void *data, void *fence, unsigned timeout_us);
    /* For drivers whose hardware cores hand over a whole texture each
     * frame rather than an image plus synchronisation (Direct3D 12): the
     * driver keeps a copy per ring slot. capture copies the core's
@@ -1155,6 +1160,7 @@ bool video_thread_hw_allowed(void);
  * from this thread. */
 #define video_thread_swap_count() (video_state_get_ptr()->swap_count)
 #define video_thread_call_on_waiter(fn, data) ((fn)(data))
+#define video_thread_main_pump() do { } while (0)
 #define video_thread_latency_stats(a, w, d) (*(a) = 0, *(w) = 0, *(d) = false, false)
 #endif
 

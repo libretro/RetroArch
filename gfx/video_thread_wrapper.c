@@ -276,6 +276,14 @@ static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, threa
    video_thread_user_release(thr);
 }
 
+void video_thread_main_pump(void)
+{
+#ifdef __APPLE__
+   void cocoa_main_thread_pump(void);
+   cocoa_main_thread_pump();
+#endif
+}
+
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
 {
    thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;

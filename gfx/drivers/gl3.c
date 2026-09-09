@@ -5816,15 +5816,18 @@ static void gl3_hw_ring_fence_signal(void *data, void *fence)
    glFlush();
 }
 
-static void gl3_hw_ring_fence_wait(void *data, void *fence)
+static bool gl3_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
    (void)data;
    if (!f || !f->sync)
-      return;
-   glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+      return true;
+   if (glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+            (GLuint64)timeout_us * 1000) == GL_TIMEOUT_EXPIRED)
+      return false;
    glDeleteSync((GLsync)f->sync);
    f->sync = NULL;
+   return true;
 }
 
 static uintptr_t gl3_get_current_framebuffer(void *data)

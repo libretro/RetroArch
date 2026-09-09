@@ -500,6 +500,13 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
  * wrapper (or from the video thread) it is the plain value. */
 uint64_t video_thread_swap_count(void);
 
+/* On the main thread, on Cocoa: run the trampoline mode briefly so a
+ * job the video thread marshalled to the main thread can run. Anywhere
+ * else, nothing. For a main-thread wait on something the video thread
+ * will signal - a ring fence - where the video thread may need the
+ * main thread first. */
+void video_thread_main_pump(void);
+
 /* From the video thread, while it is answering a synchronous command:
  * runs fn on the thread waiting for the reply and returns when it has
  * run. That thread is the core's, which is where a driver must go to

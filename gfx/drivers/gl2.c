@@ -3380,20 +3380,26 @@ static void gl2_hw_ring_fence_signal(void *data, void *fence)
    glFinish();
 }
 
-static void gl2_hw_ring_fence_wait(void *data, void *fence)
+static bool gl2_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
    (void)data;
    if (!f)
-      return;
+      return true;
 #ifdef GL2_HW_RING_SYNC
    if (f->sync)
    {
-      glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+      GLenum r = glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+            (GLuint64)timeout_us * 1000);
+      if (r == GL_TIMEOUT_EXPIRED)
+         return false;
       glDeleteSync((GLsync)f->sync);
       f->sync = NULL;
    }
+#else
+   (void)timeout_us;
 #endif
+   return true;
 }
 
 static uintptr_t gl2_get_current_framebuffer(void *data)

@@ -119,6 +119,13 @@ static hw_ring_t *hw_ring_of(void *handle)
    return thr ? (hw_ring_t*)thr->frame.hw_ring : NULL;
 }
 
+/* Waits a slot's fence on the core's thread. In slices, with the
+ * main-thread pump between: the video thread may need the main thread
+ * to run a job before it can signal - on Cocoa, a swapchain rebuild
+ * marshalled through the trampoline - and an unbounded wait here left
+ * both threads waiting on each other, reported as the trampoline
+ * stalling with a Vulkan core. Off Apple the pump is a no-op and the
+ * slices only add a wake-up per two milliseconds of wait. */
 static void hw_wait_slot(hw_ring_t *ring, unsigned i)
 {
    hw_slot_t *s        = &ring->slot[i];
@@ -126,7 +133,8 @@ static void hw_wait_slot(hw_ring_t *ring, unsigned i)
    if (!s->in_flight)
       return;
    if (thr->poke && thr->poke->hw_ring_fence_wait)
-      thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence);
+      while (!thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence, 2000))
+         video_thread_main_pump();
    s->in_flight = false;
 }
 
@@ -584,8 +592,20 @@ bool video_thread_hw_allowed(void)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+#ifdef __APPLE__
+         /* The ring needs the core's context to share objects with the
+          * driver's - textures, framebuffers' attachments, sync objects.
+          * The Cocoa GL context driver creates its hardware context with
+          * no share group, so on the ring a core there rendered into
+          * objects the video thread could not see, and locked up. Until
+          * that driver shares the two, OpenGL cores stay unthreaded on
+          * Apple, and threaded video is declined for them rather than
+          * installed with a ring that cannot work. */
+         return false;
+#else
          return string_is_equal(settings->arrays.video_driver, "gl")
              || string_is_equal(settings->arrays.video_driver, "glcore");
+#endif
 #endif
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:

@@ -7804,17 +7804,19 @@ static void d3d12_hw_ring_fence_signal(void *data, void *fence)
    d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, f->fence, ++f->value);
 }
 
-static void d3d12_hw_ring_fence_wait(void *data, void *fence)
+static bool d3d12_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
    d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
    (void)data;
    if (!f || !f->value)
-      return;
+      return true;
    if (f->fence->lpVtbl->GetCompletedValue(f->fence) < f->value)
    {
       f->fence->lpVtbl->SetEventOnCompletion(f->fence, f->value, f->event);
-      WaitForSingleObject(f->event, INFINITE);
+      if (WaitForSingleObject(f->event, (timeout_us + 999) / 1000) != WAIT_OBJECT_0)
+         return false;
    }
+   return true;
 }
 
 static bool d3d12_hw_ring_prepare(d3d12_video_t *d3d12)

@@ -1079,6 +1079,20 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
  * observers, timers and input sources from running reentrantly under the
  * wait.  'lock' is held on entry and on return.  Shares the trampoline mode
  * string with cocoa_main_thread_sync() above -- single source of truth. */
+/* The pump alone, for a caller on the main thread that waits on
+ * something other than a condvar - a ring fence - and must let the
+ * worker's marshalled blocks run between tries. Off the main thread,
+ * nothing. */
+void cocoa_main_thread_pump(void);
+void cocoa_main_thread_pump(void)
+{
+   if (!sthread_is_main_thread())
+      return;
+   CFRunLoopRunInMode(
+         CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+         0.001, false);
+}
+
 bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
 bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
 {
@@ -1107,6 +1121,20 @@ static void cocoa_show_mouse_mainthread_hide(void *userdata)
 }
 #endif
 
+#if !defined(HAVE_COCOATOUCH)
+/* 0 = never published (read as focused), 1 = not focused, 2 = focused.
+ * Written on the main thread - by cocoa_has_focus() when it is asked
+ * there, and by the application delegate's activation notifications,
+ * which is what keeps it current under threaded video, where nothing
+ * on the main thread asks and the worker reads this every frame. */
+static retro_atomic_size_t cocoa_focus_state;
+
+void cocoa_publish_focus(bool focused)
+{
+   retro_atomic_store_release_size(&cocoa_focus_state, focused ? 2 : 1);
+}
+#endif
+
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
@@ -1124,14 +1152,13 @@ bool cocoa_has_focus(void *data)
      * i.e. pause-on-focus-loss may not trigger.  Proper fix is
      * publishing from NSApplication did-become/resign-active
      * notifications; kept out of this validation patch. */
-    static retro_atomic_size_t focus_state;
     if (sthread_is_main_thread())
     {
        size_t v = [NSApp isActive] ? 2 : 1;
-       retro_atomic_store_release_size(&focus_state, v);
+       retro_atomic_store_release_size(&cocoa_focus_state, v);
        return (v == 2);
     }
-    return (retro_atomic_load_acquire_size(&focus_state) != 1);
+    return (retro_atomic_load_acquire_size(&cocoa_focus_state) != 1);
 #endif
 }
 

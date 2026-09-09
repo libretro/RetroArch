@@ -1165,9 +1165,15 @@ static ui_application_t ui_application_cocoa = {
 }
 #endif
 
-- (void)applicationDidBecomeActive:(NSNotification *)notification  { }
+/* Focus, published for the video worker: see cocoa_has_focus(). */
+void cocoa_publish_focus(bool focused);
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+   cocoa_publish_focus(true);
+}
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
+   cocoa_publish_focus(false);
    apple_input_keyboard_reset();
 }
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
