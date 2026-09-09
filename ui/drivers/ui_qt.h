@@ -612,7 +612,6 @@ private slots:
    void onCoreOptionsClicked();
    void onShowErrorMessage(QString msg);
    void onShowInfoMessage(QString msg);
-   void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
    void onDownloadScroll(QString path);

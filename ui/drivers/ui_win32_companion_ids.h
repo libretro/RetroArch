@@ -101,7 +101,6 @@ enum
    IDM_CW_CORE_OPTIONS,
    IDM_CW_SHADER_PARAMS,
    IDM_CW_OPTIONS,
-   IDM_CW_HELP_CONTRIBUTORS,
    IDM_CW_UNLOAD_CORE,
    IDM_CW_LOAD_CUSTOM_CORE,
    /* IDM_CW_DOCK_FIRST + companion_dock_id: View > Closed Docks shows

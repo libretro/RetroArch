@@ -94,7 +94,6 @@ companion_core_t *ui_companion_qt_core(void)
 #include "../../msg_hash.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
-#include "../../AUTHORS.h"
 #ifdef HAVE_GIT_VERSION
 #include "../../version_git.h"
 #endif
@@ -4173,30 +4172,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
    return QMainWindow::eventFilter(obj, event);
 }
 
-void MainWindow::onContributorsClicked()
-{
-   QScopedPointer<QDialog> dialog(new QDialog());
-   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QTextEdit *textEdit = new QTextEdit(dialog.data());
-
-   connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
-   connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
-
-   dialog->setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS));
-   dialog->setLayout(new QVBoxLayout());
-
-   dialog->layout()->addWidget(textEdit);
-
-   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Minimum));
-   dialog->layout()->addWidget(buttonBox);
-
-   textEdit->setReadOnly(true);
-   textEdit->setHtml(QString("<pre>") + retroarch_contributors_list + QString("</pre>"));
-
-   dialog->resize(480, 640);
-   dialog->exec();
-}
-
 void MainWindow::showAbout()
 {
    QScopedPointer<QDialog> dialog(new QDialog());
@@ -4220,12 +4195,6 @@ void MainWindow::showAbout()
    QLabel *label = new QLabel(text, dialog.data());
    QPixmap pix = getInvader();
    QLabel *pixLabel = new QLabel(dialog.data());
-   QPushButton *contributorsPushButton = new QPushButton(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS),
-         dialog.data());
-
-   connect(contributorsPushButton, SIGNAL(clicked()), this,
-         SLOT(onContributorsClicked()));
    connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
    connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
 
@@ -4243,7 +4212,6 @@ void MainWindow::showAbout()
 
    dialog->layout()->addWidget(pixLabel);
    dialog->layout()->addWidget(label);
-   dialog->layout()->addWidget(contributorsPushButton);
 
    dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum,
             QSizePolicy::Expanding));
@@ -4881,7 +4849,6 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    helpMenu->addAction(QString(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
               + QString("..."), mainwindow, SLOT(showAbout()));
-   helpMenu->addAction(QString("About Qt..."), qApp, SLOT(aboutQt()));
 }
 
 /* Build the playlist + file-browser tab dock. Returns the dock so the

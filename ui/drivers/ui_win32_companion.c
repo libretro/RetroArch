@@ -52,7 +52,6 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <commdlg.h>
-#include "../../AUTHORS_c.h"
 #include <shellapi.h>
 #include <shlobj.h>
 
@@ -3060,44 +3059,6 @@ static void cw_load_custom_core(ui_companion_win32_wimp_t *w, HWND owner)
       ShowWindow(w->cores_hwnd, SW_HIDE);
 }
 
-/* Qt's About Contributors: the AUTHORS list in a read-only edit. */
-static void cw_contributors_show(ui_companion_win32_wimp_t *w)
-{
-   HWND dlg, edit;
-   HINSTANCE inst = GetModuleHandleA(NULL);
-   RECT rc;
-   char *crlf;
-   size_t n, i, j;
-   dlg = CreateWindowExA(WS_EX_DLGMODALFRAME, "STATIC", 
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS),
-         WS_POPUPWINDOW | WS_CAPTION | WS_THICKFRAME | WS_VISIBLE,
-         CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, 520), CW_S(w, 460),
-         w->hwnd, NULL, inst, NULL);
-   if (!dlg)
-      return;
-   GetClientRect(dlg, &rc);
-   edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
-         WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
-         0, 0, rc.right, rc.bottom, dlg, NULL, inst, NULL);
-   if (!edit)
-      return;
-   SendMessageA(edit, WM_SETFONT, (WPARAM)GetStockObject(ANSI_FIXED_FONT), TRUE);
-   /* the edit wants CR LF */
-   n    = strlen(retroarch_contributors_list);
-   crlf = (char*)malloc(n * 2 + 1);
-   if (crlf)
-   {
-      for (i = 0, j = 0; i < n; i++)
-      {
-         if (retroarch_contributors_list[i] == '\n')
-            crlf[j++] = '\r';
-         crlf[j++] = retroarch_contributors_list[i];
-      }
-      crlf[j] = '\0';
-      SetWindowTextA(edit, crlf);
-      free(crlf);
-   }
-}
 static long cw_selected_entry(ui_companion_win32_wimp_t *w);
 static void cw_run_selected(ui_companion_win32_wimp_t *w);
 
@@ -4102,9 +4063,6 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_OPTIONS:
                cw_set_show(w);
                return 0;
-            case IDM_CW_HELP_CONTRIBUTORS:
-               cw_contributors_show(w);
-               return 0;
             case IDC_CW_CORE_INFO_BTN:
                cw_info_toggle(w);
                return 0;
@@ -4520,8 +4478,6 @@ static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION));
       AppendMenuA(help, MF_STRING, IDM_CW_HELP_ABOUT,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
-      AppendMenuA(help, MF_STRING, IDM_CW_HELP_CONTRIBUTORS,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS));
       AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
       AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit,

@@ -30654,10 +30654,6 @@ MSG_HASH(
    "Update failed."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
-   "Contributors"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    "Current shader"
    )

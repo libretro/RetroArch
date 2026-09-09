@@ -79,8 +79,6 @@ FEATURES = {
     # Qt's Stop / File > Unload Core, and File > Exit
     'unload core':        'companion_core_unload_core',
     'exit retroarch':     'CMD_EVENT_QUIT',
-    # Help > About Contributors: the AUTHORS list in a window
-    'about contributors': 'retroarch_contributors_list',
     # Qt's playlist rename, "Add Files" / file drop, thumbnail drop
     'rename playlist':    'companion_core_playlist_rename',
     'add files':          'companion_core_playlist_add_files',
