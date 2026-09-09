@@ -324,6 +324,90 @@ static void test_margin(void)
          "a 250-300 us overshoot settles the margin between them");
 }
 
+
+/* The pace decision itself, as a table: what holds the loop in the
+ * Quick Menu over a paused core, on a focused window, per combination
+ * of the user's sync settings. Each row is a fact about the shipping
+ * decision, not a wish; a row that changes is a behaviour change, and
+ * should be a deliberate one. "Timer" as a setting is Sync to Exact
+ * Content Framerate, with Menu Throttle Framerate at its default of
+ * off, which is the menu path's early return. Audio never holds the
+ * loop with the core paused: nothing writes blocking. */
+static runloop_pace_inputs_t menu_inputs(bool vsync, bool audio,
+      bool display, bool timer, bool scanline)
+{
+   runloop_pace_inputs_t in;
+   memset(&in, 0, sizeof(in));
+   in.vsync           = vsync;
+   in.focused         = true;
+   in.menu_alive      = true;
+   in.paused          = false;      /* menu pause is not RUNLOOP_FLAG_PAUSED */
+   in.vrr             = timer;
+   in.menu_early_exit = timer;      /* menu throttle off */
+   in.wrapper_active  = display;
+   in.display_pacing  = display;
+   in.audio_holding   = false;      /* paused core: the menu writes silence, non-blocking */
+   in.scanline_sync   = scanline;
+   in.scanline_locked = scanline;
+   in.rate_control    = true;
+   in.presentable     = true;
+   /* A frame limit exists on every menu path that reaches the block:
+    * the menu path sets the refresh-rate one, or leaves the content's
+    * from load. */
+   in.frame_limit     = true;
+   (void)audio;
+   return in;
+}
+
+static void test_menu_table(void)
+{
+   {
+      runloop_pace_inputs_t in;
+      in = menu_inputs(false, false, true,  false, false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_DISPLAY,
+            "menu: Display -> Display");
+      in = menu_inputs(false, true,  true,  false, false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_DISPLAY,
+            "menu: Display+Audio -> Display");
+      in = menu_inputs(true,  false, true,  false, false);
+      check(runloop_pace_decide(&in) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY),
+            "menu: Display+VSync -> VSync+Display");
+      in = menu_inputs(true,  false, false, false, false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_VSYNC,
+            "menu: VSync -> VSync");
+      in = menu_inputs(true,  true,  false, false, false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_VSYNC,
+            "menu: VSync+Audio -> VSync");
+      in = menu_inputs(true,  true,  false, true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_VSYNC,
+            "menu: VSync+Audio+Timer -> VSync (early return)");
+      in = menu_inputs(true,  false, false, true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_VSYNC,
+            "menu: VSync+Timer -> VSync (early return)");
+      in = menu_inputs(false, true,  false, false, false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_TIMER,
+            "menu: Audio -> Timer (the menu's refresh-rate timer)");
+      in = menu_inputs(false, true,  false, true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_NONE,
+            "menu: Audio+Timer -> None (early return, nothing holds)");
+      in = menu_inputs(false, false, false, false, true);
+      /* The menu's refresh-rate timer stands aside only for vsync,
+       * focus and display pacing, not for scanline: two clocks. A
+       * fact, not an endorsement. */
+      check(runloop_pace_decide(&in) == (RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER),
+            "menu: Scanline -> Scanline+Timer");
+      in = menu_inputs(false, false, false, true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_NONE,
+            "menu: Timer -> None (early return, nothing holds)");
+      in = menu_inputs(false, true,  false, true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_NONE,
+            "menu: Timer+Audio -> None (early return)");
+      in = menu_inputs(false, false, true,  true,  false);
+      check(runloop_pace_decide(&in) == RUNLOOP_PACE_NONE,
+            "menu: Timer+Display -> None (early return; the hold runs but is not counted)");
+   }
+}
+
 int main(void)
 {
    printf("runloop pacing decisions:\n");
@@ -333,6 +417,7 @@ int main(void)
    test_sample_filter();
    test_schedule();
    test_margin();
+   test_menu_table();
 
    if (failures)
    {

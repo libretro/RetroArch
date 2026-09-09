@@ -525,6 +525,87 @@ static INLINE bool runloop_pace_sample_usable(retro_time_t delta_us)
    return delta_us > 0 && delta_us < 250000;
 }
 
+/* Everything the pace decision reads, gathered once per iteration.
+ * Each field is one fact about this iteration, named for what it
+ * means rather than where it lives: fast-forward is nonblocking (the
+ * input flag the drivers follow) and fastmotion (the runloop's own
+ * flag) because the two differ for a few frames while fast-forward
+ * engages, and the existing sources test different ones. */
+typedef struct
+{
+   bool vsync;            /* the vsync setting */
+   bool nonblocking;      /* INP_FLAG_NONBLOCKING: drivers in non-blocking mode */
+   bool force_nonblock;   /* RUNLOOP_FLAG_FORCE_NONBLOCK */
+   bool fastmotion;       /* RUNLOOP_FLAG_FASTMOTION */
+   bool paused;           /* RUNLOOP_FLAG_PAUSED */
+   bool focused;          /* RUNLOOP_FLAG_FOCUSED */
+   bool menu_alive;
+   bool menu_early_exit;  /* VRR on with menu throttle off: the menu path
+                             returns before the pace block */
+   bool vrr;              /* Sync to Exact Content Framerate */
+   bool wrapper_active;   /* threaded video wrapper installed */
+   bool display_pacing;   /* Threaded Video Display Pacing setting */
+   bool audio_holding;    /* the audio driver is active, blocking, and
+                             wrote this iteration */
+   bool scanline_sync;    /* the setting */
+   bool scanline_locked;  /* a target scanline exists */
+   bool rate_control;     /* audio rate control */
+   bool presentable;      /* the context has a surface to present to */
+   bool external;         /* an external clock drives the iteration */
+   bool frame_limit;      /* frame_limit_minimum_time is non-zero */
+} runloop_pace_inputs_t;
+
+/* The pace decision as one pure function of those facts: which sources
+ * hold the loop this iteration, as RUNLOOP_PACE_* bits. It reproduces,
+ * bit for bit, what runloop_iterate() decides across its paths - the
+ * menu path's early return included - so that the decision can be
+ * tested as a table (samples/runloop/pacing) and, once the paths defer
+ * to it, made in one place. Until then runloop_iterate() computes
+ * both and asserts they agree in debug builds. */
+static INLINE unsigned runloop_pace_decide(const runloop_pace_inputs_t *in)
+{
+   unsigned pace = RUNLOOP_PACE_NONE;
+   bool vsync_holds = in->vsync && !in->nonblocking && !in->force_nonblock;
+
+   /* The menu path's early return: vsync if it is blocking, nothing
+    * else, and no timer. */
+   if (in->menu_alive && in->menu_early_exit)
+      return vsync_holds ? RUNLOOP_PACE_VSYNC : RUNLOOP_PACE_NONE;
+
+   if (in->external)
+      pace |= RUNLOOP_PACE_EXTERNAL;
+   if (vsync_holds)
+      pace |= RUNLOOP_PACE_VSYNC;
+   if (in->wrapper_active && in->display_pacing
+         && !in->nonblocking && !in->fastmotion)
+      pace |= RUNLOOP_PACE_DISPLAY;
+   if (in->audio_holding)
+      pace |= RUNLOOP_PACE_AUDIO;
+   if (in->scanline_sync && in->scanline_locked && !in->nonblocking)
+      pace |= RUNLOOP_PACE_SCANLINE;
+   {
+      bool display_paces = (pace & RUNLOOP_PACE_DISPLAY) != 0;
+      if (in->frame_limit
+            && (   in->vrr
+                || in->fastmotion
+                || (!display_paces && in->menu_alive
+                    && (!in->vsync || !in->focused))
+                || (!display_paces && in->paused)))
+         pace |= RUNLOOP_PACE_TIMER;
+   }
+   /* No window: the loop waits a frame and the iteration ends there;
+    * the gap limiter is never reached. */
+   if (     !(pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
+                    | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
+         && !in->nonblocking && !in->presentable)
+      return pace | RUNLOOP_PACE_NOWINDOW;
+   if (runloop_pace_gap_engages(pace, in->nonblocking, in->fastmotion,
+            in->scanline_sync, in->rate_control))
+      pace |= RUNLOOP_PACE_TIMER;
+   return pace;
+}
+
+
 typedef struct runloop runloop_state_t;
 
 RETRO_BEGIN_DECLS

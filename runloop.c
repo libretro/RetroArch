@@ -84,6 +84,7 @@
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <retro_assert.h>
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
 #ifdef __MACH__
@@ -4915,6 +4916,47 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    }
 }
 
+/* The facts runloop_pace_decide() reads, from this iteration's state.
+ * Read here, in one place, so the shadow decision and the paths see
+ * the same iteration. */
+static void runloop_pace_gather(runloop_pace_inputs_t *in,
+      settings_t *settings, bool menu_early_exit)
+{
+   runloop_state_t *runloop_st    = &runloop_state;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   in->vsync           = settings->bools.video_vsync;
+   in->nonblocking     = (input_st->flags & INP_FLAG_NONBLOCKING) != 0;
+   in->force_nonblock  = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) != 0;
+   in->fastmotion      = (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0;
+   in->paused          = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) != 0;
+   in->focused         = (runloop_st->flags & RUNLOOP_FLAG_FOCUSED) != 0;
+#ifdef HAVE_MENU
+   in->menu_alive      = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
+#else
+   in->menu_alive      = false;
+#endif
+   in->menu_early_exit = menu_early_exit;
+   in->vrr             = settings->bools.vrr_runloop_enable;
+#ifdef HAVE_THREADS
+   in->wrapper_active  = video_st->thread_wrapper_active;
+   in->display_pacing  = settings->bools.video_threaded_display_pacing;
+#else
+   in->wrapper_active  = false;
+   in->display_pacing  = false;
+#endif
+   in->audio_holding   =    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+                         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+                         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE);
+   in->scanline_sync   = settings->bools.video_scanline_sync;
+   in->scanline_locked = video_st->scanline[SCANLINE_NEXT] != 0;
+   in->rate_control    = settings->bools.audio_rate_control;
+   in->presentable     = video_context_driver_presentable();
+   in->external        = runloop_st->pace_external;
+   in->frame_limit     = runloop_st->frame_limit_minimum_time != 0;
+}
+
 size_t runloop_pace_string(char *s, size_t len)
 {
    runloop_state_t *runloop_st = &runloop_state;
@@ -7963,6 +8005,9 @@ int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
    int64_t      pace_limit_ns;
+#ifdef DEBUG
+   runloop_pace_inputs_t pace_in;
+#endif
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -8203,6 +8248,13 @@ int runloop_iterate(void)
                   && !(input_st->flags & INP_FLAG_NONBLOCKING)
                   && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
                runloop_st->pace |= RUNLOOP_PACE_VSYNC;
+#ifdef DEBUG
+            {
+               runloop_pace_inputs_t in;
+               runloop_pace_gather(&in, settings, true);
+               retro_assert(runloop_pace_decide(&in) == runloop_st->pace);
+            }
+#endif
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
             return 0;
          }
@@ -8435,6 +8487,11 @@ end:
     * through the same blocking funnel while the core is paused, with
     * the mixer and thumbnail audio mixed in, so "libretro running" was
     * the wrong test. The flag is set at the write sites. */
+#ifdef DEBUG
+   /* The shadow decision reads the same iteration, before the write
+    * flag is cleared below; compared after every source has spoken. */
+   runloop_pace_gather(&pace_in, settings, false);
+#endif
    if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
          && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))
@@ -8494,6 +8551,9 @@ end:
 
    if (runloop_st->pace & RUNLOOP_PACE_NOWINDOW)
    {
+#ifdef DEBUG
+      retro_assert(runloop_pace_decide(&pace_in) == runloop_st->pace);
+#endif
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
        * hidden. Under an external clock the caller is already back
@@ -8527,6 +8587,11 @@ end:
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
    }
+#ifdef DEBUG
+   /* Every source has spoken, the gap limiter included: the shadow
+    * decision must match bit for bit. */
+   retro_assert(runloop_pace_decide(&pace_in) == runloop_st->pace);
+#endif
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
