@@ -514,7 +514,6 @@ int main(int argc, char **argv)
          { "associateCore:",    "context: associate core" },
          { "openDocs:",         "Help > Documentation" },
          { "aboutRetroArch:",   "Help > About (modal alert)" },
-         { "aboutContributors:","Help > About Contributors (window)" },
          { "stopContent:",      "Stop button" },
          { "unloadCore:",       "File > Unload Core" },
          { "quitRetroArch:",    "File > Exit RetroArch" },
@@ -558,20 +557,6 @@ int main(int argc, char **argv)
       [ctrl performSelector:s withObject:nil];
       pump(data, 50);
       CHECK(stub_calls_command > before, "Stop reaches the core (command_event called)");
-      s = NSSelectorFromString(@"aboutContributors:");
-      CHECK([ctrl respondsToSelector:s], "About Contributors implemented");
-      [ctrl performSelector:s withObject:nil];
-      pump(data, 100);
-      {
-         NSWindow *cw = [ctrl valueForKey:@"contributorsWindow"];
-         CHECK(cw != nil && [cw isVisible], "contributors window shown");
-         if (cw)
-         {
-            NSTextView *tv = find_view([cw contentView], [NSTextView class]);
-            CHECK(tv && [[tv string] length] > 1000, "contributors text present (%lu chars)", tv ? (unsigned long)[[tv string] length] : 0UL);
-            [cw orderOut:nil];
-         }
-      }
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"unloadCore:")], "Unload Core implemented");
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"quitRetroArch:")], "Exit RetroArch implemented");
       CHECK([ctrl respondsToSelector:NSSelectorFromString(@"aboutRetroArch:")], "About implemented");
@@ -991,6 +976,7 @@ int main(int argc, char **argv)
       id c2;
       NSWindow *w2;
       NSRect r, fi, fb, fl, fp, ft;
+      int want_h;
       strlcpy(test_settings.arrays.desktop_menu_dock_search,     "left,1,340,60,-,0,0", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_playlists,  "left,1,340,500,-,0,1", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_core,       "left,1,340,40,-,0,2", 64);
@@ -1020,7 +1006,17 @@ int main(int argc, char **argv)
          fb = [pane_view(c2, 5) frame]; ft = [pane_view(c2, 4) frame];
          CHECK(fb.origin.y + fb.size.height <= ft.origin.y, "Screenshots above Title Screen, each its own pane (%.0f <= %.0f)", fb.origin.y + fb.size.height, ft.origin.y);
          r = [w2 contentRectForFrameRect:[w2 frame]];
-         CHECK(r.size.width == 1000 && r.size.height == 700, "window size restored (%.0fx%.0f)", r.size.width, r.size.height);
+         /* The saved 700 comes back as is where it fits; on a screen
+          * whose visible frame is shorter (CI's Xvfb) the driver clamps
+          * the frame to it, so the content is that less the title bar. */
+         {
+            NSRect vis = [[NSScreen mainScreen] visibleFrame];
+            CGFloat tb = [w2 frame].size.height - r.size.height;
+            want_h = 700;
+            if (want_h > (int)(vis.size.height - tb))
+               want_h = (int)(vis.size.height - tb);
+         }
+         CHECK(r.size.width == 1000 && abs((int)r.size.height - want_h) <= 1, "window size restored (%.0fx%.0f, wanted %d)", r.size.width, r.size.height, want_h);
          fp = [[c2 valueForKey:@"playlistsScroll"] frame];
          fl = [[c2 valueForKey:@"logScroll"] frame];
          CHECK(fp.size.width > 300, "left column at the saved 340 (playlists %.0f wide)", fp.size.width);
@@ -1042,8 +1038,8 @@ int main(int argc, char **argv)
                && strstr(test_settings.arrays.desktop_menu_dock_log, ",150,-,0,0") != NULL,
                "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
          [c2 performSelector:NSSelectorFromString(@"geometryStore")];
-         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_height == 700,
-               "window geometry re-saved (%ux%u)", test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
+         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && abs((int)test_settings.uints.desktop_menu_window_height - want_h) <= 1,
+               "window geometry re-saved (%ux%u, wanted %d)", test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height, want_h);
          /* Core Info back on: below the thumbnails, in the slot its row
           * kept for it. */
          [c2 performSelector:NSSelectorFromString(@"toggleInfo:") withObject:nil];

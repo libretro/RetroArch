@@ -51,7 +51,6 @@
 #include "../../retroarch.h"
 #include "../../msg_hash.h"
 #include "../../version.h"
-#include "../../AUTHORS_c.h"
 #include "../../verbosity.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 
@@ -247,7 +246,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTextField *itemsLabel, *zoomLabel;
    NSTextField *searchField;
    NSButton *clearButton, *infoButton, *runButton, *stopButton;
-   NSWindow *contributorsWindow;      /* Help > About Contributors */
    NSWindow *optsWindow;  NSTableView *optsTable;   /* View > Core Options */
    NSWindow *shpWindow;   NSTableView *shpTable;    /* View > Shader Parameters */
    NSWindow *setWindow;   NSTableView *setTable;    /* View > Options */
@@ -368,7 +366,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)unloadCore:(id)sender;
 - (void)quitRetroArch:(id)sender;
 - (void)aboutRetroArch:(id)sender;
-- (void)aboutContributors:(id)sender;
 - (NSInteger)entryForRow:(NSInteger)row;
 - (void)rebuildRowMap;
 - (void)buildCoresWindow;
@@ -1577,9 +1574,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
       action:@selector(aboutRetroArch:) keyEquivalent:@""];
    [item setTarget:self];
-   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS))
-      action:@selector(aboutContributors:) keyEquivalent:@""];
-   [item setTarget:self];
 
    menuItem = [[NSMenuItem alloc] initWithTitle:@"Companion" action:NULL keyEquivalent:@""];
    [menuItem setSubmenu:menu];
@@ -2436,7 +2430,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    RELEASE(playlistIcons); RELEASE(folderIcon);
    RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
    RELEASE(stopButton);
-   if (contributorsWindow) { [contributorsWindow orderOut:nil]; RELEASE(contributorsWindow); }
    if (optsWindow) { [optsWindow orderOut:nil]; RELEASE(optsWindow); }
    if (shpWindow)  { [shpWindow orderOut:nil];  RELEASE(shpWindow); }
    if (setWindow)  { [setWindow orderOut:nil];  RELEASE(setWindow); }
@@ -3525,34 +3518,6 @@ static const char *cc_thumb_subdir(int t)
    [a runModal];
 }
 
-/* Qt's About Contributors: the AUTHORS list in a scrolling text window. */
-- (void)aboutContributors:(id)sender
-{
-   if (!contributorsWindow)
-   {
-      NSRect fr = NSMakeRect(0, 0, 520, 460);
-      NSScrollView *sv;
-      NSTextView *tv;
-      contributorsWindow = [[NSWindow alloc] initWithContentRect:fr
-         styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask)
-         backing:NSBackingStoreBuffered defer:NO];
-      [contributorsWindow setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS))];
-      [contributorsWindow setReleasedWhenClosed:NO];
-      sv = [[[NSScrollView alloc] initWithFrame:fr] autorelease_compat];
-      [sv setHasVerticalScroller:YES];
-      [sv setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-      tv = [[[NSTextView alloc] initWithFrame:fr] autorelease_compat];
-      [tv setEditable:NO];
-      [tv setFont:[NSFont userFixedPitchFontOfSize:11.0]];
-      [tv setString:BOXSTRING(retroarch_contributors_list)];
-      [tv setAutoresizingMask:NSViewWidthSizable];
-      [sv setDocumentView:tv];
-      [[contributorsWindow contentView] addSubview:sv];
-      [contributorsWindow center];
-   }
-   [contributorsWindow makeKeyAndOrderFront:nil];
-}
-
 /* --- Qt's rename / add files / drops ------------------------------------- */
 
 /* Rename the selected playlist: a sheet with a text field; the core
@@ -4280,10 +4245,14 @@ static const char *cc_thumb_subdir(int t)
          screen.size.height - (CGFloat)(out.y + out.h),
          (CGFloat)out.w, (CGFloat)out.h);
    [coresWindow setFrame:frame display:NO];
-   /* The Version column takes what is left of the table's width. */
+   /* The Version column takes what is left of the table's width, from
+    * the clip view the table sits in: the table's own frame is not
+    * always re-tiled by the time the window's frame has been set. */
    {
-      CGFloat tw = [coresTable frame].size.width;
+      NSView *clip = [coresTable superview];
+      CGFloat tw   = clip ? [clip bounds].size.width : [coresTable frame].size.width;
       [verCol setWidth:(tw - name_w > ver_w) ? tw - name_w : ver_w];
+      [coresTable sizeLastColumnToFit];
    }
 }
 
