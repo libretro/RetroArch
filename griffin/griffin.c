@@ -161,6 +161,7 @@ COMPRESSION
 #include "../libretro-common/encodings/encoding_deflate.c"
 #ifdef HAVE_RZSTD
 #include "../libretro-common/encodings/encoding_rzstd.c"
+#include "../libretro-common/streams/trans_stream_rzstd.c"
 #endif
 #include "../libretro-common/streams/trans_stream_deflate.c"
 #include "../libretro-common/streams/rzip_stream.c"

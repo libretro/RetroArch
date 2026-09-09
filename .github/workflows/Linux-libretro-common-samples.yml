@@ -83,6 +83,7 @@ jobs:
             rpng
             rzip_chunk_size_test
             rzip_matches_buf_test
+            rzip_codec_test
             data_transfer_source_test
             data_transfer_prefix_test
             data_transfer_window_test

@@ -1,6 +1,7 @@
 TARGET       := rzip
 TARGET_TEST  := rzip_chunk_size_test
 TARGET_TEST2 := rzip_matches_buf_test
+TARGET_TEST3 := rzip_codec_test
 
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
@@ -44,6 +45,8 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
@@ -51,13 +54,15 @@ COMMON_SOURCES := \
 SOURCES      := rzip.c $(COMMON_SOURCES)
 SOURCES_TEST := rzip_chunk_size_test.c $(COMMON_SOURCES)
 SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
+SOURCES_TEST3 := rzip_codec_test.c $(COMMON_SOURCES)
 
 OBJS      := $(SOURCES:.c=.o)
 OBJS_TEST := $(SOURCES_TEST:.c=.o)
 OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
+OBJS_TEST3 := $(SOURCES_TEST3:.c=.o)
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS += -DHAVE_COMPRESSION -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+CFLAGS += -DHAVE_COMPRESSION -DHAVE_RZSTD -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
 
 # Silence "ISO C does not support the 'I64' ms_printf length modifier"
 # warnings when using MinGW
@@ -79,7 +84,7 @@ else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -93,7 +98,10 @@ $(TARGET_TEST): $(OBJS_TEST)
 $(TARGET_TEST2): $(OBJS_TEST2)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST3): $(OBJS_TEST3)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2) $(OBJS_TEST3)
 
 .PHONY: clean

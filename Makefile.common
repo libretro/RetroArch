@@ -2041,7 +2041,8 @@ endif
 # The built-in Zstandard codec: one C file, no dependency.
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o
+   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o \
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.o
 endif
 
 
