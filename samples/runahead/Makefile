@@ -42,7 +42,10 @@ all: $(TARGET)
 runahead_copy_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead core-copy fragment =====/,/===== END runahead core-copy fragment =====/p' $< > $@
 
-runahead_copy_test.o: runahead_copy_fragment.c
+preempt_mask_fragment.c: $(CORE_DIR)/runahead.c
+	sed -n '/===== BEGIN preempt analog-mask bit =====/,/===== END preempt analog-mask bit =====/p' $< > $@
+
+runahead_copy_test.o: runahead_copy_fragment.c preempt_mask_fragment.c
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
@@ -54,7 +57,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -f $(OBJS) runahead_copy_fragment.c
+	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c
 	rm -f $(TARGET)
 
 .PHONY: clean all check

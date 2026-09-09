@@ -385,7 +385,9 @@ static bool copy_file_with_random_name(char **temp_dll_path,
    const char *prefix       = "tmp";
    char *ext                = NULL;
    time_t time_value        = time(NULL);
-   unsigned _number_value   = (unsigned)time_value;
+   /* The generator's state, advanced for every candidate: unsigned,
+    * so the wrap is defined. */
+   uint32_t lcg             = (uint32_t)time_value;
    const char *src          = path_get_extension(*temp_dll_path);
 
    if (src)
@@ -412,10 +414,11 @@ static bool copy_file_with_random_name(char **temp_dll_path,
    /* Try up to 30 'random' filenames before giving up */
    for (i = 0; i < 30; i++)
    {
-      int number_value = _number_value * 214013 + 2531011;
-      int number       = (number_value >> 14) % 100000;
+      unsigned number;
+      lcg    = lcg * 214013u + 2531011u;
+      number = (lcg >> 14) % 100000u;
 
-      snprintf(number_buf, sizeof(number_buf), "%05d", number);
+      snprintf(number_buf, sizeof(number_buf), "%05u", number);
 
       if (*temp_dll_path)
          free(*temp_dll_path);
@@ -1669,6 +1672,28 @@ force_input_dirty:
 
 /* Preemptive Frames */
 
+/* ===== BEGIN preempt analog-mask bit =====
+ * The bit of analog_mask an (index, id) pair asks for: the left and
+ * right sticks' two axes in bits 0..3, the analog buttons in bits
+ * 4..19. A pair outside that - an index past the buttons, an id past
+ * the sixteen buttons or the two axes - has no bit, and is rejected
+ * rather than folded onto one that exists. */
+static bool preempt_analog_mask_bit(unsigned index, unsigned id, unsigned *bit)
+{
+   if (index == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+   {
+      if (id >= 16)
+         return false;
+      *bit = 4 + id;
+      return true;
+   }
+   if (index > RETRO_DEVICE_INDEX_ANALOG_RIGHT || id > RETRO_DEVICE_ID_ANALOG_Y)
+      return false;
+   *bit = index * 2 + id;
+   return true;
+}
+/* ===== END preempt analog-mask bit ===== */
+
 static int16_t preempt_input_state(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
@@ -1676,12 +1701,21 @@ static int16_t preempt_input_state(unsigned port,
    preempt_t *preempt          = runloop_st->preempt_data;
    unsigned device_class       = device & RETRO_DEVICE_MASK;
 
+   /* A port the state has no slot for is not one this core has: no
+    * input, and nothing written past the arrays. */
+   if (port >= MAX_USERS)
+      return 0;
+
    switch (device_class)
    {
       case RETRO_DEVICE_ANALOG:
+      {
          /* Add requested inputs to mask */
-         preempt->analog_mask[port] |= (1 << (id + index * 2));
+         unsigned bit;
+         if (preempt_analog_mask_bit(index, id, &bit))
+            preempt->analog_mask[port] |= (1u << bit);
          break;
+      }
       case RETRO_DEVICE_LIGHTGUN:
       case RETRO_DEVICE_POINTER:
          /* Set pointing device for this port */

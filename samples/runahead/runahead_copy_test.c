@@ -90,6 +90,32 @@ static char *get_tmpdir_alloc(const char *override_dir)
 
 /* The fragment, verbatim from runahead.c. */
 #include "runahead_copy_fragment.c"
+/* The preempt analog-mask bit rule, verbatim from runahead.c. */
+#include "preempt_mask_fragment.c"
+
+/* RA-01: an (index, id) with no bit is rejected, never folded onto a
+ * bit that exists; the valid ones land where the reader looks. */
+static void t_analog_mask_bit(void)
+{
+   unsigned bit;
+   printf("   shift_reject: analog (index, id) pairs with no bit are refused\n");
+   CHECK(preempt_analog_mask_bit(0, 0, &bit) && bit == 0, "left X");
+   CHECK(preempt_analog_mask_bit(0, 1, &bit) && bit == 1, "left Y");
+   CHECK(preempt_analog_mask_bit(1, 0, &bit) && bit == 2, "right X");
+   CHECK(preempt_analog_mask_bit(1, 1, &bit) && bit == 3, "right Y");
+   CHECK(preempt_analog_mask_bit(2, 0, &bit) && bit == 4, "button 0");
+   CHECK(preempt_analog_mask_bit(2, 15, &bit) && bit == 19, "button 15");
+   CHECK(!preempt_analog_mask_bit(2, 16, &bit), "button 16 has no bit");
+   CHECK(!preempt_analog_mask_bit(0, 2, &bit), "stick id 2 has no bit");
+   CHECK(!preempt_analog_mask_bit(3, 0, &bit), "index 3 has no bit");
+   CHECK(!preempt_analog_mask_bit(~0u, 0, &bit), "index ~0 has no bit");
+   CHECK(!preempt_analog_mask_bit(0, ~0u, &bit), "id ~0 has no bit");
+   /* The old expression: id + index * 2 with index 16 and id 0 is a
+    * shift of 32, undefined; with index 15, id 1, bit 31 aliased a
+    * button. Neither is a bit now. */
+   CHECK(!preempt_analog_mask_bit(16, 0, &bit), "(16, 0) has no bit");
+   CHECK(!preempt_analog_mask_bit(15, 1, &bit), "(15, 1) has no bit");
+}
 
 static void reset_fs(void)
 {
@@ -97,11 +123,12 @@ static void reset_fs(void)
    for (i = 0; i < dst_count; i++) free(dst_paths[i]);
    dst_count = 0; refuse_writes = 0; deleted = 0; last_deleted[0] = '\0';
 }
+
 /* --- cases ------------------------------------------------------------ */
 
 /* RA-02: successive attempts must try distinct names. Locked once the
  * generator advances; until then reported, not failed. */
-static bool names_advance = false;
+static bool names_advance = true;
 
 static void t_lcg_names(void)
 {
@@ -210,6 +237,7 @@ int main(void)
    { typedef char enum_false_is_unavailable[(RUNAHEAD_COPY_UNAVAILABLE == 0) ? 1 : -1]; (void)sizeof(enum_false_is_unavailable); }
 
    printf("runahead copy:\n");
+   t_analog_mask_bit();
    t_lcg_names();
    t_lcg_all_fail();
    t_copy_protocol();

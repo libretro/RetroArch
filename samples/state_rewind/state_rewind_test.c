@@ -211,7 +211,7 @@ static bool decoder_bounded = false;
 /* SM-03: entries must count the retained records exactly, including
  * the one dropped when the head folds to the start of the ring. Locked
  * once that accounting lands. */
-static bool entries_exact   = false;
+static bool entries_exact   = true;
 static unsigned entries_drift;
 
 /* state_manager_free releases the buffers; the struct is the caller's,

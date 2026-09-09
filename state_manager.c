@@ -261,7 +261,12 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
 }
 
 /*
- * Takes two savestates and creates a patch that turns 'src' into 'dst'.
+ * A reverse delta. Takes two savestates, 'src' the older and 'dst' the
+ * newer, and creates a patch that, applied to a copy of 'dst', restores
+ * 'src': the patch stores the old words of every run that differs, so
+ * a rewind step applies it to the current state to get the previous
+ * one. The next push swaps the blocks, so the block that was 'dst'
+ * becomes 'src' for the following patch.
  *
  * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
  * Returns the number of bytes actually written to 'patch'.
@@ -595,11 +600,18 @@ recheckcapacity:;
       compressed       += state_manager_raw_compress(oldb, newb,
             state->blocksize, compressed);
 
+      /* The next record must fit before the end of the ring without
+       * folding mid-record; if it will not, the head folds to the
+       * start now, and the record that starts there is dropped, as a
+       * record dropped for room anywhere else is. */
       if (compressed - state->data + state->maxcompsize > state->capacity)
       {
          compressed     = state->data;
          if (state->tail == state->data + sizeof(size_t))
+         {
             state->tail = state->data + read_size_t(state->tail);
+            state->entries--;
+         }
       }
       write_size_t(compressed, state->head-state->data);
       compressed       += sizeof(size_t);
@@ -676,8 +688,11 @@ void state_manager_event_init(
          rewind_buffer_size);
 
    if (!rewind_st->state)
+   {
       RARCH_WARN("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED));
+      return;
+   }
 
    state_manager_push_where(rewind_st->state, &state);
 
