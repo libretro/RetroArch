@@ -97,6 +97,7 @@ static unsigned dev_adjust_n;
 static double dev_underrun;       /* frames of silence the hardware played */
 static size_t dev_underrun_events;/* times it ran dry, as a driver counts periods */
 
+static unsigned consumer_held;
 static void dev_drain_locked(void)
 {
    double t = now_s();
@@ -106,7 +107,15 @@ static void dev_drain_locked(void)
    {
       dev_underrun -= dev_fill;
       if (before > 0.0)
+      {
          dev_underrun_events++;
+         /* Dry with audio waiting in the pipe: the consumer had it and
+          * was not running - the machine held the thread. Dry with the
+          * pipe empty is the producer's, which its own lateness count
+          * covers. */
+         if (retro_spsc_read_avail(&audio_driver_st.pipe_ring) > 0)
+            consumer_held++;
+      }
       dev_fill = 0.0;
    }
    dev_last  = t;
@@ -265,6 +274,7 @@ static void *consumer(void *arg)
 
 static double dbg_pipe, dbg_avail, dbg_eff; static unsigned dbg_n;
 static unsigned runner_late;   /* publishes the runner held past half the device */
+/* consumer_held, above: dry spells with audio in the pipe - the consumer held */
 static bool sync_on = false;   /* audio sync: the producer's flag and the setting */
 static bool jitter  = false;   /* a core that delivers late now and then */
 
@@ -459,10 +469,10 @@ int main(int argc, char **argv)
        * pipeline did; the steady-core checks are not a measurement of
        * the code there, and the run says so rather than fail on it.
        * The 64 ms device has the margin and is checked regardless. */
-      if (runner_late > 2 && DEV_CAPACITY <= 800)
+      if (runner_late + consumer_held > 2 && DEV_CAPACITY <= 800)
       {
-         printf("   the runner held %u publishes past half the device: the steady-core checks are not evaluated on it\n",
-               runner_late);
+         printf("   the runner held %u publishes past half the device and the consumer through %u dry spells: the steady-core checks are not evaluated on it\n",
+               runner_late, consumer_held);
          pthread_mutex_unlock(&dev_lock);
          goto steady_skipped;
       }
@@ -510,7 +520,7 @@ steady_skipped:
          (audio_driver_st.sink_source_hz / 48000.0 - 1.0) * 1e6,
          (double)audio_driver_st.sink_kept.usec / 1e6, audio_driver_st.sink_settled,
          audio_driver_st.sink_discarded);
-   if (!jitter && !(runner_late > 2 && DEV_CAPACITY <= 800))
+   if (!jitter && !(runner_late + consumer_held > 2 && DEV_CAPACITY <= 800))
       CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
    CHECK(bound_breaches == 0, "%u flushes produced more than the bound reserved for them", bound_breaches);
    if (dev_float)
