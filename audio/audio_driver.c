@@ -3010,6 +3010,7 @@ void audio_driver_set_nonblock_state(bool nonblock)
             audio_st->context_audio_data, nonblock);
 }
 
+#ifdef HAVE_THREADS
 /* What the pipe ring is to hold on purpose, in core frames. With a
  * blocking writer nothing: the device's buffer is the margin and the
  * writer waits on it. With a non-blocking writer a late frame is
@@ -3040,6 +3041,7 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
       ring_max  = 0;
    return target < ring_max ? target : ring_max;
 }
+#endif
 
 /**
  * audio_driver_submit:

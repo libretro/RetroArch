@@ -5291,7 +5291,7 @@ void video_driver_frame(const void *data, unsigned width,
        * A report that has not moved (compositor bypassed, driver
        * cannot say yet) leaves the loop measurement in place. */
       if (     settings->bools.video_frame_time_sample_from_display
-            && !video_st->thread_wrapper_active
+            && !video_driver_thread_wrapper_active()
             && video_st->poke
             && video_st->poke->get_last_present_time)
       {
