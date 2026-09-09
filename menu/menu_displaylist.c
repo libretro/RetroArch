@@ -11834,9 +11834,6 @@ unsigned menu_displaylist_build_list(
 #if defined(HAVE_COMPRESSION)
                {MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION,         PARSE_ONLY_BOOL, true},
 #endif
-#if defined(HAVE_COMPRESSION) && defined(HAVE_RZSTD)
-               {MENU_ENUM_LABEL_SAVE_COMPRESSION_CODEC,             PARSE_ONLY_UINT, true},
-#endif
                {MENU_ENUM_LABEL_SAVESTATE_AUTOMATIC_INTERVAL,       PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_INDEX,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP,                 PARSE_ONLY_UINT, false},
@@ -11849,6 +11846,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,               PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
+#if defined(HAVE_COMPRESSION) && defined(HAVE_RZSTD)
+               {MENU_ENUM_LABEL_SAVE_COMPRESSION_CODEC,             PARSE_ONLY_UINT, true},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
