@@ -65,6 +65,9 @@
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_hw.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -3212,6 +3215,162 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
    return ret;
 }
 
+/* Whether the threaded wrapper's hardware ring will drive this driver:
+ * decided at init, when the wrapper is already up, from the core's
+ * context type and the setting. */
+static bool gl2_hw_ring_expected(void)
+{
+#ifdef HAVE_THREADS
+   return video_driver_thread_wrapper_active() && video_thread_hw_allowed();
+#else
+   return false;
+#endif
+}
+
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+/* The core's context, current on the caller - the main thread. The
+ * context driver created it shared with this thread's at init, with
+ * the HW-render FBOs already made inside it. From here on the frame
+ * never takes it back. */
+static bool gl2_hw_ring_context_new(void *data, void **ctx)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !ctx || !(gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
+      return false;
+   gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl->flags |= GL2_FLAG_HW_RING;
+   *ctx = gl;
+   return true;
+}
+
+static void gl2_hw_ring_context_free(void *data, void *ctx)
+{
+   gl2_t *gl = (gl2_t*)data;
+   (void)ctx;
+   if (gl)
+      gl->flags &= ~GL2_FLAG_HW_RING;
+}
+
+/* Main thread, the core's context: the FBO for the ring slot, which is
+ * this driver's HW-render FBO of the same index. */
+static uintptr_t gl2_hw_ring_framebuffer(void *data, unsigned slot)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || slot >= gl->textures)
+      return 0;
+   return gl->hw_render_fbo[slot];
+}
+
+/* Main thread, the core's context: place a fence after the core's
+ * rendering and flush, so the frame on the other thread can wait it.
+ * Without sync objects, finish: correct, slower. */
+static bool gl2_hw_ring_capture(void *data, unsigned slot,
+      const void *source, unsigned format)
+{
+   gl2_t *gl = (gl2_t*)data;
+   (void)source; (void)format;
+   if (!gl || slot >= 3)
+      return false;
+#ifdef HAVE_GL_SYNC
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   {
+      if (gl->hw_ring_sync[slot])
+         glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      glFlush();
+      return true;
+   }
+#endif
+   glFinish();
+   return true;
+}
+
+/* Video thread: wait the core's fence for the slot on the server, and
+ * read the slot's texture. */
+static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || slot >= gl->textures)
+      return false;
+#ifdef HAVE_GL_SYNC
+   if (gl->hw_ring_sync[slot])
+   {
+      glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = NULL;
+   }
+#endif
+   /* The frame advances tex_index itself before reading; land on the
+    * slot after that advance. */
+   gl->tex_index = (slot + gl->textures - 1) % gl->textures;
+   return true;
+}
+
+/* Ring fences: a sync object placed in this thread's context after the
+ * frame, waited by the core's thread before it renders into the slot
+ * again. */
+typedef struct { void *sync; } gl2_ring_fence_t;
+
+static bool gl2_hw_ring_fence_new(void *data, void **fence)
+{
+   gl2_ring_fence_t *f;
+   (void)data;
+   if (!fence || !(f = (gl2_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   *fence = f;
+   return true;
+}
+
+static void gl2_hw_ring_fence_free(void *data, void *fence)
+{
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+#ifdef HAVE_GL_SYNC
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+#endif
+   free(f);
+}
+
+static void gl2_hw_ring_fence_signal(void *data, void *fence)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   if (!gl || !f)
+      return;
+#ifdef HAVE_GL_SYNC
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   {
+      if (f->sync)
+         glDeleteSync((GLsync)f->sync);
+      f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      glFlush();
+      return;
+   }
+#endif
+   glFinish();
+}
+
+static void gl2_hw_ring_fence_wait(void *data, void *fence)
+{
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+#ifdef HAVE_GL_SYNC
+   if (f->sync)
+   {
+      glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+      glDeleteSync((GLsync)f->sync);
+      f->sync = NULL;
+   }
+#endif
+}
+
 static uintptr_t gl2_get_current_framebuffer(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -4572,7 +4731,10 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(0);
 #endif
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   /* Not under the ring: the core's context is current on the main
+    * thread, and this one has no business taking it. */
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !(gl->flags & GL2_FLAG_HW_RING))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -4721,7 +4883,8 @@ static void gl2_set_nonblock_state(
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !(gl->flags & GL2_FLAG_HW_RING))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -5375,8 +5538,14 @@ static void *gl2_init(const video_info_t *video,
    if (gl->flags & GL2_FLAG_HW_RENDER_USE)
    {
       /* All on GPU, no need to excessively
-       * create textures. */
+       * create textures. Under the threaded wrapper's ring the core
+       * renders on another thread into one while this thread reads
+       * another, so there are as many as the ring has slots. */
       gl->textures = 1;
+#ifdef HAVE_THREADS
+      if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+         gl->textures = VIDEO_THREAD_HW_RING;
+#endif
 #ifdef GL_DEBUG
       if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       {
@@ -5532,7 +5701,11 @@ static void *gl2_init(const video_info_t *video,
       goto error;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   /* Init leaves the core's context current for context_reset on this
+    * thread; when the wrapper's ring will drive the core, the main
+    * thread takes that context itself and this one must not hold it. */
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_hw_ring_expected())
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return gl;
@@ -5634,7 +5807,8 @@ static void gl2_update_tex_filter_frame(gl2_t *gl, bool video_smooth)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_hw_ring_expected())
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -6321,7 +6495,17 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_supports_texture_format,
    gl2_load_texture_compressed,
    gl2_present_last,
-   gl2_get_last_present_time
+   gl2_get_last_present_time,
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   gl2_hw_ring_fence_new,
+   gl2_hw_ring_fence_free,
+   gl2_hw_ring_fence_signal,
+   gl2_hw_ring_fence_wait,
+   gl2_hw_ring_capture,
+   gl2_hw_ring_present_slot,
+   gl2_hw_ring_context_new,
+   gl2_hw_ring_context_free,
+   gl2_hw_ring_framebuffer
 };
 
 static void gl2_get_poke_interface(void *data,

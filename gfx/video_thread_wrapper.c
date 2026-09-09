@@ -1839,6 +1839,15 @@ static bool thread_get_current_software_framebuffer(void *data,
    return true;
 }
 
+/* Proc addresses are properties of the driver's API, not of a thread. */
+static retro_proc_address_t thread_get_proc_address(void *data, const char *sym)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr && thr->poke && thr->poke->get_proc_address)
+      return thr->poke->get_proc_address(thr->driver_data, sym);
+   return NULL;
+}
+
 static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -2028,8 +2037,8 @@ static const video_poke_interface_t thread_poke = {
    thread_get_video_output_size,
    thread_get_video_output_prev,
    thread_get_video_output_next,
-   NULL, /* get_current_framebuffer */
-   NULL, /* get_proc_address */
+   video_thread_hw_get_current_framebuffer,
+   thread_get_proc_address,
    thread_set_aspect_ratio,
    thread_apply_state_changes,
    thread_set_texture_frame,

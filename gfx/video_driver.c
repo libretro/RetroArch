@@ -46,6 +46,7 @@
 
 #ifdef HAVE_THREADS
 #include "video_thread_wrapper.h"
+#include "video_thread_hw.h"
 #include "font_driver.h"
 #endif
 
@@ -1341,6 +1342,12 @@ const gfx_ctx_driver_t *video_context_driver_init(
    {
       bool  video_shared_context  =
          settings->bools.video_shared_context || core_set_shared_context;
+#ifdef HAVE_THREADS
+      /* The wrapper's ring gives an OpenGL core a context of its own
+       * on the main thread: that is the shared context, forced on. */
+      if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+         video_shared_context = true;
+#endif
 
       ctx->bind_hw_render(*ctx_data,
             video_shared_context && hw_render_ctx);

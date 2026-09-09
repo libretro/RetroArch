@@ -794,6 +794,10 @@ typedef struct video_poke_interface
     * its source rather than a texture. */
    bool (*hw_ring_context_new)(void *data, void **ctx);
    void (*hw_ring_context_free)(void *data, void *ctx);
+   /* For OpenGL, whose core renders into a framebuffer the driver
+    * hands it: the framebuffer for a ring slot, valid in the core's
+    * context. Called from the core's thread. */
+   uintptr_t (*hw_ring_framebuffer)(void *data, unsigned slot);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

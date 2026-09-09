@@ -201,6 +201,7 @@
 #include "gfx/video_display_server.h"
 #ifdef HAVE_THREADS
 #include "gfx/video_thread_wrapper.h"
+#include "gfx/video_thread_hw.h"
 #endif
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
@@ -1643,6 +1644,13 @@ void drivers_init(
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
 
+#ifdef HAVE_THREADS
+      /* An OpenGL core under the threaded wrapper renders on this
+       * thread with a context of its own; it must be current here
+       * before context_reset creates the core's objects in it. */
+      if (video_driver_thread_wrapper_active())
+         video_thread_hw_bind_core_context(video_state_get_ptr()->data);
+#endif
       if (   !video_driver_cache_context_ack_test()
             && hwr->context_reset)
          hwr->context_reset();

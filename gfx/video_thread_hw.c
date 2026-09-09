@@ -38,7 +38,8 @@
 #include <libretro_d3d11.h>
 #endif
 
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11) \
+   || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #define VIDEO_THREAD_HW_ANY 1
 #endif
 
@@ -78,7 +79,8 @@ enum hw_api
    HW_API_NONE = 0,
    HW_API_VULKAN,
    HW_API_D3D12,
-   HW_API_D3D11
+   HW_API_D3D11,
+   HW_API_GL
 };
 
 typedef struct
@@ -94,6 +96,9 @@ typedef struct
 #ifdef HAVE_D3D11
       struct retro_hw_render_interface_d3d11  d3d11;
 #endif
+      /* OpenGL interposes nothing; this keeps the union non-empty on
+       * a build with only OpenGL. */
+      struct retro_hw_render_interface        base;
    } iface;
    /* Direct3D 11: the core's deferred context, the driver's object. */
    void *core_ctx;
@@ -371,6 +376,53 @@ bool video_thread_get_hw_render_interface(void *data,
    }
 }
 
+/* OpenGL: there is no interface to interpose - the core renders into a
+ * framebuffer the driver hands it, on the context that is current. The
+ * ring is set up when the main thread takes the core's context, which
+ * must happen before the core's context_reset runs there. */
+bool video_thread_hw_bind_core_context(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   hw_ring_t *ring;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!thr || !thr->poke)
+      return false;
+   switch (video_st->hw_render.context_type)
+   {
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         break;
+      default:
+         return false;
+   }
+   if (!thr->poke->hw_ring_context_new || !thr->poke->hw_ring_framebuffer
+         || !thr->poke->hw_ring_capture || !thr->poke->hw_ring_present_slot
+         || !thr->poke->hw_ring_fence_new)
+      return false;
+   if (!hw_ring_setup(thr, &ring))
+      return false;
+   if (!ring->core_ctx
+         && !thr->poke->hw_ring_context_new(thr->driver_data, &ring->core_ctx))
+      return false;
+   ring->api = HW_API_GL;
+   return true;
+}
+
+/* thread_poke.get_current_framebuffer: the framebuffer for the slot the
+ * core is filling. Main thread. */
+uintptr_t video_thread_hw_get_current_framebuffer(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   hw_ring_t *ring     = hw_ring_of(data);
+   if (!ring || ring->api != HW_API_GL || !thr->poke->hw_ring_framebuffer)
+      return 0;
+   return thr->poke->hw_ring_framebuffer(thr->driver_data, ring->index);
+}
+
 int video_thread_hw_publish(thread_video_t *thr)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
@@ -378,6 +430,12 @@ int video_thread_hw_publish(thread_video_t *thr)
    if (!ring)
       return -1;
    published = ring->index;
+   if (ring->api == HW_API_GL)
+   {
+      /* Fence the core's rendering into the slot, on its context. */
+      if (!thr->poke->hw_ring_capture(thr->driver_data, published, NULL, 0))
+         return -1;
+   }
 #ifdef HAVE_D3D11
    if (ring->api == HW_API_D3D11)
    {
@@ -437,6 +495,9 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot)
          thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
          break;
 #endif
+      case HW_API_GL:
+         thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
+         break;
       default:
          break;
    }
@@ -499,6 +560,17 @@ bool video_thread_hw_allowed(void)
       case RETRO_HW_CONTEXT_D3D12:
          return string_is_equal(settings->arrays.video_driver, "d3d12");
 #endif
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         /* Behind a setting: the core gets a context of its own, shared
+          * with the frontend's, rather than the frontend's itself. */
+         return settings->bools.video_threaded_hw_opengl
+            && string_is_equal(settings->arrays.video_driver, "gl");
+#endif
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:
          /* Behind a setting: the core records on a deferred context,
@@ -525,7 +597,9 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot) { (void)thr;
 void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)  { (void)thr; (void)hw_slot; }
 void video_thread_hw_free(thread_video_t *thr) { (void)thr; }
 bool video_thread_hw_allowed(void) { return false; }
+bool video_thread_hw_bind_core_context(void *data) { (void)data; return false; }
+uintptr_t video_thread_hw_get_current_framebuffer(void *data) { (void)data; return 0; }
 
-#endif /* HAVE_VULKAN */
+#endif /* VIDEO_THREAD_HW_ANY */
 
 #endif /* HAVE_THREADS */

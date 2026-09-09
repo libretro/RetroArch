@@ -73,6 +73,13 @@ int video_thread_hw_publish(struct thread_video *thr);
 void video_thread_hw_before_frame(struct thread_video *thr, int hw_slot);
 void video_thread_hw_after_frame(struct thread_video *thr, int hw_slot);
 
+/* OpenGL: takes the core's context on the calling (main) thread and
+ * sets the ring up. Must run before the core's context_reset. */
+bool video_thread_hw_bind_core_context(void *data);
+
+/* thread_poke.get_current_framebuffer for OpenGL cores. Main thread. */
+uintptr_t video_thread_hw_get_current_framebuffer(void *data);
+
 /* Video thread, before the driver is freed: releases the ring and its
  * fences while the device is still up. */
 void video_thread_hw_free(struct thread_video *thr);

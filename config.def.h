@@ -531,6 +531,10 @@
  * reading or read GPU queries, and a core that does either breaks. */
 #define DEFAULT_VIDEO_THREADED_HW_D3D11 false
 
+/* Let an OpenGL hardware core run under threaded video, on a context of
+ * its own shared with the frontend's. Off: such cores run unthreaded. */
+#define DEFAULT_VIDEO_THREADED_HW_OPENGL false
+
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */

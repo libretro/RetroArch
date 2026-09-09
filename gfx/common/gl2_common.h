@@ -61,7 +61,11 @@ enum gl2_flags
    GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
    GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
    GL2_FLAG_NONE                   = (1 << 21),
-   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22)
+   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22),
+   /* The threaded wrapper's hardware ring is driving this driver: the
+    * core's context is current on the main thread, so this thread
+    * never takes it, and the frame reads the ring's slot. */
+   GL2_FLAG_HW_RING                = (1 << 23)
 };
 
 struct gl2
@@ -102,6 +106,11 @@ struct gl2
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   /* The threaded wrapper's hardware ring: the fence the core's thread
+    * placed after rendering into each slot's texture, for the frame on
+    * this thread to wait before reading it. Sync objects are shared
+    * between the two contexts. */
+   void *hw_ring_sync[3];
 
    uint32_t flags;
 
