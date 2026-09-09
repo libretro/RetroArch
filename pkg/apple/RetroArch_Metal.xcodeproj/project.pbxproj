@@ -79,10 +79,6 @@
 		0790F67B2BF282B400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0790F67C2BF2925400AA58C9 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0790F6782BF282B400AA58C9 /* Media.xcassets */; };
 		0795A8C7299A095300D5035D /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0795A8C6299A095300D5035D /* CoreHaptics.framework */; };
-		0798404B2E0F21380079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
-		0798404C2E0F218D0079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
-		0798404D2E0F21910079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
-		0798404E2E0F21960079E1A3 /* huf_decompress_amd64.S in Sources */ = {isa = PBXBuildFile; fileRef = 079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */; };
 		07B9B97F2E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
 		07B9B9802E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
 		07B9B9812E49A7A3007E419E /* RetroArchAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */; };
@@ -455,7 +451,6 @@
 		0776EF3829A005D600AF0237 /* Steam.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Steam.xcconfig; sourceTree = "<group>"; };
 		0790F6782BF282B400AA58C9 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Media.xcassets; path = OSX/Media.xcassets; sourceTree = "<group>"; };
 		0795A8C6299A095300D5035D /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
-		079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.asm; path = huf_decompress_amd64.S; sourceTree = "<group>"; };
 		07B9B97D2E49A7A3007E419E /* RetroArchAppShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchAppShortcuts.swift; sourceTree = "<group>"; };
 		07F2BBC22BE83A4200FD1295 /* AppStore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppStore.xcconfig; sourceTree = "<group>"; };
 		07F2BBE92BE83A4700FD1295 /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1176,35 +1171,10 @@
 		079840132E0F20440079E1A3 /* deps */ = {
 			isa = PBXGroup;
 			children = (
-				0798404A2E0F20D50079E1A3 /* zstd */,
 			);
 			name = deps;
 			path = ../../deps;
 			sourceTree = SOURCE_ROOT;
-		};
-		0798403C2E0F20D50079E1A3 /* decompress */ = {
-			isa = PBXGroup;
-			children = (
-				079840352E0F20D50079E1A3 /* huf_decompress_amd64.S */,
-			);
-			path = decompress;
-			sourceTree = "<group>";
-		};
-		079840412E0F20D50079E1A3 /* lib */ = {
-			isa = PBXGroup;
-			children = (
-				0798403C2E0F20D50079E1A3 /* decompress */,
-			);
-			path = lib;
-			sourceTree = "<group>";
-		};
-		0798404A2E0F20D50079E1A3 /* zstd */ = {
-			isa = PBXGroup;
-			children = (
-				079840412E0F20D50079E1A3 /* lib */,
-			);
-			path = zstd;
-			sourceTree = "<group>";
 		};
 		07B9B97E2E49A7A3007E419E /* AppIntents */ = {
 			isa = PBXGroup;
@@ -1642,7 +1612,6 @@
 				05422E462140C8DB00F09961 /* griffin_objc.m in Sources */,
 				05422E472140C8DB00F09961 /* griffin.c in Sources */,
 				05422E482140C8DB00F09961 /* Shaders.metal in Sources */,
-				0798404C2E0F218D0079E1A3 /* huf_decompress_amd64.S in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1657,7 +1626,6 @@
 				0720994729B1258C001642BB /* griffin_objc.m in Sources */,
 				0720994829B1258C001642BB /* griffin.c in Sources */,
 				0720994929B1258C001642BB /* Shaders.metal in Sources */,
-				0798404D2E0F21910079E1A3 /* huf_decompress_amd64.S in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1672,7 +1640,6 @@
 				07F2BBCF2BE83A4700FD1295 /* griffin_objc.m in Sources */,
 				07F2BBD02BE83A4700FD1295 /* griffin.c in Sources */,
 				07F2BBD12BE83A4700FD1295 /* Shaders.metal in Sources */,
-				0798404E2E0F21960079E1A3 /* huf_decompress_amd64.S in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1687,7 +1654,6 @@
 				509F0C9D1AA23AFC00619ECC /* griffin_objc.m in Sources */,
 				840222FC1A889EE2009AB261 /* griffin.c in Sources */,
 				05A8C7B420DB75A500FF7857 /* Shaders.metal in Sources */,
-				0798404B2E0F21380079E1A3 /* huf_decompress_amd64.S in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

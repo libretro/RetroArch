@@ -172,7 +172,6 @@ HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/SPIRV-Cross
 HEADER_SEARCH_PATHS = $(inherited) $(GLSLANG_BUILTIN_HEADER_SEARCH_PATHS)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/gfx/include
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/libretro-common/include
