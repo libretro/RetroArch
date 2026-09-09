@@ -695,15 +695,22 @@ static void video_thread_schedule_next(thread_video_t *thr)
    thr->phase_from_display = base > 0 && base <= now;
    if (!thr->phase_from_display)
       base = now;
-   /* The present's end for the latency readout: the display's report
-    * when there is one, else the clock after the frame call. */
-   thr->last_present_end = base;
 
    next = base + thr->present_period;
    if (thr->present_period > 0)
       while (next <= now)
          next += thr->present_period;
    thr->next_present = next;
+
+   /* The present's end for the latency readout. The driver's report is
+    * a vblank or swap that has already happened, and the frame just
+    * queued goes out on the first one after it: that is next, on the
+    * display's grid when the driver gave one, else on a grid laid from
+    * the clock, which is an estimate and is labelled as one. The clock
+    * after the present call is not an end at all - a present that
+    * does not block returns in well under a millisecond, and a number
+    * measured to there says nothing about when the frame is seen. */
+   thr->last_present_end = thr->present_period > 0 ? next : now;
 }
 
 static void video_thread_loop(void *data)

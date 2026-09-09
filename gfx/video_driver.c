@@ -5994,9 +5994,9 @@ void video_driver_frame(const void *data, unsigned width,
             bool lat_display;
             if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-                     " Latency:    %.2f ms to %s (worst %.2f ms)\n",
+                     " Latency:    %.2f ms to vblank%s (worst %.2f ms)\n",
                      lat_avg / 1000.0f,
-                     lat_display ? "display" : "present",
+                     lat_display ? "" : " (est.)",
                      lat_max / 1000.0f);
          }
 #endif

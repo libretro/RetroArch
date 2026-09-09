@@ -211,10 +211,11 @@ typedef struct thread_video
    /* Whether to ask the driver when its last present reached the
     * display; the setting, carried across with the frame. */
    bool present_timing_ask;
-   /* Latency, push to present, for the statistics overlay: a moving
-    * average and the session's worst, in microseconds, and whether the
-    * present end is the display's report or the clock after the frame
-    * call. Written by the video thread under 'lock'. */
+   /* Latency, push to the vblank the frame goes out on, for the
+    * statistics overlay: a moving average and the session's worst, in
+    * microseconds, and whether that vblank is on the display's own
+    * grid or one estimated from the clock. Written by the video thread
+    * under 'lock'. */
    retro_time_t last_present_end;
    retro_time_t latency_avg;
    retro_time_t latency_max;
