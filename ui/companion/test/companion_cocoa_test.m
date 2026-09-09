@@ -144,6 +144,44 @@ extern ui_companion_driver_t ui_companion_wimp_cocoa;
  * .m, but its first two fields are stable and documented there. */
 struct wimp_peek { companion_core_t *core; void *controller; };
 
+/* The controller's dock methods this harness drives, declared as an
+ * informal category so the calls compile against the private class. */
+@interface NSObject (RACompanionDockTesting)
+- (int)paneViews:(int)pane into:(NSView**)views max:(int)max;
+- (void)dockMouseDown:(NSPoint)pt clicks:(NSInteger)clicks;
+- (void)dockMouseDragged:(NSPoint)pt;
+- (void)dockMouseUp:(NSPoint)pt;
+- (void)redockPane:(int)pane;
+- (void)floatDragUpdate:(int)pane screenPoint:(NSPoint)sp;
+- (void)floatDragEnd:(int)pane;
+- (void)showClosedDock:(id)sender;
+- (void)menuNeedsUpdate:(NSMenu*)menu;
+@end
+
+/* The first view of dock pane @pane (companion_dock_id), through the
+ * controller's -paneViews:into:max:. */
+static NSView *pane_view(id ctrl, int pane)
+{
+   NSView *vs[8];
+   int n = [ctrl paneViews:pane into:vs max:8];
+   return n > 0 ? vs[0] : nil;
+}
+
+/* A press, moves and a release on the dock view, in its coordinates. */
+static void dock_drag(id ctrl, NSPoint from, NSPoint to)
+{
+   [ctrl dockMouseDown:from clicks:1];
+   [ctrl dockMouseDragged:NSMakePoint(from.x + 20, from.y + 20)];
+   [ctrl dockMouseDragged:to];
+   [ctrl dockMouseUp:to];
+}
+
+static void dock_click(id ctrl, NSPoint at)
+{
+   [ctrl dockMouseDown:at clicks:1];
+   [ctrl dockMouseUp:at];
+}
+
 static int fails;
 #define CHECK(cond, ...) do { if (!(cond)) { fails++; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } else { printf("[ok] "); printf(__VA_ARGS__); printf("\n"); } fflush(stdout); } while (0)
 
@@ -280,7 +318,10 @@ int main(int argc, char **argv)
    ctrl = (id)peek->controller;
    win  = [ctrl performSelector:@selector(window)];
    CHECK(win != nil, "controller has a window");
-   content = [win contentView];
+   /* The panes and the content view live in the docks' surface (a
+    * RACompanionDockView under the content view). */
+   content = [ctrl valueForKey:@"dockView"];
+   CHECK(content != nil && [content superview] == [win contentView], "dock view holds the panes");
    {
       /* showing the companion takes the keyboard: RetroArch's held keys
        * must be forgotten, or a release into this window leaves the
@@ -582,14 +623,16 @@ int main(int argc, char **argv)
       }
       [(NSTableView*)[entriesScroll documentView] selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
       pump(data, 100);
-      s = NSSelectorFromString(@"installThumbnailFromPath:");
-      CHECK([ctrl respondsToSelector:s], "installThumbnailFromPath: implemented");
+      s = NSSelectorFromString(@"installThumbnailFromPath:pane:");
+      CHECK([ctrl respondsToSelector:s], "installThumbnailFromPath:pane: implemented");
       {
          NSInvocation *inv = [NSInvocation invocationWithMethodSignature:[ctrl methodSignatureForSelector:s]];
          const char *ip = img;
+         int pane = 0;
          BOOL ok = NO;
          [inv setSelector:s]; [inv setTarget:ctrl];
          [inv setArgument:&ip atIndex:2];
+         [inv setArgument:&pane atIndex:3];
          [inv invoke];
          [inv getReturnValue:&ok];
          CHECK(ok, "thumbnail installed from a dropped image");
@@ -912,31 +955,32 @@ int main(int argc, char **argv)
       CHECK([pop indexOfSelectedItem] == n - 2, "popup back on its last pick (%ld)", (long)[pop indexOfSelectedItem]);
    }
 
-   /* Dock rows: the layout on screen is written back in the shared
-    * format (with "Save Dock Positions" on) - Core Info above the
-    * thumbnail pane, boxart the raised tab, log hidden - and a second
-    * driver built from a saved layout (the one Tatsuya79 arranged in
-    * Qt: Screenshots above Title Screen, Core Info hidden, wider left
-    * column, log shown, a saved window frame) opens to it. */
+   /* Docks: the panes are docks as Qt's are - the shared model laid out
+    * by the driver. The default is written back as the rows Qt writes
+    * (thumbnails tabbed above Core Info on the right, Boxart raised,
+    * the log hidden); and a second driver built from a saved layout -
+    * the one Tatsuya79 arranged in Qt - opens to exactly it. */
    {
       NSRect fi, fb;
       ui_companion_wimp_cocoa.toggle(data, true);
       pump(data, 200);
       test_settings.bools.desktop_menu_save_dock_positions = true;
       [ctrl performSelector:NSSelectorFromString(@"layoutViews")];
-      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
-            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,0") != NULL,
-            "Core Info row: shown, right, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_boxart, "right,1,", 8) == 0
-            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,1") != NULL,
-            "boxart row: raised tab, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
-      CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,1") != NULL,
-            "title row tabbed onto boxart (%s)", test_settings.arrays.desktop_menu_dock_title);
+            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,0") != NULL,
+            "boxart row: raised tab, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,0,0,", 12) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,0") != NULL,
+            "title row tabbed onto boxart, carrying no size (%s)", test_settings.arrays.desktop_menu_dock_title);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL,
+            "Core Info row: shown, right, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,0,", 9) == 0,
             "log row hidden (%s)", test_settings.arrays.desktop_menu_dock_log);
       fi = [[ctrl valueForKey:@"infoScroll"] frame];
-      fb = [[ctrl valueForKey:@"boxart"] frame];
-      CHECK(fi.origin.y >= fb.origin.y + fb.size.height, "Core Info above the thumbnails by default");
+      fb = [pane_view(ctrl, 3) frame];
+      CHECK(fb.origin.y + fb.size.height <= fi.origin.y, "thumbnails above Core Info by default, as Qt's (flipped: %.0f <= %.0f)", fb.origin.y + fb.size.height, fi.origin.y);
+      CHECK([pane_view(ctrl, 4) isHidden], "Title Screen is a tab behind Boxart: not shown");
       [win close];
       pump(data, 100);
    }
@@ -946,21 +990,21 @@ int main(int argc, char **argv)
       struct wimp_peek *p2;
       id c2;
       NSWindow *w2;
-      NSRect r, fi, fb, fl, fp;
+      NSRect r, fi, fb, fl, fp, ft;
       strlcpy(test_settings.arrays.desktop_menu_dock_search,     "left,1,340,60,-,0,0", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_playlists,  "left,1,340,500,-,0,1", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_core,       "left,1,340,40,-,0,2", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,2", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_title,      "right,1,300,210,-,0,1", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,420,-,0,0", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,3", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
       test_settings.bools.desktop_menu_save_geometry = true;
       test_settings.uints.desktop_menu_window_x      = 20;
       test_settings.uints.desktop_menu_window_y      = 30;
       test_settings.uints.desktop_menu_window_width  = 1000;
-      test_settings.uints.desktop_menu_window_height = 600;
+      test_settings.uints.desktop_menu_window_height = 700;
       d2 = ui_companion_wimp_cocoa.init();
       CHECK(d2 != NULL, "second driver init from a saved layout");
       if (d2)
@@ -970,41 +1014,152 @@ int main(int argc, char **argv)
          w2 = [c2 valueForKey:@"window"];
          ui_companion_wimp_cocoa.toggle(d2, true);
          pump(d2, 300);
-         CHECK([[c2 valueForKey:@"infoScroll"] isHidden], "Core Info hidden as its row says");
-         CHECK(![[c2 valueForKey:@"boxart"] isHidden] && [[c2 valueForKey:@"logVisible"] boolValue],
-               "thumbnails and log shown as their rows say");
-         CHECK([[c2 valueForKey:@"boxartTypes"] selectedSegment] == 2,
-               "Screenshots tab raised: the topmost split-out dock (%ld)", (long)[[c2 valueForKey:@"boxartTypes"] selectedSegment]);
+         CHECK([[c2 valueForKey:@"infoScroll"] isHidden] && [pane_view(c2, 3) isHidden], "Core Info and Boxart hidden as their rows say");
+         CHECK(![pane_view(c2, 5) isHidden] && ![pane_view(c2, 4) isHidden] && ![[c2 valueForKey:@"logScroll"] isHidden],
+               "Screenshots, Title Screen and the log shown as their rows say");
+         fb = [pane_view(c2, 5) frame]; ft = [pane_view(c2, 4) frame];
+         CHECK(fb.origin.y + fb.size.height <= ft.origin.y, "Screenshots above Title Screen, each its own pane (%.0f <= %.0f)", fb.origin.y + fb.size.height, ft.origin.y);
          r = [w2 contentRectForFrameRect:[w2 frame]];
-         CHECK(r.size.width == 1000 && r.size.height == 600, "window size restored (%.0fx%.0f)", r.size.width, r.size.height);
+         CHECK(r.size.width == 1000 && r.size.height == 700, "window size restored (%.0fx%.0f)", r.size.width, r.size.height);
          fp = [[c2 valueForKey:@"playlistsScroll"] frame];
-         fb = [[c2 valueForKey:@"boxart"] frame];
          fl = [[c2 valueForKey:@"logScroll"] frame];
          CHECK(fp.size.width > 300, "left column at the saved 340 (playlists %.0f wide)", fp.size.width);
-         CHECK(fb.size.width >= 280 && fb.size.width <= 300, "right column at the saved 300 (thumbnails %.0f wide)", fb.size.width);
-         CHECK(fl.size.height == 150, "log at the saved 150 (%.0f)", fl.size.height);
+         CHECK(fb.size.width >= 280 && fb.size.width <= 300, "right column at the saved 300 (Screenshots %.0f wide)", fb.size.width);
+         CHECK(fl.size.height >= 100 && fl.size.height <= 150, "log inside the saved 150 (%.0f)", fl.size.height);
          [c2 performSelector:NSSelectorFromString(@"layoutViews")];
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,", 8) == 0
-               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
-               "screenshot row re-saved raised in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0,
-               "Core Info row re-saved hidden (%s)", test_settings.arrays.desktop_menu_dock_core_info);
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,0,150,", 15) == 0,
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,", 12) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",-,0,0") != NULL,
+               "screenshot row re-saved standalone in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",-,0,1") != NULL,
+               "title row re-saved standalone in slot 1 (%s)", test_settings.arrays.desktop_menu_dock_title);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_logo, "right,0,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_logo, ",boxart,0,2") != NULL,
+               "logo row re-saved hidden, tabbed onto boxart in slot 2 (%s)", test_settings.arrays.desktop_menu_dock_logo);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,3") != NULL,
+               "Core Info row re-saved hidden in slot 3 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,", 9) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_log, ",150,-,0,0") != NULL,
                "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
          [c2 performSelector:NSSelectorFromString(@"geometryStore")];
-         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_height == 600,
+         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_height == 700,
                "window geometry re-saved (%ux%u)", test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
-         /* Core Info back on via the View menu: below the thumbnails,
-          * where the rows put it. */
+         /* Core Info back on: below the thumbnails, in the slot its row
+          * kept for it. */
          [c2 performSelector:NSSelectorFromString(@"toggleInfo:") withObject:nil];
          pump(d2, 100);
-         fi = [[c2 valueForKey:@"infoScroll"] frame];
-         fb = [[c2 valueForKey:@"boxart"] frame];
-         CHECK(![[c2 valueForKey:@"infoScroll"] isHidden] && fi.origin.y + fi.size.height <= fb.origin.y,
-               "Core Info shown below the thumbnails (info top %.0f, thumbs bottom %.0f)", fi.origin.y + fi.size.height, fb.origin.y);
-         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL
-               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
-               "rows: Core Info slot 1, thumbnails slot 0 (%s / %s)", test_settings.arrays.desktop_menu_dock_core_info, test_settings.arrays.desktop_menu_dock_screenshot);
+         fi = [[c2 valueForKey:@"infoScroll"] frame]; ft = [pane_view(c2, 4) frame];
+         CHECK(![[c2 valueForKey:@"infoScroll"] isHidden] && ft.origin.y + ft.size.height <= fi.origin.y,
+               "Core Info shown below Title Screen (title bottom %.0f, info top %.0f)", ft.origin.y + ft.size.height, fi.origin.y);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,3") != NULL
+               && strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0,
+               "rows: Core Info shown, still slot 3 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         /* Gaps: a drag on the gap after the left column widens it and
+          * the rows follow; a drag on the gap between the two right
+          * panes moves their split. A gap sits just past a pane's
+          * views (the pane's padding, then the gap), in the dock
+          * view's flipped coordinates. */
+         {
+            CGFloat before;
+            NSPoint a;
+            fp = [[c2 valueForKey:@"playlistsScroll"] frame];
+            before = fp.size.width;
+            a = NSMakePoint(fp.origin.x + fp.size.width + 6 + 2, fp.origin.y + 20);
+            dock_drag(c2, a, NSMakePoint(a.x + 60, a.y));
+            pump(d2, 50);
+            fp = [[c2 valueForKey:@"playlistsScroll"] frame];
+            CHECK(fp.size.width >= before + 50, "left gap drag widened the column (%.0f -> %.0f)", before, fp.size.width);
+            CHECK(strncmp(test_settings.arrays.desktop_menu_dock_playlists, "left,1,4", 8) == 0,
+                  "playlists row follows the drag (%s)", test_settings.arrays.desktop_menu_dock_playlists);
+            fb = [pane_view(c2, 5) frame];
+            before = fb.size.height;
+            a = NSMakePoint(fb.origin.x + 10, fb.origin.y + fb.size.height + 6 + 2);
+            dock_drag(c2, a, NSMakePoint(a.x, a.y + 50));
+            pump(d2, 50);
+            fb = [pane_view(c2, 5) frame];
+            CHECK(fb.size.height >= before + 40, "pane gap drag grew Screenshots (%.0f -> %.0f)", before, fb.size.height);
+         }
+         /* Drag-and-drop of a strip: Title Screen's strip (just above
+          * its view) dragged onto the middle of Screenshots tabs it
+          * there; dragged out to the content it floats in a window of
+          * its own; the float window's title double-click re-docks it;
+          * the strip's close glyph hides it and Closed Docks brings it
+          * back. */
+         {
+            NSPoint a, b;
+            NSWindow *fw;
+            ft = [pane_view(c2, 4) frame]; fb = [pane_view(c2, 5) frame];
+            a = NSMakePoint(ft.origin.x + 10, ft.origin.y - 6 - 8);
+            b = NSMakePoint(fb.origin.x + fb.size.width / 2, fb.origin.y + fb.size.height / 2);
+            dock_drag(c2, a, b);
+            pump(d2, 100);
+            CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",-,1,0") != NULL
+                  && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",title,0,0") != NULL,
+                  "strip dropped mid-pane: Title Screen tabbed with Screenshots and raised (%s / %s)",
+                  test_settings.arrays.desktop_menu_dock_title, test_settings.arrays.desktop_menu_dock_screenshot);
+            CHECK(![pane_view(c2, 4) isHidden] && [pane_view(c2, 5) isHidden], "the raised tab shows, the other hides");
+            ft = [pane_view(c2, 4) frame];
+            a = NSMakePoint(ft.origin.x + 10, ft.origin.y - 6 - 8);
+            b = NSMakePoint(600, 300);
+            dock_drag(c2, a, b);
+            pump(d2, 100);
+            fw = [pane_view(c2, 4) window];
+            CHECK(fw && fw != w2 && [fw isVisible] && ![pane_view(c2, 4) isHidden],
+                  "strip dropped on the content: Title Screen floats in its own window");
+            CHECK(strncmp(test_settings.arrays.desktop_menu_dock_title, "float,1,", 8) == 0,
+                  "floating row (%s)", test_settings.arrays.desktop_menu_dock_title);
+            CHECK(![pane_view(c2, 5) isHidden], "Screenshots shows again once its tab partner left");
+            if (fw && fw != w2)
+            {
+               /* Dragged by its title over Screenshots' middle, the
+                * float docks as a tab there (the title-bar drag tracks
+                * the pointer against the docks; the release drops). */
+               NSView *dv = [c2 valueForKey:@"dockView"];
+               NSPoint sp;
+               fb = [pane_view(c2, 5) frame];
+               sp = [w2 convertBaseToScreen:[dv convertPoint:NSMakePoint(fb.origin.x + fb.size.width / 2,
+                     fb.origin.y + fb.size.height / 2) toView:nil]];
+               [c2 floatDragUpdate:4 screenPoint:sp];
+               [c2 floatDragEnd:4];
+               pump(d2, 100);
+               CHECK([pane_view(c2, 4) window] == w2 && ![fw isVisible]
+                     && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",title,0,0") != NULL,
+                     "float dragged over a pane docks there as a tab (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+               /* Out again, then the title double-click re-docks it on
+                * its side's end. */
+               ft = [pane_view(c2, 4) frame];
+               a = NSMakePoint(ft.origin.x + 10, ft.origin.y - 6 - 8);
+               dock_drag(c2, a, b);
+               pump(d2, 100);
+               CHECK([pane_view(c2, 4) window] == fw && [fw isVisible], "floated again");
+               [c2 redockPane:4];
+               pump(d2, 100);
+               CHECK([pane_view(c2, 4) window] == w2 && ![fw isVisible], "re-docked (Qt's title double-click)");
+               CHECK(strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,", 8) == 0,
+                     "re-docked row (%s)", test_settings.arrays.desktop_menu_dock_title);
+            }
+            ft = [pane_view(c2, 4) frame];
+            a = NSMakePoint(ft.origin.x + ft.size.width + 6 - 4 - 6, ft.origin.y - 6 - 8);
+            dock_click(c2, a);
+            pump(d2, 50);
+            CHECK([pane_view(c2, 4) isHidden] && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,0,", 8) == 0,
+                  "close glyph hides the pane (%s)", test_settings.arrays.desktop_menu_dock_title);
+            {
+               NSMenu *cd = [c2 valueForKey:@"closedDocksMenu"];
+               NSMenuItem *it = nil;
+               NSUInteger i;
+               [c2 menuNeedsUpdate:cd];
+               for (i = 0; i < (NSUInteger)[cd numberOfItems]; i++)
+                  if ([[cd itemAtIndex:i] tag] == 4)
+                     it = [cd itemAtIndex:i];
+               CHECK(it != nil, "Closed Docks lists Title Screen (%ld items)", (long)[cd numberOfItems]);
+               if (it)
+                  [c2 showClosedDock:it];
+               pump(d2, 50);
+               CHECK(![pane_view(c2, 4) isHidden] && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,", 8) == 0,
+                     "Closed Docks shows it again (%s)", test_settings.arrays.desktop_menu_dock_title);
+            }
+         }
          [w2 close];
          pump(d2, 100);
          ui_companion_wimp_cocoa.deinit(d2);

@@ -57,6 +57,7 @@
 
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
+#include "../companion/companion_dock.h"
 #include "../companion/companion_thumbs.h"
 #include <formats/image.h>
 
@@ -119,6 +120,32 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 {
 @public
    RARCH_UNSAFE_UNRETAINED id owner;
+   int pane;   /* thumbnail pane index 0..3 (Boxart, Title, Screenshot, Logo) */
+}
+@end
+
+/* The docks' surface: a flipped view filling the content area above
+ * the status bar, holding every pane's views and the content view as
+ * subviews so the shared model's top-down coordinates are its own. It
+ * draws the panes' title strips, the tab bars of tab groups and the
+ * drop marker of a drag, and takes the mouse on them: a strip drags
+ * its pane (and floats or closes it from its two glyphs, floats it on
+ * a double-click), a tab raises, a gap resizes. */
+@class RACompanionController;
+@interface RACompanionDockView : NSView
+{
+@public
+   RARCH_UNSAFE_UNRETAINED RACompanionController *owner;
+}
+@end
+
+/* A floating pane's window: a double-click on its title bar docks the
+ * pane back, as Qt's floating docks do. */
+@interface RACompanionFloatWindow : NSWindow
+{
+@public
+   RARCH_UNSAFE_UNRETAINED RACompanionController *owner;
+   int pane;
 }
 @end
 
@@ -167,9 +194,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSMenu *playlistsMenu;  /* right-click on a playlist */
    NSMenu *hiddenMenu;     /* its "Hidden Playlists" submenu, filled on open */
    NSMenu *assocMenu;      /* "Associate Core" submenu, rebuilt on open */
-   NSScrollView *logScroll; /* log pane, hidden until Companion > Log */
+   NSScrollView *logScroll; /* the Log pane */
    NSTextView *logView;
-   BOOL logVisible;
    /* Load Core window: installed cores by name / version. */
    NSWindow *coresWindow;
    NSTextField *coresStatus;   /* its "<version> - <core>" */
@@ -186,20 +212,38 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
     * rows cached from companion_core_core_info_rows(). */
    NSScrollView *infoScroll;
    NSTableView *infoTable;
-   NSImageView *boxart;     /* selected entry's boxart, right pane */
-   BOOL boxartVisible;
-   BOOL infoVisible;
-   BOOL infoFirst;          /* Core Info above the thumbnails, as Qt's default */
-   /* Pane sizes from the shared dock rows (points; 0 = default): the
-    * two columns, the two right-column panes (a ratio when both are
-    * shown) and the log. */
-   CGFloat paneLeftW, paneRightW, paneInfoH, paneBoxH, paneLogH;
+   /* The four thumbnail panes (Boxart, Title Screen, Screenshot, Logo:
+    * companion_dock_id order), each an image view showing the selected
+    * entry's image of its type; each with its own bitmap, animation
+    * frames written into its pixels in place. */
+   NSImageView *boxart[4];
+   NSBitmapImageRep *boxartRep[4];
+   NSImage *boxartImage[4];
+   int boxartW[4], boxartH[4];
+   NSInteger boxartEntry[4];          /* entry the pane shows / awaits, -1 none */
+   /* The docks: the shared model, its geometry, the metrics it was
+    * laid out with, the surface that draws and drags it, a floating
+    * pane's window, the side a floating pane came from, the drag in
+    * progress. Points throughout, as the dock rows are. */
+   companion_dock_layout_t dock;
+   companion_dock_geometry_t geom;
+   companion_dock_metrics_t dm;
+   companion_dock_drop_t drop;
+   RACompanionDockView *dockView;
+   NSWindow *floats[COMPANION_DOCK_COUNT];
+   NSMenu *closedDocksMenu;           /* Companion > Closed Docks, filled on open */
+   BOOL updatingClosedDocks;
+   int lastSide[COMPANION_DOCK_COUNT];
+   int dragGap;
+   int dragPane;
+   NSPoint dragStart;
+   BOOL dragMoved;
+   BOOL dropValid;
    struct string_list *infoKeys;
    struct string_list *infoValues;
    char infoCore[PATH_MAX_LENGTH];
 
    /* Qt-layout chrome (all owned by the view hierarchy; +1 in ivars). */
-   NSTextField *searchLabel, *browserLabel, *coreLabel, *infoLabel, *boxartLabel;
    NSTextField *itemsLabel, *zoomLabel;
    NSTextField *searchField;
    NSButton *clearButton, *infoButton, *runButton, *stopButton;
@@ -215,8 +259,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSPopUpButton *viewPopup;          /* List / Icons */
    NSPopUpButton *thumbPopup;         /* boxart / screenshot / title / logo */
    NSSlider *zoomSlider;
-   NSSegmentedControl *boxartTypes;   /* the four types for the boxart pane */
-   const char *boxartSubdir;
    NSMutableArray *playlistIcons;     /* NSImage per playlist row */
    NSImage *folderIcon;               /* the XMB folder asset, for the browser */
    char filter[128];                  /* lower-cased search text */
@@ -229,12 +271,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSInteger visFirst, visLast;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
    NSInteger thumbNoneCount;          /* its length: rows beyond it do not exist */
-   NSInteger boxartEntry;             /* entry the pane shows / awaits */
-   /* The pane's own bitmap: animation frames are written into its
-    * pixels in place, one rep + image for the animation's life. */
-   NSBitmapImageRep *boxartRep;
-   NSImage *boxartImage;
-   int boxartW, boxartH;
    BOOL syncingSort;                  /* setSortDescriptors: from the core, not a click */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
@@ -268,9 +304,24 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
 - (void)applySharedSettings;
-- (void)gridApply;
-- (void)gridStore;
+- (void)dockLoad;
+- (void)dockStore;
 - (void)geometryStore;
+- (const char*)paneTitle:(int)pane;
+- (int)paneViews:(int)pane into:(NSView**)views max:(int)max;
+- (void)layoutPane:(int)pane in:(NSRect)r;
+- (void)showPane:(int)pane shown:(BOOL)show;
+- (void)floatPane:(int)pane;
+- (void)redockPane:(int)pane;
+- (void)trackFloat:(int)pane from:(NSEvent*)e;
+- (companion_rect_t)dockClient;
+- (void)floatDragUpdate:(int)pane screenPoint:(NSPoint)sp;
+- (void)floatDragEnd:(int)pane;
+- (void)dockMouseDown:(NSPoint)pt clicks:(NSInteger)clicks;
+- (void)dockMouseDragged:(NSPoint)pt;
+- (void)dockMouseUp:(NSPoint)pt;
+- (void)drawDocks:(NSRect)dirty;
+- (void)addGapCursorsTo:(NSView*)v;
 - (void)layoutViews;
 - (void)fillCorePopup:(NSInteger)entryRow;
 - (const char*)popupCorePath;
@@ -278,7 +329,6 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)zoomChanged:(id)sender;
 - (void)thumbTypeChanged:(id)sender;
 - (void)viewChanged:(id)sender;
-- (void)boxartTypeChanged:(id)sender;
 - (void)clearSearch:(id)sender;
 - (void)statusDefault;
 - (void)tabChanged:(id)sender;
@@ -336,7 +386,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)showCoresForContent:(const char*)content;
 - (void)toggleInfo:(id)sender;
 - (void)toggleBoxart:(id)sender;
+- (void)showClosedDock:(id)sender;
 - (void)refreshBoxart;
+- (BOOL)installThumbnailFromPath:(const char*)imagePath pane:(int)pane;
 - (void)refreshInfo;
 - (void)infoFollowCore;
 - (void)cancelLoadCore:(id)sender;
@@ -439,7 +491,51 @@ static const companion_callbacks_t cc_callbacks = {
    NSArray *files = [[sender draggingPasteboard] propertyListForType:NSFilenamesPboardType];
    if (![files count] || !owner)
       return NO;
-   return [owner installThumbnailFromPath:[[files objectAtIndex:0] UTF8String]];
+   return [owner installThumbnailFromPath:[[files objectAtIndex:0] UTF8String] pane:pane];
+}
+@end
+
+@implementation RACompanionDockView
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirty { if (owner) [owner drawDocks:dirty]; }
+- (void)resetCursorRects { if (owner) [owner addGapCursorsTo:self]; }
+- (void)mouseDown:(NSEvent*)e
+{
+   if (owner)
+      [owner dockMouseDown:[self convertPoint:[e locationInWindow] fromView:nil]
+         clicks:[e clickCount]];
+}
+- (void)mouseDragged:(NSEvent*)e
+{
+   if (owner)
+      [owner dockMouseDragged:[self convertPoint:[e locationInWindow] fromView:nil]];
+}
+- (void)mouseUp:(NSEvent*)e
+{
+   if (owner)
+      [owner dockMouseUp:[self convertPoint:[e locationInWindow] fromView:nil]];
+}
+@end
+
+@implementation RACompanionFloatWindow
+- (void)sendEvent:(NSEvent*)e
+{
+   /* A press above the content area is on the title bar: a double-
+    * click docks the pane back, a drag moves the window and docks it
+    * where a strip drag would if it is let go over the companion. */
+   if ([e type] == NSLeftMouseDown && owner)
+   {
+      NSPoint p = [e locationInWindow];
+      if (p.y >= [[self contentView] frame].size.height)
+      {
+         if ([e clickCount] == 2)
+            [owner redockPane:pane];
+         else
+            [owner trackFloat:pane from:e];
+         return;
+      }
+   }
+   [super sendEvent:e];
 }
 @end
 
@@ -927,7 +1023,14 @@ static NSImage *cc_image_from_argb(const uint32_t *bits, int w, int h)
 #define CC_TAG_HAS_GEN   0
 #endif
 
-#define CC_TAG_BOXART ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+#define CC_TAG_BOXART       ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+/* Thumbnail-pane requests: the entry id, the pane index (bits 29-30)
+ * and CC_TAG_BOXART; a file-browser preview's id carries bit 28 so it
+ * cannot collide with a playlist entry's. */
+#define CC_TAG_PANE(t)      ((int)(((t) >> 29) & 3))
+#define CC_TAG_ID(t)        ((NSInteger)((t) & 0x1fffffffu))
+#define CC_TAG_MAKE(id, pn) ((uintptr_t)((id) & 0x1fffffffL) | ((uintptr_t)(pn) << 29) | CC_TAG_BOXART)
+#define CC_BROWSE_ID        0x10000000L
 
 /* Engine delivery: tag = row | gen << 32. */
 static void cc_thumb_done(void *ud, const char *path, int w, int h,
@@ -938,31 +1041,31 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [self thumbDone:tag bits:bits width:w height:h];
 }
 
-/* Frames arrive at up to the container's rate: keep one rep for the
- * pane and copy each frame into its pixels (a byte swap into RGBA),
- * rather than allocating a rep and an image per frame. */
-- (void)boxartBlit:(const uint32_t*)bits width:(int)w height:(int)h
+/* Frames arrive at up to the container's rate: keep one rep per pane
+ * and copy each frame into its pixels (a byte swap into RGBA), rather
+ * than allocating a rep and an image per frame. */
+- (void)boxartBlit:(int)t bits:(const uint32_t*)bits width:(int)w height:(int)h
 {
    unsigned char *dst;
    int i;
-   if (!boxartRep || boxartW != w || boxartH != h)
+   if (!boxartRep[t] || boxartW[t] != w || boxartH[t] != h)
    {
-      RELEASE(boxartRep);
-      RELEASE(boxartImage);
-      boxartRep = [[NSBitmapImageRep alloc]
+      RELEASE(boxartRep[t]);
+      RELEASE(boxartImage[t]);
+      boxartRep[t] = [[NSBitmapImageRep alloc]
          initWithBitmapDataPlanes:NULL pixelsWide:w pixelsHigh:h
          bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
          colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:w * 4
          bitsPerPixel:32];
-      if (!boxartRep)
+      if (!boxartRep[t])
          return;
-      boxartImage = [[NSImage alloc] initWithSize:NSMakeSize(w, h)];
-      [boxartImage addRepresentation:boxartRep];
-      boxartW = w;
-      boxartH = h;
-      [boxart setImage:boxartImage];
+      boxartImage[t] = [[NSImage alloc] initWithSize:NSMakeSize(w, h)];
+      [boxartImage[t] addRepresentation:boxartRep[t]];
+      boxartW[t] = w;
+      boxartH[t] = h;
+      [boxart[t] setImage:boxartImage[t]];
    }
-   dst = [boxartRep bitmapData];
+   dst = [boxartRep[t] bitmapData];
    for (i = 0; i < w * h; i++)
    {
       uint32_t p = bits[i];
@@ -971,7 +1074,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       dst[i * 4 + 2] = (unsigned char)( p        & 0xff);
       dst[i * 4 + 3] = 0xff;
    }
-   [boxart setNeedsDisplay:YES];
+   [boxart[t] setNeedsDisplay:YES];
 }
 
 - (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h
@@ -980,8 +1083,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (tag & CC_TAG_BOXART)
    {
       /* The pane: show it if it is still the selected entry's. */
-      if ((NSInteger)(tag & ~CC_TAG_BOXART) == boxartEntry && bits && boxart)
-         [self boxartBlit:bits width:w height:h];
+      int t = CC_TAG_PANE(tag);
+      if (CC_TAG_ID(tag) == boxartEntry[t] && bits && boxart[t])
+         [self boxartBlit:t bits:bits width:w height:h];
       return;
    }
    row = (NSInteger)(tag & 0xffffffffu);
@@ -1207,10 +1311,17 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    }
    content = [window contentView];
 
+   /* The docks' surface: everything but the status bar lives in it, in
+    * the model's (flipped) coordinates. */
+   dockView = [[RACompanionDockView alloc] initWithFrame:NSMakeRect(0, CC_STATUS_H,
+         frame.size.width, frame.size.height - CC_STATUS_H)];
+   dockView->owner = self;
+   [content addSubview:dockView];
+   content  = dockView;
+   dragGap  = -1;
+   dragPane = -1;
+
    /* --- Left column: Search / Content Browser (tabs) / Core ----------- */
-   searchLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH)];
-   KEEP_IVAR(searchLabel);
-   [content addSubview:searchLabel];
    searchField = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 100, CC_CTRL_H)];
    [searchField setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
    [searchField setTarget:self];
@@ -1222,9 +1333,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    KEEP_IVAR(clearButton);
    [content addSubview:clearButton];
 
-   browserLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER)];
-   KEEP_IVAR(browserLabel);
-   [content addSubview:browserLabel];
 
    /* Playlists: icon + name, tall rows like Qt's. */
    playlists = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 200, 500)
@@ -1283,9 +1391,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [content addSubview:brStart];
    [content addSubview:brDownloads];
 
-   coreLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE)];
-   KEEP_IVAR(coreLabel);
-   [content addSubview:coreLabel];
    corePopup = [self makePopup:@selector(corePopupChanged:)];
    KEEP_IVAR(corePopup);
    [content addSubview:corePopup];
@@ -1365,9 +1470,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [content addSubview:viewPopup];
 
    /* --- Right column: Core Info over Boxart (with its type tabs) ------ */
-   infoLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO)];
-   KEEP_IVAR(infoLabel);
-   [content addSubview:infoLabel];
    infoTable  = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, CC_PANE_W, 300)
          scroll:&si twoColumns:NO]);
    infoScroll = si;
@@ -1377,31 +1479,25 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [infoScroll setHasHorizontalScroller:YES];
    [content addSubview:infoScroll];
 
-   boxartLabel = [self makeLabel:msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART)];
-   KEEP_IVAR(boxartLabel);
-   [content addSubview:boxartLabel];
-   boxartTypes = [[NSSegmentedControl alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, CC_CTRL_H)];
-   [boxartTypes setSegmentCount:4];
-   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART)) forSegment:0];
-   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN)) forSegment:1];
-   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT)) forSegment:2];
-   [boxartTypes setLabel:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO)) forSegment:3];
-   [boxartTypes setSelectedSegment:0];
-   [boxartTypes setTarget:self];
-   [boxartTypes setAction:@selector(boxartTypeChanged:)];
-   [content addSubview:boxartTypes];
-   boxartSubdir = COMPANION_THUMB_BOXART;
-   boxart = [[RACompanionBoxart alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
-   ((RACompanionBoxart*)boxart)->owner = self;
-   [boxart registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
-   [boxart setImageScaling:NSImageScaleProportionallyUpOrDown];
-   [boxart setImageFrameStyle:NSImageFrameGrayBezel];
-   [content addSubview:boxart];
-   infoVisible   = YES; /* Qt shows both docks by default, Core Info on top */
-   boxartVisible = YES;
-   infoFirst     = YES;
+   /* The four thumbnail panes (Boxart, Title Screen, Screenshot, Logo),
+    * each an image view that takes a dropped image as that type. */
+   {
+      int t;
+      for (t = 0; t < 4; t++)
+      {
+         RACompanionBoxart *bv = [[RACompanionBoxart alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
+         bv->owner = self;
+         bv->pane  = t;
+         [bv registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+         [bv setImageScaling:NSImageScaleProportionallyUpOrDown];
+         [bv setImageFrameStyle:NSImageFrameGrayBezel];
+         [content addSubview:bv];
+         boxart[t]      = bv;
+         boxartEntry[t] = -1;
+      }
+   }
 
-   /* Log pane (hidden until Companion > Log). */
+   /* The Log pane (hidden by default, as Qt's). */
    logScroll = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, CC_STATUS_H, frame.size.width, 120)];
    logView   = [[NSTextView alloc] initWithFrame:[[logScroll contentView] bounds]];
    [logView setEditable:NO];
@@ -1409,13 +1505,14 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [logView setAutoresizingMask:NSViewWidthSizable];
    [logScroll setDocumentView:logView];
    [logScroll setHasVerticalScroller:YES];
+   [content addSubview:logScroll];
 
    status = [[NSTextField alloc] initWithFrame:NSMakeRect(4, 0, frame.size.width - 8, CC_STATUS_H)];
    [status setEditable:NO];
    [status setBordered:NO];
    [status setDrawsBackground:NO];
    [status setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
-   [content addSubview:status];
+   [[window contentView] addSubview:status];
 
    /* "Companion" menu on the main menu bar (Qt's File / View entries). */
    menu = [[[NSMenu alloc] initWithTitle:@"Companion"] autorelease_compat];
@@ -1457,14 +1554,12 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       action:@selector(viewIcons:) keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
-   item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:) keyEquivalent:@""];
-   [item setTarget:self];
-   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO))
-      action:@selector(toggleInfo:) keyEquivalent:@""];
-   [item setTarget:self];
-   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART))
-      action:@selector(toggleBoxart:) keyEquivalent:@""];
-   [item setTarget:self];
+   /* Qt's View > Closed Docks: the hidden panes, filled as it opens. */
+   closedDocksMenu = [[NSMenu alloc] initWithTitle:@""];
+   [closedDocksMenu setDelegate:self];
+   item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS))
+      action:NULL keyEquivalent:@""];
+   [item setSubmenu:closedDocksMenu];
    [menu addItem:[NSMenuItem separatorItem]];
    item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS))
       action:@selector(showCoreOptions:) keyEquivalent:@""];
@@ -1543,84 +1638,270 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 /* Explicit layout (10.4-safe; no autolayout), recomputed on resize.
  * Cocoa coordinates run bottom-up, so y grows towards the top. */
+/* --- Docks ------------------------------------------------------------
+ *
+ * The panes are docks in the sense the Qt companion's are: the shared
+ * model (ui/companion/companion_dock.c) owns where every pane is, how
+ * big, whether it is tabbed with others, floating or hidden, and this
+ * backend renders it inside dockView, whose flipped coordinates are
+ * the model's. Each pane is a set of views; layoutViews asks the model
+ * for the rectangles and frames the views in them (a hidden pane's
+ * views are hidden, a floating pane's move into a window of their
+ * own); dockView draws the strips, tab bars and drop marker and takes
+ * the mouse on them. */
+
+- (const char*)paneTitle:(int)pane
+{
+   switch (pane)
+   {
+      case COMPANION_DOCK_SEARCH:     return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+      case COMPANION_DOCK_PLAYLISTS:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER);
+      case COMPANION_DOCK_CORE:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE);
+      case COMPANION_DOCK_BOXART:     return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART);
+      case COMPANION_DOCK_TITLE:      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN);
+      case COMPANION_DOCK_SCREENSHOT: return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT);
+      case COMPANION_DOCK_LOGO:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
+      case COMPANION_DOCK_CORE_INFO:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
+      case COMPANION_DOCK_LOG:        return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG);
+      default:                        break;
+   }
+   return "";
+}
+
+/* Every view of a pane, in a fixed order. */
+- (int)paneViews:(int)pane into:(NSView**)views max:(int)max
+{
+   int n = 0;
+#define CC_ADD(v) do { if ((v) && n < max) views[n++] = (v); } while (0)
+   switch (pane)
+   {
+      case COMPANION_DOCK_SEARCH:
+         CC_ADD(searchField); CC_ADD(clearButton);
+         break;
+      case COMPANION_DOCK_PLAYLISTS:
+         CC_ADD(browserTabs); CC_ADD(brUp); CC_ADD(brStart); CC_ADD(brDownloads);
+         CC_ADD(playlistsScroll);
+         break;
+      case COMPANION_DOCK_CORE:
+         CC_ADD(corePopup); CC_ADD(infoButton); CC_ADD(runButton); CC_ADD(stopButton);
+         break;
+      case COMPANION_DOCK_CORE_INFO:
+         CC_ADD(infoScroll);
+         break;
+      case COMPANION_DOCK_LOG:
+         CC_ADD(logScroll);
+         break;
+      default:
+         if (pane >= COMPANION_DOCK_BOXART && pane <= COMPANION_DOCK_LOGO)
+            CC_ADD(boxart[pane - COMPANION_DOCK_BOXART]);
+         break;
+   }
+#undef CC_ADD
+   return n;
+}
+
+/* Frame pane @pane's views in @r, in the coordinates of the view they
+ * are subviews of (dockView, flipped, or a float window's content
+ * view, not flipped: the caller passes a rectangle in that view). */
+- (void)layoutPane:(int)pane in:(NSRect)r
+{
+   CGFloat x = r.origin.x + CC_PAD, w = r.size.width - 2 * CC_PAD;
+   CGFloat h = r.size.height - 2 * CC_PAD;
+   NSView *parent = nil;
+   NSView *vs[8];
+   BOOL flipped;
+   if ([self paneViews:pane into:vs max:8] > 0)
+      parent = [vs[0] superview];
+   flipped = parent ? [parent isFlipped] : YES;
+   if (w < 0) w = 0;
+   if (h < 0) h = 0;
+   /* Rows from the top: in a flipped parent y grows downward; in an
+    * unflipped one the top row's y is the rectangle's top less its
+    * height. */
+#define CC_ROW(top, hh) (flipped ? (r.origin.y + CC_PAD + (top)) : (r.origin.y + r.size.height - CC_PAD - (top) - (hh)))
+   switch (pane)
+   {
+      case COMPANION_DOCK_SEARCH:
+         [searchField setFrame:NSMakeRect(x, CC_ROW(0, CC_CTRL_H), w - CC_PAD - 60.0, CC_CTRL_H)];
+         [clearButton setFrame:NSMakeRect(x + w - 60.0, CC_ROW(0, CC_CTRL_H), 60.0, CC_CTRL_H)];
+         break;
+      case COMPANION_DOCK_PLAYLISTS:
+      {
+         CGFloat strip = 28.0, top = 0;
+         [browserTabs setFrame:NSMakeRect(x, CC_ROW(top, strip), w, strip)];
+         top += strip + CC_PAD;
+         if (browseMode)
+         {
+            CGFloat bw3 = (w - 2 * CC_PAD) / 3;
+            [brUp        setFrame:NSMakeRect(x, CC_ROW(top, CC_CTRL_H), bw3, CC_CTRL_H)];
+            [brStart     setFrame:NSMakeRect(x + bw3 + CC_PAD, CC_ROW(top, CC_CTRL_H), bw3, CC_CTRL_H)];
+            [brDownloads setFrame:NSMakeRect(x + 2 * (bw3 + CC_PAD), CC_ROW(top, CC_CTRL_H), bw3, CC_CTRL_H)];
+            top += CC_CTRL_H + CC_PAD;
+         }
+         [brUp setHidden:!browseMode]; [brStart setHidden:!browseMode]; [brDownloads setHidden:!browseMode];
+         [playlistsScroll setFrame:NSMakeRect(x, CC_ROW(top, h - top), w, h - top > 0 ? h - top : 0)];
+         break;
+      }
+      case COMPANION_DOCK_CORE:
+         [corePopup  setFrame:NSMakeRect(x, CC_ROW(0, CC_CTRL_H), w - 3 * CC_PAD - 150.0, CC_CTRL_H)];
+         [infoButton setFrame:NSMakeRect(x + w - 2 * CC_PAD - 150.0, CC_ROW(0, CC_CTRL_H), 50.0, CC_CTRL_H)];
+         [runButton  setFrame:NSMakeRect(x + w - CC_PAD - 100.0, CC_ROW(0, CC_CTRL_H), 50.0, CC_CTRL_H)];
+         [stopButton setFrame:NSMakeRect(x + w - 50.0, CC_ROW(0, CC_CTRL_H), 50.0, CC_CTRL_H)];
+         break;
+      case COMPANION_DOCK_CORE_INFO:
+         [infoScroll setFrame:NSMakeRect(x, CC_ROW(0, h), w, h)];
+         break;
+      case COMPANION_DOCK_LOG:
+         [logScroll setFrame:NSMakeRect(x, CC_ROW(0, h), w, h)];
+         break;
+      default:
+         if (pane >= COMPANION_DOCK_BOXART && pane <= COMPANION_DOCK_LOGO)
+            [boxart[pane - COMPANION_DOCK_BOXART] setFrame:NSMakeRect(x, CC_ROW(0, h), w, h)];
+         break;
+   }
+#undef CC_ROW
+}
+
+/* Move pane @pane's views into @parent. */
+- (void)reparentPane:(int)pane to:(NSView*)parent
+{
+   NSView *vs[8];
+   int i, n = [self paneViews:pane into:vs max:8];
+   for (i = 0; i < n; i++)
+      if ([vs[i] superview] != parent)
+      {
+         /* Every pane view is held by an ivar (+1), so it survives
+          * leaving one superview for the other. */
+         [vs[i] removeFromSuperview];
+         [parent addSubview:vs[i]];
+      }
+}
+
+- (void)setPane:(int)pane hidden:(BOOL)hidden
+{
+   NSView *vs[8];
+   int i, n = [self paneViews:pane into:vs max:8];
+   for (i = 0; i < n; i++)
+   {
+      if ((vs[i] == brUp || vs[i] == brStart || vs[i] == brDownloads) && !browseMode)
+         [vs[i] setHidden:YES];
+      else
+         [vs[i] setHidden:hidden];
+   }
+}
+
+/* A floating pane's window, made the first time the pane floats. */
+- (NSWindow*)floatWindow:(int)pane
+{
+   RACompanionFloatWindow *fw;
+   if (floats[pane])
+      return floats[pane];
+   fw = [[RACompanionFloatWindow alloc]
+      initWithContentRect:NSMakeRect(100, 100, 300, 240)
+      styleMask:NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask
+      backing:NSBackingStoreBuffered defer:NO];
+   fw->owner = self;
+   fw->pane  = pane;
+   [fw setTitle:BOXSTRING([self paneTitle:pane])];
+   [fw setReleasedWhenClosed:NO];
+   [fw setDelegate:(id)self];
+   floats[pane] = fw;
+   return fw;
+}
+
+/* The model's rectangle of a floating pane (top-down, screen) <->
+ * the window's frame (bottom-up). */
+- (NSRect)floatFrame:(int)pane
+{
+   CGFloat sh = [[NSScreen mainScreen] frame].size.height;
+   companion_rect_t *fr = &dock.floats[pane];
+   return NSMakeRect(fr->x, sh - fr->y - fr->h, fr->w, fr->h);
+}
+
+- (void)floatRectFromWindow:(NSWindow*)fw pane:(int)pane
+{
+   CGFloat sh = [[NSScreen mainScreen] frame].size.height;
+   NSRect f   = [fw frame];
+   dock.floats[pane].x = (int)f.origin.x;
+   dock.floats[pane].y = (int)(sh - f.origin.y - f.size.height);
+   dock.floats[pane].w = (int)f.size.width;
+   dock.floats[pane].h = (int)f.size.height;
+}
+
+- (void)showFloat:(int)pane
+{
+   NSWindow *fw = [self floatWindow:pane];
+   NSRect vis   = [[NSScreen mainScreen] visibleFrame];
+   NSRect r;
+   [self reparentPane:pane to:[fw contentView]];
+   if (dock.floats[pane].w > 0 && dock.floats[pane].h > 0)
+   {
+      r = [self floatFrame:pane];
+      /* A saved position on a screen that is gone stays reachable. */
+      if (r.origin.x + r.size.width  > vis.origin.x + vis.size.width)
+         r.origin.x = vis.origin.x + vis.size.width  - r.size.width;
+      if (r.origin.y + r.size.height > vis.origin.y + vis.size.height)
+         r.origin.y = vis.origin.y + vis.size.height - r.size.height;
+      if (r.origin.x < vis.origin.x) r.origin.x = vis.origin.x;
+      if (r.origin.y < vis.origin.y) r.origin.y = vis.origin.y;
+      [fw setFrame:r display:NO];
+   }
+   if (![fw isVisible])
+      [fw orderFront:nil];
+   [self layoutPane:pane in:[[fw contentView] bounds]];
+   [self setPane:pane hidden:NO];
+}
+
 - (void)layoutViews
 {
    NSRect b;
-   CGFloat W, H, top, y, x, leftW, rightW, cx, cw, logH;
-   if (!window)
+   companion_rect_t client;
+   int i;
+   if (!window || !dockView)
       return;
-   b     = [[window contentView] bounds];
-   W     = b.size.width;
-   H     = b.size.height;
-   top   = H - CC_PAD;
-   /* Column widths and the log height from the dock rows (or the Qt
-    * defaults), clamped so the entries keep some room. */
-   leftW  = paneLeftW  > 0 ? paneLeftW  : CC_PANE_W;
-   rightW = paneRightW > 0 ? paneRightW : CC_PANE_W;
-   logH   = paneLogH   > 0 ? paneLogH   : 120.0;
-   if (leftW > W - 300.0 - CC_PANE_W)
-      leftW = W - 300.0 - CC_PANE_W;
-   if (leftW < 100.0)
-      leftW = 100.0;
-   if (rightW > W - leftW - 300.0)
-      rightW = W - leftW - 300.0;
-   if (!(infoVisible || boxartVisible) || rightW < 100.0)
-      rightW = 0.0;
-   if (logH > H - CC_STATUS_H - 200.0)
-      logH = H - CC_STATUS_H - 200.0;
-   if (!logVisible)
-      logH = 0.0;
+   b = [[window contentView] bounds];
+   [status setFrame:NSMakeRect(4, 0, b.size.width - 8, CC_STATUS_H)];
+   [dockView setFrame:NSMakeRect(0, CC_STATUS_H, b.size.width, b.size.height - CC_STATUS_H)];
+   client.x = 0; client.y = 0;
+   client.w = (int)b.size.width;
+   client.h = (int)(b.size.height - CC_STATUS_H);
+   if (client.h < 0) client.h = 0;
 
-   [status setFrame:NSMakeRect(4, 0, W - 8, CC_STATUS_H)];
-   if (logVisible)
-      [logScroll setFrame:NSMakeRect(0, CC_STATUS_H, W, logH)];
+   dm.gap      = (int)CC_PAD;
+   dm.strip_h  = 20;
+   dm.tab_h    = 22;
+   dm.min_pane = 40;
+   dm.def_side = (int)CC_PANE_W;
+   dm.def_bar  = 120;
+   dm.def_slot = 200;
+   companion_dock_layout(&dock, &dm, &client, &geom);
 
-   /* Left column, top-down. */
-   x = CC_PAD;
-   y = top - CC_LABEL_H;
-   [searchLabel setFrame:NSMakeRect(x, y, leftW - 2 * CC_PAD, CC_LABEL_H)];
-   y -= CC_CTRL_H + 2;
-   [searchField setFrame:NSMakeRect(x, y, leftW - 3 * CC_PAD - 60.0, CC_CTRL_H)];
-   [clearButton setFrame:NSMakeRect(leftW - CC_PAD - 60.0, y, 60.0, CC_CTRL_H)];
-   y -= CC_PAD + CC_LABEL_H;
-   [browserLabel setFrame:NSMakeRect(x, y, leftW - 2 * CC_PAD, CC_LABEL_H)];
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
    {
-      /* Core section at the bottom of the column. */
-      CGFloat coreY = CC_STATUS_H + logH + CC_PAD;
-      [corePopup setFrame:NSMakeRect(x, coreY, leftW - 5 * CC_PAD - 3 * 50.0, CC_CTRL_H)];
-      [infoButton setFrame:NSMakeRect(leftW - 3 * CC_PAD - 150.0, coreY, 50.0, CC_CTRL_H)];
-      [runButton setFrame:NSMakeRect(leftW - 2 * CC_PAD - 100.0, coreY, 50.0, CC_CTRL_H)];
-      [stopButton setFrame:NSMakeRect(leftW - CC_PAD - 50.0, coreY, 50.0, CC_CTRL_H)];
-      coreY += CC_CTRL_H + 2;
-      [coreLabel setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD, CC_LABEL_H)];
-      coreY += CC_LABEL_H + CC_PAD;
-      /* Tabs fill what is left between the browser label and Core;
-       * under the browser a button row sits at the top of that area. */
-      if (browseMode)
+      if (geom.laid_out[i])
       {
-         CGFloat bw3 = (leftW - 4 * CC_PAD) / 3;
-         CGFloat by  = y - CC_PAD - CC_CTRL_H;
-         [brUp        setFrame:NSMakeRect(x, by, bw3, CC_CTRL_H)];
-         [brStart     setFrame:NSMakeRect(x + bw3 + CC_PAD, by, bw3, CC_CTRL_H)];
-         [brDownloads setFrame:NSMakeRect(x + 2 * (bw3 + CC_PAD), by, bw3, CC_CTRL_H)];
-         y = by - CC_PAD;
+         [self reparentPane:i to:dockView];
+         [self layoutPane:i in:NSMakeRect(geom.pane[i].x, geom.pane[i].y, geom.pane[i].w, geom.pane[i].h)];
+         [self setPane:i hidden:NO];
+         if (floats[i] && [floats[i] isVisible])
+            [floats[i] orderOut:nil];
       }
-      [brUp setHidden:!browseMode]; [brStart setHidden:!browseMode]; [brDownloads setHidden:!browseMode];
+      else if (dock.area[i] == COMPANION_DOCK_FLOAT && dock.shown[i] && [window isVisible])
+         [self showFloat:i];
+      else
       {
-         /* the strip on top, the table filling down to the Core section */
-         CGFloat strip = 28.0;
-         [browserTabs setFrame:NSMakeRect(x, y - CC_PAD - strip, leftW - 2 * CC_PAD, strip)];
-         [playlistsScroll setFrame:NSMakeRect(x, coreY, leftW - 2 * CC_PAD,
-               y - CC_PAD - strip - CC_PAD - coreY)];
+         [self setPane:i hidden:YES];
+         if (floats[i] && [floats[i] isVisible])
+            [floats[i] orderOut:nil];
       }
    }
 
-   /* Centre. */
-   cx = leftW;
-   cw = W - leftW - rightW;
+   /* Centre: the content view with Qt's footer. */
    {
-      CGFloat fy = CC_STATUS_H + logH;
-      [entriesScroll setFrame:NSMakeRect(cx + CC_PAD, fy + CC_FOOTER_H, cw - 2 * CC_PAD, H - CC_PAD - fy - CC_FOOTER_H)];
+      CGFloat cx = geom.content.x, cw = geom.content.w, x;
+      CGFloat top = geom.content.y, ch = geom.content.h;
+      CGFloat fy  = top + ch - CC_FOOTER_H; /* the footer row's top */
+      [entriesScroll setFrame:NSMakeRect(cx + CC_PAD, top + CC_PAD, cw - 2 * CC_PAD, ch - CC_PAD - CC_FOOTER_H)];
       [itemsLabel setFrame:NSMakeRect(cx + CC_PAD, fy + (CC_FOOTER_H - CC_LABEL_H) / 2, 160.0, CC_LABEL_H)];
       x = cx + cw - CC_PAD;
       x -= 100.0;
@@ -1634,154 +1915,349 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (iconView && grid)
          [grid relayout];
    }
-
-   /* Right column: Core Info and the thumbnail pane, one above the
-    * other in the order the dock rows say (Core Info on top by default,
-    * as Qt's), at the rows' heights as a ratio of the column, equal
-    * halves when there are none; either alone takes the whole column. */
-   x = W - rightW + CC_PAD;
-   {
-      CGFloat colTop = top;
-      CGFloat colBot = CC_STATUS_H + logH + CC_PAD;
-      CGFloat colH   = colTop - colBot;
-      CGFloat infoH, boxH, infoBot, boxBot;
-      CGFloat w      = rightW - 2 * CC_PAD;
-      BOOL showInfo  = rightW > 0 && infoVisible;
-      BOOL showBox   = rightW > 0 && boxartVisible;
-      if (showInfo && showBox)
-      {
-         if (paneInfoH > 0 && paneBoxH > 0)
-            infoH = colH * paneInfoH / (paneInfoH + paneBoxH);
-         else
-            infoH = colH / 2;
-         if (infoH < 80.0)
-            infoH = 80.0;
-         if (infoH > colH - 80.0)
-            infoH = colH - 80.0;
-         boxH = colH - infoH;
-         if (infoFirst)
-         {
-            boxBot  = colBot;
-            infoBot = colBot + boxH;
-         }
-         else
-         {
-            infoBot = colBot;
-            boxBot  = colBot + infoH;
-         }
-      }
-      else
-      {
-         infoH = showInfo ? colH : 0;
-         boxH  = showBox  ? colH : 0;
-         infoBot = boxBot = colBot;
-      }
-      [infoLabel  setHidden:!showInfo];
-      [infoScroll setHidden:!showInfo];
-      [boxartLabel setHidden:!showBox];
-      [boxartTypes setHidden:!showBox];
-      [boxart     setHidden:!showBox];
-      if (showInfo)
-      {
-         [infoLabel  setFrame:NSMakeRect(x, infoBot + infoH - CC_LABEL_H, w, CC_LABEL_H)];
-         [infoScroll setFrame:NSMakeRect(x, infoBot + CC_PAD, w, infoH - CC_LABEL_H - CC_PAD)];
-      }
-      if (showBox)
-      {
-         [boxartLabel setFrame:NSMakeRect(x, boxBot + boxH - CC_LABEL_H, w, CC_LABEL_H)];
-         [boxartTypes setFrame:NSMakeRect(x, boxBot + boxH - CC_LABEL_H - CC_CTRL_H, w, CC_CTRL_H)];
-         [boxart      setFrame:NSMakeRect(x, boxBot, w, boxH - CC_LABEL_H - CC_CTRL_H - CC_PAD)];
-      }
-   }
+   [dockView setNeedsDisplay:YES];
+   [[window contentView] setNeedsDisplay:YES];
+   [window invalidateCursorRectsForView:dockView];
 
    /* Keep the shared rows current so a quit from RetroArch's own menu
     * writes what is on screen; nothing while the window is not up. */
    if ([window isVisible] && ![window isMiniaturized])
-      [self gridStore];
+      [self dockStore];
 }
 
-/* The pane layout from the shared dock rows (the same rows the Qt
- * companion saves and restores): column widths, which of Core Info /
- * the thumbnail pane / the log is shown, their order and heights, the
- * raised thumbnail tab. companion_dock_grid_read() maps the rows onto
- * this fixed grid; when it has nothing to apply the Qt defaults stay.
- * Runs once, from applySharedSettings. */
-- (void)gridApply
+/* The dock layout from the shared rows (the same rows the Qt companion
+ * saves and restores), or Qt's default when there is nothing to
+ * apply. Once, from applySharedSettings. */
+- (void)dockLoad
 {
-   companion_dock_grid_t g;
-   if (!companion_dock_grid_read(config_get_ptr(), &g))
+   int i;
+   companion_dock_from_rows(config_get_ptr(), &dock);
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+      lastSide[i] = dock.area[i] == COMPANION_DOCK_FLOAT ? COMPANION_DOCK_RIGHT : dock.area[i];
+}
+
+/* The layout on screen back into the dock rows so the Qt companion (or
+ * this one next launch) opens to it. */
+- (void)dockStore
+{
+   companion_dock_to_rows(config_get_ptr(), &dock);
+}
+
+- (void)showPane:(int)pane shown:(BOOL)show
+{
+   companion_dock_set_shown(&dock, (enum companion_dock_id)pane, show ? true : false);
+   if (show)
+      companion_dock_raise(&dock, (enum companion_dock_id)pane);
+   [self layoutViews];
+   if (!show)
       return;
-   paneLeftW  = (CGFloat)g.left_w;
-   paneRightW = (CGFloat)g.right_w;
-   if (g.info_h > 0 && g.thumbs_h > 0)
-   {
-      paneInfoH = (CGFloat)g.info_h;
-      paneBoxH  = (CGFloat)g.thumbs_h;
-   }
-   paneLogH      = (CGFloat)g.log_h;
-   infoFirst     = g.info_first ? YES : NO;
-   infoVisible   = g.info_shown ? YES : NO;
-   boxartVisible = g.thumbs_shown ? YES : NO;
-   if (g.log_shown != (logVisible ? true : false))
-      [self toggleLog:nil];
-   if (boxartTypes)
-      [boxartTypes setSelectedSegment:(NSInteger)g.thumb_tab];
-   switch (g.thumb_tab)
-   {
-      case 1:  boxartSubdir = COMPANION_THUMB_TITLE;      break;
-      case 2:  boxartSubdir = COMPANION_THUMB_SCREENSHOT; break;
-      case 3:  boxartSubdir = COMPANION_THUMB_LOGO;       break;
-      default: boxartSubdir = COMPANION_THUMB_BOXART;     break;
-   }
+   if (pane == COMPANION_DOCK_CORE_INFO)
+      [self refreshInfo];
+   if (pane >= COMPANION_DOCK_BOXART && pane <= COMPANION_DOCK_LOGO)
+      [self refreshBoxart];
+}
+
+/* Float @pane at its docked rectangle, as Qt does on a strip
+ * double-click or the float glyph. */
+- (void)floatPane:(int)pane
+{
+   enum companion_dock_area side;
+   int idx;
+   companion_rect_t r;
+   NSPoint p;
+   CGFloat sh = [[NSScreen mainScreen] frame].size.height;
+   if (!companion_dock_find(&dock, (enum companion_dock_id)pane, &side, &idx))
+      return;
+   lastSide[pane] = side;
+   p   = [dockView convertPoint:NSMakePoint(geom.strip[pane].x, geom.strip[pane].y) toView:nil];
+   p   = [window convertBaseToScreen:p];
+   r.x = (int)p.x;
+   r.y = (int)(sh - p.y);
+   r.w = geom.strip[pane].w;
+   r.h = geom.pane[pane].y + geom.pane[pane].h + geom.tabbar[pane].h - geom.strip[pane].y;
+   if (r.w < dm.min_pane) r.w = dm.def_side;
+   if (r.h < dm.min_pane) r.h = dm.def_slot;
+   companion_dock_float(&dock, (enum companion_dock_id)pane, &r);
    [self layoutViews];
 }
 
-/* The inverse: the layout on screen back into the dock rows so the Qt
- * companion (or this one next launch) opens to it. The left column's
- * three sections are measured off their views, as Qt's three left
- * docks are; the two right panes from their caption's top to their
- * view's bottom. */
-- (void)gridStore
+/* Dock a floating pane back: the end of the side it came from. */
+- (void)redockPane:(int)pane
 {
-   companion_dock_grid_t g;
-   settings_t *settings = config_get_ptr();
-   NSRect a, b;
-   if (!settings->bools.desktop_menu_save_dock_positions || !window)
+   if (dock.area[pane] != COMPANION_DOCK_FLOAT)
       return;
-   memset(&g, 0, sizeof(g));
-   g.left_w       = (int)(paneLeftW  > 0 ? paneLeftW  : CC_PANE_W);
-   g.right_w      = (int)(paneRightW > 0 ? paneRightW : CC_PANE_W);
-   g.log_h        = (int)(paneLogH   > 0 ? paneLogH   : 120.0);
-   g.info_shown   = infoVisible   ? true : false;
-   g.thumbs_shown = boxartVisible ? true : false;
-   g.log_shown    = logVisible    ? true : false;
-   g.info_first   = infoFirst     ? true : false;
-   if (boxartTypes)
-      g.thumb_tab = (int)[boxartTypes selectedSegment];
-   if (g.thumb_tab < 0 || g.thumb_tab > 3)
-      g.thumb_tab = 0;
-   if (infoVisible && ![infoScroll isHidden])
-   {
-      a = [infoLabel frame]; b = [infoScroll frame];
-      g.info_h = (int)(a.origin.y + a.size.height - b.origin.y);
-   }
-   if (boxartVisible && ![boxart isHidden])
-   {
-      a = [boxartLabel frame]; b = [boxart frame];
-      g.thumbs_h = (int)(a.origin.y + a.size.height - b.origin.y);
-   }
-   a = [searchLabel frame]; b = [searchField frame];
-   g.search_h    = (int)(a.origin.y + a.size.height - b.origin.y);
-   a = [browserLabel frame]; b = [playlistsScroll frame];
-   g.playlists_h = (int)(a.origin.y + a.size.height - b.origin.y);
-   a = [coreLabel frame]; b = [runButton frame];
-   g.core_h      = (int)(a.origin.y + a.size.height - b.origin.y);
-   companion_dock_grid_write(settings, &g);
+   companion_dock_place(&dock, (enum companion_dock_id)pane,
+         (enum companion_dock_area)lastSide[pane], COMPANION_DOCK_COUNT);
+   [self layoutViews];
 }
 
-/* The window's frame into desktop_menu_window_* (logical pixels,
- * top-left origin, as Qt's), under "Remember Window Geometry"; only a
- * window that is up and not minimised has one worth keeping. */
+/* A floating pane's window dragged by its title bar: the pointer,
+ * against the dock geometry, as a strip drag's (the marker shows
+ * where the pane would dock); nothing while it is off the docks. */
+- (void)floatDragUpdate:(int)pane screenPoint:(NSPoint)sp
+{
+   NSPoint p = [dockView convertPoint:[window convertScreenToBase:sp] fromView:nil];
+   companion_rect_t client = [self dockClient];
+   dragPane  = pane;
+   dragMoved = YES;
+   companion_dock_drop_target(&dock, &geom, &dm, &client,
+         (enum companion_dock_id)pane, (int)p.x, (int)p.y, &drop);
+   dropValid = ([window isVisible] && NSPointInRect(p, [dockView bounds])
+         && drop.kind != COMPANION_DOCK_DROP_FLOAT) ? YES : NO;
+   [dockView setNeedsDisplay:YES];
+}
+
+/* The drag ended: dock the pane where the marker was, or leave it
+ * floating where it was put. */
+- (void)floatDragEnd:(int)pane
+{
+   if (dragPane != pane)
+      return;
+   dragPane = -1;
+   if (dropValid)
+      companion_dock_apply_drop(&dock, (enum companion_dock_id)pane, &drop, NULL);
+   dropValid = NO;
+   [self layoutViews];
+}
+
+/* The title-bar drag of a floating pane's window, run here rather
+ * than by AppKit so the window's position is ours to track: the
+ * window follows the pointer; a release over the docks drops it in. */
+- (void)trackFloat:(int)pane from:(NSEvent*)e
+{
+   NSWindow *fw = floats[pane];
+   NSPoint start;
+   NSRect f0;
+   if (!fw)
+      return;
+   start = [fw convertBaseToScreen:[e locationInWindow]];
+   f0    = [fw frame];
+   for (;;)
+   {
+      NSEvent *ev = [fw nextEventMatchingMask:NSLeftMouseDraggedMask | NSLeftMouseUpMask
+         untilDate:[NSDate distantFuture] inMode:NSEventTrackingRunLoopMode dequeue:YES];
+      NSPoint sp;
+      if (!ev)
+         break;
+      sp = [fw convertBaseToScreen:[ev locationInWindow]];
+      if ([ev type] == NSLeftMouseUp)
+         break;
+      [fw setFrameOrigin:NSMakePoint(f0.origin.x + sp.x - start.x, f0.origin.y + sp.y - start.y)];
+      [self floatDragUpdate:pane screenPoint:sp];
+   }
+   [self floatDragEnd:pane];
+}
+
+- (companion_rect_t)dockClient
+{
+   companion_rect_t c;
+   NSRect b = [dockView bounds];
+   c.x = 0; c.y = 0; c.w = (int)b.size.width; c.h = (int)b.size.height;
+   return c;
+}
+
+/* The two glyphs at the right of a strip: float, then close. */
+- (void)stripGlyphs:(int)pane floatRect:(NSRect*)fl closeRect:(NSRect*)cl
+{
+   const companion_rect_t *st = &geom.strip[pane];
+   CGFloat sz = st->h - 6;
+   *cl = NSMakeRect(st->x + st->w - 4 - sz, st->y + 3, sz, sz);
+   *fl = NSMakeRect(cl->origin.x - 4 - sz, st->y + 3, sz, sz);
+}
+
+- (int)stripGlyphHit:(int)pane at:(NSPoint)pt
+{
+   NSRect fl, cl;
+   [self stripGlyphs:pane floatRect:&fl closeRect:&cl];
+   if (NSPointInRect(pt, cl)) return 2;
+   if (NSPointInRect(pt, fl)) return 1;
+   return 0;
+}
+
+- (void)dockMouseDown:(NSPoint)pt clicks:(NSInteger)clicks
+{
+   companion_dock_hit_t hit;
+   companion_dock_hit_test(&dock, &geom, &dm, (int)pt.x, (int)pt.y, &hit);
+   switch (hit.kind)
+   {
+      case COMPANION_DOCK_HIT_GAP:
+         dragGap = hit.gap;
+         break;
+      case COMPANION_DOCK_HIT_STRIP:
+         switch ([self stripGlyphHit:hit.pane at:pt])
+         {
+            case 2: [self showPane:hit.pane shown:NO]; return;
+            case 1: [self floatPane:hit.pane];         return;
+            default: break;
+         }
+         if (clicks == 2)
+         {
+            [self floatPane:hit.pane];
+            return;
+         }
+         dragPane  = hit.pane;
+         dragMoved = NO;
+         dropValid = NO;
+         dragStart = pt;
+         break;
+      case COMPANION_DOCK_HIT_TAB:
+         companion_dock_raise(&dock, hit.pane);
+         [self layoutViews];
+         [self showPane:hit.pane shown:YES];
+         break;
+      default:
+         break;
+   }
+}
+
+- (void)dockMouseDragged:(NSPoint)pt
+{
+   if (dragGap >= 0)
+   {
+      companion_rect_t client = [self dockClient];
+      BOOL vertical = geom.gaps[dragGap].rect.h > geom.gaps[dragGap].rect.w;
+      companion_dock_drag_gap(&dock, &geom, &dm, &client, dragGap,
+            vertical ? (int)pt.x : (int)pt.y);
+      [self layoutViews];
+      return;
+   }
+   if (dragPane >= 0)
+   {
+      companion_rect_t client = [self dockClient];
+      if (!dragMoved && fabs(pt.x - dragStart.x) < 4 && fabs(pt.y - dragStart.y) < 4)
+         return;
+      dragMoved = YES;
+      companion_dock_drop_target(&dock, &geom, &dm, &client,
+            (enum companion_dock_id)dragPane, (int)pt.x, (int)pt.y, &drop);
+      dropValid = YES;
+      [dockView setNeedsDisplay:YES];
+   }
+}
+
+- (void)dockMouseUp:(NSPoint)pt
+{
+   if (dragGap >= 0)
+   {
+      dragGap = -1;
+      return;
+   }
+   if (dragPane >= 0)
+   {
+      int p = dragPane;
+      dragPane = -1;
+      if (dragMoved && dropValid)
+      {
+         companion_rect_t r;
+         enum companion_dock_area side;
+         int idx;
+         NSPoint sp = [window convertBaseToScreen:[dockView convertPoint:pt toView:nil]];
+         CGFloat sh = [[NSScreen mainScreen] frame].size.height;
+         /* A float lands with its strip under the pointer, at its
+          * docked size. */
+         r.w = geom.strip[p].w > 0 ? geom.strip[p].w : dm.def_side;
+         r.h = geom.laid_out[p]
+            ? geom.pane[p].y + geom.pane[p].h + geom.tabbar[p].h - geom.strip[p].y
+            : dm.def_slot;
+         r.x = (int)sp.x - r.w / 2;
+         r.y = (int)(sh - sp.y) - dm.strip_h / 2;
+         if (companion_dock_find(&dock, (enum companion_dock_id)p, &side, &idx))
+            lastSide[p] = side;
+         companion_dock_apply_drop(&dock, (enum companion_dock_id)p, &drop, &r);
+      }
+      dropValid = NO;
+      [self layoutViews];
+   }
+}
+
+- (void)addGapCursorsTo:(NSView*)v
+{
+   int i;
+   for (i = 0; i < geom.ngaps; i++)
+   {
+      const companion_rect_t *gr = &geom.gaps[i].rect;
+      [v addCursorRect:NSMakeRect(gr->x, gr->y, gr->w, gr->h)
+         cursor:gr->h > gr->w ? [NSCursor resizeLeftRightCursor] : [NSCursor resizeUpDownCursor]];
+   }
+}
+
+- (void)drawDocks:(NSRect)dirty
+{
+   NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:
+      [NSFont systemFontOfSize:[NSFont smallSystemFontSize]], NSFontAttributeName,
+      [NSColor controlTextColor], NSForegroundColorAttributeName, nil];
+   int i, k;
+   (void)dirty;
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+   {
+      const companion_rect_t *st = &geom.strip[i];
+      NSRect r, fl, cl;
+      if (!geom.laid_out[i])
+         continue;
+      /* The strip: a light band with the title, the glyphs at the right. */
+      r = NSMakeRect(st->x, st->y, st->w, st->h);
+      [[NSColor colorWithCalibratedWhite:0.85 alpha:1.0] set];
+      NSRectFill(r);
+      [BOXSTRING([self paneTitle:i]) drawAtPoint:NSMakePoint(st->x + 6, st->y + 3) withAttributes:attrs];
+      [self stripGlyphs:i floatRect:&fl closeRect:&cl];
+      [[NSColor colorWithCalibratedWhite:0.35 alpha:1.0] set];
+      NSFrameRect(fl);
+      NSFrameRect(NSMakeRect(fl.origin.x + 2, fl.origin.y + 2, fl.size.width - 4, fl.size.height - 4));
+      {
+         NSBezierPath *x = [NSBezierPath bezierPath];
+         [x moveToPoint:NSMakePoint(cl.origin.x + 2, cl.origin.y + 2)];
+         [x lineToPoint:NSMakePoint(cl.origin.x + cl.size.width - 2, cl.origin.y + cl.size.height - 2)];
+         [x moveToPoint:NSMakePoint(cl.origin.x + cl.size.width - 2, cl.origin.y + 2)];
+         [x lineToPoint:NSMakePoint(cl.origin.x + 2, cl.origin.y + cl.size.height - 2)];
+         [x setLineWidth:1.5];
+         [x stroke];
+      }
+      /* The tab bar of a group: one tab per shown member, the raised
+       * one in the window colour. */
+      if (geom.tabbar[i].h > 0)
+      {
+         enum companion_dock_area side;
+         int idx, shown = 0, n = 0;
+         CGFloat x, tw;
+         const companion_dock_slot_t *sl;
+         if (!companion_dock_find(&dock, (enum companion_dock_id)i, &side, &idx))
+            continue;
+         sl = &dock.slots[side][idx];
+         for (k = 0; k < sl->n; k++)
+            if (dock.shown[sl->members[k]])
+               shown++;
+         if (shown < 2)
+            continue;
+         tw = (CGFloat)geom.tabbar[i].w / shown;
+         x  = geom.tabbar[i].x;
+         for (k = 0; k < sl->n; k++)
+         {
+            int m = sl->members[k];
+            if (!dock.shown[m])
+               continue;
+            r = NSMakeRect(x, geom.tabbar[i].y,
+                  (n == shown - 1) ? geom.tabbar[i].x + geom.tabbar[i].w - x : tw,
+                  geom.tabbar[i].h);
+            [(m == i ? [NSColor whiteColor] : [NSColor colorWithCalibratedWhite:0.8 alpha:1.0]) set];
+            NSRectFill(r);
+            [[NSColor colorWithCalibratedWhite:0.5 alpha:1.0] set];
+            NSFrameRect(r);
+            [BOXSTRING([self paneTitle:m]) drawAtPoint:NSMakePoint(r.origin.x + 6, r.origin.y + 4) withAttributes:attrs];
+            x += tw;
+            n++;
+         }
+      }
+   }
+   /* The drop marker while a strip is being dragged. */
+   if (dragPane >= 0 && dropValid && drop.kind != COMPANION_DOCK_DROP_FLOAT)
+   {
+      NSRect r = NSMakeRect(drop.indicator.x, drop.indicator.y, drop.indicator.w, drop.indicator.h);
+      [[[NSColor selectedControlColor] colorWithAlphaComponent:0.35] set];
+      NSRectFillUsingOperation(r, NSCompositeSourceOver);
+      [[NSColor selectedControlColor] set];
+      NSFrameRectWithWidth(r, 3.0);
+   }
+}
+
 - (void)geometryStore
 {
    settings_t *settings = config_get_ptr();
@@ -1800,8 +2276,44 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    settings->uints.desktop_menu_window_height = (unsigned)r.size.height;
 }
 
-- (void)windowDidResize:(NSNotification*)note { [self layoutViews]; [self geometryStore]; }
-- (void)windowDidMove:(NSNotification*)note   { [self geometryStore]; }
+/* Which floating pane a delegate notification is about, or -1. */
+- (int)floatOf:(NSNotification*)note
+{
+   int p;
+   for (p = 0; p < COMPANION_DOCK_COUNT; p++)
+      if (floats[p] && [note object] == floats[p])
+         return p;
+   return -1;
+}
+
+- (void)windowDidResize:(NSNotification*)note
+{
+   int p = [self floatOf:note];
+   if (p >= 0)
+   {
+      [self floatRectFromWindow:floats[p] pane:p];
+      [self layoutPane:p in:[[floats[p] contentView] bounds]];
+      [self dockStore];
+      return;
+   }
+   if ([note object] != window)
+      return;
+   [self layoutViews];
+   [self geometryStore];
+}
+
+- (void)windowDidMove:(NSNotification*)note
+{
+   int p = [self floatOf:note];
+   if (p >= 0)
+   {
+      [self floatRectFromWindow:floats[p] pane:p];
+      [self dockStore];
+      return;
+   }
+   if ([note object] == window)
+      [self geometryStore];
+}
 
 /* NSMenuDelegate (10.3+): rebuild the core list each time it opens so a
  * core installed while the window is up shows without a restart. */
@@ -1813,6 +2325,31 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (!wimp)
       return;
 
+   if (menu == closedDocksMenu)
+   {
+      int p, n = 0;
+      /* GNUstep's NSMenu asks its delegate again from inside the item
+       * edits below; one pass is the update. */
+      if (updatingClosedDocks)
+         return;
+      updatingClosedDocks = YES;
+      while ([menu numberOfItems] > 0)
+         [menu removeItemAtIndex:0];
+      for (p = 0; p < COMPANION_DOCK_COUNT; p++)
+      {
+         if (dock.shown[p])
+            continue;
+         item = [menu addItemWithTitle:BOXSTRING([self paneTitle:p])
+            action:@selector(showClosedDock:) keyEquivalent:@""];
+         [item setTarget:self];
+         [item setTag:p];
+         n++;
+      }
+      if (!n)
+         [[menu addItemWithTitle:@"(none)" action:NULL keyEquivalent:@""] setEnabled:NO];
+      updatingClosedDocks = NO;
+      return;
+   }
    if (menu != assocMenu)
       return;
 
@@ -1875,14 +2412,28 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       RELEASE(infoTable);
    }
    RELEASE(infoScroll);
-   RELEASE(boxart);
-   RELEASE(searchLabel);  RELEASE(browserLabel); RELEASE(coreLabel);
-   RELEASE(infoLabel);    RELEASE(boxartLabel);  RELEASE(itemsLabel);
+   {
+      int t;
+      for (t = 0; t < 4; t++)
+      {
+         RELEASE(boxart[t]); RELEASE(boxartRep[t]); RELEASE(boxartImage[t]);
+      }
+      for (t = 0; t < COMPANION_DOCK_COUNT; t++)
+         if (floats[t])
+         {
+            [floats[t] setDelegate:nil];
+            [floats[t] orderOut:nil];
+            RELEASE(floats[t]);
+         }
+   }
+   RELEASE(closedDocksMenu);
+   RELEASE(dockView);
+   RELEASE(itemsLabel);
    RELEASE(zoomLabel);    RELEASE(searchField);  RELEASE(clearButton);
    RELEASE(infoButton);   RELEASE(runButton);    RELEASE(browserTabs);
    RELEASE(playlistsScroll); RELEASE(corePopup); RELEASE(corePaths);
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
-   RELEASE(boxartTypes);  RELEASE(playlistIcons); RELEASE(folderIcon);
+   RELEASE(playlistIcons); RELEASE(folderIcon);
    RELEASE(brUp); RELEASE(brStart); RELEASE(brDownloads);
    RELEASE(stopButton);
    if (contributorsWindow) { [contributorsWindow orderOut:nil]; RELEASE(contributorsWindow); }
@@ -1890,7 +2441,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    if (shpWindow)  { [shpWindow orderOut:nil];  RELEASE(shpWindow); }
    if (setWindow)  { [setWindow orderOut:nil];  RELEASE(setWindow); }
    RELEASE(optsTable); RELEASE(shpTable); RELEASE(setTable);
-   RELEASE(boxartRep); RELEASE(boxartImage);
    free(rowMap);
    rowMap = NULL;
    string_list_free(infoKeys);
@@ -2212,6 +2762,13 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (void)windowWillClose:(NSNotification*)note
 {
+   int p = [self floatOf:note];
+   if (p >= 0)
+   {
+      /* Closing a floating pane hides it (Qt's dock close). */
+      [self showPane:p shown:NO];
+      return;
+   }
    if (coresWindow && [note object] == coresWindow)
    {
       [self coresDismiss];
@@ -2545,7 +3102,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 - (void)refreshInfo
 {
-   if (!wimp || !infoVisible)
+   if (!wimp || !dock.shown[COMPANION_DOCK_CORE_INFO])
       return;
    string_list_free(infoKeys);
    string_list_free(infoValues);
@@ -2562,7 +3119,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    if (wimp && strcmp(infoCore, [self popupCorePath]))
    {
-      if (infoVisible)
+      if (dock.shown[COMPANION_DOCK_CORE_INFO])
          [self refreshInfo];
       else
          strlcpy(infoCore, [self popupCorePath], sizeof(infoCore));
@@ -2573,102 +3130,113 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 /* Boxart pane: from the engine cache at once, else an urgent request
  * that lands in -thumbDone:. Cleared meanwhile; never decodes on the UI
  * thread. */
+/* The repository subdirectory thumbnail pane @t shows. */
+static const char *cc_thumb_subdir(int t)
+{
+   switch (t)
+   {
+      case 1:  return COMPANION_THUMB_TITLE;
+      case 2:  return COMPANION_THUMB_SCREENSHOT;
+      case 3:  return COMPANION_THUMB_LOGO;
+      default: return COMPANION_THUMB_BOXART;
+   }
+}
+
+/* Every thumbnail pane on screen shows the selected entry's image of
+ * its type (a browser selection previews an image file in each), from
+ * the engine cache at once or through an urgent request. Never
+ * decodes on the UI thread. */
 - (void)refreshBoxart
 {
-   NSInteger row;
+   NSInteger row = -1, ent = -1;
    char path[PATH_MAX_LENGTH];
    char db_name[NAME_MAX_LENGTH];
-   const struct playlist_entry *e;
-   const uint32_t *bits;
-   NSSize sz;
-   int bw, bh;
+   const struct playlist_entry *e = NULL;
+   const char *fp = NULL;
+   int t;
 
-   [boxart setImage:nil];
-   RELEASE(boxartRep);
-   RELEASE(boxartImage);
-   boxartRep = nil; boxartImage = nil; boxartW = boxartH = 0;
-   boxartEntry = -1;
    if (thumbs)
       companion_thumbs_animate_stop(thumbs); /* the old selection's animation */
-   if (!boxartVisible || !boxart || !thumbs)
-      return;
    if (browseMode)
    {
       /* Qt previews an image file selected in the browser. */
       NSInteger bi = [self entryForRow:[entries selectedRow]];
-      const char *fp = bi >= 0 ? companion_core_browse_path(wimp->core, (size_t)bi) : NULL;
-      if (!fp || companion_core_browse_is_dir(wimp->core, (size_t)bi)
-            || image_texture_get_type(fp) == IMAGE_TYPE_NONE)
-         return;
-      strlcpy(path, fp, sizeof(path));
-      row         = bi;
-      boxartEntry = 0x40000000L | bi;
+      fp = bi >= 0 ? companion_core_browse_path(wimp->core, (size_t)bi) : NULL;
+      if (fp && (companion_core_browse_is_dir(wimp->core, (size_t)bi)
+            || image_texture_get_type(fp) == IMAGE_TYPE_NONE))
+         fp = NULL;
+      if (fp)
+         ent = CC_BROWSE_ID | bi;
    }
    else
    {
       row = iconView ? [grid selectedRow] : [self entryForRow:[entries selectedRow]];
-      if (row < 0 || !(e = companion_core_entry(wimp->core, (size_t)row)))
-         return;
-      boxartEntry = row;
-      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-      path_remove_extension(db_name);
-      if (!companion_core_thumbnail_path(wimp->core, db_name,
-               boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
+      if (row >= 0 && (e = companion_core_entry(wimp->core, (size_t)row)))
+      {
+         ent = row;
+         strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+         path_remove_extension(db_name);
+      }
+   }
+   for (t = 0; t < 4; t++)
+   {
+      const uint32_t *bits;
+      NSSize sz;
+      int bw, bh;
+      if (!boxart[t] || [boxart[t] isHidden] || ![boxart[t] window])
+         continue;
+      [boxart[t] setImage:nil];
+      RELEASE(boxartRep[t]);
+      RELEASE(boxartImage[t]);
+      boxartRep[t] = nil; boxartImage[t] = nil; boxartW[t] = boxartH[t] = 0;
+      boxartEntry[t] = ent;
+      if (ent < 0 || !thumbs)
+         continue;
+      if (fp)
+         strlcpy(path, fp, sizeof(path));
+      else if (!companion_core_thumbnail_path(wimp->core, db_name, cc_thumb_subdir(t),
                !string_is_empty(e->label) ? e->label : path_basename(e->path),
                e->path, path, sizeof(path)))
-         return;
+         continue;
+      sz = [boxart[t] bounds].size;
+      bw = (int)sz.width  - 4;
+      bh = (int)sz.height - 4;
+      if (bw < 1 || bh < 1)
+         continue;
+      bits = companion_thumbs_get(thumbs, path, bw, bh);
+      if (bits)
+         [self boxartBlit:t bits:bits width:bw height:bh];
+      else
+         companion_thumbs_request(thumbs, path, bw, bh, CC_TAG_MAKE(ent, t), true, 0x00000000u);
+      /* Like RetroArch's File Browser: an animated file plays in the
+       * pane (frames arrive in -thumbDone: with the pane's tag). */
+      companion_thumbs_animate(thumbs, path, bw, bh, CC_TAG_MAKE(ent, t), 0x00000000u);
    }
-   sz = [boxart bounds].size;
-   bw = (int)sz.width  - 4;
-   bh = (int)sz.height - 4;
-   if (bw < 1 || bh < 1)
-      return;
-   bits = companion_thumbs_get(thumbs, path, bw, bh);
-   if (bits)
-      [self boxartBlit:bits width:bw height:bh];
-   else
-      companion_thumbs_request(thumbs, path, bw, bh,
-            (uintptr_t)boxartEntry | CC_TAG_BOXART, true, 0x00000000u);
-   /* Like RetroArch's File Browser: an animated file plays in the pane
-    * (frames arrive in -thumbDone: with the pane's tag). */
-   companion_thumbs_animate(thumbs, path, bw, bh,
-         (uintptr_t)boxartEntry | CC_TAG_BOXART, 0x00000000u);
-   (void)row;
 }
 
 - (void)toggleBoxart:(id)sender
 {
-   boxartVisible = !boxartVisible;
-   [self layoutViews];
-   if (boxartVisible)
-      [self refreshBoxart];
-   return;
+   [self showPane:COMPANION_DOCK_BOXART shown:!dock.shown[COMPANION_DOCK_BOXART]];
 }
-
 
 - (void)toggleInfo:(id)sender
 {
-   infoVisible = !infoVisible;
-   [self layoutViews];
-   if (infoVisible)
-      [self refreshInfo];
-   return;
+   [self showPane:COMPANION_DOCK_CORE_INFO shown:!dock.shown[COMPANION_DOCK_CORE_INFO]];
 }
 
+- (void)showClosedDock:(id)sender
+{
+   NSInteger p = [sender tag];
+   if (p >= 0 && p < COMPANION_DOCK_COUNT)
+      [self showPane:(int)p shown:YES];
+}
 
 - (void)viewList:(id)sender  { [self setIconView:NO]; }
 - (void)viewIcons:(id)sender { [self setIconView:YES]; }
 
 - (void)toggleLog:(id)sender
 {
-   if (!window || !logScroll)
-      return;
-   logVisible = !logVisible;
-   if (logVisible)
-      [[window contentView] addSubview:logScroll];
-   else
-      [logScroll removeFromSuperview];
-   [self layoutViews];
+   [self showPane:COMPANION_DOCK_LOG shown:!dock.shown[COMPANION_DOCK_LOG]];
 }
 
 /* Append a log line; trim the oldest half once the text passes 256 KiB
@@ -2689,7 +3257,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    }
    [logView replaceCharactersInRange:NSMakeRange(len, 0)
       withString:BOXSTRING(msg)];
-   if (logVisible)
+   if (dock.shown[COMPANION_DOCK_LOG])
       [logView scrollRangeToVisible:NSMakeRange([storage length], 0)];
 }
 
@@ -2714,8 +3282,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       [self setIconView:YES];
    if (companion_core_pref_last_tab(wimp->core) == 1)
       [self browseFiles:nil];
-   /* The pane layout the dock rows describe. */
-   [self gridApply];
+   /* The dock layout the rows describe (or Qt's default), laid out. */
+   [self dockLoad];
+   [self layoutViews];
 }
 
 /* --- Qt-layout actions -------------------------------------------------- */
@@ -2894,18 +3463,6 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 - (void)viewChanged:(id)sender
 {
    [self setIconView:[viewPopup indexOfSelectedItem] == 1];
-}
-
-- (void)boxartTypeChanged:(id)sender
-{
-   switch ([boxartTypes selectedSegment])
-   {
-      case 1:  boxartSubdir = COMPANION_THUMB_TITLE;      break;
-      case 2:  boxartSubdir = COMPANION_THUMB_SCREENSHOT; break;
-      case 3:  boxartSubdir = COMPANION_THUMB_LOGO;       break;
-      default: boxartSubdir = COMPANION_THUMB_BOXART;     break;
-   }
-   [self refreshBoxart];
 }
 
 - (void)clearSearch:(id)sender
@@ -3200,7 +3757,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 
 /* An image dropped on the boxart pane: the selected entry's thumbnail
  * of the pane's type (Qt's changeThumbnail), then shown again. */
-- (BOOL)installThumbnailFromPath:(const char*)imagePath
+- (BOOL)installThumbnailFromPath:(const char*)imagePath pane:(int)pane
 {
    NSInteger row;
    const struct playlist_entry *e;
@@ -3213,7 +3770,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
    path_remove_extension(db_name);
    if (!companion_core_thumbnail_install(wimp->core, db_name,
-            boxartSubdir ? boxartSubdir : COMPANION_THUMB_BOXART,
+            cc_thumb_subdir(pane),
             !string_is_empty(e->label) ? e->label : path_basename(e->path),
             imagePath, out, sizeof(out)))
    {
@@ -3222,7 +3779,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    }
    if (thumbs)
       companion_thumbs_forget(thumbs, out);   /* the file changed on disk */
-   boxartEntry = -1;
+   boxartEntry[pane] = -1;
    [self refreshBoxart];
    thumbGen++;
    if (thumbNone && thumbNoneCount > 0)
@@ -3869,7 +4426,7 @@ static void ui_companion_cocoa_wimp_event_command(void *data,
        * settings_t first, as the Qt companion does. */
       case CMD_EVENT_QUIT:
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
-         [CC_CTRL(w) gridStore];
+         [CC_CTRL(w) dockStore];
          [CC_CTRL(w) geometryStore];
          break;
       default:
