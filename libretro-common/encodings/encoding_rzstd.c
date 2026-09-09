@@ -2867,16 +2867,23 @@ static void rzstd_wbits_add(rzstd_wbits_t *w, uint32_t value, uint32_t n)
    w->bits  |= ((uint64_t)value & (((uint64_t)1 << n) - 1)) << w->count;
    w->count += n;
 
-   while (w->count >= 8)
+   /* Whole bytes go out four at a time once there are that many: this
+    * is called once per literal, and a byte-by-byte loop was a sixth
+    * of a block's time. */
+   if (w->count >= 32)
    {
-      if (w->at >= w->cap)
+      if (w->at + 4 > w->cap)
       {
          w->overflow = 1;
          return;
       }
-      w->dst[w->at++] = (uint8_t)w->bits;
-      w->bits >>= 8;
-      w->count -= 8;
+      w->dst[w->at]     = (uint8_t)w->bits;
+      w->dst[w->at + 1] = (uint8_t)(w->bits >> 8);
+      w->dst[w->at + 2] = (uint8_t)(w->bits >> 16);
+      w->dst[w->at + 3] = (uint8_t)(w->bits >> 24);
+      w->at    += 4;
+      w->bits >>= 32;
+      w->count -= 32;
    }
 }
 
@@ -2886,7 +2893,8 @@ static void rzstd_wbits_add(rzstd_wbits_t *w, uint32_t value, uint32_t n)
 static size_t rzstd_wbits_close(rzstd_wbits_t *w)
 {
    rzstd_wbits_add(w, 1, 1);
-   if (w->count)
+   /* Whatever is left, whole bytes and then the partial one. */
+   while (w->count)
    {
       if (w->at >= w->cap)
       {
@@ -2894,8 +2902,8 @@ static size_t rzstd_wbits_close(rzstd_wbits_t *w)
          return 0;
       }
       w->dst[w->at++] = (uint8_t)w->bits;
-      w->bits  = 0;
-      w->count = 0;
+      w->bits >>= 8;
+      w->count  = w->count > 8 ? w->count - 8 : 0;
    }
    return w->at;
 }
@@ -3160,15 +3168,24 @@ static void rzstd_write_block_header(uint8_t *dst, uint32_t size,
 
 /* The inverse of the baseline tables: which code covers a value, and
  * what remains to be written as extra bits. */
+/* The code whose base is the largest at or below value: a binary
+ * search over the base table. The linear walk from the top it
+ * replaced was a tenth of a block's time, because nearly every value
+ * is small and lives at the bottom. */
 static uint32_t rzstd_code_for(const uint32_t *base, uint32_t count,
       uint32_t value)
 {
-   uint32_t i = count;
+   uint32_t lo = 0, hi = count;
 
-   while (i-- > 0)
-      if (value >= base[i])
-         return i;
-   return 0;
+   while (hi - lo > 1)
+   {
+      uint32_t mid = (lo + hi) >> 1;
+      if (value >= base[mid])
+         lo = mid;
+      else
+         hi = mid;
+   }
+   return lo;
 }
 
 /* An offset is stored three higher than its distance, because 1 to 3
@@ -4127,7 +4144,6 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      memcpy(lits + lit_len, src + in + lit_from,
                            sq->literals);
                      lit_len += sq->literals;
-
                      pos      += 1 + rep_len;
                      lit_from  = pos;
                      misses    = 0;
@@ -4228,7 +4244,6 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                            hash[hh] = (uint32_t)(in + q2 + 1);
                         }
                      }
-
                      pos      += n;
                      lit_from  = pos;
                      misses    = 0;
