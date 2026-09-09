@@ -67,16 +67,6 @@ S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,
       DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Threaded Video Display Pacing",
       "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. Off: the timer paces, as before.")
-S_BOOL(video_threaded_hw_d3d11, VIDEO_THREADED_HW_D3D11,
-      "video_threaded_hw_d3d11",
-      DEFAULT_VIDEO_THREADED_HW_D3D11, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
-      "Threaded Video For Direct3D 11 Cores",
-      "Run cores that render on the GPU with Direct3D 11 under Threaded Video, recording on a context of their own that the video thread replays. Experimental. A core that reads back from the GPU, or needs the Direct3D 11.1 context interfaces, cannot do so on that context; leave off for those. Off: such cores run unthreaded, as before.")
-S_BOOL(video_threaded_hw_opengl, VIDEO_THREADED_HW_OPENGL,
-      "video_threaded_hw_opengl",
-      DEFAULT_VIDEO_THREADED_HW_OPENGL, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
-      "Threaded Video For OpenGL Cores",
-      "Run cores that render on the GPU with OpenGL under Threaded Video, on a context of their own shared with the video thread's. Experimental: with the 'gl' driver only, and changing shaders while such a core runs is not yet supported. Off: such cores run unthreaded, as before.")
 S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
       "video_present_timing_from_display",
       DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

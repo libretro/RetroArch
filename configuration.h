@@ -594,8 +594,6 @@ typedef struct settings
       bool video_threaded;
       bool video_threaded_present_repeat;
       bool video_threaded_display_pacing;
-      bool video_threaded_hw_d3d11;
-      bool video_threaded_hw_opengl;
       bool video_present_timing_from_display;
       bool video_font_enable;
       bool video_disable_composition;

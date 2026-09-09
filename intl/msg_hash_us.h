@@ -3526,7 +3526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Improves performance at the cost of latency and more video stuttering. Use only if full speed cannot be obtained otherwise. Cores that render on the GPU run threaded with the Vulkan and Direct3D 12 drivers, and with Direct3D 11 and OpenGL when their 'Threaded Video For ... Cores' setting is on; with other drivers they run unthreaded whatever this is set to."
+   "Run the core and the video driver on separate threads, so the display keeps its cadence when the core stutters and the core overlaps with the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, matching the latency of Frame Delay. Cores that render on the GPU run threaded with the Vulkan, Direct3D 11, Direct3D 12 and gl drivers; with other drivers they run unthreaded whatever this is set to."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,

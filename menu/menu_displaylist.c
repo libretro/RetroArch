@@ -10824,8 +10824,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_THREADED_HW_D3D11, PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_THREADED_HW_OPENGL, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
@@ -10873,8 +10871,6 @@ unsigned menu_displaylist_build_list(
                         && !video_driver_is_hw_context()
                         && config_get_ptr()->bools.video_threaded_present_repeat;
                      break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_HW_D3D11:
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_HW_OPENGL:
                      build_list[i].checked = *video_driver_get_threaded();
                      break;
                   case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:

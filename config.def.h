@@ -500,14 +500,13 @@
  */
 #define DEFAULT_SWAP_INTERVAL 1
 
-/* Threaded video. Will possibly increase performance significantly
- * at the cost of worse synchronization and latency.
- */
-#if defined(HAVE_LIBNX)
+/* Threaded video: the core runs on one thread and the video driver
+ * presents on another. On by default: it keeps the display's cadence
+ * through core stutter, overlaps the core with the shader chain and
+ * present, and with display pacing on costs no latency the direct path
+ * would not. Hardware-rendered cores run threaded on every API that
+ * has a ring. */
 #define DEFAULT_VIDEO_THREADED true
-#else
-#define DEFAULT_VIDEO_THREADED false
-#endif
 
 /* Pace repeated frames from the display's own report of when a present
  * reached it, where the driver or context can say. Off falls back to the
@@ -525,14 +524,7 @@
  * times. Off: the fixed-timer pacing threaded video always had. */
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
-/* Let a Direct3D 11 hardware core run under threaded video, recording
- * on a deferred context behind a proxy that the video thread replays.
- * Off: such cores run unthreaded. */
-#define DEFAULT_VIDEO_THREADED_HW_D3D11 false
 
-/* Let an OpenGL hardware core run under threaded video, on a context of
- * its own shared with the frontend's. Off: such cores run unthreaded. */
-#define DEFAULT_VIDEO_THREADED_HW_OPENGL false
 
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)

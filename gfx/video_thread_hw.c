@@ -571,20 +571,11 @@ bool video_thread_hw_allowed(void)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         /* Behind a setting: the core gets a context of its own, shared
-          * with the frontend's, rather than the frontend's itself. */
-         return settings->bools.video_threaded_hw_opengl
-            && string_is_equal(settings->arrays.video_driver, "gl");
+         return string_is_equal(settings->arrays.video_driver, "gl");
 #endif
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:
-         /* Behind a setting: the core records on a deferred context
-          * through a proxy that rewrites the one map such a context
-          * rejects. The proxy refuses the 11.1+ context interfaces, and
-          * a deferred context cannot map for reading or read a query;
-          * a core needing any of those is the reason to leave it off. */
-         return settings->bools.video_threaded_hw_d3d11
-            && string_is_equal(settings->arrays.video_driver, "d3d11");
+         return string_is_equal(settings->arrays.video_driver, "d3d11");
 #endif
       default:
          return false;
