@@ -8798,6 +8798,15 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    return frames;
 }
 
+/* The float batch entry's gate: the same skip as the int16 batch
+ * above, asked from inside the entry the core holds by pointer. */
+bool audio_float_gate_net(void)
+{
+   net_driver_state_t *net_st  = &networking_driver_st;
+   netplay_t          *netplay = net_st->data;
+   return netplay_should_skip(netplay) || netplay->stall;
+}
+
 static void netplay_announce_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {

@@ -325,6 +325,10 @@ typedef struct audio_driver
    size_t (*underruns)(void *data);
 } audio_driver_t;
 
+/* Netplay's gate on the float batch entry; see
+ * audio_driver_set_float_gate(). */
+typedef bool (*audio_driver_float_gate_t)(void);
+
 /* A snapshot of the sink estimate's counts, taken when a window opens. */
 typedef struct
 {
@@ -364,6 +368,11 @@ typedef struct
    size_t output_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
+   /* The same reverse buffer for a float core: its frames as it gave
+    * them, no round trip through int16 on the way in or out. Indexed
+    * by rewind_ptr like rewind_buf; which one holds the audio follows
+    * core_float. */
+   float   *rewind_buf_f;
 #endif
 
    /**
@@ -510,6 +519,7 @@ typedef struct
    /* The core negotiated float audio output; set by the runloop when
     * it hands the float batch entry out, cleared when the core goes. */
    bool     core_float;
+   audio_driver_float_gate_t float_gate;
    /* Upper bound on frames per consumer pass: one video frame's worth,
     * capped to a slice. */
    size_t   pipe_pass_frames;
@@ -1010,6 +1020,14 @@ const char *audio_driver_get_ident(void);
  * pipeline's ring takes the core's format from this: float frames
  * from a float core, with no round trip through int16. */
 void audio_driver_set_core_float(bool core_float);
+
+/* A gate on the float batch entry, for netplay: the core holds that
+ * entry by pointer, so it cannot be swapped for an intercepting one
+ * as the int16 callbacks are. When set, the entry asks it whether the
+ * frame's audio is to be dropped - a replayed frame during rollback,
+ * or a stall - and returns without playing it. NULL when netplay is
+ * not intercepting. */
+void audio_driver_set_float_gate(audio_driver_float_gate_t gate);
 
 /* Periods the device played silence for want of audio since the driver
  * was initialised, where the driver counts them; 0 otherwise. */

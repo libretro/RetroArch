@@ -8756,6 +8756,9 @@ bool core_set_netplay_callbacks(void)
       runloop_st->current_core.retro_set_audio_sample(audio_sample_net);
       runloop_st->current_core.retro_set_audio_sample_batch(audio_sample_batch_net);
       runloop_st->current_core.retro_set_input_state(input_state_net);
+      /* The float batch entry the core holds by pointer is gated, not
+       * swapped. */
+      audio_driver_set_float_gate(audio_float_gate_net);
    }
 
    return true;
@@ -8778,6 +8781,7 @@ bool core_unset_netplay_callbacks(void)
    runloop_st->current_core.retro_set_video_refresh(cbs.frame_cb);
    runloop_st->current_core.retro_set_audio_sample(cbs.sample_cb);
    runloop_st->current_core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
+   audio_driver_set_float_gate(NULL);
    runloop_st->current_core.retro_set_input_state(cbs.state_cb);
 
    return true;
