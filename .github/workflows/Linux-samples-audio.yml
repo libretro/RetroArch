@@ -233,6 +233,10 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big
           ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big-jitter
           echo "[pass] pipeline_rate_control_test (64 ms device, ASan)"
+          # A float core on a float ring into a float device: a signal a
+          # tenth of an int16 LSB high arrives as published, not as zero.
+          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 float
+          echo "[pass] pipeline_rate_control_test (float core, ASan)"
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 240 ./pipeline_rate_control_test
           echo "[pass] pipeline_rate_control_test (TSan)"

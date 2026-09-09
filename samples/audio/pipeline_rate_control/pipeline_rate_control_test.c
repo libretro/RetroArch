@@ -132,10 +132,36 @@ static void *dev_init(const char *device, unsigned rate, unsigned latency,
    return &handle;
 }
 
+/* The float device: what a float core's frames look like on arrival.
+ * The peak of what it received is kept, to show a signal below one
+ * int16 LSB survived the pipeline. */
+static bool   dev_float;
+static double dev_peak;
+
 static ssize_t dev_write(void *data, const void *buf, size_t size)
 {
-   (void)data; (void)buf; (void)size;
-   return -1;
+   const float *f = (const float*)buf;
+   size_t frames  = size / (2 * sizeof(float));
+   size_t i;
+   double room, put;
+   (void)data;
+   if (!dev_float)
+      return -1;
+   for (i = 0; i < frames * 2; i++)
+      if (f[i] > dev_peak) dev_peak = f[i];
+      else if (-f[i] > dev_peak) dev_peak = -f[i];
+   pthread_mutex_lock(&dev_lock);
+   dev_drain_locked();
+   room = DEV_CAPACITY - dev_fill;
+   put  = (double)frames < room ? (double)frames : room;
+   if (put < 0.0)
+      put = 0.0;
+   dev_fill       += put;
+   dev_took       += put;
+   dev_adjust_sum += 1.0;
+   dev_adjust_n++;
+   pthread_mutex_unlock(&dev_lock);
+   return (ssize_t)put * 2 * sizeof(float);
 }
 
 static ssize_t dev_write_raw(void *data, const int16_t *samples,
@@ -166,10 +192,10 @@ static size_t dev_write_avail(void *d)
    dev_drain_locked();
    room = DEV_CAPACITY - dev_fill;
    pthread_mutex_unlock(&dev_lock);
-   return (size_t)room * 4;
+   return (size_t)room * (dev_float ? 8 : 4);
 }
 
-static size_t dev_buffer_size(void *d) { (void)d; return DEV_CAPACITY * 4; }
+static size_t dev_buffer_size(void *d) { (void)d; return DEV_CAPACITY * (dev_float ? 8 : 4); }
 
 /* What the hardware has consumed, for the sink estimate: the drain
  * counted in whole 96-frame periods, as a device counts it. */
@@ -188,16 +214,16 @@ static size_t dev_frames_consumed(void *d)
 
 static size_t dev_wait_writable(void *data, size_t len)
 {
-   size_t want = len / 4;
+   size_t want = len / (dev_float ? 8 : 4);
    size_t half = DEV_CAPACITY / 2;
    size_t room;
    if (want > half)
       want = half;
    for (;;)
    {
-      room = dev_write_avail(data) / 4;
+      room = dev_write_avail(data) / (dev_float ? 8 : 4);
       if (room >= want)
-         return room * 4;
+         return room * (dev_float ? 8 : 4);
       usleep(100);
    }
 }
@@ -207,12 +233,19 @@ static bool   dev_start(void *d, bool s)      { (void)d; (void)s; return true; }
 static bool   dev_alive(void *d)              { (void)d; return true; }
 static void   dev_set_nonblock(void *d, bool s){ (void)d; (void)s; }
 static void   dev_free(void *d)               { (void)d; }
-static bool   dev_use_float(void *d)          { (void)d; return false; }
+static bool   dev_use_float(void *d)          { (void)d; return dev_float; }
 
 static audio_driver_t scripted_driver = {
    dev_init, dev_write, dev_stop, dev_start, dev_alive, dev_set_nonblock,
    dev_free, dev_use_float, "scripted", NULL, NULL, dev_write_avail,
    dev_buffer_size, dev_write_raw, dev_wait_writable, dev_frames_consumed,
+   dev_underruns
+};
+
+static audio_driver_t scripted_float_driver = {
+   dev_init, dev_write, dev_stop, dev_start, dev_alive, dev_set_nonblock,
+   dev_free, dev_use_float, "scripted-float", NULL, NULL, dev_write_avail,
+   dev_buffer_size, NULL, dev_wait_writable, dev_frames_consumed,
    dev_underruns
 };
 
@@ -240,7 +273,7 @@ static bool pipeline_up(size_t ring_bytes)
    audio_driver_state_t *st = &audio_driver_st;
 
    memset(st, 0, sizeof(*st));
-   st->current_audio        = &scripted_driver;
+   st->current_audio        = dev_float ? &scripted_float_driver : &scripted_driver;
    st->context_audio_data   = scripted_driver.init(NULL, 48000, 8, 0, NULL);
    st->input                = 48000.0;
    st->src_ratio_orig       = 1.0;
@@ -249,9 +282,21 @@ static bool pipeline_up(size_t ring_bytes)
    st->volume_gain          = 1.0f;
    st->buffer_size          = scripted_driver.buffer_size(st->context_audio_data);
    st->output_samples_buf   = (float*)malloc(65536);
-   st->pipe_scratch         = (int16_t*)malloc(65536);
+   st->pipe_scratch         = (uint8_t*)malloc(65536);
+   st->pipe_conv            = (uint8_t*)malloc(65536);
    st->pipe_pass_frames     = 800;
-   st->pipe_frame_bytes     = 2 * sizeof(int16_t);
+   st->pipe_float           = dev_float;
+   st->pipe_frame_bytes     = dev_float ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+   if (dev_float)
+   {
+      /* The float path resamples; the int16 fast path did not need to. */
+      AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
+      strcpy(st->resampler_ident, "sinc");
+      st->resampler_quality = RESAMPLER_QUALITY_NORMAL;
+      if (!retro_resampler_realloc(&st->resampler_data, &st->resampler,
+               st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
+         return false;
+   }
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
    st->rate_control_delta   = 0.005f;
    st->drc_threshold_int16s = 1600;
@@ -276,6 +321,7 @@ static bool pipeline_up(size_t ring_bytes)
 }
 
 static int16_t frame_audio[800 * 2];
+static float   frame_audio_f[800 * 2];
 
 int main(int argc, char **argv)
 {
@@ -306,17 +352,27 @@ int main(int argc, char **argv)
     * from a steady core at any phase. */
    if (argc > 3 && strstr(argv[3], "big"))
       DEV_CAPACITY = 3072;
+   /* A float core on a float ring into a float device: the frames
+    * cross the pipeline as they are, and a signal below one int16 LSB
+    * arrives - it would be zero after a trip through int16. */
+   if (argc > 3 && strstr(argv[3], "float"))
+      dev_float = true;
    double    t0, produced, mean;
 
    /* The ring as the frontend sizes it: three publishes, and with audio
     * sync off a buffer's worth on top. */
-   if (!pipeline_up((800 * 3 + (sync_on ? 0 : (DEV_CAPACITY > 800 ? DEV_CAPACITY : 800) * 2)) * 2 * sizeof(int16_t)))
+   if (!pipeline_up((800 * 3 + (sync_on ? 0 : (DEV_CAPACITY > 800 ? DEV_CAPACITY : 800) * 2))
+            * (dev_float ? 2 * sizeof(float) : 2 * sizeof(int16_t))))
    {
       printf("FAIL: could not stand the pipeline up\n");
       return 1;
    }
    for (i = 0; i < 800 * 2; i++)
+   {
       frame_audio[i] = (int16_t)((i & 1) ? 3000 : -3000);
+      /* A tenth of an int16 LSB, alternating. */
+      frame_audio_f[i] = (i & 1) ? 3.0e-6f : -3.0e-6f;
+   }
 
    pthread_create(&cons, NULL, consumer, NULL);
 
@@ -363,8 +419,12 @@ int main(int argc, char **argv)
          dbg_eff   += (double)retro_atomic_load_acquire_int(&audio_driver_st.pipe_ctrl_avail) / 4.0;
          dbg_n++;
       }
-      audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-            sizeof(frame_audio) / sizeof(int16_t), false, false);
+      if (dev_float)
+         audio_driver_submit(&audio_driver_st, 3.0f, frame_audio_f,
+               sizeof(frame_audio_f) / sizeof(float), true, false, false);
+      else
+         audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
+               sizeof(frame_audio) / sizeof(int16_t), false, false, false);
       audio_driver_pipeline_signal(&audio_driver_st);
    }
    if (dbg_n)
@@ -453,6 +513,16 @@ steady_skipped:
    if (!jitter && !(runner_late > 2 && DEV_CAPACITY <= 800))
       CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
    CHECK(bound_breaches == 0, "%u flushes produced more than the bound reserved for them", bound_breaches);
+   if (dev_float)
+   {
+      printf("   float core: the device's peak sample was %.3g (published %.3g, one int16 LSB is %.3g)\n",
+            dev_peak, 3.0e-6, 1.0 / 32768.0);
+      /* Through int16 the published value rounds to zero; through the
+       * sinc at rate control's ratio an alternating signal at Nyquist
+       * rings a little above itself. Within a factor of two, not zero. */
+      CHECK(dev_peak > 1.5e-6 && dev_peak < 6.0e-6,
+            "a signal below one int16 LSB did not arrive as published: peak %.3g", dev_peak);
+   }
    /* Within the device's period over the short baseline: 96 frames in
     * 3 s is 667 ppm of noise, which the real thirty seconds and the
     * session's sum reduce to tens. */

@@ -443,8 +443,13 @@ typedef struct
     * Both are regions of arena_int16.
     */
    retro_spsc_t pipe_ring;
-   int16_t *pipe_scratch;
-   int16_t *pipe_conv;
+   uint8_t *pipe_scratch;
+   uint8_t *pipe_conv;
+   /* Both in pipe_arena, each a pass at the widest frame the ring can
+    * carry. pipe_record_i16 stays in the int16 arena: the recorder's
+    * staging for a float core, converted only while it records. */
+   void    *pipe_arena;
+   int16_t *pipe_record_i16;
    /* Written once by the wrapper thread as it leaves its loop, read by
     * the producer's wait. Its own field, not a bit in flags: the main
     * thread read-modify-writes flags and a second writer would lose
@@ -498,6 +503,13 @@ typedef struct
     * published - int16 or, for a float core, float. Every count on
     * the pipe is in frames; bytes appear only at the ring's edge. */
    size_t   pipe_frame_bytes;
+   /* Whether the ring carries float frames - the core negotiated float
+    * output - or int16. Decided before any audio flows: at pipe init
+    * from core_float, or when the negotiation lands on an empty ring. */
+   bool     pipe_float;
+   /* The core negotiated float audio output; set by the runloop when
+    * it hands the float batch entry out, cleared when the core goes. */
+   bool     core_float;
    /* Upper bound on frames per consumer pass: one video frame's worth,
     * capped to a slice. */
    size_t   pipe_pass_frames;
@@ -993,6 +1005,11 @@ audio_driver_state_t *audio_state_get_ptr(void);
 void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
+
+/* The core negotiated float audio output, or has gone. The threaded
+ * pipeline's ring takes the core's format from this: float frames
+ * from a float core, with no round trip through int16. */
+void audio_driver_set_core_float(bool core_float);
 
 /* Periods the device played silence for want of audio since the driver
  * was initialised, where the driver counts them; 0 otherwise. */

@@ -3758,6 +3758,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * swaps the int16 batch callback the float core no longer uses;
           * that path remains int16-only. */
          cb->batch = audio_driver_sample_batch_float;
+         audio_driver_set_core_float(true);
          break;
       }
 
@@ -4477,6 +4478,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 
 void runloop_event_deinit_core(void)
 {
+   audio_driver_set_core_float(false);
    video_driver_state_t
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;

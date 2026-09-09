@@ -175,7 +175,8 @@ static bool pipeline_up(size_t ring_bytes)
    st->volume_gain        = 1.0f;
    st->buffer_size        = scripted_driver.buffer_size(st->context_audio_data);
    st->output_samples_buf = (float*)malloc(65536);
-   st->pipe_scratch       = (int16_t*)malloc(65536);
+   st->pipe_scratch       = (uint8_t*)malloc(65536);
+   st->pipe_conv          = (uint8_t*)malloc(65536);
    st->pipe_pass_frames   = 800;
    st->pipe_frame_bytes   = 2 * sizeof(int16_t);
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
@@ -201,6 +202,7 @@ static void pipeline_down(void)
    slock_free(st->state_lock);
    free(st->output_samples_buf);
    free(st->pipe_scratch);
+   free(st->pipe_conv);
 }
 
 /* pipe_stalled is written by both threads under pipe_lock; read it the
@@ -221,7 +223,7 @@ static double produce_frame(void)
 {
    double t0 = now_ms();
    audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-         sizeof(frame_audio) / sizeof(int16_t), false, false);
+         sizeof(frame_audio) / sizeof(int16_t), false, false, false);
    audio_driver_pipeline_signal(&audio_driver_st);
    return now_ms() - t0;
 }
@@ -335,7 +337,7 @@ int main(void)
    retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
    for (i = 0; i < 20; i++)
       audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-            sizeof(frame_audio) / sizeof(int16_t), false, false);
+            sizeof(frame_audio) / sizeof(int16_t), false, false, false);
    CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
    CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
 
