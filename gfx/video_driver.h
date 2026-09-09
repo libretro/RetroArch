@@ -776,6 +776,17 @@ typedef struct video_poke_interface
    void (*hw_ring_fence_free)(void *data, void *fence);
    void (*hw_ring_fence_signal)(void *data, void *fence);
    void (*hw_ring_fence_wait)(void *data, void *fence);
+   /* For drivers whose hardware cores hand over a whole texture each
+    * frame rather than an image plus synchronisation (Direct3D 12): the
+    * driver keeps a copy per ring slot. capture copies the core's
+    * texture into the slot on the calling thread and submits the copy,
+    * so it is ordered on the queue before anything the core submits
+    * next; present_slot points the driver's frame at that slot's copy,
+    * from the video thread. The texture pointer is the driver's own
+    * type behind void (ID3D12Resource). */
+   bool (*hw_ring_capture)(void *data, unsigned slot,
+         const void *texture, unsigned format);
+   bool (*hw_ring_present_slot)(void *data, unsigned slot);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

@@ -276,6 +276,22 @@ typedef struct
    struct retro_hw_render_interface_d3d12 hw_iface;
    D3D12Resource hw_render_texture;
    DXGI_FORMAT hw_render_texture_format;
+   /* The threaded wrapper's hardware ring: a copy of the core's texture
+    * per slot, captured on the core's thread with this list and
+    * allocator, which are the main thread's own. See the hw_ring pokes
+    * in video_poke_interface_t. */
+   struct
+   {
+      D3D12Resource            texture[3];
+      DXGI_FORMAT              format[3];
+      unsigned                 width[3];
+      unsigned                 height[3];
+      D3D12CommandAllocator    allocator;
+      D3D12GraphicsCommandList cmd;
+      D3D12Fence               capture_fence;
+      HANDLE                   capture_event;
+      UINT64                   capture_value;
+   } hw_ring;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -3722,6 +3738,8 @@ error:
    return false;
 }
 
+static void d3d12_hw_ring_free(d3d12_video_t *d3d12);
+
 static void d3d12_gfx_free(void* data)
 {
    unsigned       i;
@@ -3744,6 +3762,7 @@ static void d3d12_gfx_free(void* data)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
    Release(d3d12->chain.retained);
    d3d12->chain.retained = NULL;
+   d3d12_hw_ring_free(d3d12);
 
 
 #ifdef HAVE_OVERLAY
@@ -7735,6 +7754,235 @@ static void d3d12_gfx_unload_texture(void* data,
    d3d12_gfx_unload_texture_internal(d3d12, handle);
 }
 
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+typedef struct
+{
+   D3D12Fence fence;
+   HANDLE     event;
+   UINT64     value;
+} d3d12_ring_fence_t;
+
+static bool d3d12_hw_ring_fence_new(void *data, void **out)
+{
+   d3d12_video_t *d3d12   = (d3d12_video_t*)data;
+   d3d12_ring_fence_t *f;
+   if (!d3d12 || !d3d12->device || !out)
+      return false;
+   if (!(f = (d3d12_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   if (FAILED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+               D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence), (void**)&f->fence)))
+   {
+      free(f);
+      return false;
+   }
+   f->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   *out     = f;
+   return true;
+}
+
+static void d3d12_hw_ring_fence_free(void *data, void *fence)
+{
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   Release(f->fence);
+   if (f->event)
+      CloseHandle(f->event);
+   free(f);
+}
+
+/* Queue-side signal: completes after every submission before it. */
+static void d3d12_hw_ring_fence_signal(void *data, void *fence)
+{
+   d3d12_video_t *d3d12  = (d3d12_video_t*)data;
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   if (!d3d12 || !f)
+      return;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, f->fence, ++f->value);
+}
+
+static void d3d12_hw_ring_fence_wait(void *data, void *fence)
+{
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   (void)data;
+   if (!f || !f->value)
+      return;
+   if (f->fence->lpVtbl->GetCompletedValue(f->fence) < f->value)
+   {
+      f->fence->lpVtbl->SetEventOnCompletion(f->fence, f->value, f->event);
+      WaitForSingleObject(f->event, INFINITE);
+   }
+}
+
+static bool d3d12_hw_ring_prepare(d3d12_video_t *d3d12)
+{
+   if (d3d12->hw_ring.cmd)
+      return true;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommandAllocator(d3d12->device,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
+               (void**)&d3d12->hw_ring.allocator)))
+      return false;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommandList(d3d12->device, 0,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->hw_ring.allocator, NULL,
+               uuidof(ID3D12GraphicsCommandList), (void**)&d3d12->hw_ring.cmd)))
+      return false;
+   d3d12->hw_ring.cmd->lpVtbl->Close(d3d12->hw_ring.cmd);
+   if (FAILED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+               D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence),
+               (void**)&d3d12->hw_ring.capture_fence)))
+      return false;
+   d3d12->hw_ring.capture_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   return true;
+}
+
+/* Main thread. Copies the core's texture - left in required_state, which
+ * is COPY_SOURCE - into the slot's own texture and submits the copy, so
+ * it is queued before the core's next frame touches its texture. The
+ * capture list is one; its previous use must have executed before the
+ * allocator is reset, and a copy is short. */
+static bool d3d12_hw_ring_capture(void *data, unsigned slot,
+      const void *texture, unsigned format)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   D3D12_RESOURCE_DESC        desc;
+   D3D12GraphicsCommandList   cmd;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12Resource  core  = (D3D12Resource)texture;
+   unsigned width, height;
+
+   if (!d3d12 || !core || slot >= 3 || !d3d12_hw_ring_prepare(d3d12))
+      return false;
+
+   /* ID3D12Resource::GetDesc is struct-by-value in the C vtable and
+    * mingw cannot call it as declared; the size arrives with the
+    * texture the same way the driver's own frame path learns it. */
+   width  = d3d12->hw_ring.width[slot];
+   height = d3d12->hw_ring.height[slot];
+   {
+      D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get_desc)(ID3D12Resource*, D3D12_RESOURCE_DESC*) =
+         (D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *)(ID3D12Resource*, D3D12_RESOURCE_DESC*))
+         core->lpVtbl->GetDesc;
+      get_desc(core, &desc);
+      width  = (unsigned)desc.Width;
+      height = desc.Height;
+   }
+
+   if (     !d3d12->hw_ring.texture[slot]
+         || d3d12->hw_ring.width[slot]  != width
+         || d3d12->hw_ring.height[slot] != height
+         || d3d12->hw_ring.format[slot] != (DXGI_FORMAT)format)
+   {
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   tdesc;
+      Release(d3d12->hw_ring.texture[slot]);
+      d3d12->hw_ring.texture[slot] = NULL;
+      heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask     = 1;
+      heap_props.VisibleNodeMask      = 1;
+      tdesc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      tdesc.Alignment          = 0;
+      tdesc.Width              = width;
+      tdesc.Height             = height;
+      tdesc.DepthOrArraySize   = 1;
+      tdesc.MipLevels          = 1;
+      tdesc.Format             = (DXGI_FORMAT)format;
+      tdesc.SampleDesc.Count   = 1;
+      tdesc.SampleDesc.Quality = 0;
+      tdesc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      tdesc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+      /* Created in COPY_SOURCE: the driver's frame reads the slot in
+       * required_state as it would the core's own texture; the capture
+       * below transitions in and out. */
+      if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+                  &heap_props, D3D12_HEAP_FLAG_NONE, &tdesc,
+                  D3D12_RESOURCE_STATE_COPY_SOURCE, NULL,
+                  uuidof(ID3D12Resource), (void**)&d3d12->hw_ring.texture[slot])))
+      {
+         d3d12->hw_ring.texture[slot] = NULL;
+         return false;
+      }
+      d3d12->hw_ring.width[slot]  = width;
+      d3d12->hw_ring.height[slot] = height;
+      d3d12->hw_ring.format[slot] = (DXGI_FORMAT)format;
+   }
+
+   /* The previous capture must be done with the allocator. */
+   if (d3d12->hw_ring.capture_value
+         && d3d12->hw_ring.capture_fence->lpVtbl->GetCompletedValue(
+            d3d12->hw_ring.capture_fence) < d3d12->hw_ring.capture_value)
+   {
+      d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
+            d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
+            d3d12->hw_ring.capture_event);
+      WaitForSingleObject(d3d12->hw_ring.capture_event, INFINITE);
+   }
+
+   cmd = d3d12->hw_ring.cmd;
+   d3d12->hw_ring.allocator->lpVtbl->Reset(d3d12->hw_ring.allocator);
+   cmd->lpVtbl->Reset(cmd, d3d12->hw_ring.allocator, NULL);
+
+   src.pResource        = core;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src.SubresourceIndex = 0;
+   dst.pResource        = d3d12->hw_ring.texture[slot];
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->hw_ring.texture[slot],
+         D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->hw_ring.texture[slot],
+         D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->hw_ring.cmd);
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->hw_ring.capture_fence, ++d3d12->hw_ring.capture_value);
+   return true;
+}
+
+/* Video thread: the frame reads the slot's copy exactly as it would the
+ * core's texture. */
+static bool d3d12_hw_ring_present_slot(void *data, unsigned slot)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12 || slot >= 3 || !d3d12->hw_ring.texture[slot])
+      return false;
+   d3d12->hw_render_texture        = d3d12->hw_ring.texture[slot];
+   d3d12->hw_render_texture_format = d3d12->hw_ring.format[slot];
+   return true;
+}
+
+static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   if (d3d12->hw_ring.capture_value && d3d12->hw_ring.capture_fence
+         && d3d12->hw_ring.capture_fence->lpVtbl->GetCompletedValue(
+            d3d12->hw_ring.capture_fence) < d3d12->hw_ring.capture_value)
+   {
+      d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
+            d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
+            d3d12->hw_ring.capture_event);
+      WaitForSingleObject(d3d12->hw_ring.capture_event, INFINITE);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      Release(d3d12->hw_ring.texture[i]);
+      d3d12->hw_ring.texture[i] = NULL;
+   }
+   Release(d3d12->hw_ring.cmd);
+   Release(d3d12->hw_ring.allocator);
+   Release(d3d12->hw_ring.capture_fence);
+   if (d3d12->hw_ring.capture_event)
+      CloseHandle(d3d12->hw_ring.capture_event);
+   memset(&d3d12->hw_ring, 0, sizeof(d3d12->hw_ring));
+}
+
 static bool d3d12_get_hw_render_interface(
       void* data, const struct retro_hw_render_interface** iface)
 {
@@ -8206,7 +8454,14 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_supports_texture_format,
    d3d12_gfx_load_texture_compressed,
    d3d12_present_last,
-   d3d12_get_last_present_time
+   d3d12_get_last_present_time,
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   d3d12_hw_ring_fence_new,
+   d3d12_hw_ring_fence_free,
+   d3d12_hw_ring_fence_signal,
+   d3d12_hw_ring_fence_wait,
+   d3d12_hw_ring_capture,
+   d3d12_hw_ring_present_slot
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

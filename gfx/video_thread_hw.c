@@ -30,35 +30,70 @@
 
 #ifdef HAVE_VULKAN
 #include <libretro_vulkan.h>
+#endif
+#ifdef HAVE_D3D12
+#include <libretro_d3d12.h>
+#endif
+
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12)
+#define VIDEO_THREAD_HW_ANY 1
+#endif
+
+#ifdef VIDEO_THREAD_HW_ANY
 
 typedef struct
 {
-   /* What the core handed over for this slot. The image is a copy: the
-    * core's own struct may be rewritten for its next frame while the
-    * video thread is still driving the driver with this one. */
+#ifdef HAVE_VULKAN
+   /* Vulkan: what the core handed over for this slot. The image is a
+    * copy: the core's own struct may be rewritten for its next frame
+    * while the video thread is still driving the driver with this one. */
    struct retro_vulkan_image image;
    VkSemaphore     *semaphores;
    VkCommandBuffer *cmd;
-   void            *fence;
    unsigned         num_semaphores;
    unsigned         cap_semaphores;
    unsigned         num_cmd;
    unsigned         cap_cmd;
    uint32_t         src_queue_family;
    bool             has_image;
+#endif
+#ifdef HAVE_D3D12
+   /* Direct3D 12: the texture the core set for this frame, and its
+    * format. The driver copies it into the slot's own texture at
+    * publish; after that the core may do what it likes with its own. */
+   const void      *texture;
+   unsigned         format;
+#endif
+   void            *fence;
    /* The video thread has driven the driver with this slot and its
     * fence is armed; the next user of the slot waits it first. */
    bool             in_flight;
 } hw_slot_t;
 
+enum hw_api
+{
+   HW_API_NONE = 0,
+   HW_API_VULKAN,
+   HW_API_D3D12
+};
+
 typedef struct
 {
-   struct retro_hw_render_interface_vulkan        iface;
-   const struct retro_hw_render_interface_vulkan *real;
+   union
+   {
+#ifdef HAVE_VULKAN
+      struct retro_hw_render_interface_vulkan vk;
+#endif
+#ifdef HAVE_D3D12
+      struct retro_hw_render_interface_d3d12  d3d12;
+#endif
+   } iface;
+   const struct retro_hw_render_interface *real;
    hw_slot_t slot[VIDEO_THREAD_HW_RING];
    /* The core's current sync index: the slot it is rendering into.
     * Main thread only between pushes; the push moves it. */
    unsigned  index;
+   enum hw_api api;
    thread_video_t *thr;
 } hw_ring_t;
 
@@ -66,20 +101,6 @@ static hw_ring_t *hw_ring_of(void *handle)
 {
    thread_video_t *thr = (thread_video_t*)handle;
    return thr ? (hw_ring_t*)thr->frame.hw_ring : NULL;
-}
-
-/* --- the core's side, main thread ------------------------------------ */
-
-static uint32_t hw_get_sync_index(void *handle)
-{
-   hw_ring_t *ring = hw_ring_of(handle);
-   return ring ? ring->index : 0;
-}
-
-static uint32_t hw_get_sync_index_mask(void *handle)
-{
-   (void)handle;
-   return (1u << VIDEO_THREAD_HW_RING) - 1;
 }
 
 static void hw_wait_slot(hw_ring_t *ring, unsigned i)
@@ -91,6 +112,21 @@ static void hw_wait_slot(hw_ring_t *ring, unsigned i)
    if (thr->poke && thr->poke->hw_ring_fence_wait)
       thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence);
    s->in_flight = false;
+}
+
+/* --- Vulkan: the core's side, main thread ----------------------------- */
+#ifdef HAVE_VULKAN
+
+static uint32_t hw_get_sync_index(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   return ring ? ring->index : 0;
+}
+
+static uint32_t hw_get_sync_index_mask(void *handle)
+{
+   (void)handle;
+   return (1u << VIDEO_THREAD_HW_RING) - 1;
 }
 
 static void hw_wait_sync_index(void *handle)
@@ -165,88 +201,145 @@ static void hw_set_command_buffers(void *handle, uint32_t num_cmd,
 static void hw_lock_queue(void *handle)
 {
    hw_ring_t *ring = hw_ring_of(handle);
-   if (ring && ring->real->lock_queue)
-      ring->real->lock_queue(ring->real->handle);
+   const struct retro_hw_render_interface_vulkan *real;
+   if (!ring)
+      return;
+   real = (const struct retro_hw_render_interface_vulkan*)ring->real;
+   if (real->lock_queue)
+      real->lock_queue(real->handle);
 }
 
 static void hw_unlock_queue(void *handle)
 {
    hw_ring_t *ring = hw_ring_of(handle);
-   if (ring && ring->real->unlock_queue)
-      ring->real->unlock_queue(ring->real->handle);
+   const struct retro_hw_render_interface_vulkan *real;
+   if (!ring)
+      return;
+   real = (const struct retro_hw_render_interface_vulkan*)ring->real;
+   if (real->unlock_queue)
+      real->unlock_queue(real->handle);
 }
 
 static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
    hw_ring_t *ring = hw_ring_of(handle);
-   if (ring && ring->real->set_signal_semaphore)
-      ring->real->set_signal_semaphore(ring->real->handle, semaphore);
+   const struct retro_hw_render_interface_vulkan *real;
+   if (!ring)
+      return;
+   real = (const struct retro_hw_render_interface_vulkan*)ring->real;
+   if (real->set_signal_semaphore)
+      real->set_signal_semaphore(real->handle, semaphore);
 }
+#endif /* VIDEO_THREAD_HW_ANY */
+
+/* --- Direct3D 12: the core's side, main thread ------------------------ */
+#ifdef HAVE_D3D12
+static void hw_d3d12_set_texture(void *handle, ID3D12Resource *texture,
+      DXGI_FORMAT format)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   hw_slot_t *s;
+   if (!ring)
+      return;
+   s          = &ring->slot[ring->index];
+   s->texture = texture;
+   s->format  = (unsigned)format;
+}
+#endif /* HAVE_D3D12 */
 
 /* --- the wrapper's side ---------------------------------------------- */
+
+static bool hw_ring_setup(thread_video_t *thr, hw_ring_t **out)
+{
+   hw_ring_t *ring;
+   unsigned i;
+   if ((ring = (hw_ring_t*)thr->frame.hw_ring))
+   {
+      *out = ring;
+      return true;
+   }
+   if (!(ring = (hw_ring_t*)calloc(1, sizeof(*ring))))
+      return false;
+   ring->thr = thr;
+   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+   {
+      if (!thr->poke->hw_ring_fence_new(thr->driver_data, &ring->slot[i].fence))
+      {
+         unsigned j;
+         for (j = 0; j < i; j++)
+            thr->poke->hw_ring_fence_free(thr->driver_data, ring->slot[j].fence);
+         free(ring);
+         return false;
+      }
+   }
+   thr->frame.hw_ring = ring;
+   RARCH_LOG("[Video] Threaded video: hardware core on a %u-slot ring.\n",
+         VIDEO_THREAD_HW_RING);
+   *out = ring;
+   return true;
+}
 
 bool video_thread_get_hw_render_interface(void *data,
       const struct retro_hw_render_interface **iface)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   const struct retro_hw_render_interface *real_base = NULL;
-   const struct retro_hw_render_interface_vulkan *real;
+   const struct retro_hw_render_interface *real = NULL;
    hw_ring_t *ring;
-   unsigned i;
 
    if (!thr || !iface)
       return false;
    if (!thr->poke || !thr->poke->get_hw_render_interface
-         || !thr->poke->hw_ring_install
          || !thr->poke->hw_ring_fence_new
          || !thr->poke->hw_ring_fence_wait
          || !thr->poke->hw_ring_fence_signal)
       return false;
-   if (!thr->poke->get_hw_render_interface(thr->driver_data, &real_base))
+   if (!thr->poke->get_hw_render_interface(thr->driver_data, &real) || !real)
       return false;
-   if (!real_base || real_base->interface_type != RETRO_HW_RENDER_INTERFACE_VULKAN)
-      return false;
-   real = (const struct retro_hw_render_interface_vulkan*)real_base;
 
-   if (!(ring = (hw_ring_t*)thr->frame.hw_ring))
+   switch (real->interface_type)
    {
-      if (!(ring = (hw_ring_t*)calloc(1, sizeof(*ring))))
-         return false;
-      ring->thr = thr;
-      for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
-      {
-         if (!thr->poke->hw_ring_fence_new(thr->driver_data,
-                  &ring->slot[i].fence))
-         {
-            unsigned j;
-            for (j = 0; j < i; j++)
-               thr->poke->hw_ring_fence_free(thr->driver_data,
-                     ring->slot[j].fence);
-            free(ring);
+#ifdef HAVE_VULKAN
+      case RETRO_HW_RENDER_INTERFACE_VULKAN:
+         if (!thr->poke->hw_ring_install)
             return false;
-         }
-      }
-      thr->frame.hw_ring = ring;
-      RARCH_LOG("[Video] Threaded video: hardware core on a %u-slot ring.\n",
-            VIDEO_THREAD_HW_RING);
+         if (!hw_ring_setup(thr, &ring))
+            return false;
+         ring->api                           = HW_API_VULKAN;
+         ring->real                          = real;
+         /* The driver's interface, with the bookkeeping redirected
+          * here. The handle the core sees is the wrapper. */
+         ring->iface.vk                      = *(const struct retro_hw_render_interface_vulkan*)real;
+         ring->iface.vk.handle               = thr;
+         ring->iface.vk.set_image            = hw_set_image;
+         ring->iface.vk.get_sync_index       = hw_get_sync_index;
+         ring->iface.vk.get_sync_index_mask  = hw_get_sync_index_mask;
+         ring->iface.vk.wait_sync_index      = hw_wait_sync_index;
+         ring->iface.vk.set_command_buffers  = hw_set_command_buffers;
+         ring->iface.vk.lock_queue           = hw_lock_queue;
+         ring->iface.vk.unlock_queue         = hw_unlock_queue;
+         ring->iface.vk.set_signal_semaphore = hw_set_signal_semaphore;
+         *iface = (const struct retro_hw_render_interface*)&ring->iface.vk;
+         return true;
+#endif
+#ifdef HAVE_D3D12
+      case RETRO_HW_RENDER_INTERFACE_D3D12:
+         if (!thr->poke->hw_ring_capture || !thr->poke->hw_ring_present_slot)
+            return false;
+         if (!hw_ring_setup(thr, &ring))
+            return false;
+         ring->api                     = HW_API_D3D12;
+         ring->real                    = real;
+         /* Device, queue and compiler pass straight through; only the
+          * texture handoff is redirected. */
+         ring->iface.d3d12             = *(const struct retro_hw_render_interface_d3d12*)real;
+         ring->iface.d3d12.handle      = thr;
+         ring->iface.d3d12.set_texture = hw_d3d12_set_texture;
+         *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d12;
+         return true;
+#endif
+      default:
+         return false;
    }
-
-   /* The driver's interface, with the bookkeeping redirected here. The
-    * handle the core sees is the wrapper. */
-   ring->real                       = real;
-   ring->iface                      = *real;
-   ring->iface.handle               = thr;
-   ring->iface.set_image            = hw_set_image;
-   ring->iface.get_sync_index       = hw_get_sync_index;
-   ring->iface.get_sync_index_mask  = hw_get_sync_index_mask;
-   ring->iface.wait_sync_index      = hw_wait_sync_index;
-   ring->iface.set_command_buffers  = hw_set_command_buffers;
-   ring->iface.lock_queue           = hw_lock_queue;
-   ring->iface.unlock_queue         = hw_unlock_queue;
-   ring->iface.set_signal_semaphore = hw_set_signal_semaphore;
-
-   *iface = (const struct retro_hw_render_interface*)&ring->iface;
-   return true;
 }
 
 int video_thread_hw_publish(thread_video_t *thr)
@@ -255,7 +348,20 @@ int video_thread_hw_publish(thread_video_t *thr)
    unsigned published;
    if (!ring)
       return -1;
-   published   = ring->index;
+   published = ring->index;
+#ifdef HAVE_D3D12
+   if (ring->api == HW_API_D3D12)
+   {
+      /* The slot's copy is taken now, on this thread, so the copy is
+       * queued before the core's next frame: the slot must be free of
+       * the video thread first. */
+      hw_slot_t *s = &ring->slot[published];
+      hw_wait_slot(ring, published);
+      if (!s->texture || !thr->poke->hw_ring_capture(thr->driver_data,
+               published, s->texture, s->format))
+         return -1;
+   }
+#endif
    ring->index = (ring->index + 1) % VIDEO_THREAD_HW_RING;
    /* The slot the core fills next was last driven two frames ago;
     * normally long done, and if not this is where the core waits. */
@@ -266,14 +372,29 @@ int video_thread_hw_publish(thread_video_t *thr)
 void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
-   hw_slot_t *s;
    if (!ring || hw_slot < 0 || hw_slot >= VIDEO_THREAD_HW_RING)
       return;
-   s = &ring->slot[hw_slot];
-   thr->poke->hw_ring_install(thr->driver_data,
-         s->has_image ? &s->image : NULL,
-         s->semaphores, s->num_semaphores, s->src_queue_family,
-         s->cmd, s->num_cmd);
+   switch (ring->api)
+   {
+#ifdef HAVE_VULKAN
+      case HW_API_VULKAN:
+      {
+         hw_slot_t *s = &ring->slot[hw_slot];
+         thr->poke->hw_ring_install(thr->driver_data,
+               s->has_image ? &s->image : NULL,
+               s->semaphores, s->num_semaphores, s->src_queue_family,
+               s->cmd, s->num_cmd);
+         break;
+      }
+#endif
+#ifdef HAVE_D3D12
+      case HW_API_D3D12:
+         thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
+         break;
+#endif
+      default:
+         break;
+   }
 }
 
 void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
@@ -302,27 +423,41 @@ void video_thread_hw_free(thread_video_t *thr)
       hw_wait_slot(ring, i);
       if (thr->poke && thr->poke->hw_ring_fence_free)
          thr->poke->hw_ring_fence_free(thr->driver_data, s->fence);
+#ifdef HAVE_VULKAN
       free(s->semaphores);
       free(s->cmd);
+#endif
    }
    free(ring);
    thr->frame.hw_ring = NULL;
 }
 
-/* Vulkan hardware cores run under the wrapper whenever the wrapper runs:
- * the ring gives them what the swapchain gave them unthreaded, and a
- * core that honoured the interface there honours it here. Other
- * hardware contexts have no ring yet and stay unthreaded. */
+/* Hardware cores run under the wrapper whenever the wrapper runs, where
+ * a ring exists for their API: the ring gives them what the swapchain
+ * gave them unthreaded, and a core that honoured the interface there
+ * honours it here. Other contexts have no ring yet and stay unthreaded. */
 bool video_thread_hw_allowed(void)
 {
    settings_t *settings           = config_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
-   if (video_st->hw_render.context_type != RETRO_HW_CONTEXT_VULKAN)
+   if (!settings)
       return false;
-   return settings && string_is_equal(settings->arrays.video_driver, "vulkan");
+   switch (video_st->hw_render.context_type)
+   {
+#ifdef HAVE_VULKAN
+      case RETRO_HW_CONTEXT_VULKAN:
+         return string_is_equal(settings->arrays.video_driver, "vulkan");
+#endif
+#ifdef HAVE_D3D12
+      case RETRO_HW_CONTEXT_D3D12:
+         return string_is_equal(settings->arrays.video_driver, "d3d12");
+#endif
+      default:
+         return false;
+   }
 }
 
-#else /* !HAVE_VULKAN */
+#else /* !VIDEO_THREAD_HW_ANY */
 
 bool video_thread_get_hw_render_interface(void *data,
       const struct retro_hw_render_interface **iface)
