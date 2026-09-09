@@ -163,6 +163,7 @@ bool linux_terminal_disable_input(void)
    return true;
 }
 
+#ifdef HAVE_THREADS
 static void linux_poll_illuminance_sensor(void *data)
 {
    linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t*)data;
@@ -208,6 +209,7 @@ static void linux_poll_illuminance_sensor(void *data)
 
    RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
 }
+#endif
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
@@ -251,7 +253,13 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       if (lux >= 0)
       { /* If we found an illuminance sensor that works... */
          sensor->millilux = (int)(lux * 1000.0); /* Set the first reading */
+#ifdef HAVE_THREADS
          sensor->thread = sthread_create(linux_poll_illuminance_sensor, sensor);
+#else
+         /* No thread to poll on: the first reading above is all the
+          * sensor reports. */
+         sensor->thread = NULL;
+#endif
 
          if (!sensor->thread)
          {
@@ -279,6 +287,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
    if (!sensor)
       return;
 
+#ifdef HAVE_THREADS
    if (sensor->thread)
    {
       sensor->done = true;
@@ -295,6 +304,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
       sthread_join(sensor->thread);
       /* sthread_join will free the thread */
    }
+#endif
 
    free(sensor);
 }

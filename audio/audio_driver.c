@@ -5600,9 +5600,14 @@ static size_t microphone_driver_flush(
     * the USE_FLOAT bit say the same thing - the device's format, fixed
     * at open - so every test below asks this rather than the flags word
     * the main thread keeps writing. */
+#ifdef HAVE_THREADS
    unsigned sample_size = microphone->worker_sample_size
          ? microphone->worker_sample_size
          : mic_driver_get_sample_size(microphone);
+#else
+   /* No worker without threads; the frame-synchronous path derives it. */
+   unsigned sample_size = mic_driver_get_sample_size(microphone);
+#endif
    size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
    size_t frames_to_enqueue;
    int bytes_read       = mic_st->driver->read(

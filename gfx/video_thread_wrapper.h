@@ -26,6 +26,13 @@
 
 #include "font_driver.h"
 
+/* Everything here belongs to the wrapper, which is only built with
+ * HAVE_THREADS. Without it, the callers that must still compile -
+ * gl2/gl3 for the swap count, video_driver.c for the wrapper-active
+ * test - get macro stand-ins from video_driver.h, and a prototype here
+ * would only collide with those. */
+#ifdef HAVE_THREADS
+
 RETRO_BEGIN_DECLS
 
 enum thread_cmd
@@ -440,5 +447,7 @@ uint64_t video_thread_swap_count(void);
 void video_thread_wait_idle(void);
 
 RETRO_END_DECLS
+
+#endif /* HAVE_THREADS */
 
 #endif
