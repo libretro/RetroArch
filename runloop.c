@@ -4915,6 +4915,36 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    }
 }
 
+size_t runloop_pace_string(char *s, size_t len)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   unsigned pace               = runloop_st->pace;
+   size_t   _len               = 0;
+   s[0] = '\0';
+   if (pace & RUNLOOP_PACE_VSYNC)
+      _len += strlcpy(s + _len, "VSync", len - _len);
+   if (pace & RUNLOOP_PACE_AUDIO)
+      _len += strlcpy(s + _len, _len ? "+Audio" : "Audio", len - _len);
+   if (pace & RUNLOOP_PACE_SCANLINE)
+      _len += strlcpy(s + _len, _len ? "+Scanline" : "Scanline", len - _len);
+   if (pace & RUNLOOP_PACE_DISPLAY)
+      _len += strlcpy(s + _len, _len ? "+Display" : "Display", len - _len);
+   if (pace & RUNLOOP_PACE_TIMER)
+      _len += strlcpy(s + _len, _len ? "+Timer" : "Timer", len - _len);
+   if (pace & RUNLOOP_PACE_NOWINDOW)
+      _len += strlcpy(s + _len, _len ? "+NoWindow" : "NoWindow", len - _len);
+   if (!_len)
+      _len  = strlcpy(s, "None", len);
+   /* The measured loop rate beside the claim. They agree when the
+    * named source is really holding the loop; a claim next to a rate
+    * well above the content's is a source that is not blocking on
+    * anything, which is the failure this exists to make visible. */
+   if (runloop_st->pace_period_usec > 0 && _len < len)
+      _len += snprintf(s + _len, len - _len, " (%.1f fps)",
+            1000000.0 / (double)runloop_st->pace_period_usec);
+   return _len;
+}
+
 void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)

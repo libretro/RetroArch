@@ -607,6 +607,13 @@ bool runloop_event_init_core(
 
 void runloop_pause_checks(void);
 
+/* The sources that held the loop on the last iteration, as the
+ * statistics overlay names them - "VSync+Display", "Timer", "None" -
+ * and, when a rate has been measured, " (59.9 fps)" after it. One
+ * string for the overlay and for System Information, so the menu can
+ * say what paces it where the overlay does not draw. */
+size_t runloop_pace_string(char *s, size_t len);
+
 void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);

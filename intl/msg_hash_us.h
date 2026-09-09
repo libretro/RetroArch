@@ -1484,6 +1484,10 @@ MSG_HASH(
    "Video Context Driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
+   "Pacing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    "Display Width (mm)"
    )

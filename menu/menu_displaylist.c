@@ -2435,6 +2435,24 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             0, 0, NULL))
          count++;
 
+      /* Pacing: the same line as the statistics overlay, here because
+       * the overlay does not draw over the menu, and what paces the
+       * menu is exactly the question this answers. Read at build; the
+       * list rebuilds on entry, so back out and in again to refresh. */
+      {
+         char pbuf[64];
+         runloop_pace_string(pbuf, sizeof(pbuf));
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING),
+               sizeof(entry));
+         _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+         strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+
       {
          gfx_ctx_metrics_t metrics;
          float val = 0.0f;

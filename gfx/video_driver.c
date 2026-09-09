@@ -5936,40 +5936,13 @@ void video_driver_frame(const void *data, unsigned width,
                   " Scanline:   %5d\n",
                   video_st->scanline[SCANLINE_NEXT]);
 
-         /* Which sources held the loop on the last frame; from
-          * runloop_state_t::pace. More than one is possible and is shown
-          * as such, since that is the overlap this exists to expose. */
+         /* Which sources held the loop on the last frame, with the
+          * measured rate; the same string System Information shows. */
          {
-            unsigned pace = runloop_st->pace;
-            char     pbuf[48];
-            size_t   plen = 0;
-            pbuf[0] = '\0';
-            if (pace & RUNLOOP_PACE_VSYNC)
-               plen += strlcpy(pbuf + plen, "VSync", sizeof(pbuf) - plen);
-            if (pace & RUNLOOP_PACE_AUDIO)
-               plen += strlcpy(pbuf + plen, plen ? "+Audio" : "Audio", sizeof(pbuf) - plen);
-            if (pace & RUNLOOP_PACE_SCANLINE)
-               plen += strlcpy(pbuf + plen, plen ? "+Scanline" : "Scanline", sizeof(pbuf) - plen);
-            if (pace & RUNLOOP_PACE_DISPLAY)
-               plen += strlcpy(pbuf + plen, plen ? "+Display" : "Display", sizeof(pbuf) - plen);
-            if (pace & RUNLOOP_PACE_TIMER)
-               plen += strlcpy(pbuf + plen, plen ? "+Timer" : "Timer", sizeof(pbuf) - plen);
-            if (pace & RUNLOOP_PACE_NOWINDOW)
-               plen += strlcpy(pbuf + plen, plen ? "+NoWindow" : "NoWindow", sizeof(pbuf) - plen);
-            if (!plen)
-               strlcpy(pbuf, "None", sizeof(pbuf));
-            /* The measured loop rate beside the claim. They agree when
-             * the named source is really holding the loop; a claim
-             * next to a rate well above the content's is a source that
-             * is not blocking on anything, which is the failure this
-             * line exists to make visible. */
-            if (runloop_st->pace_period_usec > 0)
-               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-                     " Pacing:     %s (%.1f fps)\n", pbuf,
-                     1000000.0 / (double)runloop_st->pace_period_usec);
-            else
-               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-                     " Pacing:     %s\n", pbuf);
+            char pbuf[64];
+            runloop_pace_string(pbuf, sizeof(pbuf));
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Pacing:     %s\n", pbuf);
          }
 
 #ifdef HAVE_THREADS
