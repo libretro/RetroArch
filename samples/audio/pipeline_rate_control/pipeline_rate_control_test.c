@@ -520,7 +520,11 @@ steady_skipped:
          (audio_driver_st.sink_source_hz / 48000.0 - 1.0) * 1e6,
          (double)audio_driver_st.sink_kept.usec / 1e6, audio_driver_st.sink_settled,
          audio_driver_st.sink_discarded);
-   if (!jitter && !(runner_late + consumer_held > 2 && DEV_CAPACITY <= 800))
+   /* A dry spell discards audio and the estimate's sum starts over,
+    * by design; whether it then reaches the baseline again before the
+    * run ends is the run's length, not the estimate. Settling is
+    * required of a run with no dry spell at all. */
+   if (!jitter && dev_underrun_events == 0)
       CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
    CHECK(bound_breaches == 0, "%u flushes produced more than the bound reserved for them", bound_breaches);
    if (dev_float)
