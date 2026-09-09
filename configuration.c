@@ -26,6 +26,7 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <streams/rzip_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -7198,6 +7199,10 @@ static bool config_load_file(global_t *global,
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+#ifdef HAVE_COMPRESSION
+   rzipstream_set_write_codec(settings->uints.save_compression_codec == 1
+         ? RZIP_CODEC_ZSTD : RZIP_CODEC_DEFLATE);
+#endif
 #ifdef ANDROID
    android_app_set_window_settings(
          settings->bools.video_notch_write_over_enable,

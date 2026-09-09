@@ -32874,6 +32874,14 @@ MSG_HASH(
    "Normal"
    )
 MSG_HASH(
+   MSG_COMPRESSION_CODEC_DEFLATE,
+   "Deflate"
+   )
+MSG_HASH(
+   MSG_COMPRESSION_CODEC_ZSTD,
+   "Zstandard"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHER,
    "Higher"
    )

@@ -205,6 +205,8 @@ enum event_command
    CMD_EVENT_SHADER_TOGGLE,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
+   /* The codec compressed saves are written with, from the setting. */
+   CMD_EVENT_SAVE_COMPRESSION_CODEC_APPLY,
    /* Cheat hotkeys. */
    CMD_EVENT_CHEAT_TOGGLE,
    CMD_EVENT_CHEAT_INDEX_PLUS,

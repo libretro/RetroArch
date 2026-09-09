@@ -1609,6 +1609,14 @@
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 #endif
 
+/* The codec compressed saves are written with: 0 deflate, 1
+ * Zstandard. Zstandard where the built-in codec is compiled in. */
+#ifdef HAVE_RZSTD
+#define DEFAULT_SAVE_COMPRESSION_CODEC 1
+#else
+#define DEFAULT_SAVE_COMPRESSION_CODEC 0
+#endif
+
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0f
 

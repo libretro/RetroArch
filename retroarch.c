@@ -86,6 +86,7 @@
 #include <compat/getopt.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <streams/rzip_stream.h>
 #include <retro_miscellaneous.h>
 #include <lists/dir_list.h>
 #ifdef __MACH__
@@ -4264,6 +4265,12 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_CHEATS_APPLY:
 #ifdef HAVE_CHEATS
          cheat_manager_apply_cheats(settings->bools.notification_show_cheats_applied);
+#endif
+         break;
+      case CMD_EVENT_SAVE_COMPRESSION_CODEC_APPLY:
+#ifdef HAVE_COMPRESSION
+         rzipstream_set_write_codec(settings->uints.save_compression_codec == 1
+               ? RZIP_CODEC_ZSTD : RZIP_CODEC_DEFLATE);
 #endif
          break;
       case CMD_EVENT_REWIND_DEINIT:

@@ -229,6 +229,7 @@ typedef struct settings
       unsigned replay_checkpoint_interval;
       unsigned replay_max_keep;
       unsigned savestate_max_keep;
+      unsigned save_compression_codec;
       unsigned network_cmd_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;

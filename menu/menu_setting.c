@@ -7170,6 +7170,22 @@ static size_t setting_get_string_representation_uint_video_sdl_display_server(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_save_compression_codec(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MSG_COMPRESSION_CODEC_ZSTD), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MSG_COMPRESSION_CODEC_DEFLATE), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_audio_resampler_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
