@@ -4065,6 +4065,10 @@ static const char *cc_thumb_subdir(int t)
       [[[coresTable tableColumns] objectAtIndex:0] setWidth:280.0];
       [[[[coresTable tableColumns] objectAtIndex:1] headerCell]
          setStringValue:@"Version"];
+      /* The Version column tracks the table's width through AppKit's
+       * own tiling (10.4 API), whatever the timing of the window's
+       * resize against the layout in coresLayout. */
+      [coresTable setColumnAutoresizingStyle:NSTableViewLastColumnOnlyAutoresizingStyle];
       [coresTable setDoubleAction:@selector(loadSelectedCore:)];
       [coresTable setTarget:self];
       [content addSubview:sc];
