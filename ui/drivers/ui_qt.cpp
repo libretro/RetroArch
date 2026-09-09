@@ -22,6 +22,9 @@
 #include <QtWidgets/QMessageBox>
 #include <QtCore/QString>
 #include <QtGlobal>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#include <QDesktopWidget>
+#endif
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QStyle>
@@ -3974,15 +3977,24 @@ void MainWindow::saveDockLayout()
  * Docks with a row are re-added to their saved side in list order (so
  * the default tabbing / splits are undone and rebuilt from the rows),
  * tabbed onto their saved partner, sized, and the saved tab raised. */
-/* QGuiApplication::screenAt is Qt 5.10; the tree builds against older
- * Qt 5 too. The same walk, on any Qt 5. */
-static QScreen *ui_qt_screen_at(const QPoint &p)
+/* The usable area of the screen a point falls on, for placing windows
+ * and docks. QScreen and QGuiApplication are Qt 5; QDesktopWidget is
+ * Qt 4 and Qt 5 and gone in Qt 6. This is the one place the companion
+ * asks which screen a point is on, so it is the one place that knows
+ * which Qt it is built against. */
+static QRect ui_qt_available_geometry_at(const QPoint &p)
 {
-   const QList<QScreen*> screens = QGuiApplication::screens();
-   for (int i = 0; i < screens.size(); i++)
-      if (screens[i]->geometry().contains(p))
-         return screens[i];
-   return NULL;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+   QScreen *screen = QGuiApplication::screenAt(p);
+   if (!screen)
+      screen = QGuiApplication::primaryScreen();
+   return screen ? screen->availableGeometry() : QRect();
+#else
+   QDesktopWidget *desktop = QApplication::desktop();
+   if (!desktop)
+      return QRect();
+   return desktop->availableGeometry(p);
+#endif
 }
 
 void MainWindow::restoreDockLayout()
@@ -4046,12 +4058,9 @@ void MainWindow::restoreDockLayout()
          if (st[i].width > 0 && st[i].height > 0)
          {
             QRect r(st[i].x, st[i].y, st[i].width, st[i].height);
-            QScreen *screen = ui_qt_screen_at(r.topLeft());
-            if (!screen)
-               screen = QGuiApplication::primaryScreen();
-            if (screen)
+            QRect avail = ui_qt_available_geometry_at(r.topLeft());
+            if (avail.isValid())
             {
-               QRect avail = screen->availableGeometry();
                if (r.right()  > avail.right())  r.moveRight(avail.right());
                if (r.bottom() > avail.bottom()) r.moveBottom(avail.bottom());
                if (r.left()   < avail.left())   r.moveLeft(avail.left());
@@ -5519,7 +5528,6 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
    QStringList horizontal_header_labels;
    companion_core_t *core  = ui_companion_qt_core();
    QByteArray contentArray = contentPath.toUtf8();
-   QScreen *desktop        = qApp->primaryScreen();
 
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
    horizontal_header_labels << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION);
@@ -5580,9 +5588,8 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
     * and the window frame; the last column takes any spare width. */
    {
       QWidget *owner       = parentWidget() ? parentWidget() : this;
-      QScreen *screen      = ui_qt_screen_at(
+      QRect avail_rect     = ui_qt_available_geometry_at(
             owner->frameGeometry().center());
-      QRect avail_rect     = (screen ? screen : desktop)->availableGeometry();
       QRect frame          = frameGeometry();
       QRect client         = geometry();
       int frame_w          = frame.width()  - client.width();
