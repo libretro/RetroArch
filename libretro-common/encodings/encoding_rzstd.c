@@ -3520,7 +3520,7 @@ static size_t rzstd_huf_write_tree(uint8_t *dst, size_t cap,
       for (i = 0; i < nweights; i++)
       {
          hist[weights[i]]++;
-         if (weights[i] + 1 > nsym)
+         if ((uint32_t)weights[i] + 1 > nsym)
             nsym = weights[i] + 1;
       }
       log = nweights > 32 ? 6 : 5;
