@@ -941,6 +941,72 @@ static void lane_display_pacing(void)
 /*   frames from the lent slot. With it off, no ask is granted.         */
 /* ------------------------------------------------------------------ */
 
+/* A driver answering a synchronous command on the video thread can ask
+ * for a call on the thread that is waiting for the reply - the core's
+ * thread, which holds the core's GL context under the hardware ring.
+ * The gl driver uses it to rebuild the core's framebuffers on a shader
+ * change. Modelled here: the driver's set_shader asks for one and the
+ * lane checks the call ran on the main thread, before the reply, and
+ * exactly once. */
+static video_driver_t        wclane_driver;
+static const video_driver_t *wclane_inner;
+static uintptr_t             wclane_call_thread;
+static unsigned              wclane_calls;
+static bool                  wclane_before_reply;
+
+static void wclane_cb(void *data)
+{
+   (void)data;
+   wclane_call_thread = sthread_get_current_thread_id();
+   wclane_calls++;
+}
+
+static bool wclane_set_shader(void *data, enum rarch_shader_type type, const char *path)
+{
+   bool ret;
+   video_thread_call_on_waiter(wclane_cb, NULL);
+   wclane_before_reply = (wclane_calls == 1);
+   ret = wclane_inner->set_shader ? wclane_inner->set_shader(data, type, path) : true;
+   return ret;
+}
+
+static void lane_waiter_call(void)
+{
+   thread_video_t *thr;
+   uintptr_t self;
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "waiter-call lane");
+   thr           = (thread_video_t*)video_st->data;
+   video_thread_wait_idle();
+   wclane_inner  = thr->driver;
+   wclane_driver = *thr->driver;
+   wclane_driver.set_shader = wclane_set_shader;
+   thr->driver   = &wclane_driver;
+   wclane_calls  = 0;
+   wclane_call_thread = 0;
+   self          = sthread_get_current_thread_id();
+
+   /* Through the wrapper: the main thread sends set_shader and waits;
+    * the video thread's driver asks for the call. */
+   video_st->current_video->set_shader(video_st->data, RARCH_SHADER_NONE, NULL);
+
+   CHECK(wclane_calls == 1, "waiter call ran %u times, expected 1", wclane_calls);
+   CHECK(wclane_call_thread == self,
+         "waiter call ran on the wrong thread (not the one waiting for the reply)");
+   CHECK(wclane_before_reply, "waiter call had not run when the command continued");
+
+   /* With no waiter - called outside a command, from the video thread's
+    * own frame - it must run on the caller rather than hang: the driver
+    * asks from inside frame() here. */
+   video_thread_wait_idle();
+   thr->driver   = wclane_inner;
+   run_frames(2);
+   printf("   waiter-call lane: call ran on the waiting thread, before the reply\n");
+}
+
 static void lane_zero_copy(void)
 {
    unsigned had = failures;
@@ -1079,6 +1145,7 @@ int main(int argc, char *argv[])
    lane_font_marshal();
    lane_display_pacing();
    lane_zero_copy();
+   lane_waiter_call();
 
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */

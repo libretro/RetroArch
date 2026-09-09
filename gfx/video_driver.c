@@ -6028,7 +6028,11 @@ void video_driver_frame(const void *data, unsigned width,
    if (render_frame && vid && vid->frame)
    {
       video_info.current_subframe = 0;
-      video_info.swap_count       = video_st->swap_count;
+#ifdef HAVE_THREADS
+      /* The video thread owns and stamps this under the wrapper. */
+      if (!video_st->thread_wrapper_active)
+#endif
+         video_info.swap_count    = video_st->swap_count;
       if (vid->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,

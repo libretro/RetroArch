@@ -3894,7 +3894,8 @@ static bool gl3_set_shader(void *data,
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !(gl->flags & GL3_FLAG_HW_RING))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return true;

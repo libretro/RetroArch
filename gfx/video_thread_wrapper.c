@@ -108,6 +108,10 @@ static void video_thread_send_packet(thread_video_t *thr,
 
    thr->send_cmd  = pkt->type;
    thr->reply_cmd = CMD_VIDEO_NONE;
+   /* Counted from the send, not from the wait that follows it: the
+    * video thread may take the command and ask for a call on this
+    * thread before this thread has reached its wait. */
+   thr->waiter_call.waiters++;
 
    scond_signal(thr->cond_thread);
    slock_unlock(thr->lock);
@@ -178,8 +182,25 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 
    VIDEO_THREAD_CMD_WAIT_ENTER(thr);
    while (pkt->type != thr->reply_cmd)
+   {
+      if (thr->waiter_call.pending)
+      {
+         /* The video thread needs this thread: run its call here, with
+          * the lock dropped, and tell it. */
+         void (*fn)(void*) = thr->waiter_call.fn;
+         void *data        = thr->waiter_call.data;
+         thr->waiter_call.pending = false;
+         slock_unlock(thr->lock);
+         fn(data);
+         slock_lock(thr->lock);
+         thr->waiter_call.done = true;
+         scond_signal(thr->waiter_call.cond);
+         continue;
+      }
       if (!video_thread_pump_wait(thr->cond_reply, thr->lock))
          scond_wait(thr->cond_reply, thr->lock);
+   }
+   thr->waiter_call.waiters--;
    VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
 
    *pkt               = thr->cmd_data;
@@ -253,6 +274,34 @@ static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, threa
    video_thread_send_packet(thr, pkt);
    video_thread_wait_reply(thr, pkt);
    video_thread_user_release(thr);
+}
+
+void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
+{
+   thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+   if (!thr || !fn)
+      return;
+   if (!video_driver_thread_wrapper_active() || !video_thread_is_self(thr))
+   {
+      fn(data);
+      return;
+   }
+   slock_lock(thr->lock);
+   if (!thr->waiter_call.waiters)
+   {
+      /* No one to hand it to: the call runs here, as it always did. */
+      slock_unlock(thr->lock);
+      fn(data);
+      return;
+   }
+   thr->waiter_call.fn      = fn;
+   thr->waiter_call.data    = data;
+   thr->waiter_call.done    = false;
+   thr->waiter_call.pending = true;
+   scond_signal(thr->cond_reply);
+   while (!thr->waiter_call.done)
+      scond_wait(thr->waiter_call.cond, thr->lock);
+   slock_unlock(thr->lock);
 }
 
 static void thread_update_driver_state(thread_video_t *thr)
@@ -1268,6 +1317,8 @@ static bool video_thread_init(thread_video_t *thr,
       return false;
    if (!(thr->frame.lock  = slock_new()))
       return false;
+   if (!(thr->waiter_call.cond = scond_new()))
+      return false;
    if (!(thr->cond_reply  = scond_new()))
       return false;
    if (!(thr->cond_ring   = scond_new()))
@@ -1461,6 +1512,7 @@ static void video_thread_free(void *data)
       slock_free(thr->alpha_lock);
       slock_free(thr->lock);
       scond_free(thr->cond_reply);
+      scond_free(thr->waiter_call.cond);
       scond_free(thr->cond_ring);
       scond_free(thr->cond_thread);
       scond_free(thr->cond_user);

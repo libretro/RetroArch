@@ -383,6 +383,23 @@ typedef struct thread_video
     * type; only asserted on in debug builds. */
    uintptr_t cond_reply_waiter;
    unsigned cond_reply_waiters;
+   /* A call the video thread needs run on the thread that is waiting
+    * for its reply - the core's thread, which holds the core's GL
+    * context. Posted from the video thread while a synchronous command
+    * is in flight, run by the waiter inside its wait loop, and the
+    * video thread waits for done. See video_thread_call_on_waiter(). */
+   struct
+   {
+      void (*fn)(void *data);
+      void *data;
+      scond_t *cond;
+      /* The number of commands sent and not yet answered, each with a
+       * thread that will wait for the reply and can service a call
+       * there; without one, the caller runs it itself. */
+      unsigned waiters;
+      bool pending;
+      bool done;
+   } waiter_call;
 
    bool alive;
    bool focus;
@@ -453,6 +470,13 @@ bool video_thread_pacing_stats(bool *display_pacing,
  * is installed; this reads it under the wrapper's lock. Without the
  * wrapper (or from the video thread) it is the plain value. */
 uint64_t video_thread_swap_count(void);
+
+/* From the video thread, while it is answering a synchronous command:
+ * runs fn on the thread waiting for the reply and returns when it has
+ * run. That thread is the core's, which is where a driver must go to
+ * touch the core's GL context under the hardware ring. From any other
+ * thread, or with no waiter, fn simply runs on the caller. */
+void video_thread_call_on_waiter(void (*fn)(void *data), void *data);
 
 void video_thread_wait_idle(void);
 

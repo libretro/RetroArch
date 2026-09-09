@@ -1724,18 +1724,27 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
    }
 }
 
+/* Take or give back the core's context around work on its objects.
+ * Under the wrapper's hardware ring the core's context is current on
+ * the main thread and that work is marshalled there, where it already
+ * is current: nothing to bind, and binding would move it. */
+static void gl2_bind_core_context(gl2_t *gl, bool enable)
+{
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !(gl->flags & GL2_FLAG_HW_RING))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
+}
+
 static void gl2_renderchain_deinit_hw_render(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
-   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
    if (gl->flags    & GL2_FLAG_HW_RENDER_FBO_INIT)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (chain->flags & GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT)
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
    gl->flags &= ~GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   gl2_bind_core_context(gl, false);
 }
 
 static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
@@ -2222,8 +2231,7 @@ static bool gl2_renderchain_init_hw_render(
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
 
    RARCH_LOG("[GL] Initializing HW render (%ux%u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -2305,8 +2313,7 @@ static bool gl2_renderchain_init_hw_render(
    gl2_renderchain_bind_backbuffer();
    gl->flags |= GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   gl2_bind_core_context(gl, false);
    return true;
 }
 
@@ -5821,6 +5828,21 @@ static void gl2_update_tex_filter_frame(gl2_t *gl, bool video_smooth)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
+/* The HW-render rebuild on a shader change, as a call the wrapper can
+ * run on the core's thread; see gl2_set_shader. */
+static void gl2_deinit_hw_render_cb(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
+}
+
+static void gl2_init_hw_render_cb(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_renderchain_init_hw_render(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h);
+}
+
 static bool gl2_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
@@ -5902,9 +5924,13 @@ static bool gl2_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
+      /* The HW-render framebuffers live in the core's context. Under
+       * the wrapper's ring that context is current on the core's
+       * thread, which is waiting for this command: the teardown and
+       * rebuild go there. Textures and renderbuffers are shared and
+       * can be made here; framebuffers are not. */
       if ((gl->flags & GL2_FLAG_HW_RENDER_USE) && (gl->flags & GL2_FLAG_FBO_INITED))
-         gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)
-               gl->renderchain_data);
+         video_thread_call_on_waiter(gl2_deinit_hw_render_cb, gl);
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
@@ -5916,11 +5942,12 @@ static bool gl2_set_shader(void *data,
       RARCH_LOG("[GL] Using %u textures.\n", gl->textures);
       gl2_init_textures(gl);
       gl2_init_textures_data(gl);
+      /* The new textures must be visible to the other context before
+       * its framebuffers attach them. */
+      glFlush();
 
       if (gl->flags & GL2_FLAG_HW_RENDER_USE)
-         gl2_renderchain_init_hw_render(gl,
-               (gl2_renderchain_data_t*)gl->renderchain_data,
-               gl->tex_w, gl->tex_h);
+         video_thread_call_on_waiter(gl2_init_hw_render_cb, gl);
    }
 
    gl2_renderchain_init(gl,
@@ -5929,8 +5956,7 @@ static bool gl2_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl, video_scale_integer);
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
 
    return true;
 

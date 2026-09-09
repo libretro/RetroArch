@@ -1140,6 +1140,7 @@ bool video_thread_hw_allowed(void);
 /* No wrapper, no video thread: the count is only ever read and written
  * from this thread. */
 #define video_thread_swap_count() (video_state_get_ptr()->swap_count)
+#define video_thread_call_on_waiter(fn, data) ((fn)(data))
 #endif
 
 bool video_driver_has_focus(void);
