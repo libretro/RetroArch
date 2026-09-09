@@ -30,9 +30,73 @@
 
 #include <windows.h>
 #ifndef _XBOX
-/* DWM_TIMING_INFO for win32_dwm_last_vblank_time(); the entry point is
- * resolved at runtime, dwmapi is not linked. */
+/* win32_dwm_last_vblank_time() reads the compositor's last vblank
+ * through DwmGetCompositionTimingInfo, resolved at runtime: dwmapi is
+ * not linked, and its header is not included either, since the SDKs
+ * the oldest MSVC job builds with do not have it. The structure below
+ * is DWM_TIMING_INFO exactly as the SDK lays it out; only cbSize and
+ * qpcVBlank are read, but the size must match for the call to accept
+ * it, so every field is here. UNSIGNED_RATIO is two UINT32s, and the
+ * SDK declares the whole thing byte-packed, which changes its size. */
+#pragma pack(push, 1)
+typedef struct
+{
+   UINT32 uiNumerator;
+   UINT32 uiDenominator;
+} win32_dwm_ratio_t;
+
+typedef struct
+{
+   UINT32 cbSize;
+   win32_dwm_ratio_t rateRefresh;
+   ULONGLONG qpcRefreshPeriod;
+   win32_dwm_ratio_t rateCompose;
+   ULONGLONG qpcVBlank;
+   ULONGLONG cRefresh;
+   UINT cDXRefresh;
+   ULONGLONG qpcCompose;
+   ULONGLONG cFrame;
+   UINT cDXPresent;
+   ULONGLONG cRefreshFrame;
+   ULONGLONG cFrameSubmitted;
+   UINT cDXPresentSubmitted;
+   ULONGLONG cFrameConfirmed;
+   UINT cDXPresentConfirmed;
+   ULONGLONG cRefreshConfirmed;
+   UINT cDXRefreshConfirmed;
+   ULONGLONG cFramesLate;
+   UINT cFramesOutstanding;
+   ULONGLONG cFrameDisplayed;
+   ULONGLONG qpcFrameDisplayed;
+   ULONGLONG cRefreshFrameDisplayed;
+   ULONGLONG cFrameComplete;
+   ULONGLONG qpcFrameComplete;
+   ULONGLONG cFramePending;
+   ULONGLONG qpcFramePending;
+   ULONGLONG cFramesDisplayed;
+   ULONGLONG cFramesComplete;
+   ULONGLONG cFramesPending;
+   ULONGLONG cFramesAvailable;
+   ULONGLONG cFramesDropped;
+   ULONGLONG cFramesMissed;
+   ULONGLONG cRefreshNextDisplayed;
+   ULONGLONG cRefreshNextPresented;
+   ULONGLONG cRefreshesDisplayed;
+   ULONGLONG cRefreshesPresented;
+   ULONGLONG cRefreshStarted;
+   ULONGLONG cPixelsReceived;
+   ULONGLONG cPixelsDrawn;
+   ULONGLONG cBuffersEmpty;
+} win32_dwm_timing_info_t;
+#pragma pack(pop)
+
+/* Where the SDK header exists, the local layout is checked against it
+ * at compile time; a mismatch is a build error, not a wrong vblank. */
+#if defined(__MINGW32__) || defined(__MINGW64__)
 #include <dwmapi.h>
+typedef char win32_dwm_timing_info_size_check[
+   sizeof(win32_dwm_timing_info_t) == sizeof(DWM_TIMING_INFO) ? 1 : -1];
+#endif
 #endif
 #endif /* !defined(_XBOX) */
 #include <math.h>
@@ -1685,14 +1749,14 @@ void win32_clip_window(bool state)
 #endif
 
 
-typedef HRESULT (WINAPI *win32_dwm_timing_fn)(HWND, DWM_TIMING_INFO*);
+typedef HRESULT (WINAPI *win32_dwm_timing_fn)(HWND, win32_dwm_timing_info_t*);
 
 retro_time_t win32_dwm_last_vblank_time(void)
 {
 #ifdef _XBOX
    return 0;
 #else
-   DWM_TIMING_INFO info;
+   win32_dwm_timing_info_t info;
    static win32_dwm_timing_fn get_timing;
    static bool                resolved;
    static LARGE_INTEGER       freq;

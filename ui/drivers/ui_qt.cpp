@@ -3974,6 +3974,17 @@ void MainWindow::saveDockLayout()
  * Docks with a row are re-added to their saved side in list order (so
  * the default tabbing / splits are undone and rebuilt from the rows),
  * tabbed onto their saved partner, sized, and the saved tab raised. */
+/* QGuiApplication::screenAt is Qt 5.10; the tree builds against older
+ * Qt 5 too. The same walk, on any Qt 5. */
+static QScreen *ui_qt_screen_at(const QPoint &p)
+{
+   const QList<QScreen*> screens = QGuiApplication::screens();
+   for (int i = 0; i < screens.size(); i++)
+      if (screens[i]->geometry().contains(p))
+         return screens[i];
+   return NULL;
+}
+
 void MainWindow::restoreDockLayout()
 {
    settings_t *settings = config_get_ptr();
@@ -4035,7 +4046,7 @@ void MainWindow::restoreDockLayout()
          if (st[i].width > 0 && st[i].height > 0)
          {
             QRect r(st[i].x, st[i].y, st[i].width, st[i].height);
-            QScreen *screen = QGuiApplication::screenAt(r.topLeft());
+            QScreen *screen = ui_qt_screen_at(r.topLeft());
             if (!screen)
                screen = QGuiApplication::primaryScreen();
             if (screen)
@@ -5569,7 +5580,7 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
     * and the window frame; the last column takes any spare width. */
    {
       QWidget *owner       = parentWidget() ? parentWidget() : this;
-      QScreen *screen      = QGuiApplication::screenAt(
+      QScreen *screen      = ui_qt_screen_at(
             owner->frameGeometry().center());
       QRect avail_rect     = (screen ? screen : desktop)->availableGeometry();
       QRect frame          = frameGeometry();
