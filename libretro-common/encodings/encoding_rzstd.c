@@ -3292,13 +3292,33 @@ typedef struct rzstd_seq
  * trusted; a tree that does not read back the same is not sent, and
  * the literals go raw. */
 
+/* The literal coder's working memory: a histogram, the code, and
+ * the Huffman build's queues. Six kilobytes, which is not a stack
+ * frame on a platform with eight-kilobyte threads, so it lives with
+ * the encoder's other scratch on the heap. */
+typedef struct rzstd_huf_enc
+{
+   uint32_t hist[256];
+   uint32_t order[256];
+   uint32_t weight[512];
+   uint16_t parent[512];
+   uint16_t code[256];
+   uint8_t  len[256];
+   uint8_t  nbits[256];
+   uint8_t  weights[257];
+} rzstd_huf_enc_t;
+
 /* Code lengths for the present symbols, at most max_len each. A
  * proper Huffman code on the histogram; if it is too deep, the
  * histogram is flattened - halved and floored at one - and rebuilt,
  * which shortens the deepest codes at a small cost in fit. */
-static uint32_t rzstd_huf_lengths(uint32_t *hist, uint8_t *len,
-      uint32_t max_len)
+static uint32_t rzstd_huf_lengths(rzstd_huf_enc_t *e, uint32_t max_len)
 {
+   uint32_t *hist    = e->hist;
+   uint8_t  *len     = e->len;
+   uint32_t *order   = e->order;
+   uint32_t *weight  = e->weight;
+   uint16_t *parent  = e->parent;
    uint32_t present = 0;
    uint32_t s;
    uint32_t deepest;
@@ -3314,9 +3334,6 @@ static uint32_t rzstd_huf_lengths(uint32_t *hist, uint8_t *len,
       /* Nodes 0..255 are leaves, 256.. are internal; parent[] links
        * them. Two sorted queues merged: the leaves by frequency and the
        * internal nodes in creation order, which is ascending weight. */
-      uint32_t order[256];
-      uint32_t weight[512];
-      uint16_t parent[512];
       uint32_t nleaf = 0, leaf_at = 0, node_at = 256, node_end = 256;
       uint32_t i;
 
@@ -3611,13 +3628,14 @@ static size_t rzstd_huf_write_stream(uint8_t *dst, size_t cap,
  * the tree and the streams. Returns the bytes written, or 0 when raw
  * is no worse or the tree could not be sent. */
 static size_t rzstd_huf_literals(uint8_t *dst, size_t cap,
-      const uint8_t *lits, size_t n, rzstd_fse_ct_t *ct, rzstd_huf_t *check)
+      const uint8_t *lits, size_t n, rzstd_fse_ct_t *ct, rzstd_huf_t *check,
+      rzstd_huf_enc_t *e)
 {
-   uint32_t hist[256];
-   uint8_t  len[256];
-   uint16_t code[256];
-   uint8_t  nbits[256];
-   uint8_t  weights[257];
+   uint32_t *hist    = e->hist;
+   uint8_t  *len     = e->len;
+   uint16_t *code    = e->code;
+   uint8_t  *nbits   = e->nbits;
+   uint8_t  *weights = e->weights;
    uint32_t present, max_bits = 0, last = 0, s;
    size_t   i, hdr, tree, body, total;
    int      four;
@@ -3625,11 +3643,11 @@ static size_t rzstd_huf_literals(uint8_t *dst, size_t cap,
 
    if (n < 8 || n > 0x3ffff)
       return 0;
-   memset(hist, 0, sizeof(hist));
-   memset(len, 0, sizeof(len));
+   memset(hist, 0, sizeof(e->hist));
+   memset(len, 0, sizeof(e->len));
    for (i = 0; i < n; i++)
       hist[lits[i]]++;
-   present = rzstd_huf_lengths(hist, len, RZSTD_HUF_MAX_BITS);
+   present = rzstd_huf_lengths(e, RZSTD_HUF_MAX_BITS);
    if (present < 2)
       return 0;
    for (s = 0; s < 256; s++)
@@ -3748,7 +3766,8 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
     * two or three bytes by how large the run is (3.1.1.3.1). */
    {
       size_t h = rzstd_huf_literals(dst, dst_cap, literals, lit_len,
-            &cts[3], (rzstd_huf_t*)(cts + 4));
+            &cts[3], (rzstd_huf_t*)(cts + 4),
+            (rzstd_huf_enc_t*)((uint8_t*)(cts + 4) + sizeof(rzstd_huf_t)));
       if (h)
       {
          at += h;
@@ -3985,8 +4004,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
             chain = (uint32_t*)calloc((size_t)1 << enc_log,
                   sizeof(uint32_t));
             /* Three sequence tables, a fourth for the Huffman weights,
-             * and a decoder's table after them to read a tree back. */
+             * then a decoder's table to read a tree back and the
+             * literal coder's working memory after it. */
             cts   = (rzstd_fse_ct_t*)calloc(4 + (sizeof(rzstd_huf_t)
+                     + sizeof(rzstd_huf_enc_t)
                      + sizeof(rzstd_fse_ct_t) - 1) / sizeof(rzstd_fse_ct_t),
                   sizeof(*cts));
          }
