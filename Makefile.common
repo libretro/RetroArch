@@ -2038,45 +2038,16 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
-# The built-in Zstandard codec. Independent of HAVE_ZSTD: a build may
-# have either, both while platforms are moving over, or eventually only
-# this one, at which point HAVE_ZSTD and deps/zstd can go.
+# The built-in Zstandard codec: one C file, no dependency.
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
    OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o
 endif
 
-ifeq ($(HAVE_ZSTD),1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
-   DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
-   ZSOBJ = $(DEPS_DIR)/zstd/lib/common/entropy_common.o \
-           $(DEPS_DIR)/zstd/lib/common/error_private.o \
-           $(DEPS_DIR)/zstd/lib/common/fse_decompress.o \
-           $(DEPS_DIR)/zstd/lib/common/zstd_common.o \
-           $(DEPS_DIR)/zstd/lib/common/xxhash.o \
-           $(DEPS_DIR)/zstd/lib/compress/fse_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/hist.o \
-           $(DEPS_DIR)/zstd/lib/compress/huf_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_literals.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_sequences.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_superblock.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_double_fast.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_fast.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_lazy.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_ldm.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_opt.o \
-           $(DEPS_DIR)/zstd/lib/decompress/huf_decompress.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_ddict.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
-
-   OBJ += $(ZSOBJ)
-endif
 
 # The archive backend needs one decoder, not a particular one. Testing
 # the two concatenated would be wrong: "00" is not empty.
-ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+ifeq ($(HAVE_RZSTD),1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o
 endif
 
@@ -2269,7 +2240,7 @@ else
    # The CHD Zstandard codec decodes through whichever backend is
    # configured, rzstd first. Same shape as the FLAC test above: either
    # one gives libchdr a decoder, so build the wrapper for both.
-   ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+   ifeq ($(HAVE_RZSTD),1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
    endif
 endif
@@ -2600,7 +2571,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rapi/rc_api_user.o \
 
       # RVZ/WIA disc image support for RetroAchievements
-      HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),1,0)
+      HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_RZSTD)),1,0)
       ifeq ($(HAVE_CHEEVOS_RVZ), 1)
          DEFINES += -DHAVE_CHEEVOS_RVZ
          OBJ += cheevos/cheevos_rvz.o

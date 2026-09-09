@@ -148,7 +148,7 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
@@ -227,7 +227,7 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_menu.c"
 
 #if defined(HAVE_CHEEVOS_RVZ)
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../cheevos/cheevos_rvz.c"
 #endif
 #endif
@@ -1591,7 +1591,7 @@ DEPENDENCIES
 #define GRIFFIN_HAVE_R7Z_LZMA 1
 #include "../libretro-common/formats/7z/r7z_lzma.c"
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
 #endif  /* !HAVE_RCHD */
@@ -1611,32 +1611,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/7z/r7z_filters.c"
 #endif
 
-#ifdef HAVE_ZSTD
-#if (DEBUGLEVEL>=2)
-#include "../deps/zstd/lib/common/debug.c"
-#endif
-#include "../deps/zstd/lib/common/entropy_common.c"
-#include "../deps/zstd/lib/common/error_private.c"
-#include "../deps/zstd/lib/common/fse_decompress.c"
-#include "../deps/zstd/lib/common/zstd_common.c"
-#include "../deps/zstd/lib/common/xxhash.c"
-#include "../deps/zstd/lib/compress/fse_compress.c"
-#include "../deps/zstd/lib/compress/hist.c"
-#include "../deps/zstd/lib/compress/huf_compress.c"
-#include "../deps/zstd/lib/compress/zstd_compress.c"
-#include "../deps/zstd/lib/compress/zstd_compress_literals.c"
-#include "../deps/zstd/lib/compress/zstd_compress_sequences.c"
-#include "../deps/zstd/lib/compress/zstd_compress_superblock.c"
-#include "../deps/zstd/lib/compress/zstd_double_fast.c"
-#include "../deps/zstd/lib/compress/zstd_fast.c"
-#include "../deps/zstd/lib/compress/zstd_lazy.c"
-#include "../deps/zstd/lib/compress/zstd_ldm.c"
-#include "../deps/zstd/lib/compress/zstd_opt.c"
-#include "../deps/zstd/lib/decompress/huf_decompress.c"
-#include "../deps/zstd/lib/decompress/zstd_ddict.c"
-#include "../deps/zstd/lib/decompress/zstd_decompress.c"
-#include "../deps/zstd/lib/decompress/zstd_decompress_block.c"
-#endif
 
 #ifdef WANT_LIBFAT
 #include "../deps/libfat/cache.c"

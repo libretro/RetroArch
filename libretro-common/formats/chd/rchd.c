@@ -149,7 +149,7 @@
 #if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 #define HAVE_RCHD_FLAC    1
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #define HAVE_RCHD_ZSTD    1
 #endif
 #endif
