@@ -27,6 +27,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+
 #include <audio/audio_low_pass.h>
 
 #ifndef M_PI
@@ -36,15 +38,6 @@
 /* Section Q's for a fourth-order Butterworth cascade. */
 static const double audio_low_pass_section_q[2] =
       { 0.54119610014619698, 1.3065629648763766 };
-
-static double audio_low_pass_clamp(double v, double lo, double hi)
-{
-   if (v < lo)
-      return lo;
-   if (v > hi)
-      return hi;
-   return v;
-}
 
 /* floor(x + 0.5) rather than round()/lround(): C89 has neither. */
 static int16_t audio_low_pass_saturate(double y)
@@ -94,8 +87,7 @@ static double audio_low_pass_process_sample(audio_low_pass_t *lp,
 void audio_low_pass_set_cutoff_now(audio_low_pass_t *lp, double cutoff_hz)
 {
    int s;
-   lp->cur_cutoff = audio_low_pass_clamp(cutoff_hz,
-         AUDIO_LOW_PASS_MIN_CUTOFF, lp->wide_open);
+   lp->cur_cutoff = MAX(AUDIO_LOW_PASS_MIN_CUTOFF, MIN(lp->wide_open, cutoff_hz));
    for (s = 0; s < 2; s++)
       audio_low_pass_design(&lp->stages[s], lp->cur_cutoff, lp->sample_rate,
             audio_low_pass_section_q[s]);
@@ -168,8 +160,7 @@ void audio_low_pass_process(audio_low_pass_t *lp, int16_t *frames,
       from[s][4] = lp->stages[s].a2;
    }
 
-   target_hz = audio_low_pass_clamp(target_hz,
-         AUDIO_LOW_PASS_MIN_CUTOFF, lp->wide_open);
+   target_hz = MAX(AUDIO_LOW_PASS_MIN_CUTOFF, MIN(lp->wide_open, target_hz));
    a         = 1.0 - exp(-block_seconds / AUDIO_LOW_PASS_TAU);
    audio_low_pass_set_cutoff_now(lp,
          lp->cur_cutoff + ((target_hz - lp->cur_cutoff) * a));
@@ -227,5 +218,5 @@ double audio_low_pass_target_hz(double reference_hz, double speed,
    if (speed <= 1.0)
       return wide_open;
    target = reference_hz / speed;
-   return audio_low_pass_clamp(target, AUDIO_LOW_PASS_SPEED_FLOOR, wide_open);
+   return MAX(AUDIO_LOW_PASS_SPEED_FLOOR, MIN(wide_open, target));
 }

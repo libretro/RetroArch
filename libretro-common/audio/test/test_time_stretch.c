@@ -10,6 +10,8 @@
 
 #include <audio/audio_time_stretch.h>
 
+#include "test_goertzel.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -84,30 +86,6 @@ static void fill_noise(int16_t *buf, int frames, uint32_t *rng, float *lp)
       buf[(i * 2) + 0] = v;
       buf[(i * 2) + 1] = v;
    }
-}
-
-/* Goertzel magnitude of x[0..n-1] at digital frequency f (cycles/sample):
- * a single-bin DFT, cheaper than a full transform when only a few known
- * frequencies matter. */
-static double goertzel_mag(const double *x, int n, double f)
-{
-   double w     = 2.0 * M_PI * f;
-   double coeff = 2.0 * cos(w);
-   double q0;
-   double q1    = 0.0;
-   double q2    = 0.0;
-   double real;
-   double imag;
-   int    i;
-   for (i = 0; i < n; i++)
-   {
-      q0 = (coeff * q1) - q2 + x[i];
-      q2 = q1;
-      q1 = q0;
-   }
-   real = q1 - (q2 * cos(w));
-   imag = q2 * sin(w);
-   return sqrt((real * real) + (imag * imag));
 }
 
 static void test_lifecycle(void)

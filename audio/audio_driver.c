@@ -1881,6 +1881,13 @@ static INLINE size_t audio_driver_input_bound(double ratio, size_t output_frames
 #define AUDIO_OUTPUT_BOUND_CHECK(produced, bound) do {} while (0)
 #endif
 
+/* x = x * (n - 1) / n + sample / n, factored out so every exponential
+ * moving average in this file rounds identically. */
+static INLINE double audio_driver_ema(double prev, double sample, double n)
+{
+   return (prev * (n - 1) / n) + (sample / n);
+}
+
 static double audio_driver_fastforward_ratio_mult(
       audio_driver_state_t *audio_st, size_t input_frames)
 {
@@ -1904,10 +1911,9 @@ static double audio_driver_fastforward_ratio_mult(
    if (!(audio_st->avg_flush_frames > 0.0))
       audio_st->avg_flush_frames = (double)input_frames;
    else
-      audio_st->avg_flush_frames =
-            audio_st->avg_flush_frames
-                  * (AUDIO_FF_EXP_AVG_SAMPLES - 1) / AUDIO_FF_EXP_AVG_SAMPLES
-            + (double)input_frames / AUDIO_FF_EXP_AVG_SAMPLES;
+      audio_st->avg_flush_frames = audio_driver_ema(
+            audio_st->avg_flush_frames, (double)input_frames,
+            AUDIO_FF_EXP_AVG_SAMPLES);
 
    expected_flush_delta = (audio_st->avg_flush_frames
          / audio_st->input * 1000000);
@@ -2092,10 +2098,7 @@ static double audio_driver_ff_edge(audio_driver_state_t *audio_st,
  * the chunk are instead never resampled. No headroom beyond what the
  * device reports: the surplus is not queued anywhere, the non-blocking
  * write truncates it mid-waveform and the remainder is dropped, which
- * is heard as a click. The audible
- * result is unchanged - the same head-of-chunk fragments reach the
- * device either way - only the discard moves from after the resampler
- * to before it.
+ * is heard as a click.
  *
  * Deliberately input capping and not ratio bounding: shrinking the
  * ratio would time-compress the chunk into the writable space, which
@@ -2104,8 +2107,7 @@ static double audio_driver_ff_edge(audio_driver_state_t *audio_st,
  *
  * write_avail() returns bytes (see wasapi/alsa/dsound implementations);
  * under threaded audio it is the same locked accessor the rate-control
- * path already calls once per DRC interval.  Drivers without
- * write_avail() keep the old behaviour.
+ * path already calls once per DRC interval.
  *
  * Returns: capped input frame count (<= in_frames; 0 when the device
  * has no room at all).
@@ -2288,11 +2290,9 @@ static void audio_driver_time_stretch_idle(audio_driver_state_t *audio_st,
       return;
    /* The same average the synthesis paces against, so the reserve asked for
     * below is in the units the next engage will use. */
-   audio_st->stretch_arrival_avg =
-           (audio_st->stretch_arrival_avg
-            * (AUDIO_STRETCH_ARRIVAL_AVG_N - 1)
-            / AUDIO_STRETCH_ARRIVAL_AVG_N)
-         + ((double)in_frames / AUDIO_STRETCH_ARRIVAL_AVG_N);
+   audio_st->stretch_arrival_avg = audio_driver_ema(
+         audio_st->stretch_arrival_avg, (double)in_frames,
+         AUDIO_STRETCH_ARRIVAL_AVG_N);
    audio_time_stretch_write(audio_st->time_stretch, in, (int)in_frames);
    audio_time_stretch_idle(audio_st->time_stretch,
          audio_time_stretch_target_input_fill(audio_st->stretch_arrival_avg));
@@ -2341,11 +2341,9 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
    if (!audio_driver_time_stretch_alloc(audio_st, in_frames))
       return -1;
 
-   audio_st->stretch_arrival_avg =
-           (audio_st->stretch_arrival_avg
-            * (AUDIO_STRETCH_ARRIVAL_AVG_N - 1)
-            / AUDIO_STRETCH_ARRIVAL_AVG_N)
-         + ((double)in_frames / AUDIO_STRETCH_ARRIVAL_AVG_N);
+   audio_st->stretch_arrival_avg = audio_driver_ema(
+         audio_st->stretch_arrival_avg, (double)in_frames,
+         AUDIO_STRETCH_ARRIVAL_AVG_N);
 
    /* A short accept means those frames are gone. The samples either side of
     * the hole are not continuous, and overlap-adding them is audible. */
@@ -2365,8 +2363,7 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
    {
       size_t room;
       room_bytes  = audio->write_avail(audio_st->context_audio_data);
-      frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-            ? (2 * sizeof(float)) : (2 * sizeof(int16_t));
+      frame_bytes = audio_driver_dev_frame_bytes(audio_st);
       /* src_ratio_curr converts the device's output-rate room into the
        * input-rate count this function works in. */
       room        = (audio_st->src_ratio_curr > 0.0)
@@ -2427,7 +2424,6 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
     * consumer but not this one: a lower ratio means more output per unit of
     * input, and the device is already full, so the non-blocking write drops
     * the surplus and leaves a gap. */
-   if (speed > 0.0)
    {
       /* Widen the floor while the ring is starving. At the first engage
        * after a core loads the ring is cold, and a 5% surplus takes well over
@@ -2510,7 +2506,7 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
     * of time so it converges alike at any speed, and capped at the surplus
     * the ring-fill trim can supply without draining the ring. */
    if (     !(is_slowmotion && slowmotion_ratio > 1.0f)
-         && frame_bytes > 0 && audio_st->buffer_size > 0)
+         && audio_st->buffer_size > 0)
    {
       double dev_size = (double)(audio_st->buffer_size / frame_bytes);
       double dev_fill = dev_size - (double)(room_bytes / frame_bytes);
@@ -2520,11 +2516,9 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
       if (audio_st->stretch_device_fill < 0.0)
          audio_st->stretch_device_fill = dev_fill;
       else
-         audio_st->stretch_device_fill =
-                 (audio_st->stretch_device_fill
-                  * (AUDIO_STRETCH_ARRIVAL_AVG_N - 1)
-                  / AUDIO_STRETCH_ARRIVAL_AVG_N)
-               + (dev_fill / AUDIO_STRETCH_ARRIVAL_AVG_N);
+         audio_st->stretch_device_fill = audio_driver_ema(
+               audio_st->stretch_device_fill, dev_fill,
+               AUDIO_STRETCH_ARRIVAL_AVG_N);
       deficit = (dev_size * AUDIO_STRETCH_DEVICE_FILL_TARGET)
             - audio_st->stretch_device_fill;
       if (     deficit > 0.0
@@ -2966,29 +2960,12 @@ static float audio_driver_pause_read(const void *buf, bool is_float, size_t i)
 static void audio_driver_pause_write(void *buf, bool is_float, size_t i,
       float v)
 {
-   float    scaled;
-   uint32_t bits;
    if (is_float)
    {
       ((float*)buf)[i] = v;
       return;
    }
-   /* Rounding, saturation and the NaN guard all as convert_float_to_s16()
-    * does them - see the comment there. */
-   scaled = v * 0x8000;
-   memcpy(&bits, &scaled, sizeof(bits));
-   if ((bits & 0x7FFFFFFFu) > 0x7F800000u)
-      ((int16_t*)buf)[i] = 0;
-   else
-   {
-      scaled += (scaled >= 0.0f ? 0.5f : -0.5f);
-      if (scaled >  32767.0f)
-         ((int16_t*)buf)[i] =  0x7FFF;
-      else if (scaled < -32768.0f)
-         ((int16_t*)buf)[i] = -0x8000;
-      else
-         ((int16_t*)buf)[i] = (int16_t)(int32_t)scaled;
-   }
+   ((int16_t*)buf)[i] = (int16_t)audio_float_to_s16_sat(v);
 }
 
 /**
@@ -3071,8 +3048,7 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
    {
       size_t n = (audio_st->pause_mute_frames < num_frames)
             ? audio_st->pause_mute_frames : num_frames;
-      memset(buf, 0, n * 2
-            * (is_float ? sizeof(float) : sizeof(int16_t)));
+      memset(buf, 0, n * audio_driver_ff_carry_frame_bytes(is_float));
       audio_st->pause_mute_frames -= (unsigned)n;
    }
 
@@ -3651,9 +3627,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                 * Gated on the driver being non-blocking rather than on
                 * fast-forward being held: the flag outlives the release by the
                 * frames runloop.c takes to restore blocking writes, and across
-                * those the device is still full. Bounding only while held
-                * leaves that window unbounded, and the truncated write is
-                * heard as a click on every release. */
+                * those the device is still full. */
                if (     !(   is_fastforward
                           && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
                      && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
@@ -4038,13 +4012,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    }
 #endif
 
-   /* The arrival count, taken before the carry can inflate it. The
-    * speed estimate averages frames against wall-clock intervals, so
-    * it has to count each frame once, when it arrives - the same
-    * reason time_stretch_idle() runs above the carry rather than
-    * below it. A deferred frame re-presented on a later flush is not
-    * new arrival, and counting it again reads as frames outrunning
-    * the clock, i.e. as speed. */
+   /* The arrival count; see the s16 arm above. */
    arrival_frames_f = src_data.input_frames;
    /* The carry, same as the s16 arm above: what an earlier flush held back
     * leads this one's own frames. See audio_driver_ff_carry_append(). */
@@ -5213,15 +5181,29 @@ static void audio_driver_write_float(audio_driver_state_t *audio_st,
    }
 }
 
+/* Index into pause_hist for a given age. The one modulo here is paid once
+ * per call; audio_driver_pause_tail_period()'s search instead walks the
+ * ring with audio_driver_pause_hist_prev() to avoid paying it per frame. */
+static unsigned audio_driver_pause_hist_idx(
+      audio_driver_state_t *audio_st, unsigned age)
+{
+   return (audio_st->pause_hist_pos + AUDIO_PAUSE_HIST_FRAMES - age)
+         % AUDIO_PAUSE_HIST_FRAMES;
+}
+
 /* The stereo frame 'age' frames back from the most recently played one; age
  * 1 is that frame itself. The caller checks the age against
  * pause_hist_fill. */
 static const float *audio_driver_pause_hist_at(
       audio_driver_state_t *audio_st, unsigned age)
 {
-   unsigned idx = (audio_st->pause_hist_pos + AUDIO_PAUSE_HIST_FRAMES - age)
-         % AUDIO_PAUSE_HIST_FRAMES;
-   return &audio_st->pause_hist[idx * 2];
+   return &audio_st->pause_hist[audio_driver_pause_hist_idx(audio_st, age) * 2];
+}
+
+/* Steps a pause_hist index one frame older, wrapping without a modulo. */
+static INLINE unsigned audio_driver_pause_hist_prev(unsigned idx)
+{
+   return idx ? (idx - 1) : (AUDIO_PAUSE_HIST_FRAMES - 1);
 }
 
 /* Period, in output frames, that the pause tail should repeat: the lag whose
@@ -5243,6 +5225,7 @@ static unsigned audio_driver_pause_tail_period(
    unsigned max_p     = AUDIO_PAUSE_TAIL_MAX_PERIOD;
    float    e_ref     = 0.0f;
    unsigned k;
+   unsigned idx;
 
    if (audio_st->pause_hist_fill
          < AUDIO_PAUSE_TAIL_MIN_PERIOD + AUDIO_PAUSE_TAIL_CORR_FRAMES)
@@ -5255,24 +5238,30 @@ static unsigned audio_driver_pause_tail_period(
     * scoring them together stops a quiet channel's noise choosing the period
     * for a loud one. The energy only decides whether there is anything here
     * worth matching. */
+   idx = audio_driver_pause_hist_idx(audio_st, 1);
    for (k = 0; k < AUDIO_PAUSE_TAIL_CORR_FRAMES; k++)
    {
-      const float *f = audio_driver_pause_hist_at(audio_st, 1 + k);
+      const float *f = &audio_st->pause_hist[idx * 2];
       float        v = f[0] + f[1];
       e_ref         += v * v;
+      idx            = audio_driver_pause_hist_prev(idx);
    }
    if (e_ref <= 0.0f)
       return 0;
 
    for (p = AUDIO_PAUSE_TAIL_MIN_PERIOD; p <= max_p; p++)
    {
-      float diff = 0.0f;
+      float    diff = 0.0f;
+      unsigned ia   = audio_driver_pause_hist_idx(audio_st, 1);
+      unsigned ib   = audio_driver_pause_hist_idx(audio_st, 1 + p);
       for (k = 0; k < AUDIO_PAUSE_TAIL_CORR_FRAMES; k++)
       {
-         const float *a = audio_driver_pause_hist_at(audio_st, 1 + k);
-         const float *b = audio_driver_pause_hist_at(audio_st, 1 + p + k);
+         const float *a = &audio_st->pause_hist[ia * 2];
+         const float *b = &audio_st->pause_hist[ib * 2];
          float        d = (a[0] + a[1]) - (b[0] + b[1]);
          diff          += d * d;
+         ia             = audio_driver_pause_hist_prev(ia);
+         ib             = audio_driver_pause_hist_prev(ib);
       }
       /* Scored by distance rather than correlation: a normalised
        * correlation is blind to level, so the same phrase at half or twice
@@ -5380,8 +5369,7 @@ void audio_driver_pause_fade(bool paused)
       if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
             && audio->write_avail)
       {
-         size_t fb   = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         size_t fb   = audio_driver_dev_frame_bytes(audio_st);
          size_t room = audio->write_avail(audio_st->context_audio_data) / fb;
          if (room < n)
             n = (unsigned)room;

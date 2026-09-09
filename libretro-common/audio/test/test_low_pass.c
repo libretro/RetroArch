@@ -10,6 +10,8 @@
 
 #include <audio/audio_low_pass.h>
 
+#include "test_goertzel.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -39,31 +41,6 @@ static void fill_sine(int16_t *buf, int frames, double hz, double rate,
       buf[(i*2)+1] = (int16_t)v;
       *phase      += (2.0 * M_PI * hz) / rate;
    }
-}
-
-/* Goertzel magnitude of x[0..n-1] at digital frequency f (cycles/sample):
- * a single-bin DFT, cheaper than a full transform when only one known
- * frequency matters. Same technique test_time_stretch.c uses on a power
- * spectrum; here it runs directly on the signal. */
-static double goertzel_mag(const double *x, int n, double f)
-{
-   double w     = 2.0 * M_PI * f;
-   double coeff = 2.0 * cos(w);
-   double q0;
-   double q1    = 0.0;
-   double q2    = 0.0;
-   double real;
-   double imag;
-   int    i;
-   for (i = 0; i < n; i++)
-   {
-      q0 = (coeff * q1) - q2 + x[i];
-      q2 = q1;
-      q1 = q0;
-   }
-   real = q1 - (q2 * cos(w));
-   imag = q2 * sin(w);
-   return sqrt((real * real) + (imag * imag));
 }
 
 /* Goertzel-estimated amplitude of a pure tone at tone_hz/amplitude, run

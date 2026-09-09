@@ -28,16 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <audio/audio_time_stretch.h>
+#include <retro_miscellaneous.h>
 
-static double audio_stretch_clamp(double v, double lo, double hi)
-{
-   if (v < lo)
-      return lo;
-   if (v > hi)
-      return hi;
-   return v;
-}
+#include <audio/audio_time_stretch.h>
 
 double audio_time_stretch_ratio(double arrival_per_flush, int output_per_flush,
       int input_fill, int target_fill)
@@ -52,12 +45,11 @@ double audio_time_stretch_ratio(double arrival_per_flush, int output_per_flush,
    if (target_fill > 0)
    {
       double err = (input_fill - (double)target_fill) / (double)target_fill;
-      err        = audio_stretch_clamp(err, -1.0, 1.0);
+      err        = MAX(-1.0, MIN(1.0, err));
       ratio     *= 1.0 + (AUDIO_STRETCH_TRIM_GAIN * err);
    }
 
-   return audio_stretch_clamp(ratio,
-         AUDIO_STRETCH_MIN_RATIO, AUDIO_STRETCH_MAX_RATIO);
+   return MAX(AUDIO_STRETCH_MIN_RATIO, MIN(AUDIO_STRETCH_MAX_RATIO, ratio));
 }
 
 int audio_time_stretch_target_input_fill(double arrival_per_flush)
@@ -97,11 +89,6 @@ static int16_t audio_stretch_saturate(float v)
    if (s < -32768)
       s = -32768;
    return (int16_t)s;
-}
-
-static int64_t audio_stretch_max64(int64_t a, int64_t b)
-{
-   return a > b ? a : b;
 }
 
 bool audio_time_stretch_init(audio_time_stretch_t *ts)
@@ -280,9 +267,12 @@ static double audio_stretch_energy(const audio_time_stretch_t *ts, int64_t pos)
    return e;
 }
 
-/* Normalised so the search doesn't just latch onto the loudest candidate. */
+/* Normalised so the search doesn't just latch onto the loudest candidate.
+ * ref holds the natural-continuation window as a linear copy, so the
+ * caller pays the masked-index lookup once per search instead of once
+ * per candidate. */
 static double audio_stretch_score(const audio_time_stretch_t *ts, int64_t pos,
-      double ref_energy)
+      const double *ref, double ref_energy)
 {
    double dot    = 0.0;
    double energy = 0.0;
@@ -290,8 +280,7 @@ static double audio_stretch_score(const audio_time_stretch_t *ts, int64_t pos,
    for (i = 0; i < AUDIO_STRETCH_SYNTHESIS_HOP; i++)
    {
       double a = ts->in_mono[(int)((pos + i) & AUDIO_STRETCH_IN_MASK)];
-      double b = ts->in_mono[(int)((ts->natural_pos + i) & AUDIO_STRETCH_IN_MASK)];
-      dot    += a * b;
+      dot    += a * ref[i];
       energy += a * a;
    }
    return dot / sqrt((energy * ref_energy) + 1.0e-9);
@@ -300,9 +289,9 @@ static double audio_stretch_score(const audio_time_stretch_t *ts, int64_t pos,
 static int64_t audio_stretch_find_best_offset(const audio_time_stretch_t *ts,
       int64_t seen_write)
 {
-   int64_t oldest     = audio_stretch_max64(0,
-         seen_write - AUDIO_STRETCH_INPUT_CAPACITY);
+   int64_t oldest     = MAX(0, seen_write - AUDIO_STRETCH_INPUT_CAPACITY);
    int64_t latest;
+   double  ref[AUDIO_STRETCH_SYNTHESIS_HOP];
    double  ref_energy;
    double  best_score = -1.0e30;
    int     lowest_k   = -AUDIO_STRETCH_SEARCH_RADIUS;
@@ -319,6 +308,8 @@ static int64_t audio_stretch_find_best_offset(const audio_time_stretch_t *ts,
       return ts->analysis_pos;
 
    ref_energy = audio_stretch_energy(ts, ts->natural_pos);
+   for (k = 0; k < AUDIO_STRETCH_SYNTHESIS_HOP; k++)
+      ref[k] = ts->in_mono[(int)((ts->natural_pos + k) & AUDIO_STRETCH_IN_MASK)];
 
    /* Masking a negative position wraps it into frames we never wrote. */
    if ((ts->analysis_pos + lowest_k) < oldest)
@@ -335,9 +326,14 @@ static int64_t audio_stretch_find_best_offset(const audio_time_stretch_t *ts,
    if (best_k > highest_k)
       best_k = highest_k;
 
+   /* Score the seed, so a tie keeps it: on digital silence every
+    * candidate scores 0 and an unscored seed loses to the first one. */
+   best_score = audio_stretch_score(ts, ts->analysis_pos + best_k, ref,
+         ref_energy);
+
    for (k = lowest_k; k <= highest_k; k += AUDIO_STRETCH_COARSE_STRIDE)
    {
-      double s = audio_stretch_score(ts, ts->analysis_pos + k, ref_energy);
+      double s = audio_stretch_score(ts, ts->analysis_pos + k, ref, ref_energy);
       if (s > best_score)
       {
          best_score = s;
@@ -353,7 +349,7 @@ static int64_t audio_stretch_find_best_offset(const audio_time_stretch_t *ts,
       hi = highest_k;
    for (k = lo; k <= hi; k++)
    {
-      double s = audio_stretch_score(ts, ts->analysis_pos + k, ref_energy);
+      double s = audio_stretch_score(ts, ts->analysis_pos + k, ref, ref_energy);
       if (s > best_score)
       {
          best_score = s;
