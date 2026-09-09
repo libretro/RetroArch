@@ -3046,10 +3046,60 @@ static void rzstd_fse_ct_flush(rzstd_wbits_t *w, uint32_t state,
  * so a smaller block simply forgets everything it has seen every time
  * it starts one. */
 #define RZSTD_ENC_BLOCK    RZSTD_BLOCK_MAX
-#define RZSTD_ENC_HASH_LOG 15
-#define RZSTD_ENC_CHAIN_LOG 15
-#define RZSTD_ENC_CHAIN_DEPTH 8
+/* One bucket per position of a full block: a 15-bit table for a
+ * 128 KB block put four positions in every bucket, and the chain walk
+ * spent its depth on collisions. */
+#define RZSTD_ENC_HASH_LOG 17
+#define RZSTD_ENC_CHAIN_LOG 17
 #define RZSTD_ENC_MIN_MATCH 4
+
+/* What a level buys: how many candidates a bucket walk considers, and
+ * whether the position after a match is tried for a longer one before
+ * the match is taken (lazy matching, what deflate does from level 4).
+ * 1 is a greedy pass over the newest few candidates; 3 is the default;
+ * 9 walks far. */
+static int rzstd_enc_depth(int level)
+{
+   if (level <= 1) return 2;
+   if (level == 2) return 4;
+   if (level == 3) return 8;
+   if (level <= 5) return 24;
+   if (level <= 7) return 64;
+   return 192;
+}
+static int rzstd_enc_lazy(int level)
+{
+   return level >= 3;
+}
+
+/* Bytes p and q agree on, up to limit: eight at a time where the
+ * platform reads unaligned words. */
+static size_t rzstd_match_len(const uint8_t *p, const uint8_t *q, size_t limit)
+{
+   size_t n = 0;
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(__i386__) || defined(_M_IX86) || defined(__ARM_FEATURE_UNALIGNED)
+   while (n + 8 <= limit)
+   {
+      uint64_t a, b;
+      memcpy(&a, p + n, 8);
+      memcpy(&b, q + n, 8);
+      if (a != b)
+      {
+         uint64_t x = a ^ b;
+         unsigned lo = (unsigned)(x & 0xFFFFFFFFu);
+         /* Little-endian: the first differing byte is the lowest
+          * differing bit's byte. */
+         if (lo)
+            return n + (size_t)(compat_ctz(lo) >> 3);
+         return n + 4 + (size_t)(compat_ctz((unsigned)(x >> 32)) >> 3);
+      }
+      n += 8;
+   }
+#endif
+   while (n < limit && p[n] == q[n])
+      n++;
+   return n;
+}
 
 size_t rzstd_compress_bound(size_t src_len)
 {
@@ -3365,8 +3415,8 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
     * to hold them as locals - see the comment there.  Allocated with
     * the match-finder scratch and freed with it. */
    rzstd_fse_ct_t *cts = NULL;
-
-   (void)level;
+   const int depth_max = rzstd_enc_depth(level);
+   const int lazy      = rzstd_enc_lazy(level);
 
    if (!dst || (!src && src_len))
       return RZSTD_PROCESS_ERROR;
@@ -3479,6 +3529,12 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * rotate the list and would have to be mirrored exactly. */
             size_t   rep_len;
 
+            /* Positions that found nothing, in a row: on data that
+             * will not match - a noisy page - the search steps over
+             * more of it the longer it has found nothing, and resets
+             * on a match. What the reference calls skip strength. */
+            uint32_t misses = 0;
+
             while (pos + RZSTD_ENC_MIN_MATCH <= take)
             {
                const uint8_t *p = src + in + pos;
@@ -3514,12 +3570,18 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                {
                   const uint8_t *r  = src + in + pos + 1;
                   const uint8_t *rq = r - rep[0];
+                  uint32_t a, b;
 
-                  while (pos + 1 + rep_len < take
-                        && r[rep_len] == rq[rep_len])
-                     rep_len++;
-                  if (rep_len < RZSTD_ENC_MIN_MATCH)
-                     rep_len = 0;
+                  /* Four bytes first: on data without repeats this is
+                   * the whole test, and it is made at every position. */
+                  memcpy(&a, r, 4);
+                  memcpy(&b, rq, 4);
+                  if (a == b)
+                  {
+                     rep_len = rzstd_match_len(r, rq, take - (pos + 1));
+                     if (rep_len < RZSTD_ENC_MIN_MATCH)
+                        rep_len = 0;
+                  }
                }
 
                /* Walk the bucket for the longest match rather than
@@ -3544,14 +3606,14 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                {
                   size_t best_len  = 0;
                   size_t best_from = 0;
-                  int    depth     = RZSTD_ENC_CHAIN_DEPTH;
+                  int    depth     = depth_max;
 
                   while (cand && depth--)
                   {
                      size_t         abs_from = (size_t)cand - 1;
                      size_t         from;
                      const uint8_t *q;
-                     size_t         n = 0;
+                     size_t         n;
 
                      /* Outside this block, so it belongs to an earlier
                       * one: a match may not cross a block boundary. */
@@ -3559,8 +3621,18 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                         break;
                      from = abs_from - in;
                      q    = src + abs_from;
-                     while (pos + n < take && p[n] == q[n])
-                        n++;
+                     /* A candidate that cannot beat the best is not
+                      * measured: its byte at the best length differs,
+                      * or its first four are not the position's. */
+                     if (   (best_len && q[best_len] != p[best_len])
+                         || memcmp(q, p, 4) != 0)
+                     {
+                        cand = chain[abs_from & (((size_t)1 << enc_log) - 1)];
+                        if (cand && (size_t)cand - 1 >= abs_from)
+                           break;
+                        continue;
+                     }
+                     n = rzstd_match_len(p, q, take - pos);
                      if (n > best_len)
                      {
                         best_len  = n;
@@ -3598,7 +3670,50 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                      pos      += 1 + rep_len;
                      lit_from  = pos;
+                     misses    = 0;
                      continue;
+                  }
+
+                  /* Lazy matching: a match of modest length is held
+                   * one byte while the next position is searched, and
+                   * given up for a match there that is longer by more
+                   * than the literal it costs. Deflate does this from
+                   * level 4 and it is most of the ratio between its
+                   * fast and its default levels. */
+                  if (lazy && best_len >= RZSTD_ENC_MIN_MATCH && best_len < 32
+                        && pos + 1 + RZSTD_ENC_MIN_MATCH <= take)
+                  {
+                     const uint8_t *p2 = p + 1;
+                     uint32_t h2 = ((uint32_t)p2[0] | ((uint32_t)p2[1] << 8)
+                           | ((uint32_t)p2[2] << 16) | ((uint32_t)p2[3] << 24))
+                           * 2654435761u;
+                     uint32_t c2;
+                     int      d2 = depth_max;
+                     size_t   len2 = 0;
+                     h2 >>= 32 - enc_log;
+                     c2 = hash[h2];
+                     while (c2 && d2--)
+                     {
+                        size_t abs2 = (size_t)c2 - 1;
+                        size_t n2;
+                        if (abs2 < in || abs2 >= in + pos + 1)
+                           break;
+                        n2 = rzstd_match_len(p2, src + abs2, take - (pos + 1));
+                        if (n2 > len2)
+                           len2 = n2;
+                        if (len2 >= 64)
+                           break;
+                        c2 = chain[abs2 & (((size_t)1 << enc_log) - 1)];
+                        if (c2 && (size_t)c2 - 1 >= abs2)
+                           break;
+                     }
+                     if (len2 > best_len + 1)
+                     {
+                        /* Take the literal; the next iteration finds
+                         * and takes the longer match. */
+                        pos++;
+                        continue;
+                     }
                   }
 
                   if (best_len >= RZSTD_ENC_MIN_MATCH)
@@ -3656,10 +3771,12 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                      pos      += n;
                      lit_from  = pos;
+                     misses    = 0;
                      continue;
                   }
                }
-               pos++;
+               misses++;
+               pos += 1 + (misses >> 6);
             }
 
             /* A match may not end a block: the last three bytes have to

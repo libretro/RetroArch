@@ -5,9 +5,9 @@
  * until the first repeat code that resolves differently -- which was
  * two blocks in, so nothing shorter than 256 KB caught it.
  *
- *   cc -I libretro-common/include -I deps/zstd/lib -DZSTD_DISABLE_ASM \
- *      -o rzstd_multiblock_test <this> \
- *      libretro-common/encodings/encoding_rzstd.c deps/zstd/lib/*/*.c
+ *   cc -I libretro-common/include -o rzstd_multiblock_test <this> \
+ *      libretro-common/encodings/encoding_rzstd.c -lzstd
+ *   (the reference decoder, from the system's libzstd, is the oracle)
  */
 #include <stdio.h>
 #include <stdlib.h>
