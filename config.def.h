@@ -525,6 +525,12 @@
  * times. Off: the fixed-timer pacing threaded video always had. */
 #define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
 
+/* Let a Direct3D 11 hardware core run under threaded video, recording
+ * on a deferred context the video thread replays. Off: such cores run
+ * unthreaded. Off by default because a deferred context cannot map for
+ * reading or read GPU queries, and a core that does either breaks. */
+#define DEFAULT_VIDEO_THREADED_HW_D3D11 false
+
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */

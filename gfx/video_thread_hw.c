@@ -34,8 +34,11 @@
 #ifdef HAVE_D3D12
 #include <libretro_d3d12.h>
 #endif
+#ifdef HAVE_D3D11
+#include <libretro_d3d11.h>
+#endif
 
-#if defined(HAVE_VULKAN) || defined(HAVE_D3D12)
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11)
 #define VIDEO_THREAD_HW_ANY 1
 #endif
 
@@ -74,7 +77,8 @@ enum hw_api
 {
    HW_API_NONE = 0,
    HW_API_VULKAN,
-   HW_API_D3D12
+   HW_API_D3D12,
+   HW_API_D3D11
 };
 
 typedef struct
@@ -87,7 +91,12 @@ typedef struct
 #ifdef HAVE_D3D12
       struct retro_hw_render_interface_d3d12  d3d12;
 #endif
+#ifdef HAVE_D3D11
+      struct retro_hw_render_interface_d3d11  d3d11;
+#endif
    } iface;
+   /* Direct3D 11: the core's deferred context, the driver's object. */
+   void *core_ctx;
    const struct retro_hw_render_interface *real;
    hw_slot_t slot[VIDEO_THREAD_HW_RING];
    /* The core's current sync index: the slot it is rendering into.
@@ -337,6 +346,26 @@ bool video_thread_get_hw_render_interface(void *data,
          *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d12;
          return true;
 #endif
+#ifdef HAVE_D3D11
+      case RETRO_HW_RENDER_INTERFACE_D3D11:
+         if (!thr->poke->hw_ring_capture || !thr->poke->hw_ring_present_slot
+               || !thr->poke->hw_ring_context_new)
+            return false;
+         if (!hw_ring_setup(thr, &ring))
+            return false;
+         if (!ring->core_ctx
+               && !thr->poke->hw_ring_context_new(thr->driver_data, &ring->core_ctx))
+            return false;
+         ring->api                    = HW_API_D3D11;
+         ring->real                   = real;
+         /* Device and compiler pass through; the context is the core's
+          * own deferred one, never the video thread's immediate one. */
+         ring->iface.d3d11            = *(const struct retro_hw_render_interface_d3d11*)real;
+         ring->iface.d3d11.handle     = thr;
+         ring->iface.d3d11.context    = (ID3D11DeviceContext*)ring->core_ctx;
+         *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d11;
+         return true;
+#endif
       default:
          return false;
    }
@@ -349,6 +378,17 @@ int video_thread_hw_publish(thread_video_t *thr)
    if (!ring)
       return -1;
    published = ring->index;
+#ifdef HAVE_D3D11
+   if (ring->api == HW_API_D3D11)
+   {
+      /* Close the core's recording into the slot; the slot must not be
+       * mid-replay on the video thread. */
+      hw_wait_slot(ring, published);
+      if (!thr->poke->hw_ring_capture(thr->driver_data, published,
+               ring->core_ctx, 0))
+         return -1;
+   }
+#endif
 #ifdef HAVE_D3D12
    if (ring->api == HW_API_D3D12)
    {
@@ -392,6 +432,11 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot)
          thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
          break;
 #endif
+#ifdef HAVE_D3D11
+      case HW_API_D3D11:
+         thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
+         break;
+#endif
       default:
          break;
    }
@@ -428,6 +473,8 @@ void video_thread_hw_free(thread_video_t *thr)
       free(s->cmd);
 #endif
    }
+   if (ring->core_ctx && thr->poke && thr->poke->hw_ring_context_free)
+      thr->poke->hw_ring_context_free(thr->driver_data, ring->core_ctx);
    free(ring);
    thr->frame.hw_ring = NULL;
 }
@@ -451,6 +498,14 @@ bool video_thread_hw_allowed(void)
 #ifdef HAVE_D3D12
       case RETRO_HW_CONTEXT_D3D12:
          return string_is_equal(settings->arrays.video_driver, "d3d12");
+#endif
+#ifdef HAVE_D3D11
+      case RETRO_HW_CONTEXT_D3D11:
+         /* Behind a setting: the core records on a deferred context,
+          * which cannot map for reading or query the GPU, and a core
+          * that does either breaks there. */
+         return settings->bools.video_threaded_hw_d3d11
+            && string_is_equal(settings->arrays.video_driver, "d3d11");
 #endif
       default:
          return false;

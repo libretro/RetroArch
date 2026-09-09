@@ -785,8 +785,15 @@ typedef struct video_poke_interface
     * from the video thread. The texture pointer is the driver's own
     * type behind void (ID3D12Resource). */
    bool (*hw_ring_capture)(void *data, unsigned slot,
-         const void *texture, unsigned format);
+         const void *source, unsigned format);
    bool (*hw_ring_present_slot)(void *data, unsigned slot);
+   /* For drivers whose core-facing context is not safe to share with
+    * the video thread (Direct3D 11's immediate context): a context of
+    * the core's own, recorded on the core's thread and replayed by the
+    * driver from the video thread. capture then takes the context as
+    * its source rather than a texture. */
+   bool (*hw_ring_context_new)(void *data, void **ctx);
+   void (*hw_ring_context_free)(void *data, void *ctx);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

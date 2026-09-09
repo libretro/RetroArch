@@ -3526,7 +3526,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Improves performance at the cost of latency and more video stuttering. Use only if full speed cannot be obtained otherwise. Cores that render on the GPU run threaded with the Vulkan and Direct3D 12 drivers; with other drivers they run unthreaded whatever this is set to."
+   "Improves performance at the cost of latency and more video stuttering. Use only if full speed cannot be obtained otherwise. Cores that render on the GPU run threaded with the Vulkan and Direct3D 12 drivers, and with Direct3D 11 when 'Threaded Video For Direct3D 11 Cores' is on; with other drivers they run unthreaded whatever this is set to."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,

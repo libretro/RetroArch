@@ -316,6 +316,24 @@ typedef struct
     * a frame() that asked for it (retain_output), and the group that
     * frame put on screen for present_last() to replay. */
    D3D11Texture2D        retained;
+   /* The threaded wrapper's hardware ring. The core records on a
+    * deferred context of its own; at each push its command list and the
+    * texture it left bound at PS slot 0 go into a slot, and the video
+    * thread replays the list on the immediate context and reads that
+    * texture, in the order the immediate context executes. */
+   struct
+   {
+      struct
+      {
+         ID3D11CommandList *list;
+         D3D11Texture2D     texture;
+         DXGI_FORMAT        format;
+      } slot[3];
+      /* Set by present_slot for the frame that follows: the texture
+       * to read instead of whatever PS slot 0 holds. */
+      D3D11Texture2D present;
+      DXGI_FORMAT    present_format;
+   } hw_ring;
    unsigned              retained_width;
    unsigned              retained_height;
    unsigned              retained_light;
@@ -2886,6 +2904,8 @@ error:
    return false;
 }
 
+static void d3d11_hw_ring_free(d3d11_video_t *d3d11);
+
 static void d3d11_gfx_free(void* data)
 {
    int i;
@@ -2900,6 +2920,7 @@ static void d3d11_gfx_free(void* data)
       CloseHandle(d3d11->frameLatencyWaitableObject);
    Release(d3d11->retained);
    d3d11->retained = NULL;
+   d3d11_hw_ring_free(d3d11);
 
 
 #ifdef HAVE_OVERLAY
@@ -4459,16 +4480,30 @@ static bool d3d11_gfx_frame(
       {
           D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
           D3D11ShaderResourceView hw_view = NULL;
-          context->lpVtbl->PSGetShaderResources(context, 0, 1, &hw_view);
+          if (d3d11->hw_ring.present)
+          {
+             /* The ring's texture for this frame, from the core's
+              * deferred context; PS slot 0 on this context has nothing
+              * to do with it. */
+             hw_texture             = d3d11->hw_ring.present;
+             hw_texture->lpVtbl->AddRef(hw_texture);
+             hw_desc.Format         = d3d11->hw_ring.present_format;
+             d3d11->hw_ring.present = NULL;
+          }
+          else
+             context->lpVtbl->PSGetShaderResources(context, 0, 1, &hw_view);
 
-          if (!hw_view)
+          if (!hw_view && !hw_texture)
           {
              RARCH_WARN("[D3D11] HW render: no SRV bound at slot 0.\n");
           }
           else
           {
-             hw_view->lpVtbl->GetDesc(hw_view, &hw_desc);
-             hw_view->lpVtbl->GetResource(hw_view, (D3D11Resource*)&hw_texture);
+             if (hw_view)
+             {
+                hw_view->lpVtbl->GetDesc(hw_view, &hw_desc);
+                hw_view->lpVtbl->GetResource(hw_view, (D3D11Resource*)&hw_texture);
+             }
 
              if (d3d11->frame.texture[0].desc.Format != hw_desc.Format)
              {
@@ -6162,6 +6197,136 @@ static void d3d11_gfx_unload_texture(void* data,
    d3d11_gfx_unload_texture_internal(handle);
 }
 
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+/* The core's own context: deferred, so it records on the core's thread
+ * and the immediate context - the video thread's - stays that thread's. */
+static bool d3d11_hw_ring_context_new(void *data, void **ctx)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11DeviceContext deferred = NULL;
+   if (!d3d11 || !d3d11->device || !ctx)
+      return false;
+   if (FAILED(d3d11->device->lpVtbl->CreateDeferredContext(d3d11->device, 0, &deferred)))
+      return false;
+   *ctx = deferred;
+   return true;
+}
+
+static void d3d11_hw_ring_context_free(void *data, void *ctx)
+{
+   (void)data;
+   Release((D3D11DeviceContext)ctx);
+}
+
+/* Main thread. Closes the core's recording into a command list and
+ * takes the texture it left at PS slot 0 - the contract the driver's
+ * own frame path reads from the immediate context - both into the
+ * slot. The texture is referenced; the core is free to rebind. */
+static bool d3d11_hw_ring_capture(void *data, unsigned slot,
+      const void *source, unsigned format)
+{
+   d3d11_video_t *d3d11        = (d3d11_video_t*)data;
+   D3D11DeviceContext deferred = (D3D11DeviceContext)source;
+   D3D11ShaderResourceView view = NULL;
+   D3D11Texture2D texture       = NULL;
+   ID3D11CommandList *list      = NULL;
+   D3D11_SHADER_RESOURCE_VIEW_DESC desc;
+   (void)format;
+
+   if (!d3d11 || !deferred || slot >= 3)
+      return false;
+
+   deferred->lpVtbl->PSGetShaderResources(deferred, 0, 1, &view);
+   if (view)
+   {
+      view->lpVtbl->GetDesc(view, &desc);
+      view->lpVtbl->GetResource(view, (D3D11Resource*)&texture);
+      Release(view);
+   }
+   if (FAILED(deferred->lpVtbl->FinishCommandList(deferred, FALSE, &list)))
+   {
+      Release(texture);
+      return false;
+   }
+
+   Release(d3d11->hw_ring.slot[slot].list);
+   Release(d3d11->hw_ring.slot[slot].texture);
+   d3d11->hw_ring.slot[slot].list    = list;
+   d3d11->hw_ring.slot[slot].texture = texture;
+   d3d11->hw_ring.slot[slot].format  = texture ? desc.Format : DXGI_FORMAT_UNKNOWN;
+   return true;
+}
+
+/* Video thread: replays the slot's list on the immediate context, ahead
+ * of the frame that reads the slot's texture. */
+static bool d3d11_hw_ring_present_slot(void *data, unsigned slot)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (!d3d11 || slot >= 3)
+      return false;
+   if (d3d11->hw_ring.slot[slot].list)
+   {
+      d3d11->context->lpVtbl->ExecuteCommandList(d3d11->context,
+            d3d11->hw_ring.slot[slot].list, TRUE);
+      Release(d3d11->hw_ring.slot[slot].list);
+      d3d11->hw_ring.slot[slot].list = NULL;
+   }
+   d3d11->hw_ring.present        = d3d11->hw_ring.slot[slot].texture;
+   d3d11->hw_ring.present_format = d3d11->hw_ring.slot[slot].format;
+   return d3d11->hw_ring.present != NULL;
+}
+
+/* No GPU fence is needed: every use of the core's texture is ordered by
+ * the immediate context, which is the only place anything executes.
+ * What the ring waits for is the video thread having replayed a slot,
+ * a CPU event. Fences here are Win32 auto-reset events. */
+static bool d3d11_hw_ring_fence_new(void *data, void **fence)
+{
+   HANDLE ev;
+   (void)data;
+   if (!fence)
+      return false;
+   if (!(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return false;
+   *fence = (void*)ev;
+   return true;
+}
+
+static void d3d11_hw_ring_fence_free(void *data, void *fence)
+{
+   (void)data;
+   if (fence)
+      CloseHandle((HANDLE)fence);
+}
+
+static void d3d11_hw_ring_fence_signal(void *data, void *fence)
+{
+   (void)data;
+   if (fence)
+      SetEvent((HANDLE)fence);
+}
+
+static void d3d11_hw_ring_fence_wait(void *data, void *fence)
+{
+   (void)data;
+   if (fence)
+      WaitForSingleObject((HANDLE)fence, INFINITE);
+}
+
+static void d3d11_hw_ring_free(d3d11_video_t *d3d11)
+{
+   unsigned i;
+   for (i = 0; i < 3; i++)
+   {
+      Release(d3d11->hw_ring.slot[i].list);
+      Release(d3d11->hw_ring.slot[i].texture);
+      d3d11->hw_ring.slot[i].list    = NULL;
+      d3d11->hw_ring.slot[i].texture = NULL;
+   }
+   d3d11->hw_ring.present = NULL;
+}
+
 static bool d3d11_get_hw_render_interface(
       void* data, const struct retro_hw_render_interface** iface)
 {
@@ -6319,7 +6484,16 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_supports_texture_format,
    d3d11_gfx_load_texture_compressed,
    d3d11_present_last,
-   d3d11_get_last_present_time
+   d3d11_get_last_present_time,
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   d3d11_hw_ring_fence_new,
+   d3d11_hw_ring_fence_free,
+   d3d11_hw_ring_fence_signal,
+   d3d11_hw_ring_fence_wait,
+   d3d11_hw_ring_capture,
+   d3d11_hw_ring_present_slot,
+   d3d11_hw_ring_context_new,
+   d3d11_hw_ring_context_free
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,
