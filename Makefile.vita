@@ -59,6 +59,7 @@ else
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
 	HAVE_7ZIP		:= 1
+	HAVE_RZSTD		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
 	HAVE_GXM		:= 0
 	HAVE_VITAGL		:= 0

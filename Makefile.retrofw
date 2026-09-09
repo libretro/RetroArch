@@ -45,6 +45,7 @@ DINGUX = 1
 HAVE_SCREENSHOTS = 0
 HAVE_REWIND = 1
 HAVE_7ZIP = 1
+HAVE_RZSTD = 1
 HAVE_AL = 0
 # ALSA freezes when switching back from menu
 HAVE_ALSA = 0

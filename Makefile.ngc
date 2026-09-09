@@ -136,6 +136,7 @@ HAVE_RTGA                := 1
 HAVE_RMODTRACKER                := 1
 HAVE_OVERLAY             := 1
 HAVE_7ZIP                := 1
+HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
