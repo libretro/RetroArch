@@ -4478,11 +4478,12 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 
 void runloop_event_deinit_core(void)
 {
-   audio_driver_set_core_float(false);
    video_driver_state_t
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
+
+   audio_driver_set_core_float(false);
 
 #ifdef HAVE_THREADS
    /* Defensive: ensure the autosave worker thread is joined

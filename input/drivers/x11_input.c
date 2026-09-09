@@ -171,13 +171,13 @@ static int16_t x_input_state(
 
    if (port < MAX_USERS)
    {
-      unsigned mouse_port = port;
-      
+      unsigned mouse_port  = port;
+      x11_input_t *x11     = (x11_input_t*)data;
+      settings_t *settings = config_get_ptr();
+
 #ifndef HAVE_XI2
       mouse_port = 0;
 #endif
-      x11_input_t *x11     = (x11_input_t*)data;
-      settings_t *settings = config_get_ptr();
 
       switch (device)
       {

@@ -298,7 +298,9 @@ bool video_thread_get_hw_render_interface(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
    const struct retro_hw_render_interface *real = NULL;
+#if defined(HAVE_VULKAN) || defined(HAVE_D3D12)
    hw_ring_t *ring;
+#endif
 
    if (!thr || !iface)
       return false;

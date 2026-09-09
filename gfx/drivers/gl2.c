@@ -3229,6 +3229,15 @@ static bool gl2_hw_ring_expected(void)
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
 
+/* Sync objects for the ring: the same condition the driver's own fence
+ * path compiles under. GLES builds finish instead. */
+#if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
+#define GL2_HW_RING_SYNC 1
+#ifndef GL_TIMEOUT_IGNORED
+#define GL_TIMEOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
+#endif
+#endif
+
 /* The core's context, current on the caller - the main thread. The
  * context driver created it shared with this thread's at init, with
  * the HW-render FBOs already made inside it. From here on the frame
@@ -3273,7 +3282,7 @@ static bool gl2_hw_ring_capture(void *data, unsigned slot,
    (void)source; (void)format;
    if (!gl || slot >= 3)
       return false;
-#ifdef HAVE_GL_SYNC
+#ifdef GL2_HW_RING_SYNC
    if (gl->flags & GL2_FLAG_HAVE_SYNC)
    {
       if (gl->hw_ring_sync[slot])
@@ -3294,7 +3303,7 @@ static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
    gl2_t *gl = (gl2_t*)data;
    if (!gl || slot >= gl->textures)
       return false;
-#ifdef HAVE_GL_SYNC
+#ifdef GL2_HW_RING_SYNC
    if (gl->hw_ring_sync[slot])
    {
       glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
@@ -3329,7 +3338,7 @@ static void gl2_hw_ring_fence_free(void *data, void *fence)
    (void)data;
    if (!f)
       return;
-#ifdef HAVE_GL_SYNC
+#ifdef GL2_HW_RING_SYNC
    if (f->sync)
       glDeleteSync((GLsync)f->sync);
 #endif
@@ -3342,7 +3351,7 @@ static void gl2_hw_ring_fence_signal(void *data, void *fence)
    gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
    if (!gl || !f)
       return;
-#ifdef HAVE_GL_SYNC
+#ifdef GL2_HW_RING_SYNC
    if (gl->flags & GL2_FLAG_HAVE_SYNC)
    {
       if (f->sync)
@@ -3361,7 +3370,7 @@ static void gl2_hw_ring_fence_wait(void *data, void *fence)
    (void)data;
    if (!f)
       return;
-#ifdef HAVE_GL_SYNC
+#ifdef GL2_HW_RING_SYNC
    if (f->sync)
    {
       glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
