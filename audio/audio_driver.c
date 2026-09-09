@@ -888,9 +888,9 @@ enum
 static double audio_driver_sink_pipe_frames(audio_driver_state_t *audio_st)
 {
 #ifdef HAVE_THREADS
-   if (audio_st->pipe_threaded)
+   if (audio_st->pipe_threaded && audio_st->pipe_frame_bytes)
       return (double)retro_spsc_read_avail(&audio_st->pipe_ring)
-            / (2 * sizeof(int16_t)) * audio_st->src_ratio_orig;
+            / audio_st->pipe_frame_bytes * audio_st->src_ratio_orig;
 #endif
    return 0.0;
 }
@@ -2583,7 +2583,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             latency_frames = per_frame;
          frames       += latency_frames * 2;
       }
-      bytes            = frames * 2 * sizeof(int16_t);
+      audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
+      bytes            = frames * audio_driver_st.pipe_frame_bytes;
       if (bytes < 4096)
          bytes         = 4096;
       if (!retro_spsc_init(&audio_driver_st.pipe_ring, bytes))
@@ -2591,15 +2592,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          RARCH_ERR("[Audio] Cannot allocate the pipeline ring. Exiting...\n");
          return false;
       }
-      audio_driver_st.pipe_pass_int16s    = per_frame * 2;
+      audio_driver_st.pipe_pass_frames    = per_frame;
       retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
       audio_driver_st.pipe_underruns_seen = 0;
       audio_driver_st.pipe_priming        = true;
-      if (audio_driver_st.pipe_pass_int16s > AUDIO_PIPE_SLICE_INT16S)
-         audio_driver_st.pipe_pass_int16s = AUDIO_PIPE_SLICE_INT16S;
-      if (audio_driver_st.pipe_pass_int16s < 128)
-         audio_driver_st.pipe_pass_int16s = 128;
-      audio_driver_st.pipe_pass_int16s   &= ~(size_t)1;
+      if (audio_driver_st.pipe_pass_frames > AUDIO_PIPE_SLICE_INT16S / 2)
+         audio_driver_st.pipe_pass_frames = AUDIO_PIPE_SLICE_INT16S / 2;
+      if (audio_driver_st.pipe_pass_frames < 64)
+         audio_driver_st.pipe_pass_frames = 64;
       audio_driver_st.pipe_gen            = 0;
       audio_driver_st.pipe_stalled        = false;
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
@@ -2622,7 +2622,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.pipe_threaded       = true;
       audio_driver_st.pipe_consumer_gone  = false;
       RARCH_LOG("[Audio] Threaded pipeline: ring holds %u frames of core audio.\n",
-            (unsigned)(audio_driver_st.pipe_ring.capacity / (2 * sizeof(int16_t))));
+            (unsigned)(audio_driver_st.pipe_ring.capacity / audio_driver_st.pipe_frame_bytes));
    }
 
    /* Before the driver's init, which is where a driver that reports a
@@ -3059,13 +3059,13 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    /* Never under one publish: the core delivers a frame at a time, and
     * a pipe holding less than that between publishes is a device that
     * runs dry between them whatever its own buffer holds. */
-   if (target < audio_st->pipe_pass_int16s / 2)
-      target = audio_st->pipe_pass_int16s / 2;
+   if (target < audio_st->pipe_pass_frames)
+      target = audio_st->pipe_pass_frames;
    /* Within the ring less two publishes: one arriving, one of swing
     * in the fill between the core's publish and the consumer's pass. */
-   ring_max    = audio_st->pipe_ring.capacity / (2 * sizeof(int16_t));
-   if (ring_max > audio_st->pipe_pass_int16s)
-      ring_max -= audio_st->pipe_pass_int16s;
+   ring_max    = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
+   if (ring_max > 2 * audio_st->pipe_pass_frames)
+      ring_max -= 2 * audio_st->pipe_pass_frames;
    else
       ring_max  = 0;
    return target < ring_max ? target : ring_max;
@@ -3105,7 +3105,7 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
                ? 2 * sizeof(float) : 2 * sizeof(int16_t);
          double pipe_frames = (double)retro_spsc_read_avail(&audio_st->pipe_ring)
-               / (2 * sizeof(int16_t));
+               / audio_st->pipe_frame_bytes;
          double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
          double target      = (double)audio_driver_pipe_target_frames(audio_st)
                * audio_st->src_ratio_orig * frame_bytes;
@@ -3142,7 +3142,7 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
           * at the nominal ratio. Counted here, on the thread that
           * closes its windows, so a window holds whole publishes and
           * neither the ring nor what it refused is in the measure. */
-         audio_st->sink_offered += (double)(n / (2 * sizeof(int16_t)))
+         audio_st->sink_offered += (double)(n / audio_st->pipe_frame_bytes)
                * audio_st->src_ratio_orig;
          p       += n;
          len     -= n;
@@ -3237,7 +3237,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * it is cheaper to start that far behind once than to have rate
     * control build it at half a percent. */
    {
-      size_t need = 2 * sizeof(int16_t);
+      size_t need = audio_st->pipe_frame_bytes;
       if (audio_st->pipe_priming)
       {
          size_t target = audio_driver_pipe_target_frames(audio_st);
@@ -3247,11 +3247,11 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
                   ? sizeof(float) : sizeof(int16_t));
             size_t device = (size_t)((double)audio_st->buffer_size / frame_bytes
                   / audio_st->src_ratio_orig);
-            size_t room   = audio_st->pipe_ring.capacity / (2 * sizeof(int16_t));
+            size_t room   = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
             target += device;
-            if (target > room - audio_st->pipe_pass_int16s / 2)
-               target = room - audio_st->pipe_pass_int16s / 2;
-            need = target * 2 * sizeof(int16_t);
+            if (target > room - audio_st->pipe_pass_frames)
+               target = room - audio_st->pipe_pass_frames;
+            need = target * audio_st->pipe_frame_bytes;
          }
       }
    slock_lock(audio_st->pipe_lock);
@@ -3282,10 +3282,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    audio_st->pipe_priming = false;
    }
 
-   have  = retro_spsc_read_avail(&audio_st->pipe_ring) / sizeof(int16_t);
-   have &= ~(size_t)1;
-   if (have > audio_st->pipe_pass_int16s)
-      have = audio_st->pipe_pass_int16s;
+   have  = retro_spsc_read_avail(&audio_st->pipe_ring) / audio_st->pipe_frame_bytes;
+   if (have > audio_st->pipe_pass_frames)
+      have = audio_st->pipe_pass_frames;
 
    /* Never write more than half the device buffer in one pass, so the
     * room waited for below exists at any fill and a small buffer never
@@ -3296,9 +3295,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    if (audio_st->buffer_size)
    {
       size_t cap = (size_t)((double)(audio_st->buffer_size / 2 / frame_bytes)
-            / audio_st->src_ratio_curr) * 2;
-      cap &= ~(size_t)1;
-      if (cap >= 64 && have > cap)
+            / audio_st->src_ratio_curr);
+      if (cap >= 32 && have > cap)
          have = cap;
    }
 
@@ -3319,14 +3317,14 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       size_t seen = audio->underruns(audio_st->context_audio_data);
       if (seen != audio_st->pipe_underruns_seen)
       {
-         size_t target = audio_driver_pipe_target_frames(audio_st) * 2 * sizeof(int16_t);
+         size_t target = audio_driver_pipe_target_frames(audio_st) * audio_st->pipe_frame_bytes;
          size_t held   = retro_spsc_read_avail(&audio_st->pipe_ring);
          audio_st->pipe_underruns_seen = seen;
          while (held > target)
          {
             size_t take = held - target;
-            if (take > audio_st->pipe_pass_int16s * sizeof(int16_t))
-               take = audio_st->pipe_pass_int16s * sizeof(int16_t);
+            if (take > audio_st->pipe_pass_frames * audio_st->pipe_frame_bytes)
+               take = audio_st->pipe_pass_frames * audio_st->pipe_frame_bytes;
             if (!retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch, take))
                break;
             held -= take;
@@ -3342,7 +3340,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       /* Nothing is going to the device while paused; the chunk is
        * taken and dropped so the ring keeps flowing for the producer. */
       retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
-            have * sizeof(int16_t));
+            have * audio_st->pipe_frame_bytes);
       slock_lock(audio_st->pipe_lock);
       audio_st->pipe_gen++;
       scond_signal(audio_st->pipe_cond);
@@ -3371,13 +3369,13 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
             config_get_ptr()->floats.slowmotion_ratio,
             (   (snap & AUDIO_SNAP_FASTMOTION)
              && config_get_ptr()->bools.audio_fastforward_speedup)
-               ? audio_driver_ff_mult(audio_st, have >> 1) : 1.0),
-         have >> 1) * frame_bytes;
+               ? audio_driver_ff_mult(audio_st, have) : 1.0),
+         have) * frame_bytes;
    if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
 
    retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
-         have * sizeof(int16_t));
+         have * audio_st->pipe_frame_bytes);
 
    /* Let a throttled producer know ring space has opened - and that
     * the device is draining again, if it had been found stalled. */
@@ -3390,7 +3388,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    audio_driver_state_lock();
    audio_driver_flush(audio_st,
          config_get_ptr()->floats.slowmotion_ratio,
-         audio_st->pipe_scratch, have, false,
+         audio_st->pipe_scratch, have * 2, false,
          (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
          (snap & AUDIO_SNAP_FASTMOTION) ? true : false);
    audio_driver_state_unlock();

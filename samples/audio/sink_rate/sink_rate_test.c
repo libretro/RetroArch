@@ -377,7 +377,8 @@ static void s_publishes(audio_driver_state_t *st)
 {
    int i;
    reset(st, true);
-   st->pipe_threaded = true;
+   st->pipe_threaded    = true;
+   st->pipe_frame_bytes = 2 * sizeof(int16_t);
    dev_ppm = 50.0;
    for (i = 0; i < 300 * 60; i++)
    {

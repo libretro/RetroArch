@@ -250,7 +250,8 @@ static bool pipeline_up(size_t ring_bytes)
    st->buffer_size          = scripted_driver.buffer_size(st->context_audio_data);
    st->output_samples_buf   = (float*)malloc(65536);
    st->pipe_scratch         = (int16_t*)malloc(65536);
-   st->pipe_pass_int16s     = 1600;
+   st->pipe_pass_frames     = 800;
+   st->pipe_frame_bytes     = 2 * sizeof(int16_t);
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
    st->rate_control_delta   = 0.005f;
    st->drc_threshold_int16s = 1600;

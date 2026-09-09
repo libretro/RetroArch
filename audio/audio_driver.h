@@ -494,9 +494,13 @@ typedef struct
     * racing read of the runloop's flag word is not.
     */
    retro_atomic_int_t runloop_snapshot;
-   /* Upper bound on input samples per consumer pass: one video frame's
-    * worth, capped to a slice. */
-   size_t   pipe_pass_int16s;
+   /* The ring's unit: bytes per stereo frame of what the core
+    * published - int16 or, for a float core, float. Every count on
+    * the pipe is in frames; bytes appear only at the ring's edge. */
+   size_t   pipe_frame_bytes;
+   /* Upper bound on frames per consumer pass: one video frame's worth,
+    * capped to a slice. */
+   size_t   pipe_pass_frames;
    /* Rate control's fill on the threaded pipeline, as free space in
     * device bytes, sampled by the producer before each publish and
     * read by the consumer's controller; -1 before the first sample.
