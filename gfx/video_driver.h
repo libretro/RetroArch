@@ -1093,6 +1093,9 @@ bool video_driver_thread_wrapper_active(void);
 #else
 #define video_driver_is_threaded() (false)
 #define video_driver_thread_wrapper_active() (false)
+/* No wrapper, no video thread: the count is only ever read and written
+ * from this thread. */
+#define video_thread_swap_count() (video_state_get_ptr()->swap_count)
 #endif
 
 bool video_driver_has_focus(void);
