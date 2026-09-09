@@ -490,6 +490,11 @@ typedef struct video_frame_info
    bool font_enable;
    bool hdr_support;
    bool libretro_running;
+   /* The core ran this iteration: not paused, and not stopped under
+    * the menu by menu_pause_libretro. The threaded wrapper's display
+    * pacing holds to the content's period while it runs and to the
+    * display's while it does not. */
+   bool core_running;
    bool xmb_shadows_enable;
    bool battery_level_enable;
    bool timedate_enable;

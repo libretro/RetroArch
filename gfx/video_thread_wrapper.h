@@ -232,6 +232,9 @@ typedef struct thread_video
    /* Fast-forward, from the frame info at the push: the hold stands
     * down for it. Distinct from nonblock, which vsync-off also sets. */
    bool fast_forward;
+   /* Whether the core ran this iteration, from the frame info at the
+    * push: the hold's period is the content's only while it does. */
+   bool core_running;
    /* Display pacing's schedule: when the next content frame is due,
     * accumulated in the content's own period. Main thread. */
    retro_time_t content_due;

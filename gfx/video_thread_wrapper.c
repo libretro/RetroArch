@@ -1113,6 +1113,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    {
       thr->display_pacing = video_info->threaded_display_pacing;
       thr->fast_forward   = video_info->input_driver_nonblock_state;
+      thr->core_running   = video_info->core_running;
    }
 
    if (!thr->nonblock)
@@ -1322,11 +1323,13 @@ static bool video_thread_frame(void *data, const void *frame_,
        * schedule restarts from the presenter's next vblank rather than
        * carrying a backlog. */
       content = (fps > 1.0) ? (retro_time_t)(1000000.0 / fps) : period;
-#ifdef HAVE_MENU
-      /* The menu is not content: it runs at the display's rate. */
-      if (thr->texture.enable)
+      /* With the core stopped - paused, or under a menu that pauses
+       * it - the frames are the menu's or a repeat, not content, and
+       * run at the display's rate. A core running under the menu keeps
+       * the content's period: the display's ran it at the display's
+       * rate, twice its speed on a 120 Hz panel. */
+      if (!thr->core_running)
          content = period;
-#endif
       if (thr->content_due <= 0 || thr->content_due < now - content)
          thr->content_due = thr->next_present;
       else

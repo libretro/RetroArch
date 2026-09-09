@@ -962,7 +962,16 @@ static void lane_display_pacing(void)
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    CHECK(menu_is_up(), "display-pacing lane: menu did not reopen");
 #ifdef HAVE_MENU
-   display_pacing_measure(120.0f, 60, 120.0f, "menu, core running");
+   /* A core running under the menu is still content and keeps the
+    * content's period; at the display's it ran at twice the speed on
+    * a 120 Hz panel. Only with the core stopped is a frame the menu's,
+    * at the display's rate. */
+   {
+      bool saved_pause = settings->bools.menu_pause_libretro;
+      settings->bools.menu_pause_libretro = false;
+      display_pacing_measure(120.0f, 60, 60.0f, "menu, core running");
+      settings->bools.menu_pause_libretro = saved_pause;
+   }
    /* The quick menu over a paused core is the common case, and takes
     * a different path through the runloop: the cached frame, with no
     * core run before it. */
