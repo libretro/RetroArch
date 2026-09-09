@@ -49,6 +49,12 @@
  * same 8 ms, which a sanitizer's runner needs and a 60 ms stall is
  * still well outside. */
 #define AUDIO_SINK_WINDOW_BAND    0.008
+/* Every flush's output against the bound the consumer reserved for it,
+ * computed the same way: a flush producing more than its bound is a
+ * write the device was not asked to make room for. */
+static unsigned bound_breaches;
+#define AUDIO_OUTPUT_BOUND_CHECK(produced, bound) \
+   do { if ((size_t)(produced) > (size_t)(bound)) bound_breaches++; } while (0)
 #include "../../../audio/audio_driver.c"
 
 static unsigned failures = 0;
@@ -445,6 +451,7 @@ steady_skipped:
          audio_driver_st.sink_discarded);
    if (!jitter && !(runner_late > 2 && DEV_CAPACITY <= 800))
       CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
+   CHECK(bound_breaches == 0, "%u flushes produced more than the bound reserved for them", bound_breaches);
    /* Within the device's period over the short baseline: 96 frames in
     * 3 s is 667 ppm of noise, which the real thirty seconds and the
     * session's sum reduce to tens. */

@@ -1327,6 +1327,34 @@ static double audio_driver_bound_ratio(double ratio,
    return (ratio > max_ratio) ? max_ratio : ratio;
 }
 
+/* The ratio a flush resamples at, composed in one place: the current
+ * ratio - rate control's adjustment and the sink bias in it - times
+ * slow motion, times fast-forward's speedup multiplier where the
+ * caller has one. The consumer's preflight and the flush itself use
+ * this, so what is reserved is what is produced. The resampler bound
+ * for that ratio is the same sixteen input frames' worth of overshoot
+ * audio_driver_bound_ratio() reserves. */
+static INLINE double audio_driver_effective_ratio(
+      const audio_driver_state_t *audio_st, bool is_slowmotion,
+      float slowmotion_ratio, double ff_mult)
+{
+   double ratio = audio_st->src_ratio_curr;
+   if (is_slowmotion)
+      ratio *= slowmotion_ratio;
+   return ratio * ff_mult;
+}
+
+static INLINE size_t audio_driver_output_bound(double ratio, size_t input_frames)
+{
+   return (size_t)((double)(input_frames + 16) * ratio) + 1;
+}
+
+/* A harness may define this to count a flush that produced more than
+ * its bound; the shipping build has no check on the audio thread. */
+#ifndef AUDIO_OUTPUT_BOUND_CHECK
+#define AUDIO_OUTPUT_BOUND_CHECK(produced, bound) do {} while (0)
+#endif
+
 static double audio_driver_fastforward_ratio_mult(
       audio_driver_state_t *audio_st, size_t input_frames)
 {
@@ -1768,22 +1796,18 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
             audio_st->src_ratio_curr = audio_st->src_ratio_orig
                   * audio_driver_sink_bias(audio_st);
-         i16_ratio = audio_st->src_ratio_curr;
-         if (is_slowmotion)
-            i16_ratio *= slowmotion_ratio;
          if (!is_fastforward && !audio_st->pipe_threaded)
             audio_driver_ff_mult_reset(audio_st);
-         if (is_fastforward)
-         {
-            if (config_get_ptr()->bools.audio_fastforward_speedup)
-               i16_ratio *= audio_driver_ff_mult(audio_st, rs_frames);
-            /* Without speedup the device is pinned near full and the
-             * write below drops most of the output; resample only what
-             * it can accept.  See audio_driver_ff_discard_bound. */
-            else
-               rs_frames = (unsigned)audio_driver_ff_discard_bound(
-                     audio_st, i16_ratio, rs_frames);
-         }
+         i16_ratio = audio_driver_effective_ratio(audio_st, is_slowmotion,
+               slowmotion_ratio,
+               (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+                  ? audio_driver_ff_mult(audio_st, rs_frames) : 1.0);
+         /* Without speedup the device is pinned near full and the
+          * write below drops most of the output; resample only what
+          * it can accept.  See audio_driver_ff_discard_bound. */
+         if (is_fastforward && !config_get_ptr()->bools.audio_fastforward_speedup)
+            rs_frames = (unsigned)audio_driver_ff_discard_bound(
+                  audio_st, i16_ratio, rs_frames);
 
          /* The int16 resampler writes to output_samples_int16 with no
           * capacity argument; bound the ratio to what that buffer holds. */
@@ -2099,23 +2123,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
       audio_st->src_ratio_curr = audio_st->src_ratio_orig
             * audio_driver_sink_bias(audio_st);
-   src_data.ratio           = audio_st->src_ratio_curr;
-
-   if (is_slowmotion)
-      src_data.ratio       *= slowmotion_ratio;
-
    if (!is_fastforward && !audio_st->pipe_threaded)
       audio_driver_ff_mult_reset(audio_st);
+   src_data.ratio           = audio_driver_effective_ratio(audio_st,
+         is_slowmotion, slowmotion_ratio,
+         (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+            ? audio_driver_ff_mult(audio_st, src_data.input_frames) : 1.0);
 
    if (is_fastforward)
    {
-      if (config_get_ptr()->bools.audio_fastforward_speedup)
-         src_data.ratio *= audio_driver_ff_mult(
-               audio_st, src_data.input_frames);
       /* Without speedup the device is pinned near full and the write
        * below drops most of the output; resample only what it can
        * accept.  See audio_driver_ff_discard_bound. */
-      else
+      if (!config_get_ptr()->bools.audio_fastforward_speedup)
          src_data.input_frames = audio_driver_ff_discard_bound(
                audio_st, src_data.ratio, src_data.input_frames);
    }
@@ -2228,6 +2248,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    {
       const void *output_data = audio_st->output_samples_buf;
       unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
+      AUDIO_OUTPUT_BOUND_CHECK(output_frames,
+            audio_driver_output_bound(src_data.ratio, src_data.input_frames));
 
       /* Clamp float samples to [-1.0, 1.0] before writing to the
        * audio driver.  Three sources can produce out-of-range values:
@@ -3333,8 +3355,17 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * frame rate until a pass completes. Taking the chunk first and then
     * finding no room threw it away while telling the producer the ring
     * had drained, and paced the frontend at one frame per failed pass. */
-   out_bytes   = (size_t)((double)(have >> 1) * audio_st->src_ratio_curr + 16.0)
-         * frame_bytes;
+   /* What this chunk will produce at the ratio the flush will use -
+    * slow motion and fast-forward's speedup in, the same composition -
+    * so the room waited for is the room the write needs. */
+   out_bytes   = audio_driver_output_bound(
+         audio_driver_effective_ratio(audio_st,
+            (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
+            config_get_ptr()->floats.slowmotion_ratio,
+            (   (snap & AUDIO_SNAP_FASTMOTION)
+             && config_get_ptr()->bools.audio_fastforward_speedup)
+               ? audio_driver_ff_mult(audio_st, have >> 1) : 1.0),
+         have >> 1) * frame_bytes;
    if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
 
