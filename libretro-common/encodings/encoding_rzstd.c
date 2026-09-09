@@ -3259,6 +3259,453 @@ typedef struct rzstd_seq
  * and rzstd_encode() already owns heap scratch for the match finder,
  * so these go alongside it and are allocated once per call rather
  * than once per block. */
+
+/* -------- Huffman literals, encoder side --------
+ *
+ * A savestate's literals are most of its output, and they are bytes
+ * with a few bits of entropy each: stored raw they cost eight. This
+ * builds a length-limited Huffman code over the block's literals,
+ * transmits it as Zstandard weights - FSE-coded, or the direct form
+ * where the alphabet allows - and writes the literals as four
+ * streams, or one for a small block, in the layout rzstd_huf_decode()
+ * reads. The code assignment mirrors rzstd_huf_build(): slots by
+ * ascending weight, symbols in order within a weight, so what the
+ * decoder derives from the weights is what was used here. The tree
+ * as written is read back through rzstd_huf_read() before it is
+ * trusted; a tree that does not read back the same is not sent, and
+ * the literals go raw. */
+
+/* Code lengths for the present symbols, at most max_len each. A
+ * proper Huffman code on the histogram; if it is too deep, the
+ * histogram is flattened - halved and floored at one - and rebuilt,
+ * which shortens the deepest codes at a small cost in fit. */
+static uint32_t rzstd_huf_lengths(uint32_t *hist, uint8_t *len,
+      uint32_t max_len)
+{
+   uint32_t present = 0;
+   uint32_t s;
+   uint32_t deepest;
+
+   for (s = 0; s < 256; s++)
+      if (hist[s])
+         present++;
+   if (present < 2)
+      return present;
+
+   for (;;)
+   {
+      /* Nodes 0..255 are leaves, 256.. are internal; parent[] links
+       * them. Two sorted queues merged: the leaves by frequency and the
+       * internal nodes in creation order, which is ascending weight. */
+      uint32_t order[256];
+      uint32_t weight[512];
+      uint16_t parent[512];
+      uint32_t nleaf = 0, leaf_at = 0, node_at = 256, node_end = 256;
+      uint32_t i;
+
+      for (s = 0; s < 256; s++)
+         if (hist[s])
+            order[nleaf++] = s;
+      /* Insertion sort by frequency: 256 at most, and the histogram is
+       * far from sorted. */
+      for (i = 1; i < nleaf; i++)
+      {
+         uint32_t v = order[i], j = i;
+         while (j && hist[order[j - 1]] > hist[v])
+         {
+            order[j] = order[j - 1];
+            j--;
+         }
+         order[j] = v;
+      }
+      for (i = 0; i < nleaf; i++)
+         weight[order[i]] = hist[order[i]];
+
+      while (leaf_at + (node_end - node_at) > 1 || (leaf_at < nleaf && (nleaf - leaf_at) + (node_end - node_at) > 1))
+      {
+         uint32_t pick[2];
+         uint32_t k;
+         for (k = 0; k < 2; k++)
+         {
+            int take_leaf;
+            if (leaf_at < nleaf && node_at < node_end)
+               take_leaf = weight[order[leaf_at]] <= weight[node_at];
+            else
+               take_leaf = leaf_at < nleaf;
+            pick[k] = take_leaf ? order[leaf_at++] : node_at++;
+         }
+         weight[node_end] = weight[pick[0]] + weight[pick[1]];
+         parent[pick[0]]  = (uint16_t)node_end;
+         parent[pick[1]]  = (uint16_t)node_end;
+         node_end++;
+         if (leaf_at == nleaf && node_at == node_end - 1)
+            break;
+      }
+      /* The root is the last node made. Depth of each leaf is the
+       * number of parents to it. */
+      deepest = 0;
+      for (i = 0; i < nleaf; i++)
+      {
+         uint32_t n = order[i], d = 0;
+         while (n != node_end - 1)
+         {
+            n = parent[n];
+            d++;
+         }
+         len[order[i]] = (uint8_t)d;
+         if (d > deepest)
+            deepest = d;
+      }
+      if (deepest <= max_len)
+         return present;
+      for (s = 0; s < 256; s++)
+         if (hist[s])
+            hist[s] = (hist[s] >> 1) | 1;
+   }
+}
+
+/* Codes and widths from the lengths, laid out as the decoder lays its
+ * table: by ascending weight, symbols in order within a weight, each
+ * taking 2^(weight-1) of the 2^max_bits slots. */
+static void rzstd_huf_codes(const uint8_t *len, uint32_t max_bits,
+      uint16_t *code, uint8_t *nbits)
+{
+   uint32_t position = 0;
+   uint32_t w, s;
+   for (w = 1; w <= max_bits; w++)
+   {
+      uint32_t width = max_bits + 1 - w;
+      for (s = 0; s < 256; s++)
+      {
+         if (len[s] != width)
+            continue;
+         code[s]   = (uint16_t)(position >> (w - 1));
+         nbits[s]  = (uint8_t)width;
+         position += (uint32_t)1 << (w - 1);
+      }
+   }
+}
+
+/* Counts to 2^log, at least one for every present symbol, the largest
+ * taking the remainder. */
+static int rzstd_fse_normalize(const uint32_t *hist, uint32_t nsym,
+      uint32_t total, uint32_t log, int16_t *norm)
+{
+   uint32_t size = (uint32_t)1 << log;
+   uint32_t s, sum = 0, largest = 0;
+   int32_t  rest;
+   for (s = 0; s < nsym; s++)
+   {
+      if (!hist[s])
+      {
+         norm[s] = 0;
+         continue;
+      }
+      norm[s] = (int16_t)(((uint64_t)hist[s] * size) / total);
+      if (norm[s] < 1)
+         norm[s] = 1;
+      sum += norm[s];
+      if (hist[s] > hist[largest])
+         largest = s;
+   }
+   rest = (int32_t)size - (int32_t)sum;
+   if ((int32_t)norm[largest] + rest < 1)
+      return 0;
+   norm[largest] = (int16_t)(norm[largest] + rest);
+   /* A single symbol with the whole table gives the decoder no bits
+    * to count symbols by: not representable. */
+   if (norm[largest] >= (int16_t)size)
+      return 0;
+   return 1;
+}
+
+/* The table description (4.1.1), the mirror of rzstd_fse_read_counts. */
+static size_t rzstd_fse_write_counts(uint8_t *dst, size_t cap,
+      const int16_t *norm, uint32_t nsym, uint32_t log)
+{
+   uint32_t bit_pos = 0;
+   int32_t  remaining = (int32_t)(((uint32_t)1 << log) + 1);
+   uint32_t s = 0;
+   uint32_t last;
+#define RZ_PUT(v, n) do { \
+      uint32_t k_; \
+      for (k_ = 0; k_ < (n); k_++, bit_pos++) { \
+         if ((bit_pos >> 3) >= cap) return 0; \
+         if (!(bit_pos & 7)) dst[bit_pos >> 3] = 0; \
+         if (((v) >> k_) & 1) dst[bit_pos >> 3] |= (uint8_t)(1 << (bit_pos & 7)); \
+      } } while (0)
+   /* The last present symbol; nothing past it is written. */
+   for (last = nsym; last > 0 && norm[last - 1] == 0; last--)
+      ;
+   RZ_PUT(log - 5, 4);
+   while (remaining > 1 && s < last)
+   {
+      uint32_t bits_needed = compat_highbit_u32((uint32_t)remaining);
+      uint32_t threshold   = ((uint32_t)1 << (bits_needed + 1)) - 1 - (uint32_t)remaining;
+      int32_t  count       = norm[s];
+      uint32_t value       = (uint32_t)(count + 1);
+      if (value < threshold)
+         RZ_PUT(value, bits_needed);
+      else
+      {
+         /* Values at or past the threshold take the wider width.
+          * Those with the top bit set are offset by the threshold,
+          * which the decoder subtracts; it tells the two widths apart
+          * by the low bits, and the offset keeps them at or past the
+          * threshold. */
+         uint32_t v = value;
+         if (v >= ((uint32_t)1 << bits_needed))
+            v += threshold;
+         RZ_PUT(v, bits_needed + 1);
+      }
+      remaining -= (count < 0) ? -count : count;
+      s++;
+      if (count == 0)
+      {
+         /* A run of further zeroes, two bits at a time. */
+         uint32_t run = 0;
+         while (s < last && norm[s] == 0)
+         {
+            run++;
+            s++;
+         }
+         while (run >= 3)
+         {
+            RZ_PUT(3, 2);
+            run -= 3;
+         }
+         RZ_PUT(run, 2);
+      }
+   }
+#undef RZ_PUT
+   if (remaining != 1)
+      return 0;
+   return (bit_pos + 7) >> 3;
+}
+
+/* The tree: a header byte and the weights, FSE-coded as two
+ * interleaved states over one stream when that is shorter and reads
+ * back, or two to a byte otherwise. Returns the bytes written, 0
+ * when no representation fits. */
+static size_t rzstd_huf_write_tree(uint8_t *dst, size_t cap,
+      const uint8_t *weights, uint32_t nweights, rzstd_fse_ct_t *ct,
+      rzstd_huf_t *check)
+{
+   size_t direct_len = 1 + (nweights + 1) / 2;
+   size_t fse_len    = 0;
+
+   /* FSE-coded, where the weights have any spread. */
+   {
+      uint32_t hist[RZSTD_HUF_MAX_BITS + 1];
+      int16_t  norm[RZSTD_HUF_MAX_BITS + 1];
+      uint32_t nsym = 0, i, log;
+      memset(hist, 0, sizeof(hist));
+      for (i = 0; i < nweights; i++)
+      {
+         hist[weights[i]]++;
+         if (weights[i] + 1 > nsym)
+            nsym = weights[i] + 1;
+      }
+      log = nweights > 32 ? 6 : 5;
+      if (nweights >= 2 && rzstd_fse_normalize(hist, nsym, nweights, log, norm)
+            && rzstd_fse_build_ct(ct, norm, nsym, log) == RZ_OK)
+      {
+         size_t desc = rzstd_fse_write_counts(dst + 1, cap > 1 ? cap - 1 : 0, norm, nsym, log);
+         if (desc)
+         {
+            rzstd_wbits_t w;
+            uint32_t c1, c2;
+            int32_t  i2;
+            size_t   stream;
+            rzstd_wbits_init(&w, dst + 1 + desc, cap > 1 + desc ? cap - 1 - desc : 0);
+            /* Symbols from the last, as the reference does: the
+             * decoder's first state reads the flush written last. */
+            if (nweights & 1)
+            {
+               c1 = rzstd_fse_ct_begin(ct, weights[nweights - 1]);
+               c2 = rzstd_fse_ct_begin(ct, weights[nweights - 2]);
+               i2 = (int32_t)nweights - 3;
+               if (i2 >= 0)
+               {
+                  c1 = rzstd_fse_ct_encode(&w, c1, ct, weights[i2]);
+                  i2--;
+               }
+            }
+            else
+            {
+               c2 = rzstd_fse_ct_begin(ct, weights[nweights - 1]);
+               c1 = rzstd_fse_ct_begin(ct, weights[nweights - 2]);
+               i2 = (int32_t)nweights - 3;
+            }
+            while (i2 >= 1)
+            {
+               c2 = rzstd_fse_ct_encode(&w, c2, ct, weights[i2]);
+               c1 = rzstd_fse_ct_encode(&w, c1, ct, weights[i2 - 1]);
+               i2 -= 2;
+            }
+            rzstd_fse_ct_flush(&w, c2, ct);
+            rzstd_fse_ct_flush(&w, c1, ct);
+            stream = rzstd_wbits_close(&w);
+            if (!w.overflow && stream && desc + stream < 128)
+            {
+               size_t used = 0;
+               dst[0] = (uint8_t)(desc + stream);
+               fse_len = 1 + desc + stream;
+               /* Read it back: the count and every weight must be
+                * what was sent. */
+               if (rzstd_huf_read(check, dst, fse_len, &used) != RZ_OK
+                     || used != fse_len)
+                  fse_len = 0;
+            }
+         }
+      }
+   }
+   if (fse_len && (fse_len <= direct_len || nweights > 128))
+      return fse_len;
+   if (nweights > 128 || cap < direct_len)
+      return 0;
+   {
+      uint32_t i;
+      dst[0] = (uint8_t)(127 + nweights);
+      for (i = 0; i < nweights; i += 2)
+         dst[1 + i / 2] = (uint8_t)((weights[i] << 4)
+               | (i + 1 < nweights ? weights[i + 1] : 0));
+   }
+   return direct_len;
+}
+
+/* One stream of literals, from the last symbol back, so the decoder
+ * reading from the end gets them in order. */
+static size_t rzstd_huf_write_stream(uint8_t *dst, size_t cap,
+      const uint8_t *lits, size_t n, const uint16_t *code, const uint8_t *nbits)
+{
+   rzstd_wbits_t w;
+   size_t i;
+   rzstd_wbits_init(&w, dst, cap);
+   for (i = n; i > 0; i--)
+      rzstd_wbits_add(&w, code[lits[i - 1]], nbits[lits[i - 1]]);
+   {
+      size_t out = rzstd_wbits_close(&w);
+      return w.overflow ? 0 : out;
+   }
+}
+
+/* The whole literals section, Huffman-coded, into dst: the header,
+ * the tree and the streams. Returns the bytes written, or 0 when raw
+ * is no worse or the tree could not be sent. */
+static size_t rzstd_huf_literals(uint8_t *dst, size_t cap,
+      const uint8_t *lits, size_t n, rzstd_fse_ct_t *ct, rzstd_huf_t *check)
+{
+   uint32_t hist[256];
+   uint8_t  len[256];
+   uint16_t code[256];
+   uint8_t  nbits[256];
+   uint8_t  weights[257];
+   uint32_t present, max_bits = 0, last = 0, s;
+   size_t   i, hdr, tree, body, total;
+   int      four;
+   uint8_t *p;
+
+   if (n < 8 || n > 0x3ffff)
+      return 0;
+   memset(hist, 0, sizeof(hist));
+   memset(len, 0, sizeof(len));
+   for (i = 0; i < n; i++)
+      hist[lits[i]]++;
+   present = rzstd_huf_lengths(hist, len, RZSTD_HUF_MAX_BITS);
+   if (present < 2)
+      return 0;
+   for (s = 0; s < 256; s++)
+   {
+      if (len[s] > max_bits)
+         max_bits = len[s];
+      if (len[s])
+         last = s;
+   }
+   /* Weights: max_bits + 1 - length, zero for absent; the last present
+    * symbol's is implied and not sent. */
+   for (s = 0; s < last; s++)
+      weights[s] = len[s] ? (uint8_t)(max_bits + 1 - len[s]) : 0;
+   rzstd_huf_codes(len, max_bits, code, nbits);
+
+   /* An estimate first: the coded size from the histogram; raw is no
+    * worse than that plus a tree, and raw is one to three bytes of
+    * header. */
+   {
+      uint64_t bits = 0;
+      for (s = 0; s < 256; s++)
+         bits += (uint64_t)hist[s] * nbits[s];
+      if ((bits >> 3) + 40 >= n)
+         return 0;
+   }
+
+   four = n >= 1024;
+   hdr  = !four ? 3 : (n < 16384 ? 4 : 5);
+   if (cap < hdr + 1)
+      return 0;
+   p    = dst + hdr;
+   tree = rzstd_huf_write_tree(p, cap - hdr, weights, last, ct, check);
+   if (!tree)
+      return 0;
+   p   += tree;
+   if (!four)
+   {
+      body = rzstd_huf_write_stream(p, cap - hdr - tree, lits, n, code, nbits);
+      if (!body)
+         return 0;
+   }
+   else
+   {
+      size_t quarter = (n + 3) / 4, at = 6, k, size[4];
+      if (cap < hdr + tree + 6)
+         return 0;
+      for (k = 0; k < 4; k++)
+      {
+         size_t from = k * quarter, to = from + quarter;
+         if (from > n) from = n;
+         if (to > n) to = n;
+         size[k] = rzstd_huf_write_stream(p + at, cap - hdr - tree - at,
+               lits + from, to - from, code, nbits);
+         if (!size[k] || (k < 3 && size[k] > 0xffff))
+            return 0;
+         at += size[k];
+      }
+      p[0] = (uint8_t)size[0]; p[1] = (uint8_t)(size[0] >> 8);
+      p[2] = (uint8_t)size[1]; p[3] = (uint8_t)(size[1] >> 8);
+      p[4] = (uint8_t)size[2]; p[5] = (uint8_t)(size[2] >> 8);
+      body = at;
+   }
+   total = tree + body;
+   if (hdr + total >= n)
+      return 0;
+   if (!four)
+   {
+      if (total > 0x3ff)
+         return 0;
+      dst[0] = (uint8_t)(RZSTD_LIT_HUFFMAN | (0 << 2) | (n << 4));
+      dst[1] = (uint8_t)((n >> 4) | (total << 6));
+      dst[2] = (uint8_t)(total >> 2);
+   }
+   else if (n < 16384 && total <= 0x3fff)
+   {
+      dst[0] = (uint8_t)(RZSTD_LIT_HUFFMAN | (2 << 2) | (n << 4));
+      dst[1] = (uint8_t)(n >> 4);
+      dst[2] = (uint8_t)((n >> 12) | (total << 2));
+      dst[3] = (uint8_t)(total >> 6);
+   }
+   else
+   {
+      if (total > 0x3ffff)
+         return 0;
+      dst[0] = (uint8_t)(RZSTD_LIT_HUFFMAN | (3 << 2) | (n << 4));
+      dst[1] = (uint8_t)(n >> 4);
+      dst[2] = (uint8_t)((n >> 12) | (total << 6));
+      dst[3] = (uint8_t)(total >> 2);
+      dst[4] = (uint8_t)(total >> 10);
+   }
+   return hdr + total;
+}
+
 static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       const uint8_t *src, size_t len, const rzstd_seq_t *seq, size_t nseq,
       const uint8_t *literals, size_t lit_len, size_t *out_len,
@@ -3280,9 +3727,17 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
    if (!nseq)
       return RZ_DATA;
 
-   /* Literals go out raw: legal, and it avoids building and
-    * transmitting a Huffman table. The size field is one, two or three
-    * bytes by how large the run is (3.1.1.3.1). */
+   /* Huffman where it pays; raw otherwise. The raw size field is one,
+    * two or three bytes by how large the run is (3.1.1.3.1). */
+   {
+      size_t h = rzstd_huf_literals(dst, dst_cap, literals, lit_len,
+            &cts[3], (rzstd_huf_t*)(cts + 4));
+      if (h)
+      {
+         at += h;
+         goto literals_done;
+      }
+   }
    if (lit_len < 32)
    {
       if (at + 1 > dst_cap)
@@ -3309,6 +3764,7 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       return RZ_DATA;
    memcpy(dst + at, literals, lit_len);
    at += lit_len;
+literals_done:
 
    /* Sequence count, then a modes byte saying all three tables are the
     * predefined ones, so none is transmitted. */
@@ -3511,7 +3967,11 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * read. */
             chain = (uint32_t*)calloc((size_t)1 << enc_log,
                   sizeof(uint32_t));
-            cts   = (rzstd_fse_ct_t*)calloc(3, sizeof(*cts));
+            /* Three sequence tables, a fourth for the Huffman weights,
+             * and a decoder's table after them to read a tree back. */
+            cts   = (rzstd_fse_ct_t*)calloc(4 + (sizeof(rzstd_huf_t)
+                     + sizeof(rzstd_fse_ct_t) - 1) / sizeof(rzstd_fse_ct_t),
+                  sizeof(*cts));
          }
 
          if (seq && lits && hash && chain && cts)
