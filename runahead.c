@@ -45,10 +45,50 @@
 #include "runloop.h"
 #include "verbosity.h"
 
+/* ===== BEGIN runahead dense input cache =====
+ * The last value each input tuple returned, for the dirty comparison
+ * on every core poll. The common tuples - a plain joypad's sixteen
+ * buttons and its mask, an analog device's two sticks and sixteen
+ * buttons - live in a fixed table indexed by (port, index, id): a
+ * load, no search. Anything else - a subclassed device, a keyboard,
+ * a pointer - goes to the list the frontend kept, found by a walk.
+ * A tuple never set reads 0 from either, as it always did. */
+typedef struct runahead_dense_cache
+{
+   int16_t joypad[MAX_USERS][17];             /* ids 0..15; 16 is the mask */
+   int16_t analog[MAX_USERS][3][16];          /* index 0..2, id 0..15 */
+} runahead_dense_cache_t;
+
+/* Where a tuple lives in the dense cache, or NULL for the list. */
+static int16_t *runahead_dense_slot(runahead_dense_cache_t *c,
+      unsigned port, unsigned device, unsigned index, unsigned id)
+{
+   if (!c || port >= MAX_USERS)
+      return NULL;
+   if (device == RETRO_DEVICE_JOYPAD && index == 0)
+   {
+      if (id < 16)
+         return &c->joypad[port][id];
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         return &c->joypad[port][16];
+      return NULL;
+   }
+   if (device == RETRO_DEVICE_ANALOG && index < 3 && id < 16)
+      return &c->analog[port][index][id];
+   return NULL;
+}
+/* ===== END runahead dense input cache ===== */
+
+static runahead_dense_cache_t *runahead_dense;
+
 static int16_t input_state_get_last(unsigned port,
       unsigned device, unsigned index, unsigned id)
 {
    runloop_state_t      *runloop_st = runloop_state_get_ptr();
+   const int16_t *slot = runahead_dense_slot(runahead_dense, port, device, index, id);
+
+   if (slot)
+      return *slot;
 
    if (runloop_st->input_state_list)
    {
@@ -96,7 +136,16 @@ static struct retro_game_info* clone_retro_game_info(const
    if (!dest)
       return NULL;
 
-   /* content_file_init() guarantees that all
+   /* The copy task in flight copies the core binary, never this; the
+    * data is read only at retro_load_game on the secondary, on the
+    * main thread, after the task has reported ready. Unloading
+    * destroys the secondary - which invalidates any in-flight result
+    * through the copy generation - before retro_unload_game and
+    * before the content is freed, and a new secondary needs a new
+    * core_load_game, which replaces this clone. So the alias holds
+    * for as long as it is read.
+    *
+    * content_file_init() guarantees that all
     * elements of the source retro_game_info
     * struct will persist for the lifetime of
     * the core. This means we do not have to
@@ -1107,6 +1156,13 @@ static void runahead_input_state_set_last(
 {
    size_t i;
    input_list_element *element = NULL;
+   int16_t *slot = runahead_dense_slot(runahead_dense, port, device, index, id);
+
+   if (slot)
+   {
+      *slot = value;
+      return;
+   }
 
    if (!runloop_st->input_state_list)
       mylist_create(&runloop_st->input_state_list, 16,
@@ -1195,6 +1251,10 @@ static void runahead_add_input_state_hook(runloop_state_t *runloop_st)
 
    if (!runloop_st->input_state_callback_original)
    {
+      /* Allocated once, here; the polls that follow allocate nothing
+       * for the common tuples. Without it, everything takes the list. */
+      if (!runahead_dense)
+         runahead_dense = (runahead_dense_cache_t*)calloc(1, sizeof(*runahead_dense));
       runloop_st->input_state_callback_original = cbs->state_cb;
       cbs->state_cb                             = runahead_input_state_with_logging;
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
@@ -1225,6 +1285,11 @@ static void runahead_remove_input_state_hook(runloop_state_t *runloop_st)
       runloop_st->current_core.retro_set_input_state(cbs->state_cb);
       runloop_st->input_state_callback_original = NULL;
       mylist_destroy(&runloop_st->input_state_list);
+   if (runahead_dense)
+   {
+      free(runahead_dense);
+      runahead_dense = NULL;
+   }
    }
 
    if (runloop_st->retro_reset_callback_original)
@@ -1737,10 +1802,28 @@ static int16_t preempt_input_state(unsigned port,
    return input_driver_state_wrapper(port, device, index, id);
 }
 
+/* ===== BEGIN preempt slab =====
+ * The frame buffers are one allocation, frames * state_size bytes,
+ * with buffer[i] at i * state_size from the base; buffer[0] is the
+ * base and the one to free. The product is checked before it is
+ * asked for. */
+static bool preempt_slab_alloc(void **buffer, unsigned frames, size_t state_size)
+{
+   unsigned i;
+   uint8_t *base;
+   if (!frames || !state_size || state_size > ((size_t)-1) / frames)
+      return false;
+   if (!(base = (uint8_t*)malloc((size_t)frames * state_size)))
+      return false;
+   for (i = 0; i < frames; i++)
+      buffer[i] = base + (size_t)i * state_size;
+   return true;
+}
+/* ===== END preempt slab ===== */
+
 static const char* preempt_allocate(runloop_state_t *runloop_st,
       const uint8_t frames)
 {
-   uint8_t i;
    size_t info_size;
    preempt_t *preempt = (preempt_t*)calloc(1, sizeof(preempt_t));
 
@@ -1754,12 +1837,8 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
    preempt->state_size = info_size;
    preempt->frames     = frames;
 
-   for (i = 0; i < frames; i++)
-   {
-      preempt->buffer[i] = malloc(preempt->state_size);
-      if (!preempt->buffer[i])
-         return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
-   }
+   if (!preempt_slab_alloc(preempt->buffer, frames, info_size))
+      return msg_hash_to_str(MSG_PREEMPT_FAILED_TO_ALLOCATE);
 
    return NULL;
 }
@@ -1771,7 +1850,6 @@ static const char* preempt_allocate(runloop_state_t *runloop_st,
  **/
 void preempt_deinit(void *data)
 {
-   size_t i;
    runloop_state_t *runloop_st       = (runloop_state_t*)data;
    preempt_t *preempt                = runloop_st->preempt_data;
    struct retro_core_t *current_core = &runloop_st->current_core;
@@ -1779,9 +1857,8 @@ void preempt_deinit(void *data)
    if (!preempt)
       return;
 
-   /* Free memory */
-   for (i = 0; i < preempt->frames; i++)
-      free(preempt->buffer[i]);
+   /* One slab; buffer[0] is its base. */
+   free(preempt->buffer[0]);
 
    free(preempt);
    runloop_st->preempt_data = NULL;

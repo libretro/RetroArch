@@ -22,6 +22,8 @@
 #include <compat/strl.h>
 
 #include "../../runloop.h"
+#include "../../input/input_defines.h"
+#include "../../runahead.h"
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -92,6 +94,95 @@ static char *get_tmpdir_alloc(const char *override_dir)
 #include "runahead_copy_fragment.c"
 /* The preempt analog-mask bit rule, verbatim from runahead.c. */
 #include "preempt_mask_fragment.c"
+/* The dense input cache and the preempt slab, verbatim from runahead.c. */
+#include "dense_cache_fragment.c"
+#include "preempt_slab_fragment.c"
+
+/* The dense cache: every common tuple has a slot, distinct per tuple;
+ * everything else is refused to the list; a set then get reads back. */
+static void t_dense_cache(void)
+{
+   runahead_dense_cache_t *c = (runahead_dense_cache_t*)calloc(1, sizeof(*c));
+   unsigned port, id, index;
+   int16_t *slot;
+   printf("   input_set_get: the dense cache's slots and its refusals\n");
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      for (id = 0; id < 16; id++)
+      {
+         slot = runahead_dense_slot(c, port, RETRO_DEVICE_JOYPAD, 0, id);
+         CHECK(slot != NULL, "joypad port %u id %u has no slot", port, id);
+         if (slot) *slot = (int16_t)(port * 100 + id);
+      }
+      slot = runahead_dense_slot(c, port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+      CHECK(slot != NULL, "joypad port %u mask has no slot", port);
+      for (index = 0; index < 3; index++)
+         for (id = 0; id < 16; id++)
+            CHECK(runahead_dense_slot(c, port, RETRO_DEVICE_ANALOG, index, id) != NULL,
+                  "analog port %u index %u id %u has no slot", port, index, id);
+   }
+   for (port = 0; port < MAX_USERS; port++)
+      for (id = 0; id < 16; id++)
+         CHECK(*runahead_dense_slot(c, port, RETRO_DEVICE_JOYPAD, 0, id) == (int16_t)(port * 100 + id),
+               "joypad port %u id %u read back wrong", port, id);
+   /* Distinct: the mask slot is not a button's, analog is not joypad's. */
+   CHECK(runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK)
+         != runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 0, 15), "the mask shares a button's slot");
+   CHECK(runahead_dense_slot(c, 0, RETRO_DEVICE_ANALOG, 0, 0)
+         != runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 0, 0), "analog shares joypad's slot");
+   /* Refused to the list: subclassed devices, other indexes and ids,
+    * ports past the table, keyboards and pointers. */
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 1, 0), "joypad index 1 was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 0, 16), "joypad id 16 was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_JOYPAD, 0, 255), "joypad id 255 was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_ANALOG, 3, 0), "analog index 3 was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_ANALOG, 0, 16), "analog id 16 was given a slot");
+   CHECK(!runahead_dense_slot(c, MAX_USERS, RETRO_DEVICE_JOYPAD, 0, 0), "port MAX_USERS was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_KEYBOARD, 0, 0), "a keyboard was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_POINTER, 0, 0), "a pointer was given a slot");
+   CHECK(!runahead_dense_slot(c, 0, RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1), 0, 0), "a subclassed joypad was given a slot");
+   CHECK(!runahead_dense_slot(NULL, 0, RETRO_DEVICE_JOYPAD, 0, 0), "a NULL cache gave a slot");
+   /* A frame of polls as a core makes them: informational timing. */
+   {
+      struct timespec t0, t1;
+      unsigned rep, polls = 0;
+      volatile int16_t sink = 0;
+      clock_gettime(CLOCK_MONOTONIC, &t0);
+      for (rep = 0; rep < 20000; rep++)
+         for (port = 0; port < 2; port++)
+            for (id = 0; id < 16; id++)
+            {
+               int16_t *sl = runahead_dense_slot(c, port, RETRO_DEVICE_JOYPAD, 0, id);
+               sink += *sl; *sl = sink; polls++;
+            }
+      clock_gettime(CLOCK_MONOTONIC, &t1);
+      printf("      %.1f ns per poll, two joypads, get then set (informational)\n",
+            ((t1.tv_sec - t0.tv_sec) * 1e9 + (t1.tv_nsec - t0.tv_nsec)) / polls);
+   }
+   free(c);
+}
+
+/* The slab: N buffers inside one allocation, contiguous at state_size
+ * strides, freed by freeing the first; an impossible product refused. */
+static void t_preempt_slab(void)
+{
+   void *buffer[MAX_RUNAHEAD_FRAMES];
+   unsigned i;
+   size_t ss = 1000;
+   printf("   preempt_slab: one allocation for all frames\n");
+   memset(buffer, 0, sizeof(buffer));
+   CHECK(preempt_slab_alloc(buffer, 6, ss), "a slab of six was refused");
+   for (i = 1; i < 6; i++)
+      CHECK((uint8_t*)buffer[i] == (uint8_t*)buffer[0] + i * ss, "buffer %u is not at its stride", i);
+   for (i = 0; i < 6; i++)
+      memset(buffer[i], (int)i, ss);
+   for (i = 0; i < 6; i++)
+      CHECK(((uint8_t*)buffer[i])[ss - 1] == (uint8_t)i, "buffer %u's bytes were shared", i);
+   free(buffer[0]);
+   CHECK(!preempt_slab_alloc(buffer, 0, ss), "zero frames was accepted");
+   CHECK(!preempt_slab_alloc(buffer, 6, 0), "a zero state size was accepted");
+   CHECK(!preempt_slab_alloc(buffer, 6, ((size_t)-1) / 2), "a product past SIZE_MAX was accepted");
+}
 
 /* RA-01: an (index, id) with no bit is rejected, never folded onto a
  * bit that exists; the valid ones land where the reader looks. */
@@ -238,6 +329,8 @@ int main(void)
 
    printf("runahead copy:\n");
    t_analog_mask_bit();
+   t_dense_cache();
+   t_preempt_slab();
    t_lcg_names();
    t_lcg_all_fail();
    t_copy_protocol();
