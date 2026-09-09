@@ -39,7 +39,7 @@ RETRO_BEGIN_DECLS
  * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
  * @return The number of bytes available for reading from \c buffer.
  */
-#define FIFO_READ_AVAIL(buffer) (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first)
+#define FIFO_READ_AVAIL(buffer) fifo_read_avail_of(buffer)
 
 /**
  * Returns the available space in \c buffer for writing.
@@ -47,7 +47,7 @@ RETRO_BEGIN_DECLS
  * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
  * @return The number of bytes that \c buffer can accept.
  */
-#define FIFO_WRITE_AVAIL(buffer) (((buffer)->size - 1) - (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first))
+#define FIFO_WRITE_AVAIL(buffer) fifo_write_avail_of(buffer)
 
 /**
  * Returns the available data in \c buffer for reading.
@@ -55,7 +55,7 @@ RETRO_BEGIN_DECLS
  * @param buffer \c fifo_buffer_t. The FIFO queue to check.
  * @return The number of bytes available for reading from \c buffer.
  */
-#define FIFO_READ_AVAIL_NONPTR(buffer) (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first)
+#define FIFO_READ_AVAIL_NONPTR(buffer) fifo_read_avail_of(&(buffer))
 
 /**
  * Returns the available space in \c buffer for writing.
@@ -63,7 +63,7 @@ RETRO_BEGIN_DECLS
  * @param buffer \c fifo_buffer_t. The FIFO queue to check.
  * @return The number of bytes that \c buffer can accept.
  */
-#define FIFO_WRITE_AVAIL_NONPTR(buffer) (((buffer).size - 1) - (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first))
+#define FIFO_WRITE_AVAIL_NONPTR(buffer) fifo_write_avail_of(&(buffer))
 
 /** @copydoc fifo_buffer_t */
 struct fifo_buffer
@@ -81,6 +81,23 @@ struct fifo_buffer
  * although the caller is responsible for synchronization.
  */
 typedef struct fifo_buffer fifo_buffer_t;
+
+/* The availability, from one load each of first, end and size: the
+ * argument is evaluated once, and a reader without the caller's lock
+ * sees one snapshot rather than several. Inline, so a driver's
+ * write_avail(), which rate control samples every frame, pays a few
+ * instructions. */
+static INLINE size_t fifo_read_avail_of(const fifo_buffer_t *buffer)
+{
+   size_t first = buffer->first;
+   size_t end   = buffer->end;
+   return (end < first) ? end + buffer->size - first : end - first;
+}
+
+static INLINE size_t fifo_write_avail_of(const fifo_buffer_t *buffer)
+{
+   return (buffer->size - 1) - fifo_read_avail_of(buffer);
+}
 
 /**
  * Creates a new FIFO queue with \c size bytes of memory.

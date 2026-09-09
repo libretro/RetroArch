@@ -111,7 +111,12 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len)
    if (rest_write > 0)
       memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
 
-   buffer->end = (buffer->end + len) % buffer->size;
+   /* len is under size, so the index crosses the ring's end at most
+    * once: a compare and a subtract, not a division by a size that is
+    * never a power of two. */
+   buffer->end += len;
+   if (buffer->end >= buffer->size)
+      buffer->end -= buffer->size;
 }
 
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len)
@@ -130,7 +135,9 @@ void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len)
    if (rest_read > 0)
       memcpy((uint8_t*)in_buf + first_read, buffer->buffer, rest_read);
 
-   buffer->first = (buffer->first + len) % buffer->size;
+   buffer->first += len;
+   if (buffer->first >= buffer->size)
+      buffer->first -= buffer->size;
 }
 
 /* The checked calls clamp to what is available and say how much moved;
