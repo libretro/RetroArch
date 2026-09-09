@@ -974,8 +974,9 @@ static bool video_thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   unsigned slot;
+   unsigned slot       = 0;
    bool dropped        = false;
+   bool zero_copy      = false;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
@@ -1029,11 +1030,28 @@ static bool video_thread_frame(void *data, const void *frame_,
       }
    }
 
+   /* A frame rendered straight into the lent slot: publish that slot,
+    * no copy. The loan kept it free, so it is still neither pending nor
+    * being rendered. Any other push means the core rendered elsewhere;
+    * the loan lapses and the slot is picked as usual. */
+   if (thr->frame.lent >= 0)
+   {
+      unsigned l = (unsigned)thr->frame.lent;
+      thr->frame.lent = -1;
+      if (frame_ && frame_ == thr->frame.slot[l].buffer)
+      {
+         zero_copy = true;
+         slot      = l;
+      }
+   }
+
    /* Pick the slot to fill. The worker renders tail ^ 1 while busy and
     * claims tail next, so a slot is free when it is neither. When both
     * are taken, the newest unclaimed frame is replaced rather than the
     * new one dropped, and the worker keeps rendering what it holds. */
-   if (!thr->frame.pending)
+   if (zero_copy)
+      ;
+   else if (!thr->frame.pending)
       slot = thr->frame.tail;
    else if (thr->frame.pending == 1 && !thr->frame.busy)
       slot = thr->frame.tail ^ 1;
@@ -1074,7 +1092,18 @@ static bool video_thread_frame(void *data, const void *frame_,
          height            = rows;
       }
 
-      if (src)
+      if (zero_copy)
+      {
+         /* Already in place; the slot's pitch is the one the core was
+          * given, which is what it rendered with. Rows past the slot
+          * are cropped as for a copied frame. */
+         thr->frame.zero_copy_count++;
+         if (pitch)
+            copy_stride = (unsigned)pitch;
+         if ((size_t)height * copy_stride > thr->frame.buffer_size)
+            height = (unsigned)(thr->frame.buffer_size / copy_stride);
+      }
+      else if (src)
       {
          if (pitch == copy_stride)
             memcpy(dst, src, (size_t)height * copy_stride);
@@ -1236,6 +1265,7 @@ static bool video_thread_init(thread_video_t *thr,
       }
 
       thr->frame.buffer_size = max_size;
+      thr->frame.lent        = -1;
    }
 
    thr->input                = input;
@@ -1399,9 +1429,10 @@ static void video_thread_free(void *data)
       scond_free(thr->cond_user);
 
       RARCH_LOG(
-         "Threaded video stats: Frames pushed: %u, Frames dropped: %u, Frames repeated: %llu.\n",
+         "Threaded video stats: Frames pushed: %u, Frames dropped: %u, Frames repeated: %llu, Zero-copy: %llu.\n",
          thr->hit_count, thr->miss_count,
-         (unsigned long long)thr->frames_repeated);
+         (unsigned long long)thr->frames_repeated,
+         (unsigned long long)thr->frame.zero_copy_count);
 
       /* video_init_thread() pointed the video state at the vtable
        * embedded in this struct. Point it back at the wrapped driver's
@@ -1723,6 +1754,54 @@ static void thread_set_texture_frame(void *data, const void *frame,
    slock_unlock(thr->frame.lock);
 }
 
+/* The core asks for a buffer to render the next frame into. Lend it a
+ * ring slot that neither side holds, so the frame lands where the video
+ * thread will read it and the push copies nothing. Declined when no
+ * slot is free (the push then copies as before), when the core wants
+ * to read back (the slot last held the frame before the previous one,
+ * not the previous one, so the contents are not what a reading core
+ * expects), or when the geometry does not fit the slot. A core that
+ * never asks is unaffected. */
+static bool thread_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   unsigned bpp, slot;
+   size_t   need;
+
+   if (!thr || !fb)
+      return false;
+   if (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
+      return false;
+
+   bpp  = thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   need = (size_t)fb->width * bpp * fb->height;
+   if (!fb->width || !fb->height || need > thr->frame.buffer_size)
+      return false;
+
+   slock_lock(thr->lock);
+   if (!thr->frame.pending)
+      slot = thr->frame.tail;
+   else if (thr->frame.pending == 1 && !thr->frame.busy)
+      slot = thr->frame.tail ^ 1;
+   else
+   {
+      slock_unlock(thr->lock);
+      return false;
+   }
+   thr->frame.lent        = (int)slot;
+   thr->frame.lent_width  = fb->width;
+   thr->frame.lent_height = fb->height;
+   slock_unlock(thr->lock);
+
+   fb->data         = thr->frame.slot[slot].buffer;
+   fb->pitch        = (size_t)fb->width * bpp;
+   fb->format       = thr->info.rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = 0;
+   return true;
+}
+
 static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1922,7 +2001,7 @@ static const video_poke_interface_t thread_poke = {
    thread_show_mouse,
    thread_grab_mouse_toggle,
    thread_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   thread_get_current_software_framebuffer,
    NULL, /* get_hw_render_interface */
    thread_set_hdr_menu_nits,
    thread_set_hdr_paper_white_nits,

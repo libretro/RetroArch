@@ -4,6 +4,7 @@
  * the frontend a frame per retro_run, sometimes duplicated and
  * sometimes taller than the geometry it declared. */
 #include <string.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <libretro.h>
 
@@ -20,6 +21,11 @@ void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
    environ_cb = cb;
+   {
+      /* The frames below are RGB565; say so, as a real core must. */
+      enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+      cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
+   }
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -50,17 +56,46 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 }
 void retro_set_controller_port_device(unsigned port, unsigned device) { (void)port; (void)device; }
 void retro_reset(void) { }
+/* Set by the harness through the core's own export below: when on,
+ * retro_run asks the frontend for a framebuffer and renders into it,
+ * exercising the wrapper's zero-copy lend. Counts how often the ask
+ * was granted so the harness can check the lend actually happened. */
+static int      harness_use_fb;
+static unsigned harness_fb_granted;
+
+void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
+unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
+
 void retro_run(void)
 {
    unsigned h = (runs % 61 == 60) ? H_OVERSIZE : H;
    unsigned i;
+   uint16_t *dst = frame;
+   size_t   pitch = W * 2;
    runs++;
+
+   if (harness_use_fb && h == H)
+   {
+      struct retro_framebuffer fb;
+      memset(&fb, 0, sizeof(fb));
+      fb.width        = W;
+      fb.height       = H;
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      if (     environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+            && fb.format == RETRO_PIXEL_FORMAT_RGB565)
+      {
+         dst   = (uint16_t*)fb.data;
+         pitch = fb.pitch;
+         harness_fb_granted++;
+      }
+   }
+
    for (i = 0; i < W * h; i++)
-      frame[i] = (uint16_t)(runs + i);
+      dst[i] = (uint16_t)(runs + i);
    if (runs % 3 == 0)
-      video_cb(NULL, W, h, W * 2);
+      video_cb(NULL, W, h, pitch);
    else
-      video_cb(frame, W, h, W * 2);
+      video_cb(dst, W, h, pitch);
 }
 size_t retro_serialize_size(void) { return 0; }
 bool retro_serialize(void *data, size_t size) { (void)data; (void)size; return false; }

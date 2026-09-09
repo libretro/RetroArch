@@ -347,6 +347,15 @@ typedef struct thread_video
        * set, the slot being rendered is tail ^ 1. */
       bool busy;
       bool within_thread;
+      /* Zero-copy: the slot handed to the core through
+       * get_current_software_framebuffer, -1 for none. Held free until
+       * the core pushes a frame: a push whose data is that slot's
+       * buffer publishes it without a copy; any other push clears the
+       * reservation first. Guarded by 'lock'. */
+      int lent;
+      unsigned lent_width;
+      unsigned lent_height;
+      uint64_t zero_copy_count;
    } frame;
 
    bool apply_state_changes;

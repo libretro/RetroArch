@@ -820,6 +820,60 @@ static void lane_display_pacing(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: zero-copy lends a slot and publishes it without a copy         */
+/*   The harness core asks for a framebuffer each frame; with the       */
+/*   setting on the wrapper should grant most asks and publish those    */
+/*   frames from the lent slot. With it off, no ask is granted.         */
+/* ------------------------------------------------------------------ */
+
+static void lane_zero_copy(void)
+{
+   unsigned had = failures;
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
+   unsigned (*granted)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_granted") : NULL;
+   thread_video_t *thr;
+   unsigned g0, g1, zc0, zc1;
+
+   CHECK(use_fb && granted, "harness core lacks the framebuffer exports");
+   if (!use_fb || !granted)
+      return;
+
+   /* The core only runs with the menu closed, so close it for the lane
+    * and reopen it after. */
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(10);
+   expect_wrapper(true, "zero-copy lane");
+   use_fb(1);
+
+   /* Most asks granted, and those frames published from the lent slot.
+    * Dupes (every third frame) ask and then push NULL, so the loan
+    * lapses; oversize frames are declined. */
+   run_frames(2);
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   g0  = granted();
+   slock_lock(thr->lock); zc0 = (unsigned)thr->frame.zero_copy_count; slock_unlock(thr->lock);
+   run_frames(60);
+   video_thread_wait_idle();
+   g1  = granted();
+   slock_lock(thr->lock); zc1 = (unsigned)thr->frame.zero_copy_count; slock_unlock(thr->lock);
+   CHECK(g1 - g0 >= 30, "zero-copy on but only %u of 60 asks granted", g1 - g0);
+   CHECK(zc1 - zc0 >= 20, "only %u frames published zero-copy for %u grants", zc1 - zc0, g1 - g0);
+   CHECK(zc1 - zc0 <= g1 - g0, "%u zero-copy frames for %u grants", zc1 - zc0, g1 - g0);
+
+   use_fb(0);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] zero-copy lane (%u grants, %u zero-copy frames)\n",
+            g1 - g0, zc1 - zc0);
+}
+
+/* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
 {
@@ -908,6 +962,7 @@ int main(int argc, char *argv[])
    lane_display_phase();
    lane_command_runs_once();
    lane_display_pacing();
+   lane_zero_copy();
 
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */
