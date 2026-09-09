@@ -1296,13 +1296,40 @@ static bool video_thread_frame(void *data, const void *frame_,
       retro_time_t now    = cpu_features_get_time_usec();
       retro_time_t reserve = thr->render_time + thr->core_time;
       retro_time_t margin  = reserve / 8;
+      retro_time_t period  = thr->present_period;
+      retro_time_t content;
+      retro_time_t vblank;
       retro_time_t target;
+      double fps = video_state_get_ptr()->av_info.timing.fps;
       if (margin < 500)
          margin = 500;
-      target = thr->next_present + thr->present_period - reserve - margin;
-      /* Never hold longer than a period: the estimate can be wrong. */
-      if (target > now + thr->present_period)
-         target = now + thr->present_period;
+
+      /* The content's own period, not the display's: on a 120 Hz
+       * display a 60 fps core is due every other vblank, and a hold
+       * that released it every vblank ran it at four times speed. The
+       * due time accumulates in the content's period exactly, so the
+       * cadence is the content's over any stretch; each frame then
+       * goes out on the first vblank at or after its due time, which
+       * is where the target is measured from. After a stall the
+       * schedule restarts from the presenter's next vblank rather than
+       * carrying a backlog. */
+      content = (fps > 1.0) ? (retro_time_t)(1000000.0 / fps) : period;
+      if (thr->content_due <= 0 || thr->content_due < now - content)
+         thr->content_due = thr->next_present;
+      else
+         thr->content_due += content;
+      if (thr->content_due < thr->next_present)
+         thr->content_due = thr->next_present;
+      vblank = thr->next_present;
+      if (period > 0)
+         while (vblank < thr->content_due)
+            vblank += period;
+
+      target = vblank - reserve - margin;
+      /* Never hold longer than a content period: the estimate can be
+       * wrong. */
+      if (target > now + content)
+         target = now + content;
       while (now < target)
       {
          scond_wait_timeout(thr->cond_ring, thr->lock, target - now);

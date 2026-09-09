@@ -889,12 +889,50 @@ static void lane_font_marshal(void)
 /*   and nothing should be dropped: N frames take about N periods.     */
 /* ------------------------------------------------------------------ */
 
+/* One measurement of the hold: n core frames with the display at
+ * display_hz and the core at its own 60. The hold must pace to the
+ * core's period on the display's grid: at 120 Hz a 60 fps core is due
+ * every other vblank, and a hold that released it every vblank ran it
+ * at four times speed on a real 120 Hz panel. */
+static void display_pacing_measure(float display_hz, unsigned n)
+{
+   settings_t *settings = config_get_ptr();
+   thread_video_t *thr  = (thread_video_t*)video_state_get_ptr()->data;
+   retro_time_t t0, took, expect;
+   unsigned dropped_before, dropped_after;
+   float saved = settings->floats.video_refresh_rate;
+
+   settings->floats.video_refresh_rate = display_hz;
+   run_frames(6);
+   video_thread_wait_idle();
+   dropped_before = thr->miss_count;
+   t0 = cpu_features_get_time_usec();
+   run_frames(n);
+   took = cpu_features_get_time_usec() - t0;
+   video_thread_wait_idle();
+   dropped_after = thr->miss_count;
+   settings->floats.video_refresh_rate = saved;
+
+   /* The core is 60 fps whatever the display does. */
+   expect = (retro_time_t)(1000000.0 * n / 60.0);
+   CHECK(took > expect * 3 / 4,
+         "display pacing at %.0f Hz did not hold the runloop: %u frames in %.1f ms, expected ~%.1f",
+         display_hz, n, took / 1000.0, expect / 1000.0);
+   CHECK(took < expect * 3 / 2,
+         "display pacing at %.0f Hz held the runloop too long: %u frames in %.1f ms, expected ~%.1f",
+         display_hz, n, took / 1000.0, expect / 1000.0);
+   CHECK(dropped_after - dropped_before <= 2,
+         "display pacing at %.0f Hz dropped %u frames", display_hz,
+         dropped_after - dropped_before);
+   fprintf(stderr, "   display pacing at %.0f Hz: %u frames in %.1f ms\n",
+         display_hz, n, took / 1000.0);
+}
+
 static void lane_display_pacing(void)
 {
    unsigned had = failures;
    settings_t *settings = config_get_ptr();
-   retro_time_t t0, took, expect;
-   unsigned dropped_before, dropped_after, n = 60;
+   bool saved_pacing = settings->bools.video_threaded_display_pacing;
 
    settings->bools.video_threaded_display_pacing = true;
    set_threaded_via_setting(true);
@@ -912,40 +950,16 @@ static void lane_display_pacing(void)
    run_frames(3);
    video_thread_wait_idle();
 
-   {
-      thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
-      dropped_before = thr->miss_count;
-      t0 = cpu_features_get_time_usec();
-      run_frames(n);
-      took = cpu_features_get_time_usec() - t0;
-      video_thread_wait_idle();
-      dropped_after = thr->miss_count;
-   }
-
-   /* refresh_rate is what the harness config sets; the wrapper paces
-    * on it since the null driver reports none. Allow the margin the
-    * pacer keeps plus scheduler slop. */
-   expect = (retro_time_t)(1000000.0 * n / settings->floats.video_refresh_rate);
-   (void)settings;
-   CHECK(took > expect * 3 / 4,
-         "display pacing did not hold the runloop: %u frames in %.1f ms, expected ~%.1f",
-         n, took / 1000.0, expect / 1000.0);
-   CHECK(took < expect * 3 / 2,
-         "display pacing held the runloop too long: %u frames in %.1f ms, expected ~%.1f",
-         n, took / 1000.0, expect / 1000.0);
-   CHECK(dropped_after == dropped_before,
-         "display pacing dropped %u frames", dropped_after - dropped_before);
-
-   settings->bools.video_threaded_display_pacing = false;
-   set_threaded_via_setting(false);
+   display_pacing_measure(60.0f, 60);
+   display_pacing_measure(120.0f, 60);
 
    /* Back to the menu for the lanes that follow. */
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = saved_pacing;
 
    if (failures == had)
-      fprintf(stderr, "[pass] display-pacing lane (%u frames in %.1f ms)\n",
-            n, took / 1000.0);
+      fprintf(stderr, "[pass] display-pacing lane\n");
 }
 
 /* ------------------------------------------------------------------ */
