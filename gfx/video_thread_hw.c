@@ -571,7 +571,8 @@ bool video_thread_hw_allowed(void)
       case RETRO_HW_CONTEXT_OPENGLES2:
       case RETRO_HW_CONTEXT_OPENGLES3:
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         return string_is_equal(settings->arrays.video_driver, "gl");
+         return string_is_equal(settings->arrays.video_driver, "gl")
+             || string_is_equal(settings->arrays.video_driver, "glcore");
 #endif
 #ifdef HAVE_D3D11
       case RETRO_HW_CONTEXT_D3D11:

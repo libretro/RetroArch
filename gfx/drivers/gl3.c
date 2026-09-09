@@ -49,6 +49,9 @@
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_hw.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -224,6 +227,14 @@ typedef struct gl3
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
+   /* The threaded wrapper's hardware ring: a target per slot, made in
+    * the core's context beside the driver's own, which is slot 0; the
+    * fence the core's thread placed after rendering into each, for the
+    * frame to wait before reading it. Sync objects are shared between
+    * the two contexts. */
+   GLuint hw_ring_texture[3];
+   GLuint hw_ring_fbo[3];
+   void  *hw_ring_sync[3];
 
    float menu_texture_alpha;
    math_matrix_4x4 mvp;                /* float alignment */
@@ -1883,6 +1894,20 @@ static void gl3_deinit_hw_render(gl3_t *gl)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
+   {
+      unsigned i;
+      for (i = 1; i < 3; i++)
+      {
+         if (gl->hw_ring_fbo[i])
+            glDeleteFramebuffers(1, &gl->hw_ring_fbo[i]);
+         if (gl->hw_ring_texture[i])
+            glDeleteTextures(1, &gl->hw_ring_texture[i]);
+         gl->hw_ring_fbo[i]     = 0;
+         gl->hw_ring_texture[i] = 0;
+      }
+      gl->hw_ring_fbo[0]     = 0;
+      gl->hw_ring_texture[0] = 0;
+   }
    if (gl->hw_render_fbo)
       glDeleteFramebuffers(1, &gl->hw_render_fbo);
    if (gl->hw_render_rb_ds)
@@ -2040,6 +2065,8 @@ static void gl3_destroy_resources(gl3_t *gl)
    gl3_deinit_hw_render(gl);
 }
 
+static bool gl3_hw_ring_expected(void);
+
 static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
 {
    GLint max_fbo_size;
@@ -2119,6 +2146,39 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
    gl->flags               |= GL3_FLAG_HW_RENDER_ENABLE;
    gl->hw_render_max_width  = width;
    gl->hw_render_max_height = height;
+
+   /* The ring's other slots: the same target again, sharing the depth
+    * renderbuffer, which only the core's rendering touches and never
+    * two slots at once. Slot 0 is the driver's own. */
+   gl->hw_ring_texture[0] = gl->hw_render_texture;
+   gl->hw_ring_fbo[0]     = gl->hw_render_fbo;
+   if (gl3_hw_ring_expected())
+   {
+      unsigned i;
+      for (i = 1; i < 3; i++)
+      {
+         glGenFramebuffers(1, &gl->hw_ring_fbo[i]);
+         glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_ring_fbo[i]);
+         glGenTextures(1, &gl->hw_ring_texture[i]);
+         glBindTexture(GL_TEXTURE_2D, gl->hw_ring_texture[i]);
+         glTexStorage2D(GL_TEXTURE_2D, 1,
+               gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8,
+               width, height);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, gl->hw_ring_texture[i], 0);
+         if (gl->hw_render_rb_ds)
+         {
+            if (hwr->stencil)
+               glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                     GL_RENDERBUFFER, gl->hw_render_rb_ds);
+            else
+               glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                     GL_RENDERBUFFER, gl->hw_render_rb_ds);
+         }
+         glClear(GL_COLOR_BUFFER_BIT);
+      }
+   }
+
    glBindTexture(GL_TEXTURE_2D, 0);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -4074,12 +4134,17 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   /* Init leaves the core's context current for context_reset on this
+    * thread; when the wrapper's ring will drive the core, the main
+    * thread takes that context itself and this one must not hold it. */
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_hw_ring_expected())
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_hw_ring_expected())
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return false;
 }
@@ -5329,7 +5394,10 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_fence_iterate(gl, hard_sync_frames);
 
    glBindVertexArray(0);
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   /* Not under the ring: the core's context is current on the main
+    * thread, and this one has no business taking it. */
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !(gl->flags & GL3_FLAG_HW_RING))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -5592,7 +5660,8 @@ static void gl3_set_texture_frame(void *data,
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl->menu_texture_alpha = alpha;
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !(gl->flags & GL3_FLAG_HW_RING))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -5611,6 +5680,133 @@ static void gl3_set_texture_enable(void *data, bool state, bool fullscreen)
       gl->flags |=  GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
    else
       gl->flags &= ~GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
+}
+
+/* Whether the threaded wrapper's hardware ring will drive this driver:
+ * decided at init, when the wrapper is already up, from the core's
+ * context type and the driver name. */
+static bool gl3_hw_ring_expected(void)
+{
+#ifdef HAVE_THREADS
+   return video_driver_thread_wrapper_active() && video_thread_hw_allowed();
+#else
+   return false;
+#endif
+}
+
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+#ifndef GL_TIMEOUT_IGNORED
+#define GL_TIMEOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
+#endif
+
+/* The core's context, current on the caller - the main thread. From
+ * here on the frame never takes it back. */
+static bool gl3_hw_ring_context_new(void *data, void **ctx)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || !ctx || !(gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
+      return false;
+   gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl->flags |= GL3_FLAG_HW_RING;
+   *ctx = gl;
+   return true;
+}
+
+static void gl3_hw_ring_context_free(void *data, void *ctx)
+{
+   gl3_t *gl = (gl3_t*)data;
+   (void)ctx;
+   if (gl)
+      gl->flags &= ~GL3_FLAG_HW_RING;
+}
+
+static uintptr_t gl3_hw_ring_framebuffer(void *data, unsigned slot)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || slot >= 3)
+      return 0;
+   return gl->hw_ring_fbo[slot];
+}
+
+/* Main thread, the core's context: a fence after the core's rendering
+ * into the slot, flushed so the other thread's wait can see it. */
+static bool gl3_hw_ring_capture(void *data, unsigned slot,
+      const void *source, unsigned format)
+{
+   gl3_t *gl = (gl3_t*)data;
+   (void)source; (void)format;
+   if (!gl || slot >= 3)
+      return false;
+   if (gl->hw_ring_sync[slot])
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+   gl->hw_ring_sync[slot] = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   glFlush();
+   return true;
+}
+
+/* Video thread: wait the core's fence on the server, and read the
+ * slot's texture as the frame's HW-render texture. */
+static bool gl3_hw_ring_present_slot(void *data, unsigned slot)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || slot >= 3 || !gl->hw_ring_texture[slot])
+      return false;
+   if (gl->hw_ring_sync[slot])
+   {
+      glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = NULL;
+   }
+   gl->hw_render_texture = gl->hw_ring_texture[slot];
+   return true;
+}
+
+typedef struct { void *sync; } gl3_ring_fence_t;
+
+static bool gl3_hw_ring_fence_new(void *data, void **fence)
+{
+   gl3_ring_fence_t *f;
+   (void)data;
+   if (!fence || !(f = (gl3_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   *fence = f;
+   return true;
+}
+
+static void gl3_hw_ring_fence_free(void *data, void *fence)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+   free(f);
+}
+
+static void gl3_hw_ring_fence_signal(void *data, void *fence)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+   f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   glFlush();
+}
+
+static void gl3_hw_ring_fence_wait(void *data, void *fence)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f || !f->sync)
+      return;
+   glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_IGNORED);
+   glDeleteSync((GLsync)f->sync);
+   f->sync = NULL;
 }
 
 static uintptr_t gl3_get_current_framebuffer(void *data)
@@ -5795,7 +5991,19 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    gl3_supports_texture_format,
-   gl3_load_texture_compressed
+   gl3_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   gl3_hw_ring_fence_new,
+   gl3_hw_ring_fence_free,
+   gl3_hw_ring_fence_signal,
+   gl3_hw_ring_fence_wait,
+   gl3_hw_ring_capture,
+   gl3_hw_ring_present_slot,
+   gl3_hw_ring_context_new,
+   gl3_hw_ring_context_free,
+   gl3_hw_ring_framebuffer
 };
 
 static void gl3_get_poke_interface(void *data,

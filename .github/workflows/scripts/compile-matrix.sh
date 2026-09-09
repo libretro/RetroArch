@@ -140,6 +140,11 @@ check "gl2: GLES3" \
    "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl2.c
 check "gl2: desktop" \
    "$GLDEFS $GLINC" gfx/drivers/gl2.c
+GL3DEFS="-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_SPIRV_CROSS -DHAVE_REWIND -DHAVE_OVERLAY -Ideps/SPIRV-Cross"
+check "gl3: desktop" \
+   "$GL3DEFS $GLINC" gfx/drivers/gl3.c
+check "gl3: GLES3" \
+   "$GL3DEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl3.c
 check "hw ring: OpenGL only" \
    "-DHAVE_OPENGL $GLINC" gfx/video_thread_hw.c
 check "hw ring: GLES only" \
