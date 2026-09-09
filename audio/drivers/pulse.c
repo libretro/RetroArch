@@ -22,6 +22,7 @@
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
@@ -51,6 +52,16 @@ typedef struct
     * the mainloop lock where the writes happen. */
    uint64_t frames_written;
    unsigned rate;
+   /* What the server last said, from its own thread, for the reads the
+    * frontend makes every frame: the writable size, from the write
+    * callback's argument and after each write; the sink's own latency
+    * behind the stream, in frames, from the latency update. Read
+    * without the mainloop lock. Stale by at most one server period -
+    * the write callback fires at each - and stale on the full side,
+    * since only a callback raises the writable size and every write
+    * lowers it at once. */
+   retro_atomic_size_t writable_cached;
+   retro_atomic_size_t sink_frames_cached;
 } pa_t;
 
 /* Bounds on the waits below. A server that is answering signals in
@@ -192,12 +203,20 @@ static void pulse_stream_state_cb(pa_stream *s, void *data)
 static void pulse_stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   retro_atomic_store_release_size(&pa->writable_cached, len);
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void pulse_stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   /* On the mainloop thread, the lock held: the timing info is
+    * current here. sink_usec is the part of the latency that is not
+    * the server's queue; NULL until timing data has arrived. */
+   const pa_timing_info *ti = pa_stream_get_timing_info(s);
+   if (ti && pa->rate)
+      retro_atomic_store_release_size(&pa->sink_frames_cached,
+            (size_t)((uint64_t)ti->sink_usec * pa->rate / 1000000));
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
@@ -238,6 +257,8 @@ static void *pulse_init(const char *device, unsigned rate,
 
    if (!pa)
       return NULL;
+   retro_atomic_size_init(&pa->writable_cached, 0);
+   retro_atomic_size_init(&pa->sink_frames_cached, 0);
 
    memset(&spec, 0, sizeof(spec));
 
@@ -333,6 +354,10 @@ static void *pulse_init(const char *device, unsigned rate,
       pa->buffer_size = buffer_attr.tlength;
       pa->minreq      = buffer_attr.tlength / 4;
 
+   /* Seeded here, under the lock; the write callback keeps it. */
+   retro_atomic_store_release_size(&pa->writable_cached,
+         pa_stream_writable_size(pa->stream));
+   retro_atomic_store_release_size(&pa->sink_frames_cached, 0);
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_ready = true;
 
@@ -406,6 +431,8 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          _len    += writable;
          /* Stereo float32, fixed at stream setup. */
          pa->frames_written += writable / (2 * sizeof(float));
+         retro_atomic_store_release_size(&pa->writable_cached,
+               pa_stream_writable_size(pa->stream));
       }
       else if (!pa->nonblock)
       {
@@ -474,31 +501,21 @@ static void pulse_set_nonblock_state(void *data, bool state)
 
 static bool pulse_use_float(void *data) { return true; }
 
+/* Read every frame by the frontend; served from what the server's
+ * thread last said, with no lock. See writable_cached. */
 static size_t pulse_write_avail(void *data)
 {
-   size_t _len;
    pa_t *pa = (pa_t*)data;
+   size_t sink;
 
    if (!pa->is_ready)
       return 0;
 
-   pa_threaded_mainloop_lock(pa->mainloop);
-   _len = pa_stream_writable_size(pa->stream);
-
    audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
-   {
-      /* The sink's own latency behind the stream buffer, for the
-       * statistics overlay: sink_usec is the part of
-       * pa_stream_get_latency() that is not the server's queue. Only
-       * known once timing data has arrived, so the pointer is NULL
-       * until then, and it can change with the sink. */
-      const pa_timing_info *ti = pa_stream_get_timing_info(pa->stream);
-      if (ti && pa->rate)
-         audio_driver_set_device_latency((size_t)
-               ((uint64_t)ti->sink_usec * pa->rate / 1000000));
-   }
-   pa_threaded_mainloop_unlock(pa->mainloop);
-   return _len;
+   sink = retro_atomic_load_acquire_size(&pa->sink_frames_cached);
+   if (sink)
+      audio_driver_set_device_latency(sink);
+   return retro_atomic_load_acquire_size(&pa->writable_cached);
 }
 
 static size_t pulse_buffer_size(void *data)
