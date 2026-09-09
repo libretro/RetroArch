@@ -1,24 +1,19 @@
 name: CI Linux pace shadow [debug harness]
 
-# The pace decision is being moved into one pure function,
-# runloop_pace_decide(), which for now shadows the decisions the
-# runloop's paths still make for themselves. Debug builds assert the
-# two agree at every point a path decides. That assertion exists only
-# under DEBUG=1, and every other job that runs the threaded-video
-# harness links a release build - so until this job, the shadow was
-# checked on one developer's machine and nowhere else.
+# The pace decision - which sources hold the loop each iteration - is
+# one pure function, runloop_pace_decide() in runloop.h, that every
+# path of runloop_iterate() defers to. It began life shadowing the
+# paths' own scattered decisions with a debug assertion that the two
+# agreed; this job was created to run that assertion in CI, and it
+# never fired, which is what let the paths defer.
 #
-# This job builds with the assertion live, under ASan and UBSan, and
-# runs the threaded-video harness through it: threaded and unthreaded,
-# menu open and closed, display pacing on, the runtime toggles - every
-# configuration the harness has a lane for, each iteration of each one
-# comparing the shadow to the shipping decision. It also runs the
-# pacing sample, whose menu table pins the decision row by row.
-#
-# A failure here means the pure function and the paths disagree on
-# some iteration, and the assertion names it. That is the signal that
-# decides when the paths can defer to the function and the scattered
-# logic can go.
+# What the job still does: builds with DEBUG=1 under ASan and UBSan,
+# so every retro_assert in the wrapper, the ring and the runloop is
+# live, and runs the threaded-video harness through it - threaded and
+# unthreaded, menu open and closed, display pacing on, the runtime
+# toggles - then the pacing sample, whose menu table pins the decision
+# row by row. The release harness job cannot see an assertion; this
+# one can.
 
 on:
   push:
@@ -34,7 +29,7 @@ permissions:
 
 jobs:
   linux-pace-shadow:
-    name: Debug build, harness under the shadow assertion
+    name: Debug build, harness with assertions live
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -75,7 +70,7 @@ jobs:
         run: |
           make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1
 
-      - name: Run the threaded-video harness under the shadow assertion
+      - name: Run the threaded-video harness with assertions live
         shell: bash
         run: |
           set -eu

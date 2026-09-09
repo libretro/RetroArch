@@ -8005,9 +8005,7 @@ int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
    int64_t      pace_limit_ns;
-#ifdef DEBUG
    runloop_pace_inputs_t pace_in;
-#endif
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -8243,18 +8241,8 @@ int runloop_iterate(void)
          {
             /* Returns before the pace block: record what holds this
              * path - vsync if it is blocking, nothing otherwise. */
-            runloop_st->pace = RUNLOOP_PACE_NONE;
-            if (     settings->bools.video_vsync
-                  && !(input_st->flags & INP_FLAG_NONBLOCKING)
-                  && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-               runloop_st->pace |= RUNLOOP_PACE_VSYNC;
-#ifdef DEBUG
-            {
-               runloop_pace_inputs_t in;
-               runloop_pace_gather(&in, settings, true);
-               retro_assert(runloop_pace_decide(&in) == runloop_st->pace);
-            }
-#endif
+            runloop_pace_gather(&pace_in, settings, true);
+            runloop_st->pace = runloop_pace_decide(&pace_in);
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
             return 0;
          }
@@ -8424,9 +8412,10 @@ end:
     * video_driver_frame(), which runs between the top and here, and a
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves. */
-   runloop_st->pace = RUNLOOP_PACE_NONE;
-   if (runloop_st->pace_external)
-      runloop_st->pace |= RUNLOOP_PACE_EXTERNAL;
+   /* Computed at the end of the iteration and read by the overlay during
+    * the next one - one frame stale by design; see runloop_state_t::pace.
+    * Paths that return before this block set it themselves, through the
+    * same function. */
    /* How long the last iteration actually took, smoothed. One clock
     * read on a path that already takes several, and the only way to
     * tell a source that is holding the loop from one that merely says
@@ -8460,100 +8449,27 @@ end:
     * nothing else is pacing at all (see below). */
    pace_limit_min   = runloop_st->frame_limit_minimum_time;
    pace_limit_ns    = runloop_st->frame_limit_minimum_time_ns;
-   /* The vsync bit reads the driver's blocking state, not the setting:
-    * fast-forward (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK
-    * both put the driver into non-blocking presentation while the
-    * setting stays true. */
-   if (     settings->bools.video_vsync
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
-#ifdef HAVE_THREADS
-   /* Threaded video's display pacing holds the loop at the handover;
-    * see RUNLOOP_PACE_DISPLAY. Not in fast-forward, where the handover
-    * does not hold either. */
-   if (     video_st->thread_wrapper_active
-         && settings->bools.video_threaded_display_pacing
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-      runloop_st->pace |= RUNLOOP_PACE_DISPLAY;
-#endif
-   /* The live blocking state, not the audio_sync setting. Fast-forward
-    * puts the driver into non-blocking mode for a few frames while
-    * audio_sync stays true, and during those frames audio is not
-    * holding anything. */
-   /* ...and a write actually happened this iteration. Not a predicate
-    * on who might have written: the menu feeds a frame of silence
-    * through the same blocking funnel while the core is paused, with
-    * the mixer and thumbnail audio mixed in, so "libretro running" was
-    * the wrong test. The flag is set at the write sites. */
-#ifdef DEBUG
-   /* The shadow decision reads the same iteration, before the write
-    * flag is cleared below; compared after every source has spoken. */
+
+   /* One decision from this iteration's facts, gathered once - see
+    * runloop_pace_decide() in runloop.h, and the table in
+    * samples/runloop/pacing that pins it row by row. The audio write
+    * flag is read by the gather and cleared here. */
    runloop_pace_gather(&pace_in, settings, false);
-#endif
-   if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))
-      runloop_st->pace |= RUNLOOP_PACE_AUDIO;
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
-   /* Mirrors the gate at the video_driver_scanline_after_frame() call
-    * site, which skips the wait under fast-forward. A failed
-    * calibration zeroes SCANLINE_NEXT, so the target test covers the
-    * unlocked case. */
-   if (     settings->bools.video_scanline_sync
-         && video_st->scanline[SCANLINE_NEXT]
-         && !(input_st->flags & INP_FLAG_NONBLOCKING))
-      runloop_st->pace |= RUNLOOP_PACE_SCANLINE;
-   {
-      retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
-      /* Identical to the condition the sleep below used inline. */
-      /* The menu and pause clauses put the timer on the loop where
-       * nothing else holds it. Under display pacing the handover
-       * holds it there too, at the display's rate: with the core
-       * paced by Display alone the menu read Display+Timer, two clocks
-       * anchored on the same frame, the timer's by a sleep and a spin.
-       * Those two clauses stand aside for display pacing, so the menu
-       * is paced by the same clock as the content. Fast-forward and
-       * VRR keep the timer; neither holds the handover. */
-      bool display_paces = (runloop_st->pace & RUNLOOP_PACE_DISPLAY) != 0;
-      if (   (frame_limit_min)
-          && (   (vrr_runloop_enable)
-              || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-#ifdef HAVE_MENU
-              || (   !display_paces
-                  && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-                  && (!(settings->bools.video_vsync)
-                      || !(runloop_st->flags & RUNLOOP_FLAG_FOCUSED)))
-#endif
-              || (!display_paces && (runloop_st->flags & RUNLOOP_FLAG_PAUSED))))
-         runloop_st->pace |= RUNLOOP_PACE_TIMER;
-   }
+   runloop_st->pace = runloop_pace_sources(&pace_in);
 
    /* Nothing to present to - a minimised or zero-sized window, a
     * surface the compositor has suspended, a swapchain that could not
-    * be created. The video path still runs and still costs nothing
-    * much, but the frame goes nowhere, and none of the display-side
-    * pacing above can hold the loop: there is no vblank to block on
-    * and no scanout to lock to. Left alone, the loop spins.
-    *
-    * The context drivers used to sleep inside swap_buffers() for this,
-    * where the frontend could not see it and it stacked with whatever
-    * else was pacing. The wait belongs here, with the rest of the
-    * pacing, and only when nothing else is already holding the loop -
-    * audio still blocks with the window hidden, and fast-forward is
-    * meant to run unthrottled. */
-   if (     !(runloop_st->pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
-                                | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !video_context_driver_presentable())
+    * be created. The frame goes nowhere and nothing display-side can
+    * hold the loop; left alone, it spins. The wait belongs here, with
+    * the rest of the pacing, and only when nothing else holds the
+    * loop - audio still blocks with the window hidden, and fast-forward
+    * is meant to run unthrottled. */
+   if (runloop_pace_no_window(runloop_st->pace, &pace_in))
       runloop_st->pace |= RUNLOOP_PACE_NOWINDOW;
 
    if (runloop_st->pace & RUNLOOP_PACE_NOWINDOW)
    {
-#ifdef DEBUG
-      retro_assert(runloop_pace_decide(&pace_in) == runloop_st->pace);
-#endif
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
        * hidden. Under an external clock the caller is already back
@@ -8566,16 +8482,12 @@ end:
    /* Nothing at all is holding the loop: vsync off, audio sync off or
     * not writing, no scanline lock, and no fast-forward limit to fall
     * back on - frame_limit_minimum_time is zero whenever the ratio is
-    * "unlimited", which is the default, so the branch above cannot
-    * engage however slowly the core is running. The timer holds the
-    * loop to the display rate, which audio rate control can follow
-    * and which Scanline Sync is aiming at while it recalibrates. See
-    * runloop_pace_gap_engages() for when it stays out. */
-   if (runloop_pace_gap_engages(runloop_st->pace,
-            (input_st->flags & INP_FLAG_NONBLOCKING) != 0,
-            (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0,
-            settings->bools.video_scanline_sync,
-            settings->bools.audio_rate_control))
+    * "unlimited", which is the default, so the timer clause above
+    * cannot engage however slowly the core is running. The timer holds
+    * the loop to the display rate, which audio rate control can follow
+    * and which Scanline Sync is aiming at while it recalibrates. */
+   if (runloop_pace_gap_engages(runloop_st->pace, pace_in.nonblocking,
+            pace_in.fastmotion, pace_in.scanline_sync, pace_in.rate_control))
    {
       runloop_st->pace         |= RUNLOOP_PACE_TIMER;
       pace_limit_min            = runloop_content_frame_time_us(
@@ -8587,11 +8499,6 @@ end:
                ? video_st->video_refresh_rate_original
                : settings->floats.video_refresh_rate);
    }
-#ifdef DEBUG
-   /* Every source has spoken, the gap limiter included: the shadow
-    * decision must match bit for bit. */
-   retro_assert(runloop_pace_decide(&pace_in) == runloop_st->pace);
-#endif
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {

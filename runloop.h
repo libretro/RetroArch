@@ -562,7 +562,11 @@ typedef struct
  * tested as a table (samples/runloop/pacing) and, once the paths defer
  * to it, made in one place. Until then runloop_iterate() computes
  * both and asserts they agree in debug builds. */
-static INLINE unsigned runloop_pace_decide(const runloop_pace_inputs_t *in)
+/* The sources: everything but the no-window wait and the gap limiter,
+ * which the caller applies after, because each has an effect beyond
+ * the bits - the wait ends the iteration, the gap limiter sets the
+ * period the timer sleeps to. */
+static INLINE unsigned runloop_pace_sources(const runloop_pace_inputs_t *in)
 {
    unsigned pace = RUNLOOP_PACE_NONE;
    bool vsync_holds = in->vsync && !in->nonblocking && !in->force_nonblock;
@@ -593,11 +597,27 @@ static INLINE unsigned runloop_pace_decide(const runloop_pace_inputs_t *in)
                 || (!display_paces && in->paused)))
          pace |= RUNLOOP_PACE_TIMER;
    }
-   /* No window: the loop waits a frame and the iteration ends there;
-    * the gap limiter is never reached. */
-   if (     !(pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
-                    | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
-         && !in->nonblocking && !in->presentable)
+   return pace;
+}
+
+/* Whether nothing display-side can hold the loop because there is
+ * nothing to present to; the caller waits a frame and returns. */
+static INLINE bool runloop_pace_no_window(unsigned sources,
+      const runloop_pace_inputs_t *in)
+{
+   return   !(sources & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
+                       | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
+         && !in->nonblocking && !in->presentable;
+}
+
+/* The whole decision, for the table and for anything that only needs
+ * the bits. */
+static INLINE unsigned runloop_pace_decide(const runloop_pace_inputs_t *in)
+{
+   unsigned pace = runloop_pace_sources(in);
+   if (in->menu_alive && in->menu_early_exit)
+      return pace;
+   if (runloop_pace_no_window(pace, in))
       return pace | RUNLOOP_PACE_NOWINDOW;
    if (runloop_pace_gap_engages(pace, in->nonblocking, in->fastmotion,
             in->scanline_sync, in->rate_control))
