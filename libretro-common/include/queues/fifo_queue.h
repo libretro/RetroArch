@@ -130,6 +130,11 @@ static INLINE void fifo_clear(fifo_buffer_t *buffer)
  * @param in_buf The buffer to read bytes from.
  * @param size The length of \c in_buf, in bytes.
  */
+/* Unchecked: len must be at most FIFO_WRITE_AVAIL() for a write and
+ * FIFO_READ_AVAIL() for a read, which the caller has established under
+ * whatever synchronisation it owns; the ring is never locked here. A
+ * length past that is a copy past the ring. The checked calls below
+ * clamp and report instead. */
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len);
 
 /**
@@ -141,6 +146,11 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len);
  * @post Upon return, \c buffer will have up to \c size more bytes of space available for writing.
  */
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len);
+
+/* Checked: copy at most what is available and return how much moved.
+ * A length of zero, or nothing available, moves nothing. */
+size_t fifo_write_checked(fifo_buffer_t *buffer, const void *in_buf, size_t len);
+size_t fifo_read_checked(fifo_buffer_t *buffer, void *in_buf, size_t len);
 
 /**
  * Releases \c buffer and its contents.
