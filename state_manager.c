@@ -44,6 +44,13 @@
 /* Keep it off unless you're chasing a core bug, it slows things down. */
 #define STRICT_BUF_SIZE 0
 
+/* A dirty run of this many words or more is copied with memcpy; a
+ * shorter one by the loop, which for the few-word runs that dominate
+ * a delta costs less than a call. */
+#ifndef STATE_MANAGER_MEMCPY_WORDS
+#define STATE_MANAGER_MEMCPY_WORDS 32
+#endif
+
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
 #endif
@@ -313,8 +320,14 @@ static size_t state_manager_raw_compress(const void *src,
       *compressed16++ = changed;
       *compressed16++ = skip;
 
-      for (i = 0; i < changed; i++)
-         compressed16[i] = old16[i];
+      /* The typical dirty run is a few words, where a call costs more
+       * than the loop; a long one - a framebuffer, a redrawn tilemap -
+       * is a copy. */
+      if (changed >= STATE_MANAGER_MEMCPY_WORDS)
+         memcpy(compressed16, old16, changed * sizeof(uint16_t));
+      else
+         for (i = 0; i < changed; i++)
+            compressed16[i] = old16[i];
 
       old16        += changed;
       new16        += changed;
@@ -398,13 +411,13 @@ static bool state_manager_raw_decompress(const void *patch, size_t patch_len,
 
          out16       += *p++;
 
-         /* We could do memcpy, but it seems that memcpy has a
-          * constant-per-call overhead that actually shows up.
-          *
-          * Our average size in here seems to be 8 or something.
-          * Therefore, we do something with lower overhead. */
-         for (i = 0; i < numchanged; i++)
-            out16[i]  = p[i];
+         /* The typical run is a few words, where a call costs more
+          * than the loop; a long one is a copy. */
+         if (numchanged >= STATE_MANAGER_MEMCPY_WORDS)
+            memcpy(out16, p, numchanged * sizeof(uint16_t));
+         else
+            for (i = 0; i < numchanged; i++)
+               out16[i]  = p[i];
 
          p           += numchanged;
          out16       += numchanged;
