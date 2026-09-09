@@ -29,7 +29,11 @@ enum
    IDC_CW_LOG,
    IDC_CW_INFO,       /* core information pane: list view */
    IDC_CW_SEARCH,     /* search box (left column, top) */
-   IDC_CW_BOXART,     /* boxart preview (right column, below info) */
+   IDC_CW_BOXART,     /* the four thumbnail panes: IDC_CW_BOXART + 0..3
+                         (Boxart, Title Screen, Screenshot, Logo) */
+   IDC_CW_BOXART_1,
+   IDC_CW_BOXART_2,
+   IDC_CW_BOXART_3,
    IDC_CW_SEARCH_LABEL,
    IDC_CW_CLEAR,      /* "Clear" next to the search box */
    IDC_CW_BROWSER_LABEL,
@@ -100,6 +104,10 @@ enum
    IDM_CW_HELP_CONTRIBUTORS,
    IDM_CW_UNLOAD_CORE,
    IDM_CW_LOAD_CUSTOM_CORE,
+   /* IDM_CW_DOCK_FIRST + companion_dock_id: View > Closed Docks shows
+    * that pane again. */
+   IDM_CW_DOCK_FIRST,
+   IDM_CW_DOCK_LAST = IDM_CW_DOCK_FIRST + 8,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,

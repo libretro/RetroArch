@@ -45,6 +45,7 @@
 #include "../../../core_option_manager.h"
 #include "../../../ui/ui_companion_driver.h"
 #include "../../../ui/companion/companion_core.h"
+#include "../../../ui/companion/companion_dock.h"
 #include "../../../ui/drivers/ui_win32.h"
 #include "../../../version.h"
 
@@ -319,30 +320,39 @@ int main(void)
       }
    }
 
-   /* Dock rows: the layout on screen is written back in the shared
-    * format (with "Save Dock Positions" on), and a second driver built
+   /* Docks: the panes are docks as Qt's are - the shared model laid out
+    * by the driver. The default layout is written back as the rows Qt
+    * writes for its default (thumbnails tabbed above Core Info on the
+    * right, Boxart raised, the log hidden); and a second driver built
     * from a saved layout - the one Tatsuya79 arranged in Qt: Screenshots
-    * above Title Screen, Core Info hidden, a wider left column, the log
-    * shown - opens to it: the thumbnail pane on the Screenshots tab,
-    * Core Info hidden, the log up, the columns at the saved widths. */
+    * split out above Title Screen split out, Boxart and Core Info
+    * hidden, a wider left column, the log shown, a saved window frame -
+    * opens to exactly it. */
    {
       RECT ri, rb;
       HWND info = GetDlgItem(hwnd, IDC_CW_INFO), boxart = GetDlgItem(hwnd, IDC_CW_BOXART);
       test_settings.bools.desktop_menu_save_dock_positions = true;
       SendMessageA(hwnd, WM_SIZE, 0, 0);
-      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
-            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,0") != NULL,
-            "Core Info row: shown, right, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_boxart, "right,1,", 8) == 0
-            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,1") != NULL,
-            "boxart row: raised tab, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
-      CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,1") != NULL,
-            "title row tabbed onto boxart (%s)", test_settings.arrays.desktop_menu_dock_title);
+            && strstr(test_settings.arrays.desktop_menu_dock_boxart, ",-,1,0") != NULL,
+            "boxart row: raised tab, slot 0 (%s)", test_settings.arrays.desktop_menu_dock_boxart);
+      CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",boxart,0,0") != NULL
+            && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,0,0,", 12) == 0,
+            "title row tabbed onto boxart, carrying no size (%s)", test_settings.arrays.desktop_menu_dock_title);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL,
+            "Core Info row: shown, right, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,0,", 9) == 0,
             "log row hidden (%s)", test_settings.arrays.desktop_menu_dock_log);
+      CHECK(strncmp(test_settings.arrays.desktop_menu_dock_playlists, "left,1,280,", 11) == 0
+            && strstr(test_settings.arrays.desktop_menu_dock_playlists, ",-,0,1") != NULL,
+            "playlists row: left, 280 wide, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_playlists);
       GetWindowRect(info, &ri); GetWindowRect(boxart, &rb);
-      CHECK(ri.bottom <= rb.top, "Core Info above the thumbnails by default");
+      CHECK(IsWindowVisible(boxart) && IsWindowVisible(info) && rb.bottom <= ri.top,
+            "thumbnails above Core Info by default, as Qt's");
+      CHECK(!IsWindowVisible(GetDlgItem(hwnd, IDC_CW_BOXART + 1)), "Title Screen is a tab behind Boxart: not shown");
    }
+
    /* The Core combo's "Load Core..." item is an action, as in Qt: picking
     * it opens the Load Core window, and dismissing that puts the combo
     * back on its last real pick. */
@@ -446,22 +456,22 @@ int main(void)
    {
       void *d2;
       struct wimp_peek *p2;
-      HWND h2, info, boxart, log, btabs, pl;
-      RECT rb, rl, rp;
+      HWND h2, info, boxart, title, shot, log, pl;
+      RECT rb, rl, rp, rt;
       strlcpy(test_settings.arrays.desktop_menu_dock_search,     "left,1,340,60,-,0,0", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_playlists,  "left,1,340,500,-,0,1", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_core,       "left,1,340,40,-,0,2", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,0", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_boxart,     "right,0,0,0,-,0,2", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_title,      "right,1,300,210,-,0,1", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,420,-,0,0", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,0", 64);
-      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_logo,       "right,0,0,0,boxart,0,2", 64);
+      strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,3", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
-      test_settings.bools.desktop_menu_save_geometry     = true;
-      test_settings.uints.desktop_menu_window_x          = 20;
-      test_settings.uints.desktop_menu_window_y          = 30;
-      test_settings.uints.desktop_menu_window_width      = 1000;
-      test_settings.uints.desktop_menu_window_height     = 600;
+      test_settings.bools.desktop_menu_save_geometry = true;
+      test_settings.uints.desktop_menu_window_x      = 20;
+      test_settings.uints.desktop_menu_window_y      = 30;
+      test_settings.uints.desktop_menu_window_width  = 1000;
+      test_settings.uints.desktop_menu_window_height = 700;
       d2 = ui_companion_wimp_win32.init();
       CHECK(d2 != NULL, "second driver init from a saved layout");
       if (d2)
@@ -470,73 +480,171 @@ int main(void)
          h2     = p2->hwnd;
          info   = GetDlgItem(h2, IDC_CW_INFO);
          boxart = GetDlgItem(h2, IDC_CW_BOXART);
+         title  = GetDlgItem(h2, IDC_CW_BOXART + 1);
+         shot   = GetDlgItem(h2, IDC_CW_BOXART + 2);
          log    = GetDlgItem(h2, IDC_CW_LOG);
-         btabs  = GetDlgItem(h2, IDC_CW_BOXART_TABS);
          pl     = GetDlgItem(h2, IDC_CW_PLAYLISTS);
          ui_companion_wimp_win32.toggle(d2, true);
          pump(d2, 400);
-         CHECK(!IsWindowVisible(info), "Core Info hidden as its row says");
-         CHECK(IsWindowVisible(boxart) && IsWindowVisible(log), "thumbnails and log shown as their rows say");
-         CHECK(SendMessageA(btabs, TCM_GETCURSEL, 0, 0) == 2, "Screenshots tab raised: the topmost split-out dock (%d)", (int)SendMessageA(btabs, TCM_GETCURSEL, 0, 0));
+         CHECK(!IsWindowVisible(info) && !IsWindowVisible(boxart), "Core Info and Boxart hidden as their rows say");
+         CHECK(IsWindowVisible(shot) && IsWindowVisible(title) && IsWindowVisible(log),
+               "Screenshots, Title Screen and the log shown as their rows say");
+         GetWindowRect(shot, &rb); GetWindowRect(title, &rt);
+         CHECK(rb.bottom <= rt.top, "Screenshots above Title Screen, each its own pane (%ld <= %ld)", (long)rb.bottom, (long)rt.top);
          GetWindowRect(h2, &rp);
-         CHECK(rp.right - rp.left == 1000 && rp.bottom - rp.top == 600 && rp.left == 20 && rp.top == 30,
+         CHECK(rp.right - rp.left == 1000 && rp.bottom - rp.top == 700 && rp.left == 20 && rp.top == 30,
                "window geometry restored (%ld,%ld %ldx%ld)", (long)rp.left, (long)rp.top, (long)(rp.right - rp.left), (long)(rp.bottom - rp.top));
-         GetWindowRect(pl, &rp); GetWindowRect(boxart, &rb); GetWindowRect(log, &rl);
+         GetWindowRect(pl, &rp); GetWindowRect(log, &rl);
          CHECK(rp.right - rp.left > 300, "left column at the saved 340 (playlists %ld wide)", (long)(rp.right - rp.left));
-         CHECK(rb.right - rb.left >= 280 && rb.right - rb.left <= 300, "right column at the saved 300 (thumbnails %ld wide)", (long)(rb.right - rb.left));
-         CHECK(rl.bottom - rl.top >= 140 && rl.bottom - rl.top <= 150, "log at the saved 150 (%ld)", (long)(rl.bottom - rl.top));
+         CHECK(rb.right - rb.left >= 280 && rb.right - rb.left <= 300, "right column at the saved 300 (Screenshots %ld wide)", (long)(rb.right - rb.left));
+         CHECK(rl.bottom - rl.top >= 100 && rl.bottom - rl.top <= 150, "log inside the saved 150 (%ld)", (long)(rl.bottom - rl.top));
          /* Re-saved as shown: nothing lost in the round trip. */
          SendMessageA(h2, WM_SIZE, 0, 0);
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,", 8) == 0
-               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
-               "screenshot row re-saved raised in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0,
-               "Core Info row re-saved hidden (%s)", test_settings.arrays.desktop_menu_dock_core_info);
-         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,0,150,", 15) == 0,
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_screenshot, "right,1,300,", 12) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",-,0,0") != NULL,
+               "screenshot row re-saved standalone in slot 0 (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",-,0,1") != NULL,
+               "title row re-saved standalone in slot 1 (%s)", test_settings.arrays.desktop_menu_dock_title);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_logo, "right,0,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_logo, ",boxart,0,2") != NULL,
+               "logo row re-saved hidden, tabbed onto boxart in slot 2 (%s)", test_settings.arrays.desktop_menu_dock_logo);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,0,", 8) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,3") != NULL,
+               "Core Info row re-saved hidden in slot 3 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,", 9) == 0
+               && strstr(test_settings.arrays.desktop_menu_dock_log, ",150,-,0,0") != NULL,
                "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
          CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_x == 20,
                "window geometry re-saved (%u,%u %ux%u)", test_settings.uints.desktop_menu_window_x, test_settings.uints.desktop_menu_window_y,
                test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
-         /* Core Info back on via the View menu: below the thumbnails,
-          * where the rows put it. */
+         /* Core Info back on: below the thumbnails, in the slot its
+          * row kept for it. */
          SendMessageA(h2, WM_COMMAND, IDM_CW_TOGGLE_INFO, 0);
          pump(d2, 100);
-         GetWindowRect(info, &rp); GetWindowRect(boxart, &rb);
-         CHECK(IsWindowVisible(info) && rb.bottom <= rp.top, "Core Info shown below the thumbnails (thumbs bottom %ld, info top %ld)", (long)rb.bottom, (long)rp.top);
-         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,1") != NULL
-               && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",boxart,1,0") != NULL,
-               "rows: Core Info slot 1, thumbnails slot 0 (%s / %s)", test_settings.arrays.desktop_menu_dock_core_info, test_settings.arrays.desktop_menu_dock_screenshot);
-         /* Splitters: a drag on the gap after the left column widens
-          * it and the rows follow; a drag on the gap between the two
-          * right panes moves their split. */
+         GetWindowRect(info, &rp); GetWindowRect(title, &rt);
+         CHECK(IsWindowVisible(info) && rt.bottom <= rp.top, "Core Info shown below Title Screen (title bottom %ld, info top %ld)", (long)rt.bottom, (long)rp.top);
+         CHECK(strstr(test_settings.arrays.desktop_menu_dock_core_info, ",-,0,3") != NULL
+               && strncmp(test_settings.arrays.desktop_menu_dock_core_info, "right,1,", 8) == 0,
+               "rows: Core Info shown, still slot 3 (%s)", test_settings.arrays.desktop_menu_dock_core_info);
+         /* Gaps: a drag on the gap after the left column widens it and
+          * the rows follow; a drag on the gap between the two right
+          * panes moves their split. Gaps sit just past a pane's
+          * controls (the pane's padding, then the gap). */
          {
             RECT rb2;
-            int gx, gy, before;
             POINT pt;
+            int before;
             GetWindowRect(pl, &rp);
             before = rp.right - rp.left;
-            gx = before + 2 * 4 + 2; /* just past the column: the gap */
-            gy = 50;
-            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(gx, gy));
-            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(gx + 60, gy));
-            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(gx + 60, gy));
+            pt.x = rp.right + 4 + 2; pt.y = rp.top + 20;
+            ScreenToClient(h2, &pt);
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(pt.x, pt.y));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(pt.x + 60, pt.y));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(pt.x + 60, pt.y));
             pump(d2, 50);
             GetWindowRect(pl, &rp);
-            CHECK(rp.right - rp.left >= before + 50, "left splitter drag widened the column (%d -> %ld)", before, (long)(rp.right - rp.left));
+            CHECK(rp.right - rp.left >= before + 50, "left gap drag widened the column (%d -> %ld)", before, (long)(rp.right - rp.left));
             CHECK(strncmp(test_settings.arrays.desktop_menu_dock_playlists, "left,1,4", 8) == 0,
                   "playlists row follows the drag (%s)", test_settings.arrays.desktop_menu_dock_playlists);
-            /* Both right panes up, thumbnails on top: the gap sits just
-             * under the thumbnail image. */
-            GetWindowRect(boxart, &rb2);
-            pt.x = rb2.left + 10; pt.y = rb2.bottom + 2;
+            GetWindowRect(shot, &rb2);
+            pt.x = rb2.left + 10; pt.y = rb2.bottom + 4 + 2;
             ScreenToClient(h2, &pt);
             before = rb2.bottom - rb2.top;
             SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(pt.x, pt.y));
-            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(pt.x, pt.y + 80));
-            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(pt.x, pt.y + 80));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(pt.x, pt.y + 50));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(pt.x, pt.y + 50));
             pump(d2, 50);
-            GetWindowRect(boxart, &rb2);
-            CHECK(rb2.bottom - rb2.top >= before + 60, "pane splitter drag grew the top pane (%d -> %ld)", before, (long)(rb2.bottom - rb2.top));
+            GetWindowRect(shot, &rb2);
+            CHECK(rb2.bottom - rb2.top >= before + 40, "pane gap drag grew Screenshots (%d -> %ld)", before, (long)(rb2.bottom - rb2.top));
+         }
+         /* Drag-and-drop of a strip: Title Screen's strip (just above
+          * its control) dragged onto the middle of Screenshots tabs it
+          * there; dragged out to the content it floats in a window of
+          * its own; a double-click on that window's caption re-docks
+          * it; the strip's close glyph hides it and View > Closed Docks
+          * brings it back. */
+         {
+            RECT rs, rt2, fw;
+            POINT a, b;
+            HWND fl;
+            GetWindowRect(title, &rt2); GetWindowRect(shot, &rs);
+            a.x = rt2.left + 10; a.y = rt2.top - 4 - 8;   /* the strip above the control */
+            b.x = rs.left + (rs.right - rs.left) / 2; b.y = rs.top + (rs.bottom - rs.top) / 2;
+            ScreenToClient(h2, &a); ScreenToClient(h2, &b);
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(a.x, a.y));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(a.x + 20, a.y + 20));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(b.x, b.y));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(b.x, b.y));
+            pump(d2, 100);
+            CHECK(strstr(test_settings.arrays.desktop_menu_dock_title, ",-,1,0") != NULL
+                  && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",title,0,0") != NULL,
+                  "strip dropped mid-pane: Title Screen tabbed with Screenshots and raised (%s / %s)",
+                  test_settings.arrays.desktop_menu_dock_title, test_settings.arrays.desktop_menu_dock_screenshot);
+            CHECK(IsWindowVisible(title) && !IsWindowVisible(shot), "the raised tab shows, the other hides");
+            /* Out to the content: floats. */
+            GetWindowRect(title, &rt2);
+            a.x = rt2.left + 10; a.y = rt2.top - 4 - 8;
+            b.x = 600; b.y = 300;
+            ScreenToClient(h2, &a);
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(a.x, a.y));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(a.x + 20, a.y + 20));
+            SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(b.x, b.y));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(b.x, b.y));
+            pump(d2, 100);
+            fl = GetParent(title);
+            CHECK(fl && fl != h2 && IsWindowVisible(fl) && IsWindowVisible(title),
+                  "strip dropped on the content: Title Screen floats in its own window");
+            CHECK(strncmp(test_settings.arrays.desktop_menu_dock_title, "float,1,", 8) == 0,
+                  "floating row (%s)", test_settings.arrays.desktop_menu_dock_title);
+            CHECK(IsWindowVisible(shot), "Screenshots shows again once its tab partner left");
+            if (fl && fl != h2)
+            {
+               /* Dragged by its caption over Screenshots' middle, the
+                * float docks as a tab there (WM_MOVING tracks the
+                * pointer, WM_EXITSIZEMOVE drops), as Qt's floats do. */
+               POINT c;
+               GetWindowRect(shot, &rs);
+               c.x = rs.left + (rs.right - rs.left) / 2; c.y = rs.top + (rs.bottom - rs.top) / 2;
+               SetCursorPos(c.x, c.y);
+               GetWindowRect(fl, &fw);
+               SendMessageA(fl, WM_ENTERSIZEMOVE, 0, 0);
+               SendMessageA(fl, WM_MOVING, WMSZ_LEFT, (LPARAM)&fw);
+               SendMessageA(fl, WM_EXITSIZEMOVE, 0, 0);
+               pump(d2, 100);
+               CHECK(GetParent(title) == h2 && !IsWindowVisible(fl)
+                     && strstr(test_settings.arrays.desktop_menu_dock_screenshot, ",title,0,0") != NULL,
+                     "float dragged over a pane docks there as a tab (%s)", test_settings.arrays.desktop_menu_dock_screenshot);
+               /* Out again, then the caption double-click re-docks it
+                * on its side's end. */
+               GetWindowRect(title, &rt2);
+               a.x = rt2.left + 10; a.y = rt2.top - 4 - 8;
+               ScreenToClient(h2, &a);
+               SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(a.x, a.y));
+               SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(a.x + 20, a.y + 20));
+               SendMessageA(h2, WM_MOUSEMOVE,   MK_LBUTTON, MAKELPARAM(b.x, b.y));
+               SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(b.x, b.y));
+               pump(d2, 100);
+               CHECK(GetParent(title) == fl && IsWindowVisible(fl), "floated again");
+               GetWindowRect(fl, &fw);
+               SendMessageA(fl, WM_NCLBUTTONDBLCLK, HTCAPTION, MAKELPARAM(fw.left + 20, fw.top + 5));
+               pump(d2, 100);
+               CHECK(GetParent(title) == h2 && !IsWindowVisible(fl), "caption double-click re-docks it");
+               CHECK(strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,", 8) == 0,
+                     "re-docked row (%s)", test_settings.arrays.desktop_menu_dock_title);
+            }
+            /* The close glyph, then Closed Docks. */
+            GetWindowRect(title, &rt2);
+            a.x = rt2.right - 4 - 6; a.y = rt2.top - 4 - 8;
+            ScreenToClient(h2, &a);
+            SendMessageA(h2, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(a.x, a.y));
+            SendMessageA(h2, WM_LBUTTONUP,   0,          MAKELPARAM(a.x, a.y));
+            pump(d2, 50);
+            CHECK(!IsWindowVisible(title) && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,0,", 8) == 0,
+                  "close glyph hides the pane (%s)", test_settings.arrays.desktop_menu_dock_title);
+            SendMessageA(h2, WM_COMMAND, IDM_CW_DOCK_FIRST + COMPANION_DOCK_TITLE, 0);
+            pump(d2, 50);
+            CHECK(IsWindowVisible(title) && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,", 8) == 0,
+                  "Closed Docks shows it again (%s)", test_settings.arrays.desktop_menu_dock_title);
          }
          ui_companion_wimp_win32.deinit(d2);
       }

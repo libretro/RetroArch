@@ -93,6 +93,7 @@
 
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
 #define COMPANION_WIN32_CORES_CLASS "RetroArchCompanionCores"
+#define COMPANION_WIN32_FLOAT_CLASS "RetroArchCompanionDock"
 /* The Load Core picker: its button strip, and the size it never opens
  * below (logical px; the same floor as the Qt and Cocoa pickers). */
 #define COMPANION_WIN32_CORES_STRIP 34
@@ -137,6 +138,7 @@
 
 /* Control / command IDs. Kept clear of the ID_M_* range in ui_win32.h. */
 #include "ui_win32_companion_ids.h"
+#include "../companion/companion_dock.h"
 
 typedef struct ui_companion_win32_wimp
 {
@@ -145,31 +147,56 @@ typedef struct ui_companion_win32_wimp
    HWND playlists;   /* LISTBOX  */
    HWND entries;     /* SysListView32, report view */
    HWND status;      /* msctls_statusbar32 */
-   HWND log;         /* read-only multiline EDIT, hidden by default */
-   bool log_visible;
+   HWND log;         /* read-only multiline EDIT (the Log pane) */
    HWND info;        /* core information: SysListView32 key / value */
-   bool info_visible;
    HWND search;      /* EDIT above the entries; substring filter */
    char filter[128]; /* lower-cased search text, "" = show all */
-   HWND search_label, clear_btn;
-   HWND browser_label, tabs;
-   HWND core_label, core_combo, core_info_btn, run_btn, stop_btn;
+   HWND clear_btn;
+   HWND tabs;
+   HWND core_combo, core_info_btn, run_btn, stop_btn;
    WNDPROC search_proc;    /* the EDIT's original procedure */
    HWND items_label, view_label, view_combo;
-   HWND info_label, boxart_label;
    HFONT font;              /* the system message font at this DPI */
    int dpi;                 /* LOGPIXELSX; all layout sizes scale by it */
    int text_h;              /* font height in px, drives row heights */
    HIMAGELIST pl_icons;     /* folder icon for the playlist list */
-   HWND zoom_label, zoom, thumb_combo, boxart_tabs;
+   HWND zoom_label, zoom, thumb_combo;
    int thumb_px;            /* icon-view thumbnail edge in px, from zoom */
-   const char *boxart_subdir; /* boxart pane's type (its own tabs) */
-   HWND boxart;      /* STATIC (SS_BITMAP): selected entry's boxart */
-   HBITMAP boxart_bmp;
-   void *boxart_bits;      /* the DIB's pixels: frames are copied in place */
-   int boxart_bw, boxart_bh; /* its size */
-   bool boxart_visible;
-   long boxart_entry; /* entry index shown, -1 = none */
+   /* The four thumbnail panes (Boxart, Title Screen, Screenshot, Logo:
+    * companion_dock_id order): each a STATIC (SS_BITMAP) showing the
+    * selected entry's image of its type. Frames of an animation are
+    * copied into the pane's own DIB section rather than creating and
+    * destroying a GDI object per frame. */
+   struct
+   {
+      HWND ctl;
+      HBITMAP bmp;
+      void *bits;       /* the DIB's pixels */
+      int bw, bh;       /* its size */
+      long entry;       /* entry index shown, -1 = none, -2 = refresh */
+   } thumb_pane[4];
+   /* The docks: the shared model, its geometry for the current client
+    * size, the metrics it was laid out with, a floating pane's own
+    * window, the side a floating pane came from, and the drag in
+    * progress (a gap being moved or a strip being dragged, with the
+    * drop it would make). */
+   companion_dock_layout_t dock;
+   companion_dock_layout_t dock_scratch; /* the copy scaled for the rows */
+   companion_dock_geometry_t geom;
+   companion_dock_metrics_t dm;
+   companion_dock_drop_t drop;
+   HWND floats[COMPANION_DOCK_COUNT];
+   HMENU closed_docks_menu;   /* View > Closed Docks, filled as it opens */
+   int last_side[COMPANION_DOCK_COUNT];
+   POINT drag_start;
+   int drag_gap;
+   int drag_pane;
+   bool drag_moved;
+   bool drop_valid;
+   bool float_class_registered;
+   /* Scratch for cw_core_combo_fill: the launch options of an entry
+    * (some kilobytes of names and paths, kept off the stack). */
+   companion_launch_option_t combo_opts[6];
    /* Core the info pane currently describes; the pane follows the
     * running core from the iterate hook (only the shader commands are
     * forwarded to companions, so a load/unload is not an event here). */
@@ -229,29 +256,8 @@ typedef struct ui_companion_win32_wimp
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
-   /* Splitters: the playlist pane / entries gap (pane_w is the left
-    * column's width), the entries / right column gap (right_w), the
-    * Core Info / thumbnail gap in the right column (info_h and box_h,
-    * both 0 = share the column equally) and the gap above the log
-    * (log_h). All in pixels at this DPI; the dock rows they come from
-    * and go to are logical (see cw_grid_apply / cw_grid_store). */
-   int pane_w;
-   int right_w;
-   int info_h, box_h;
-   int log_h;
-   int splitting;  /* CW_SPLIT_* being dragged, 0 = none */
-   bool info_first; /* Core Info above the thumbnails, as Qt's default */
    bool class_registered;
 } ui_companion_win32_wimp_t;
-
-enum
-{
-   CW_SPLIT_NONE = 0,
-   CW_SPLIT_LEFT,   /* left column | entries */
-   CW_SPLIT_RIGHT,  /* entries | right column */
-   CW_SPLIT_INFO,   /* Core Info / thumbnails, in the right column */
-   CW_SPLIT_LOG     /* panes / log */
-};
 
 /* One driver instance; the WNDPROC needs to find it. */
 static ui_companion_win32_wimp_t *g_win32_wimp = NULL;
@@ -550,11 +556,17 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
 #define CW_TAG_HAS_GEN   0
 #endif
 
-/* Boxart-pane requests are tagged with the entry index and this bit. */
-#define CW_TAG_BOXART ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+/* Thumbnail-pane requests are tagged with the entry id, the pane
+ * index (bits 29-30) and this bit; a file-browser preview's id carries
+ * bit 28 so it cannot collide with a playlist entry's. */
+#define CW_TAG_BOXART       ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+#define CW_TAG_PANE(t)      ((int)(((t) >> 29) & 3))
+#define CW_TAG_ID(t)        ((long)((t) & 0x1fffffffu))
+#define CW_TAG_MAKE(id, pn) ((uintptr_t)((id) & 0x1fffffffL) | ((uintptr_t)(pn) << 29) | CW_TAG_BOXART)
+#define CW_BROWSE_ID        0x10000000L
 
-static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
-      int bw, int bh);
+static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
+      const uint32_t *bits, int bw, int bh);
 
 static void cw_thumb_done(void *ud, const char *path, int bw, int bh,
       uintptr_t tag, const uint32_t *bits)
@@ -565,8 +577,9 @@ static void cw_thumb_done(void *ud, const char *path, int bw, int bh,
    if (tag & CW_TAG_BOXART)
    {
       /* The pane: show it if it is still the selected entry's. */
-      if ((long)(tag & ~CW_TAG_BOXART) == w->boxart_entry && bits)
-         cw_boxart_show(w, bits, bw, bh);
+      int t = CW_TAG_PANE(tag);
+      if (CW_TAG_ID(tag) == w->thumb_pane[t].entry && bits)
+         cw_boxart_show(w, t, bits, bw, bh);
       return;
    }
    row = CW_TAG_ROW(tag);
@@ -755,9 +768,11 @@ static void cw_rows_commit(ui_companion_win32_wimp_t *w, size_t n)
  * shows the current folder's subfolders (".." first) and the entries
  * view its files; a folder descends on double-click / Enter. */
 static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry);
-static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, const char *path, long id);
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons);
 static void cw_layout(ui_companion_win32_wimp_t *w);
+static void cw_info_fill(ui_companion_win32_wimp_t *w);
+static long cw_focused_entry(ui_companion_win32_wimp_t *w);
+static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
 /* Shell icon for browse row @row, decided from name and attributes
  * alone (SHGFI_USEFILEATTRIBUTES: no shell or disk lookup); a drive
@@ -1096,106 +1111,272 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
 /* Logical (96-dpi) pixels of the dock rows <-> pixels at this DPI. */
 #define CW_TO_LOGICAL(w, x) MulDiv((x), 96, (w)->dpi)
 
-/* Take the pane layout from the shared dock rows (the same rows the Qt
- * companion saves and restores): column widths, which of Core Info /
- * the thumbnail pane / the log is shown, their order and heights, the
- * raised thumbnail tab. companion_dock_grid_read() maps the rows onto
- * this fixed grid; when it has nothing to apply the Qt defaults stay
- * (both right panes shown, Core Info on top, log hidden). Runs once,
- * from init, after every control exists. */
-static void cw_grid_apply(ui_companion_win32_wimp_t *w)
+/* --- Docks ------------------------------------------------------------
+ *
+ * The panes are docks in the sense the Qt companion's are: the shared
+ * model (ui/companion/companion_dock.c) owns where every pane is, how
+ * big, whether it is tabbed with others, floating or hidden, and this
+ * backend renders it. Each pane is a set of child controls; cw_layout()
+ * asks the model for the rectangles and moves the controls into them
+ * (a hidden pane's controls are hidden, a floating pane's are
+ * re-parented into a window of its own), then paints the title strips,
+ * tab bars and the drop marker itself in WM_PAINT, since no control is
+ * drawing there. A strip drags its pane (mouse capture, as the
+ * splitters already did); a strip's two glyphs float and close it, a
+ * double-click floats or re-docks, a tab raises. */
+
+/* The pane's title, from the same strings Qt's docks use. */
+static const char *cw_pane_title(enum companion_dock_id p)
 {
-   companion_dock_grid_t g;
-   if (!companion_dock_grid_read(config_get_ptr(), &g))
-      return;
-   if (g.left_w > 0)
-      w->pane_w  = CW_S(w, g.left_w);
-   if (g.right_w > 0)
-      w->right_w = CW_S(w, g.right_w);
-   if (g.info_h > 0 && g.thumbs_h > 0)
+   switch (p)
    {
-      w->info_h = CW_S(w, g.info_h);
-      w->box_h  = CW_S(w, g.thumbs_h);
+      case COMPANION_DOCK_SEARCH:     return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+      case COMPANION_DOCK_PLAYLISTS:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER);
+      case COMPANION_DOCK_CORE:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE);
+      case COMPANION_DOCK_BOXART:     return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART);
+      case COMPANION_DOCK_TITLE:      return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN);
+      case COMPANION_DOCK_SCREENSHOT: return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT);
+      case COMPANION_DOCK_LOGO:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
+      case COMPANION_DOCK_CORE_INFO:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
+      case COMPANION_DOCK_LOG:        return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG);
+      default:                        break;
    }
-   if (g.log_h > 0)
-      w->log_h   = CW_S(w, g.log_h);
-   w->info_first     = g.info_first;
-   w->info_visible   = g.info_shown;
-   w->boxart_visible = g.thumbs_shown;
-   w->log_visible    = g.log_shown;
-   if (w->info)
-      ShowWindow(w->info, w->info_visible ? SW_SHOW : SW_HIDE);
-   if (w->boxart)
-      ShowWindow(w->boxart, w->boxart_visible ? SW_SHOW : SW_HIDE);
-   if (w->log)
-      ShowWindow(w->log, w->log_visible ? SW_SHOW : SW_HIDE);
-   if (w->boxart_tabs)
-      SendMessageA(w->boxart_tabs, TCM_SETCURSEL, (WPARAM)g.thumb_tab, 0);
-   switch (g.thumb_tab)
+   return "";
+}
+
+/* The thumbnail pane index (0..3) of a thumbnail dock id, -1 otherwise. */
+static int cw_thumb_index(enum companion_dock_id p)
+{
+   if (p >= COMPANION_DOCK_BOXART && p <= COMPANION_DOCK_LOGO)
+      return (int)p - COMPANION_DOCK_BOXART;
+   return -1;
+}
+
+/* The repository subdirectory a thumbnail pane shows. */
+static const char *cw_thumb_subdir(int t)
+{
+   switch (t)
    {
-      case 1:  w->boxart_subdir = COMPANION_THUMB_TITLE;      break;
-      case 2:  w->boxart_subdir = COMPANION_THUMB_SCREENSHOT; break;
-      case 3:  w->boxart_subdir = COMPANION_THUMB_LOGO;       break;
-      default: w->boxart_subdir = COMPANION_THUMB_BOXART;     break;
+      case 1:  return COMPANION_THUMB_TITLE;
+      case 2:  return COMPANION_THUMB_SCREENSHOT;
+      case 3:  return COMPANION_THUMB_LOGO;
+      default: return COMPANION_THUMB_BOXART;
    }
 }
 
-/* The inverse: the layout on screen back into the dock rows, in
- * logical pixels, so the Qt companion (or this one next launch) opens
- * to it. The left column's three sections are measured off their
- * controls, as Qt's three left docks are. */
-static void cw_grid_store(ui_companion_win32_wimp_t *w)
+/* Every control of a pane, in a fixed order; NULL-terminated. */
+static int cw_pane_controls(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, HWND *out, int max)
 {
-   companion_dock_grid_t g;
-   RECT r, rs;
+   int n = 0;
+   int t = cw_thumb_index(p);
+#define CW_ADD(h) do { if ((h) && n < max) out[n++] = (h); } while (0)
+   switch (p)
+   {
+      case COMPANION_DOCK_SEARCH:
+         CW_ADD(w->search); CW_ADD(w->clear_btn);
+         break;
+      case COMPANION_DOCK_PLAYLISTS:
+         CW_ADD(w->tabs); CW_ADD(w->br_up); CW_ADD(w->br_start);
+         CW_ADD(w->br_downloads); CW_ADD(w->playlists);
+         break;
+      case COMPANION_DOCK_CORE:
+         CW_ADD(w->core_combo); CW_ADD(w->core_info_btn);
+         CW_ADD(w->run_btn); CW_ADD(w->stop_btn);
+         break;
+      case COMPANION_DOCK_CORE_INFO:
+         CW_ADD(w->info);
+         break;
+      case COMPANION_DOCK_LOG:
+         CW_ADD(w->log);
+         break;
+      default:
+         if (t >= 0)
+            CW_ADD(w->thumb_pane[t].ctl);
+         break;
+   }
+#undef CW_ADD
+   return n;
+}
+
+/* Lay the controls of pane @p out in @r (client coordinates of the
+ * window they are children of). */
+static void cw_pane_layout(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, const RECT *r)
+{
+   const int L  = w->text_h + CW_S(w, 4);   /* a caption line */
+   const int C  = w->text_h + CW_S(w, 10);  /* a control row */
+   const int P  = CW_S(w, 4);               /* padding */
+   int x = r->left + P, y = r->top + P;
+   int wd = r->right - r->left - 2 * P;
+   int ht = r->bottom - r->top - 2 * P;
+   int t  = cw_thumb_index(p);
+   if (wd < 0) wd = 0;
+   if (ht < 0) ht = 0;
+   switch (p)
+   {
+      case COMPANION_DOCK_SEARCH:
+      {
+         int btn_w = CW_S(w, 56);
+         MoveWindow(w->search, x, y, wd - P - btn_w, C, TRUE);
+         MoveWindow(w->clear_btn, x + wd - btn_w, y, btn_w, C, TRUE);
+         break;
+      }
+      case COMPANION_DOCK_PLAYLISTS:
+      {
+         const int TAB_H = w->text_h + CW_S(w, 10);
+         int pl_h;
+         MoveWindow(w->tabs, x, y, wd, TAB_H, TRUE);
+         y += TAB_H;
+         if (w->browse_mode)
+         {
+            /* Up | Start Directory | Downloads, three equal buttons. */
+            int bw3 = (wd - 2 * P) / 3;
+            MoveWindow(w->br_up,        x,                   y, bw3, C, TRUE);
+            MoveWindow(w->br_start,     x + P + bw3,         y, bw3, C, TRUE);
+            MoveWindow(w->br_downloads, x + 2 * (P + bw3),   y, bw3, C, TRUE);
+            y += C + P;
+         }
+         pl_h = r->bottom - P - y;
+         if (pl_h < 0) pl_h = 0;
+         MoveWindow(w->playlists, x, y, wd, pl_h, TRUE);
+         /* One column, the width of the list less the icon. */
+         SendMessageA(w->playlists, LVM_SETCOLUMNWIDTH, 0,
+               wd - CW_S(w, COMPANION_WIN32_PL_ICON) - CW_S(w, 24));
+         break;
+      }
+      case COMPANION_DOCK_CORE:
+      {
+         int sm_w = CW_S(w, 48); /* "Info" / "Run" */
+         /* A COMBOBOX's height is its dropped-list height; the closed
+          * control stays one row tall regardless. */
+         MoveWindow(w->core_combo, x, y, wd - 3 * P - 3 * sm_w,
+               C + 10 * (w->text_h + CW_S(w, 4)), TRUE);
+         MoveWindow(w->core_info_btn, x + wd - 2 * P - 3 * sm_w, y, sm_w, C, TRUE);
+         MoveWindow(w->run_btn,       x + wd - P - 2 * sm_w,     y, sm_w, C, TRUE);
+         MoveWindow(w->stop_btn,      x + wd - sm_w,             y, sm_w, C, TRUE);
+         break;
+      }
+      case COMPANION_DOCK_CORE_INFO:
+         MoveWindow(w->info, x, y, wd, ht, TRUE);
+         /* One text column; wide enough that long firmware lines
+          * scroll horizontally rather than truncate, as Qt's do. */
+         SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 800));
+         break;
+      case COMPANION_DOCK_LOG:
+         MoveWindow(w->log, x, y, wd, ht, TRUE);
+         break;
+      default:
+         if (t >= 0)
+            MoveWindow(w->thumb_pane[t].ctl, x, y, wd, ht, TRUE);
+         break;
+   }
+   (void)L;
+}
+
+static void cw_pane_show(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, bool show)
+{
+   HWND ctl[8];
+   int i, n = cw_pane_controls(w, p, ctl, 8);
+   for (i = 0; i < n; i++)
+   {
+      /* The browser buttons only show under the File Browser tab. */
+      if (     (ctl[i] == w->br_up || ctl[i] == w->br_start || ctl[i] == w->br_downloads)
+            && !w->browse_mode)
+         ShowWindow(ctl[i], SW_HIDE);
+      else
+         ShowWindow(ctl[i], show ? SW_SHOW : SW_HIDE);
+   }
+}
+
+/* Re-parent pane @p's controls into @parent. */
+static void cw_pane_reparent(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, HWND parent)
+{
+   HWND ctl[8];
+   int i, n = cw_pane_controls(w, p, ctl, 8);
+   for (i = 0; i < n; i++)
+      if (GetParent(ctl[i]) != parent)
+         SetParent(ctl[i], parent);
+}
+
+static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
+      WPARAM wparam, LPARAM lparam);
+
+/* The floating pane's own window: created the first time the pane
+ * floats, hidden while it is docked. Owned by the companion window so
+ * it stays above it and hides with it. */
+static HWND cw_float_window(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   HINSTANCE inst = GetModuleHandleA(NULL);
+   if (w->floats[p])
+      return w->floats[p];
+   if (!w->float_class_registered)
+   {
+      WNDCLASSA wc;
+      memset(&wc, 0, sizeof(wc));
+      wc.lpfnWndProc   = cw_float_wndproc;
+      wc.hInstance     = inst;
+      wc.hCursor       = LoadCursorA(NULL, MAKEINTRESOURCEA(32512));
+      wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+      wc.lpszClassName = COMPANION_WIN32_FLOAT_CLASS;
+      wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
+      if (!RegisterClassA(&wc))
+         return NULL;
+      w->float_class_registered = true;
+   }
+   w->floats[p] = CreateWindowExA(WS_EX_TOOLWINDOW, COMPANION_WIN32_FLOAT_CLASS,
+         cw_pane_title(p), WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+         CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, 300), CW_S(w, 240),
+         w->hwnd, NULL, inst, NULL);
+   if (w->floats[p])
+      SetWindowLongPtrA(w->floats[p], GWLP_USERDATA, (LONG_PTR)(int)p);
+   return w->floats[p];
+}
+
+/* The dock rows are logical pixels; the model here is in pixels. */
+static void cw_dock_scale(companion_dock_layout_t *l, int num, int den)
+{
+   int s, i;
+   for (s = 0; s < COMPANION_DOCK_SIDES; s++)
+   {
+      l->side_size[s] = MulDiv(l->side_size[s], num, den);
+      for (i = 0; i < l->nslots[s]; i++)
+         l->slots[s][i].size = MulDiv(l->slots[s][i].size, num, den);
+   }
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+   {
+      l->floats[i].x = MulDiv(l->floats[i].x, num, den);
+      l->floats[i].y = MulDiv(l->floats[i].y, num, den);
+      l->floats[i].w = MulDiv(l->floats[i].w, num, den);
+      l->floats[i].h = MulDiv(l->floats[i].h, num, den);
+   }
+}
+
+/* The layout from the shared dock rows (the same rows the Qt companion
+ * saves and restores), or Qt's default when there is nothing to
+ * apply. Once, from init, after every control exists. */
+static void cw_dock_load(ui_companion_win32_wimp_t *w)
+{
+   int i;
+   companion_dock_from_rows(config_get_ptr(), &w->dock);
+   cw_dock_scale(&w->dock, w->dpi, 96);
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+      w->last_side[i] = w->dock.area[i] == COMPANION_DOCK_FLOAT
+         ? COMPANION_DOCK_RIGHT : w->dock.area[i];
+}
+
+/* The layout on screen back into the dock rows so the Qt companion (or
+ * this one next launch) opens to it. */
+static void cw_dock_store(ui_companion_win32_wimp_t *w)
+{
    settings_t *settings = config_get_ptr();
    if (!settings->bools.desktop_menu_save_dock_positions)
       return;
-   memset(&g, 0, sizeof(g));
-   g.left_w       = CW_TO_LOGICAL(w, w->pane_w);
-   g.right_w      = CW_TO_LOGICAL(w, w->right_w);
-   g.log_h        = CW_TO_LOGICAL(w, w->log_h);
-   g.info_shown   = w->info_visible;
-   g.thumbs_shown = w->boxart_visible;
-   g.log_shown    = w->log_visible;
-   g.info_first   = w->info_first;
-   if (w->boxart_tabs)
-      g.thumb_tab = (int)SendMessageA(w->boxart_tabs, TCM_GETCURSEL, 0, 0);
-   if (g.thumb_tab < 0 || g.thumb_tab > 3)
-      g.thumb_tab = 0;
-   /* Right column heights as laid out: the caption's top to the
-    * control's bottom, either pane alone is the whole column. */
-   if (w->info_visible && w->info && w->info_label)
-   {
-      GetWindowRect(w->info_label, &r);
-      GetWindowRect(w->info, &rs);
-      g.info_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
-   }
-   if (w->boxart_visible && w->boxart && w->boxart_label)
-   {
-      GetWindowRect(w->boxart_label, &r);
-      GetWindowRect(w->boxart, &rs);
-      g.thumbs_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
-   }
-   if (w->search_label && w->search)
-   {
-      GetWindowRect(w->search_label, &r);
-      GetWindowRect(w->search, &rs);
-      g.search_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
-   }
-   if (w->browser_label && w->playlists)
-   {
-      GetWindowRect(w->browser_label, &r);
-      GetWindowRect(w->playlists, &rs);
-      g.playlists_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
-   }
-   if (w->core_label && w->run_btn)
-   {
-      GetWindowRect(w->core_label, &r);
-      GetWindowRect(w->run_btn, &rs);
-      g.core_h = CW_TO_LOGICAL(w, rs.bottom - r.top);
-   }
-   companion_dock_grid_write(settings, &g);
+   w->dock_scratch = w->dock;
+   cw_dock_scale(&w->dock_scratch, 96, w->dpi);
+   companion_dock_to_rows(settings, &w->dock_scratch);
 }
 
 /* The window's screen rectangle into desktop_menu_window_* (logical
@@ -1217,240 +1398,572 @@ static void cw_geometry_store(ui_companion_win32_wimp_t *w)
    settings->uints.desktop_menu_window_height = (unsigned)CW_TO_LOGICAL(w, r.bottom - r.top);
 }
 
+/* A floating pane's window: position from the model (a fresh float
+ * with no rectangle yet takes Qt's habit of the pane's docked size at
+ * the pointer), shown, its controls inside it. */
+static void cw_float_show(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   HWND fw = cw_float_window(w, p);
+   companion_rect_t *fr = &w->dock.floats[p];
+   RECT rc;
+   if (!fw)
+      return;
+   cw_pane_reparent(w, p, fw);
+   if (fr->w > 0 && fr->h > 0)
+   {
+      /* A saved position on a monitor that is gone stays reachable. */
+      RECT wa;
+      companion_rect_t avail, out;
+      if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0))
+      {
+         wa.left = wa.top = 0;
+         wa.right  = GetSystemMetrics(SM_CXSCREEN);
+         wa.bottom = GetSystemMetrics(SM_CYSCREEN);
+      }
+      avail.x = wa.left; avail.y = wa.top;
+      avail.w = wa.right - wa.left; avail.h = wa.bottom - wa.top;
+      out = *fr;
+      if (out.x + out.w > avail.x + avail.w) out.x = avail.x + avail.w - out.w;
+      if (out.y + out.h > avail.y + avail.h) out.y = avail.y + avail.h - out.h;
+      if (out.x < avail.x) out.x = avail.x;
+      if (out.y < avail.y) out.y = avail.y;
+      SetWindowPos(fw, NULL, out.x, out.y, out.w, out.h, SWP_NOZORDER | SWP_NOACTIVATE);
+   }
+   if (!IsWindowVisible(fw))
+      ShowWindow(fw, SW_SHOWNOACTIVATE);
+   GetClientRect(fw, &rc);
+   cw_pane_layout(w, p, &rc);
+   cw_pane_show(w, p, true);
+}
+
 static void cw_layout(ui_companion_win32_wimp_t *w)
 {
    RECT rc, sb;
    int status_h = 0;
+   companion_rect_t client;
+   int i;
+   const int C = w ? w->text_h + CW_S(w, 10) : 24;
+   const int L = w ? w->text_h + CW_S(w, 4) : 18;
+   const int P = w ? CW_S(w, 4) : 4;
 
    if (!w || !w->hwnd)
       return;
 
    GetClientRect(w->hwnd, &rc);
-
    if (w->status)
    {
       SendMessageA(w->status, WM_SIZE, 0, 0);
       GetWindowRect(w->status, &sb);
       status_h = sb.bottom - sb.top;
    }
+   client.x = 0; client.y = 0;
+   client.w = rc.right;
+   client.h = rc.bottom - status_h;
+   if (client.h < 0) client.h = 0;
 
-   /* Keep the pane inside the window as it is resized. */
+   w->dm.gap      = CW_S(w, COMPANION_WIN32_SPLIT_W);
+   w->dm.strip_h  = w->text_h + CW_S(w, 6);
+   w->dm.tab_h    = w->text_h + CW_S(w, 8);
+   w->dm.min_pane = CW_S(w, 40);
+   w->dm.def_side = CW_S(w, 280);
+   w->dm.def_bar  = CW_S(w, COMPANION_WIN32_LOG_H);
+   w->dm.def_slot = CW_S(w, 200);
+   companion_dock_layout(&w->dock, &w->dm, &client, &w->geom);
+
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
    {
-      int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
-      int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
-      if (w->pane_w > rc.right - pane_min - split_w)
-         w->pane_w = rc.right - pane_min - split_w;
-      if (w->pane_w < pane_min)
-         w->pane_w = pane_min;
+      enum companion_dock_id p = (enum companion_dock_id)i;
+      if (w->geom.laid_out[i])
+      {
+         RECT r;
+         cw_pane_reparent(w, p, w->hwnd);
+         r.left   = w->geom.pane[i].x;
+         r.top    = w->geom.pane[i].y;
+         r.right  = r.left + w->geom.pane[i].w;
+         r.bottom = r.top + w->geom.pane[i].h;
+         cw_pane_layout(w, p, &r);
+         cw_pane_show(w, p, true);
+         if (w->floats[i] && IsWindowVisible(w->floats[i]))
+            ShowWindow(w->floats[i], SW_HIDE);
+      }
+      else if (w->dock.area[i] == COMPANION_DOCK_FLOAT && w->dock.shown[i]
+            && IsWindowVisible(w->hwnd))
+         cw_float_show(w, p);
+      else
+      {
+         cw_pane_show(w, p, false);
+         if (w->floats[i] && IsWindowVisible(w->floats[i]))
+            ShowWindow(w->floats[i], SW_HIDE);
+      }
    }
 
+   /* Centre: the content view with Qt's footer ("N items" left, View
+    * combo right). */
    {
-      int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
-      int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
-      bool r_info  = (w->info_visible && w->info);
-      bool r_box   = (w->boxart_visible && w->boxart);
-      int log_h, right_w, list_h, entry_x, entry_w;
-      /* Rows follow the font: a caption is one line, a control a line
-       * plus button chrome. */
-      const int L  = w->text_h + CW_S(w, 4);
-      const int C  = w->text_h + CW_S(w, 10);
-      const int P  = CW_S(w, 4); /* padding */
-      const int TAB_H = w->text_h + CW_S(w, 10);
-      int y;
-      /* The log and the right column take the sizes they were last
-       * dragged or restored to, clamped so the entries keep their
-       * minimum. */
-      if (w->log_h <= 0)
-         w->log_h   = CW_S(w, COMPANION_WIN32_LOG_H);
-      if (w->right_w <= 0)
-         w->right_w = CW_S(w, COMPANION_WIN32_INFO_W);
-      if (w->log_h > rc.bottom - status_h - pane_min - split_w)
-         w->log_h   = rc.bottom - status_h - pane_min - split_w;
-      if (w->log_h < pane_min)
-         w->log_h   = pane_min;
-      if (w->right_w > rc.right - w->pane_w - 2 * split_w - pane_min)
-         w->right_w = rc.right - w->pane_w - 2 * split_w - pane_min;
-      if (w->right_w < pane_min)
-         w->right_w = pane_min;
-      log_h   = (w->log_visible && w->log) ? w->log_h + split_w : 0;
-      right_w = (r_info || r_box) ? w->right_w + split_w : 0;
-      list_h  = rc.bottom - status_h - log_h;
-      entry_x = w->pane_w + split_w;
-      entry_w = rc.right - entry_x - right_w;
-      if (list_h < 0)
-         list_h = 0;
-      if (entry_w < CW_S(w, COMPANION_WIN32_PANE_MIN))
-      {
-         right_w = 0;
-         r_info  = r_box = false;
-         entry_w = rc.right - entry_x;
-      }
-
-      /* Left column, laid out like the Qt companion's docks:
-       *   Search        [ edit ][Clear]
-       *   Content Browser
-       *   [Playlists | File Browser]
-       *   [ playlist list ...                ]
-       *   Core
-       *   [ launch-with combo ][Info][Run]  */
-      y = P;
-      {
-         int btn_w = CW_S(w, 56); /* "Clear" */
-         int sm_w  = CW_S(w, 48); /* "Info" / "Run" */
-         MoveWindow(w->search_label, P, y, w->pane_w - 2 * P, L, TRUE);
-         y += L;
-         MoveWindow(w->search, P, y, w->pane_w - 3 * P - btn_w, C, TRUE);
-         MoveWindow(w->clear_btn, w->pane_w - P - btn_w, y, btn_w, C, TRUE);
-         y += C + P;
-         MoveWindow(w->browser_label, P, y, w->pane_w - 2 * P, L, TRUE);
-         y += L;
-         MoveWindow(w->tabs, P, y, w->pane_w - 2 * P, TAB_H, TRUE);
-         y += TAB_H;
-         if (w->browse_mode)
-         {
-            /* Up | Start Directory | Downloads, three equal buttons. */
-            int bw3 = (w->pane_w - 4 * P) / 3;
-            MoveWindow(w->br_up,        P,               y, bw3, C, TRUE);
-            MoveWindow(w->br_start,     2 * P + bw3,     y, bw3, C, TRUE);
-            MoveWindow(w->br_downloads, 3 * P + 2 * bw3, y, bw3, C, TRUE);
-            y += C + P;
-         }
-         {
-            int core_h = P + L + C + P;           /* the Core section */
-            int pl_h   = list_h - y - core_h;
-            if (pl_h < 0)
-               pl_h = 0;
-            MoveWindow(w->playlists, P, y, w->pane_w - 2 * P, pl_h, TRUE);
-            /* One column, the width of the list less the icon. */
-            SendMessageA(w->playlists, LVM_SETCOLUMNWIDTH, 0,
-                  w->pane_w - 2 * P - CW_S(w, COMPANION_WIN32_PL_ICON) - CW_S(w, 24));
-            y += pl_h + P;
-            MoveWindow(w->core_label, P, y, w->pane_w - 2 * P, L, TRUE);
-            y += L;
-            /* A COMBOBOX's height is its dropped-list height; the closed
-             * control stays one row tall regardless. */
-            MoveWindow(w->core_combo, P, y, w->pane_w - 5 * P - 3 * sm_w,
-                  C + 10 * (w->text_h + CW_S(w, 4)), TRUE);
-            MoveWindow(w->core_info_btn, w->pane_w - 3 * P - 3 * sm_w, y, sm_w, C, TRUE);
-            MoveWindow(w->run_btn, w->pane_w - 2 * P - 2 * sm_w, y, sm_w, C, TRUE);
-            MoveWindow(w->stop_btn, w->pane_w - P - sm_w, y, sm_w, C, TRUE);
-         }
-      }
-
-      /* Centre: the content view with Qt's footer ("N items" left,
-       * View combo right). */
-      {
-         int fh        = C + 2 * P;
-         int eh        = list_h - fh;
-         int cb_w      = CW_S(w, 110);   /* View combo */
-         int lb_w      = CW_S(w, 44);    /* "View" caption */
-         int list_room = C + 5 * (w->text_h + CW_S(w, 4)); /* combo drop room */
-         int tb_w      = CW_S(w, 130);   /* Thumbnail type combo */
-         int zs_w      = CW_S(w, 140);   /* zoom slider */
-         int x         = entry_x + entry_w - P;
-         if (eh < 0)
-            eh = 0;
-         MoveWindow(w->entries, entry_x, 0, entry_w, eh, TRUE);
-         MoveWindow(w->items_label, entry_x + P, eh + P + (C - L) / 2,
-               CW_S(w, 160), L, TRUE);
-         /* Right-aligned run, as Qt's footer: View, Thumbnail, Zoom. */
-         x -= cb_w;
-         MoveWindow(w->view_combo, x, eh + P, cb_w, list_room, TRUE);
-         x -= P + tb_w;
-         MoveWindow(w->thumb_combo, x, eh + P, tb_w, list_room, TRUE);
-         x -= P + zs_w;
-         MoveWindow(w->zoom, x, eh + P, zs_w, C, TRUE);
-         x -= P + lb_w;
-         MoveWindow(w->zoom_label, x, eh + P + (C - L) / 2, lb_w, L, TRUE);
-         MoveWindow(w->view_label, 0, 0, 0, 0, TRUE); /* Qt shows none */
-         /* Name / Core columns share the list width (Qt: name wider). */
-         SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 0, (entry_w * 2) / 3 - CW_S(w, 8));
-         SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 1, entry_w / 3 - CW_S(w, 24));
-      }
-
-      /* Right column: a "Core Info" caption + list and a "Boxart"
-       * caption + tabs + image, one above the other in the order the
-       * dock rows say (Core Info on top by default, as Qt's), a
-       * draggable gap between them; each takes the full column when
-       * alone. */
-      {
-         int rx     = entry_x + entry_w + split_w;
-         int box_h, info_h, info_y, box_y;
-         int iw     = w->right_w;
-         if (r_info && r_box)
-         {
-            /* Both: the dragged / restored heights as a ratio of the
-             * column, equal halves when there are none. */
-            int col = list_h - split_w;
-            if (w->info_h > 0 && w->box_h > 0)
-               info_h = (int)((long)col * w->info_h / (w->info_h + w->box_h));
-            else
-               info_h = col / 2;
-            if (info_h < pane_min)
-               info_h = pane_min;
-            if (info_h > col - pane_min)
-               info_h = col - pane_min;
-            box_h  = col - info_h;
-            if (w->info_first)
-            {
-               info_y = 0;
-               box_y  = info_h + split_w;
-            }
-            else
-            {
-               box_y  = 0;
-               info_y = box_h + split_w;
-            }
-         }
-         else
-         {
-            info_h = r_info ? list_h : 0;
-            box_h  = r_box  ? list_h : 0;
-            info_y = box_y = 0;
-         }
-         if (r_info)
-         {
-            MoveWindow(w->info_label, rx, info_y + P, iw - P, L, TRUE);
-            MoveWindow(w->info, rx, info_y + P + L, iw - P, info_h - L - P, TRUE);
-            /* One text column; wide enough that long firmware lines
-             * scroll horizontally rather than truncate, as Qt's do. */
-            SendMessageA(w->info, LVM_SETCOLUMNWIDTH, 0, CW_S(w, 800));
-         }
-         else
-         {
-            MoveWindow(w->info_label, rx, 0, 0, 0, TRUE);
-            MoveWindow(w->info, rx, 0, 0, 0, TRUE);
-         }
-         if (r_box)
-         {
-            int tab_h = w->text_h + CW_S(w, 10);
-            MoveWindow(w->boxart_label, rx, box_y + P, iw - P, L, TRUE);
-            MoveWindow(w->boxart_tabs, rx, box_y + P + L, iw - P, tab_h, TRUE);
-            MoveWindow(w->boxart, rx, box_y + P + L + tab_h, iw - P,
-                  box_h - P - L - tab_h, TRUE);
-         }
-         else
-         {
-            MoveWindow(w->boxart_label, rx, 0, 0, 0, TRUE);
-            MoveWindow(w->boxart_tabs, rx, 0, 0, 0, TRUE);
-            MoveWindow(w->boxart, rx, 0, 0, 0, TRUE);
-         }
-         ShowWindow(w->info_label, r_info ? SW_SHOW : SW_HIDE);
-         ShowWindow(w->boxart_label, r_box ? SW_SHOW : SW_HIDE);
-         ShowWindow(w->boxart_tabs, r_box ? SW_SHOW : SW_HIDE);
-      }
-
-      if (w->log)
-         MoveWindow(w->log, 0, list_h + split_w, rc.right,
-               log_h > split_w ? log_h - split_w : 0, TRUE);
+      int entry_x   = w->geom.content.x;
+      int entry_w   = w->geom.content.w;
+      int fh        = C + 2 * P;
+      int eh        = w->geom.content.h - fh;
+      int cb_w      = CW_S(w, 110);   /* View combo */
+      int lb_w      = CW_S(w, 44);    /* "View" caption */
+      int list_room = C + 5 * (w->text_h + CW_S(w, 4)); /* combo drop room */
+      int tb_w      = CW_S(w, 130);   /* Thumbnail type combo */
+      int zs_w      = CW_S(w, 140);   /* zoom slider */
+      int x         = entry_x + entry_w - P;
+      int top       = w->geom.content.y;
+      if (eh < 0)
+         eh = 0;
+      MoveWindow(w->entries, entry_x, top, entry_w, eh, TRUE);
+      MoveWindow(w->items_label, entry_x + P, top + eh + P + (C - L) / 2,
+            CW_S(w, 160), L, TRUE);
+      /* Right-aligned run, as Qt's footer: View, Thumbnail, Zoom. */
+      x -= cb_w;
+      MoveWindow(w->view_combo, x, top + eh + P, cb_w, list_room, TRUE);
+      x -= P + tb_w;
+      MoveWindow(w->thumb_combo, x, top + eh + P, tb_w, list_room, TRUE);
+      x -= P + zs_w;
+      MoveWindow(w->zoom, x, top + eh + P, zs_w, C, TRUE);
+      x -= P + lb_w;
+      MoveWindow(w->zoom_label, x, top + eh + P + (C - L) / 2, lb_w, L, TRUE);
+      MoveWindow(w->view_label, 0, 0, 0, 0, TRUE); /* Qt shows none */
+      /* Name / Core columns share the list width (Qt: name wider). */
+      SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 0, (entry_w * 2) / 3 - CW_S(w, 8));
+      SendMessageA(w->entries, LVM_SETCOLUMNWIDTH, 1, entry_w / 3 - CW_S(w, 24));
    }
+
+   /* The strips, tab bars and gaps are painted by the window. */
+   InvalidateRect(w->hwnd, NULL, TRUE);
 
    /* Keep the shared rows current so a quit from RetroArch's own menu
     * writes what is on screen (retroarch.cfg is written before the
     * companion is torn down); nothing while hidden or minimised, a
     * hidden window has no layout worth keeping. */
    if (IsWindowVisible(w->hwnd) && !IsIconic(w->hwnd))
-      cw_grid_store(w);
+      cw_dock_store(w);
+}
+
+/* The two glyphs at the right of a strip: float, then close. */
+static void cw_strip_glyphs(ui_companion_win32_wimp_t *w,
+      const companion_rect_t *strip, RECT *fl, RECT *cl)
+{
+   int sz = strip->h - CW_S(w, 4);
+   cl->right  = strip->x + strip->w - CW_S(w, 2);
+   cl->left   = cl->right - sz;
+   cl->top    = strip->y + CW_S(w, 2);
+   cl->bottom = cl->top + sz;
+   fl->right  = cl->left - CW_S(w, 2);
+   fl->left   = fl->right - sz;
+   fl->top    = cl->top;
+   fl->bottom = cl->bottom;
+}
+
+static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
+{
+   int i, k;
+   HFONT old = w->font ? (HFONT)SelectObject(hdc, w->font) : NULL;
+   SetBkMode(hdc, TRANSPARENT);
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+   {
+      const companion_rect_t *st = &w->geom.strip[i];
+      RECT r, fl, cl;
+      if (!w->geom.laid_out[i])
+         continue;
+      /* The strip: a light band with the title, the glyphs at the right. */
+      r.left = st->x; r.top = st->y;
+      r.right = st->x + st->w; r.bottom = st->y + st->h;
+      FillRect(hdc, &r, (HBRUSH)(COLOR_BTNFACE + 1));
+      SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
+      r.left += CW_S(w, 6);
+      DrawTextA(hdc, cw_pane_title((enum companion_dock_id)i), -1, &r,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+      cw_strip_glyphs(w, st, &fl, &cl);
+      DrawFrameControl(hdc, &fl, DFC_CAPTION, DFCS_CAPTIONRESTORE | DFCS_FLAT);
+      DrawFrameControl(hdc, &cl, DFC_CAPTION, DFCS_CAPTIONCLOSE | DFCS_FLAT);
+      /* The tab bar of a group: one tab per shown member, the raised
+       * one in the window colour, the rest as buttons. */
+      if (w->geom.tabbar[i].h > 0)
+      {
+         enum companion_dock_area side;
+         int idx, shown = 0, n = 0, x, tw;
+         const companion_dock_slot_t *sl;
+         if (!companion_dock_find(&w->dock, (enum companion_dock_id)i, &side, &idx))
+            continue;
+         sl = &w->dock.slots[side][idx];
+         for (k = 0; k < sl->n; k++)
+            if (w->dock.shown[sl->members[k]])
+               shown++;
+         if (shown < 2)
+            continue;
+         tw = w->geom.tabbar[i].w / shown;
+         x  = w->geom.tabbar[i].x;
+         for (k = 0; k < sl->n; k++)
+         {
+            int m = sl->members[k];
+            if (!w->dock.shown[m])
+               continue;
+            r.left = x; r.top = w->geom.tabbar[i].y;
+            r.right = (n == shown - 1) ? w->geom.tabbar[i].x + w->geom.tabbar[i].w : x + tw;
+            r.bottom = r.top + w->geom.tabbar[i].h;
+            if (m == i)
+            {
+               FillRect(hdc, &r, (HBRUSH)(COLOR_WINDOW + 1));
+               DrawEdge(hdc, &r, EDGE_ETCHED, BF_LEFT | BF_RIGHT | BF_BOTTOM);
+            }
+            else
+               DrawFrameControl(hdc, &r, DFC_BUTTON, DFCS_BUTTONPUSH);
+            r.left += CW_S(w, 4); r.right -= CW_S(w, 4);
+            DrawTextA(hdc, cw_pane_title((enum companion_dock_id)m), -1, &r,
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            x += tw;
+            n++;
+         }
+      }
+   }
+   /* The drop marker while a strip is being dragged: a hatched frame
+    * over where the pane would land. */
+   if (w->drag_pane >= 0 && w->drop_valid && w->drop.kind != COMPANION_DOCK_DROP_FLOAT)
+   {
+      RECT r;
+      HBRUSH hb = CreateHatchBrush(HS_DIAGCROSS, GetSysColor(COLOR_HIGHLIGHT));
+      r.left = w->drop.indicator.x; r.top = w->drop.indicator.y;
+      r.right = r.left + w->drop.indicator.w; r.bottom = r.top + w->drop.indicator.h;
+      if (hb)
+      {
+         RECT inner = r;
+         int b = CW_S(w, 4);
+         InflateRect(&inner, -b, -b);
+         FrameRect(hdc, &r, hb);
+         FrameRect(hdc, &inner, hb);
+         DeleteObject(hb);
+      }
+   }
+   if (old)
+      SelectObject(hdc, old);
+}
+
+/* Hidden panes, for View > Closed Docks. */
+static bool cw_dock_hidden(ui_companion_win32_wimp_t *w, int i)
+{
+   return !w->dock.shown[i];
+}
+
+static void cw_dock_show_pane(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, bool show)
+{
+   int t;
+   companion_dock_set_shown(&w->dock, p, show);
+   if (show)
+      companion_dock_raise(&w->dock, p);
+   cw_layout(w);
+   if (!show)
+      return;
+   if (p == COMPANION_DOCK_CORE_INFO)
+      cw_info_fill(w);
+   t = cw_thumb_index(p);
+   if (t >= 0)
+   {
+      w->thumb_pane[t].entry = -2; /* force a refresh */
+      cw_boxart_update(w, cw_focused_entry(w));
+   }
+}
+
+/* Float @p: at its docked rectangle, as Qt does on a strip double-click
+ * or the float glyph. */
+static void cw_dock_float_pane(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   companion_rect_t r;
+   POINT pt;
+   enum companion_dock_area side;
+   int idx;
+   if (!companion_dock_find(&w->dock, p, &side, &idx))
+      return;
+   w->last_side[p] = side;
+   pt.x = w->geom.strip[p].x; pt.y = w->geom.strip[p].y;
+   ClientToScreen(w->hwnd, &pt);
+   r.x = pt.x; r.y = pt.y;
+   r.w = w->geom.strip[p].w;
+   r.h = w->geom.pane[p].y + w->geom.pane[p].h + w->geom.tabbar[p].h - w->geom.strip[p].y;
+   if (r.w < w->dm.min_pane) r.w = w->dm.def_side;
+   if (r.h < w->dm.min_pane) r.h = w->dm.def_slot;
+   companion_dock_float(&w->dock, p, &r);
+   cw_layout(w);
+}
+
+/* Dock a floating pane back: the end of the side it came from. */
+static void cw_dock_redock_pane(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   if (w->dock.area[p] != COMPANION_DOCK_FLOAT)
+      return;
+   companion_dock_place(&w->dock, p, (enum companion_dock_area)w->last_side[p],
+         COMPANION_DOCK_COUNT);
+   cw_layout(w);
+}
+
+/* Where a strip drag would drop, for the marker and the release. */
+static void cw_drag_update(ui_companion_win32_wimp_t *w, int x, int y)
+{
+   RECT rc, sb;
+   companion_rect_t client;
+   int status_h = 0;
+   GetClientRect(w->hwnd, &rc);
+   if (w->status)
+   {
+      GetWindowRect(w->status, &sb);
+      status_h = sb.bottom - sb.top;
+   }
+   client.x = 0; client.y = 0; client.w = rc.right; client.h = rc.bottom - status_h;
+   companion_dock_drop_target(&w->dock, &w->geom, &w->dm, &client,
+         (enum companion_dock_id)w->drag_pane, x, y, &w->drop);
+   w->drop_valid = true;
+   InvalidateRect(w->hwnd, NULL, FALSE);
+}
+
+static void cw_drag_end(ui_companion_win32_wimp_t *w, int x, int y, bool apply)
+{
+   enum companion_dock_id p = (enum companion_dock_id)w->drag_pane;
+   if (w->drag_pane < 0)
+      return;
+   w->drag_pane = -1;
+   if (apply && w->drag_moved && w->drop_valid)
+   {
+      companion_rect_t r;
+      POINT pt;
+      enum companion_dock_area side;
+      int idx;
+      pt.x = x; pt.y = y;
+      ClientToScreen(w->hwnd, &pt);
+      /* A float lands with its strip under the pointer, at its docked
+       * size. */
+      r.w = w->geom.strip[p].w > 0 ? w->geom.strip[p].w : w->dm.def_side;
+      r.h = w->geom.laid_out[p]
+         ? w->geom.pane[p].y + w->geom.pane[p].h + w->geom.tabbar[p].h - w->geom.strip[p].y
+         : w->dm.def_slot;
+      r.x = pt.x - r.w / 2;
+      r.y = pt.y - w->dm.strip_h / 2;
+      if (companion_dock_find(&w->dock, p, &side, &idx))
+         w->last_side[p] = side;
+      companion_dock_apply_drop(&w->dock, p, &w->drop, &r);
+   }
+   w->drop_valid = false;
+   cw_layout(w);
+}
+
+/* The strip glyph under a point: 1 float, 2 close, 0 neither. */
+static int cw_strip_glyph_hit(ui_companion_win32_wimp_t *w,
+      enum companion_dock_id p, int x, int y)
+{
+   RECT fl, cl;
+   POINT pt;
+   pt.x = x; pt.y = y;
+   cw_strip_glyphs(w, &w->geom.strip[p], &fl, &cl);
+   if (PtInRect(&cl, pt)) return 2;
+   if (PtInRect(&fl, pt)) return 1;
+   return 0;
+}
+
+/* Mouse on the companion window's own surface: the strips, tabs and
+ * gaps. Returns true when handled. */
+static bool cw_dock_mouse(ui_companion_win32_wimp_t *w, UINT msg, int x, int y)
+{
+   companion_dock_hit_t hit;
+   switch (msg)
+   {
+      case WM_LBUTTONDOWN:
+         companion_dock_hit_test(&w->dock, &w->geom, &w->dm, x, y, &hit);
+         switch (hit.kind)
+         {
+            case COMPANION_DOCK_HIT_GAP:
+               w->drag_gap = hit.gap;
+               SetCapture(w->hwnd);
+               return true;
+            case COMPANION_DOCK_HIT_STRIP:
+               switch (cw_strip_glyph_hit(w, hit.pane, x, y))
+               {
+                  case 2: cw_dock_show_pane(w, hit.pane, false); return true;
+                  case 1: cw_dock_float_pane(w, hit.pane);       return true;
+                  default: break;
+               }
+               w->drag_pane    = (int)hit.pane;
+               w->drag_moved   = false;
+               w->drop_valid   = false;
+               w->drag_start.x = x;
+               w->drag_start.y = y;
+               SetCapture(w->hwnd);
+               return true;
+            case COMPANION_DOCK_HIT_TAB:
+               companion_dock_raise(&w->dock, hit.pane);
+               cw_layout(w);
+               cw_dock_show_pane(w, hit.pane, true);
+               return true;
+            default:
+               break;
+         }
+         return false;
+      case WM_LBUTTONDBLCLK:
+         companion_dock_hit_test(&w->dock, &w->geom, &w->dm, x, y, &hit);
+         if (hit.kind == COMPANION_DOCK_HIT_STRIP && !cw_strip_glyph_hit(w, hit.pane, x, y))
+         {
+            cw_dock_float_pane(w, hit.pane);
+            return true;
+         }
+         return false;
+      case WM_MOUSEMOVE:
+         if (w->drag_gap >= 0)
+         {
+            RECT rc, sb;
+            companion_rect_t client;
+            int status_h = 0;
+            bool vertical = w->geom.gaps[w->drag_gap].rect.h > w->geom.gaps[w->drag_gap].rect.w;
+            GetClientRect(w->hwnd, &rc);
+            if (w->status)
+            {
+               GetWindowRect(w->status, &sb);
+               status_h = sb.bottom - sb.top;
+            }
+            client.x = 0; client.y = 0; client.w = rc.right; client.h = rc.bottom - status_h;
+            companion_dock_drag_gap(&w->dock, &w->geom, &w->dm, &client, w->drag_gap,
+                  vertical ? x : y);
+            cw_layout(w);
+            return true;
+         }
+         if (w->drag_pane >= 0)
+         {
+            if (     !w->drag_moved
+                  && abs(x - w->drag_start.x) < CW_S(w, 4)
+                  && abs(y - w->drag_start.y) < CW_S(w, 4))
+               return true;
+            w->drag_moved = true;
+            cw_drag_update(w, x, y);
+            return true;
+         }
+         return false;
+      case WM_LBUTTONUP:
+         if (w->drag_gap >= 0)
+         {
+            w->drag_gap = -1;
+            ReleaseCapture();
+            return true;
+         }
+         if (w->drag_pane >= 0)
+         {
+            /* The drop first: ReleaseCapture() sends WM_CAPTURECHANGED,
+             * which cancels a drag still in progress. */
+            cw_drag_end(w, x, y, true);
+            ReleaseCapture();
+            return true;
+         }
+         return false;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* The pointer, in the companion window's client, while a floating
+ * pane's window is being dragged: a drop target over the docks shows
+ * the marker (the strip drag's), elsewhere none. */
+static void cw_float_moving(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   POINT pt;
+   if (!GetCursorPos(&pt))
+      return;
+   ScreenToClient(w->hwnd, &pt);
+   w->drag_pane  = (int)p;
+   w->drag_moved = true;
+   cw_drag_update(w, pt.x, pt.y);
+   if (w->drop.kind == COMPANION_DOCK_DROP_FLOAT)
+      w->drop_valid = false;
+}
+
+/* The drag ended: dock the pane where the marker was, or leave it
+ * floating where it was put. */
+static void cw_float_moved(ui_companion_win32_wimp_t *w, enum companion_dock_id p)
+{
+   if (w->drag_pane != (int)p)
+      return;
+   w->drag_pane = -1;
+   if (w->drop_valid && w->drop.kind != COMPANION_DOCK_DROP_FLOAT)
+   {
+      w->last_side[p] = w->dock.area[p] == COMPANION_DOCK_FLOAT
+         ? w->last_side[p] : w->dock.area[p];
+      companion_dock_apply_drop(&w->dock, p, &w->drop, NULL);
+   }
+   w->drop_valid = false;
+   cw_layout(w);
+}
+
+/* A floating pane's window: the pane's controls sit in it; the
+ * controls' notifications go to the companion window's procedure as
+ * if it were the parent; closing hides the pane (Qt's dock close);
+ * a double-click on the caption docks it back (Qt's). */
+static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
+      WPARAM wparam, LPARAM lparam)
+{
+   ui_companion_win32_wimp_t *w = g_win32_wimp;
+   int p = (int)GetWindowLongPtrA(hwnd, GWLP_USERDATA);
+   switch (msg)
+   {
+      case WM_SIZE:
+      case WM_MOVE:
+         if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
+         {
+            RECT rc;
+            if (!IsIconic(hwnd) && GetWindowRect(hwnd, &rc))
+            {
+               w->dock.floats[p].x = rc.left;
+               w->dock.floats[p].y = rc.top;
+               w->dock.floats[p].w = rc.right - rc.left;
+               w->dock.floats[p].h = rc.bottom - rc.top;
+            }
+            if (msg == WM_SIZE)
+            {
+               GetClientRect(hwnd, &rc);
+               cw_pane_layout(w, (enum companion_dock_id)p, &rc);
+            }
+            if (IsWindowVisible(hwnd))
+               cw_dock_store(w);
+         }
+         return 0;
+      /* Dragged by its caption over the companion window, the pane
+       * docks where a strip drag would drop it, as Qt's floating docks
+       * do: WM_MOVING tracks the pointer against the dock geometry and
+       * shows the marker, WM_EXITSIZEMOVE applies the drop. */
+      case WM_MOVING:
+         if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
+            cw_float_moving(w, (enum companion_dock_id)p);
+         break;
+      case WM_EXITSIZEMOVE:
+         if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
+            cw_float_moved(w, (enum companion_dock_id)p);
+         break;
+      case WM_CLOSE:
+         if (w && p >= 0 && p < COMPANION_DOCK_COUNT)
+            cw_dock_show_pane(w, (enum companion_dock_id)p, false);
+         return 0;
+      case WM_NCLBUTTONDBLCLK:
+         if (w && wparam == HTCAPTION && p >= 0 && p < COMPANION_DOCK_COUNT)
+         {
+            cw_dock_redock_pane(w, (enum companion_dock_id)p);
+            return 0;
+         }
+         break;
+      case WM_COMMAND:
+      case WM_NOTIFY:
+      case WM_HSCROLL:
+      case WM_VSCROLL:
+      case WM_CONTEXTMENU:
+      case WM_CTLCOLORSTATIC:
+      case WM_CTLCOLOREDIT:
+      case WM_CTLCOLORLISTBOX:
+      case WM_MEASUREITEM:
+      case WM_DRAWITEM:
+         if (w && w->hwnd)
+            return cw_wndproc(w->hwnd, msg, wparam, lparam);
+         break;
+      default:
+         break;
+   }
+   return DefWindowProcA(hwnd, msg, wparam, lparam);
 }
 
 /* Core information pane: the rows companion_core_core_info_rows()
@@ -1462,7 +1975,7 @@ static void cw_info_fill(ui_companion_win32_wimp_t *w)
    size_t i;
    LVITEMA item;
 
-   if (!w || !w->info || !w->info_visible)
+   if (!w || !w->info || !w->dock.shown[COMPANION_DOCK_CORE_INFO])
       return;
 
    keys   = string_list_new();
@@ -1557,17 +2070,16 @@ static HBITMAP cw_boxart_scale(const struct texture_image *img,
    return bmp;
 }
 
-/* Show the boxart of entry @entry (index into the playlist, or -1 to
- * clear). No-op if the pane already shows it. */
-/* Put engine pixels (bw x bh) into the pane's static control. */
-/* Frames of an animation arrive here at up to the container's rate:
- * keep one DIB section for the pane and copy each frame into its
- * pixels, rather than creating and destroying a GDI object per frame.
- * A new size (the pane was resized, a different aspect) rebuilds it. */
-static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
-      int bw, int bh)
+/* Put engine pixels (bw x bh) into thumbnail pane @t's static control.
+ * Frames of an animation arrive here at up to the container's rate:
+ * keep one DIB section per pane and copy each frame into its pixels,
+ * rather than creating and destroying a GDI object per frame. A new
+ * size (the pane was resized, a different aspect) rebuilds it. */
+static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
+      const uint32_t *bits, int bw, int bh)
 {
-   if (!w->boxart_bmp || !w->boxart_bits || w->boxart_bw != bw || w->boxart_bh != bh)
+   if (!w->thumb_pane[t].bmp || !w->thumb_pane[t].bits
+         || w->thumb_pane[t].bw != bw || w->thumb_pane[t].bh != bh)
    {
       BITMAPINFO bmi;
       void *dst = NULL;
@@ -1586,121 +2098,128 @@ static void cw_boxart_show(ui_companion_win32_wimp_t *w, const uint32_t *bits,
             DeleteObject(bmp);
          return;
       }
-      SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
-      if (w->boxart_bmp)
-         DeleteObject(w->boxart_bmp);
-      w->boxart_bmp  = bmp;
-      w->boxart_bits = dst;
-      w->boxart_bw   = bw;
-      w->boxart_bh   = bh;
+      SendMessageA(w->thumb_pane[t].ctl, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bmp);
+      if (w->thumb_pane[t].bmp)
+         DeleteObject(w->thumb_pane[t].bmp);
+      w->thumb_pane[t].bmp  = bmp;
+      w->thumb_pane[t].bits = dst;
+      w->thumb_pane[t].bw   = bw;
+      w->thumb_pane[t].bh   = bh;
    }
    /* GdiFlush: the DIB's pixels are written from this thread while GDI
     * may still be batching a draw of the previous frame from them. */
    GdiFlush();
-   memcpy(w->boxart_bits, bits, (size_t)bw * bh * 4);
-   InvalidateRect(w->boxart, NULL, FALSE);
+   memcpy(w->thumb_pane[t].bits, bits, (size_t)bw * bh * 4);
+   InvalidateRect(w->thumb_pane[t].ctl, NULL, FALSE);
 }
 
-/* Boxart pane for @entry: from the engine cache at once, otherwise an
- * urgent request that lands through cw_thumb_done. The pane is cleared
- * meanwhile, so a stale cover never sits under a new selection. Never
- * decodes on the UI thread. */
-/* Show the image at @path in the pane, tagged @id (entry index, or a
- * browse index with the high bit). From the engine cache at once,
- * otherwise an urgent request that lands through cw_thumb_done; the
- * pane is cleared meanwhile. Never decodes on the UI thread. */
-static void cw_boxart_update_path(ui_companion_win32_wimp_t *w,
+/* Show the image at @path in thumbnail pane @t, tagged @id (entry
+ * index, or a browse index with CW_BROWSE_ID). From the engine cache
+ * at once, otherwise an urgent request that lands through
+ * cw_thumb_done; the pane is cleared meanwhile. Never decodes on the
+ * UI thread. A pane that is not on screen (hidden, or a tab that is
+ * not raised) is left alone: it is refreshed when it comes up. */
+static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, int t,
       const char *path, long id)
 {
    const uint32_t *bits;
    RECT rc;
    int bw, bh;
+   HWND ctl = w->thumb_pane[t].ctl;
 
-   if (!w || !w->boxart || !w->boxart_visible)
+   if (!w || !ctl || !IsWindowVisible(ctl))
       return;
-   if (id == w->boxart_entry)
+   if (id == w->thumb_pane[t].entry)
       return;
-   w->boxart_entry = id;
+   w->thumb_pane[t].entry = id;
 
-   /* Whatever was animating in the pane stops with the old selection. */
+   /* Whatever was animating stops with the old selection. */
    if (w->thumbs_engine)
       companion_thumbs_animate_stop(w->thumbs_engine);
 
    /* Clear. A static control does not repaint on STM_SETIMAGE NULL by
     * itself (it keeps drawing the old image until invalidated), so
     * invalidate it; the old bitmap goes once it is no longer set. */
-   SendMessageA(w->boxart, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
-   if (w->boxart_bmp)
+   SendMessageA(ctl, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
+   if (w->thumb_pane[t].bmp)
    {
-      DeleteObject(w->boxart_bmp);
-      w->boxart_bmp = NULL;
+      DeleteObject(w->thumb_pane[t].bmp);
+      w->thumb_pane[t].bmp = NULL;
    }
-   w->boxart_bits = NULL;
-   w->boxart_bw   = w->boxart_bh = 0;
-   InvalidateRect(w->boxart, NULL, TRUE);
+   w->thumb_pane[t].bits = NULL;
+   w->thumb_pane[t].bw   = w->thumb_pane[t].bh = 0;
+   InvalidateRect(ctl, NULL, TRUE);
    if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;
 
-   GetClientRect(w->boxart, &rc);
+   GetClientRect(ctl, &rc);
    bw = rc.right - 4;
    bh = rc.bottom - 4;
    if (bw < 1 || bh < 1)
       return;
    bits = companion_thumbs_get(w->thumbs_engine, path, bw, bh);
    if (bits)
-      cw_boxart_show(w, bits, bw, bh);
+      cw_boxart_show(w, t, bits, bw, bh);
    else
       companion_thumbs_request(w->thumbs_engine, path, bw, bh,
-            (uintptr_t)id | CW_TAG_BOXART, true,
-            cw_sys_color_argb(COLOR_BTNFACE));
+            CW_TAG_MAKE(id, t), true, cw_sys_color_argb(COLOR_BTNFACE));
    /* And, like RetroArch's File Browser, an APNG / animated WEBP /
     * WEBM / MP4 plays in the pane: frames land through cw_thumb_done
     * with the same tag. A still animates nothing. */
    companion_thumbs_animate(w->thumbs_engine, path, bw, bh,
-         (uintptr_t)id | CW_TAG_BOXART, cw_sys_color_argb(COLOR_BTNFACE));
+         CW_TAG_MAKE(id, t), cw_sys_color_argb(COLOR_BTNFACE));
 }
 
-/* Boxart pane for playlist entry @entry (the pane's own type). */
+/* Every thumbnail pane on screen shows playlist entry @entry, each
+ * its own type. */
 static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry)
 {
    char path[PATH_MAX_LENGTH];
    char db_name[NAME_MAX_LENGTH];
-   const struct playlist_entry *e;
+   const struct playlist_entry *e = NULL;
+   int t;
 
-   if (!w || !w->boxart)
+   if (!w)
       return;
-   if (entry < 0 || w->browse_mode
-         || !(e = companion_core_entry(w->core, (size_t)entry)))
+   if (entry >= 0 && !w->browse_mode)
+      e = companion_core_entry(w->core, (size_t)entry);
+   if (e)
    {
-      cw_boxart_update_path(w, NULL, -1);
-      return;
+      strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
+      path_remove_extension(db_name);
    }
-   strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
-   path_remove_extension(db_name);
-   if (!companion_core_thumbnail_path(w->core, db_name,
-            w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
-            !string_is_empty(e->label) ? e->label : path_basename(e->path),
-            e->path, path, sizeof(path)))
-      path[0] = '\0';
-   cw_boxart_update_path(w, path, entry);
+   for (t = 0; t < 4; t++)
+   {
+      if (!e)
+      {
+         cw_boxart_update_path(w, t, NULL, -1);
+         continue;
+      }
+      if (!companion_core_thumbnail_path(w->core, db_name, cw_thumb_subdir(t),
+               !string_is_empty(e->label) ? e->label : path_basename(e->path),
+               e->path, path, sizeof(path)))
+         path[0] = '\0';
+      cw_boxart_update_path(w, t, path, entry);
+   }
 }
 
-/* File browser selection: an image file previews in the pane, as in
- * the Qt companion; anything else clears it. */
+/* File browser selection: an image file previews in every thumbnail
+ * pane on screen, as in the Qt companion; anything else clears them. */
 static void cw_boxart_browse(ui_companion_win32_wimp_t *w, long row)
 {
-   const char *fp;
-   if (!w || row < 0 || (size_t)row >= w->row_count)
-   {
-      cw_boxart_update_path(w, NULL, -1);
+   const char *fp = NULL;
+   int t;
+   if (!w)
       return;
+   if (row >= 0 && (size_t)row < w->row_count)
+   {
+      fp = companion_core_browse_path(w->core, w->rows[row]);
+      if (!fp || companion_core_browse_is_dir(w->core, w->rows[row])
+            || image_texture_get_type(fp) == IMAGE_TYPE_NONE)
+         fp = NULL;
    }
-   fp = companion_core_browse_path(w->core, w->rows[row]);
-   if (fp && !companion_core_browse_is_dir(w->core, w->rows[row])
-         && image_texture_get_type(fp) != IMAGE_TYPE_NONE)
-      cw_boxart_update_path(w, fp, (long)(0x40000000L | row));
-   else
-      cw_boxart_update_path(w, NULL, -1);
+   for (t = 0; t < 4; t++)
+      cw_boxart_update_path(w, t, fp, fp ? (long)(CW_BROWSE_ID | row) : -1);
 }
 
 /* The playlist-entry index behind the entries' focused row, or -1. */
@@ -1715,26 +2234,14 @@ static long cw_focused_entry(ui_companion_win32_wimp_t *w)
 
 static void cw_boxart_toggle(ui_companion_win32_wimp_t *w)
 {
-   if (!w || !w->boxart)
-      return;
-   w->boxart_visible = !w->boxart_visible;
-   ShowWindow(w->boxart, w->boxart_visible ? SW_SHOW : SW_HIDE);
-   cw_layout(w);
-   if (w->boxart_visible)
-   {
-      w->boxart_entry = -2; /* force a refresh */
-      cw_boxart_update(w, cw_focused_entry(w));
-   }
+   if (w)
+      cw_dock_show_pane(w, COMPANION_DOCK_BOXART, !w->dock.shown[COMPANION_DOCK_BOXART]);
 }
 
 static void cw_info_toggle(ui_companion_win32_wimp_t *w)
 {
-   if (!w || !w->info)
-      return;
-   w->info_visible = !w->info_visible;
-   ShowWindow(w->info, w->info_visible ? SW_SHOW : SW_HIDE);
-   cw_layout(w);
-   cw_info_fill(w);
+   if (w)
+      cw_dock_show_pane(w, COMPANION_DOCK_CORE_INFO, !w->dock.shown[COMPANION_DOCK_CORE_INFO]);
 }
 
 /* Append one log line to the EDIT: move the caret to the end and
@@ -1775,115 +2282,8 @@ static void cw_log_append(ui_companion_win32_wimp_t *w, const char *msg)
 
 static void cw_log_toggle(ui_companion_win32_wimp_t *w)
 {
-   if (!w || !w->log)
-      return;
-   w->log_visible = !w->log_visible;
-   ShowWindow(w->log, w->log_visible ? SW_SHOW : SW_HIDE);
-   cw_layout(w);
-}
-
-/* Which splitter gap a client point is in, CW_SPLIT_NONE when none. The
- * gaps are the client area no child control covers: the vertical gap
- * after the left column, the one before the right column, the
- * horizontal gap between the two right-column panes and the one above
- * the log; each only when what it separates is shown. Read off the
- * controls so this always agrees with cw_layout(). */
-static int cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
-{
-   RECT rc, r;
-   int status_h = 0;
-   int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
-   int list_h;
-   bool r_info  = (w->info_visible && w->info);
-   bool r_box   = (w->boxart_visible && w->boxart);
-
-   GetClientRect(w->hwnd, &rc);
-   if (w->status)
-   {
-      GetWindowRect(w->status, &r);
-      status_h = r.bottom - r.top;
-   }
-   list_h = rc.bottom - status_h;
-   if (w->log_visible && w->log)
-   {
-      list_h -= w->log_h + split_w;
-      if (y >= list_h && y < list_h + split_w && x >= 0 && x < rc.right)
-         return CW_SPLIT_LOG;
-   }
-   if (y < 0 || y >= list_h)
-      return CW_SPLIT_NONE;
-   if (x >= w->pane_w && x < w->pane_w + split_w)
-      return CW_SPLIT_LEFT;
-   if (r_info || r_box)
-   {
-      int rx = rc.right - w->right_w - split_w;
-      if (x >= rx && x < rx + split_w)
-         return CW_SPLIT_RIGHT;
-      if (x >= rx + split_w && r_info && r_box)
-      {
-         /* Between the two panes: just past whichever is on top. */
-         HWND top = w->info_first ? w->info : w->boxart;
-         POINT pt;
-         GetWindowRect(top, &r);
-         pt.x = r.left; pt.y = r.bottom;
-         ScreenToClient(w->hwnd, &pt);
-         if (y >= pt.y && y < pt.y + CW_S(w, 4) + split_w)
-            return CW_SPLIT_INFO;
-      }
-   }
-   return CW_SPLIT_NONE;
-}
-
-/* Move the splitter being dragged to the pointer; cw_layout() clamps. */
-static void cw_splitter_drag(ui_companion_win32_wimp_t *w, int x, int y)
-{
-   RECT rc, sb;
-   int status_h = 0;
-   int split_w  = CW_S(w, COMPANION_WIN32_SPLIT_W);
-   GetClientRect(w->hwnd, &rc);
-   if (w->status)
-   {
-      GetWindowRect(w->status, &sb);
-      status_h = sb.bottom - sb.top;
-   }
-   switch (w->splitting)
-   {
-      case CW_SPLIT_LEFT:
-         w->pane_w  = x - split_w / 2;
-         break;
-      case CW_SPLIT_RIGHT:
-         w->right_w = rc.right - x - split_w / 2;
-         break;
-      case CW_SPLIT_LOG:
-         w->log_h   = rc.bottom - status_h - y - split_w / 2;
-         break;
-      case CW_SPLIT_INFO:
-      {
-         int list_h = rc.bottom - status_h
-            - ((w->log_visible && w->log) ? w->log_h + split_w : 0);
-         int col    = list_h - split_w;
-         int top_h  = y - split_w / 2;
-         int pane_min = CW_S(w, COMPANION_WIN32_PANE_MIN);
-         if (top_h < pane_min)
-            top_h = pane_min;
-         if (top_h > col - pane_min)
-            top_h = col - pane_min;
-         if (w->info_first)
-         {
-            w->info_h = top_h;
-            w->box_h  = col - top_h;
-         }
-         else
-         {
-            w->box_h  = top_h;
-            w->info_h = col - top_h;
-         }
-         break;
-      }
-      default:
-         break;
-   }
-   cw_layout(w);
+   if (w)
+      cw_dock_show_pane(w, COMPANION_DOCK_LOG, !w->dock.shown[COMPANION_DOCK_LOG]);
 }
 
 /* --- companion_core -> Win32 callbacks -------------------------------- */
@@ -1992,7 +2392,6 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
 }
 
 static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content);
-static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, const char *path, long id);
 
 /* Files dropped on the window (Qt's FileDropWidget / ThumbnailWidget):
  * an image dropped over the boxart pane becomes the selected entry's
@@ -2004,18 +2403,21 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
    RECT rc;
    UINT i, n = DragQueryFileA(drop, 0xFFFFFFFF, NULL, 0);
    char **paths;
-   bool over_boxart = false;
+   int over_pane = -1; /* the thumbnail pane dropped on, if any */
 
    if (!n)
    {
       DragFinish(drop);
       return;
    }
-   if (DragQueryPoint(drop, &pt) && w->boxart && w->boxart_visible)
+   if (DragQueryPoint(drop, &pt))
    {
+      int t;
       ClientToScreen(w->hwnd, &pt);
-      GetWindowRect(w->boxart, &rc);
-      over_boxart = PtInRect(&rc, pt) ? true : false;
+      for (t = 0; t < 4; t++)
+         if (w->thumb_pane[t].ctl && IsWindowVisible(w->thumb_pane[t].ctl)
+               && GetWindowRect(w->thumb_pane[t].ctl, &rc) && PtInRect(&rc, pt))
+            over_pane = t;
    }
    paths = (char**)calloc(n, sizeof(char*));
    if (!paths)
@@ -2031,7 +2433,7 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
    }
    DragFinish(drop);
 
-   if (over_boxart && paths[0] && image_texture_get_type(paths[0]) != IMAGE_TYPE_NONE
+   if (over_pane >= 0 && paths[0] && image_texture_get_type(paths[0]) != IMAGE_TYPE_NONE
          && !w->browse_mode)
    {
       long entry = cw_focused_entry(w);
@@ -2043,14 +2445,14 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
          strlcpy(db_name, e->db_name ? e->db_name : "", sizeof(db_name));
          path_remove_extension(db_name);
          if (companion_core_thumbnail_install(w->core, db_name,
-                  w->boxart_subdir ? w->boxart_subdir : COMPANION_THUMB_BOXART,
+                  cw_thumb_subdir(over_pane),
                   !string_is_empty(e->label) ? e->label : path_basename(e->path),
                   paths[0], out, sizeof(out)))
          {
             /* the file changed on disk: forget it and show it again */
             if (w->thumbs_engine)
                companion_thumbs_forget(w->thumbs_engine, out);
-            w->boxart_entry = -2;
+            w->thumb_pane[over_pane].entry = -2;
             cw_boxart_update(w, entry);
             cw_thumbs_reset(w, w->row_count);
             cw_status_set(w, "Thumbnail updated");
@@ -2095,25 +2497,24 @@ static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
                    | OFN_ALLOWMULTISELECT | OFN_EXPLORER;
    if (GetOpenFileNameA(&ofn) && buf[0])
    {
-      /* dir\0file1\0file2\0\0, or a single full path */
-      char dir[PATH_MAX_LENGTH];
+      /* dir\0file1\0file2\0\0 (the first string is the directory), or
+       * a single full path */
       const char *p = buf + strlen(buf) + 1;
       const char **paths = NULL;
       size_t n = 0, cap = 0;
-      char full[PATH_MAX_LENGTH];
+      char *full = (char*)malloc(PATH_MAX_LENGTH);
       if (!*p)
       {
          paths = (const char**)malloc(sizeof(char*));
          paths[0] = buf;
          n = 1;
       }
-      else
+      else if (full)
       {
-         strlcpy(dir, buf, sizeof(dir));
          while (*p)
          {
             char *fp;
-            fill_pathname_join_special(full, dir, p, sizeof(full));
+            fill_pathname_join_special(full, buf, p, PATH_MAX_LENGTH);
             fp = strldup(full, strlen(full) + 1);
             if (n == cap)
             {
@@ -2137,6 +2538,7 @@ static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
             free((void*)paths[i]);
       }
       free((void*)paths);
+      free(full);
    }
    free(buf);
 }
@@ -2708,7 +3110,7 @@ static char cw_combo_paths[CW_COMBO_MAX][PATH_MAX_LENGTH];
 
 static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
 {
-   companion_launch_option_t opts[CW_COMBO_MAX - 2];
+   companion_launch_option_t *opts = w->combo_opts;
    size_t i, n = 0;
    const struct playlist_entry *e = NULL;
    char pl_name[NAME_MAX_LENGTH];
@@ -2730,7 +3132,7 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
    n = companion_core_launch_options(w->core,
          e ? e->core_path : NULL, e ? e->core_name : NULL, pl_name,
          companion_core_pref_suggest_loaded_core_first(w->core),
-         opts, sizeof(opts) / sizeof(opts[0]));
+         opts, CW_COMBO_MAX - 2);
 
    for (i = 0; i < n; i++)
    {
@@ -2899,7 +3301,7 @@ static void cw_browse_enter(ui_companion_win32_wimp_t *w)
       SendMessageA(w->tabs, TCM_SETCURSEL, 1, 0);
    /* Qt shows no boxart for the browser: clear now, not when the
     * listing lands. */
-   cw_boxart_update_path(w, NULL, -1);
+   cw_boxart_browse(w, -1);
    cw_core_combo_fill(w, -1);
    cw_info_fill(w);
    ShowWindow(w->br_up, SW_SHOW);
@@ -3455,6 +3857,57 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
    DestroyMenu(menu); /* destroys the submenu too */
 }
 
+/* File > New Playlist: a free default name, then the label is opened
+ * for editing - the in-place rename the menu already has, so there is
+ * no dialog to write. (Its own frame: the path buffer would otherwise
+ * sit in the window procedure's.) */
+static void cw_playlist_new(ui_companion_win32_wimp_t *w)
+{
+   char name[64], out[PATH_MAX_LENGTH];
+   unsigned k;
+   for (k = 0; k < 100; k++)
+   {
+      if (k)
+         snprintf(name, sizeof(name), "New Playlist %u", k + 1);
+      else
+         strlcpy(name, "New Playlist", sizeof(name));
+      if (companion_core_playlist_new(w->core, name, out, sizeof(out)))
+         break;
+   }
+   if (k < 100)
+   {
+      size_t i, n = companion_core_playlist_count(w->core);
+      for (i = 0; i < n; i++)
+         if (string_is_equal(companion_core_playlist_path(w->core, i), out))
+         {
+            SetFocus(w->playlists);
+            ListView_SetItemState(w->playlists, (int)i,
+                  LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+            SendMessageA(w->playlists, LVM_EDITLABELA, (WPARAM)i, 0);
+            break;
+         }
+   }
+}
+
+/* Delete Playlist, after a confirmation naming it. */
+static void cw_playlist_delete(ui_companion_win32_wimp_t *w)
+{
+   LRESULT sel = SendMessageA(w->playlists, LVM_GETNEXTITEM,
+         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+   const char *p = (sel >= 0 && !w->browse_mode)
+      ? companion_core_playlist_path(w->core, (size_t)sel) : NULL;
+   char msg[NAME_MAX_LENGTH + 64];
+   if (!p || string_is_equal(p, COMPANION_ALL_PLAYLISTS_TOKEN))
+      return;
+   snprintf(msg, sizeof(msg), "Delete \"%s\"?",
+         companion_core_playlist_name(w->core, (size_t)sel));
+   if (MessageBoxA(w->hwnd, msg,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST),
+            MB_YESNO | MB_ICONQUESTION) == IDYES
+         && !companion_core_playlist_delete(w->core, p))
+      cw_status_set(w, "Could not delete the playlist");
+}
+
 static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
       WPARAM wparam, LPARAM lparam)
 {
@@ -3503,62 +3956,88 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          ShowWindow(hwnd, SW_HIDE);
          return 0;
 
-      /* Splitter */
+      /* The docks: strips, tabs and gaps are the window's own surface. */
+      case WM_PAINT:
+         if (w)
+         {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+            if (hdc)
+               cw_paint_docks(w, hdc);
+            EndPaint(hwnd, &ps);
+            return 0;
+         }
+         break;
       case WM_SETCURSOR:
          if (w && (HWND)wparam == hwnd && LOWORD(lparam) == HTCLIENT)
          {
             POINT pt;
-            int sp;
+            companion_dock_hit_t hit;
             GetCursorPos(&pt);
             ScreenToClient(hwnd, &pt);
-            sp = w->splitting ? w->splitting : cw_on_splitter(w, pt.x, pt.y);
-            if (sp != CW_SPLIT_NONE)
+            if (w->drag_gap >= 0)
             {
-               /* IDC_SIZEWE for the column gaps, IDC_SIZENS for the
-                * horizontal ones. */
-               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(
-                     (sp == CW_SPLIT_LEFT || sp == CW_SPLIT_RIGHT) ? 32644 : 32645)));
+               hit.kind = COMPANION_DOCK_HIT_GAP;
+               hit.gap  = w->drag_gap;
+            }
+            else
+               companion_dock_hit_test(&w->dock, &w->geom, &w->dm, pt.x, pt.y, &hit);
+            if (hit.kind == COMPANION_DOCK_HIT_GAP)
+            {
+               /* IDC_SIZEWE for a vertical gap, IDC_SIZENS for a
+                * horizontal one. */
+               const companion_rect_t *gr = &w->geom.gaps[hit.gap].rect;
+               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(gr->h > gr->w ? 32644 : 32645)));
                return TRUE;
             }
          }
          break;
       case WM_LBUTTONDOWN:
-         if (w)
-         {
-            int sp = cw_on_splitter(w, (int)(short)LOWORD(lparam),
-                  (int)(short)HIWORD(lparam));
-            if (sp != CW_SPLIT_NONE)
-            {
-               w->splitting = sp;
-               SetCapture(hwnd);
-               return 0;
-            }
-         }
-         break;
+      case WM_LBUTTONDBLCLK:
       case WM_MOUSEMOVE:
-         if (w && w->splitting)
-         {
-            cw_splitter_drag(w, (int)(short)LOWORD(lparam),
-                  (int)(short)HIWORD(lparam));
-            return 0;
-         }
-         break;
       case WM_LBUTTONUP:
-         if (w && w->splitting)
-         {
-            w->splitting = CW_SPLIT_NONE;
-            ReleaseCapture();
+         if (w && cw_dock_mouse(w, msg, (int)(short)LOWORD(lparam),
+                  (int)(short)HIWORD(lparam)))
             return 0;
-         }
          break;
       case WM_CAPTURECHANGED:
          if (w)
-            w->splitting = CW_SPLIT_NONE;
+         {
+            w->drag_gap = -1;
+            if (w->drag_pane >= 0)
+               cw_drag_end(w, 0, 0, false);
+         }
+         break;
+      case WM_INITMENUPOPUP:
+         /* View > Closed Docks: the hidden panes, rebuilt as it opens
+          * (Qt's viewClosedDocksMenu). */
+         if (w && w->closed_docks_menu && (HMENU)wparam == w->closed_docks_menu)
+         {
+            int i, n = 0;
+            while (DeleteMenu(w->closed_docks_menu, 0, MF_BYPOSITION))
+               ;
+            for (i = 0; i < COMPANION_DOCK_COUNT; i++)
+               if (cw_dock_hidden(w, i))
+               {
+                  AppendMenuA(w->closed_docks_menu, MF_STRING,
+                        IDM_CW_DOCK_FIRST + i, cw_pane_title((enum companion_dock_id)i));
+                  n++;
+               }
+            if (!n)
+               AppendMenuA(w->closed_docks_menu, MF_STRING | MF_GRAYED, 0, "(none)");
+            return 0;
+         }
          break;
 
       case WM_COMMAND:
          if (!w)
             break;
+         if (LOWORD(wparam) >= IDM_CW_DOCK_FIRST
+               && LOWORD(wparam) <= IDM_CW_DOCK_LAST)
+         {
+            cw_dock_show_pane(w, (enum companion_dock_id)(LOWORD(wparam) - IDM_CW_DOCK_FIRST), true);
+            return 0;
+         }
          if (LOWORD(wparam) >= IDM_CW_UNHIDE_FIRST
                && LOWORD(wparam) <= IDM_CW_UNHIDE_LAST)
          {
@@ -3724,53 +4203,10 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                }
                return 0;
             case IDM_CW_NEW_PLAYLIST:
-               {
-                  /* A free default name, then the label is opened for
-                   * editing - the in-place rename the menu already has,
-                   * so there is no dialog to write. */
-                  char name[64], out[PATH_MAX_LENGTH];
-                  unsigned k;
-                  for (k = 0; k < 100; k++)
-                  {
-                     if (k)
-                        snprintf(name, sizeof(name), "New Playlist %u", k + 1);
-                     else
-                        strlcpy(name, "New Playlist", sizeof(name));
-                     if (companion_core_playlist_new(w->core, name, out, sizeof(out)))
-                        break;
-                  }
-                  if (k < 100)
-                  {
-                     size_t i, n = companion_core_playlist_count(w->core);
-                     for (i = 0; i < n; i++)
-                        if (string_is_equal(companion_core_playlist_path(w->core, i), out))
-                        {
-                           SetFocus(w->playlists);
-                           ListView_SetItemState(w->playlists, (int)i,
-                                 LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-                           SendMessageA(w->playlists, LVM_EDITLABELA, (WPARAM)i, 0);
-                           break;
-                        }
-                  }
-               }
+               cw_playlist_new(w);
                return 0;
             case IDM_CW_DELETE_PLAYLIST:
-               {
-                  LRESULT sel = SendMessageA(w->playlists, LVM_GETNEXTITEM,
-                        (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
-                  const char *p = (sel >= 0 && !w->browse_mode)
-                     ? companion_core_playlist_path(w->core, (size_t)sel) : NULL;
-                  char msg[PATH_MAX_LENGTH + 64];
-                  if (!p || string_is_equal(p, COMPANION_ALL_PLAYLISTS_TOKEN))
-                     return 0;
-                  snprintf(msg, sizeof(msg), "Delete \"%s\"?",
-                        companion_core_playlist_name(w->core, (size_t)sel));
-                  if (MessageBoxA(w->hwnd, msg,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST),
-                           MB_YESNO | MB_ICONQUESTION) == IDYES
-                        && !companion_core_playlist_delete(w->core, p))
-                     cw_status_set(w, "Could not delete the playlist");
-               }
+               cw_playlist_delete(w);
                return 0;
             case IDM_CW_RENAME_PLAYLIST:
                {
@@ -4007,22 +4443,6 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                else if (hdr->code == LVN_BEGINLABELEDITA)
                   return w->browse_mode ? TRUE : FALSE; /* TRUE cancels */
             }
-            else if (hdr->idFrom == IDC_CW_BOXART_TABS)
-            {
-               if (hdr->code == TCN_SELCHANGE)
-               {
-                  switch (SendMessageA(w->boxart_tabs, TCM_GETCURSEL, 0, 0))
-                  {
-                     case 1:  w->boxart_subdir = COMPANION_THUMB_TITLE;      break;
-                     case 2:  w->boxart_subdir = COMPANION_THUMB_SCREENSHOT; break;
-                     case 3:  w->boxart_subdir = COMPANION_THUMB_LOGO;       break;
-                     default: w->boxart_subdir = COMPANION_THUMB_BOXART;     break;
-                  }
-                  w->boxart_entry = -2; /* force a refresh */
-                  cw_boxart_update(w, cw_focused_entry(w));
-                  return 0;
-               }
-            }
             else if (hdr->idFrom == IDC_CW_TABS)
             {
                if (hdr->code == TCN_SELCHANGE)
@@ -4051,7 +4471,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
 
 /* --- Window construction ---------------------------------------------- */
 
-static HMENU cw_build_menu(void)
+static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
 {
    HMENU bar  = CreateMenu();
    HMENU file = CreatePopupMenu();
@@ -4077,7 +4497,9 @@ static HMENU cw_build_menu(void)
    AppendMenuA(view, MF_STRING, IDM_CW_RUN,          "&Run Selected\tEnter");
    AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
-   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
+   w->closed_docks_menu = CreatePopupMenu();
+   AppendMenuA(view, MF_POPUP, (UINT_PTR_COMPAT)w->closed_docks_menu,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS));
    AppendMenuA(view, MF_SEPARATOR, 0, NULL);
    AppendMenuA(view, MF_STRING, IDM_CW_CORE_OPTIONS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS));
@@ -4085,8 +4507,6 @@ static HMENU cw_build_menu(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
    AppendMenuA(view, MF_STRING, IDM_CW_OPTIONS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS));
-   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_INFO,  "Core &Information");
-   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_BOXART, "&Boxart");
 
    {
       /* Same top-level titles as the Qt menubar, from the same strings. */
@@ -4167,9 +4587,9 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          SelectObject(hdc, old);
          ReleaseDC(NULL, hdc);
       }
-      /* Qt's left dock is about 280 logical px wide. */
-      w->pane_w = CW_S(w, 280);
    }
+   w->drag_gap  = -1;
+   w->drag_pane = -1;
 
 
    memset(&wc, 0, sizeof(wc));
@@ -4238,7 +4658,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
 
       w->hwnd = CreateWindowExA(0, COMPANION_WIN32_CLASS,
             COMPANION_WIN32_TITLE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
-            wx, wy, ww, wh, NULL, cw_build_menu(), inst, NULL);
+            wx, wy, ww, wh, NULL, cw_build_menu(w), inst, NULL);
    }
    if (!w->hwnd)
       return false;
@@ -4325,9 +4745,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
             LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
    }
 
-   /* Section captions and controls that make up Qt's docks. */
-   w->search_label  = cw_make(w, "STATIC", msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH), SS_LEFT, IDC_CW_SEARCH_LABEL);
+   /* The controls that make up Qt's docks; the docks' own chrome (title
+    * strips, tab bars) is painted by the window. */
    w->clear_btn     = cw_make(w, "BUTTON", msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR), BS_PUSHBUTTON, IDC_CW_CLEAR);
    /* Qt's File Browser toolbar: Up / Start Directory / Downloads. Shown
@@ -4342,9 +4761,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    ShowWindow(w->br_up, SW_HIDE);
    ShowWindow(w->br_start, SW_HIDE);
    ShowWindow(w->br_downloads, SW_HIDE);
-   w->browser_label = cw_make(w, "STATIC", msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), SS_LEFT,
-            IDC_CW_BROWSER_LABEL);
    w->tabs          = cw_make(w, "SysTabControl32", "", WS_CLIPSIBLINGS, IDC_CW_TABS);
    if (w->tabs)
    {
@@ -4356,8 +4772,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER);
       SendMessageA(w->tabs, TCM_INSERTITEMA, 1, (LPARAM)&ti);
    }
-   w->core_label    = cw_make(w, "STATIC", msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_CORE), SS_LEFT, IDC_CW_CORE_LABEL);
    w->core_combo    = cw_make(w, "COMBOBOX", "",
          CBS_DROPDOWNLIST | WS_VSCROLL, IDC_CW_CORE_COMBO);
    w->core_info_btn = cw_make(w, "BUTTON", msg_hash_to_str(
@@ -4404,35 +4818,6 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       SendMessageA(w->thumb_combo, CB_SETCURSEL,
             (WPARAM)companion_core_pref_thumbnail_type(w->core), 0);
    }
-   /* Qt's boxart dock has tabs for the four thumbnail types. */
-   w->boxart_tabs = cw_make(w, "SysTabControl32", "", WS_CLIPSIBLINGS, IDC_CW_BOXART_TABS);
-   if (w->boxart_tabs)
-   {
-      TCITEMA ti;
-      memset(&ti, 0, sizeof(ti));
-      ti.mask    = TCIF_TEXT;
-      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART);
-      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 0, (LPARAM)&ti);
-      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN);
-      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 1, (LPARAM)&ti);
-      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT);
-      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 2, (LPARAM)&ti);
-      ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
-      SendMessageA(w->boxart_tabs, TCM_INSERTITEMA, 3, (LPARAM)&ti);
-   }
-   w->boxart_subdir = COMPANION_THUMB_BOXART;
-
-   w->info_label    = cw_make(w, "STATIC", msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_CORE_INFO), SS_LEFT, IDC_CW_INFO_LABEL);
-   w->boxart_label  = cw_make(w, "STATIC", msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART), SS_LEFT, IDC_CW_BOXART_LABEL);
-
-   /* Qt shows the Core Info and Boxart docks by default, Core Info on
-    * top. */
-   w->info_visible   = true;
-   w->boxart_visible = true;
-   w->info_first     = true;
-
    w->entries = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS
          | LVS_OWNERDATA,
@@ -4461,10 +4846,18 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
             (LONG_PTR)cw_search_proc);
    }
 
-   w->boxart = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
-         WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
-         0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_BOXART, inst, NULL);
-   w->boxart_entry = -1;
+   /* The four thumbnail panes (Boxart, Title Screen, Screenshot, Logo:
+    * one STATIC each, ids IDC_CW_BOXART + index). */
+   {
+      int t;
+      for (t = 0; t < 4; t++)
+      {
+         w->thumb_pane[t].ctl = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
+               WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
+               0, 0, 0, 0, w->hwnd, (HMENU)(UINT_PTR_COMPAT)(IDC_CW_BOXART + t), inst, NULL);
+         w->thumb_pane[t].entry = -1;
+      }
+   }
    DragAcceptFiles(w->hwnd, TRUE);
 
    w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
@@ -4472,7 +4865,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
    if (!w->playlists || !w->entries || !w->status || !w->log || !w->info
-         || !w->search || !w->boxart)
+         || !w->search || !w->thumb_pane[0].ctl || !w->thumb_pane[3].ctl)
       return false;
 
    SendMessageA(w->info, LVM_SETEXTENDEDLISTVIEWSTYLE,
@@ -4558,8 +4951,8 @@ static void *ui_companion_win32_wimp_init(void)
    w->thumb_subdir = companion_core_pref_thumbnail_subdir(w->core);
    if (companion_core_pref_last_tab(w->core) == 1)
       cw_browse_enter(w);
-   /* The pane layout the dock rows describe, then lay out to it. */
-   cw_grid_apply(w);
+   /* The dock layout the rows describe (or Qt's default), laid out. */
+   cw_dock_load(w);
    cw_layout(w);
 
    companion_core_refresh_playlists(w->core);
@@ -4603,8 +4996,17 @@ static void ui_companion_win32_wimp_deinit(void *data)
       UnregisterClassA(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
    w->hwnd = w->entries = w->cores_hwnd = w->cores_status = NULL;
 
-   if (w->boxart_bmp)
-      DeleteObject(w->boxart_bmp);
+   {
+      int t;
+      for (t = 0; t < 4; t++)
+         if (w->thumb_pane[t].bmp)
+            DeleteObject(w->thumb_pane[t].bmp);
+      for (t = 0; t < COMPANION_DOCK_COUNT; t++)
+         if (w->floats[t])
+            DestroyWindow(w->floats[t]);
+      if (w->float_class_registered)
+         UnregisterClassA(COMPANION_WIN32_FLOAT_CLASS, GetModuleHandleA(NULL));
+   }
    if (w->pl_icons)
       ImageList_Destroy(w->pl_icons);
    if (w->font && w->font != (HFONT)GetStockObject(DEFAULT_GUI_FONT))
@@ -4653,7 +5055,7 @@ static void ui_companion_win32_wimp_iterate(void *data)
     * status follow the running core. */
    if (strcmp(w->info_core, cw_combo_core_path(w)))
    {
-      if (w->info_visible)
+      if (w->dock.shown[COMPANION_DOCK_CORE_INFO])
          cw_info_fill(w);
       else
          strlcpy(w->info_core, cw_combo_core_path(w), sizeof(w->info_core));
@@ -4676,7 +5078,7 @@ static void ui_companion_win32_wimp_event_command(void *data,
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          if (IsWindowVisible(w->hwnd) && !IsIconic(w->hwnd))
          {
-            cw_grid_store(w);
+            cw_dock_store(w);
             cw_geometry_store(w);
          }
          break;
