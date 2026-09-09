@@ -77,8 +77,19 @@ struct fifo_buffer
 /**
  * A bounded FIFO byte queue implemented as a ring buffer.
  *
- * Useful for communication between threads,
- * although the caller is responsible for synchronization.
+ * The caller synchronises it, and every use in the tree does so with
+ * a lock. It is not lock-free: the producer's and the consumer's
+ * indices sit together, and read with no lock they bounce a cache
+ * line between threads. For one producer and one consumer with no
+ * lock, retro_spsc_t is the type.
+ *
+ * The ring is one byte larger than the capacity asked for, and full
+ * is one byte short of it - so size is never a power of two, and the
+ * wrap is a compare and a subtract rather than a mask. Rounding the
+ * allocation up to a power of two would change the capacity a caller
+ * asked for; a mask wants a ring with a count instead of a wasted
+ * slot, which changes what the availability means, and is a different
+ * type.
  */
 typedef struct fifo_buffer fifo_buffer_t;
 
