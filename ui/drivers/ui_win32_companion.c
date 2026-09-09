@@ -1945,11 +1945,32 @@ static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
             cw_float_moving(w, (enum companion_dock_id)p);
          break;
+      /* A pane drag is a modal loop on the run loop's thread like any
+       * other window's: same pause handling. The drop is applied after
+       * the timer and audio are back, since docking the pane may take
+       * this window down. */
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_sizemove_enter(hwnd);
+         break;
+      case WM_EXITMENULOOP:
+         win32_sizemove_exit(hwnd);
+         break;
       case WM_EXITSIZEMOVE:
+         win32_sizemove_exit(hwnd);
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT && w->floats[p] == hwnd)
             cw_float_moved(w, (enum companion_dock_id)p);
          break;
+      case WM_TIMER:
+         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
+            break;
+         win32_sizemove_tick();
+         return 0;
+      case WM_DESTROY:
+         win32_sizemove_abort();
+         break;
       case WM_CLOSE:
+         win32_sizemove_abort();
          if (w && p >= 0 && p < COMPANION_DOCK_COUNT)
             cw_dock_show_pane(w, (enum companion_dock_id)p, false);
          return 0;
