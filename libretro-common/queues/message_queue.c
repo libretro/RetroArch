@@ -25,6 +25,16 @@
 
 #include <boolean.h>
 #include <queues/message_queue.h>
+
+struct queue_elem
+{
+   char *msg;                          /* both point into the node's own block */
+   char *title;
+   unsigned duration;
+   unsigned prio;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+};
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -40,7 +50,7 @@ bool msg_queue_initialize(msg_queue_t *queue, size_t len)
             calloc(len + 1, sizeof(struct queue_elem*))))
       return false;
 
-   queue->tmp_msg            = NULL;
+   queue->tmp                = NULL;
    queue->elems              = elems;
    queue->ptr                = 1;
    queue->size               = len + 1;
@@ -93,7 +103,7 @@ bool msg_queue_deinitialize(msg_queue_t *queue)
    msg_queue_clear(queue);
    free(queue->elems);
    queue->elems   = NULL;
-   queue->tmp_msg = NULL;
+   queue->tmp = NULL;
    queue->ptr     = 0;
    queue->size    = 0;
    return true;
@@ -123,22 +133,31 @@ bool msg_queue_try_push(msg_queue_t *queue, const char *msg,
    if (!queue || queue->ptr >= queue->size)
       return false;
 
-   /* Everything the node needs is allocated before the heap is
-    * touched, so a failure leaves the queue as it was. */
-   if (!(new_elem = (struct queue_elem*)malloc(sizeof(struct queue_elem))))
-      return false;
-   new_elem->msg   = NULL;
-   new_elem->title = NULL;
-   if (msg && !(new_elem->msg = strdup(msg)))
+   /* The node and its strings are one block - the node first, the
+    * strings after it - allocated before the heap is touched, so a
+    * failure leaves the queue as it was, and freed as one. The node's
+    * pointers point into the block; nothing frees them on their own. */
    {
-      free(new_elem);
-      return false;
-   }
-   if (title && !(new_elem->title = strdup(title)))
-   {
-      free(new_elem->msg);
-      free(new_elem);
-      return false;
+      size_t msg_len   = msg   ? strlen(msg)   + 1 : 0;
+      size_t title_len = title ? strlen(title) + 1 : 0;
+      char  *block     = (char*)malloc(sizeof(struct queue_elem) + msg_len + title_len);
+      if (!block)
+         return false;
+      new_elem        = (struct queue_elem*)block;
+      block          += sizeof(struct queue_elem);
+      new_elem->msg   = NULL;
+      new_elem->title = NULL;
+      if (msg)
+      {
+         new_elem->msg = block;
+         memcpy(block, msg, msg_len);
+         block += msg_len;
+      }
+      if (title)
+      {
+         new_elem->title = block;
+         memcpy(block, title, title_len);
+      }
    }
 
    /* A duration is pulls: a message asked for none at all is shown
@@ -195,15 +214,13 @@ void msg_queue_clear(msg_queue_t *queue)
    {
       if (queue->elems[i])
       {
-         free(queue->elems[i]->msg);
-         free(queue->elems[i]->title);
          free(queue->elems[i]);
          queue->elems[i] = NULL;
       }
    }
    queue->ptr     = 1;
-   free(queue->tmp_msg);
-   queue->tmp_msg = NULL;
+   free(queue->tmp);
+   queue->tmp = NULL;
 }
 
 /* Takes the front out of the heap: the last node moves into the hole
@@ -259,15 +276,13 @@ const char *msg_queue_pull(msg_queue_t *queue)
    if (front->duration > 0)
       return front->msg;
 
-   free(queue->tmp_msg);
-   queue->tmp_msg = front->msg;
-   front->msg     = NULL;
+   /* The removed node is kept whole until the next pull or clear, so
+    * the message it returns stays valid that long. */
+   free(queue->tmp);
+   front      = msg_queue_remove_front(queue);
+   queue->tmp = front;
 
-   front = msg_queue_remove_front(queue);
-   free(front->title);
-   free(front);
-
-   return queue->tmp_msg;
+   return front->msg;
 }
 
 /**
@@ -302,8 +317,6 @@ bool msg_queue_extract(msg_queue_t *queue, msg_queue_entry_t *queue_entry)
    if (front->title)
       strlcpy(queue_entry->title, front->title, sizeof(queue_entry->title));
 
-   free(front->msg);
-   free(front->title);
    free(front);
 
    return true;

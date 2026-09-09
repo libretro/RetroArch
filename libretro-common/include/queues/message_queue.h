@@ -43,20 +43,15 @@ enum message_queue_category
    MESSAGE_QUEUE_CATEGORY_SUCCESS
 };
 
-typedef struct queue_elem
-{
-   char *msg;
-   char *title;
-   unsigned duration;
-   unsigned prio;
-   enum message_queue_icon icon;
-   enum message_queue_category category;
-} queue_elem_t;
+/* A node of the queue: one block holding the node and its strings,
+ * owned and freed by the queue alone. Defined in message_queue.c. */
+struct queue_elem;
 
 typedef struct msg_queue
 {
-   char *tmp_msg;
-   queue_elem_t **elems;
+   struct queue_elem *tmp;             /* the last node pull() removed, kept whole
+                                          for the message it returned */
+   struct queue_elem **elems;
    size_t ptr;
    size_t size;
 } msg_queue_t;

@@ -21,7 +21,9 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <queues/message_queue.h>
+/* The node type is private to message_queue.c; the invariant checks
+ * read it, so the source is included rather than linked. */
+#include "../../../queues/message_queue.c"
 #include <queues/fifo_queue.h>
 
 static unsigned failures = 0;
@@ -153,7 +155,19 @@ static void t_lifetime(void)
       m = msg_queue_pull(&q);
       CHECK(m && !strcmp(m, "three"), "pull %u of a duration-3 message: %s", i + 1, m ? m : "(null)");
    }
+   /* The last pull removed the node and returned its message; that
+    * pointer is the queue's temporary and stands until the next pull. */
+   CHECK(m && !strcmp(m, "three"), "the message of a removed node is not readable after its last pull");
    CHECK(msg_queue_pull(&q) == NULL && q.ptr == 1, "a duration-3 message survived three pulls");
+   /* One block per node: message and title live inside it. */
+   msg_queue_push(&q, "blk", 2, 5, "ttl", MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   {
+      const char *base = (const char*)q.elems[1];
+      CHECK(q.elems[1]->msg   > base && q.elems[1]->msg   < base + sizeof(struct queue_elem) + 8, "the message is not in the node's block");
+      CHECK(q.elems[1]->title > base && q.elems[1]->title < base + sizeof(struct queue_elem) + 8, "the title is not in the node's block");
+      CHECK(!strcmp(q.elems[1]->msg, "blk") && !strcmp(q.elems[1]->title, "ttl"), "the block's strings are wrong");
+   }
+   msg_queue_clear(&q);
    /* Zero is one pull, not forever: a core's message shorter than a
     * frame rounds to zero and is shown once. */
    msg_queue_push(&q, "zero", 1, 0, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -176,17 +190,22 @@ static void t_alloc_failure(void)
    int at;
    msg_queue_initialize(&q, 8);
    msg_queue_push(&q, "keep", 5, 10, "t", MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   for (at = 0; at < 3; at++)
+   /* One block per push: one allocation, one failure point. */
+   for (at = 0; at < 1; at++)
    {
       alloc_count   = 0;
       fail_alloc_at = at;
-      msg_queue_push(&q, "new", 9, 10, "title", MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      CHECK(!msg_queue_try_push(&q, "new", 9, 10, "title", MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO),
+            "a push whose allocation failed reported success");
       fail_alloc_at = -1;
       CHECK(q.ptr == 2, "allocation %d failed and the queue has %u nodes, not 1", at, (unsigned)(q.ptr - 1));
       CHECK(q.elems[1] && q.elems[1]->msg && !strcmp(q.elems[1]->msg, "keep"),
             "allocation %d failed and the front changed", at);
       heap_invariants(&q, "after a failed push");
    }
+   alloc_count = 0;
+   CHECK(msg_queue_try_push(&q, "new", 9, 10, "title", MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO)
+         && alloc_count == 0, "a push made an allocation the wrapper did not see");
    msg_queue_deinitialize(&q);
 }
 
@@ -294,9 +313,8 @@ static void t_fifo_construction(void)
    f = fifo_new((size_t)-1);
    CHECK(f == NULL, "fifo_new(SIZE_MAX) succeeded: len + 1 wrapped");
    if (f) fifo_free(f);
-   f = fifo_new((size_t)-2);
-   /* May legitimately fail for want of memory; must not wrap. */
-   if (f) { CHECK(f->size == (size_t)-1, "fifo_new(SIZE_MAX-1) sized %u", (unsigned)f->size); fifo_free(f); }
+   /* SIZE_MAX - 1 is a legal request for SIZE_MAX bytes, which no
+    * allocator grants and a sanitizer's reports; not asked. */
 }
 
 static void t_msg_init(void)

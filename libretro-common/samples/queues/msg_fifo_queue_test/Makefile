@@ -4,7 +4,6 @@ LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
 	msg_fifo_queue_test.c \
-	$(LIBRETRO_COMM_DIR)/queues/message_queue.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c
