@@ -695,6 +695,9 @@ static void video_thread_schedule_next(thread_video_t *thr)
    thr->phase_from_display = base > 0 && base <= now;
    if (!thr->phase_from_display)
       base = now;
+   /* The present's end for the latency readout: the display's report
+    * when there is one, else the clock after the frame call. */
+   thr->last_present_end = base;
 
    next = base + thr->present_period;
    if (thr->present_period > 0)
@@ -937,7 +940,21 @@ static void video_thread_loop(void *data)
          /* Under the lock: the phase it records is read by the overlay
           * from the main thread. */
          if (ret_frame)
+         {
             video_thread_schedule_next(thr);
+            /* Latency: from the core's handover of this slot to the
+             * present's end just recorded. Repeats present in their
+             * own branch below and add nothing here. */
+            if (thr->last_present_end > thr->frame.slot[slot].pushed_at)
+            {
+               retro_time_t lat = thr->last_present_end - thr->frame.slot[slot].pushed_at;
+               thr->latency_avg = thr->latency_avg
+                  ? (thr->latency_avg * 7 + lat) / 8 : lat;
+               if (lat > thr->latency_max)
+                  thr->latency_max = lat;
+               thr->latency_from_display = thr->phase_from_display;
+            }
+         }
          thr->frame.busy    = false;
          scond_broadcast(thr->cond_ring);
          slock_unlock(thr->lock);
@@ -1203,6 +1220,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].width  = width;
       thr->frame.slot[slot].height = height;
       thr->frame.slot[slot].count  = frame_count;
+      thr->frame.slot[slot].pushed_at = cpu_features_get_time_usec();
       thr->frame.slot[slot].hw_slot = hw_slot;
       thr->frame.slot[slot].pitch  = copy_stride;
 
@@ -2384,6 +2402,25 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase)
    *display_phase = thr->phase_from_display;
    slock_unlock(thr->lock);
    return armed;
+}
+
+bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
+      bool *from_display)
+{
+   thread_video_t *thr;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   *avg = *worst = 0;
+   *from_display = false;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
+      return false;
+   slock_lock(thr->lock);
+   *avg          = thr->latency_avg;
+   *worst        = thr->latency_max;
+   *from_display = thr->latency_from_display;
+   slock_unlock(thr->lock);
+   return *avg > 0;
 }
 
 bool video_thread_pacing_stats(bool *display_pacing,

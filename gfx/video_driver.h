@@ -1141,6 +1141,7 @@ bool video_thread_hw_allowed(void);
  * from this thread. */
 #define video_thread_swap_count() (video_state_get_ptr()->swap_count)
 #define video_thread_call_on_waiter(fn, data) ((fn)(data))
+#define video_thread_latency_stats(a, w, d) (*(a) = 0, *(w) = 0, *(d) = false, false)
 #endif
 
 bool video_driver_has_focus(void);

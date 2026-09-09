@@ -5989,6 +5989,16 @@ void video_driver_frame(const void *data, unsigned width,
                      " Core Start: display (core %.2f ms, render %.2f ms)\n",
                      core_time / 1000.0f, render_time / 1000.0f);
          }
+         {
+            retro_time_t lat_avg, lat_max;
+            bool lat_display;
+            if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Latency:    %.2f ms to %s (worst %.2f ms)\n",
+                     lat_avg / 1000.0f,
+                     lat_display ? "display" : "present",
+                     lat_max / 1000.0f);
+         }
 #endif
 
          if (video_st->frame_delay_target > 0)

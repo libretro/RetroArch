@@ -211,6 +211,15 @@ typedef struct thread_video
    /* Whether to ask the driver when its last present reached the
     * display; the setting, carried across with the frame. */
    bool present_timing_ask;
+   /* Latency, push to present, for the statistics overlay: a moving
+    * average and the session's worst, in microseconds, and whether the
+    * present end is the display's report or the clock after the frame
+    * call. Written by the video thread under 'lock'. */
+   retro_time_t last_present_end;
+   retro_time_t latency_avg;
+   retro_time_t latency_max;
+   bool         latency_from_display;
+
    /* Display pacing. render_time is the video thread's moving average
     * of driver->frame() and is read under 'lock'; core_time is the main
     * thread's moving average of the time between one frame handoff's
@@ -334,6 +343,9 @@ typedef struct thread_video
       struct
       {
          uint64_t count;
+         /* When the core handed this frame over, on the main thread's
+          * clock; the latency readout measures from here. */
+         retro_time_t pushed_at;
          /* Hardware-rendered frame: the HW ring slot it lives in, -1
           * for a software frame. See hw_ring below. */
          int hw_slot;
@@ -465,6 +477,12 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase);
  * whether the wrapper is up at all. */
 bool video_thread_pacing_stats(bool *display_pacing,
       retro_time_t *core_time, retro_time_t *render_time);
+
+/* Latency from the core's handover to the present, for the overlay:
+ * the moving average and the session's worst, and whether the present
+ * end came from the display. False with no wrapper. */
+bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
+      bool *from_display);
 
 /* video_st->swap_count is written by the video thread while the wrapper
  * is installed; this reads it under the wrapper's lock. Without the
