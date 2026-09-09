@@ -962,7 +962,16 @@ static void lane_display_pacing(void)
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    CHECK(menu_is_up(), "display-pacing lane: menu did not reopen");
 #ifdef HAVE_MENU
-   display_pacing_measure(120.0f, 60, 120.0f, "menu");
+   display_pacing_measure(120.0f, 60, 120.0f, "menu, core running");
+   /* The quick menu over a paused core is the common case, and takes
+    * a different path through the runloop: the cached frame, with no
+    * core run before it. */
+   {
+      bool saved_pause = settings->bools.menu_pause_libretro;
+      settings->bools.menu_pause_libretro = true;
+      display_pacing_measure(120.0f, 60, 120.0f, "menu, core paused");
+      settings->bools.menu_pause_libretro = saved_pause;
+   }
 #endif
    settings->bools.video_threaded_display_pacing = saved_pacing;
 
