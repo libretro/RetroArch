@@ -132,6 +132,17 @@ retro_time_t win32_dwm_last_vblank_time(void);
 void win32_clip_window(bool grab);
 #endif
 
+#if !defined(_XBOX)
+/* Size/move and menu-loop handling for any window whose wndproc runs on
+ * the run loop's thread: content pauses, audio is stopped cleanly and a
+ * timer re-presents the last frame. See win32_common.c. */
+#define WIN32_SIZEMOVE_TIMER_ID 0x5241
+void win32_sizemove_enter(HWND hwnd);
+void win32_sizemove_exit(HWND hwnd);
+void win32_sizemove_tick(void);
+void win32_sizemove_abort(void);
+#endif
+
 void win32_check_window(void *data,
       bool *quit,
       bool *resize, unsigned *width, unsigned *height);

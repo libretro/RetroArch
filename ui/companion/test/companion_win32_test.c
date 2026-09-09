@@ -53,6 +53,10 @@
 ui_window_win32_t main_window;
 static int stub_menu_loop_calls;
 LRESULT win32_menu_loop(HWND hwnd, WPARAM wparam) { (void)hwnd; (void)wparam; stub_menu_loop_calls++; return 0; }
+void win32_sizemove_enter(HWND h) { (void)h; }
+void win32_sizemove_exit(HWND h) { (void)h; }
+void win32_sizemove_tick(void) { }
+void win32_sizemove_abort(void) { }
 
 extern settings_t test_settings;
 extern runloop_state_t test_runloop;

@@ -130,6 +130,7 @@ typedef char win32_dwm_timing_info_size_check[
 #include "../../verbosity.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../../audio/audio_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
@@ -686,6 +687,111 @@ uint16_t win32_get_keyboard_mods(void)
    return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
 }
 
+#if !defined(_XBOX)
+#ifndef WM_ENTERSIZEMOVE
+#define WM_ENTERSIZEMOVE 0x0231
+#endif
+#ifndef WM_EXITSIZEMOVE
+#define WM_EXITSIZEMOVE  0x0232
+#endif
+#ifndef WM_ENTERMENULOOP
+#define WM_ENTERMENULOOP 0x0211
+#endif
+#ifndef WM_EXITMENULOOP
+#define WM_EXITMENULOOP  0x0212
+#endif
+
+/* Title-bar drags, border resizes and menu bars run a modal loop inside
+ * DefWindowProc that does not return until the user lets go. With
+ * non-threaded video the run loop is on this thread, so content pauses
+ * for the duration - that is the norm for a windowed game and is not
+ * changed here. What is done: the audio driver is stopped so the sink
+ * does not underrun and pop, and a plain timer keeps the last frame on
+ * screen at the current window size. Nothing in here runs the run
+ * loop, the menu, input or the task queue; running those nested inside
+ * a captured-mouse modal loop is what 91920289 did and why it was
+ * reverted.
+ *
+ * Size/move and menu loops can nest (system menu opened while sizing):
+ * arm on the first entry, disarm on the last exit. One timer for the
+ * process; the window that armed it owns it, so the companion and the
+ * main window never kill each other's. */
+#define WIN32_SIZEMOVE_TIMER_ID 0x5241
+
+static uint8_t win32_sizemove_depth;
+static bool    win32_sizemove_stopped_audio;
+static HWND    win32_sizemove_timer_hwnd;
+
+void win32_sizemove_enter(HWND hwnd)
+{
+   if (win32_sizemove_depth++)
+      return;
+   /* The window lives on the video thread; the run loop is elsewhere
+    * and keeps going on its own. */
+   if (video_driver_is_threaded())
+      return;
+
+   /* A user who pressed P already stopped the driver and must not get
+    * it restarted on release. audio_driver_stop() returns false when
+    * the driver is not alive, so the latch is a real transition. */
+   win32_sizemove_stopped_audio = false;
+   if (!(runloop_state_get_ptr()->flags & RUNLOOP_FLAG_PAUSED))
+      win32_sizemove_stopped_audio = audio_driver_stop();
+
+   if (SetTimer(hwnd, WIN32_SIZEMOVE_TIMER_ID, 16, NULL))
+      win32_sizemove_timer_hwnd = hwnd;
+}
+
+void win32_sizemove_exit(HWND hwnd)
+{
+   (void)hwnd;
+   if (!win32_sizemove_depth || --win32_sizemove_depth)
+      return;
+   if (video_driver_is_threaded())
+      return;
+
+   if (win32_sizemove_timer_hwnd)
+   {
+      KillTimer(win32_sizemove_timer_hwnd, WIN32_SIZEMOVE_TIMER_ID);
+      win32_sizemove_timer_hwnd = NULL;
+   }
+   /* A failed start clears AUDIO_FLAG_ACTIVE for the session; say so. */
+   if (win32_sizemove_stopped_audio && !audio_driver_start(false))
+      RARCH_WARN("[Win32] Audio did not restart after a window size/move.\n");
+   win32_sizemove_stopped_audio = false;
+}
+
+/* A routed window is going away mid-drag. No audio restart: the driver
+ * may already be gone, and audio_driver_start() failing mutes the
+ * session. */
+void win32_sizemove_abort(void)
+{
+   if (win32_sizemove_timer_hwnd)
+      KillTimer(win32_sizemove_timer_hwnd, WIN32_SIZEMOVE_TIMER_ID);
+   win32_sizemove_timer_hwnd    = NULL;
+   win32_sizemove_depth         = 0;
+   win32_sizemove_stopped_audio = false;
+}
+
+/* WM_TIMER with WIN32_SIZEMOVE_TIMER_ID, delivered on the thread that
+ * owns the driver. The same two calls the run loop makes per frame and
+ * nothing else: the driver's alive() is where win32_check_window()
+ * consumes WIN32_CMN_FLAG_RESIZED and arms the swapchain resize, and
+ * video_driver_cached_frame() then presents the last frame into the
+ * resized chain - the pause picture. current_video and data have
+ * independent lifetimes during teardown, hence both checks. */
+void win32_sizemove_tick(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!win32_sizemove_depth || video_driver_is_threaded())
+      return;
+   if (video_st->current_video && video_st->data)
+      video_st->current_video->alive(video_st->data);
+   video_driver_cached_frame();
+}
+#endif
+
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -731,12 +837,32 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+#if !defined(_XBOX)
+         win32_sizemove_abort();
+#endif
          g_win32_flags |= WIN32_CMN_FLAG_QUIT;
          *quit          = true;
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
          break;
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_sizemove_enter(hwnd);
+         break;
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         win32_sizemove_exit(hwnd);
+         break;
+      case WM_TIMER:
+         /* Someone else's timer falls through to DefWindowProc. */
+         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
+            break;
+         win32_sizemove_tick();
+         *quit = true;
+         return 0;
+#endif
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
          if (     wparam != SIZE_MAXHIDE
@@ -951,6 +1077,13 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+#endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
 #ifdef HAVE_THREADS
@@ -1036,6 +1169,13 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+#endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
 #ifdef HAVE_THREADS
@@ -1247,6 +1387,13 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_QUIT:
       case WM_MOVE:
       case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+#endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
 #ifdef HAVE_THREADS

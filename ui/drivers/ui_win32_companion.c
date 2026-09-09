@@ -137,6 +137,20 @@
 
 /* Control / command IDs. Kept clear of the ID_M_* range in ui_win32.h. */
 #include "ui_win32_companion_ids.h"
+
+/* Pre-Win98 SDKs lack these; the messages themselves date from 95. */
+#ifndef WM_ENTERSIZEMOVE
+#define WM_ENTERSIZEMOVE 0x0231
+#endif
+#ifndef WM_EXITSIZEMOVE
+#define WM_EXITSIZEMOVE  0x0232
+#endif
+#ifndef WM_ENTERMENULOOP
+#define WM_ENTERMENULOOP 0x0211
+#endif
+#ifndef WM_EXITMENULOOP
+#define WM_EXITMENULOOP  0x0212
+#endif
 #include "../companion/companion_dock.h"
 
 typedef struct ui_companion_win32_wimp
@@ -3914,7 +3928,28 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
 
       case WM_CLOSE:
          /* Closing the companion never quits RetroArch. */
+         win32_sizemove_abort();
          ShowWindow(hwnd, SW_HIDE);
+         return 0;
+      case WM_DESTROY:
+         win32_sizemove_abort();
+         break;
+
+      /* Dragging or sizing this window, or browsing its menu bar, runs
+       * a modal loop on the run loop's thread exactly as the main window
+       * does; same handling, no run loop access. */
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_sizemove_enter(hwnd);
+         break;
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         win32_sizemove_exit(hwnd);
+         break;
+      case WM_TIMER:
+         if (wparam != WIN32_SIZEMOVE_TIMER_ID)
+            break;
+         win32_sizemove_tick();
          return 0;
 
       /* The docks: strips, tabs and gaps are the window's own surface. */
