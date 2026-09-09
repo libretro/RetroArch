@@ -255,6 +255,7 @@ int main(void)
    s_stop_start(0,  0,    "a device that cannot pause: stop drops, start prepares",       0, 1, 0, 1);
    s_stop_start(1, -EIO,  "a device that says it can pause and refuses: stop drops",      1, 1, 0, 1);
    s_repeated();
+   s_blocking_write();
 
    if (failures)
    {

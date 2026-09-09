@@ -493,42 +493,46 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
    }
    else
    {
-      bool eagain_retry         = true;
+      /* Write first; the device usually has the room, and a wait
+       * before every write was a syscall and a scheduler round trip
+       * for nothing. Wait only when it says EAGAIN, and then for a
+       * bounded time - one buffer's worth - so a device that stops
+       * draining costs a bounded pause and a short write, never the
+       * audio thread. A wait that returns without space, twice, is
+       * that device. */
+      unsigned waits    = 0;
+      int      wait_ms  = 100;
+      if (alsa->stream_info.buffer_size && alsa->stream_info.rate)
+         wait_ms = (int)((uint64_t)BYTES_TO_FRAMES(alsa->stream_info.buffer_size,
+                     alsa->stream_info.frame_bits) * 1000 / alsa->stream_info.rate) + 1;
 
       while (size)
       {
-         snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(alsa->pcm, -1);
-
-         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
-         {
-            if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
-               return -1;
-            continue;
-         }
-
-         frames = snd_pcm_writei(alsa->pcm, buf, size);
+         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
             if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
                return -1;
-
             break;
          }
          else if (frames == -EAGAIN)
          {
-            /* Definitely not supposed to happen. */
-            if (eagain_retry)
+            int rc;
+            if (waits++ >= 2)
+               break;
+            rc = snd_pcm_wait(alsa->pcm, wait_ms);
+            if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
             {
-               eagain_retry = false;
-               continue;
+               if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+                  return -1;
             }
-            break;
+            continue;
          }
          else if (frames < 0)
             return -1;
 
+         waits = 0;
          _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          alsa->frames_written += (uint64_t)frames;
          buf  += (frames << 1) * frames_size;
