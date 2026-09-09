@@ -71,6 +71,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /Cg/
 /GL/
 /SDL/
+/SDL3/
 /ffmpeg/
 /freetype2/
 /ft2build.h
