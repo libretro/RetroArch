@@ -1,0 +1,80 @@
+name: CI Linux TSan [threaded-video harness]
+
+# The threaded-video harness under ThreadSanitizer. Linux-tsan-threaded-
+# video.yml builds with TSan and runs RetroArch headless with the
+# wrapper on, which is one configuration; the harness has a lane for
+# each thing the wrapper does - the runtime toggle, reinit under the
+# wrapper, the command mailbox, presenter repeats and their display
+# phase, the second ring waiter, the re-entrant frame, the call on the
+# waiting thread, display pacing, the zero-copy loan, the hardware
+# ring's bookkeeping - and runs each against the shipping objects with
+# nothing stubbed. It is where the send/wait race in the waiter call
+# was found, under TSan, on a developer's machine: this job is what
+# keeps that class of bug found in CI instead. Null drivers, no
+# display, no SDL, so no suppression file is needed; the harness sets
+# halt_on_error itself, so any report fails the job.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-tsan-harness:
+    name: TSan build, the threaded-video harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        # Non-Qt, as the harness requires (with Qt, main() lives in
+        # ui_qt.o). Menu enabled: the menu lanes are half the point.
+        run: |
+          ./configure \
+            --disable-qt \
+            --disable-discord \
+            --disable-cheevos \
+            --disable-networking \
+            --disable-ffmpeg
+
+      - name: Build with DEBUG=1 and -fsanitize=thread
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1
+
+      - name: Run the threaded-video harness under TSan
+        shell: bash
+        run: |
+          set -eu
+          # SAN=thread links exactly the build above; CYCLES=2 runs
+          # each toggling lane twice. The harness's own TSAN_OPTIONS
+          # halt on the first report.
+          SAN=thread CYCLES=2 make -C samples/gfx/threaded_video check
+          make -C samples/gfx/threaded_video clean
