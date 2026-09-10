@@ -1039,23 +1039,28 @@ static const video_driver_t *rslane_inner;
 static unsigned              rslane_report_w, rslane_report_h;
 static unsigned              rslane_seen_w,   rslane_seen_h;
 static bool                  rslane_seen;
-static volatile int          rslane_stage;    /* 0 idle, 1 hold K, 2 K+1 pushed, 3 reported */
+/* 0 idle, 1 hold K, 2 K+1 pushed, 3 reported. Written by the main
+ * thread, read on the video thread: an atomic, so TSan sees the
+ * handoff it is. */
+static retro_atomic_size_t   rslane_stage;
+#define RSLANE_GET()   retro_atomic_load_acquire_size(&rslane_stage)
+#define RSLANE_SET(v)  retro_atomic_store_release_size(&rslane_stage, (v))
 
 static bool rslane_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   if (rslane_stage == 1)
+   if (RSLANE_GET() == 1)
    {
       /* Frame K: wait for the main thread to push K+1, then report the
        * resize as a context driver's check_window would. */
       unsigned spins = 0;
-      while (rslane_stage == 1 && spins++ < 2000)
+      while (RSLANE_GET() == 1 && spins++ < 2000)
          retro_sleep(1);
       video_driver_set_output_size(rslane_report_w, rslane_report_h);
-      rslane_stage = 3;
+      RSLANE_SET(3);
    }
-   else if (rslane_stage == 3 && !rslane_seen)
+   else if (RSLANE_GET() == 3 && !rslane_seen)
    {
       /* Frame K+1: what size is this drawn at? The size before the
        * report may be zero in the harness, so a flag, not the value. */
@@ -1097,18 +1102,18 @@ static void lane_resize_under_wrapper(void)
    rslane_seen     = false;
 
    /* K: pushed, and held on the video thread. */
-   rslane_stage = 1;
+   RSLANE_SET(1);
    video_driver_cached_frame();
    retro_sleep(5);
    /* K+1: pushed while K is held, built with the size known now. */
    video_driver_cached_frame();
-   rslane_stage = 2;
+   RSLANE_SET(2);
    /* K reports and returns; K+1 is drawn. */
    video_thread_wait_idle();
    run_frames(2);
    video_thread_wait_idle();
 
-   CHECK(rslane_stage == 3, "resize lane: frame K never ran on the video thread");
+   CHECK(RSLANE_GET() == 3, "resize lane: frame K never ran on the video thread");
    CHECK(rslane_seen, "resize lane: frame K+1 never ran");
    CHECK(rslane_seen_w == rslane_report_w && rslane_seen_h == rslane_report_h,
          "frame after a resize was drawn at %ux%u, the driver had reported %ux%u",
@@ -1116,7 +1121,7 @@ static void lane_resize_under_wrapper(void)
 
    video_thread_wait_idle();
    thr->driver  = rslane_inner;
-   rslane_stage = 0;
+   RSLANE_SET(0);
    /* Put the size and the menu back for the lanes that follow. */
    video_driver_set_output_size(before_w, before_h);
    if (!menu_is_up())

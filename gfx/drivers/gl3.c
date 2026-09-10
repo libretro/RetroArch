@@ -5705,8 +5705,19 @@ static bool gl3_hw_ring_expected(void)
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
 
+/* ARB_sync names the hardware ring uses; the PowerPC macOS headers
+ * have none of them. */
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
 #ifndef GL_TIMEOUT_IGNORED
-#define GL_TIMEOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
+#define GL_TIMEOUT_IGNORED                0xFFFFFFFFFFFFFFFFull
+#endif
+#ifndef GL_TIMEOUT_EXPIRED
+#define GL_TIMEOUT_EXPIRED                0x911B
 #endif
 
 /* The core's context, current on the caller - the main thread. From

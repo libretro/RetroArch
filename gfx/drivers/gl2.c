@@ -326,6 +326,14 @@ static bool gl2_init_pbo_readback(gl2_t *gl);
 #ifndef GL_SYNC_FLUSH_COMMANDS_BIT
 #define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
 #endif
+/* The rest of the ARB_sync names the hardware ring uses; the PowerPC
+ * macOS headers have none of them. */
+#ifndef GL_TIMEOUT_IGNORED
+#define GL_TIMEOUT_IGNORED                0xFFFFFFFFFFFFFFFFull
+#endif
+#ifndef GL_TIMEOUT_EXPIRED
+#define GL_TIMEOUT_EXPIRED                0x911B
+#endif
 
 enum gl2_renderchain_flags
 {
@@ -3240,9 +3248,6 @@ static bool gl2_hw_ring_expected(void)
  * path compiles under. GLES builds finish instead. */
 #if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
 #define GL2_HW_RING_SYNC 1
-#ifndef GL_TIMEOUT_IGNORED
-#define GL_TIMEOUT_IGNORED 0xFFFFFFFFFFFFFFFFull
-#endif
 #endif
 
 /* The core's context, current on the caller - the main thread. The
