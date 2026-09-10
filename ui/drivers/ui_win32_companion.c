@@ -634,44 +634,53 @@ static void cw_thumb_want(ui_companion_win32_wimp_t *w, size_t row, bool urgent)
          CW_TAG(row, w->gen), urgent, cw_sys_color_argb(COLOR_WINDOW));
 }
 
-/* Rows currently on screen: [first, last]. Item rects are monotonic in
- * row order (rows fill left-to-right, top-to-bottom), so binary search
- * the first row whose bottom is below the top edge, then walk to the
- * first row whose top is past the bottom edge. */
+/* Rows currently on screen: [first, last], from the grid geometry the
+ * control was given, never from LVM_GETITEMRECT. In icon view a virtual
+ * list has no stored positions: every LVM_GETITEMRECT for row r lays
+ * out rows 0..r again, measuring each label with DrawText through
+ * LVN_GETDISPINFO. A binary search over 42k rows did that sixteen
+ * times per frame and the window sat in comctl32 for seconds at a
+ * time ("Not Responding" with the main window still rendering).
+ * Icon view fills rows left to right, top to bottom, on the spacing
+ * cw_icon_spacing_apply() set, so the visible range is arithmetic:
+ * the scroll origin and the client height pick the rows, the client
+ * width picks the columns. Clamped to the row count; a partial last
+ * row is fine. Never returns fewer rows than the control shows. */
 static bool cw_visible_rows(ui_companion_win32_wimp_t *w, size_t *first,
       size_t *last)
 {
-   RECT client, rc;
-   size_t lo, hi, i;
-   if (!w->row_count)
+   RECT client;
+   POINT origin;
+   DWORD sp;
+   int cx, cy, cols, top, bot;
+   size_t f, l;
+   if (!w->row_count || !w->entries)
       return false;
    GetClientRect(w->entries, &client);
-
-   lo = 0;
-   hi = w->row_count;
-   while (lo < hi)
-   {
-      size_t mid = lo + (hi - lo) / 2;
-      rc.left = LVIR_BOUNDS;
-      if (!SendMessageA(w->entries, LVM_GETITEMRECT, mid, (LPARAM)&rc))
-         return false;
-      if (rc.bottom < 0)
-         lo = mid + 1;
-      else
-         hi = mid;
-   }
-   if (lo >= w->row_count)
+   origin.x = origin.y = 0;
+   SendMessageA(w->entries, LVM_GETORIGIN, 0, (LPARAM)&origin);
+   sp = (DWORD)SendMessageA(w->entries, LVM_GETITEMSPACING, FALSE, 0);
+   cx = (int)LOWORD(sp);
+   cy = (int)HIWORD(sp);
+   if (cx <= 0 || cy <= 0)
       return false;
-   *first = lo;
-   for (i = lo; i < w->row_count; i++)
-   {
-      rc.left = LVIR_BOUNDS;
-      if (!SendMessageA(w->entries, LVM_GETITEMRECT, i, (LPARAM)&rc))
-         break;
-      if (rc.top > client.bottom)
-         break;
-   }
-   *last = i ? i - 1 : lo;
+   cols = (client.right - client.left) / cx;
+   if (cols < 1)
+      cols = 1;
+   top = origin.y / cy;
+   if (top < 0)
+      top = 0;
+   bot = (origin.y + (client.bottom - client.top)) / cy;
+   if (bot < top)
+      bot = top;
+   f = (size_t)top * (size_t)cols;
+   l = ((size_t)bot + 1) * (size_t)cols;
+   if (f >= w->row_count)
+      return false;
+   if (l > w->row_count)
+      l = w->row_count;
+   *first = f;
+   *last  = l - 1;
    return true;
 }
 
