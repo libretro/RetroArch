@@ -67,6 +67,7 @@ typedef struct
    core_updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
    bool is_experimental;
+   struct string_list* supported_extensions;
 } core_updater_list_entry_t;
 
 /* Prevent direct access to core_updater_list_t

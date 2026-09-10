@@ -2893,10 +2893,11 @@ core_updater_info_t *core_info_get_core_updater_info(
       return NULL;
    }
 
-   info->is_experimental     = false;
-   info->display_name        = NULL;
-   info->description         = NULL;
-   info->licenses            = NULL;
+   info->is_experimental      = false;
+   info->display_name         = NULL;
+   info->description          = NULL;
+   info->licenses             = NULL;
+   info->supported_extensions = NULL;
 
    /* Fetch required parameters */
 
@@ -2912,6 +2913,9 @@ core_updater_info_t *core_info_get_core_updater_info(
 
    /* > licenses */
    info->licenses = config_take_string(conf, "license");
+
+   /* > supported_extensions */
+   info->supported_extensions = config_take_string(conf, "supported_extensions");
 
    /* Clean up */
    config_file_free(conf);
@@ -2932,6 +2936,9 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
 
    if (info->licenses)
       free(info->licenses);
+
+   if (info->supported_extensions)
+      free(info->supported_extensions);
 
    free(info);
    info = NULL;

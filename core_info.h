@@ -122,6 +122,7 @@ typedef struct
    char *display_name;
    char *description;
    char *licenses;
+   char *supported_extensions;
    bool is_experimental;
 } core_updater_info_t;
 
