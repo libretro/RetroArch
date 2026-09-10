@@ -143,6 +143,13 @@ struct ff_audio_info
     */
    const retro_resampler_t *resampler;
    void *resampler_data;
+   /* The float resampler is stereo: a wider frame goes through one
+    * instance per pair at the same ratio on the same count, which
+    * produces the same number of frames for every pair. resampler_data
+    * is the first pair's; the others follow here. */
+   void *resampler_pair[3];
+   float *pair_in, *pair_out;
+   size_t pair_frames;
 
    /* When the encoder consumes s16 and a resample is required, use the
     * integer sinc resampler so the game signal never detours through
@@ -371,14 +378,14 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    audio->codec                 = avcodec_alloc_context3(codec);
 
    audio->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
+   /* The default layout for the count: mono, stereo, quad, 5.1 (the
+    * pair at the back), 7.1 - FL FR FC LFE BL BR SL SR, the order the
+    * frames arrive in. */
 #if HAVE_CH_LAYOUT
-   audio->codec->ch_layout = (param->channels > 1)
-      ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO
-      : (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+   av_channel_layout_default(&audio->codec->ch_layout, (int)param->channels);
 #else
    audio->codec->channels       = param->channels;
-   audio->codec->channel_layout = (param->channels > 1)
-      ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+   audio->codec->channel_layout = av_get_default_channel_layout((int)param->channels);
 #endif
 
    ffmpeg_audio_resolve_format(audio, codec);
@@ -408,12 +415,26 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
       }
 
       if (!audio->resampler_int16)
+      {
+         unsigned i, npairs = (param->channels + 1) / 2;
          retro_resampler_realloc(
                &audio->resampler_data,
                &audio->resampler,
                audio_resampler,
                RESAMPLER_QUALITY_DONTCARE,
                audio->ratio);
+         for (i = 1; i < npairs && i < 4; i++)
+         {
+            const retro_resampler_t *drv = NULL;
+            retro_resampler_realloc(&audio->resampler_pair[i - 1], &drv,
+                  audio_resampler, RESAMPLER_QUALITY_DONTCARE, audio->ratio);
+            if (!audio->resampler_pair[i - 1])
+            {
+               RARCH_ERR("[FFmpeg] Cannot create the resampler for channel pair %u.\n", i);
+               return false;
+            }
+         }
+      }
    }
    else
    {
@@ -1101,6 +1122,17 @@ static void ffmpeg_free(void *data)
 
    if (handle->audio.resampler && handle->audio.resampler_data)
       handle->audio.resampler->free(handle->audio.resampler_data);
+   if (handle->audio.resampler)
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+         if (handle->audio.resampler_pair[i])
+            handle->audio.resampler->free(handle->audio.resampler_pair[i]);
+   }
+   memset(handle->audio.resampler_pair, 0, sizeof(handle->audio.resampler_pair));
+   av_freep(&handle->audio.pair_in);
+   av_freep(&handle->audio.pair_out);
+   handle->audio.pair_frames    = 0;
    handle->audio.resampler      = NULL;
    handle->audio.resampler_data = NULL;
 
@@ -1659,15 +1691,63 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
    if (handle->audio.resampler)
    {
-      /* It's always two channels ... */
       struct resampler_data info = {0};
+      const unsigned ch = handle->params.channels;
 
-      info.data_in      = (const float*)aud->data;
-      info.data_out     = handle->audio.resample_out;
-      info.input_frames = aud->frames;
-      info.ratio        = handle->audio.ratio;
-
-      handle->audio.resampler->process(handle->audio.resampler_data, &info);
+      if (ch <= 2)
+      {
+         info.data_in      = (const float*)aud->data;
+         info.data_out     = handle->audio.resample_out;
+         info.input_frames = aud->frames;
+         info.ratio        = handle->audio.ratio;
+         handle->audio.resampler->process(handle->audio.resampler_data, &info);
+      }
+      else
+      {
+         /* a wider frame: each pair through its own instance, the
+          * last channel of an odd count paired with itself */
+         const float *in = (const float*)aud->data;
+         unsigned npairs = (ch + 1) / 2, i, c0, c1;
+         size_t f, out_frames = 0;
+         size_t need_out = (size_t)(aud->frames * handle->audio.ratio) + 16;
+         if (aud->frames > handle->audio.pair_frames)
+         {
+            float *ni = (float*)av_realloc(handle->audio.pair_in, aud->frames * 2 * sizeof(float));
+            float *no = (float*)av_realloc(handle->audio.pair_out, need_out * 2 * sizeof(float));
+            if (!ni || !no)
+               return;
+            handle->audio.pair_in     = ni;
+            handle->audio.pair_out    = no;
+            handle->audio.pair_frames = aud->frames;
+         }
+         for (i = 0; i < npairs; i++)
+         {
+            c0 = 2 * i;
+            c1 = (2 * i + 1 < ch) ? 2 * i + 1 : 2 * i;
+            for (f = 0; f < aud->frames; f++)
+            {
+               handle->audio.pair_in[2 * f]     = in[f * ch + c0];
+               handle->audio.pair_in[2 * f + 1] = in[f * ch + c1];
+            }
+            memset(&info, 0, sizeof(info));
+            info.data_in      = handle->audio.pair_in;
+            info.data_out     = handle->audio.pair_out;
+            info.input_frames = aud->frames;
+            info.ratio        = handle->audio.ratio;
+            handle->audio.resampler->process(
+                  i == 0 ? handle->audio.resampler_data : handle->audio.resampler_pair[i - 1], &info);
+            if (info.output_frames > handle->audio.resample_out_frames)
+               info.output_frames = handle->audio.resample_out_frames;
+            for (f = 0; f < info.output_frames; f++)
+            {
+               handle->audio.resample_out[f * ch + c0] = handle->audio.pair_out[2 * f];
+               if (c1 != c0)
+                  handle->audio.resample_out[f * ch + c1] = handle->audio.pair_out[2 * f + 1];
+            }
+            out_frames = info.output_frames;
+         }
+         info.output_frames = out_frames;
+      }
 
       aud->data         = handle->audio.resample_out;
       aud->frames       = info.output_frames;

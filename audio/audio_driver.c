@@ -815,6 +815,9 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    free(audio_st->multi_fold);
    audio_st->multi_fold               = NULL;
    audio_st->multi_fold_frames        = 0;
+   free(audio_st->record_remap);
+   audio_st->record_remap             = NULL;
+   audio_st->record_remap_frames      = 0;
    audio_st->core_layout              = AUDIO_LAYOUT_STEREO;
    audio_driver_extra_free(audio_st);
    /* The wrapper thread was joined by audio->free() above, so nothing
@@ -4206,6 +4209,51 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 }
 #endif
 
+/* A batch to the recorder, in the recorder's layout: as it is when
+ * that is the batch's, remapped otherwise - a stereo batch on a 5.1
+ * recording goes to the fronts, a 5.1 batch on a stereo one is
+ * folded. The recorder takes int16; a float batch is narrowed once.
+ * The remap buffer grows to the largest batch. */
+static void audio_driver_record_push(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned channels, uint32_t layout, bool is_float)
+{
+   recording_state_t *record_st = recording_state_get_ptr();
+   struct record_audio_data ffemu_data;
+   uint32_t rlayout   = record_st->layout ? record_st->layout : AUDIO_LAYOUT_STEREO;
+   unsigned rchannels = record_st->channels ? record_st->channels : 2;
+   const int16_t *src = (const int16_t*)data;
+   size_t need        = frames * (channels > rchannels ? channels : rchannels);
+   if (!record_st->data || !record_st->driver || !record_st->driver->push_audio)
+      return;
+   if (is_float || rlayout != layout)
+   {
+      if (need > audio_st->record_remap_frames)
+      {
+         int16_t *nb = (int16_t*)realloc(audio_st->record_remap, need * 2 * sizeof(int16_t));
+         if (!nb)
+            return;
+         audio_st->record_remap        = nb;
+         audio_st->record_remap_frames = need;
+      }
+   }
+   if (is_float)
+   {
+      /* narrowed into the second half of the remap buffer, so the
+       * remap below can read it and write the first */
+      int16_t *n16 = audio_st->record_remap + need;
+      convert_float_to_s16(n16, (const float*)data, frames * channels);
+      src = n16;
+   }
+   if (rlayout != layout)
+   {
+      audio_layout_remap_s16(audio_st->record_remap, rlayout, src, layout, frames);
+      src = audio_st->record_remap;
+   }
+   ffemu_data.data   = src;
+   ffemu_data.frames = frames;
+   record_st->driver->push_audio(record_st->data, &ffemu_data);
+}
+
 /**
  * audio_driver_sample_accum_flush:
  *
@@ -4337,14 +4385,7 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
                   : frames_remaining;
 
       if (recording_push_audio)
-      {
-         struct record_audio_data ffemu_data;
-
-         ffemu_data.data   = data;
-         ffemu_data.frames = frames_to_write;
-
-         record_st->driver->push_audio(record_st->data, &ffemu_data);
-      }
+         audio_driver_record_push(audio_st, data, frames_to_write, 2, AUDIO_LAYOUT_STEREO, false);
 
       if (flush_audio)
          audio_driver_submit(audio_st, slowmotion_ratio, data,
@@ -4411,7 +4452,6 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
       const void *data, size_t frames, unsigned channels, unsigned layout, bool is_float)
 {
    uint32_t runloop_flags;
-   recording_state_t *record_st = recording_state_get_ptr();
    const unsigned pc = AUDIO_PIPE_CANON_CHANNELS;
    size_t sample = is_float ? sizeof(float) : sizeof(int16_t);
    unsigned slot[AUDIO_PIPE_CANON_CHANNELS], bit, n = 0, c;
@@ -4438,21 +4478,7 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
    if (audio_st->float_gate && audio_st->float_gate())
       return true;    /* netplay's interception, for an entry it cannot swap */
    runloop_flags = runloop_get_flags();
-   if (record_st->data && record_st->driver && record_st->driver->push_audio)
-   {
-      /* the recorder takes stereo int16: the fold */
-      struct record_audio_data ffemu_data;
-      if (is_float)
-      {
-         audio_downmix_f32((float*)audio_st->multi_fold, (const float*)data, frames, layout, channels);
-         convert_float_to_s16((int16_t*)audio_st->multi_fold, (const float*)audio_st->multi_fold, frames * 2);
-      }
-      else
-         audio_downmix_s16((int16_t*)audio_st->multi_fold, (const int16_t*)data, frames, layout, channels);
-      ffemu_data.data   = audio_st->multi_fold;
-      ffemu_data.frames = frames;
-      record_st->driver->push_audio(record_st->data, &ffemu_data);
-   }
+   audio_driver_record_push(audio_st, data, frames, channels, layout, is_float);
    if (      (runloop_flags & RUNLOOP_FLAG_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf)
@@ -4670,15 +4696,8 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
          /* The recorder consumes int16: converted into its own staging
           * only while it records. The ring takes the float frames as
           * they are on a float ring, and converts them on an int16 one. */
-         if (recording_push_audio && audio_st->pipe_record_i16)
-         {
-            struct record_audio_data ffemu_data;
-            convert_float_to_s16(audio_st->pipe_record_i16, data,
-                  frames_to_write << 1);
-            ffemu_data.data   = audio_st->pipe_record_i16;
-            ffemu_data.frames = frames_to_write;
-            record_st->driver->push_audio(record_st->data, &ffemu_data);
-         }
+         if (recording_push_audio)
+            audio_driver_record_push(audio_st, data, frames_to_write, 2, AUDIO_LAYOUT_STEREO, true);
          if (flush_audio)
             audio_driver_submit(audio_st, slowmotion_ratio,
                   data, frames_to_write << 1, true,
@@ -4689,18 +4708,8 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
          continue;
       }
 #endif
-      if (recording_push_audio && audio_st->output_samples_int16)
-      {
-         struct record_audio_data ffemu_data;
-
-         convert_float_to_s16(audio_st->output_samples_int16,
-               data, frames_to_write << 1);
-
-         ffemu_data.data   = audio_st->output_samples_int16;
-         ffemu_data.frames = frames_to_write;
-
-         record_st->driver->push_audio(record_st->data, &ffemu_data);
-      }
+      if (recording_push_audio)
+         audio_driver_record_push(audio_st, data, frames_to_write, 2, AUDIO_LAYOUT_STEREO, true);
 
       if (flush_audio)
       {

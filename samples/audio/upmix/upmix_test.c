@@ -238,6 +238,35 @@ int main(void)
             "layout_known is wrong at the edges");
    }
 
+   /* The remap the recorder's push uses: a batch of one layout to a
+    * recording of another. */
+   printf("   remap: a batch to a recording of another layout\n");
+   {
+      int16_t s51[6] = { 1000, -2000, 3000, 4000, 5000, -6000 };   /* FL FR FC LFE BL BR */
+      int16_t st[2]  = { 700, -800 };
+      int16_t out[8];
+      /* 5.1 to 5.1: a copy */
+      audio_layout_remap_s16(out, AUDIO_LAYOUT_5POINT1, s51, AUDIO_LAYOUT_5POINT1, 1);
+      CHECK(memcmp(out, s51, sizeof(s51)) == 0, "equal layouts are not a copy");
+      /* stereo to 5.1: fronts, the rest zero */
+      audio_layout_remap_s16(out, AUDIO_LAYOUT_5POINT1, st, AUDIO_LAYOUT_STEREO, 1);
+      CHECK(out[0] == 700 && out[1] == -800 && !out[2] && !out[3] && !out[4] && !out[5],
+            "stereo into 5.1 is not fronts and silence (%d %d %d %d %d %d)", out[0], out[1], out[2], out[3], out[4], out[5]);
+      /* 5.1 to stereo: the fold, as audio_downmix_s16 */
+      audio_layout_remap_s16(out, AUDIO_LAYOUT_STEREO, s51, AUDIO_LAYOUT_5POINT1, 1);
+      CHECK(abs(out[0] - (1000 + (int)(0.70710678f * 3000) + (int)(0.70710678f * 5000))) <= 2,
+            "5.1 into stereo left is %d", out[0]);
+      CHECK(abs(out[1] - (-2000 + (int)(0.70710678f * 3000) + (int)(0.70710678f * -6000))) <= 2,
+            "5.1 into stereo right is %d", out[1]);
+      /* 5.1 to 7.1: the six in place, the side pair zero */
+      audio_layout_remap_s16(out, AUDIO_LAYOUT_7POINT1, s51, AUDIO_LAYOUT_5POINT1, 1);
+      CHECK(memcmp(out, s51, sizeof(s51)) == 0 && !out[6] && !out[7], "5.1 into 7.1 is not in place");
+      /* 5.1 sides to 5.1 back: the side pair has no slot, folds to the fronts */
+      audio_layout_remap_s16(out, AUDIO_LAYOUT_5POINT1, s51, AUDIO_LAYOUT_5POINT1_SURROUND, 1);
+      CHECK(out[4] == 0 && out[5] == 0 && abs(out[0] - (1000 + (int)(0.70710678f * 5000))) <= 2,
+            "sides into a back recording: back %d %d, left %d", out[4], out[5], out[0]);
+   }
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

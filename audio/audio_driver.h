@@ -761,6 +761,9 @@ typedef struct
    uint32_t      core_layout;
    void         *multi_fold;
    size_t        multi_fold_frames;
+   /* the recorder's frame from a batch of another layout or format */
+   int16_t      *record_remap;
+   size_t        record_remap_frames;
    /* The discrete path: a core's channels past the front pair, kept
     * apart to a device that has their positions. The front pair goes
     * through the pipeline as every stereo core's does - the filters,

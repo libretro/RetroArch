@@ -83,6 +83,15 @@ bool audio_layout_supported(uint32_t layout);
 void audio_downmix_f32(float *out, const float *in, size_t frames, uint32_t layout, unsigned channels);
 void audio_downmix_s16(int16_t *out, const int16_t *in, size_t frames, uint32_t layout, unsigned channels);
 
+/* A frame of one layout to a frame of another: positions both have
+ * copied to their slots, positions only the destination has left
+ * zero (the fronts included: a mono source goes to both), and
+ * positions only the source has folded into the destination's fronts
+ * at the BS.775 gains, LFE dropped. The recorder's frame from any
+ * batch. Equal layouts are a copy. */
+void audio_layout_remap_s16(int16_t *out, uint32_t out_layout,
+      const int16_t *in, uint32_t in_layout, size_t frames);
+
 /* Every set bit names a position above. */
 bool audio_layout_known(uint32_t layout);
 

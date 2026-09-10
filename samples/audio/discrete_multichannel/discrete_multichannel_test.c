@@ -318,6 +318,92 @@ static void stereo_on_wide_ring_case(void)
    free(inf);
 }
 
+/* --- the recorder: takes what the frontend pushes ---------------------- */
+static int16_t *rec_cap = NULL; static size_t rec_frames = 0, rec_cap_frames = 0; static unsigned rec_channels = 2;
+static bool rec_push_audio(void *d, const struct record_audio_data *a)
+{
+   (void)d;
+   if (rec_frames + a->frames > rec_cap_frames)
+   {
+      rec_cap_frames = (rec_frames + a->frames) * 2 + 4096;
+      rec_cap = (int16_t*)realloc(rec_cap, rec_cap_frames * rec_channels * sizeof(int16_t));
+   }
+   memcpy(rec_cap + rec_frames * rec_channels, a->data, a->frames * rec_channels * sizeof(int16_t));
+   rec_frames += a->frames;
+   return true;
+}
+static record_driver_t rec_driver = { NULL, NULL, NULL, rec_push_audio, NULL, "capture" };
+
+/* A 5.1 core recorded: the recorder opened in the core's layout gets
+ * its six channels as they are; a stereo batch meanwhile lands in the
+ * fronts with the rest silent; a recorder opened in stereo gets the
+ * fold. The push is the frontend's, through the wide entry on the
+ * threaded ring and the classic entries. */
+static void record_case(void)
+{
+   size_t frames = 4410, f; unsigned c;
+   float *inf = (float*)malloc(frames * 6 * sizeof(float));
+   float *st  = (float*)malloc(frames * 2 * sizeof(float));
+   recording_state_t *rs = recording_state_get_ptr();
+   sthread_t *th;
+   printf("   recording: the core's layout when the recorder has it, the fold when it does not\n");
+   CHECK(pipe_up(true, true), "stand-up");
+   for (f = 0; f < frames; f++)
+   {
+      for (c = 0; c < 6; c++) inf[f * 6 + c] = 0.3f * (float)sin(2 * M_PI * tone_hz[c] * f / 44100.0);
+      st[2 * f] = inf[f * 6]; st[2 * f + 1] = inf[f * 6 + 1];
+   }
+   /* the recorder opened in 5.1, as recording_init does for a 5.1 core */
+   rs->driver = &rec_driver; rs->data = rs; rs->layout = AUDIO_LAYOUT_5POINT1; rs->channels = 6;
+   rec_channels = 6; rec_frames = 0;
+   retro_atomic_store_release_int(&consumer_run, 1);
+   th = sthread_create(consumer, NULL);
+   audio_driver_sample_batch_multi_float(inf, frames, 6, AUDIO_LAYOUT_5POINT1);
+   audio_driver_sample_batch_float(st, frames);
+   retro_atomic_store_release_int(&consumer_run, 0);
+   slock_lock(audio_driver_st.pipe_lock); scond_signal(audio_driver_st.pipe_data_cond); slock_unlock(audio_driver_st.pipe_lock);
+   sthread_join(th);
+   CHECK(rec_frames == frames * 2, "the recorder got %u frames of %u", (unsigned)rec_frames, (unsigned)(frames * 2));
+   if (rec_frames == frames * 2)
+   {
+      float *first = (float*)malloc(frames * 6 * sizeof(float)), *second = (float*)malloc(frames * 6 * sizeof(float));
+      double e;
+      for (f = 0; f < frames * 6; f++) { first[f] = rec_cap[f] / 32768.0f; second[f] = rec_cap[frames * 6 + f] / 32768.0f; }
+      /* the recording is at the source's 44.1 kHz; the measure assumes 48 */
+#define REC_HZ(h) ((h) * 48000.0 / 44100.0)
+      e = tone_energy(first, frames, 6, 4, REC_HZ(tone_hz[4]));
+      CHECK(e > 0.05, "the 5.1 batch's BL is not in the recording's BL (%.4f)", e);
+      e = tone_energy(first, frames, 6, 4, REC_HZ(tone_hz[0]));
+      CHECK(e < 0.001, "the 5.1 batch's FL leaked into the recording's BL (%.4f)", e);
+      e = tone_energy(second, frames, 6, 0, REC_HZ(tone_hz[0]));
+      CHECK(e > 0.05, "the stereo batch's FL is not in the recording's FL (%.4f)", e);
+      for (f = 0; f < frames; f++)
+         if (rec_cap[frames * 6 + f * 6 + 4] || rec_cap[frames * 6 + f * 6 + 2]) { CHECK(0, "the stereo batch did not leave the recording's other channels silent"); break; }
+      free(first); free(second);
+   }
+   /* the recorder opened in stereo: the fold */
+   rs->layout = AUDIO_LAYOUT_STEREO; rs->channels = 2; rec_channels = 2; rec_frames = 0;
+   retro_atomic_store_release_int(&consumer_run, 1);
+   th = sthread_create(consumer, NULL);
+   audio_driver_sample_batch_multi_float(inf, frames, 6, AUDIO_LAYOUT_5POINT1);
+   retro_atomic_store_release_int(&consumer_run, 0);
+   slock_lock(audio_driver_st.pipe_lock); scond_signal(audio_driver_st.pipe_data_cond); slock_unlock(audio_driver_st.pipe_lock);
+   sthread_join(th);
+   CHECK(rec_frames == frames, "the stereo recorder got %u frames", (unsigned)rec_frames);
+   if (rec_frames == frames)
+   {
+      float *r = (float*)malloc(frames * 2 * sizeof(float));
+      double fl, bl;
+      for (f = 0; f < frames * 2; f++) r[f] = rec_cap[f] / 32768.0f;
+      fl = tone_energy(r, frames, 2, 0, REC_HZ(tone_hz[0]));
+      bl = tone_energy(r, frames, 2, 0, REC_HZ(tone_hz[4]));
+      CHECK(fabs(bl / fl - 0.5) < 0.1, "the fold to the stereo recording is not -3 dB on BL (%.3f of %.3f)", bl, fl);
+      free(r);
+   }
+   rs->driver = NULL; rs->data = NULL;
+   free(inf); free(st);
+}
+
 static void fold_case(void)
 {
    size_t frames = 4410, f; unsigned c;
@@ -350,9 +436,10 @@ int main(void)
    threaded_case(true, true);
    threaded_case(false, false);
    stereo_on_wide_ring_case();
+   record_case();
    fold_case();
    audio_driver_deinit_internal(true);
-   free(cap);
+   free(cap); free(rec_cap);
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("discrete multi-channel: a core's channels reach their speakers as they are\n");
    return 0;

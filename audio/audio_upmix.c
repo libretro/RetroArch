@@ -134,6 +134,61 @@ void audio_downmix_s16(int16_t *out, const int16_t *in, size_t frames, uint32_t 
    }
 }
 
+void audio_layout_remap_s16(int16_t *out, uint32_t out_layout,
+      const int16_t *in, uint32_t in_layout, size_t frames)
+{
+   const unsigned oc = audio_layout_channels(out_layout);
+   const unsigned ic = audio_layout_channels(in_layout);
+   int  dst[11];            /* per source slot: the destination slot, or -1 */
+   float gl[11], gr[11];    /* the fold of a source slot without a destination */
+   int  ol = -1, orr = -1;
+   unsigned bit, n = 0, k;
+   size_t f;
+   if (in_layout == out_layout)
+   {
+      memcpy(out, in, frames * ic * sizeof(int16_t));
+      return;
+   }
+   downmix_gains(in_layout, gl, gr, &n);
+   n = 0;
+   for (bit = 0; bit < 11; bit++)
+   {
+      uint32_t p = 1u << bit;
+      if (!(in_layout & p))
+         continue;
+      dst[n++] = (out_layout & p) ? (int)audio_layout_channels(out_layout & (p - 1)) : -1;
+   }
+   if (out_layout & AUDIO_SPEAKER_FRONT_LEFT)  ol  = 0;
+   if (out_layout & AUDIO_SPEAKER_FRONT_RIGHT) orr = (int)audio_layout_channels(out_layout & (AUDIO_SPEAKER_FRONT_RIGHT - 1));
+   for (f = 0; f < frames; f++)
+   {
+      int32_t l = 0, r = 0;
+      memset(out, 0, oc * sizeof(int16_t));
+      for (k = 0; k < n; k++)
+      {
+         if (dst[k] >= 0)
+            out[dst[k]] = in[k];
+         else
+         {
+            l += (int32_t)(in[k] * gl[k]);
+            r += (int32_t)(in[k] * gr[k]);
+         }
+      }
+      if (ol >= 0 && l)
+      {
+         int32_t v = out[ol] + l;
+         out[ol] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+      }
+      if (orr >= 0 && r)
+      {
+         int32_t v = out[orr] + r;
+         out[orr] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+      }
+      out += oc;
+      in  += ic;
+   }
+}
+
 /* The slot of a position in a frame of the layout: the count of set
  * bits below it, or -1 when the layout lacks it. */
 static int upmix_slot(uint32_t layout, uint32_t position)

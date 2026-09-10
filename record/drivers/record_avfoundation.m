@@ -331,9 +331,22 @@ static void *avfoundation_record_init(const struct record_params *params)
       {
          AudioChannelLayout channelLayout;
          memset(&channelLayout, 0, sizeof(channelLayout));
-         channelLayout.mChannelLayoutTag = handle->channels == 1
-                                         ? kAudioChannelLayoutTag_Mono
-                                         : kAudioChannelLayoutTag_Stereo;
+         /* the frames arrive in the WAV order - FL FR FC LFE BL BR
+          * SL SR - which is the channel bitmap's ascending order, so
+          * a wider layout is named by its bitmap rather than a tag
+          * whose order might differ (the MPEG 7.1 tags put the pairs
+          * the other way about) */
+         switch (handle->channels)
+         {
+            case 1:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Mono; break;
+            case 4:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x33; break;
+            case 6:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x3F; break;
+            case 8:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x63F; break;
+            default: channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo; break;
+         }
 
          NSData *channelLayoutData = [NSData dataWithBytes:&channelLayout
                                                     length:sizeof(channelLayout)];

@@ -24,6 +24,7 @@
 #include "../configuration.h"
 #include "../list_special.h"
 #include "../gfx/video_driver.h"
+#include "../audio/audio_driver.h"
 #ifdef HAVE_THREADS
 #include "../gfx/video_thread_wrapper.h"
 #endif
@@ -34,6 +35,7 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "../audio/audio_upmix.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
 #include "drivers/record_avfoundation.h"
@@ -303,7 +305,24 @@ bool recording_init(void)
    params.out_height                = av_info->geometry.base_height;
    params.fb_width                  = av_info->geometry.max_width;
    params.fb_height                 = av_info->geometry.max_height;
+   /* A core delivering a wider layout than stereo through the
+    * multi-channel batch entry is recorded in it, where the container
+    * has a default layout for the count - quad, 5.1 with the pair at
+    * the back, 7.1 - which are the layouts in the order the recorder
+    * takes them. Anything else, stereo. */
    params.channels                  = 2;
+   recording_st->layout              = AUDIO_LAYOUT_STEREO;
+   {
+      uint32_t core_layout = audio_state_get_ptr()->core_layout;
+      if (     core_layout == AUDIO_LAYOUT_QUAD
+            || core_layout == AUDIO_LAYOUT_5POINT1
+            || core_layout == AUDIO_LAYOUT_7POINT1)
+      {
+         params.channels   = audio_layout_channels(core_layout);
+         recording_st->layout = core_layout;
+      }
+   }
+   recording_st->channels            = params.channels;
    params.filename                  = output;
    params.fps                       = av_info->timing.fps;
    params.samplerate                = av_info->timing.sample_rate;
