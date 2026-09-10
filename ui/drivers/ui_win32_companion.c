@@ -2281,16 +2281,49 @@ static void cw_info_toggle(ui_companion_win32_wimp_t *w)
 /* Append one log line to the EDIT: move the caret to the end and
  * replace the (empty) selection, which is the only O(line) append the
  * control offers. Newlines become CRLF as the control wants. */
+/* Posted to the companion window with a heap copy of one log line.
+ * RARCH_LOG runs on whatever thread logs - the video thread under
+ * threaded video, a core's own workers - and the log edit belongs to
+ * the run loop's thread. A SendMessage from another thread blocks until
+ * that thread pumps, and it does not pump while it waits on the video
+ * thread (video_thread_wait_reply), so the two deadlocked: seen as a
+ * hang on F5 with threaded video + Vulkan. PostMessage never blocks. */
+#define CW_WM_LOG_LINE    (WM_APP + 0x0510)
+/* Same shape for the status bar: runloop_msg_queue_push() is called
+ * from core and task threads, under RUNLOOP_MSG_QUEUE_LOCK. */
+#define CW_WM_STATUS_TEXT (WM_APP + 0x0511)
+
+/* Run loop thread only: put one line into the edit. */
+static void cw_log_commit(ui_companion_win32_wimp_t *w, const char *line)
+{
+   LRESULT len;
+   if (!w || !w->log)
+      return;
+   len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
+   if (len > COMPANION_WIN32_LOG_MAX)
+   {
+      /* Drop the oldest half in one replacement. */
+      SendMessageA(w->log, EM_SETSEL, 0, len / 2);
+      SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)"");
+      len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
+   }
+   SendMessageA(w->log, EM_SETSEL, len, len);
+   SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)line);
+}
+
+/* Any thread. Converts, copies and posts; the wndproc commits. A full
+ * queue drops the line rather than waiting. */
 static void cw_log_append(ui_companion_win32_wimp_t *w, const char *msg)
 {
-   char line[1024 + 2];
+   char *line;
    size_t i, j;
-   LRESULT len;
 
-   if (!w || !w->log || !msg)
+   if (!w || !w->hwnd || !w->log || !msg)
+      return;
+   if (!(line = (char*)malloc(1024 + 3)))
       return;
 
-   for (i = 0, j = 0; msg[i] && j < sizeof(line) - 3; i++)
+   for (i = 0, j = 0; msg[i] && j < 1024; i++)
    {
       if (msg[i] == '\n')
       {
@@ -2302,16 +2335,19 @@ static void cw_log_append(ui_companion_win32_wimp_t *w, const char *msg)
    }
    line[j] = '\0';
 
-   len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
-   if (len > COMPANION_WIN32_LOG_MAX)
-   {
-      /* Drop the oldest half in one replacement. */
-      SendMessageA(w->log, EM_SETSEL, 0, len / 2);
-      SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)"");
-      len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
-   }
-   SendMessageA(w->log, EM_SETSEL, len, len);
-   SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)line);
+   if (!PostMessageA(w->hwnd, CW_WM_LOG_LINE, 0, (LPARAM)line))
+      free(line);
+}
+
+/* Lines posted but not yet dispatched when the window goes away would
+ * leak; drain them on the owning thread before DestroyWindow. */
+static void cw_log_drain(HWND hwnd)
+{
+   MSG m;
+   if (!hwnd)
+      return;
+   while (PeekMessageA(&m, hwnd, CW_WM_LOG_LINE, CW_WM_STATUS_TEXT, PM_REMOVE))
+      free((char*)m.lParam);
 }
 
 static void cw_log_toggle(ui_companion_win32_wimp_t *w)
@@ -2372,7 +2408,18 @@ static void cw_on_playlist_changed(void *ud)
 static void cw_on_status_message(void *ud, const char *msg,
       unsigned prio, unsigned duration, bool flush)
 {
-   cw_status_set((ui_companion_win32_wimp_t*)ud, msg);
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   char *copy;
+   size_t n;
+   (void)prio; (void)duration; (void)flush;
+   if (!w || !w->hwnd || !msg)
+      return;
+   n = strlen(msg) + 1;
+   if (!(copy = (char*)malloc(n)))
+      return;
+   memcpy(copy, msg, n);
+   if (!PostMessageA(w->hwnd, CW_WM_STATUS_TEXT, 0, (LPARAM)copy))
+      free(copy);
 }
 
 static void cw_on_notify_refresh(void *ud)
@@ -3911,6 +3958,14 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
 
    switch (msg)
    {
+      case CW_WM_LOG_LINE:
+         cw_log_commit(w, (const char*)lparam);
+         free((char*)lparam);
+         return 0;
+      case CW_WM_STATUS_TEXT:
+         cw_status_set(w, (const char*)lparam);
+         free((char*)lparam);
+         return 0;
       case WM_SIZE:
          cw_layout(w);
          if (w)
@@ -5002,6 +5057,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
       DestroyWindow(w->set_hwnd);
    if (w->cores_class_registered)
       UnregisterClassA(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
+   cw_log_drain(w->hwnd);
    if (w->hwnd)
       DestroyWindow(w->hwnd);
    if (w->class_registered)
