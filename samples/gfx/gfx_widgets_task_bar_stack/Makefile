@@ -6,7 +6,7 @@ TARGET := gfx_widgets_task_bar_stack_test
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
-# gfx_widgets.c reaches for 59 symbols outside itself.  Eight resolve
+# gfx_widgets.c reaches for 63 symbols outside itself.  Eight resolve
 # to real libretro-common sources and are linked; the rest are in
 # stubs_retroarch.c, including dummies for the ten gfx_widget_t
 # instances that live in gfx/widgets/.

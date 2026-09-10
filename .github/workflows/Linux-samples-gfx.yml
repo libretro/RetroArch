@@ -434,6 +434,20 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run gfx_widgets_task_bar_stack_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_task_bar_stack
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          test -x gfx_widgets_task_bar_stack_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_widgets_task_bar_stack_test
+          echo "[pass] gfx_widgets_task_bar_stack_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_widgets_task_bar_stack_test
+          echo "[pass] gfx_widgets_task_bar_stack_test (TSan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers

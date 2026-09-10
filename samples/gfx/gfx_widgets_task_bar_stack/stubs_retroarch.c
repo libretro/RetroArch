@@ -64,11 +64,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <boolean.h>
+#include <features/features_cpu.h>
 
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../retroarch.h"
+#include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
 /* --- singletons --- */
@@ -222,12 +224,21 @@ font_data_t *gfx_display_font_file(gfx_display_t *p_disp, char *fontpath,
   return NULL; }
 
 /* --- animation --- */
-bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
+bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
 { (void)entry; return true; }
-bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
-void gfx_animation_timer_start(float *timer,
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag) { (void)tag; return true; }
+void gfx_animation_timer_start_widget(float *timer,
       gfx_timer_ctx_entry_t *timer_entry)
 { (void)timer_entry; if (timer) *timer = 0.0f; }
+void gfx_animation_widgets_own(bool worker) { (void)worker; }
+void gfx_animation_update_widgets(retro_time_t current_time,
+      float ticker_speed, unsigned video_width, unsigned video_height)
+{ (void)current_time; (void)ticker_speed; (void)video_width; (void)video_height; }
+
+/* --- gfx_widgets_worker_step(), which no test here drives --- */
+static settings_t s_settings;
+settings_t *config_get_ptr(void) { return &s_settings; }
+retro_time_t cpu_features_get_time_usec(void) { return 0; }
 
 /* --- video driver --- */
 uint32_t video_driver_get_disp_flags(void) { return 0; }
