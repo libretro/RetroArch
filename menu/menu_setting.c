@@ -7216,6 +7216,23 @@ static size_t setting_get_string_representation_uint_audio_resampler_quality(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_audio_output_layout(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 1:  return strlcpy(s, "4.0", len);
+         case 2:  return strlcpy(s, "5.1", len);
+         case 3:  return strlcpy(s, "5.1 Surround", len);
+         case 4:  return strlcpy(s, "7.1", len);
+         default: return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_audio_format_negotiation(
       rarch_setting_t *setting, char *s, size_t len)
 {

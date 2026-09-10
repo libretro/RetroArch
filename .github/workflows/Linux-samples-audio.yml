@@ -195,6 +195,27 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 400 ./pipeline_stall_test
           echo "[pass] pipeline_stall_test (TSan)"
 
+      - name: Build and run upmix_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/upmix
+        run: |
+          set -eu
+          # The stereo-to-wider stage at the last step before a device
+          # opened with a wider speaker layout. A layout is a mask of
+          # positions in ascending bit order, never a count: 5.1 with
+          # the rear pair at the back and 5.1 with it at the sides are
+          # two layouts whose slots differ. The fronts carry the stereo
+          # unchanged, the rear pair -3 dB in its own slots, the centre
+          # the -6 dB sum, the LFE the bass through a 120 Hz low-pass and
+          # none of the treble; stereo is a copy; a mask the stage
+          # cannot fill is refused.
+          make clean all
+          ./upmix_test
+          echo "[pass] upmix_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./upmix_test
+          echo "[pass] upmix_test (ASan)"
+
       - name: Build and run pipeline_rate_control_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/pipeline_rate_control

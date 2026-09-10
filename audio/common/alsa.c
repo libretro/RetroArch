@@ -24,6 +24,55 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+/* The device's channel map as AUDIO_SPEAKER_ positions, in the order
+ * the device takes them. 0 when the map is unknown or has a position
+ * the frontend has no bit for. A map whose positions are not in the
+ * frontend's ascending-bit order is reported as 0 too: the frontend
+ * lays frames out in that order and does not permute. */
+static uint32_t alsa_layout_of_chmap(snd_pcm_t *pcm, unsigned channels)
+{
+   snd_pcm_chmap_t *map = snd_pcm_get_chmap(pcm);
+   uint32_t layout = 0, last = 0;
+   unsigned i;
+   if (!map)
+      return 0;
+   if (map->channels != channels)
+   {
+      free(map);
+      return 0;
+   }
+   for (i = 0; i < map->channels; i++)
+   {
+      uint32_t bit;
+      switch (map->pos[i])
+      {
+         case SND_CHMAP_FL:  bit = AUDIO_SPEAKER_FRONT_LEFT;    break;
+         case SND_CHMAP_FR:  bit = AUDIO_SPEAKER_FRONT_RIGHT;   break;
+         case SND_CHMAP_FC:  bit = AUDIO_SPEAKER_FRONT_CENTER;  break;
+         case SND_CHMAP_LFE: bit = AUDIO_SPEAKER_LOW_FREQUENCY; break;
+         case SND_CHMAP_RL:  bit = AUDIO_SPEAKER_BACK_LEFT;     break;
+         case SND_CHMAP_RR:  bit = AUDIO_SPEAKER_BACK_RIGHT;    break;
+         case SND_CHMAP_RC:  bit = AUDIO_SPEAKER_BACK_CENTER;   break;
+         case SND_CHMAP_SL:  bit = AUDIO_SPEAKER_SIDE_LEFT;     break;
+         case SND_CHMAP_SR:  bit = AUDIO_SPEAKER_SIDE_RIGHT;    break;
+         case SND_CHMAP_FLC: bit = AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER;  break;
+         case SND_CHMAP_FRC: bit = AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER; break;
+         default:
+            free(map);
+            return 0;
+      }
+      if (bit <= last)
+      {
+         free(map);
+         return 0;
+      }
+      layout |= bit;
+      last    = bit;
+   }
+   free(map);
+   return layout;
+}
+
 int alsa_init_pcm(snd_pcm_t **pcm,
    const char* device,
    snd_pcm_stream_t stream,
@@ -104,7 +153,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
       goto error;
    }
-   stream_info->frame_bits = snd_pcm_format_physical_width(format) * channels;
 
    if ((errnum = snd_pcm_hw_params_set_format(*pcm, params, format)) < 0)
    {
@@ -117,7 +165,21 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   if ((errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
+   /* A wider count than stereo is a request: a device that will not
+    * take it gets stereo, and the caller learns the count from
+    * stream_info->channels. Stereo itself is required. */
+   if (channels > 2
+         && (errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
+   {
+      RARCH_WARN("[ALSA] %s device \"%s\" would not open with %u channels (%s); opening stereo.\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            channels,
+            snd_strerror(errnum));
+      channels = 2;
+   }
+   if (channels <= 2
+         && (errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
    {
       RARCH_ERR("[ALSA] Failed to set %u-channel audio for %s device \"%s\": %s.\n",
             channels,
@@ -127,6 +189,9 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
       goto error;
    }
+   stream_info->frame_bits = snd_pcm_format_physical_width(format) * channels;
+   stream_info->channels   = channels;
+   stream_info->layout     = 0;
 
    /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
    if ((errnum = snd_pcm_hw_params_set_rate_resample(*pcm, params, false)) < 0)
@@ -184,6 +249,18 @@ int alsa_init_pcm(snd_pcm_t **pcm,
             snd_strerror(errnum));
 
       goto error;
+   }
+
+   /* Wider than stereo: what the device says its channels are. */
+   if (channels > 2)
+   {
+      stream_info->layout = alsa_layout_of_chmap(*pcm, channels);
+      if (stream_info->layout)
+         RARCH_LOG("[ALSA] %s device \"%s\" opened with %u channels, layout 0x%03x from its channel map.\n",
+               snd_pcm_stream_name(stream), snd_pcm_name(*pcm), channels, stream_info->layout);
+      else
+         RARCH_LOG("[ALSA] %s device \"%s\" opened with %u channels; no usable channel map, the requested layout is assumed.\n",
+               snd_pcm_stream_name(stream), snd_pcm_name(*pcm), channels);
    }
 
    /* Shouldn't have to bother with this,

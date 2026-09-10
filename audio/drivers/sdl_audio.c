@@ -549,6 +549,7 @@ typedef struct sdl_audio
    bool nonblock;
    bool is_paused;
    SDL_AudioSpec device_spec;
+   uint32_t      layout;   /* the layout asked for, reported when the count matched */
    SDL_AudioDeviceID speaker_device;
 } sdl_audio_t;
 
@@ -637,7 +638,15 @@ static void *sdl_audio_init(const char *device,
 #else
    spec.format   = AUDIO_S16SYS;
 #endif
-   spec.channels = 2;
+   /* The channels of the layout the frontend wants; SDL converts if
+    * the device lacks them, so what it grants is what the frontend
+    * gets, in SDL's fixed interleaved order for the count - which is
+    * the layout's ascending-bit order. SDL does not say whether a
+    * six-channel device's rear pair is at the back or the sides; it
+    * takes the frames in that order and maps them itself, so the
+    * layout reported is the one asked for. */
+   sdl->layout   = audio_driver_requested_layout();
+   spec.channels = (Uint8)audio_layout_channels(sdl->layout);
    spec.samples  = frames; /* This is in audio frames, not samples ... :( */
    spec.callback = sdl_audio_playback_cb;
    spec.userdata = sdl;
@@ -694,7 +703,8 @@ static void *sdl_audio_init(const char *device,
     * rounded up - 42.7 ms reported against a 64 ms setting - and the
     * line here claimed four. */
    {
-      size_t frame_bytes = 2 * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
+      size_t frame_bytes = (size_t)sdl->device_spec.channels
+            * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
       size_t fifo_frames = ((size_t)(*new_rate) * latency) / 1000;
       if (fifo_frames < (size_t)sdl->device_spec.samples * 2)
          fifo_frames     = (size_t)sdl->device_spec.samples * 2;
@@ -866,6 +876,14 @@ static void sdl_audio_free(void *data)
    free(sdl);
 }
 
+static uint32_t sdl_audio_layout(void *data)
+{
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   if (!sdl || sdl->device_spec.channels != audio_layout_channels(sdl->layout))
+      return AUDIO_LAYOUT_STEREO;
+   return sdl->layout;
+}
+
 static bool sdl_audio_use_float(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
@@ -959,5 +977,8 @@ audio_driver_t audio_sdl = {
    sdl_audio_write_avail,
    sdl_audio_buffer_size,
    NULL, /* write_raw */
-   sdl_audio_wait_writable
+   sdl_audio_wait_writable,
+   NULL, /* consumed */
+   NULL, /* underruns */
+   sdl_audio_layout
 };

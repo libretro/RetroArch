@@ -14,6 +14,7 @@ flags   += -std=gnu99
 # reaches the real library.
 SOURCES_C := \
 	alsa_lifecycle_test.c \
+	../../../audio/audio_upmix.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/drivers/alsa.c \
 	$(CORE_DIR)/audio/common/alsa.c \

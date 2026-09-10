@@ -376,6 +376,7 @@ typedef struct alsa
 {
    snd_pcm_t *pcm;
    alsa_stream_info_t stream_info;
+   uint32_t requested_layout;
    /* Frames snd_pcm_writei() accepted since open; less what the device
     * still holds, it is what the device has consumed. */
    uint64_t frames_written;
@@ -386,6 +387,21 @@ typedef struct alsa
    bool is_paused;
    bool held;
 } alsa_t;
+
+/* The layout the device actually has, from its channel map; the
+ * requested one where the map could not be read; stereo where the
+ * device would not open wider. */
+static uint32_t alsa_layout(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (!alsa || alsa->stream_info.channels <= 2)
+      return AUDIO_LAYOUT_STEREO;
+   if (alsa->stream_info.layout)
+      return alsa->stream_info.layout;
+   if (alsa->stream_info.channels == audio_layout_channels(alsa->requested_layout))
+      return alsa->requested_layout;
+   return AUDIO_LAYOUT_STEREO;
+}
 
 static bool alsa_use_float(void *data)
 {
@@ -408,8 +424,10 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
+   alsa->requested_layout = audio_driver_requested_layout();
    if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate,
-            latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
+            latency, audio_layout_channels(alsa->requested_layout),
+            &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
       goto error;
 
    return alsa;
@@ -737,6 +755,8 @@ audio_driver_t audio_alsa = {
    alsa_buffer_size,
    NULL, /* write_raw */
    alsa_wait_writable,
-   alsa_frames_consumed
+   alsa_frames_consumed,
+   NULL, /* underruns */
+   alsa_layout
 };
 

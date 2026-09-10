@@ -11,6 +11,7 @@ flags   += -std=gnu99
 
 SOURCES_C := \
 	sink_rate_test.c \
+	../../../audio/audio_upmix.c \
 	stubs_retroarch.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \

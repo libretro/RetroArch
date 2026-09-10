@@ -8539,6 +8539,7 @@ unsigned menu_displaylist_build_list(
                      { MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY, PARSE_ONLY_UINT, false },
                      { MENU_ENUM_LABEL_AUDIO_FASTPATH_S16, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_AUDIO_OUTPUT_LAYOUT,      PARSE_ONLY_UINT, false },
                   };
                   count += menu_displaylist_parse_settings_rows(list, settings,
                         dl_rows_3, (unsigned)ARRAY_SIZE(dl_rows_3));

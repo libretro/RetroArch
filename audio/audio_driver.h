@@ -50,6 +50,7 @@ typedef struct scond scond_t;
 #include <audio/sinc_resampler_int16.h>
 
 #include "audio_defines.h"
+#include "audio_upmix.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
@@ -323,7 +324,27 @@ typedef struct audio_driver
     * frontend for the statistics overlay each frame, and once at
     * driver teardown for the log. NULL when the driver cannot tell. */
    size_t (*underruns)(void *data);
+
+   /* Optional. The speaker layout the device was opened with, as a
+    * mask of AUDIO_SPEAKER_ positions (audio_upmix.h), interleaved in
+    * ascending bit order. A driver that can open more than stereo
+    * asks audio_driver_requested_layout() at init for the layout the
+    * frontend wants, opens what the device grants, and reports here
+    * what it actually opened - the positions, not a count: a device
+    * that drives the rear pair from the sides reports SIDE_LEFT and
+    * SIDE_RIGHT, whatever was asked. The frontend upmixes its stereo
+    * mix to that layout at the last step before write(). NULL, or
+    * AUDIO_LAYOUT_STEREO, means stereo and the pipeline as it always
+    * was. Every byte the driver reports - write_avail(),
+    * buffer_size(), what write() accepts - is in frames of that
+    * layout's channels. */
+   uint32_t (*layout)(void *data);
 } audio_driver_t;
+
+/* The layout the user asked for, one of the AUDIO_LAYOUT_ masks. A
+ * driver opening a device reads this; a driver without the layout
+ * hook is not asked. */
+uint32_t audio_driver_requested_layout(void);
 
 /* Netplay's gate on the float batch entry; see
  * audio_driver_set_float_gate(). */
@@ -704,6 +725,18 @@ typedef struct
     * Used to re-initialise the resampler on the transition back to actual
     * resampling so it does not resume from a stale ring buffer. */
    bool     resampler_bypassed;
+
+   /* The layout the device was opened with - AUDIO_LAYOUT_STEREO
+    * unless the driver reports a wider one - its channel count, and
+    * the stage that widens the stereo mix to it at the last step
+    * before write(). The buffers hold one write's frames at
+    * out_channels, float and int16. */
+   uint32_t      out_layout;
+   unsigned      out_channels;
+   audio_upmix_t upmix;
+   float        *upmix_buf;
+   int16_t      *upmix_i16;
+   size_t        upmix_frames;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

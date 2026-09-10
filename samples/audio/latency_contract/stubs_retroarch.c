@@ -1,3 +1,4 @@
+#include "../../../audio/audio_driver.h"
 /* The frontend logging entry points audio/drivers/alsa.c and
  * audio/common/alsa.c reach for. Signatures copied from verbosity.h
  * rather than guessed; everything goes to stdout so a failing
@@ -48,3 +49,6 @@ void RARCH_DBG(const char *fmt, ...)
    vprintf(fmt, ap);
    va_end(ap);
 }
+
+/* The layout the driver under test asks the frontend for: stereo. */
+uint32_t audio_driver_requested_layout(void) { return AUDIO_LAYOUT_STEREO; }

@@ -1407,6 +1407,11 @@
  * AUDIO_FORMAT_NEGOTIATION_INT16 (0) or AUDIO_FORMAT_NEGOTIATION_FLOAT (1).
  * Float by default, matching RetroArch's historical driver behaviour. */
 #define DEFAULT_AUDIO_FORMAT_NEGOTIATION AUDIO_FORMAT_NEGOTIATION_FLOAT
+
+/* Speaker layout to open the output device with: 0 stereo, the
+ * pipeline as it always was; 1 quad, 2 5.1, 3 5.1 with the rear pair
+ * at the sides, 4 7.1 - upmixed from the stereo mix. */
+#define DEFAULT_AUDIO_OUTPUT_LAYOUT 0
 /* Automatically mute audio when rewind is enabled. */
 #define DEFAULT_AUDIO_REWIND_MUTE false
 

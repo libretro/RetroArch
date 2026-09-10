@@ -336,6 +336,34 @@ microphone_driver_t *microphone_drivers[] = {
 
 static audio_driver_state_t audio_driver_st = {0}; /* double alignment */
 
+/* The setting's values, in menu order: what each opens. */
+static uint32_t audio_driver_layout_of_setting(unsigned value)
+{
+   switch (value)
+   {
+      case 1:  return AUDIO_LAYOUT_QUAD;
+      case 2:  return AUDIO_LAYOUT_5POINT1;
+      case 3:  return AUDIO_LAYOUT_5POINT1_SURROUND;
+      case 4:  return AUDIO_LAYOUT_7POINT1;
+      default: return AUDIO_LAYOUT_STEREO;
+   }
+}
+
+uint32_t audio_driver_requested_layout(void)
+{
+   settings_t *settings = config_get_ptr();
+   return audio_driver_layout_of_setting(
+         settings ? settings->uints.audio_output_layout : 0);
+}
+
+static INLINE size_t audio_driver_dev_frame_bytes(const audio_driver_state_t *audio_st)
+{
+   unsigned ch = audio_st->out_channels ? audio_st->out_channels : 2;
+   return ch * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+         ? sizeof(float) : sizeof(int16_t));
+}
+
+
 /**************************************/
 
 audio_driver_state_t *audio_state_get_ptr(void)
@@ -599,6 +627,13 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (audio_st->arena_float)
       memalign_free(audio_st->arena_float);
    audio_st->arena_float              = NULL;
+   free(audio_st->upmix_buf);
+   free(audio_st->upmix_i16);
+   audio_st->upmix_buf                = NULL;
+   audio_st->upmix_i16                = NULL;
+   audio_st->upmix_frames             = 0;
+   audio_st->out_layout               = AUDIO_LAYOUT_STEREO;
+   audio_st->out_channels             = 2;
    audio_st->input_data               = NULL;
    audio_st->synth_buf                = NULL;
    audio_st->output_samples_buf       = NULL;
@@ -908,8 +943,7 @@ static double audio_driver_sink_device_frames(audio_driver_state_t *audio_st)
    size_t frame_bytes;
    if (!audio || !audio->write_avail || !audio_st->buffer_size || !audio_st->context_audio_data)
       return 0.0;
-   frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+   frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    {
       size_t avail = audio->write_avail(audio_st->context_audio_data);
       if (avail > audio_st->buffer_size)
@@ -1100,8 +1134,7 @@ static void audio_driver_sink_apply(audio_driver_state_t *audio_st,
    if (     !(audio_st->sink_warned & AUDIO_SINK_WARNED_TOO_SLOW)
          && audio_st->buffer_size > 0 && fabs(r - 1.0) > 0.0)
    {
-      size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-            ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+      size_t frame_bytes = audio_driver_dev_frame_bytes(audio_st);
       double buffer_sec  = (double)audio_st->buffer_size / (double)frame_bytes / (double)rate;
       double drain_sec   = (buffer_sec * 0.5) / fabs(r - 1.0);
       if (drain_sec < (double)AUDIO_SINK_BASELINE_USEC / 1e6)
@@ -1466,9 +1499,7 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
    avail_bytes     = audio->write_avail(audio_st->context_audio_data);
    if (audio_st->buffer_size && avail_bytes > audio_st->buffer_size)
       avail_bytes  = audio_st->buffer_size;
-   out_frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         ? (2 * sizeof(float))
-         : (2 * sizeof(int16_t));
+   out_frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    max_out_frames  = avail_bytes / out_frame_bytes
          + AUDIO_FF_DISCARD_SLACK_FRAMES;
    max_in_frames   = (size_t)((double)max_out_frames / ratio);
@@ -1564,6 +1595,56 @@ static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
    }
 }
 #endif
+
+/* The bytes of one frame as the device takes them: its channels at
+ * its sample size. */
+/* Hands frames of the stereo mix to the driver. On a stereo device
+ * the buffer goes as it is, float or int16 as the driver takes it -
+ * this is the write as it always was. On a wider device the stereo
+ * is widened into upmix_buf, narrowed to int16 there if the driver
+ * wants that, and the wider frames go. Returns the bytes the driver
+ * accepted, in frames of the device's own size for the caller's
+ * accounting. */
+static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, const void *stereo, size_t frames,
+      bool stereo_is_float)
+{
+   bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
+   size_t sample    = dev_float ? sizeof(float) : sizeof(int16_t);
+
+   if (audio_st->out_channels <= 2 || !audio_st->upmix_buf)
+      return audio->write(audio_st->context_audio_data, stereo,
+            frames * 2 * sample);
+
+   /* The upmix takes float stereo; an int16 mix is widened first. */
+   if (frames > audio_st->upmix_frames)
+      frames = audio_st->upmix_frames;
+   if (!stereo_is_float)
+   {
+      /* Narrowed stereo from the int16 path: widen into the head of
+       * the float scratch, then upmix from there into the rest.
+       * upmix_buf holds frames * channels floats; the stereo copy
+       * needs frames * 2 and the output starts after it only if
+       * channels leaves room, so use the int16 scratch reinterpreted
+       * as the staging area instead: it is frames * channels int16,
+       * which is frames * channels / 2 floats, enough for stereo
+       * when channels >= 4. */
+      float *stage = (float*)audio_st->upmix_i16;
+      convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
+      audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf, stage, frames);
+   }
+   else
+      audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf,
+            (const float*)stereo, frames);
+
+   if (dev_float)
+      return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
+            frames * audio_st->out_channels * sizeof(float));
+   convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf,
+         frames * audio_st->out_channels);
+   return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
+         frames * audio_st->out_channels * sizeof(int16_t));
+}
 
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
@@ -1869,14 +1950,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             {
-               ssize_t w = audio->write(audio_st->context_audio_data,
-                     audio_st->output_samples_buf,
-                     out_frames * 2 * sizeof(float));
+               ssize_t w = audio_driver_write_frames(audio_st, audio,
+                     audio_st->output_samples_buf, out_frames, true);
                audio_st->sink_offered_raw += out_frames;
                if (!audio_st->pipe_threaded)
                   audio_st->sink_offered  += (double)out_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
                if (w > 0)
-                  audio_st->sink_accepted += (uint64_t)w / (2 * sizeof(float));
+                  audio_st->sink_accepted += (uint64_t)w / audio_driver_dev_frame_bytes(audio_st);
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
@@ -1953,14 +2033,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             {
-               ssize_t w = audio->write(audio_st->context_audio_data,
-                     audio_st->output_samples_int16,
-                     out_frames * 2 * sizeof(int16_t));
+               ssize_t w = audio_driver_write_frames(audio_st, audio,
+                     audio_st->output_samples_int16, out_frames, false);
                audio_st->sink_offered_raw += out_frames;
                if (!audio_st->pipe_threaded)
                   audio_st->sink_offered  += (double)out_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
                if (w > 0)
-                  audio_st->sink_accepted += (uint64_t)w / (2 * sizeof(int16_t));
+                  audio_st->sink_accepted += (uint64_t)w / audio_driver_dev_frame_bytes(audio_st);
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
@@ -2377,28 +2456,24 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          }
       }
 
-      /* If the audio driver supports float samples,
-       * we don't have to do conversion */
-      if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         output_frames       *= sizeof(float); /* Unit: bytes */
-      else
+      /* A float driver takes the float mix as it is; an int16 one gets
+       * it narrowed. A wider device gets either widened on the way. */
+      if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT))
       {
          convert_float_to_s16(audio_st->output_samples_int16,
                (const float*)output_data, output_frames * 2);
-
          output_data          = audio_st->output_samples_int16;
-         output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
       {
-         size_t  fb = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
-         ssize_t w  = audio->write(audio_st->context_audio_data,
-               output_data, output_frames * 2);
-         audio_st->sink_offered_raw += (uint64_t)(output_frames * 2 / fb);
+         size_t  fb = audio_driver_dev_frame_bytes(audio_st);
+         ssize_t w  = audio_driver_write_frames(audio_st, audio, output_data,
+               output_frames,
+               (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0);
+         audio_st->sink_offered_raw += (uint64_t)output_frames;
          if (!audio_st->pipe_threaded)
-            audio_st->sink_offered  += (double)(output_frames * 2 / fb) * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+            audio_st->sink_offered  += (double)output_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
          if (w > 0)
             audio_st->sink_accepted += (uint64_t)w / fb;
       }
@@ -2706,6 +2781,48 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          && audio_driver_st.current_audio->use_float(
             audio_driver_st.context_audio_data))
       AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_USE_FLOAT);
+
+   /* The layout the device opened with: stereo unless the driver can
+    * say more. A wider device gets the upmix stage and its buffers,
+    * sized to the largest write the pipeline makes. */
+   audio_driver_st.out_layout   = AUDIO_LAYOUT_STEREO;
+   audio_driver_st.out_channels = 2;
+   if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
+         && audio_driver_st.current_audio->layout)
+   {
+      uint32_t layout = audio_driver_st.current_audio->layout(
+            audio_driver_st.context_audio_data);
+      if (layout != AUDIO_LAYOUT_STEREO && audio_layout_supported(layout))
+      {
+         unsigned ch   = audio_layout_channels(layout);
+         size_t frames = audio_driver_st.output_samples_buf_length
+               / (2 * sizeof(float));
+         audio_driver_st.upmix_buf = (float*)malloc(frames * ch * sizeof(float));
+         audio_driver_st.upmix_i16 = (int16_t*)malloc(frames * ch * sizeof(int16_t));
+         if (audio_driver_st.upmix_buf && audio_driver_st.upmix_i16
+               && audio_upmix_init(&audio_driver_st.upmix, layout,
+                  settings->uints.audio_output_sample_rate))
+         {
+            audio_driver_st.out_layout   = layout;
+            audio_driver_st.out_channels = ch;
+            audio_driver_st.upmix_frames = frames;
+            RARCH_LOG("[Audio] Device opened with %u channels, layout 0x%03x%s; the stereo mix is upmixed to it.\n",
+                  ch, layout,
+                  (layout & (AUDIO_SPEAKER_SIDE_LEFT | AUDIO_SPEAKER_SIDE_RIGHT))
+                  && !(layout & AUDIO_SPEAKER_BACK_LEFT) ? " (rear pair at the sides)" : "");
+         }
+         else
+         {
+            free(audio_driver_st.upmix_buf);
+            free(audio_driver_st.upmix_i16);
+            audio_driver_st.upmix_buf = NULL;
+            audio_driver_st.upmix_i16 = NULL;
+            RARCH_WARN("[Audio] Device opened with layout 0x%03x but the upmix stage could not be set up; writing stereo.\n", layout);
+         }
+      }
+      else if (layout != AUDIO_LAYOUT_STEREO)
+         RARCH_WARN("[Audio] Device opened with layout 0x%03x, which the frontend cannot fill; writing stereo.\n", layout);
+   }
 
    if (     !audio_sync
          && (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE))
@@ -3083,8 +3200,7 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    size_t frame_bytes, target, ring_max;
    if (config_get_ptr()->bools.audio_sync || !audio_st->buffer_size)
       return 0;
-   frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+   frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    target      = (size_t)((double)audio_st->buffer_size / frame_bytes
          / audio_st->src_ratio_orig);
    /* Never under one publish: the core delivers a frame at a time, and

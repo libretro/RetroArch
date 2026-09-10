@@ -1,27 +1,19 @@
 compiler     := gcc
-TARGET       := thread_handshake_test
+TARGET       := upmix_test
 
 CORE_DIR = ../../..
 LIBRETRO_COMM_DIR = $(CORE_DIR)/libretro-common
-INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
+INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 
 CC      := $(compiler)
 flags   += -std=gnu99
 
 SOURCES_C := \
-	thread_handshake_test.c \
-	../../../audio/audio_upmix.c \
-	stubs_retroarch.c \
-	$(CORE_DIR)/audio/audio_thread_wrapper.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
-	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
-	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c
+	upmix_test.c \
+	$(CORE_DIR)/audio/audio_upmix.c
 
-CFLAGS += -Wall $(INCDIRS)
-CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
-	-D_GNU_SOURCE
-LDFLAGS += -lm -lpthread
+CFLAGS += -Wall $(INCDIRS) -D_GNU_SOURCE
+LDFLAGS += -lm
 
 ifneq ($(SAN),)
    SANITIZER := $(SAN)
