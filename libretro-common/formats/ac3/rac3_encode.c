@@ -48,16 +48,23 @@ typedef struct
 
 static void bw_put(rac3_bw_t *w, unsigned v, unsigned n)
 {
-   while (n--)
+   /* n bits of v, MSB first, into the byte stream; past cap the bits
+    * are counted and not stored. Bytes are cleared as they are
+    * entered, so a buffer need not be zeroed first. */
+   while (n)
    {
-      size_t byte = w->bit >> 3;
-      unsigned bit = (v >> n) & 1u;
+      size_t   byte = w->bit >> 3;
+      unsigned off  = (unsigned)(w->bit & 7);
+      unsigned room = 8 - off;
+      unsigned take = n < room ? n : room;
+      unsigned bits = (v >> (n - take)) & ((1u << take) - 1u);
       if (byte < w->cap)
       {
-         if ((w->bit & 7) == 0) w->p[byte] = 0;
-         w->p[byte] |= (uint8_t)(bit << (7 - (w->bit & 7)));
+         if (off == 0) w->p[byte] = 0;
+         w->p[byte] |= (uint8_t)(bits << (room - take));
       }
-      w->bit++;
+      w->bit += take;
+      n      -= take;
    }
 }
 
@@ -94,7 +101,14 @@ static const uint8_t enc_nfchans[8] = { 2, 1, 2, 3, 3, 4, 4, 5 };
 
 /* The acmod for a layout and the slot of each stream channel in the
  * input's mask order (FL FR FC LFE BC SL SR ascending). */
-static bool enc_layout(rac3_encoder_t *e, uint32_t layout)
+typedef struct
+{
+   unsigned acmod, lfeon, nfchans, nchans, lfe_slot;
+   unsigned slot[ENC_NCH_MAX];
+   uint32_t layout;
+} enc_layout_t;
+
+static bool enc_layout(enc_layout_t *e, uint32_t layout)
 {
    uint32_t fbw = layout & ~0x008u;
    unsigned lfe = (layout & 0x008u) ? 1 : 0;
@@ -123,6 +137,14 @@ static bool enc_layout(rac3_encoder_t *e, uint32_t layout)
    return true;
 }
 
+int rac3_layout_acmod(uint32_t layout)
+{
+   enc_layout_t l;
+   if (!enc_layout(&l, layout))
+      return -1;
+   return (int)l.acmod;
+}
+
 rac3_encoder_t *rac3_encoder_new(unsigned rate, uint32_t layout, unsigned kbps)
 {
    static const uint16_t rates[19] = { 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 448, 512, 576, 640 };
@@ -133,7 +155,13 @@ rac3_encoder_t *rac3_encoder_new(unsigned rate, uint32_t layout, unsigned kbps)
    if (rate != 48000 && rate != 44100 && rate != 32000) return NULL;
    e = (rac3_encoder_t*)calloc(1, sizeof(*e));
    if (!e) return NULL;
-   if (!enc_layout(e, layout)) { free(e); return NULL; }
+   {
+      enc_layout_t l;
+      if (!enc_layout(&l, layout)) { free(e); return NULL; }
+      e->acmod = l.acmod; e->lfeon = l.lfeon; e->nfchans = l.nfchans;
+      e->nchans = l.nchans; e->lfe_slot = l.lfe_slot; e->layout = l.layout;
+      memcpy(e->slot, l.slot, sizeof(e->slot));
+   }
    e->rate  = rate;
    e->kbps  = kbps;
    e->fscod = rate == 48000 ? 0 : rate == 44100 ? 1 : 2;
@@ -166,33 +194,38 @@ size_t rac3_encoder_frame_bytes(const rac3_encoder_t *e)
 /* ---- 8.2.3: the forward transform ------------------------------------ */
 
 /* XD[k] = -2/N sum x[n] cos(2 pi/(4N) (2n+1)(2k+1) + pi/4 (2k+1)), the
- * long transform (alpha = 0), on a 512-sample windowed block. Done
- * as a direct sum with a recurrence-free cos table built per call
- * on the (2n+1)(2k+1) product mod 4N; the table is 2048 entries. */
+ * long transform (alpha = 0), on a 512-sample windowed block. A
+ * direct sum against a full table of the cosines, 256 rows of 512,
+ * built once: a plain dot product per output, which the compiler
+ * vectorises, at 512 KiB of memory the process pays once. */
+static float mdct_cos[256][512];
+static bool  mdct_cos_have = false;
+
 static void mdct512(const float *x, float *X)
 {
-   static float cos4n[2048];
-   static bool  have = false;
    unsigned n, k;
-   if (!have)
+   if (!mdct_cos_have)
    {
-      for (n = 0; n < 2048; n++)
-         cos4n[n] = (float)cos(2.0 * RAC3_PI * (double)n / 2048.0);
-      have = true;
+      for (k = 0; k < 256; k++)
+         for (n = 0; n < 512; n++)
+            mdct_cos[k][n] = (float)(-2.0 / 512.0 * cos(2.0 * RAC3_PI / 2048.0 * (double)((2 * n + 1) * (2 * k + 1))
+                  + RAC3_PI / 4.0 * (double)(2 * k + 1)));
+      mdct_cos_have = true;
    }
    for (k = 0; k < 256; k++)
    {
-      double acc = 0.0;
-      /* phase = (2n+1)(2k+1) * 2pi/2048 + (2k+1) * pi/4 = 2pi/2048 * ((2n+1)(2k+1) + 256 (2k+1)) */
-      unsigned base = (2 * k + 1) * 256;
-      unsigned step = 2 * k + 1;
-      unsigned ph   = (base + step) & 2047;     /* n = 0 */
-      for (n = 0; n < 512; n++)
+      const float *c = mdct_cos[k];
+      /* four partial sums: the compiler may not reorder a float sum,
+       * so the independence is written out for it */
+      float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+      for (n = 0; n < 512; n += 4)
       {
-         acc += (double)x[n] * cos4n[ph];
-         ph = (ph + 2 * step) & 2047;
+         a0 += x[n]     * c[n];
+         a1 += x[n + 1] * c[n + 1];
+         a2 += x[n + 2] * c[n + 2];
+         a3 += x[n + 3] * c[n + 3];
       }
-      X[k] = (float)(-2.0 / 512.0 * acc);
+      X[k] = (a0 + a1) + (a2 + a3);
    }
 }
 
@@ -238,7 +271,7 @@ static void frame_exponents(rac3_encoder_t *e, unsigned ch, unsigned nmant)
 
 /* ---- 7.2.2 forward: the allocation --------------------------------- */
 
-static int logadd(int a, int b)
+static int enc_logadd(int a, int b)
 {
    int c = a - b;
    int address = (c < 0 ? -c : c) >> 1;
@@ -246,7 +279,7 @@ static int logadd(int a, int b)
    return (c >= 0 ? a : b) + (int)rac3_latab[address];
 }
 
-static int calc_lowcomp(int a, int b0, int b1, int bin)
+static int enc_calc_lowcomp(int a, int b0, int b1, int bin)
 {
    if (bin < 7)
    {
@@ -296,21 +329,21 @@ static void allocate(rac3_encoder_t *e, const uint8_t *exps, unsigned start, uns
       lastbin = rac3_bndtab[kk] + rac3_bndsz[kk];
       if (lastbin > end) lastbin = end;
       bndpsd[kk] = psd[j]; j++;
-      for (i = j; i < lastbin; i++) { bndpsd[kk] = logadd(bndpsd[kk], psd[j]); j++; }
+      for (i = j; i < lastbin; i++) { bndpsd[kk] = enc_logadd(bndpsd[kk], psd[j]); j++; }
       kk++;
    } while (end > lastbin);
    bndstrt = rac3_masktab[start];
    bndend  = rac3_masktab[end - 1] + 1;
    {
-      lowcomp = calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0);
+      lowcomp = enc_calc_lowcomp(lowcomp, bndpsd[0], bndpsd[1], 0);
       excite[0] = bndpsd[0] - fgain - lowcomp;
-      lowcomp = calc_lowcomp(lowcomp, bndpsd[1], bndpsd[2], 1);
+      lowcomp = enc_calc_lowcomp(lowcomp, bndpsd[1], bndpsd[2], 1);
       excite[1] = bndpsd[1] - fgain - lowcomp;
       begin = 7;
       for (bin = 2; bin < 7; bin++)
       {
          if (!(bndend == 7 && bin == 6))
-            lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin + 1], (int)bin);
+            lowcomp = enc_calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin + 1], (int)bin);
          fastleak = bndpsd[bin] - fgain;
          slowleak = bndpsd[bin] - sgain;
          excite[bin] = fastleak - lowcomp;
@@ -320,7 +353,7 @@ static void allocate(rac3_encoder_t *e, const uint8_t *exps, unsigned start, uns
       for (bin = begin; bin < (bndend < 22 ? bndend : 22); bin++)
       {
          if (!(bndend == 7 && bin == 6))
-            lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin + 1], (int)bin);
+            lowcomp = enc_calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin + 1], (int)bin);
          fastleak -= fdecay; if (fastleak < bndpsd[bin] - fgain) fastleak = bndpsd[bin] - fgain;
          slowleak -= sdecay; if (slowleak < bndpsd[bin] - sgain) slowleak = bndpsd[bin] - sgain;
          excite[bin] = (fastleak - lowcomp > slowleak) ? fastleak - lowcomp : slowleak;

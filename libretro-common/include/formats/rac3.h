@@ -154,6 +154,13 @@ size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
  * speaker order for the layout, 1536 frames per call. */
 typedef struct rac3_encoder rac3_encoder_t;
 
+/* The largest syncframe: 640 kbit/s at 32 kHz, 1920 words. */
+#define RAC3_MAX_FRAME_BYTES 3840
+
+/* The acmod a layout mask encodes as, -1 if A/52 has no
+ * configuration for it (the encoder's layouts, listed below). */
+int rac3_layout_acmod(uint32_t layout);
+
 /* rate: 48000, 44100 or 32000. layout: the frontend's mask, one of
  * the configurations A/52 has (mono FC; stereo; 3.0; 2.1 as L R BC;
  * quad with the pair at the sides; 5.0 and 5.1 with the pair at the
