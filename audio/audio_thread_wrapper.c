@@ -55,6 +55,9 @@ typedef struct audio_thread
    bool is_paused;
    bool is_shutdown;
    bool use_float;
+   /* The layout the inner driver opened with, read as use_float is:
+    * on the thread, once, right after init. */
+   uint32_t layout;
    /* Ask the OS for a higher scheduling class from inside the thread. */
    bool raise_priority;
    bool prefer_fast_cores;
@@ -96,6 +99,9 @@ static void audio_thread_loop(void *data)
    thr->inited        = thr->driver_data ? 1 : -1;
    if (thr->inited > 0 && thr->driver->use_float)
       thr->use_float  = thr->driver->use_float(thr->driver_data);
+   thr->layout        = AUDIO_LAYOUT_STEREO;
+   if (thr->inited > 0 && thr->driver->layout)
+      thr->layout     = thr->driver->layout(thr->driver_data);
    scond_signal(thr->cond);
    slock_unlock(thr->lock);
 
@@ -374,6 +380,18 @@ static size_t audio_thread_wait_writable(void *data, size_t len)
 /* The wrapped driver's count, for the sink rate estimate: without this
  * the frontend saw the wrapper's NULL and never measured under the
  * threaded pipeline - which is where every reporter runs. */
+/* The wrapper is the driver the frontend sees, so a hook it does not
+ * forward is a hook the frontend never calls. This one it did not,
+ * and a 5.1 device under the threaded driver got the stereo mix as
+ * 8-byte frames into 24-byte ones. */
+static uint32_t audio_thread_layout(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr)
+      return AUDIO_LAYOUT_STEREO;
+   return thr->layout;
+}
+
 static size_t audio_thread_underruns(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -468,7 +486,8 @@ static const audio_driver_t audio_thread = {
    NULL, /* write_raw */
    audio_thread_wait_writable,
    audio_thread_frames_consumed,
-   audio_thread_underruns
+   audio_thread_underruns,
+   audio_thread_layout
 };
 
 /**

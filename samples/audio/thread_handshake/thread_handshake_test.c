@@ -133,6 +133,9 @@ static size_t fake_wait_writable(void *data, size_t len)
    return len;
 }
 static size_t fake_buffer_size(void *data) { (void)data; return 8192; }
+/* A 5.1 device: the wrapper must hand this through, as it does
+ * use_float, or the frontend writes stereo into 6-channel frames. */
+static uint32_t fake_layout(void *data) { (void)data; return 0x60Fu; }
 
 static audio_driver_t fake_driver = {
    fake_init,
@@ -149,7 +152,10 @@ static audio_driver_t fake_driver = {
    fake_write_avail,
    fake_buffer_size,
    NULL,
-   fake_wait_writable
+   fake_wait_writable,
+   NULL, /* frames_consumed */
+   NULL, /* underruns */
+   fake_layout
 };
 
 /* The wrapper's loop calls audio_driver_callback(), which in the
@@ -203,6 +209,9 @@ int main(void)
          "init against a responsive device failed");
    wrapper_drv = drv;
    wrapper_ctx = data;
+   CHECK(drv && drv->use_float && drv->use_float(data), "the wrapper does not report the inner driver's float");
+   CHECK(drv && drv->layout && drv->layout(data) == 0x60Fu,
+         "the wrapper does not report the inner driver's layout (0x%03x)", drv && drv->layout ? drv->layout(data) : 0);
    CHECK(drv && drv->stop(data), "stop before first start failed");
    CHECK(drv && drv->start(data, false), "first start failed");
    CHECK(retro_atomic_load_acquire_int(&warn_count) == 0,
