@@ -1006,7 +1006,7 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
    double   offered  = audio_st->sink_offered - at->offered
          - (pipe_now - at->pipe) - (dev_now - at->device);
    double   taken    = consumed >= at->consumed ? (double)(consumed - at->consumed) : 0.0;
-   bool     kept;
+   bool     kept, device_ok;
 
    audio_st->sink_window_at = now_usec + AUDIO_SINK_WINDOW_USEC;
    audio_driver_sink_mark(audio_st, at, consumed);
@@ -1021,10 +1021,14 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
     * pass are then judged together with the last few: the sum must be
     * within the band a bias could correct, the lateness having
     * cancelled over them. */
-   kept = fabs(taken / nominal - 1.0)   <= AUDIO_SINK_DEVICE_BAND
-       && fabs(offered / nominal - 1.0) <= AUDIO_SINK_WINDOW_BAND;
-   if (kept)
+   device_ok = fabs(taken / nominal - 1.0) <= AUDIO_SINK_DEVICE_BAND;
+   kept      = device_ok && fabs(offered / nominal - 1.0) <= AUDIO_SINK_WINDOW_BAND;
+   if (device_ok)
    {
+      /* The last few windows the device was steady through, kept or
+       * not, tile the time before this one: a publish a stall pushed
+       * across a window boundary is short in one window and long in
+       * the next, and only the pair sums to the clock. */
       int64_t  span = wdt;
       double   sum  = offered;
       double   took = taken;
@@ -1044,9 +1048,19 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
        * adjustment, which is the point - a steady one migrates into
        * the bias - but a window in which rate control sat at its
        * bound, filling a buffer or a pipe, is not a clock. */
-      kept = fabs(sum / ((double)rate * (double)span / 1e6) - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE
-          && sum > 0.0
-          && fabs(took / sum - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE;
+      if (kept)
+         kept = fabs(sum / ((double)rate * (double)span / 1e6) - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE
+             && sum > 0.0
+             && fabs(took / sum - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE;
+   }
+   else
+   {
+      /* A dry spell or a stalled device: the time before it cannot be
+       * bridged, and its own window is no measure of either clock. */
+      memset(audio_st->sink_recent_usec,     0, sizeof(audio_st->sink_recent_usec));
+      memset(audio_st->sink_recent_offered,  0, sizeof(audio_st->sink_recent_offered));
+      memset(audio_st->sink_recent_consumed, 0, sizeof(audio_st->sink_recent_consumed));
+      audio_st->sink_recent_head = 0;
    }
 
    if (kept)
@@ -1054,10 +1068,23 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
       audio_st->sink_discarded = 0;
       if (audio_st->sink_settled < 2)
          audio_st->sink_settled++;
+      /* The windows left out since the last kept one, the device
+       * steady through them, come in with this one: they are the
+       * same span of both clocks, and leaving out only the short
+       * half of a shifted pair would bias the sums by the shift -
+       * which the application then refuses as implausible, and the
+       * baseline is lost. */
       audio_st->sink_kept.usec     += wdt;
       audio_st->sink_kept.offered  += offered;
       audio_st->sink_kept.consumed += taken;
+      if (!audio_st->sink_pending_broken)
+      {
+         audio_st->sink_kept.usec     += audio_st->sink_pending.usec;
+         audio_st->sink_kept.offered  += audio_st->sink_pending.offered;
+         audio_st->sink_kept.consumed += audio_st->sink_pending.consumed;
+      }
       memset(&audio_st->sink_pending, 0, sizeof(audio_st->sink_pending));
+      audio_st->sink_pending_broken = false;
    }
    else
    {
@@ -1069,9 +1096,23 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
          audio_st->sink_settled = 0;
          memset(&audio_st->sink_kept, 0, sizeof(audio_st->sink_kept));
       }
-      audio_st->sink_pending.usec     += wdt;
-      audio_st->sink_pending.offered  += offered;
-      audio_st->sink_pending.consumed += taken;
+      if (device_ok)
+      {
+         audio_st->sink_pending.usec     += wdt;
+         audio_st->sink_pending.offered  += offered;
+         audio_st->sink_pending.consumed += taken;
+      }
+      else
+      {
+         /* Nothing before a dry spell is carried past it, and nothing
+          * after it merges into the sums: the pending sum from here
+          * is for the rates shown only, until the next kept window
+          * drops it. */
+         audio_st->sink_pending.usec     = wdt;
+         audio_st->sink_pending.offered  = offered;
+         audio_st->sink_pending.consumed = taken;
+         audio_st->sink_pending_broken   = true;
+      }
    }
 
    /* The rates shown: the sums where they stand, the windows left out
@@ -1228,6 +1269,7 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       audio_st->sink_discarded = 0;
       memset(&audio_st->sink_kept,    0, sizeof(audio_st->sink_kept));
       memset(&audio_st->sink_pending, 0, sizeof(audio_st->sink_pending));
+      audio_st->sink_pending_broken = false;
       memset(audio_st->sink_recent_usec,     0, sizeof(audio_st->sink_recent_usec));
       memset(audio_st->sink_recent_offered,  0, sizeof(audio_st->sink_recent_offered));
       memset(audio_st->sink_recent_consumed, 0, sizeof(audio_st->sink_recent_consumed));

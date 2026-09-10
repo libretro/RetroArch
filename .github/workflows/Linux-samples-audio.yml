@@ -272,6 +272,11 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big
           ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big-jitter
           echo "[pass] pipeline_rate_control_test (64 ms device, ASan)"
+          # The producer held 4 ms every five seconds, as a loaded runner
+          # holds it: a publish pushed across a sink window boundary. The
+          # estimate must settle and apply about zero, not the shift.
+          ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 big-stall
+          echo "[pass] pipeline_rate_control_test (stalled producer, ASan)"
           # A float core on a float ring into a float device: a signal a
           # tenth of an int16 LSB high arrives as published, not as zero.
           ASAN_OPTIONS=detect_leaks=0 timeout 120 ./pipeline_rate_control_test 16 4 float

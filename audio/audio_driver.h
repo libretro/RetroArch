@@ -690,6 +690,7 @@ typedef struct
    unsigned sink_recent_head;
    audio_sink_sum_t  sink_kept;        /* the windows summed for the bias */
    audio_sink_sum_t  sink_pending;     /* windows since the last kept one, for the rates shown meanwhile */
+   bool              sink_pending_broken; /* a dry spell is in it: shown, never merged into the kept sums */
    unsigned sink_settled;              /* kept windows in a row, up to 2, after which the sums stand */
    unsigned sink_applied;              /* times the bias has been set */
    unsigned sink_discarded;            /* windows left out in a row */

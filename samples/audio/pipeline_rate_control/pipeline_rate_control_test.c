@@ -277,6 +277,7 @@ static unsigned runner_late;   /* publishes the runner held past half the device
 /* consumer_held, above: dry spells with audio in the pipe - the consumer held */
 static bool sync_on = false;   /* audio sync: the producer's flag and the setting */
 static bool jitter  = false;   /* a core that delivers late now and then */
+static bool stall   = false;   /* a producer thread held 4 ms every five seconds */
 
 static bool pipeline_up(size_t ring_bytes)
 {
@@ -355,6 +356,14 @@ int main(int argc, char **argv)
       sync_on = true;
    if (argc > 3 && strstr(argv[3], "jitter"))
       jitter = true;
+   /* A stall: one publish in every 300 - every five seconds - held 4
+    * ms, what a loaded runner does to the producer thread. Against a
+    * 64 ms device it costs nothing but a publish pushed across a sink
+    * window boundary: short in one window, long in the next, and
+    * the estimate must still settle and apply, which it did not when
+    * it kept the long half and left the short one out. */
+   if (argc > 3 && strstr(argv[3], "stall"))
+      stall = true;
    /* The 64 ms default buffer: the consumer's chunks are whole
     * publishes, and the pipe's fill swings by one with the phase
     * between the core and the consumer. A threshold on that fill
@@ -397,6 +406,8 @@ int main(int argc, char **argv)
        * kept, delivers the next two as soon as it can. */
       if (jitter && i % 120 == 60)
          sleep_until(t0 + (double)i / 60.0 + 0.060);
+      else if (stall && i % 300 == 299)
+         sleep_until(t0 + (double)i / 60.0 + 0.004);
       else
       {
          double late;
