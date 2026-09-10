@@ -91,6 +91,7 @@ static struct
 static uint8_t *g_cap      = NULL;
 static size_t   g_cap_len  = 0, g_cap_cap = 0;
 static bool     g_capture  = false;
+static pthread_mutex_t g_cap_lock = PTHREAD_MUTEX_INITIALIZER;   /* the harness sets, the device thread appends */
 
 void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3)
 {
@@ -100,15 +101,21 @@ void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_
 
 void fake_device_capture(bool on)
 {
+   pthread_mutex_lock(&g_cap_lock);
    g_capture = on;
    if (on)
       g_cap_len = 0;
+   pthread_mutex_unlock(&g_cap_lock);
 }
 
 size_t fake_device_captured(const uint8_t **buf)
 {
+   size_t n;
+   pthread_mutex_lock(&g_cap_lock);
    *buf = g_cap;
-   return g_cap_len;
+   n    = g_cap_len;
+   pthread_mutex_unlock(&g_cap_lock);
+   return n;
 }
 
 static const GUID g_dolby_digital = { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
@@ -397,6 +404,7 @@ static HRESULT r_releasebuffer(IAudioRenderClient *t, UINT32 n, DWORD flags)
    (void)flags;
    pthread_mutex_lock(&c->m);
    c->stats.buffers_released++;
+   pthread_mutex_lock(&g_cap_lock);
    if (g_capture && n)
    {
       size_t bytes = (size_t)n * c->frame_bytes;
@@ -408,6 +416,7 @@ static HRESULT r_releasebuffer(IAudioRenderClient *t, UINT32 n, DWORD flags)
       memcpy(g_cap + g_cap_len, c->buffer, bytes);
       g_cap_len += bytes;
    }
+   pthread_mutex_unlock(&g_cap_lock);
    if (c->mode == AUDCLNT_SHAREMODE_EXCLUSIVE) c->released = true;
    else c->padding += n;
    pthread_mutex_unlock(&c->m);

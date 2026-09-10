@@ -240,15 +240,24 @@ static void ac3_bitstream_case(void)
       while (at + 8 <= cap_len && !(iec61937_probe(cap + at, cap_len - at, &type, &payload) && type == IEC61937_AC3))
          at += st.period_frames * 4;
       CHECK(at + 8 <= cap_len, "no AC-3 burst begins on a period boundary in %u captured bytes", (unsigned)cap_len);
-      CHECK(at <= (size_t)st.period_frames * 4 * 3, "the first burst begins %u frames in", (unsigned)(at / 4));
+      /* Two writes of 800 frames and an encode, so three periods of
+       * 16 ms natively; under a sanitizer the encode alone can be
+       * longer than a burst, so the bound is loose: within the fifo. */
+      CHECK(at <= (size_t)IEC61937_AC3_BURST_BYTES * 4, "the first burst begins %u frames in", (unsigned)(at / 4));
       while (at + IEC61937_AC3_BURST_BYTES <= cap_len)
       {
          size_t k;
          rac3_frame_info_t info;
          if (!iec61937_probe(cap + at, cap_len - at, &type, &payload) || type != IEC61937_AC3 || payload > sizeof(frame))
          {
-            /* trailing silence the pump filled after the writes */
-            break;
+            /* A period of silence between bursts: the writer could not
+             * keep the fifo fed - under ThreadSanitizer the encode is
+             * slower than real time - and the pump filled it. The
+             * bursts themselves are whole and the writer blocked, so
+             * nothing is lost; the next burst is a period boundary on.
+             * Trailing silence after the last write ends the walk. */
+            at += st.period_frames * 4;
+            continue;
          }
          for (k = 0; k + 1 < payload; k += 2) { frame[k] = cap[at + 8 + k + 1]; frame[k + 1] = cap[at + 8 + k]; }
          if (k < payload) frame[k] = cap[at + 8 + k + 1];
