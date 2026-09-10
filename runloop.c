@@ -6278,7 +6278,16 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
-   if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+   /* Pump this thread's own window queue every iteration, threaded
+    * video included. With threaded video the RetroArch window lives on
+    * the video thread and pumps itself from the driver's alive(), but
+    * the companion windows are created here, and PeekMessage(NULL)
+    * only ever returns the calling thread's messages, so this is the
+    * only pump they have: gated off, they went "Not Responding" the
+    * moment threaded video was on. Under non-threaded video the main
+    * window's messages are on this queue too and win32_check_window()
+    * also pumps them; whichever runs first dispatches, nothing is seen
+    * twice. Cocoa's process_events is a no-op. */
    {
       const ui_application_t *application = uico_st->drv
          ? uico_st->drv->application
