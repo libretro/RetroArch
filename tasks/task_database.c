@@ -1589,6 +1589,16 @@ static enum scan_verdict task_database_iterate_crc_lookup(
 
          database_info_list_iterate_new(db_state, query);
       }
+
+      /* database_info_list_new_filtered() returns NULL when the .rdb
+       * cannot be opened or the query fails to compile.  Nothing below
+       * advances list_index on a NULL info, so every subsequent tick
+       * re-entered here with entry_index != 0, skipped the query and
+       * returned SCAN_VERDICT_CONTINUE - the scan hung on the first
+       * content file that reached an unreadable database.  A database
+       * that cannot answer is a database with no match: move on. */
+      if (!db_state->info)
+         return database_info_list_iterate_next(db_state);
    }
 
    /* Same shape as the serial lookup below: entry_index was used to
@@ -1853,7 +1863,10 @@ static int task_database_iterate_serial_lookup(
       free(serial_buf);
 
 serial_query_done:
-      ;
+      /* See the crc lookup: a database that cannot be queried must
+       * not leave list_index where it is, or the scan never ends. */
+      if (!db_state->info)
+         return database_info_list_iterate_next(db_state);
    }
 
    if (db_state->info)
@@ -1924,7 +1937,12 @@ static int task_database_iterate(
 {
 #ifdef DEBUG
    RARCH_DBG("[Scanner] Type %d, \"%s\" against \"%s\".\n", db->type, name, database_info_get_current_name(db_state));
-   RARCH_DBG("[Scanner] Size: min %ld actual %ld max %ld.\n", db_state->min_sizes[db_state->list_index], db_state->size, db_state->max_sizes[db_state->list_index]);
+   /* list_index == list->size is a valid state here (every database
+    * tried, the "against (null)" tick), and the size arrays have
+    * list->size entries - reading them unguarded was a one-past-the-
+    * end read on every content file under ASan. */
+   if (db_state->list && (size_t)db_state->list_index < db_state->list->size)
+      RARCH_DBG("[Scanner] Size: min %ld actual %ld max %ld.\n", db_state->min_sizes[db_state->list_index], db_state->size, db_state->max_sizes[db_state->list_index]);
 #endif
    switch (db->type)
    {
@@ -3247,8 +3265,13 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      manual_scan->status = DATABASE_SCAN_ITERATE_NEXT;
                   break;
                case SCAN_VERDICT_ERROR:
+                  /* An error verdict leaves the per-file state where
+                   * it was, so treating it like CONTINUE re-ran the
+                   * same failing step every tick.  Give up on this
+                   * file and go to the next one. */
                   RARCH_ERR("[Scanner] Scanning of content unexpectedly failed for \"%s\"\n", content_path);
-                  /* fall through */
+                  manual_scan->status = DATABASE_SCAN_ITERATE_NEXT;
+                  break;
                case SCAN_VERDICT_CONTINUE:
                   break;
             }

@@ -266,6 +266,27 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
    file_size = intfstream_get_size(fd);
    if (file_size < 0)
       goto error;
+
+   /* A zero metadata_offset is a legacy file: the writers that
+    * produced the 2015-2016 era .rdb set never rewrote the header,
+    * so their files carry the placeholder written before the records
+    * and have neither a metadata map nor index blocks.  Such files
+    * are still shipped by users whose database directory predates
+    * upstream renames (the online updater does not delete removed
+    * files), and their records are readable - the cursor walks from
+    * the header to the RDT_NULL sentinel and never consults the
+    * count.  Reading metadata at offset 0 would decode the header's
+    * own bytes, which rmsgpack_dom_read_into() now correctly
+    * rejects, so accept the file with no count and no indexes
+    * rather than failing the open. */
+   if (header.metadata_offset == 0)
+   {
+      db->count              = 0;
+      db->first_index_offset = 0;
+      db->fd                 = fd;
+      return 0;
+   }
+
    if (header.metadata_offset >= (uint64_t)file_size)
       goto error;
    if (intfstream_seek(fd, (ssize_t)header.metadata_offset,
@@ -309,6 +330,11 @@ error:
 static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
+   /* Legacy file without a metadata block (see libretrodb_open):
+    * there are no index blocks to find. */
+   if (db->first_index_offset == 0)
+      return -1;
+
    intfstream_seek(db->fd,
                    (ssize_t)db->first_index_offset,
                    RETRO_VFS_SEEK_POSITION_START);
