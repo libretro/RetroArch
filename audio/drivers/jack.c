@@ -212,7 +212,6 @@ static size_t ja_find_buffersize(jack_t *jd, int latency, unsigned out_rate)
 
 static void *ja_init(const char *device,
       unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    int i;

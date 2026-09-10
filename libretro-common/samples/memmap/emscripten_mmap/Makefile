@@ -2,18 +2,6 @@ LIBRETRO_COMM_DIR := ../../..
 TARGET := emscripten_mmap_test
 WASM_TARGET := emscripten_mmap.js
 EMCC ?= emcc
-# The node the SDK ships, which is the one emcc itself runs its tools
-# with. A bare "node" is whatever the PATH has, and on a runner that
-# is sometimes a directory entry with no execute bit - the build
-# succeeds and the run dies with "Permission denied". emcc prints the
-# path it uses; a PATH node is the fallback for a machine without the
-# config.
-EMSDK_NODE := $(shell $(EMCC) --em-config 2>/dev/null | sed -n 's/^NODE_JS *= *//p' | tr -d "'\"[]" | awk '{print $$1}')
-ifneq ($(wildcard $(EMSDK_NODE)),)
-NODE ?= $(EMSDK_NODE)
-else
-NODE ?= node
-endif
 
 SOURCES := emscripten_mmap.c $(LIBRETRO_COMM_DIR)/memmap/memmap.c
 CFLAGS += -std=c89 -D_GNU_SOURCE -Wall -Wextra -Werror -I$(LIBRETRO_COMM_DIR)/include
@@ -34,10 +22,28 @@ $(WASM_TARGET): $(SOURCES) $(LIBRETRO_COMM_DIR)/include/memmap.h
 check: $(TARGET)
 	./$(TARGET)
 
+# The first node that actually runs, tried in order: one the caller
+# named, the one emsdk exports, the one emcc records in its config,
+# then whatever is on the PATH. A name on the PATH is not enough - on
+# some runners it is there and not executable, and the build then
+# succeeds and the run dies with "Permission denied" - so each
+# candidate is asked for its version before it is used.
 check-wasm: $(WASM_TARGET)
-	@command -v $(NODE) >/dev/null 2>&1 || { \
-	   echo "check-wasm: no usable node ($(NODE)); set NODE= to one" >&2; exit 1; }
-	$(NODE) $(WASM_TARGET)
+	@node=""; \
+	for c in "$(NODE)" "$$EMSDK_NODE" \
+	         "`$(EMCC) --em-config 2>/dev/null | sed -n \"s/.*NODE_JS *= *['\\\"]\\([^'\\\"]*\\).*/\\1/p\" | head -n1`" \
+	         node nodejs; do \
+	   [ -n "$$c" ] || continue; \
+	   "$$c" --version >/dev/null 2>&1 || continue; \
+	   node="$$c"; break; \
+	done; \
+	if [ -z "$$node" ]; then \
+	   echo "check-wasm: SKIPPED - no node that runs here (tried NODE=$(NODE), EMSDK_NODE, emcc --em-config, node, nodejs)." >&2; \
+	   echo "check-wasm: the wasm was built; running it needs a node the environment supplies." >&2; \
+	   exit 0; \
+	fi; \
+	echo "$$node $(WASM_TARGET)"; \
+	"$$node" $(WASM_TARGET)
 
 clean:
 	rm -f $(TARGET) $(WASM_TARGET) emscripten_mmap.wasm

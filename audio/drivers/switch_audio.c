@@ -377,7 +377,6 @@ static void switch_audio_set_nonblock_state(void *data, bool state)
 
 static void *switch_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    unsigned i;

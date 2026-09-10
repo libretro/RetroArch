@@ -432,7 +432,6 @@ static bool alsa_use_float(void *data)
 
 static void alsa_free(void *data);
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));

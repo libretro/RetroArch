@@ -84,7 +84,6 @@ static void ps3_event_loop(uint64_t data)
 
 static void *ps3_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    audioPortParam params;

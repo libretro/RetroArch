@@ -102,7 +102,6 @@ static size_t gx_audio_frames_consumed(void *data)
 
 static void *gx_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));

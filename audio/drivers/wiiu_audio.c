@@ -120,7 +120,6 @@ static size_t ax_audio_frames_consumed(void *data)
 extern void AXRegisterFrameCallback(void *cb);
 
 static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    AXVoiceOffsets offsets[2];

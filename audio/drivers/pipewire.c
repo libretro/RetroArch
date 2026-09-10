@@ -756,7 +756,6 @@ static struct string_list *pwire_enumerate_sinks(void)
 
 static void *pwire_init(const char *device, unsigned rate,
       unsigned latency,
-      
       unsigned *new_rate)
 {
    int                         res;

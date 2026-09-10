@@ -174,12 +174,31 @@ static const struct SLPlayItf_ *play_obj = &play_vt;
 
 static SLresult obj_realize(SLObjectItf self, SLboolean async)
 { (void)self; (void)async; return SL_RESULT_SUCCESS; }
-static void obj_destroy(SLObjectItf self) { (void)self; mock_objects--; }
+static const struct SLObjectItf_ *player_obj_storage;
+
+static void obj_destroy(SLObjectItf self)
+{
+   /* Destroying the player stops its callbacks before it returns -
+    * OpenSL says so, and a driver that frees its handle after
+    * destroying the player is right to. The pump kept calling back
+    * into freed memory, which is the mock being unfaithful rather
+    * than the driver being wrong. */
+   if (self == &player_obj_storage)
+   {
+      pthread_mutex_lock(&q_lock);
+      q_cb        = NULL;
+      q_cb_ctx    = NULL;
+      q.head      = q.count = 0;
+      mock_playing = 0;
+      pthread_mutex_unlock(&q_lock);
+   }
+   mock_objects--;
+}
 static SLresult obj_get_iface(SLObjectItf self, SLInterfaceID iid, void *out);
+
 static const struct SLObjectItf_ obj_vt = { obj_realize, obj_get_iface, obj_destroy };
 static const struct SLObjectItf_ *engine_obj = &obj_vt;
 static const struct SLObjectItf_ *mix_obj    = &obj_vt;
-static const struct SLObjectItf_ *player_obj = &obj_vt;
 
 static SLresult eng_create_mix(SLEngineItf self, SLObjectItf *mix,
       SLuint32 n, const SLInterfaceID *ids, const SLboolean *req)
@@ -220,7 +239,8 @@ static SLresult eng_create_player(SLEngineItf self, SLObjectItf *player,
    }
    mock_objects++;
    pthread_mutex_unlock(&q_lock);
-   *player = &player_obj;
+   player_obj_storage = &obj_vt;
+   *player = &player_obj_storage;
    return SL_RESULT_SUCCESS;
 }
 

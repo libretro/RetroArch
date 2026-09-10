@@ -142,7 +142,6 @@ static void sl_free(void *data)
 }
 
 static void *sl_init(const char *device, unsigned rate, unsigned latency,
-      
       unsigned *new_rate)
 {
    unsigned i;
