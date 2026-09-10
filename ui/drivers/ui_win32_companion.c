@@ -2783,6 +2783,15 @@ static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPAR
          if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_OPTS_LIST)
          {
             NMHDR *hdr = (NMHDR*)lparam;
+            if (hdr->code == LVN_GETINFOTIPA)
+            {
+               NMLVGETINFOTIPA *tip = (NMLVGETINFOTIPA*)lparam;
+               const char *info = companion_core_option_info(w->core,
+                     (size_t)tip->iItem);
+               if (tip->pszText && tip->cchTextMax > 0 && info && *info)
+                  strlcpy(tip->pszText, info, (size_t)tip->cchTextMax);
+               return 0;
+            }
             if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
             {
                int sel = (int)SendMessageA(w->opts_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
@@ -2859,6 +2868,9 @@ static void cw_opts_show(ui_companion_win32_wimp_t *w)
          return;
       cw_table_column(w, w->opts_list, 0, "Option", 330);
       cw_table_column(w, w->opts_list, 1, "Value", 200);
+      /* The core's own description of each option, on hover. */
+      SendMessageA(w->opts_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
+            LVS_EX_INFOTIP, LVS_EX_INFOTIP);
       cw_table_button(w->opts_hwnd, "Reset", IDC_CW_OPTS_RESET, false);
       cw_table_button(w->opts_hwnd, "Reset All", IDC_CW_OPTS_RESET_ALL, false);
       cw_table_button(w->opts_hwnd, "Close", IDC_CW_OPTS_CLOSE, true);
