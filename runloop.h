@@ -362,9 +362,6 @@ struct runloop
     * cross-thread race, so reusing it would undo that reasoning for
     * no gain. This is main-thread only. */
    bool content_closing;
-   /* An external clock is calling runloop_iterate(); see
-    * RUNLOOP_PACE_EXTERNAL. Main-thread only, same reasoning. */
-   bool pace_external;
 };
 
 /* Frame pacing sources.
@@ -396,12 +393,9 @@ enum runloop_pace_source
    RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
    RUNLOOP_PACE_TIMER    = (1 << 3), /* CPU counter: frame-limit sleep   */
    RUNLOOP_PACE_NOWINDOW = (1 << 4), /* nothing to present to: wait      */
-   /* The host is calling runloop_iterate() at the content rate from
-    * somewhere it must return quickly to - a Win32 modal size/move
-    * loop, for one. The frame-limit sleep, frame delay, and the
-    * no-window wait yield to that clock rather than stack on it. Set
-    * from runloop_state_t::pace_external. */
-   RUNLOOP_PACE_EXTERNAL = (1 << 5),
+   /* (1 << 5) was RUNLOOP_PACE_EXTERNAL, a host clock driving
+    * runloop_iterate() from a Win32 modal loop; that pump was removed
+    * in 7fbc868499 and nothing else ever set it. Left vacant. */
    /* Threaded video's display pacing: the frame handover holds this
     * thread until the core's next run is due, from the presenter's
     * next vblank and the measured core and render times. It is the
@@ -552,7 +546,6 @@ enum runloop_pace_fact
    PACE_FACT_SCANLINE_LOCKED = (1 << 13), /* a target scanline exists */
    PACE_FACT_RATE_CONTROL    = (1 << 14), /* audio rate control */
    PACE_FACT_PRESENTABLE     = (1 << 15), /* the context has a surface */
-   PACE_FACT_EXTERNAL        = (1 << 16), /* an external clock drives it */
    PACE_FACT_FRAME_LIMIT     = (1 << 17)  /* frame_limit_minimum_time != 0 */
 };
 
@@ -581,8 +574,6 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
    if ((f & PACE_FACT_MENU_ALIVE) && (f & PACE_FACT_MENU_EARLY_EXIT))
       return vsync_holds ? RUNLOOP_PACE_VSYNC : RUNLOOP_PACE_NONE;
 
-   if (f & PACE_FACT_EXTERNAL)
-      pace |= RUNLOOP_PACE_EXTERNAL;
    if (vsync_holds)
       pace |= RUNLOOP_PACE_VSYNC;
    if ((f & PACE_FACT_WRAPPER) && (f & PACE_FACT_DISPLAY_PACING)

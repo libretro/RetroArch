@@ -4969,7 +4969,6 @@ static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
    if (video_st->scanline[SCANLINE_NEXT])                  f |= PACE_FACT_SCANLINE_LOCKED;
    if (settings->bools.audio_rate_control)                 f |= PACE_FACT_RATE_CONTROL;
    if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
-   if (runloop_st->pace_external)                          f |= PACE_FACT_EXTERNAL;
    if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;
    return f;
 }
@@ -8498,10 +8497,8 @@ end:
    {
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
-       * hidden. Under an external clock the caller is already back
-       * within a frame. */
-      if (!(runloop_st->pace & RUNLOOP_PACE_EXTERNAL))
-         retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
+       * hidden. */
+      retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
       return 1;
    }
 
@@ -8536,67 +8533,54 @@ end:
       {
          const retro_time_t end_frame_time = cpu_features_get_time_usec();
 
-         /* Under an external clock the sleep is the caller's; the
-          * schedule is re-anchored so it does not carry a backlog into
-          * the first frame after the clock lets go. */
-         if (runloop_st->pace & RUNLOOP_PACE_EXTERNAL)
+         const retro_time_t to_sleep_us = runloop_pace_schedule(
+               &runloop_st->frame_limit_anchor_ns,
+               pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
+               end_frame_time);
+         runloop_st->frame_limit_last_time = runloop_st->frame_limit_anchor_ns / 1000;
+         if (to_sleep_us > 0)
          {
-            runloop_st->frame_limit_last_time = end_frame_time;
-            runloop_st->frame_limit_anchor_ns = (int64_t)end_frame_time * 1000;
-         }
-         else
-         {
-            const retro_time_t to_sleep_us = runloop_pace_schedule(
-                  &runloop_st->frame_limit_anchor_ns,
-                  pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
-                  end_frame_time);
-            runloop_st->frame_limit_last_time = runloop_st->frame_limit_anchor_ns / 1000;
-            if (to_sleep_us > 0)
-            {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-               /* Emscripten paces through a deferred main loop timeout
-                * that is expressed in whole milliseconds, so it cannot
-                * act on a sub-millisecond remainder, nor spin. */
-               platform_emscripten_deferred_sleep((int)(to_sleep_us / 1000));
+            /* Emscripten paces through a deferred main loop timeout
+             * that is expressed in whole milliseconds, so it cannot
+             * act on a sub-millisecond remainder, nor spin. */
+            platform_emscripten_deferred_sleep((int)(to_sleep_us / 1000));
 #else
-               /* Sleep short by the margin the sleep has been seen to
-                * overshoot, then spin the remainder to the deadline:
-                * the sleep decides how much is spun, the clock decides
-                * where the frame lands. */
-               const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
-               retro_time_t now            = end_frame_time;
+            /* Sleep short by the margin the sleep has been seen to
+             * overshoot, then spin the remainder to the deadline:
+             * the sleep decides how much is spun, the clock decides
+             * where the frame lands. */
+            const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
+            retro_time_t now            = end_frame_time;
 #if defined(HAVE_COCOATOUCH)
-               /* In the background the loop is not paced at all. */
-               if (uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
-                  return 1;
-#endif
-               if (to_sleep_us > runloop_st->frame_limit_margin)
-               {
-                  const retro_time_t asked = to_sleep_us - runloop_st->frame_limit_margin;
-                  retro_sleep_us((unsigned)asked);
-                  now = cpu_features_get_time_usec();
-                  runloop_st->frame_limit_margin = runloop_pace_margin_update(
-                        runloop_st->frame_limit_margin,
-                        now - (end_frame_time + asked), frame_limit_min);
-               }
-               while (now < deadline)
-               {
-                  retro_cpu_relax();
-                  now = cpu_features_get_time_usec();
-               }
-#endif
+            /* In the background the loop is not paced at all. */
+            if (uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
                return 1;
+#endif
+            if (to_sleep_us > runloop_st->frame_limit_margin)
+            {
+               const retro_time_t asked = to_sleep_us - runloop_st->frame_limit_margin;
+               retro_sleep_us((unsigned)asked);
+               now = cpu_features_get_time_usec();
+               runloop_st->frame_limit_margin = runloop_pace_margin_update(
+                     runloop_st->frame_limit_margin,
+                     now - (end_frame_time + asked), frame_limit_min);
             }
+            while (now < deadline)
+            {
+               retro_cpu_relax();
+               now = cpu_features_get_time_usec();
+            }
+#endif
+            return 1;
          }
+
       }
    }
 
-   /* Frame delay. Not under an external clock: it is a sleep before
-    * the core runs, and the caller has to be back before the next
-    * tick. */
-   if (     !(runloop_st->pace & RUNLOOP_PACE_EXTERNAL)
-         && (   !(input_st->flags & INP_FLAG_NONBLOCKING)
-             || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)))
+   /* Frame delay. */
+   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
+         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
       video_frame_delay(video_st, settings);
 
    /* Set paused state after x frames */
