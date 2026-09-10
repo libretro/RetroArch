@@ -75,6 +75,13 @@ ifeq ($(DESCRIPTOR_IO),1)
    CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
 endif
 
+# FAKE_CFR=1 stands in a copy_file_range that copies to EOF whatever
+# len it was given (what gVisor was observed doing); FAKE_CFR=2 one
+# that copies three times len.  Both exercise vfs_v5_metadata_test's
+# distrust-and-resume path on a kernel that would never trip it.
+ifneq ($(FAKE_CFR),)
+   CFLAGS += -DVFS_COPY_TEST_FAKE_CFR=$(FAKE_CFR)
+endif
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every

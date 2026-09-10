@@ -944,9 +944,15 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
         if (!(flags & RETRO_VFS_COPY_OVERWRITE))
             return NULL;
         /* cp -f: a read-only stale dst must not defeat an explicit
-         * overwrite. */
+         * overwrite; Windows refuses to delete a read-only file, so
+         * clear the attribute and try once more. */
         if (retro_vfs_file_remove_impl(dst) != 0)
-            return NULL;
+        {
+            if (   !(dflags & RETRO_VFS_STAT_IS_READONLY)
+                || retro_vfs_set_readonly_impl(dst, 0) != 0
+                || retro_vfs_file_remove_impl(dst) != 0)
+                return NULL;
+        }
     }
     else
     {
