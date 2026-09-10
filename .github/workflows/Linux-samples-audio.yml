@@ -216,6 +216,25 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./upmix_test
           echo "[pass] upmix_test (ASan)"
 
+      - name: Build and run discrete_multichannel_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/discrete_multichannel
+        run: |
+          set -eu
+          # A core's 5.1 through the multi-channel batch entry to a 5.1
+          # device without the fold and the upmix in between: each
+          # device channel carries its core channel's tone and none of
+          # the others', in all four format pairings, through the
+          # resampler off unity; and to a stereo device, the fold at
+          # the BS.775 gains with the LFE dropped. Includes the shipping
+          # audio_driver.c.
+          make clean all
+          ./discrete_multichannel_test
+          echo "[pass] discrete_multichannel_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
+          echo "[pass] discrete_multichannel_test (ASan)"
+
       - name: Build and run binaural_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/audio/binaural

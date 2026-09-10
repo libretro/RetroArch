@@ -745,6 +745,38 @@ typedef struct
    uint32_t      core_layout;
    void         *multi_fold;
    size_t        multi_fold_frames;
+   /* The discrete path: a core's channels past the front pair, kept
+    * apart to a device that has their positions. The front pair goes
+    * through the pipeline as every stereo core's does - the filters,
+    * the resampler, the mixer, rate control - and the others go
+    * beside it through their own instances of the same resampler at
+    * the same ratio, in pairs, so their frame count is the fronts'.
+    * At the write they take the device slots of their positions and
+    * the upmix fills what the core did not send. Stereo ring only:
+    * on the threaded pipeline the extras are not carried yet, and the
+    * entry folds instead. */
+   struct
+   {
+      unsigned  channels;        /* extras: core channels less two, 0 = none */
+      uint32_t  positions;       /* their mask, without FL and FR */
+      unsigned  nres;            /* resampler instances: (channels + 1) / 2 */
+      void     *res[4];          /* float: resampler_data; int16: resampler_data_int16 */
+      bool      res_int16;       /* which kind res[] holds */
+      float    *in_f;            /* frames * channels, interleaved, this batch */
+      int16_t  *in_i;
+      float    *pair_in;         /* one pair's frames, for the resampler */
+      float    *pair_out;
+      int16_t  *pair_in_i;
+      int16_t  *pair_out_i;
+      float    *out_f;           /* the resampled extras, frames * channels */
+      int16_t  *out_i;
+      size_t    cap_in;          /* frames the in buffers hold */
+      size_t    cap_out;         /* frames the out and pair buffers hold */
+      size_t    in_frames;       /* pending in this flush */
+      size_t    out_frames;      /* produced by the last resample */
+      bool      pending;         /* extras accompany the flush in progress */
+      bool      is_float;
+   } extra;
    audio_upmix_t upmix;
    float        *upmix_buf;
    int16_t      *upmix_i16;

@@ -553,6 +553,216 @@ size_t audio_driver_get_underruns(void)
    return 0;
 }
 
+/* ---- the discrete extras ------------------------------------------ */
+
+static void audio_driver_extra_free(audio_driver_state_t *audio_st)
+{
+   unsigned i;
+   for (i = 0; i < audio_st->extra.nres; i++)
+   {
+      if (!audio_st->extra.res[i])
+         continue;
+      if (audio_st->extra.res_int16)
+      {
+         if (audio_st->resampler_int16_free)
+            audio_st->resampler_int16_free(audio_st->extra.res[i]);
+      }
+      else if (audio_st->resampler)
+         audio_st->resampler->free(audio_st->extra.res[i]);
+      audio_st->extra.res[i] = NULL;
+   }
+   free(audio_st->extra.in_f);
+   free(audio_st->extra.in_i);
+   free(audio_st->extra.pair_in);
+   free(audio_st->extra.pair_out);
+   free(audio_st->extra.pair_in_i);
+   free(audio_st->extra.pair_out_i);
+   free(audio_st->extra.out_f);
+   free(audio_st->extra.out_i);
+   memset(&audio_st->extra, 0, sizeof(audio_st->extra));
+}
+
+/* An int16 resampler instance of the kind the front pair uses. */
+static void *audio_driver_int16_resampler_new(audio_driver_state_t *audio_st)
+{
+   const char *rs_ident = (audio_st->resampler && audio_st->resampler->short_ident)
+         ? audio_st->resampler->short_ident : "";
+   if (string_is_equal(rs_ident, "sinc"))
+      return sinc_resampler_int16_init(audio_st->src_ratio_orig,
+            audio_sinc_int16_quality_map(audio_st->resampler_quality));
+#ifdef HAVE_NEAREST_RESAMPLER
+   if (string_is_equal(rs_ident, "nearest"))
+      return nearest_resampler_int16_init();
+#endif
+#ifdef HAVE_CC_RESAMPLER
+   if (string_is_equal(rs_ident, "cc"))
+      return cc_resampler_int16_init(audio_st->src_ratio_orig);
+#endif
+   return NULL;
+}
+
+/* Room for a batch of extras: the buffers, and resampler instances of
+ * the kind the front pair's path uses. The instances are remade when
+ * the kind changes. */
+static bool audio_driver_extra_prepare(audio_driver_state_t *audio_st,
+      unsigned channels, uint32_t positions, size_t frames, bool is_float, bool int16_path)
+{
+   unsigned nres = (channels + 1) / 2, i;
+   size_t   cap_out = frames * 4 + 1024;   /* a ratio's worth of headroom, as the fronts have */
+   if (channels != audio_st->extra.channels || positions != audio_st->extra.positions
+         || int16_path != audio_st->extra.res_int16 || nres != audio_st->extra.nres)
+   {
+      audio_driver_extra_free(audio_st);
+      audio_st->extra.channels  = channels;
+      audio_st->extra.positions = positions;
+      audio_st->extra.nres      = nres;
+      audio_st->extra.res_int16 = int16_path;
+      for (i = 0; i < nres; i++)
+      {
+         if (int16_path)
+            audio_st->extra.res[i] = audio_driver_int16_resampler_new(audio_st);
+         else
+         {
+            const retro_resampler_t *drv = NULL;
+            retro_resampler_realloc(&audio_st->extra.res[i], &drv,
+                  audio_st->resampler_ident, audio_st->resampler_quality,
+                  audio_st->src_ratio_orig);
+         }
+         if (!audio_st->extra.res[i])
+         {
+            audio_driver_extra_free(audio_st);
+            return false;
+         }
+      }
+   }
+   if (frames > audio_st->extra.cap_in)
+   {
+      free(audio_st->extra.in_f);
+      free(audio_st->extra.in_i);
+      audio_st->extra.in_f = (float*)malloc(frames * channels * sizeof(float));
+      audio_st->extra.in_i = (int16_t*)malloc(frames * channels * sizeof(int16_t));
+      audio_st->extra.cap_in = frames;
+   }
+   if (cap_out > audio_st->extra.cap_out)
+   {
+      free(audio_st->extra.pair_in);
+      free(audio_st->extra.pair_out);
+      free(audio_st->extra.pair_in_i);
+      free(audio_st->extra.pair_out_i);
+      free(audio_st->extra.out_f);
+      free(audio_st->extra.out_i);
+      audio_st->extra.pair_in    = (float*)malloc(frames * 2 * sizeof(float));
+      audio_st->extra.pair_out   = (float*)malloc(cap_out * 2 * sizeof(float));
+      audio_st->extra.pair_in_i  = (int16_t*)malloc(frames * 2 * sizeof(int16_t));
+      audio_st->extra.pair_out_i = (int16_t*)malloc(cap_out * 2 * sizeof(int16_t));
+      audio_st->extra.out_f      = (float*)malloc(cap_out * channels * sizeof(float));
+      audio_st->extra.out_i      = (int16_t*)malloc(cap_out * channels * sizeof(int16_t));
+      audio_st->extra.cap_out    = cap_out;
+   }
+   if (!audio_st->extra.in_f || !audio_st->extra.in_i || !audio_st->extra.pair_in
+         || !audio_st->extra.pair_out || !audio_st->extra.pair_in_i
+         || !audio_st->extra.pair_out_i || !audio_st->extra.out_f || !audio_st->extra.out_i)
+   {
+      audio_driver_extra_free(audio_st);
+      return false;
+   }
+   audio_st->extra.is_float  = is_float;
+   audio_st->extra.in_frames = frames;
+   return true;
+}
+
+/* The extras through their resamplers, in pairs, at the front pair's
+ * ratio on the front pair's input count, just after the fronts went
+ * through: the same kind of resampler on the same count at the same
+ * ratio produces the same number of frames, which is what keeps the
+ * channels aligned. bypass: the fronts were copied at unity. */
+static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
+      double ratio, size_t input_frames, bool bypass, bool int16_path)
+{
+   unsigned i, c, ch = audio_st->extra.channels;
+   size_t f, out_frames = 0;
+   if (!audio_st->extra.pending)
+      return;
+   if (input_frames > audio_st->extra.in_frames)
+      input_frames = audio_st->extra.in_frames;
+   /* the front path decided its format; the extras follow it */
+   if (int16_path && audio_st->extra.is_float)
+      convert_float_to_s16(audio_st->extra.in_i, audio_st->extra.in_f, input_frames * ch);
+   else if (!int16_path && !audio_st->extra.is_float)
+      convert_s16_to_float(audio_st->extra.in_f, audio_st->extra.in_i, input_frames * ch, 1.0f);
+   for (i = 0; i < audio_st->extra.nres; i++)
+   {
+      unsigned c0 = 2 * i, c1 = 2 * i + 1 < ch ? 2 * i + 1 : 2 * i;
+      size_t n;
+      if (int16_path)
+      {
+         struct resampler_data_int16 d;
+         for (f = 0; f < input_frames; f++)
+         {
+            audio_st->extra.pair_in_i[2 * f]     = audio_st->extra.in_i[f * ch + c0];
+            audio_st->extra.pair_in_i[2 * f + 1] = audio_st->extra.in_i[f * ch + c1];
+         }
+         if (bypass)
+         {
+            memcpy(audio_st->extra.pair_out_i, audio_st->extra.pair_in_i, input_frames * 2 * sizeof(int16_t));
+            n = input_frames;
+         }
+         else
+         {
+            d.data_in       = audio_st->extra.pair_in_i;
+            d.data_out      = audio_st->extra.pair_out_i;
+            d.input_frames  = (unsigned)input_frames;
+            d.output_frames = 0;
+            d.ratio         = ratio;
+            audio_st->resampler_int16_process(audio_st->extra.res[i], &d);
+            n = d.output_frames;
+         }
+         if (n > audio_st->extra.cap_out) n = audio_st->extra.cap_out;
+         for (f = 0; f < n; f++)
+         {
+            audio_st->extra.out_i[f * ch + c0] = audio_st->extra.pair_out_i[2 * f];
+            if (c1 != c0)
+               audio_st->extra.out_i[f * ch + c1] = audio_st->extra.pair_out_i[2 * f + 1];
+         }
+      }
+      else
+      {
+         struct resampler_data d;
+         for (f = 0; f < input_frames; f++)
+         {
+            audio_st->extra.pair_in[2 * f]     = audio_st->extra.in_f[f * ch + c0];
+            audio_st->extra.pair_in[2 * f + 1] = audio_st->extra.in_f[f * ch + c1];
+         }
+         if (bypass)
+         {
+            memcpy(audio_st->extra.pair_out, audio_st->extra.pair_in, input_frames * 2 * sizeof(float));
+            n = input_frames;
+         }
+         else
+         {
+            d.data_in       = audio_st->extra.pair_in;
+            d.data_out      = audio_st->extra.pair_out;
+            d.input_frames  = input_frames;
+            d.output_frames = 0;
+            d.ratio         = ratio;
+            audio_st->resampler->process(audio_st->extra.res[i], &d);
+            n = d.output_frames;
+         }
+         if (n > audio_st->extra.cap_out) n = audio_st->extra.cap_out;
+         for (f = 0; f < n; f++)
+         {
+            audio_st->extra.out_f[f * ch + c0] = audio_st->extra.pair_out[2 * f];
+            if (c1 != c0)
+               audio_st->extra.out_f[f * ch + c1] = audio_st->extra.pair_out[2 * f + 1];
+         }
+      }
+      out_frames = n;
+   }
+   (void)c;
+   audio_st->extra.out_frames = out_frames;
+   audio_st->extra.pending    = false;
+}
+
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -596,6 +806,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->multi_fold               = NULL;
    audio_st->multi_fold_frames        = 0;
    audio_st->core_layout              = AUDIO_LAYOUT_STEREO;
+   audio_driver_extra_free(audio_st);
    /* The wrapper thread was joined by audio->free() above, so nothing
     * reads the ring any more. */
    retro_spsc_free(&audio_st->pipe_ring);
@@ -1654,6 +1865,122 @@ static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
  * wants that, and the wider frames go. Returns the bytes the driver
  * accepted, in frames of the device's own size for the caller's
  * accounting. */
+/* The device frame from the fronts, the core's extras where the device
+ * has their positions, and the upmix's fill for the rest. A pair the
+ * core sent at the back goes to a device with only a side pair, and
+ * the reverse; a position the device lacks that the core sent is
+ * folded into the fronts at -3 dB (LFE dropped, as the device has no
+ * speaker for it). The upmix has already filled every slot from the
+ * fronts; the core's channels replace what they cover. */
+static int audio_driver_extra_slot(uint32_t layout, uint32_t position)
+{
+   uint32_t below;
+   if (!(layout & position))
+      return -1;
+   below = layout & (position - 1);
+   return (int)audio_layout_channels(below);
+}
+
+static void audio_driver_extra_merge_f32(audio_driver_state_t *audio_st,
+      float *dev, size_t frames)
+{
+   const unsigned ch  = audio_st->extra.channels;
+   const unsigned och = audio_st->out_channels;
+   const uint32_t pos = audio_st->extra.positions;
+   const uint32_t dev_layout = audio_st->out_layout;
+   int dst[11], srcslot[11];
+   unsigned n = 0, bit, k;
+   size_t f;
+   /* each extra: its slot in the extras frame, and where it goes */
+   for (bit = 2; bit < 11; bit++)
+   {
+      uint32_t p = 1u << bit, to = p;
+      if (!(pos & p))
+         continue;
+      srcslot[n] = audio_driver_extra_slot(pos, p);
+      if (!(dev_layout & to))
+      {
+         /* a back pair for a side-only device and the reverse */
+         if (p == AUDIO_SPEAKER_BACK_LEFT)  to = AUDIO_SPEAKER_SIDE_LEFT;
+         if (p == AUDIO_SPEAKER_BACK_RIGHT) to = AUDIO_SPEAKER_SIDE_RIGHT;
+         if (p == AUDIO_SPEAKER_SIDE_LEFT)  to = AUDIO_SPEAKER_BACK_LEFT;
+         if (p == AUDIO_SPEAKER_SIDE_RIGHT) to = AUDIO_SPEAKER_BACK_RIGHT;
+      }
+      dst[n] = (dev_layout & to) ? audio_driver_extra_slot(dev_layout, to) : -(int)bit - 1;
+      n++;
+   }
+   for (f = 0; f < frames; f++)
+   {
+      const float *e = audio_st->extra.out_f + f * ch;
+      float *d = dev + f * och;
+      for (k = 0; k < n; k++)
+      {
+         if (dst[k] >= 0)
+            d[dst[k]] = e[srcslot[k]];
+         else
+         {
+            /* no speaker for it: fold into the fronts, LFE dropped */
+            unsigned b = (unsigned)(-dst[k] - 1);
+            float v = e[srcslot[k]] * 0.70710678f;
+            if (b == 3) continue;
+            if (b == 2 || b == 8) { d[0] += v; d[1] += v; }
+            else if (b == 4 || b == 6 || b == 9) d[0] += v;
+            else d[1] += v;
+         }
+      }
+   }
+}
+
+static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
+      int16_t *dev, size_t frames)
+{
+   const unsigned ch  = audio_st->extra.channels;
+   const unsigned och = audio_st->out_channels;
+   const uint32_t pos = audio_st->extra.positions;
+   const uint32_t dev_layout = audio_st->out_layout;
+   int dst[11], srcslot[11];
+   unsigned n = 0, bit, k;
+   size_t f;
+   for (bit = 2; bit < 11; bit++)
+   {
+      uint32_t p = 1u << bit, to = p;
+      if (!(pos & p))
+         continue;
+      srcslot[n] = audio_driver_extra_slot(pos, p);
+      if (!(dev_layout & to))
+      {
+         if (p == AUDIO_SPEAKER_BACK_LEFT)  to = AUDIO_SPEAKER_SIDE_LEFT;
+         if (p == AUDIO_SPEAKER_BACK_RIGHT) to = AUDIO_SPEAKER_SIDE_RIGHT;
+         if (p == AUDIO_SPEAKER_SIDE_LEFT)  to = AUDIO_SPEAKER_BACK_LEFT;
+         if (p == AUDIO_SPEAKER_SIDE_RIGHT) to = AUDIO_SPEAKER_BACK_RIGHT;
+      }
+      dst[n] = (dev_layout & to) ? audio_driver_extra_slot(dev_layout, to) : -(int)bit - 1;
+      n++;
+   }
+   for (f = 0; f < frames; f++)
+   {
+      const int16_t *e = audio_st->extra.out_i + f * ch;
+      int16_t *d = dev + f * och;
+      for (k = 0; k < n; k++)
+      {
+         if (dst[k] >= 0)
+            d[dst[k]] = e[srcslot[k]];
+         else
+         {
+            unsigned b = (unsigned)(-dst[k] - 1);
+            int32_t v = ((int32_t)e[srcslot[k]] * 23170 + 16384) >> 15;
+            int32_t l = d[0], r = d[1];
+            if (b == 3) continue;
+            if (b == 2 || b == 8) { l += v; r += v; }
+            else if (b == 4 || b == 6 || b == 9) l += v;
+            else r += v;
+            d[0] = (int16_t)(l > 32767 ? 32767 : l < -32768 ? -32768 : l);
+            d[1] = (int16_t)(r > 32767 ? 32767 : r < -32768 ? -32768 : r);
+         }
+      }
+   }
+}
+
 static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       const audio_driver_t *audio, const void *stereo, size_t frames,
       bool stereo_is_float)
@@ -1697,6 +2024,18 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
    {
       audio_upmix_process_s16(&audio_st->upmix, audio_st->upmix_i16,
             (const int16_t*)stereo, frames);
+      if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
+      {
+         if (audio_st->extra.res_int16)
+            audio_driver_extra_merge_s16(audio_st, audio_st->upmix_i16, frames);
+         else
+         {
+            /* extras resampled as float behind an int16 front: narrow */
+            convert_float_to_s16(audio_st->extra.out_i, audio_st->extra.out_f, frames * audio_st->extra.channels);
+            audio_driver_extra_merge_s16(audio_st, audio_st->upmix_i16, frames);
+         }
+         audio_st->extra.out_frames = 0;
+      }
       return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
             frames * audio_st->out_channels * sizeof(int16_t));
    }
@@ -1715,6 +2054,17 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf,
             (const float*)stereo, frames);
 
+   if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
+   {
+      if (!audio_st->extra.res_int16)
+         audio_driver_extra_merge_f32(audio_st, audio_st->upmix_buf, frames);
+      else
+      {
+         convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i, frames * audio_st->extra.channels, 1.0f);
+         audio_driver_extra_merge_f32(audio_st, audio_st->upmix_buf, frames);
+      }
+      audio_st->extra.out_frames = 0;
+   }
    if (dev_float)
       return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
             frames * audio_st->out_channels * sizeof(float));
@@ -1991,6 +2341,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          s16.output_frames = 0;
          s16.ratio         = i16_ratio;
          audio_st->resampler_int16_process(audio_st->resampler_data_int16, &s16);
+         audio_driver_extra_resample(audio_st, i16_ratio, rs_frames, false, true);
 
          out_frames = (unsigned)s16.output_frames;
 
@@ -2387,6 +2738,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       else
          src_data.output_frames = 0;
    }
+   audio_driver_extra_resample(audio_st, src_data.ratio, src_data.input_frames,
+         audio_st->resampler_bypassed, false);
 
 #ifdef HAVE_AUDIOMIXER
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
@@ -3883,10 +4236,74 @@ static bool audio_driver_multi_layout_ok(unsigned channels, unsigned layout)
        && audio_layout_channels(layout) == channels;
 }
 
+/* Whether a batch of this layout goes discretely: a device wider than
+ * stereo, the front pair present (the pipeline is that pair), and no
+ * threaded ring in between (it carries stereo). Otherwise the fold. */
+static bool audio_driver_multi_discrete(audio_driver_state_t *audio_st, unsigned layout)
+{
+   return audio_st->out_channels > 2
+       && (layout & AUDIO_LAYOUT_STEREO) == AUDIO_LAYOUT_STEREO
+       && !audio_st->pipe_threaded
+       && !audio_st->virtualize;
+}
+
+/* The front pair to the fold buffer, the rest to the extras; the
+ * front pair then goes through the classic entry with the extras
+ * pending beside it. Whether the int16 resampler path will be taken
+ * is the flush's decision (audio_driver_mixer_use_s16's terms); the
+ * extras follow whichever is taken, converting once if the core's
+ * format is the other. */
+static bool audio_driver_multi_split_f32(audio_driver_state_t *audio_st,
+      const float *data, size_t frames, unsigned channels, unsigned layout)
+{
+   unsigned ch = channels - 2;
+   size_t f; unsigned c;
+   bool int16_path = audio_driver_mixer_use_s16(true);
+   float *fronts;
+   if (!audio_driver_multi_fold_room(audio_st, frames, sizeof(float)))
+      return false;
+   if (!audio_driver_extra_prepare(audio_st, ch, layout & ~AUDIO_LAYOUT_STEREO, frames, true, int16_path))
+      return false;
+   fronts = (float*)audio_st->multi_fold;
+   for (f = 0; f < frames; f++)
+   {
+      fronts[2 * f]     = data[f * channels];
+      fronts[2 * f + 1] = data[f * channels + 1];
+      for (c = 0; c < ch; c++)
+         audio_st->extra.in_f[f * ch + c] = data[f * channels + 2 + c];
+   }
+   audio_st->extra.pending = true;
+   return true;
+}
+
+static bool audio_driver_multi_split_s16(audio_driver_state_t *audio_st,
+      const int16_t *data, size_t frames, unsigned channels, unsigned layout)
+{
+   unsigned ch = channels - 2;
+   size_t f; unsigned c;
+   bool int16_path = audio_driver_mixer_use_s16(false);
+   int16_t *fronts;
+   if (!audio_driver_multi_fold_room(audio_st, frames, sizeof(int16_t)))
+      return false;
+   if (!audio_driver_extra_prepare(audio_st, ch, layout & ~AUDIO_LAYOUT_STEREO, frames, false, int16_path))
+      return false;
+   fronts = (int16_t*)audio_st->multi_fold;
+   for (f = 0; f < frames; f++)
+   {
+      fronts[2 * f]     = data[f * channels];
+      fronts[2 * f + 1] = data[f * channels + 1];
+      for (c = 0; c < ch; c++)
+         audio_st->extra.in_i[f * ch + c] = data[f * channels + 2 + c];
+   }
+   audio_st->extra.pending = true;
+   return true;
+}
+
 size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
       unsigned channels, unsigned layout)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+   size_t n;
    if (!data || !audio_driver_multi_layout_ok(channels, layout))
       return 0;
    audio_st->core_layout = layout;
@@ -3894,6 +4311,13 @@ size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
       return audio_driver_sample_batch(data, frames);
    if (!frames || !audio_driver_multi_fold_room(audio_st, frames, sizeof(int16_t)))
       return 0;
+   if (audio_driver_multi_discrete(audio_st, layout)
+         && audio_driver_multi_split_s16(audio_st, data, frames, channels, layout))
+   {
+      n = audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, frames);
+      audio_st->extra.pending = false;
+      return n;
+   }
    audio_downmix_s16((int16_t*)audio_st->multi_fold, data, frames, layout, channels);
    return audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, frames);
 }
@@ -3902,6 +4326,7 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
       unsigned channels, unsigned layout)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+   size_t n;
    if (!data || !audio_driver_multi_layout_ok(channels, layout))
       return 0;
    audio_st->core_layout = layout;
@@ -3909,6 +4334,13 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
       return audio_driver_sample_batch_float(data, frames);
    if (!frames || !audio_driver_multi_fold_room(audio_st, frames, sizeof(float)))
       return 0;
+   if (audio_driver_multi_discrete(audio_st, layout)
+         && audio_driver_multi_split_f32(audio_st, data, frames, channels, layout))
+   {
+      n = audio_driver_sample_batch_float((const float*)audio_st->multi_fold, frames);
+      audio_st->extra.pending = false;
+      return n;
+   }
    audio_downmix_f32((float*)audio_st->multi_fold, data, frames, layout, channels);
    return audio_driver_sample_batch_float((const float*)audio_st->multi_fold, frames);
 }
