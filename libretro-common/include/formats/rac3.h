@@ -141,6 +141,35 @@ void rac3_decoder_set_drc(rac3_decoder_t *d, bool on);
 size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
       float *out, rac3_frame_info_t *info);
 
+/* ---- the encoder -------------------------------------------------- */
+
+/* A basic AC-3 encoder in the sense of the standard's section 8: the
+ * long transform only, no coupling, no rematrixing, new D15
+ * exponents in block 0 reused for the frame, the core bit allocation
+ * with the section's nominal parameters and the SNR offset searched
+ * to fill the frame. Legal, and decodable by any decoder; not the
+ * most efficient use of a bit rate, which is what coupling and the
+ * finer strategies buy. Input is interleaved float in the frontend's
+ * speaker order for the layout, 1536 frames per call. */
+typedef struct rac3_encoder rac3_encoder_t;
+
+/* rate: 48000, 44100 or 32000. layout: the frontend's mask, one of
+ * the configurations A/52 has (mono FC; stereo; 3.0; 2.1 as L R BC;
+ * quad with the pair at the sides; 5.0 and 5.1 with the pair at the
+ * sides; each with or without the LFE). kbps: one of the standard's
+ * nineteen rates, 32 to 640. NULL if any is not. */
+rac3_encoder_t *rac3_encoder_new(unsigned rate, uint32_t layout, unsigned kbps);
+void            rac3_encoder_free(rac3_encoder_t *e);
+
+/* The bytes one frame of this encoder takes (at 44.1 kHz the two
+ * sizes alternate, so this is the larger). */
+size_t rac3_encoder_frame_bytes(const rac3_encoder_t *e);
+
+/* 1536 frames of in, interleaved at the layout's channel count, to
+ * one AC-3 frame in out (cap bytes). Returns the bytes written, 0 if
+ * cap is too small. */
+size_t rac3_encode_frame(rac3_encoder_t *e, const float *in, uint8_t *out, size_t cap);
+
 RETRO_END_DECLS
 
 #endif

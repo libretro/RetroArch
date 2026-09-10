@@ -136,6 +136,7 @@ jobs:
             rac3_frame_test
             rac3_tables_test
             rac3_decode_test
+            rac3_encode_test
           )
 
           # Targets that are built but deliberately not executed, each
