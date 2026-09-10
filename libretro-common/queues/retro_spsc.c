@@ -95,11 +95,12 @@ size_t retro_spsc_write_avail(const retro_spsc_t *q)
     * acquire-load on tail so any reads we do based on the freed
     * space are ordered after the consumer's tail publication.
     *
-    * We can read our own head without an acquire because we are the
-    * only writer to it; but retro_atomic.h does not expose relaxed
-    * loads, so use acquire.  Cost is one extra fence on weak-memory
-    * targets, which is negligible compared to the actual work
-    * surrounding this query. */
+    * The header says producer-only, but audio_driver.c also calls
+    * read_avail from the producer side as a fill-level query, and the
+    * same could happen here.  Keep BOTH loads acquire so a cross-side
+    * caller still gets a happens-before with the other thread's
+    * release; the query functions are not hot enough to justify the
+    * relaxed own-counter load used in the data-path functions below. */
    size_t head = retro_atomic_load_acquire_size(
          (retro_atomic_size_t*)&q->head);
    size_t tail = retro_atomic_load_acquire_size(
@@ -116,6 +117,8 @@ size_t retro_spsc_read_avail(const retro_spsc_t *q)
     * release are visible by the time we read them. */
    size_t head = retro_atomic_load_acquire_size(
          (retro_atomic_size_t*)&q->head);
+   /* acquire on tail too: see retro_spsc_write_avail - this is called
+    * from the producer side in audio_driver.c as a fill query. */
    size_t tail = retro_atomic_load_acquire_size(
          (retro_atomic_size_t*)&q->tail);
    return head - tail;
@@ -126,7 +129,9 @@ size_t retro_spsc_write(retro_spsc_t *q, const void *data, size_t bytes)
    size_t mask, head_idx, first;
    const uint8_t *src = (const uint8_t*)data;
    /* read tail first to know how much room there is */
-   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   /* head is ours (relaxed); acquire on the consumer's tail pairs
+    * with their release-store so the freed space is really free. */
+   size_t head  = retro_atomic_load_relaxed_size(&q->head);
    size_t tail  = retro_atomic_load_acquire_size(&q->tail);
    size_t avail = q->capacity - (head - tail);
    if (bytes > avail)
@@ -157,8 +162,10 @@ size_t retro_spsc_read(retro_spsc_t *q, void *data, size_t bytes)
    uint8_t *dst = (uint8_t*)data;
    /* acquire on head pairs with producer's release-store; this is
     * what makes the subsequent memcpys safe to read. */
+   /* acquire on the producer's head pairs with their release-store;
+    * tail is ours (relaxed). */
    size_t head  = retro_atomic_load_acquire_size(&q->head);
-   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
    size_t avail = head - tail;
    if (bytes > avail)
       bytes = avail;
@@ -186,7 +193,7 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes)
    uint8_t *dst = (uint8_t*)data;
    size_t head  = retro_atomic_load_acquire_size(
          (retro_atomic_size_t*)&q->head);
-   size_t tail = retro_atomic_load_acquire_size(
+   size_t tail = retro_atomic_load_relaxed_size(
          (retro_atomic_size_t*)&q->tail);
    size_t avail = head - tail;
    if (bytes > avail)
@@ -210,7 +217,9 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes)
 size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr)
 {
    size_t mask, head_idx, span;
-   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   /* head is ours (relaxed); acquire on the consumer's tail pairs
+    * with their release-store so the freed space is really free. */
+   size_t head  = retro_atomic_load_relaxed_size(&q->head);
    size_t tail  = retro_atomic_load_acquire_size(&q->tail);
    size_t avail = q->capacity - (head - tail);
 
@@ -241,8 +250,10 @@ void retro_spsc_write_end(retro_spsc_t *q, size_t bytes)
 size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr)
 {
    size_t mask, tail_idx, span;
+   /* acquire on the producer's head pairs with their release-store;
+    * tail is ours (relaxed). */
    size_t head  = retro_atomic_load_acquire_size(&q->head);
-   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
    size_t avail = head - tail;
 
    mask     = q->capacity - 1;
@@ -268,8 +279,10 @@ void retro_spsc_read_end(retro_spsc_t *q, size_t bytes)
 
 size_t retro_spsc_skip(retro_spsc_t *q, size_t bytes)
 {
+   /* acquire on the producer's head pairs with their release-store;
+    * tail is ours (relaxed). */
    size_t head  = retro_atomic_load_acquire_size(&q->head);
-   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
    size_t avail = head - tail;
 
    if (bytes > avail)
