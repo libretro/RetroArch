@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <boolean.h>
 
-#if defined(PSP) || defined(PS2) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(HAVE_LIBNX) || defined(__PS3__) || defined(__PSL1GHT__) || defined(__EMSCRIPTEN__)
+#if defined(PSP) || defined(PS2) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(HAVE_LIBNX) || defined(__PS3__) || defined(__PSL1GHT__)
 /* No mman available */
 #elif defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>

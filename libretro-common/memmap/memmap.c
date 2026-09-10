@@ -199,7 +199,7 @@ int memsync(void *start, void *end)
     * webOS armv7 GCC rejects it as an implicit declaration. */
    __builtin___clear_cache((char*)start, (char*)end);
    return 0;
-#elif defined(HAVE_MMAN) && defined(MS_SYNC) && defined(MS_INVALIDATE)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MS_SYNC) && defined(MS_INVALIDATE)
    /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
     * into the HAVE_MMAN branch of memmap.h and ships a <sys/mman.h>
     * that includes cleanly but declares neither msync nor the MS_
@@ -230,9 +230,10 @@ int memprotect(void *addr, size_t len)
  * Reserve/commit. See memmap.h for why this cannot go through mmap().
  * -------------------------------------------------------------------- */
 
+/* Emscripten mmap allocates backing memory; it cannot reserve address space. */
 #if defined(_WIN32)
 #define MEMMAP_HAVE_RESERVE 1
-#elif defined(HAVE_MMAN)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
 /* memmap.h has already included <sys/mman.h> in this case; sysconf and
  * _SC_PAGESIZE need <unistd.h> as well. */
 #include <unistd.h>

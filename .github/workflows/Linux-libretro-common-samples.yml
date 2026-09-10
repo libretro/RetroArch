@@ -74,6 +74,7 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            emscripten_mmap_test
             archive_zip_test
             archive_zstd_test
             config_file_test
