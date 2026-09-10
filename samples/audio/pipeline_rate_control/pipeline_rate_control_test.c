@@ -133,10 +133,10 @@ static size_t dev_underruns(void *d)
 }
 
 static void *dev_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+      unsigned *new_rate)
 {
    static int handle = 1;
-   (void)device; (void)rate; (void)latency; (void)block_frames; (void)new_rate;
+   (void)device; (void)rate; (void)latency; (void)new_rate;
    dev_last = now_s();
    return &handle;
 }
@@ -285,7 +285,7 @@ static bool pipeline_up(size_t ring_bytes)
 
    memset(st, 0, sizeof(*st));
    st->current_audio        = dev_float ? &scripted_float_driver : &scripted_driver;
-   st->context_audio_data   = scripted_driver.init(NULL, 48000, 8, 0, NULL);
+   st->context_audio_data   = scripted_driver.init(NULL, 48000, 8, NULL);
    st->input                = 48000.0;
    st->src_ratio_orig       = 1.0;
    st->src_ratio_curr       = 1.0;

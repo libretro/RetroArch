@@ -162,7 +162,6 @@ typedef struct settings
 
       unsigned audio_output_sample_rate;
       unsigned audio_output_layout;
-      unsigned audio_block_frames;
       unsigned audio_latency;
       unsigned audio_format_negotiation;
 

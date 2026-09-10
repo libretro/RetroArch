@@ -62,7 +62,7 @@ static void rsound_err_cb(void *userdata)
 }
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    int channels, format;

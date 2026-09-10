@@ -7,6 +7,7 @@
 #include <stdarg.h>
 
 #include "../../../configuration.h"
+#include "../../../defaults.h"
 
 /* audio/common/alsa.c reads one field - audio_format_negotiation -
  * during hw-params setup; zero is AUTO, which lets the null PCM pick
@@ -57,3 +58,8 @@ void audio_driver_set_device_latency(size_t frames) { (void)frames; }
  * unless a case sets otherwise. */
 uint32_t stub_requested_layout = 0x3u;
 uint32_t audio_driver_requested_layout(void) { return stub_requested_layout; }
+
+/* The platform's audio defaults: audio_driver_device_block_frames()
+ * reads the device's transfer granularity from here, and no platform
+ * in a harness reports one. */
+struct defaults g_defaults;

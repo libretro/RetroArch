@@ -35,7 +35,7 @@ typedef struct ps2_audio
 
 static void *ps2_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    struct audsrv_fmt_t format;

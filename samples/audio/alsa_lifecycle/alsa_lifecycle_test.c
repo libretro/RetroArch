@@ -132,7 +132,7 @@ static void reset_counts(void)
 static void *open_null(void)
 {
    unsigned new_rate = 0;
-   void *ctx = audio_alsa.init("null", 48000, 64, 1024, &new_rate);
+   void *ctx = audio_alsa.init("null", 48000, 64, &new_rate);
    CHECK(ctx != NULL, "the null PCM did not open");
    return ctx;
 }

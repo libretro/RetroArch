@@ -1647,7 +1647,7 @@ static void wasapi_pump_stop(wasapi_t *w);
 #endif
 
 static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned u1, unsigned *new_rate)
+      unsigned *new_rate)
 {
    HRESULT hr;
    UINT32 frame_count        = 0;

@@ -39,7 +39,7 @@ static void latency_case(unsigned latency, unsigned burst, unsigned rate)
    opensl_mock_reset();
    /* The platform's fact, not a setting: the driver asks for it. */
    stub_device_block_frames = burst;
-   h = audio_opensl.init(NULL, rate, latency, 0, &new_rate);
+   h = audio_opensl.init(NULL, rate, latency, &new_rate);
    CHECK(h != NULL, "latency %u: init failed", latency);
    if (!h)
       return;
@@ -117,7 +117,7 @@ int main(void)
 
    printf("   float where the device takes it, 16-bit where it does not\n");
    opensl_mock_reset();
-   h = audio_opensl.init(NULL, 48000, 64, 0, &new_rate);
+   h = audio_opensl.init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -128,7 +128,7 @@ int main(void)
    }
    opensl_mock_reset();
    opensl_mock_set_float_supported(0);
-   h = audio_opensl.init(NULL, 48000, 64, 0, &new_rate);
+   h = audio_opensl.init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on a 16-bit-only device");
    if (h)
    {
@@ -139,7 +139,7 @@ int main(void)
 
    printf("   a full queue: write_avail is nil, not an enormous number\n");
    opensl_mock_reset();
-   h = audio_opensl.init(NULL, 48000, 64, 0, &new_rate);
+   h = audio_opensl.init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -156,7 +156,7 @@ int main(void)
 
    printf("   a device that stops consuming: the write comes back rather than hanging\n");
    opensl_mock_reset();
-   h = audio_opensl.init(NULL, 48000, 64, 0, &new_rate);
+   h = audio_opensl.init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {

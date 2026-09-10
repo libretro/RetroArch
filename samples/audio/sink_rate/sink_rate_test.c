@@ -44,8 +44,8 @@ static size_t dev_frames_consumed(void *data)
 }
 static size_t dev_write_avail(void *data)  { (void)data; return 500; }
 static size_t dev_buffer_size(void *data)  { (void)data; return 1000; }
-static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned b, unsigned *n)
-{ static int h; (void)d; (void)r; (void)l; (void)b; (void)n; return &h; }
+static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned *n)
+{ static int h; (void)d; (void)r; (void)l; (void)n; return &h; }
 static ssize_t dev_write(void *d, const void *b, size_t s) { (void)d; (void)b; return (ssize_t)s; }
 static bool   dev_stop(void *d)               { (void)d; return true; }
 static bool   dev_start(void *d, bool s)      { (void)d; (void)s; return true; }

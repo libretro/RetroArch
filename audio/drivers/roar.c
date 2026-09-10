@@ -32,7 +32,7 @@ typedef struct
 } roar_t;
 
 static void *ra_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    int err;
    roar_vs_t *vss = NULL;

@@ -224,7 +224,7 @@ static void *al_list_new(void *u)
 
 
 static void *al_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    size_t _latency;

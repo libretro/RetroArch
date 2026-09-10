@@ -8546,10 +8546,6 @@ unsigned menu_displaylist_build_list(
                         dl_rows_3, (unsigned)ARRAY_SIZE(dl_rows_3));
                }
             }
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
 #ifdef HAVE_WASAPI
             if (string_is_equal(settings->arrays.audio_driver, "wasapi"))
             {

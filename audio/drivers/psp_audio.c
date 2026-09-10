@@ -133,7 +133,7 @@ static void psp_audio_mainloop(void *data)
 
 static void *psp_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    int port;

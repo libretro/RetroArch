@@ -3229,7 +3229,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate, &new_rate,
                audio_latency,
-               settings->uints.audio_block_frames,
                settings->bools.audio_thread_priority,
                settings->bools.thread_prefer_fast_cores,
                audio_driver_st.current_audio))
@@ -3246,7 +3245,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                ? settings->arrays.audio_device : NULL,
                settings->uints.audio_output_sample_rate,
                audio_latency,
-               settings->uints.audio_block_frames,
                &new_rate);
       RARCH_LOG("[Audio] Started synchronous audio driver.\n");
    }

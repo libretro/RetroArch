@@ -40,8 +40,8 @@ static size_t scripted_avail = 0;
 
 static size_t dev_write_avail(void *data)  { (void)data; return scripted_avail; }
 static size_t dev_buffer_size(void *data)  { (void)data; return 1000; }
-static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned b, unsigned *n)
-{ static int h; (void)d; (void)r; (void)l; (void)b; (void)n; return &h; }
+static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned *n)
+{ static int h; (void)d; (void)r; (void)l; (void)n; return &h; }
 static ssize_t dev_write(void *d, const void *b, size_t s) { (void)d; (void)b; return (ssize_t)s; }
 static bool   dev_stop(void *d)               { (void)d; return true; }
 static bool   dev_start(void *d, bool s)      { (void)d; (void)s; return true; }
@@ -74,7 +74,7 @@ int main(void)
 
    memset(st, 0, sizeof(*st));
    st->current_audio        = &scripted;
-   st->context_audio_data   = scripted.init(NULL, 48000, 64, 0, NULL);
+   st->context_audio_data   = scripted.init(NULL, 48000, 64, NULL);
    st->buffer_size          = scripted.buffer_size(st->context_audio_data);
    st->rate_control_delta   = delta;
    st->src_ratio_orig       = 1.0;

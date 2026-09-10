@@ -62,10 +62,10 @@ static retro_atomic_int_t dev_frames_took = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t dev_waits       = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static void *dev_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+      unsigned *new_rate)
 {
    static int handle = 1;
-   (void)device; (void)latency; (void)block_frames;
+   (void)device; (void)latency;
    if (new_rate) *new_rate = rate;
    return &handle;
 }
@@ -167,7 +167,7 @@ static bool pipeline_up(size_t ring_bytes)
 
    memset(st, 0, sizeof(*st));
    st->current_audio      = &scripted_driver;
-   st->context_audio_data = scripted_driver.init(NULL, 48000, 64, 0, NULL);
+   st->context_audio_data = scripted_driver.init(NULL, 48000, 64, NULL);
    st->input              = 48000.0;
    st->src_ratio_orig     = 1.0;
    st->src_ratio_curr     = 1.0;

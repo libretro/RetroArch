@@ -199,14 +199,14 @@ int main(void)
    printf("   a device that is not there is not opened\n");
    dev_reset();
    new_rate = 0;
-   h = drv->init("3,1", 48000, 64, 0, &new_rate);
+   h = drv->init("3,1", 48000, 64, &new_rate);
    CHECK(h == NULL, "a missing device returned %p", h);
    CHECK(dev.open == 0, "%d handle(s) left open", dev.open);
 
    printf("   the negotiated rate and format are what the device took\n");
    dev_reset();
    new_rate = 0;
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (!h) { printf("%u failure(s)\n", failures); return 1; }
    printf("      %u Hz, %u channels, %s; period %u, buffer %u frames\n",
@@ -224,7 +224,7 @@ int main(void)
    dev_reset();
    dev.min_rate = 44100; dev.max_rate = 48000;
    new_rate = 0;
-   h = drv->init(NULL, 96000, 64, 0, &new_rate);
+   h = drv->init(NULL, 96000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -236,7 +236,7 @@ int main(void)
    printf("   an s16-only device is opened in s16\n");
    dev_reset();
    dev.takes_float = false;
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -247,7 +247,7 @@ int main(void)
 
    printf("   writes reach the device, and it is started once it has audio\n");
    dev_reset();
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -322,7 +322,7 @@ int main(void)
    printf("   a device that cannot pause is dropped and prepared instead\n");
    dev_reset();
    dev.can_pause = false;
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {

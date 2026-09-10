@@ -194,7 +194,6 @@ static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
    }
 
    if (num < 1)
-      (void)block_frames;
    swa->current_buffer = NULL;
 
    if (!swa->current_buffer)
@@ -378,7 +377,7 @@ static void switch_audio_set_nonblock_state(void *data, bool state)
 
 static void *switch_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    unsigned i;

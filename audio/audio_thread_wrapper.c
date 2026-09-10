@@ -47,7 +47,6 @@ typedef struct audio_thread
    /* Initialization options. */
    unsigned out_rate;
    unsigned latency;
-   unsigned block_frames;
 
    bool alive;
    bool stopped;
@@ -94,7 +93,7 @@ static void audio_thread_loop(void *data)
 
    thr->driver_data   = thr->driver->init(
          thr->device, thr->out_rate, thr->latency,
-         thr->block_frames, thr->new_rate);
+         thr->new_rate);
    slock_lock(thr->lock);
    thr->inited        = thr->driver_data ? 1 : -1;
    if (thr->inited > 0 && thr->driver->use_float)
@@ -509,7 +508,7 @@ static const audio_driver_t audio_thread = {
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned *new_rate, unsigned latency,
-      unsigned block_frames, bool raise_priority,
+      bool raise_priority,
       bool prefer_fast_cores,
       const audio_driver_t *drv)
 {
@@ -524,7 +523,6 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    thr->out_rate       = audio_out_rate;
    thr->new_rate       = new_rate;
    thr->latency        = latency;
-   thr->block_frames   = block_frames;
 
    if (!(thr->cond     = scond_new()))
       goto error;

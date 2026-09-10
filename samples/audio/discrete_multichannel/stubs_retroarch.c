@@ -18,6 +18,7 @@
 #include <audio/audio_mixer.h>
 
 #include "../../../configuration.h"
+#include "../../../defaults.h"
 #include "../../../record/record_driver.h"
 #include "../../../runloop.h"
 #include "../../../menu/menu_driver.h"
@@ -262,11 +263,11 @@ const audio_driver_t *audio_thread_wrapped_driver(void *data)
 
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned *new_rate,
-      unsigned latency, unsigned block_frames, bool raise_priority,
+      unsigned latency, bool raise_priority,
       bool prefer_fast_cores, const audio_driver_t *driver)
 {
    (void)out_driver; (void)out_data; (void)device; (void)out_rate;
-   (void)new_rate; (void)latency; (void)block_frames;
+   (void)new_rate; (void)latency;
    (void)raise_priority; (void)prefer_fast_cores; (void)driver;
    unreachable("audio_init_thread");
    return false;
@@ -293,3 +294,8 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
    HAVE_RAC3 and this harness does not exercise the mixer. */
 audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
 { (void)buffer; (void)size; return NULL; }
+
+/* The platform's audio defaults: audio_driver_device_block_frames()
+ * reads the device's transfer granularity from here, and no platform
+ * in a harness reports one. */
+struct defaults g_defaults;

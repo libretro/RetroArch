@@ -8,6 +8,7 @@
 #include <stdarg.h>
 
 #include "../../../configuration.h"
+#include "../../../defaults.h"
 
 /* audio/common/alsa.c reads one field - audio_format_negotiation -
  * during hw-params setup; zero is AUTO, which lets the null PCM pick
@@ -52,3 +53,8 @@ void RARCH_DBG(const char *fmt, ...)
 
 /* The layout the driver under test asks the frontend for: stereo. */
 uint32_t audio_driver_requested_layout(void) { return AUDIO_LAYOUT_STEREO; }
+
+/* The platform's audio defaults: audio_driver_device_block_frames()
+ * reads the device's transfer granularity from here, and no platform
+ * in a harness reports one. */
+struct defaults g_defaults;

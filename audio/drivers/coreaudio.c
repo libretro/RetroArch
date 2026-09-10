@@ -563,7 +563,7 @@ static unsigned coreaudio_get_hardware_sample_rate(AudioUnit dev)
 
 static void *coreaudio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    size_t buffer_samples;

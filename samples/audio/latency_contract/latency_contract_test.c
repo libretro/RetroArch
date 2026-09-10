@@ -73,7 +73,7 @@ static void exercise(const case_t *c, unsigned latency_ms)
 
    printf("-- %s at %u ms\n", d->ident, latency_ms);
 
-   ctx = d->init(c->device, rate, latency_ms, 0, &new_rate);
+   ctx = d->init(c->device, rate, latency_ms, &new_rate);
    CHECK(ctx != NULL, "%s: did not open on its null backend", d->ident);
    if (!ctx)
       return;

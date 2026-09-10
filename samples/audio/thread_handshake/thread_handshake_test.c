@@ -90,10 +90,10 @@ static void sleep_us(int us)
 }
 
 static void *fake_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+      unsigned *new_rate)
 {
    static int handle = 1;
-   (void)device; (void)latency; (void)block_frames;
+   (void)device; (void)latency;
    sleep_us(retro_atomic_load_acquire_int(&stall_init_us));
    if (new_rate)
       *new_rate = rate;
@@ -205,7 +205,7 @@ int main(void)
     *    initial wait and block() has to come back from it. */
    STAGE(1);
    CHECK(audio_init_thread(&drv, &data, "fake", 48000, &new_rate, 64,
-            512, false, false, &fake_driver),
+            false, false, &fake_driver),
          "init against a responsive device failed");
    wrapper_drv = drv;
    wrapper_ctx = data;
@@ -291,7 +291,7 @@ int main(void)
    retro_atomic_store_release_int(&warn_count, 0);
    retro_atomic_store_release_int(&stall_init_us, 3 * 1000 * 1000);
    CHECK(audio_init_thread(&drv, &data, "fake", 48000, &new_rate, 64,
-            512, false, false, &fake_driver),
+            false, false, &fake_driver),
          "init against a slow device failed");
    CHECK(retro_atomic_load_acquire_int(&warn_count) == 1,
          "a slow init was reported %d times, expected once",

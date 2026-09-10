@@ -276,7 +276,7 @@ static void pulse_channel_map(uint32_t layout, pa_channel_map *map)
 }
 
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency, unsigned block_frames,
+      unsigned latency, 
       unsigned *new_rate)
 {
    pa_sample_spec spec;

@@ -47,7 +47,7 @@ typedef struct alsa
 typedef long snd_pcm_sframes_t;
 
 static void *alsa_qsa_init(const char *device,
-      unsigned rate, unsigned latency, unsigned block_frames,
+      unsigned rate, unsigned latency, 
       unsigned *new_rate)
 {
    int err, card, dev, i;
@@ -135,7 +135,6 @@ static void *alsa_qsa_init(const char *device,
     * block size to be rounded to and the block follows the latency.
     * It used to take block_frames * 4 - a number a user set for an
     * Android device's burst, applied here to a different platform. */
-   (void)block_frames;
    alsa->buf_size = next_pow2(32 * latency);
    if (!alsa->buf_size)
       alsa->buf_size = 256;

@@ -5575,10 +5575,6 @@ void config_set_defaults(void *data)
       settings->uints.audio_output_sample_rate =
             (unsigned)g_defaults.settings_out_sample_rate;
 
-   if (g_defaults.settings_out_block_frames > 0)
-      settings->uints.audio_block_frames       =
-            (unsigned)g_defaults.settings_out_block_frames;
-
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
 #ifdef HAVE_AUDIOMIXER

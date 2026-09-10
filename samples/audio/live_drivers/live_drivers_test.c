@@ -41,7 +41,7 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
    size_t i, writes = 0, zero_avail = 0, max_avail = 0, min_avail = (size_t)-1;
    double t = 0;
    printf("   %s on %s\n", name, device);
-   h = drv->init(device, rate, latency, 0, &rate);
+   h = drv->init(device, rate, latency, &rate);
    CHECK(h != NULL, "%s: init failed", name);
    if (!h) return;
    printf("      rate %u, buffer %u bytes, layout 0x%x\n", rate, (unsigned)drv->buffer_size(h),

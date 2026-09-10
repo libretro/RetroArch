@@ -31,19 +31,19 @@ int main(void)
    qsa_mock_reset();
    qsa_mock_set_open_error(-EBUSY);
    new_rate = 0;
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h == NULL, "a failed open returned %p, which the frontend reads as a live driver", h);
    CHECK(qsa_mock_open_handles() == 0, "a failed open left %d handle(s) open", qsa_mock_open_handles());
    qsa_mock_reset();
    qsa_mock_set_params_error(-EINVAL);
-   h = drv->init(NULL, 48000, 64, 0, &new_rate);
+   h = drv->init(NULL, 48000, 64, &new_rate);
    CHECK(h == NULL, "failed parameters returned %p", h);
    CHECK(qsa_mock_open_handles() == 0, "failed parameters left the device open");
 
    printf("   the rate the device took is the rate the frontend is told\n");
    qsa_mock_reset();
    new_rate = 0;
-   h = drv->init(NULL, 44100, 64, 0, &new_rate);
+   h = drv->init(NULL, 44100, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (!h) { printf("%u failure(s)\n", failures); return 1; }
    printf("      asked 44100, device took %d, frontend told %u\n", qsa_mock_device_rate(), new_rate);

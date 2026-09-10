@@ -41,8 +41,8 @@ static size_t   cap_frames   = 0, cap_cap = 0;
  * between phases; both go under this. */
 static pthread_mutex_t cap_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned b, unsigned *n)
-{ static int h; (void)d; (void)r; (void)l; (void)b; if (n) *n = 48000; return &h; }
+static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned *n)
+{ static int h; (void)d; (void)r; (void)l; if (n) *n = 48000; return &h; }
 static ssize_t dev_write(void *d, const void *buf, size_t size)
 {
    size_t frames = size / (dev_channels * (dev_float ? sizeof(float) : sizeof(int16_t))), f, c;
@@ -89,7 +89,7 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
    dev_float    = float_dev;
    cap_frames   = 0;
    st->current_audio          = &scripted;
-   st->context_audio_data     = scripted.init(NULL, 48000, 64, 0, NULL);
+   st->context_audio_data     = scripted.init(NULL, 48000, 64, NULL);
    st->input                  = 44100.0;                  /* off unity: the extras resample */
    st->src_ratio_orig         = 48000.0 / 44100.0;
    st->src_ratio_curr         = st->src_ratio_orig;
@@ -459,7 +459,7 @@ static void ac3_bitstream_case(void)
    settings->uints.audio_output_sample_rate      = 48000;
    settings->uints.audio_output_layout           = 3;   /* 5.1, surrounds at the sides */
 
-   ctx = audio_wasapi.init(NULL, 48000, 64, 0, &new_rate);
+   ctx = audio_wasapi.init(NULL, 48000, 64, &new_rate);
    CHECK(ctx != NULL, "the AC-3 driver did not open");
    if (!ctx) { free(inf); return; }
 

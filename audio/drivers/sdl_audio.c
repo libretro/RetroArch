@@ -595,7 +595,7 @@ static void sdl_audio_free(void *data);
 
 static void *sdl_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    int frames;
    size_t bufsize;

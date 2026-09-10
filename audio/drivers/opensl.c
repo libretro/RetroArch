@@ -142,7 +142,7 @@ static void sl_free(void *data)
 }
 
 static void *sl_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    unsigned i;
@@ -190,13 +190,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
     * the device can do. Where nothing is reported, the block is
     * derived from the latency as before. */
    {
-      unsigned burst = audio_driver_device_block_frames();
-      if (block_frames)
-         frames_per_block = block_frames;    /* an explicit override */
-      else if (burst)
-         frames_per_block = burst;
-      else
-         frames_per_block = next_pow2(32 * latency) / 4;
+      unsigned burst   = audio_driver_device_block_frames();
+      frames_per_block = burst ? burst : next_pow2(32 * latency) / 4;
    }
    if (frames_per_block < 2)
       frames_per_block = 2;

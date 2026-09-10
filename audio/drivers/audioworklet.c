@@ -236,7 +236,7 @@ static bool audioworklet_resume_ctx(void *data)
 #define AUDIOWORKLET_BLOCK_WAIT_MS   2000
 
 static void *audioworklet_init(const char *device, unsigned rate,
-   unsigned latency, unsigned block_frames, unsigned *new_rate)
+   unsigned latency,  unsigned *new_rate)
 {
    audioworklet_data_t *audioworklet;
    if (audioworklet_static_data)

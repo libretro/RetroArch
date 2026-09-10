@@ -56,7 +56,7 @@ int main(void)
    caps_default(&c);
    ealsa_mock_reset(&c);
    new_rate = 0;
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (!h) { printf("%u failure(s)\n", failures); return 1; }
    printf("      device took %u Hz, %u channels, format %d, period %u, buffer %u frames\n",
@@ -98,7 +98,7 @@ int main(void)
    c.rate_min = c.rate_max = 44100;
    ealsa_mock_reset(&c);
    new_rate = 0;
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on a 44.1 kHz-only card");
    if (h)
    {
@@ -112,7 +112,7 @@ int main(void)
    caps_default(&c);
    c.allow_float = 0;
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on an s16-only card");
    if (h)
    {
@@ -128,7 +128,7 @@ int main(void)
    c.period_min = 512; c.period_max = 4096; c.period_granularity = 512;
    c.periods_fixed = 2;
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on a card with its own period sizes (device refused: %s)", ealsa_mock_refine_why());
    if (h)
    {
@@ -155,7 +155,7 @@ int main(void)
    c.channels_max = 2;
    ealsa_mock_reset(&c);
    want_layout = AUDIO_LAYOUT_5POINT1;
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed when the layout was refused");
    if (h)
    {
@@ -168,7 +168,7 @@ int main(void)
    printf("   a 5.1 card with 5.1 asked for: six channels\n");
    caps_default(&c);
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on a 5.1 card");
    if (h)
    {
@@ -184,20 +184,20 @@ int main(void)
    printf("   a card that is not there\n");
    caps_default(&c);
    ealsa_mock_reset(&c);
-   h = drv->init("3,1", 48000, 64, 0, &new_rate);
+   h = drv->init("3,1", 48000, 64, &new_rate);
    CHECK(h == NULL, "init returned %p for a device that does not exist", h);
    CHECK(ealsa_mock_open_fds() == 0, "a failed init left %d descriptor(s) open", ealsa_mock_open_fds());
    caps_default(&c);
    c.refine_fails = 1;
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h == NULL, "init returned %p for a device with no usable parameters", h);
    CHECK(ealsa_mock_open_fds() == 0, "a refused device left %d descriptor(s) open", ealsa_mock_open_fds());
 
    printf("   writing: the device gets the frames, and is started once\n");
    caps_default(&c);
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed");
    if (h)
    {
@@ -283,7 +283,7 @@ int main(void)
    caps_default(&c);
    c.can_pause = 0;
    ealsa_mock_reset(&c);
-   h = drv->init("0,0", 48000, 64, 0, &new_rate);
+   h = drv->init("0,0", 48000, 64, &new_rate);
    CHECK(h != NULL, "init failed on a card that cannot pause");
    if (h)
    {

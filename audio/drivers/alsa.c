@@ -432,7 +432,7 @@ static bool alsa_use_float(void *data)
 
 static void alsa_free(void *data);
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
@@ -1207,7 +1207,7 @@ static void tinyalsa_free(void *data)
 }
 
 static void *tinyalsa_init(const char *devicestr, unsigned rate,
-      unsigned latency, unsigned block_frames, unsigned *new_rate)
+      unsigned latency,  unsigned *new_rate)
 {
    char     path[64];
    unsigned card = 0, device = 0, want_channels, ch;
@@ -1215,7 +1215,6 @@ static void *tinyalsa_init(const char *devicestr, unsigned rate,
    int      format      = EALSA_FORMAT_S16;
    ealsa_t *ea          = (ealsa_t*)calloc(1, sizeof(*ea));
 
-   (void)block_frames;
    if (!ea)
       return NULL;
    ea->fd = -1;

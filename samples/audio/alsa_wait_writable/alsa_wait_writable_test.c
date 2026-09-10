@@ -251,7 +251,7 @@ int main(void)
 
    pthread_create(&dog, NULL, watchdog, NULL);
 
-   ctx = audio_alsa.init("null", 48000, 64, 1024, &new_rate);
+   ctx = audio_alsa.init("null", 48000, 64, &new_rate);
    if (!ctx)
    {
       /* No usable ALSA at all (fully sandboxed CI): nothing below can

@@ -77,7 +77,7 @@ static size_t ctr_dsp_audio_frames_consumed(void *data)
 #define CTR_DSP_AUDIO_SIZE_MASK   (CTR_DSP_AUDIO_SIZE  - 1u)
 
 static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    ctr_dsp_audio_t *ctr = NULL;

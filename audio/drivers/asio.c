@@ -1270,7 +1270,7 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
 }
 
 static void *ra_asio_init(const char *device, unsigned rate,
-      unsigned latency, unsigned block_frames, unsigned *new_rate)
+      unsigned latency,  unsigned *new_rate)
 {
    int i, num_drivers;
    asio_driver_entry_t drivers[ASIO_MAX_DRIVERS];

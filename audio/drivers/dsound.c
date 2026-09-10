@@ -563,7 +563,7 @@ static void dsound_size_stages(dsound_t *ds, unsigned latency,
 }
 
 static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    LPGUID selected_device = NULL;
    WAVEFORMATEXTENSIBLE wfx;

@@ -548,7 +548,7 @@ error:
 }
 
 static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    size_t bufsize;
    uint32_t layout;

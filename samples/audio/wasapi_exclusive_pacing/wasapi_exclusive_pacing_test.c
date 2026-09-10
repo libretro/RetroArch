@@ -85,7 +85,7 @@ static bool run(const scenario_t *sc, result_t *r)
    settings->uints.audio_wasapi_sh_buffer_length  = sc->sh_buffer_length;
    settings->uints.audio_output_sample_rate       = 48000;
 
-   ctx = audio_wasapi.init(NULL, 48000, sc->latency_ms, 0, &new_rate);
+   ctx = audio_wasapi.init(NULL, 48000, sc->latency_ms, &new_rate);
    if (!ctx)
    {
       printf("   init failed\n");
@@ -180,7 +180,7 @@ static void ac3_bitstream_case(void)
    settings->uints.audio_wasapi_sh_buffer_length = 0;
    settings->uints.audio_output_sample_rate      = 48000;
 
-   ctx = audio_wasapi.init(NULL, 48000, 64, 0, &new_rate);
+   ctx = audio_wasapi.init(NULL, 48000, 64, &new_rate);
    CHECK(ctx != NULL, "init failed");
    if (!ctx)
       goto done;

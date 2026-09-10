@@ -344,7 +344,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
 
 static void *sdl3_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    size_t frame_size, min_size;
    int device_sample_frames = 0;

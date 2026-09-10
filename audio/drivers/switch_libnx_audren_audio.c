@@ -62,7 +62,7 @@ typedef struct
 
 static void *libnx_audren_audio_init(
       const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
+      
       unsigned *new_rate)
 {
    unsigned i, j;
