@@ -1051,8 +1051,9 @@ AUDIO
 #endif
 #endif
 
-#ifdef HAVE_TINYALSA
-#include "../audio/drivers/tinyalsa.c"
+#if defined(HAVE_TINYALSA) && !defined(HAVE_ALSA)
+/* Both drivers are in this file; with HAVE_ALSA it came in above. */
+#include "../audio/drivers/alsa.c"
 #endif
 
 #ifdef HAVE_PULSE

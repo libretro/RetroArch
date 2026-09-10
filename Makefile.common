@@ -846,8 +846,12 @@ ifeq ($(TARGET), retroarch_3ds)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o \
-          audio/common/alsa.o
+   OBJ += audio/common/alsa.o
+   # audio/drivers/alsa.c carries both drivers; see HAVE_TINYALSA below
+   # for the case where it is built without alsa-lib.
+   ifneq ($(HAVE_TINYALSA), 1)
+      OBJ += audio/drivers/alsa.o
+   endif
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
@@ -863,7 +867,10 @@ ifeq ($(HAVE_ALSA), 1)
 endif
 
 ifeq ($(HAVE_TINYALSA), 1)
-   OBJ += audio/drivers/tinyalsa.o
+   # The embedded driver lives in audio/drivers/alsa.c beside the
+   # alsa-lib one, each behind its own define; one object either way,
+   # and a build with only this one needs no alsa-lib.
+   OBJ += audio/drivers/alsa.o
    DEFINES += -DHAVE_TINYALSA
 endif
 

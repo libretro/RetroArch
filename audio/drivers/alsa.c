@@ -15,17 +15,34 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Two drivers live here, and a build may have either or both.
+ *
+ * "alsa" talks to alsa-lib, which is what a desktop Linux has. It is
+ * everything below, up to the embedded section.
+ *
+ * "tinyalsa" talks to the kernel's PCM character devices directly -
+ * the ioctls of <sound/asound.h> - and needs no library at all, which
+ * is what an embedded build wants. It is the section at the end of
+ * this file, under HAVE_TINYALSA, and its includes are its own: a
+ * build with only HAVE_TINYALSA never sees an alsa-lib header. */
+
 #include <stdlib.h>
 
 #include <lists/string_list.h>
 
+#ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
+#endif
 #include <errno.h>
 
 #include "../audio_driver.h"
+#ifdef HAVE_ALSA
 #include "../common/alsa.h"
+#endif
 #include "../../verbosity.h"
+
+#ifdef HAVE_ALSA
 
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
@@ -760,3 +777,739 @@ audio_driver_t audio_alsa = {
    alsa_layout
 };
 
+#endif /* HAVE_ALSA */
+
+
+
+/* ================= the embedded driver: "tinyalsa" =================
+ *
+ * The kernel's PCM devices, spoken to directly: /dev/snd/pcmC<card>D<dev>p
+ * and the ioctls of <sound/asound.h>. No library, which is the point -
+ * an embedded build has the kernel and nothing else.
+ *
+ * Written against that header, which carries the Linux-syscall-note
+ * exception so userspace may use it. It replaces a vendored copy of
+ * Android's tinyalsa; the driver keeps its "tinyalsa" ident so no
+ * configuration changes, but the implementation is RetroArch's and
+ * can therefore take what the rest of the audio stack now expects:
+ * float output, a channel layout, the frames the device has consumed,
+ * and a bounded wait for writable space.
+ *
+ * The parameter negotiation is the one part of this that is not
+ * obvious from the structs. A hw_params carries a mask per masked
+ * parameter (access, format, subformat) and an interval per numeric
+ * one (channels, rate, period size, buffer size, ...). The caller
+ * fills every mask with every bit and every interval with its widest
+ * range, narrows the ones it cares about, sets rmask to say which it
+ * touched, and asks the kernel to refine: the kernel intersects each
+ * with what the hardware can do and hands the result back. Refining
+ * with a single value in an interval is how a specific rate is asked
+ * for; refining with a range is how the hardware is asked what it
+ * supports. HW_PARAMS then commits a fully determined set. */
+
+#ifdef HAVE_TINYALSA
+
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <limits.h>
+#include <retro_endianness.h>
+#include <retro_miscellaneous.h>
+
+#include "../audio_upmix.h"
+
+/* The kernel's PCM ABI, spelled out rather than included.
+ *
+ * <sound/asound.h> is where these come from, and it is not included
+ * for two reasons: an embedded toolchain need not carry it, which is
+ * the whole point of this driver; and where alsa-lib is also present
+ * the two headers define the same names differently and cannot both
+ * be in one translation unit. The layouts are an ABI - the kernel
+ * will not move them - so a copy is safe in a way a copy of an
+ * interface never is. Everything below is prefixed so nothing here
+ * can collide with alsa-lib's names above. */
+
+typedef unsigned long ealsa_uframes_t;
+typedef signed long   ealsa_sframes_t;
+
+#define EALSA_MASK_MAX          256
+#define EALSA_P_ACCESS          0
+#define EALSA_P_FORMAT          1
+#define EALSA_P_SUBFORMAT       2
+#define EALSA_P_FIRST_MASK      EALSA_P_ACCESS
+#define EALSA_P_LAST_MASK       EALSA_P_SUBFORMAT
+#define EALSA_P_SAMPLE_BITS     8
+#define EALSA_P_CHANNELS        10
+#define EALSA_P_RATE            11
+#define EALSA_P_PERIOD_SIZE     13
+#define EALSA_P_PERIODS         15
+#define EALSA_P_BUFFER_SIZE     17
+#define EALSA_P_TICK_TIME       19
+#define EALSA_P_FIRST_INTERVAL  EALSA_P_SAMPLE_BITS
+#define EALSA_P_LAST_INTERVAL   EALSA_P_TICK_TIME
+
+#define EALSA_ACCESS_RW_INTERLEAVED 3
+#define EALSA_FMT_S16_LE            2
+#define EALSA_FMT_S16_BE            3
+#define EALSA_FMT_FLOAT_LE          14
+#define EALSA_FMT_FLOAT_BE          15
+
+#define EALSA_INFO_PAUSE            0x00080000
+#define EALSA_TSTAMP_NONE           0
+
+struct ealsa_interval
+{
+   unsigned int min, max;
+   unsigned int openmin:1, openmax:1, integer:1, empty:1;
+};
+
+struct ealsa_mask
+{
+   uint32_t bits[(EALSA_MASK_MAX + 31) / 32];
+};
+
+struct ealsa_hw_params
+{
+   unsigned int flags;
+   struct ealsa_mask     masks[EALSA_P_LAST_MASK - EALSA_P_FIRST_MASK + 1];
+   struct ealsa_mask     mres[5];
+   struct ealsa_interval intervals[EALSA_P_LAST_INTERVAL - EALSA_P_FIRST_INTERVAL + 1];
+   struct ealsa_interval ires[9];
+   unsigned int rmask, cmask, info, msbits, rate_num, rate_den;
+   ealsa_uframes_t fifo_size;
+   unsigned char reserved[64];
+};
+
+struct ealsa_sw_params
+{
+   int tstamp_mode;
+   unsigned int period_step;
+   unsigned int sleep_min;
+   ealsa_uframes_t avail_min;
+   ealsa_uframes_t xfer_align;
+   ealsa_uframes_t start_threshold;
+   ealsa_uframes_t stop_threshold;
+   ealsa_uframes_t silence_threshold;
+   ealsa_uframes_t silence_size;
+   ealsa_uframes_t boundary;
+   unsigned int proto;
+   unsigned int tstamp_type;
+   unsigned char reserved[56];
+};
+
+struct ealsa_xferi
+{
+   ealsa_sframes_t result;
+   void           *buf;
+   ealsa_uframes_t frames;
+};
+
+#define EALSA_IOCTL_HW_REFINE     _IOWR('A', 0x10, struct ealsa_hw_params)
+#define EALSA_IOCTL_HW_PARAMS     _IOWR('A', 0x11, struct ealsa_hw_params)
+#define EALSA_IOCTL_SW_PARAMS     _IOWR('A', 0x13, struct ealsa_sw_params)
+#define EALSA_IOCTL_DELAY         _IOR('A', 0x21, ealsa_sframes_t)
+#define EALSA_IOCTL_PREPARE       _IO('A', 0x40)
+#define EALSA_IOCTL_START         _IO('A', 0x42)
+#define EALSA_IOCTL_DROP          _IO('A', 0x43)
+#define EALSA_IOCTL_PAUSE         _IOW('A', 0x45, int)
+#define EALSA_IOCTL_WRITEI_FRAMES _IOW('A', 0x50, struct ealsa_xferi)
+
+/* The seam the harness replaces: everything this driver does to a
+ * device goes through these. */
+#ifndef EALSA_SYSCALLS
+#define ealsa_open_dev(path, flags)  open((path), (flags))
+#define ealsa_ioctl(fd, req, arg)    ioctl((fd), (req), (arg))
+#define ealsa_close(fd)              close((fd))
+#define ealsa_poll(fds, n, timeout)  poll((fds), (n), (timeout))
+#endif
+
+#define EALSA_FORMAT_S16   0
+#define EALSA_FORMAT_FLOAT 1
+
+typedef struct ealsa
+{
+   int      fd;
+   unsigned rate;
+   unsigned channels;
+   uint32_t layout;
+   unsigned frame_bits;
+   size_t   buffer_size;      /* bytes */
+   size_t   period_frames;
+   size_t   buffer_frames;
+   uint64_t frames_written;   /* handed to the device since it opened */
+   bool     nonblock;
+   bool     has_float;
+   bool     can_pause;
+   bool     is_paused;
+   bool     running;
+} ealsa_t;
+
+/* ---- the parameter set ---------------------------------------- */
+
+static INLINE struct ealsa_mask *ealsa_mask(struct ealsa_hw_params *p,
+      unsigned param)
+{
+   return &p->masks[param - EALSA_P_FIRST_MASK];
+}
+
+static INLINE struct ealsa_interval *ealsa_interval(struct ealsa_hw_params *p,
+      unsigned param)
+{
+   return &p->intervals[param - EALSA_P_FIRST_INTERVAL];
+}
+
+/* Every mask full and every interval as wide as it goes: the set the
+ * kernel narrows. rmask names every parameter, so a refine returns
+ * what the hardware can do with all of them. */
+static void ealsa_params_any(struct ealsa_hw_params *p)
+{
+   unsigned i;
+   memset(p, 0, sizeof(*p));
+   for (i = EALSA_P_FIRST_MASK; i <= EALSA_P_LAST_MASK; i++)
+      memset(ealsa_mask(p, i)->bits, 0xff, sizeof(ealsa_mask(p, i)->bits));
+   for (i = EALSA_P_FIRST_INTERVAL; i <= EALSA_P_LAST_INTERVAL; i++)
+   {
+      struct ealsa_interval *iv = ealsa_interval(p, i);
+      iv->min = 0;
+      iv->max = UINT_MAX;
+   }
+   p->rmask = ~0u;
+   p->cmask = 0;
+   p->info  = ~0u;
+}
+
+static void ealsa_mask_only(struct ealsa_hw_params *p, unsigned param,
+      unsigned bit)
+{
+   struct ealsa_mask *m = ealsa_mask(p, param);
+   memset(m->bits, 0, sizeof(m->bits));
+   m->bits[bit >> 5] = 1u << (bit & 31);
+}
+
+static void ealsa_interval_exact(struct ealsa_hw_params *p, unsigned param,
+      unsigned value)
+{
+   struct ealsa_interval *iv = ealsa_interval(p, param);
+   iv->min     = value;
+   iv->max     = value;
+   iv->integer = 1;
+   iv->openmin = 0;
+   iv->openmax = 0;
+}
+
+static unsigned ealsa_interval_min(const struct ealsa_hw_params *p, unsigned param)
+{
+   return p->intervals[param - EALSA_P_FIRST_INTERVAL].min;
+}
+
+static unsigned ealsa_interval_max(const struct ealsa_hw_params *p, unsigned param)
+{
+   return p->intervals[param - EALSA_P_FIRST_INTERVAL].max;
+}
+
+/* The kernel's format numbers for what this driver offers. */
+static unsigned ealsa_format_bit(int format)
+{
+   if (format == EALSA_FORMAT_FLOAT)
+      return is_little_endian() ? EALSA_FMT_FLOAT_LE
+                                : EALSA_FMT_FLOAT_BE;
+   return is_little_endian() ? EALSA_FMT_S16_LE
+                             : EALSA_FMT_S16_BE;
+}
+
+static unsigned ealsa_format_bits(int format)
+{
+   return (format == EALSA_FORMAT_FLOAT) ? 32 : 16;
+}
+
+/* Does the hardware take this format at this channel count and rate?
+ * A refine that comes back without an error says yes, and says what
+ * it would settle on. */
+static bool ealsa_probe(int fd, int format, unsigned channels, unsigned rate)
+{
+   struct ealsa_hw_params p;
+   ealsa_params_any(&p);
+   ealsa_mask_only(&p, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+   ealsa_mask_only(&p, EALSA_P_FORMAT, ealsa_format_bit(format));
+   ealsa_interval_exact(&p, EALSA_P_CHANNELS, channels);
+   ealsa_interval_exact(&p, EALSA_P_RATE, rate);
+   return ealsa_ioctl(fd, EALSA_IOCTL_HW_REFINE, &p) == 0;
+}
+
+/* ---- open and setup -------------------------------------------- */
+
+static bool ealsa_set_params(ealsa_t *ea, int format, unsigned channels,
+      unsigned rate, unsigned latency_ms)
+{
+   struct ealsa_hw_params hw;
+   struct ealsa_sw_params sw;
+   unsigned period_frames, periods = 4;
+
+   /* A period of a quarter of the asked-for latency, and four of
+    * them: the buffer is the latency, and the device wakes four
+    * times across it. */
+   period_frames = (rate * latency_ms) / (1000 * periods);
+   if (period_frames < 64)
+      period_frames = 64;
+
+   ealsa_params_any(&hw);
+   ealsa_mask_only(&hw, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+   ealsa_mask_only(&hw, EALSA_P_FORMAT, ealsa_format_bit(format));
+   ealsa_interval_exact(&hw, EALSA_P_CHANNELS, channels);
+   ealsa_interval_exact(&hw, EALSA_P_RATE, rate);
+   ealsa_interval_exact(&hw, EALSA_P_PERIOD_SIZE, period_frames);
+   ealsa_interval_exact(&hw, EALSA_P_PERIODS, periods);
+
+   /* Refined first, so a device that wants a different period size
+    * says so rather than failing the commit. */
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &hw) < 0)
+      return false;
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_PARAMS, &hw) < 0)
+      return false;
+
+   ea->period_frames = ealsa_interval_min(&hw, EALSA_P_PERIOD_SIZE);
+   ea->buffer_frames = ealsa_interval_min(&hw, EALSA_P_BUFFER_SIZE);
+   if (!ea->period_frames)
+      ea->period_frames = period_frames;
+   if (!ea->buffer_frames)
+      ea->buffer_frames = ea->period_frames * periods;
+   ea->can_pause     = (hw.info & EALSA_INFO_PAUSE) != 0;
+   ea->rate          = rate;
+   ea->channels      = channels;
+   ea->has_float     = (format == EALSA_FORMAT_FLOAT);
+   ea->frame_bits    = ealsa_format_bits(format) * channels;
+   ea->buffer_size   = ea->buffer_frames * ea->frame_bits / 8;
+
+   memset(&sw, 0, sizeof(sw));
+   sw.tstamp_mode       = EALSA_TSTAMP_NONE;
+   sw.avail_min         = ea->period_frames;
+   /* Started explicitly, so the first write does not begin playing a
+    * buffer that is not yet full. */
+   sw.start_threshold   = ea->buffer_frames + 1;
+   /* Never stopped on an underrun: an xrun is recovered by the write
+    * path, and a stopped stream would need a prepare the caller did
+    * not ask for. */
+   sw.stop_threshold    = ULONG_MAX;
+   sw.silence_threshold = 0;
+   sw.silence_size      = 0;
+   /* The pointer wrap: the largest multiple of the buffer that fits,
+    * which is what the kernel compares the application pointer
+    * against. The test is on the value before doubling, so the
+    * doubling cannot overflow - testing the doubled value wraps it to
+    * zero at the top and the loop never ends. */
+   sw.boundary          = ea->buffer_frames;
+   while (sw.boundary <= (ULONG_MAX >> 2))
+      sw.boundary *= 2;
+   sw.stop_threshold    = sw.boundary;
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_SW_PARAMS, &sw) < 0)
+      return false;
+   return ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) == 0;
+}
+
+/* Frames the device still holds. DELAY rather than STATUS: the status
+ * struct carries timespecs whose layout has moved between kernel
+ * versions, and the delay is the only figure this driver wants. */
+static ealsa_sframes_t ealsa_delay(ealsa_t *ea)
+{
+   ealsa_sframes_t d = 0;
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_DELAY, &d) < 0)
+      return 0;
+   return d;
+}
+
+/* Frames the device could take now: its buffer less what it holds. */
+static size_t ealsa_avail(ealsa_t *ea)
+{
+   ealsa_sframes_t d = ealsa_delay(ea);
+   if (d <= 0)
+      return ea->buffer_frames;
+   if ((size_t)d >= ea->buffer_frames)
+      return 0;
+   return ea->buffer_frames - (size_t)d;
+}
+
+static bool ealsa_recover(ealsa_t *ea)
+{
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) < 0)
+      return false;
+   ea->running = false;
+   return true;
+}
+
+/* ---- the driver ------------------------------------------------ */
+
+typedef struct ealsa tinyalsa_t;
+
+static void tinyalsa_free(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   if (!ea)
+      return;
+   if (ea->fd >= 0)
+   {
+      ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
+      ealsa_close(ea->fd);
+   }
+   free(ea);
+}
+
+static void *tinyalsa_init(const char *devicestr, unsigned rate,
+      unsigned latency, unsigned block_frames, unsigned *new_rate)
+{
+   char     path[64];
+   unsigned card = 0, device = 0, want_channels, ch;
+   uint32_t want_layout = audio_driver_requested_layout();
+   int      format      = EALSA_FORMAT_S16;
+   ealsa_t *ea          = (ealsa_t*)calloc(1, sizeof(*ea));
+
+   (void)block_frames;
+   if (!ea)
+      return NULL;
+   ea->fd = -1;
+
+   /* "<card>,<device>", either part optional. */
+   if (devicestr)
+   {
+      char *endp;
+      unsigned long v = strtoul(devicestr, &endp, 10);
+      if (endp != devicestr)
+      {
+         card = (unsigned)v;
+         if (*endp == ',')
+         {
+            const char *p = endp + 1;
+            v = strtoul(p, &endp, 10);
+            if (endp != p)
+               device = (unsigned)v;
+         }
+      }
+   }
+
+   snprintf(path, sizeof(path), "/dev/snd/pcmC%uD%up", card, device);
+   if ((ea->fd = ealsa_open_dev(path, O_RDWR)) < 0)
+   {
+      RARCH_ERR("[TINYALSA] Cannot open %s.\n", path);
+      goto error;
+   }
+   RARCH_LOG("[TINYALSA] Using card %u, device %u.\n", card, device);
+
+   /* The rate the device will take: asked for first, and if it is
+    * refused, the nearest end of what the hardware reports. The
+    * frontend is told through new_rate either way. */
+   {
+      struct ealsa_hw_params p;
+      ealsa_params_any(&p);
+      ealsa_mask_only(&p, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &p) < 0)
+      {
+         RARCH_ERR("[TINYALSA] The device reports no usable parameters.\n");
+         goto error;
+      }
+      {
+         unsigned min = ealsa_interval_min(&p, EALSA_P_RATE);
+         unsigned max = ealsa_interval_max(&p, EALSA_P_RATE);
+         if (rate < min || rate > max)
+         {
+            RARCH_WARN("[TINYALSA] %u Hz is outside the device's %u-%u Hz.\n",
+                  rate, min, max);
+            rate = (rate < min) ? min : max;
+         }
+      }
+   }
+
+   /* Float where the device takes it: the pipeline is float, and an
+    * s16 device is the only reason to narrow. */
+   if (ealsa_probe(ea->fd, EALSA_FORMAT_FLOAT, 2, rate))
+      format = EALSA_FORMAT_FLOAT;
+
+   /* The layout the frontend asked for, if the device has that many
+    * channels; stereo otherwise. */
+   want_channels = audio_layout_channels(want_layout);
+   if (want_channels < 2 || !audio_layout_supported(want_layout))
+   {
+      want_channels = 2;
+      want_layout   = AUDIO_LAYOUT_STEREO;
+   }
+   for (ch = want_channels; ch >= 2; ch -= 2)
+   {
+      if (ealsa_probe(ea->fd, format, ch, rate))
+         break;
+      if (ch == 2)
+      {
+         RARCH_ERR("[TINYALSA] The device takes neither the layout nor stereo.\n");
+         goto error;
+      }
+   }
+   if (ch != want_channels)
+   {
+      RARCH_WARN("[TINYALSA] %u channels refused; opening %u.\n", want_channels, ch);
+      want_layout = AUDIO_LAYOUT_STEREO;
+   }
+   ea->layout = (ch == want_channels) ? want_layout : AUDIO_LAYOUT_STEREO;
+
+   if (!latency)
+      latency = 64;
+   if (!ealsa_set_params(ea, format, ch, rate, latency))
+   {
+      RARCH_ERR("[TINYALSA] The device refused the parameters.\n");
+      goto error;
+   }
+
+   if (new_rate)
+      *new_rate = ea->rate;
+
+   RARCH_LOG("[TINYALSA] %u Hz, %u channels, %s, layout 0x%x.\n",
+         ea->rate, ea->channels, ea->has_float ? "float" : "s16",
+         (unsigned)ea->layout);
+   RARCH_LOG("[TINYALSA] Period %u frames, buffer %u frames (%u bytes).\n",
+         (unsigned)ea->period_frames, (unsigned)ea->buffer_frames,
+         (unsigned)ea->buffer_size);
+   RARCH_LOG("[TINYALSA] Can pause: %s.\n", ea->can_pause ? "yes" : "no");
+   return ea;
+
+error:
+   tinyalsa_free(ea);
+   return NULL;
+}
+
+static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
+{
+   ealsa_t *ea      = (ealsa_t*)data;
+   const uint8_t *p = (const uint8_t*)buf;
+   size_t   frames  = len * 8 / ea->frame_bits;
+   size_t   written = 0;
+
+   while (frames)
+   {
+      struct ealsa_xferi x;
+      x.buf    = (void*)p;
+      x.frames = frames;
+      x.result = 0;
+
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_WRITEI_FRAMES, &x) < 0)
+      {
+         if (errno == EAGAIN)
+         {
+            if (ea->nonblock)
+               break;
+            /* Blocking: wait for the device to free a period, and
+             * come back short rather than spinning if it does not. */
+            {
+               struct pollfd pfd;
+               pfd.fd      = ea->fd;
+               pfd.events  = POLLOUT;
+               pfd.revents = 0;
+               if (ealsa_poll(&pfd, 1, 100) <= 0)
+                  break;
+            }
+            continue;
+         }
+         if (errno == EPIPE || errno == ESTRPIPE)
+         {
+            /* An underrun, or a resume after a suspend: prepared
+             * again and the frames go out on the next turn. */
+            if (!ealsa_recover(ea))
+               return -1;
+            continue;
+         }
+         return written ? (ssize_t)(written * ea->frame_bits / 8) : -1;
+      }
+      if (x.result <= 0)
+         break;
+      p                   += (size_t)x.result * ea->frame_bits / 8;
+      frames              -= x.result;
+      written             += x.result;
+      ea->frames_written  += x.result;
+      /* Started once the buffer holds something: the threshold is
+       * past the buffer's end, so the kernel never starts it. */
+      if (!ea->running && !ea->is_paused)
+      {
+         if (ealsa_ioctl(ea->fd, EALSA_IOCTL_START, NULL) == 0)
+            ea->running = true;
+      }
+   }
+   return (ssize_t)(written * ea->frame_bits / 8);
+}
+
+/* Frames the device has played: what was handed to it, less what it
+ * still holds. The sink rate estimate reads this. */
+static size_t tinyalsa_frames_consumed(void *data)
+{
+   ealsa_t        *ea = (ealsa_t*)data;
+   ealsa_sframes_t d  = ealsa_delay(ea);
+   uint64_t queued    = (d > 0) ? (uint64_t)d : 0;
+   if (queued > ea->frames_written)
+      return (size_t)ea->frames_written;
+   return (size_t)(ea->frames_written - queued);
+}
+
+static size_t tinyalsa_write_avail(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ealsa_avail(ea) * ea->frame_bits / 8;
+}
+
+static size_t tinyalsa_buffer_size(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea->buffer_size;
+}
+
+/* Waits until the device can take @len bytes, bounded so a device
+ * that has stopped draining hands the pass back. */
+static size_t tinyalsa_wait_writable(void *data, size_t len)
+{
+   ealsa_t *ea    = (ealsa_t*)data;
+   size_t   want  = len * 8 / ea->frame_bits;
+   unsigned laps  = 8;
+   int      ms    = (int)(ea->period_frames * 2000 / (ea->rate ? ea->rate : 48000));
+   if (ms < 2)
+      ms = 2;
+   else if (ms > 100)
+      ms = 100;
+   if (want > ea->buffer_frames)
+      want = ea->buffer_frames;
+   while (laps--)
+   {
+      struct pollfd pfd;
+      size_t avail = ealsa_avail(ea);
+      if (avail >= want)
+         return avail * ea->frame_bits / 8;
+      if (ea->nonblock || ea->is_paused)
+         break;
+      pfd.fd      = ea->fd;
+      pfd.events  = POLLOUT;
+      pfd.revents = 0;
+      if (ealsa_poll(&pfd, 1, ms) <= 0)
+         break;
+   }
+   return ealsa_avail(ea) * ea->frame_bits / 8;
+}
+
+static bool tinyalsa_stop(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   if (ea->is_paused)
+      return true;
+   if (ea->can_pause && ea->running)
+   {
+      int on = 1;
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PAUSE, &on) == 0)
+      {
+         ea->is_paused = true;
+         return true;
+      }
+   }
+   /* No pause, or it was refused: dropped, and prepared again so the
+    * next start has somewhere to begin. */
+   ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
+   ea->running   = false;
+   ea->is_paused = ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) == 0;
+   return ea->is_paused;
+}
+
+static bool tinyalsa_start(void *data, bool is_shutdown)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   (void)is_shutdown;
+   if (!ea->is_paused)
+      return true;
+   if (ea->can_pause && ea->running)
+   {
+      int off = 0;
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PAUSE, &off) < 0)
+         return false;
+   }
+   ea->is_paused = false;
+   return true;
+}
+
+static bool tinyalsa_alive(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea && !ea->is_paused;
+}
+
+static void tinyalsa_set_nonblock_state(void *data, bool state)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   ea->nonblock = state;
+}
+
+static bool tinyalsa_use_float(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea->has_float;
+}
+
+static uint32_t tinyalsa_layout(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea ? ea->layout : AUDIO_LAYOUT_STEREO;
+}
+
+/* The playback devices the kernel exposes, as "<card>,<device>" with
+ * the name the driver reports. */
+static void *tinyalsa_device_list_new(void *data)
+{
+   struct string_list *list = string_list_new();
+   unsigned card, device;
+   (void)data;
+   if (!list)
+      return NULL;
+   for (card = 0; card < 8; card++)
+   {
+      for (device = 0; device < 8; device++)
+      {
+         char path[64], label[32];
+         int fd;
+         union string_list_elem_attr attr;
+         snprintf(path, sizeof(path), "/dev/snd/pcmC%uD%up", card, device);
+         /* Opened only to see whether it is there; the name the
+          * frontend shows is the "<card>,<device>" it passes back. */
+         if ((fd = ealsa_open_dev(path, O_RDWR | O_NONBLOCK)) < 0)
+            continue;
+         ealsa_close(fd);
+         snprintf(label, sizeof(label), "%u,%u", card, device);
+         attr.i = 0;
+         string_list_append(list, label, attr);
+      }
+   }
+   return list;
+}
+
+static void tinyalsa_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *s = (struct string_list*)array_list_data;
+   (void)data;
+   if (s)
+      string_list_free(s);
+}
+
+audio_driver_t audio_tinyalsa = {
+   tinyalsa_init,
+   tinyalsa_write,
+   tinyalsa_stop,
+   tinyalsa_start,
+   tinyalsa_alive,
+   tinyalsa_set_nonblock_state,
+   tinyalsa_free,
+   tinyalsa_use_float,
+   "tinyalsa",
+   tinyalsa_device_list_new,
+   tinyalsa_device_list_free,
+   tinyalsa_write_avail,
+   tinyalsa_buffer_size,
+   NULL, /* write_raw */
+   tinyalsa_wait_writable,
+   tinyalsa_frames_consumed,
+   NULL, /* underruns */
+   tinyalsa_layout
+};
+
+#endif /* HAVE_TINYALSA */

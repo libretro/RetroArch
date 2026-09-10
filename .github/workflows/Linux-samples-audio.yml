@@ -235,6 +235,23 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
           echo "[pass] discrete_multichannel_test (ASan)"
 
+      - name: Build and run embedded_alsa_test (the embedded ALSA driver, mock kernel device)
+        shell: bash
+        working-directory: samples/audio/embedded_alsa
+        run: |
+          set -eu
+          # The "tinyalsa" driver in audio/drivers/alsa.c talks the
+          # kernel PCM ioctls directly. abi_check compares its copy of
+          # that ABI - extracted from the driver itself, so it cannot
+          # go stale - against <sound/asound.h>: every struct size and
+          # offset, constant and ioctl number. The test then runs the
+          # driver against a mock device that refines parameters the
+          # way the kernel does.
+          make clean check
+          echo "[pass] embedded_alsa_test"
+          make clean check SANITIZER=address,undefined
+          echo "[pass] embedded_alsa_test (ASan)"
+
       - name: Build and run qsa_test (the QNX driver against a mock QSA device)
         shell: bash
         working-directory: samples/audio/qsa
