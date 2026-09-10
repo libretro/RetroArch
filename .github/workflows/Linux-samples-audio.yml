@@ -216,6 +216,24 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./upmix_test
           echo "[pass] upmix_test (ASan)"
 
+      - name: Build and run binaural_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/binaural
+        run: |
+          set -eu
+          # A layout rendered to two ears for headphones: a left speaker
+          # arrives at the left ear first, louder and brighter; the rear
+          # pair duller than the front; centre and LFE alike to both
+          # ears; a centred source keeps its level and a full-scale one
+          # leaves at full scale; the two 5.1s render their rear pair
+          # from different directions; stereo is a mild crossfeed.
+          make clean all
+          ./binaural_test
+          echo "[pass] binaural_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./binaural_test
+          echo "[pass] binaural_test (ASan)"
+
       - name: Build and run pipeline_rate_control_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/pipeline_rate_control

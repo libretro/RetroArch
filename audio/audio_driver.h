@@ -51,6 +51,7 @@ typedef struct scond scond_t;
 
 #include "audio_defines.h"
 #include "audio_upmix.h"
+#include "audio_binaural.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
@@ -737,6 +738,15 @@ typedef struct
    float        *upmix_buf;
    int16_t      *upmix_i16;
    size_t        upmix_frames;
+
+   /* Headphones on a stereo device: the stereo mix is widened to a
+    * virtual 5.1 by the upmix and rendered back to two ears by the
+    * binaural stage, so the rears are behind the listener. On when
+    * the setting is and the device is stereo; the render lands in
+    * upmix_buf's second half. */
+   bool             virtualize;
+   audio_binaural_t binaural;
+   float           *virt_buf;      /* frames * 6 floats, the virtual 5.1 */
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

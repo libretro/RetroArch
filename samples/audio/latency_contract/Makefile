@@ -10,6 +10,7 @@ TARGET    := latency_contract_test
 SOURCES_C := \
 	latency_contract_test.c \
 	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/drivers/alsa.c \
 	$(CORE_DIR)/audio/common/alsa.c \

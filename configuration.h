@@ -631,6 +631,7 @@ typedef struct settings
       bool audio_enable_menu_bgm;
       bool audio_enable_menu_scroll;
       bool audio_sync;
+      bool audio_headphone_virtual_surround;
       bool audio_sink_rate_estimation;
       bool audio_threaded_pipeline;
       bool audio_thread_priority;

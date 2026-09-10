@@ -15,6 +15,7 @@ flags   += -std=gnu99
 SOURCES_C := \
 	alsa_wait_writable_test.c \
 	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/drivers/alsa.c \
 	$(CORE_DIR)/audio/common/alsa.c \

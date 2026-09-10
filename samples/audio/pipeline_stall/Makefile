@@ -12,6 +12,7 @@ flags   += -std=gnu99
 SOURCES_C := \
 	pipeline_stall_test.c \
 	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \

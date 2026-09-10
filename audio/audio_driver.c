@@ -629,8 +629,11 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->arena_float              = NULL;
    free(audio_st->upmix_buf);
    free(audio_st->upmix_i16);
+   free(audio_st->virt_buf);
    audio_st->upmix_buf                = NULL;
    audio_st->upmix_i16                = NULL;
+   audio_st->virt_buf                 = NULL;
+   audio_st->virtualize               = false;
    audio_st->upmix_frames             = 0;
    audio_st->out_layout               = AUDIO_LAYOUT_STEREO;
    audio_st->out_channels             = 2;
@@ -1611,6 +1614,28 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
 {
    bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
    size_t sample    = dev_float ? sizeof(float) : sizeof(int16_t);
+
+   if (audio_st->out_channels <= 2 && audio_st->virtualize && audio_st->virt_buf)
+   {
+      /* Headphones: stereo to a virtual 5.1 and back to two ears. */
+      const float *src = (const float*)stereo;
+      if (frames > audio_st->upmix_frames)
+         frames = audio_st->upmix_frames;
+      if (!stereo_is_float)
+      {
+         float *stage = (float*)audio_st->upmix_i16;
+         convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
+         src = stage;
+      }
+      audio_upmix_process(&audio_st->upmix, audio_st->virt_buf, src, frames);
+      audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
+      if (dev_float)
+         return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
+               frames * 2 * sizeof(float));
+      convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf, frames * 2);
+      return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
+            frames * 2 * sizeof(int16_t));
+   }
 
    if (audio_st->out_channels <= 2 || !audio_st->upmix_buf)
       return audio->write(audio_st->context_audio_data, stereo,
@@ -2822,6 +2847,40 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       }
       else if (layout != AUDIO_LAYOUT_STEREO)
          RARCH_WARN("[Audio] Device opened with layout 0x%03x, which the frontend cannot fill; writing stereo.\n", layout);
+   }
+
+   /* Headphone virtual surround: on a stereo device with the setting
+    * on, the mix goes stereo, virtual 5.1, two ears. Buffers: the
+    * virtual 5.1 at six floats a frame, and the render in upmix_buf
+    * and upmix_i16 at two. */
+   audio_driver_st.virtualize = false;
+   if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
+         && audio_driver_st.out_channels == 2
+         && settings->bools.audio_headphone_virtual_surround)
+   {
+      size_t frames = audio_driver_st.output_samples_buf_length / (2 * sizeof(float));
+      audio_driver_st.virt_buf  = (float*)malloc(frames * 6 * sizeof(float));
+      audio_driver_st.upmix_buf = (float*)malloc(frames * 2 * sizeof(float));
+      audio_driver_st.upmix_i16 = (int16_t*)malloc(frames * 6 * sizeof(int16_t));
+      if (audio_driver_st.virt_buf && audio_driver_st.upmix_buf && audio_driver_st.upmix_i16
+            && audio_upmix_init(&audio_driver_st.upmix, AUDIO_LAYOUT_5POINT1,
+               settings->uints.audio_output_sample_rate)
+            && audio_binaural_init(&audio_driver_st.binaural, AUDIO_LAYOUT_5POINT1,
+               settings->uints.audio_output_sample_rate))
+      {
+         audio_driver_st.virtualize   = true;
+         audio_driver_st.upmix_frames = frames;
+         RARCH_LOG("[Audio] Headphone virtual surround: the stereo mix goes through a virtual 5.1 to two ears.\n");
+      }
+      else
+      {
+         free(audio_driver_st.virt_buf);
+         free(audio_driver_st.upmix_buf);
+         free(audio_driver_st.upmix_i16);
+         audio_driver_st.virt_buf  = NULL;
+         audio_driver_st.upmix_buf = NULL;
+         audio_driver_st.upmix_i16 = NULL;
+      }
    }
 
    if (     !audio_sync

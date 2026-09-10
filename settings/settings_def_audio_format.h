@@ -15,3 +15,9 @@ S_UINT_EX(audio_output_layout, AUDIO_OUTPUT_LAYOUT,
       DEFAULT_AUDIO_OUTPUT_LAYOUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_AUDIO_REINIT, 0, 4, 1.0, 0, setting_action_ok_uint, setting_get_string_representation_uint_audio_output_layout, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Output Speaker Layout",
       "Speaker layout to open the output device with. 'Stereo' is the pipeline as it always was. The wider layouts open a wider device where the driver can, and the stereo mix is upmixed to it at the last step: fronts as they are, a centre from the sum, the rear pair at -3 dB, the bass to the LFE. '5.1' puts the rear pair at the back, '5.1 Surround' at the sides; a device that drives them from the other position reports so and is treated as it is. Drivers that cannot open more than stereo stay stereo.")
+
+S_BOOL(audio_headphone_virtual_surround, AUDIO_HEADPHONE_VIRTUAL_SURROUND,
+      "audio_headphone_virtual_surround",
+      DEFAULT_AUDIO_HEADPHONE_VIRTUAL_SURROUND, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
+      "Headphone Virtual Surround",
+      "On a stereo device, widen the mix to a virtual 5.1 and render it to two ears as a head would hear those speakers: the rear pair behind the listener, a mild crossfeed across the fronts. For headphones; on speakers it only narrows the stereo. Has no effect when the device is opened with a wider layout.")

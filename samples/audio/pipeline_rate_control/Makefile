@@ -13,6 +13,7 @@ SOURCES_C := \
 	pipeline_rate_control_test.c \
 	stubs_retroarch.c \
 	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
