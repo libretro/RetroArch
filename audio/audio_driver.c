@@ -4406,6 +4406,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          handle = audio_mixer_load_m4a(buf, params->bufsize);
 #endif
          break;
+      case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
+         handle = audio_mixer_load_ac3(buf, params->bufsize);
+#endif
+         break;
       case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
          handle = audio_mixer_load_opus(buf, params->bufsize);
