@@ -1132,6 +1132,109 @@ static void lane_resize_under_wrapper(void)
             rslane_seen_w, rslane_seen_h);
 }
 
+/* Heap traffic on the frame path.
+ *
+ * The emulation frame path makes no general-purpose heap calls today -
+ * not unthreaded, not under the wrapper - and that is a property worth
+ * keeping rather than a target to aim at: an allocation per frame is a
+ * lock, a possible syscall and a fragmentation source on the one path
+ * that must not have any. So this lane counts them, over three hundred
+ * frames of each configuration, and fails if any appear.
+ *
+ * The counting is glibc's malloc hooks by interposition: the harness
+ * defines malloc/free/calloc/realloc, forwards to __libc_*, and counts.
+ * Only where that interposition works and no allocator sanitizer is in
+ * the way - ASan and TSan replace these symbols themselves, and their
+ * own bookkeeping would be counted - so the lane runs on SAN=none and
+ * says so otherwise. The menu is not the frame path and is not counted:
+ * its lists allocate when they are built, by design. */
+#if defined(__GLIBC__) && !defined(__SANITIZE_ADDRESS__) && !defined(__SANITIZE_THREAD__)
+#define HARNESS_COUNT_HEAP 1
+#endif
+
+#ifdef HARNESS_COUNT_HEAP
+extern void *__libc_malloc(size_t);
+extern void  __libc_free(void*);
+extern void *__libc_calloc(size_t, size_t);
+extern void *__libc_realloc(void*, size_t);
+
+static unsigned long heap_calls;
+static bool          heap_counting;
+
+void *malloc(size_t n)
+{
+   if (heap_counting)
+      heap_calls++;
+   return __libc_malloc(n);
+}
+
+void free(void *p)
+{
+   __libc_free(p);
+}
+
+void *calloc(size_t a, size_t b)
+{
+   if (heap_counting)
+      heap_calls++;
+   return __libc_calloc(a, b);
+}
+
+void *realloc(void *p, size_t n)
+{
+   if (heap_counting)
+      heap_calls++;
+   return __libc_realloc(p, n);
+}
+
+static unsigned long heap_calls_over(unsigned frames)
+{
+   /* Settle first: the first frames after a driver change still build
+    * things. What is measured is the steady state. */
+   run_frames(30);
+   heap_calls    = 0;
+   heap_counting = true;
+   run_frames(frames);
+   heap_counting = false;
+   return heap_calls;
+}
+
+static void lane_frame_path_heap(void)
+{
+   unsigned had = failures;
+   unsigned long unthreaded, threaded;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "heap lane: menu still up");
+
+   set_threaded_via_setting(false);
+   run_frames(10);
+   unthreaded = heap_calls_over(300);
+
+   set_threaded_via_setting(true);
+   run_frames(10);
+   expect_wrapper(true, "heap lane");
+   threaded   = heap_calls_over(300);
+
+   CHECK(unthreaded == 0,
+         "unthreaded frame path made %lu heap calls over 300 frames", unthreaded);
+   CHECK(threaded == 0,
+         "threaded frame path made %lu heap calls over 300 frames", threaded);
+
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] frame-path heap lane (0 heap calls in 300 frames, threaded and not)\n");
+}
+#else
+static void lane_frame_path_heap(void)
+{
+   fprintf(stderr, "[skip] frame-path heap lane (needs glibc, no allocator sanitizer)\n");
+}
+#endif
+
 static void lane_waiter_call(void)
 {
    thread_video_t *thr;
@@ -1480,6 +1583,7 @@ int main(int argc, char *argv[])
    lane_display_pacing();
    lane_zero_copy();
    lane_waiter_call();
+   lane_frame_path_heap();
    lane_resize_under_wrapper();
 
    /* Orderly shutdown: the teardown barriers are part of what is

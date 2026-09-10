@@ -133,7 +133,11 @@ jobs:
           # wrapper, the command mailbox, presenter repeats, and the
           # font init/free marshalling - the last of which is where a
           # deferred font free unbound the video thread's GL context on
-          # X11 and left every frame after it black.
+          # X11 and left every frame after it black. This build has no
+          # allocator sanitizer, so it is also the one job where the
+          # frame-path heap lane runs: it counts heap calls over three
+          # hundred frames, threaded and not, and the frame path makes
+          # none.
           samples/gfx/threaded_video/build.sh
           ./samples/gfx/threaded_video/threaded_video_test 3
           make -C samples/gfx/threaded_video clean
