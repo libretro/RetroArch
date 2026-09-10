@@ -792,11 +792,19 @@ static int64_t uwp_filetime_to_unix(const FILETIME &ft)
     return (int64_t)((t - UWP_FILETIME_EPOCH_DIFF) / UWP_FILETIME_TICKS_PER_S);
 }
 
+/* FILETIME covers 1601-01-01 .. ~30828 AD; out-of-range values clamp
+ * to the nearest end rather than wrapping.  -unix_s is never formed. */
 static void uwp_unix_to_filetime(int64_t unix_s, FILETIME &ft)
 {
+    const int64_t min_unix = -(int64_t)(UWP_FILETIME_EPOCH_DIFF / UWP_FILETIME_TICKS_PER_S);
+    const int64_t max_unix = (int64_t)((0x7fffffffffffffffULL - UWP_FILETIME_EPOCH_DIFF) / UWP_FILETIME_TICKS_PER_S);
     uint64_t t;
-    if (unix_s < 0)
-        t = UWP_FILETIME_EPOCH_DIFF - (uint64_t)(-unix_s) * UWP_FILETIME_TICKS_PER_S;
+    if (unix_s <= min_unix)
+        t = 0;
+    else if (unix_s >= max_unix)
+        t = 0x7fffffffffffffffULL;
+    else if (unix_s < 0)
+        t = UWP_FILETIME_EPOCH_DIFF - ((uint64_t)0 - (uint64_t)unix_s) * UWP_FILETIME_TICKS_PER_S;
     else
         t = UWP_FILETIME_EPOCH_DIFF + (uint64_t)unix_s * UWP_FILETIME_TICKS_PER_S;
     ft.dwLowDateTime  = (DWORD)(t & 0xffffffffULL);

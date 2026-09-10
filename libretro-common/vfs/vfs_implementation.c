@@ -249,11 +249,20 @@ static int64_t vfs_filetime_to_unix(const FILETIME *ft)
    return (int64_t)((t - VFS_FILETIME_EPOCH_DIFF) / VFS_FILETIME_TICKS_PER_S);
 }
 
+/* FILETIME covers 1601-01-01 .. ~30828 AD.  Anything outside is clamped
+ * to the nearest end rather than wrapped; -unix_s is never formed, so
+ * INT64_MIN is safe. */
+#define VFS_FILETIME_MIN_UNIX  (-(int64_t)(VFS_FILETIME_EPOCH_DIFF / VFS_FILETIME_TICKS_PER_S))
+#define VFS_FILETIME_MAX_UNIX  ((int64_t)((0x7fffffffffffffffULL - VFS_FILETIME_EPOCH_DIFF) / VFS_FILETIME_TICKS_PER_S))
 static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
 {
    uint64_t t;
-   if (unix_s < 0)
-      t = VFS_FILETIME_EPOCH_DIFF - (uint64_t)(-unix_s) * VFS_FILETIME_TICKS_PER_S;
+   if (unix_s <= VFS_FILETIME_MIN_UNIX)
+      t = 0;
+   else if (unix_s >= VFS_FILETIME_MAX_UNIX)
+      t = 0x7fffffffffffffffULL;
+   else if (unix_s < 0)
+      t = VFS_FILETIME_EPOCH_DIFF - ((uint64_t)0 - (uint64_t)unix_s) * VFS_FILETIME_TICKS_PER_S;
    else
       t = VFS_FILETIME_EPOCH_DIFF + (uint64_t)unix_s * VFS_FILETIME_TICKS_PER_S;
    ft->dwLowDateTime  = (DWORD)(t & 0xffffffffULL);
@@ -2852,24 +2861,38 @@ int retro_vfs_set_mtime_impl(const char *path, int64_t mtime)
 #endif
 }
 
-/* Create every missing directory above @dst.  Same walk as
+/* Create @dir and every missing directory above it.  Same shape as
  * path_mkdir(), kept local so this file does not grow a link-time
- * dependency on file_path_io.c for standalone consumers.  @dst is
- * modified in place and restored before returning. */
-static void vfs_copy_mkdir_parents(char *dst)
+ * dependency on file_path_io.c for standalone consumers.  Works from
+ * the bottom up: try @dir, on failure make its parent and retry, so a
+ * drive root ("C:"), a UNC share prefix or a doubled separator is just
+ * a rung that fails harmlessly instead of a component we try to
+ * create.  @dir is modified in place and restored before returning.
+ * Returns 0 when @dir exists afterwards. */
+static int vfs_copy_mkdir_parents(char *dir)
 {
-   char *p;
-   for (p = dst + 1; *p; p++)
+   char *sep;
+   int   ret = retro_vfs_mkdir_impl(dir);
+   if (ret != -1)
+      return 0;               /* 0 created, -2 already there */
+   /* Strip the last component (ignoring a trailing separator) and
+    * recurse; stop at the top of the string. */
+   sep = dir + strlen(dir);
+   while (sep > dir && (sep[-1] == '/' || sep[-1] == '\\'))
+      sep--;
+   while (sep > dir && sep[-1] != '/' && sep[-1] != '\\')
+      sep--;
+   while (sep > dir && (sep[-1] == '/' || sep[-1] == '\\'))
+      sep--;
+   if (sep == dir)
+      return -1;
    {
-      char c = *p;
-      if (c != '/' && c != '\\')
-         continue;
-      *p = '\0';
-      /* -2 (exists) and 0 (created) are both fine; -1 is reported by
-       * the open that follows, which is the error the caller wants. */
-      retro_vfs_mkdir_impl(dst);
-      *p = c;
+      char c = *sep;
+      *sep   = '\0';
+      vfs_copy_mkdir_parents(dir);
+      *sep   = c;
    }
+   return retro_vfs_mkdir_impl(dir) != -1 ? 0 : -1;
 }
 
 /* Portable copy: both ends through the VFS, so either may be SAF,
@@ -3012,8 +3035,21 @@ int retro_vfs_copy_impl(const char *src, const char *dst, unsigned flags)
    }
    else
    {
-      strlcpy(dst_buf, dst, sizeof(dst_buf));
-      vfs_copy_mkdir_parents(dst_buf);
+      /* Parent directory of dst, if dst has one. */
+      const char *last = strrchr(dst, '/');
+      const char *bs   = strrchr(dst, '\\');
+      if (bs > last)
+         last = bs;
+      if (last && last > dst)
+      {
+         size_t n = (size_t)(last - dst);
+         if (n >= sizeof(dst_buf))
+            return -1;
+         memcpy(dst_buf, dst, n);
+         dst_buf[n] = '\0';
+         if (vfs_copy_mkdir_parents(dst_buf) != 0)
+            return -1;
+      }
    }
 
    /* Fast paths only when both ends are native.  A backend path on
@@ -3454,8 +3490,10 @@ static VFS_NOINLINE int retro_vfs_dirent_stat_slow(
       libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime)
 {
    char path[PATH_MAX_LENGTH];
-   fill_pathname_join_special(path, rdir->orig_path,
-         retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
+   const char *name = retro_vfs_dirent_get_name_impl(rdir);
+   if (!name || !rdir->orig_path)
+      return 0;
+   fill_pathname_join_special(path, rdir->orig_path, name, sizeof(path));
    return retro_vfs_stat_full(path, size, mtime);
 }
 #endif

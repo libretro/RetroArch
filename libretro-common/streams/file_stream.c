@@ -38,6 +38,7 @@
 #include <compat/msvc.h>
 #endif
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
@@ -231,7 +232,8 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_remove_cb   = vfs_iface->remove;
    filestream_rename_cb   = vfs_iface->rename;
 
-   if (vfs_info->required_interface_version >= FILESTREAM_COPY_REQUIRED_VFS_VERSION)
+   if (vfs_info->required_interface_version >= FILESTREAM_COPY_REQUIRED_VFS_VERSION
+         && vfs_iface->copy)
       filestream_copy_cb  = vfs_iface->copy;
    else
       filestream_copy_use_loop = true;
@@ -1687,6 +1689,14 @@ int filestream_copy_ex(const char *src, const char *dst, unsigned flags)
       return filestream_copy_cb(src, dst, flags);
    if (filestream_copy_use_loop)
    {
+      /* Same contract as retro_vfs_copy_impl's prologue, expressed
+       * through the frontend's own stat: src must be a regular file,
+       * dst must not be a directory, and an existing dst needs the
+       * OVERWRITE flag. */
+      if (!src || !*src || !dst || !*dst || string_is_equal(src, dst))
+         return -1;
+      if (!path_is_valid(src) || path_is_directory(src) || path_is_directory(dst))
+         return -1;
       if (!(flags & RETRO_VFS_COPY_OVERWRITE) && path_is_valid(dst))
          return -1;
       return filestream_copy_loop(src, dst);

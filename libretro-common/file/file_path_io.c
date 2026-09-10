@@ -101,17 +101,16 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    else
       path_stat64_cb = NULL;
 
+   /* Members a v5 frontend left NULL stay NULL: the wrappers then
+    * report "unavailable" rather than dereferencing them. */
+   path_set_readonly_cb = NULL;
+   path_get_mtime_cb    = NULL;
+   path_set_mtime_cb    = NULL;
    if (vfs_info->required_interface_version >= METADATA_REQUIRED_VFS_VERSION)
    {
       path_set_readonly_cb = vfs_iface->set_readonly;
       path_get_mtime_cb    = vfs_iface->get_mtime;
       path_set_mtime_cb    = vfs_iface->set_mtime;
-   }
-   else
-   {
-      path_set_readonly_cb = NULL;
-      path_get_mtime_cb    = NULL;
-      path_set_mtime_cb    = NULL;
    }
 }
 

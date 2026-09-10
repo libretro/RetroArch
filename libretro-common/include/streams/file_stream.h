@@ -64,9 +64,6 @@ RETRO_BEGIN_DECLS
  */
 typedef struct RFILE RFILE;
 
-#define FILESTREAM_REQUIRED_VFS_VERSION 2
-#define FILESTREAM_COPY_REQUIRED_VFS_VERSION 5
-
 /**
  * Initializes the \c filestream functions to use the VFS interface provided by the frontend.
  * Optional; if not called, all \c filestream functions

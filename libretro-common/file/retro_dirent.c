@@ -68,7 +68,10 @@ void dirent_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    dirent_dirent_is_dir_cb   = vfs_iface->dirent_is_dir;
    dirent_closedir_cb        = vfs_iface->closedir;
 
-   if (vfs_info->required_interface_version >= DIRENT_STAT_REQUIRED_VFS_VERSION)
+   /* A frontend that negotiated v5 but left the member NULL is treated
+    * like an older one: the local _impl must not touch its handles. */
+   if (vfs_info->required_interface_version >= DIRENT_STAT_REQUIRED_VFS_VERSION
+         && vfs_iface->dirent_stat)
       dirent_dirent_stat_cb  = vfs_iface->dirent_stat;
    else
       dirent_stat_unavailable = true;
@@ -127,6 +130,8 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
 
 int retro_dirent_stat(struct RDIR *rdir, int64_t *size, int64_t *mtime)
 {
+   if (!rdir)
+      return 0;
    if (dirent_dirent_stat_cb)
       return dirent_dirent_stat_cb((struct retro_vfs_dir_handle *)rdir, size, mtime);
    if (dirent_stat_unavailable)
