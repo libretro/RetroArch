@@ -3125,6 +3125,26 @@ struct retro_vfs_dir_handle;
  */
 #define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
 
+/**
+ * Indicates that the current user cannot write to the given path.
+ * POSIX: the owner write bit is clear.
+ * Windows/UWP: \c FILE_ATTRIBUTE_READONLY is set.
+ * Frontends that cannot determine this never set the flag.
+ * @since VFS API v5
+ */
+#define RETRO_VFS_STAT_IS_READONLY            (1 << 3)
+
+/** @} */
+
+/**
+ * @defgroup RETRO_VFS_COPY Copy Flags
+ * @since VFS API v5
+ * @{
+ */
+
+/** Replace \c dst if it already exists. Without it an existing \c dst is an error. */
+#define RETRO_VFS_COPY_OVERWRITE              (1 << 0)
+
 /** @} */
 
 /**
@@ -3319,6 +3339,76 @@ typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 typedef int (RETRO_CALLCONV *retro_vfs_stat_64_t)(const char *path, int64_t *size);
 
 /**
+ * Sets or clears the read-only state of a file or directory.
+ *
+ * POSIX: sets or clears the write bits of the mode, leaving the rest intact.
+ * Windows/UWP: sets or clears \c FILE_ATTRIBUTE_READONLY.
+ *
+ * @param path The path to the file or directory.
+ * @param readonly Non-zero to make the path read-only,
+ * zero to make it writable.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform or file system
+ * cannot store a read-only state.
+ * @see path_set_readonly
+ * @see RETRO_VFS_STAT_IS_READONLY
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_set_readonly_t)(const char *path, int readonly);
+
+/**
+ * Gets the last modification time of a file or directory.
+ *
+ * @param path The path to the file or directory.
+ * @param[out] mtime Set to the modification time
+ * in seconds since 1970-01-01T00:00:00Z. May be negative.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform
+ * cannot report a modification time.
+ * @see path_get_mtime
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_get_mtime_t)(const char *path, int64_t *mtime);
+
+/**
+ * Sets the last modification time of a file or directory.
+ *
+ * The frontend rounds to the file system's resolution,
+ * so a following \c retro_vfs_get_mtime_t may report a different value.
+ *
+ * @param path The path to the file or directory.
+ * @param mtime The modification time in seconds since 1970-01-01T00:00:00Z.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform or file system
+ * does not allow the modification time to be set.
+ * @see path_set_mtime
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mtime);
+
+/**
+ * Copies a single regular file.
+ *
+ * Equivalent to \c std::filesystem::copy_file with
+ * \c copy_options::overwrite_existing when \c RETRO_VFS_COPY_OVERWRITE is set.
+ * \c dst is the full path of the new file, not a directory;
+ * missing parent directories are created.
+ * Metadata (modification time, read-only state) of \c dst
+ * after the copy is platform-defined.
+ * On failure no partial \c dst is left behind.
+ * Either path may belong to any file system the frontend supports.
+ *
+ * @param src The path to the file to copy. Must be a regular file.
+ * @param dst The full path of the destination file. Must differ from \c src.
+ * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
+ * @return 0 on success, or -1 on failure.
+ * @see filestream_copy
+ * @see RETRO_VFS_COPY
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_copy_t)(const char *src, const char *dst, unsigned flags);
+
+/**
  * Creates a directory at the given path.
  *
  * @param dir The desired location of the new directory.
@@ -3389,6 +3479,29 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_v
  * @since VFS API v3
  */
 typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/**
+ * Gets information about the directory entry most recently returned by
+ * \c retro_vfs_readdir_t, without opening it or building its path.
+ *
+ * Only valid after a \c retro_vfs_readdir_t call that returned \c true,
+ * and before the next \c retro_vfs_readdir_t or \c retro_vfs_closedir_t
+ * call on the same handle.
+ *
+ * @param dirstream The directory being enumerated.
+ * @param[out] size The entry's size in bytes (0 for directories).
+ * May be \c NULL, in which case this value is ignored.
+ * @param[out] mtime The entry's modification time
+ * in seconds since 1970-01-01T00:00:00Z.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags for the entry
+ * (\c RETRO_VFS_STAT_IS_VALID is always set on success),
+ * or 0 if the frontend cannot provide entry information.
+ * @see retro_dirent_stat
+ * @see RETRO_VFS_STAT
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_dirent_stat_t)(struct retro_vfs_dir_handle *dirstream, int64_t *size, int64_t *mtime);
 
 /**
  * Closes the given directory and release its resources.
@@ -3477,6 +3590,22 @@ struct retro_vfs_interface
    /* VFS API v4 */
    /** @copydoc retro_vfs_stat_64_t */
    retro_vfs_stat_64_t stat_64;
+
+   /* VFS API v5 */
+   /** @copydoc retro_vfs_set_readonly_t */
+   retro_vfs_set_readonly_t set_readonly;
+
+   /** @copydoc retro_vfs_get_mtime_t */
+   retro_vfs_get_mtime_t get_mtime;
+
+   /** @copydoc retro_vfs_set_mtime_t */
+   retro_vfs_set_mtime_t set_mtime;
+
+   /** @copydoc retro_vfs_copy_t */
+   retro_vfs_copy_t copy;
+
+   /** @copydoc retro_vfs_dirent_stat_t */
+   retro_vfs_dirent_stat_t dirent_stat;
 };
 
 /**
