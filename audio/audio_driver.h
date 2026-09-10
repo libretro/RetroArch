@@ -823,6 +823,19 @@ bool audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
 
+/* The device's own transfer granularity in frames, where the platform
+ * knows it: Android reports the fast mixer's burst through
+ * OUTPUT_FRAMES_PER_BUFFER, and a buffer that is not a multiple of it
+ * leaves the fast path. Zero where the platform does not say, which is
+ * everywhere else - a driver that gets zero picks its own block from
+ * the latency it was asked for.
+ *
+ * This is a property of the sink, in the same class as the device
+ * period WASAPI reports or the period grid an ALSA card refines to.
+ * Those are asked of the device; this one is asked of the platform,
+ * because the sink cannot be asked directly. Neither is a preference. */
+unsigned audio_driver_device_block_frames(void);
+
 /* Records the device stage behind the driver's buffer, in frames at the
  * output rate; 0 to say the driver reports none. Reset when a driver is
  * initialised, so a driver that reports one calls this after each init

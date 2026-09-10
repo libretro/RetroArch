@@ -194,7 +194,8 @@ static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
    }
 
    if (num < 1)
-      swa->current_buffer = NULL;
+      (void)block_frames;
+   swa->current_buffer = NULL;
 
    if (!swa->current_buffer)
    {
@@ -471,7 +472,11 @@ static void *switch_audio_init(const char *device,
    swa->latency        = latency;
    swa->last_append    = svcGetSystemTick();
 
-   swa->blocking       = block_frames;
+   /* Blocking until the frontend says otherwise. This used to be
+    * assigned block_frames - a frame count into a bool, so any block
+    * size at all made the driver blocking - and set_nonblock_state
+    * overwrote it on the next call regardless. */
+   swa->blocking       = true;
    swa->is_paused      = true;
 
    RARCH_LOG("[Switch audio] Audio initialized.\n");

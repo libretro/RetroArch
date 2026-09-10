@@ -26,24 +26,27 @@ static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
 
 static uint8_t pcm[65536];
+extern unsigned stub_device_block_frames;
 
 /* The reporter's case: 44.1 kHz, a 1024-frame block from the device,
  * and the latency swept through the value where it used to fail. */
-static void latency_case(unsigned latency, unsigned block_frames, unsigned rate)
+static void latency_case(unsigned latency, unsigned burst, unsigned rate)
 {
    void *h;
    unsigned new_rate = 0;
    size_t   frame_bytes, total;
 
    opensl_mock_reset();
-   h = audio_opensl.init(NULL, rate, latency, block_frames, &new_rate);
+   /* The platform's fact, not a setting: the driver asks for it. */
+   stub_device_block_frames = burst;
+   h = audio_opensl.init(NULL, rate, latency, 0, &new_rate);
    CHECK(h != NULL, "latency %u: init failed", latency);
    if (!h)
       return;
    frame_bytes = audio_opensl.use_float(h) ? 8 : 4;
    total       = audio_opensl.buffer_size(h);
-   printf("      latency %2u ms, block %4u frames: %u buffer(s) of %u bytes, %.1f ms total\n",
-         latency, block_frames, opensl_mock_num_buffers(),
+   printf("      latency %2u ms, device burst %4u frames: %u buffer(s) of %u bytes, %.1f ms total\n",
+         latency, burst, opensl_mock_num_buffers(),
          (unsigned)(total / opensl_mock_num_buffers()),
          total / frame_bytes * 1000.0 / rate);
    /* The floor the reporter asked for: a queue of one block cannot be
@@ -52,6 +55,16 @@ static void latency_case(unsigned latency, unsigned block_frames, unsigned rate)
    CHECK(opensl_mock_num_buffers() >= 2,
          "latency %u gave the device %u buffer(s)", latency, opensl_mock_num_buffers());
    CHECK(total > 0 && total % frame_bytes == 0, "buffer_size %u is not whole frames", (unsigned)total);
+   if (burst)
+   {
+      /* Every block a whole burst: a queue that is not a multiple of
+       * the device's burst leaves the fast mixer, which costs
+       * latency rather than saving it. */
+      size_t block = total / opensl_mock_num_buffers();
+      CHECK(block % (burst * frame_bytes) == 0,
+            "latency %u: a %u-byte block is not a multiple of the device's %u-frame burst",
+            latency, (unsigned)block, burst);
+   }
    /* Writes go through and the device plays them. */
    {
       size_t i, sent = 0;
@@ -83,14 +96,21 @@ int main(void)
    memset(pcm, 0x11, sizeof(pcm));
    printf("opensl:\n");
 
-   printf("   the latencies from issue #6405, at the device's 1024-frame block\n");
+   printf("   the latencies from issue #6405, at the device's 1024-frame burst\n");
    latency_case(35, 1024, 44100);
    latency_case(34, 1024, 44100);   /* the one that used to wedge */
    latency_case(16, 1024, 44100);
    latency_case(8,  1024, 44100);
    latency_case(1,  1024, 44100);
 
-   printf("   a block the driver picks itself follows the latency\n");
+   printf("   a phone's own burst: the latency is reachable down to two of them\n");
+   latency_case(64, 192, 48000);
+   latency_case(16, 192, 48000);
+   latency_case(8,  192, 48000);   /* 8 ms is two bursts: the floor, and reached */
+   latency_case(64, 240, 44100);
+   latency_case(8,  240, 44100);
+
+   printf("   a device that reports no burst: the block follows the latency\n");
    latency_case(64, 0, 48000);
    latency_case(16, 0, 48000);
    latency_case(8,  0, 48000);

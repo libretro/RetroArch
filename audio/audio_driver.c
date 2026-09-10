@@ -31,6 +31,7 @@
 #endif
 
 #include "audio_driver.h"
+#include "../defaults.h"
 
 #include <retro_assert.h>
 #include <string/stdstring.h>
@@ -4793,6 +4794,12 @@ bool audio_driver_dsp_filter_init(const char *device)
    return true;
 }
 #endif
+
+unsigned audio_driver_device_block_frames(void)
+{
+   return g_defaults.settings_out_block_frames > 0
+      ? (unsigned)g_defaults.settings_out_block_frames : 0;
+}
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {

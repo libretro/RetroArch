@@ -179,17 +179,36 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
-   /* Sizes in frames first; the byte size follows the format chosen. */
-   if (block_frames)
-      frames_per_block = block_frames;
-   else
-      frames_per_block = next_pow2(32 * latency) / 4;
+   /* Sizes in frames first; the byte size follows the format chosen.
+    *
+    * The device's burst is a granularity, not a block size: a queue
+    * whose blocks are not a multiple of it leaves the fast mixer,
+    * which costs latency rather than saving it. So the block is the
+    * burst where the platform reports one, and the latency decides
+    * how many - the same shape every other driver has, where the
+    * frontend asks in milliseconds and the driver rounds it to what
+    * the device can do. Where nothing is reported, the block is
+    * derived from the latency as before. */
+   {
+      unsigned burst = audio_driver_device_block_frames();
+      if (block_frames)
+         frames_per_block = block_frames;    /* an explicit override */
+      else if (burst)
+         frames_per_block = burst;
+      else
+         frames_per_block = next_pow2(32 * latency) / 4;
+   }
    if (frames_per_block < 2)
       frames_per_block = 2;
 
    sl->buf_count    = (latency * rate + 500) / 1000;
    sl->buf_count    = (sl->buf_count + frames_per_block / 2) / frames_per_block;
 
+   /* Two at least: the block being filled is the block the device is
+    * playing, so a queue of one cannot be written to at all. This is
+    * the floor of the buffer-queue path - a latency below two bursts
+    * is not reachable, and the buffer_size() this driver reports says
+    * so rather than pretending otherwise. */
    if (sl->buf_count < 2)
       sl->buf_count = 2;
 

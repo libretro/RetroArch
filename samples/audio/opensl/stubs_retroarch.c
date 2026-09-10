@@ -12,3 +12,8 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 void audio_driver_set_buffer_size(size_t bufsize) { (void)bufsize; }
 void audio_driver_set_device_latency(size_t frames) { (void)frames; }
 uint32_t audio_driver_requested_layout(void) { return 0x3; }
+
+/* The device's transfer granularity, as the platform reports it. The
+ * harness sets it to model a phone's fast-mixer burst. */
+unsigned stub_device_block_frames = 0;
+unsigned audio_driver_device_block_frames(void) { return stub_device_block_frames; }

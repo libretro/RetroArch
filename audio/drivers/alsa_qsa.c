@@ -131,10 +131,12 @@ static void *alsa_qsa_init(const char *device,
    if (new_rate)
       *new_rate = alsa->rate;
 
-   if (block_frames)
-      alsa->buf_size = block_frames * 4;
-   else
-      alsa->buf_size = next_pow2(32 * latency);
+   /* QNX reports no transfer granularity, so there is nothing for a
+    * block size to be rounded to and the block follows the latency.
+    * It used to take block_frames * 4 - a number a user set for an
+    * Android device's burst, applied here to a different platform. */
+   (void)block_frames;
+   alsa->buf_size = next_pow2(32 * latency);
    if (!alsa->buf_size)
       alsa->buf_size = 256;
 
