@@ -219,6 +219,23 @@
 #define VFS_HAVE_POSIX_METADATA 1
 #include <sys/time.h>
 #endif
+
+/* fstatat(): POSIX.1-2008.  glibc, musl, bionic, the BSDs and Haiku have
+ * it; QNX 6.5 does not, ORBIS's FreeBSD-derived libc does not, and on
+ * Apple it arrived with the 10.10 SDK, which the PowerPC cross SDK
+ * predates.  Everyone else takes the join+stat path in dirent_stat. */
+#if defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__) && !defined(ORBIS)
+#if defined(__APPLE__)
+#include <AvailabilityMacros.h>
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+#define VFS_HAVE_FSTATAT 1
+#elif !defined(MAC_OS_X_VERSION_MIN_REQUIRED) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#define VFS_HAVE_FSTATAT 1
+#endif
+#else
+#define VFS_HAVE_FSTATAT 1
+#endif
+#endif
 /* clonefile(): APFS constant-time copy.  Needs the 10.12+ SDK and a
  * deployment target that has the symbol; the PowerPC and other legacy
  * SDKs have neither, and __has_include keeps them from even looking. */
@@ -3060,8 +3077,11 @@ static int vfs_copy_step_linux(struct retro_vfs_copy_handle *h, int64_t budget)
       ssize_t n;
       if ((int64_t)want > budget)
          want = (size_t)budget;
-      n = (ssize_t)syscall(SYS_copy_file_range, h->in_fd, &off_in,
-            h->out_fd, &off_out, want, 0u);
+      /* Every argument widened to long: syscall() reads its varargs
+       * as longs, and an int or unsigned in a register may carry
+       * whatever was in its upper half. */
+      n = (ssize_t)syscall(SYS_copy_file_range, (long)h->in_fd, (long)&off_in,
+            (long)h->out_fd, (long)&off_out, (long)want, 0L);
       if (n < 0)
       {
          if (h->done == 0 && (errno == EXDEV || errno == ENOSYS
@@ -3619,7 +3639,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
  * of dirent_stat reaches it. */
 #if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF)) \
       || !(defined(_WIN32) || defined(VITA) \
-            || (defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__) && !defined(ORBIS)))
+            || defined(VFS_HAVE_FSTATAT))
 static VFS_NOINLINE int retro_vfs_dirent_stat_slow(
       libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime)
 {
@@ -3677,10 +3697,9 @@ int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir *rdir,
       if (!(entry->d_stat.st_mode & SCE_S_IWUSR))
          ret |= RETRO_VFS_STAT_IS_READONLY;
       return ret;
-#elif defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__) && !defined(ORBIS)
+#elif defined(VFS_HAVE_FSTATAT)
       /* fstatat on the open directory: no path join, no lookup from
-       * the root, one inode read.  (ORBIS carries FreeBSD headers but
-       * its libc has no fstatat; it takes the join+stat path.) */
+       * the root, one inode read. */
       const struct dirent *entry = (const struct dirent*)rdir->entry;
       struct stat st;
       int ret = RETRO_VFS_STAT_IS_VALID;

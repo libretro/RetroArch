@@ -172,19 +172,27 @@ static int copy_sync_budget(const char *src, const char *dst, unsigned flags,
    unsigned steps = 0;
    if (!h)
       return -1;
-   while ((st = filestream_copy_step(h, budget, &done, &total)) == RETRO_VFS_COPY_RUNNING)
+   for (;;)
    {
-      steps++;
-      if (steps > 100000000u)
-         break;
+      st = filestream_copy_step(h, budget, &done, &total);
+      if (getenv("VFS_V5_TRACE") || (steps < 3 && budget > 0 && budget < 1000000))
+         printf("  trace step %u: status %d done %lld total %lld\n",
+               steps + 1, st, (long long)done, (long long)total);
+      /* The budget binds every step, including the one that finishes. */
       if (done > total || done < prev || (budget > 0 && done - prev > budget))
       {
-         printf("  FAIL step moved %lld (prev %lld, budget %lld, total %lld)\n",
-               (long long)(done - prev), (long long)prev, (long long)budget, (long long)total);
+         printf("  FAIL step %u moved %lld (prev %lld, budget %lld, total %lld, status %d)\n",
+               steps + 1, (long long)(done - prev), (long long)prev,
+               (long long)budget, (long long)total, st);
          failures++;
          break;
       }
+      if (st != RETRO_VFS_COPY_RUNNING)
+         break;
+      steps++;
       prev = done;
+      if (steps > 100000000u)
+         break;
    }
    if (steps_out)
       *steps_out = steps;
@@ -217,7 +225,8 @@ static void test_copy(const char *dir)
       CHECK(copy_sync_budget(src, dst, RETRO_VFS_COPY_OVERWRITE, 100000, &steps) == 0,
             "copy with a 100000-byte step budget completes");
       if (steps < BIG_SIZE / 100000)
-         printf("  note steps=%u expected>=%u\n", steps, (unsigned)(BIG_SIZE / 100000));
+         printf("  note steps=%u expected>=%u (fixture %u bytes; see the per-step trace above)\n",
+               steps, (unsigned)(BIG_SIZE / 100000), (unsigned)BIG_SIZE);
       CHECK(steps >= BIG_SIZE / 100000, "took at least the minimum number of steps");
       CHECK(files_equal(src, dst), "small-step copy is byte-identical");
    }

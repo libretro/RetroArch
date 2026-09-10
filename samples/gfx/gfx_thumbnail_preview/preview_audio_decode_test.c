@@ -270,3 +270,7 @@ int config_userdata_get_string(void *u, const char *k, char **v,
 bool path_is_directory(const char *p)
 { struct stat st; return p && stat(p, &st) == 0 && S_ISDIR(st.st_mode); }
 bool path_mkdir(const char *d) { (void)d; return false; }
+/* filestream_copy()'s v1-frontend fallback checks the destination
+ * first; this sample never copies, but the symbol must resolve. */
+bool path_is_valid(const char *p)
+{ struct stat st; return p && stat(p, &st) == 0; }
