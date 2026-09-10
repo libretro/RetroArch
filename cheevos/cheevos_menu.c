@@ -16,11 +16,16 @@
 #include <features/features_cpu.h>
 #include <retro_assert.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
+#include <file/file_path.h>
+#include <formats/image.h>
 
 #include "cheevos_locals.h"
 #include "cheevos_client.h"
 
 #include "../gfx/gfx_display.h"
+#include "../gfx/video_driver.h"
+#include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 #include "../msg_hash.h"
 
@@ -214,6 +219,8 @@ void rcheevos_menu_reset_badges(void)
    const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
    rcheevos_menuitem_t* menuitem = rcheevos_locals->menuitems;
    rcheevos_menuitem_t* stop = menuitem + rcheevos_locals->menuitem_count;
+
+   rcheevos_badge_cache_reset();
 
    while (menuitem < stop)
    {
@@ -1036,12 +1043,18 @@ static void rcheevos_client_download_achievement_badge(const char* badge_name, b
    }
 }
 
-static void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size, const char* badge, bool locked)
+/* A badge file is missing locally: fetch it. Which URL depends on the
+ * kind of badge, which the name's first letter says. */
+void rcheevos_badge_request_download(const char* badge, bool locked)
 {
-   size_t _len = strlcpy(badge_file, badge, badge_file_size);
-   if (locked)
-      _len += strlcpy_lit(badge_file + _len, "_lock", badge_file_size - _len);
-   strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, badge_file_size - _len);
+   if (!badge || !badge[0])
+      return;
+   if (badge[0] == 'i')
+      rcheevos_client_download_subset_badge(badge);
+   else if (badge[0] == 'u')
+      rcheevos_client_download_user_badge();
+   else
+      rcheevos_client_download_achievement_badge(badge, locked);
 }
 
 bool rcheevos_is_badge_available(const char* badge, bool locked)
@@ -1058,46 +1071,5 @@ bool rcheevos_is_badge_available(const char* badge, bool locked)
    return path_is_valid(fullpath);
 }
 
-uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
-{
-   char badge_file[24];
-   char fullpath[PATH_MAX_LENGTH];
-   uintptr_t tex = 0;
-
-   if (!badge || !badge[0])
-      return 0;
-
-#ifdef HAVE_THREADS
-   /* The OpenGL driver crashes if gfx_display_reset_textures_list is not called on the video thread.
-    * If threaded video is enabled, it'll automatically dispatch the request to the video thread.
-    * If threaded video is not enabled, just return null. The video thread should assume the image
-    * wasn't downloaded and check again in a few frames.
-    */
-   if (!video_driver_is_threaded() && !task_is_on_main_thread())
-      return 0;
-#endif
-
-   rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), badge, locked);
-
-   fill_pathname_application_special(fullpath, sizeof(fullpath),
-      APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
-
-   if (!gfx_display_reset_textures_list(badge_file, fullpath,
-      &tex, gfx_display_texture_filter(), NULL, NULL))
-   {
-      if (download_if_missing)
-      {
-         if (badge[0] == 'i')
-            rcheevos_client_download_subset_badge(badge);
-         else if (badge[0] == 'u')
-            rcheevos_client_download_user_badge();
-         else
-            rcheevos_client_download_achievement_badge(badge, locked);
-      }
-      return 0;
-   }
-
-   return tex;
-}
 
 

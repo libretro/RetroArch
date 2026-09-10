@@ -226,6 +226,7 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
+#include "../cheevos/cheevos_badge.c"
 
 #if defined(HAVE_CHEEVOS_RVZ)
 #ifdef HAVE_RZSTD
