@@ -1614,7 +1614,13 @@ void video_display_server_destroy(void)
 
    if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
+      {
+#if defined(HAVE_MODELINE)
+         crt_switch_display_server_lost(&video_st->crt_switch_st,
+               video_st->current_display_server_data);
+#endif
          current_display_server->destroy(video_st->current_display_server_data);
+      }
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    if (sdl_display_server_data)
    {

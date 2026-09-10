@@ -72,6 +72,7 @@ typedef struct videocrt_switch
    uint16_t vdisplay, vsync_start, vsync_end, vtotal, vscan;
    bool active;
    bool ops_valid;
+   bool ops_lost;
    bool menu_active;
    bool hh_core;
 
@@ -99,6 +100,12 @@ void crt_switch_res_core(
       int crt_switch_vert_adjust);
 
 void crt_destroy_modes(videocrt_switch_t *p_switch);
+
+/* The display server instance whose data is @data is about to be
+ * destroyed: drop the ops table bound to it so nothing dereferences
+ * freed memory, and arrange for the next switch to rebind and apply
+ * the mode again. No-op when the consumer is not bound to it. */
+void crt_switch_display_server_lost(videocrt_switch_t *p_switch, void *data);
 
 /* Write an EDID block for the configured CRT preset (menu mode, or
  * the ini set for mode 4) to <config>/edid/<preset>.bin; s receives

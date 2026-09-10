@@ -250,6 +250,53 @@ static bool crt_load_config_ini(videocrt_switch_t *p_switch)
    return true;
 }
 
+/* Point the ops table at the display server instance that is up
+ * right now and open its modeline path. The instance is torn down
+ * and rebuilt under a full video init (content load and close go
+ * through the main deinit), so this runs at engine init and again
+ * after crt_switch_display_server_lost() dropped the old table. */
+static void crt_bind_display_server(videocrt_switch_t *p_switch)
+{
+   video_modeline_gen_t *gen = p_switch->gen;
+
+   memset(&p_switch->ops, 0, sizeof(p_switch->ops));
+   p_switch->ops_valid = false;
+   p_switch->ops_lost  = false;
+   if (!p_switch->khr_ctx && video_display_server_get_modeline_ops(&p_switch->ops))
+   {
+      if (p_switch->ops.open && !p_switch->ops.open(p_switch->ops.data, &gen->disp))
+      {
+         RARCH_ERR("[CRT] Display server could not open the modeline path, generating only.\n");
+         memset(&p_switch->ops, 0, sizeof(p_switch->ops));
+      }
+      else
+         p_switch->ops_valid = true;
+   }
+   p_switch->ops.name = p_switch->ops_valid ? video_display_server_get_ident() : "dummy";
+}
+
+void crt_switch_display_server_lost(videocrt_switch_t *p_switch, void *data)
+{
+   if (!p_switch->gen || !p_switch->ops_valid || p_switch->ops.data != data)
+      return;
+
+   /* The server closes its modeline path as it goes down, which
+    * puts the desktop timing back on the wire, and the ops table
+    * points into memory that is about to be freed. Drop the table,
+    * forget what was current, and make the next frame's request
+    * look new so the mode is applied again through the rebound
+    * server. */
+   memset(&p_switch->ops, 0, sizeof(p_switch->ops));
+   p_switch->ops.name       = "dummy";
+   p_switch->ops_valid      = false;
+   p_switch->ops_lost       = true;
+   p_switch->gen->current   = NULL;
+   p_switch->ra_tmp_height  = 0;
+   p_switch->ra_tmp_width   = 0;
+   p_switch->ra_tmp_core_hz = 0.0f;
+   RARCH_LOG("[CRT] Display server going down, rebinding on the next switch.\n");
+}
+
 static bool crt_engine_init(videocrt_switch_t *p_switch,
       int monitor_index, unsigned int crt_mode, unsigned int super_width)
 {
@@ -299,19 +346,7 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
       modeline_ini_load(gen, "display0.ini");
       modeline_parse_options(gen);
 
-      memset(&p_switch->ops, 0, sizeof(p_switch->ops));
-      p_switch->ops_valid = false;
-      if (!p_switch->khr_ctx && video_display_server_get_modeline_ops(&p_switch->ops))
-      {
-         if (p_switch->ops.open && !p_switch->ops.open(p_switch->ops.data, &gen->disp))
-         {
-            RARCH_ERR("[CRT] Display server could not open the modeline path, generating only.\n");
-            memset(&p_switch->ops, 0, sizeof(p_switch->ops));
-         }
-         else
-            p_switch->ops_valid = true;
-      }
-      p_switch->ops.name = p_switch->ops_valid ? video_display_server_get_ident() : "dummy";
+      crt_bind_display_server(p_switch);
 
       p_switch->rtn = modeline_list_init(gen, &p_switch->ops) ? 0 : -1;
       RARCH_LOG("[CRT] Engine rtn %d.\n", p_switch->rtn);
@@ -324,6 +359,14 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
          crt_load_config_ini(p_switch);
          crt_apply_server_policy(p_switch);
       }
+   }
+
+   else if (p_switch->ops_lost && p_switch->rtn >= 0)
+   {
+      /* Engine alive, display server rebuilt underneath it */
+      crt_bind_display_server(p_switch);
+      if (p_switch->ops_valid)
+         RARCH_LOG("[CRT] Rebound to display server \"%s\".\n", p_switch->ops.name);
    }
 
    if (p_switch->rtn >= 0)
@@ -547,6 +590,7 @@ void crt_destroy_modes(videocrt_switch_t *p_switch)
    }
    memset(&p_switch->ops, 0, sizeof(p_switch->ops));
    p_switch->ops_valid = false;
+   p_switch->ops_lost  = false;
 }
 
 void crt_switch_res_core(
