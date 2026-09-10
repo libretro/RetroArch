@@ -1002,6 +1002,20 @@ static void ealsa_interval_exact(struct ealsa_hw_params *p, unsigned param,
    iv->openmax = 0;
 }
 
+/* A parameter the device may settle anywhere within. HW_PARAMS
+ * refines and then chooses, so a range is a request the card can meet
+ * its own way - which an exact value is not: a card whose periods
+ * come in twos, or whose period size is a multiple of 512, refuses an
+ * exact 4 x 768 outright and the open fails. */
+static void ealsa_interval_range(struct ealsa_hw_params *p, unsigned param,
+      unsigned lo, unsigned hi)
+{
+   struct ealsa_interval *iv = ealsa_interval(p, param);
+   iv->min     = lo;
+   iv->max     = hi;
+   iv->integer = 1;
+}
+
 static unsigned ealsa_interval_min(const struct ealsa_hw_params *p, unsigned param)
 {
    return p->intervals[param - EALSA_P_FIRST_INTERVAL].min;
@@ -1050,9 +1064,8 @@ static bool ealsa_set_params(ealsa_t *ea, int format, unsigned channels,
    struct ealsa_sw_params sw;
    unsigned period_frames, periods = 4;
 
-   /* A period of a quarter of the asked-for latency, and four of
-    * them: the buffer is the latency, and the device wakes four
-    * times across it. */
+   /* A period of a quarter of the asked-for latency, so the device
+    * wakes four times across a buffer that holds the latency. */
    period_frames = (rate * latency_ms) / (1000 * periods);
    if (period_frames < 64)
       period_frames = 64;
@@ -1062,18 +1075,49 @@ static bool ealsa_set_params(ealsa_t *ea, int format, unsigned channels,
    ealsa_mask_only(&hw, EALSA_P_FORMAT, ealsa_format_bit(format));
    ealsa_interval_exact(&hw, EALSA_P_CHANNELS, channels);
    ealsa_interval_exact(&hw, EALSA_P_RATE, rate);
-   ealsa_interval_exact(&hw, EALSA_P_PERIOD_SIZE, period_frames);
-   ealsa_interval_exact(&hw, EALSA_P_PERIODS, periods);
-
-   /* Refined first, so a device that wants a different period size
-    * says so rather than failing the commit. */
+   /* The period and the buffer, asked for as "no smaller than this".
+    *
+    * An exact value is refused outright by a card whose periods come
+    * in twos or whose period size is a multiple of 512 - the refine
+    * narrows to nothing and the open fails. A range is met, but the
+    * kernel settles every interval at its minimum, so a range alone
+    * opens the smallest buffer the card has: eight milliseconds where
+    * sixty-four were asked for, which underruns on every frame. So
+    * the range is refined first to see what the card can do, the
+    * smallest value at or above what was wanted is taken from the
+    * result, and that is committed. */
+   ealsa_interval_range(&hw, EALSA_P_PERIOD_SIZE, period_frames, UINT_MAX);
+   ealsa_interval_range(&hw, EALSA_P_PERIODS, 2, 16);
    if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &hw) < 0)
       return false;
+   period_frames = ealsa_interval_min(&hw, EALSA_P_PERIOD_SIZE);
+   if (!period_frames)
+      return false;
+   ealsa_interval_exact(&hw, EALSA_P_PERIOD_SIZE, period_frames);
+
+   /* The buffer the latency asks for, rounded up to a whole number of
+    * the period the card settled on, then asked for exactly so the
+    * card picks the count that makes it. A card that cannot make that
+    * buffer keeps the range it refined and the kernel chooses. */
+   {
+      struct ealsa_hw_params want = hw;
+      unsigned buffer_frames = (rate * latency_ms) / 1000;
+      unsigned n             = (buffer_frames + period_frames - 1) / period_frames;
+      if (n < 2)
+         n = 2;
+      ealsa_interval_exact(&want, EALSA_P_BUFFER_SIZE, n * period_frames);
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &want) == 0)
+         hw = want;
+   }
+
    if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_PARAMS, &hw) < 0)
       return false;
 
    ea->period_frames = ealsa_interval_min(&hw, EALSA_P_PERIOD_SIZE);
    ea->buffer_frames = ealsa_interval_min(&hw, EALSA_P_BUFFER_SIZE);
+   if (ea->buffer_frames < ea->period_frames)
+      ea->buffer_frames = ea->period_frames
+            * ealsa_interval_min(&hw, EALSA_P_PERIODS);
    if (!ea->period_frames)
       ea->period_frames = period_frames;
    if (!ea->buffer_frames)

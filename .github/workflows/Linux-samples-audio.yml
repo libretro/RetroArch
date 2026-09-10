@@ -252,6 +252,25 @@ jobs:
           make clean check SANITIZER=address,undefined
           echo "[pass] embedded_alsa_test (ASan)"
 
+      - name: Build and run ealsa_test (the embedded ALSA driver against a mock PCM device)
+        shell: bash
+        working-directory: samples/audio/ealsa
+        run: |
+          set -eu
+          # The embedded driver in audio/drivers/alsa.c talks to the
+          # kernel's PCM ABI through one seam - open, ioctl, close,
+          # poll - so a scripted device that answers the way a card
+          # does runs it with no card present, and can refuse a rate, a
+          # format, a channel count or a period grid, which is where a
+          # negotiation goes wrong. Built with HAVE_TINYALSA alone, so
+          # the build never sees an alsa-lib header either.
+          make clean all
+          ./ealsa_test
+          echo "[pass] ealsa_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./ealsa_test
+          echo "[pass] ealsa_test (ASan)"
+
       - name: Build and run qsa_test (the QNX driver against a mock QSA device)
         shell: bash
         working-directory: samples/audio/qsa
