@@ -6323,7 +6323,8 @@ static bool d3d11_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_u
    (void)data;
    if (!fence)
       return true;
-   return WaitForSingleObject((HANDLE)fence, (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
+   return WaitForSingleObject((HANDLE)fence, timeout_us == HW_RING_WAIT_FOREVER
+         ? INFINITE : (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
 }
 
 static void d3d11_hw_ring_free(d3d11_video_t *d3d11)

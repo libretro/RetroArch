@@ -5823,7 +5823,8 @@ static bool gl3_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
    if (!f || !f->sync)
       return true;
    if (glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
-            (GLuint64)timeout_us * 1000) == GL_TIMEOUT_EXPIRED)
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000) == GL_TIMEOUT_EXPIRED)
       return false;
    glDeleteSync((GLsync)f->sync);
    f->sync = NULL;

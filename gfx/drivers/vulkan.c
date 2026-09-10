@@ -6844,7 +6844,8 @@ static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_
       return true;
    f = (VkFence)(uintptr_t)fence;
    if (vkWaitForFences(vk->context->device, 1, &f, VK_TRUE,
-            (uint64_t)timeout_us * 1000) != VK_SUCCESS)
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? UINT64_MAX : (uint64_t)timeout_us * 1000) != VK_SUCCESS)
       return false;
    vkResetFences(vk->context->device, 1, &f);
    return true;

@@ -786,15 +786,17 @@ typedef struct video_poke_interface
    /* A fence the wrapper owns: created unsignalled, signalled by
     * hw_ring_fence_signal after the frame the driver just submitted,
     * waited and reset by hw_ring_fence_wait from any thread. The wait
-    * is bounded: it returns true once the fence has signalled and been
-    * reset, false when timeout_us passed first, and the wrapper calls
-    * it again. Bounded because the waiting thread is the main thread,
-    * and on Cocoa the video thread may need the main thread to run a
-    * job before it can signal; an unbounded wait there is a deadlock. */
+    * returns true once the fence has signalled and been reset, false
+    * when timeout_us passed first; HW_RING_WAIT_FOREVER is the single
+    * unbounded wait, which is what every platform but Cocoa uses -
+    * there the video thread may need the main thread to run a job
+    * before it can signal, so the wrapper waits in slices and pumps
+    * between them, and only there. */
    bool (*hw_ring_fence_new)(void *data, void **fence);
    void (*hw_ring_fence_free)(void *data, void *fence);
    void (*hw_ring_fence_signal)(void *data, void *fence);
    bool (*hw_ring_fence_wait)(void *data, void *fence, unsigned timeout_us);
+#define HW_RING_WAIT_FOREVER ((unsigned)-1)
    /* For drivers whose hardware cores hand over a whole texture each
     * frame rather than an image plus synchronisation (Direct3D 12): the
     * driver keeps a copy per ring slot. capture copies the core's

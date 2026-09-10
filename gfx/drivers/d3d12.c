@@ -7813,7 +7813,8 @@ static bool d3d12_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_u
    if (f->fence->lpVtbl->GetCompletedValue(f->fence) < f->value)
    {
       f->fence->lpVtbl->SetEventOnCompletion(f->fence, f->value, f->event);
-      if (WaitForSingleObject(f->event, (timeout_us + 999) / 1000) != WAIT_OBJECT_0)
+      if (WaitForSingleObject(f->event, timeout_us == HW_RING_WAIT_FOREVER
+               ? INFINITE : (timeout_us + 999) / 1000) != WAIT_OBJECT_0)
          return false;
    }
    return true;

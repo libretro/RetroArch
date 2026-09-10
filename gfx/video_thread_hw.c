@@ -119,13 +119,14 @@ static hw_ring_t *hw_ring_of(void *handle)
    return thr ? (hw_ring_t*)thr->frame.hw_ring : NULL;
 }
 
-/* Waits a slot's fence on the core's thread. In slices, with the
- * main-thread pump between: the video thread may need the main thread
- * to run a job before it can signal - on Cocoa, a swapchain rebuild
- * marshalled through the trampoline - and an unbounded wait here left
- * both threads waiting on each other, reported as the trampoline
- * stalling with a Vulkan core. Off Apple the pump is a no-op and the
- * slices only add a wake-up per two milliseconds of wait. */
+/* Waits a slot's fence on the core's thread. On Apple, in slices with
+ * the main-thread pump between: the video thread may need the main
+ * thread to run a job before it can signal - a swapchain rebuild
+ * marshalled through the Cocoa trampoline - and an unbounded wait here
+ * left both threads waiting on each other, reported as the trampoline
+ * stalling with a Vulkan core. Everywhere else there is no trampoline
+ * and nothing to pump, so the wait is the single unbounded one it was:
+ * the slices are a cost only the platform that needs them pays. */
 static void hw_wait_slot(hw_ring_t *ring, unsigned i)
 {
    hw_slot_t *s        = &ring->slot[i];
@@ -133,8 +134,14 @@ static void hw_wait_slot(hw_ring_t *ring, unsigned i)
    if (!s->in_flight)
       return;
    if (thr->poke && thr->poke->hw_ring_fence_wait)
+   {
+#ifdef __APPLE__
       while (!thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence, 2000))
          video_thread_main_pump();
+#else
+      thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence, HW_RING_WAIT_FOREVER);
+#endif
+   }
    s->in_flight = false;
 }
 

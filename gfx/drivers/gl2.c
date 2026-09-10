@@ -3390,7 +3390,8 @@ static bool gl2_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
    if (f->sync)
    {
       GLenum r = glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
-            (GLuint64)timeout_us * 1000);
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000);
       if (r == GL_TIMEOUT_EXPIRED)
          return false;
       glDeleteSync((GLsync)f->sync);
