@@ -216,6 +216,8 @@ static void test_copy(const char *dir)
       unsigned steps = 0;
       CHECK(copy_sync_budget(src, dst, RETRO_VFS_COPY_OVERWRITE, 100000, &steps) == 0,
             "copy with a 100000-byte step budget completes");
+      if (steps < BIG_SIZE / 100000)
+         printf("  note steps=%u expected>=%u\n", steps, (unsigned)(BIG_SIZE / 100000));
       CHECK(steps >= BIG_SIZE / 100000, "took at least the minimum number of steps");
       CHECK(files_equal(src, dst), "small-step copy is byte-identical");
    }

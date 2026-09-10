@@ -219,9 +219,19 @@
 #define VFS_HAVE_POSIX_METADATA 1
 #include <sys/time.h>
 #endif
+/* clonefile(): APFS constant-time copy.  Needs the 10.12+ SDK and a
+ * deployment target that has the symbol; the PowerPC and other legacy
+ * SDKs have neither, and __has_include keeps them from even looking. */
 #if defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
+#include <AvailabilityMacros.h>
+#if defined(__has_include)
+#if __has_include(<sys/clonefile.h>) \
+      && defined(MAC_OS_X_VERSION_MIN_REQUIRED) \
+      && MAC_OS_X_VERSION_MIN_REQUIRED >= 101200
 #include <sys/clonefile.h>
-#include <sys/attr.h>
+#define VFS_HAVE_CLONEFILE 1
+#endif
+#endif
 #endif
 /* copy_file_range() through syscall(): the glibc wrapper is only
  * declared under _GNU_SOURCE, which standalone consumers of this file
@@ -2337,7 +2347,7 @@ static int retro_vfs_stat_full(const char *path, int64_t *size, int64_t *mtime)
 
       if (FIO_S_ISDIR(stat_buf.st_mode))
          ret              |= RETRO_VFS_STAT_IS_DIRECTORY;
-      if (!(stat_buf.st_mode & FIO_S_IWUSR))
+      if (!(stat_buf.st_mode & SCE_S_IWUSR))
          ret              |= RETRO_VFS_STAT_IS_READONLY;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
       /* Lowlevel Lv2 */
@@ -2759,10 +2769,12 @@ int retro_vfs_set_readonly_impl(const char *path, int readonly)
       SceIoStat st;
       if (sceIoGetstat(path, &st) < 0)
          return -1;
+      /* Owner write bit only: SCE_S_IWOTH is deprecated in the SDK and
+       * the contract is "the current user cannot write". */
       if (readonly)
-         st.st_mode &= ~(SCE_S_IWUSR | SCE_S_IWGRP | SCE_S_IWOTH);
+         st.st_mode &= ~SCE_S_IWUSR;
       else
-         st.st_mode |=   SCE_S_IWUSR;
+         st.st_mode |=  SCE_S_IWUSR;
       return sceIoChstat(path, &st, SCE_CST_MODE) < 0 ? -1 : 0;
    }
 #elif defined(VFS_HAVE_POSIX_METADATA)
@@ -3166,7 +3178,7 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
       native = false;
 #endif
 
-#if defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
+#if defined(VFS_HAVE_CLONEFILE)
    /* APFS same-volume: a clone.  Constant time, no bytes move, and
     * the result is a complete independent file, so the copy is DONE
     * before the first step.  Any failure (other volume, HFS+, network)
@@ -3607,7 +3619,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
  * of dirent_stat reaches it. */
 #if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF)) \
       || !(defined(_WIN32) || defined(VITA) \
-            || (defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__)))
+            || (defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__) && !defined(ORBIS)))
 static VFS_NOINLINE int retro_vfs_dirent_stat_slow(
       libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime)
 {
@@ -3665,9 +3677,10 @@ int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir *rdir,
       if (!(entry->d_stat.st_mode & SCE_S_IWUSR))
          ret |= RETRO_VFS_STAT_IS_READONLY;
       return ret;
-#elif defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__)
+#elif defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__) && !defined(ORBIS)
       /* fstatat on the open directory: no path join, no lookup from
-       * the root, one inode read. */
+       * the root, one inode read.  (ORBIS carries FreeBSD headers but
+       * its libc has no fstatat; it takes the join+stat path.) */
       const struct dirent *entry = (const struct dirent*)rdir->entry;
       struct stat st;
       int ret = RETRO_VFS_STAT_IS_VALID;
