@@ -1106,6 +1106,8 @@ static bool video_thread_frame(void *data, const void *frame_,
    int hw_slot         = -1;
    bool dropped        = false;
    bool zero_copy      = false;
+   bool waited         = false;
+   retro_time_t now;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
@@ -1126,11 +1128,18 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_lock(thr->lock);
 
+   /* One clock read for the handover. Everything below that wants
+    * "now" - the core-time sample, the slot's push time, the hold's
+    * start - means this instant, unless the ring wait below ran, in
+    * which case it is read again once after. The clock is a syscall
+    * on more than one console, and this is the paced path. */
+   now = cpu_features_get_time_usec();
+
    /* Time since the last handoff returned: the core's frame plus the
     * runloop around it, which is what display pacing has to reserve. */
    if (thr->run_start)
    {
-      retro_time_t took = cpu_features_get_time_usec() - thr->run_start;
+      retro_time_t took = now - thr->run_start;
       thr->core_time    = thr->core_time
          ? (thr->core_time * 7 + took) / 8 : took;
    }
@@ -1154,6 +1163,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       {
          retro_time_t current = cpu_features_get_time_usec();
          retro_time_t delta   = target - current;
+         waited               = true;
 
          if (delta <= 0)
             break;
@@ -1162,6 +1172,10 @@ static bool video_thread_frame(void *data, const void *frame_,
             break;
       }
    }
+   /* The push time and the hold's start are after the wait, if there
+    * was one; otherwise the entry read still is now. */
+   if (waited)
+      now = cpu_features_get_time_usec();
 
    /* A hardware-rendered frame: there is no pixel data to copy, the
     * core's image lives in the HW ring. Publish the HW slot the core
@@ -1264,7 +1278,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].width  = width;
       thr->frame.slot[slot].height = height;
       thr->frame.slot[slot].count  = frame_count;
-      thr->frame.slot[slot].pushed_at = cpu_features_get_time_usec();
+      thr->frame.slot[slot].pushed_at = now;
       thr->frame.slot[slot].hw_slot = hw_slot;
       thr->frame.slot[slot].pitch  = copy_stride;
 
@@ -1327,7 +1341,6 @@ static bool video_thread_frame(void *data, const void *frame_,
          && thr->present_period > 0
          && thr->next_present > 0)
    {
-      retro_time_t now    = cpu_features_get_time_usec();
       retro_time_t reserve = thr->render_time + thr->core_time;
       retro_time_t margin  = reserve / 8;
       retro_time_t period  = thr->present_period;

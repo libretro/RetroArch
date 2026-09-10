@@ -8560,7 +8560,10 @@ end:
                         now - (end_frame_time + asked), frame_limit_min);
                }
                while (now < deadline)
+               {
+                  retro_cpu_relax();
                   now = cpu_features_get_time_usec();
+               }
 #endif
                return 1;
             }
