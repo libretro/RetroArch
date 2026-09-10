@@ -175,6 +175,7 @@ typedef struct ui_companion_win32_wimp
    HIMAGELIST pl_icons;     /* folder icon for the playlist list */
    HWND zoom_label, zoom, thumb_combo;
    int thumb_px;            /* icon-view thumbnail edge in px, from zoom */
+   int icon_cx, icon_cy;    /* icon spacing last given to the control  */
    /* The four thumbnail panes (Boxart, Title Screen, Screenshot, Logo:
     * companion_dock_id order): each a STATIC (SS_BITMAP) showing the
     * selected entry's image of its type. Frames of an animation are
@@ -398,10 +399,46 @@ static int cw_thumb_edge(ui_companion_win32_wimp_t *w)
  * plus room for a two-line label, like Qt's grid cells. */
 static void cw_icon_spacing_apply(ui_companion_win32_wimp_t *w)
 {
-   int T = cw_thumb_edge(w);
+   int T  = cw_thumb_edge(w);
+   int cx = T + CW_S(w, 24);
+   int cy = T + CW_S(w, 40);
    w->thumb_px = T;
-   SendMessageA(w->entries, LVM_SETICONSPACING, 0,
-         MAKELPARAM(T + CW_S(w, 24), T + CW_S(w, 40)));
+   /* LVM_SETICONSPACING makes the control re-lay-out every item, and
+    * this is reached on every list change. Same edge and DPI, same
+    * spacing: nothing to tell it. */
+   if (cx == w->icon_cx && cy == w->icon_cy)
+      return;
+   w->icon_cx = cx;
+   w->icon_cy = cy;
+   SendMessageA(w->entries, LVM_SETICONSPACING, 0, MAKELPARAM(cx, cy));
+}
+
+/* Invalidate the icon-view cell of @row if any of it is on screen.
+ * Same grid arithmetic as cw_visible_rows(); LVM_REDRAWITEMS would
+ * ask the control for the rect instead, which in icon view on a
+ * virtual list is a layout pass, and it does so even for rows well
+ * off screen - which most delivered thumbnails are, since two screens
+ * either side are prefetched. */
+static void cw_cell_invalidate(ui_companion_win32_wimp_t *w, size_t row)
+{
+   RECT client, rc;
+   POINT origin;
+   int cols;
+   if (!w->entries || w->icon_cx <= 0 || w->icon_cy <= 0)
+      return;
+   GetClientRect(w->entries, &client);
+   origin.x = origin.y = 0;
+   SendMessageA(w->entries, LVM_GETORIGIN, 0, (LPARAM)&origin);
+   cols = (client.right - client.left) / w->icon_cx;
+   if (cols < 1)
+      cols = 1;
+   rc.left   = (LONG)(row % (size_t)cols) * w->icon_cx - origin.x - 8;
+   rc.top    = (LONG)(row / (size_t)cols) * w->icon_cy - origin.y - 8;
+   rc.right  = rc.left + w->icon_cx + 16;
+   rc.bottom = rc.top  + w->icon_cy + 16;
+   if (rc.bottom < client.top || rc.top > client.bottom)
+      return;
+   InvalidateRect(w->entries, &rc, FALSE);
 }
 
 static uint32_t cw_sys_color_argb(int index)
@@ -539,14 +576,14 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
       if (victim < w->row_count && w->thumb_idx[victim] == slot + 1)
       {
          w->thumb_idx[victim] = 0; /* falls back to the engine cache */
-         SendMessageA(w->entries, LVM_REDRAWITEMS, victim, victim);
+         cw_cell_invalidate(w, victim);
       }
       ImageList_Replace(w->thumbs, slot + 1, bmp, NULL);
    }
    DeleteObject(bmp);
    w->slot_row[slot] = row;
    w->thumb_idx[row] = slot + 1;
-   SendMessageA(w->entries, LVM_REDRAWITEMS, row, row);
+   cw_cell_invalidate(w, row);
 }
 
 /* Engine delivery: tag = row | (gen << 32) (gen in the high bits on
