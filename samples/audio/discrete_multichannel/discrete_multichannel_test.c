@@ -150,15 +150,15 @@ static double tone_energy(const float *x, size_t n, unsigned stride, unsigned ch
 static const double tone_hz[6] = { 220, 330, 440, 60, 550, 660 };   /* FL FR FC LFE BL BR */
 
 /* --- the threaded pipeline: a consumer thread over the ring --------- */
-static bool dev_wait_writable(void *d, size_t len) { (void)d; (void)len; return true; }
+/* The contract returns the bytes the device can take, not a flag. */
+static size_t dev_wait_writable(void *d, size_t len) { (void)d; return len; }
 static audio_driver_t scripted_threaded;
 static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
-static void *consumer(void *arg)
+static void consumer(void *arg)
 {
    (void)arg;
    while (retro_atomic_load_acquire_int(&consumer_run))
       audio_driver_pipeline_consume(&audio_driver_st);
-   return NULL;
 }
 static bool pipe_up(bool core_float, bool float_dev)
 {
