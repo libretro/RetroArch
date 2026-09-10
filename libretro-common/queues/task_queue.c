@@ -86,6 +86,9 @@ static slock_t *finished_lock               = NULL;
 static slock_t *property_lock               = NULL;
 static slock_t *queue_lock                  = NULL;
 static scond_t *worker_cond                 = NULL;
+/* Signalled by a worker each time it moves a task onto the finished
+ * queue.  The blocking waiters sleep on it instead of spinning. */
+static scond_t *finished_cond               = NULL;
 static sthread_t *worker_thread             = NULL;
 static bool worker_continue                 = true;
 /* use running_lock when touching it */
@@ -578,6 +581,24 @@ static void retro_task_threaded_gather(void)
    }
 }
 
+/* Park a blocking waiter until a worker retires a task.
+ *
+ * The waiters below used to loop on gather() with nothing in between,
+ * which pinned a core for as long as the task ran - half the CPU of a
+ * CLI --scan was the main thread taking and releasing the queue
+ * locks.  Sleep on finished_cond instead, with a short timeout as the
+ * net for the states the signal does not cover (the caller's own
+ * condition flipping, a task that keeps yielding without finishing).
+ * If something is already sitting on the finished queue there is
+ * nothing to wait for - gather() will retire it on the next pass. */
+static void retro_task_threaded_park(void)
+{
+   slock_lock(finished_lock);
+   if (!tasks_finished.front)
+      scond_wait_timeout(finished_cond, finished_lock, 1000);
+   slock_unlock(finished_lock);
+}
+
 static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
 {
    bool wait = false;
@@ -596,6 +617,9 @@ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
          wait = (tasks_finished.front && !tasks_finished.front->when);
          slock_unlock(finished_lock);
       }
+
+      if (wait)
+         retro_task_threaded_park();
    } while (wait && (!cond || cond(data)));
 }
 
@@ -786,6 +810,7 @@ static void threaded_worker(void *userdata)
          /* Add task to finished queue */
          slock_lock(finished_lock);
          task_queue_put(&tasks_finished, task);
+         scond_signal(finished_cond);
          slock_unlock(finished_lock);
          slock_unlock(running_lock);
       }
@@ -799,6 +824,7 @@ static void retro_task_threaded_init(void)
    property_lock   = slock_new();
    queue_lock      = slock_new();
    worker_cond     = scond_new();
+   finished_cond   = scond_new();
 
    slock_lock(running_lock);
    worker_continue = true;
@@ -817,6 +843,7 @@ static void retro_task_threaded_deinit(void)
    sthread_join(worker_thread);
 
    scond_free(worker_cond);
+   scond_free(finished_cond);
    slock_free(running_lock);
    slock_free(finished_lock);
    slock_free(property_lock);
@@ -824,6 +851,7 @@ static void retro_task_threaded_deinit(void)
 
    worker_thread   = NULL;
    worker_cond     = NULL;
+   finished_cond   = NULL;
    running_lock    = NULL;
    finished_lock   = NULL;
    property_lock   = NULL;
@@ -900,6 +928,7 @@ static void gcd_worker(retro_task_t *task)
       /* Add task to finished queue */
       slock_lock(finished_lock);
       task_queue_put(&tasks_finished, task);
+      scond_signal(finished_cond);
       slock_unlock(finished_lock);
    }
 }
@@ -939,6 +968,9 @@ static void retro_task_gcd_wait(retro_task_condition_fn_t cond, void* data)
             wait |= !task->when;
          slock_unlock(finished_lock);
       }
+
+      if (wait)
+         retro_task_threaded_park();
    } while (wait && (!cond || cond(data)));
 }
 
@@ -951,6 +983,7 @@ static void retro_task_gcd_init(void)
    property_lock   = slock_new();
    queue_lock      = slock_new();
    worker_cond     = scond_new();
+   finished_cond   = scond_new();
 
    slock_lock(running_lock);
    worker_continue = true;
@@ -972,12 +1005,14 @@ static void retro_task_gcd_deinit(void)
    slock_unlock(running_lock);
 
    scond_free(worker_cond);
+   scond_free(finished_cond);
    slock_free(running_lock);
    slock_free(finished_lock);
    slock_free(property_lock);
    slock_free(queue_lock);
 
    worker_cond     = NULL;
+   finished_cond   = NULL;
    running_lock    = NULL;
    finished_lock   = NULL;
    property_lock   = NULL;
