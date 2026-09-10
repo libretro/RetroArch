@@ -235,6 +235,25 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
           echo "[pass] discrete_multichannel_test (ASan)"
 
+      - name: Build and run qsa_test (the QNX driver against a mock QSA device)
+        shell: bash
+        working-directory: samples/audio/qsa
+        run: |
+          set -eu
+          # audio/drivers/alsa_qsa.c is QNX-only and has no build here,
+          # so it is built against a stand-in <sys/asoundlib.h> over a
+          # scripted device: init and its failure path, the rate it
+          # reports back, blocking and non-blocking writes, stop and
+          # start, underrun recovery, and a device that stops draining.
+          # Not a substitute for a QNX build; it is the coverage the
+          # driver had none of.
+          make clean all
+          ./qsa_test
+          echo "[pass] qsa_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./qsa_test
+          echo "[pass] qsa_test (ASan)"
+
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
         working-directory: samples/audio/live_drivers
