@@ -30,7 +30,10 @@ typedef struct
 
 void ealsa_mock_reset(ealsa_mock_caps_t *caps);   /* NULL: a cooperative card */
 void ealsa_mock_drain(size_t frames);             /* the device plays this much */
-void ealsa_mock_inject_xrun(void);                /* the next write returns EPIPE */
+void ealsa_mock_inject_xrun(void);
+void ealsa_mock_freeze(int on);        /* the device takes nothing and never signals */
+void ealsa_mock_inject_eintr(unsigned n);  /* the next n polls are cut short by a signal */
+unsigned ealsa_mock_polls(void);                /* the next write returns EPIPE */
 size_t ealsa_mock_queued(void);
 size_t ealsa_mock_written(void);
 unsigned ealsa_mock_rate(void);

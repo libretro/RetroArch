@@ -68,6 +68,8 @@ struct m_xferi { m_sframes_t result; void *buf; m_uframes_t frames; };
 static char refine_why_buf[128];
 static ealsa_mock_caps_t caps;
 static int      fds, next_fd = 5, started, paused, prepares, xrun_pending, nonblock_open;
+static int      frozen;
+static unsigned eintr_pending, polls;
 static unsigned took_rate, took_channels, took_period, took_buffer;
 static int      took_format = -1, committed;
 static size_t   queued, written;
@@ -88,12 +90,16 @@ void ealsa_mock_reset(ealsa_mock_caps_t *c)
 {
    if (c) caps = *c; else caps_default();
    fds = started = paused = prepares = xrun_pending = nonblock_open = 0;
+   frozen = 0; eintr_pending = 0; polls = 0;
    took_rate = took_channels = took_period = took_buffer = 0;
    took_format = -1; committed = 0; queued = written = 0;
    memset(&sw_taken, 0, sizeof(sw_taken));
 }
 void ealsa_mock_drain(size_t frames) { queued = frames >= queued ? 0 : queued - frames; }
 void ealsa_mock_inject_xrun(void) { xrun_pending = 1; }
+void ealsa_mock_freeze(int on) { frozen = on; }
+void ealsa_mock_inject_eintr(unsigned n) { eintr_pending = n; }
+unsigned ealsa_mock_polls(void) { return polls; }
 size_t   ealsa_mock_queued(void)   { return queued; }
 size_t   ealsa_mock_written(void)  { return written; }
 unsigned ealsa_mock_rate(void)     { return took_rate; }
@@ -266,7 +272,7 @@ int ealsa_mock_ioctl(int fd, unsigned long req, void *arg)
          size_t room;
          if (!committed) { errno = EBADFD; return -1; }
          if (xrun_pending) { xrun_pending = 0; errno = EPIPE; return -1; }
-         if (paused)       { errno = EAGAIN; return -1; }
+         if (paused || frozen) { errno = EAGAIN; return -1; }
          room = queued >= took_buffer ? 0 : took_buffer - queued;
          if (!room)        { errno = EAGAIN; return -1; }
          if (x->frames < room)
@@ -289,7 +295,14 @@ int ealsa_mock_poll(void *fds_, unsigned n, int timeout)
 {
    struct pollfd *pfd = (struct pollfd*)fds_;
    (void)n; (void)timeout;
-   if (!paused && queued < took_buffer)
+   polls++;
+   if (eintr_pending)
+   {
+      eintr_pending--;
+      errno = EINTR;
+      return -1;
+   }
+   if (!paused && !frozen && queued < took_buffer)
    {
       pfd->revents = POLLOUT;
       return 1;

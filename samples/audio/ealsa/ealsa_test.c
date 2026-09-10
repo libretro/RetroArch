@@ -319,6 +319,80 @@ int main(void)
       CHECK(ealsa_mock_open_fds() == 0, "the listing left %d descriptor(s) open", ealsa_mock_open_fds());
    }
 
+   /* The write and wait loops in the states no real card gives on
+    * demand. These cases came from tinyalsa_write_test, which drove
+    * the driver this one replaced; the loops are new code but the
+    * properties are the same, and they are the ones a device that is
+    * full, stalled or signalling can break. */
+   printf("   the write and wait loops against a device that will not take\n");
+   caps_default(&c);
+   ealsa_mock_reset(&c);
+   h = drv->init("0,0", 48000, 64, &new_rate);
+   CHECK(h != NULL, "init failed");
+   if (h)
+   {
+      size_t chunk = 256 * 2 * sizeof(float);
+      ssize_t w;
+      unsigned before;
+
+      CHECK(drv->start(h, false), "start");
+
+      /* Filled first, and then left to stop draining: a device that
+       * refuses while still reporting room is not a device. */
+      drv->set_nonblock_state(h, true);
+      while ((w = drv->write(h, frame, chunk)) == (ssize_t)chunk)
+         ;
+      ealsa_mock_freeze(1);
+
+      /* A full device, non-blocking: what it managed, and no more. */
+      w = drv->write(h, frame, chunk);
+      printf("      non-blocking at a device taking nothing: %ld of %u bytes\n",
+            (long)w, (unsigned)chunk);
+      CHECK(w == 0, "a device taking nothing accepted %ld bytes", (long)w);
+
+      /* Blocking against a device that never signals: bounded. */
+      drv->set_nonblock_state(h, false);
+      before = ealsa_mock_polls();
+      w = drv->write(h, frame, chunk);
+      printf("      blocking at a device that never signals: %ld bytes after %u poll(s)\n",
+            (long)w, ealsa_mock_polls() - before);
+      CHECK(w >= 0 && w < (ssize_t)chunk, "it took %ld of %u bytes", (long)w, (unsigned)chunk);
+      CHECK(ealsa_mock_polls() > before, "it never waited on the device at all");
+
+      /* wait_writable at the same device: nothing, within its bound. */
+      CHECK(drv->wait_writable(h, chunk) == 0,
+            "wait_writable found room at a device taking nothing");
+
+      /* A poll cut short by a signal is not a refusal. The device is
+       * still full, so the write comes back short either way; what
+       * says the signals were retried rather than taken for an answer
+       * is that the loop polled past them. */
+      ealsa_mock_inject_eintr(3);
+      before = ealsa_mock_polls();
+      w = drv->write(h, frame, chunk);
+      printf("      three signals at a full device: %u poll(s), %ld bytes\n",
+            ealsa_mock_polls() - before, (long)w);
+      CHECK(ealsa_mock_polls() - before > 3,
+            "the write stopped at the first of three signals (%u poll(s))",
+            ealsa_mock_polls() - before);
+
+      /* The first write on a started device reports what it took, or
+       * the caller sends the opening chunk twice. */
+      ealsa_mock_reset(&c);
+      drv->free(h);
+      h = drv->init("0,0", 48000, 64, &new_rate);
+      CHECK(h != NULL, "re-init failed");
+      if (h)
+      {
+         drv->set_nonblock_state(h, false);
+         drv->start(h, false);
+         w = drv->write(h, frame, chunk);
+         printf("      the first write reported %ld of %u bytes\n", (long)w, (unsigned)chunk);
+         CHECK(w == (ssize_t)chunk, "the first write reported %ld of %u bytes", (long)w, (unsigned)chunk);
+         drv->free(h);
+      }
+   }
+
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("embedded alsa: the driver negotiates what the card offers and reports it\n");
    return 0;

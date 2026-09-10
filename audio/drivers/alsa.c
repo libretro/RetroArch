@@ -1351,7 +1351,13 @@ static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
                pfd.fd      = ea->fd;
                pfd.events  = POLLOUT;
                pfd.revents = 0;
-               if (ealsa_poll(&pfd, 1, 100) <= 0)
+               int pr = ealsa_poll(&pfd, 1, 100);
+               /* A signal is not the device saying no: RetroArch takes
+                * them for its timers, and treating one as a refusal
+                * returned a short write for no reason. */
+               if (pr < 0 && errno == EINTR)
+                  continue;
+               if (pr <= 0)
                   break;
             }
             continue;
@@ -1432,8 +1438,13 @@ static size_t tinyalsa_wait_writable(void *data, size_t len)
       pfd.fd      = ea->fd;
       pfd.events  = POLLOUT;
       pfd.revents = 0;
-      if (ealsa_poll(&pfd, 1, ms) <= 0)
-         break;
+      {
+         int pr = ealsa_poll(&pfd, 1, ms);
+         if (pr < 0 && errno == EINTR)
+            continue;      /* a signal, not a device short of room */
+         if (pr <= 0)
+            break;
+      }
    }
    return ealsa_avail(ea) * ea->frame_bits / 8;
 }
