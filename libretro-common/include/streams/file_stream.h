@@ -54,6 +54,7 @@
  * The minimum version of the VFS interface required by the \c filestream functions.
  */
 #define FILESTREAM_REQUIRED_VFS_VERSION 2
+#define FILESTREAM_COPY_REQUIRED_VFS_VERSION 5
 
 RETRO_BEGIN_DECLS
 
@@ -64,6 +65,7 @@ RETRO_BEGIN_DECLS
 typedef struct RFILE RFILE;
 
 #define FILESTREAM_REQUIRED_VFS_VERSION 2
+#define FILESTREAM_COPY_REQUIRED_VFS_VERSION 5
 
 /**
  * Initializes the \c filestream functions to use the VFS interface provided by the frontend.
@@ -394,14 +396,31 @@ int filestream_delete(const char *path);
 int filestream_rename(const char *old_path, const char *new_path);
 
 /**
- * Copies a file to a new location.
+ * Copies a regular file to a new location, replacing an existing one.
  *
- * @param src_path Path to the file to rename.
+ * Uses the platform's copy primitive through the VFS when the frontend
+ * offers VFS API v5; missing parent directories of \c dst_path are created.
+ * Either path may be on any file system the frontend supports.
+ *
+ * @param src_path Path to the file to copy.
  * @param dst_path The target name and location of the file.
  * @return 0 if the file was copied successfully,
- * or -1 if there was an error.
+ * or -1 if there was an error (no partial \c dst_path is left behind).
+ * @see filestream_copy_ex
  */
 int filestream_copy(const char *src_path, const char *dst_path);
+
+/**
+ * Copies a regular file to a new location.
+ *
+ * @param src_path Path to the file to copy.
+ * @param dst_path The target name and location of the file.
+ * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0
+ * (in which case an existing \c dst_path is an error).
+ * @return 0 if the file was copied successfully, or -1 on error.
+ * @see RETRO_VFS_COPY
+ */
+int filestream_copy_ex(const char *src_path, const char *dst_path, unsigned flags);
 
 /**
  * Compares and verifies files.
