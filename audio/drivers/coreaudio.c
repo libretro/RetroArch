@@ -712,11 +712,13 @@ static void *coreaudio_init(const char *device,
     * 8, LeftSurround 0x10 (the back pair), ..., LeftSurroundDirect
     * 0x200 (the side pair) - in the same ascending order, so a wider
     * layout goes across as itself and the two 5.1s stay apart. Stereo
-    * keeps its named tag. */
+    * keeps its named tag. The field is a UInt32 in every SDK; the
+    * AudioChannelBitmap name for it came later than the 10.4 SDK the
+    * PPC build uses. */
    if (dev->channels > 2)
    {
       layout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
-      layout.mChannelBitmap    = (AudioChannelBitmap)dev->layout;
+      layout.mChannelBitmap    = (UInt32)dev->layout;
    }
    else
       layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
