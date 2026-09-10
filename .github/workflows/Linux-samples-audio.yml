@@ -225,9 +225,13 @@ jobs:
           # device without the fold and the upmix in between: each
           # device channel carries its core channel's tone and none of
           # the others', in all four format pairings, through the
-          # resampler off unity; and to a stereo device, the fold at
-          # the BS.775 gains with the LFE dropped. Includes the shipping
-          # audio_driver.c.
+          # resampler off unity; over the threaded ring; recorded; and
+          # to a stereo device, the fold at the BS.775 gains with the
+          # LFE dropped. The last case runs the shipping WASAPI driver
+          # over the fake device from wasapi_exclusive_pacing, so a
+          # 5.1 core reaches a Dolby Digital decoder as AC-3 bursts
+          # that decode back to its own channels. Includes the
+          # shipping audio_driver.c.
           make clean all
           ./discrete_multichannel_test
           echo "[pass] discrete_multichannel_test"

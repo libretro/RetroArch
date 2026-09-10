@@ -288,3 +288,8 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 }
 
 /* retro_resampler_realloc: the real one is linked in. */
+
+/* The mixer's AC-3 loader: audio_driver.c dispatches to it under
+   HAVE_RAC3 and this harness does not exercise the mixer. */
+audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
+{ (void)buffer; (void)size; return NULL; }

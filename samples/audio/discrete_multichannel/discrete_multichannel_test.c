@@ -17,9 +17,16 @@
 #include <string.h>
 #include <math.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <rthreads/rthreads.h>
+#include <formats/rac3.h>
+#include <formats/iec61937.h>
+#include "fake_wasapi.h"
+
 #include "../../../audio/audio_driver.c"
+
+extern audio_driver_t audio_wasapi;
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -30,6 +37,9 @@ static uint32_t dev_layout   = AUDIO_LAYOUT_5POINT1;
 static bool     dev_float    = true;
 static float   *cap          = NULL;
 static size_t   cap_frames   = 0, cap_cap = 0;
+/* The consumer thread appends to the capture and the test resets it
+ * between phases; both go under this. */
+static pthread_mutex_t cap_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void  *dev_init(const char *d, unsigned r, unsigned l, unsigned b, unsigned *n)
 { static int h; (void)d; (void)r; (void)l; (void)b; if (n) *n = 48000; return &h; }
@@ -37,6 +47,7 @@ static ssize_t dev_write(void *d, const void *buf, size_t size)
 {
    size_t frames = size / (dev_channels * (dev_float ? sizeof(float) : sizeof(int16_t))), f, c;
    (void)d;
+   pthread_mutex_lock(&cap_lock);
    if (cap_frames + frames > cap_cap)
    {
       cap_cap = (cap_frames + frames) * 2 + 4096;
@@ -48,6 +59,7 @@ static ssize_t dev_write(void *d, const void *buf, size_t size)
                ? ((const float*)buf)[f * dev_channels + c]
                : ((const int16_t*)buf)[f * dev_channels + c] / 32768.0f;
    cap_frames += frames;
+   pthread_mutex_unlock(&cap_lock);
    return (ssize_t)size;
 }
 static bool     dev_stop(void *d) { (void)d; return true; }
@@ -242,7 +254,13 @@ static void threaded_case(bool core_float, bool float_dev)
       }
    retro_atomic_store_release_int(&consumer_run, 1);
    th = sthread_create(consumer, NULL);
-   /* batches as a core delivers them, the consumer draining beside */
+   /* batches as a core delivers them, the consumer draining beside.
+    * The ring's layout is published per batch and read once a pass,
+    * so the pass that straddles the first 5.1 batch takes its extra
+    * slots from the stereo side and the upmix fills them - one pass,
+    * documented, and not what this case is about. The capture is
+    * dropped once the first batches are through, so what is judged
+    * is the steady state whatever the consumer's phase. */
    for (f = 0; f < frames; f += 735)
    {
       size_t n = frames - f < 735 ? frames - f : 735;
@@ -251,6 +269,13 @@ static void threaded_case(bool core_float, bool float_dev)
       else
          audio_driver_sample_batch_multi_int16(ini + f * 6, n, 6, AUDIO_LAYOUT_5POINT1);
       usleep(1000);
+      if (f == 735 * 4)
+      {
+         usleep(20000);
+         pthread_mutex_lock(&cap_lock);
+         cap_frames = 0;
+         pthread_mutex_unlock(&cap_lock);
+      }
    }
    usleep(200000);
    retro_atomic_store_release_int(&consumer_run, 0);
@@ -258,8 +283,7 @@ static void threaded_case(bool core_float, bool float_dev)
    scond_signal(audio_driver_st.pipe_data_cond);
    slock_unlock(audio_driver_st.pipe_lock);
    sthread_join(th);
-   /* judge the last half, the pipe primed and steady */
-   skip = cap_frames / 2;
+   skip = 0;
    for (d = 0; d < 6 && cap_frames > skip; d++)
    {
       double own = tone_energy(cap + skip * 6, cap_frames - skip, 6, d, tone_hz[d]), worst_other = 0; unsigned o;
@@ -404,6 +428,178 @@ static void record_case(void)
    free(inf); free(st);
 }
 
+/* A 5.1 core through the batch entry to a device that takes no PCM
+ * wider than stereo but decodes Dolby Digital: the frontend's merge
+ * builds the 5.1 device frame and the driver encodes that frame to
+ * AC-3 over IEC 61937. The bursts the device is given are decoded
+ * back here, and each channel has to carry its own tone - which is
+ * what says the encoder was handed the core's channels and not the
+ * upmix's copies of the fronts. */
+static void ac3_bitstream_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t frames = 4410 * 4, f;
+   unsigned c, d;
+   float *inf = (float*)malloc(frames * 6 * sizeof(float));
+   unsigned new_rate = 0;
+   void *ctx;
+   const uint8_t *bur = NULL;
+   size_t bur_len, at = 0, decoded = 0;
+   float *pcm;
+   rac3_decoder_t *dec;
+
+   printf("   5.1 core to a device that decodes Dolby Digital: the bursts carry the core's channels\n");
+   audio_driver_deinit_internal(true);
+   memset(st, 0, sizeof(*st));
+   fake_device_configure_engine(0, 0);
+   fake_device_configure_channels(2, true);
+   settings->bools.audio_wasapi_exclusive_mode   = true;
+   settings->uints.audio_wasapi_sh_buffer_length = 0;
+   settings->uints.audio_output_sample_rate      = 48000;
+   settings->uints.audio_output_layout           = 3;   /* 5.1, surrounds at the sides */
+
+   ctx = audio_wasapi.init(NULL, 48000, 64, 0, &new_rate);
+   CHECK(ctx != NULL, "the AC-3 driver did not open");
+   if (!ctx) { free(inf); return; }
+
+   st->current_audio      = &audio_wasapi;
+   st->context_audio_data = ctx;
+   st->input              = 48000.0;
+   st->src_ratio_orig     = 1.0;
+   st->src_ratio_curr     = 1.0;
+   st->cached_rate_adjust = 1.0;
+   st->volume_gain        = 1.0f;
+   st->buffer_size        = audio_wasapi.buffer_size(ctx);
+   st->output_samples_buf_length   = 1 << 18;
+   st->output_samples_int16_length = 1 << 17;
+   st->output_samples_buf   = (float*)malloc(st->output_samples_buf_length);
+   st->output_samples_int16 = (int16_t*)malloc(st->output_samples_int16_length);
+   st->input_data           = (float*)malloc(1 << 18);
+   st->input_data_int16     = (int16_t*)malloc(1 << 17);
+   st->core_float           = true;
+   st->sink_bias            = 1.0;
+   st->core_layout          = AUDIO_LAYOUT_STEREO;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT | AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED);
+   /* the layout the driver opened, as audio_driver_init picks it up */
+   st->out_layout   = audio_wasapi.layout(ctx);
+   st->out_channels = audio_layout_channels(st->out_layout);
+   CHECK(st->out_channels == 6, "the driver reports %u channels", st->out_channels);
+   {
+      size_t up = st->output_samples_buf_length / (2 * sizeof(float));
+      st->upmix_buf    = (float*)malloc(up * st->out_channels * sizeof(float));
+      st->upmix_i16    = (int16_t*)malloc(up * st->out_channels * sizeof(int16_t));
+      st->upmix_frames = up;
+      audio_upmix_init(&st->upmix, st->out_layout, 48000);
+   }
+
+   for (f = 0; f < frames; f++)
+      for (c = 0; c < 6; c++)
+         inf[f * 6 + c] = 0.4f * (float)sin(2 * M_PI * tone_hz[c] * f / 48000.0);
+
+   audio_wasapi.set_nonblock_state(ctx, false);
+   fake_device_capture(true);
+   audio_wasapi.start(ctx, false);
+   for (f = 0; f < frames; f += 735)
+   {
+      size_t n = frames - f < 735 ? frames - f : 735;
+      size_t took = audio_driver_sample_batch_multi_float(inf + f * 6, n, 6, AUDIO_LAYOUT_5POINT1);
+      CHECK(took == n, "the entry took %u of %u frames", (unsigned)took, (unsigned)n);
+   }
+   /* Drained until the bursts the feed produced have reached the
+    * device, or until it stops taking, or until a deadline: a
+    * sanitized run is an order of magnitude slower than a plain one,
+    * so a fixed wait ends it after a burst or two, and the device's
+    * pump never goes quiet for good, so waiting for quiet alone does
+    * not end at all. */
+   {
+      size_t   want  = (frames / 1536) * IEC61937_AC3_BURST_BYTES;
+      size_t   last  = 0, got = 0;
+      unsigned lap   = 0, quiet = 0;
+      while (lap++ < 250 && quiet < 15)
+      {
+         usleep(20000);
+         got   = fake_device_captured(&bur);
+         quiet = (got == last) ? quiet + 1 : 0;
+         last  = got;
+         if (got >= want)
+            break;
+      }
+   }
+   audio_wasapi.stop(ctx);
+   fake_device_capture(false);
+   bur_len = fake_device_captured(&bur);
+
+   /* the bursts, decoded */
+   dec = rac3_decoder_new();
+   pcm = (float*)calloc(frames * 6 + 1536 * 6, sizeof(float));
+   {
+      unsigned type, bursts = 0;
+      size_t payload;
+      while (at + 8 <= bur_len
+            && !(iec61937_probe(bur + at, bur_len - at, &type, &payload) && type == IEC61937_AC3))
+         at += 2;
+      while (at + IEC61937_AC3_BURST_BYTES <= bur_len)
+      {
+         uint8_t frame[RAC3_MAX_FRAME_BYTES];
+         rac3_frame_info_t info;
+         size_t k;
+         /* Silence between bursts: the device's pump plays whatever
+          * the driver had ready, and a slow run leaves gaps. Stepped
+          * over a frame at a time rather than taken for the end of
+          * the stream. */
+         if (!iec61937_probe(bur + at, bur_len - at, &type, &payload)
+               || type != IEC61937_AC3 || payload > sizeof(frame))
+         {
+            at += 4;
+            continue;
+         }
+         for (k = 0; k + 1 < payload; k += 2)
+         {
+            frame[k]     = bur[at + 8 + k + 1];
+            frame[k + 1] = bur[at + 8 + k];
+         }
+         if (payload & 1)
+            frame[payload - 1] = bur[at + 8 + payload - 1];
+         k = rac3_decode_frame(dec, frame, payload, pcm + decoded * 6, &info);
+         if (!k)
+            break;
+         decoded += k;
+         bursts++;
+         at += IEC61937_AC3_BURST_BYTES;
+      }
+      printf("      %u byte(s) to the device, %u burst(s), %u frames decoded\n",
+            (unsigned)bur_len, bursts, (unsigned)decoded);
+      /* a burst is 1536 frames; the feed is 17640 of them */
+      CHECK(bursts >= (unsigned)(frames / 1536) - 1,
+            "only %u of about %u bursts reached the device", bursts, (unsigned)(frames / 1536));
+   }
+   for (d = 0; d < 6 && decoded > 4096; d++)
+   {
+      double own = tone_energy(pcm + 1536 * 6, decoded - 1536, 6, d, tone_hz[d]);
+      double worst = 0;
+      unsigned o;
+      for (o = 0; o < 6; o++)
+      {
+         double e;
+         if (o == d) continue;
+         e = tone_energy(pcm + 1536 * 6, decoded - 1536, 6, d, tone_hz[o]);
+         if (e > worst) worst = e;
+      }
+      printf("      decoded ch%u: own tone %.3f, loudest other %.4f\n", d, own, worst);
+      CHECK(own > 0.02, "channel %u lost its tone through the bitstream (%.4f)", d, own);
+      CHECK(worst < own / 10.0,
+            "channel %u carries another channel's tone (%.4f of %.4f): the encoder was handed the upmix, not the core",
+            d, worst, own);
+   }
+   rac3_decoder_free(dec);
+   free(pcm);
+   free(inf);
+   audio_wasapi.free(ctx);
+   st->current_audio = NULL;
+   st->context_audio_data = NULL;
+}
+
 static void fold_case(void)
 {
    size_t frames = 4410, f; unsigned c;
@@ -428,16 +624,21 @@ static void fold_case(void)
 
 int main(void)
 {
+   /* One case at a time, for when a single one is being worked on:
+    * DM_ONLY=ac3 runs the bitstream case alone. */
+   const char *only = getenv("DM_ONLY");
+#define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
-   discrete_case(true, true);
-   discrete_case(false, false);
-   discrete_case(false, true);
-   discrete_case(true, false);
-   threaded_case(true, true);
-   threaded_case(false, false);
-   stereo_on_wide_ring_case();
-   record_case();
-   fold_case();
+   RUN("discrete", discrete_case(true, true));
+   RUN("discrete", discrete_case(false, false));
+   RUN("discrete", discrete_case(false, true));
+   RUN("discrete", discrete_case(true, false));
+   RUN("threaded", threaded_case(true, true));
+   RUN("threaded", threaded_case(false, false));
+   RUN("threaded", stereo_on_wide_ring_case());
+   RUN("record",   record_case());
+   RUN("ac3",      ac3_bitstream_case());
+   RUN("fold",     fold_case());
    audio_driver_deinit_internal(true);
    free(cap); free(rec_cap);
    if (failures) { printf("%u failure(s)\n", failures); return 1; }

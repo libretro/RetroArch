@@ -9,8 +9,19 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) \
 CC      := $(compiler)
 flags   += -std=gnu99
 
+# The WASAPI driver's text, its three Windows include lines swapped
+# for the fake device's, so the AC-3 bitstream path runs here.
+GEN := wasapi_sim.c
+
 SOURCES_C := \
 	discrete_multichannel_test.c \
+	$(GEN) \
+	../wasapi_exclusive_pacing/fake_wasapi.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_encode.c \
+	$(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.c \
+	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	stubs_retroarch.c \
 	../../../audio/audio_upmix.c \
 	../../../audio/audio_binaural.c \
@@ -43,7 +54,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
 CFLAGS += -Wall $(INCDIRS)
-CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MENU \
+CFLAGS += -I../wasapi_exclusive_pacing -DHAVE_WASAPI -DHAVE_RAC3 -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MENU \
 	-DHAVE_CONFIGFILE -D_GNU_SOURCE
 LDFLAGS += -lm -lpthread
 
@@ -58,6 +69,17 @@ endif
 OBJS := $(SOURCES_C:.c=.o)
 
 all: $(TARGET)
+
+WASAPI_SRC ?= ../../../audio/drivers/wasapi.c
+$(GEN): $(WASAPI_SRC)
+	sed -e 's|#include "../common/mmdevice_common.h"|#include "fake_wasapi.h"|' \
+	    -e 's|#include "../common/mmdevice_common_inline.h"||' \
+	    -e 's|#include "../common/wasapi.h"||' \
+	    -e 's|#include "../audio_driver.h"|#include "../../../audio/audio_driver.h"|' \
+	    -e 's|#include "../../verbosity.h"|#include "../../../verbosity.h"|' \
+	    -e 's|#include "../../configuration.h"|#include "../../../configuration.h"|' \
+	    $< > $@
+
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
