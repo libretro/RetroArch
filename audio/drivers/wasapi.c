@@ -133,6 +133,12 @@ typedef struct
    rac3_encoder_t *ac3;
    float         *ac3_in;         /* 1536 frames of the layout */
    unsigned       ac3_in_frames;  /* collected so far */
+   /* Frames the frontend has written that the device has not taken:
+    * the fifo's and the encoder's together, kept under fifo_lock so
+    * write_avail() reads one figure - read as two, from two threads,
+    * the fifo's room and the encoder's count could be from either
+    * side of a burst's push, half the buffer apart. */
+   size_t         ac3_inflight;
    unsigned       ac3_frame_size;
    uint8_t        ac3_frame[RAC3_MAX_FRAME_BYTES];
    uint8_t        ac3_burst[IEC61937_AC3_BURST_BYTES];
@@ -195,6 +201,17 @@ static const char *wasapi_wave_format_name(const WAVEFORMATEXTENSIBLE *format)
          break;
    }
    return "<unknown>";
+}
+
+/* bytes of the carrier left the fifo for the device; under fifo_lock
+ * where there is one */
+static INLINE void wasapi_ac3_drained(wasapi_t *w, size_t bytes)
+{
+   if (w->ac3)
+   {
+      size_t frames = bytes / 4;
+      w->ac3_inflight = w->ac3_inflight > frames ? w->ac3_inflight - frames : 0;
+   }
 }
 
 static const char* wasapi_error(DWORD error)
@@ -2048,7 +2065,10 @@ static void wasapi_pump_thread(void *data)
             continue;
          slock_lock(w->fifo_lock);
          if (FIFO_READ_AVAIL(w->buffer) >= w->engine_buffer_size)
+         {
             fifo_read(w->buffer, dest, w->engine_buffer_size);
+            wasapi_ac3_drained(w, w->engine_buffer_size);
+         }
          else
          {
             memset(dest, 0, w->engine_buffer_size);
@@ -2148,6 +2168,7 @@ static bool wasapi_push_sh(wasapi_t *w)
 
 static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len);
 
+
 /* AC-3: float frames of the layout in, bursts to the fifo. Frames are
  * collected until a syncframe's worth, encoded, wrapped, and the
  * burst written to the fifo through the raw path, which blocks or
@@ -2184,6 +2205,13 @@ static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
             src + done * w->ac3_frame_size, take * w->ac3_frame_size);
       w->ac3_in_frames += (unsigned)take;
       done             += take;
+#ifdef HAVE_THREADS
+      slock_lock(w->fifo_lock);
+      w->ac3_inflight  += take;
+      slock_unlock(w->fifo_lock);
+#else
+      w->ac3_inflight  += take;
+#endif
       if (w->ac3_in_frames == 1536)
       {
          size_t n = rac3_encode_frame(w->ac3, w->ac3_in, w->ac3_frame, sizeof(w->ac3_frame));
@@ -2270,6 +2298,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
             if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
                return -1;
             fifo_read(w->buffer, dest, w->engine_buffer_size);
+            wasapi_ac3_drained(w, w->engine_buffer_size);
             if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
                return -1;
             write_avail = w->engine_buffer_size;
@@ -2467,12 +2496,20 @@ static size_t wasapi_write_avail(void *wh)
 #endif
       if (w->ac3)
       {
-         /* In the frontend's frames: the fifo's room in carrier frames
-          * (a burst is 1536 of them for 1536 layout frames), less what
-          * the encoder holds, which the next burst will need room for. */
-         size_t frames = room / w->frame_size;
-         frames = frames > w->ac3_in_frames ? frames - w->ac3_in_frames : 0;
-         return frames * w->ac3_frame_size;
+         /* In the frontend's frames: the buffer's frames less those in
+          * flight - the fifo's and the encoder's, one figure kept under
+          * the lock (a burst is 1536 carrier frames for 1536 layout
+          * frames, so the two counts add). */
+         size_t cap = (w->buffer->size - 1) / w->frame_size;
+         size_t inflight;
+#ifdef HAVE_THREADS
+         slock_lock(w->fifo_lock);
+         inflight = w->ac3_inflight;
+         slock_unlock(w->fifo_lock);
+#else
+         inflight = w->ac3_inflight;
+#endif
+         return (cap > inflight ? cap - inflight : 0) * w->ac3_frame_size;
       }
       return room;
    }
@@ -2572,6 +2609,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
                      w->renderer, frame_count, &dest)))
             return 0;
          fifo_read(w->buffer, dest, w->engine_buffer_size);
+         wasapi_ac3_drained(w, w->engine_buffer_size);
       }
       else
       {
