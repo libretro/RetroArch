@@ -538,6 +538,33 @@ steady_skipped:
    if (!jitter && dev_underrun_events == 0)
       CHECK(audio_driver_st.sink_applied > 0, "the sink estimate never settled on the threaded pipeline");
    CHECK(bound_breaches == 0, "%u flushes produced more than the bound reserved for them", bound_breaches);
+   /* The overlay's buffer statistics, from the same fill the
+    * controller reads: centred so that on target is half free, with
+    * the water marks a quarter of a device buffer either side. A ring
+    * that holds its target reports a middling saturation and few
+    * marks; a ring too small to hold a publish cannot, and the marks
+    * are what says so - at a ring of ten milliseconds against a
+    * device period this run reports half its samples near underrun,
+    * which is the ring and not the measure. */
+   {
+      audio_statistics_t st;
+      memset(&st, 0, sizeof(st));
+      if (audio_compute_buffer_statistics(&st))
+      {
+         printf("   buffer statistics: saturation %.1f%%, deviation %.1f%%, underrun %.1f%%, blocking %.1f%%, over %u samples\n",
+               st.average_buffer_saturation, st.std_deviation_percentage,
+               st.close_to_underrun, st.close_to_blocking, st.samples);
+         if (!jitter && !stall && dev_underrun_events == 0)
+         {
+            CHECK(st.average_buffer_saturation > 15.0 && st.average_buffer_saturation < 95.0,
+                  "a run that held its target reports %.1f%% saturation", st.average_buffer_saturation);
+            CHECK(st.close_to_underrun < 50.0,
+                  "a run that held its target spent %.1f%% of it near underrun", st.close_to_underrun);
+            CHECK(st.close_to_blocking < 50.0,
+                  "a run that held its target spent %.1f%% of it near blocking", st.close_to_blocking);
+         }
+      }
+   }
    if (dev_float)
    {
       printf("   float core: the device's peak sample was %.3g (published %.3g, one int16 LSB is %.3g)\n",
