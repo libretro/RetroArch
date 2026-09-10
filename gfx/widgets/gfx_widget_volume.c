@@ -305,7 +305,7 @@ static void gfx_widget_volume_timer_end(void *userdata)
    gfx_animation_push(&entry);
 }
 
-void gfx_widget_volume_update_and_show(float new_volume, bool mute)
+static void gfx_widget_volume_update_and_show_state(float new_volume, bool mute)
 {
    gfx_timer_ctx_entry_t entry;
    gfx_widget_volume_state_t *state = &p_w_volume_st;
@@ -323,6 +323,13 @@ void gfx_widget_volume_update_and_show(float new_volume, bool mute)
    entry.userdata    = NULL;
 
    gfx_animation_timer_start(&state->timer, &entry);
+}
+
+void gfx_widget_volume_update_and_show(float new_volume, bool mute)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_volume_update_and_show_state(new_volume, mute);
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widget_volume_layout(

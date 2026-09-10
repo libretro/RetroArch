@@ -163,7 +163,7 @@ static void gfx_widget_generic_message_slide_in_cb(void *userdata)
 }
 
 /* Widget interface */
-void gfx_widget_set_generic_message(
+static void gfx_widget_set_generic_message_state(
       const char *msg, unsigned duration)
 {
    dispgfx_widget_t *p_dispwidget            = dispwidget_get_ptr();
@@ -229,6 +229,14 @@ void gfx_widget_set_generic_message(
     *   - Animation 'finishes' immediately, and the
     *     user never sees it... */
    state->message_updated = true;
+}
+
+void gfx_widget_set_generic_message(
+      const char *msg, unsigned duration)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_generic_message_state(msg, duration);
+   gfx_widgets_state_unlock();
 }
 
 /* Widget layout() */

@@ -297,6 +297,9 @@ typedef struct thread_video
    scond_t *cond_user;
    uintptr_t user_owner;
    unsigned user_depth;
+   /* Widget state lock depth user_acquire() released on the owner's
+    * behalf, retaken when the slot is released */
+   unsigned user_widgets_depth;
    /* cond_ring: ring progress (frame.pending / frame.busy changing),
     * broadcast by the video thread when it claims or completes a slot.
     * Any number of waiters, each re-testing its own predicate. */

@@ -306,13 +306,20 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
  * show none.  Safe to call whether or not the animation is running:
  * a value set while idle is simply what the next animation starts
  * with, and the reset on start clears it. */
-void gfx_widget_set_load_content_progress(int8_t progress)
+static void gfx_widget_set_load_content_progress_state(int8_t progress)
 {
    p_w_load_content_animation_st.progress =
          (progress > 100) ? 100 : progress;
 }
 
-bool gfx_widget_start_load_content_animation(void)
+void gfx_widget_set_load_content_progress(int8_t progress)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_load_content_progress_state(progress);
+   gfx_widgets_state_unlock();
+}
+
+static bool gfx_widget_start_load_content_animation_state(void)
 {
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
@@ -566,6 +573,15 @@ icon_done:
    state->status = GFX_WIDGET_LOAD_CONTENT_BEGIN;
 
    return true;
+}
+
+bool gfx_widget_start_load_content_animation(void)
+{
+   bool ret;
+   gfx_widgets_state_lock();
+   ret = gfx_widget_start_load_content_animation_state();
+   gfx_widgets_state_unlock();
+   return ret;
 }
 
 /* Widget layout() */

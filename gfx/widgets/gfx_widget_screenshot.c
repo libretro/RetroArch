@@ -139,7 +139,7 @@ static void gfx_widgets_play_screenshot_flash(void *data)
    gfx_animation_push(&entry);
 }
 
-void gfx_widget_state_slot_show(
+static void gfx_widget_state_slot_show_state(
       void *data,
       const char *shotname, const char *filename)
 {
@@ -157,7 +157,16 @@ void gfx_widget_state_slot_show(
    strlcpy(state->shotname, shotname, sizeof(state->shotname));
 }
 
-void gfx_widget_screenshot_taken(
+void gfx_widget_state_slot_show(
+      void *data,
+      const char *shotname, const char *filename)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_state_slot_show_state(data, shotname, filename);
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widget_screenshot_taken_state(
       void *data,
       const char *shotname, const char *filename)
 {
@@ -175,6 +184,15 @@ void gfx_widget_screenshot_taken(
       strlcpy(state->filename, filename, sizeof(state->filename));
       strlcpy(state->shotname, shotname, sizeof(state->shotname));
    }
+}
+
+void gfx_widget_screenshot_taken(
+      void *data,
+      const char *shotname, const char *filename)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_screenshot_taken_state(data, shotname, filename);
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widget_screenshot_end(void *userdata)

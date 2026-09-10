@@ -160,6 +160,11 @@ check "hw ring: Vulkan only" \
 check "hw ring: no hardware API" \
    "$GLINC" gfx/video_thread_hw.c
 
+# Widget state lock: the worker draws widgets while the main thread
+# writes them, and the wrapper yields the lock around its waits.
+check "widgets: state lock" "$GLINC -DHAVE_GFX_WIDGETS" \
+   gfx/gfx_widgets.c gfx/video_thread_wrapper.c gfx/video_driver.c runloop.c
+
 # Without threads: the wrapper is not built, and callers must compile
 # against the macro stand-ins, not the wrapper's prototypes. Syntax
 # only here; the link is the threadless job's.
@@ -182,6 +187,9 @@ check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driv
 check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD" retroarch.c
 check_nothreads "no threads: audio_driver" "$GLINC"               audio/audio_driver.c
 check_nothreads "no threads: linux input"  "$GLINC"               input/common/linux_common.c
+check_nothreads "no threads: widget state lock stand-ins" \
+   "$GLINC -DHAVE_GFX_WIDGETS" \
+   gfx/gfx_widgets.c gfx/widgets/gfx_widget_volume.c gfx/video_driver.c runloop.c
 
 echo "== run-ahead: the dynamic-library gates =="
 # The secondary instance exists only with HAVE_DYNAMIC; a build that

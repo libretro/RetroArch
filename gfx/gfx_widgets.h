@@ -21,6 +21,7 @@
 #endif
 
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
@@ -217,6 +218,17 @@ typedef struct dispgfx_widget
     * by FIFO_*_AVAIL checks where the result is used to gate a
     * subsequent FIFO operation. */
    slock_t* msg_queue_lock;
+   /* Everything the widgets draw. With the threaded video wrapper the
+    * worker draws it while the main thread animates, iterates and sets
+    * it, so both sides hold this: the worker across the draw, a writer
+    * across its change. Outermost of the widget locks. Recursive for
+    * its owner through state_owner/state_depth, and released for as
+    * long as its owner waits on the worker (gfx_widgets_state_yield()),
+    * so a writer that loads or frees a texture cannot deadlock against
+    * a draw waiting for it. Untouched without the wrapper. */
+   slock_t* state_lock;
+   retro_atomic_size_t state_owner;
+   unsigned state_depth;
 #endif
    fifo_buffer_t msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
@@ -478,6 +490,16 @@ void gfx_widget_set_load_content_progress(int8_t progress);
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
+#ifdef HAVE_THREADS
+void gfx_widgets_state_lock(void);
+void gfx_widgets_state_unlock(void);
+unsigned gfx_widgets_state_yield(void);
+void gfx_widgets_state_resume(unsigned depth);
+#else
+#define gfx_widgets_state_lock()     ((void)0)
+#define gfx_widgets_state_unlock()   ((void)0)
+#endif
+
 void gfx_widgets_frame(void *data);
 
 bool gfx_widgets_visible(void *data);

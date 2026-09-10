@@ -123,7 +123,7 @@ static void gfx_widget_progress_message_fadeout(void *userdata)
 
 /* Widget interface */
 
-void gfx_widget_set_progress_message(
+static void gfx_widget_set_progress_message_state(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress)
 {
@@ -171,6 +171,15 @@ void gfx_widget_set_progress_message(
 
    /* Set 'active' flag */
    state->active = true;
+}
+
+void gfx_widget_set_progress_message(
+      const char *message, unsigned duration,
+      unsigned priority, int8_t progress)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_progress_message_state(message, duration, priority, progress);
+   gfx_widgets_state_unlock();
 }
 
 /* Widget layout() */

@@ -200,7 +200,7 @@ static void gfx_widgets_msg_queue_free(
       dispgfx_widget_t *p_dispwidget,
       disp_widget_msg_t *msg);
 
-void gfx_widgets_msg_queue_push(
+static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
       const char *msg,
       size_t len,
@@ -565,6 +565,22 @@ void gfx_widgets_msg_queue_push(
          msg_widget->task_progress     = task->progress;
       }
    }
+}
+
+void gfx_widgets_msg_queue_push(
+      retro_task_t *task,
+      const char *msg,
+      size_t len,
+      unsigned duration,
+      char *title,
+      enum message_queue_icon icon,
+      enum message_queue_category category,
+      unsigned prio, bool flush,
+      bool menu_is_alive)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_msg_queue_push_state(task, msg, len, duration, title, icon, category, prio, flush, menu_is_alive);
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widgets_move_end(void *userdata)
@@ -1125,7 +1141,7 @@ static void gfx_widgets_layout(
    }
 }
 
-void gfx_widgets_iterate(
+static void gfx_widgets_iterate_state(
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
@@ -1294,6 +1310,18 @@ void gfx_widgets_iterate(
          break;
       }
    }
+}
+
+void gfx_widgets_iterate(
+      void *data_disp,
+      void *settings_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_iterate_state(data_disp, settings_data, width, height, fullscreen, dir_assets, font_path, is_threaded);
+   gfx_widgets_state_unlock();
 }
 
 static int gfx_widgets_draw_indicator(
@@ -1820,7 +1848,7 @@ bool gfx_widgets_visible(void *data)
    return false;
 }
 
-void gfx_widgets_frame(void *data)
+static void gfx_widgets_frame_state(void *data)
 {
    size_t i;
    video_frame_info_t *video_info   = (video_frame_info_t*)data;
@@ -2199,6 +2227,13 @@ void gfx_widgets_frame(void *data)
             video_st->data, video_width, video_height, false, true);
 }
 
+void gfx_widgets_frame(void *data)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_frame_state(data);
+   gfx_widgets_state_unlock();
+}
+
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
@@ -2273,6 +2308,8 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    p_dispwidget->current_msgs_lock = NULL;
    slock_free(p_dispwidget->msg_queue_lock);
    p_dispwidget->msg_queue_lock = NULL;
+   slock_free(p_dispwidget->state_lock);
+   p_dispwidget->state_lock = NULL;
 #endif
 
    p_dispwidget->msg_queue_tasks_count = 0;
@@ -2423,6 +2460,9 @@ bool gfx_widgets_init(
 #ifdef HAVE_THREADS
       p_dispwidget->current_msgs_lock = slock_new();
       p_dispwidget->msg_queue_lock    = slock_new();
+      retro_atomic_size_init(&p_dispwidget->state_owner, 0);
+      p_dispwidget->state_depth       = 0;
+      p_dispwidget->state_lock        = slock_new();
 #endif
 
       fill_pathname_join_special(
@@ -2644,6 +2684,79 @@ void gfx_widgets_ai_service_overlay_unload(void)
       p_dispwidget->ai_service_overlay_texture = 0;
       gfx_widgets_ai_service_overlay_set_state(0);
    }
+}
+#endif
+
+#ifdef HAVE_THREADS
+void gfx_widgets_state_lock(void)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   uintptr_t self;
+
+   if (     !p_dispwidget->state_lock
+         || !video_state_get_ptr()->thread_wrapper_active)
+      return;
+
+   self = sthread_get_current_thread_id();
+   if ((uintptr_t)retro_atomic_load_acquire_size(
+            &p_dispwidget->state_owner) == self)
+   {
+      p_dispwidget->state_depth++;
+      return;
+   }
+
+   slock_lock(p_dispwidget->state_lock);
+   retro_atomic_store_release_size(&p_dispwidget->state_owner, (size_t)self);
+   p_dispwidget->state_depth = 1;
+}
+
+void gfx_widgets_state_unlock(void)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+
+   /* Not the owner: the matching lock found the wrapper inactive */
+   if ((uintptr_t)retro_atomic_load_acquire_size(
+            &p_dispwidget->state_owner) != sthread_get_current_thread_id())
+      return;
+   if (--p_dispwidget->state_depth)
+      return;
+
+   retro_atomic_store_release_size(&p_dispwidget->state_owner, 0);
+   slock_unlock(p_dispwidget->state_lock);
+}
+
+/* For the threaded video wrapper, before this thread waits on the
+ * worker: a draw blocked on the lock would never let the worker reach
+ * the command. Returns the depth to hand back to resume, 0 if this
+ * thread held nothing. */
+unsigned gfx_widgets_state_yield(void)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   unsigned depth;
+
+   if (     !p_dispwidget->state_lock
+         || (uintptr_t)retro_atomic_load_acquire_size(
+            &p_dispwidget->state_owner) != sthread_get_current_thread_id())
+      return 0;
+
+   depth                     = p_dispwidget->state_depth;
+   p_dispwidget->state_depth = 0;
+   retro_atomic_store_release_size(&p_dispwidget->state_owner, 0);
+   slock_unlock(p_dispwidget->state_lock);
+   return depth;
+}
+
+void gfx_widgets_state_resume(unsigned depth)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+
+   if (!depth || !p_dispwidget->state_lock)
+      return;
+
+   slock_lock(p_dispwidget->state_lock);
+   retro_atomic_store_release_size(&p_dispwidget->state_owner,
+         (size_t)sthread_get_current_thread_id());
+   p_dispwidget->state_depth = depth;
 }
 #endif
 

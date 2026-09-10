@@ -6118,6 +6118,8 @@ void video_driver_frame(const void *data, unsigned width,
 #if defined(HAVE_GFX_WIDGETS)
       if (widgets_active)
       {
+         /* The threaded video worker draws this text */
+         gfx_widgets_state_lock();
          /* Cap to widget buffer.  _len is the source length; if it
           * would overflow, fall back to a clamping strlcpy and use
           * its return as the new length. */
@@ -6138,6 +6140,7 @@ void video_driver_frame(const void *data, unsigned width,
                p_dispwidget->gfx_widgets_status_text_len =
                   sizeof(p_dispwidget->gfx_widgets_status_text) - 1;
          }
+         gfx_widgets_state_unlock();
       }
       else
 #endif
