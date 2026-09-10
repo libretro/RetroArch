@@ -89,7 +89,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    snd_pcm_sw_params_t *sw_params = NULL;
    unsigned latency_usec          = latency * 1000;
    unsigned periods               = 4;
-   unsigned orig_rate             = rate;
    const char *alsa_dev           = device ? device : "default";
    int errnum                     = 0;
 
@@ -283,13 +282,22 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       }
    }
 
-   stream_info->period_size = snd_pcm_frames_to_bytes(*pcm, stream_info->period_frames);
-   if (stream_info->period_size < 0)
+   /* snd_pcm_frames_to_bytes returns a signed count and a negative
+    * value is its error; the field it is stored in is unsigned, so
+    * the test has to be on the return value. It was made after the
+    * store, where it could never be true, and a failure would have
+    * been carried on as an enormous size. The error's message came
+    * from the frame count too, not from the return. */
    {
-      RARCH_ERR("[ALSA] Failed to convert a period size of %lu frames to bytes: %s.\n",
-            stream_info->period_frames,
-            snd_strerror(stream_info->period_frames));
-      goto error;
+      ssize_t bytes = snd_pcm_frames_to_bytes(*pcm, stream_info->period_frames);
+      if (bytes < 0)
+      {
+         RARCH_ERR("[ALSA] Failed to convert a period size of %lu frames to bytes: %s.\n",
+               (unsigned long)stream_info->period_frames,
+               snd_strerror((int)bytes));
+         goto error;
+      }
+      stream_info->period_size = (size_t)bytes;
    }
 
    RARCH_LOG("[ALSA] Period: %u periods per buffer (%lu frames, %lu bytes).\n",
@@ -316,15 +324,19 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    }
 
 
-   stream_info->buffer_size = snd_pcm_frames_to_bytes(*pcm, buffer_size);
-   if (stream_info->buffer_size < 0)
    {
-      RARCH_ERR("[ALSA] Failed to convert a buffer size of %lu frames to bytes: %s.\n",
-            buffer_size,
-            snd_strerror(buffer_size));
-      goto error;
+      ssize_t bytes = snd_pcm_frames_to_bytes(*pcm, buffer_size);
+      if (bytes < 0)
+      {
+         RARCH_ERR("[ALSA] Failed to convert a buffer size of %lu frames to bytes: %s.\n",
+               (unsigned long)buffer_size,
+               snd_strerror((int)bytes));
+         goto error;
+      }
+      stream_info->buffer_size = (size_t)bytes;
    }
-   RARCH_LOG("[ALSA] Buffer size: %lu frames (%lu bytes).\n", buffer_size, stream_info->buffer_size);
+   RARCH_LOG("[ALSA] Buffer size: %lu frames (%lu bytes).\n",
+         (unsigned long)buffer_size, (unsigned long)stream_info->buffer_size);
 
    stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
 

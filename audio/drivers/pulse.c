@@ -239,8 +239,10 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
    pa_t *pa = (pa_t*)data;
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
    if (server_attr)
+   {
       pa->buffer_size = server_attr->tlength;
       pa->minreq      = server_attr->minreq;
+   }
 
 #if 0
    RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
@@ -385,8 +387,10 @@ static void *pulse_init(const char *device, unsigned rate,
             (unsigned)pa->buffer_size);
    }
    else
+   {
       pa->buffer_size = buffer_attr.tlength;
       pa->minreq      = buffer_attr.tlength / 4;
+   }
 
    /* Seeded here, under the lock; the write callback keeps it. */
    retro_atomic_store_release_size(&pa->writable_cached,

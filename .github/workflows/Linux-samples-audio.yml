@@ -235,6 +235,36 @@ jobs:
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./discrete_multichannel_test
           echo "[pass] discrete_multichannel_test (ASan)"
 
+      - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
+        shell: bash
+        working-directory: samples/audio/live_drivers
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libasound2-dev libpulse-dev pulseaudio
+          # A server with a null sink, and an ALSA config naming a null
+          # PCM: the real drivers against the real libraries, no
+          # hardware. Pulse's telemetry is cached from the server
+          # thread's callbacks; ALSA is run once as the device reports
+          # itself and once told it cannot pause, the fallback from
+          # snd_pcm_pause to snd_pcm_drop.
+          export XDG_RUNTIME_DIR=/tmp/xdg
+          mkdir -p "$XDG_RUNTIME_DIR/pulse"
+          printf 'pcm.nullpcm { type null }\n' > "$HOME/.asoundrc"
+          pulseaudio --daemonize=no --exit-idle-time=-1 --disallow-exit -n \
+            -L "module-null-sink sink_name=nullsink rate=48000 channels=2" \
+            -L "module-native-protocol-unix auth-anonymous=1 socket=$XDG_RUNTIME_DIR/pulse/native" \
+            --log-target=file:/tmp/pa.log &
+          PA_PID=$!
+          sleep 3
+          make clean all
+          ./live_drivers_test
+          echo "[pass] live_drivers_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./live_drivers_test
+          echo "[pass] live_drivers_test (ASan)"
+          kill $PA_PID || true
+
       - name: Build and run binaural_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/audio/binaural
