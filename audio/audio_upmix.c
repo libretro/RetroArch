@@ -42,6 +42,98 @@ bool audio_layout_supported(uint32_t layout)
        || layout == AUDIO_LAYOUT_7POINT1;
 }
 
+#define AUDIO_KNOWN_POSITIONS 0x7FFu
+
+bool audio_layout_known(uint32_t layout)
+{
+   return layout != 0 && (layout & ~AUDIO_KNOWN_POSITIONS) == 0;
+}
+
+/* The fold's gains per position into left and right, in the
+ * position's bit order. */
+static void downmix_gains(uint32_t layout, float *gl, float *gr, unsigned *nslots)
+{
+   static const float table[11][2] = {
+      { 1.0f, 0.0f },              /* FL */
+      { 0.0f, 1.0f },              /* FR */
+      { 0.70710678f, 0.70710678f },/* FC */
+      { 0.0f, 0.0f },              /* LFE: dropped */
+      { 0.70710678f, 0.0f },       /* BL */
+      { 0.0f, 0.70710678f },       /* BR */
+      { 0.70710678f, 0.0f },       /* FLC */
+      { 0.0f, 0.70710678f },       /* FRC */
+      { 0.5f, 0.5f },              /* BC */
+      { 0.70710678f, 0.0f },       /* SL */
+      { 0.0f, 0.70710678f }        /* SR */
+   };
+   unsigned bit, n = 0;
+   for (bit = 0; bit < 11; bit++)
+      if (layout & (1u << bit))
+      {
+         gl[n] = table[bit][0];
+         gr[n] = table[bit][1];
+         n++;
+      }
+   /* mono: the one channel to both sides at unity */
+   if (n == 1)
+      gl[0] = gr[0] = 1.0f;
+   *nslots = n;
+}
+
+void audio_downmix_f32(float *out, const float *in, size_t frames, uint32_t layout, unsigned channels)
+{
+   float gl[11], gr[11];
+   unsigned n, c;
+   size_t f;
+   downmix_gains(layout, gl, gr, &n);
+   if (n != channels)
+      return;
+   for (f = 0; f < frames; f++)
+   {
+      float l = 0.0f, r = 0.0f;
+      for (c = 0; c < n; c++)
+      {
+         l += in[c] * gl[c];
+         r += in[c] * gr[c];
+      }
+      out[0] = l;
+      out[1] = r;
+      out   += 2;
+      in    += n;
+   }
+}
+
+void audio_downmix_s16(int16_t *out, const int16_t *in, size_t frames, uint32_t layout, unsigned channels)
+{
+   float gl[11], gr[11];
+   int32_t ql[11], qr[11];
+   unsigned n, c;
+   size_t f;
+   downmix_gains(layout, gl, gr, &n);
+   if (n != channels)
+      return;
+   for (c = 0; c < n; c++)
+   {
+      ql[c] = (int32_t)(gl[c] * 32768.0f + 0.5f);
+      qr[c] = (int32_t)(gr[c] * 32768.0f + 0.5f);
+   }
+   for (f = 0; f < frames; f++)
+   {
+      int64_t l = 0, r = 0;
+      for (c = 0; c < n; c++)
+      {
+         l += (int64_t)in[c] * ql[c];
+         r += (int64_t)in[c] * qr[c];
+      }
+      l = (l + 16384) >> 15;
+      r = (r + 16384) >> 15;
+      out[0] = (int16_t)(l > 32767 ? 32767 : l < -32768 ? -32768 : l);
+      out[1] = (int16_t)(r > 32767 ? 32767 : r < -32768 ? -32768 : r);
+      out   += 2;
+      in    += n;
+   }
+}
+
 /* The slot of a position in a frame of the layout: the count of set
  * bits below it, or -1 when the layout lacks it. */
 static int upmix_slot(uint32_t layout, uint32_t position)

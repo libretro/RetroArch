@@ -592,6 +592,10 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (audio_st->pipe_arena)
       memalign_free(audio_st->pipe_arena);
    audio_st->pipe_arena               = NULL;
+   free(audio_st->multi_fold);
+   audio_st->multi_fold               = NULL;
+   audio_st->multi_fold_frames        = 0;
+   audio_st->core_layout              = AUDIO_LAYOUT_STEREO;
    /* The wrapper thread was joined by audio->free() above, so nothing
     * reads the ring any more. */
    retro_spsc_free(&audio_st->pipe_ring);
@@ -2859,6 +2863,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * sized to the largest write the pipeline makes. */
    audio_driver_st.out_layout   = AUDIO_LAYOUT_STEREO;
    audio_driver_st.out_channels = 2;
+   audio_driver_st.core_layout  = AUDIO_LAYOUT_STEREO;
    if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
          && audio_driver_st.current_audio->layout)
    {
@@ -3835,6 +3840,69 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    } while (frames_remaining > 0);
 
    return frames;
+}
+
+/* The multi-channel batch entries. A frame of the core's layout is
+ * folded to stereo (audio_downmix_*) into a buffer grown to the
+ * largest batch, and handed to the classic entry of the same sample
+ * format, so everything downstream - the filters, the resampler, the
+ * mixer, recording, rewind, netplay's gate - sees what it always has.
+ * A device opened wider gets the upmix's widening of that stereo, as
+ * a stereo core's does; the discrete path to such a device, with the
+ * core's own rears kept apart, is the next step and will take over
+ * here when it exists. Stereo in is passed straight through. */
+static bool audio_driver_multi_fold_room(audio_driver_state_t *audio_st,
+      size_t frames, size_t sample)
+{
+   if (frames > audio_st->multi_fold_frames)
+   {
+      /* float and int16 batches share the buffer: sized for float,
+       * the larger */
+      void *n = realloc(audio_st->multi_fold, frames * 2 * sizeof(float));
+      if (!n)
+         return false;
+      audio_st->multi_fold        = n;
+      audio_st->multi_fold_frames = frames;
+   }
+   (void)sample;
+   return true;
+}
+
+static bool audio_driver_multi_layout_ok(unsigned channels, unsigned layout)
+{
+   return audio_layout_known(layout)
+       && channels >= 1 && channels <= 8
+       && audio_layout_channels(layout) == channels;
+}
+
+size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
+      unsigned channels, unsigned layout)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (!data || !audio_driver_multi_layout_ok(channels, layout))
+      return 0;
+   audio_st->core_layout = layout;
+   if (layout == AUDIO_LAYOUT_STEREO)
+      return audio_driver_sample_batch(data, frames);
+   if (!frames || !audio_driver_multi_fold_room(audio_st, frames, sizeof(int16_t)))
+      return 0;
+   audio_downmix_s16((int16_t*)audio_st->multi_fold, data, frames, layout, channels);
+   return audio_driver_sample_batch((const int16_t*)audio_st->multi_fold, frames);
+}
+
+size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
+      unsigned channels, unsigned layout)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (!data || !audio_driver_multi_layout_ok(channels, layout))
+      return 0;
+   audio_st->core_layout = layout;
+   if (layout == AUDIO_LAYOUT_STEREO)
+      return audio_driver_sample_batch_float(data, frames);
+   if (!frames || !audio_driver_multi_fold_room(audio_st, frames, sizeof(float)))
+      return 0;
+   audio_downmix_f32((float*)audio_st->multi_fold, data, frames, layout, channels);
+   return audio_driver_sample_batch_float((const float*)audio_st->multi_fold, frames);
 }
 
 /* Float counterpart of audio_driver_sample_batch(). Used only when the
@@ -5044,22 +5112,38 @@ void audio_driver_set_core_float(bool core_float)
 
 /* The speaker path in effect, for the overlay: the layout the device
  * opened with and how it is filled, in a few words. */
+static const char *audio_layout_name(uint32_t layout, char *buf, size_t len)
+{
+   switch (layout)
+   {
+      case AUDIO_LAYOUT_STEREO:           return "stereo";
+      case AUDIO_LAYOUT_QUAD:             return "4.0";
+      case AUDIO_LAYOUT_5POINT1:          return "5.1";
+      case AUDIO_LAYOUT_5POINT1_SURROUND: return "5.1 sides";
+      case AUDIO_LAYOUT_7POINT1:          return "7.1";
+      default: break;
+   }
+   if (layout == AUDIO_SPEAKER_FRONT_CENTER)
+      return "mono";
+   snprintf(buf, len, "%u channels", audio_layout_channels(layout));
+   return buf;
+}
+
 size_t audio_driver_get_layout_desc(char *s, size_t len)
 {
    const audio_driver_state_t *st = &audio_driver_st;
-   const char *name;
-   switch (st->out_layout)
-   {
-      case AUDIO_LAYOUT_QUAD:             name = "4.0";          break;
-      case AUDIO_LAYOUT_5POINT1:          name = "5.1";          break;
-      case AUDIO_LAYOUT_5POINT1_SURROUND: name = "5.1 sides";    break;
-      case AUDIO_LAYOUT_7POINT1:          name = "7.1";          break;
-      default:                            name = "stereo";       break;
-   }
+   char tmp[24];
+   const char *name = audio_layout_name(st->out_layout, tmp, sizeof(tmp));
+   /* what the core delivers, when it is not the stereo everything
+    * else is: folded to stereo at the boundary today */
+   const char *from = (st->core_layout && st->core_layout != AUDIO_LAYOUT_STEREO)
+         ? audio_layout_name(st->core_layout, tmp, sizeof(tmp)) : "stereo";
    if (st->out_channels > 2)
-      return snprintf(s, len, "%s (upmixed from stereo)", name);
+      return snprintf(s, len, "%s (upmixed from %s)", name, from);
    if (st->virtualize)
       return snprintf(s, len, "stereo, virtual 5.1 to headphones");
+   if (st->core_layout && st->core_layout != AUDIO_LAYOUT_STEREO)
+      return snprintf(s, len, "stereo (folded from %s)", from);
    return snprintf(s, len, "stereo");
 }
 

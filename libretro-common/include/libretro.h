@@ -2872,6 +2872,79 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Negotiates multi-channel audio output.
+ *
+ * The classic batch callbacks carry interleaved stereo. A core whose
+ * source has more channels - a console with discrete surround, a
+ * media player, an arcade board with a distinct rear pair - has had
+ * to fold them to two at the libretro boundary. This call hands the
+ * core a pair of batch entry points that take a frame of any of the
+ * layouts below, so the channels reach the frontend as they are;
+ * what happens to them then is the frontend's: sent discretely to a
+ * device that has those speakers, folded to stereo for one that does
+ * not, folded and re-expanded as the user's settings say.
+ *
+ * On success the frontend fills the supplied
+ * \c retro_audio_sample_multi_callback: \c batch_int16 always, and
+ * \c batch_float when it also answers \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT (a core wanting
+ * float should query that first; a NULL \c batch_float means int16
+ * only). Either function takes interleaved frames of \c channels
+ * samples, in the ascending-bit order of \c layout - front left,
+ * front right, front centre, LFE, back left, back right, ...
+ * - which is the order the WAVEFORMATEXTENSIBLE channel mask, ALSA,
+ * SDL and the WAV format use. \c channels must equal the number of
+ * bits set in \c layout. The return value has the meaning of
+ * \c retro_audio_sample_batch_t.
+ *
+ * Contract:
+ *  - Negotiate once, during \c retro_load_game(). The layout may
+ *    change from call to call (a game switching from stereo to 5.1),
+ *    but the core commits to one sample format for the loaded game,
+ *    as with the float call, and does not mix these entry points
+ *    with the classic ones.
+ *  - A layout with a bit the frontend does not know, or more than
+ *    eight channels, is refused: the call returns 0 frames. Cores
+ *    should use the \c RETRO_AUDIO_LAYOUT_ constants.
+ *  - The function pointers are owned by the frontend and remain
+ *    valid until \c retro_unload_game().
+ *  - Frontends that do not recognise this call return \c false; the
+ *    core keeps folding to stereo and using the classic callbacks.
+ *
+ * @param[out] data <tt>struct retro_audio_sample_multi_callback *</tt>.
+ * @return \c true if multi-channel output is supported, \c false otherwise.
+ * @see retro_audio_sample_multi_callback
+ * @see RETRO_AUDIO_SPEAKER_FRONT_LEFT
+ */
+#define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/* Speaker positions, as bits of a layout mask; a frame's channels are
+ * interleaved in ascending bit order. The bits are those of the
+ * WAVEFORMATEXTENSIBLE channel mask. */
+#define RETRO_AUDIO_SPEAKER_FRONT_LEFT            0x001
+#define RETRO_AUDIO_SPEAKER_FRONT_RIGHT           0x002
+#define RETRO_AUDIO_SPEAKER_FRONT_CENTER          0x004
+#define RETRO_AUDIO_SPEAKER_LOW_FREQUENCY         0x008
+#define RETRO_AUDIO_SPEAKER_BACK_LEFT             0x010
+#define RETRO_AUDIO_SPEAKER_BACK_RIGHT            0x020
+#define RETRO_AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER  0x040
+#define RETRO_AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER 0x080
+#define RETRO_AUDIO_SPEAKER_BACK_CENTER           0x100
+#define RETRO_AUDIO_SPEAKER_SIDE_LEFT             0x200
+#define RETRO_AUDIO_SPEAKER_SIDE_RIGHT            0x400
+
+/* The layouts a core is expected to use. Others are accepted where the
+ * frontend knows every bit. */
+#define RETRO_AUDIO_LAYOUT_MONO   (RETRO_AUDIO_SPEAKER_FRONT_CENTER)
+#define RETRO_AUDIO_LAYOUT_STEREO (RETRO_AUDIO_SPEAKER_FRONT_LEFT | RETRO_AUDIO_SPEAKER_FRONT_RIGHT)
+#define RETRO_AUDIO_LAYOUT_2_1    (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY)
+#define RETRO_AUDIO_LAYOUT_QUAD   (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_BACK_LEFT | RETRO_AUDIO_SPEAKER_BACK_RIGHT)
+#define RETRO_AUDIO_LAYOUT_5_1    (RETRO_AUDIO_LAYOUT_QUAD | RETRO_AUDIO_SPEAKER_FRONT_CENTER | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY)
+#define RETRO_AUDIO_LAYOUT_5_1_SIDE (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_FRONT_CENTER | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY \
+                                    | RETRO_AUDIO_SPEAKER_SIDE_LEFT | RETRO_AUDIO_SPEAKER_SIDE_RIGHT)
+#define RETRO_AUDIO_LAYOUT_7_1    (RETRO_AUDIO_LAYOUT_5_1 | RETRO_AUDIO_SPEAKER_SIDE_LEFT | RETRO_AUDIO_SPEAKER_SIDE_RIGHT)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.
@@ -8019,6 +8092,40 @@ struct retro_audio_sample_float_callback
    /* Set by the frontend. The core calls this instead of the int16
     * batch callback once float output has been negotiated. */
    retro_audio_sample_batch_float_t batch;
+};
+
+/**
+ * Renders multiple audio frames of a multi-channel layout.
+ *
+ * Valid only after the frontend has answered \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI.
+ *
+ * @param data Interleaved frames of \c channels samples, one sample
+ *     a speaker in the ascending-bit order of \c layout; int16 or
+ *     float in [-1.0, 1.0] by the entry point.
+ * @param frames The number of frames in \c data.
+ * @param channels Samples per frame: the bits set in \c layout.
+ * @param layout The speaker mask, from the \c RETRO_AUDIO_SPEAKER_ bits.
+ * @return The number of frames processed; 0 for a layout the frontend
+ *     does not take.
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI
+ */
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_multi_int16_t)(
+      const int16_t *data, size_t frames, unsigned channels, unsigned layout);
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_multi_float_t)(
+      const float *data, size_t frames, unsigned channels, unsigned layout);
+
+/**
+ * Multi-channel batch callbacks handed to the core in response to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI.
+ */
+struct retro_audio_sample_multi_callback
+{
+   /* Set by the frontend. */
+   retro_audio_sample_batch_multi_int16_t batch_int16;
+   /* Set by the frontend when float output is negotiated too, NULL
+    * otherwise. */
+   retro_audio_sample_batch_multi_float_t batch_float;
 };
 
 /**

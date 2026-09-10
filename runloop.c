@@ -3763,6 +3763,24 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:
+      {
+         struct retro_audio_sample_multi_callback *cb =
+               (struct retro_audio_sample_multi_callback*)data;
+         if (!cb)
+            return false;
+         /* The int16 entry always; the float one under the same terms
+          * as RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT - a core
+          * wanting float queries that first, and gets the float entry
+          * here when it was granted. Both fold to the stereo pipeline;
+          * the device's layout is the upmix's affair, as for a stereo
+          * core. */
+         cb->batch_int16 = audio_driver_sample_batch_multi_int16;
+         cb->batch_float = audio_state_get_ptr()->core_float
+               ? audio_driver_sample_batch_multi_float : NULL;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
 #if TARGET_OS_IPHONE

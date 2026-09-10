@@ -735,6 +735,16 @@ typedef struct
     * out_channels, float and int16. */
    uint32_t      out_layout;
    unsigned      out_channels;
+   /* The multi-channel batch entry (RETRO_ENVIRONMENT_GET_AUDIO_
+    * SAMPLE_BATCH_MULTI): the layout the core last delivered, and
+    * the stereo fold of a batch, grown to the largest batch seen. The
+    * pipeline carries stereo; a core's wider frame is folded here at
+    * the boundary, and the device's upmix widens the stereo again.
+    * core_layout is stereo until the core delivers something else,
+    * and the overlay says what it was folded from. */
+   uint32_t      core_layout;
+   void         *multi_fold;
+   size_t        multi_fold_frames;
    audio_upmix_t upmix;
    float        *upmix_buf;
    int16_t      *upmix_i16;
@@ -970,6 +980,13 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
  * @return Number of frames processed.
  **/
 size_t audio_driver_sample_batch_float(const float *data, size_t frames);
+
+/* The multi-channel batch entries handed to a core that negotiated
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI: a frame of the
+ * layout's channels, folded to stereo and passed to the classic
+ * entry of the same sample format. 0 for a layout not taken. */
+size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames, unsigned channels, unsigned layout);
+size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames, unsigned channels, unsigned layout);
 
 #ifdef HAVE_REWIND
 /**

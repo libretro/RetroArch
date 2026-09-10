@@ -137,6 +137,49 @@ int main(void)
    }
 
    free(in); free(out);
+   /* The fold the multi-channel batch entry uses: a core's wider
+    * frame to the stereo pipeline. Each position at its BS.775 gain,
+    * the LFE dropped, int16 the float to the bit, mono to both. */
+   printf("   downmix: a wider frame to stereo at the ITU gains\n");
+   {
+      float  f6[6]  = { 0.5f, -0.25f, 0.4f, 0.9f, 0.2f, -0.3f };  /* FL FR FC LFE BL BR */
+      float  o[2]   = { 0, 0 };
+      int16_t i6[6], oi[2];
+      float  el, er;
+      unsigned c;
+      audio_downmix_f32(o, f6, 1, AUDIO_LAYOUT_5POINT1, 6);
+      el = 0.5f + 0.70710678f * 0.4f + 0.70710678f * 0.2f;
+      er = -0.25f + 0.70710678f * 0.4f + 0.70710678f * -0.3f;
+      CHECK(fabsf(o[0] - el) < 1e-6f && fabsf(o[1] - er) < 1e-6f,
+            "5.1 folds to %.4f %.4f, expected %.4f %.4f", o[0], o[1], el, er);
+      for (c = 0; c < 6; c++) i6[c] = (int16_t)(f6[c] * 32767.0f);
+      audio_downmix_s16(oi, i6, 1, AUDIO_LAYOUT_5POINT1, 6);
+      CHECK(abs((int)oi[0] - (int)(el * 32767.0f)) <= 2 && abs((int)oi[1] - (int)(er * 32767.0f)) <= 2,
+            "int16 fold gives %d %d, expected about %d %d", oi[0], oi[1], (int)(el * 32767.0f), (int)(er * 32767.0f));
+      /* sides fold as the back pair; a lone back centre at -6 dB each */
+      audio_downmix_f32(o, f6, 1, AUDIO_LAYOUT_5POINT1_SURROUND, 6);
+      CHECK(fabsf(o[0] - el) < 1e-6f, "5.1 sides folds differently from 5.1 back");
+      {
+         float f3[3] = { 0.5f, -0.25f, 0.8f };   /* FL FR BC */
+         audio_downmix_f32(o, f3, 1, AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_BACK_CENTER, 3);
+         CHECK(fabsf(o[0] - (0.5f + 0.4f)) < 1e-6f && fabsf(o[1] - (-0.25f + 0.4f)) < 1e-6f,
+               "a back centre folds at %.3f into left, expected -6 dB", o[0] - 0.5f);
+      }
+      {
+         float m = 0.3f;
+         audio_downmix_f32(o, &m, 1, AUDIO_SPEAKER_FRONT_CENTER, 1);
+         CHECK(o[0] == 0.3f && o[1] == 0.3f, "mono is not both sides at unity");
+      }
+      /* saturation on correlated int16 content */
+      {
+         int16_t loud[6] = { 30000, 30000, 30000, 0, 30000, 30000 };
+         audio_downmix_s16(oi, loud, 1, AUDIO_LAYOUT_5POINT1, 6);
+         CHECK(oi[0] == 32767 && oi[1] == 32767, "correlated loud content did not saturate (%d)", oi[0]);
+      }
+      CHECK(audio_layout_known(AUDIO_LAYOUT_7POINT1) && !audio_layout_known(0x800u) && !audio_layout_known(0),
+            "layout_known is wrong at the edges");
+   }
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

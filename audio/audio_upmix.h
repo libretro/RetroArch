@@ -70,6 +70,22 @@ unsigned audio_layout_channels(uint32_t layout);
  * mask the stage cannot fill is not a layout the frontend opens. */
 bool audio_layout_supported(uint32_t layout);
 
+/* A frame of any layout of the eleven positions above, folded to
+ * stereo: the ITU-R BS.775 fold the mixer uses - centre and the
+ * surround pairs into both sides at -3 dB, a back centre at -6 dB
+ * into each, the fronts of centre at -3 dB to their side, LFE
+ * dropped. Not normalised, as the mixer's is not: a 5.1 source folds
+ * to the level a stereo one would have had, and correlated content
+ * may clip, which the s16 form saturates. For a core delivering a
+ * wider layout than the pipeline carries (the multi-channel batch
+ * entry, RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI). 'channels'
+ * is the layout's count, which the caller has checked. */
+void audio_downmix_f32(float *out, const float *in, size_t frames, uint32_t layout, unsigned channels);
+void audio_downmix_s16(int16_t *out, const int16_t *in, size_t frames, uint32_t layout, unsigned channels);
+
+/* Every set bit names a position above. */
+bool audio_layout_known(uint32_t layout);
+
 /* Stereo to a wider layout, at the last step before the device. The
  * pipeline stays stereo - the core, the filters, the resampler, the
  * mixer - and a device opened with a wider layout gets this stage
