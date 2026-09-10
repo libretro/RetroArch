@@ -1696,6 +1696,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
          && !is_float
+         /* The raw path hands the driver stereo int16 as it is: no
+          * upmix, no headphone render. Only when the output is plain
+          * stereo. */
+         && audio_st->out_channels <= 2
+         && !audio_st->virtualize
          && !midi_driver_synth_active()
 #ifdef HAVE_DSP_FILTER
          && !audio_st->dsp

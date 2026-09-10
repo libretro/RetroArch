@@ -163,6 +163,12 @@ typedef struct coreaudio
    /* AudioConverter for hardware-accelerated resampling */
    AudioConverterRef converter;
    unsigned output_rate;  /* Hardware output rate */
+   /* The layout the output unit's input bus was set to, as the
+    * frontend's mask, and its channel count: the unit routes each
+    * position to the hardware's speaker of that position, or mixes
+    * where it lacks one. The ring holds frames of this many floats. */
+   uint32_t layout;
+   unsigned channels;
    double current_ratio;  /* Effective input rate the converter was built for */
    unsigned last_input_rate; /* The two keys write_raw() last built it from */
    double last_rate_adjust;
@@ -182,6 +188,7 @@ typedef struct
 {
    const int16_t *data;
    size_t frames_left;
+   unsigned channels;
 } converter_callback_ctx_t;
 
 static bool coreaudio_wait_init(coreaudio_t *dev)
@@ -296,10 +303,10 @@ static OSStatus converter_input_cb(
       frames_to_provide = (UInt32)ctx->frames_left;
 
    ioData->mBuffers[0].mData        = (void *)ctx->data;
-   ioData->mBuffers[0].mDataByteSize = frames_to_provide * 4; /* stereo int16 */
-   ioData->mBuffers[0].mNumberChannels = 2;
+   ioData->mBuffers[0].mDataByteSize = frames_to_provide * ctx->channels * sizeof(int16_t);
+   ioData->mBuffers[0].mNumberChannels = ctx->channels;
 
-   ctx->data        += frames_to_provide * 2; /* advance by samples */
+   ctx->data        += frames_to_provide * ctx->channels; /* advance by samples */
    ctx->frames_left -= frames_to_provide;
    *ioNumberDataPackets = frames_to_provide;
 
@@ -338,10 +345,10 @@ static bool coreaudio_update_converter(coreaudio_t *dev,
    input_desc.mFormatID         = kAudioFormatLinearPCM;
    input_desc.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
                                 | kAudioFormatFlagIsPacked;
-   input_desc.mBytesPerPacket   = 4;
+   input_desc.mBytesPerPacket   = dev->channels * sizeof(int16_t);
    input_desc.mFramesPerPacket  = 1;
-   input_desc.mBytesPerFrame    = 4;
-   input_desc.mChannelsPerFrame = 2;
+   input_desc.mBytesPerFrame    = dev->channels * sizeof(int16_t);
+   input_desc.mChannelsPerFrame = dev->channels;
    input_desc.mBitsPerChannel   = 16;
 
    /* Output format: float32 stereo at hardware output rate */
@@ -349,10 +356,10 @@ static bool coreaudio_update_converter(coreaudio_t *dev,
    output_desc.mFormatID         = kAudioFormatLinearPCM;
    output_desc.mFormatFlags      = kAudioFormatFlagIsFloat
                                  | kAudioFormatFlagIsPacked;
-   output_desc.mBytesPerPacket   = 8;
+   output_desc.mBytesPerPacket   = dev->channels * sizeof(float);
    output_desc.mFramesPerPacket  = 1;
-   output_desc.mBytesPerFrame    = 8;
-   output_desc.mChannelsPerFrame = 2;
+   output_desc.mBytesPerFrame    = dev->channels * sizeof(float);
+   output_desc.mChannelsPerFrame = dev->channels;
    output_desc.mBitsPerChannel   = 32;
 
    err = AudioConverterNew(&input_desc, &output_desc, &dev->converter);
@@ -582,6 +589,13 @@ static void *coreaudio_init(const char *device,
    if (!(dev = (coreaudio_t*)calloc(1, sizeof(*dev))))
       return NULL;
 
+   /* The layout the frontend asked for; the unit routes its positions
+    * to the hardware's speakers, mixing where it lacks one, so what
+    * is asked is carried - unless the unit will not take the stream
+    * format at that width, in which case stereo. */
+   dev->layout   = audio_driver_requested_layout();
+   dev->channels = audio_layout_channels(dev->layout);
+
    if (!coreaudio_wait_init(dev))
       goto error;
 
@@ -620,9 +634,9 @@ static void *coreaudio_init(const char *device,
    /* Set audio format */
    stream_desc.mSampleRate       = rate;
    stream_desc.mBitsPerChannel   = sizeof(float) * CHAR_BIT;
-   stream_desc.mChannelsPerFrame = 2;
-   stream_desc.mBytesPerPacket   = 2 * sizeof(float);
-   stream_desc.mBytesPerFrame    = 2 * sizeof(float);
+   stream_desc.mChannelsPerFrame = dev->channels;
+   stream_desc.mBytesPerPacket   = dev->channels * sizeof(float);
+   stream_desc.mBytesPerFrame    = dev->channels * sizeof(float);
    stream_desc.mFramesPerPacket  = 1;
    stream_desc.mFormatID         = kAudioFormatLinearPCM;
    stream_desc.mFormatFlags      = kAudioFormatFlagIsFloat
@@ -647,7 +661,27 @@ static void *coreaudio_init(const char *device,
       goto error;
 
    if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
-      goto error;
+   {
+      if (dev->channels > 2)
+      {
+         RARCH_WARN("[CoreAudio] The output unit would not take a %u-channel stream (layout 0x%03x); opening stereo.\n",
+               dev->channels, dev->layout);
+         dev->layout   = AUDIO_LAYOUT_STEREO;
+         dev->channels = 2;
+         stream_desc.mChannelsPerFrame = 2;
+         stream_desc.mBytesPerPacket   = 2 * sizeof(float);
+         stream_desc.mBytesPerFrame    = 2 * sizeof(float);
+         if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+                  kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
+            goto error;
+         i_size = sizeof(real_desc);
+         if (AudioUnitGetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+                  kAudioUnitScope_Input, 0, &real_desc, &i_size) != noErr)
+            goto error;
+      }
+      if (real_desc.mChannelsPerFrame != stream_desc.mChannelsPerFrame)
+         goto error;
+   }
    if (real_desc.mBitsPerChannel != stream_desc.mBitsPerChannel)
       goto error;
    if (real_desc.mFormatFlags != stream_desc.mFormatFlags)
@@ -662,7 +696,7 @@ static void *coreaudio_init(const char *device,
 
    /* Allocate converter output buffer (enough for 2048 output frames) */
    dev->conv_buffer_frames = 2048;
-   dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * 2, sizeof(float));
+   dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * dev->channels, sizeof(float));
    if (!dev->conv_buffer)
       goto error;
 
@@ -673,10 +707,23 @@ static void *coreaudio_init(const char *device,
     * had been under #ifndef, which a macOS SDK defining the macro as
     * 0 turned into "never", so the layout was not being set at all. */
 #if !TARGET_OS_IPHONE
-   layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
+   /* The bus's speaker positions. Core Audio's channel bitmap uses the
+    * same bits as the frontend's mask - Left 1, Right 2, Center 4, LFE
+    * 8, LeftSurround 0x10 (the back pair), ..., LeftSurroundDirect
+    * 0x200 (the side pair) - in the same ascending order, so a wider
+    * layout goes across as itself and the two 5.1s stay apart. Stereo
+    * keeps its named tag. */
+   if (dev->channels > 2)
+   {
+      layout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+      layout.mChannelBitmap    = (AudioChannelBitmap)dev->layout;
+   }
+   else
+      layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
          kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
-      RARCH_WARN("[CoreAudio] The output unit declined a stereo channel layout; continuing with the two-channel stream format.\n");
+      RARCH_WARN("[CoreAudio] The output unit declined the channel layout (0x%03x); continuing with the %u-channel stream format.\n",
+            dev->layout, dev->channels);
 #endif
 
    /* Set callbacks and finish up. */
@@ -715,7 +762,7 @@ static void *coreaudio_init(const char *device,
 
    /* Calculate buffer size in samples (stereo) */
    buffer_samples   = (latency * (*new_rate)) / 1000;
-   buffer_samples  *= 2;  /* stereo */
+   buffer_samples  *= dev->channels;
 
    /* Round up to next power of 2 for fast modulo via masking; the ring
     * holds the setting, not the container. */
@@ -737,7 +784,7 @@ static void *coreaudio_init(const char *device,
    RARCH_LOG("[CoreAudio] Buffer: %u samples (%u bytes, %.1f ms).\n",
          (unsigned)dev->usable,
          (unsigned)(dev->usable * sizeof(float)),
-         (float)dev->usable * 1000.0f / (*new_rate) / 2.0f);
+         (float)dev->usable * 1000.0f / (*new_rate) / (float)dev->channels);
 
 #if !TARGET_OS_IPHONE
    /* The device's own stage behind the ring, for the statistics
@@ -881,6 +928,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
    /* Set up callback context */
    ctx.data        = samples;
    ctx.frames_left = frames;
+   ctx.channels    = dev->channels;
 
    /* Process in chunks that fit our conv_buffer */
    while (ctx.frames_left > 0)
@@ -888,8 +936,8 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       UInt32 output_frames = (UInt32)dev->conv_buffer_frames;
 
       output_buffer.mNumberBuffers = 1;
-      output_buffer.mBuffers[0].mNumberChannels = 2;
-      output_buffer.mBuffers[0].mDataByteSize   = output_frames * 8; /* stereo float */
+      output_buffer.mBuffers[0].mNumberChannels = dev->channels;
+      output_buffer.mBuffers[0].mDataByteSize   = output_frames * dev->channels * sizeof(float);
       output_buffer.mBuffers[0].mData           = dev->conv_buffer;
 
       err = AudioConverterFillComplexBuffer(dev->converter,
@@ -923,7 +971,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       if (volume != 1.0f)
       {
          float *v = dev->conv_buffer;
-         size_t n = output_frames * 2;
+         size_t n = output_frames * dev->channels;
          size_t k;
          for (k = 0; k < n; k++)
             v[k] *= volume;
@@ -932,7 +980,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       /* Write converted samples to ring buffer */
       {
          float *out_ptr     = dev->conv_buffer;
-         size_t out_samples = output_frames * 2; /* stereo */
+         size_t out_samples = output_frames * dev->channels;
          int    laps        = 8;
 
          while (!dev->is_paused && out_samples > 0)
@@ -945,7 +993,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
                rb_write(dev, out_ptr, to_write);
                out_ptr       += to_write;
                out_samples   -= to_write;
-               frames_written += to_write / 2; /* count frames, not samples */
+               frames_written += to_write / dev->channels; /* count frames, not samples */
             }
 
             if (dev->nonblock)
@@ -1026,6 +1074,12 @@ static bool coreaudio_start(void *data, bool is_shutdown)
 }
 
 static bool coreaudio_use_float(void *data) { return true; }
+
+static uint32_t coreaudio_layout(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   return dev ? dev->layout : AUDIO_LAYOUT_STEREO;
+}
 
 static size_t coreaudio_underruns(void *data)
 {
@@ -1147,7 +1201,7 @@ static size_t coreaudio_frames_consumed(void *data)
    coreaudio_t *dev = (coreaudio_t*)data;
    if (!dev)
       return 0;
-   return retro_atomic_load_acquire_size(&dev->consumed) / 2;
+   return retro_atomic_load_acquire_size(&dev->consumed) / dev->channels;
 }
 
 audio_driver_t audio_coreaudio = {
@@ -1167,7 +1221,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_write_raw,
    coreaudio_wait_writable,
    coreaudio_frames_consumed,
-   coreaudio_underruns
+   coreaudio_underruns,
+   coreaudio_layout
 };
 
 
