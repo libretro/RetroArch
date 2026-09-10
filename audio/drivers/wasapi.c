@@ -139,6 +139,13 @@ typedef struct
     * the fifo's room and the encoder's count could be from either
     * side of a burst's push, half the buffer apart. */
    size_t         ac3_inflight;
+   /* Whether the fifo has ever been fed: a period of silence before
+    * the first audio is not an underrun. On the AC-3 path the first
+    * burst is 32 ms of input and an encode away from the first write,
+    * and the frontend, told of underruns meanwhile, discarded the
+    * audio it had primed the pipe with, then filled the fifo at rate
+    * control's pace: a quarter of a minute low. Under fifo_lock. */
+   bool           fed;
    unsigned       ac3_frame_size;
    uint8_t        ac3_frame[RAC3_MAX_FRAME_BYTES];
    uint8_t        ac3_burst[IEC61937_AC3_BURST_BYTES];
@@ -2073,7 +2080,8 @@ static void wasapi_pump_thread(void *data)
          {
             memset(dest, 0, w->engine_buffer_size);
             flags = AUDCLNT_BUFFERFLAGS_SILENT;
-            retro_atomic_fetch_add_size(&w->underruns, 1);
+            if (w->fed)
+               retro_atomic_fetch_add_size(&w->underruns, 1);
          }
          /* Each period released is one the device takes; silence
           * counts too, the device's clock does not stop for it. */
@@ -2275,6 +2283,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
          if (ir > room)
             ir = room;
          fifo_write(w->buffer, (const char*)data + _len, ir);
+         w->fed = true;
          _len += ir;
       }
       slock_unlock(w->fifo_lock);
