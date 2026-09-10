@@ -22,6 +22,7 @@
 #include <lists/string_list.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/select.h>
 
 #ifdef HAVE_OSS_BSD
@@ -55,10 +56,20 @@ typedef struct oss_audio
     * queued. The format is fixed at S16 stereo below, so a frame is
     * four bytes. */
    uint64_t frames_written;
+   /* The layout the device opened with, and the frame: S16 at the
+    * layout's channel count. OSS's channel order is its own - FL FR
+    * BL BR FC LFE SL SR - not the frontend's mask order (FL FR FC LFE
+    * BL BR SL SR), so a wider frame is permuted on the way through
+    * order[] into stage, output channel k taking input slot order[k]. */
+   uint32_t layout;
+   unsigned channels;
+   unsigned order[8];
+   int16_t *stage;
+   size_t   stage_bytes;
    bool is_paused;
 } oss_audio_t;
 
-#define OSS_FRAME_BYTES 4
+#define OSS_FRAME_BYTES (ossaudio->channels * sizeof(int16_t))
 
 /* Iteration cap for oss_wait_writable(): bounds wakes that deliver no
  * space, so one call costs at most this many bounded waits. */
@@ -89,11 +100,50 @@ static void *oss_init(const char *device,
    if (ioctl(ossaudio->fd, SNDCTL_DSP_SETFRAGMENT, &frag) < 0)
       RARCH_WARN("[OSS] Could not set fragment sizes. Latency might not be as expected.\n");
 
-   channels = 2;
+   /* The layout the frontend asked for; the device says what count it
+    * takes, and anything but the count asked for is stereo. The back
+    * pair is what OSS's order has, so a layout with the pair at the
+    * sides is reported as the back pair. */
+   {
+      uint32_t want = audio_driver_requested_layout();
+      unsigned ch   = audio_layout_channels(want);
+      ossaudio->layout   = AUDIO_LAYOUT_STEREO;
+      ossaudio->channels = 2;
+      channels = (ch == 4 || ch == 6 || ch == 8) ? (int)ch : 2;
+      if (ioctl(ossaudio->fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
+         goto error;
+      if (channels != 2 && channels != (int)ch)
+      {
+         RARCH_LOG("[OSS] The device answered %d channels to %u asked; opening stereo.\n", channels, ch);
+         channels = 2;
+         if (ioctl(ossaudio->fd, SNDCTL_DSP_CHANNELS, &channels) < 0 || channels != 2)
+            goto error;
+      }
+      if (channels == 8)
+      {
+         static const unsigned o[8] = { 0, 1, 4, 5, 2, 3, 6, 7 };
+         ossaudio->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_FRONT_CENTER | AUDIO_SPEAKER_LOW_FREQUENCY
+               | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT | AUDIO_SPEAKER_SIDE_LEFT | AUDIO_SPEAKER_SIDE_RIGHT;
+         memcpy(ossaudio->order, o, sizeof(o));
+      }
+      else if (channels == 6)
+      {
+         static const unsigned o[6] = { 0, 1, 4, 5, 2, 3 };
+         ossaudio->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_FRONT_CENTER | AUDIO_SPEAKER_LOW_FREQUENCY
+               | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT;
+         memcpy(ossaudio->order, o, sizeof(o));
+      }
+      else if (channels == 4)
+      {
+         static const unsigned o[4] = { 0, 1, 2, 3 };
+         ossaudio->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT;
+         memcpy(ossaudio->order, o, sizeof(o));
+      }
+      ossaudio->channels = (unsigned)channels;
+      if (channels > 2)
+         RARCH_LOG("[OSS] Opened %d channels, layout 0x%03x, in OSS's channel order.\n", channels, ossaudio->layout);
+   }
    format   = is_little_endian() ? AFMT_S16_LE : AFMT_S16_BE;
-
-   if (ioctl(ossaudio->fd, SNDCTL_DSP_CHANNELS, &channels) < 0)
-      goto error;
 
    if (ioctl(ossaudio->fd, SNDCTL_DSP_SETFMT, &format) < 0)
       goto error;
@@ -126,6 +176,26 @@ static ssize_t oss_write(void *data, const void *s, size_t len)
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
    if (len == 0)
       return 0;
+   if (ossaudio->channels > 2)
+   {
+      /* into OSS's channel order, a whole frame at a time */
+      size_t frames = len / OSS_FRAME_BYTES, f;
+      unsigned c;
+      const int16_t *in = (const int16_t*)s;
+      if (ossaudio->stage_bytes < frames * OSS_FRAME_BYTES)
+      {
+         int16_t *n = (int16_t*)realloc(ossaudio->stage, frames * OSS_FRAME_BYTES);
+         if (!n)
+            return -1;
+         ossaudio->stage       = n;
+         ossaudio->stage_bytes = frames * OSS_FRAME_BYTES;
+      }
+      for (f = 0; f < frames; f++)
+         for (c = 0; c < ossaudio->channels; c++)
+            ossaudio->stage[f * ossaudio->channels + c] = in[f * ossaudio->channels + ossaudio->order[c]];
+      s   = ossaudio->stage;
+      len = frames * OSS_FRAME_BYTES;
+   }
    if ((_len = write(ossaudio->fd, s, len)) < 0)
    {
       if (errno == EAGAIN && (fcntl(ossaudio->fd, F_GETFL) & O_NONBLOCK))
@@ -270,6 +340,7 @@ static void oss_free(void *data)
 #endif
 
    close(ossaudio->fd);
+   free(ossaudio->stage);
    free(data);
 }
 
@@ -367,6 +438,12 @@ static void oss_device_list_free(void *data, void *array_list_data)
       string_list_free(sl);
 }
 
+static uint32_t oss_layout(void *data)
+{
+   oss_audio_t *ossaudio = (oss_audio_t*)data;
+   return ossaudio ? ossaudio->layout : AUDIO_LAYOUT_STEREO;
+}
+
 audio_driver_t audio_oss = {
    oss_init,
    oss_write,
@@ -383,5 +460,7 @@ audio_driver_t audio_oss = {
    oss_buffer_size,
    NULL, /* write_raw */
    oss_wait_writable,
-   oss_frames_consumed
+   oss_frames_consumed,
+   NULL, /* underruns */
+   oss_layout
 };
