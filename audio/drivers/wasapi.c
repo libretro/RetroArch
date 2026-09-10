@@ -323,6 +323,22 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
  * If \c true, the selected format will be written to \c format.
  * If \c false, the value referred by \c format will be unchanged.
  */
+/* The other layout of the same count: 5.1 with the rear pair at the
+ * sides for 5.1 with it at the back and back again. Windows' own
+ * endpoints are usually the sides one (KSAUDIO_SPEAKER_5POINT1_SURROUND
+ * is what a 5.1 endpoint reports), and exclusive mode takes exactly
+ * the mask or nothing, so a request for one is tried as the other
+ * before it is given up on - and whichever the device took is what is
+ * reported, never the request. 0 when there is no sibling. */
+static uint32_t wasapi_sibling_layout(uint32_t layout)
+{
+   if (layout == AUDIO_LAYOUT_5POINT1)
+      return AUDIO_LAYOUT_5POINT1_SURROUND;
+   if (layout == AUDIO_LAYOUT_5POINT1_SURROUND)
+      return AUDIO_LAYOUT_5POINT1;
+   return 0;
+}
+
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout)
 {
    /* Try the requested sample format first, then try the other one. */
@@ -347,6 +363,15 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
                suggested_format->Format.nChannels,
                suggested_format->Format.nSamplesPerSec);
 
+         /* A suggestion with fewer channels than asked is not this
+          * request granted with a different sample format; it is the
+          * layout refused, and the caller decides what stereo costs. */
+         if (suggested_format->Format.nChannels != channels)
+         {
+            RARCH_WARN("[WASAPI] Windows offers %u channels for the %u requested; layout 0x%03x refused.\n",
+                  suggested_format->Format.nChannels, channels, layout);
+            break;
+         }
          if (wasapi_is_format_suitable(suggested_format))
          {
             *format = *suggested_format;
@@ -366,6 +391,16 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          preferred_formats[0] = (format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE);
          preferred_formats[1] = (format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE);
          RARCH_WARN("[WASAPI] Requested format not supported, and Windows could not suggest one. RetroArch will do so.\n");
+         /* The layout as asked, then its sibling: the same speakers
+          * under the mask the device may prefer. */
+         {
+            uint32_t layouts[2];
+            size_t   nl = 1, k;
+            layouts[0] = layout;
+            layouts[1] = wasapi_sibling_layout(layout);
+            if (layouts[1])
+               nl = 2;
+         for (k = 0; k < nl; k++)
          for (i = 0; i < ARRAY_SIZE(preferred_formats); ++i)
          {
             static const unsigned preferred_rates[] = { 48000, 44100, 96000, 192000, 32000 };
@@ -373,19 +408,25 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
             {
                HRESULT format_check_hr;
                WAVEFORMATEXTENSIBLE possible_format;
-               wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels, layout);
+               wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels, layouts[k]);
                format_check_hr = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *) &possible_format, NULL);
                if (SUCCEEDED(format_check_hr))
                {
                   *format = possible_format;
-                  RARCH_DBG("[WASAPI] RetroArch suggests a format of (%s, %u-channel, %uHz).\n",
+                  RARCH_DBG("[WASAPI] RetroArch suggests a format of (%s, %u-channel, %uHz, mask 0x%03x).\n",
                         wasapi_wave_format_name(format),
                         format->Format.nChannels,
-                        format->Format.nSamplesPerSec);
+                        format->Format.nSamplesPerSec,
+                        (unsigned)format->dwChannelMask);
+                  if (k)
+                     RARCH_LOG("[WASAPI] The device took layout 0x%03x in place of the requested 0x%03x: the rear pair is at the %s.\n",
+                           layouts[k], layout,
+                           (layouts[k] & AUDIO_SPEAKER_SIDE_LEFT) ? "sides" : "back");
                   CoTaskMemFree(suggested_format);
                   return true;
                }
             }
+         }
          }
          RARCH_ERR("[WASAPI] Failed to select client format: No suitable format available.\n");
          break;
@@ -1461,20 +1502,46 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
     * layout hook. */
    layout    = audio_driver_requested_layout();
    w->layout = AUDIO_LAYOUT_STEREO;
-   w->client = wasapi_init_client(w->device,
-         &exclusive_mode, &float_format, &rate, latency,
-         audio_layout_channels(layout), layout, &w->layout, &low_latency);
-   if (!w->client && layout != AUDIO_LAYOUT_STEREO)
-   {
-      RARCH_WARN("[WASAPI] Device would not open with layout 0x%03x; opening stereo.\n", layout);
-      float_format   = (settings->uints.audio_format_negotiation
-            == AUDIO_FORMAT_NEGOTIATION_FLOAT);
-      exclusive_mode = settings->bools.audio_wasapi_exclusive_mode;
-      rate           = req_rate;
-      w->layout      = AUDIO_LAYOUT_STEREO;
-      w->client      = wasapi_init_client(w->device,
+   if (layout == AUDIO_LAYOUT_STEREO)
+      w->client = wasapi_init_client(w->device,
             &exclusive_mode, &float_format, &rate, latency, 2,
             AUDIO_LAYOUT_STEREO, NULL, &low_latency);
+   else
+   {
+      /* A wider layout, in the preferred mode first; a device that
+       * will not open with it in that mode gets stereo in that mode
+       * before the other mode is tried with either, so a refused
+       * layout costs the layout and never the mode - exclusive mode
+       * is the latency, and the layout is not worth it. */
+      bool     want_ex  = exclusive_mode;
+      unsigned ch       = audio_layout_channels(layout);
+      bool     f0       = float_format;
+      unsigned pass;
+      for (pass = 0; pass < 4 && !w->client; pass++)
+      {
+         bool     ex   = (pass < 2) ? want_ex : !want_ex;
+         uint32_t lay  = (pass & 1) ? AUDIO_LAYOUT_STEREO : layout;
+         unsigned chs  = (pass & 1) ? 2 : ch;
+         uint32_t *lo  = (pass & 1) ? NULL : &w->layout;
+         float_format  = f0;
+         rate          = req_rate;
+         w->layout     = AUDIO_LAYOUT_STEREO;
+         w->client     = ex
+               ? wasapi_init_client_ex(w->device, &float_format, &rate, latency, chs, lay, lo)
+               : wasapi_init_client_sh(w->device, &float_format, &rate, latency, chs, lay, lo, &low_latency);
+         if (w->client)
+         {
+            exclusive_mode = ex;
+            if (pass & 1)
+               RARCH_WARN("[WASAPI] Device would not open with layout 0x%03x in %s mode; opened stereo in it instead.\n",
+                     layout, ex ? "exclusive" : "shared");
+            else if (pass)
+               RARCH_WARN("[WASAPI] Device would not open in %s mode; opened layout 0x%03x in %s mode instead.\n",
+                     want_ex ? "exclusive" : "shared", w->layout, ex ? "exclusive" : "shared");
+         }
+      }
+      if (w->client)
+         RARCH_LOG("[WASAPI] Client initialized (%s).\n", exclusive_mode ? "exclusive" : "shared");
    }
    if (!w->client)
       goto error;
