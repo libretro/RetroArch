@@ -36,8 +36,8 @@
 
 #ifdef _MSC_VER
 #include <compat/msvc.h>
-#include <compat/strl.h>
 #endif
+#include <compat/strl.h>
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
