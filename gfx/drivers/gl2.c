@@ -65,10 +65,11 @@
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
-#ifdef HAVE_THREADS
 #include "../video_thread_hw.h"
 #endif
-#endif
+
+static bool gl2_hw_ring_expected(void);
+static bool gl2_core_context_is_mains(gl2_t *gl);
 
 #include "../font_driver.h"
 
@@ -1732,10 +1733,14 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
    }
 }
 
-/* Take or give back the core's context around work on its objects.
- * Under the wrapper's hardware ring the core's context is current on
- * the main thread and that work is marshalled there, where it already
- * is current: nothing to bind, and binding would move it. */
+/* Take or give back the core's context around work on its objects -
+ * a bind-true / bind-false pair that leaves this thread holding what
+ * it held before. Once the ring has taken the context (the flag) that
+ * work is marshalled to the main thread, where the context already is
+ * current: nothing to bind, and binding would move it. Before the ring
+ * has taken it, this thread builds the objects in the core's context
+ * and gives it back, ring expected or not; this asks the flag alone,
+ * unlike the sites that would leave the context current here. */
 static void gl2_bind_core_context(gl2_t *gl, bool enable)
 {
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
@@ -3241,6 +3246,20 @@ static bool gl2_hw_ring_expected(void)
    return false;
 #endif
 }
+
+/* Whether the core's context belongs to the main thread: it does once
+ * the wrapper's ring has taken it (the flag), and it will as soon as
+ * the ring is set up (expected, from init on). Every place this
+ * thread would take that context for itself asks this, and only this.
+ * Asking only the flag let a bind during init - the stock shader's
+ * load is one - take the context here after the ring was decided but
+ * before it was set up, and the main thread's own bind then failed:
+ * a core with no current context, and no GL function resolved. */
+static bool gl2_core_context_is_mains(gl2_t *gl)
+{
+   return (gl->flags & GL2_FLAG_HW_RING) || gl2_hw_ring_expected();
+}
+
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
 
@@ -4771,7 +4790,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* Not under the ring: the core's context is current on the main
     * thread, and this one has no business taking it. */
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !(gl->flags & GL2_FLAG_HW_RING))
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -4921,7 +4940,7 @@ static void gl2_set_nonblock_state(
    }
 
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !(gl->flags & GL2_FLAG_HW_RING))
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -5742,7 +5761,7 @@ static void *gl2_init(const video_info_t *video,
     * thread; when the wrapper's ring will drive the core, the main
     * thread takes that context itself and this one must not hold it. */
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !gl2_hw_ring_expected())
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return gl;
@@ -5845,7 +5864,7 @@ static void gl2_update_tex_filter_frame(gl2_t *gl, bool video_smooth)
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-         && !gl2_hw_ring_expected())
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 

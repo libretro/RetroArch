@@ -2072,6 +2072,7 @@ static void gl3_destroy_resources(gl3_t *gl)
 }
 
 static bool gl3_hw_ring_expected(void);
+static bool gl3_core_context_is_mains(gl3_t *gl);
 
 static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
 {
@@ -3901,7 +3902,7 @@ static bool gl3_set_shader(void *data,
       return false;
 
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !(gl->flags & GL3_FLAG_HW_RING))
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return true;
@@ -4145,13 +4146,13 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
     * thread; when the wrapper's ring will drive the core, the main
     * thread takes that context itself and this one must not hold it. */
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !gl3_hw_ring_expected())
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !gl3_hw_ring_expected())
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return false;
 }
@@ -5406,7 +5407,7 @@ static bool gl3_frame(void *data, const void *frame,
    /* Not under the ring: the core's context is current on the main
     * thread, and this one has no business taking it. */
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !(gl->flags & GL3_FLAG_HW_RING))
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -5670,7 +5671,7 @@ static void gl3_set_texture_frame(void *data,
    glBindTexture(GL_TEXTURE_2D, 0);
    gl->menu_texture_alpha = alpha;
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !(gl->flags & GL3_FLAG_HW_RING))
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -5702,6 +5703,20 @@ static bool gl3_hw_ring_expected(void)
    return false;
 #endif
 }
+
+/* Whether the core's context belongs to the main thread: it does once
+ * the wrapper's ring has taken it (the flag), and it will as soon as
+ * the ring is set up (expected, from init on). Every place this
+ * thread would take that context for itself asks this, and only this.
+ * Asking only the flag let a bind during init - the stock shader's
+ * load is one - take the context here after the ring was decided but
+ * before it was set up, and the main thread's own bind then failed:
+ * a core with no current context, and no GL function resolved. */
+static bool gl3_core_context_is_mains(gl3_t *gl)
+{
+   return (gl->flags & GL3_FLAG_HW_RING) || gl3_hw_ring_expected();
+}
+
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
 
