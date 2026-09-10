@@ -117,6 +117,9 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
 #ifdef HAVE_ROPUS
 #include <formats/ropus.h>
 #endif
+#ifdef HAVE_RAC3
+#include <formats/rac3.h>
+#endif
 #ifdef HAVE_RAAC
 #include <formats/raac.h>
 #ifdef HAVE_RMP4
@@ -495,7 +498,7 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  * audio_transfer_webm_audio_type), .ogg being ambiguous between Vorbis
  * and Opus in any case. */
 
-#if defined(HAVE_RAAC) || defined(HAVE_RWAV)
+#if defined(HAVE_RAAC) || defined(HAVE_RWAV) || defined(HAVE_RAC3)
 /* Unit-scale float (full scale +-1.0) to s16, the conversion raac
  * applies at its own edge.  Kept in one place because two arms need
  * exactly it: the AAC arm holds raac's f32 output and converts on the
@@ -741,6 +744,10 @@ enum audio_type_enum audio_decode_get_type(const char *path)
       return AUDIO_TYPE_MP3;
    if (string_is_equal_noncase(ext, "wav"))
       return AUDIO_TYPE_WAV;
+#ifdef HAVE_RAC3
+   if (string_is_equal_noncase(ext, "ac3"))
+      return AUDIO_TYPE_AC3;
+#endif
 #ifdef HAVE_RMODTRACKER
    if (     string_is_equal_noncase(ext, "mod")
          || string_is_equal_noncase(ext, "s3m")
@@ -872,6 +879,182 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
 
 #endif
 
+#ifdef HAVE_RAC3
+/* AC-3: a buffer of syncframes, walked with rac3_parse_frame_info and
+ * decoded a frame at a time into a pending block of 1536 frames the
+ * reads drain. The stream's channel count and rate are the first
+ * frame's; a frame that disagrees ends the stream. The decoder's
+ * overlap window means a seek decodes the frame before the target
+ * and discards it, so the target frame comes out as it would in a
+ * playthrough. s16 is the f32 output saturated. */
+struct audio_transfer_ac3
+{
+   const uint8_t  *buf;
+   size_t          buf_size;
+   size_t          avail;       /* resident prefix, 0 = all */
+   size_t          pos;         /* next frame's byte offset */
+   rac3_decoder_t *dec;
+   unsigned        channels;
+   unsigned        rate;
+   uint64_t        total_frames;
+   uint64_t        frame_pos;   /* PCM frame at the head of pend, absolute */
+   float          *pend;        /* 1536 * channels floats */
+   size_t          pend_n;      /* frames in pend */
+   size_t          pend_off;    /* frames of pend already handed out */
+   bool            ended;
+};
+
+static size_t audio_transfer_ac3_end(const struct audio_transfer_ac3 *a)
+{
+   return (a->avail && a->avail < a->buf_size) ? a->avail : a->buf_size;
+}
+
+/* Decodes the frame at pos into pend, advances pos. Returns 1 on a
+ * frame, 0 at the end of the buffer (or the frontier), -1 on a bad
+ * frame. */
+static int audio_transfer_ac3_next(struct audio_transfer_ac3 *a)
+{
+   rac3_frame_info_t info;
+   size_t end = audio_transfer_ac3_end(a);
+   size_t got;
+   enum rac3_status st;
+   if (a->pos >= end)
+      return 0;
+   st = rac3_parse_frame_info(a->buf + a->pos, end - a->pos, &info);
+   if (st == RAC3_NEED_MORE)
+      return 0;
+   if (st != RAC3_OK || info.kind != RAC3_KIND_AC3)
+      return -1;
+   if (a->pos + info.frame_bytes > end)
+      return 0;
+   if (info.channels != a->channels || info.sample_rate != a->rate)
+      return -1;
+   got = rac3_decode_frame(a->dec, a->buf + a->pos, info.frame_bytes, a->pend, &info);
+   if (!got)
+      return -1;
+   a->pos      += info.frame_bytes;
+   a->pend_n    = got;
+   a->pend_off  = 0;
+   return 1;
+}
+
+/* The stream's frames, by walking the headers. */
+static uint64_t audio_transfer_ac3_count(const struct audio_transfer_ac3 *a)
+{
+   size_t   pos   = 0, end = a->buf_size;
+   uint64_t total = 0;
+   while (pos < end)
+   {
+      rac3_frame_info_t info;
+      if (rac3_parse_frame_info(a->buf + pos, end - pos, &info) != RAC3_OK)
+         break;
+      if (pos + info.frame_bytes > end)
+         break;
+      total += info.samples;
+      pos   += info.frame_bytes;
+   }
+   return total;
+}
+
+/* Fresh decoder state: at the head, or the frame before the target
+ * decoded and discarded so the overlap window is what a playthrough
+ * would have left. */
+static bool audio_transfer_ac3_seek_to(struct audio_transfer_ac3 *a, uint64_t frame)
+{
+   size_t   pos = 0;
+   uint64_t at  = 0;
+   rac3_decoder_t *fresh;
+   size_t   prev_pos = (size_t)-1;
+   while (pos < a->buf_size)
+   {
+      rac3_frame_info_t info;
+      if (rac3_parse_frame_info(a->buf + pos, a->buf_size - pos, &info) != RAC3_OK)
+         return false;
+      if (pos + info.frame_bytes > a->buf_size)
+         return false;
+      if (at + info.samples > frame)
+         break;
+      prev_pos = pos;
+      at      += info.samples;
+      pos     += info.frame_bytes;
+   }
+   if (pos >= a->buf_size)
+      return false;
+   fresh = rac3_decoder_new();
+   if (!fresh)
+      return false;
+   rac3_decoder_free(a->dec);
+   a->dec = fresh;
+   if (prev_pos != (size_t)-1)
+   {
+      rac3_frame_info_t info;
+      if (rac3_parse_frame_info(a->buf + prev_pos, a->buf_size - prev_pos, &info) != RAC3_OK)
+         return false;
+      rac3_decode_frame(a->dec, a->buf + prev_pos, info.frame_bytes, a->pend, &info);
+   }
+   a->pos       = pos;
+   a->pend_n    = 0;
+   a->pend_off  = 0;
+   a->frame_pos = at;
+   a->ended     = false;
+   /* the frames of the target's block before the target */
+   if (audio_transfer_ac3_next(a) == 1)
+      a->pend_off = (size_t)(frame - at);
+   return true;
+}
+
+static int audio_transfer_ac3_read(struct audio_transfer_ac3 *a,
+      float *out_f32, int16_t *out_s16, size_t frames, size_t *frames_out)
+{
+   size_t produced = 0;
+   if (!a || !a->dec)
+      return AUDIO_PROCESS_ERROR;
+   while (produced < frames)
+   {
+      size_t take, i, n;
+      const float *src;
+      if (a->pend_off >= a->pend_n)
+      {
+         int r;
+         if (a->ended)
+            break;
+         r = audio_transfer_ac3_next(a);
+         if (r < 0)
+         {
+            if (frames_out) *frames_out = produced;
+            return AUDIO_PROCESS_ERROR;
+         }
+         if (r == 0)
+         {
+            /* the frontier, or the end: the end when the whole buffer
+             * has been walked */
+            if (audio_transfer_ac3_end(a) >= a->buf_size)
+               a->ended = true;
+            break;
+         }
+      }
+      take = a->pend_n - a->pend_off;
+      if (take > frames - produced)
+         take = frames - produced;
+      src = a->pend + a->pend_off * a->channels;
+      n   = take * a->channels;
+      if (out_f32)
+         memcpy(out_f32 + produced * a->channels, src, n * sizeof(float));
+      else
+         for (i = 0; i < n; i++)
+            out_s16[produced * a->channels + i] = audio_transfer_unit_to_s16(src[i]);
+      a->pend_off  += take;
+      a->frame_pos += take;
+      produced     += take;
+   }
+   if (frames_out)
+      *frames_out = produced;
+   if (produced == 0 && a->ended)
+      return AUDIO_PROCESS_END;
+   return AUDIO_PROCESS_NEXT;
+}
+#endif
+
 #ifdef HAVE_RAAC
 struct audio_transfer_aac
 {
@@ -972,6 +1155,10 @@ void *audio_transfer_new(enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
          return calloc(1, sizeof(struct audio_transfer_aac));
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+         return calloc(1, sizeof(struct audio_transfer_ac3));
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
          return calloc(1, sizeof(struct audio_transfer_wav));
@@ -1057,6 +1244,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             md->data = ptr;
             md->size = len;
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         if (a)
+         {
+            a->buf      = (const uint8_t*)ptr;
+            a->buf_size = len;
          }
          break;
       }
@@ -1543,7 +1742,7 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
  * readable and handed the decoder packets on pages the window never
  * committed. */
 #if defined(HAVE_RWEBM) || defined(HAVE_RVORBIS) || defined(HAVE_ROPUS) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC)
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3)
    switch (type)
    {
 #ifdef HAVE_RVORBIS
@@ -1572,6 +1771,15 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
             rwebm_set_avail(op->demux, avail);
 #endif
          return;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         if (a)
+            a->avail = avail;
+         break;
       }
 #endif
 #ifdef HAVE_RAAC
@@ -3254,6 +3462,36 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         rac3_frame_info_t info;
+         if (!a || !a->buf || !a->buf_size)
+            return false;
+         if (rac3_parse_frame_info(a->buf, a->buf_size, &info) != RAC3_OK
+               || info.kind != RAC3_KIND_AC3)
+            return false;
+         a->channels     = info.channels;
+         a->rate         = info.sample_rate;
+         a->total_frames = audio_transfer_ac3_count(a);
+         a->pend         = (float*)malloc(1536 * a->channels * sizeof(float));
+         a->dec          = rac3_decoder_new();
+         if (!a->pend || !a->dec)
+         {
+            free(a->pend);
+            a->pend = NULL;
+            rac3_decoder_free(a->dec);
+            a->dec  = NULL;
+            return false;
+         }
+         a->pos = 0;
+         a->pend_n = a->pend_off = 0;
+         a->frame_pos = 0;
+         a->ended = false;
+         return true;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -3482,6 +3720,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
          return op && op->handle;
       }
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         return a && a->dec;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -3639,6 +3884,18 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          if (total_frames)
             *total_frames = (bounded && op->limit >= 0)
                ? (uint64_t)op->limit : 0;
+         return true;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         if (!a || !a->dec)
+            return false;
+         if (channels)     *channels     = a->channels;
+         if (rate)         *rate         = a->rate;
+         if (total_frames) *total_frames = a->total_frames;
          return true;
       }
 #endif
@@ -4411,6 +4668,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+         return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
+               NULL, out, frames, frames_out);
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -4714,6 +4976,11 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+         return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
+               out, NULL, frames, frames_out);
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -4872,6 +5139,13 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
          if (op->handle && op->packets)
             return op->pkt_offset;
          return 0;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         return a ? a->pos : 0;
       }
 #endif
 #ifdef HAVE_RAAC
@@ -5182,6 +5456,15 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         if (!a || !a->dec)
+            return false;
+         return audio_transfer_ac3_seek_to(a, frame);
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -5300,6 +5583,18 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          {
             free(op->pend);
             free(op->asm_buf);
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_TYPE_AC3:
+      {
+         struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
+         if (a)
+         {
+            free(a->pend);
+            rac3_decoder_free(a->dec);
          }
          break;
       }

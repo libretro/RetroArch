@@ -139,6 +139,8 @@ jobs:
             rac3_encode_test
             # IEC 61937 bursts against ffmpeg's spdif muxer and demuxer.
             iec61937_test
+            # The AC-3 arm of audio_transfer against ffmpeg's decode.
+            audio_transfer_ac3_test
           )
 
           # Targets that are built but deliberately not executed, each

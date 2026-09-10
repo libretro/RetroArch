@@ -1130,6 +1130,11 @@ ifeq ($(HAVE_RWAV), 1)
    CFLAGS      += -DHAVE_RWAV
 endif
 
+# AC-3 (rac3) and IEC 61937: no dependencies, on wherever the mixer is.
+ifeq ($(HAVE_AUDIOMIXER), 1)
+   CFLAGS      += -DHAVE_RAC3
+endif
+
 ifeq ($(HAVE_OVERLAY), 1)
    CFLAGS      += -DHAVE_OVERLAY
 endif

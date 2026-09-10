@@ -74,14 +74,18 @@ enum audio_type_enum
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
    AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed, Ogg (.opus) or WebM (.weba) */
-   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, an ADTS buffer
+   AUDIO_TYPE_AAC,  /* AAC-LC (raac); demuxed path, an ADTS buffer
                     * (.aac), or a whole MP4/M4A buffer when rmp4 is
                     * built in                                          */
+   AUDIO_TYPE_AC3   /* AC-3 (rac3); a buffer of syncframes (.ac3). Up
+                    * to 5.1, handed over in the speaker-mask order
+                    * (FL FR FC LFE ... surrounds), which is the WAV
+                    * order the mixer folds by                          */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
  * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised.
- * Covers WAV, FLAC, Ogg Vorbis, MP3 and the tracker modules only:
+ * Covers WAV, FLAC, Ogg Vorbis, MP3, AC-3 and the tracker modules only:
  * .opus, .aac, .m4a, .weba, .mka, .mkv and .oga have no extension
  * mapping, and .ogg names a container rather than a codec - Vorbis,
  * Opus and FLAC all travel in one - so those types come from the

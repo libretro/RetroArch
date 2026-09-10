@@ -534,6 +534,13 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #include "../libretro-common/file/rbmp_file.c"
 
+#ifdef HAVE_RAC3
+#include "../libretro-common/formats/ac3/rac3_frame.c"
+#include "../libretro-common/formats/ac3/rac3_decode.c"
+#include "../libretro-common/formats/ac3/rac3_encode.c"
+#include "../libretro-common/formats/iec61937/iec61937.c"
+#endif
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif
@@ -1023,10 +1030,6 @@ AUDIO
 #endif
 
 #ifdef HAVE_WASAPI
-#include "../libretro-common/formats/ac3/rac3_frame.c"
-#include "../libretro-common/formats/ac3/rac3_decode.c"
-#include "../libretro-common/formats/ac3/rac3_encode.c"
-#include "../libretro-common/formats/iec61937/iec61937.c"
 #include "../audio/drivers/wasapi.c"
 #endif
 
