@@ -86,6 +86,8 @@ static const unsigned char anim_webp[] = {
 
 int      gt_uploads;
 unsigned gt_last_crc;
+extern int gt_async_mode, gt_async_posted, gt_async_pending;
+void gt_async_flush(void);
 
 void gfx_thumbnail_anim_open(gfx_thumbnail_t *t, const char *path);
 
@@ -179,6 +181,79 @@ int main(void)
       }
    }
    gfx_thumbnail_reset(&th);
+
+   /* 3. threaded video: frames leave through the asynchronous upload
+    *    and the decoder's buffer is copied, one frame in flight at a
+    *    time. Nothing reaches the driver until delivery; a frame that
+    *    is decoded while one is travelling is skipped, not queued; and
+    *    a reset while one is in flight discards it on delivery. */
+   reset_thumb(&th);
+   gt_uploads = 0;
+   gt_last_crc = 0;
+   gt_async_mode = 1;
+   gt_async_posted = gt_async_pending = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   if (!th.anim)
+   {
+      printf("[FAIL] async: the animation never installed\n");
+      bad = 1;
+   }
+   else
+   {
+      int posted_before_flush;
+      for (i = 0; i < 120 && gt_async_posted < 1; i++)
+      {
+         gfx_thumbnail_animate(&th);
+         usleep(16666);
+      }
+      /* keep animating without delivering: nothing more may be posted */
+      for (i = 0; i < 20; i++)
+      {
+         gfx_thumbnail_animate(&th);
+         usleep(16666);
+      }
+      posted_before_flush = gt_async_posted;
+      if (posted_before_flush != 1 || gt_uploads != 0 || !th.anim_inflight)
+      {
+         printf("[FAIL] async: %d posted, %d uploaded, inflight=%d before "
+                "delivery (want 1, 0, 1)\n", posted_before_flush,
+                gt_uploads, th.anim_inflight);
+         bad = 1;
+      }
+      gt_async_flush();
+      if (gt_uploads != 1 || th.anim_inflight || th.texture != 2)
+      {
+         printf("[FAIL] async: after delivery %d uploaded, inflight=%d, "
+                "texture=%lu\n", gt_uploads, th.anim_inflight,
+                (unsigned long)th.texture);
+         bad = 1;
+      }
+      /* the next frame may travel now */
+      for (i = 0; i < 120 && gt_async_posted < 2; i++)
+      {
+         gfx_thumbnail_animate(&th);
+         usleep(16666);
+      }
+      if (gt_async_posted != 2)
+      {
+         printf("[FAIL] async: second frame never posted after delivery\n");
+         bad = 1;
+      }
+      /* reset with a frame in flight: delivery must not touch it */
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      if (th.texture != 0 || th.anim_inflight || gt_async_pending != 0)
+      {
+         printf("[FAIL] async: delivery after reset installed texture=%lu "
+                "inflight=%d pending=%d\n", (unsigned long)th.texture,
+                th.anim_inflight, gt_async_pending);
+         bad = 1;
+      }
+      if (!bad)
+         printf("[ok]   async: one frame in flight, delivered on flush, "
+                "discarded after reset\n");
+   }
+   gt_async_mode = 0;
 
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");

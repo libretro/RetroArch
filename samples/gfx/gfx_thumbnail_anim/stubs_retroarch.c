@@ -37,6 +37,67 @@ bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
    return true;
 }
 bool video_driver_texture_unload(uintptr_t *id) { *id = 0; return true; }
+
+/* --- the asynchronous path ---
+ * gt_async_mode makes the wrapper look active. Loads are parked here
+ * and completed by gt_async_flush(), which runs the CRC oracle, the
+ * release and the done() callback in post order - the same contract
+ * the real wrapper gives the main thread from video_thread_frame(). */
+int gt_async_mode;
+int gt_async_posted;
+int gt_async_pending;
+typedef struct gt_async_node
+{
+   struct gt_async_node *next;
+   void *img;
+   void (*done)(void *user, uintptr_t handle);
+   void *user;
+   void (*release)(void *img);
+} gt_async_node_t;
+static gt_async_node_t *gt_async_head, *gt_async_tail;
+
+bool video_driver_thread_wrapper_active(void) { return gt_async_mode != 0; }
+
+bool video_driver_texture_load_async(void *data, unsigned filter,
+      void (*done)(void *user, uintptr_t handle), void *user,
+      void (*release)(void *img))
+{
+   if (!gt_async_mode)
+   {
+      uintptr_t id = 0;
+      video_driver_texture_load(data, filter, &id);
+      if (release) release(data);
+      if (done)    done(user, id);
+      return true;
+   }
+   {
+      gt_async_node_t *n = (gt_async_node_t*)calloc(1, sizeof(*n));
+      if (!n) return false;
+      n->img = data; n->done = done; n->user = user; n->release = release;
+      if (gt_async_tail) gt_async_tail->next = n; else gt_async_head = n;
+      gt_async_tail = n;
+      gt_async_posted++;
+      gt_async_pending++;
+   }
+   return true;
+}
+
+void gt_async_flush(void)
+{
+   gt_async_node_t *n = gt_async_head;
+   gt_async_head = gt_async_tail = NULL;
+   while (n)
+   {
+      gt_async_node_t *next = n->next;
+      uintptr_t id = 0;
+      video_driver_texture_load(n->img, 0, &id);
+      if (n->release) n->release(n->img);
+      gt_async_pending--;
+      if (n->done)    n->done(n->user, id);
+      free(n);
+      n = next;
+   }
+}
 unsigned video_driver_get_disp_flags(void) { return 0; }
 void video_driver_get_video_output_size(unsigned *w, unsigned *h,
       char *n, size_t l) { *w = 1920; *h = 1080; (void)n; (void)l; }

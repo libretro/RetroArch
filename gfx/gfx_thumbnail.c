@@ -879,12 +879,187 @@ static bool gfx_thumbnail_try_video_open(gfx_thumbnail_t *thumbnail,
 /* Uploads one final-format animation frame as the thumbnail's texture.
  * 'pixels' must already be in the format the video driver expects
  * ('use_rgba' describes it). Runs on the main thread. */
+/* --- Asynchronous uploads ------------------------------------------
+ * Under threaded video video_driver_texture_load() is a round trip to
+ * the video thread that the main thread waits out - up to one present
+ * per upload. Thumbnails are the most frequent upload the menu makes
+ * (one per row while scrolling, one per frame for a playing preview),
+ * so they go through video_driver_texture_load_async(): the image is
+ * handed over, the handle comes back through a done() callback on the
+ * main thread at a later frame. The ticket below is what done() gets.
+ * It is validated against the list generation and the thumbnail's own
+ * upload sequence, both bumped by the same events that would have made
+ * the synchronous write wrong. Without the wrapper the same calls
+ * complete synchronously and behave exactly as before. */
+
+typedef struct
+{
+   gfx_thumbnail_t *thumbnail;
+   uint64_t list_id;
+   uint16_t upload_seq;
+   unsigned width;
+   unsigned height;
+   bool is_anim_frame;
+} gfx_thumbnail_upload_ticket_t;
+
+static void gfx_thumbnail_upload_release(void *img)
+{
+   struct texture_image *ti = (struct texture_image*)img;
+   if (ti)
+   {
+      image_texture_free(ti);
+      free(ti);
+   }
+}
+
+/* Main thread. Installs @handle on the ticket's thumbnail if the
+ * upload is still wanted; unloads it otherwise. */
+static void gfx_thumbnail_upload_done(void *user, uintptr_t handle)
+{
+   gfx_thumbnail_upload_ticket_t *t = (gfx_thumbnail_upload_ticket_t*)user;
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   gfx_thumbnail_t *thumbnail;
+   bool wanted;
+
+   if (!t)
+      return;
+   thumbnail = t->thumbnail;
+   wanted    =    t->list_id    == p_gfx_thumb->list_id
+               && t->upload_seq == thumbnail->upload_seq;
+
+   if (t->is_anim_frame)
+   {
+      /* Whatever happened, this frame is no longer in flight. Only
+       * clear it when the ticket is current: after a reset the flag
+       * already belongs to the next request. */
+      if (wanted)
+         thumbnail->anim_inflight = 0;
+      if (!wanted || !handle)
+      {
+         if (handle)
+            video_driver_texture_unload(&handle);
+         free(t);
+         return;
+      }
+      if (thumbnail->texture)
+         video_driver_texture_unload(&thumbnail->texture);
+      thumbnail->texture = handle;
+      thumbnail->width   = t->width;
+      thumbnail->height  = t->height;
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) ==
+            GFX_THUMBNAIL_STATUS_PENDING)
+      {
+         GFX_THUMB_STATUS_STORE(&thumbnail->status,
+               GFX_THUMBNAIL_STATUS_AVAILABLE);
+         gfx_thumbnail_init_fade(p_gfx_thumb, thumbnail);
+      }
+      free(t);
+      return;
+   }
+
+   /* The still. Wanted only while the request that posted it is the
+    * one still pending; an animation frame that got there first is
+    * newer than this still and keeps its texture. */
+   if (     !wanted
+         || GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_PENDING)
+   {
+      if (handle)
+         video_driver_texture_unload(&handle);
+      free(t);
+      return;
+   }
+   if (!handle)
+   {
+      GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_MISSING);
+      gfx_thumbnail_init_fade(p_gfx_thumb, thumbnail);
+      free(t);
+      return;
+   }
+   if (thumbnail->texture)
+   {
+      /* An animation frame landed first: newer, keep it. */
+      video_driver_texture_unload(&handle);
+   }
+   else
+   {
+      thumbnail->texture = handle;
+      thumbnail->width   = t->width;
+      thumbnail->height  = t->height;
+   }
+   /* Release-store: texture/width/height are visible before the video
+    * thread can see AVAILABLE in gfx_thumbnail_draw(). */
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_AVAILABLE);
+   gfx_thumbnail_init_fade(p_gfx_thumb, thumbnail);
+   free(t);
+}
+
+static gfx_thumbnail_upload_ticket_t *gfx_thumbnail_upload_ticket(
+      gfx_thumbnail_t *thumbnail, unsigned width, unsigned height,
+      bool is_anim_frame)
+{
+   gfx_thumbnail_upload_ticket_t *t =
+      (gfx_thumbnail_upload_ticket_t*)malloc(sizeof(*t));
+   if (!t)
+      return NULL;
+   t->thumbnail     = thumbnail;
+   t->list_id       = gfx_thumb_st.list_id;
+   t->upload_seq    = thumbnail->upload_seq;
+   t->width         = width;
+   t->height        = height;
+   t->is_anim_frame = is_anim_frame;
+   return t;
+}
+
 static void gfx_thumbnail_anim_upload(gfx_thumbnail_t *thumbnail,
       const uint32_t *pixels, unsigned width, unsigned height,
       bool use_rgba)
 {
    struct texture_image img;
    uintptr_t new_texture = 0;
+
+#ifdef HAVE_THREADS
+   /* Threaded video: the decoder's buffer is reused for the next
+    * frame, so the wrapper gets its own copy. One frame in flight per
+    * thumbnail; a frame decoded while one is still travelling is
+    * skipped, which is what a slow present would have shown anyway.
+    * The copy is a few hundred microseconds at most; the wait it
+    * replaces was up to a present. */
+   if (video_driver_thread_wrapper_active())
+   {
+      struct texture_image *heap;
+      gfx_thumbnail_upload_ticket_t *t;
+      size_t bytes = (size_t)width * (size_t)height * sizeof(uint32_t);
+
+      if (thumbnail->anim_inflight)
+         return;
+      if (!(heap = (struct texture_image*)calloc(1, sizeof(*heap))))
+         return;
+      if (!(heap->pixels = (uint32_t*)malloc(bytes)))
+      {
+         free(heap);
+         return;
+      }
+      memcpy(heap->pixels, pixels, bytes);
+      heap->width         = width;
+      heap->height        = height;
+      heap->supports_rgba = use_rgba;
+      if (!(t = gfx_thumbnail_upload_ticket(thumbnail, width, height, true)))
+      {
+         gfx_thumbnail_upload_release(heap);
+         return;
+      }
+      thumbnail->anim_inflight = 1;
+      if (!video_driver_texture_load_async(heap, TEXTURE_FILTER_LINEAR,
+               gfx_thumbnail_upload_done, t, gfx_thumbnail_upload_release))
+      {
+         thumbnail->anim_inflight = 0;
+         gfx_thumbnail_upload_release(heap);
+         free(t);
+      }
+      return;
+   }
+#endif
+
 
    img.width         = width;
    img.height        = height;
@@ -1343,6 +1518,40 @@ static void gfx_thumbnail_handle_upload(
    if (thumbnail_tag->thumbnail->texture)
       gfx_thumbnail_reset(thumbnail_tag->thumbnail);
 
+   /* Check we have a valid image */
+   if (!img || (img->width < 1) || (img->height < 1))
+   {
+      GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+            GFX_THUMBNAIL_STATUS_MISSING);
+      fade_enabled = true;
+      goto end;
+   }
+
+#ifdef HAVE_THREADS
+   /* Threaded video: hand the image over and keep the status PENDING
+    * until the handle comes back through gfx_thumbnail_upload_done(),
+    * which sets AVAILABLE (or MISSING) and starts the fade. The
+    * animation below is still opened now, from this task; if its first
+    * frame lands before the still, the still yields to it. */
+   if (video_driver_thread_wrapper_active())
+   {
+      gfx_thumbnail_upload_ticket_t *t = gfx_thumbnail_upload_ticket(
+            thumbnail_tag->thumbnail, img->width, img->height, false);
+      if (t && video_driver_texture_load_async(img,
+               gfx_display_texture_filter(),
+               gfx_thumbnail_upload_done, t, gfx_thumbnail_upload_release))
+      {
+         /* Dimensions now, so layout does not wait for the handle. */
+         thumbnail_tag->thumbnail->width  = img->width;
+         thumbnail_tag->thumbnail->height = img->height;
+         img = NULL; /* the wrapper's now */
+         goto open_anim;
+      }
+      free(t);
+      /* Refused: synchronous below. */
+   }
+#endif
+
    /* Set thumbnail 'missing' status by default
     * (saves a number of checks later)
     * > Release-store ensures prior texture reset is
@@ -1354,10 +1563,6 @@ static void gfx_thumbnail_handle_upload(
     * animations should be applied (based on current
     * thumbnail status and global configuration) */
    fade_enabled = true;
-
-   /* Check we have a valid image */
-   if (!img || (img->width < 1) || (img->height < 1))
-      goto end;
 
    /* Upload texture to GPU */
    if (!video_driver_texture_load(
@@ -1375,6 +1580,10 @@ static void gfx_thumbnail_handle_upload(
     *   AVAILABLE via acquire-load in gfx_thumbnail_draw() */
    GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
          GFX_THUMBNAIL_STATUS_AVAILABLE);
+
+#ifdef HAVE_THREADS
+open_anim:
+#endif
 
    /* If the file is an animation, open a streaming decoder for it;
     * frames are advanced by gfx_thumbnail_animate() while the
@@ -1860,7 +2069,10 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
       gfx_animation_kill_by_tag(&tag);
    }
 
-   /* Reset all parameters */
+   /* Reset all parameters. Uploads still on their way to the video
+    * thread learn on delivery that this reset happened. */
+   thumbnail->upload_seq++;
+   thumbnail->anim_inflight = 0;
    GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
    thumbnail->texture     = 0;
    thumbnail->width       = 0;
