@@ -574,6 +574,7 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 {
    switch (xegl_api)
    {
+      case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
@@ -581,7 +582,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 #else
          break;
 #endif
-      case GFX_CTX_OPENGL_API:
       case GFX_CTX_NONE:
       default:
          break;

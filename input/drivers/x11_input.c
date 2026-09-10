@@ -434,7 +434,9 @@ static void x_input_free(void *data)
    if (x11)
    {
 #ifdef HAVE_XI2
-      XIFreeDeviceInfo(x11->di);
+      /* NULL when the server lacks XInput 2 */
+      if (x11->di)
+         XIFreeDeviceInfo(x11->di);
 #endif
 #ifdef __linux__
       linux_close_illuminance_sensor(x11->illuminance_sensor);
@@ -597,6 +599,8 @@ static void x_input_poll(void *data)
       x11->mouse_r[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<3 : 0;
       x11->mouse_4[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<0 : 0;
       x11->mouse_5[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<1 : 0;
+      /* XIQueryPointer() allocates the button mask for the caller */
+      XFree(buttons_return.mask);
 #else
       x11->mouse_l[mouse_port] = mask & Button1Mask;
       x11->mouse_m[mouse_port] = mask & Button2Mask;
