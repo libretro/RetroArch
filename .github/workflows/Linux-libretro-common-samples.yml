@@ -131,6 +131,9 @@ jobs:
             msg_fifo_queue_test
             audio_mixer_loop_test
             audio_mixer_rate_guard_test
+            # The AC-3 / E-AC-3 frame layer against ffmpeg's streams:
+            # ffmpeg is in the package list above for it.
+            rac3_frame_test
           )
 
           # Targets that are built but deliberately not executed, each
