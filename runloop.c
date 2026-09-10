@@ -3778,6 +3778,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          cb->batch_int16 = audio_driver_sample_batch_multi_int16;
          cb->batch_float = audio_state_get_ptr()->core_float
                ? audio_driver_sample_batch_multi_float : NULL;
+         audio_driver_set_core_multi(true);
          break;
       }
 
@@ -4503,6 +4504,7 @@ void runloop_event_deinit_core(void)
    settings_t        *settings = config_get_ptr();
 
    audio_driver_set_core_float(false);
+   audio_driver_set_core_multi(false);
 
 #ifdef HAVE_THREADS
    /* Defensive: ensure the autosave worker thread is joined

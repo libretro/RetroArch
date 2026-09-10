@@ -534,6 +534,22 @@ typedef struct
     * published - int16 or, for a float core, float. Every count on
     * the pipe is in frames; bytes appear only at the ring's edge. */
    size_t   pipe_frame_bytes;
+   /* The ring's frame width: stereo, or - for a core that negotiated
+    * the multi-channel batch entry before the driver came up - the
+    * canonical frame of every position, AUDIO_PIPE_CANON_CHANNELS
+    * wide, a slot per speaker bit, the ones the batch lacks zero. A
+    * fixed width, so the ring is never switched under the consumer;
+    * the layout of the frames in it is published per batch through
+    * pipe_layout, read once a pass, and says which slots are the
+    * core's. pipe_wide is the consumer's bounce for a pass of the
+    * frame; pipe_canon the producer's staging for building it. */
+   unsigned pipe_channels;
+   retro_atomic_int_t pipe_layout;
+   uint8_t *pipe_wide;
+   size_t   pipe_wide_bytes;
+   uint8_t *pipe_canon;
+   size_t   pipe_canon_frames;
+   bool     core_multi;   /* the multi-channel entry was negotiated */
    /* Whether the ring carries float frames - the core negotiated float
     * output - or int16. Decided before any audio flows: at pipe init
     * from core_float, or when the negotiation lands on an empty ring. */
@@ -1118,6 +1134,13 @@ size_t audio_driver_get_layout_desc(char *s, size_t len);
  * pipeline's ring takes the core's format from this: float frames
  * from a float core, with no round trip through int16. */
 void audio_driver_set_core_float(bool core_float);
+
+/* The core negotiated RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:
+ * a driver brought up after this carries the canonical wide frame on
+ * its threaded ring, so a batch's channels reach the device apart.
+ * Negotiated after the driver is up, the entry folds to stereo until
+ * the next driver init. */
+void audio_driver_set_core_multi(bool core_multi);
 
 /* A gate on the float batch entry, for netplay: the core holds that
  * entry by pointer, so it cannot be swapped for an intercepting one
