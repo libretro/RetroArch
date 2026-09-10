@@ -33,6 +33,7 @@ typedef struct
 {
    pa_threaded_mainloop *mainloop;
    pa_context *context;
+   uint32_t layout;   /* the frontend's mask the stream carries */
    pa_stream *stream;
    size_t buffer_size;
    /* The server's request granularity; wait_writable() only needs
@@ -246,11 +247,38 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
 #endif
 }
 
+/* A channel map of the layout's positions in the mask's ascending-bit
+ * order, which is the order the frames carry. A count never decides
+ * a position: the two six-channel layouts differ in the rear pair and
+ * each is given as itself. */
+static void pulse_channel_map(uint32_t layout, pa_channel_map *map)
+{
+   static const struct { uint32_t bit; pa_channel_position_t pos; } table[] = {
+      { AUDIO_SPEAKER_FRONT_LEFT,            PA_CHANNEL_POSITION_FRONT_LEFT            },
+      { AUDIO_SPEAKER_FRONT_RIGHT,           PA_CHANNEL_POSITION_FRONT_RIGHT           },
+      { AUDIO_SPEAKER_FRONT_CENTER,          PA_CHANNEL_POSITION_FRONT_CENTER          },
+      { AUDIO_SPEAKER_LOW_FREQUENCY,         PA_CHANNEL_POSITION_LFE                   },
+      { AUDIO_SPEAKER_BACK_LEFT,             PA_CHANNEL_POSITION_REAR_LEFT             },
+      { AUDIO_SPEAKER_BACK_RIGHT,            PA_CHANNEL_POSITION_REAR_RIGHT            },
+      { AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER,  PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER  },
+      { AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER, PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER },
+      { AUDIO_SPEAKER_BACK_CENTER,           PA_CHANNEL_POSITION_REAR_CENTER           },
+      { AUDIO_SPEAKER_SIDE_LEFT,             PA_CHANNEL_POSITION_SIDE_LEFT             },
+      { AUDIO_SPEAKER_SIDE_RIGHT,            PA_CHANNEL_POSITION_SIDE_RIGHT            },
+   };
+   size_t i;
+   pa_channel_map_init(map);
+   for (i = 0; i < ARRAY_SIZE(table); i++)
+      if (layout & table[i].bit)
+         map->map[map->channels++] = table[i].pos;
+}
+
 static void *pulse_init(const char *device, unsigned rate,
       unsigned latency, unsigned block_frames,
       unsigned *new_rate)
 {
    pa_sample_spec spec;
+   pa_channel_map map;
    pa_buffer_attr        buffer_attr = {0};
    const pa_buffer_attr *server_attr = NULL;
    pa_t                          *pa = (pa_t*)calloc(1, sizeof(*pa));
@@ -302,12 +330,18 @@ static void *pulse_init(const char *device, unsigned rate,
    if (device)
      pa_context_set_default_sink(pa->context, device, NULL, NULL);
 
+   /* The layout the frontend asked for, as a channel map of its
+    * positions in the mask's order: the server routes each to the
+    * sink's channel of that position, or remixes where the sink
+    * lacks one, so what is asked is what is carried. */
+   pa->layout    = audio_driver_requested_layout();
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
-   spec.channels = 2;
+   spec.channels = (uint8_t)audio_layout_channels(pa->layout);
    spec.rate     = rate;
+   pulse_channel_map(pa->layout, &map);
    pa->rate      = rate;
 
-   pa->stream    = pa_stream_new(pa->context, "audio", &spec, NULL);
+   pa->stream    = pa_stream_new(pa->context, "audio", &spec, &map);
    if (!pa->stream)
       goto unlock_error;
 
@@ -429,8 +463,8 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          buf     += writable;
          len     -= writable;
          _len    += writable;
-         /* Stereo float32, fixed at stream setup. */
-         pa->frames_written += writable / (2 * sizeof(float));
+         /* Float32 at the layout's channels, fixed at stream setup. */
+         pa->frames_written += writable / (audio_layout_channels(pa->layout) * sizeof(float));
          retro_atomic_store_release_size(&pa->writable_cached,
                pa_stream_writable_size(pa->stream));
       }
@@ -500,6 +534,12 @@ static void pulse_set_nonblock_state(void *data, bool state)
 }
 
 static bool pulse_use_float(void *data) { return true; }
+
+static uint32_t pulse_layout(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   return pa ? pa->layout : AUDIO_LAYOUT_STEREO;
+}
 
 /* Read every frame by the frontend; served from what the server's
  * thread last said, with no lock. See writable_cached. */
@@ -740,5 +780,7 @@ audio_driver_t audio_pulse = {
    pulse_buffer_size,
    NULL, /* write_raw */
    pulse_wait_writable,
-   pulse_frames_consumed
+   pulse_frames_consumed,
+   NULL, /* underruns */
+   pulse_layout
 };

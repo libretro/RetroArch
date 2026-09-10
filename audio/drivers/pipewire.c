@@ -46,6 +46,7 @@ typedef struct pipewire_audio
    struct spa_audio_info_raw info;
    uint32_t highwater_mark;
    uint32_t frame_size;
+   uint32_t layout;      /* the frontend's mask the stream carries */
    struct spa_ringbuffer ring;
    uint8_t buffer[RINGBUFFER_SIZE];
    /* Frames handed to the graph since the stream started, for the sink
@@ -84,33 +85,45 @@ static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannel
    return nchannels;
 }
 
-static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+/* The stream's positions from the frontend's layout mask, in the
+ * mask's ascending-bit order - which is the order the frames carry.
+ * Mono is its own case. A count never decides a position: the two
+ * six-channel layouts differ in the rear pair, and each is given as
+ * itself. */
+static void pwire_set_position_layout(uint32_t layout,
+      uint32_t position[SPA_AUDIO_MAX_CHANNELS])
 {
+   static const struct { uint32_t bit; uint32_t spa; } map[] = {
+      { AUDIO_SPEAKER_FRONT_LEFT,            SPA_AUDIO_CHANNEL_FL  },
+      { AUDIO_SPEAKER_FRONT_RIGHT,           SPA_AUDIO_CHANNEL_FR  },
+      { AUDIO_SPEAKER_FRONT_CENTER,          SPA_AUDIO_CHANNEL_FC  },
+      { AUDIO_SPEAKER_LOW_FREQUENCY,         SPA_AUDIO_CHANNEL_LFE },
+      { AUDIO_SPEAKER_BACK_LEFT,             SPA_AUDIO_CHANNEL_RL  },
+      { AUDIO_SPEAKER_BACK_RIGHT,            SPA_AUDIO_CHANNEL_RR  },
+      { AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER,  SPA_AUDIO_CHANNEL_FLC },
+      { AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER, SPA_AUDIO_CHANNEL_FRC },
+      { AUDIO_SPEAKER_BACK_CENTER,           SPA_AUDIO_CHANNEL_RC  },
+      { AUDIO_SPEAKER_SIDE_LEFT,             SPA_AUDIO_CHANNEL_SL  },
+      { AUDIO_SPEAKER_SIDE_RIGHT,            SPA_AUDIO_CHANNEL_SR  },
+   };
+   size_t i, n = 0;
    memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
          sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+      if (layout & map[i].bit)
+         position[n++] = map[i].spa;
+}
 
-   switch (channels)
+static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+{
+   if (channels == 1)
    {
-      case 8:
-         position[6] = SPA_AUDIO_CHANNEL_SL;
-         position[7] = SPA_AUDIO_CHANNEL_SR;
-         /* fallthrough */
-      case 6:
-         position[2] = SPA_AUDIO_CHANNEL_FC;
-         position[3] = SPA_AUDIO_CHANNEL_LFE;
-         position[4] = SPA_AUDIO_CHANNEL_RL;
-         position[5] = SPA_AUDIO_CHANNEL_RR;
-         /* fallthrough */
-      case 2:
-         position[0] = SPA_AUDIO_CHANNEL_FL;
-         position[1] = SPA_AUDIO_CHANNEL_FR;
-         break;
-      case 1:
-         position[0] = SPA_AUDIO_CHANNEL_MONO;
-         break;
-      default:
-         RARCH_ERR("[PipeWire] Internal error: unsupported channel count %d.\n", channels);
+      memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
+            sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+      position[0] = SPA_AUDIO_CHANNEL_MONO;
+      return;
    }
+   pwire_set_position_layout(AUDIO_LAYOUT_STEREO, position);
 }
 
 #ifdef HAVE_MICROPHONE
@@ -765,11 +778,15 @@ static void *pwire_init(const char *device, unsigned rate,
    if (!pipewire_core_wait_resync(audio->pw))
       goto unlock_error;
 
+   /* The layout the frontend asked for, with its positions: PipeWire
+    * routes each to the sink's channel of that position, or mixes
+    * where the sink lacks one, so what is asked is what is carried. */
+   audio->layout        = audio_driver_requested_layout();
    audio->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
-   audio->info.channels = DEFAULT_CHANNELS;
-   pwire_set_position(DEFAULT_CHANNELS, audio->info.position);
+   audio->info.channels = audio_layout_channels(audio->layout);
+   pwire_set_position_layout(audio->layout, audio->info.position);
    audio->info.rate     = rate;
-   audio->frame_size    = pwire_calc_frame_size(audio->info.format, DEFAULT_CHANNELS);
+   audio->frame_size    = pwire_calc_frame_size(audio->info.format, audio->info.channels);
 
    props = pw_properties_new(PW_KEY_MEDIA_TYPE,          PW_RARCH_MEDIA_TYPE_AUDIO,
                              PW_KEY_MEDIA_CATEGORY,      PW_RARCH_MEDIA_CATEGORY_PLAYBACK,
@@ -1040,6 +1057,12 @@ static void pwire_free(void *data)
 
 static bool pwire_use_float(void *data) { return true; }
 
+static uint32_t pwire_layout(void *data)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   return audio ? audio->layout : AUDIO_LAYOUT_STEREO;
+}
+
 static struct string_list *pwire_enumerate_sinks(void);
 
 static void *pwire_device_list_new(void *data)
@@ -1157,5 +1180,7 @@ audio_driver_t audio_pipewire = {
       pwire_buffer_size,
       NULL, /* write_raw */
       pwire_wait_writable,
-      pwire_frames_consumed
+      pwire_frames_consumed,
+      NULL, /* underruns */
+      pwire_layout
 };
