@@ -24,6 +24,7 @@
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>
+#include <streams/interface_stream.h>
 
 #include "libretro-db/libretrodb.h"
 
@@ -1020,7 +1021,47 @@ struct database_info_crc_index
    uint64_t             size_min;
    uint64_t             size_max;
    bool                 have_size;
+   /* One buffered stream on the database, opened on the first hit
+    * and kept for the index's lifetime.  A hit reads one record at a
+    * known offset; opening the file twice per hit (libretrodb_open
+    * for the header, then a fresh 64 KB window in libretrodb_read_at)
+    * cost 1214 opens and 36 MB of reads for 607 matches on a 300 KB
+    * database.  Opened lazily so that only databases which actually
+    * match content hold a file handle - a scan can index every
+    * claimed database, and console fd tables are small. */
+   intfstream_t        *fd;
 };
+
+/* The records a hit reads back are a few hundred bytes; the window
+ * only needs to cover the largest one, not the file. */
+#define DB_INDEX_READ_WINDOW (16 * 1024)
+
+static intfstream_t *db_index_stream_open(const char *rdb_path)
+{
+   intfstream_t *fd = intfstream_open_buffered(rdb_path,
+         DB_INDEX_READ_WINDOW);
+   if (!fd)
+      fd = intfstream_open_file(rdb_path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   return fd;
+}
+
+static int db_index_read_at(intfstream_t *fd, uint64_t offset,
+      struct rmsgpack_dom_value *out)
+{
+   if (intfstream_seek(fd, (int64_t)offset,
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+      return -1;
+   return (rmsgpack_dom_read(fd, out) < 0) ? -1 : 0;
+}
+
+static void db_index_stream_close(intfstream_t *fd)
+{
+   if (!fd)
+      return;
+   intfstream_close(fd);
+   free(fd);
+}
 
 static int db_crc_by_crc(const void *a, const void *b)
 {
@@ -1199,6 +1240,7 @@ void database_info_crc_index_free(database_info_crc_index_t *idx)
 {
    if (!idx)
       return;
+   db_index_stream_close(idx->fd);
    free(idx->entries);
    free(idx->rdb_path);
    free(idx);
@@ -1240,7 +1282,7 @@ static size_t db_crc_gather(const database_info_crc_index_t *idx,
 }
 
 database_info_list_t *database_info_list_new_crc(
-      const database_info_crc_index_t *idx, const char *rdb_path,
+      database_info_crc_index_t *idx, const char *rdb_path,
       uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
    /* Working set for one lookup.  A run longer than this is handed
@@ -1252,7 +1294,6 @@ database_info_list_t *database_info_list_new_crc(
    struct db_crc_entry   hits[32];
    database_info_list_t *list  = NULL;
    database_info_t      *items = NULL;
-   libretrodb_t         *db    = NULL;
    size_t                found = 0;
    size_t                i, kept = 0;
 
@@ -1294,27 +1335,22 @@ database_info_list_t *database_info_list_new_crc(
       return NULL;
    }
 
-   if (!(db = libretrodb_new())
-       || libretrodb_open(idx->rdb_path, db, false) != 0)
+   if (!idx->fd && !(idx->fd = db_index_stream_open(idx->rdb_path)))
    {
       free(items);
       free(list);
-      libretrodb_free(db);
       return NULL;
    }
 
    for (i = 0; i < found; i++)
    {
       struct rmsgpack_dom_value item;
-      if (libretrodb_read_at(db, hits[i].offset, &item) != 0)
+      if (db_index_read_at(idx->fd, hits[i].offset, &item) != 0)
          continue;
       if (database_info_fill_from_dom(&item, &items[kept], fields) == 0)
          kept++;
       rmsgpack_dom_value_free(&item);
    }
-
-   libretrodb_close(db);
-   libretrodb_free(db);
 
    list->list  = items;
    list->count = kept;
@@ -1345,6 +1381,7 @@ struct database_info_serial_index
    struct db_serial_entry *entries;
    size_t                  count;
    char                   *rdb_path;
+   intfstream_t           *fd;       /* see database_info_crc_index */
 };
 
 static uint32_t db_serial_hash(const uint8_t *key, size_t len)
@@ -1503,6 +1540,7 @@ void database_info_serial_index_free(database_info_serial_index_t *idx)
 {
    if (!idx)
       return;
+   db_index_stream_close(idx->fd);
    free(idx->entries);
    free(idx->rdb_path);
    free(idx);
@@ -1550,7 +1588,7 @@ static bool db_record_has_serial(struct rmsgpack_dom_value *item,
 }
 
 database_info_list_t *database_info_list_new_serial(
-      const database_info_serial_index_t *idx, const char *rdb_path,
+      database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields)
 {
    /* See database_info_list_new_crc(): a run too long to hold goes to
@@ -1558,7 +1596,6 @@ database_info_list_t *database_info_list_new_serial(
    struct db_serial_entry hits[32];
    database_info_list_t  *list  = NULL;
    database_info_t       *items = NULL;
-   libretrodb_t          *db    = NULL;
    size_t                 serial_len;
    uint32_t               want;
    size_t                 lo, hi, found = 0, i, kept = 0;
@@ -1609,12 +1646,10 @@ database_info_list_t *database_info_list_new_serial(
       return NULL;
    }
 
-   if (!(db = libretrodb_new())
-       || libretrodb_open(idx->rdb_path, db, false) != 0)
+   if (!idx->fd && !(idx->fd = db_index_stream_open(idx->rdb_path)))
    {
       free(items);
       free(list);
-      libretrodb_free(db);
       return NULL;
    }
 
@@ -1622,7 +1657,7 @@ database_info_list_t *database_info_list_new_serial(
    {
       struct rmsgpack_dom_value item;
 
-      if (libretrodb_read_at(db, hits[i].offset, &item) != 0)
+      if (db_index_read_at(idx->fd, hits[i].offset, &item) != 0)
          continue;
 
       /* The index matched a hash; this is where it is made exact. */
@@ -1632,9 +1667,6 @@ database_info_list_t *database_info_list_new_serial(
 
       rmsgpack_dom_value_free(&item);
    }
-
-   libretrodb_close(db);
-   libretrodb_free(db);
 
    list->list  = items;
    list->count = kept;
