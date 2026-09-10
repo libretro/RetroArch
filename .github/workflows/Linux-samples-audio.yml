@@ -275,6 +275,27 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./ealsa_test
           echo "[pass] ealsa_test (ASan)"
 
+      - name: Build and run opensl_test (the Android driver against a mock OpenSL player)
+        shell: bash
+        working-directory: samples/audio/opensl
+        run: |
+          set -eu
+          # audio/drivers/opensl.c is Android-only and has no build
+          # here, so it is built against stand-in <SLES/*.h> over a
+          # scripted player whose queue a thread drains: the block
+          # arithmetic at the latencies of issue #6405 and below, the
+          # queue accounting the hang there came from, float and
+          # 16-bit, a full queue, and a device that stops consuming.
+          make clean all
+          ./opensl_test
+          echo "[pass] opensl_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./opensl_test
+          echo "[pass] opensl_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./opensl_test
+          echo "[pass] opensl_test (TSan)"
+
       - name: Build and run qsa_test (the QNX driver against a mock QSA device)
         shell: bash
         working-directory: samples/audio/qsa
