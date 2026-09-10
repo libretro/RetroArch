@@ -46,6 +46,8 @@
 #ifdef ANDROID
 #include <android/log.h>
 #include <sys/system_properties.h>
+#include "../../cheevos/cheevos.h"
+#include "../../cheevos/cheevos_locals.h"
 #ifdef HAVE_SAF
 #include <vfs/vfs_implementation_saf.h>
 #include "../../menu/menu_cbs.h"
@@ -1664,6 +1666,66 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
    }
 
    android_vfs_authorized_locations_refresh();
+#endif
+}
+
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityFuture_applyRetroAchievementsHostOverride
+      (JNIEnv *env, jclass clazz, jstring host_obj, jboolean hardcore_enabled)
+{
+#ifdef HAVE_CHEEVOS
+   const char *host = NULL;
+   settings_t *settings = config_get_ptr();
+   rcheevos_locals_t *locals = get_rcheevos_locals();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+#endif
+
+   (void)clazz;
+
+   if (!settings)
+      return;
+
+   if (host_obj)
+   {
+      host = (*env)->GetStringUTFChars(env, host_obj, NULL);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+         return;
+      }
+   }
+
+   strlcpy(settings->arrays.cheevos_custom_host,
+         host ? host : "", sizeof(settings->arrays.cheevos_custom_host));
+   settings->bools.cheevos_hardcore_mode_enable = (hardcore_enabled == JNI_TRUE);
+
+   if (locals && locals->client)
+      rc_client_set_host(locals->client, settings->arrays.cheevos_custom_host);
+
+   rcheevos_hardcore_enabled_changed();
+   rcheevos_validate_config_settings();
+
+#ifdef HAVE_MENU
+   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+      menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                     | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+#endif
+
+   if (host)
+   {
+      (*env)->ReleaseStringUTFChars(env, host_obj, host);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+      }
+   }
+#else
+   (void)env;
+   (void)clazz;
+   (void)host_obj;
+   (void)hardcore_enabled;
 #endif
 }
 
@@ -3427,6 +3489,10 @@ static void frontend_unix_init(void *data)
          "setSustainedPerformanceMode", "(Z)V");
    GET_METHOD_ID(env, android_app->setWindowSettings, class,
          "setWindowSettings", "(ZZ)V");
+   GET_METHOD_ID(env, android_app->setCheevosSettings, class,
+         "setCheevosSettings", "(Ljava/lang/String;Z)V");
+   GET_METHOD_ID(env, android_app->getCheevosOverride, class,
+         "getCheevosOverride", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->setScreenOrientation, class,
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
@@ -3970,6 +4036,64 @@ void android_app_set_window_settings(bool notch_write_over,
       CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
             g_android->setWindowSettings,
             (jboolean)notch_write_over, (jboolean)auto_mouse_grab);
+#endif
+}
+
+void android_app_set_cheevos_settings(const char *host, bool hardcore_enabled)
+{
+#ifdef ANDROID
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->setCheevosSettings)
+      return;
+
+   CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+         g_android->setCheevosSettings,
+         (*env)->NewStringUTF(env, host ? host : ""),
+         (jboolean)hardcore_enabled);
+#endif
+}
+
+bool android_app_get_cheevos_override(char *s, size_t len,
+      bool *hardcore_enabled)
+{
+#ifdef ANDROID
+   jobject jstr = NULL;
+   const char *state = NULL;
+   const char *separator = NULL;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->getCheevosOverride)
+      return false;
+
+   CALL_OBJ_METHOD(env, jstr, g_android->activity->clazz,
+         g_android->getCheevosOverride);
+
+   if (!jstr)
+      return false;
+
+   state = (*env)->GetStringUTFChars(env, jstr, 0);
+
+   if (!state || !(separator = strchr(state, '\t')))
+   {
+      if (state)
+         (*env)->ReleaseStringUTFChars(env, jstr, state);
+      return false;
+   }
+
+   {
+      size_t host_len = (size_t)(separator - state) + 1;
+
+      if (host_len > len)
+         host_len = len;
+      strlcpy(s, state, host_len);
+   }
+   *hardcore_enabled = (separator[1] == '1');
+
+   (*env)->ReleaseStringUTFChars(env, jstr, state);
+   return true;
+#else
+   return false;
 #endif
 }
 
