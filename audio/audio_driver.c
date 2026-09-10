@@ -3078,9 +3078,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
           * does not match the setting. */
          unsigned out_rate     = new_rate
                ? new_rate : settings->uints.audio_output_sample_rate;
-         size_t   frame_bytes  =
-               (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_USE_FLOAT)
-               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         /* the device's frame: the layout's channels, not two - a 5.1
+          * driver's buffer read three times its size here */
+         size_t   frame_bytes  = audio_driver_dev_frame_bytes(&audio_driver_st);
          double   buffer_ms    = out_rate
                ? (double)audio_driver_st.buffer_size / frame_bytes
                   * 1000.0 / out_rate
@@ -3098,11 +3098,12 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          }
 #endif
          RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
-               "%.1f ms of %s at %u Hz against a %u ms latency setting%s; "
+               "%.1f ms of %u-channel %s at %u Hz against a %u ms latency setting%s; "
                "rate control %s it near %.1f ms.\n",
                ident,
                (unsigned)audio_driver_st.buffer_size, buffer_ms,
-               (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
+               audio_driver_st.out_channels ? audio_driver_st.out_channels : 2,
+               (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_USE_FLOAT) ? "float" : "int16",
                out_rate, audio_latency,
                latency_floored ? " (raised to the minimum)" : "",
                audio_rate_control ? "holds" : "is off; on, it would hold",
