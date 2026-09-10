@@ -145,6 +145,13 @@ ANIM_WINDOW_SOURCES := preview_anim_window_test.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
            $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
            $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
+           $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
+           $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
+           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
+           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
+           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
+           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
@@ -161,7 +168,7 @@ ANIM_WINDOW_SOURCES := preview_anim_window_test.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 ANIM_WINDOW_CFLAGS := -Wall -std=gnu99 -g -O1 \
-           -DHAVE_RPNG -DHAVE_RWEBP -DRARCH_INTERNAL \
+           -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RWEBM -DRARCH_INTERNAL \
            -DHAVE_MMAP -D_GNU_SOURCE \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include $(EXTRA_CFLAGS)
 ifneq ($(SANITIZER),)

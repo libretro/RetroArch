@@ -55,6 +55,16 @@ struct data_transfer;
 #define GFX_ANIM_PREVIEW_WINDOW_AHEAD (8 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_WINDOW_BACK  (8 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_FEED_BUDGET  (512 * 1024)
+/* Bitrate-sized feed for the video types: seconds of content kept
+ * committed ahead of and behind the decoder, and the floors under
+ * them. A short lookahead is refilled every animate() tick with
+ * FEED_BUDGET, so two seconds is many ticks of slack at any bitrate
+ * a preview plays; the floors cover a packet burst on a low-bitrate
+ * file. The fixed AHEAD/BACK above stay as the ceilings.  */
+#define GFX_ANIM_PREVIEW_FEED_AHEAD_SECS   2
+#define GFX_ANIM_PREVIEW_FEED_BACK_MSECS   500
+#define GFX_ANIM_PREVIEW_FEED_AHEAD_MIN    (1024 * 1024)
+#define GFX_ANIM_PREVIEW_FEED_BACK_MIN     (256 * 1024)
 #define GFX_ANIM_PREVIEW_ABS_MAX_FILE (1024 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_MAX_FILE     (256 * 1024 * 1024)
 #define GFX_ANIM_PREVIEW_MAX_PIXELS   (3840 * 2160)
@@ -71,6 +81,11 @@ typedef struct gfx_anim_preview
    unsigned width, height;
    int num_frames, loop_count;
    bool windowed;                /* dt is a sliding window (reserved) */
+   /* Feed geometry for this session. The video types size these to
+    * the container's bitrate at open (see gfx_anim_preview_open);
+    * the frame-indexed types keep the fixed constants. */
+   size_t feed_ahead;
+   size_t feed_back;
    /* Whether the stream emits ARGB words (asked once at open; a stream
     * that honours it keeps that order for the whole animation, and
     * some - APNG - report "no" to a repeat request after the first
@@ -106,6 +121,11 @@ int gfx_anim_preview_probe(const char *path);
  * an I/O failure (the caller should close: the decoder would loop
  * early on an end-of-data wall). No-op for a non-windowed session. */
 bool gfx_anim_preview_feed(gfx_anim_preview_t *p);
+
+/* Bytes of the file this session currently holds resident (head plus
+ * window; the whole file for a non-windowed session). For readouts
+ * and harness numbers. */
+size_t gfx_anim_preview_resident_bytes(const gfx_anim_preview_t *p);
 
 /* Next displayed frame: the stream's canvas (valid until the next call).
  * *native_argb tells whether it is ARGB words (decided once at open) or

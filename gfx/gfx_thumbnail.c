@@ -1442,10 +1442,9 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       }
    }
 
-   /* Upload the frame.  The stream already emitted the upload order
-    * when the request above was honoured; otherwise (WEBP) it emits
-    * memory-order R,G,B,A and an ARGB pipeline needs the swap into
-    * the shared scratch buffer. */
+   /* Upload the frame.  Every stream type honours the order request
+    * above, so the swap below is a fallback that no current stream
+    * reaches; it stays for one that cannot honour the request. */
    {
       static uint32_t *swap_scratch = NULL;
       static size_t swap_scratch_px = 0;

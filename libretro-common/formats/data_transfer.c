@@ -564,6 +564,18 @@ bool data_transfer_reserve_supported(void)
    return mempagesize() != 0;
 }
 
+size_t data_transfer_window_resident(data_transfer_t *dt)
+{
+   size_t head, moving;
+   if (!dt || !dt->window)
+      return 0;
+   if (dt->map_len == 0)     /* settled into a whole-file commit */
+      return dt->len;
+   head   = dt->wfreed < dt->keep ? dt->wfreed : dt->keep;
+   moving = dt->whi > dt->wfreed ? dt->whi - dt->wfreed : 0;
+   return head + moving;
+}
+
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
 {
    return dt && dt->window && dt->map_len != 0;

@@ -254,7 +254,7 @@ def main():
     # a clean cannot leave the run globbing nothing; the outputs are
     # deterministic, so an existing set is reused rather than encoded
     # again (the lossless animations are the expensive part).
-    if all(os.path.exists(j(n)) for n in ('anim_lossless.webp',
+    if all(os.path.exists(j(n)) for n in ('long_video.mp4', 'anim_lossless.webp',
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
             'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4')):
@@ -276,6 +276,14 @@ def main():
     apng(j('anim_lossless.png'), 30, 1280, 720, 10)
     apng_dispose_previous(j('anim_dispose_prev.png'))
 
+    # A video longer than the feeder's fixed window span (4+8+8 MiB),
+    # for the bitrate-sized feed check: 60 s at 4 Mbit/s is 30 MB.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=640x360:r=30', '-t', '60',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-b:v', '4M',
+        '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart',
+        j('long_video.mp4')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 

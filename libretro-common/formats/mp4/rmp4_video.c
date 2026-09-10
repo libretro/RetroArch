@@ -1024,6 +1024,11 @@ size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
    return s ? rmp4_consumed(s->demux) : 0;
 }
 
+int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
+{
+   return (s && s->demux) ? rmp4_duration_ns(s->demux) : 0;
+}
+
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
    if (!s)

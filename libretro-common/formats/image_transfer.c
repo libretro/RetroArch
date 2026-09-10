@@ -870,6 +870,31 @@ size_t image_transfer_anim_stream_media_floor(void *stream,
    return 0;
 }
 
+int64_t image_transfer_anim_stream_duration_ns(void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_duration_ns(
+               (rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_duration_ns(
+               (rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
 size_t image_transfer_anim_stream_consumed(void *stream,
       enum image_type_enum type)
 {

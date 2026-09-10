@@ -353,6 +353,12 @@ void image_transfer_anim_stream_set_avail(void *stream,
  * any lookahead) and for a frame not indexed yet. */
 size_t image_transfer_anim_stream_media_floor(void *stream,
       enum image_type_enum type);
+/* Container duration in nanoseconds for the video types, 0 for the
+ * frame-indexed ones (WEBP, APNG carry per-frame delays only) and
+ * when the file does not say. Lets a windowed reader size its
+ * lookahead to the bitrate instead of a fixed byte count. */
+int64_t image_transfer_anim_stream_duration_ns(void *stream,
+      enum image_type_enum type);
 size_t image_transfer_anim_stream_consumed(void *stream,
       enum image_type_enum type);
 void image_transfer_anim_stream_next_span(void *stream,

@@ -23,6 +23,7 @@
 
 #include "harness.h"
 #include "../../../gfx/gfx_thumbnail.h"
+#include "../../../gfx/gfx_anim_preview.h"
 #include "../../../libretro-common/include/formats/data_transfer.h"
 
 static double rss_mib(void)
@@ -96,6 +97,14 @@ static void run(const char *path, const char *label, int expect_video)
       peak = rss_mib();
       printf("      RSS after open=%.1f MiB, after %d frames=%.1f MiB\n",
             after_open, nf, peak);
+      /* The session's own count: head plus moving window, nothing
+       * else. This is the number the bitrate-sized feed changes. */
+      if (th.anim_sess)
+         printf("      session resident after %d frames=%.2f MiB "
+                "(file %.2f MiB)\n", nf,
+                gfx_anim_preview_resident_bytes(
+                   (const gfx_anim_preview_t*)th.anim_sess) / (1024.0 * 1024.0),
+                file_len(path) / (1024.0 * 1024.0));
    }
 
    printf("      audio_streams=%d bytes=%llu\n", hp.audio_streams,

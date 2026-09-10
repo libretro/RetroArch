@@ -82,6 +82,11 @@ static bool gfx_anim_preview_whole_ok(uint64_t file_len, uint64_t px)
        && (px == 0 || px <= GFX_ANIM_PREVIEW_MAX_PIXELS);
 }
 
+static void gfx_anim_preview_size_feed(gfx_anim_preview_t *p);
+static void gfx_anim_preview_feed_geometry(void *stream,
+      enum image_type_enum type, size_t len, size_t *ahead_out,
+      size_t *back_out);
+
 /* Admission for the windowed path: a windowed open commits only the
  * head plus the sliding window, never the whole file, so charge that
  * and the decoder's own buffers. */
@@ -284,10 +289,12 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
       if (stream)
       {
          /* Restart the read frontier at the media floor and prime one
-          * window so the first frames decode from resident bytes. */
+          * window - the lookahead the feed will keep, sized to the
+          * content - so the first frames decode from resident bytes. */
          size_t fl = image_transfer_anim_stream_media_floor(stream, type);
-         size_t hi = fl + GFX_ANIM_PREVIEW_WINDOW_KEEP
-               + GFX_ANIM_PREVIEW_WINDOW_AHEAD;
+         size_t ahead, back, hi;
+         gfx_anim_preview_feed_geometry(stream, type, blen, &ahead, &back);
+         hi = fl + ahead;
          if (hi > blen)
             hi = blen;
          data_transfer_window_rebase(dt, fl);
@@ -336,6 +343,7 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
     * APNG even though the order stands - deciding per frame here once
     * swapped R and B from the second frame on). */
    p->native_argb = image_transfer_anim_stream_set_argb(stream, type, 1);
+   gfx_anim_preview_size_feed(p);
    if (p->num_frames < 2 && type != IMAGE_TYPE_WEBM && type != IMAGE_TYPE_MP4)
    {
       /* one frame is a still */
@@ -345,7 +353,50 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
    return p;
 }
 
+/* Size the moving window to the content. A fixed 8 MiB ahead and
+ * 8 MiB behind is 13 s each way of a 5 Mbit/s trailer, resident for
+ * nothing; at the bitrate two seconds ahead and half a second back
+ * is what a per-tick refill needs, and a low-bitrate file gets the
+ * floor. The frame-indexed types name no duration and keep the
+ * ceilings. */
+static void gfx_anim_preview_feed_geometry(void *stream,
+      enum image_type_enum type, size_t len, size_t *ahead_out,
+      size_t *back_out)
+{
+   int64_t dur_ns;
+   *ahead_out = GFX_ANIM_PREVIEW_WINDOW_AHEAD;
+   *back_out  = GFX_ANIM_PREVIEW_WINDOW_BACK;
+   dur_ns = image_transfer_anim_stream_duration_ns(stream, type);
+   if (dur_ns > 0 && len > 0)
+   {
+      /* bytes per second, rounded up; 64-bit throughout */
+      uint64_t bps   = ((uint64_t)len * 1000000000ull + (uint64_t)dur_ns - 1)
+                     / (uint64_t)dur_ns;
+      uint64_t ahead = bps * GFX_ANIM_PREVIEW_FEED_AHEAD_SECS;
+      uint64_t back  = bps * GFX_ANIM_PREVIEW_FEED_BACK_MSECS / 1000;
+      if (ahead < GFX_ANIM_PREVIEW_FEED_AHEAD_MIN) ahead = GFX_ANIM_PREVIEW_FEED_AHEAD_MIN;
+      if (back  < GFX_ANIM_PREVIEW_FEED_BACK_MIN)  back  = GFX_ANIM_PREVIEW_FEED_BACK_MIN;
+      if (ahead < GFX_ANIM_PREVIEW_WINDOW_AHEAD)   *ahead_out = (size_t)ahead;
+      if (back  < GFX_ANIM_PREVIEW_WINDOW_BACK)    *back_out  = (size_t)back;
+   }
+}
+
+static void gfx_anim_preview_size_feed(gfx_anim_preview_t *p)
+{
+   gfx_anim_preview_feed_geometry(p->stream, p->type, p->len,
+         &p->feed_ahead, &p->feed_back);
+}
+
 /* --- feeding --------------------------------------------------------------- */
+
+size_t gfx_anim_preview_resident_bytes(const gfx_anim_preview_t *p)
+{
+   if (!p)
+      return 0;
+   if (!p->windowed || !p->dt)
+      return p->len;
+   return data_transfer_window_resident(p->dt);
+}
 
 bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
 {
@@ -366,8 +417,8 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
    anchor    = (tell > 0) ? tell : floor_off;
    if (anchor > 0)
    {
-      size_t margin = GFX_ANIM_PREVIEW_WINDOW_BACK;
-      size_t ahead  = GFX_ANIM_PREVIEW_WINDOW_AHEAD;
+      size_t margin = p->feed_back;
+      size_t ahead  = p->feed_ahead;
       size_t budget = GFX_ANIM_PREVIEW_FEED_BUDGET;
       size_t hi;
       size_t res_hi = 0;
@@ -709,6 +760,7 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    /* gfx_thumbnail's worker asks the stream itself per job; the answer
     * recorded here is for callers that draw through the session. */
    p->native_argb = image_transfer_anim_stream_set_argb(stream, type, 1);
+   gfx_anim_preview_size_feed(p);
    return p;
 }
 

@@ -456,6 +456,70 @@ static void run_still(const char *path, const char *label)
       gfx_anim_preview_close(p);
 }
 
+
+/* V1  a video longer than the fixed window span plays to the end
+ *     with its resident bytes bounded by the bitrate-sized feed, not
+ *     by the 4 + 8 + 8 MiB constants. The session reports its own
+ *     count (head plus moving window); mincore over the reservation
+ *     confirms the OS agrees. Prints both peaks so the number is in
+ *     the log. */
+static void run_video_window(const char *path, const char *label)
+{
+   gfx_anim_preview_t *p;
+   int frames = 0, dur = 0;
+   bool argb = false;
+   size_t peak_session = 0;
+   double peak_pages = 0.0;
+   size_t fixed_span = GFX_ANIM_PREVIEW_WINDOW_KEEP + GFX_ANIM_PREVIEW_WINDOW_AHEAD
+                     + GFX_ANIM_PREVIEW_WINDOW_BACK;
+   size_t bound;
+
+   printf("  %s\n", label);
+   p = gfx_anim_preview_open(path, -1);
+   if (!p)
+   {
+      check("V1 video opens through the session", 0);
+      return;
+   }
+   check("V1 session is windowed", gfx_anim_preview_windowed(p));
+   printf("      feed ahead=%.2f MiB back=%.2f MiB (fixed span %.0f MiB)\n",
+         p->feed_ahead / (1024.0 * 1024.0), p->feed_back / (1024.0 * 1024.0),
+         fixed_span / (1024.0 * 1024.0));
+   /* what the feed may hold: head + back + ahead, plus one feed
+    * budget of slack for the extend that runs past the target */
+   bound = GFX_ANIM_PREVIEW_WINDOW_KEEP + p->feed_back + p->feed_ahead
+         + GFX_ANIM_PREVIEW_FEED_BUDGET;
+
+   while (frames < 100000)
+   {
+      size_t r;
+      double m;
+      if (!gfx_anim_preview_feed(p))
+         break;
+      if (!gfx_anim_preview_next(p, &dur, &argb))
+         break;
+      frames++;
+      r = gfx_anim_preview_resident_bytes(p);
+      if (r > peak_session)
+         peak_session = r;
+      if ((frames & 63) == 0)
+      {
+         m = mapping_resident_mib(p);
+         if (m > peak_pages)
+            peak_pages = m;
+      }
+   }
+   printf("      frames=%d peak resident: session=%.2f MiB pages=%.2f MiB "
+          "(file %.2f MiB)\n", frames,
+          peak_session / (1024.0 * 1024.0), peak_pages,
+          p->len / (1024.0 * 1024.0));
+   check("V1 every frame played", frames >= 1700);
+   check("V1 resident stayed within head + bitrate-sized window",
+         peak_session <= bound);
+   check("V1 resident stayed below the fixed span", peak_session < fixed_span);
+   gfx_anim_preview_close(p);
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -475,6 +539,8 @@ int main(int argc, char **argv)
       run_order(path, "anim_dispose_prev.png (APNG, DISPOSE_PREVIOUS)");
       snprintf(path, sizeof(path), "%s/still_lossless.webp", argv[i]);
       run_still(path, "still_lossless.webp");
+      snprintf(path, sizeof(path), "%s/long_video.mp4", argv[i]);
+      run_video_window(path, "long_video.mp4 (60 s at 4 Mbit/s, past the fixed span)");
    }
    printf("\n%s (%d failure%s)\n", fails ? "FAIL" : "PASS", fails,
          fails == 1 ? "" : "s");

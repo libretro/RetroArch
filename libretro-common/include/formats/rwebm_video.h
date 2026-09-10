@@ -168,6 +168,8 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
  * resident: [media_floor, consumed + lookahead). */
 size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *stream);
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *stream);
+/* Container duration in nanoseconds, 0 when the file does not say. */
+int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *stream);
 
 /* For a stream adopted from a still decoded against a partial read:
  * once the whole file is in the buffer, finish the timestamp
