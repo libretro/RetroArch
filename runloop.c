@@ -3208,7 +3208,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             retro_vfs_get_mtime_impl,
             retro_vfs_set_mtime_impl,
             retro_vfs_copy_begin_impl,
-            retro_vfs_copy_poll_impl,
+            retro_vfs_copy_step_impl,
             retro_vfs_copy_close_impl,
             retro_vfs_dirent_stat_impl
          };

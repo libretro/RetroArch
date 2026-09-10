@@ -3149,7 +3149,7 @@ struct retro_vfs_dir_handle;
 
 /**
  * @defgroup RETRO_VFS_COPY_STATUS Copy Status
- * Values returned by \c retro_vfs_copy_poll_t.
+ * Values returned by \c retro_vfs_copy_step_t.
  * @since VFS API v5
  * @{
  */
@@ -3408,11 +3408,14 @@ typedef int (RETRO_CALLCONV *retro_vfs_get_mtime_t)(const char *path, int64_t *m
 typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mtime);
 
 /**
- * Starts copying a single regular file and returns without waiting for it.
+ * Starts copying a single regular file and returns without moving any of it.
  *
- * The transfer runs in the background (or, on frontends without threads,
- * advances in bounded steps inside \c retro_vfs_copy_poll_t). None of the
- * three copy calls waits for the transfer; each returns promptly.
+ * A copy is a resumable operation that the caller advances with
+ * \c retro_vfs_copy_step_t, each step bounded by a byte budget the caller
+ * chooses. The frontend keeps no thread and holds no lock for it; a caller
+ * that wants the transfer off its own thread drives the steps from wherever
+ * it likes. No call in this group ever waits for more than the requested
+ * step.
  *
  * \c dst is the full path of the new file, not a directory; missing parent
  * directories are created. Metadata (modification time, read-only state)
@@ -3427,7 +3430,7 @@ typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mt
  * @param dst The full path of the destination file. Must differ from \c src.
  * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
  * @return A handle to poll and close, or \c NULL if the copy could not start.
- * @see retro_vfs_copy_poll_t
+ * @see retro_vfs_copy_step_t
  * @see retro_vfs_copy_close_t
  * @see filestream_copy_begin
  * @see RETRO_VFS_COPY
@@ -3436,27 +3439,36 @@ typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mt
 typedef struct retro_vfs_copy_handle *(RETRO_CALLCONV *retro_vfs_copy_begin_t)(const char *src, const char *dst, unsigned flags);
 
 /**
- * Reports the state of a copy started with \c retro_vfs_copy_begin_t.
+ * Advances a copy started with \c retro_vfs_copy_begin_t by at most
+ * \c max_bytes and reports its state.
  *
- * Returns promptly. Frontends without background threads may advance the
- * copy by a bounded amount before returning, so callers that want the copy
- * to make progress should poll at least occasionally.
+ * The budget is the caller's latency/throughput dial: a few MiB from a
+ * frame loop keeps each call short; a very large budget (or repeated calls
+ * until the status leaves \c RETRO_VFS_COPY_RUNNING) runs the transfer at
+ * the full speed of the platform's copy primitive with no user-space
+ * buffer where the kernel can move the bytes itself.
+ *
+ * A step never moves more than \c max_bytes, but it may move less, and it
+ * may report \c RETRO_VFS_COPY_DONE early if the platform completed the
+ * copy without moving bytes (e.g. a file-system clone).
  *
  * @param handle The copy.
+ * @param max_bytes Upper bound on bytes moved by this call; 0 selects a
+ * frontend default sized for a frame loop (a few MiB).
  * @param[out] bytes_done Bytes written to \c dst so far. May be \c NULL.
  * @param[out] bytes_total Size of \c src in bytes. May be \c NULL.
  * @return One of the \c RETRO_VFS_COPY_STATUS values.
  * @since VFS API v5
  */
-typedef int (RETRO_CALLCONV *retro_vfs_copy_poll_t)(struct retro_vfs_copy_handle *handle, int64_t *bytes_done, int64_t *bytes_total);
+typedef int (RETRO_CALLCONV *retro_vfs_copy_step_t)(struct retro_vfs_copy_handle *handle, int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total);
 
 /**
  * Releases a copy handle.
  *
  * If the copy is still running it is cancelled and the partial \c dst
- * removed; this waits only for the in-flight chunk to stop, not for the
- * transfer. Must be called exactly once for every non-NULL handle from
- * \c retro_vfs_copy_begin_t, whatever \c retro_vfs_copy_poll_t reported.
+ * removed; nothing is waited for. Must be called exactly once for every
+ * non-NULL handle from \c retro_vfs_copy_begin_t, whatever
+ * \c retro_vfs_copy_step_t reported.
  *
  * @param handle The copy.
  * @return 0 if the copy had completed successfully, or -1 if it failed,
@@ -3661,8 +3673,8 @@ struct retro_vfs_interface
    /** @copydoc retro_vfs_copy_begin_t */
    retro_vfs_copy_begin_t copy_begin;
 
-   /** @copydoc retro_vfs_copy_poll_t */
-   retro_vfs_copy_poll_t copy_poll;
+   /** @copydoc retro_vfs_copy_step_t */
+   retro_vfs_copy_step_t copy_step;
 
    /** @copydoc retro_vfs_copy_close_t */
    retro_vfs_copy_close_t copy_close;

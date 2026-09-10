@@ -188,7 +188,7 @@ static retro_vfs_rename_t filestream_rename_cb     = NULL;
  * the members unset) owns the files: the local _impl must not run
  * behind its back, so the begin/poll/close wrappers report failure. */
 static retro_vfs_copy_begin_t filestream_copy_begin_cb = NULL;
-static retro_vfs_copy_poll_t  filestream_copy_poll_cb  = NULL;
+static retro_vfs_copy_step_t  filestream_copy_step_cb  = NULL;
 static retro_vfs_copy_close_t filestream_copy_close_cb = NULL;
 static bool filestream_copy_unavailable                = false;
 
@@ -212,7 +212,7 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_remove_cb   = NULL;
    filestream_rename_cb   = NULL;
    filestream_copy_begin_cb = NULL;
-   filestream_copy_poll_cb  = NULL;
+   filestream_copy_step_cb  = NULL;
    filestream_copy_close_cb = NULL;
    filestream_copy_unavailable = false;
 
@@ -236,10 +236,10 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_rename_cb   = vfs_iface->rename;
 
    if (vfs_info->required_interface_version >= FILESTREAM_COPY_REQUIRED_VFS_VERSION
-         && vfs_iface->copy_begin && vfs_iface->copy_poll && vfs_iface->copy_close)
+         && vfs_iface->copy_begin && vfs_iface->copy_step && vfs_iface->copy_close)
    {
       filestream_copy_begin_cb = vfs_iface->copy_begin;
-      filestream_copy_poll_cb  = vfs_iface->copy_poll;
+      filestream_copy_step_cb  = vfs_iface->copy_step;
       filestream_copy_close_cb = vfs_iface->copy_close;
    }
    else
@@ -1700,14 +1700,14 @@ struct retro_vfs_copy_handle *filestream_copy_begin(
    return retro_vfs_copy_begin_impl(src, dst, flags);
 }
 
-int filestream_copy_poll(struct retro_vfs_copy_handle *handle,
-      int64_t *bytes_done, int64_t *bytes_total)
+int filestream_copy_step(struct retro_vfs_copy_handle *handle,
+      int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total)
 {
-   if (filestream_copy_poll_cb)
-      return filestream_copy_poll_cb(handle, bytes_done, bytes_total);
+   if (filestream_copy_step_cb)
+      return filestream_copy_step_cb(handle, max_bytes, bytes_done, bytes_total);
    if (filestream_copy_unavailable)
       return RETRO_VFS_COPY_FAILED;
-   return retro_vfs_copy_poll_impl(handle, bytes_done, bytes_total);
+   return retro_vfs_copy_step_impl(handle, max_bytes, bytes_done, bytes_total);
 }
 
 int filestream_copy_close(struct retro_vfs_copy_handle *handle)

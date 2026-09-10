@@ -410,25 +410,30 @@ int filestream_rename(const char *old_path, const char *new_path);
 int filestream_copy(const char *src_path, const char *dst_path);
 
 /**
- * Starts copying a regular file and returns without waiting for it.
- * Wraps \c retro_vfs_copy_begin_t; see it for the full contract.
+ * Starts copying a regular file without moving any of it yet.
+ * Wraps \c retro_vfs_copy_begin_t; see it for the full contract. The
+ * caller advances the copy with \c filestream_copy_step; no thread is
+ * involved unless the caller supplies one.
  *
  * @param src_path Path to the file to copy. Must be a regular file.
  * @param dst_path Full path of the destination. Must differ from \c src_path.
  * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
- * @return A handle for \c filestream_copy_poll and \c filestream_copy_close,
+ * @return A handle for \c filestream_copy_step and \c filestream_copy_close,
  * or \c NULL if the copy could not start (including when the frontend
  * does not offer VFS API v5).
  */
 struct retro_vfs_copy_handle *filestream_copy_begin(const char *src_path, const char *dst_path, unsigned flags);
 
 /**
- * Reports the state of a copy started with \c filestream_copy_begin.
- * Returns promptly; see \c retro_vfs_copy_poll_t.
+ * Advances a copy started with \c filestream_copy_begin by at most
+ * \c max_bytes and reports its state. See \c retro_vfs_copy_step_t for
+ * how to use the budget as a latency/throughput dial.
  *
+ * @param max_bytes Upper bound on bytes moved by this call; 0 selects a
+ * default sized for a frame loop.
  * @return One of the \c RETRO_VFS_COPY_STATUS values.
  */
-int filestream_copy_poll(struct retro_vfs_copy_handle *handle, int64_t *bytes_done, int64_t *bytes_total);
+int filestream_copy_step(struct retro_vfs_copy_handle *handle, int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total);
 
 /**
  * Releases a copy handle, cancelling the copy if it is still running.

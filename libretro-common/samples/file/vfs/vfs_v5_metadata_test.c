@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <boolean.h>
 #include <file/file_path.h>
@@ -158,29 +159,41 @@ static void test_mtime(const char *dir)
    CHECK(path_get_mtime(p, &t2) && t2 <= -86398 && t2 >= -86402, "negative mtime round-trips");
 }
 
-/* Drive a begin/poll/close copy to completion.  The poll loop is what
- * a caller would do from a task; each poll must return promptly. */
-static int copy_sync(const char *src, const char *dst, unsigned flags)
+/* Drive a begin/step/close copy to completion with a fixed per-step
+ * budget, checking that no step overshoots it and that progress is
+ * monotonic.  A small budget exercises resumption across many steps;
+ * a huge one is the "run it flat out" case. */
+static int copy_sync_budget(const char *src, const char *dst, unsigned flags,
+      int64_t budget, unsigned *steps_out)
 {
    struct retro_vfs_copy_handle *h = filestream_copy_begin(src, dst, flags);
    int st;
-   int64_t done = 0, total = 0;
-   unsigned polls = 0;
+   int64_t done = 0, total = 0, prev = 0;
+   unsigned steps = 0;
    if (!h)
       return -1;
-   while ((st = filestream_copy_poll(h, &done, &total)) == RETRO_VFS_COPY_RUNNING)
+   while ((st = filestream_copy_step(h, budget, &done, &total)) == RETRO_VFS_COPY_RUNNING)
    {
-      polls++;
-      if (polls > 100000000u)
+      steps++;
+      if (steps > 100000000u)
          break;
-      if (done > total)
+      if (done > total || done < prev || (budget > 0 && done - prev > budget))
       {
-         printf("  FAIL bytes_done %lld > total %lld\n", (long long)done, (long long)total);
+         printf("  FAIL step moved %lld (prev %lld, budget %lld, total %lld)\n",
+               (long long)(done - prev), (long long)prev, (long long)budget, (long long)total);
          failures++;
          break;
       }
+      prev = done;
    }
+   if (steps_out)
+      *steps_out = steps;
    return filestream_copy_close(h);
+}
+
+static int copy_sync(const char *src, const char *dst, unsigned flags)
+{
+   return copy_sync_budget(src, dst, flags, 0, NULL);
 }
 
 static void test_copy(const char *dir)
@@ -193,24 +206,43 @@ static void test_copy(const char *dir)
    snprintf(nested, sizeof(nested), "%s/sub/deeper/nested.bin", dir);
 
    CHECK(write_pattern(src, BIG_SIZE, 3), "3 MiB fixture written");
-   CHECK(copy_sync(src, dst, 0) == 0, "copy to new dst completes");
+   CHECK(copy_sync(src, dst, 0) == 0, "copy to new dst completes (default step)");
    CHECK(files_equal(src, dst), "copy is byte-identical");
    CHECK(path_get_size(dst) == (int64_t)BIG_SIZE, "copy has the right size");
    CHECK(!path_is_readonly(dst), "copy is writable");
 
+   /* Small budget: many resumed steps, none overshooting. */
+   {
+      unsigned steps = 0;
+      CHECK(copy_sync_budget(src, dst, RETRO_VFS_COPY_OVERWRITE, 100000, &steps) == 0,
+            "copy with a 100000-byte step budget completes");
+      CHECK(steps >= BIG_SIZE / 100000, "took at least the minimum number of steps");
+      CHECK(files_equal(src, dst), "small-step copy is byte-identical");
+   }
+   /* Huge budget: one call moves everything. */
+   {
+      unsigned steps = 0;
+      CHECK(copy_sync_budget(src, dst, RETRO_VFS_COPY_OVERWRITE, INT64_MAX, &steps) == 0,
+            "copy with an unbounded budget completes");
+      CHECK(files_equal(src, dst), "flat-out copy is byte-identical");
+   }
+
    CHECK(filestream_copy_begin(src, dst, 0) == NULL, "begin onto existing dst without OVERWRITE refused");
    CHECK(files_equal(src, dst), "dst untouched by the refused copy");
 
-   /* Cancel while running: begin, close immediately, no partial file.
-    * With a worker thread the copy may already have finished; either
-    * outcome is legal, what is not is a partial dst. */
+   /* Cancel mid-copy: begin, move a little, close.  No partial file may
+    * remain.  (A clone-capable file system may legitimately be DONE
+    * after begin; then dst must be complete.) */
    {
       char cdst[512];
       struct retro_vfs_copy_handle *h;
-      int rc;
+      int rc, st;
+      int64_t done = 0;
       snprintf(cdst, sizeof(cdst), "%s/cancelled.bin", dir);
       h  = filestream_copy_begin(src, cdst, 0);
       CHECK(h != NULL, "begin for cancel test");
+      st = filestream_copy_step(h, 65536, &done, NULL);
+      CHECK(st != RETRO_VFS_COPY_FAILED, "first small step ok");
       rc = filestream_copy_close(h);
       if (rc == 0)
          CHECK(files_equal(src, cdst), "closed after completion: dst complete");

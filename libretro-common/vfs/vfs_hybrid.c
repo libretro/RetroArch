@@ -416,13 +416,13 @@ static struct retro_vfs_copy_handle *hyb_copy_begin( const char *src, const char
 	return NULL;
 }
 
-static int hyb_copy_poll( struct retro_vfs_copy_handle *ch, int64_t *done, int64_t *total ) {
+static int hyb_copy_step( struct retro_vfs_copy_handle *ch, int64_t max_bytes, int64_t *done, int64_t *total ) {
 	hyb_copy_t *c = (hyb_copy_t *)ch;
 	if ( !c )
 		return RETRO_VFS_COPY_FAILED;
 	if ( c->be == HYB_LOCAL )
-		return retro_vfs_copy_poll_impl( (struct retro_vfs_copy_handle *)c->h, done, total );
-	return hyb_front->copy_poll( (struct retro_vfs_copy_handle *)c->h, done, total );
+		return retro_vfs_copy_step_impl( (struct retro_vfs_copy_handle *)c->h, max_bytes, done, total );
+	return hyb_front->copy_step( (struct retro_vfs_copy_handle *)c->h, max_bytes, done, total );
 }
 
 static int hyb_copy_close( struct retro_vfs_copy_handle *ch ) {
@@ -473,7 +473,7 @@ static struct retro_vfs_interface hyb_iface = {
 	hyb_stat_64,
 	/* v5 */
 	hyb_set_readonly, hyb_get_mtime, hyb_set_mtime,
-	hyb_copy_begin, hyb_copy_poll, hyb_copy_close, hyb_dirent_stat
+	hyb_copy_begin, hyb_copy_step, hyb_copy_close, hyb_dirent_stat
 };
 
 void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
