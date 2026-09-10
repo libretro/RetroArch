@@ -119,7 +119,6 @@ static enum rac3_status rac3_parse_ac3(rac3_bits_t *b, rac3_frame_info_t *info)
       return RAC3_NEED_MORE;
    if (fscod == 3 || frmsizecod > 37)
       return RAC3_BAD;
-   (void)bsmod;
    /* The mixing levels come between acmod and lfeon: cmixlev when
     * there is a centre and more than one front, surmixlev when there
     * is a surround, dsurmod for 2/0. */
@@ -143,6 +142,7 @@ static enum rac3_status rac3_parse_ac3(rac3_bits_t *b, rac3_frame_info_t *info)
    info->blocks         = 6;
    info->bitrate        = rac3_bitrate_kbps[frmsizecod >> 1] * 1000;
    info->acmod          = acmod;
+   info->bsmod          = bsmod;
    info->lfe            = lfeon != 0;
    info->channels       = rac3_acmod_channels[acmod] + (lfeon ? 1 : 0);
    info->layout         = rac3_acmod_layout[acmod] | (lfeon ? 0x008u : 0);
@@ -198,6 +198,7 @@ static enum rac3_status rac3_parse_eac3(rac3_bits_t *b, rac3_frame_info_t *info)
    info->samples        = info->blocks * 256;
    info->bitrate        = 0;
    info->acmod          = acmod;
+   info->bsmod          = 0;             /* E-AC-3 carries it later in bsi, when at all */
    info->lfe            = lfeon != 0;
    info->channels       = rac3_acmod_channels[acmod] + (lfeon ? 1 : 0);
    info->layout         = rac3_acmod_layout[acmod] | (lfeon ? 0x008u : 0);

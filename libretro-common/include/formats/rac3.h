@@ -62,6 +62,7 @@ typedef struct rac3_frame_info
    unsigned              samples;         /* per channel in this frame: 1536, or 256 * blocks */
    unsigned              blocks;          /* audio blocks: 6, or E-AC-3's 1, 2, 3 or 6 */
    unsigned              bitrate;         /* nominal, bits per second; 0 for E-AC-3 */
+   unsigned              bsmod;           /* bit stream mode: 0 complete main; IEC 61937 carries it */
    unsigned              acmod;           /* 0 = 1+1 (two mono), 1 = 1/0, 2 = 2/0, 3 = 3/0,
                                              4 = 2/1, 5 = 3/1, 6 = 2/2, 7 = 3/2 */
    bool                  lfe;

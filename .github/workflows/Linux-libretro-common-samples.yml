@@ -137,6 +137,8 @@ jobs:
             rac3_tables_test
             rac3_decode_test
             rac3_encode_test
+            # IEC 61937 bursts against ffmpeg's spdif muxer and demuxer.
+            iec61937_test
           )
 
           # Targets that are built but deliberately not executed, each
