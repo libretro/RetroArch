@@ -2163,6 +2163,23 @@ static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
       size_t take = 1536 - w->ac3_in_frames;
       if (take > frames - done)
          take = frames - done;
+      /* A burst goes whole or not at all: part of one in the stream
+       * puts the receiver out of sync until the next preamble. Without
+       * blocking, the frames that would complete a burst are not taken
+       * until the fifo has room for it; the caller offers them again. */
+      if ((w->flags & WASAPI_FLG_NONBLOCK) && w->ac3_in_frames + take == 1536)
+      {
+         size_t room;
+#ifdef HAVE_THREADS
+         slock_lock(w->fifo_lock);
+         room = FIFO_WRITE_AVAIL(w->buffer);
+         slock_unlock(w->fifo_lock);
+#else
+         room = FIFO_WRITE_AVAIL(w->buffer);
+#endif
+         if (room < IEC61937_AC3_BURST_BYTES)
+            break;
+      }
       memcpy((uint8_t*)w->ac3_in + (size_t)w->ac3_in_frames * w->ac3_frame_size,
             src + done * w->ac3_frame_size, take * w->ac3_frame_size);
       w->ac3_in_frames += (unsigned)take;
@@ -2176,7 +2193,17 @@ static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
          if (written < 0)
             return -1;
          if ((size_t)written < b)
+         {
+            /* Cut short: only the pump takes room and the room was
+             * checked, so this is a blocking write that gave up (the
+             * pump stopped, or the bounded wait ran out). The stream
+             * has part of a burst; the receiver resyncs at the next
+             * preamble. Counted with the underruns for the overlay. */
+#ifdef HAVE_THREADS
+            retro_atomic_fetch_add_size(&w->underruns, 1);
+#endif
             return (ssize_t)(done * w->ac3_frame_size);
+         }
       }
    }
    return (ssize_t)(done * w->ac3_frame_size);

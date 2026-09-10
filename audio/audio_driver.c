@@ -3529,8 +3529,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
          size_t target = audio_driver_pipe_target_frames(audio_st);
          if (target)
          {
-            size_t frame_bytes = 2 * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-                  ? sizeof(float) : sizeof(int16_t));
+            size_t frame_bytes = audio_driver_dev_frame_bytes(audio_st);
             size_t device = (size_t)((double)audio_st->buffer_size / frame_bytes
                   / audio_st->src_ratio_orig);
             size_t room   = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
@@ -3576,8 +3575,12 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * room waited for below exists at any fill and a small buffer never
     * has to drain to empty before it can take a chunk. Whatever is left
     * stays in the ring and goes on the next pass without waiting. */
-   frame_bytes = 2 * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         ? sizeof(float) : sizeof(int16_t));
+   /* The device's frame, whatever the layout: taken as stereo on a
+    * 5.1 device, the cap was three times half the buffer and the room
+    * waited for a third of what the write needed, so a chunk could
+    * arrive at a fifo without room for it - and a driver that frames
+    * its output, as the AC-3 path does, then wrote part of a burst. */
+   frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    if (audio_st->buffer_size)
    {
       size_t cap = (size_t)((double)(audio_st->buffer_size / 2 / frame_bytes)
