@@ -4983,6 +4983,27 @@ void audio_driver_set_core_float(bool core_float)
 #endif
 }
 
+/* The speaker path in effect, for the overlay: the layout the device
+ * opened with and how it is filled, in a few words. */
+size_t audio_driver_get_layout_desc(char *s, size_t len)
+{
+   const audio_driver_state_t *st = &audio_driver_st;
+   const char *name;
+   switch (st->out_layout)
+   {
+      case AUDIO_LAYOUT_QUAD:             name = "4.0";          break;
+      case AUDIO_LAYOUT_5POINT1:          name = "5.1";          break;
+      case AUDIO_LAYOUT_5POINT1_SURROUND: name = "5.1 sides";    break;
+      case AUDIO_LAYOUT_7POINT1:          name = "7.1";          break;
+      default:                            name = "stereo";       break;
+   }
+   if (st->out_channels > 2)
+      return snprintf(s, len, "%s (upmixed from stereo)", name);
+   if (st->virtualize)
+      return snprintf(s, len, "stereo, virtual 5.1 to headphones");
+   return snprintf(s, len, "stereo");
+}
+
 const char *audio_driver_get_ident(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;

@@ -1059,6 +1059,11 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
 
+/* The speaker path in effect, in a few words, for the statistics
+ * overlay: the layout the device opened with and how it is filled.
+ * Returns the length written. */
+size_t audio_driver_get_layout_desc(char *s, size_t len);
+
 /* The core negotiated float audio output, or has gone. The threaded
  * pipeline's ring takes the core's format from this: float frames
  * from a float core, with no round trip through int16. */

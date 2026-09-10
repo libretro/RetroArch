@@ -5862,14 +5862,18 @@ void video_driver_frame(const void *data, unsigned width,
             /* The buffer the driver opened with. Half is where rate
              * control holds the fill. */
             double      buffer_ms     = audio_driver_get_buffer_latency_ms();
+            char        layout_desc[48];
+            audio_driver_get_layout_desc(layout_desc, sizeof(layout_desc));
             __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                   "AUDIO: %s %s\n"
                   " SampleRate: %u %s\n"
+                  " Speakers: %s\n"
                   ,
                   audio_ident ? audio_ident : "n/a",
                   (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
                   settings->uints.audio_output_sample_rate,
-                  (audio_st->src_ratio_orig == 1.0) ? "" : "R");
+                  (audio_st->src_ratio_orig == 1.0) ? "" : "R",
+                  layout_desc);
             {
                /* The device stage behind the buffer, where the driver
                 * reports one: the part of the path the setting cannot
