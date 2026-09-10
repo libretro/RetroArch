@@ -393,31 +393,50 @@ int filestream_delete(const char *path);
 int filestream_rename(const char *old_path, const char *new_path);
 
 /**
- * Copies a regular file to a new location, replacing an existing one.
+ * Copies a regular file to a new location, replacing an existing one,
+ * and does not return until it is done.
  *
- * Uses the platform's copy primitive through the VFS when the frontend
- * offers VFS API v5; missing parent directories of \c dst_path are created.
- * Either path may be on any file system the frontend supports.
+ * Kept for callers that predate VFS API v5. It copies through
+ * \c filestream_open/read/write and does not use the platform's copy
+ * primitive; new code should use \c filestream_copy_begin, which does
+ * and does not block.
  *
  * @param src_path Path to the file to copy.
  * @param dst_path The target name and location of the file.
  * @return 0 if the file was copied successfully,
  * or -1 if there was an error (no partial \c dst_path is left behind).
- * @see filestream_copy_ex
+ * @see filestream_copy_begin
  */
 int filestream_copy(const char *src_path, const char *dst_path);
 
 /**
- * Copies a regular file to a new location.
+ * Starts copying a regular file and returns without waiting for it.
+ * Wraps \c retro_vfs_copy_begin_t; see it for the full contract.
  *
- * @param src_path Path to the file to copy.
- * @param dst_path The target name and location of the file.
- * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0
- * (in which case an existing \c dst_path is an error).
- * @return 0 if the file was copied successfully, or -1 on error.
- * @see RETRO_VFS_COPY
+ * @param src_path Path to the file to copy. Must be a regular file.
+ * @param dst_path Full path of the destination. Must differ from \c src_path.
+ * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
+ * @return A handle for \c filestream_copy_poll and \c filestream_copy_close,
+ * or \c NULL if the copy could not start (including when the frontend
+ * does not offer VFS API v5).
  */
-int filestream_copy_ex(const char *src_path, const char *dst_path, unsigned flags);
+struct retro_vfs_copy_handle *filestream_copy_begin(const char *src_path, const char *dst_path, unsigned flags);
+
+/**
+ * Reports the state of a copy started with \c filestream_copy_begin.
+ * Returns promptly; see \c retro_vfs_copy_poll_t.
+ *
+ * @return One of the \c RETRO_VFS_COPY_STATUS values.
+ */
+int filestream_copy_poll(struct retro_vfs_copy_handle *handle, int64_t *bytes_done, int64_t *bytes_total);
+
+/**
+ * Releases a copy handle, cancelling the copy if it is still running.
+ * See \c retro_vfs_copy_close_t.
+ *
+ * @return 0 if the copy had completed successfully, otherwise -1.
+ */
+int filestream_copy_close(struct retro_vfs_copy_handle *handle);
 
 /**
  * Compares and verifies files.

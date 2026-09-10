@@ -5,6 +5,7 @@ TARGET_TEST3 := vfs_seek_contract_test
 TARGET_TEST4 := vfs_bulk_read_test
 TARGET_TEST5 := filestream_rbuf_fault_test
 TARGET_TEST6 := vfs_v5_metadata_test
+TARGET_TEST7 := vfs_v5_metadata_test_pump
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -24,7 +25,7 @@ COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
-	vfs_v5_metadata_test.o $(COMMON_OBJS)
+	vfs_v5_metadata_test.o $(COMMON_OBJS) $(V5_THREADS_OBJS)
 
 # filestream_rbuf_fault_test drives the two arms on which
 # filestream_rbuf_fill() gives up and hands the caller back to the
@@ -86,7 +87,7 @@ ifneq ($(SANITIZER),)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-	$(TARGET_TEST5) $(TARGET_TEST6)
+	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -129,14 +130,34 @@ $(TARGET_TEST5): filestream_rbuf_fault_test.o $(FAULT_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # vfs_v5_metadata_test covers the VFS API v5 additions (read-only
-# state, mtime, copy, dirent_stat) through the path_*, filestream_copy*
-# and retro_dirent_stat wrappers.  Small fixtures, one temp dir.
-$(TARGET_TEST6): vfs_v5_metadata_test.o $(COMMON_OBJS)
+# state, mtime, begin/poll/close copy, dirent_stat) through the path_*,
+# filestream_copy* and retro_dirent_stat wrappers.  The copy runs on a
+# worker thread, which is what every frontend build ships, so this
+# target links its own vfs_implementation.o built with HAVE_THREADS
+# plus rthreads, and needs -lpthread.
+V5_THREADS_OBJS := vfs_implementation_threads.o \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o
+
+vfs_implementation_threads.o: $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -c -o $@ $<
+
+$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o: $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -c -o $@ $<
+
+$(TARGET_TEST6): vfs_v5_metadata_test.o $(V5_THREADS_OBJS) \
+		$(filter-out $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o,$(COMMON_OBJS))
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
+# The same test against the thread-less build, where copy_poll()
+# advances the transfer one chunk per call instead of a worker doing
+# it.  Both must pass the same contract.
+$(TARGET_TEST7): vfs_v5_metadata_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
-		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(OBJS) $(FAULT_FS_OBJ)
+		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST7) \
+		$(OBJS) $(FAULT_FS_OBJ)
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt

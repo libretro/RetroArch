@@ -100,6 +100,7 @@ jobs:
             vfs_seek_contract_test
             vfs_bulk_read_test
             vfs_v5_metadata_test
+            vfs_v5_metadata_test_pump
             vfs_hybrid_test
             filestream_rbuf_fault_test
             cdrom_cuesheet_overflow_test

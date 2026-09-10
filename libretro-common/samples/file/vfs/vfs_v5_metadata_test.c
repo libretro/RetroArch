@@ -158,10 +158,34 @@ static void test_mtime(const char *dir)
    CHECK(path_get_mtime(p, &t2) && t2 <= -86398 && t2 >= -86402, "negative mtime round-trips");
 }
 
+/* Drive a begin/poll/close copy to completion.  The poll loop is what
+ * a caller would do from a task; each poll must return promptly. */
+static int copy_sync(const char *src, const char *dst, unsigned flags)
+{
+   struct retro_vfs_copy_handle *h = filestream_copy_begin(src, dst, flags);
+   int st;
+   int64_t done = 0, total = 0;
+   unsigned polls = 0;
+   if (!h)
+      return -1;
+   while ((st = filestream_copy_poll(h, &done, &total)) == RETRO_VFS_COPY_RUNNING)
+   {
+      polls++;
+      if (polls > 100000000u)
+         break;
+      if (done > total)
+      {
+         printf("  FAIL bytes_done %lld > total %lld\n", (long long)done, (long long)total);
+         failures++;
+         break;
+      }
+   }
+   return filestream_copy_close(h);
+}
+
 static void test_copy(const char *dir)
 {
    char src[512], dst[512], sub[512], nested[512];
-   int64_t sz = 0;
    printf("copy:\n");
    snprintf(src, sizeof(src), "%s/src.bin", dir);
    snprintf(dst, sizeof(dst), "%s/dst.bin", dir);
@@ -169,43 +193,64 @@ static void test_copy(const char *dir)
    snprintf(nested, sizeof(nested), "%s/sub/deeper/nested.bin", dir);
 
    CHECK(write_pattern(src, BIG_SIZE, 3), "3 MiB fixture written");
-   CHECK(filestream_copy_ex(src, dst, 0) == 0, "copy to new dst succeeds");
+   CHECK(copy_sync(src, dst, 0) == 0, "copy to new dst completes");
    CHECK(files_equal(src, dst), "copy is byte-identical");
    CHECK(path_get_size(dst) == (int64_t)BIG_SIZE, "copy has the right size");
    CHECK(!path_is_readonly(dst), "copy is writable");
 
-   CHECK(filestream_copy_ex(src, dst, 0) != 0, "copy onto existing dst without OVERWRITE fails");
+   CHECK(filestream_copy_begin(src, dst, 0) == NULL, "begin onto existing dst without OVERWRITE refused");
    CHECK(files_equal(src, dst), "dst untouched by the refused copy");
 
+   /* Cancel while running: begin, close immediately, no partial file.
+    * With a worker thread the copy may already have finished; either
+    * outcome is legal, what is not is a partial dst. */
+   {
+      char cdst[512];
+      struct retro_vfs_copy_handle *h;
+      int rc;
+      snprintf(cdst, sizeof(cdst), "%s/cancelled.bin", dir);
+      h  = filestream_copy_begin(src, cdst, 0);
+      CHECK(h != NULL, "begin for cancel test");
+      rc = filestream_copy_close(h);
+      if (rc == 0)
+         CHECK(files_equal(src, cdst), "closed after completion: dst complete");
+      else
+         CHECK(!path_is_valid(cdst), "closed while running: no partial dst");
+      filestream_delete(cdst);
+   }
+
    CHECK(write_pattern(src, 4096, 4), "fixture replaced with a different one");
-   CHECK(filestream_copy(src, dst) == 0, "filestream_copy (OVERWRITE) replaces dst");
+   CHECK(copy_sync(src, dst, RETRO_VFS_COPY_OVERWRITE) == 0, "OVERWRITE replaces dst");
    CHECK(files_equal(src, dst) && path_get_size(dst) == 4096, "dst now matches the new source");
 
    if (path_set_readonly(dst, true))
    {
-      CHECK(filestream_copy(src, dst) == 0, "OVERWRITE replaces a read-only dst (cp -f)");
+      CHECK(copy_sync(src, dst, RETRO_VFS_COPY_OVERWRITE) == 0, "OVERWRITE replaces a read-only dst (cp -f)");
       path_set_readonly(dst, false);
    }
 
-   CHECK(filestream_copy_ex(src, nested, 0) == 0, "copy into a missing directory creates it");
+   CHECK(copy_sync(src, nested, 0) == 0, "copy into a missing directory creates it");
    CHECK(path_is_directory(sub) && files_equal(src, nested), "nested copy landed");
 
-   CHECK(filestream_copy_ex(src, src, RETRO_VFS_COPY_OVERWRITE) != 0, "src == dst fails");
+   CHECK(filestream_copy_begin(src, src, RETRO_VFS_COPY_OVERWRITE) == NULL, "src == dst refused");
    CHECK(path_get_size(src) == 4096, "src not truncated by the refused self-copy");
+   CHECK(filestream_copy_begin(dir, dst, RETRO_VFS_COPY_OVERWRITE) == NULL, "directory as src refused");
+   CHECK(filestream_copy_begin(src, sub, RETRO_VFS_COPY_OVERWRITE) == NULL, "directory as dst refused");
+   CHECK(filestream_copy_begin("does/not/exist.bin", dst, RETRO_VFS_COPY_OVERWRITE) == NULL, "missing src refused");
 
-   CHECK(filestream_copy_ex(dir, dst, RETRO_VFS_COPY_OVERWRITE) != 0, "directory as src fails");
-   CHECK(filestream_copy_ex(src, sub, RETRO_VFS_COPY_OVERWRITE) != 0, "directory as dst fails");
-   CHECK(filestream_copy_ex("does/not/exist.bin", dst, RETRO_VFS_COPY_OVERWRITE) != 0, "missing src fails");
-
-   /* No partial file on failure: a dst whose parent is a *file*
-    * cannot be created, so the copy must fail and leave nothing. */
+   /* No partial file on failure: a dst whose parent is a *file* cannot
+    * be created, so begin must refuse and leave nothing. */
    {
       char bad[512];
       snprintf(bad, sizeof(bad), "%s/src.bin/child.bin", dir);
-      CHECK(filestream_copy_ex(src, bad, 0) != 0, "impossible dst fails");
+      CHECK(filestream_copy_begin(src, bad, 0) == NULL, "impossible dst refused");
       CHECK(!path_is_valid(bad), "no partial file left behind");
    }
-   (void)sz;
+
+   /* The pre-v5 blocking helper still works and still refuses the
+    * same things. */
+   CHECK(filestream_copy(src, dst) == 0 && files_equal(src, dst), "legacy filestream_copy still copies");
+   CHECK(filestream_copy(src, src) != 0, "legacy filestream_copy refuses src == dst");
 }
 
 static void test_dirent_stat(const char *dir)

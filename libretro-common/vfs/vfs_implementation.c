@@ -207,6 +207,9 @@
 #include <compat/fopen_utf8.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 /* VFS API v5 metadata operations (read-only state, modification time)
  * are implemented on the platforms whose libc exposes chmod()/utimes()
@@ -2895,18 +2898,82 @@ static int vfs_copy_mkdir_parents(char *dir)
    return retro_vfs_mkdir_impl(dir) != -1 ? 0 : -1;
 }
 
-/* Portable copy: both ends through the VFS, so either may be SAF,
- * SMB, CDROM or native.  One large heap buffer; the read hint asks
- * the backend for read-ahead where it has one. */
-#define VFS_COPY_BUF_LARGE (1024 * 1024)
-#define VFS_COPY_BUF_SMALL (64 * 1024)
+/* ---- copy: begin / poll / close --------------------------------------
+ *
+ * None of the three calls waits for the transfer.  With HAVE_THREADS the
+ * transfer runs on its own thread and poll() only reads state; without
+ * threads poll() advances the copy by one bounded chunk.  Either way the
+ * caller is never parked behind the bytes.
+ *
+ * Memory: the handle, its two path strings, and on the portable path one
+ * transfer buffer (1 MiB, 64 KiB if that allocation fails).  The kernel
+ * fast paths (copy_file_range, copyfile, CopyFileEx) move data without a
+ * user-space buffer at all.  The worker thread's stack is the only cost
+ * the blocking version did not have.
+ *
+ * Speed: the same kernel primitives as a blocking copy, issued in chunks
+ * of VFS_COPY_KERNEL_CHUNK so a cancel is honoured within one chunk.  A
+ * chunk that size is far above any per-call overhead, so throughput is
+ * that of the primitive. */
 
-static int vfs_copy_loop(const char *src, const char *dst)
+#define VFS_COPY_BUF_LARGE     (1024 * 1024)
+#define VFS_COPY_BUF_SMALL     (64 * 1024)
+#define VFS_COPY_KERNEL_CHUNK  ((size_t)64 * 1024 * 1024)
+
+struct retro_vfs_copy_handle
+{
+   char    *src;
+   char    *dst;
+   int64_t  total;
+   int64_t  done;      /* bytes written so far, updated by the transfer */
+   int      status;    /* RETRO_VFS_COPY_RUNNING / DONE / FAILED */
+   int      cancel;    /* set by close() while running */
+#ifdef HAVE_THREADS
+   sthread_t *thread;
+   slock_t   *lock;
+#else
+   /* Pumped state for the thread-less portable path. */
+   libretro_vfs_implementation_file *in;
+   libretro_vfs_implementation_file *out;
+   char   *buf;
+   size_t  buf_len;
+#endif
+};
+
+#ifdef HAVE_THREADS
+#define VFS_COPY_LOCK(h)   slock_lock((h)->lock)
+#define VFS_COPY_UNLOCK(h) slock_unlock((h)->lock)
+#else
+#define VFS_COPY_LOCK(h)   do { } while (0)
+#define VFS_COPY_UNLOCK(h) do { } while (0)
+#endif
+
+#ifdef HAVE_THREADS
+static void vfs_copy_progress(struct retro_vfs_copy_handle *h, int64_t done)
+{
+   VFS_COPY_LOCK(h);
+   h->done = done;
+   VFS_COPY_UNLOCK(h);
+}
+
+static int vfs_copy_cancelled(struct retro_vfs_copy_handle *h)
+{
+   int c;
+   VFS_COPY_LOCK(h);
+   c = h->cancel;
+   VFS_COPY_UNLOCK(h);
+   return c;
+}
+
+/* Portable transfer: both ends through the VFS, so either may be SAF,
+ * SMB, CDROM or native.  Returns 0 done, -1 failed/cancelled. */
+static int vfs_copy_portable(struct retro_vfs_copy_handle *h)
 {
    libretro_vfs_implementation_file *in  = NULL;
    libretro_vfs_implementation_file *out = NULL;
    char   *buf                           = NULL;
    size_t  buf_len                       = VFS_COPY_BUF_LARGE;
+   int64_t done                          = 0;
    int     ret                           = -1;
 
    if (!(buf = (char*)malloc(buf_len)))
@@ -2915,28 +2982,31 @@ static int vfs_copy_loop(const char *src, const char *dst)
       if (!(buf = (char*)malloc(buf_len)))
          return -1;
    }
-
-   in = retro_vfs_file_open_impl(src, RETRO_VFS_FILE_ACCESS_READ,
+   in = retro_vfs_file_open_impl(h->src, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
    if (!in)
       goto end;
-   out = retro_vfs_file_open_impl(dst, RETRO_VFS_FILE_ACCESS_WRITE,
+   out = retro_vfs_file_open_impl(h->dst, RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!out)
       goto end;
 
    for (;;)
    {
-      int64_t n = retro_vfs_file_read_impl(in, buf, buf_len);
+      int64_t n;
+      if (vfs_copy_cancelled(h))
+         goto end;
+      n = retro_vfs_file_read_impl(in, buf, buf_len);
       if (n < 0)
          goto end;
       if (n == 0)
          break;
       if (retro_vfs_file_write_impl(out, buf, (uint64_t)n) != n)
          goto end;
+      done += n;
+      vfs_copy_progress(h, done);
    }
    ret = 0;
-
 end:
    if (out && retro_vfs_file_close_impl(out) != 0)
       ret = -1;
@@ -2946,36 +3016,40 @@ end:
    return ret;
 }
 
+/* Kernel fast paths and the transfer driver: only the worker thread
+ * runs these.  The thread-less build pumps the portable loop from
+ * poll() instead (see retro_vfs_copy_poll_impl). */
 #if defined(VFS_HAVE_COPY_FILE_RANGE)
-/* Kernel-side copy: no bytes cross into user space.  Returns 1 on
- * success, 0 if the kernel cannot do it for this pair and nothing was
- * written yet (caller falls back), -1 on a real error mid-copy. */
-static int vfs_copy_linux(const char *src, const char *dst, int64_t src_size)
+/* 1 done, 0 kernel declined before writing anything (use portable),
+ * -1 failed or cancelled. */
+static int vfs_copy_linux(struct retro_vfs_copy_handle *h)
 {
-   int in_fd  = open(src, O_RDONLY | O_CLOEXEC);
+   int in_fd  = open(h->src, O_RDONLY | O_CLOEXEC);
    int out_fd = -1;
-   int64_t left;
+   int64_t left, done = 0;
    int ret    = -1;
    bool started = false;
 
    if (in_fd < 0)
       return -1;
-   out_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+   out_fd = open(h->dst, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
    if (out_fd < 0)
    {
       close(in_fd);
       return -1;
    }
    posix_fadvise(in_fd, 0, 0, POSIX_FADV_SEQUENTIAL);
-   /* Reserve the extent up front so the copy lands contiguously.
-    * Failure is harmless (FAT, tmpfs). */
-   if (src_size > 0)
-      posix_fallocate(out_fd, 0, (off_t)src_size);
+   if (h->total > 0)
+      posix_fallocate(out_fd, 0, (off_t)h->total);
 
-   for (left = src_size; left > 0; )
+   for (left = h->total; left > 0; )
    {
-      ssize_t n = (ssize_t)syscall(SYS_copy_file_range, in_fd, NULL, out_fd, NULL,
-            (size_t)(left > (int64_t)(1 << 30) ? (1 << 30) : left), 0u);
+      ssize_t n;
+      if (vfs_copy_cancelled(h))
+         goto end;
+      n = (ssize_t)syscall(SYS_copy_file_range, in_fd, NULL, out_fd, NULL,
+            (size_t)(left > (int64_t)VFS_COPY_KERNEL_CHUNK
+               ? VFS_COPY_KERNEL_CHUNK : (size_t)left), 0u);
       if (n < 0)
       {
          if (!started && (errno == EXDEV || errno == ENOSYS
@@ -2984,9 +3058,11 @@ static int vfs_copy_linux(const char *src, const char *dst, int64_t src_size)
          goto end;
       }
       if (n == 0)
-         break; /* src shrank under us: treat what we have as complete */
+         break; /* src shrank under us; what we have is complete */
       started = true;
       left   -= n;
+      done   += n;
+      vfs_copy_progress(h, done);
    }
    ret = 1;
 end:
@@ -2997,41 +3073,182 @@ end:
 }
 #endif
 
-int retro_vfs_copy_impl(const char *src, const char *dst, unsigned flags)
+#if defined(_WIN32) && !defined(_XBOX)
+static DWORD CALLBACK vfs_copy_win32_progress(
+      LARGE_INTEGER total, LARGE_INTEGER transferred,
+      LARGE_INTEGER stream_size, LARGE_INTEGER stream_transferred,
+      DWORD stream_number, DWORD reason, HANDLE hsrc, HANDLE hdst, LPVOID data)
 {
+   struct retro_vfs_copy_handle *h = (struct retro_vfs_copy_handle*)data;
+   (void)total; (void)stream_size; (void)stream_transferred;
+   (void)stream_number; (void)reason; (void)hsrc; (void)hdst;
+   vfs_copy_progress(h, (int64_t)transferred.QuadPart);
+   return vfs_copy_cancelled(h) ? PROGRESS_CANCEL : PROGRESS_CONTINUE;
+}
+
+static int vfs_copy_win32(struct retro_vfs_copy_handle *h)
+{
+   BOOL ok = FALSE;
+#if defined(LEGACY_WIN32_RUNTIME)
+   if (win32_needs_local_encoding())
+   {
+#endif
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+   {
+      char *src_local = utf8_to_local_string_alloc(h->src);
+      char *dst_local = utf8_to_local_string_alloc(h->dst);
+      if (src_local && dst_local)
+         ok = CopyFileExA(src_local, dst_local, vfs_copy_win32_progress, h,
+               NULL, COPY_FILE_FAIL_IF_EXISTS);
+      free(src_local);
+      free(dst_local);
+   }
+#endif
+#if defined(LEGACY_WIN32_RUNTIME)
+   }
+   else
+#endif
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+   {
+      wchar_t *src_wide = utf8_to_utf16_string_alloc(h->src);
+      wchar_t *dst_wide = utf8_to_utf16_string_alloc(h->dst);
+      if (src_wide && dst_wide)
+         ok = CopyFileExW(src_wide, dst_wide, vfs_copy_win32_progress, h,
+               NULL, COPY_FILE_FAIL_IF_EXISTS);
+      free(src_wide);
+      free(dst_wide);
+   }
+#endif
+   return ok ? 0 : -1;
+}
+#endif
+
+#if defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
+static int vfs_copy_darwin_status(int what, int stage, copyfile_state_t state,
+      const char *src, const char *dst, void *ctx)
+{
+   struct retro_vfs_copy_handle *h = (struct retro_vfs_copy_handle*)ctx;
+   off_t copied = 0;
+   (void)what; (void)stage; (void)src; (void)dst;
+   copyfile_state_get(state, COPYFILE_STATE_COPIED, &copied);
+   vfs_copy_progress(h, (int64_t)copied);
+   return vfs_copy_cancelled(h) ? COPYFILE_QUIT : COPYFILE_CONTINUE;
+}
+
+static int vfs_copy_darwin(struct retro_vfs_copy_handle *h)
+{
+   copyfile_state_t st = copyfile_state_alloc();
+   int r;
+   copyfile_state_set(st, COPYFILE_STATE_STATUS_CB, (void*)vfs_copy_darwin_status);
+   copyfile_state_set(st, COPYFILE_STATE_STATUS_CTX, h);
+   r = copyfile(h->src, h->dst, st, COPYFILE_DATA);
+   copyfile_state_free(st);
+   return r == 0 ? 0 : -1;
+}
+#endif
+
+/* The transfer proper.  Fast path when both ends are native, else the
+ * portable loop.  Sets h->status; removes dst on anything but success. */
+static void vfs_copy_run(struct retro_vfs_copy_handle *h)
+{
+   int ret = -1;
+#if defined(HAVE_SMBCLIENT)
+   if (path_is_smb(h->src) || path_is_smb(h->dst))
+      goto portable;
+#endif
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (path_is_saf(h->src) || path_is_saf(h->dst))
+      goto portable;
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
+   ret = vfs_copy_win32(h);
+   goto done;
+#elif defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
+   ret = vfs_copy_darwin(h);
+   goto done;
+#elif defined(VFS_HAVE_COPY_FILE_RANGE)
+   {
+      int r = vfs_copy_linux(h);
+      if (r != 0)
+      {
+         ret = (r == 1) ? 0 : -1;
+         goto done;
+      }
+   }
+#endif
+#if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF))
+portable:
+#endif
+   ret = vfs_copy_portable(h);
+done:
+   if (ret != 0)
+      retro_vfs_file_remove_impl(h->dst);
+   VFS_COPY_LOCK(h);
+   h->status = (ret == 0) ? RETRO_VFS_COPY_DONE : RETRO_VFS_COPY_FAILED;
+   if (ret == 0)
+      h->done = h->total;
+   VFS_COPY_UNLOCK(h);
+}
+
+static void vfs_copy_thread(void *data)
+{
+   vfs_copy_run((struct retro_vfs_copy_handle*)data);
+}
+#endif /* HAVE_THREADS */
+
+static void vfs_copy_handle_free(struct retro_vfs_copy_handle *h)
+{
+#ifdef HAVE_THREADS
+   if (h->lock)
+      slock_free(h->lock);
+#else
+   if (h->in)
+      retro_vfs_file_close_impl(h->in);
+   if (h->out)
+      retro_vfs_file_close_impl(h->out);
+   free(h->buf);
+#endif
+   free(h->src);
+   free(h->dst);
+   free(h);
+}
+
+struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
+      const char *src, const char *dst, unsigned flags)
+{
+   struct retro_vfs_copy_handle *h;
    int64_t src_size = 0;
    int     sflags, dflags;
-   int     ret      = -1;
    char    dst_buf[PATH_MAX_LENGTH];
 
    if (!src || !*src || !dst || !*dst)
-      return -1;
+      return NULL;
 #if defined(_WIN32)
    if (string_is_equal_case_insensitive(src, dst))
-      return -1;
+      return NULL;
 #else
    if (string_is_equal(src, dst))
-      return -1;
+      return NULL;
 #endif
 
    sflags = retro_vfs_stat_full(src, &src_size, NULL);
    if (     !(sflags & RETRO_VFS_STAT_IS_VALID)
          ||  (sflags & RETRO_VFS_STAT_IS_DIRECTORY)
          ||  (sflags & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL))
-      return -1;
+      return NULL;
 
    dflags = retro_vfs_stat_full(dst, NULL, NULL);
    if (dflags & RETRO_VFS_STAT_IS_VALID)
    {
       if (dflags & RETRO_VFS_STAT_IS_DIRECTORY)
-         return -1;
+         return NULL;
       if (!(flags & RETRO_VFS_COPY_OVERWRITE))
-         return -1;
+         return NULL;
       /* cp -f semantics: a stale read-only dst must not defeat an
        * explicit overwrite, and a fresh inode is what every fast path
-       * below wants anyway. */
+       * wants anyway. */
       if (retro_vfs_file_remove_impl(dst) != 0)
-         return -1;
+         return NULL;
    }
    else
    {
@@ -3044,94 +3261,139 @@ int retro_vfs_copy_impl(const char *src, const char *dst, unsigned flags)
       {
          size_t n = (size_t)(last - dst);
          if (n >= sizeof(dst_buf))
-            return -1;
+            return NULL;
          memcpy(dst_buf, dst, n);
          dst_buf[n] = '\0';
-         if (vfs_copy_mkdir_parents(dst_buf) != 0)
-            return -1;
+         /* mkdir reports "exists" for a file of that name too, so
+          * confirm the parent really is a directory. */
+         if (     vfs_copy_mkdir_parents(dst_buf) != 0
+               || !(retro_vfs_stat_full(dst_buf, NULL, NULL) & RETRO_VFS_STAT_IS_DIRECTORY))
+            return NULL;
       }
    }
 
-   /* Fast paths only when both ends are native.  A backend path on
-    * either side goes straight to the portable loop, which is also
-    * how a copy between two backends works. */
-#if defined(HAVE_SMBCLIENT)
-   if (path_is_smb(src) || path_is_smb(dst))
-      goto portable;
-#endif
-#if defined(ANDROID) && defined(HAVE_SAF)
-   if (path_is_saf(src) || path_is_saf(dst))
-      goto portable;
-#endif
+   if (!(h = (struct retro_vfs_copy_handle*)calloc(1, sizeof(*h))))
+      return NULL;
+   h->src    = strdup(src);
+   h->dst    = strdup(dst);
+   h->total  = src_size;
+   h->status = RETRO_VFS_COPY_RUNNING;
+   if (!h->src || !h->dst)
+      goto fail;
 
-#if defined(_WIN32) && !defined(_XBOX)
+#ifdef HAVE_THREADS
+   if (!(h->lock = slock_new()))
+      goto fail;
+   if (!(h->thread = sthread_create(vfs_copy_thread, h)))
+      goto fail;
+#endif
+   return h;
+
+fail:
+   vfs_copy_handle_free(h);
+   return NULL;
+}
+
+int retro_vfs_copy_poll_impl(struct retro_vfs_copy_handle *h,
+      int64_t *bytes_done, int64_t *bytes_total)
+{
+   int status;
+   if (!h)
+      return RETRO_VFS_COPY_FAILED;
+#ifndef HAVE_THREADS
+   /* No worker: advance by one bounded chunk here.  Kernel fast paths
+    * are not used on this path; they cannot be resumed a chunk at a
+    * time across calls without a thread to park in. */
+   if (h->status == RETRO_VFS_COPY_RUNNING)
    {
-      BOOL ok = FALSE;
-#if defined(LEGACY_WIN32_RUNTIME)
-      if (win32_needs_local_encoding())
+      int64_t n;
+      if (!h->buf)
       {
-#endif
-#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+         h->buf_len = VFS_COPY_BUF_LARGE;
+         if (!(h->buf = (char*)malloc(h->buf_len)))
+         {
+            h->buf_len = VFS_COPY_BUF_SMALL;
+            h->buf     = (char*)malloc(h->buf_len);
+         }
+         if (!h->buf)
+            goto fail;
+         h->in  = retro_vfs_file_open_impl(h->src, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+         h->out = retro_vfs_file_open_impl(h->dst, RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (!h->in || !h->out)
+            goto fail;
+      }
+      n = retro_vfs_file_read_impl(h->in, h->buf, h->buf_len);
+      if (n < 0)
+         goto fail;
+      if (n == 0)
       {
-         char *src_local = utf8_to_local_string_alloc(src);
-         char *dst_local = utf8_to_local_string_alloc(dst);
-         if (src_local && dst_local)
-            ok = CopyFile(src_local, dst_local, TRUE);
-         free(src_local);
-         free(dst_local);
+         retro_vfs_file_close_impl(h->in);
+         h->in = NULL;
+         if (retro_vfs_file_close_impl(h->out) != 0)
+         {
+            h->out = NULL;
+            goto fail;
+         }
+         h->out    = NULL;
+         h->done   = h->total;
+         h->status = RETRO_VFS_COPY_DONE;
       }
-#endif
-#if defined(LEGACY_WIN32_RUNTIME)
-      }
+      else if (retro_vfs_file_write_impl(h->out, h->buf, (uint64_t)n) != n)
+         goto fail;
       else
-#endif
-#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
-      {
-         wchar_t *src_wide = utf8_to_utf16_string_alloc(src);
-         wchar_t *dst_wide = utf8_to_utf16_string_alloc(dst);
-         if (src_wide && dst_wide)
-            ok = CopyFileW(src_wide, dst_wide, TRUE);
-         free(src_wide);
-         free(dst_wide);
-      }
-#endif
-      ret = ok ? 0 : -1;
-      goto done;
+         h->done += n;
    }
-#elif defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
-   /* fcopyfile-backed; clones on APFS when it can. */
-   ret = copyfile(src, dst, NULL, COPYFILE_DATA) == 0 ? 0 : -1;
-   goto done;
-#elif defined(VFS_HAVE_COPY_FILE_RANGE)
+   goto report;
+fail:
+   if (h->in)  retro_vfs_file_close_impl(h->in);
+   if (h->out) retro_vfs_file_close_impl(h->out);
+   h->in = NULL;
+   h->out = NULL;
+   retro_vfs_file_remove_impl(h->dst);
+   h->status = RETRO_VFS_COPY_FAILED;
+report:
+#endif
+   VFS_COPY_LOCK(h);
+   status = h->status;
+   if (bytes_done)
+      *bytes_done  = h->done;
+   if (bytes_total)
+      *bytes_total = h->total;
+   VFS_COPY_UNLOCK(h);
+   return status;
+}
+
+int retro_vfs_copy_close_impl(struct retro_vfs_copy_handle *h)
+{
+   int status;
+   if (!h)
+      return -1;
+#ifdef HAVE_THREADS
+   VFS_COPY_LOCK(h);
+   status = h->status;
+   if (status == RETRO_VFS_COPY_RUNNING)
+      h->cancel = 1;
+   VFS_COPY_UNLOCK(h);
+   /* Waits for the in-flight chunk to notice the cancel and for the
+    * partial dst to be removed; not for the transfer. */
+   if (h->thread)
+      sthread_join(h->thread);
+   status = h->status;
+#else
+   status = h->status;
+   if (status == RETRO_VFS_COPY_RUNNING)
    {
-      int r = vfs_copy_linux(src, dst, src_size);
-      if (r == 1)
-      {
-         ret = 0;
-         goto done;
-      }
-      if (r < 0)
-      {
-         ret = -1;
-         goto done;
-      }
-      /* r == 0: kernel declined before writing; portable loop. */
+      if (h->in)  retro_vfs_file_close_impl(h->in);
+      if (h->out) retro_vfs_file_close_impl(h->out);
+      h->in = NULL;
+      h->out = NULL;
+      retro_vfs_file_remove_impl(h->dst);
    }
 #endif
-
-#if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF))
-portable:
-#endif
-   ret = vfs_copy_loop(src, dst);
-
-#if (defined(_WIN32) && !defined(_XBOX)) \
-      || (defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)) \
-      || defined(VFS_HAVE_COPY_FILE_RANGE)
-done:
-#endif
-   if (ret != 0)
-      retro_vfs_file_remove_impl(dst);
-   return ret;
+   vfs_copy_handle_free(h);
+   return status == RETRO_VFS_COPY_DONE ? 0 : -1;
 }
 
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(

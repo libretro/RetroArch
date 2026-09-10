@@ -3148,6 +3148,27 @@ struct retro_vfs_dir_handle;
 /** @} */
 
 /**
+ * @defgroup RETRO_VFS_COPY_STATUS Copy Status
+ * Values returned by \c retro_vfs_copy_poll_t.
+ * @since VFS API v5
+ * @{
+ */
+/** The copy is still in progress. */
+#define RETRO_VFS_COPY_RUNNING                (0)
+/** The copy completed; \c dst is complete and closed. */
+#define RETRO_VFS_COPY_DONE                   (1)
+/** The copy failed or was cancelled; no partial \c dst remains. */
+#define RETRO_VFS_COPY_FAILED                 (-1)
+/** @} */
+
+/**
+ * Opaque handle to an in-progress file copy.
+ * @see retro_vfs_copy_begin_t
+ * @since VFS API v5
+ */
+struct retro_vfs_copy_handle;
+
+/**
  * Returns the path that was used to open this file.
  *
  * @param stream The opened file handle to get the path of.
@@ -3387,26 +3408,62 @@ typedef int (RETRO_CALLCONV *retro_vfs_get_mtime_t)(const char *path, int64_t *m
 typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mtime);
 
 /**
- * Copies a single regular file.
+ * Starts copying a single regular file and returns without waiting for it.
  *
- * Equivalent to \c std::filesystem::copy_file with
- * \c copy_options::overwrite_existing when \c RETRO_VFS_COPY_OVERWRITE is set.
- * \c dst is the full path of the new file, not a directory;
- * missing parent directories are created.
- * Metadata (modification time, read-only state) of \c dst
- * after the copy is platform-defined.
- * On failure no partial \c dst is left behind.
- * Either path may belong to any file system the frontend supports.
+ * The transfer runs in the background (or, on frontends without threads,
+ * advances in bounded steps inside \c retro_vfs_copy_poll_t). None of the
+ * three copy calls waits for the transfer; each returns promptly.
+ *
+ * \c dst is the full path of the new file, not a directory; missing parent
+ * directories are created. Metadata (modification time, read-only state)
+ * of \c dst after the copy is platform-defined. Either path may belong to
+ * any file system the frontend supports.
+ *
+ * Checks that can be made up front (missing or non-regular \c src,
+ * \c dst is a directory, \c dst exists without \c RETRO_VFS_COPY_OVERWRITE,
+ * \c src equals \c dst) fail here by returning \c NULL.
  *
  * @param src The path to the file to copy. Must be a regular file.
  * @param dst The full path of the destination file. Must differ from \c src.
  * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
- * @return 0 on success, or -1 on failure.
- * @see filestream_copy
+ * @return A handle to poll and close, or \c NULL if the copy could not start.
+ * @see retro_vfs_copy_poll_t
+ * @see retro_vfs_copy_close_t
+ * @see filestream_copy_begin
  * @see RETRO_VFS_COPY
  * @since VFS API v5
  */
-typedef int (RETRO_CALLCONV *retro_vfs_copy_t)(const char *src, const char *dst, unsigned flags);
+typedef struct retro_vfs_copy_handle *(RETRO_CALLCONV *retro_vfs_copy_begin_t)(const char *src, const char *dst, unsigned flags);
+
+/**
+ * Reports the state of a copy started with \c retro_vfs_copy_begin_t.
+ *
+ * Returns promptly. Frontends without background threads may advance the
+ * copy by a bounded amount before returning, so callers that want the copy
+ * to make progress should poll at least occasionally.
+ *
+ * @param handle The copy.
+ * @param[out] bytes_done Bytes written to \c dst so far. May be \c NULL.
+ * @param[out] bytes_total Size of \c src in bytes. May be \c NULL.
+ * @return One of the \c RETRO_VFS_COPY_STATUS values.
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_copy_poll_t)(struct retro_vfs_copy_handle *handle, int64_t *bytes_done, int64_t *bytes_total);
+
+/**
+ * Releases a copy handle.
+ *
+ * If the copy is still running it is cancelled and the partial \c dst
+ * removed; this waits only for the in-flight chunk to stop, not for the
+ * transfer. Must be called exactly once for every non-NULL handle from
+ * \c retro_vfs_copy_begin_t, whatever \c retro_vfs_copy_poll_t reported.
+ *
+ * @param handle The copy.
+ * @return 0 if the copy had completed successfully, or -1 if it failed,
+ * was cancelled, or was still running when closed.
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_copy_close_t)(struct retro_vfs_copy_handle *handle);
 
 /**
  * Creates a directory at the given path.
@@ -3601,8 +3658,14 @@ struct retro_vfs_interface
    /** @copydoc retro_vfs_set_mtime_t */
    retro_vfs_set_mtime_t set_mtime;
 
-   /** @copydoc retro_vfs_copy_t */
-   retro_vfs_copy_t copy;
+   /** @copydoc retro_vfs_copy_begin_t */
+   retro_vfs_copy_begin_t copy_begin;
+
+   /** @copydoc retro_vfs_copy_poll_t */
+   retro_vfs_copy_poll_t copy_poll;
+
+   /** @copydoc retro_vfs_copy_close_t */
+   retro_vfs_copy_close_t copy_close;
 
    /** @copydoc retro_vfs_dirent_stat_t */
    retro_vfs_dirent_stat_t dirent_stat;

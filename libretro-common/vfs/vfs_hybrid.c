@@ -390,17 +390,52 @@ static int hyb_set_mtime( const char *path, int64_t mtime ) {
 	return -1;
 }
 
-static int hyb_copy( const char *src, const char *dst, unsigned flags ) {
-	/* both native: local copy (fast paths live there).  A URI on
-	   either side means at least one end only the frontend can reach. */
+/* A copy handle must be polled and closed by whichever side began it,
+   so the wrapper records which one that was. */
+typedef struct { int be; void *h; } hyb_copy_t;
+
+static struct retro_vfs_copy_handle *hyb_copy_begin( const char *src, const char *dst, unsigned flags ) {
+	hyb_copy_t *c = (hyb_copy_t *)calloc( 1, sizeof( *c ) );
+	if ( !c )
+		return NULL;
+	/* both native: local (fast paths live there).  A URI on either
+	   side means at least one end only the frontend can reach. */
 	if ( !hyb_is_uri( src ) && !hyb_is_uri( dst ) ) {
-		int r = retro_vfs_copy_impl( src, dst, flags );
-		if ( r == 0 || !( hyb_front && HYB_SANDBOXED ) )
-			return r;
+		c->h = retro_vfs_copy_begin_impl( src, dst, flags );
+		if ( c->h || !( hyb_front && HYB_SANDBOXED ) ) {
+			c->be = HYB_LOCAL;
+			if ( !c->h ) { free( c ); return NULL; }
+			return (struct retro_vfs_copy_handle *)c;
+		}
 	}
-	if ( hyb_front && hyb_front_version >= 5 && hyb_front->copy )
-		return hyb_front->copy( src, dst, flags );
-	return -1;
+	if ( hyb_front && hyb_front_version >= 5 && hyb_front->copy_begin ) {
+		c->h = hyb_front->copy_begin( src, dst, flags );
+		if ( c->h ) { c->be = HYB_FRONT; return (struct retro_vfs_copy_handle *)c; }
+	}
+	free( c );
+	return NULL;
+}
+
+static int hyb_copy_poll( struct retro_vfs_copy_handle *ch, int64_t *done, int64_t *total ) {
+	hyb_copy_t *c = (hyb_copy_t *)ch;
+	if ( !c )
+		return RETRO_VFS_COPY_FAILED;
+	if ( c->be == HYB_LOCAL )
+		return retro_vfs_copy_poll_impl( (struct retro_vfs_copy_handle *)c->h, done, total );
+	return hyb_front->copy_poll( (struct retro_vfs_copy_handle *)c->h, done, total );
+}
+
+static int hyb_copy_close( struct retro_vfs_copy_handle *ch ) {
+	hyb_copy_t *c = (hyb_copy_t *)ch;
+	int r;
+	if ( !c )
+		return -1;
+	if ( c->be == HYB_LOCAL )
+		r = retro_vfs_copy_close_impl( (struct retro_vfs_copy_handle *)c->h );
+	else
+		r = hyb_front->copy_close( (struct retro_vfs_copy_handle *)c->h );
+	free( c );
+	return r;
 }
 
 static int hyb_dirent_stat( struct retro_vfs_dir_handle *dh, int64_t *size, int64_t *mtime ) {
@@ -437,7 +472,8 @@ static struct retro_vfs_interface hyb_iface = {
 	/* v4 */
 	hyb_stat_64,
 	/* v5 */
-	hyb_set_readonly, hyb_get_mtime, hyb_set_mtime, hyb_copy, hyb_dirent_stat
+	hyb_set_readonly, hyb_get_mtime, hyb_set_mtime,
+	hyb_copy_begin, hyb_copy_poll, hyb_copy_close, hyb_dirent_stat
 };
 
 void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {

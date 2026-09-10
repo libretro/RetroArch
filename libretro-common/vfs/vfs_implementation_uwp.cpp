@@ -42,6 +42,7 @@
 
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <rthreads/rthreads.h>
 #include <libretro.h>
 #include <encodings/utf.h>
 #include <compat/strl.h>
@@ -882,52 +883,159 @@ int retro_vfs_set_mtime_impl(const char *path, int64_t mtime)
     return ok ? 0 : -1;
 }
 
-int retro_vfs_copy_impl(const char *src, const char *dst, unsigned flags)
+/* copy: begin / poll / close.  The transfer runs on its own thread
+ * (rthreads; UWP always has threads) via CopyFile2, which is in the UWP
+ * API set and drives the same kernel copy std::filesystem::copy_file
+ * uses; its progress routine reports bytes and honours cancellation
+ * within one chunk.  begin/poll/close never wait for the transfer. */
+struct retro_vfs_copy_handle
 {
+    char     *src;
+    char     *dst;
+    int64_t   total;
+    int64_t   done;
+    int       status;
+    int       cancel;
+    sthread_t *thread;
+    slock_t   *lock;
+};
+
+static COPYFILE2_MESSAGE_ACTION CALLBACK uwp_copy_progress(
+        const COPYFILE2_MESSAGE *msg, PVOID ctx)
+{
+    struct retro_vfs_copy_handle *h = (struct retro_vfs_copy_handle*)ctx;
+    int cancel;
+    if (msg->Type == COPYFILE2_CALLBACK_CHUNK_FINISHED)
+    {
+        slock_lock(h->lock);
+        h->done = (int64_t)msg->Info.ChunkFinished.uliTotalBytesTransferred.QuadPart;
+        slock_unlock(h->lock);
+    }
+    slock_lock(h->lock);
+    cancel = h->cancel;
+    slock_unlock(h->lock);
+    return cancel ? COPYFILE2_PROGRESS_CANCEL : COPYFILE2_PROGRESS_CONTINUE;
+}
+
+static void uwp_copy_thread(void *data)
+{
+    struct retro_vfs_copy_handle *h = (struct retro_vfs_copy_handle*)data;
+    wchar_t *src_wide = utf8_to_utf16_string_alloc(h->src);
+    wchar_t *dst_wide = utf8_to_utf16_string_alloc(h->dst);
+    HRESULT hr        = E_FAIL;
+    COPYFILE2_EXTENDED_PARAMETERS params;
+
+    memset(&params, 0, sizeof(params));
+    params.dwSize             = sizeof(params);
+    params.dwCopyFlags        = COPY_FILE_FAIL_IF_EXISTS;
+    params.pProgressRoutine   = uwp_copy_progress;
+    params.pvCallbackContext  = h;
+
+    if (src_wide && dst_wide)
+    {
+        windowsize_path(src_wide);
+        windowsize_path(dst_wide);
+        hr = CopyFile2(src_wide, dst_wide, &params);
+    }
+    free(src_wide);
+    free(dst_wide);
+
+    if (FAILED(hr))
+        retro_vfs_file_remove_impl(h->dst);
+
+    slock_lock(h->lock);
+    h->status = SUCCEEDED(hr) ? RETRO_VFS_COPY_DONE : RETRO_VFS_COPY_FAILED;
+    if (SUCCEEDED(hr))
+        h->done = h->total;
+    slock_unlock(h->lock);
+}
+
+static void uwp_copy_handle_free(struct retro_vfs_copy_handle *h)
+{
+    if (h->lock)
+        slock_free(h->lock);
+    free(h->src);
+    free(h->dst);
+    free(h);
+}
+
+struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
+        const char *src, const char *dst, unsigned flags)
+{
+    struct retro_vfs_copy_handle *h;
     int64_t src_size = 0;
     int sflags, dflags;
-    wchar_t *src_wide, *dst_wide;
-    BOOL ok;
 
     if (!src || !*src || !dst || !*dst)
-        return -1;
+        return NULL;
     if (_stricmp(src, dst) == 0)
-        return -1;
+        return NULL;
 
     sflags = retro_vfs_stat_64_impl(src, &src_size);
     if (!(sflags & RETRO_VFS_STAT_IS_VALID) || (sflags & RETRO_VFS_STAT_IS_DIRECTORY))
-        return -1;
+        return NULL;
 
     dflags = retro_vfs_stat_64_impl(dst, NULL);
     if (dflags & RETRO_VFS_STAT_IS_VALID)
     {
         if (dflags & RETRO_VFS_STAT_IS_DIRECTORY)
-            return -1;
+            return NULL;
         if (!(flags & RETRO_VFS_COPY_OVERWRITE))
-            return -1;
+            return NULL;
         /* cp -f: a read-only stale dst must not defeat an explicit
-         * overwrite, and CopyFile refuses read-only targets. */
+         * overwrite, and CopyFile2 refuses read-only targets. */
         if (retro_vfs_file_remove_impl(dst) != 0)
-            return -1;
+            return NULL;
     }
     else
         uwp_mkdir_impl(std::filesystem::path(dst).parent_path());
 
-    src_wide = utf8_to_utf16_string_alloc(src);
-    dst_wide = utf8_to_utf16_string_alloc(dst);
-    windowsize_path(src_wide);
-    windowsize_path(dst_wide);
-    /* Kernel-side copy, the same primitive std::filesystem::copy_file
-     * uses on MSVC.  bFailIfExists = TRUE: existence was handled above. */
-    ok = CopyFileFromAppW(src_wide, dst_wide, TRUE);
-    free(src_wide);
-    free(dst_wide);
-    if (!ok)
+    h = (struct retro_vfs_copy_handle*)calloc(1, sizeof(*h));
+    if (!h)
+        return NULL;
+    h->src    = strdup(src);
+    h->dst    = strdup(dst);
+    h->total  = src_size;
+    h->status = RETRO_VFS_COPY_RUNNING;
+    if (!h->src || !h->dst || !(h->lock = slock_new())
+            || !(h->thread = sthread_create(uwp_copy_thread, h)))
     {
-        retro_vfs_file_remove_impl(dst);
-        return -1;
+        uwp_copy_handle_free(h);
+        return NULL;
     }
-    return 0;
+    return h;
+}
+
+int retro_vfs_copy_poll_impl(struct retro_vfs_copy_handle *h,
+        int64_t *bytes_done, int64_t *bytes_total)
+{
+    int status;
+    if (!h)
+        return RETRO_VFS_COPY_FAILED;
+    slock_lock(h->lock);
+    status = h->status;
+    if (bytes_done)
+        *bytes_done = h->done;
+    if (bytes_total)
+        *bytes_total = h->total;
+    slock_unlock(h->lock);
+    return status;
+}
+
+int retro_vfs_copy_close_impl(struct retro_vfs_copy_handle *h)
+{
+    int status;
+    if (!h)
+        return -1;
+    slock_lock(h->lock);
+    if (h->status == RETRO_VFS_COPY_RUNNING)
+        h->cancel = 1;
+    slock_unlock(h->lock);
+    if (h->thread)
+        sthread_join(h->thread);
+    status = h->status;
+    uwp_copy_handle_free(h);
+    return status == RETRO_VFS_COPY_DONE ? 0 : -1;
 }
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
