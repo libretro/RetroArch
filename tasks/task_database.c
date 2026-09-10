@@ -1470,6 +1470,28 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          return database_info_list_iterate_next(db_state);
    }
 
+   /* The core-info gate is an in-memory string check; the size gate
+    * below costs a full walk of the database the first time it is
+    * consulted, because task_database_fill_db_min_max() builds the
+    * crc index in that walk.  Running the walk first meant every
+    * database in the directory was read end to end once per scan,
+    * including the ones no installed core claims and which can never
+    * match - 200 MB of .rdb reads to scan a 70 MB set with the
+    * shipped database directory.  Ask the cheap question first. */
+   if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
+   {
+      if (!core_info_database_supports_content_path(
+            db_state->list->elems[db_state->list_index].data, name))
+         return database_info_list_iterate_next(db_state);
+
+      if (!path_contains_compressed_file)
+      {
+         if (core_info_database_match_archive_member(
+               db_state->list->elems[db_state->list_index].data))
+            return database_info_list_iterate_next(db_state);
+      }
+   }
+
    /* If size boundaries are not filled for this DB, run the queries */
    if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
       task_database_fill_db_min_max(db_state);
@@ -1519,25 +1541,6 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       database_info_list_t *hits = NULL;
 
       query[0] = '\0';
-
-      if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
-      {
-         /* don't scan files that can't be in this database.
-          *
-          * Could be because of:
-          * - A matching core missing
-          * - Incompatible file extension */
-         if (!core_info_database_supports_content_path(
-               db_state->list->elems[db_state->list_index].data, name))
-            return database_info_list_iterate_next(db_state);
-
-         if (!path_contains_compressed_file)
-         {
-            if (core_info_database_match_archive_member(
-                  db_state->list->elems[db_state->list_index].data))
-               return database_info_list_iterate_next(db_state);
-         }
-      }
 
       /* Answer from this database's crc index when we can.  Building
        * it costs one walk - about what a single probe used to cost -
