@@ -118,5 +118,5 @@ S_UINT_EX(save_compression_codec, SAVE_COMPRESSION_CODEC,
       "save_compression_codec",
       DEFAULT_SAVE_COMPRESSION_CODEC, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_SAVE_COMPRESSION_CODEC_APPLY, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_save_compression_codec, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Compression Codec",
-      "The codec compressed save files and save states are written with. Zstandard loads several times faster than Deflate and saves somewhat faster, for files somewhat larger. Files written with either codec are read back; only new files change.")
+      "The codec every compressed file is written with, including save files, save states, playlists, core backups and the core info cache. Zstandard loads several times faster than Deflate and saves somewhat faster, for files somewhat larger. Files written with either codec are read back; only new files change.")
 #endif
