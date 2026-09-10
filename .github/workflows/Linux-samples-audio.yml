@@ -589,3 +589,20 @@ jobs:
           test -x pacing_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 ./pacing_test
           echo "[pass] pacing_test (ASan)"
+
+      - name: Build the ALSA objects through configure (--enable-alsa)
+        shell: bash
+        run: |
+          set -eu
+          # The harnesses above compile audio/drivers/alsa.c with
+          # -DHAVE_ALSA on the command line. A distribution build takes
+          # HAVE_ALSA from config.h instead, and the file gates its
+          # alsa-lib includes on it, so build the objects that way too:
+          # configure with ALSA on, then compile them. That covers the
+          # object a distribution ships as well as the ones the
+          # harnesses build (libretro/RetroArch#19525).
+          ./configure --enable-alsa --disable-qt --disable-ffmpeg \
+            --disable-x11 --disable-wayland
+          grep -q '^HAVE_ALSA = 1' config.mk
+          make obj-unix/release/audio/drivers/alsa.o \
+               obj-unix/release/audio/common/alsa.o

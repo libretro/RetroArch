@@ -30,6 +30,10 @@
 
 #include <lists/string_list.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
