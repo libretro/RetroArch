@@ -78,9 +78,10 @@ enum audio_type_enum
                     * (.aac), or a whole MP4/M4A buffer when rmp4 is
                     * built in                                          */
    AUDIO_TYPE_AC3   /* AC-3 (rac3); a buffer of syncframes (.ac3). Up
-                    * to 5.1, handed over in the speaker-mask order
-                    * (FL FR FC LFE ... surrounds), which is the WAV
-                    * order the mixer folds by                          */
+                    * to 5.1, handed over in the WAV shape for its
+                    * channel count (the mixer folds by count): a
+                    * lone surround becomes a phantom pair, and the
+                    * LFE is kept only in 5.1                           */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of

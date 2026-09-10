@@ -49,6 +49,8 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_M4A,
    AUDIO_MIXER_TYPE_OPUS,
    AUDIO_MIXER_TYPE_WEBA, /* resolves to OPUS or OGG at load */
+   AUDIO_MIXER_TYPE_AC3,  /* a .ac3 file of syncframes (rac3); up to
+                           * 5.1, folded to stereo like the others */
    /* A WAV played as a stream: decoded a chunk at a time out of the
     * source buffer rather than converted whole at load, so its cost
     * is the source and not the source plus a decoded copy, and its
@@ -86,6 +88,7 @@ audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size);
 /* WebM audio (.weba): identifies the track's codec and returns a sound
  * of the matching existing type (OPUS or OGG), or NULL when the

@@ -84,7 +84,7 @@
  * left behind. */
 #if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) \
  || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) \
- || defined(HAVE_ROPUS)
+ || defined(HAVE_ROPUS) || defined(HAVE_RAC3)
 #define AUDIO_MIXER_HAS_STREAM 1
 #include <formats/audio.h>
 #endif
@@ -1262,6 +1262,24 @@ audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
 #endif
 }
 
+audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size)
+{
+#ifdef HAVE_RAC3
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+
+   if (!sound)
+      return NULL;
+
+   sound->type           = AUDIO_MIXER_TYPE_AC3;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
 audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size)
 {
 #ifdef HAVE_ROPUS
@@ -1394,13 +1412,19 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
 void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
 {
 #if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC)
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3)
    if (!voice)
       return;
 #ifdef AUDIO_MIXER_HAS_STREAM
    AUDIO_MIXER_LOCK(voice);
    switch (voice->type)
    {
+#ifdef HAVE_RAC3
+      case AUDIO_MIXER_TYPE_AC3:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_AC3, avail);
+         break;
+#endif
 #ifdef HAVE_RVORBIS
       case AUDIO_MIXER_TYPE_OGG:
          audio_transfer_set_avail(voice->types.stream.stream,
@@ -1479,6 +1503,12 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
                AUDIO_TYPE_AAC);
          break;
 #endif
+#ifdef HAVE_RAC3
+      case AUDIO_MIXER_TYPE_AC3:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_AC3);
+         break;
+#endif
       default:
          break;
    }
@@ -1550,6 +1580,13 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
          break;
       case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
+         handle = (void*)sound->types.stream.data;
+         if (handle && !sound->data_owner)
+            free(handle);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
          handle = (void*)sound->types.stream.data;
          if (handle && !sound->data_owner)
             free(handle);
@@ -2009,6 +2046,12 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
                   resampler_ident, quality, stop_cb, AUDIO_TYPE_AAC);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_AC3);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
             res = audio_mixer_play_stream(sound, voice, repeat, volume,
@@ -2104,6 +2147,12 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb, AUDIO_TYPE_AAC);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
+                  quality, stop_cb, AUDIO_TYPE_AC3);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
             res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
@@ -2188,6 +2237,11 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
 #ifdef HAVE_RAAC
       case AUDIO_MIXER_TYPE_M4A:
          audio_mixer_release_stream(voice, AUDIO_TYPE_AAC);
+         break;
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_MIXER_TYPE_AC3:
+         audio_mixer_release_stream(voice, AUDIO_TYPE_AC3);
          break;
 #endif
 #ifdef HAVE_ROPUS
@@ -2659,6 +2713,11 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_AAC);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_AC3);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_OPUS);
@@ -2729,6 +2788,11 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
             audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_AAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_AC3:
+#ifdef HAVE_RAC3
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_AC3);
 #endif
             break;
          case AUDIO_MIXER_TYPE_OPUS:

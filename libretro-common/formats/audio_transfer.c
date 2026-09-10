@@ -894,7 +894,19 @@ struct audio_transfer_ac3
    size_t          avail;       /* resident prefix, 0 = all */
    size_t          pos;         /* next frame's byte offset */
    rac3_decoder_t *dec;
-   unsigned        channels;
+   unsigned        channels;    /* handed over, in the mixer's order */
+   unsigned        dec_channels;/* the stream's, in mask order */
+   uint32_t        layout;
+   /* The mixer folds by channel count in the WAV order, and A/52 has
+    * configurations the count does not tell apart - 3/1, 2/2, 3/0
+    * with LFE and 2/1 with LFE are all four channels. So the frame is
+    * put into the WAV shape for its count here: LFE kept only where
+    * WAV's count puts one (5.1), a lone back centre split into a
+    * phantom pair at -3 dB each, the surround pair in the pair's
+    * place. Each output channel is up to two decoded ones at a gain. */
+   int             map_a[6], map_b[6];
+   float           map_g[6];
+   float          *raw;         /* 1536 * dec_channels, the decoder's */
    unsigned        rate;
    uint64_t        total_frames;
    uint64_t        frame_pos;   /* PCM frame at the head of pend, absolute */
@@ -927,15 +939,73 @@ static int audio_transfer_ac3_next(struct audio_transfer_ac3 *a)
       return -1;
    if (a->pos + info.frame_bytes > end)
       return 0;
-   if (info.channels != a->channels || info.sample_rate != a->rate)
+   if (info.channels != a->dec_channels || info.sample_rate != a->rate)
       return -1;
-   got = rac3_decode_frame(a->dec, a->buf + a->pos, info.frame_bytes, a->pend, &info);
+   got = rac3_decode_frame(a->dec, a->buf + a->pos, info.frame_bytes, a->raw, &info);
    if (!got)
       return -1;
+   {
+      size_t f; unsigned c;
+      for (f = 0; f < got; f++)
+      {
+         const float *in = a->raw + f * a->dec_channels;
+         float *out      = a->pend + f * a->channels;
+         for (c = 0; c < a->channels; c++)
+         {
+            float v = in[a->map_a[c]];
+            if (a->map_b[c] >= 0)
+               v += in[a->map_b[c]];
+            out[c] = v * a->map_g[c];
+         }
+      }
+   }
    a->pos      += info.frame_bytes;
    a->pend_n    = got;
    a->pend_off  = 0;
    return 1;
+}
+
+/* The WAV-shaped channel set for an A/52 layout: the count the mixer
+ * folds by, and where each channel comes from. Mask bits: FL 1, FR 2,
+ * FC 4, LFE 8, BC 0x100, SL 0x200, SR 0x400, in ascending order in
+ * the decoder's output. */
+static void audio_transfer_ac3_map(struct audio_transfer_ac3 *a)
+{
+   unsigned slot[16], n = 0, i, out = 0;
+   bool fc  = (a->layout & 0x004u) != 0;
+   bool bc  = (a->layout & 0x100u) != 0;
+   bool sp  = (a->layout & 0x200u) != 0;   /* the surround pair */
+   bool lfe = (a->layout & 0x008u) != 0;
+   for (i = 0; i < 16; i++)
+      slot[i] = (a->layout & (1u << i)) ? n++ : 0;
+#define AC3_OUT(A, B, G) do { a->map_a[out] = (A); a->map_b[out] = (B); a->map_g[out] = (G); out++; } while (0)
+   if (!(a->layout & 0x001u))
+   {
+      /* mono: the centre alone */
+      AC3_OUT((int)slot[2], -1, 1.0f);
+   }
+   else
+   {
+      AC3_OUT((int)slot[0], -1, 1.0f);
+      AC3_OUT((int)slot[1], -1, 1.0f);
+      if (fc)
+         AC3_OUT((int)slot[2], -1, 1.0f);
+      if (fc && lfe && sp)
+         AC3_OUT((int)slot[3], -1, 1.0f);     /* 5.1: WAV's LFE slot */
+      if (sp)
+      {
+         AC3_OUT((int)slot[9], -1, 1.0f);
+         AC3_OUT((int)slot[10], -1, 1.0f);
+      }
+      else if (bc)
+      {
+         AC3_OUT((int)slot[8], -1, 0.70710678f);
+         AC3_OUT((int)slot[8], -1, 0.70710678f);
+      }
+   }
+#undef AC3_OUT
+   a->channels = out;
+   (void)lfe;
 }
 
 /* The stream's frames, by walking the headers. */
@@ -990,7 +1060,7 @@ static bool audio_transfer_ac3_seek_to(struct audio_transfer_ac3 *a, uint64_t fr
       rac3_frame_info_t info;
       if (rac3_parse_frame_info(a->buf + prev_pos, a->buf_size - prev_pos, &info) != RAC3_OK)
          return false;
-      rac3_decode_frame(a->dec, a->buf + prev_pos, info.frame_bytes, a->pend, &info);
+      rac3_decode_frame(a->dec, a->buf + prev_pos, info.frame_bytes, a->raw, &info);
    }
    a->pos       = pos;
    a->pend_n    = 0;
@@ -3472,14 +3542,19 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          if (rac3_parse_frame_info(a->buf, a->buf_size, &info) != RAC3_OK
                || info.kind != RAC3_KIND_AC3)
             return false;
-         a->channels     = info.channels;
+         a->dec_channels = info.channels;
+         a->layout       = info.layout;
          a->rate         = info.sample_rate;
+         audio_transfer_ac3_map(a);
          a->total_frames = audio_transfer_ac3_count(a);
+         a->raw          = (float*)malloc(1536 * a->dec_channels * sizeof(float));
          a->pend         = (float*)malloc(1536 * a->channels * sizeof(float));
          a->dec          = rac3_decoder_new();
-         if (!a->pend || !a->dec)
+         if (!a->raw || !a->pend || !a->dec)
          {
+            free(a->raw);
             free(a->pend);
+            a->raw  = NULL;
             a->pend = NULL;
             rac3_decoder_free(a->dec);
             a->dec  = NULL;
@@ -5593,6 +5668,7 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
          if (a)
          {
+            free(a->raw);
             free(a->pend);
             rac3_decoder_free(a->dec);
          }

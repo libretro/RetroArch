@@ -678,6 +678,7 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "m4a",       FILE_TYPE_M4A },
 #endif
       { "aac",       FILE_TYPE_AAC },
+      { "ac3",       FILE_TYPE_AC3 },
 #endif
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
       { "opus",      FILE_TYPE_OPUS },

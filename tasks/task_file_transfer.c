@@ -348,6 +348,7 @@ do_transfer:
           * task's data and donates the transfer to the mixer - never
           * ran.  The sound loaded and then silently did not play. */
          case NBIO_TYPE_M4A:
+         case NBIO_TYPE_AC3:
          case NBIO_TYPE_OPUS:
 #ifdef HAVE_AUDIOMIXER
             if (!task_audio_mixer_load_handler(task))

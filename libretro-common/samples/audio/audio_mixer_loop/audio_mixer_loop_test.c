@@ -83,6 +83,10 @@
 
 #include <audio/audio_mixer.h>
 #include <formats/audio.h>
+#ifdef HAVE_RAC3
+#include <formats/rac3.h>
+#include <math.h>
+#endif
 
 #include "ogg_fixture.h"
 
@@ -474,6 +478,56 @@ int main(void)
          fails++;
       audio_mixer_destroy(snd);
    }
+
+#ifdef HAVE_RAC3
+   /* The AC-3 arm and the mixer's AC-3 sound type, on a fixture made
+    * here with the encoder: ten 5.1 frames of tones, folded to stereo
+    * by the mixer. The same seek and repeat contracts as Vorbis. */
+   {
+      static float in[1536 * 6];
+      uint8_t *ac3 = (uint8_t*)malloc(4096 * 10);
+      size_t ac3_len = 0; unsigned f, i, c;
+      rac3_encoder_t *enc = rac3_encoder_new(48000, 0x60Fu, 448);
+      for (f = 0; f < 10 && enc; f++)
+      {
+         for (i = 0; i < 1536; i++)
+            for (c = 0; c < 6; c++)
+               in[i * 6 + c] = 0.3f * (float)sin(2.0 * 3.14159265 * (220.0 * (c + 1)) * (double)(f * 1536 + i) / 48000.0);
+         ac3_len += rac3_encode_frame(enc, in, ac3 + ac3_len, 4096 * 10 - ac3_len);
+      }
+      rac3_encoder_free(enc);
+      printf("3b. audio_transfer: an AC-3 stream replays after a seek to 0\n");
+      current_case = "case 3b (AC-3 seek contract)";
+      if (!ac3_len || !check_seek_replays(ac3, ac3_len, AUDIO_TYPE_AC3, "ac3"))
+         fails++;
+      printf("3c. audio_mixer: a repeating AC-3 voice keeps playing past its loop point\n");
+      current_case = "case 3c (mixer repeat, AC-3 float)";
+      if (!(snd = audio_mixer_load_ac3(dup_bytes(ac3, ac3_len), ac3_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 0, 1, "AC-3 float"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      current_case = "case 3c (mixer repeat, AC-3 int16)";
+      if (!(snd = audio_mixer_load_ac3(dup_bytes(ac3, ac3_len), ac3_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 1, 1, "AC-3 int16"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      free(ac3);
+   }
+#endif
 
    printf("4. audio_mixer: a stream with no audio in it never becomes a voice\n");
    current_case = "case 4 (empty stream)";

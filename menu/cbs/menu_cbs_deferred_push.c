@@ -462,6 +462,9 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
                string_ext_list_merge_dedup(ext_filter, &_len, 2048, "aac");
 #endif
+#ifdef HAVE_RAC3
+               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "ac3");
+#endif
 #ifdef HAVE_ROPUS
                string_ext_list_merge_dedup(ext_filter, &_len, 2048, "opus");
 #endif
