@@ -135,6 +135,7 @@ jobs:
             # ffmpeg is in the package list above for it.
             rac3_frame_test
             rac3_tables_test
+            rac3_decode_test
           )
 
           # Targets that are built but deliberately not executed, each

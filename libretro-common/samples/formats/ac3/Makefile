@@ -1,6 +1,7 @@
 compiler     := gcc
 TARGET       := rac3_frame_test
 TARGET2      := rac3_tables_test
+TARGET3      := rac3_decode_test
 
 LIBRETRO_COMM_DIR = ../../..
 INCDIRS := -I$(LIBRETRO_COMM_DIR)/include
@@ -25,7 +26,10 @@ endif
 
 OBJS := $(SOURCES_C:.c=.o)
 
-all: $(TARGET) $(TARGET2)
+all: $(TARGET) $(TARGET2) $(TARGET3)
+
+$(TARGET3): rac3_decode_test.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.c
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -O2 -o$@ rac3_decode_test.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.c $(LDFLAGS)
 
 $(TARGET2): rac3_tables_test.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_tables.h
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -Wno-unused-variable -Wno-unused-const-variable -o$@ rac3_tables_test.c $(LDFLAGS)
@@ -39,12 +43,13 @@ $(TARGET): $(OBJS)
 # The reference streams come from ffmpeg, so the check is skipped
 # where it is not installed; the frame walk is then unexercised, and
 # the job says so.
-check: $(TARGET) $(TARGET2)
+check: $(TARGET) $(TARGET2) $(TARGET3)
 	./$(TARGET2)
 	./$(TARGET)
+	./$(TARGET3)
 
 clean:
 	rm -f $(OBJS)
-	rm -f $(TARGET) $(TARGET2)
+	rm -f $(TARGET) $(TARGET2) $(TARGET3)
 
 .PHONY: clean all check

@@ -115,6 +115,32 @@ uint16_t rac3_crc16(const uint8_t *src, size_t len);
  * whole. Needs the entire frame. */
 bool rac3_frame_crc_ok(const uint8_t *src, size_t frame_bytes);
 
+/* ---- the decoder -------------------------------------------------- */
+
+/* A decoder for AC-3 (bsid <= 8). Frames go in one at a time and
+ * come out as interleaved float, one value per channel per sample in
+ * the frame's layout, the mask's ascending-bit order - so a 3/2
+ * stream comes out FL FR FC [LFE] SL SR. Output is nominal full
+ * scale at +/-1.0 before dialogue normalisation; dynamic range
+ * control (dynrng) is applied as the standard directs unless turned
+ * off; dialnorm is reported, not applied, so the caller may. */
+typedef struct rac3_decoder rac3_decoder_t;
+
+rac3_decoder_t *rac3_decoder_new(void);
+void            rac3_decoder_free(rac3_decoder_t *d);
+
+/* Apply the stream's dynamic range control words (default on). */
+void rac3_decoder_set_drc(rac3_decoder_t *d, bool on);
+
+/* Decodes one frame. src must hold the whole frame. out must have
+ * room for info->samples * info->channels floats. Returns the frames
+ * (samples per channel) written, 0 on a frame the decoder refuses
+ * (bad header, a CRC that does not hold, an E-AC-3 frame, a syntax
+ * element the standard reserves), in which case info is still filled
+ * where the header parsed. */
+size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
+      float *out, rac3_frame_info_t *info);
+
 RETRO_END_DECLS
 
 #endif
