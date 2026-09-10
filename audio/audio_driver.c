@@ -1238,12 +1238,15 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
     * cancelled over them. */
    device_ok = fabs(taken / nominal - 1.0) <= AUDIO_SINK_DEVICE_BAND;
    kept      = device_ok && fabs(offered / nominal - 1.0) <= AUDIO_SINK_WINDOW_BAND;
-   if (device_ok)
+   if (kept)
    {
-      /* The last few windows the device was steady through, kept or
-       * not, tile the time before this one: a publish a stall pushed
-       * across a window boundary is short in one window and long in
-       * the next, and only the pair sums to the clock. */
+      /* The last few windows within their own bands, kept or not by
+       * the sum test, tile the time before this one: a publish a
+       * stall pushed across a window boundary is short in one window
+       * and long in the next, and only the pair sums to the clock. A
+       * window outside its own band - a pause, a dry spell - is not
+       * in the ring: it would fail every sum for the next few windows
+       * whatever they measured. */
       int64_t  span = wdt;
       double   sum  = offered;
       double   took = taken;
@@ -1268,7 +1271,7 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
              && sum > 0.0
              && fabs(took / sum - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE;
    }
-   else
+   else if (!device_ok)
    {
       /* A dry spell or a stalled device: the time before it cannot be
        * bridged, and its own window is no measure of either clock. */
@@ -1283,20 +1286,31 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
       audio_st->sink_discarded = 0;
       if (audio_st->sink_settled < 2)
          audio_st->sink_settled++;
-      /* The windows left out since the last kept one, the device
-       * steady through them, come in with this one: they are the
-       * same span of both clocks, and leaving out only the short
-       * half of a shifted pair would bias the sums by the shift -
-       * which the application then refuses as implausible, and the
-       * baseline is lost. */
+      /* The windows left out since the last kept one come in with
+       * this one when, taken together with it, they read as the clock
+       * - a publish a stall pushed across a boundary is short in one
+       * window and long in the next, and only the pair sums to the
+       * rate; leaving out the short half alone biased the sums by the
+       * shift. A pause, a stall the source did not make up, or a slow
+       * start read as a slow source over the pending span, and stay
+       * out: the device steady through them is not enough, the
+       * source has to have been too. */
       audio_st->sink_kept.usec     += wdt;
       audio_st->sink_kept.offered  += offered;
       audio_st->sink_kept.consumed += taken;
-      if (!audio_st->sink_pending_broken)
+      if (!audio_st->sink_pending_broken && audio_st->sink_pending.usec > 0)
       {
-         audio_st->sink_kept.usec     += audio_st->sink_pending.usec;
-         audio_st->sink_kept.offered  += audio_st->sink_pending.offered;
-         audio_st->sink_kept.consumed += audio_st->sink_pending.consumed;
+         double span = (double)(audio_st->sink_pending.usec + wdt);
+         double sum  = audio_st->sink_pending.offered + offered;
+         double took = audio_st->sink_pending.consumed + taken;
+         if (   fabs(sum / ((double)rate * span / 1e6) - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE
+             && sum > 0.0
+             && fabs(took / sum - 1.0) <= AUDIO_SINK_BIAS_PLAUSIBLE)
+         {
+            audio_st->sink_kept.usec     += audio_st->sink_pending.usec;
+            audio_st->sink_kept.offered  += audio_st->sink_pending.offered;
+            audio_st->sink_kept.consumed += audio_st->sink_pending.consumed;
+         }
       }
       memset(&audio_st->sink_pending, 0, sizeof(audio_st->sink_pending));
       audio_st->sink_pending_broken = false;
