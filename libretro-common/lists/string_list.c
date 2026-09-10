@@ -54,16 +54,24 @@ static bool string_list_deinitialize_internal(struct string_list *list)
 
 bool string_list_capacity(struct string_list *list, size_t cap)
 {
-   struct string_list_elem *new_data = (struct string_list_elem*)
+   struct string_list_elem *new_data;
+
+   /* Guard the byte-count multiplication: a huge cap would wrap and
+    * realloc a buffer far smaller than the caller expects. */
+   if (cap > SIZE_MAX / sizeof(*new_data))
+      return false;
+
+   new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
 
    if (!new_data)
       return false;
 
-   if (cap > list->cap)
-      memset(&new_data[list->cap], 0,
-            sizeof(*new_data) * (cap - list->cap));
-
+   /* Slots in [size, cap) are never read: string_list_free() only walks
+    * [0, size), and the append paths fully initialise a slot when it
+    * becomes live.  So there is no need to zero the whole new half on
+    * every doubling, which for large lists was a memset over hundreds of
+    * thousands of elements to add one entry. */
    list->elems = new_data;
    list->cap   = cap;
    return true;
@@ -142,17 +150,24 @@ bool string_list_append(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
-   if (      list->size >= list->cap
-         && !string_list_capacity(list,
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
-      return false;
+         return false;
+   }
 
    data_dup = strdup(elem);
    if (!data_dup)
       return false;
 
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
    list->size++;
 
    return true;
@@ -163,10 +178,14 @@ bool string_list_append_n(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
-   if (      list->size >= list->cap
-         && !string_list_capacity(list,
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
-      return false;
+         return false;
+   }
 
    data_dup = (char*)malloc(len + 1);
    if (!data_dup)
@@ -174,8 +193,11 @@ bool string_list_append_n(struct string_list *list, const char *elem,
    memcpy(data_dup, elem, len);
    data_dup[len] = '\0';
 
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
    list->size++;
    return true;
 }
