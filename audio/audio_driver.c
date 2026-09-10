@@ -3383,8 +3383,13 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
             && audio_st->context_audio_data
             && audio_st->buffer_size)
       {
-         size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         /* the device's frame: the pipe's frames and the target are
+          * put into the device's bytes, which write_avail() and
+          * buffer_size are in - a 5.1 device's are three times a
+          * stereo one's, and taken as stereo the target read as a
+          * third of the buffer, an occupancy the fifo could never
+          * reach: rate control pinned at its bound, "underrun 100%" */
+         size_t frame_bytes = audio_driver_dev_frame_bytes(audio_st);
          double pipe_frames = (double)retro_spsc_read_avail(&audio_st->pipe_ring)
                / audio_st->pipe_frame_bytes;
          double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
@@ -4991,9 +4996,7 @@ double audio_driver_get_buffer_latency_ms(void)
    audio_driver_state_t *audio_st = &audio_driver_st;
    settings_t *settings           = config_get_ptr();
    unsigned    rate               = settings->uints.audio_output_sample_rate;
-   size_t      frame_bytes        =
-         (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-         ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+   size_t      frame_bytes        = audio_driver_dev_frame_bytes(audio_st);
 
    if (!audio_st->current_audio || !audio_st->buffer_size || !rate)
       return 0.0;
