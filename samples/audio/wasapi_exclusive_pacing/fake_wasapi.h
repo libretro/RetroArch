@@ -135,6 +135,7 @@ struct IMMDevice { const IMMDeviceVtbl *lpVtbl; void *fake; };
 #define _IAudioClient_Initialize(This,m,f,d,p,fmt,g)    ((This)->lpVtbl->Initialize(This,m,f,d,p,fmt,g))
 #define _IAudioClient_QueryInterface(This,riid,ppv)     ((This)->lpVtbl->QueryInterface(This,riid,ppv))
 #define _IAudioClient_IsFormatSupported(This,m,fmt,pp)  ((This)->lpVtbl->IsFormatSupported(This,m,fmt,pp))
+#define _IAudioClient_GetMixFormat(This,pp)              ((This)->lpVtbl->GetMixFormat(This,pp))
 #define _IMMDevice_Activate(This,iid,c,pa,ppv)          ((This)->lpVtbl->Activate(This,&(iid),c,pa,ppv))
 /* IAudioClient3: the Windows 10 interface with selectable shared-mode
  * engine periods. Offered when configured to be; the fake's vtable

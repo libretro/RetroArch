@@ -8,6 +8,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 TARGET    := wasapi_exclusive_pacing_test
 GEN       := wasapi_sim.c
 SOURCES_C := wasapi_exclusive_pacing_test.c fake_wasapi.c stubs_retroarch.c $(GEN) \
+	../../../audio/audio_upmix.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \

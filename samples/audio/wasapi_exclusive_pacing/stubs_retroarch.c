@@ -52,3 +52,6 @@ void RARCH_DBG(const char *fmt, ...)
 /* The device stage the driver reports for the statistics overlay;
  * nothing here reads it. */
 void audio_driver_set_device_latency(size_t frames) { (void)frames; }
+
+/* The layout the driver under test asks the frontend for: stereo. */
+uint32_t audio_driver_requested_layout(void) { return 0x3u; }
