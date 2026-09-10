@@ -1140,7 +1140,6 @@ static const struct
    char s_67d549fd[38];
    char s_3aaf6bf1[120];
    char s_7e96b5ce[45];
-   char s_3547866d[132];
    char s_8010a29e[116];
    char s_81120e85[116];
 #if defined (WIIU)
@@ -2435,8 +2434,6 @@ static const struct
    "Forsink auto-lasting av shader (i ms). Kan jobbe rundt grafiske glitcher n\303\245r du bruker pr"
    "ogramvare for \"skjermkopier\".",
    "Endre innstillinger for videosynkronisering.",
-   "Forbedrer ytelsen p\303\245 bekostning av latens og mer hakk i videoen. Bruk bare hvis full hast"
-   "ighet ikke kan oppn\303\245s p\303\245 noe annet vis.",
    "Tilpasset visningsregionsh\303\270yde som er brukt hvis st\303\270rrelsesforhold er satt til \"e"
    "gendefinert st\303\270rrelsesforhold\".",
    "Tilpasset visningsregionsbredde som er brukt hvis st\303\270rrelsesforhold er satt til \"egendef"
@@ -2579,7 +2576,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28984u
+      (sizeof(msg_hash_no_blob) == (28852u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3849,7 +3846,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
 #if defined (WIIU)

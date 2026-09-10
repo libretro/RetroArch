@@ -597,7 +597,26 @@ static const struct
    char s_f0ce97f7[17];
    char s_704e200c[23];
    char s_a82728ec[25];
+   char s_2fab99c4[62];
+   char s_cce25e3a[51];
    char s_7ca0c97c[38];
+   char s_a85293bc[33];
+   char s_e05e1cdf[27];
+   char s_fb4bba8f[39];
+   char s_6e8d7d8d[34];
+   char s_b3ffd267[45];
+   char s_ab72ef00[47];
+   char s_b65fb6ee[49];
+   char s_ed8d3608[21];
+   char s_95e923ca[49];
+   char s_c36b0d98[51];
+   char s_cbaa86a1[44];
+   char s_00602cda[31];
+   char s_ac5d5951[27];
+   char s_ce501285[28];
+   char s_3d9f9d8c[29];
+   char s_62302004[25];
+   char s_62302005[25];
    char s_328dfd67[15];
    char s_6831e4b8[19];
    char s_b48bf607[10];
@@ -1529,7 +1548,6 @@ static const struct
    char s_74b77b4a[19];
    char s_7534cfc9[7];
    char s_36259b63[16];
-   char s_37368130[12];
    char s_d51f54a2[14];
    char s_b35f573c[7];
    char s_753c8d3b[9];
@@ -1797,6 +1815,7 @@ static const struct
    char s_53b632e1[69];
    char s_f246e141[33];
    char s_dff02a9f[30];
+   char s_5b997f85[20];
    char s_87ee250e[33];
    char s_91e11405[66];
    char s_04681a15[33];
@@ -2033,6 +2052,7 @@ static const struct
    char s_f90272bb[21];
    char s_41713ab9[18];
    char s_f808254b[30];
+   char s_a2cb8534[13];
    char s_a4d3948f[13];
    char s_7f75b005[33];
    char s_c7e66e0a[33];
@@ -2119,6 +2139,7 @@ static const struct
    char s_44e1c38f[30];
    char s_aa9bc75d[12];
    char s_57047267[9];
+   char s_8a600be0[35];
    char s_6665b7fc[51];
    char s_2e6ad26e[10];
    char s_43e9897c[31];
@@ -2164,6 +2185,7 @@ static const struct
    char s_0e2c0fca[27];
    char s_93ac5ec8[26];
    char s_6cdf4f07[20];
+   char s_a03f132e[31];
    char s_b3d1e989[18];
    char s_50eb4c56[5];
    char s_a023adce[12];
@@ -2235,6 +2257,8 @@ static const struct
    char s_c017f975[12];
    char s_730df420[16];
    char s_258060bf[26];
+   char s_3bbc8b05[35];
+   char s_e595f6df[37];
    char s_f90edcc2[55];
    char s_ad14307a[12];
 #if defined(RARCH_MOBILE)
@@ -2574,6 +2598,20 @@ static const struct
    char s_0ef5e125[21];
    char s_b714023a[42];
    char s_b0d3045a[43];
+   char s_b50332b2[68];
+   char s_5239f728[68];
+   char s_7175042a[29];
+   char s_a2c852cd[40];
+   char s_32ab82b6[67];
+   char s_d6370c78[50];
+   char s_400c0506[42];
+   char s_d733484f[14];
+   char s_c9829d48[63];
+   char s_bc0e4cff[24];
+   char s_6f8f2d33[106];
+   char s_f4ef1a7a[106];
+   char s_249a55f2[107];
+   char s_249a55f3[107];
    char s_fe3fb37b[55];
    char s_d11127dc[119];
    char s_7b51019e[53];
@@ -3241,6 +3279,7 @@ static const struct
    char s_98d47f8f[367];
    char s_9385fbef[40];
    char s_efb7504d[77];
+   char s_6b4a7333[316];
    char s_70d6077c[45];
    char s_31124733[188];
    char s_2d24a503[149];
@@ -3368,6 +3407,7 @@ static const struct
    char s_f77f7a41[66];
 #endif
    char s_e7cb5685[53];
+   char s_8bb367a2[121];
    char s_2beab583[29];
    char s_a1c071eb[107];
    char s_0d9ceefa[92];
@@ -3427,6 +3467,8 @@ static const struct
    char s_fc2d67bb[179];
    char s_43946ee5[78];
    char s_5492b73d[49];
+   char s_15cad80e_0[500];
+   char s_15cad80e_1[37];
    char s_01e5fbea[372];
    char s_0653bf6a_0[500];
    char s_0653bf6a_1[15];
@@ -3466,7 +3508,8 @@ static const struct
    char s_1eebf4f8[186];
    char s_2f2ca2b6[185];
    char s_2c9be635[151];
-   char s_05ec12e6[193];
+   char s_c8fb9e1c[369];
+   char s_05ec12e6[212];
    char s_b5a603de[61];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3510,7 +3553,10 @@ static const struct
    char s_d62ed5dc[404];
    char s_2e69508b[389];
    char s_7e96b5ce[44];
-   char s_3547866d[156];
+   char s_3547866d_0[500];
+   char s_3547866d_1[75];
+   char s_d73ccef3[470];
+   char s_81163acd[468];
    char s_c2314d30[214];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[163];
@@ -3624,6 +3670,7 @@ static const struct
    char s_8db0184a[43];
    char s_08abd26f[19];
    char s_48f0233f[54];
+   char s_63ab0b54[8];
    char s_510c1140[51];
    char s_3b592d2d[20];
    char s_ec5751c3[41];
@@ -4915,7 +4962,26 @@ static const struct
    "Datenbankmanager",
    "Von der Liste l\303\266schen",
    "Wiedergabeliste l\303\266schen",
+   "Desktop-Men\303\274: Maximale Anzahl f\303\274r Raster von Alle Playlists",
+   "Desktop-Men\303\274: Maximale Anzahl f\303\274r Alle Playlists",
    "Desktop-Men\303\274 (Neustart erforderlich)",
+   "Desktop-Men\303\274: Symbolansichtzoom",
+   "Desktop-Men\303\274: Letzter Tab",
+   "Desktop-Men\303\274: Fenstergeometrie merken",
+   "Desktop-Men\303\274: Letzten Tab merken",
+   "Desktop-Men\303\274: Beenden des Scans best\303\244tigen",
+   "Desktop-Men\303\274: Begr\303\274\303\237ungsbildschirm anzeigen",
+   "Desktop-Men\303\274: Geladenen Core zuerst vorschlagen",
+   "Desktop-Men\303\274: Theme",
+   "Desktop-Men\303\274: Begrenzung des Miniaturbildcaches",
+   "Desktop-Men\303\274: Maximale Gr\303\266\303\237e der Miniaturbilder",
+   "Desktop-Men\303\274: Qualit\303\244t der Miniaturbilder",
+   "Desktop-Men\303\274: Miniaturbildtyp",
+   "Desktop-Men\303\274: Ansichtstyp",
+   "Desktop-Men\303\274: Fensterh\303\266he",
+   "Desktop-Men\303\274: Fensterbreite",
+   "Desktop-Men\303\274: Fenster X",
+   "Desktop-Men\303\274: Fenster Y",
    "Aktueller Core",
    "Keine Reservierung",
    "Bevorzugt",
@@ -5848,7 +5914,6 @@ static const struct
    "Core dea&ktivieren",
    "&Hilfe",
    "\303\234ber RetroArch",
-   "Mitwirkende",
    "Dokumentation",
    "Leeren",
    "&Ansicht",
@@ -6123,6 +6188,7 @@ static const struct
    "Status speichern: H\303\266chster Wert f\303\274r Autoz\303\244hler, der behalten wird",
    "Status speichern: Vorschaubilder",
    "Konfiguration speichern unter",
+   "Komprimierungscodec",
    "Aktuelle Konfiguration speichern",
    "\303\234berschreibende Konfiguration f\303\274rs Inhaltsverzeichnis speichern",
    "Core-\303\234berschreibungen speichern",
@@ -6359,6 +6425,7 @@ static const struct
    "Einzeltaste (Halten)",
    "Doppelanalogstick",
    "Doppelanalogstick (Erzwungen)",
+   "Begleiter-UI",
    "UI-Companion",
    "UI-Companion beim Booten starten",
    "Desktop-Men\303\274 beim Start \303\266ffnen",
@@ -6447,6 +6514,7 @@ static const struct
    "Automatische Bildverz\303\266gerung",
    "Automatisch",
    "effektiv",
+   "Abtasten der Bilddauer vom Display",
    "Bildwiederholrate nur in stabilem Zustand erfassen",
    "Erzwungen",
    "Exklusive Vollbild-Verhandlung",
@@ -6492,6 +6560,7 @@ static const struct
    "Overscan-Korrektur (unten)",
    "Overscan-Korrektur (oben)",
    "Filter mitaufnehmen",
+   "Taktwiederholungen vom Display",
    "Benutzerdefiniert",
    "Hoch",
    "Verlustfrei",
@@ -6563,6 +6632,8 @@ static const struct
    "Automatisch",
    "Synchronisation",
    "Video in separatem Thread",
+   "Anzeigetaktung f\303\274r Threaded Video",
+   "Bildwiederholung f\303\274r Threaded Video",
    "Metallargumentpuffer verwenden (Neustart erforderlich)",
    "Entflackern",
 #if defined(RARCH_MOBILE)
@@ -7034,6 +7105,24 @@ static const struct
    "Datenbanken ansehen.",
    "Entferne diesen Eintrag aus der Playlist.",
    "Wiedergabeliste vom Dateisystem entfernen.",
+   "Eintr\303\244ge f\303\274r Alle Playlists in der Listenansicht; 0 = unbegrenzt.",
+   "Eintr\303\244ge f\303\274r Alle Playlists in der Listenansicht; 0 = unbegrenzt.",
+   "Zoomstufe der Symbolansicht.",
+   "0 = Wiedergabelisten, 1 = Dateibrowser.",
+   "0 = Systemvorgabe, 1 = dunkel, 2 = benutzerdefiniertes Stylesheet.",
+   "Anzahl der im Speicher gehaltenen Miniaturbilder.",
+   "L\303\244ngste Kante in Pixeln; 0 = unbegrenzt.",
+   "0 = Standard.",
+   "0 = Verpackung, 1 = Screenshot, 2 = Titelbildschirm, 3 = Logo.",
+   "0 = Liste, 1 = Symbole.",
+   "Gespeicherte Fenstergr\303\266\303\237e; wird verwendet, wenn die Option \342\200\236Fenstergeom"
+   "etrie merken\342\200\234 aktiviert ist.",
+   "Gespeicherte Fenstergr\303\266\303\237e; wird verwendet, wenn die Option \342\200\236Fenstergeom"
+   "etrie merken\342\200\234 aktiviert ist.",
+   "Gespeicherte Fensterposition; wird verwendet, wenn die Option \342\200\236Fenstergeometrie merke"
+   "n\342\200\234 aktiviert ist.",
+   "Gespeicherte Fensterposition; wird verwendet, wenn die Option \342\200\236Fenstergeometrie merke"
+   "n\342\200\234 aktiviert ist.",
    "Die Standard-Verzeichnisse f\303\274r diverse Daten \303\244ndern.",
    "Der App Discord erlauben, Daten \303\274ber den gespielten Inhalt anzuzeigen. Nur verf\303\274gb"
    "ar mit dem nativen Desktop-Client.",
@@ -8047,6 +8136,11 @@ static const struct
    "l von Speicherst\303\244nden aufgezeichnet wird.",
    "Vorschaubilder von Savestates anzeigen.",
    "Aktuelle Konfiguration als benutzerdefinierte Konfigurationsdatei speichern.",
+   "Der Codec, mit dem komprimierte Speicherdateien und Spielst\303\244nde geschrieben werden. \342"
+   "\200\236Zstandard\342\200\234 l\303\244dt um ein Vielfaches schneller als \342\200\236Deflate"
+   "\342\200\234 und speichert bei etwas gr\303\266\303\237eren Dateien etwas schneller. Mit beiden "
+   "Codecs geschriebene Dateien werden wieder eingelesen; es werden nur neue Dateien ge\303\244ndert"
+   ".",
    "Aktuelle Konfigurationsdatei \303\274berschreiben.",
    "Eine \303\274berschreibende Konfigurationsdatei speichern, die f\303\274r jeden Inhalt gilt, der"
    " aus demselben Verzeichnis wie die aktuelle Datei geladen wird. Hat Vorrang vor der Hauptkonfigu"
@@ -8216,6 +8310,8 @@ static const struct
    "Zeitzone w\303\244hlen, um Datum und Zeit an Ihren Standort anzupassen.",
 #endif
    "Die aktuelle Uhrzeit im bevorzugten Format anzeigen.",
+   "Treiber f\303\274r die Desktop-Begleiter-UI, der verwendet wird, wenn das Desktop-Men\303\274 ak"
+   "tiviert ist. (Neustart erforderlich)",
    "Fenstermen\303\274leiste anzeigen.",
    "Wenn ein Savestate geladen wurde, wird der Inhalt zum Zustand vor dem Laden des Savestates zur"
    "\303\274ckgesetzt.",
@@ -8311,6 +8407,13 @@ static const struct
    "r Windows Videoprobleme mit sRGB FBOs. Mit dieser Einstellung kann dies umgangen werden.",
    "Reduziert die Latenzzeit auf Kosten eines h\303\266heren Risikos von Videostottern.",
    "Effektive \"Bildverz\303\266gerung\" dynamisch anpassen.",
+   "\342\200\236Gesch\303\244tzte Bildwiederholfrequenz\342\200\234 wird aus dem Bericht des Display"
+   "s selbst abgelesen, der angibt, wann die einzelnen Frames das Display erreicht haben, anstatt di"
+   "e Frame-Schleife des Frontends zu messen. Es \303\244ndert sich lediglich die Anzeige: Sie wird "
+   "nicht mehr durch die Bildrate des Cores und das Timing-Rauschen der Schleife verzerrt. Dies hat "
+   "keinen Einfluss darauf, wie Frames getaktet oder dargestellt werden. Gilt nur, wenn der Grafiktr"
+   "eiber diesen Wert melden kann; andernfalls wird di",
+   "e Frame-Schleife zeitlich gesteuert.",
    "Die Erfassung f\303\274r \342\200\236Gesch\303\244tzte Bildwiederholrate\342\200\234 sollte auf "
    "Bilder beschr\303\244nkt werden, bei denen der Inhalt reibungslos wiedergegeben wird (kein Men"
    "\303\274, keine Pause, kein Schnellvorlauf, Bilddauer innerhalb eines akzeptablen Bereichs). Die"
@@ -8397,9 +8500,13 @@ static const struct
    "hen.",
    "Video aufnehmen, nachdem Filter (aber keine Shader) angewendet wurden. Das Video wird genauso gu"
    "t aussehen, wie das, was Du auf dem Bildschirm siehst.",
-   "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audioabtas"
-   "trate verwendet. Dieser Wert wird ignoriert, wenn \342\200\236Video in separatem Thread\342\200"
-   "\234 aktiviert ist.",
+   "Zeit wiederholte Frames ab dem Zeitpunkt, zu dem das Display meldet, dass ein Frame tats\303\244"
+   "chlich bei ihm angekommen ist, und nicht ab der eigenen Uhr des Frontends. Gilt, sofern der Graf"
+   "iktreiber dies melden kann; ansonsten wird \303\274berall die Uhr verwendet, ebenso wie immer da"
+   "nn, wenn die Meldung veraltet ist. Diese Option deaktivieren, um stets die Uhr zu verwenden.",
+   "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audio-Eing"
+   "angsrate verwendet und dient als Anzeigedauer f\303\274r \342\200\236Threaded Video\342\200\234,"
+   " wenn der Treiber keine solche melden kann.",
    "Die gesch\303\244tzte Bildwiederholfrequenz des Bildschirms in Hz.",
    "Vom Displaytreiber angegebene Bildwiederholfrequenz.",
 #ifdef HAVE_ODROIDGO2
@@ -8481,8 +8588,26 @@ static const struct
    "n z.\302\240B. Inhalte mit 30 FPS auf einem 60-Hz-Bildschirm oder 60 FPS auf einem 120-Hz-Bildsc"
    "hirm ausgef\303\274hrt werden.",
    "Videosynchronisationseinstellungen \303\244ndern.",
-   "Verbessert die Leistung auf Kosten der Latenz und erh\303\266htem Stottern vom Video. Nur verwen"
-   "den, wenn sonst keine volle Geschwindigkeit erreicht werden kann.",
+   "Den Core und den Grafiktreiber in separaten Threads ausf\303\274hren, damit die Anzeige ihren Ta"
+   "kt beibeh\303\244lt, wenn der Core ruckelt und sich der Core mit der Shader-Kette und der Darste"
+   "llung \303\274berschneidet. Bei \342\200\236Threaded-Video-Anzeigetaktung\342\200\234 startet de"
+   "r Kern so sp\303\244t, wie es die n\303\244chste Bildwiederholrate zul\303\244sst, entsprechend "
+   "der Latenz von \342\200\236Bildverz\303\266gerung\342\200\234. Cores, die auf der GPU rendern, l"
+   "aufen mit den Vulkan-, Direct3D 11-, Direct3D 12- und gl-Treibern im Thread-Modus; mit anderen T"
+   "re",
+   "ibern laufen sie unabh\303\244ngig von dieser Einstellung im Nicht-Thread-Modus.",
+   "Bei \342\200\236Threaded Video\342\200\234 wird jeder Core-Frame so sp\303\244t wie m\303\266gli"
+   "ch gestartet, wie es die n\303\244chste Bildschirmaktualisierung zul\303\244sst \342\200\223 bas"
+   "ierend auf den gemessenen Core- und Renderzeiten \342\200\223, anstatt nach einem festen Timer. "
+   "Dadurch wird die Latenz auf das Niveau gesenkt, das \342\200\236Bildverz\303\266gerung\342\200"
+   "\234 bei \342\200\236Unthreaded Video\342\200\234 erreicht, und ein Frame, der zu lange dauert, "
+   "wird wiederholt, anstatt ausgelassen zu werden. Aus: Der Timer bestimmt das Tempo wie bisher.",
+   "Mit \342\200\236Threaded Video\342\200\234 wird weiterhin das letzte Bild mit der Bildwiederholf"
+   "requenz des Displays dargestellt, w\303\244hrend der Core hinterherhinkt, anstatt das vorherige "
+   "Bild auf dem Bildschirm stehen zu lassen. Dies sorgt daf\303\274r, dass die Einblendung schwarze"
+   "r Bilder und Shader-Effekte zur Bildwiederholfrequenz auch bei Rucklern des Cores stabil bleiben"
+   ". Dies gilt, wenn der Grafiktreiber ein Bild wiederholen kann; bei Shader-Teilbildern wird dies "
+   "nicht angewendet.",
    "Versuchen, die Leistung durch Verwendung von Metallargumentpuffer zu verbessern. Einige Cores k"
    "\303\266nnen dies erfordern. Dies kann einige Shader st\303\266ren, insbesondere bei alten Hardw"
    "are- oder Betriebssystemversionen.",
@@ -8623,6 +8748,7 @@ static const struct
    "Suche wurde nicht initialisiert/gestartet.",
    "\303\234berpr\303\274fe Core: ",
    "Alle %d Errungenschaften f\303\274r diese Sitzung aktiviert",
+   "L\303\244ssig",
    "RetroAchievements Medienwechsel fehlgeschlagen: %s",
    "%s vervollst\303\244ndigt",
    "Dieses Spiel hat keine Errungenschaften.",
@@ -9140,7 +9266,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (196825u
+      (sizeof(msg_hash_de_blob) == (201319u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10143,7 +10269,26 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SHOW_WELCOME_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
@@ -11341,6 +11486,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -11577,6 +11723,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -11663,6 +11810,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
@@ -11708,6 +11856,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -11779,6 +11928,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -12115,6 +12266,20 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -12782,6 +12947,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -12909,6 +13075,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -12968,6 +13135,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -13005,6 +13173,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -13050,6 +13219,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13163,6 +13334,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
    (uint32_t)MSG_CHECKING_CORE,
    (uint32_t)MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_CASUAL_MODE,
    (uint32_t)MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    (uint32_t)MSG_CHEEVOS_COMPLETED_GAME,
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,

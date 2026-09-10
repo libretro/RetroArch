@@ -1514,7 +1514,6 @@ static const struct
    char s_74b77b4a[22];
    char s_7534cfc9[9];
    char s_36259b63[20];
-   char s_37368130[16];
    char s_d51f54a2[15];
    char s_b35f573c[8];
    char s_1cad7751[10];
@@ -1919,6 +1918,7 @@ static const struct
    char s_519cd5f8[18];
    char s_43ac80a0[14];
    char s_6959ce80[16];
+   char s_aa628249[12];
    char s_ebe994b4[16];
    char s_1c62c301[11];
    char s_a8bb35b6[13];
@@ -3319,7 +3319,6 @@ static const struct
    char s_36033606[231];
    char s_2e69508b[329];
    char s_7e96b5ce[43];
-   char s_3547866d[121];
    char s_c2314d30[222];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[152];
@@ -5755,7 +5754,6 @@ static const struct
    "&\303\207ekirde\304\237i \303\207\304\261kart",
    "&Yard\304\261m",
    "RetroArch Hakk\304\261nda",
-   "Kat\304\261l\304\261mc\304\261lar",
    "Dok\303\274mantasyon",
    "Temizle",
    "&Ara\303\247lar",
@@ -6176,6 +6174,7 @@ static const struct
    "\304\260\305\237letim sistemi",
    "Git S\303\274r\303\274m\303\274",
    "Lakka S\303\274r\303\274m\303\274",
+   "\304\260lerleyi\305\237",
    "G\303\274\303\247 Kayna\304\237\304\261",
    "\305\236arj oldu",
    "\305\236arj oluyor",
@@ -8469,8 +8468,6 @@ static const struct
    "re h\304\261z\304\261 sa\304\237lar. 60 Hz ekranda 30 fps i\303\247erik veya 120 Hz ekranda 60 f"
    "ps i\303\247erik.",
    "Video e\305\237itleme ayarlar\304\261n\304\261 de\304\237i\305\237tirin.",
-   "Gecikme ve daha fazla video tak\304\261lma pahas\304\261na performans\304\261 art\304\261r\304"
-   "\261r. Yaln\304\261zca tam h\304\261z elde edemiyorsan\304\261z kullan\304\261n.",
    "Metal arg\303\274man arabelleklerini kullanarak performans\304\261 art\304\261rmay\304\261 deney"
    "in. Baz\304\261 \303\247ekirdekler buna ihtiya\303\247 duyabilir. Bu \303\266zellikle eski donan"
    "\304\261m veya i\305\237letim sistemi s\303\274r\303\274mlerinde baz\304\261 g\303\266lgelendiri"
@@ -9183,7 +9180,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (171056u
+      (sizeof(msg_hash_tr_blob) == (170931u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11459,6 +11456,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12859,7 +12857,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

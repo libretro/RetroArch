@@ -615,6 +615,7 @@ static const struct
    char s_704e200c[8];
    char s_a82728ec[32];
    char s_7ca0c97c[42];
+   char s_ed8d3608[25];
    char s_328dfd67[13];
    char s_6831e4b8[14];
    char s_b48bf607[9];
@@ -1557,7 +1558,6 @@ static const struct
    char s_74b77b4a[18];
    char s_7534cfc9[7];
    char s_36259b63[16];
-   char s_37368130[16];
    char s_d51f54a2[14];
    char s_b35f573c[8];
    char s_1cad7751[7];
@@ -1838,6 +1838,7 @@ static const struct
    char s_53b632e1[52];
    char s_f246e141[44];
    char s_dff02a9f[28];
+   char s_5b997f85[22];
    char s_87ee250e[29];
    char s_91e11405[52];
    char s_04681a15[30];
@@ -2011,6 +2012,7 @@ static const struct
    char s_43ac80a0[16];
    char s_6959ce80[17];
    char s_886631ec[20];
+   char s_aa628249[6];
    char s_ebe994b4[20];
    char s_1c62c301[10];
    char s_a8bb35b6[10];
@@ -2080,6 +2082,7 @@ static const struct
    char s_f808254b[26];
    char s_77e3256e[31];
    char s_eea0ed20[25];
+   char s_a2cb8534[31];
    char s_7f75b005[43];
    char s_c7e66e0a[41];
    char s_48da4695[25];
@@ -2628,6 +2631,8 @@ static const struct
    char s_0ef5e125[27];
    char s_b714023a[34];
    char s_b0d3045a[58];
+   char s_d733484f[18];
+   char s_bc0e4cff[24];
    char s_fe3fb37b[60];
    char s_d11127dc[149];
    char s_7b51019e[55];
@@ -3518,7 +3523,6 @@ static const struct
    char s_1eebf4f8[153];
    char s_2f2ca2b6[153];
    char s_2c9be635[133];
-   char s_05ec12e6[155];
    char s_b5a603de[72];
    char s_d9c2db25[77];
 #ifdef HAVE_ODROIDGO2
@@ -3561,7 +3565,6 @@ static const struct
    char s_d62ed5dc[331];
    char s_2e69508b[424];
    char s_7e96b5ce[49];
-   char s_3547866d[157];
    char s_c2314d30[278];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[167];
@@ -3702,6 +3705,7 @@ static const struct
    char s_ff23bc4d[52];
    char s_3af3e017[21];
    char s_f7e279a6[11];
+   char s_b624ae2e[10];
    char s_12a68ed0[90];
    char s_d7065ee8[47];
    char s_89aa2160[19];
@@ -4994,6 +4998,7 @@ static const struct
    "Elimina",
    "Esborrar llista de reproducci\303\263",
    "Men\303\272 d'escriptori (Es requereix reinici)",
+   "Men\303\272 d'escriptori: Tema",
    "Nucli actual",
    "Sense reserva",
    "Preferit",
@@ -5940,7 +5945,6 @@ static const struct
    "Descarregar nucli",
    "&Ajuda",
    "Sobre RetroArch",
-   "Col\302\267laboradors",
    "Documentaci\303\263",
    "Netejar",
    "&Eines",
@@ -6229,6 +6233,7 @@ static const struct
    "Estats desats: Nombre m\303\240xim d'augments autom\303\240tics",
    "Estats desats: Miniatures de desats r\303\240pids",
    "Desa la configuraci\303\263 com a",
+   "C\303\262dec de compressi\303\263",
    "Desa la configuraci\303\263 actual",
    "Desa la personalitzaci\303\263 de directori de continguts",
    "Desa les excepcions del nucli",
@@ -6402,6 +6407,7 @@ static const struct
    "Versi\303\263 del Git",
    "Versi\303\263 de Lakka",
    "Versi\303\263 de MoltenVK",
+   "Ritme",
    "Font d'alimentaci\303\263",
    "Carregada",
    "Carregant",
@@ -6471,6 +6477,7 @@ static const struct
    "Doble anal\303\262gic (for\303\247at)",
    "Clau de transmissi\303\263 de Twitch",
    "Port de transmissi\303\263 UDP",
+   "Interf\303\255cie d'usuari Companion",
    "Executa la interf\303\255cie d'usuari en iniciar",
    "Obre el men\303\272 d\342\200\231escriptori a l\342\200\231inici",
    "Mostra la barra de men\303\272",
@@ -7160,6 +7167,8 @@ static const struct
    "Mostra les bases de dades.",
    "Elimina l\342\200\231entrada de la llista.",
    "Elimina la llista de reproducci\303\263 del sistema de fitxers.",
+   "0 =  per defecte.",
+   "0 = llista, 1 = icones.",
    "Canvia els directoris predefinits on es troben els fitxers.",
    "Permet que l'app Discord mostri m\303\251s informaci\303\263 sobre el contingut que s'est\303"
    "\240 executant. Nom\303\251s funcionar\303\240 amb el client d'escriptori de Discord.",
@@ -8576,9 +8585,6 @@ static const struct
    "art superior de la pantalla). Pot provocar defectes d'escalat.",
    "Captura la imatge despr\303\251s d'aplicar els filtres (per\303\262 no els shaders). El v\303"
    "\255deo es veur\303\240 tan elegant com el veieu a la pantalla.",
-   "Freq\303\274\303\250ncia d'actualitzaci\303\263 vertical de la pantalla. S'usa per a calcular un"
-   "a freq\303\274\303\250ncia d'\303\240udio adient. S'ignorar\303\240 si s'activa \302\253V\303"
-   "\255deo multifil\302\273.",
    "La freq\303\274\303\250ncia d'actualitzaci\303\263 precisa estimada de la pantalla en Hz.",
    "La freq\303\274\303\250ncia d'actualitzaci\303\263 que notifica el controlador de la pantalla.",
 #ifdef HAVE_ODROIDGO2
@@ -8650,8 +8656,6 @@ static const struct
    "\200\231executa un contingut a 30 fps en una pantalla a 60 Hz o un contingut a 60 fps en una pan"
    "talla a 120 Hz.",
    "Canvia les opcions de sincronitzaci\303\263 de v\303\255deo.",
-   "Millora el rendiment a costa de la lat\303\250ncia i de m\303\251s entretallament del v\303\255d"
-   "eo. Useu nom\303\251s si no es pot assolir la velocitat m\303\240xima de cap altra manera.",
    "Pots provar d'augmentar el rendiment si fas servir la mem\303\262ria interm\303\250dia pels argu"
    "ments de Metal. Alguns nuclis necessiten tenir aquesta opci\303\263 activada. Aquesta opci\303"
    "\263 pot fer malb\303\251 alguns shaders, sobretot en maquinari m\303\251s antic o versions del "
@@ -8836,6 +8840,7 @@ static const struct
    "S\342\200\231est\303\240 comparant amb nombres m\303\240gics coneguts...",
    "Compilat amb l\342\200\231API",
    "Compilador",
+   "Desinflar",
    "No s\342\200\231ha establert el directori de configuraci\303\263. No es pot desar la nova config"
    "uraci\303\263.",
    "S'ha carregat la configuraci\303\263 personalitzada.",
@@ -9339,7 +9344,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (203550u
+      (sizeof(msg_hash_ca_blob) == (203358u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10355,6 +10360,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
@@ -11576,6 +11582,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -11749,6 +11756,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -11818,6 +11826,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -12363,6 +12372,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_VIEW_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -13253,7 +13264,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13296,7 +13306,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13437,6 +13446,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
    (uint32_t)MSG_COMPILED_AGAINST_API,
    (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_COMPRESSION_CODEC_DEFLATE,
    (uint32_t)MSG_CONFIG_DIRECTORY_NOT_SET,
    (uint32_t)MSG_CONFIG_OVERRIDE_LOADED,
    (uint32_t)MSG_CONNECTED_TO,

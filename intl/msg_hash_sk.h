@@ -1533,7 +1533,6 @@ static const struct
    char s_74b77b4a[19];
    char s_7534cfc9[11];
    char s_36259b63[21];
-   char s_37368130[15];
    char s_d51f54a2[14];
    char s_b35f573c[11];
    char s_1cad7751[11];
@@ -1966,6 +1965,7 @@ static const struct
    char s_43ac80a0[11];
    char s_6959ce80[13];
    char s_886631ec[16];
+   char s_aa628249[7];
    char s_ebe994b4[14];
    char s_1c62c301[8];
    char s_a8bb35b6[11];
@@ -3431,7 +3431,6 @@ static const struct
    char s_1eebf4f8[179];
    char s_2f2ca2b6[177];
    char s_2c9be635[121];
-   char s_05ec12e6[156];
    char s_b5a603de[51];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3474,7 +3473,6 @@ static const struct
    char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
-   char s_3547866d[129];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[162];
@@ -5873,7 +5871,6 @@ static const struct
    "Odna\304\215\303\255ta\305\245 jadro",
    "&N\303\241poveda",
    "O programe RetroArch",
-   "Prispievatelia",
    "Dokument\303\241cia",
    "Vy\304\215isti\305\245",
    "&N\303\241stroje",
@@ -6317,6 +6314,7 @@ static const struct
    "Verzia Git",
    "Verzia Lakka",
    "Verzia MoltenVK",
+   "Pokrok",
    "Zdroj Energie",
    "Nabit\303\251",
    "Nab\303\255janie",
@@ -8636,9 +8634,6 @@ static const struct
    "). M\303\264\305\276e sp\303\264sobi\305\245 artefakty \305\241k\303\241lovania.",
    "Zachyt\303\255 obraz po aplik\303\241cii filtrov (ale nie shaderov). Video bude vyzera\305\245 t"
    "ak pekne ako to, \304\215o vid\303\255te na obrazovke.",
-   "Vertik\303\241lna obnovovacia frekvencia obrazovky. Pou\305\276ije sa na v\303\275po\304\215et v"
-   "hodn\303\251ho vzorkovania vstupu audia. Ignorovan\303\251, ak je povolen\303\251 'Vl\303\241kno"
-   "v\303\251 video'.",
    "Odhadovan\303\241 obnovovacia frekvencia obrazovky v Hz.",
    "Obnovovacia frekvencia hl\303\241sen\303\241 ovl\303\241da\304\215om obrazu.",
 #ifdef HAVE_ODROIDGO2
@@ -8733,9 +8728,6 @@ static const struct
    "\305\241ie tempo sn\303\255mok pri spusten\303\255 napr. 30 fps obsahu na 60 Hz displeji alebo 6"
    "0 fps obsahu na 120 Hz displeji.",
    "Zmena nastavenia synchroniz\303\241cie videa.",
-   "Zlep\305\241uje v\303\275kon za cenu oneskorenia a vy\305\241\305\241ieho zasek\303\241vania vid"
-   "ea. Pou\305\276\303\255vajte, iba ak nem\303\264\305\276ete z\303\255ska\305\245 pln\303\272 r"
-   "\303\275chlos\305\245.",
    "Pok\303\272si sa zlep\305\241i\305\245 v\303\275kon pou\305\276it\303\255m Metal argument buffer"
    "ov. Niektor\303\251 cores to m\303\264\305\276u vy\305\276adova\305\245. Toto m\303\264\305\276e"
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
@@ -9424,7 +9416,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179651u
+      (sizeof(msg_hash_sk_blob) == (179358u
 #ifdef ANDROID
        + 389u
 #endif
@@ -11788,6 +11780,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -13251,7 +13244,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13294,7 +13286,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

@@ -1541,7 +1541,6 @@ static const struct
    char s_74b77b4a[16];
    char s_7534cfc9[8];
    char s_36259b63[22];
-   char s_37368130[17];
    char s_d51f54a2[15];
    char s_b35f573c[8];
    char s_1cad7751[12];
@@ -1964,6 +1963,7 @@ static const struct
    char s_43ac80a0[12];
    char s_6959ce80[14];
    char s_886631ec[17];
+   char s_aa628249[7];
    char s_ebe994b4[14];
    char s_1c62c301[11];
    char s_a8bb35b6[9];
@@ -3440,7 +3440,6 @@ static const struct
    char s_1eebf4f8[114];
    char s_2f2ca2b6[116];
    char s_2c9be635[57];
-   char s_05ec12e6[212];
    char s_b5a603de[65];
    char s_d9c2db25[72];
 #ifdef HAVE_ODROIDGO2
@@ -3483,7 +3482,6 @@ static const struct
    char s_d62ed5dc[363];
    char s_2e69508b[328];
    char s_7e96b5ce[41];
-   char s_3547866d[159];
    char s_c2314d30[200];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[168];
@@ -5951,7 +5949,6 @@ static const struct
    "Mag &bez\303\241r\303\241sa",
    "&S\303\272g\303\263",
    "A RetroArch n\303\251vjegye",
-   "K\303\266zrem\305\261k\303\266d\305\221k",
    "Dokument\303\241ci\303\263",
    "T\303\266r\303\266l",
    "&Eszk\303\266z\303\266k",
@@ -6397,6 +6394,7 @@ static const struct
    "Git verzi\303\263",
    "Lakka verzi\303\263",
    "MoltenVK verzi\303\263",
+   "Temp\303\263",
    "T\303\241pell\303\241t\303\241s",
    "Felt\303\266ltve",
    "T\303\266lt\303\251s",
@@ -8883,10 +8881,6 @@ static const struct
    " okozhat.",
    "A sz\305\261r\305\221k (de nem a shaderek) ut\303\241ni k\303\251p r\303\266gz\303\255t\303\251s"
    "e.",
-   "A k\303\251perny\305\221 f\303\274gg\305\221leges friss\303\255t\303\251si gyakoris\303\241ga. A"
-   " megfelel\305\221 hangbemeneti sebess\303\251g kisz\303\241m\303\255t\303\241s\303\241ra szolg"
-   "\303\241l. Ezt a rendszer figyelmen k\303\255v\303\274l hagyja, ha a \"T\303\266bbsz\303\241las "
-   "megjelen\303\255t\303\251s\" enged\303\251lyezve van.",
    "A k\303\251perny\305\221 pontosan becs\303\274lt friss\303\255t\303\251si gyakoris\303\241ga Hz-"
    "ben.",
    "A k\303\251perny\305\221-illeszt\305\221program \303\241ltal megadott friss\303\255t\303\251si g"
@@ -8985,9 +8979,6 @@ static const struct
    "\241ul 30 fps-es tartalom fut 60 Hz-es k\303\251perny\305\221n, vagy 60 fps-es tartalom 120 Hz-e"
    "s k\303\251perny\305\221n.",
    "A k\303\251p szinkroniz\303\241ci\303\263s be\303\241ll\303\255t\303\241sai.",
-   "Jav\303\255tja a teljes\303\255tm\303\251nyt a k\303\251sleltet\303\251s \303\251s a megjelen"
-   "\303\255t\303\251s folyamatoss\303\241g\303\241nak rov\303\241s\303\241ra. Csak akkor, ha egy"
-   "\303\251bk\303\251nt nem \303\251rhet\305\221 el a teljes sebess\303\251g.",
    "A teljes\303\255tm\303\251ny javulhat a Metal argumentum pufferek haszn\303\241lat\303\241val. N"
    "\303\251h\303\241ny magnak sz\303\274ks\303\251ge lehet erre, de hib\303\241t okozhat egyes shad"
    "erekn\303\251l, k\303\274l\303\266n\303\266sen r\303\251gi hardver vagy OS verzi\303\263 eset"
@@ -9727,7 +9718,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (189370u
+      (sizeof(msg_hash_hu_blob) == (188989u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12079,6 +12070,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -13553,7 +13545,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13596,7 +13587,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

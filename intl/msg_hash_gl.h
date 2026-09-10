@@ -1545,7 +1545,6 @@ static const struct
    char s_74b77b4a[22];
    char s_7534cfc9[7];
    char s_36259b63[16];
-   char s_37368130[14];
    char s_d51f54a2[15];
    char s_b35f573c[7];
    char s_1cad7751[13];
@@ -1995,6 +1994,7 @@ static const struct
    char s_43ac80a0[16];
    char s_6959ce80[18];
    char s_886631ec[21];
+   char s_aa628249[5];
    char s_ebe994b4[23];
    char s_1c62c301[8];
    char s_a8bb35b6[9];
@@ -3455,7 +3455,6 @@ static const struct
    char s_1eebf4f8[217];
    char s_2f2ca2b6[217];
    char s_2c9be635[140];
-   char s_05ec12e6[190];
    char s_b5a603de[53];
    char s_d9c2db25[75];
 #ifdef HAVE_ODROIDGO2
@@ -3498,7 +3497,6 @@ static const struct
    char s_d62ed5dc[379];
    char s_2e69508b[409];
    char s_7e96b5ce[57];
-   char s_3547866d[140];
    char s_c2314d30[233];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[177];
@@ -5862,7 +5860,6 @@ static const struct
    "&Descargar un N\303\272cleo",
    "&Axuda",
    "Sobre RetroArch",
-   "Colaboradores",
    "Documentaci\303\263n",
    "Limpar",
    "&Ferramentas",
@@ -6320,6 +6317,7 @@ static const struct
    "Versi\303\263n de Git",
    "Versi\303\263n de Lakka",
    "Versi\303\263n de MoltenVK",
+   "Paso",
    "Fonte de alimentaci\303\263n",
    "Cargada",
    "Cargando",
@@ -8354,9 +8352,6 @@ static const struct
    "or da pantalla). Pode introducir artefactos de escala.",
    "Captura a imaxe despois de aplicar filtros (pero non sombreadores). O v\303\255deo ter\303\241 u"
    "n aspecto tan elegante como o que ves na t\303\272a pantalla.",
-   "Frecuencia de actualizaci\303\263n vertical da t\303\272a pantalla. \303\232sase para calcular u"
-   "nha taxa de entrada de son axeitada. Isto ignorarase se est\303\241 activado \342\200\234V\303"
-   "\255deo con f\303\255os (Threaded Video)\342\200\235.",
    "A taxa de actualizaci\303\263n estimada da pantalla en Hz.",
    "A taxa de actualizaci\303\263n segundo a informada polo controlador da pantalla.",
 #ifdef HAVE_ODROIDGO2
@@ -8434,8 +8429,6 @@ static const struct
    "mo de fotogramas mellorado cando se executa, por exemplo. Contido de 30 fps nunha pantalla de 60"
    " Hz ou contido de 60 fps nunha pantalla de 120 Hz.",
    "Cambiar as configuraci\303\263ns de sincronizaci\303\263n de v\303\255deo.",
-   "Millora o rendemento a costa da latencia e que o v\303\255deo vaia a saltos. \303\232sao s\303"
-   "\263 se a velocidade completa non se pode obter doutra maneira.",
    "Tenta mellorar o rendemento usando b\303\272feres de argumentos de Metal. Alg\303\272ns n\303"
    "\272cleos poden requirilo. Isto pode provocar erros nalg\303\272ns sombreadores, especialmente e"
    "n soporte f\303\255sico antigo ou versi\303\263ns antigas do sistema operativo.",
@@ -9099,7 +9092,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194239u
+      (sizeof(msg_hash_gl_blob) == (193900u
 #ifdef ANDROID
        + 365u
 #endif
@@ -11471,6 +11464,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12930,7 +12924,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -12973,7 +12966,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

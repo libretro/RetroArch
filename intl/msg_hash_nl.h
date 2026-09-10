@@ -1483,7 +1483,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[6];
    char s_36259b63[15];
-   char s_37368130[11];
    char s_d51f54a2[13];
    char s_b35f573c[6];
    char s_1cad7751[13];
@@ -3386,7 +3385,6 @@ static const struct
    char s_36033606[198];
    char s_2e69508b[363];
    char s_7e96b5ce[44];
-   char s_3547866d[158];
    char s_c2314d30[192];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[175];
@@ -5615,7 +5613,6 @@ static const struct
    "&Ontlaad core",
    "&hulp",
    "Over RetroArch",
-   "bijdragers",
    "Documentatie",
    "Legen",
    "&Gereedschap",
@@ -7947,8 +7944,6 @@ static const struct
    "erapporteerde framesnelheid, wat zorgt voor een verbeterde framepacing bij het hardlopen van b.v"
    ". 30 fps-inhoud op een 60 Hz-scherm of 60 fps-inhoud op een 120 Hz-scherm.",
    "Video-synchronisatie instellingen wijzigen.",
-   "Verbetert prestaties ten koste van latentie en vloeiendheid van het beeld. Gebruik dit alleen wa"
-   "nneer het afspelen op volle snelheid niet anders mogelijk is.",
    "Probeer de prestaties te verbeteren door de Metal-argumentbuffers te gebruiken. Voor sommige cor"
    "es kan dit nodig zijn. Dit kan sommige shaders breken, met name op oude hardware of OS versies.",
 #if defined(RARCH_MOBILE)
@@ -8577,7 +8572,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174520u
+      (sizeof(msg_hash_nl_blob) == (174351u
 #ifdef ANDROID
        + 375u
 #endif
@@ -12354,7 +12349,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

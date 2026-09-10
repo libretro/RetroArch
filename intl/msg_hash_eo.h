@@ -1576,7 +1576,6 @@ static const struct
    char s_74b77b4a[18];
    char s_7534cfc9[7];
    char s_36259b63[14];
-   char s_37368130[14];
    char s_d51f54a2[12];
    char s_b35f573c[6];
    char s_1cad7751[6];
@@ -2034,6 +2033,7 @@ static const struct
    char s_519cd5f8[21];
    char s_43ac80a0[14];
    char s_6959ce80[16];
+   char s_aa628249[9];
    char s_ebe994b4[13];
    char s_1c62c301[9];
    char s_a8bb35b6[9];
@@ -3523,7 +3523,6 @@ static const struct
    char s_1eebf4f8[172];
    char s_2f2ca2b6[172];
    char s_2c9be635[135];
-   char s_05ec12e6[157];
    char s_b5a603de[61];
    char s_d9c2db25[59];
 #ifdef HAVE_ODROIDGO2
@@ -3566,7 +3565,6 @@ static const struct
    char s_d62ed5dc[349];
    char s_2e69508b[366];
    char s_7e96b5ce[39];
-   char s_3547866d[135];
    char s_c2314d30[210];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[183];
@@ -5925,7 +5923,6 @@ static const struct
    "&Mal\305\235argi kernon",
    "&Helpo",
    "Pri RetroArch",
-   "Kontribuintoj",
    "Dokumentado",
    "Vi\305\235i",
    "&Iloj",
@@ -6391,6 +6388,7 @@ static const struct
    "Operaciumo de fasado",
    "Versio de Git",
    "Versio de Lakka",
+   "Ludritmo",
    "Kurentofonto",
    "\305\234argita",
    "\305\234argata",
@@ -8339,8 +8337,6 @@ static const struct
    "nioj (akiritaj de la plej supro de la ekrano). Povus enigi skaladajn artefaktojn.",
    "Kapti la bildon post filtriloj (sed ne ombrigiloj) estas aplikitaj. La videa\304\265o aspektos "
    "\304\235uste kiel tio, kion vi vidas en via ekrano.",
-   "Vertikala ofteco de aktualigo de via ekrano. Uzata por kalkuli \304\235ustan oftecon de a\305"
-   "\255dia enigo. \304\210i tio estos ignorata se \"Fadenigita video\" estas ebligita.",
    "La fidela pritaksita ofteco de aktualigo de la ekrano je Hz.",
    "La ofteco de aktualigo la\305\255 raportite de la ekrana pelilo.",
 #ifdef HAVE_ODROIDGO2
@@ -8415,8 +8411,6 @@ static const struct
    "iam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, a\305\255 enhavon de 60 fps en ekra"
    "no de 120 Hz.",
    "\305\234an\304\235i agordojn pri videa sinkronigo.",
-   "Plibonigas rendimenton kontra\305\255 atendotempo kaj videa \"mikrobalbutado\". Uzu \304\235in n"
-   "ur se plena rapideco ne povas esti atingita alikaze.",
    "Provi plibonigi rendimenton uzante argumentajn bufrojn de Metal. Kelkaj kernoj povas bezoni \304"
    "\211i tion. \304\210i tio povas \"rompi\" kelkajn ombrigilojn, \304\211efe en kadukaj aparataroj"
    " a\305\255 malnovaj versioj de operaciumoj.",
@@ -9064,7 +9058,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172863u
+      (sizeof(msg_hash_eo_blob) == (172566u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11486,6 +11480,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12975,7 +12970,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13018,7 +13012,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

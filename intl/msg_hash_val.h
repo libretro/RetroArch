@@ -383,6 +383,7 @@ static const struct
    char s_8fe41f79[39];
    char s_519cd5f8[42];
    char s_43ac80a0[15];
+   char s_aa628249[13];
    char s_ebe994b4[15];
    char s_da093426[21];
    char s_d9b00fbd[34];
@@ -671,7 +672,6 @@ static const struct
    char s_3aaf6bf1[165];
    char s_5b059407[136];
    char s_7e96b5ce[49];
-   char s_3547866d[168];
    char s_8010a29e[157];
    char s_81120e85[157];
    char s_47ae341f[151];
@@ -1085,6 +1085,7 @@ static const struct
    "Identificador del processador d'acc\303\251s",
    "Sistema operatiu del processador d'acc\303\251s",
    "Versi\303\263 de Git",
+   "Ritme de joc",
    "Font d'energia",
    "Versi\303\263 de RetroArch",
    "Controlador de contexte de v\303\255deo",
@@ -1456,8 +1457,6 @@ static const struct
    "D\303\263na un context privat als nuclis renderitzats per maquinari. Aix\303\262 alforra tragina"
    "r canvis en l'estat del maquinari entre fotogrames.",
    "Canvia els ajustos de sincronitzaci\303\263 de v\303\255deo.",
-   "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
-   "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
    "Establix l'al\303\247ada personalitzada de l'\303\240rea de visualitzaci\303\263. Este valor s'u"
    "sar\303\240 si ha sigut escollit \302\253Personalitzat\302\273 a l'ajust \302\253Relaci\303\263 "
    "d'aspecte\302\273.",
@@ -1517,7 +1516,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25754u
+      (sizeof(msg_hash_val_blob) == (25599u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -1983,6 +1982,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -2271,7 +2271,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

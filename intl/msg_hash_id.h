@@ -553,6 +553,7 @@ static const struct
    char s_cd916c68[17];
    char s_8fe41f79[18];
    char s_43ac80a0[10];
+   char s_aa628249[12];
    char s_ebe994b4[12];
    char s_da093426[16];
    char s_d9b00fbd[21];
@@ -917,7 +918,6 @@ static const struct
    char s_67d549fd[32];
    char s_3aaf6bf1[123];
    char s_7e96b5ce[36];
-   char s_3547866d[120];
    char s_8010a29e[87];
    char s_81120e85[86];
    char s_47ae341f[83];
@@ -1528,6 +1528,7 @@ static const struct
    "Lebar Layar (mm)",
    "Pengenal Frontend",
    "Versi Git",
+   "Kadar Gerak",
    "Sumber daya",
    "Versi RetroArch",
    "Driver Konteks Video",
@@ -1929,8 +1930,6 @@ static const struct
    "Menunda muat-langsung 'shader' (dalam milidetik). Dapat mengatasi 'glitch' grafis saat menggunak"
    "an aplikasi 'screen grab'.",
    "Ubah pengaturan sinkronisasi video.",
-   "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak da"
-   "pat berkecepatan penuh.",
    "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
    "Lebar viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
    "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
@@ -2007,7 +2006,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26917u
+      (sizeof(msg_hash_id_blob) == (26809u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2657,6 +2656,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -3021,7 +3021,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

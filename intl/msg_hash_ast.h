@@ -473,7 +473,6 @@ static const struct
    char s_74b77b4a[21];
    char s_7534cfc9[7];
    char s_36259b63[20];
-   char s_37368130[15];
    char s_d51f54a2[15];
    char s_b35f573c[7];
    char s_1cad7751[14];
@@ -1475,7 +1474,6 @@ static const struct
    "&Descargar el nucleu",
    "&Ayuda",
    "Tocante a RetroArch",
-   "Collaboradores",
    "Documentaci\303\263n",
    "Borrar",
    "&Ferramientes",
@@ -2060,7 +2058,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24502u
+      (sizeof(msg_hash_ast_blob) == (24487u
 #ifdef HAVE_MIST
        + 20u
 #endif

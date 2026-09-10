@@ -719,6 +719,7 @@ static const struct
    char s_2c296537[25];
    char s_519cd5f8[38];
    char s_43ac80a0[12];
+   char s_aa628249[6];
    char s_ebe994b4[17];
    char s_1c62c301[10];
    char s_a8bb35b6[11];
@@ -1121,7 +1122,6 @@ static const struct
    char s_23c41f7c[85];
    char s_2e69508b[369];
    char s_7e96b5ce[54];
-   char s_3547866d[142];
    char s_8010a29e[134];
    char s_81120e85[135];
    char s_48696c85[94];
@@ -2167,6 +2167,7 @@ static const struct
    "Nome da interface visual",
    "Sistema operativo da interface visual",
    "Vers\303\243o Git",
+   "Ritmo",
    "Fonte de energia",
    "Carregada",
    "Carregando",
@@ -2695,8 +2696,6 @@ static const struct
    "tar, por exemplo, conte\303\272do de 30 fps num ecr\303\243 de 60 Hz ou conte\303\272do de 60 fp"
    "s num ecr\303\243 de 120 Hz.",
    "Alterar configura\303\247\303\265es de sincroniza\303\247\303\243o de v\303\255deo.",
-   "Aumenta performance a custo de lat\303\252ncia e mais stuttering de v\303\255deo. Use apenas se "
-   "velocidade m\303\241xima n\303\243o pode ser obtida de outra maneira.",
    "Personalizar a altura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247\303"
    "\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
    "Personalizar a largura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247"
@@ -2986,7 +2985,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55005u
+      (sizeof(msg_hash_pt_pt_blob) == (54869u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3789,6 +3788,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -4191,7 +4191,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,

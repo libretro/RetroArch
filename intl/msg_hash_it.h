@@ -1501,7 +1501,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[7];
    char s_36259b63[26];
-   char s_37368130[14];
    char s_d51f54a2[15];
    char s_b35f573c[9];
    char s_1cad7751[11];
@@ -1939,6 +1938,7 @@ static const struct
    char s_519cd5f8[28];
    char s_43ac80a0[13];
    char s_6959ce80[15];
+   char s_aa628249[6];
    char s_ebe994b4[23];
    char s_1c62c301[9];
    char s_a8bb35b6[12];
@@ -3394,7 +3394,6 @@ static const struct
    char s_36033606[214];
    char s_2e69508b[361];
    char s_7e96b5ce[50];
-   char s_3547866d[157];
    char s_c2314d30[218];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[190];
@@ -5677,7 +5676,6 @@ static const struct
    "&Scarica Core",
    "&Aiuto",
    "Informazioni Su RetroArch",
-   "Collaboratori",
    "Documentazione",
    "Cancella",
    "&Strumenti",
@@ -6121,6 +6119,7 @@ static const struct
    "Sistema operativo front-end",
    "Versione Git",
    "Versione Lakka",
+   "Ritmo",
    "Fonte di alimentazione",
    "Caricato",
    "Caricamento",
@@ -8044,8 +8043,6 @@ static const struct
    "-reported, fornendo un miglioramento del ritmo dei frame quando si esegue e.. contenuto di 30 fp"
    "s su un display a 60 Hz o un contenuto di 60 fps su un display a 120 Hz.",
    "Cambia le impostazioni di sincronizzazione video.",
-   "Migliora le prestazioni al costo della latenza e di una maggiore incisione video. Usalo solo se "
-   "altrimenti non \303\250 possibile ottenere una velocit\303\240 maggiore.",
    "Tenta di migliorare le prestazioni usando i buffer di argomenti di Metal. Alcuni core potrebbero"
    " richiederli. Potrebbe compromettere alcuni shader, specialmente su hardware o versioni di siste"
    "ma operativo pi\303\271 datati.",
@@ -8697,7 +8694,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183704u
+      (sizeof(msg_hash_it_blob) == (183539u
 #ifdef ANDROID
        + 376u
 #endif
@@ -11025,6 +11022,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12480,7 +12478,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
