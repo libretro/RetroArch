@@ -1218,6 +1218,177 @@ static void lane_zero_copy(void)
 
 /* ------------------------------------------------------------------ */
 
+
+/* ------------------------------------------------------------------ */
+/* Lane: asynchronous texture uploads                                  */
+/*   video_driver_texture_load_async() must return at once, upload on  */
+/*   the video thread, deliver done() on the main thread in post       */
+/*   order with the driver's handle, release the image exactly once,   */
+/*   and hand every in-flight load a 0 when the wrapper is torn down.  */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t async_driver;
+static const video_driver_t *async_inner;
+static video_poke_interface_t async_poke;
+static const video_poke_interface_t *async_inner_poke;
+static uintptr_t async_upload_thread;
+static unsigned  async_uploads;
+
+static uintptr_t async_fake_load(void *data, void *img, bool threaded,
+      enum texture_filter_type filter)
+{
+   (void)data; (void)img; (void)threaded; (void)filter;
+   async_upload_thread = sthread_get_current_thread_id();
+   return 0x1000 + ++async_uploads;
+}
+
+static void async_fake_unload(void *data, bool threaded, uintptr_t id)
+{
+   (void)data; (void)threaded; (void)id;
+}
+
+static void async_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   async_inner->poke_interface(data, &async_inner_poke);
+   async_poke = *async_inner_poke;
+   async_poke.load_texture   = async_fake_load;
+   async_poke.unload_texture = async_fake_unload;
+   *iface = &async_poke;
+}
+
+#define ASYNC_N 6
+static unsigned  async_done_order[ASYNC_N];
+static uintptr_t async_done_handle[ASYNC_N];
+static unsigned  async_done_count;
+static unsigned  async_released;
+static uintptr_t async_done_thread;
+
+static void async_done_cb(void *user, uintptr_t handle)
+{
+   unsigned idx = (unsigned)(uintptr_t)user;
+   if (async_done_count < ASYNC_N)
+   {
+      async_done_order[async_done_count]  = idx;
+      async_done_handle[async_done_count] = handle;
+   }
+   async_done_count++;
+   async_done_thread = sthread_get_current_thread_id();
+}
+
+static void async_release_cb(void *img)
+{
+   (void)img;
+   async_released++;
+}
+
+static void lane_async_texture_load(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   static struct texture_image imgs[ASYNC_N];
+   unsigned i;
+   retro_time_t t0, t1;
+   uintptr_t main_thread = sthread_get_current_thread_id();
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "async lane");
+   thr = (thread_video_t*)video_st->data;
+
+   video_thread_wait_idle();
+   async_inner  = thr->driver;
+   async_driver = *thr->driver;
+   async_driver.poke_interface = async_get_poke;
+   thr->driver  = &async_driver;
+   async_driver.poke_interface(thr->driver_data, &thr->poke);
+   /* video_driver_texture_load_async() goes through video_st->poke. */
+   video_st->poke = thr->poke;
+
+   async_uploads = async_done_count = async_released = 0;
+   for (i = 0; i < ASYNC_N; i++)
+   {
+      imgs[i].width = imgs[i].height = 4;
+      imgs[i].pixels = (uint32_t*)&imgs[i];
+   }
+
+   t0 = cpu_features_get_time_usec();
+   for (i = 0; i < ASYNC_N; i++)
+      CHECK(video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
+               async_done_cb, (void*)(uintptr_t)i, async_release_cb),
+            "async load %u refused", i);
+   t1 = cpu_features_get_time_usec();
+   CHECK(t1 - t0 < 5000, "posting %u async loads took %lld us: it blocked",
+         ASYNC_N, (long long)(t1 - t0));
+   CHECK(async_done_count == 0, "done() ran before any frame was pushed");
+
+   run_frames(5);
+   video_thread_wait_idle();
+   run_frames(1);
+
+   CHECK(async_uploads == ASYNC_N, "%u of %u uploads reached the driver",
+         async_uploads, ASYNC_N);
+   CHECK(async_upload_thread != main_thread,
+         "upload ran on the main thread");
+   CHECK(async_released == ASYNC_N, "%u of %u images released",
+         async_released, ASYNC_N);
+   CHECK(async_done_count == ASYNC_N, "%u of %u done() calls",
+         async_done_count, ASYNC_N);
+   CHECK(async_done_thread == main_thread, "done() ran off the main thread");
+   for (i = 0; i < ASYNC_N && i < async_done_count; i++)
+   {
+      CHECK(async_done_order[i] == i, "done() order: slot %u got load %u",
+            i, async_done_order[i]);
+      CHECK(async_done_handle[i] == 0x1000 + i + 1,
+            "load %u delivered handle %lx", i, (unsigned long)async_done_handle[i]);
+   }
+
+   /* Teardown with loads in flight: park the worker on a command so
+    * the posts sit in the in-list, then drop threaded video. Every
+    * one must be released and answered with 0, none twice. */
+   async_done_count = async_released = 0;
+   for (i = 0; i < ASYNC_N; i++)
+      video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
+            async_done_cb, (void*)(uintptr_t)i, async_release_cb);
+   thr->driver = async_inner;
+   thr->poke   = async_inner_poke;
+   video_st->poke = async_inner_poke;
+   set_threaded_via_setting(false);
+   run_frames(2);
+   CHECK(async_released == ASYNC_N, "teardown released %u of %u images",
+         async_released, ASYNC_N);
+   CHECK(async_done_count == ASYNC_N, "teardown answered %u of %u loads",
+         async_done_count, ASYNC_N);
+
+   /* Without the wrapper the call is synchronous and still keeps the
+    * contract: release, then done, before returning. The harness
+    * driver has no load_texture, so lend it the fake one. */
+   {
+      const video_poke_interface_t *real_poke = video_st->poke;
+      video_poke_interface_t sync_poke;
+      if (real_poke)
+         sync_poke = *real_poke;
+      else
+         memset(&sync_poke, 0, sizeof(sync_poke));
+      sync_poke.load_texture   = async_fake_load;
+      sync_poke.unload_texture = async_fake_unload;
+      video_st->poke = &sync_poke;
+      async_done_count = async_released = 0;
+      CHECK(video_driver_texture_load_async(&imgs[0], TEXTURE_FILTER_LINEAR,
+               async_done_cb, (void*)0, async_release_cb),
+            "synchronous fallback refused");
+      CHECK(async_released == 1 && async_done_count == 1,
+            "synchronous fallback: released %u, done %u",
+            async_released, async_done_count);
+      CHECK(async_done_thread == main_thread,
+            "synchronous fallback: done() off the main thread");
+      video_st->poke = real_poke;
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] async texture load lane (%u uploads)\n", ASYNC_N);
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -1298,6 +1469,7 @@ int main(int argc, char *argv[])
    lane_reinit_under_wrapper(cycles / 2 + 1);
    lane_toggle_in_game(cycles);
    lane_swap_count();
+   lane_async_texture_load();
    lane_present_repeat();
    lane_every_command_replies();
    lane_second_ring_waiter();

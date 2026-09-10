@@ -1144,6 +1144,40 @@ typedef struct
    uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
 } icon_load_tag_t;
 
+static void icon_image_release(void *img)
+{
+   struct texture_image *ti = (struct texture_image*)img;
+   if (ti)
+   {
+      image_texture_free(ti);
+      free(ti);
+   }
+}
+
+/* Main thread, when the upload has a handle (or failed with 0). The
+ * generation check lives here, not at queue time: the target may have
+ * been freed while the upload was in flight. A stale result, or one
+ * for a target that already got a newer handle, is unloaded rather
+ * than leaked. */
+static void icon_load_done(void *user, uintptr_t handle)
+{
+   icon_load_tag_t *tag = (icon_load_tag_t*)user;
+   if (!tag)
+      return;
+   if (tag->generation != *tag->generation_ptr)
+   {
+      if (handle)
+         video_driver_texture_unload(&handle);
+   }
+   else if (handle)
+   {
+      if (*tag->target)
+         video_driver_texture_unload(tag->target);
+      *tag->target = handle;
+   }
+   free(tag);
+}
+
 static void cb_task_icon_load(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -1163,8 +1197,14 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, gfx_display_texture_filter(),
-         tag->target);
+   /* Under threaded video this used to be a blocking round trip to
+    * the video thread per icon - up to one present each, on the main
+    * thread, dozens of times at startup. The upload now goes to the
+    * video thread's queue and the handle comes back through
+    * icon_load_done() at a later frame; img and tag are theirs now. */
+   if (video_driver_texture_load_async(img, gfx_display_texture_filter(),
+            icon_load_done, tag, icon_image_release))
+      return;
 
 end:
    if (img)

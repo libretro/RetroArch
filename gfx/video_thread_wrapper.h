@@ -183,9 +183,33 @@ typedef struct thread_packet
    enum thread_cmd type;
 } thread_packet_t;
 
+/* A texture upload the main thread does not wait for. Queued nodes
+ * are owned by the video thread from post to completion; completed
+ * nodes wait in the out list until the main thread delivers them from
+ * video_thread_async_poll(). Both lists are guarded by thr->lock. */
+typedef void (*video_thread_async_done_t)(void *user, uintptr_t handle);
+typedef void (*video_thread_async_release_t)(void *img);
+
+typedef struct video_thread_async_load
+{
+   struct video_thread_async_load *next;
+   void *img;                      /* struct texture_image*, ours until released */
+   void *user;
+   video_thread_async_done_t    done;
+   video_thread_async_release_t release;
+   uintptr_t handle;
+   enum texture_filter_type filter;
+} video_thread_async_load_t;
+
 typedef struct thread_video
 {
    retro_time_t last_time;
+   /* Asynchronous texture uploads, see video_thread_texture_load_async(). */
+   struct
+   {
+      video_thread_async_load_t *in_head,  *in_tail;   /* to upload */
+      video_thread_async_load_t *out_head, *out_tail;  /* to deliver */
+   } async;
    /* Presenter state, all owned by the video thread. present_period
     * is one display period in usec, taken from the refresh rate of the
     * last frame rendered; next_present is when a repeat of it falls
@@ -469,6 +493,24 @@ bool video_thread_font_init(
 
 uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func);
+
+/* Upload @img on the video thread without blocking the caller. The
+ * video thread runs the upload at its next wake, calls release(img),
+ * and parks the handle; the main thread then gets done(user, handle)
+ * from video_thread_async_poll(), which video_thread_frame() runs
+ * every frame. If the wrapper is torn down first, in-flight loads are
+ * released and delivered with handle 0. Returns false (and takes no
+ * ownership) when the wrapper is not active - the caller does the
+ * synchronous load instead. Main thread only. */
+bool video_thread_texture_load_async(void *img,
+      enum texture_filter_type filter,
+      video_thread_async_done_t done, void *user,
+      video_thread_async_release_t release);
+
+/* Deliver completed asynchronous uploads to their done() callbacks.
+ * Main thread; video_thread_frame() calls it, callers that upload
+ * while no frames are being pushed can call it themselves. */
+void video_thread_async_poll(void);
 
 /* Barrier: wait until the video thread is idle (no pending frame).
  * Must be called from the main thread before freeing GPU resources

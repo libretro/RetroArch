@@ -3662,6 +3662,45 @@ bool video_driver_texture_load(void *data,
    return true;
 }
 
+bool video_driver_texture_load_async(void *data,
+      enum texture_filter_type filter_type,
+      void (*done)(void *user, uintptr_t handle), void *user,
+      void (*release)(void *img))
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   struct texture_image *ti           = (struct texture_image*)data;
+   uintptr_t id                       = 0;
+
+   if (!ti || !poke || !poke->load_texture)
+      return false;
+
+#ifdef HAVE_THREADS
+   /* The CPU-side fixups video_driver_texture_load() applies happen
+    * here, on the caller's thread, so the video thread only uploads.
+    * Compressed images keep the synchronous path: their driver-native
+    * upload negotiates per driver and is not worth duplicating. */
+   if (!ti->compressed && video_driver_thread_wrapper_active())
+   {
+      if (     ti->pix10
+            && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+         image_texture_narrow_10bit(ti);
+      if (video_thread_texture_load_async(ti, filter_type,
+               done, user, release))
+         return true;
+      /* Wrapper refused (tearing down, or we are the video thread):
+       * synchronous below. */
+   }
+#endif
+
+   video_driver_texture_load(ti, filter_type, &id);
+   if (release)
+      release(ti);
+   if (done)
+      done(user, id);
+   return true;
+}
+
 bool video_driver_texture_unload(uintptr_t *id)
 {
    video_driver_state_t *video_st     = &video_driver_st;

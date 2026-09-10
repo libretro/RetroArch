@@ -721,6 +721,150 @@ static void video_thread_schedule_next(thread_video_t *thr)
    thr->last_present_end = thr->present_period > 0 ? next : now;
 }
 
+/* Video thread: take the whole in list under the lock, upload each
+ * node with the driver directly (this is the driver's thread), release
+ * the image, and queue the handle for the main thread. */
+static void video_thread_async_run(thread_video_t *thr)
+{
+   video_thread_async_load_t *n;
+
+   slock_lock(thr->lock);
+   n                 = thr->async.in_head;
+   thr->async.in_head = thr->async.in_tail = NULL;
+   slock_unlock(thr->lock);
+
+   while (n)
+   {
+      video_thread_async_load_t *next = n->next;
+      n->handle = 0;
+      if (thr->driver_data && thr->poke && thr->poke->load_texture)
+         n->handle = thr->poke->load_texture(thr->driver_data,
+               n->img, false, n->filter);
+      if (n->release)
+         n->release(n->img);
+      n->img  = NULL;
+      n->next = NULL;
+
+      slock_lock(thr->lock);
+      if (thr->async.out_tail)
+         thr->async.out_tail->next = n;
+      else
+         thr->async.out_head       = n;
+      thr->async.out_tail          = n;
+      slock_unlock(thr->lock);
+
+      n = next;
+   }
+}
+
+/* Main thread: deliver everything in the out list. Runs done() with
+ * the lock released, so a done() that uploads or unloads a texture
+ * is fine. */
+static void video_thread_async_deliver(thread_video_t *thr)
+{
+   video_thread_async_load_t *n;
+
+   slock_lock(thr->lock);
+   n                   = thr->async.out_head;
+   thr->async.out_head = thr->async.out_tail = NULL;
+   slock_unlock(thr->lock);
+
+   while (n)
+   {
+      video_thread_async_load_t *next = n->next;
+      if (n->done)
+         n->done(n->user, n->handle);
+      free(n);
+      n = next;
+   }
+}
+
+/* Teardown, after the join: nothing else touches the lists now. Loads
+ * never uploaded are released; every waiter learns of the handle 0,
+ * since any real one died with the driver. */
+static void video_thread_async_drop_all(thread_video_t *thr)
+{
+   video_thread_async_load_t *n = thr->async.in_head;
+   while (n)
+   {
+      video_thread_async_load_t *next = n->next;
+      if (n->release && n->img)
+         n->release(n->img);
+      if (n->done)
+         n->done(n->user, 0);
+      free(n);
+      n = next;
+   }
+   n = thr->async.out_head;
+   while (n)
+   {
+      video_thread_async_load_t *next = n->next;
+      if (n->done)
+         n->done(n->user, 0);
+      free(n);
+      n = next;
+   }
+   thr->async.in_head  = thr->async.in_tail  = NULL;
+   thr->async.out_head = thr->async.out_tail = NULL;
+}
+
+bool video_thread_texture_load_async(void *img,
+      enum texture_filter_type filter,
+      video_thread_async_done_t done, void *user,
+      video_thread_async_release_t release)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   video_thread_async_load_t *n;
+
+   if (!video_st->thread_wrapper_active || !img)
+      return false;
+   thr = (thread_video_t*)video_st->data;
+   if (!thr || !thr->thread)
+      return false;
+   /* On the video thread there is nothing to hand off to. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return false;
+   if (!(n = (video_thread_async_load_t*)calloc(1, sizeof(*n))))
+      return false;
+
+   n->img     = img;
+   n->user    = user;
+   n->done    = done;
+   n->release = release;
+   n->filter  = filter;
+
+   slock_lock(thr->lock);
+   if (!thr->alive)
+   {
+      slock_unlock(thr->lock);
+      free(n);
+      return false;
+   }
+   if (thr->async.in_tail)
+      thr->async.in_tail->next = n;
+   else
+      thr->async.in_head       = n;
+   thr->async.in_tail          = n;
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+   return true;
+}
+
+void video_thread_async_poll(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (!video_st->thread_wrapper_active)
+      return;
+   thr = (thread_video_t*)video_st->data;
+   if (!thr)
+      return;
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return;
+   video_thread_async_deliver(thr);
+}
+
 static void video_thread_loop(void *data)
 {
    thread_packet_t pkt;
@@ -736,7 +880,9 @@ static void video_thread_loop(void *data)
       bool repeat_due = false;
 
       slock_lock(thr->lock);
-      while (thr->send_cmd == CMD_VIDEO_NONE && !thr->frame.pending)
+      while (     thr->send_cmd == CMD_VIDEO_NONE
+               && !thr->frame.pending
+               && !thr->async.in_head)
       {
          /* With a frame retained, the wait has a deadline: the next
           * display period after the last present. Passing it with
@@ -785,6 +931,8 @@ static void video_thread_loop(void *data)
 
       if (have_cmd && video_thread_handle_packet(thr, &pkt))
          return;
+
+      video_thread_async_run(thr);
 
       if (claimed)
       {
@@ -1112,6 +1260,10 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    if (!thr)
       return false;
+
+   /* Asynchronous uploads that finished since the last frame reach
+    * their owners before the frame that may draw with them. */
+   video_thread_async_deliver(thr);
 
    /* If called from within read_viewport, we're actually in the
     * driver thread, so just render directly. */
@@ -1604,6 +1756,7 @@ static void video_thread_free(void *data)
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
       }
+      video_thread_async_drop_all(thr);
 
       /* After the join, not before it: the video thread reads this
        * from inside driver frame callbacks, so clearing it while that
