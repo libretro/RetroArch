@@ -103,6 +103,15 @@ static void qt_set_playlist_hidden(const QString &path, bool hidden)
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
 
+/* Qt shows a plain-text tooltip on one line however long it is - a
+ * sublabel paragraph ran the width of a 2560 px desktop. It wraps
+ * rich text to a sane width, so tips go in as escaped rich text. */
+static inline QString wrapped_tooltip(const char *text)
+{
+   return QStringLiteral("<qt>") + QString::fromUtf8(text).toHtmlEscaped()
+        + QStringLiteral("</qt>");
+}
+
 static inline void add_sublabel_and_whats_this(
       QWidget *widget, rarch_setting_t *setting)
 {
@@ -111,7 +120,7 @@ static inline void add_sublabel_and_whats_this(
 
    if (menu_cbs_sublabel_for_enum((enum msg_hash_enums)setting->enum_idx,
             (unsigned)setting->type, setting->size, tmp, sizeof(tmp)))
-      widget->setToolTip(tmp);
+      widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
          tmp, sizeof(tmp));
@@ -2668,7 +2677,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
       };
       for (size_t i = 0; i < sizeof(tips) / sizeof(tips[0]); i++)
       {
-         const char *tip = msg_hash_to_str(tips[i].help);
+         QString tip = wrapped_tooltip(msg_hash_to_str(tips[i].help));
          tips[i].w->setToolTip(tip);
          if (QWidget *label = form->labelForField(tips[i].w))
             label->setToolTip(tip);
@@ -3101,8 +3110,11 @@ void CoreOptionsDialog::buildLayout()
 
                word_wrap(new_info, new_info_len, option->info,
                      option_info_len, 50, 100, 0);
-               descLabel->setToolTip(new_info);
-               combo_box->setToolTip(new_info);
+               /* already wrapped to 50 columns: keep the line breaks */
+               descLabel->setToolTip(QStringLiteral("<qt><pre>")
+                     + QString::fromUtf8(new_info).toHtmlEscaped()
+                     + QStringLiteral("</pre></qt>"));
+               combo_box->setToolTip(descLabel->toolTip());
                free(new_info);
             }
 

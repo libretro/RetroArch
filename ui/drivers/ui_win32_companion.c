@@ -2805,6 +2805,17 @@ static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 }
 
 /* Shared shape of the two secondary windows: class, frame, list. */
+/* A list view's info tip is one line however long unless its tooltip
+ * control is given a maximum width; give it one so a paragraph wraps
+ * instead of running off the screen. The control exists once the
+ * extended style is set; a missing one is harmless. */
+static void cw_infotip_wrap(ui_companion_win32_wimp_t *w, HWND list)
+{
+   HWND tip = (HWND)SendMessageA(list, LVM_GETTOOLTIPS, 0, 0);
+   if (tip)
+      SendMessageA(tip, TTM_SETMAXTIPWIDTH, 0, CW_S(w, 420));
+}
+
 static HWND cw_table_window(ui_companion_win32_wimp_t *w, const char *cls,
       WNDPROC proc, const char *title, int width, HWND *list_out, int list_id)
 {
@@ -2871,6 +2882,7 @@ static void cw_opts_show(ui_companion_win32_wimp_t *w)
       /* The core's own description of each option, on hover. */
       SendMessageA(w->opts_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
             LVS_EX_INFOTIP, LVS_EX_INFOTIP);
+      cw_infotip_wrap(w, w->opts_list);
       cw_table_button(w->opts_hwnd, "Reset", IDC_CW_OPTS_RESET, false);
       cw_table_button(w->opts_hwnd, "Reset All", IDC_CW_OPTS_RESET_ALL, false);
       cw_table_button(w->opts_hwnd, "Close", IDC_CW_OPTS_CLOSE, true);
@@ -3178,6 +3190,7 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
       /* Hover help per row, served from LVN_GETINFOTIP below. */
       SendMessageA(w->set_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
             LVS_EX_INFOTIP, LVS_EX_INFOTIP);
+      cw_infotip_wrap(w, w->set_list);
       w->set_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
             0, 0, 0, 0, w->set_hwnd, (HMENU)IDC_CW_SET_EDIT, inst, NULL);
