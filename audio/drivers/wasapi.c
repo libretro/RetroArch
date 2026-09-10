@@ -35,6 +35,8 @@
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+#include <formats/rac3.h>
+#include <formats/iec61937.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -121,6 +123,19 @@ typedef struct
    unsigned char frame_size;
    /* Float samples, whatever the channel count. */
    bool          float_format;
+   /* AC-3 over IEC 61937: the frontend writes float frames of the
+    * layout, the encoder takes them 1536 at a time, and what reaches
+    * the fifo and the device is the 6144-byte burst - 1536 frames of
+    * the 2-channel 16-bit carrier, so a layout frame and a device
+    * frame are the same count and only the bytes per frame differ.
+    * ac3_frame_size is the frontend's view; frame_size the device's.
+    * The sizes reported to the frontend are in its own frames. */
+   rac3_encoder_t *ac3;
+   float         *ac3_in;         /* 1536 frames of the layout */
+   unsigned       ac3_in_frames;  /* collected so far */
+   unsigned       ac3_frame_size;
+   uint8_t        ac3_frame[RAC3_MAX_FRAME_BYTES];
+   uint8_t        ac3_burst[IEC61937_AC3_BURST_BYTES];
    uint8_t flags;
    /* The speaker layout the stream opened with, as the frontend's
     * mask (WAVEFORMATEXTENSIBLE's bits): what the device took, which
@@ -502,25 +517,22 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
    return false;
 }
 
-static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
-      uint32_t layout, uint32_t *layout_out)
+/* IAudioClient::Initialize for an exclusive event-driven stream on
+ * client with format wf, with the period policy and the retries every
+ * exclusive stream needs: the period is a quarter of the latency
+ * setting, never above it, floored at the device's minimum; an
+ * unaligned buffer is retried at the size the device wants, an
+ * already-initialised client and a refused period are retried on a
+ * fresh client with the whole setting. On failure the client is
+ * released and NULL is left in *client. */
+static HRESULT wasapi_initialize_exclusive(IMMDevice *device, IAudioClient **client,
+      const WAVEFORMATEX *wf, unsigned latency, unsigned rate)
 {
-   WAVEFORMATEXTENSIBLE wf;
-   IAudioClient *client           = NULL;
    REFERENCE_TIME minimum_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
-   HRESULT hr                     = _IMMDevice_Activate(device,
-         IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+   HRESULT hr;
 
-   if (FAILED(hr))
-   {
-      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
-            mmdevice_hresult_name(hr));
-      return NULL;
-   }
-
-   hr = _IAudioClient_GetDevicePeriod(client, NULL, &minimum_period);
+   hr = _IAudioClient_GetDevicePeriod(*client, NULL, &minimum_period);
    if (FAILED(hr))
       RARCH_ERR("[WASAPI] Failed to get minimum device period of exclusive client: %s.\n",
             mmdevice_hresult_name(hr));
@@ -541,30 +553,16 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
-   wasapi_set_format(&wf, *float_fmt, *rate, channels, layout);
-   RARCH_DBG("[WASAPI] Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
-         wf.Format.wBitsPerSample,
-         wf.Format.nChannels,
-         wasapi_wave_format_name(&wf),
-         wf.Format.nSamplesPerSec,
-         latency);
-
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout))
-   {
-      RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
-      goto error;
-   }
-
-   hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+   hr = _IAudioClient_Initialize(*client, AUDCLNT_SHAREMODE_EXCLUSIVE,
          AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-         buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+         buffer_duration, buffer_duration, (WAVEFORMATEX*)wf, NULL);
 
    if (hr == AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED)
    {
       UINT32 buffer_length = 0;
       RARCH_WARN("[WASAPI] Unaligned buffer size: %s.\n",
             mmdevice_hresult_name(hr));
-      hr = _IAudioClient_GetBufferSize(client, &buffer_length);
+      hr = _IAudioClient_GetBufferSize(*client, &buffer_length);
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] Failed to get buffer size of client: %s.\n",
@@ -572,40 +570,42 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          goto error;
       }
 
-      RELEASE(client);
+      RELEASE((*client));
 
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
-            CLSCTX_ALL, NULL, (void**)&client);
+            CLSCTX_ALL, NULL, (void**)client);
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
                mmdevice_hresult_name(hr));
-         return NULL;
+         *client = NULL;
+         return hr;
       }
 
-      buffer_duration = 10000.0 * 1000.0 / (*rate) * buffer_length + 0.5;
-      hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+      buffer_duration = 10000.0 * 1000.0 / rate * buffer_length + 0.5;
+      hr = _IAudioClient_Initialize(*client, AUDCLNT_SHAREMODE_EXCLUSIVE,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-            buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+            buffer_duration, buffer_duration, (WAVEFORMATEX*)wf, NULL);
    }
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
    {
-      RELEASE(client);
+      RELEASE((*client));
 
       hr     = _IMMDevice_Activate(device,
             IID_IAudioClient,
-            CLSCTX_ALL, NULL, (void**)&client);
+            CLSCTX_ALL, NULL, (void**)client);
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
                mmdevice_hresult_name(hr));
-         return NULL;
+         *client = NULL;
+         return hr;
       }
 
-      hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+      hr = _IAudioClient_Initialize(*client, AUDCLNT_SHAREMODE_EXCLUSIVE,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-            buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+            buffer_duration, buffer_duration, (WAVEFORMATEX*)wf, NULL);
    }
    if (     hr == AUDCLNT_E_DEVICE_IN_USE
          || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
@@ -619,18 +619,19 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    {
       RARCH_WARN("[WASAPI] Exclusive period of %.1f ms refused (%s); retrying with the whole %u ms setting.\n",
             (float)buffer_duration / 10000.0f, mmdevice_hresult_name(hr), latency);
-      RELEASE(client);
-      hr = _IMMDevice_Activate(device, IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+      RELEASE((*client));
+      hr = _IMMDevice_Activate(device, IID_IAudioClient, CLSCTX_ALL, NULL, (void**)client);
       if (FAILED(hr))
       {
          RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
                mmdevice_hresult_name(hr));
-         return NULL;
+         *client = NULL;
+         return hr;
       }
       buffer_duration = latency * 10000.0;
-      hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+      hr = _IAudioClient_Initialize(*client, AUDCLNT_SHAREMODE_EXCLUSIVE,
             AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
-            buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+            buffer_duration, buffer_duration, (WAVEFORMATEX*)wf, NULL);
       if (hr == AUDCLNT_E_DEVICE_IN_USE || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
          goto error;
    }
@@ -641,6 +642,47 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
             mmdevice_hresult_name(hr));
       goto error;
    }
+   return hr;
+
+error:
+   RELEASE((*client));
+   *client = NULL;
+   return hr;
+}
+
+static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
+      uint32_t layout, uint32_t *layout_out)
+{
+   WAVEFORMATEXTENSIBLE wf;
+   IAudioClient *client           = NULL;
+   HRESULT hr                     = _IMMDevice_Activate(device,
+         IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+            mmdevice_hresult_name(hr));
+      return NULL;
+   }
+
+   wasapi_set_format(&wf, *float_fmt, *rate, channels, layout);
+   RARCH_DBG("[WASAPI] Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
+         wf.Format.wBitsPerSample,
+         wf.Format.nChannels,
+         wasapi_wave_format_name(&wf),
+         wf.Format.nSamplesPerSec,
+         latency);
+
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout))
+   {
+      RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
+      RELEASE(client);
+      return NULL;
+   }
+
+   if (FAILED(wasapi_initialize_exclusive(device, &client, (const WAVEFORMATEX*)&wf, latency, *rate)))
+      return NULL;
 
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM
          && memcmp(&wf.SubFormat, &KSDATAFORMAT_SUBTYPE_PCM, sizeof(GUID)) != 0;
@@ -648,10 +690,64 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (layout_out)
       *layout_out = wasapi_format_layout(&wf);
    return client;
+}
 
-error:
-   RELEASE(client);
-   return NULL;
+/* An exclusive stream carrying AC-3 in IEC 61937 bursts, for a
+ * device - a TV or receiver on HDMI or S/PDIF - that takes no more
+ * than stereo PCM but decodes Dolby Digital: what the frontend's
+ * wider layout becomes when the PCM form of it is refused. The
+ * stream the device sees is 2-channel 16-bit at the encoder's rate;
+ * *rate is forced to one the encoder takes (48 kHz unless it already
+ * is 44.1 or 32). NULL, quietly, when the device does not take the
+ * format: the caller has stereo PCM to fall back on. */
+static IAudioClient *wasapi_init_client_ac3(IMMDevice *device,
+      unsigned *rate, unsigned latency, unsigned channels, unsigned kbps)
+{
+   mmdevice_iec61937_format_t wf;
+   IAudioClient *client = NULL;
+   HRESULT hr;
+
+   if (*rate != 48000 && *rate != 44100 && *rate != 32000)
+      *rate = 48000;
+
+   hr = _IMMDevice_Activate(device, IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+            mmdevice_hresult_name(hr));
+      return NULL;
+   }
+
+   memset(&wf, 0, sizeof(wf));
+   wf.FormatExt.Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
+   wf.FormatExt.Format.nChannels            = 2;
+   wf.FormatExt.Format.nSamplesPerSec       = *rate;
+   wf.FormatExt.Format.wBitsPerSample       = 16;
+   wf.FormatExt.Format.nBlockAlign          = 4;
+   wf.FormatExt.Format.nAvgBytesPerSec      = *rate * 4;
+   wf.FormatExt.Format.cbSize               = sizeof(wf) - sizeof(WAVEFORMATEX);
+   wf.FormatExt.Samples.wValidBitsPerSample = 16;
+   wf.FormatExt.dwChannelMask               = 0x3;   /* FL FR: the carrier */
+   wf.FormatExt.SubFormat                   = mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL;
+   wf.dwEncodedSamplesPerSec                = *rate;
+   wf.dwEncodedChannelCount                 = channels;
+   wf.dwAverageBytesPerSec                  = kbps * 1000 / 8;
+
+   hr = _IAudioClient_IsFormatSupported(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+         (const WAVEFORMATEX*)&wf, NULL);
+   if (hr != S_OK)
+   {
+      RARCH_DBG("[WASAPI] Device does not take AC-3 over IEC 61937 in exclusive mode (%s).\n",
+            mmdevice_hresult_name(hr));
+      RELEASE(client);
+      return NULL;
+   }
+   RARCH_LOG("[WASAPI] Device takes AC-3 over IEC 61937: encoding %u channels at %u kbit/s, %u Hz.\n",
+         channels, kbps, *rate);
+
+   if (FAILED(wasapi_initialize_exclusive(device, &client, (const WAVEFORMATEX*)&wf, latency, *rate)))
+      return NULL;
+   return client;
 }
 
 /* The engine period the shared stream was opened at by the
@@ -1588,6 +1684,43 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          w->client     = ex
                ? wasapi_init_client_ex(w->device, &float_format, &rate, latency, chs, lay, lo)
                : wasapi_init_client_sh(w->device, &float_format, &rate, latency, chs, lay, lo, &low_latency);
+         /* A wider layout refused as PCM in exclusive mode is tried
+          * as AC-3 over IEC 61937 before stereo: a TV or receiver that
+          * advertises stereo PCM only, on HDMI or S/PDIF, usually
+          * decodes Dolby Digital, and the layout survives as a
+          * bit stream. A/52 takes 1.0 to 5.1; a 7.1 request goes as
+          * 5.1, its back pair folded into the surround pair by the
+          * upmix to what the layout hook reports. */
+         if (!w->client && ex && !(pass & 1))
+         {
+            uint32_t enc_layout = layout;
+            unsigned enc_ch;
+            if (enc_layout & 0x030u)   /* BL BR: fold onto SL SR */
+               enc_layout = (enc_layout & ~0x030u) | 0x600u;
+            if (rac3_layout_acmod(enc_layout) < 0)
+               enc_layout = (enc_layout & 0x008u) ? 0x60Fu : 0x607u;
+            enc_ch = audio_layout_channels(enc_layout);
+            w->client = wasapi_init_client_ac3(w->device, &rate, latency, enc_ch,
+                  enc_ch >= 5 ? 640 : enc_ch >= 3 ? 448 : 256);
+            if (w->client)
+            {
+               w->ac3 = rac3_encoder_new(rate, enc_layout, enc_ch >= 5 ? 640 : enc_ch >= 3 ? 448 : 256);
+               w->ac3_in = (float*)calloc((size_t)1536 * enc_ch, sizeof(float));
+               if (!w->ac3 || !w->ac3_in)
+               {
+                  RELEASE(w->client);
+                  w->client = NULL;
+               }
+               else
+               {
+                  w->layout       = enc_layout;
+                  w->ac3_frame_size = enc_ch * sizeof(float);
+                  float_format    = false;   /* the carrier: 16-bit stereo */
+                  RARCH_LOG("[WASAPI] Layout 0x%03x goes to the device as AC-3 over IEC 61937 (the device takes stereo PCM only).\n",
+                        w->layout);
+               }
+            }
+         }
          if (w->client)
          {
             exclusive_mode = ex;
@@ -1630,6 +1763,10 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    w->float_format           = float_format;
    w->frame_size             = (unsigned char)(audio_layout_channels(w->layout)
          * (float_format ? sizeof(float) : sizeof(int16_t)));
+   /* AC-3: the device's frame is the carrier's, 2 channels of 16 bits,
+    * whatever layout the encoder takes */
+   if (w->ac3)
+      w->frame_size          = 4;
    w->engine_buffer_size     = frame_count * w->frame_size;
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
@@ -1643,6 +1780,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       size_t fifo_bytes = ((size_t)rate * latency / 1000) * w->frame_size;
       if (fifo_bytes < (size_t)w->engine_buffer_size * 2)
          fifo_bytes     = (size_t)w->engine_buffer_size * 2;
+      /* AC-3 arrives a whole burst - 32 ms - at a time, encoded on the
+       * writer's thread when its 1536 frames are in: the fifo holds
+       * four, so a burst's encode and the writer's own pace never find
+       * it empty, and rate control sees the fill in steps of a burst
+       * against a span of four. A TV or receiver decoding the stream
+       * adds its own latency to this in any case. */
+      if (w->ac3 && fifo_bytes < (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1)
+         fifo_bytes     = (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1;
       if (!(w->buffer = fifo_new(fifo_bytes)))
          goto error;
       RARCH_LOG("[WASAPI] Exclusive: %u ms setting as a %u-frame fifo (%u ms, rate control holds it about half full) in front of a %u-frame device period (%.1f ms); about %u ms from write to the device.\n",
@@ -1856,6 +2001,10 @@ error:
       CloseHandle(w->write_event);
    if (w->buffer)
       fifo_free(w->buffer);
+   if (w->ac3)
+      rac3_encoder_free(w->ac3);
+   if (w->ac3_in)
+      free(w->ac3_in);
 #ifdef HAVE_THREADS
    if (w->room_cond)
       scond_free(w->room_cond);
@@ -1997,14 +2146,56 @@ static bool wasapi_push_sh(wasapi_t *w)
    return true;
 }
 
+static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len);
+
+/* AC-3: float frames of the layout in, bursts to the fifo. Frames are
+ * collected until a syncframe's worth, encoded, wrapped, and the
+ * burst written to the fifo through the raw path, which blocks or
+ * not as the mode says; a burst that does not fit in non-blocking
+ * mode is the frames that are dropped. Returns the input bytes
+ * taken, which is all of them unless a burst was dropped. */
+static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
+{
+   const uint8_t *src = (const uint8_t*)data;
+   size_t frames      = len / w->ac3_frame_size, done = 0;
+   while (done < frames)
+   {
+      size_t take = 1536 - w->ac3_in_frames;
+      if (take > frames - done)
+         take = frames - done;
+      memcpy((uint8_t*)w->ac3_in + (size_t)w->ac3_in_frames * w->ac3_frame_size,
+            src + done * w->ac3_frame_size, take * w->ac3_frame_size);
+      w->ac3_in_frames += (unsigned)take;
+      done             += take;
+      if (w->ac3_in_frames == 1536)
+      {
+         size_t n = rac3_encode_frame(w->ac3, w->ac3_in, w->ac3_frame, sizeof(w->ac3_frame));
+         size_t b = n ? iec61937_wrap_ac3(w->ac3_frame, n, 0, w->ac3_burst, sizeof(w->ac3_burst)) : 0;
+         ssize_t written = b ? wasapi_write_raw(w, w->ac3_burst, b) : -1;
+         w->ac3_in_frames = 0;
+         if (written < 0)
+            return -1;
+         if ((size_t)written < b)
+            return (ssize_t)(done * w->ac3_frame_size);
+      }
+   }
+   return (ssize_t)(done * w->ac3_frame_size);
+}
+
 static ssize_t wasapi_write(void *wh, const void *data, size_t len)
 {
-   size_t _len = 0;
    wasapi_t *w = (wasapi_t*)wh;
-   uint8_t flg = w->flags;
-
-   if (!(flg & WASAPI_FLG_RUNNING))
+   if (!(w->flags & WASAPI_FLG_RUNNING))
       return -1;
+   if (w->ac3)
+      return wasapi_write_ac3(w, data, len);
+   return wasapi_write_raw(w, data, len);
+}
+
+static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
+{
+   size_t _len = 0;
+   uint8_t flg = w->flags;
 
 #ifdef HAVE_THREADS
    {
@@ -2187,6 +2378,10 @@ static void wasapi_free(void *wh)
 
    if (w->buffer)
       fifo_free(w->buffer);
+   if (w->ac3)
+      rac3_encoder_free(w->ac3);
+   if (w->ac3_in)
+      free(w->ac3_in);
 #ifdef HAVE_THREADS
    if (w->room_cond)
       scond_free(w->room_cond);
@@ -2205,7 +2400,8 @@ static void wasapi_free(void *wh)
 static bool wasapi_use_float(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-   return w->float_format;
+   /* The encoder takes float whatever the carrier is */
+   return w->float_format || w->ac3;
 }
 
 static uint32_t wasapi_layout(void *wh)
@@ -2242,6 +2438,15 @@ static size_t wasapi_write_avail(void *wh)
 #else
       room = FIFO_WRITE_AVAIL(w->buffer);
 #endif
+      if (w->ac3)
+      {
+         /* In the frontend's frames: the fifo's room in carrier frames
+          * (a burst is 1536 of them for 1536 layout frames), less what
+          * the encoder holds, which the next burst will need room for. */
+         size_t frames = room / w->frame_size;
+         frames = frames > w->ac3_in_frames ? frames - w->ac3_in_frames : 0;
+         return frames * w->ac3_frame_size;
+      }
       return room;
    }
 #ifdef HAVE_THREADS
@@ -2281,7 +2486,11 @@ static size_t wasapi_buffer_size(void *wh)
     * shared mode let avail exceed the "buffer size", pushing the rate
     * controller's direction term past its intended +-1 range. */
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
+   {
+      if (w->ac3)
+         return (w->buffer->size - 1) / w->frame_size * w->ac3_frame_size;
       return w->buffer->size - 1;
+   }
    /* The fifo's capacity is one less than its slot count. */
    return (w->buffer->size - 1) + w->engine_buffer_size;
 }

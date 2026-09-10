@@ -53,5 +53,7 @@ void RARCH_DBG(const char *fmt, ...)
  * nothing here reads it. */
 void audio_driver_set_device_latency(size_t frames) { (void)frames; }
 
-/* The layout the driver under test asks the frontend for: stereo. */
-uint32_t audio_driver_requested_layout(void) { return 0x3u; }
+/* The layout the driver under test asks the frontend for: stereo
+ * unless a case sets otherwise. */
+uint32_t stub_requested_layout = 0x3u;
+uint32_t audio_driver_requested_layout(void) { return stub_requested_layout; }

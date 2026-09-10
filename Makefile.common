@@ -929,6 +929,14 @@ endif
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
    OBJ += audio/drivers/wasapi.o
+   # AC-3 over IEC 61937 for an exclusive-mode device that decodes
+   # Dolby Digital but takes no more than stereo PCM: the frame
+   # layer, the encoder and the burst framing, with the decoder its
+   # tables and oracle share.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.o \
+          $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.o \
+          $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_encode.o \
+          $(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.o
    DEFINES += -DHAVE_WASAPI
    LIBS += -lole32 -lksuser
 endif

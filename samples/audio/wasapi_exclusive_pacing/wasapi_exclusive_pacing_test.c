@@ -16,6 +16,9 @@
 #include <time.h>
 #include <stdlib.h>
 
+#include <math.h>
+#include <formats/rac3.h>
+#include <formats/iec61937.h>
 #include "fake_wasapi.h"
 #include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
@@ -146,6 +149,154 @@ static void report(const char *name, const scenario_t *sc, const result_t *r)
          r->dev.periods ? 100.0 * r->dev.periods_unanswered / r->dev.periods : 0.0);
 }
 
+extern uint32_t stub_requested_layout;
+
+/* A 5.1 request against a device that takes stereo PCM only but
+ * decodes Dolby Digital - a TV on HDMI, which is what the reporter's
+ * LG turned out to be: the driver must open the endpoint as AC-3
+ * over IEC 61937, report the 5.1 layout and take float, feed the
+ * device every period, and what the device receives must be bursts
+ * of AC-3 that decode back to what was written. */
+static void ac3_bitstream_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned new_rate    = 0;
+   void *ctx;
+   const unsigned frames_per_write = 800, writes = 90;   /* 1.5 s */
+   float *buf;
+   unsigned i, ch;
+   const uint8_t *cap = NULL;
+   size_t cap_len, at = 0, decoded = 0;
+   float *out;
+   rac3_decoder_t *dec;
+   fake_device_stats_t st;
+   size_t frame_bytes;
+
+   printf("AC-3 over IEC 61937 to a stereo-PCM-only device\n");
+   fake_device_configure_engine(0, 0);
+   fake_device_configure_channels(2, true);
+   stub_requested_layout = 0x60Fu;   /* 5.1, surrounds at the sides */
+   settings->bools.audio_wasapi_exclusive_mode   = true;
+   settings->uints.audio_wasapi_sh_buffer_length = 0;
+   settings->uints.audio_output_sample_rate      = 48000;
+
+   ctx = audio_wasapi.init(NULL, 48000, 64, 0, &new_rate);
+   CHECK(ctx != NULL, "init failed");
+   if (!ctx)
+      goto done;
+   CHECK(new_rate == 48000, "rate %u", new_rate);
+   CHECK(audio_wasapi.layout && audio_wasapi.layout(ctx) == 0x60Fu, "layout reported 0x%03x, expected 0x60F",
+         audio_wasapi.layout ? audio_wasapi.layout(ctx) : 0);
+   CHECK(audio_wasapi.use_float(ctx), "the encoder takes float; use_float says otherwise");
+   frame_bytes = 6 * sizeof(float);
+   CHECK(audio_wasapi.buffer_size(ctx) % frame_bytes == 0 && audio_wasapi.buffer_size(ctx) / frame_bytes >= 1536 * 4,
+         "buffer_size %u bytes is not whole 5.1 float frames of at least four bursts", (unsigned)audio_wasapi.buffer_size(ctx));
+   CHECK(audio_wasapi.write_avail(ctx) % frame_bytes == 0, "write_avail %u is not whole frames", (unsigned)audio_wasapi.write_avail(ctx));
+
+   buf = (float*)calloc(frames_per_write * 6, sizeof(float));
+   audio_wasapi.set_nonblock_state(ctx, false);   /* audio sync on: blocking writes */
+   fake_device_capture(true);
+   audio_wasapi.start(ctx, false);
+   for (i = 0; i < writes; i++)
+   {
+      unsigned f;
+      for (f = 0; f < frames_per_write; f++)
+         for (ch = 0; ch < 6; ch++)
+         {
+            double n = (double)(i * frames_per_write + f);
+            double hz = ch == 3 ? 50.0 : 220.0 * (ch + 1);
+            buf[f * 6 + ch] = 0.4f * (float)sin(2.0 * 3.14159265358979 * hz * n / 48000.0);
+         }
+      {
+         ssize_t n;
+         if (getenv("AC3_TRACE"))
+            printf("      write %2u: avail %5u frames before\n", i, (unsigned)(audio_wasapi.write_avail(ctx) / frame_bytes));
+         n = audio_wasapi.write(ctx, buf, frames_per_write * frame_bytes);
+         CHECK(n == (ssize_t)(frames_per_write * frame_bytes), "write %u took %d of %u bytes", i, (int)n, (unsigned)(frames_per_write * frame_bytes));
+      }
+   }
+   /* let the pump drain the last bursts */
+   {
+      struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); sleep_until(&t, 150000000L);
+   }
+   audio_wasapi.stop(ctx);
+   fake_device_stats(&st);
+   fake_device_capture(false);
+   cap_len = fake_device_captured(&cap);
+   printf("   device took %u periods of 2-channel 16-bit at 48 kHz, %u unanswered; %u bytes captured\n",
+         st.periods, st.periods_unanswered, (unsigned)cap_len);
+   CHECK(st.share_mode == 1, "not exclusive");
+   CHECK(st.periods && st.periods_unanswered * 100 < st.periods, "%u of %u periods unanswered", st.periods_unanswered, st.periods);
+
+   /* the capture: bursts of AC-3, each 6144 bytes, decoding to the tones */
+   dec = rac3_decoder_new();
+   out = (float*)calloc((size_t)writes * frames_per_write * 6 + 1536 * 6, sizeof(float));
+   {
+      unsigned bursts = 0, type; size_t payload;
+      uint8_t frame[RAC3_MAX_FRAME_BYTES];
+      /* The pump fills silence until the first burst is encoded -
+       * 1536 frames after the first write - so the bursts begin a
+       * whole number of periods in, and from there they abut. */
+      while (at + 8 <= cap_len && !(iec61937_probe(cap + at, cap_len - at, &type, &payload) && type == IEC61937_AC3))
+         at += st.period_frames * 4;
+      CHECK(at + 8 <= cap_len, "no AC-3 burst begins on a period boundary in %u captured bytes", (unsigned)cap_len);
+      CHECK(at <= (size_t)st.period_frames * 4 * 3, "the first burst begins %u frames in", (unsigned)(at / 4));
+      while (at + IEC61937_AC3_BURST_BYTES <= cap_len)
+      {
+         size_t k;
+         rac3_frame_info_t info;
+         if (!iec61937_probe(cap + at, cap_len - at, &type, &payload) || type != IEC61937_AC3 || payload > sizeof(frame))
+         {
+            /* trailing silence the pump filled after the writes */
+            break;
+         }
+         for (k = 0; k + 1 < payload; k += 2) { frame[k] = cap[at + 8 + k + 1]; frame[k + 1] = cap[at + 8 + k]; }
+         if (k < payload) frame[k] = cap[at + 8 + k + 1];
+         k = rac3_decode_frame(dec, frame, payload, out + decoded * 6, &info);
+         CHECK(k == 1536, "burst %u: the frame did not decode", bursts);
+         if (!k) break;
+         CHECK(info.layout == 0x60Fu, "burst %u: layout 0x%03x", bursts, info.layout);
+         decoded += k;
+         bursts++;
+         at += IEC61937_AC3_BURST_BYTES;
+      }
+      printf("   %u bursts decoded, %u frames\n", bursts, (unsigned)decoded);
+      if (getenv("AC3_TRACE"))
+      {
+         size_t o; unsigned p = 0;
+         for (o = 0; o + 8 <= cap_len; o += st.period_frames * 4, p++)
+         {
+            unsigned t; size_t pl; bool zero = true; size_t z;
+            for (z = 0; z < st.period_frames * 4 && zero; z++) zero = cap[o + z] == 0;
+            printf("      period %3u: %s\n", p, iec61937_probe(cap + o, cap_len - o, &t, &pl) ? "burst" : zero ? "zero" : "payload/other");
+         }
+      }
+      CHECK(bursts >= writes * frames_per_write / 1536 - 1, "only %u bursts for %u frames written", bursts, writes * frames_per_write);
+   }
+   /* against what was written, 256 frames later (the codec's delay) */
+   for (ch = 0; ch < 6; ch++)
+   {
+      double aa = 0, err = 0, s; size_t f;
+      double hz = ch == 3 ? 50.0 : 220.0 * (ch + 1);
+      for (f = 256; f < decoded; f++)
+      {
+         double x = 0.4 * sin(2.0 * 3.14159265358979 * hz * (double)(f - 256) / 48000.0);
+         double y = out[f * 6 + ch];
+         aa += x * x; err += (x - y) * (x - y);
+      }
+      s = err > 0 ? 10.0 * log10(aa / err) : 200.0;
+      printf("   ch%u: %.1f dB against what was written\n", ch, s);
+      CHECK(s > 30.0, "ch%u decodes at %.1f dB", ch, s);
+   }
+   rac3_decoder_free(dec);
+   free(out);
+   free(buf);
+   audio_wasapi.free(ctx);
+done:
+   stub_requested_layout = 0x3u;
+   fake_device_configure_channels(0, false);
+}
+
 int main(int argc, char **argv)
 {
    /* A device like the reporter's Topping: 3 ms minimum period, 10 ms
@@ -258,6 +409,8 @@ int main(int argc, char **argv)
       CHECK(unanswered_pct < 1.0, "scenario %u: %.2f%% of periods unanswered", i, unanswered_pct);
       CHECK(dropped_pct < 1.0, "scenario %u: %.2f%% dropped", i, dropped_pct);
    }
+
+   ac3_bitstream_case();
 
    /* Every init took COM up on its thread and every free put it back. */
    CHECK(fake_com_refs() == 0, "COM references left after free: %d", fake_com_refs());

@@ -1023,6 +1023,10 @@ AUDIO
 #endif
 
 #ifdef HAVE_WASAPI
+#include "../libretro-common/formats/ac3/rac3_frame.c"
+#include "../libretro-common/formats/ac3/rac3_decode.c"
+#include "../libretro-common/formats/ac3/rac3_encode.c"
+#include "../libretro-common/formats/iec61937/iec61937.c"
 #include "../audio/drivers/wasapi.c"
 #endif
 

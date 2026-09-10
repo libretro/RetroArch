@@ -58,6 +58,16 @@ typedef struct {
    union { WORD wValidBitsPerSample, wSamplesPerBlock, wReserved; } Samples;
    DWORD dwChannelMask; GUID SubFormat;
 } WAVEFORMATEXTENSIBLE;
+/* As mmdevice_common_inline.h defines them, for the driver's AC-3 path. */
+typedef struct
+{
+   WAVEFORMATEXTENSIBLE FormatExt;
+   DWORD dwEncodedSamplesPerSec;
+   DWORD dwEncodedChannelCount;
+   DWORD dwAverageBytesPerSec;
+} mmdevice_iec61937_format_t;
+static const GUID mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL =
+   { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 
 /* --- AUDCLNT --------------------------------------------------------- */
 typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } AUDCLNT_SHAREMODE;
@@ -194,6 +204,12 @@ void fake_device_configure(unsigned rate, REFERENCE_TIME min_period_hns,
  * holds the engine there and any other period is refused with
  * AUDCLNT_E_ENGINE_PERIODICITY_LOCKED. */
 void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames);
+/* The pin's PCM channel limit (0: any) and whether it takes AC-3 over
+ * IEC 61937 in exclusive mode - a TV on HDMI: 2 and true. */
+void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3);
+/* Keep every byte released to the device from now on; what was kept. */
+void   fake_device_capture(bool on);
+size_t fake_device_captured(const uint8_t **buf);
 void fake_device_stats(fake_device_stats_t *out);
 /* Outstanding mmdevice_com_init() references; zero once every driver
  * instance opened in the test has been freed. */

@@ -119,6 +119,24 @@ DEFINE_GUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, 0x00000003, 0x0000, 0x0010, 0x80, 0
 DEFINE_GUID(KSDATAFORMAT_SUBTYPE_PCM, 0x00000001, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 #endif
 
+/* IEC 61937 over WASAPI: a compressed stream is an exclusive-mode
+ * WAVEFORMATEXTENSIBLE whose subtype names the codec, extended with
+ * the encoded rate, channel count and byte rate; the carrier is
+ * 2-channel 16-bit PCM. Neither MinGW's headers nor MSVC's give an
+ * instance of the subtype GUID to link, and MinGW lacks the struct,
+ * so both are here under our own names. The Dolby Digital subtype is
+ * KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_DIGITAL, 00000092-0000-0010-
+ * 8000-00aa00389b71. */
+typedef struct
+{
+   WAVEFORMATEXTENSIBLE FormatExt;
+   DWORD dwEncodedSamplesPerSec;
+   DWORD dwEncodedChannelCount;
+   DWORD dwAverageBytesPerSec;
+} mmdevice_iec61937_format_t;
+static const GUID mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL =
+   { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
+
 DEFINE_PROPERTYKEY(PKEY_Device_FriendlyName, 0xa45c254e, 0xdf1c, 0x4efd, 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0, 14); /* DEVPROP_TYPE_STRING */
 
 /* IAudioClient3 (Windows 10 1607+): shared-mode streams at an engine

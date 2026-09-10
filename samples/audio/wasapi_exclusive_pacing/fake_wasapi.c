@@ -82,7 +82,53 @@ static struct
    REFERENCE_TIME min_period, default_period;
    bool accept_float;
    unsigned engine_min_frames, locked_period_frames;
-} g_cfg = { 48000, 30000, 100000, false, 0, 0 };
+   unsigned max_channels;      /* PCM channels the pin takes; 0 = any */
+   bool accept_iec61937_ac3;   /* the Dolby Digital subtype, exclusive */
+} g_cfg = { 48000, 30000, 100000, false, 0, 0, 0, false };
+
+/* Everything released to the device while capturing, for a harness
+ * that wants to look at the bytes and not just count them. */
+static uint8_t *g_cap      = NULL;
+static size_t   g_cap_len  = 0, g_cap_cap = 0;
+static bool     g_capture  = false;
+
+void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3)
+{
+   g_cfg.max_channels       = max_channels;
+   g_cfg.accept_iec61937_ac3 = accept_iec61937_ac3;
+}
+
+void fake_device_capture(bool on)
+{
+   g_capture = on;
+   if (on)
+      g_cap_len = 0;
+}
+
+size_t fake_device_captured(const uint8_t **buf)
+{
+   *buf = g_cap;
+   return g_cap_len;
+}
+
+static const GUID g_dolby_digital = { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
+
+/* The pin's answer to a format, exclusive: the PCM channel gate and
+ * the compressed subtypes it decodes. */
+static HRESULT format_answer(const WAVEFORMATEX *fmt)
+{
+   if (fmt->wFormatTag == 0xFFFE && fmt->cbSize >= 22)
+   {
+      const WAVEFORMATEXTENSIBLE *x = (const WAVEFORMATEXTENSIBLE*)fmt;
+      if (memcmp(&x->SubFormat, &g_dolby_digital, sizeof(GUID)) == 0)
+         return g_cfg.accept_iec61937_ac3 ? S_OK : AUDCLNT_E_UNSUPPORTED_FORMAT;
+   }
+   if (g_cfg.max_channels && fmt->nChannels > g_cfg.max_channels)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
+   if (fmt->wFormatTag != WAVE_FORMAT_PCM && !g_cfg.accept_float)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
+   return S_OK;
+}
 
 void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames)
 {
@@ -197,7 +243,7 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
       if (!(flags & AUDCLNT_STREAMFLAGS_EVENTCALLBACK)) return E_FAIL;
       if (dur != per) return AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL;
       if (per < g_cfg.min_period) return AUDCLNT_E_INVALID_DEVICE_PERIOD;
-      if (fmt->wFormatTag != WAVE_FORMAT_PCM && !g_cfg.accept_float) return AUDCLNT_E_UNSUPPORTED_FORMAT;
+      if (format_answer(fmt) != S_OK) return AUDCLNT_E_UNSUPPORTED_FORMAT;
       c->period_hns    = per;
       c->period_frames = (unsigned)((per * g_cfg.rate + 5000000) / 10000000);
       c->buffer_frames = c->period_frames;
@@ -238,7 +284,9 @@ static HRESULT c_isformatsupported(IAudioClient *t, AUDCLNT_SHAREMODE mode, cons
    (void)t;
    if (closest) *closest = NULL;
    if (mode == AUDCLNT_SHAREMODE_EXCLUSIVE)
-      return (fmt->wFormatTag == WAVE_FORMAT_PCM || g_cfg.accept_float) ? S_OK : AUDCLNT_E_UNSUPPORTED_FORMAT;
+      return format_answer(fmt);
+   if (g_cfg.max_channels && fmt->nChannels > g_cfg.max_channels)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
    return S_OK; /* shared: the engine mixes anything */
 }
 static HRESULT c_getmixformat(IAudioClient *t, WAVEFORMATEX **f) { (void)t; *f = NULL; return E_FAIL; }
@@ -349,6 +397,17 @@ static HRESULT r_releasebuffer(IAudioRenderClient *t, UINT32 n, DWORD flags)
    (void)flags;
    pthread_mutex_lock(&c->m);
    c->stats.buffers_released++;
+   if (g_capture && n)
+   {
+      size_t bytes = (size_t)n * c->frame_bytes;
+      if (g_cap_len + bytes > g_cap_cap)
+      {
+         g_cap_cap = (g_cap_len + bytes) * 2;
+         g_cap     = (uint8_t*)realloc(g_cap, g_cap_cap);
+      }
+      memcpy(g_cap + g_cap_len, c->buffer, bytes);
+      g_cap_len += bytes;
+   }
    if (c->mode == AUDCLNT_SHAREMODE_EXCLUSIVE) c->released = true;
    else c->padding += n;
    pthread_mutex_unlock(&c->m);
