@@ -363,6 +363,16 @@ static void wasapi_log_endpoint_formats(IAudioClient *client, AUDCLNT_SHAREMODE 
             mix->Format.wBitsPerSample,
             mix->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE ? mix->Samples.wValidBitsPerSample : mix->Format.wBitsPerSample,
             (unsigned)mix->Format.nSamplesPerSec);
+      /* The mix format is the endpoint's speaker setup as Windows has
+       * it, and exclusive mode opens nothing wider than that setup:
+       * a stereo mix format means the endpoint is configured stereo,
+       * and no six-channel format will be taken until it is set to
+       * 5.1 or 7.1 in Windows' sound settings - which an HDMI
+       * television often does not offer, taking multichannel only as
+       * a bitstream, not PCM. */
+      if (mix->Format.nChannels <= 2)
+         RARCH_WARN("[WASAPI] The endpoint is configured as %u-channel in Windows; a wider layout needs its speaker setup set to 5.1 or 7.1 in the sound settings, and an HDMI display may not offer that for PCM.\n",
+               mix->Format.nChannels);
       CoTaskMemFree(mix);
    }
    for (i = 0; i < ARRAY_SIZE(lays); i++)
