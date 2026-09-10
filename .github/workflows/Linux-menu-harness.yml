@@ -124,6 +124,17 @@ jobs:
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
 
+      - name: Hot function budget
+        shell: bash
+        run: |
+          set -eu
+          # Code size and stack frame of the functions that run every
+          # frame, against a checked-in reference: a change that doubles
+          # either passes every lane in the suite and shows up only as a
+          # slower frame on someone's machine. Uses the release objects
+          # this job already built.
+          .github/workflows/scripts/hot-function-budget.sh
+
       - name: Build and run threaded_video_test
         shell: bash
         run: |

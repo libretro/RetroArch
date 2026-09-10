@@ -1,0 +1,5 @@
+# function                  size  stack-frame   (release build, x86-64 GCC)
+runloop_iterate             3933  88
+video_driver_frame          9225  4008
+video_thread_frame          1894  88
+audio_driver_sample_batch    378  24
