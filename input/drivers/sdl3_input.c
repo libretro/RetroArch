@@ -622,7 +622,8 @@ static void sdl3_manage_text_input(void)
       return;
 
 #ifdef HAVE_MENU
-   want = menu_input_dialog_get_display_kb();
+   want = menu_input_dialog_get_display_kb()
+       && config_get_ptr()->bools.input_sdl3_system_keyboard;
 #endif
 
    if (want == SDL_TextInputActive(win))

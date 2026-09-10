@@ -8971,6 +8971,13 @@ unsigned menu_displaylist_build_list(
                 count++;
 #endif
 
+#ifdef HAVE_SDL3
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+                PARSE_ONLY_BOOL, true) == 0)
+                count++;
+#endif
+
 #ifdef HAVE_LIBNX
          {
             unsigned user;

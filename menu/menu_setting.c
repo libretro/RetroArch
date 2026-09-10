@@ -15098,6 +15098,22 @@ static void settings_build_input(
                   general_read_handler,
                   SD_FLAG_NONE);
 #endif
+#ifdef HAVE_SDL3
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_sdl3_system_keyboard,
+                  MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
 
             ADD_DESC(inp_desc_10);
 

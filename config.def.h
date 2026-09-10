@@ -1782,6 +1782,11 @@
  * all times. */
 #define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD false
 
+/* Use the system screen keyboard for menu text entry on SDL3
+ * platforms that provide one. Off by default so gamepad-only
+ * devices such as TVs keep the navigable on-screen keyboard. */
+#define DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD false
+
 /* Automatically enable game focus when running or
  * resuming content */
 #define DEFAULT_INPUT_AUTO_GAME_FOCUS AUTO_GAME_FOCUS_OFF
