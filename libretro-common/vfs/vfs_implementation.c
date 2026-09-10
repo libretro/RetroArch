@@ -71,6 +71,7 @@
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
 #  include <psp2/io/stat.h>
+#  include <psp2/rtc.h>
 #elif !defined(_WIN32)
 #  if defined(PSP)
 #    include <pspiofilemgr.h>
@@ -205,6 +206,60 @@
 #include <encodings/utf.h>
 #include <compat/fopen_utf8.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
+
+/* VFS API v5 metadata operations (read-only state, modification time)
+ * are implemented on the platforms whose libc exposes chmod()/utimes()
+ * with a permission model behind them, and on Win32 via attributes.
+ * Everywhere else they report failure rather than pretend. */
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+      || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) \
+      || defined(__HAIKU__) || defined(__QNX__) || defined(ANDROID) \
+      || defined(__sun__)
+#define VFS_HAVE_POSIX_METADATA 1
+#include <sys/time.h>
+#endif
+#if defined(__APPLE__)
+#include <copyfile.h>
+#endif
+/* copy_file_range() through syscall(): the glibc wrapper is only
+ * declared under _GNU_SOURCE, which standalone consumers of this file
+ * need not define, and the raw syscall number has been in the kernel
+ * headers since 4.5.  Define VFS_COPY_NO_FASTPATH to force the
+ * portable loop (used by the samples to test that path on a host
+ * that would otherwise never take it). */
+#if defined(__linux__) && !defined(VFS_COPY_NO_FASTPATH)
+#include <sys/syscall.h>
+#if defined(SYS_copy_file_range)
+#define VFS_HAVE_COPY_FILE_RANGE 1
+#endif
+#endif
+
+/* Windows FILETIME is 100 ns ticks since 1601-01-01; Unix time is
+ * seconds since 1970-01-01.  Both conversions run in uint64_t so the
+ * epoch offset can never be a signed-overflow UB site. */
+#if defined(_WIN32)
+#define VFS_FILETIME_EPOCH_DIFF   116444736000000000ULL
+#define VFS_FILETIME_TICKS_PER_S  10000000ULL
+static int64_t vfs_filetime_to_unix(const FILETIME *ft)
+{
+   uint64_t t = ((uint64_t)ft->dwHighDateTime << 32) | (uint64_t)ft->dwLowDateTime;
+   if (t < VFS_FILETIME_EPOCH_DIFF)
+      return -(int64_t)((VFS_FILETIME_EPOCH_DIFF - t) / VFS_FILETIME_TICKS_PER_S);
+   return (int64_t)((t - VFS_FILETIME_EPOCH_DIFF) / VFS_FILETIME_TICKS_PER_S);
+}
+
+static void vfs_unix_to_filetime(int64_t unix_s, FILETIME *ft)
+{
+   uint64_t t;
+   if (unix_s < 0)
+      t = VFS_FILETIME_EPOCH_DIFF - (uint64_t)(-unix_s) * VFS_FILETIME_TICKS_PER_S;
+   else
+      t = VFS_FILETIME_EPOCH_DIFF + (uint64_t)unix_s * VFS_FILETIME_TICKS_PER_S;
+   ft->dwLowDateTime  = (DWORD)(t & 0xffffffffULL);
+   ft->dwHighDateTime = (DWORD)(t >> 32);
+}
+#endif
 
 #ifdef HAVE_CDROM
 #include <vfs/vfs_implementation_cdrom.h>
@@ -2217,7 +2272,12 @@ static int vfs_stat_win32_wide(const char *path,
 #endif
 #endif
 
-int retro_vfs_stat_64_impl(const char *path, int64_t *size)
+/* One platform ladder serves stat, stat_64, get_mtime and the POSIX
+ * fallback of dirent_stat.  @mtime is filled (seconds since the Unix
+ * epoch) where the platform reports one; the SMB and SAF backends do
+ * not carry it through their stat helpers yet, so it is left untouched
+ * there and callers treat -1 from get_mtime as "unavailable". */
+static int retro_vfs_stat_full(const char *path, int64_t *size, int64_t *mtime)
 {
    int ret                   = RETRO_VFS_STAT_IS_VALID;
 
@@ -2258,9 +2318,17 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
       if (size)
          *size                  = (int64_t)stat_buf.st_size;
+      if (mtime)
+      {
+         time_t t = 0;
+         sceRtcGetTime_t(&stat_buf.st_mtime, &t);
+         *mtime                 = (int64_t)t;
+      }
 
       if (FIO_S_ISDIR(stat_buf.st_mode))
          ret              |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (!(stat_buf.st_mode & FIO_S_IWUSR))
+         ret              |= RETRO_VFS_STAT_IS_READONLY;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
       /* Lowlevel Lv2 */
       sysFSStat stat_buf;
@@ -2270,9 +2338,13 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
       if (size)
          *size = (int64_t)stat_buf.st_size;
+      if (mtime)
+         *mtime = (int64_t)stat_buf.st_mtime;
 
       if ((stat_buf.st_mode & S_IFMT) == S_IFDIR)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (!(stat_buf.st_mode & S_IWUSR))
+         ret  |= RETRO_VFS_STAT_IS_READONLY;
 #elif defined(_WIN32)
       /* Windows
        * Older MSVC _stat may fail on directory paths 
@@ -2318,9 +2390,13 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
       if (size)
          *size = (int64_t)stat_buf.st_size;
+      if (mtime)
+         *mtime = (int64_t)stat_buf.st_mtime;
 
       if (file_info & FILE_ATTRIBUTE_DIRECTORY)
          ret  |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (file_info & FILE_ATTRIBUTE_READONLY)
+         ret  |= RETRO_VFS_STAT_IS_READONLY;
 #elif defined(GEKKO)
       /* On GEKKO platforms, paths cannot have
        * trailing slashes - we must therefore
@@ -2338,11 +2414,15 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
       if (size)
          *size = (int64_t)stat_buf.st_size;
+      if (mtime)
+         *mtime = (int64_t)stat_buf.st_mtime;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
       if (S_ISCHR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
+      if (!(stat_buf.st_mode & S_IWUSR))
+         ret |= RETRO_VFS_STAT_IS_READONLY;
 #else
       /* Every other platform */
 /* _LARGEFILE64_SOURCE is a request for the LFS64 API, not evidence
@@ -2364,14 +2444,44 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
       if (size)
          *size = (int64_t)stat_buf.st_size;
+      if (mtime)
+         *mtime = (int64_t)stat_buf.st_mtime;
 
       if (S_ISDIR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_DIRECTORY;
       if (S_ISCHR(stat_buf.st_mode))
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
+      if (!(stat_buf.st_mode & S_IWUSR))
+         ret |= RETRO_VFS_STAT_IS_READONLY;
 #endif
    }
    return ret;
+}
+
+int retro_vfs_stat_64_impl(const char *path, int64_t *size)
+{
+   return retro_vfs_stat_full(path, size, NULL);
+}
+
+int retro_vfs_get_mtime_impl(const char *path, int64_t *mtime)
+{
+   int64_t t = 0;
+   int flags;
+   bool got_it;
+
+   if (!mtime)
+      return -1;
+
+   /* The SMB/SAF stat helpers leave @mtime untouched; a sentinel that
+    * no real file system reports tells those cases apart from a genuine
+    * timestamp. */
+   t     = INT64_MIN;
+   flags = retro_vfs_stat_full(path, NULL, &t);
+   got_it = (flags != 0) && (t != INT64_MIN);
+   if (!got_it)
+      return -1;
+   *mtime = t;
+   return 0;
 }
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
@@ -2579,6 +2689,413 @@ int retro_vfs_restrict_permissions_impl(const char *path)
 #else
    return chmod(path, S_IRUSR | S_IWUSR) == 0 ? 0 : -1;
 #endif
+}
+
+int retro_vfs_set_readonly_impl(const char *path, int readonly)
+{
+   if (!path || !*path)
+      return -1;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      DWORD attrs;
+      int   ret = -1;
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (win32_needs_local_encoding())
+      {
+#endif
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         char *path_local = utf8_to_local_string_alloc(path);
+         if (!path_local)
+            return -1;
+         attrs = GetFileAttributes(path_local);
+         if (attrs != INVALID_FILE_ATTRIBUTES)
+         {
+            if (readonly)
+               attrs |=  FILE_ATTRIBUTE_READONLY;
+            else
+               attrs &= ~FILE_ATTRIBUTE_READONLY;
+            ret = SetFileAttributes(path_local, attrs) ? 0 : -1;
+         }
+         free(path_local);
+      }
+#endif
+#if defined(LEGACY_WIN32_RUNTIME)
+      }
+      else
+#endif
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+         if (!path_wide)
+            return -1;
+         attrs = GetFileAttributesW(path_wide);
+         if (attrs != INVALID_FILE_ATTRIBUTES)
+         {
+            if (readonly)
+               attrs |=  FILE_ATTRIBUTE_READONLY;
+            else
+               attrs &= ~FILE_ATTRIBUTE_READONLY;
+            ret = SetFileAttributesW(path_wide, attrs) ? 0 : -1;
+         }
+         free(path_wide);
+      }
+#endif
+      return ret;
+   }
+#elif defined(VITA)
+   {
+      SceIoStat st;
+      if (sceIoGetstat(path, &st) < 0)
+         return -1;
+      if (readonly)
+         st.st_mode &= ~(SCE_S_IWUSR | SCE_S_IWGRP | SCE_S_IWOTH);
+      else
+         st.st_mode |=   SCE_S_IWUSR;
+      return sceIoChstat(path, &st, SCE_CST_MODE) < 0 ? -1 : 0;
+   }
+#elif defined(VFS_HAVE_POSIX_METADATA)
+   {
+      struct stat st;
+      mode_t mode;
+      if (stat(path, &st) < 0)
+         return -1;
+      mode = st.st_mode & 07777;
+      if (readonly)
+         mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+      else
+         mode |=   S_IWUSR;
+      return chmod(path, mode) == 0 ? 0 : -1;
+   }
+#else
+   /* No permission model reachable from here. */
+   (void)readonly;
+   return -1;
+#endif
+}
+
+int retro_vfs_set_mtime_impl(const char *path, int64_t mtime)
+{
+   if (!path || !*path)
+      return -1;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      HANDLE   h = INVALID_HANDLE_VALUE;
+      FILETIME ft;
+      BOOL     ok;
+
+      vfs_unix_to_filetime(mtime, &ft);
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (win32_needs_local_encoding())
+      {
+#endif
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         char *path_local = utf8_to_local_string_alloc(path);
+         if (!path_local)
+            return -1;
+         h = CreateFile(path_local, FILE_WRITE_ATTRIBUTES,
+               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+               FILE_FLAG_BACKUP_SEMANTICS, NULL);
+         free(path_local);
+      }
+#endif
+#if defined(LEGACY_WIN32_RUNTIME)
+      }
+      else
+#endif
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+         if (!path_wide)
+            return -1;
+         h = CreateFileW(path_wide, FILE_WRITE_ATTRIBUTES,
+               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+               FILE_FLAG_BACKUP_SEMANTICS, NULL);
+         free(path_wide);
+      }
+#endif
+      if (h == INVALID_HANDLE_VALUE)
+         return -1;
+      /* Creation and access times are left alone. */
+      ok = SetFileTime(h, NULL, NULL, &ft);
+      CloseHandle(h);
+      return ok ? 0 : -1;
+   }
+#elif defined(VITA)
+   {
+      SceIoStat st;
+      time_t t = (time_t)mtime;
+      if (sceIoGetstat(path, &st) < 0)
+         return -1;
+      sceRtcSetTime_t(&st.st_mtime, t);
+      return sceIoChstat(path, &st, SCE_CST_MT) < 0 ? -1 : 0;
+   }
+#elif defined(VFS_HAVE_POSIX_METADATA)
+   {
+      struct stat st;
+      struct timeval tv[2];
+      if (stat(path, &st) < 0)
+         return -1;
+      /* Keep the access time; only the modification time changes. */
+      tv[0].tv_sec  = st.st_atime;
+      tv[0].tv_usec = 0;
+      tv[1].tv_sec  = (time_t)mtime;
+      tv[1].tv_usec = 0;
+      return utimes(path, tv) == 0 ? 0 : -1;
+   }
+#else
+   (void)mtime;
+   return -1;
+#endif
+}
+
+/* Create every missing directory above @dst.  Same walk as
+ * path_mkdir(), kept local so this file does not grow a link-time
+ * dependency on file_path_io.c for standalone consumers.  @dst is
+ * modified in place and restored before returning. */
+static void vfs_copy_mkdir_parents(char *dst)
+{
+   char *p;
+   for (p = dst + 1; *p; p++)
+   {
+      char c = *p;
+      if (c != '/' && c != '\\')
+         continue;
+      *p = '\0';
+      /* -2 (exists) and 0 (created) are both fine; -1 is reported by
+       * the open that follows, which is the error the caller wants. */
+      retro_vfs_mkdir_impl(dst);
+      *p = c;
+   }
+}
+
+/* Portable copy: both ends through the VFS, so either may be SAF,
+ * SMB, CDROM or native.  One large heap buffer; the read hint asks
+ * the backend for read-ahead where it has one. */
+#define VFS_COPY_BUF_LARGE (1024 * 1024)
+#define VFS_COPY_BUF_SMALL (64 * 1024)
+
+static int vfs_copy_loop(const char *src, const char *dst)
+{
+   libretro_vfs_implementation_file *in  = NULL;
+   libretro_vfs_implementation_file *out = NULL;
+   char   *buf                           = NULL;
+   size_t  buf_len                       = VFS_COPY_BUF_LARGE;
+   int     ret                           = -1;
+
+   if (!(buf = (char*)malloc(buf_len)))
+   {
+      buf_len = VFS_COPY_BUF_SMALL;
+      if (!(buf = (char*)malloc(buf_len)))
+         return -1;
+   }
+
+   in = retro_vfs_file_open_impl(src, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+   if (!in)
+      goto end;
+   out = retro_vfs_file_open_impl(dst, RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!out)
+      goto end;
+
+   for (;;)
+   {
+      int64_t n = retro_vfs_file_read_impl(in, buf, buf_len);
+      if (n < 0)
+         goto end;
+      if (n == 0)
+         break;
+      if (retro_vfs_file_write_impl(out, buf, (uint64_t)n) != n)
+         goto end;
+   }
+   ret = 0;
+
+end:
+   if (out && retro_vfs_file_close_impl(out) != 0)
+      ret = -1;
+   if (in)
+      retro_vfs_file_close_impl(in);
+   free(buf);
+   return ret;
+}
+
+#if defined(VFS_HAVE_COPY_FILE_RANGE)
+/* Kernel-side copy: no bytes cross into user space.  Returns 1 on
+ * success, 0 if the kernel cannot do it for this pair and nothing was
+ * written yet (caller falls back), -1 on a real error mid-copy. */
+static int vfs_copy_linux(const char *src, const char *dst, int64_t src_size)
+{
+   int in_fd  = open(src, O_RDONLY | O_CLOEXEC);
+   int out_fd = -1;
+   int64_t left;
+   int ret    = -1;
+   bool started = false;
+
+   if (in_fd < 0)
+      return -1;
+   out_fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+   if (out_fd < 0)
+   {
+      close(in_fd);
+      return -1;
+   }
+   posix_fadvise(in_fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+   /* Reserve the extent up front so the copy lands contiguously.
+    * Failure is harmless (FAT, tmpfs). */
+   if (src_size > 0)
+      posix_fallocate(out_fd, 0, (off_t)src_size);
+
+   for (left = src_size; left > 0; )
+   {
+      ssize_t n = (ssize_t)syscall(SYS_copy_file_range, in_fd, NULL, out_fd, NULL,
+            (size_t)(left > (int64_t)(1 << 30) ? (1 << 30) : left), 0u);
+      if (n < 0)
+      {
+         if (!started && (errno == EXDEV || errno == ENOSYS
+                  || errno == EINVAL || errno == EOPNOTSUPP || errno == EPERM))
+            ret = 0;
+         goto end;
+      }
+      if (n == 0)
+         break; /* src shrank under us: treat what we have as complete */
+      started = true;
+      left   -= n;
+   }
+   ret = 1;
+end:
+   if (close(out_fd) != 0 && ret == 1)
+      ret = -1;
+   close(in_fd);
+   return ret;
+}
+#endif
+
+int retro_vfs_copy_impl(const char *src, const char *dst, unsigned flags)
+{
+   int64_t src_size = 0;
+   int     sflags, dflags;
+   int     ret      = -1;
+   char    dst_buf[PATH_MAX_LENGTH];
+
+   if (!src || !*src || !dst || !*dst)
+      return -1;
+#if defined(_WIN32)
+   if (string_is_equal_case_insensitive(src, dst))
+      return -1;
+#else
+   if (string_is_equal(src, dst))
+      return -1;
+#endif
+
+   sflags = retro_vfs_stat_full(src, &src_size, NULL);
+   if (     !(sflags & RETRO_VFS_STAT_IS_VALID)
+         ||  (sflags & RETRO_VFS_STAT_IS_DIRECTORY)
+         ||  (sflags & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL))
+      return -1;
+
+   dflags = retro_vfs_stat_full(dst, NULL, NULL);
+   if (dflags & RETRO_VFS_STAT_IS_VALID)
+   {
+      if (dflags & RETRO_VFS_STAT_IS_DIRECTORY)
+         return -1;
+      if (!(flags & RETRO_VFS_COPY_OVERWRITE))
+         return -1;
+      /* cp -f semantics: a stale read-only dst must not defeat an
+       * explicit overwrite, and a fresh inode is what every fast path
+       * below wants anyway. */
+      if (retro_vfs_file_remove_impl(dst) != 0)
+         return -1;
+   }
+   else
+   {
+      strlcpy(dst_buf, dst, sizeof(dst_buf));
+      vfs_copy_mkdir_parents(dst_buf);
+   }
+
+   /* Fast paths only when both ends are native.  A backend path on
+    * either side goes straight to the portable loop, which is also
+    * how a copy between two backends works. */
+#if defined(HAVE_SMBCLIENT)
+   if (path_is_smb(src) || path_is_smb(dst))
+      goto portable;
+#endif
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (path_is_saf(src) || path_is_saf(dst))
+      goto portable;
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      BOOL ok = FALSE;
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (win32_needs_local_encoding())
+      {
+#endif
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         char *src_local = utf8_to_local_string_alloc(src);
+         char *dst_local = utf8_to_local_string_alloc(dst);
+         if (src_local && dst_local)
+            ok = CopyFile(src_local, dst_local, TRUE);
+         free(src_local);
+         free(dst_local);
+      }
+#endif
+#if defined(LEGACY_WIN32_RUNTIME)
+      }
+      else
+#endif
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+      {
+         wchar_t *src_wide = utf8_to_utf16_string_alloc(src);
+         wchar_t *dst_wide = utf8_to_utf16_string_alloc(dst);
+         if (src_wide && dst_wide)
+            ok = CopyFileW(src_wide, dst_wide, TRUE);
+         free(src_wide);
+         free(dst_wide);
+      }
+#endif
+      ret = ok ? 0 : -1;
+      goto done;
+   }
+#elif defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)
+   /* fcopyfile-backed; clones on APFS when it can. */
+   ret = copyfile(src, dst, NULL, COPYFILE_DATA) == 0 ? 0 : -1;
+   goto done;
+#elif defined(VFS_HAVE_COPY_FILE_RANGE)
+   {
+      int r = vfs_copy_linux(src, dst, src_size);
+      if (r == 1)
+      {
+         ret = 0;
+         goto done;
+      }
+      if (r < 0)
+      {
+         ret = -1;
+         goto done;
+      }
+      /* r == 0: kernel declined before writing; portable loop. */
+   }
+#endif
+
+#if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF))
+portable:
+#endif
+   ret = vfs_copy_loop(src, dst);
+
+#if (defined(_WIN32) && !defined(_XBOX)) \
+      || (defined(__APPLE__) && !defined(VFS_COPY_NO_FASTPATH)) \
+      || defined(VFS_HAVE_COPY_FILE_RANGE)
+done:
+#endif
+   if (ret != 0)
+      retro_vfs_file_remove_impl(dst);
+   return ret;
 }
 
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
@@ -2921,6 +3438,94 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 #endif
       /* dirent struct doesn't have d_type, do it the slow way ... */
       return retro_vfs_dirent_is_dir_stat(rdir);
+#endif
+   }
+}
+
+/* The join-and-stat fallback: one full-path stat per entry, which is
+ * exactly what a caller without dirent_stat would do itself, so it is
+ * never worse than today.  Split out so the PATH_MAX_LENGTH local
+ * stays off the fast paths' stack.  Only compiled where some branch
+ * of dirent_stat reaches it. */
+#if defined(HAVE_SMBCLIENT) || (defined(ANDROID) && defined(HAVE_SAF)) \
+      || !(defined(_WIN32) || defined(VITA) \
+            || (defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__)))
+static VFS_NOINLINE int retro_vfs_dirent_stat_slow(
+      libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime)
+{
+   char path[PATH_MAX_LENGTH];
+   fill_pathname_join_special(path, rdir->orig_path,
+         retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
+   return retro_vfs_stat_full(path, size, mtime);
+}
+#endif
+
+int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir *rdir,
+      int64_t *size, int64_t *mtime)
+{
+   if (!rdir)
+      return 0;
+#ifdef HAVE_SMBCLIENT
+   if (rdir->smb_handle)
+      return retro_vfs_dirent_stat_slow(rdir, size, mtime);
+#endif
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (rdir->saf_directory != NULL)
+      return retro_vfs_dirent_stat_slow(rdir, size, mtime);
+   else
+#endif
+   {
+#if defined(_WIN32)
+      /* Everything is already in the find data; no I/O at all. */
+      const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
+      int ret = RETRO_VFS_STAT_IS_VALID;
+      if (size)
+         *size = (int64_t)(((uint64_t)entry->nFileSizeHigh << 32)
+               | (uint64_t)entry->nFileSizeLow);
+      if (mtime)
+         *mtime = vfs_filetime_to_unix(&entry->ftLastWriteTime);
+      if (entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+         ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (entry->dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+         ret |= RETRO_VFS_STAT_IS_READONLY;
+      return ret;
+#elif defined(VITA)
+      const SceIoDirent *entry     = (const SceIoDirent*)&rdir->entry;
+      int ret = RETRO_VFS_STAT_IS_VALID;
+      if (size)
+         *size = (int64_t)entry->d_stat.st_size;
+      if (mtime)
+      {
+         time_t t = 0;
+         sceRtcGetTime_t(&entry->d_stat.st_mtime, &t);
+         *mtime = (int64_t)t;
+      }
+      if (SCE_S_ISDIR(entry->d_stat.st_mode))
+         ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (!(entry->d_stat.st_mode & SCE_S_IWUSR))
+         ret |= RETRO_VFS_STAT_IS_READONLY;
+      return ret;
+#elif defined(VFS_HAVE_POSIX_METADATA) && !defined(__QNX__)
+      /* fstatat on the open directory: no path join, no lookup from
+       * the root, one inode read. */
+      const struct dirent *entry = (const struct dirent*)rdir->entry;
+      struct stat st;
+      int ret = RETRO_VFS_STAT_IS_VALID;
+      if (!entry || fstatat(dirfd(rdir->directory), entry->d_name, &st, 0) < 0)
+         return 0;
+      if (size)
+         *size = (int64_t)st.st_size;
+      if (mtime)
+         *mtime = (int64_t)st.st_mtime;
+      if (S_ISDIR(st.st_mode))
+         ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+      if (S_ISCHR(st.st_mode))
+         ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
+      if (!(st.st_mode & S_IWUSR))
+         ret |= RETRO_VFS_STAT_IS_READONLY;
+      return ret;
+#else
+      return retro_vfs_dirent_stat_slow(rdir, size, mtime);
 #endif
    }
 }
