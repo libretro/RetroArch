@@ -39,6 +39,13 @@ int main(void)
    data[size - 1] = 0x34;
    if (data[0] != 0x12 || data[size - 1] != 0x34)
       return 1;
+#ifdef __EMSCRIPTEN__
+   /* mprotect resolves to libc here as well, so memprotect() has to be
+    * checked alongside mmap: it is the other call whose implementation
+    * the header selection decides. */
+   if (memprotect(data, size) != 0)
+      return 1;
+#endif
    if (munmap(data, size) != 0)
       return 1;
 #ifdef __EMSCRIPTEN__
