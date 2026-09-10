@@ -461,6 +461,74 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
 
+  # memmap.h picks between libretro-common's mman shim and the
+  # platform's own <sys/mman.h>, and Emscripten is the target where
+  # that choice is load-bearing: its libc declares mmap with a 64-bit
+  # off_t while the shim declares a 32-bit size_t, so a consumer that
+  # sees both declarations fails to compile, and reserve/commit has no
+  # meaning behind it at all - an anonymous mmap there allocates and
+  # zeroes the whole length, and mprotect and madvise are no-ops.
+  #
+  # None of that is reachable from the native sweep above, which
+  # compiles the sample with every Emscripten branch preprocessed
+  # away.  This lane is where the declarations are held to libc's.
+  emscripten-memmap:
+    name: Emscripten memmap ABI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Pinned rather than floating: the job exists to hold a libc ABI,
+      # so the toolchain it is held against changes deliberately.
+      EM_VERSION: 5.0.1
+      EM_CACHE_FOLDER: emsdk-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache emsdk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.EM_CACHE_FOLDER }}
+          key: ${{ env.EM_VERSION }}-${{ runner.os }}
+
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
+
+      - name: Run the memmap sample under node
+        shell: bash
+        working-directory: libretro-common/samples/memmap/emscripten_mmap
+        run: |
+          set -eu
+          set -o pipefail
+          # Fails to compile without the libc declaration; the mmap
+          # assignment through an off_t-typed function pointer is the
+          # discriminator.  The mprotect / reserve / msync checks that
+          # follow it cover the calls the same header choice hands to
+          # libc.
+          make clean
+          make check-wasm
+
+      - name: Compile vfs_implementation.c with file mappings enabled
+        shell: bash
+        working-directory: libretro-common
+        run: |
+          set -eu
+          set -o pipefail
+          # The in-tree translation unit that includes memmap.h and
+          # <sys/mman.h> together.  Makefile.emscripten does not set
+          # HAVE_MMAP today, so nothing else compiles this shape for
+          # wasm - which is exactly why the two declarations can drift
+          # apart unnoticed until a downstream consumer hits it.
+          emcc -std=c89 -D_GNU_SOURCE -DHAVE_MMAP \
+             -Wall -Wextra -Werror \
+             -I include -c vfs/vfs_implementation.c \
+             -o "$RUNNER_TEMP/vfs_implementation.o"
+
   # Cross-architecture validation lane for retro_atomic_test.
   #
   # The samples job above runs on x86_64, which is a strongly-ordered
