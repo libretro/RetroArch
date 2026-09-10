@@ -1453,8 +1453,14 @@ static void lane_async_texture_load(void)
    for (i = 0; i < ASYNC_N; i++)
       video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
             async_done_cb, (void*)(uintptr_t)i, async_release_cb);
+   /* The video thread reads thr->poke for every queued upload, so the
+    * swap goes under the lock that guards the lists it walks - the
+    * test reaches into the wrapper's own state, and doing so while
+    * its thread runs is a race whoever writes it. */
+   slock_lock(thr->lock);
    thr->driver = async_inner;
    thr->poke   = async_inner_poke;
+   slock_unlock(thr->lock);
    video_st->poke = async_inner_poke;
    set_threaded_via_setting(false);
    run_frames(2);
