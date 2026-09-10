@@ -3437,7 +3437,8 @@ static void *gl3_init(const video_info_t *video,
    glBindVertexArray(gl->vao);
    glBindVertexArray(0);
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return gl;
 
@@ -3711,7 +3712,8 @@ static void gl3_set_nonblock_state(void *data, bool state,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -3762,7 +3764,8 @@ static bool gl3_shader_load_begin(void *data,
          ds->filter,
          &deferred->total_passes);
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    if (!ds->new_chain)
@@ -3813,7 +3816,8 @@ static bool gl3_shader_load_step(void *data,
 
       deferred->current_pass++;
 
-      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+            && !gl3_core_context_is_mains(gl))
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
       return true; /* more work remains */
@@ -3854,7 +3858,8 @@ static bool gl3_shader_load_step(void *data,
    }
 
 cleanup:
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    free(ds);
    deferred->driver_data = NULL;

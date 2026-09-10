@@ -2483,12 +2483,14 @@ static bool gl2_renderchain_read_viewport(
       gl->readback_buffer_screenshot = NULL;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return false;
@@ -3666,7 +3668,8 @@ static void gl2_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -6001,7 +6004,8 @@ static bool gl2_set_shader(void *data,
    return true;
 
 error:
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 #endif
    return false;
@@ -6116,7 +6120,8 @@ static bool gl2_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+      if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+            && !gl2_core_context_is_mains(gl))
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       return false;
    }
@@ -6147,7 +6152,8 @@ static bool gl2_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }

@@ -427,7 +427,11 @@ bool video_thread_hw_bind_core_context(void *data)
       return false;
    if (!ring->core_ctx
          && !thr->poke->hw_ring_context_new(thr->driver_data, &ring->core_ctx))
+   {
+      RARCH_ERR("[Video] Threaded video: the core's GL context could not be "
+            "taken on the main thread; the core will have no context.\n");
       return false;
+   }
    ring->api = HW_API_GL;
    return true;
 }

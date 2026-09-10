@@ -808,10 +808,15 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 
          if (win32_hdc)
          {
-            if (enable)
-               wglMakeCurrent(win32_hdc, win32_hw_hrc);
-            else
-               wglMakeCurrent(win32_hdc, win32_hrc);
+            /* A failed make-current leaves the calling thread with no
+             * context, and every GL call after it - the core's
+             * function lookups first - fails with nothing to say why.
+             * The usual cause is the context being current on another
+             * thread, which the threaded wrapper's ring must never let
+             * happen; if it does, this is the line that says so. */
+            if (!wglMakeCurrent(win32_hdc, enable ? win32_hw_hrc : win32_hrc))
+               RARCH_ERR("[WGL] wglMakeCurrent(%s context) failed: 0x%08lx.\n",
+                     enable ? "core" : "driver", (unsigned long)GetLastError());
          }
 #endif
          break;
