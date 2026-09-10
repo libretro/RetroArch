@@ -77,7 +77,8 @@ enum audio_type_enum
    AUDIO_TYPE_AAC,  /* AAC-LC (raac); demuxed path, an ADTS buffer
                     * (.aac), or a whole MP4/M4A buffer when rmp4 is
                     * built in                                          */
-   AUDIO_TYPE_AC3   /* AC-3 (rac3); a buffer of syncframes (.ac3). Up
+   AUDIO_TYPE_AC3   /* AC-3 or E-AC-3 (rac3); a buffer of syncframes
+                    * (.ac3, .eac3, .ec3). Up
                     * to 5.1, handed over in the WAV shape for its
                     * channel count (the mixer folds by count): a
                     * lone surround becomes a phantom pair, and the

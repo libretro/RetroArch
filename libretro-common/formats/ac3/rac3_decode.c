@@ -129,6 +129,22 @@ struct rac3_decoder
    int      grp4_left, grp4_codes[2];
    uint32_t dither;
    rac3_block_t blk;
+   /* E-AC-3 (Annex E): what the audio frame header fixes for its
+    * blocks, read once and used by every block; zero for AC-3. */
+   struct
+   {
+      bool     on;
+      unsigned nblocks;
+      unsigned strmtyp;
+      unsigned blkswe, dithflage, bamode, frmfgaincode, dbaflde, skipflde;
+      unsigned snroffststr, frmcsnroffst, frmfsnroffst;
+      unsigned cplstre[6], cplinu[6];
+      unsigned cplexpstr[6], chexpstr[6][RAC3_NCH_MAX], lfeexpstr[6];
+      unsigned firstcplcos[RAC3_NCH_MAX], firstcplleak;
+      unsigned cplbndstrc_set;   /* a banding read or defaulted this frame */
+      bool     ahte;
+      unsigned chahtinu[RAC3_NCH_MAX], cplahtinu, lfeahtinu;
+   } e;
    /* scratch, here rather than on the stack: the decoder runs on
     * threads with small stacks on some targets */
    float    cplcoef[256];
@@ -494,7 +510,7 @@ static void read_mantissas(rac3_decoder_t *d, rac3_br_t *b, const uint8_t *bap,
    for (bin = start; bin < end; bin++)
    {
       float m = read_mantissa(d, b, bap[bin], dith);
-      coef[bin] = ldexpf(m, -(int)exps[bin]);
+      coef[bin] = (float)ldexp((double)m, -(int)exps[bin]);
    }
 }
 
@@ -641,7 +657,7 @@ static float dynrng_gain(unsigned dynrng)
    x = (int)(dynrng >> 5);          /* 3-bit signed */
    if (x >= 4) x -= 8;
    y = (float)(32 + (dynrng & 31)) / 64.0f;   /* 0.1YYYYY */
-   return ldexpf(y, x + 1);
+   return (float)ldexp((double)y, x + 1);
 }
 
 /* ---- the frame ----------------------------------------------------- */
@@ -655,9 +671,18 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
    unsigned nfchans = d->nfchans;
    float   *cplcoef = d->cplcoef;
 
-   /* block switch and dither flags */
-   for (ch = 0; ch < nfchans; ch++) k->blksw[ch]    = br_get(b, 1);
-   for (ch = 0; ch < nfchans; ch++) k->dithflag[ch] = br_get(b, 1);
+   const bool eac3 = d->e.on;
+
+   /* block switch and dither flags: E-AC-3 sends them only when the
+    * frame says so, off and on otherwise */
+   if (!eac3 || d->e.blkswe)
+      for (ch = 0; ch < nfchans; ch++) k->blksw[ch]    = br_get(b, 1);
+   else
+      for (ch = 0; ch < nfchans; ch++) k->blksw[ch]    = 0;
+   if (!eac3 || d->e.dithflage)
+      for (ch = 0; ch < nfchans; ch++) k->dithflag[ch] = br_get(b, 1);
+   else
+      for (ch = 0; ch < nfchans; ch++) k->dithflag[ch] = 1;
    /* dynamic range */
    if (br_get(b, 1)) k->dynrng = br_get(b, 8);
    else if (blk == 0) k->dynrng = 0;
@@ -666,13 +691,26 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       if (br_get(b, 1)) k->dynrng2 = br_get(b, 8);
       else if (blk == 0) k->dynrng2 = 0;
    }
-   /* coupling strategy */
-   if (br_get(b, 1))
+   /* E-AC-3 spectral extension: a strategy in block 0 always, else
+    * when its flag says; a stream that uses it is not decoded here */
+   if (eac3)
    {
-      k->cplinu = br_get(b, 1);
+      unsigned spxstre = (blk == 0) ? 1 : br_get(b, 1);
+      if (spxstre && br_get(b, 1))
+         return false;      /* spxinu: spectral extension, not implemented */
+   }
+   /* coupling strategy: the E-AC-3 frame says which blocks carry one */
+   if (eac3 ? d->e.cplstre[blk] : br_get(b, 1))
+   {
+      k->cplinu = eac3 ? d->e.cplinu[blk] : br_get(b, 1);
       if (k->cplinu)
       {
-         for (ch = 0; ch < nfchans; ch++) k->chincpl[ch] = br_get(b, 1);
+         if (eac3 && br_get(b, 1))
+            return false;   /* ecplinu: enhanced coupling, not implemented */
+         if (eac3 && d->acmod == 2)
+            k->chincpl[0] = k->chincpl[1] = 1;
+         else
+            for (ch = 0; ch < nfchans; ch++) k->chincpl[ch] = br_get(b, 1);
          k->phsflginu = (d->acmod == 2) ? br_get(b, 1) : 0;
          k->cplbegf = br_get(b, 4);
          k->cplendf = br_get(b, 4);
@@ -681,27 +719,61 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
          k->ncplsubnd = 3 + k->cplendf - k->cplbegf;
          k->cplbndstrc[0] = 0;
          k->ncplbnd = k->ncplsubnd;
-         for (bnd = 1; bnd < k->ncplsubnd; bnd++)
+         if (!eac3 || br_get(b, 1))   /* cplbndstrce */
+            for (bnd = 1; bnd < k->ncplsubnd; bnd++)
+            {
+               k->cplbndstrc[bnd] = br_get(b, 1);
+               k->ncplbnd -= k->cplbndstrc[bnd];
+            }
+         else
          {
-            k->cplbndstrc[bnd] = br_get(b, 1);
-            k->ncplbnd -= k->cplbndstrc[bnd];
+            /* E-AC-3 Table E2.12: the default banding, by the
+             * sub-band's absolute index, in a frame's first coupled
+             * block; a later block reuses the block before */
+            static const uint8_t defcplbndstrc[18] =
+               { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1 };
+            if (blk == 0 || !d->e.cplbndstrc_set)
+               for (bnd = 1; bnd < k->ncplsubnd; bnd++)
+                  k->cplbndstrc[bnd] = defcplbndstrc[bnd + k->cplbegf];
+            for (bnd = 1; bnd < k->ncplsubnd; bnd++)
+               k->ncplbnd -= k->cplbndstrc[bnd];
          }
+         d->e.cplbndstrc_set = 1;
          k->cplstrtmant = 37 + 12 * k->cplbegf;
          k->cplendmant  = 37 + 12 * (k->cplendf + 3);
       }
       else
-         for (ch = 0; ch < nfchans; ch++) k->chincpl[ch] = 0;
+      {
+         for (ch = 0; ch < nfchans; ch++)
+         {
+            k->chincpl[ch]      = 0;
+            d->e.firstcplcos[ch] = 1;
+         }
+         d->e.firstcplleak = 1;
+         k->phsflginu      = 0;
+      }
    }
-   else if (blk == 0)
+   else if (blk == 0 && !eac3)
       return false;
-   /* coupling coordinates and phase flags */
+   /* coupling coordinates and phase flags: E-AC-3 sends a channel's
+    * first set without a flag */
    if (k->cplinu)
    {
       unsigned cplcoe[RAC3_NCH_MAX] = {0};
       for (ch = 0; ch < nfchans; ch++)
       {
-         if (!k->chincpl[ch]) continue;
-         cplcoe[ch] = br_get(b, 1);
+         if (!k->chincpl[ch])
+         {
+            d->e.firstcplcos[ch] = 1;
+            continue;
+         }
+         if (eac3 && d->e.firstcplcos[ch])
+         {
+            cplcoe[ch]           = 1;
+            d->e.firstcplcos[ch] = 0;
+         }
+         else
+            cplcoe[ch] = br_get(b, 1);
          if (cplcoe[ch])
          {
             unsigned mstrcplco = br_get(b, 2);
@@ -711,7 +783,7 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
             {
                unsigned e = br_get(b, 4), m = br_get(b, 4);
                float t = (e == 15) ? (float)m / 16.0f : (float)(m + 16) / 32.0f;
-               bandco[bnd] = ldexpf(t, -(int)(e + 3 * mstrcplco));
+               bandco[bnd] = (float)ldexp((double)t, -(int)(e + 3 * mstrcplco));
             }
             /* bands to sub-bands by cplbndstrc */
             bnd = 0;
@@ -735,10 +807,10 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
          }
       }
    }
-   /* rematrixing */
+   /* rematrixing: E-AC-3 has the strategy in block 0 without a flag */
    if (d->acmod == 2)
    {
-      if (br_get(b, 1))
+      if ((eac3 && blk == 0) || br_get(b, 1))
       {
          unsigned nremat = 4;
          if (k->cplinu)
@@ -752,10 +824,19 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       else if (blk == 0)
          return false;
    }
-   /* exponent strategy */
-   if (k->cplinu) k->cplexpstr = br_get(b, 2);
-   for (ch = 0; ch < nfchans; ch++) k->chexpstr[ch] = br_get(b, 2);
-   if (d->lfeon) k->lfeexpstr = br_get(b, 1);
+   /* exponent strategy: E-AC-3's are in the frame header */
+   if (eac3)
+   {
+      k->cplexpstr = d->e.cplexpstr[blk];
+      for (ch = 0; ch < nfchans; ch++) k->chexpstr[ch] = d->e.chexpstr[blk][ch];
+      k->lfeexpstr = d->e.lfeexpstr[blk];
+   }
+   else
+   {
+      if (k->cplinu) k->cplexpstr = br_get(b, 2);
+      for (ch = 0; ch < nfchans; ch++) k->chexpstr[ch] = br_get(b, 2);
+      if (d->lfeon) k->lfeexpstr = br_get(b, 1);
+   }
    for (ch = 0; ch < nfchans; ch++)
    {
       if (k->chexpstr[ch] != 0 && !k->chincpl[ch])
@@ -795,8 +876,17 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       if (!decode_exponents(b, 2, 1, absexp, k->lfeexps, true))
          return false;
    }
-   /* bit allocation parameters */
-   if (br_get(b, 1))
+   /* bit allocation parameters: E-AC-3 fixes them at their defaults
+    * unless the frame says they are sent */
+   if (eac3 && !d->e.bamode)
+   {
+      k->sdcycod  = 2;
+      k->fdcycod  = 1;
+      k->sgaincod = 1;
+      k->dbpbcod  = 2;
+      k->floorcod = 7;
+   }
+   else if (br_get(b, 1))
    {
       k->sdcycod  = br_get(b, 2);
       k->fdcycod  = br_get(b, 2);
@@ -804,9 +894,52 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       k->dbpbcod  = br_get(b, 2);
       k->floorcod = br_get(b, 3);
    }
-   else if (blk == 0)
+   else if (blk == 0 && !eac3)
       return false;
-   if (br_get(b, 1))
+   /* SNR offsets and fast gains: E-AC-3 has three strategies for the
+    * offsets, and gains only when the frame says */
+   if (eac3)
+   {
+      if (d->e.snroffststr == 0)
+      {
+         k->csnroffst    = d->e.frmcsnroffst;
+         k->cplfsnroffst = d->e.frmfsnroffst;
+         for (ch = 0; ch < nfchans; ch++) k->fsnroffst[ch] = d->e.frmfsnroffst;
+         k->lfefsnroffst = d->e.frmfsnroffst;
+      }
+      else if (blk == 0 || br_get(b, 1))
+      {
+         k->csnroffst = br_get(b, 6);
+         if (d->e.snroffststr == 1)
+         {
+            unsigned f = br_get(b, 4);
+            k->cplfsnroffst = f;
+            for (ch = 0; ch < nfchans; ch++) k->fsnroffst[ch] = f;
+            k->lfefsnroffst = f;
+         }
+         else
+         {
+            if (k->cplinu) k->cplfsnroffst = br_get(b, 4);
+            for (ch = 0; ch < nfchans; ch++) k->fsnroffst[ch] = br_get(b, 4);
+            if (d->lfeon) k->lfefsnroffst = br_get(b, 4);
+         }
+      }
+      if (d->e.frmfgaincode && br_get(b, 1))
+      {
+         if (k->cplinu) k->cplfgaincod = br_get(b, 3);
+         for (ch = 0; ch < nfchans; ch++) k->fgaincod[ch] = br_get(b, 3);
+         if (d->lfeon) k->lfefgaincod = br_get(b, 3);
+      }
+      else
+      {
+         k->cplfgaincod = 4;
+         for (ch = 0; ch < nfchans; ch++) k->fgaincod[ch] = 4;
+         k->lfefgaincod = 4;
+      }
+      if (d->e.strmtyp == 0 && br_get(b, 1))
+         br_get(b, 10);        /* convsnroffst: for a converter to AC-3 */
+   }
+   else if (br_get(b, 1))
    {
       k->csnroffst = br_get(b, 6);
       if (k->cplinu)
@@ -829,14 +962,30 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       return false;
    if (k->cplinu)
    {
-      if (br_get(b, 1))
+      unsigned cplleake;
+      if (eac3 && d->e.firstcplleak)
+      {
+         cplleake          = 1;
+         d->e.firstcplleak = 0;
+      }
+      else
+         cplleake = br_get(b, 1);
+      if (cplleake)
       {
          k->cplfleak = br_get(b, 3);
          k->cplsleak = br_get(b, 3);
       }
    }
-   /* delta bit allocation */
-   if (br_get(b, 1))
+   /* delta bit allocation: E-AC-3 only when the frame says */
+   if (eac3 && !d->e.dbaflde)
+   {
+      if (blk == 0)
+      {
+         k->cpldeltbae = 2;
+         for (ch = 0; ch < nfchans; ch++) k->deltbae[ch] = 2;
+      }
+   }
+   else if (br_get(b, 1))
    {
       if (k->cplinu) k->cpldeltbae = br_get(b, 2);
       for (ch = 0; ch < nfchans; ch++) k->deltbae[ch] = br_get(b, 2);
@@ -873,8 +1022,8 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
       k->cpldeltbae = 2;
       for (ch = 0; ch < nfchans; ch++) k->deltbae[ch] = 2;
    }
-   /* skip field */
-   if (br_get(b, 1))
+   /* skip field: E-AC-3 only when the frame says */
+   if ((!eac3 || d->e.skipflde) && br_get(b, 1))
    {
       unsigned skipl = br_get(b, 9);
       while (skipl--) br_get(b, 8);
@@ -937,7 +1086,7 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
                unsigned bin = k->cplstrtmant + sb * 12 + i;
                float v;
                if (k->cplbap[bin] == 0 && k->dithflag[ch])
-                  v = ldexpf(next_dither(d), -(int)k->cplexps[bin]);
+                  v = (float)ldexp((double)next_dither(d), -(int)k->cplexps[bin]);
                else
                   v = cplcoef[bin];
                d->coef[ch][bin] = v * co;
@@ -1029,6 +1178,226 @@ static bool decode_block(rac3_decoder_t *d, rac3_br_t *b, unsigned blk, float *o
    return true;
 }
 
+/* E-AC-3 (Annex E): the bsi and the audio frame header, to the first
+ * audio block. Independent streams (and dependent ones' syntax, which
+ * only differs in bsi) without spectral extension, enhanced coupling
+ * or the adaptive hybrid transform: what the frame header says of
+ * those is read and, where the stream uses them, refused. Returns
+ * false on a stream this decoder does not decode. */
+static bool decode_eac3_header(rac3_decoder_t *d, rac3_br_t *b, const rac3_frame_info_t *info)
+{
+   unsigned strmtyp, fscod, numblkscod, acmod, lfeon, blk, ch;
+   unsigned nfchans = d->nfchans;
+   static const uint8_t blocks_of[4] = { 1, 2, 3, 6 };
+
+   memset(&d->e, 0, sizeof(d->e));
+   d->e.on = true;
+   b->bit  = 16;
+   strmtyp = br_get(b, 2);
+   br_get(b, 3);                      /* substreamid */
+   br_get(b, 11);                     /* frmsiz */
+   fscod   = br_get(b, 2);
+   if (fscod == 3)
+   {
+      br_get(b, 2);                   /* fscod2: a halved rate */
+      numblkscod = 3;
+   }
+   else
+      numblkscod = br_get(b, 2);
+   acmod   = br_get(b, 3);
+   lfeon   = br_get(b, 1);
+   br_get(b, 5);                      /* bsid */
+   br_get(b, 5);                      /* dialnorm */
+   if (br_get(b, 1)) br_get(b, 8);    /* compr */
+   if (acmod == 0)
+   {
+      br_get(b, 5);
+      if (br_get(b, 1)) br_get(b, 8);
+   }
+   if (strmtyp == 1)
+      if (br_get(b, 1)) br_get(b, 16);   /* chanmap */
+   d->e.strmtyp = strmtyp;
+   d->e.nblocks = blocks_of[numblkscod];
+   /* mixing metadata */
+   if (br_get(b, 1))
+   {
+      if (acmod > 2) br_get(b, 2);                 /* dmixmod */
+      if ((acmod & 1) && acmod > 2) br_get(b, 6);  /* ltrtcmixlev, lorocmixlev */
+      if (acmod & 4) br_get(b, 6);                 /* ltrtsurmixlev, lorosurmixlev */
+      if (lfeon && br_get(b, 1)) br_get(b, 5);     /* lfemixlevcod */
+      if (strmtyp == 0)
+      {
+         if (br_get(b, 1)) br_get(b, 6);           /* pgmscl */
+         if (acmod == 0 && br_get(b, 1)) br_get(b, 6);
+         if (br_get(b, 1)) br_get(b, 6);           /* extpgmscl */
+         {
+            unsigned mixdef = br_get(b, 2);
+            if (mixdef == 1)
+               br_get(b, 5);
+            else if (mixdef == 2)
+               br_get(b, 12);
+            else if (mixdef == 3)
+            {
+               unsigned mixdeflen = br_get(b, 5);
+               unsigned n = (mixdeflen + 2) * 8;
+               while (n--) br_get(b, 1);            /* mixdata2, mixdata3, mixdata and fill: mixdeflen+2 bytes in all */
+            }
+         }
+         if (acmod < 2)
+         {
+            if (br_get(b, 1)) br_get(b, 14);        /* paninfo */
+            if (acmod == 0 && br_get(b, 1)) br_get(b, 14);
+         }
+         if (br_get(b, 1))                          /* frmmixcfginfoe */
+         {
+            if (numblkscod == 0)
+               br_get(b, 5);
+            else
+               for (blk = 0; blk < d->e.nblocks; blk++)
+                  if (br_get(b, 1)) br_get(b, 5);
+         }
+      }
+   }
+   /* informational metadata */
+   if (br_get(b, 1))
+   {
+      br_get(b, 3);                                 /* bsmod */
+      br_get(b, 2);                                 /* copyrightb, origbs */
+      if (acmod == 2) br_get(b, 4);                 /* dsurmod, dheadphonmod */
+      if (acmod >= 6) br_get(b, 2);                 /* dsurexmod */
+      if (br_get(b, 1)) br_get(b, 8);               /* audprodi */
+      if (acmod == 0 && br_get(b, 1)) br_get(b, 8);
+      if (fscod < 3) br_get(b, 1);                  /* sourcefscod */
+   }
+   if (strmtyp == 0 && numblkscod != 3) br_get(b, 1);   /* convsync */
+   if (strmtyp == 2)
+   {
+      unsigned blkid = (numblkscod == 3) ? 1 : br_get(b, 1);
+      if (blkid) br_get(b, 6);                      /* frmsizecod */
+   }
+   if (br_get(b, 1))                                /* addbsi */
+   {
+      unsigned n = br_get(b, 6) + 1;
+      while (n--) br_get(b, 8);
+   }
+   if (b->over)
+      return false;
+
+   /* audfrm */
+   {
+      unsigned expstre = 1;
+      if (numblkscod == 3)
+      {
+         expstre   = br_get(b, 1);
+         d->e.ahte = br_get(b, 1) != 0;
+      }
+      d->e.snroffststr  = br_get(b, 2);
+      {
+         unsigned transproce = br_get(b, 1);
+         d->e.blkswe        = br_get(b, 1);
+         d->e.dithflage     = br_get(b, 1);
+         d->e.bamode        = br_get(b, 1);
+         d->e.frmfgaincode  = br_get(b, 1);
+         d->e.dbaflde       = br_get(b, 1);
+         d->e.skipflde      = br_get(b, 1);
+         {
+            unsigned spxattene = br_get(b, 1);
+            /* coupling: which blocks carry a strategy, and use it */
+            if (acmod > 1)
+            {
+               d->e.cplstre[0] = 1;
+               d->e.cplinu[0]  = br_get(b, 1);
+               for (blk = 1; blk < d->e.nblocks; blk++)
+               {
+                  d->e.cplstre[blk] = br_get(b, 1);
+                  d->e.cplinu[blk]  = d->e.cplstre[blk] ? br_get(b, 1) : d->e.cplinu[blk - 1];
+               }
+            }
+            /* exponent strategies, per block or from the frame table */
+            if (expstre)
+            {
+               for (blk = 0; blk < d->e.nblocks; blk++)
+               {
+                  if (d->e.cplinu[blk]) d->e.cplexpstr[blk] = br_get(b, 2);
+                  for (ch = 0; ch < nfchans; ch++) d->e.chexpstr[blk][ch] = br_get(b, 2);
+               }
+            }
+            else
+            {
+               unsigned ncplblks = 0, code;
+               for (blk = 0; blk < 6; blk++) ncplblks += d->e.cplinu[blk];
+               if (acmod > 1 && ncplblks > 0)
+               {
+                  code = br_get(b, 5);
+                  for (blk = 0; blk < 6; blk++) d->e.cplexpstr[blk] = rac3_frmexpstr[code][blk];
+               }
+               for (ch = 0; ch < nfchans; ch++)
+               {
+                  code = br_get(b, 5);
+                  for (blk = 0; blk < 6; blk++) d->e.chexpstr[blk][ch] = rac3_frmexpstr[code][blk];
+               }
+            }
+            if (lfeon)
+               for (blk = 0; blk < d->e.nblocks; blk++) d->e.lfeexpstr[blk] = br_get(b, 1);
+            /* converter exponent strategies: for a converter to AC-3 */
+            if (strmtyp == 0)
+            {
+               unsigned convexpstre = (numblkscod != 3) ? br_get(b, 1) : 1;
+               if (convexpstre)
+                  for (ch = 0; ch < nfchans; ch++) br_get(b, 5);
+            }
+            /* AHT: which channels use it; any that does is refused */
+            if (d->e.ahte)
+            {
+               unsigned ncplregs = 0, nchregs;
+               unsigned ncplblks = 0;
+               for (blk = 0; blk < 6; blk++) ncplblks += d->e.cplinu[blk];
+               for (blk = 0; blk < 6; blk++)
+                  if (d->e.cplstre[blk] && d->e.cplexpstr[blk] != 0) ncplregs++;
+               d->e.cplahtinu = (ncplblks == 6 && ncplregs == 1) ? br_get(b, 1) : 0;
+               for (ch = 0; ch < nfchans; ch++)
+               {
+                  nchregs = 0;
+                  for (blk = 0; blk < 6; blk++) if (d->e.chexpstr[blk][ch] != 0) nchregs++;
+                  d->e.chahtinu[ch] = (nchregs == 1) ? br_get(b, 1) : 0;
+               }
+               if (lfeon)
+               {
+                  unsigned nlferegs = 0;
+                  for (blk = 0; blk < 6; blk++) if (d->e.lfeexpstr[blk] != 0) nlferegs++;
+                  d->e.lfeahtinu = (nlferegs == 1) ? br_get(b, 1) : 0;
+               }
+               if (d->e.cplahtinu || d->e.lfeahtinu)
+                  return false;
+               for (ch = 0; ch < nfchans; ch++) if (d->e.chahtinu[ch]) return false;
+            }
+            if (d->e.snroffststr == 0)
+            {
+               d->e.frmcsnroffst = br_get(b, 6);
+               d->e.frmfsnroffst = br_get(b, 4);
+            }
+            if (transproce)
+               for (ch = 0; ch < nfchans; ch++)
+                  if (br_get(b, 1)) br_get(b, 18);   /* transprocloc, transproclen */
+            if (spxattene)
+               for (ch = 0; ch < nfchans; ch++)
+                  if (br_get(b, 1)) br_get(b, 5);    /* spxattencod */
+            /* block start information: (nblocks-1) * (4 + ceil(log2(words))) bits */
+            if (numblkscod != 0 && br_get(b, 1))
+            {
+               unsigned words = info->frame_bytes / 2, lg = 0, n;
+               while ((1u << lg) < words) lg++;
+               n = (d->e.nblocks - 1) * (4 + lg);
+               while (n--) br_get(b, 1);
+            }
+         }
+      }
+   }
+   for (ch = 0; ch < nfchans; ch++) d->e.firstcplcos[ch] = 1;
+   d->e.firstcplleak = 1;
+   return !b->over;
+}
+
 size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
       float *out, rac3_frame_info_t *info)
 {
@@ -1039,7 +1408,7 @@ size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
    if (!info) info = &local;
    if (rac3_parse_frame_info(src, len, info) != RAC3_OK)
       return 0;
-   if (info->kind != RAC3_KIND_AC3 || info->frame_bytes > len)
+   if (info->frame_bytes > len)
       return 0;
    if (!rac3_frame_crc_ok(src, info->frame_bytes))
       return 0;
@@ -1058,9 +1427,21 @@ size_t rac3_decode_frame(rac3_decoder_t *d, const uint8_t *src, size_t len,
       d->nfchans = nfchans_of[d->acmod];
    }
 
+   b.p = src; b.len = info->frame_bytes; b.bit = 40; b.over = false;
+   if (info->kind == RAC3_KIND_EAC3)
+   {
+      if (info->sample_rate != 48000 && info->sample_rate != 44100 && info->sample_rate != 32000)
+         return 0;         /* the halved rates need the reduced-rate tables */
+      if (!decode_eac3_header(d, &b, info))
+         return 0;
+      for (blk = 0; blk < d->e.nblocks; blk++)
+         if (!decode_block(d, &b, blk, out, info->channels))
+            return 0;
+      return d->e.nblocks * 256;
+   }
+   d->e.on = false;
    /* Walk the BSI to the audio blocks: syncinfo is 40 bits; then the
     * bsi as Table 5.2. */
-   b.p = src; b.len = info->frame_bytes; b.bit = 40; b.over = false;
    br_get(&b, 5);                     /* bsid */
    br_get(&b, 3);                     /* bsmod */
    acmod = br_get(&b, 3);

@@ -135,6 +135,19 @@ static const uint8_t rac3_baptab[64] = {
 /* Table 7.17: mantissa bits per bap for the asymmetric quantizers,
  * bap 6 to 15; the symmetric ones (1 to 5) are grouped and listed
  * in the decoder. */
+/* Annex E Table E2.10: the frame exponent strategy combinations, an
+ * index to a strategy per block (0 reuse, 1 D15, 2 D25, 3 D45). */
+static const uint8_t rac3_frmexpstr[32][6] = {
+   {1,0,0,0,0,0}, {1,0,0,0,0,3}, {1,0,0,0,2,0}, {1,0,0,0,3,3},
+   {2,0,0,2,0,0}, {2,0,0,2,0,3}, {2,0,0,3,2,0}, {2,0,0,3,3,3},
+   {2,0,1,0,0,0}, {2,0,2,0,0,3}, {2,0,2,0,2,0}, {2,0,2,0,3,3},
+   {2,0,3,2,0,0}, {2,0,3,2,0,3}, {2,0,3,3,2,0}, {2,0,3,3,3,3},
+   {3,1,0,0,0,0}, {3,1,0,0,0,3}, {3,2,0,0,2,0}, {3,2,0,0,3,3},
+   {3,2,0,2,0,0}, {3,2,0,2,0,3}, {3,2,0,3,2,0}, {3,2,0,3,3,3},
+   {3,3,1,0,0,0}, {3,3,2,0,0,3}, {3,3,2,0,2,0}, {3,3,2,0,3,3},
+   {3,3,3,2,0,0}, {3,3,3,2,0,3}, {3,3,3,3,2,0}, {3,3,3,3,3,3}
+};
+
 static const uint8_t rac3_bap_bits[16] = { 0, 0, 0, 0, 0, 0, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16 };
 
 /* Table 7.33: the window, the first half; the second half mirrors it. */

@@ -56,6 +56,8 @@ static double snr_db(const float *a, const float *b, size_t n, unsigned stride, 
    return 10.0 * log10(aa / err);
 }
 
+static const char *codec = "ac3";   /* ffmpeg's encoder for the case: ac3 or eac3 */
+
 static void stream_case(const char *source, unsigned rate, unsigned channels, unsigned kbps, const char *name, double floor_db)
 {
    char cmd[640], path[128], refpath[128];
@@ -67,9 +69,9 @@ static void stream_case(const char *source, unsigned rate, unsigned channels, un
    snprintf(path, sizeof(path), "/tmp/rac3d_%s.ac3", name);
    snprintf(refpath, sizeof(refpath), "/tmp/rac3d_%s.f32", name);
    snprintf(cmd, sizeof(cmd),
-         "ffmpeg -hide_banner -loglevel error -y -f lavfi -i \"%s\" -ac %u -c:a ac3 -b:a %uk -f ac3 %s && "
+         "ffmpeg -hide_banner -loglevel error -y -f lavfi -i \"%s\" -ac %u -c:a %s -b:a %uk -f %s %s && "
          "ffmpeg -hide_banner -loglevel error -y -i %s -f f32le -c:a pcm_f32le %s",
-         source, channels, kbps, path, path, refpath);
+         source, channels, codec, kbps, codec, path, path, refpath);
    if (system(cmd) != 0)
    {
       printf("   %-26s (ffmpeg would not make it; skipped)\n", name);
@@ -89,6 +91,7 @@ static void stream_case(const char *source, unsigned rate, unsigned channels, un
       size_t n;
       if (rac3_parse_frame_info(data + at, len - at, &info) != RAC3_OK) break;
       if (decoded + 1536 > ref_frames + 1536) break;
+      CHECK((info.kind == RAC3_KIND_EAC3) == (codec[0] == 'e'), "%s: the stream is not what ffmpeg was asked for", name);
       n = rac3_decode_frame(dec, data + at, len - at, ours + decoded * channels, &info);
       if (!n)
       {
@@ -150,6 +153,18 @@ int main(void)
       stream_case(noise, 48000, 2, 192, "pink-48k-stereo-192", 12.0);
       stream_case(noise, 48000, 6, 640, "pink-48k-5.1-640",    12.0);
       stream_case(noise, 48000, 2,  64, "pink-48k-stereo-64",   6.0);
+      /* E-AC-3 (Annex E) from ffmpeg's eac3 encoder: the same
+       * decoder, the frame header's strategies and the block syntax
+       * differences; no spectral extension, enhanced coupling or AHT
+       * in these streams */
+      printf("   E-AC-3:\n");
+      codec = "eac3";
+      stream_case(tone,  48000, 2, 192, "eac3-tone-48k-stereo-192", 30.0);
+      stream_case(tone,  48000, 1,  96, "eac3-tone-48k-mono-96",    30.0);
+      stream_case(tone,  48000, 6, 448, "eac3-tone-48k-5.1-448",    30.0);
+      stream_case(noise, 48000, 2, 192, "eac3-pink-48k-stereo-192", 12.0);
+      stream_case(noise, 48000, 6, 640, "eac3-pink-48k-5.1-640",    12.0);
+      stream_case(noise, 48000, 2,  64, "eac3-pink-48k-stereo-64",   6.0);
    }
    if (failures)
    {

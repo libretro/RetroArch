@@ -745,7 +745,9 @@ enum audio_type_enum audio_decode_get_type(const char *path)
    if (string_is_equal_noncase(ext, "wav"))
       return AUDIO_TYPE_WAV;
 #ifdef HAVE_RAC3
-   if (string_is_equal_noncase(ext, "ac3"))
+   if (     string_is_equal_noncase(ext, "ac3")
+         || string_is_equal_noncase(ext, "eac3")
+         || string_is_equal_noncase(ext, "ec3"))
       return AUDIO_TYPE_AC3;
 #endif
 #ifdef HAVE_RMODTRACKER
@@ -880,7 +882,7 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
 #endif
 
 #ifdef HAVE_RAC3
-/* AC-3: a buffer of syncframes, walked with rac3_parse_frame_info and
+/* AC-3 or E-AC-3: a buffer of syncframes, walked with rac3_parse_frame_info and
  * decoded a frame at a time into a pending block of 1536 frames the
  * reads drain. The stream's channel count and rate are the first
  * frame's; a frame that disagrees ends the stream. The decoder's
@@ -935,7 +937,7 @@ static int audio_transfer_ac3_next(struct audio_transfer_ac3 *a)
    st = rac3_parse_frame_info(a->buf + a->pos, end - a->pos, &info);
    if (st == RAC3_NEED_MORE)
       return 0;
-   if (st != RAC3_OK || info.kind != RAC3_KIND_AC3)
+   if (st != RAC3_OK)
       return -1;
    if (a->pos + info.frame_bytes > end)
       return 0;
@@ -3539,8 +3541,12 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          rac3_frame_info_t info;
          if (!a || !a->buf || !a->buf_size)
             return false;
-         if (rac3_parse_frame_info(a->buf, a->buf_size, &info) != RAC3_OK
-               || info.kind != RAC3_KIND_AC3)
+         if (rac3_parse_frame_info(a->buf, a->buf_size, &info) != RAC3_OK)
+            return false;
+         /* E-AC-3 too, a frame of one to six blocks; a dependent
+          * substream is not a programme on its own */
+         if (info.kind == RAC3_KIND_EAC3 && info.stream_type != RAC3_STREAM_INDEPENDENT
+               && info.stream_type != RAC3_STREAM_AC3_CONVERT)
             return false;
          a->dec_channels = info.channels;
          a->layout       = info.layout;

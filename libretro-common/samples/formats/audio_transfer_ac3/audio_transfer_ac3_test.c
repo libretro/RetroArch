@@ -93,9 +93,9 @@ static void one(const char *name, const char *lavfi, unsigned channels)
    int r;
 
    printf("   %s\n", name);
-   snprintf(cmd, sizeof(cmd), "ffmpeg -hide_banner -loglevel error -y -f lavfi -i '%s' -t 2 -c:a ac3 -b:a 448k /tmp/at_ac3_%s.ac3 && "
+   snprintf(cmd, sizeof(cmd), "ffmpeg -hide_banner -loglevel error -y -f lavfi -i '%s' -t 2 -c:a %s -b:a 448k -f %s /tmp/at_ac3_%s.ac3 && "
          "ffmpeg -hide_banner -loglevel error -y -i /tmp/at_ac3_%s.ac3 -f f32le -c:a pcm_f32le /tmp/at_ac3_%s.f32",
-         lavfi, name, name, name);
+         lavfi, strstr(name, "eac3") ? "eac3" : "ac3", strstr(name, "eac3") ? "eac3" : "ac3", name, name, name);
    if (system(cmd) != 0) { CHECK(0, "%s: ffmpeg could not make the streams", name); return; }
    snprintf(cmd, sizeof(cmd), "/tmp/at_ac3_%s.ac3", name);
    ac3 = read_all(cmd, &ac3_len);
@@ -196,6 +196,8 @@ int main(void)
    }
    one("stereo", "sine=f=440:r=48000[a];sine=f=660:r=48000[b];[a][b]join=inputs=2:channel_layout=stereo", 2);
    one("5.1",    "sine=f=220:r=48000[a];sine=f=330:r=48000[b];sine=f=440:r=48000[c];sine=f=60:r=48000[d];"
+                 "sine=f=550:r=48000[e];sine=f=770:r=48000[f];[a][b][c][d][e][f]join=inputs=6:channel_layout=5.1(side)", 6);
+   one("eac3-5.1", "sine=f=220:r=48000[a];sine=f=330:r=48000[b];sine=f=440:r=48000[c];sine=f=60:r=48000[d];"
                  "sine=f=550:r=48000[e];sine=f=770:r=48000[f];[a][b][c][d][e][f]join=inputs=6:channel_layout=5.1(side)", 6);
    shape("3-1", "sine=f=220:r=48000[a];sine=f=330:r=48000[b];sine=f=440:r=48000[c];sine=f=550:r=48000[d];[a][b][c][d]join=inputs=4:channel_layout=4.0", 4, 5, 0);
    shape("3-0-lfe", "sine=f=220:r=48000[a];sine=f=330:r=48000[b];sine=f=440:r=48000[c];sine=f=60:r=48000[d];[a][b][c][d]join=inputs=4:channel_layout=3.1", 4, 3, 1);

@@ -1673,7 +1673,9 @@ bool task_push_audio_mixer_load_and_play(
       nbio->type      = NBIO_TYPE_M4A;
       t->callback     = task_audio_mixer_handle_upload_m4a_and_play;
    }
-   else if (string_is_equal(ext_lower, "ac3"))
+   else if (string_is_equal(ext_lower, "ac3")
+         || string_is_equal(ext_lower, "eac3")
+         || string_is_equal(ext_lower, "ec3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_AC3;
       nbio->type      = NBIO_TYPE_AC3;
@@ -1840,7 +1842,9 @@ bool task_push_audio_mixer_load(
       nbio->type      = NBIO_TYPE_M4A;
       t->callback     = task_audio_mixer_handle_upload_m4a;
    }
-   else if (string_is_equal(ext_lower, "ac3"))
+   else if (string_is_equal(ext_lower, "ac3")
+         || string_is_equal(ext_lower, "eac3")
+         || string_is_equal(ext_lower, "ec3"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_AC3;
       nbio->type      = NBIO_TYPE_AC3;
