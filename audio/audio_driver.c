@@ -1687,19 +1687,26 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       return audio->write(audio_st->context_audio_data, stereo,
             frames * 2 * sample);
 
-   /* The upmix takes float stereo; an int16 mix is widened first. */
    if (frames > audio_st->upmix_frames)
       frames = audio_st->upmix_frames;
+   /* An int16 mix into an int16 device stays int16 through the upmix:
+    * the fixed-point form, so the all-integer pipeline never rounds
+    * through float on the way out. It was widened to float, upmixed
+    * and narrowed again - two conversions and a rounding for nothing. */
+   if (!stereo_is_float && !dev_float)
+   {
+      audio_upmix_process_s16(&audio_st->upmix, audio_st->upmix_i16,
+            (const int16_t*)stereo, frames);
+      return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
+            frames * audio_st->out_channels * sizeof(int16_t));
+   }
    if (!stereo_is_float)
    {
-      /* Narrowed stereo from the int16 path: widen into the head of
-       * the float scratch, then upmix from there into the rest.
-       * upmix_buf holds frames * channels floats; the stereo copy
-       * needs frames * 2 and the output starts after it only if
-       * channels leaves room, so use the int16 scratch reinterpreted
-       * as the staging area instead: it is frames * channels int16,
-       * which is frames * channels / 2 floats, enough for stereo
-       * when channels >= 4. */
+      /* Narrowed stereo from the int16 path into a float device: the
+       * one conversion the mixed formats need, into the head of the
+       * int16 scratch reinterpreted as float (frames * channels int16
+       * is frames * channels / 2 floats, enough for stereo when
+       * channels >= 4), then upmixed from there. */
       float *stage = (float*)audio_st->upmix_i16;
       convert_s16_to_float(stage, (const int16_t*)stereo, frames * 2, 1.0f);
       audio_upmix_process(&audio_st->upmix, audio_st->upmix_buf, stage, frames);
@@ -1711,6 +1718,7 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
    if (dev_float)
       return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
             frames * audio_st->out_channels * sizeof(float));
+   /* a float mix into an int16 device: the one narrowing it needs */
    convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf,
          frames * audio_st->out_channels);
    return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,

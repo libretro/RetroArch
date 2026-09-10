@@ -137,6 +137,64 @@ int main(void)
    }
 
    free(in); free(out);
+   /* The int16 form against the float form: the same gains and the
+    * same LFE filter, within the rounding of an int16, on a stereo
+    * tone set through 5.1 - what an int16 pipeline into an int16
+    * device now runs instead of widening to float and back. */
+   printf("   int16 upmix agrees with the float one to the LSB\n");
+   {
+      audio_upmix_t uf, ui;
+      size_t m = 4800, j;
+      int16_t *in16 = (int16_t*)malloc(m * 2 * sizeof(int16_t));
+      int16_t *o16  = (int16_t*)malloc(m * 6 * sizeof(int16_t));
+      float   *inf  = (float*)malloc(m * 2 * sizeof(float));
+      float   *of   = (float*)malloc(m * 6 * sizeof(float));
+      int worst = 0;
+      audio_upmix_init(&uf, AUDIO_LAYOUT_5POINT1, 48000);
+      audio_upmix_init(&ui, AUDIO_LAYOUT_5POINT1, 48000);
+      for (j = 0; j < m; j++)
+      {
+         in16[2 * j]     = (int16_t)(20000.0 * sin(2.0 * 3.14159265358979 * 60.0 * (double)j / 48000.0)
+                                  + 8000.0 * sin(2.0 * 3.14159265358979 * 3000.0 * (double)j / 48000.0));
+         in16[2 * j + 1] = (int16_t)(15000.0 * sin(2.0 * 3.14159265358979 * 90.0 * (double)j / 48000.0));
+         inf[2 * j]      = in16[2 * j] / 32768.0f;
+         inf[2 * j + 1]  = in16[2 * j + 1] / 32768.0f;
+      }
+      audio_upmix_process(&uf, of, inf, m);
+      audio_upmix_process_s16(&ui, o16, in16, m);
+      {
+         /* the LFE against a double-precision run of the same filter:
+          * the float form's own rounding is a few LSB there, the
+          * int16 form's state is Q30 */
+         double lfe = 0.0, a = uf.lfe_coeff;
+         int worst_f = 0, worst_i = 0;
+         for (j = 0; j < m; j++)
+         {
+            double mm = ((double)in16[2 * j] + in16[2 * j + 1]) * 0.5 / 32768.0;
+            int ref, df, di;
+            lfe += a * (mm - lfe);
+            ref = (int)floor(lfe * 32768.0 + 0.5);
+            df  = abs(ref - (int)floor(of[j * 6 + 3] * 32768.0f + 0.5f));
+            di  = abs(ref - (int)o16[j * 6 + 3]);
+            if (df > worst_f) worst_f = df;
+            if (di > worst_i) worst_i = di;
+         }
+         printf("      LFE against double precision: float form %d LSB, int16 form %d LSB\n", worst_f, worst_i);
+         CHECK(worst_i <= 1, "the int16 LFE is %d LSB from the double-precision filter", worst_i);
+      }
+      for (j = 0; j < m * 6; j++)
+      {
+         int ref, d;
+         if (j % 6 == 3) continue;   /* the LFE is judged above */
+         ref = (int)floor(of[j] * 32768.0f + 0.5f);
+         d   = abs(ref - (int)o16[j]);
+         if (d > worst) worst = d;
+      }
+      printf("      worst difference elsewhere: %d LSB over %u samples of 5.1\n", worst, (unsigned)(m * 6));
+      CHECK(worst <= 1, "int16 upmix is %d LSB from the float one", worst);
+      free(in16); free(o16); free(inf); free(of);
+   }
+
    /* The fold the multi-channel batch entry uses: a core's wider
     * frame to the stereo pipeline. Each position at its BS.775 gain,
     * the LFE dropped, int16 the float to the bit, mono to both. */

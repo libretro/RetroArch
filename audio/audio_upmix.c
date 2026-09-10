@@ -160,6 +160,8 @@ bool audio_upmix_init(audio_upmix_t *up, uint32_t layout, unsigned rate)
    /* One-pole low-pass: y += a * (x - y), a from the corner. */
    x             = exp(-2.0 * 3.14159265358979 * UPMIX_LFE_HZ / (double)rate);
    up->lfe_coeff = (float)(1.0 - x);
+   up->lfe_coeff_q30 = (int32_t)((1.0 - x) * 1073741824.0 + 0.5);
+   up->lfe_state_q30 = 0;
    up->layout    = layout;
    up->channels  = audio_layout_channels(layout);
    up->fl  = upmix_slot(layout, AUDIO_SPEAKER_FRONT_LEFT);
@@ -171,6 +173,48 @@ bool audio_upmix_init(audio_upmix_t *up, uint32_t layout, unsigned rate)
    up->sl  = upmix_slot(layout, AUDIO_SPEAKER_SIDE_LEFT);
    up->sr  = upmix_slot(layout, AUDIO_SPEAKER_SIDE_RIGHT);
    return true;
+}
+
+void audio_upmix_process_s16(audio_upmix_t *up, int16_t *out, const int16_t *in, size_t frames)
+{
+   size_t i;
+   int64_t lfe = up->lfe_state_q30;   /* the state: an int16 in Q30 */
+   const int64_t a = up->lfe_coeff_q30;
+   const int32_t centre = (int32_t)(UPMIX_CENTRE_GAIN * 32768.0f + 0.5f);
+   const int32_t rear   = (int32_t)(UPMIX_REAR_GAIN * 32768.0f + 0.5f);
+   const unsigned ch = up->channels;
+
+   if (up->layout == AUDIO_LAYOUT_STEREO)
+   {
+      memcpy(out, in, frames * 2 * sizeof(int16_t));
+      return;
+   }
+   for (i = 0; i < frames; i++)
+   {
+      int32_t l = in[2 * i], r = in[2 * i + 1];
+      /* the centre: (l + r) * gain, rounded; in Q15 for the filter */
+      int32_t m_q15 = (l + r) * centre;                 /* |l+r| < 2^16, centre 2^14: fits */
+      int32_t m     = (m_q15 + 16384) >> 15;
+      out[up->fl] = (int16_t)l;
+      out[up->fr] = (int16_t)r;
+      if (up->fc  >= 0) out[up->fc]  = (int16_t)m;
+      if (up->lfe >= 0)
+      {
+         /* lfe += a * (m - lfe): the state in Q30, the coefficient in
+          * Q30, the difference taken to Q15 for the product to fit in
+          * 64 bits. A Q15 coefficient was five LSB off on a 60 Hz
+          * tone: at a hundredth, its own rounding was a tenth of a
+          * percent of the cutoff. */
+         lfe += (a * (((int64_t)m_q15 * 32768 - lfe) >> 15)) >> 15;
+         out[up->lfe] = (int16_t)((lfe + (1 << 29)) >> 30);
+      }
+      if (up->bl  >= 0) out[up->bl]  = (int16_t)((l * rear + 16384) >> 15);
+      if (up->br  >= 0) out[up->br]  = (int16_t)((r * rear + 16384) >> 15);
+      if (up->sl  >= 0) out[up->sl]  = (int16_t)((l * rear + 16384) >> 15);
+      if (up->sr  >= 0) out[up->sr]  = (int16_t)((r * rear + 16384) >> 15);
+      out += ch;
+   }
+   up->lfe_state_q30 = lfe;
 }
 
 void audio_upmix_process(audio_upmix_t *up, float *out, const float *in, size_t frames)

@@ -111,6 +111,11 @@ typedef struct audio_upmix
    int      fl, fr, fc, lfe, bl, br, sl, sr;
    float    lfe_coeff;  /* the low-pass's coefficient for the rate */
    float    lfe_state;  /* its one sample of memory */
+   int32_t  lfe_coeff_q30;  /* the same, for the int16 form: in Q30, because
+                             * the coefficient is a hundredth or so and its
+                             * rounding is what the filter's response is */
+   int64_t  lfe_state_q30;  /* its sample of memory: an int16 in Q30, so the
+                             * slow filter's small steps are not lost */
 } audio_upmix_t;
 
 /* Refuses a layout audio_layout_supported() does not, leaving stereo. */
@@ -119,6 +124,12 @@ bool audio_upmix_init(audio_upmix_t *up, uint32_t layout, unsigned rate);
 /* frames of interleaved stereo in, frames * channels floats out.
  * out must not overlap in. With stereo this is a copy. */
 void audio_upmix_process(audio_upmix_t *up, float *out, const float *in, size_t frames);
+
+/* The same in int16, for an int16 pipeline into an int16 device: the
+ * gains in Q15, the LFE low-pass in Q15 on a 32-bit accumulator, so
+ * the whole path stays integer and never rounds through float. The
+ * two forms keep their own filter memory; a pipeline uses one. */
+void audio_upmix_process_s16(audio_upmix_t *up, int16_t *out, const int16_t *in, size_t frames);
 
 RETRO_END_DECLS
 
