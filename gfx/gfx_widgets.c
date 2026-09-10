@@ -17,6 +17,7 @@
 
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -27,6 +28,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
+#include <features/features_cpu.h>
 
 #include "gfx_display.h"
 #include "gfx_widgets.h"
@@ -270,7 +272,7 @@ static void gfx_widgets_msg_queue_push_state(
             if (msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
             {
                uintptr_t _tag     = (uintptr_t)&msg_widget->expiration_timer;
-               gfx_animation_kill_by_tag(&_tag);
+               gfx_animation_kill_widget_by_tag(&_tag);
                msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
             }
 
@@ -506,7 +508,7 @@ static void gfx_widgets_msg_queue_push_state(
          if (msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
          {
             uintptr_t _tag     = (uintptr_t)&msg_widget->expiration_timer;
-            gfx_animation_kill_by_tag(&_tag);
+            gfx_animation_kill_widget_by_tag(&_tag);
             msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
          }
 
@@ -546,7 +548,7 @@ static void gfx_widgets_msg_queue_push_state(
                entry.cb             = msg_widget_msg_transition_animation_done;
                entry.userdata       = msg_widget;
 
-               gfx_animation_push(&entry);
+               gfx_animation_push_widget(&entry);
             }
             else
                msg_widget_msg_transition_animation_done(msg_widget);
@@ -637,7 +639,7 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
          entry.target_value   = ceilf(y);
          entry.userdata       = msg;
 
-         gfx_animation_push(&entry);
+         gfx_animation_push_widget(&entry);
 
          p_dispwidget->flags |= DISPGFX_WIDGET_FLAG_MOVING;
       }
@@ -689,14 +691,14 @@ static void gfx_widgets_msg_queue_free(
    }
 
    /* Kill all animations */
-   gfx_animation_kill_by_tag(&hourglass_timer_tag);
-   gfx_animation_kill_by_tag(&tag);
+   gfx_animation_kill_widget_by_tag(&hourglass_timer_tag);
+   gfx_animation_kill_widget_by_tag(&tag);
 
    /* Kill all timers */
    if (msg->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
    {
       uintptr_t _tag = (uintptr_t)&msg->expiration_timer;
-      gfx_animation_kill_by_tag(&_tag);
+      gfx_animation_kill_widget_by_tag(&_tag);
    }
 
    /* Free it */
@@ -765,14 +767,14 @@ static void gfx_widgets_msg_queue_kill(
    entry.target_value           = msg->offset_y -
       p_dispwidget->msg_queue_height / 4;
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 
    /* Fade out */
    entry.cb                     = gfx_widgets_msg_queue_kill_end;
    entry.subject                = &msg->alpha;
    entry.target_value           = 0.0f;
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 
    /* Move all messages back to their correct position */
    if (p_dispwidget->current_msgs_size != 0)
@@ -913,7 +915,7 @@ static void gfx_widgets_start_msg_expiration_timer(
    timer.duration = duration;
    timer.userdata = msg_widget;
 
-   gfx_animation_timer_start(&msg_widget->expiration_timer, &timer);
+   gfx_animation_timer_start_widget(&msg_widget->expiration_timer, &timer);
 
    msg_widget->flags                   |=
       DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
@@ -932,7 +934,7 @@ static void gfx_widgets_hourglass_end(void *userdata)
    timer.duration          = HOURGLASS_INTERVAL;
    timer.userdata          = msg;
 
-   gfx_animation_timer_start(&msg->hourglass_timer, &timer);
+   gfx_animation_timer_start_widget(&msg->hourglass_timer, &timer);
 }
 
 static void gfx_widgets_hourglass_tick(void *userdata)
@@ -949,7 +951,7 @@ static void gfx_widgets_hourglass_tick(void *userdata)
    entry.cb               = gfx_widgets_hourglass_end;
    entry.userdata         = msg;
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 }
 
 static void gfx_widgets_font_init(
@@ -1141,14 +1143,18 @@ static void gfx_widgets_layout(
    }
 }
 
-static void gfx_widgets_iterate_state(
+/* Relayout when the screen, the scale factor or the notification font
+ * changes. It builds and retires fonts, which the font driver keeps on
+ * the main thread, so it stays there when the threaded video worker
+ * runs the rest of the widgets; it is rare, and holds the widget state
+ * lock only for the relayout itself. */
+static INLINE void gfx_widgets_update_layout(
       void *data_disp,
       void *settings_data,
       unsigned width, unsigned height, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
-   size_t i;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     * On some platforms (e.g. 32-bit x86 without SSE),
@@ -1182,6 +1188,7 @@ static void gfx_widgets_iterate_state(
        !string_is_equal(p_dispwidget->last_font_path,
              font_path ? font_path : ""))
    {
+      gfx_widgets_state_lock();
       p_dispwidget->last_scale_factor = scale_factor;
       p_dispwidget->last_video_width  = width;
       p_dispwidget->last_video_height = height;
@@ -1191,7 +1198,19 @@ static void gfx_widgets_iterate_state(
       gfx_widgets_layout(p_disp, p_dispwidget,
             is_threaded, dir_assets, font_path);
       video_driver_monitor_reset();
+      gfx_widgets_state_unlock();
    }
+}
+
+/* Once a frame: the widgets' own iterate() and the message queue. On
+ * the threaded video worker when it draws the widgets. */
+static INLINE void gfx_widgets_iterate_frame(
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded)
+{
+   size_t i;
+   dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -1320,9 +1339,25 @@ void gfx_widgets_iterate(
       bool is_threaded)
 {
    gfx_widgets_state_lock();
-   gfx_widgets_iterate_state(data_disp, settings_data, width, height, fullscreen, dir_assets, font_path, is_threaded);
+   gfx_widgets_update_layout(data_disp, settings_data, width, height,
+         fullscreen, dir_assets, font_path, is_threaded);
+   gfx_widgets_iterate_frame(width, height, fullscreen,
+         dir_assets, font_path, is_threaded);
    gfx_widgets_state_unlock();
 }
+
+#ifdef HAVE_THREADS
+void gfx_widgets_iterate_layout(
+      void *data_disp,
+      void *settings_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded)
+{
+   gfx_widgets_update_layout(data_disp, settings_data, width, height,
+         fullscreen, dir_assets, font_path, is_threaded);
+}
+#endif
 
 static int gfx_widgets_draw_indicator(
       dispgfx_widget_t *p_dispwidget,
@@ -2249,7 +2284,7 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    }
 
    /* Kill all running animations */
-   gfx_animation_kill_by_tag(
+   gfx_animation_kill_widget_by_tag(
          &p_dispwidget->gfx_widgets_generic_tag);
 
    /* Purge everything from the fifo */
@@ -2515,6 +2550,13 @@ bool gfx_widgets_init(
          width, height, fullscreen,
          dir_assets, font_path);
 
+#ifdef HAVE_THREADS
+   /* Under the threaded video wrapper the worker that draws the
+    * widgets also animates and lays them out */
+   p_dispwidget->worker = video_state_get_ptr()->thread_wrapper_active;
+   gfx_animation_widgets_own(p_dispwidget->worker);
+#endif
+
    return true;
 
 error:
@@ -2634,6 +2676,14 @@ void gfx_widgets_deinit(bool widgets_persisting)
 {
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
 
+#ifdef HAVE_THREADS
+   /* Back to the main list: the tweens of widgets that persist carry
+    * on under whichever video comes up next, and freeing kills the
+    * rest where the widget code looks for them */
+   p_dispwidget->worker = false;
+   gfx_animation_widgets_own(false);
+#endif
+
    gfx_widgets_detach_tasks(p_dispwidget);
 
    gfx_widgets_context_destroy(p_dispwidget);
@@ -2688,6 +2738,26 @@ void gfx_widgets_ai_service_overlay_unload(void)
 #endif
 
 #ifdef HAVE_THREADS
+void gfx_widgets_worker_step(void *data)
+{
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   settings_t *settings           = config_get_ptr();
+
+   if (!p_dispwidget->worker)
+      return;
+
+   gfx_widgets_state_lock();
+   gfx_animation_update_widgets(cpu_features_get_time_usec(),
+         settings->floats.menu_ticker_speed,
+         video_info->width, video_info->height);
+   gfx_widgets_iterate_frame(
+         video_info->width, video_info->height, video_info->fullscreen,
+         settings->paths.directory_assets, settings->paths.path_font,
+         true);
+   gfx_widgets_state_unlock();
+}
+
 void gfx_widgets_state_lock(void)
 {
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;

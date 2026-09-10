@@ -229,6 +229,12 @@ typedef struct dispgfx_widget
    slock_t* state_lock;
    retro_atomic_size_t state_owner;
    unsigned state_depth;
+   /* The threaded video worker animates and lays out the widgets
+    * (gfx_widgets_worker_step()). Set at init and cleared at deinit,
+    * when neither thread is in the widgets; a field of its own rather
+    * than a bit in 'flags', which the main thread read-modify-writes
+    * while the worker would read this. */
+   bool worker;
 #endif
    fifo_buffer_t msg_queue;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
@@ -501,6 +507,21 @@ void gfx_widgets_state_resume(unsigned depth);
 #endif
 
 void gfx_widgets_frame(void *data);
+
+#ifdef HAVE_THREADS
+/* Threaded video worker, before the driver's frame: what the runloop
+ * does for the widgets without the wrapper, less the layout. */
+void gfx_widgets_worker_step(void *data);
+
+/* The main thread's part of gfx_widgets_iterate() while the worker
+ * runs the rest: relayout on a screen, scale or font change. */
+void gfx_widgets_iterate_layout(
+      void *data_disp,
+      void *settings_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded);
+#endif
 
 bool gfx_widgets_visible(void *data);
 

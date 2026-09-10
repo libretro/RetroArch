@@ -228,6 +228,9 @@ struct tween
    float       target_value;
    float       *subject;
    bool        deleted;
+   /* Pushed by a widget: moves with the widgets when the threaded
+    * video worker takes them over */
+   bool        widget;
 };
 
 struct gfx_animation
@@ -246,6 +249,14 @@ struct gfx_animation
    float delta_time;
 
    uint8_t flags;
+
+   /* Update bookkeeping, one set per instance: the widgets' instance
+    * is ticked on the threaded video worker */
+   retro_time_t last_clock_update;
+   retro_time_t last_ticker_update;
+   retro_time_t last_ticker_slow_update;
+   float ticker_pixel_accumulator;
+   float ticker_pixel_line_accumulator;
 };
 
 typedef struct gfx_animation gfx_animation_t;
@@ -271,6 +282,27 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry);
 void gfx_animation_push_delayed(unsigned delay, gfx_animation_ctx_entry_t *entry);
 
 void gfx_animation_deinit(void);
+
+/* Widget tweens. Without the threaded video wrapper they share the
+ * main instance and tick with it; with it the worker owns them in an
+ * instance of their own, ticked by gfx_animation_update_widgets(). */
+bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry);
+
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag);
+
+void gfx_animation_timer_start_widget(float *timer,
+      gfx_timer_ctx_entry_t *timer_entry);
+
+bool gfx_animation_ticker_widget(gfx_animation_ctx_ticker_t *ticker);
+
+gfx_animation_t *anim_widgets_get_ptr(void);
+
+/* Hands the widget tweens to the worker's instance or back to the
+ * main one. Neither thread may be touching them. */
+void gfx_animation_widgets_own(bool worker);
+
+void gfx_animation_update_widgets(retro_time_t current_time,
+      float ticker_speed, unsigned video_width, unsigned video_height);
 
 gfx_animation_t *anim_get_ptr(void);
 

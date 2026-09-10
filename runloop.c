@@ -6669,20 +6669,12 @@ static enum runloop_state_enum runloop_check_state(
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    video_driver_get_output_size(&output_width, &output_height);
 
-#if defined(HAVE_GFX_WIDGETS)
-   /* The tween subjects include widget state the threaded video
-    * worker draws */
-   gfx_widgets_state_lock();
-#endif
    gfx_animation_update(
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
          output_width,
          output_height);
-#if defined(HAVE_GFX_WIDGETS)
-   gfx_widgets_state_unlock();
-#endif
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -6692,17 +6684,35 @@ static enum runloop_state_enum runloop_check_state(
       bool video_is_fullscreen    = settings->bools.video_fullscreen
                                  || rarch_force_fullscreen;
 
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-      gfx_widgets_iterate(
-            p_disp,
-            settings,
-            output_width,
-            output_height,
-            video_is_fullscreen,
-            settings->paths.directory_assets,
-            settings->paths.path_font,
-            VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
+#ifdef HAVE_THREADS
+      /* Under the threaded video wrapper the worker animates and
+       * iterates the widgets (gfx_widgets_worker_step()); the layout,
+       * which owns fonts, stays here */
+      if (p_dispwidget->worker)
+         gfx_widgets_iterate_layout(
+               p_disp,
+               settings,
+               output_width,
+               output_height,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               true);
+      else
+#endif
+      {
+         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+         gfx_widgets_iterate(
+               p_disp,
+               settings,
+               output_width,
+               output_height,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
+         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
+      }
    }
 #endif
 

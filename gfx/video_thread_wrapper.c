@@ -1033,6 +1033,14 @@ static void video_thread_loop(void *data)
                   && video_info->shader_subframes <= 1;
 
                render_start = cpu_features_get_time_usec();
+#ifdef HAVE_GFX_WIDGETS
+               /* This thread draws the widgets, so it advances and lays
+                * them out too, before the driver's frame asks whether
+                * any are visible - where the runloop does it without
+                * the wrapper */
+               if (video_info->widgets_active)
+                  gfx_widgets_worker_step(video_info);
+#endif
                if (thr->frame.slot[slot].hw_slot >= 0)
                {
                   /* A hardware frame: the driver reads the core's

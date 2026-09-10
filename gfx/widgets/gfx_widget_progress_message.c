@@ -118,7 +118,7 @@ static void gfx_widget_progress_message_fadeout(void *userdata)
    animation_entry.cb           = gfx_widget_progress_message_fadeout_cb;
    animation_entry.userdata     = state;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
 }
 
 /* Widget interface */
@@ -156,15 +156,15 @@ static void gfx_widget_set_progress_message_state(
          1.0f);
 
    /* Kill any existing timer/animation */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
 
    /* Start new message timer */
    timer.duration = duration;
    timer.cb       = gfx_widget_progress_message_fadeout;
    timer.userdata = state;
 
-   gfx_animation_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start_widget(&state->timer, &timer);
 
    /* Set initial widget opacity */
    state->alpha  = 1.0f;
@@ -335,8 +335,8 @@ static void gfx_widget_progress_message_free(void)
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timer / animation */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
 
    /* Deactivate widget */
    state->alpha  = 0.0f;

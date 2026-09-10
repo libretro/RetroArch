@@ -452,7 +452,7 @@ static void gfx_widget_achievement_popup_dismiss(void* userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 }
 
 static void gfx_widget_achievement_popup_fold(void* userdata)
@@ -472,7 +472,7 @@ static void gfx_widget_achievement_popup_fold(void* userdata)
    anim_fold.target_value = 0.0f;
    anim_fold.userdata     = NULL;
 
-   gfx_animation_push(&anim_fold);
+   gfx_animation_push_widget(&anim_fold);
 
    /* Slide horizontal (if required) */
    if (state->anchor_h != ANCHOR_LEFT)
@@ -485,7 +485,7 @@ static void gfx_widget_achievement_popup_fold(void* userdata)
       anim_slide.target_value = 0.0f;
       anim_slide.userdata     = NULL;
 
-      gfx_animation_push(&anim_slide);
+      gfx_animation_push_widget(&anim_slide);
    }
 }
 
@@ -507,7 +507,7 @@ static void gfx_widget_achievement_popup_unfold(void* userdata)
    anim_unfold.target_value = 1.0f;
    anim_unfold.userdata     = NULL;
 
-   gfx_animation_push(&anim_unfold);
+   gfx_animation_push_widget(&anim_unfold);
 
    /* Slide horizontal (if required) */
    if (state->anchor_h != ANCHOR_LEFT)
@@ -520,7 +520,7 @@ static void gfx_widget_achievement_popup_unfold(void* userdata)
       anim_slide.target_value = 1.0f;
       anim_slide.userdata     = NULL;
 
-      gfx_animation_push(&anim_slide);
+      gfx_animation_push_widget(&anim_slide);
    }
 
    /* Wait before folding */
@@ -528,10 +528,10 @@ static void gfx_widget_achievement_popup_unfold(void* userdata)
    timer.duration = MSG_QUEUE_ANIMATION_DURATION + CHEEVO_NOTIFICATION_DURATION;
    timer.userdata = NULL;
 
-   gfx_animation_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start_widget(&state->timer, &timer);
 }
 
-void gfx_widgets_update_cheevos_appearance(void)
+static void gfx_widgets_update_cheevos_appearance_state(void)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    const settings_t* settings = config_get_ptr();
@@ -559,6 +559,13 @@ void gfx_widgets_update_cheevos_appearance(void)
       state->anchor_v = ANCHOR_BOTTOM;
    else
       state->anchor_v = ANCHOR_TOP;
+}
+
+void gfx_widgets_update_cheevos_appearance(void)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_update_cheevos_appearance_state();
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widget_achievement_popup_start(
@@ -594,10 +601,10 @@ static void gfx_widget_achievement_popup_start(
    anim_slide.target_value = 1.0f;
    anim_slide.userdata = NULL;
 
-   gfx_animation_push(&anim_slide);
+   gfx_animation_push_widget(&anim_slide);
 }
 
-void gfx_widgets_push_achievement(const char* title, const char* subtitle, const char* badge)
+static void gfx_widgets_push_achievement_state(const char* title, const char* subtitle, const char* badge)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
    int start_notification = 1;
@@ -651,6 +658,13 @@ void gfx_widgets_push_achievement(const char* title, const char* subtitle, const
 #ifdef HAVE_THREADS
    slock_unlock(state->queue_lock);
 #endif
+}
+
+void gfx_widgets_push_achievement(const char* title, const char* subtitle, const char* badge)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_push_achievement_state(title, subtitle, badge);
+   gfx_widgets_state_unlock();
 }
 
 static bool gfx_widget_achievement_popup_visible(void)

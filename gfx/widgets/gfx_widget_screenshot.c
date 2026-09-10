@@ -28,7 +28,6 @@
 struct gfx_widget_screenshot_state
 {
    uintptr_t texture;
-   gfx_animation_t *p_anim;
 
    unsigned video_height;
    unsigned texture_width;
@@ -55,7 +54,6 @@ typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
-   NULL,          /* p_anim */
    0,             /* video_height */
    0,             /* texture_width */
    0,             /* texture_height */
@@ -99,7 +97,7 @@ static void gfx_widget_screenshot_fadeout(void *userdata)
          break;
    }
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 }
 
 static void gfx_widget_screenshot_dispose(void *userdata)
@@ -136,7 +134,7 @@ static void gfx_widgets_play_screenshot_flash(void *data)
          break;
    }
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 }
 
 static void gfx_widget_state_slot_show_state(
@@ -231,7 +229,7 @@ static void gfx_widget_screenshot_end(void *userdata)
          break;
    }
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_widget(&entry);
 }
 
 static void gfx_widget_screenshot_free(void)
@@ -262,7 +260,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-   gfx_animation_t          *p_anim     = state->p_anim;
+   /* Not cached at init: the instance changes when the threaded
+    * video worker takes the widgets over */
+   gfx_animation_t          *p_anim     = anim_widgets_get_ptr();
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
    int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
 
@@ -351,7 +351,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       ticker.str        = state->shotname;
       ticker.spacer     = NULL;
 
-      gfx_animation_ticker(&ticker);
+      gfx_animation_ticker_widget(&ticker);
 
       gfx_widgets_draw_text(font_regular,
             shotname,
@@ -461,7 +461,7 @@ static void gfx_widget_screenshot_iterate(
             break;
       }
 
-      gfx_animation_timer_start(&state->timer, &timer);
+      gfx_animation_timer_start_widget(&state->timer, &timer);
 
       state->loaded       = true;
       state->filename[0]  = '\0';
@@ -473,10 +473,6 @@ static bool gfx_widget_screenshot_init(
       gfx_animation_t *p_anim,
       bool video_is_threaded, bool fullscreen)
 {
-   gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-
-   state->p_anim = p_anim;
-
    return false;
 }
 

@@ -432,7 +432,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 #endif
 }
 
-void gfx_widgets_clear_leaderboard_displays(void)
+static void gfx_widgets_clear_leaderboard_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
@@ -445,6 +445,13 @@ void gfx_widgets_clear_leaderboard_displays(void)
 #ifdef HAVE_THREADS
    slock_unlock(state->array_lock);
 #endif
+}
+
+void gfx_widgets_clear_leaderboard_displays(void)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_clear_leaderboard_displays_state();
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widgets_set_leaderboard_display_state(unsigned id, const char* value)
@@ -535,7 +542,7 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
    gfx_widgets_state_unlock();
 }
 
-void gfx_widgets_clear_challenge_displays(void)
+static void gfx_widgets_clear_challenge_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
@@ -548,6 +555,13 @@ void gfx_widgets_clear_challenge_displays(void)
 #ifdef HAVE_THREADS
    slock_unlock(state->array_lock);
 #endif
+}
+
+void gfx_widgets_clear_challenge_displays(void)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_clear_challenge_displays_state();
+   gfx_widgets_state_unlock();
 }
 
 static void gfx_widgets_set_challenge_display_state(unsigned id, const char* badge)

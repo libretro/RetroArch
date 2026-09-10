@@ -191,9 +191,9 @@ static void gfx_widget_load_content_animation_reset(void)
    uintptr_t timer_tag                              = (uintptr_t)&state->timer;
 
    /* Kill any existing timers/animations */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
-   gfx_animation_kill_by_tag(&slide_offset_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&slide_offset_tag);
 
    /* Reset pertinent state parameters */
    state->status             = GFX_WIDGET_LOAD_CONTENT_IDLE;
@@ -261,7 +261,7 @@ static void gfx_widget_load_content_animation_wait_cb(void *userdata)
    animation_entry.cb           = gfx_widget_load_content_animation_fade_out_cb;
    animation_entry.userdata     = NULL;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
    state->status = GFX_WIDGET_LOAD_CONTENT_FADE_OUT;
 }
 
@@ -275,7 +275,7 @@ static void gfx_widget_load_content_animation_slide_cb(void *userdata)
    timer.cb       = gfx_widget_load_content_animation_wait_cb;
    timer.userdata = state;
 
-   gfx_animation_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start_widget(&state->timer, &timer);
    state->status = GFX_WIDGET_LOAD_CONTENT_WAIT;
 }
 
@@ -296,7 +296,7 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
    animation_entry.cb           = gfx_widget_load_content_animation_slide_cb;
    animation_entry.userdata     = state;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
    state->status = GFX_WIDGET_LOAD_CONTENT_SLIDE;
 }
 
@@ -727,7 +727,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       animation_entry.cb           = gfx_widget_load_content_animation_fade_in_cb;
       animation_entry.userdata     = state;
 
-      gfx_animation_push(&animation_entry);
+      gfx_animation_push_widget(&animation_entry);
       state->status = GFX_WIDGET_LOAD_CONTENT_FADE_IN;
    }
 }

@@ -57,6 +57,8 @@
 
 #include <retro_miscellaneous.h>
 
+#include <array/rbuf.h>
+
 #include "gfx/gfx_animation.h"
 
 static int failures;
@@ -387,6 +389,129 @@ static void test_zero_s_len_is_rejected(void)
    CHECK(dst[0] == 'X', "a zero s_len still wrote to the destination");
 }
 
+
+/* ------------------------------------------------------------------
+ * 8. widget tweens change hands
+ *
+ * Under the threaded video wrapper the worker owns the widget tweens
+ * in an instance of its own and ticks it; without it they tick in the
+ * main list. The hand-over moves them both ways and must neither drop
+ * a tween, move a menu tween, nor tick one instance from the other.
+ * ------------------------------------------------------------------ */
+static void push_one(float *subject, bool widget, int *count)
+{
+   gfx_animation_ctx_entry_t entry;
+   memset(&entry, 0, sizeof(entry));
+   *subject           = 0.0f;
+   entry.subject      = subject;
+   entry.target_value = 1.0f;
+   entry.duration     = 1000.0f;   /* ms */
+   entry.easing_enum  = EASING_LINEAR;
+   entry.tag          = (uintptr_t)subject;
+   entry.cb           = on_tween_done;
+   if (widget ? gfx_animation_push_widget(&entry) : gfx_animation_push(&entry))
+   {
+      pushes++;
+      (*count)++;
+   }
+}
+
+static void test_widget_handover(void)
+{
+   float menu_subject, widget_subject, late_subject, timer;
+   gfx_timer_ctx_entry_t timer_entry;
+   gfx_animation_ctx_ticker_t ticker;
+   char dst[8];
+   uintptr_t late_tag;
+   int n        = 0;
+   int cb_start;
+
+   gfx_animation_deinit();
+   /* Unowned: widget tweens share the main list */
+   CHECK(anim_widgets_get_ptr() == anim_get_ptr(),
+         "handover: widgets start on the main list");
+   push_one(&menu_subject, false, &n);
+   push_one(&widget_subject, true, &n);
+   CHECK(n == 2, "handover: both pushes taken");
+   gfx_animation_update(1000000, false, 1.0f, 640, 480);
+   CHECK(RBUF_LEN(anim_get_ptr()->list) == 2,
+         "handover: both tweens in the main list while unowned");
+
+   /* To the worker: only the widget tween moves */
+   gfx_animation_widgets_own(true);
+   CHECK(anim_widgets_get_ptr() != anim_get_ptr(),
+         "handover: worker owns an instance of its own");
+   CHECK(RBUF_LEN(anim_get_ptr()->list) == 1,
+         "handover: menu tween stays in the main list");
+   CHECK(RBUF_LEN(anim_widgets_get_ptr()->list) == 1,
+         "handover: widget tween moved to the worker");
+
+   /* Each instance ticks only its own */
+   gfx_animation_update(1500000, false, 1.0f, 640, 480);
+   CHECK(menu_subject > 0.45f && menu_subject < 0.55f,
+         "handover: main tick advances the menu tween");
+   CHECK(widget_subject == 0.0f,
+         "handover: main tick leaves the worker's tween alone");
+   gfx_animation_update_widgets(1250000, 1.0f, 640, 480);
+   CHECK(widget_subject > 0.2f && widget_subject < 0.3f,
+         "handover: worker tick advances the widget tween on the shared clock");
+
+   /* Pushes, kills and timers go to the owner */
+   push_one(&late_subject, true, &n);
+   CHECK(RBUF_LEN(anim_widgets_get_ptr()->list) == 2,
+         "handover: widget push lands with the worker");
+   timer_entry.cb       = NULL;
+   timer_entry.userdata = NULL;
+   timer_entry.duration = 100.0f;
+   gfx_animation_timer_start_widget(&timer, &timer_entry);
+   CHECK(RBUF_LEN(anim_widgets_get_ptr()->list) == 3,
+         "handover: widget timer lands with the worker");
+   late_tag = (uintptr_t)&late_subject;
+   gfx_animation_kill_widget_by_tag(&late_tag);
+   CHECK(RBUF_LEN(anim_widgets_get_ptr()->list) == 2,
+         "handover: widget kill finds the worker's tween");
+
+   /* The ticker flag is the instance's own */
+   memset(&ticker, 0, sizeof(ticker));
+   ticker.s     = dst;
+   ticker.s_len = sizeof(dst);
+   ticker.len   = 4;
+   ticker.str   = "a label longer than four";
+   ticker.idx   = 0;
+   ticker.selected = true;
+   ticker.type_enum = TICKER_TYPE_BOUNCE;
+   anim_get_ptr()->flags &= ~GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+   gfx_animation_ticker_widget(&ticker);
+   ticker_calls++;
+   CHECK(anim_widgets_get_ptr()->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE,
+         "handover: widget ticker marks the worker's instance");
+   CHECK(!(anim_get_ptr()->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE),
+         "handover: widget ticker leaves the main instance alone");
+
+   /* Back to the main list, mid-flight: carries on and completes */
+   gfx_animation_widgets_own(false);
+   CHECK(anim_widgets_get_ptr() == anim_get_ptr(),
+         "handover: widgets back on the main list");
+   CHECK(RBUF_LEN(anim_get_ptr()->list) == 3,
+         "handover: widget tween and timer rejoin the menu tween");
+   cb_start = cb_calls;
+   gfx_animation_update(3000000, false, 1.0f, 640, 480);
+   CHECK(widget_subject == 1.0f && menu_subject == 1.0f,
+         "handover: both tweens complete on the main tick");
+   CHECK(cb_calls - cb_start == 2,
+         "handover: both completion callbacks ran once");
+   CHECK(RBUF_LEN(anim_get_ptr()->list) == 0,
+         "handover: nothing left behind");
+
+   /* Update bookkeeping outlives a deinit, as the statics did */
+   {
+      retro_time_t last = anim_get_ptr()->last_ticker_update;
+      gfx_animation_deinit();
+      CHECK(anim_get_ptr()->last_ticker_update == last,
+            "handover: deinit keeps the ticker bookkeeping");
+   }
+}
+
 int main(void)
 {
    test_multibyte_does_not_overflow();
@@ -396,6 +521,7 @@ int main(void)
    test_deinit_while_running();
    test_ticker();
    test_ticker_smooth();
+   test_widget_handover();
 
    printf("pushes=%d callbacks=%d ticker calls=%d\n",
          pushes, cb_calls, ticker_calls);

@@ -21,6 +21,7 @@
 #include <encodings/utf.h>
 #include <retro_math.h>
 #include <retro_miscellaneous.h>
+#include <retro_inline.h>
 #include <features/features_cpu.h>
 #include <array/rbuf.h>
 
@@ -43,9 +44,20 @@ static gfx_animation_t anim_st = {
    0       /* flags                 */
 };
 
+/* The widgets' own instance, live only while the threaded video
+ * worker owns them; anim_widgets points at whichever instance the
+ * widget tweens are in. */
+static gfx_animation_t anim_widgets_st;
+static gfx_animation_t *anim_widgets = &anim_st;
+
 gfx_animation_t *anim_get_ptr(void)
 {
    return &anim_st;
+}
+
+gfx_animation_t *anim_widgets_get_ptr(void)
+{
+   return anim_widgets;
 }
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */
@@ -842,10 +854,10 @@ static const easing_cb easing_table[EASING_LAST] = {
    easing_out_in_bounce   /* EASING_OUT_IN_BOUNCE*/
 };
 
-bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
+static bool gfx_animation_push_in(gfx_animation_t *p_anim,
+      gfx_animation_ctx_entry_t *entry, bool widget)
 {
    struct tween t;
-   gfx_animation_t *p_anim = &anim_st;
 
    t.duration           = entry->duration;
    /* p_anim->cur_time is the timestamp of the current (or most
@@ -863,6 +875,7 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    t.cb                 = entry->cb;
    t.userdata           = entry->userdata;
    t.deleted            = false;
+   t.widget             = widget;
 
    /* Resolve easing via table lookup */
    if (entry->easing_enum < EASING_LAST)
@@ -882,7 +895,18 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    return true;
 }
 
-bool gfx_animation_update(
+bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
+{
+   return gfx_animation_push_in(&anim_st, entry, false);
+}
+
+bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
+{
+   return gfx_animation_push_in(anim_widgets, entry, true);
+}
+
+static INLINE bool gfx_animation_update_in(
+      gfx_animation_t *p_anim,
       retro_time_t current_time,
       bool timedate_enable,
       float _ticker_speed,
@@ -890,20 +914,13 @@ bool gfx_animation_update(
       unsigned video_height)
 {
    unsigned i;
-   gfx_animation_t *p_anim                     = &anim_st;
    const bool ticker_is_active                 = (p_anim->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE) ? true : false;
 
-   static retro_time_t last_clock_update       = 0;
-   static retro_time_t last_ticker_update      = 0;
-   static retro_time_t last_ticker_slow_update = 0;
-
    /* Horizontal smooth ticker parameters */
-   static float ticker_pixel_accumulator       = 0.0f;
    unsigned ticker_pixel_accumulator_uint      = 0;
    float ticker_pixel_increment                = 0.0f;
 
    /* Vertical (line) smooth ticker parameters */
-   static float ticker_pixel_line_accumulator  = 0.0f;
    unsigned ticker_pixel_line_accumulator_uint = 0;
    float ticker_pixel_line_increment           = 0.0f;
 
@@ -923,26 +940,26 @@ bool gfx_animation_update(
       : (float)(p_anim->cur_time - p_anim->old_time) / 1000.0f;
    p_anim->old_time                            = p_anim->cur_time;
 
-   if (((p_anim->cur_time - last_clock_update) > 1000000) /* 1000000 us == 1 second */
+   if (((p_anim->cur_time - p_anim->last_clock_update) > 1000000) /* 1000000 us == 1 second */
          && timedate_enable)
    {
       p_anim->flags                |= GFX_ANIM_FLAG_IS_ACTIVE;
-      last_clock_update             = p_anim->cur_time;
+      p_anim->last_clock_update             = p_anim->cur_time;
    }
 
    if (ticker_is_active)
    {
       /* Update non-smooth ticker indices */
-      if (p_anim->cur_time - last_ticker_update >= ticker_speed)
+      if (p_anim->cur_time - p_anim->last_ticker_update >= ticker_speed)
       {
          p_anim->ticker_idx++;
-         last_ticker_update = p_anim->cur_time;
+         p_anim->last_ticker_update = p_anim->cur_time;
       }
 
-      if (p_anim->cur_time - last_ticker_slow_update >= ticker_slow_speed)
+      if (p_anim->cur_time - p_anim->last_ticker_slow_update >= ticker_slow_speed)
       {
          p_anim->ticker_slow_idx++;
-         last_ticker_slow_update = p_anim->cur_time;
+         p_anim->last_ticker_slow_update = p_anim->cur_time;
       }
 
       /* Pixel tickers (horizontal + vertical/line) update
@@ -974,24 +991,24 @@ bool gfx_animation_update(
                video_width, video_height);
 
       /* > Update accumulators */
-      ticker_pixel_accumulator           += ticker_pixel_increment;
-      ticker_pixel_accumulator_uint       = (unsigned)ticker_pixel_accumulator;
+      p_anim->ticker_pixel_accumulator           += ticker_pixel_increment;
+      ticker_pixel_accumulator_uint       = (unsigned)p_anim->ticker_pixel_accumulator;
 
-      ticker_pixel_line_accumulator      += ticker_pixel_line_increment;
-      ticker_pixel_line_accumulator_uint  = (unsigned)ticker_pixel_line_accumulator;
+      p_anim->ticker_pixel_line_accumulator      += ticker_pixel_line_increment;
+      ticker_pixel_line_accumulator_uint  = (unsigned)p_anim->ticker_pixel_line_accumulator;
 
       /* > Check whether we've accumulated enough
        *   for an idx update */
       if (ticker_pixel_accumulator_uint > 0)
       {
          p_anim->ticker_pixel_idx        += ticker_pixel_accumulator_uint;
-         ticker_pixel_accumulator        -= (float)ticker_pixel_accumulator_uint;
+         p_anim->ticker_pixel_accumulator        -= (float)ticker_pixel_accumulator_uint;
       }
 
       if (ticker_pixel_line_accumulator_uint > 0)
       {
          p_anim->ticker_pixel_line_idx   += ticker_pixel_line_accumulator_uint;
-         ticker_pixel_line_accumulator   -= (float)ticker_pixel_line_accumulator_uint;
+         p_anim->ticker_pixel_line_accumulator   -= (float)ticker_pixel_line_accumulator_uint;
       }
    }
 
@@ -1086,6 +1103,77 @@ bool gfx_animation_update(
    return ((p_anim->flags & GFX_ANIM_FLAG_IS_ACTIVE) > 0);
 }
 
+bool gfx_animation_update(
+      retro_time_t current_time,
+      bool timedate_enable,
+      float ticker_speed,
+      unsigned video_width,
+      unsigned video_height)
+{
+   return gfx_animation_update_in(&anim_st, current_time, timedate_enable,
+         ticker_speed, video_width, video_height);
+}
+
+void gfx_animation_update_widgets(retro_time_t current_time,
+      float ticker_speed, unsigned video_width, unsigned video_height)
+{
+   /* Nothing to do while the widget tweens tick with the main list */
+   if (anim_widgets == &anim_widgets_st)
+      gfx_animation_update_in(&anim_widgets_st, current_time, false,
+            ticker_speed, video_width, video_height);
+}
+
+/* Moves every widget tween in 'from' to the end of 'to' */
+static void gfx_animation_move_widgets(gfx_animation_t *from,
+      gfx_animation_t *to)
+{
+   size_t i;
+
+   for (i = 0; i < RBUF_LEN(from->list); i++)
+   {
+      if (!from->list[i].widget)
+         continue;
+      if (!from->list[i].deleted)
+         RBUF_PUSH(to->list, from->list[i]);
+      RBUF_REMOVE(from->list, i);
+      i--;
+   }
+   for (i = 0; i < RBUF_LEN(from->pending); i++)
+   {
+      if (!from->pending[i].widget)
+         continue;
+      RBUF_PUSH(to->list, from->pending[i]);
+      RBUF_REMOVE(from->pending, i);
+      i--;
+   }
+}
+
+void gfx_animation_widgets_own(bool worker)
+{
+   gfx_animation_t *to = worker ? &anim_widgets_st : &anim_st;
+
+   if (anim_widgets == to)
+      return;
+
+   /* Start times are absolute on the shared clock, so a tween carries
+    * on where it was. The worker's instance starts its clock afresh:
+    * its first update has no delta. */
+   if (worker)
+   {
+      anim_widgets_st.cur_time = anim_st.cur_time;
+      anim_widgets_st.old_time = 0;
+   }
+   gfx_animation_move_widgets(anim_widgets, to);
+   anim_widgets = to;
+
+   if (!worker)
+   {
+      RBUF_FREE(anim_widgets_st.list);
+      RBUF_FREE(anim_widgets_st.pending);
+      memset(&anim_widgets_st, 0, sizeof(anim_widgets_st));
+   }
+}
+
 static size_t build_ticker_loop_string(
       const char* src_str, const char *spacer,
       size_t char_offset1, size_t num_chars1,
@@ -1109,9 +1197,9 @@ static size_t build_ticker_loop_string(
    return _len;
 }
 
-bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
+static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
+      gfx_animation_ctx_ticker_t *ticker)
 {
-   gfx_animation_t *p_anim = &anim_st;
    size_t str_len          = utf8len(ticker->str);
 
    /* utf8cpy() computes its clamp as (len - 1), so a zero here
@@ -1196,6 +1284,16 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    p_anim->flags |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
    return true;
+}
+
+bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
+{
+   return gfx_animation_ticker_in(&anim_st, ticker);
+}
+
+bool gfx_animation_ticker_widget(gfx_animation_ctx_ticker_t *ticker)
+{
+   return gfx_animation_ticker_in(anim_widgets, ticker);
 }
 
 /* Smooth ticker glyph width cache
@@ -1724,10 +1822,10 @@ end:
    return is_active;
 }
 
-bool gfx_animation_kill_by_tag(uintptr_t *tag)
+static bool gfx_animation_kill_by_tag_in(gfx_animation_t *p_anim,
+      uintptr_t *tag)
 {
    unsigned i;
-   gfx_animation_t *p_anim = &anim_st;
 
    if (!tag || *tag == (uintptr_t)-1)
       return false;
@@ -1779,21 +1877,44 @@ bool gfx_animation_kill_by_tag(uintptr_t *tag)
    return true;
 }
 
+bool gfx_animation_kill_by_tag(uintptr_t *tag)
+{
+   return gfx_animation_kill_by_tag_in(&anim_st, tag);
+}
+
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag)
+{
+   return gfx_animation_kill_by_tag_in(anim_widgets, tag);
+}
+
 void gfx_animation_deinit(void)
 {
-   gfx_animation_t *p_anim = &anim_st;
+   gfx_animation_t *p_anim                   = &anim_st;
+   /* The update bookkeeping outlives a deinit, as it did when it was
+    * function-static in gfx_animation_update() */
+   retro_time_t last_clock_update            = p_anim->last_clock_update;
+   retro_time_t last_ticker_update           = p_anim->last_ticker_update;
+   retro_time_t last_ticker_slow_update      = p_anim->last_ticker_slow_update;
+   float ticker_pixel_accumulator            = p_anim->ticker_pixel_accumulator;
+   float ticker_pixel_line_accumulator       = p_anim->ticker_pixel_line_accumulator;
    RBUF_FREE(p_anim->list);
    RBUF_FREE(p_anim->pending);
    memset(p_anim, 0, sizeof(*p_anim));
+   p_anim->last_clock_update                 = last_clock_update;
+   p_anim->last_ticker_update                = last_ticker_update;
+   p_anim->last_ticker_slow_update           = last_ticker_slow_update;
+   p_anim->ticker_pixel_accumulator          = ticker_pixel_accumulator;
+   p_anim->ticker_pixel_line_accumulator     = ticker_pixel_line_accumulator;
    ticker_wcache_flush();
 }
 
-void gfx_animation_timer_start(float *timer, gfx_timer_ctx_entry_t *timer_entry)
+static void gfx_animation_timer_start_in(gfx_animation_t *p_anim,
+      float *timer, gfx_timer_ctx_entry_t *timer_entry, bool widget)
 {
    gfx_animation_ctx_entry_t entry;
    uintptr_t tag        = (uintptr_t)timer;
 
-   gfx_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag_in(p_anim, &tag);
 
    *timer               = 0.0f;
 
@@ -1805,5 +1926,16 @@ void gfx_animation_timer_start(float *timer, gfx_timer_ctx_entry_t *timer_entry)
    entry.cb             = timer_entry->cb;
    entry.userdata       = timer_entry->userdata;
 
-   gfx_animation_push(&entry);
+   gfx_animation_push_in(p_anim, &entry, widget);
+}
+
+void gfx_animation_timer_start(float *timer, gfx_timer_ctx_entry_t *timer_entry)
+{
+   gfx_animation_timer_start_in(&anim_st, timer, timer_entry, false);
+}
+
+void gfx_animation_timer_start_widget(float *timer,
+      gfx_timer_ctx_entry_t *timer_entry)
+{
+   gfx_animation_timer_start_in(anim_widgets, timer, timer_entry, true);
 }
