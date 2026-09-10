@@ -1024,6 +1024,109 @@ static bool wclane_set_shader(void *data, enum rarch_shader_type type, const cha
    return ret;
 }
 
+/* A window resize under the wrapper. The driver notices it on the
+ * video thread, in alive() between frames, and records the new output
+ * size; a frame already pushed carries the size known when it was
+ * built on the main thread. A driver that sizes its swapchain and
+ * viewport from the frame info then rebuilt them at the old size and
+ * laid the menu out for it - Windows, Vulkan, windowed, going back into
+ * the menu. The ordering is forced here: frame K is held on the video
+ * thread until the main thread has pushed K+1, then the resize is
+ * reported, then K+1 is drawn - and the size K+1 is drawn at must be
+ * the reported one, not the one it was pushed with. */
+static video_driver_t        rslane_driver;
+static const video_driver_t *rslane_inner;
+static unsigned              rslane_report_w, rslane_report_h;
+static unsigned              rslane_seen_w,   rslane_seen_h;
+static bool                  rslane_seen;
+static volatile int          rslane_stage;    /* 0 idle, 1 hold K, 2 K+1 pushed, 3 reported */
+
+static bool rslane_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if (rslane_stage == 1)
+   {
+      /* Frame K: wait for the main thread to push K+1, then report the
+       * resize as a context driver's check_window would. */
+      unsigned spins = 0;
+      while (rslane_stage == 1 && spins++ < 2000)
+         retro_sleep(1);
+      video_driver_set_output_size(rslane_report_w, rslane_report_h);
+      rslane_stage = 3;
+   }
+   else if (rslane_stage == 3 && !rslane_seen)
+   {
+      /* Frame K+1: what size is this drawn at? The size before the
+       * report may be zero in the harness, so a flag, not the value. */
+      rslane_seen_w = video_info->width;
+      rslane_seen_h = video_info->height;
+      rslane_seen   = true;
+   }
+   return rslane_inner->frame(data, frame, width, height, frame_count,
+         pitch, msg, video_info);
+}
+
+static void lane_resize_under_wrapper(void)
+{
+   unsigned had = failures;
+   thread_video_t *thr;
+   unsigned before_w = 0, before_h = 0;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "resize lane");
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   /* In game: a menu-frame push drains the video thread first, which
+    * would serialise the push after the report. */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "resize lane: menu still up");
+   run_frames(2);
+   video_thread_wait_idle();
+
+   rslane_inner  = thr->driver;
+   rslane_driver = *thr->driver;
+   rslane_driver.frame = rslane_frame;
+   thr->driver   = &rslane_driver;
+
+   video_driver_get_output_size(&before_w, &before_h);
+   rslane_report_w = before_w + 320;
+   rslane_report_h = before_h + 200;
+   rslane_seen_w   = rslane_seen_h = 0;
+   rslane_seen     = false;
+
+   /* K: pushed, and held on the video thread. */
+   rslane_stage = 1;
+   video_driver_cached_frame();
+   retro_sleep(5);
+   /* K+1: pushed while K is held, built with the size known now. */
+   video_driver_cached_frame();
+   rslane_stage = 2;
+   /* K reports and returns; K+1 is drawn. */
+   video_thread_wait_idle();
+   run_frames(2);
+   video_thread_wait_idle();
+
+   CHECK(rslane_stage == 3, "resize lane: frame K never ran on the video thread");
+   CHECK(rslane_seen, "resize lane: frame K+1 never ran");
+   CHECK(rslane_seen_w == rslane_report_w && rslane_seen_h == rslane_report_h,
+         "frame after a resize was drawn at %ux%u, the driver had reported %ux%u",
+         rslane_seen_w, rslane_seen_h, rslane_report_w, rslane_report_h);
+
+   video_thread_wait_idle();
+   thr->driver  = rslane_inner;
+   rslane_stage = 0;
+   /* Put the size and the menu back for the lanes that follow. */
+   video_driver_set_output_size(before_w, before_h);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] resize lane (frame after resize drawn at %ux%u)\n",
+            rslane_seen_w, rslane_seen_h);
+}
+
 static void lane_waiter_call(void)
 {
    thread_video_t *thr;
@@ -1200,6 +1303,7 @@ int main(int argc, char *argv[])
    lane_display_pacing();
    lane_zero_copy();
    lane_waiter_call();
+   lane_resize_under_wrapper();
 
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */
