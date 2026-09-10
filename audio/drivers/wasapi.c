@@ -339,6 +339,53 @@ static uint32_t wasapi_sibling_layout(uint32_t layout)
    return 0;
 }
 
+/* What the endpoint would take, logged once when a wide layout is
+ * refused: the engine's mix format, and for six and eight channels
+ * under each mask whether 16-bit, 24-in-32-bit and float are accepted
+ * in the mode. The frontend writes 16-bit or float; a device that
+ * takes multichannel only as 24-in-32 says so here, which is the
+ * fact the next step needs. */
+static void wasapi_log_endpoint_formats(IAudioClient *client, AUDCLNT_SHAREMODE mode)
+{
+   WAVEFORMATEXTENSIBLE *mix = NULL;
+   static const struct { unsigned ch; uint32_t mask; const char *name; } lays[] = {
+      { 6, AUDIO_LAYOUT_5POINT1,          "5.1 back"  },
+      { 6, AUDIO_LAYOUT_5POINT1_SURROUND, "5.1 sides" },
+      { 8, AUDIO_LAYOUT_7POINT1,          "7.1"       },
+   };
+   size_t i;
+
+   if (SUCCEEDED(_IAudioClient_GetMixFormat(client, (WAVEFORMATEX **)&mix)) && mix)
+   {
+      RARCH_LOG("[WASAPI] Endpoint mix format: %s, %u channels, mask 0x%03x, %u bits (%u valid), %u Hz.\n",
+            wasapi_wave_format_name(mix), mix->Format.nChannels,
+            mix->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE ? (unsigned)mix->dwChannelMask : 0u,
+            mix->Format.wBitsPerSample,
+            mix->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE ? mix->Samples.wValidBitsPerSample : mix->Format.wBitsPerSample,
+            (unsigned)mix->Format.nSamplesPerSec);
+      CoTaskMemFree(mix);
+   }
+   for (i = 0; i < ARRAY_SIZE(lays); i++)
+   {
+      WAVEFORMATEXTENSIBLE wf;
+      HRESULT h16, h24, hf;
+      wasapi_set_format(&wf, false, 48000, lays[i].ch, lays[i].mask);
+      h16 = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *)&wf, NULL);
+      /* 24 valid bits in a 32-bit container, the common HDMI form. */
+      wf.Format.wBitsPerSample        = 32;
+      wf.Format.nBlockAlign           = (WORD)(lays[i].ch * 4);
+      wf.Format.nAvgBytesPerSec       = 48000 * wf.Format.nBlockAlign;
+      wf.Samples.wValidBitsPerSample  = 24;
+      h24 = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *)&wf, NULL);
+      wasapi_set_format(&wf, true, 48000, lays[i].ch, lays[i].mask);
+      hf  = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *)&wf, NULL);
+      RARCH_LOG("[WASAPI] %s mode, %s (mask 0x%03x) at 48000 Hz: 16-bit %s, 24-in-32 %s, float %s.\n",
+            mode == AUDCLNT_SHAREMODE_EXCLUSIVE ? "Exclusive" : "Shared",
+            lays[i].name, lays[i].mask,
+            h16 == S_OK ? "yes" : "no", h24 == S_OK ? "yes" : "no", hf == S_OK ? "yes" : "no");
+   }
+}
+
 static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout)
 {
    /* Try the requested sample format first, then try the other one. */
@@ -429,6 +476,8 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
          }
          }
          RARCH_ERR("[WASAPI] Failed to select client format: No suitable format available.\n");
+         if (channels > 2)
+            wasapi_log_endpoint_formats(client, mode);
          break;
       }
       default:

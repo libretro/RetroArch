@@ -155,6 +155,7 @@ static const GUID mmdevice_IID_IAudioClient3 =
 #endif
 #define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \
    ( (This)->IsFormatSupported(ShareMode,pFormat,ppClosestMatch))
+#define _IAudioClient_GetMixFormat(This,ppDeviceFormat) ( (This)->GetMixFormat(ppDeviceFormat) )
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->Activate(iid,(dwClsCtx),pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->EnumAudioEndpoints(dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->GetDefaultAudioEndpoint(dataFlow,role,ppEndpoint)
@@ -199,6 +200,7 @@ static const GUID mmdevice_IID_IAudioClient3 =
 #endif
 #define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \
    ( (This)->lpVtbl->IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch))
+#define _IAudioClient_GetMixFormat(This,ppDeviceFormat) ( (This)->lpVtbl->GetMixFormat(This,ppDeviceFormat) )
 #define _IMMDevice_Activate(This,iid,dwClsCtx,pActivationParams,ppv) ((This)->lpVtbl->Activate(This,&(iid),dwClsCtx,pActivationParams,ppv))
 #define _IMMDeviceEnumerator_EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices) (This)->lpVtbl->EnumAudioEndpoints(This,dataFlow,dwStateMask,ppDevices)
 #define _IMMDeviceEnumerator_GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint) (This)->lpVtbl->GetDefaultAudioEndpoint(This,dataFlow,role,ppEndpoint)
