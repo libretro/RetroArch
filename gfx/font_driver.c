@@ -325,8 +325,11 @@ static const font_renderer_driver_t *font_renderer_shared_driver(
  * smooth ticker glyph width cache in gfx_animation.c) key their
  * entries on this value: font_data_t pointers can be recycled by
  * the allocator across free/create cycles, so pointer equality
- * alone cannot prove a cached entry still describes a live font */
-static uint32_t font_driver_generation = 0;
+ * alone cannot prove a cached entry still describes a live font.
+ * Atomic because the main thread bumps it while the threaded video
+ * worker reads it, drawing widgets during content. */
+static retro_atomic_int_t font_driver_generation
+   = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 /* Every live font, so they can be rebuilt when the file behind them
  * should change. Singly linked through font_data_t::next. */
@@ -546,14 +549,14 @@ unsigned font_driver_reload_fonts(void)
    if (n)
       /* Derived data cached outside this file - ticker widths, menu
        * line heights - is now stale. */
-      font_driver_generation++;
+      retro_atomic_fetch_add_int(&font_driver_generation, 1);
 
    return n;
 }
 
 uint32_t font_driver_get_generation(void)
 {
-   return font_driver_generation;
+   return (uint32_t)retro_atomic_load_acquire_int(&font_driver_generation);
 }
 
 int font_renderer_create_default(
@@ -1317,7 +1320,7 @@ void font_driver_free(font_data_t *font)
       font_data_t **link      = &font_live;
 
       /* Invalidate any externally cached per-font derived data */
-      font_driver_generation++;
+      retro_atomic_fetch_add_int(&font_driver_generation, 1);
 
       while (*link)
       {
@@ -1585,7 +1588,7 @@ bool font_driver_reinit_osd(const char *font_path, float font_size)
 
    /* Derived data cached outside this file - the widgets' line
     * metrics, gfx_animation's ticker widths - is now stale. */
-   font_driver_generation++;
+   retro_atomic_fetch_add_int(&font_driver_generation, 1);
    return true;
 }
 
