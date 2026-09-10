@@ -1348,10 +1348,11 @@ static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
              * come back short rather than spinning if it does not. */
             {
                struct pollfd pfd;
+               int           pr;
                pfd.fd      = ea->fd;
                pfd.events  = POLLOUT;
                pfd.revents = 0;
-               int pr = ealsa_poll(&pfd, 1, 100);
+               pr          = ealsa_poll(&pfd, 1, 100);
                /* A signal is not the device saying no: RetroArch takes
                 * them for its timers, and treating one as a refusal
                 * returned a short write for no reason. */
