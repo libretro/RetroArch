@@ -48,6 +48,7 @@ typedef struct sdl3_audio
    SDL_Mutex *lock; /**< Guards condition, the stream callbacks are called through it. */
    SDL_Condition *cond; /**< Signalled each time the device moves data. */
    SDL_AudioSpec spec; /**< The format for the given audio sample. */
+   uint32_t layout;    /**< The frontend's mask the stream was opened with. */
    SDL_AtomicU32 devid; /**< The device the stream is bound to. */
    size_t buffer_size; /**< Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
    size_t in_cap; /**< buffer_size converted into input-format bytes; equal to buffer_size outside the write_raw fast path. */
@@ -366,9 +367,54 @@ static void *sdl3_audio_init(const char *device,
    if (!(sdl->cond = SDL_CreateCondition()))
       goto error;
 
-   if (!(sdl->stream = sdl3_audio_open_stream(device, false, rate, latency,
-         2, &sdl->spec, &device_sample_frames)))
-      goto error;
+   /* The layout the frontend asked for, opened as its channel count
+    * only when the device itself has that many: SDL would otherwise
+    * fold the channels back to the device's count on its own, and
+    * the frontend's stereo mix is the better source for a stereo
+    * device than an upmix of it folded again. SDL's channel order is
+    * the WAV order - FL FR FC LFE BL BR (SL SR) - which is the
+    * frontend's mask order with the rear pair at the back, so what is
+    * reported names the back pair for 4, 6 and 8 channels. */
+   {
+      uint32_t want     = audio_driver_requested_layout();
+      unsigned channels = audio_layout_channels(want);
+      SDL_AudioSpec dev = {0};
+      int dev_frames    = 0;
+      sdl->layout       = AUDIO_LAYOUT_STEREO;
+      if (channels > 2)
+      {
+         SDL_AudioDeviceID id = sdl3_audio_find_device(device, false);
+         if (!SDL_GetAudioDeviceFormat(id, &dev, &dev_frames) || dev.channels < (int)channels)
+         {
+            RARCH_LOG("[SDL3 audio] The device has %d channels; layout 0x%03x asked for %u, opening stereo.\n",
+                  dev.channels, want, channels);
+            channels = 2;
+         }
+      }
+      if (channels == 8)
+         sdl->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_FRONT_CENTER | AUDIO_SPEAKER_LOW_FREQUENCY
+               | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT | AUDIO_SPEAKER_SIDE_LEFT | AUDIO_SPEAKER_SIDE_RIGHT;
+      else if (channels == 6)
+         sdl->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_FRONT_CENTER | AUDIO_SPEAKER_LOW_FREQUENCY
+               | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT;
+      else if (channels == 4)
+         sdl->layout = AUDIO_LAYOUT_STEREO | AUDIO_SPEAKER_BACK_LEFT | AUDIO_SPEAKER_BACK_RIGHT;
+      else
+         channels    = 2;
+      if (!(sdl->stream = sdl3_audio_open_stream(device, false, rate, latency,
+            (int)channels, &sdl->spec, &device_sample_frames)))
+      {
+         if (channels == 2)
+            goto error;
+         RARCH_WARN("[SDL3 audio] The device would not open with %u channels; opening stereo.\n", channels);
+         sdl->layout = AUDIO_LAYOUT_STEREO;
+         if (!(sdl->stream = sdl3_audio_open_stream(device, false, rate, latency,
+               2, &sdl->spec, &device_sample_frames)))
+            goto error;
+      }
+      if (sdl->layout != AUDIO_LAYOUT_STEREO)
+         RARCH_LOG("[SDL3 audio] Opened %u channels, layout 0x%03x.\n", channels, sdl->layout);
+   }
 
    sdl->latency = latency;
 
@@ -686,6 +732,12 @@ static void sdl3_audio_set_nonblock_state(void *data, bool state)
       sdl->nonblock = state;
 }
 
+static uint32_t sdl3_audio_layout(void *data)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   return sdl ? sdl->layout : AUDIO_LAYOUT_STEREO;
+}
+
 static bool sdl3_audio_use_float(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
@@ -730,7 +782,10 @@ audio_driver_t audio_sdl3 = {
    sdl3_audio_write_avail,
    sdl3_audio_buffer_size,
    sdl3_audio_write_raw,
-   sdl3_audio_wait_writable
+   sdl3_audio_wait_writable,
+   NULL, /* frames_consumed */
+   NULL, /* underruns */
+   sdl3_audio_layout
 };
 
 #ifdef HAVE_MICROPHONE
