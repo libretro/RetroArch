@@ -3079,6 +3079,22 @@ static int rzstd_enc_lazy(int level)
 {
    return level >= 3;
 }
+/* Whether a match may reach back past the block it is in, into the
+ * whole frame. On a memory image that is where most matches are -
+ * the same offset in a page written a megabyte earlier - and taking
+ * them is worth a sixth of the output; but every candidate that far
+ * back is a cache miss to read, and it makes the search three times
+ * slower. Levels below 5 keep the block-local search, which is what
+ * the replay checkpoints and the savestate writer run on the frame's
+ * time, and with it the predefined sequence tables and no weighing
+ * of short matches: those two are worth two percent on their own at
+ * a tenth of the speed, which is no trade at all, and only pay once
+ * the far matches are in. Levels 1 to 3 are the encoder as it was;
+ * 5 and up spend the time. */
+static int rzstd_enc_window(int level)
+{
+   return level >= 5;
+}
 
 /* Bytes p and q agree on, up to limit: eight at a time where the
  * platform reads unaligned words. */
@@ -3265,6 +3281,28 @@ typedef struct rzstd_seq
    uint32_t match;
    uint32_t offset;
 } rzstd_seq_t;
+
+/* log2 of a count in sixteenths of a bit: the integer part from the
+ * highest set bit, the fraction from the next four, for the cost
+ * comparisons below, which need no libm. */
+static uint32_t rzstd_log2_q4(uint32_t x)
+{
+   static const uint8_t frac[16] = { 0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15 };
+   uint32_t hb = 0;
+   if (x < 2)
+      return 0;
+   while ((x >> (hb + 1)) != 0)
+      hb++;
+   return hb * 16 + frac[hb >= 4 ? (x >> (hb - 4)) & 15 : (x << (4 - hb)) & 15];
+}
+
+/* The sequence tables' working memory: a histogram and a normalised
+ * count per table. Five kilobytes, off the stack with the rest. */
+typedef struct rzstd_seq_stats
+{
+   uint32_t hist[3][RZSTD_FSE_MAX_SYMBOLS];
+   int16_t  norm[3][RZSTD_FSE_MAX_SYMBOLS];
+} rzstd_seq_stats_t;
 
 /* Emits one block as literals plus sequences, or reports that doing so
  * would not be smaller than storing it. */
@@ -3744,7 +3782,7 @@ static size_t rzstd_huf_literals(uint8_t *dst, size_t cap,
 static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       const uint8_t *src, size_t len, const rzstd_seq_t *seq, size_t nseq,
       const uint8_t *literals, size_t lit_len, size_t *out_len,
-      rzstd_fse_ct_t *cts)
+      rzstd_fse_ct_t *cts, int fit_tables)
 {
    rzstd_fse_ct_t *ll_ctp = &cts[0];
    rzstd_fse_ct_t *ml_ctp = &cts[1];
@@ -3820,14 +3858,97 @@ literals_done:
    else
       return RZ_DATA;
 
-   if (at + 1 > dst_cap)
-      return RZ_DATA;
-   dst[at++] = 0;
-
-   if (rzstd_fse_build_ct(ll_ctp, rzstd_ll_default, 36, 6) != RZ_OK
-    || rzstd_fse_build_ct(ml_ctp, rzstd_ml_default, 53, 6) != RZ_OK
-    || rzstd_fse_build_ct(of_ctp, rzstd_of_default, 29, 5) != RZ_OK)
-      return RZ_DATA;
+   /* Each table is the block's own where that pays, the predefined
+    * one otherwise. The predefined tables (3.1.1.3.2.2.1) give the
+    * codes a memory image produces - few literals, matches of four
+    * or five, offsets of eighteen bits - four bits or more each, and
+    * three of them a sequence was most of what a sequence cost. A
+    * table fitted to the block's histogram gives the common codes
+    * one or two bits, for a description of a few dozen bytes; the
+    * fit is judged by the ideal cost of the symbols under each
+    * table, description included, and the smaller is written. */
+   {
+      /* after the four tables, the Huffman decoder and coder */
+      rzstd_seq_stats_t *st = (rzstd_seq_stats_t*)((uint8_t*)(cts + 4)
+            + sizeof(rzstd_huf_t) + sizeof(rzstd_huf_enc_t));
+      uint32_t (*hist)[RZSTD_FSE_MAX_SYMBOLS] = st->hist;
+      int16_t  (*norm)[RZSTD_FSE_MAX_SYMBOLS] = st->norm;
+      static const uint32_t nsym_of[3] = { 36, 53, 29 };
+      static const uint32_t log_max[3] = { 9, 9, 8 };
+      static const int16_t *predef[3];
+      uint32_t modes = 0, t;
+      predef[0] = rzstd_ll_default;
+      predef[1] = rzstd_ml_default;
+      predef[2] = rzstd_of_default;
+      memset(st->hist, 0, sizeof(st->hist));
+      for (i = 0; fit_tables && i < nseq; i++)
+      {
+         hist[0][rzstd_code_for(rzstd_ll_base, 36, seq[i].literals)]++;
+         hist[1][rzstd_code_for(rzstd_ml_base, 53, seq[i].match)]++;
+         hist[2][rzstd_of_code(seq[i].offset)]++;
+      }
+      /* the modes byte comes first; the descriptions follow in the
+       * decoder's order: literal lengths, offsets, match lengths */
+      {
+         size_t modes_at = at;
+         static const uint32_t order[3] = { 0, 2, 1 };
+         uint32_t k;
+         if (at + 1 > dst_cap)
+            return RZ_DATA;
+         at++;
+         for (k = 0; k < 3; k++)
+         {
+            uint32_t nsym = nsym_of[t = order[k]], present = 0, max = 0, s, alog;
+            uint64_t cost_predef = 0, cost_own = 0;   /* sixteenths of a bit */
+            uint32_t predef_log = (t == 2) ? 5 : 6;
+            rzstd_fse_ct_t *ct = &cts[t];
+            for (s = 0; s < nsym; s++)
+               if (hist[t][s]) { present++; max = s; }
+            /* one symbol: the predefined table codes it in a few bits
+             * a sequence; the RLE mode would be free, but a block
+             * where every sequence has the same code is not one worth
+             * a fourth path through the state machine */
+            (void)present;
+            /* the ideal cost under the predefined table: a symbol at
+             * probability p costs -log2 p bits; one it gives no slot
+             * to it cannot code at all */
+            for (s = 0; s < nsym; s++)
+            {
+               int16_t c = predef[t][s];
+               if (!hist[t][s]) continue;
+               if (c <= 0) { cost_predef = (uint64_t)-1; break; }
+               cost_predef += (uint64_t)hist[t][s] * (predef_log * 16 - rzstd_log2_q4((uint32_t)c));
+            }
+            /* the block's own: accuracy by the count, as the reference
+             * picks it, capped by the table's maximum */
+            alog = 5;
+            while (alog < log_max[t] && ((uint32_t)1 << alog) < nseq) alog++;
+            if (rzstd_fse_normalize(hist[t], max + 1, (uint32_t)nseq, alog, norm[t]))
+            {
+               for (s = 0; s <= max; s++)
+                  if (hist[t][s])
+                     cost_own += (uint64_t)hist[t][s] * (alog * 16 - rzstd_log2_q4((uint32_t)norm[t][s]));
+               cost_own += 16 * 8 * (2 + (max + 1) * (alog + 1) / 8);   /* the description, roughly */
+            }
+            else
+               cost_own = (uint64_t)-1;
+            if (fit_tables && cost_own < cost_predef)
+            {
+               size_t desc = rzstd_fse_write_counts(dst + at, dst_cap > at ? dst_cap - at : 0,
+                     norm[t], max + 1, alog);
+               if (desc && rzstd_fse_build_ct(ct, norm[t], max + 1, alog) == RZ_OK)
+               {
+                  at    += desc;
+                  modes |= 2u << (6 - 2 * k);
+                  continue;
+               }
+            }
+            if (rzstd_fse_build_ct(ct, predef[t], nsym, predef_log) != RZ_OK)
+               return RZ_DATA;
+         }
+         dst[modes_at] = (uint8_t)modes;
+      }
+   }
 
    rzstd_wbits_init(&w, dst + at, dst_cap - at);
 
@@ -3909,6 +4030,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
    rzstd_fse_ct_t *cts = NULL;
    const int depth_max = rzstd_enc_depth(level);
    const int lazy      = rzstd_enc_lazy(level);
+   const int window    = rzstd_enc_window(level);
 
    if (!dst || (!src && src_len))
       return RZSTD_PROCESS_ERROR;
@@ -4007,7 +4129,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * then a decoder's table to read a tree back and the
              * literal coder's working memory after it. */
             cts   = (rzstd_fse_ct_t*)calloc(4 + (sizeof(rzstd_huf_t)
-                     + sizeof(rzstd_huf_enc_t)
+                     + sizeof(rzstd_huf_enc_t) + sizeof(rzstd_seq_stats_t)
                      + sizeof(rzstd_fse_ct_t) - 1) / sizeof(rzstd_fse_ct_t),
                   sizeof(*cts));
          }
@@ -4064,7 +4186,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                 * that only when literals are present. */
                rep_len = 0;
                if (rep[0] && pos + 1 + RZSTD_ENC_MIN_MATCH <= take
-                     && (size_t)rep[0] <= pos + 1)
+                     && (size_t)rep[0] <= (window ? in : 0) + pos + 1)
                {
                   const uint8_t *r  = src + in + pos + 1;
                   const uint8_t *rq = r - rep[0];
@@ -4080,6 +4202,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      if (rep_len < RZSTD_ENC_MIN_MATCH)
                         rep_len = 0;
                   }
+#ifdef RZSTD_REP3
+                  else if (((a ^ b) & 0xFFFFFFu) == 0)
+                     rep_len = 3;
+#endif
                }
 
                /* Walk the bucket for the longest match rather than
@@ -4113,16 +4239,23 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      const uint8_t *q;
                      size_t         n;
 
-                     /* Outside this block, so it belongs to an earlier
-                      * one: a match may not cross a block boundary. */
-                     if (abs_from < in || abs_from >= in + pos)
+                     /* Not before this position: an entry left by a
+                      * later pass over an earlier block. Anything
+                      * earlier in the input is a match: the window is
+                      * the whole frame (single segment), and a match
+                      * reaches back across blocks - which is where most
+                      * of the matches are on a memory image of pages
+                      * that resemble each other, a block being a few
+                      * dozen pages and the frame thousands. */
+                     if (abs_from >= in + pos || (!window && abs_from < in))
                         break;
-                     from = abs_from - in;
+                     from = abs_from;
                      q    = src + abs_from;
                      /* A candidate that cannot beat the best is not
                       * measured: its byte at the best length differs,
                       * or its first four are not the position's. */
-                     if (   (best_len && q[best_len] != p[best_len])
+                     if (   (best_len && (pos + best_len >= take
+                                          || q[best_len] != p[best_len]))
                          || memcmp(q, p, 4) != 0)
                      {
                         cand = chain[abs_from & (((size_t)1 << enc_log) - 1)];
@@ -4144,8 +4277,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      if (best_len >= 64)
                         break;
 
-                     cand = chain[abs_from
-                        & (((size_t)1 << enc_log) - 1)];
+                     cand = chain[abs_from & (((size_t)1 << enc_log) - 1)];
                      if (cand && (size_t)cand - 1 >= abs_from)
                         break;   /* not strictly older: stop */
                   }
@@ -4193,7 +4325,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      {
                         size_t abs2 = (size_t)c2 - 1;
                         size_t n2;
-                        if (abs2 < in || abs2 >= in + pos + 1)
+                        if (abs2 >= in + pos + 1 || (!window && abs2 < in))
                            break;
                         n2 = rzstd_match_len(p2, src + abs2, take - (pos + 1));
                         if (n2 > len2)
@@ -4213,6 +4345,27 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      }
                   }
 
+                  /* Is the match worth a sequence? A sequence costs
+                   * its three symbols - a dozen bits or so between
+                   * them - and the offset's extra bits, which is the
+                   * offset's width less one; the literals it replaces
+                   * cost about eight bits each. A four-byte match a
+                   * quarter of a megabyte back costs more than the
+                   * four literals do, and taking every one of them
+                   * put more into the sequences section than they
+                   * took out of the literals: on a memory image the
+                   * matches are mostly short and far. A remembered
+                   * offset has no extra bits and is always worth it. */
+                  if (window && best_len >= RZSTD_ENC_MIN_MATCH && best_len < 8)
+                  {
+                     uint32_t off  = (uint32_t)(in + pos - best_from);
+                     uint32_t bits = 16;
+                     if (off != rep[0] && off != rep[1] && off != rep[2])
+                        bits += rzstd_of_code(off + 3);
+                     if (bits + 4 > best_len * 8)
+                        best_len = 0;
+                  }
+
                   if (best_len >= RZSTD_ENC_MIN_MATCH)
                   {
                      size_t from = best_from;
@@ -4223,7 +4376,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      sq->literals = (uint32_t)(pos - lit_from);
                      sq->match    = (uint32_t)n;
                      sq->offset = rzstd_enc_offset(rep,
-                           (uint32_t)(pos - from), sq->literals);
+                           (uint32_t)(in + pos - from), sq->literals);
 
                      memcpy(lits + lit_len, src + in + lit_from,
                            sq->literals);
@@ -4287,7 +4440,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
             if (nseq && cts && rzstd_emit_block(dst + at + 3, dst_len - at - 3,
                      src + in, take, seq, nseq, lits, lit_len,
-                     &produced, cts) == RZ_OK
+                     &produced, cts, window) == RZ_OK
                   && produced < take)
             {
                rzstd_write_block_header(dst + at, (uint32_t)produced,
@@ -4317,6 +4470,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
    free(hash);
    free(chain);
+
    free(cts);
 
    if (wrote)
