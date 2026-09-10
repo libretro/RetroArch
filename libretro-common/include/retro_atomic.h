@@ -49,6 +49,11 @@
  * tags for every backend:
  *
  *   retro_atomic_load_acquire   - acquire load   (pairs with release store)
+ *   retro_atomic_load_relaxed_size - relaxed load of a size_t; no ordering.
+ *                                 For a thread reading a counter that
+ *                                 only it writes (e.g. an SPSC producer
+ *                                 reading its own head).  Not offered for
+ *                                 int: no caller needs it yet.
  *   retro_atomic_store_release  - release store  (pairs with acquire load)
  *   retro_atomic_fetch_add      - acq_rel RMW
  *   retro_atomic_fetch_sub      - acq_rel RMW
@@ -391,6 +396,8 @@ typedef atomic_size_t retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_size(p) \
    atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_load_relaxed_size(p) \
+   atomic_load_explicit((p), memory_order_relaxed)
 #define retro_atomic_store_release_size(p, v) \
    atomic_store_explicit((p), (v), memory_order_release)
 #define retro_atomic_fetch_add_size(p, v) \
@@ -448,6 +455,8 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_size(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
+#define retro_atomic_load_relaxed_size(p) \
+   std::atomic_load_explicit((p), std::memory_order_relaxed)
 #define retro_atomic_store_release_size(p, v) \
    std::atomic_store_explicit((p), (std::size_t)(v), std::memory_order_release)
 #define retro_atomic_fetch_add_size(p, v) \
@@ -482,6 +491,8 @@ typedef size_t retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_size(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_size(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
 #define retro_atomic_store_release_size(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
 #define retro_atomic_fetch_add_size(p, v) \
@@ -620,6 +631,12 @@ static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
  * needs seq_cst, they can pair this with an additional load_acquire
  * on the same variable. */
 
+/* Relaxed load: retro_atomic_size_t is volatile LONG_PTR, so a plain
+ * read is an aligned native-width volatile load, which MSVC guarantees
+ * is atomic (no tearing) on every architecture it targets.  This is
+ * the one load here that is not a locked RMW. */
+#define retro_atomic_load_relaxed_size(p) ((size_t)(*(p)))
+
 #if defined(_WIN64)
 #define retro_atomic_load_acquire_size(p) \
    ((size_t)InterlockedCompareExchangeAcquire64((LONGLONG volatile*)(p), 0, 0))
@@ -680,6 +697,11 @@ typedef volatile intptr_t retro_atomic_size_t;
 #define retro_atomic_fetch_and_int(p, v) \
    ((int)OSAtomicAnd32OrigBarrier((uint32_t)(v), (volatile uint32_t*)(p)))
 
+/* Relaxed load: aligned native-width volatile read, atomic on every
+ * Apple target (no tearing); unlike the barrier'd Add(0) above it is
+ * not an RMW. */
+#define retro_atomic_load_relaxed_size(p) ((size_t)(*(p)))
+
 #if defined(__LP64__)
 #define retro_atomic_load_acquire_size(p) \
    ((size_t)OSAtomicAdd64Barrier(0, (volatile int64_t*)(p)))
@@ -730,6 +752,8 @@ typedef volatile size_t retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_size(p) \
    __sync_fetch_and_add((p), (size_t)0)
+/* Relaxed load: aligned volatile size_t read, no RMW. */
+#define retro_atomic_load_relaxed_size(p) (*(p))
 #define retro_atomic_store_release_size(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
 #define retro_atomic_fetch_add_size(p, v) \
@@ -775,6 +799,7 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 }
 
 #define retro_atomic_load_acquire_size(p)        (*(p))
+#define retro_atomic_load_relaxed_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
 #define retro_atomic_fetch_add_size(p, v)        ((*(p) += (v)) - (v))
 #define retro_atomic_fetch_sub_size(p, v)        ((*(p) -= (v)) + (v))

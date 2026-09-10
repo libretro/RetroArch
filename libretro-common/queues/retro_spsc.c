@@ -227,10 +227,15 @@ void retro_spsc_write_end(retro_spsc_t *q, size_t bytes)
 {
    if (bytes == 0)
       return;
-   /* Release: the caller's stores into the span happen-before the
+   /* head is written only by the producer, i.e. by this thread, so
+    * reading our own last store needs no ordering: a relaxed load is
+    * enough (and on the MSVC/Apple/__sync backends the acquire load is
+    * a locked RMW, so this also removes a lock-prefixed instruction
+    * from every span commit).
+    * Release: the caller's stores into the span happen-before the
     * consumer's acquire-load of head, same pairing as retro_spsc_write. */
    retro_atomic_store_release_size(&q->head,
-         retro_atomic_load_acquire_size(&q->head) + bytes);
+         retro_atomic_load_relaxed_size(&q->head) + bytes);
 }
 
 size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr)
@@ -253,10 +258,12 @@ void retro_spsc_read_end(retro_spsc_t *q, size_t bytes)
 {
    if (bytes == 0)
       return;
-   /* Release: our reads of the span happen-before the producer's
+   /* tail is written only by the consumer, i.e. by this thread, so a
+    * relaxed load of our own counter suffices; see retro_spsc_write_end.
+    * Release: our reads of the span happen-before the producer's
     * acquire-load of tail sees the space as free. */
    retro_atomic_store_release_size(&q->tail,
-         retro_atomic_load_acquire_size(&q->tail) + bytes);
+         retro_atomic_load_relaxed_size(&q->tail) + bytes);
 }
 
 size_t retro_spsc_skip(retro_spsc_t *q, size_t bytes)
