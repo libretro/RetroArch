@@ -4632,9 +4632,9 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
 
          if (param)
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
-      }
 
-      video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+      }
    }
 }
 

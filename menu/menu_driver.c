@@ -3117,6 +3117,7 @@ static bool menu_shader_manager_save_preset_internal(
 {
    size_t _len;
    char fullname[NAME_MAX_LENGTH];
+   char buffer[DIR_MAX_LENGTH];
    bool ret                       = false;
    enum rarch_shader_type type    = RARCH_SHADER_NONE;
    char *preset_path              = NULL;
@@ -3145,7 +3146,6 @@ static bool menu_shader_manager_save_preset_internal(
    else
    {
       char basedir[DIR_MAX_LENGTH];
-      char buffer[DIR_MAX_LENGTH];
 
       for (i = 0; i < num_target_dirs; i++)
       {
