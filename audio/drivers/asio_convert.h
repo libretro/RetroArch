@@ -182,21 +182,21 @@ static INLINE void asio_store_u64(uint8_t *p, uint64_t v, bool big_endian)
  * hidden, only its edges. */
 #define ASIO_FADE_FRAMES 32
 
-/* Writes have frames of src - interleaved float stereo - to buf_l and
- * buf_r in type, then silence to frames. Types asio_convert_known()
- * rejects get silence for all frames. Audio that stops short of frames
- * is faded out over its last ASIO_FADE_FRAMES; with fade_in set, the
- * caller having had silence last period, it is faded in over its first.
- * The fades are applied to src in place. */
+/* Writes have frames of src - interleaved float, channels wide - to
+ * the channels output buffers bufs[0..channels-1] in type, then
+ * silence to frames. Types asio_convert_known() rejects get silence
+ * for all frames. Audio that stops short of frames is faded out over
+ * its last ASIO_FADE_FRAMES; with fade_in set, the caller having had
+ * silence last period, it is faded in over its first. The fades are
+ * applied to src in place. Channel c of frame i is src[i * channels
+ * + c]; the stereo case is channels 2 with bufs = { left, right }. */
 static INLINE void asio_convert_frames(ASIOSampleType type,
-      float *src, long have, long frames, void *buf_l, void *buf_r,
-      bool fade_in)
+      float *src, long have, long frames, unsigned channels,
+      void **bufs, bool fade_in)
 {
-   uint8_t *dl = (uint8_t*)buf_l;
-   uint8_t *dr = (uint8_t*)buf_r;
    size_t   bps = asio_bytes_per_sample(type);
    long     i;
-   unsigned bits;
+   unsigned c, bits;
    bool     big;
 
    if (!asio_convert_known(type))
@@ -211,15 +211,15 @@ static INLINE void asio_convert_frames(ASIOSampleType type,
          for (i = 0; i < fade; i++)
          {
             float g = (float)(i + 1) / (float)fade;
-            src[i * 2 + 0] *= g;
-            src[i * 2 + 1] *= g;
+            for (c = 0; c < channels; c++)
+               src[i * channels + c] *= g;
          }
       if (have < frames)
          for (i = 0; i < fade; i++)
          {
             float g = (float)(fade - i - 1) / (float)fade;
-            src[(have - fade + i) * 2 + 0] *= g;
-            src[(have - fade + i) * 2 + 1] *= g;
+            for (c = 0; c < channels; c++)
+               src[(have - fade + i) * channels + c] *= g;
          }
    }
 
@@ -228,46 +228,52 @@ static INLINE void asio_convert_frames(ASIOSampleType type,
       case ASIOSTFloat32LSB:
       case ASIOSTFloat32MSB:
          big = (type == ASIOSTFloat32MSB);
-         for (i = 0; i < have; i++)
+         for (c = 0; c < channels; c++)
          {
-            union { float f; uint32_t u; } l, r;
-            l.f = src[i * 2 + 0];
-            r.f = src[i * 2 + 1];
-            asio_store_u32(dl + i * 4, l.u, big);
-            asio_store_u32(dr + i * 4, r.u, big);
+            uint8_t *d = (uint8_t*)bufs[c];
+            for (i = 0; i < have; i++)
+            {
+               union { float f; uint32_t u; } v;
+               v.f = src[i * channels + c];
+               asio_store_u32(d + i * 4, v.u, big);
+            }
          }
          break;
 
       case ASIOSTFloat64LSB:
       case ASIOSTFloat64MSB:
          big = (type == ASIOSTFloat64MSB);
-         for (i = 0; i < have; i++)
+         for (c = 0; c < channels; c++)
          {
-            union { double f; uint64_t u; } l, r;
-            l.f = (double)src[i * 2 + 0];
-            r.f = (double)src[i * 2 + 1];
-            asio_store_u64(dl + i * 8, l.u, big);
-            asio_store_u64(dr + i * 8, r.u, big);
+            uint8_t *d = (uint8_t*)bufs[c];
+            for (i = 0; i < have; i++)
+            {
+               union { double f; uint64_t u; } v;
+               v.f = (double)src[i * channels + c];
+               asio_store_u64(d + i * 8, v.u, big);
+            }
          }
          break;
 
       case ASIOSTInt16LSB:
       case ASIOSTInt16MSB:
          big = (type == ASIOSTInt16MSB);
-         for (i = 0; i < have; i++)
+         for (c = 0; c < channels; c++)
          {
-            asio_store_u16(dl + i * 2, (uint32_t)asio_float_to_int(src[i * 2 + 0], 16), big);
-            asio_store_u16(dr + i * 2, (uint32_t)asio_float_to_int(src[i * 2 + 1], 16), big);
+            uint8_t *d = (uint8_t*)bufs[c];
+            for (i = 0; i < have; i++)
+               asio_store_u16(d + i * 2, (uint32_t)asio_float_to_int(src[i * channels + c], 16), big);
          }
          break;
 
       case ASIOSTInt24LSB:
       case ASIOSTInt24MSB:
          big = (type == ASIOSTInt24MSB);
-         for (i = 0; i < have; i++)
+         for (c = 0; c < channels; c++)
          {
-            asio_store_u24(dl + i * 3, (uint32_t)asio_float_to_int(src[i * 2 + 0], 24), big);
-            asio_store_u24(dr + i * 3, (uint32_t)asio_float_to_int(src[i * 2 + 1], 24), big);
+            uint8_t *d = (uint8_t*)bufs[c];
+            for (i = 0; i < have; i++)
+               asio_store_u24(d + i * 3, (uint32_t)asio_float_to_int(src[i * channels + c], 24), big);
          }
          break;
 
@@ -287,12 +293,13 @@ static INLINE void asio_convert_frames(ASIOSampleType type,
          big = (   type == ASIOSTInt32MSB   || type == ASIOSTInt32MSB16
                 || type == ASIOSTInt32MSB18 || type == ASIOSTInt32MSB20
                 || type == ASIOSTInt32MSB24);
-         for (i = 0; i < have; i++)
+         for (c = 0; c < channels; c++)
          {
-            /* The value in the low bits of the word, sign extended: the
-             * int32_t cast to uint32_t is exactly that. */
-            asio_store_u32(dl + i * 4, (uint32_t)asio_float_to_int(src[i * 2 + 0], bits), big);
-            asio_store_u32(dr + i * 4, (uint32_t)asio_float_to_int(src[i * 2 + 1], bits), big);
+            uint8_t *d = (uint8_t*)bufs[c];
+            for (i = 0; i < have; i++)
+               /* The value in the low bits of the word, sign extended:
+                * the int32_t cast to uint32_t is exactly that. */
+               asio_store_u32(d + i * 4, (uint32_t)asio_float_to_int(src[i * channels + c], bits), big);
          }
          break;
 
@@ -301,10 +308,8 @@ static INLINE void asio_convert_frames(ASIOSampleType type,
    }
 
    if (have < frames)
-   {
-      memset(dl + (size_t)have * bps, 0, (size_t)(frames - have) * bps);
-      memset(dr + (size_t)have * bps, 0, (size_t)(frames - have) * bps);
-   }
+      for (c = 0; c < channels; c++)
+         memset((uint8_t*)bufs[c] + (size_t)have * bps, 0, (size_t)(frames - have) * bps);
 }
 
 #endif

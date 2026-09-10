@@ -114,14 +114,18 @@ typedef struct
     * bit races with a write of another. Set at init, never changed. */
    bool                pump_exclusive;
 #endif
-   unsigned char frame_size;          /* 4 or 8 only */
-   /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
-    * together in wasapi_init and frame_size == 1u << frame_shift.
-    * Exists so the byte-count-to-frame-count conversions on the write
-    * path are shifts rather than 64-bit hardware divides.  Fits in the
-    * struct's existing tail padding, so wasapi_t stays 64 bytes. */
-   unsigned char frame_shift;
+   /* Bytes per frame: the channels at the sample size - 4 or 8 for
+    * stereo, up to 32 for 7.1 float. The byte-to-frame conversions
+    * on the write path divide by it; a shift was possible only while
+    * every frame size was a power of two. */
+   unsigned char frame_size;
+   /* Float samples, whatever the channel count. */
+   bool          float_format;
    uint8_t flags;
+   /* The speaker layout the stream opened with, as the frontend's
+    * mask (WAVEFORMATEXTENSIBLE's bits): what the device took, which
+    * for a shared-mode stream is the engine's mix format's mask. */
+   uint32_t layout;
 } wasapi_t;
 
 static void wasapi_imm_stop_thread(wasapi_t *w)
@@ -203,8 +207,19 @@ static const char* wasapi_error(DWORD error)
    return s;
 }
 
+/* The speaker mask: mono, or the frontend's layout, whose bits are
+ * WAVEFORMATEXTENSIBLE's own. */
+static DWORD wasapi_channel_mask(unsigned channels, uint32_t layout)
+{
+   if (channels == 1)
+      return KSAUDIO_SPEAKER_MONO;
+   if (channels == 2)
+      return KSAUDIO_SPEAKER_STEREO;
+   return (DWORD)layout;
+}
+
 static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
-      bool float_fmt, unsigned rate, unsigned channels)
+      bool float_fmt, unsigned rate, unsigned channels, uint32_t layout)
 {
    WORD wBitsPerSample        = float_fmt ? 32 : 16;
    WORD nBlockAlign           = (channels * wBitsPerSample) / 8;
@@ -216,13 +231,16 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
    wf->Format.nBlockAlign     = nBlockAlign;
    wf->Format.wBitsPerSample  = wBitsPerSample;
 
-   if (float_fmt)
+   /* Float, or more than stereo, is WAVE_FORMAT_EXTENSIBLE with the
+    * speaker mask; stereo int16 stays plain PCM, as it always was. */
+   if (float_fmt || channels > 2)
    {
       wf->Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
       wf->Format.cbSize               = sizeof(WORD) + sizeof(DWORD) + sizeof(GUID);
       wf->Samples.wValidBitsPerSample = wBitsPerSample;
-      wf->dwChannelMask               = channels == 1 ? KSAUDIO_SPEAKER_MONO : KSAUDIO_SPEAKER_STEREO;
-      wf->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+      wf->dwChannelMask               = wasapi_channel_mask(channels, layout);
+      wf->SubFormat                   = float_fmt
+            ? KSDATAFORMAT_SUBTYPE_IEEE_FLOAT : KSDATAFORMAT_SUBTYPE_PCM;
    }
    else
    {
@@ -234,15 +252,35 @@ static void wasapi_set_format(WAVEFORMATEXTENSIBLE *wf,
    }
 }
 
+/* The layout a format opened with: the mask a wider EXTENSIBLE format
+ * carries, stereo for anything else. */
+static uint32_t wasapi_format_layout(const WAVEFORMATEXTENSIBLE *wf)
+{
+   if (wf->Format.nChannels > 2 && wf->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE)
+      return (uint32_t)wf->dwChannelMask;
+   return AUDIO_LAYOUT_STEREO;
+}
+
 /**
  * @param[in] format The format to check.
  * @return \c true if \c format is suitable for RetroArch.
  */
 static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
 {
-   /* RetroArch only supports mono mic input and stereo speaker output */
-   if (!format || format->Format.nChannels == 0 || format->Format.nChannels > 2)
+   /* Mono mic input, stereo speaker output, or a wider speaker layout
+    * the frontend can fill - and for that the format must say its
+    * positions: a wider format without a speaker mask is not one. */
+   if (!format || format->Format.nChannels == 0)
       return false;
+   if (format->Format.nChannels > 2)
+   {
+      if (format->Format.wFormatTag != WAVE_FORMAT_EXTENSIBLE)
+         return false;
+      if (!audio_layout_supported((uint32_t)format->dwChannelMask))
+         return false;
+      if (audio_layout_channels((uint32_t)format->dwChannelMask) != format->Format.nChannels)
+         return false;
+   }
 
    switch (format->Format.wFormatTag)
    {
@@ -252,12 +290,19 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
             return false;
          break;
       case WAVE_FORMAT_EXTENSIBLE:
-         if (memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)) != 0)
+         if (memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)) == 0)
+         {
+            if (format->Format.wBitsPerSample != 32)
+               /* floating-point samples must be 32-bit */
+               return false;
+         }
+         else if (memcmp(&format->SubFormat, &KSDATAFORMAT_SUBTYPE_PCM, sizeof(GUID)) == 0)
+         {
+            if (format->Format.wBitsPerSample != 16)
+               return false;
+         }
+         else
             /* RetroArch doesn't support any other subformat */
-            return false;
-
-         if (format->Format.wBitsPerSample != 32)
-            /* floating-point samples must be 32-bit */
             return false;
          break;
       default:
@@ -278,7 +323,7 @@ static bool wasapi_is_format_suitable(const WAVEFORMATEXTENSIBLE *format)
  * If \c true, the selected format will be written to \c format.
  * If \c false, the value referred by \c format will be unchanged.
  */
-static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels)
+static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout)
 {
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
@@ -328,7 +373,7 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
             {
                HRESULT format_check_hr;
                WAVEFORMATEXTENSIBLE possible_format;
-               wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels);
+               wasapi_set_format(&possible_format, preferred_formats[i], preferred_rates[j], channels, layout);
                format_check_hr = _IAudioClient_IsFormatSupported(client, mode, (const WAVEFORMATEX *) &possible_format, NULL);
                if (SUCCEEDED(format_check_hr))
                {
@@ -358,7 +403,8 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
 }
 
 static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
+      uint32_t layout, uint32_t *layout_out)
 {
    WAVEFORMATEXTENSIBLE wf;
    IAudioClient *client           = NULL;
@@ -395,7 +441,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
-   wasapi_set_format(&wf, *float_fmt, *rate, channels);
+   wasapi_set_format(&wf, *float_fmt, *rate, channels, layout);
    RARCH_DBG("[WASAPI] Requesting exclusive %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
          wf.Format.nChannels,
@@ -403,7 +449,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       goto error;
@@ -496,8 +542,11 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       goto error;
    }
 
-   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
+   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM
+         && memcmp(&wf.SubFormat, &KSDATAFORMAT_SUBTYPE_PCM, sizeof(GUID)) != 0;
    *rate      = wf.Format.nSamplesPerSec;
+   if (layout_out)
+      *layout_out = wasapi_format_layout(&wf);
    return client;
 
 error:
@@ -513,7 +562,7 @@ static unsigned wasapi_sh_engine_period = 0;
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
-      bool *low_latency)
+      uint32_t layout, uint32_t *layout_out, bool *low_latency)
 {
    wasapi_sh_engine_period = 0;
    WAVEFORMATEXTENSIBLE wf;
@@ -548,7 +597,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          || (sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER))
       buffer_duration = default_period * 2;
 
-   wasapi_set_format(&wf, *float_fmt, *rate, channels);
+   wasapi_set_format(&wf, *float_fmt, *rate, channels, layout);
    RARCH_DBG("[WASAPI] Requesting shared %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.Format.wBitsPerSample,
          wf.Format.nChannels,
@@ -556,7 +605,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels, layout))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       goto error;
@@ -689,8 +738,11 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 #ifdef __IAudioClient3_INTERFACE_DEFINED__
 initialized:
 #endif
-   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
+   *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM
+         && memcmp(&wf.SubFormat, &KSDATAFORMAT_SUBTYPE_PCM, sizeof(GUID)) != 0;
    *rate      = wf.Format.nSamplesPerSec;
+   if (layout_out)
+      *layout_out = wasapi_format_layout(&wf);
    return client;
 
 error:
@@ -701,7 +753,7 @@ error:
 
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
-      bool *low_latency)
+      uint32_t layout, uint32_t *layout_out, bool *low_latency)
 {
    HRESULT hr;
    IAudioClient *client;
@@ -713,22 +765,22 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
 
    if (*exclusive)
    {
-      client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels);
+      client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels, layout, layout_out);
       if (!client)
       {
          RARCH_WARN("[WASAPI] Failed to initialize exclusive client, attempting shared client.\n");
-         client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, low_latency);
+         client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, layout, layout_out, low_latency);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, low_latency);
+      client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, layout, layout_out, low_latency);
       if (!client)
       {
          RARCH_WARN("[WASAPI] Failed to initialize shared client, attempting exclusive client.\n");
-         client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels);
+         client = wasapi_init_client_ex(device, float_fmt, rate, latency, channels, layout, layout_out);
          if (client)
             *exclusive = true;
       }
@@ -1173,7 +1225,8 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    }
 
    mic->client = wasapi_init_client(mic->device,
-      &mic->exclusive, &float_format, &rate, latency, 1, NULL);
+      &mic->exclusive, &float_format, &rate, latency, 1,
+      AUDIO_LAYOUT_STEREO, NULL, NULL);
    if (!mic->client)
    {
       RARCH_ERR("[WASAPI] Failed to open client for capture device \"%s\".\n", mic->device_name);
@@ -1387,6 +1440,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    bool audio_sync           = settings->bools.audio_sync;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
    bool low_latency          = false;
+   uint32_t layout           = AUDIO_LAYOUT_STEREO;
+   unsigned req_rate         = rate;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
 
    if (!w)
@@ -1401,8 +1456,27 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (!w->device)
       goto error;
 
-   if (!(w->client = wasapi_init_client(w->device,
-         &exclusive_mode, &float_format, &rate, latency, 2, &low_latency)))
+   /* The layout the frontend asked for; a device that will not open
+    * with it gets stereo, and the frontend learns which from the
+    * layout hook. */
+   layout    = audio_driver_requested_layout();
+   w->layout = AUDIO_LAYOUT_STEREO;
+   w->client = wasapi_init_client(w->device,
+         &exclusive_mode, &float_format, &rate, latency,
+         audio_layout_channels(layout), layout, &w->layout, &low_latency);
+   if (!w->client && layout != AUDIO_LAYOUT_STEREO)
+   {
+      RARCH_WARN("[WASAPI] Device would not open with layout 0x%03x; opening stereo.\n", layout);
+      float_format   = (settings->uints.audio_format_negotiation
+            == AUDIO_FORMAT_NEGOTIATION_FLOAT);
+      exclusive_mode = settings->bools.audio_wasapi_exclusive_mode;
+      rate           = req_rate;
+      w->layout      = AUDIO_LAYOUT_STEREO;
+      w->client      = wasapi_init_client(w->device,
+            &exclusive_mode, &float_format, &rate, latency, 2,
+            AUDIO_LAYOUT_STEREO, NULL, &low_latency);
+   }
+   if (!w->client)
       goto error;
    if (exclusive_mode)
       w->flags              |= WASAPI_FLG_EXCLUSIVE;
@@ -1427,8 +1501,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (FAILED(hr))
       goto error;
 
-   w->frame_size             = float_format ? 8 : 4;
-   w->frame_shift            = float_format ? 3 : 2;
+   w->float_format           = float_format;
+   w->frame_size             = (unsigned char)(audio_layout_channels(w->layout)
+         * (float_format ? sizeof(float) : sizeof(int16_t)));
    w->engine_buffer_size     = frame_count * w->frame_size;
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
@@ -1692,7 +1767,7 @@ static void wasapi_pump_thread(void *data)
       if (w->pump_exclusive)
       {
          BYTE *dest         = NULL;
-         UINT32 frame_count = (UINT32)(w->engine_buffer_size >> w->frame_shift);
+         UINT32 frame_count = (UINT32)(w->engine_buffer_size / w->frame_size);
          DWORD  flags       = 0;
          if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
             continue;
@@ -1779,11 +1854,11 @@ static bool wasapi_push_sh(wasapi_t *w)
    read_avail  = FIFO_READ_AVAIL(w->buffer);
    engine_free = w->engine_buffer_size - padding * w->frame_size;
    n           = read_avail < engine_free ? read_avail : engine_free;
-   n           = (n >> w->frame_shift) << w->frame_shift;
+   n           = (n / w->frame_size) * w->frame_size;
    if (n)
    {
       BYTE *dest         = NULL;
-      UINT32 frame_count = (UINT32)(n >> w->frame_shift);
+      UINT32 frame_count = (UINT32)(n / w->frame_size);
       if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
          return false;
       fifo_read(w->buffer, dest, n);
@@ -1843,7 +1918,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          if (!write_avail)
          {
             BYTE *dest         = NULL;
-            UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
+            UINT32 frame_count = w->engine_buffer_size / w->frame_size;
             if (flg & WASAPI_FLG_NONBLOCK)
                break;
             if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
@@ -2004,7 +2079,13 @@ static void wasapi_free(void *wh)
 static bool wasapi_use_float(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
-   return (w->frame_size == 8);
+   return w->float_format;
+}
+
+static uint32_t wasapi_layout(void *wh)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   return w ? w->layout : AUDIO_LAYOUT_STEREO;
 }
 
 static void *wasapi_device_list_new(void *u)
@@ -2124,7 +2205,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
 
       if (w->flags & WASAPI_FLG_EXCLUSIVE)
       {
-         frame_count = w->engine_buffer_size >> w->frame_shift;
+         frame_count = w->engine_buffer_size / w->frame_size;
          if (FAILED(_IAudioRenderClient_GetBuffer(
                      w->renderer, frame_count, &dest)))
             return 0;
@@ -2143,7 +2224,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
          ir          = read_avail < engine_free ? read_avail : engine_free;
          if (!ir)
             continue;
-         frame_count = ir >> w->frame_shift;
+         frame_count = ir / w->frame_size;
          if (FAILED(_IAudioRenderClient_GetBuffer(
                      w->renderer, frame_count, &dest)))
             return 0;
@@ -2198,5 +2279,6 @@ audio_driver_t audio_wasapi = {
    NULL, /* write_raw */
    wasapi_wait_writable,
    wasapi_frames_consumed,
-   wasapi_underruns
+   wasapi_underruns,
+   wasapi_layout
 };

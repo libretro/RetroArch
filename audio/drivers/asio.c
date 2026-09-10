@@ -663,7 +663,9 @@ typedef struct ra_asio
    scond_t           *cond;
    slock_t           *cond_lock;
 #endif
-   ASIOBufferInfo     buf_info[2];  /* L and R output channels */
+   ASIOBufferInfo     buf_info[8];  /* one per output channel played */
+   unsigned           channels;     /* how many of them: the layout's */
+   uint32_t           layout;       /* the frontend's mask across them */
    /* Deinterleave scratch, owned by the consumer (ASIO callback).
     * One bulk retro_spsc_read per callback lands here and the format
     * conversion below reads out of it, instead of taking the ring's
@@ -748,7 +750,7 @@ static size_t asio_ring_frames(const ra_asio_t *ad, unsigned latency)
  * with the old one gone. */
 static bool asio_size_ring(ra_asio_t *ad, unsigned latency)
 {
-   size_t want = asio_ring_frames(ad, latency) * 2 * sizeof(float);
+   size_t want = asio_ring_frames(ad, latency) * ad->channels * sizeof(float);
 
    /* retro_spsc rounds its capacity up to a power of two. The ring's
     * size for every purpose here - what is reported, what is written
@@ -787,7 +789,7 @@ static size_t asio_ring_room(const ra_asio_t *ad)
 
 static void asio_log_stages(const ra_asio_t *ad, unsigned latency)
 {
-   size_t ring_frames   = ad->ring_size / (2 * sizeof(float));
+   size_t ring_frames   = ad->ring_size / (ad->channels * sizeof(float));
    size_t device_frames = asio_device_frames(ad);
    double ring_ms       = (double)ring_frames * 1000.0 / ad->sample_rate;
    double device_ms     = (double)device_frames * 1000.0 / ad->sample_rate;
@@ -818,14 +820,18 @@ static ra_asio_t *g_asio_persistent = NULL;
 static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       long index, long frames)
 {
-   void *buf_l  = ad->buf_info[0].buffers[index];
-   void *buf_r  = ad->buf_info[1].buffers[index];
+   void    *bufs[8];
+   unsigned c;
+   size_t   frame_bytes = ad->channels * sizeof(float);
    /* Acquire-load on the producer's head cursor.  Pairs with the
     * release-store inside retro_spsc_write that asio_write
     * issues on the main thread, so the bytes we're about to read
     * out via retro_spsc_read are guaranteed visible. */
    size_t avail = retro_spsc_read_avail(&ad->ring);
-   long have    = (long)(avail / (2 * sizeof(float)));
+   long have    = (long)(avail / frame_bytes);
+
+   for (c = 0; c < ad->channels; c++)
+      bufs[c] = ad->buf_info[c].buffers[index];
 
    if (have > frames)
       have = frames;
@@ -837,7 +843,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
     * but use its return value in case that contract changes. */
    if (have > 0)
       have = (long)(retro_spsc_read(&ad->ring, ad->scratch,
-            (size_t)have * 2 * sizeof(float)) / (2 * sizeof(float)));
+            (size_t)have * frame_bytes) / frame_bytes);
 
    /* Every type the specification defines, in asio_convert.h; the
     * five this used to handle left every other one - the Int32LSB24
@@ -846,7 +852,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
     * that ended in silence is faded in, and audio that runs out is
     * faded out, so an underrun's edges do not click. */
    asio_convert_frames(ad->sample_type, ad->scratch, have, frames,
-         buf_l, buf_r, ad->last_underran);
+         ad->channels, bufs, ad->last_underran);
    ad->last_underran = (have < frames);
    if (have < frames)
       retro_atomic_fetch_add_size(&ad->underruns, 1);
@@ -870,8 +876,9 @@ static void asio_cb_buffer_switch(long index,
       {
          size_t bsz = ad->buffer_frames
                * asio_bytes_per_sample(ad->sample_type);
-         memset(ad->buf_info[0].buffers[index], 0, bsz);
-         memset(ad->buf_info[1].buffers[index], 0, bsz);
+         unsigned c;
+         for (c = 0; c < ad->channels; c++)
+            memset(ad->buf_info[c].buffers[index], 0, bsz);
          /* The zeros are output too; a driver that waits for the
           * notification would otherwise hold the previous half. */
          if (ad->output_ready_supported)
@@ -1133,25 +1140,28 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
          ad->buffer_frames == pref_sz ? ", the driver's preferred size"
                : ", below the driver's preferred size for the latency setting");
 
-   /* Scratch for one period of interleaved float; sized to the period,
-    * so made again when the period is. */
-   free(ad->scratch);
-   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
-         * 2 * sizeof(float));
-   if (!ad->scratch)
+   /* The outputs to play through: the setting names the first, and
+    * the layout's channels follow it in the layout's order - an ASIO
+    * device lists its outputs as numbered mono channels with no
+    * positions of their own, so the positions are the user's wiring
+    * and the setting's word for it; outputs first+0.. carry the
+    * layout's positions in ascending bit order. On a multi-output
+    * interface the first outputs are not always the ones the user is
+    * listening to - a digital pair before the analog ones is common.
+    * A device short of outputs for the layout gets stereo, and a
+    * setting past the device's outputs falls back to the first, both
+    * said so. */
    {
-      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
-      return false;
-   }
-
-   /* The pair of outputs to play through: the setting names the first,
-    * the second follows it. A device lists its outputs as numbered
-    * mono channels, and on a multi-output interface the first two are
-    * not always the ones the user is listening to - a digital pair
-    * before the analog ones is common. A setting past the device's
-    * outputs falls back to the first pair and says so. */
-   {
-      long left = (long)config_get_ptr()->uints.audio_asio_output_channel;
+      long left       = (long)config_get_ptr()->uints.audio_asio_output_channel;
+      ad->layout      = audio_driver_requested_layout();
+      ad->channels    = audio_layout_channels(ad->layout);
+      if (ad->channels > 2 && left + (long)ad->channels > ad->out_channels)
+      {
+         RARCH_WARN("[ASIO] Layout 0x%03x needs %u outputs from output %ld and this device has %ld; playing stereo.\n",
+               ad->layout, ad->channels, left + 1, ad->out_channels);
+         ad->layout   = AUDIO_LAYOUT_STEREO;
+         ad->channels = 2;
+      }
       if (left < 0 || left + 1 >= ad->out_channels)
       {
          if (left != 0)
@@ -1160,6 +1170,17 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
          left = 0;
       }
       ad->out_left = left;
+   }
+
+   /* Scratch for one period of interleaved float; sized to the period,
+    * so made again when the period is. */
+   free(ad->scratch);
+   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
+         * ad->channels * sizeof(float));
+   if (!ad->scratch)
+   {
+      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
+      return false;
    }
 
    memset(&ch_info, 0, sizeof(ch_info));
@@ -1188,10 +1209,17 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
    }
 
    memset(ad->buf_info, 0, sizeof(ad->buf_info));
-   ad->buf_info[0].isInput    = ASIOFalse;
-   ad->buf_info[0].channelNum = ad->out_left;
-   ad->buf_info[1].isInput    = ASIOFalse;
-   ad->buf_info[1].channelNum = ad->out_left + 1;
+   {
+      unsigned c;
+      for (c = 0; c < ad->channels; c++)
+      {
+         ad->buf_info[c].isInput    = ASIOFalse;
+         ad->buf_info[c].channelNum = ad->out_left + (long)c;
+      }
+      if (ad->channels > 2)
+         RARCH_LOG("[ASIO] Layout 0x%03x across outputs %ld to %ld, in the layout's order.\n",
+               ad->layout, ad->out_left + 1, ad->out_left + (long)ad->channels);
+   }
 
    /* Sized from two periods for now - the device's reported latency is
     * only known once buffers exist - and resized to it below, before
@@ -1204,7 +1232,7 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
    }
 
    if (ASIO_CALL_CREATE_BUFFERS(ad->iasio,
-            ad->buf_info, 2, ad->buffer_frames,
+            ad->buf_info, (long)ad->channels, ad->buffer_frames,
             &g_asio_callbacks) != ASE_OK)
    {
       RARCH_ERR("[ASIO] Failed to create buffers.\n");
@@ -1823,6 +1851,12 @@ static void ra_asio_device_list_free(void *data, void *slp)
       string_list_free(sl);
 }
 
+static uint32_t asio_layout(void *data)
+{
+   ra_asio_t *ad = (ra_asio_t*)data;
+   return (ad && ad->channels > 2) ? ad->layout : AUDIO_LAYOUT_STEREO;
+}
+
 audio_driver_t audio_asio = {
    ra_asio_init,
    ra_asio_write,
@@ -1841,7 +1875,8 @@ audio_driver_t audio_asio = {
          * for A/V sync rate control.  Software resampler handles it. */
    ra_asio_wait_writable,
    ra_asio_frames_consumed,
-   ra_asio_underruns
+   ra_asio_underruns,
+   asio_layout
 };
 
 /* Called from the menu to open the ASIO driver's control panel.
