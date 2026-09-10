@@ -4017,8 +4017,12 @@ static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
    return 0.0f;
 }
 
+/* @denied counts the nodes that exist but rejected the open with
+ * EACCES, so the caller can tell a machine with no such devices apart
+ * from one where the user lacks read access to them. */
 static bool open_devices(udev_input_t *udev,
-      enum udev_input_dev_type type, device_handle_cb cb)
+      enum udev_input_dev_type type, device_handle_cb cb,
+      unsigned *denied)
 {
    struct udev_device *dev;
    const char             *type_str = g_dev_type_str[type];
@@ -4059,6 +4063,13 @@ static bool open_devices(udev_input_t *udev,
 
             close(fd);
          }
+         else
+         {
+            if (errno == EACCES)
+               (*denied)++;
+            RARCH_DBG("[udev] Could not open \"%s\": %s.\n",
+                  devnode, strerror(errno));
+         }
       }
       udev_device_unref(dev);
    }
@@ -4074,6 +4085,7 @@ static void *udev_input_init(const char *joypad_driver)
    int keyboard=0;
    int fd;
    int i;
+   unsigned denied = 0;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
 #endif
@@ -4117,17 +4129,17 @@ static void *udev_input_init(const char *joypad_driver)
 
    udev->fd  = fd;
 
-   if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
+   if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard, &denied))
       goto error;
 
-   if (!open_devices(udev, UDEV_INPUT_MOUSE, udev_handle_mouse))
+   if (!open_devices(udev, UDEV_INPUT_MOUSE, udev_handle_mouse, &denied))
       goto error;
 
-   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse))
+   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse, &denied))
       goto error;
 
 #ifdef UDEV_TOUCH_SUPPORT
-   if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch))
+   if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch, &denied))
       goto error;
 #endif
 
@@ -4137,6 +4149,9 @@ static void *udev_input_init(const char *joypad_driver)
    {
       settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev] Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      if (denied)
+         RARCH_WARN("[udev] %u node(s) refused the open with EACCES. Keyboards and mice are not covered by the seat ACLs on most distributions, so the user needs read access to them by other means, typically membership of the \"input\" group.\n",
+               denied);
       /* Start screen is not used nowadays, but it still gets true value only
        * on first startup without config file, so it should be good to catch
        * initial boots without udev devices available. */
