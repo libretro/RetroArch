@@ -834,6 +834,25 @@ static void test_settings_table(void)
    CHECK(n == 13, "13 rows (got %u)", (unsigned)n);
    for (i = 0; i < n; i++)
       CHECK(*companion_core_setting_label(c, i) && *companion_core_setting_get(c, i, buf, sizeof(buf)) != 2, "row %u has a label", (unsigned)i);
+   /* Tooltip help: every row has its own message, none shared (the
+    * stub returns a distinct string per enum, so two rows on one
+    * enum would collide). */
+   {
+      char help[32][64];
+      size_t j;
+      CHECK(n <= 32, "settings table fits the help check");
+      for (i = 0; i < n && i < 32; i++)
+      {
+         const char *h = companion_core_setting_sublabel(c, i);
+         CHECK(h && *h, "row %u has tooltip help", (unsigned)i);
+         strlcpy(help[i], h ? h : "", sizeof(help[i]));
+      }
+      for (i = 0; i < n && i < 32; i++)
+         for (j = 0; j < i; j++)
+            CHECK(!string_is_equal(help[i], help[j]),
+                  "rows %u and %u share help", (unsigned)i, (unsigned)j);
+   }
+   CHECK(!*companion_core_setting_sublabel(c, n), "out-of-range row has no help");
    CHECK(companion_core_setting_kind(c, 2) == COMPANION_SETTING_CHOICE && companion_core_setting_choice_count(c, 2) == 3, "theme is a 3-way choice");
    CHECK(companion_core_setting_set(c, 2, "Dark") && test_settings.uints.desktop_menu_theme == 1, "theme by label");
    CHECK(companion_core_setting_set(c, 2, "2") && test_settings.uints.desktop_menu_theme == 2, "theme by index");

@@ -513,6 +513,8 @@ enum companion_setting_kind
 };
 size_t      companion_core_setting_count(companion_core_t *core);
 const char *companion_core_setting_label(companion_core_t *core, size_t i);
+/* One-line help for row @i, for a tooltip; "" for a row without one. */
+const char *companion_core_setting_sublabel(companion_core_t *core, size_t i);
 enum companion_setting_kind companion_core_setting_kind(companion_core_t *core, size_t i);
 /* Current value as text into @s; returns @s. */
 const char *companion_core_setting_get(companion_core_t *core, size_t i, char *s, size_t len);

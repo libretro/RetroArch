@@ -30278,6 +30278,58 @@ MSG_HASH(
    "Remember window geometry:"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Restore the desktop menu window to the position and size it had when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   "Open the content browser on the tab that was selected when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   "Colour theme of the desktop menu: follow the system, use the built-in dark theme, or load a custom stylesheet."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "List hidden files and folders in the file browser."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   "Colour used to highlight the selected row, as #rrggbb."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   "When a core is already loaded, offer it first when starting content."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   "Playlist to show when the desktop menu opens. Leave empty for the first one."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   "Memory kept for decoded thumbnails, in megabytes. Larger values scroll big playlists more smoothly."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   "Largest edge, in pixels, an image dropped onto a thumbnail is scaled down to before saving. 0 keeps the original size."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   "Stylesheet file used when the theme is set to Custom."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Most entries the All Playlists view shows in list mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "Most entries the All Playlists view shows in grid mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   "Show a message when a content scan finishes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
    "Remember last content browser tab:"
    )

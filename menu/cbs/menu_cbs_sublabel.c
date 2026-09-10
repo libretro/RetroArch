@@ -1433,6 +1433,28 @@ static int action_bind_sublabel_from_enum(
    return 1;
 }
 
+size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
+      unsigned type, size_t size, char *s, size_t len)
+{
+   menu_file_list_cbs_t cbs;
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   memset(&cbs, 0, sizeof(cbs));
+   cbs.enum_idx      = enum_idx;
+   cbs.sublabel_enum = MSG_UNKNOWN;
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, type, size);
+   /* Table-driven: the bound callback reads sublabel_enum back out of
+    * the list's action data, which a caller without a list cannot
+    * supply, so read it here. This is what went missing for the
+    * desktop companions' tooltips when the sublabels became data. */
+   if (cbs.sublabel_enum != MSG_UNKNOWN)
+      return strlcpy(s, msg_hash_to_str(cbs.sublabel_enum), len);
+   if (cbs.action_sublabel && cbs.action_sublabel != action_bind_sublabel_from_enum)
+      cbs.action_sublabel(NULL, type, 0, NULL, NULL, s, len);
+   return strlen(s);
+}
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path,
       const char *label, size_t lbl_len,

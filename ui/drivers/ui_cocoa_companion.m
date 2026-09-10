@@ -2523,6 +2523,21 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    return row;
 }
 
+/* Hover help for View > Options rows: the same one-line text the Qt
+ * dialog and the Win32 companion show. NSTableView asks its delegate
+ * per cell; every other table has no help and gets nil. */
+- (NSString*)tableView:(NSTableView*)tv toolTipForCell:(NSCell*)cell
+      rect:(NSRectPointer)rect tableColumn:(NSTableColumn*)col
+      row:(NSInteger)row mouseLocation:(NSPoint)loc
+{
+   const char *help;
+   (void)cell; (void)rect; (void)col; (void)loc;
+   if (!wimp || tv != setTable || row < 0)
+      return nil;
+   help = companion_core_setting_sublabel(wimp->core, (size_t)row);
+   return (help && *help) ? [NSString stringWithUTF8String:help] : nil;
+}
+
 - (NSInteger)numberOfRowsInTableView:(NSTableView*)tv
 {
    if (!wimp)

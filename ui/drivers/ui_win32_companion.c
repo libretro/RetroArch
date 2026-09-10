@@ -3118,6 +3118,17 @@ static LRESULT CALLBACK cw_set_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
          if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_SET_LIST)
          {
             NMHDR *hdr = (NMHDR*)lparam;
+            if (hdr->code == LVN_GETINFOTIPA)
+            {
+               /* The tooltip for the hovered row: the same one-line help
+                * the Qt dialog shows. */
+               NMLVGETINFOTIPA *tip = (NMLVGETINFOTIPA*)lparam;
+               const char *help = companion_core_setting_sublabel(w->core,
+                     (size_t)tip->iItem);
+               if (tip->pszText && tip->cchTextMax > 0 && help && *help)
+                  strlcpy(tip->pszText, help, (size_t)tip->cchTextMax);
+               return 0;
+            }
             if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
             {
                int sel = (int)SendMessageA(w->set_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
@@ -3152,6 +3163,9 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
          return;
       cw_table_column(w, w->set_list, 0, "Setting", 330);
       cw_table_column(w, w->set_list, 1, "Value", 260);
+      /* Hover help per row, served from LVN_GETINFOTIP below. */
+      SendMessageA(w->set_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
+            LVS_EX_INFOTIP, LVS_EX_INFOTIP);
       w->set_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
             0, 0, 0, 0, w->set_hwnd, (HMENU)IDC_CW_SET_EDIT, inst, NULL);

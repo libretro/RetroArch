@@ -435,6 +435,27 @@ const char *companion_core_setting_label(companion_core_t *core, size_t i)
    return i < CS_COUNT ? cs_rows[i].label : "";
 }
 
+const char *companion_core_setting_sublabel(companion_core_t *core, size_t i)
+{
+   static const enum msg_hash_enums cs_help[CS_COUNT] = {
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   };
+   (void)core;
+   return i < CS_COUNT ? msg_hash_to_str(cs_help[i]) : "";
+}
+
 enum companion_setting_kind companion_core_setting_kind(companion_core_t *core, size_t i)
 {
    (void)core;

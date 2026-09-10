@@ -106,18 +106,12 @@ static const QRegularExpression decimalsRegex("%.(\\d)f");
 static inline void add_sublabel_and_whats_this(
       QWidget *widget, rarch_setting_t *setting)
 {
-   struct menu_file_list_cbs cbs = {};
    char tmp[512];
    tmp[0] = '\0';
 
-   cbs.enum_idx = (enum msg_hash_enums)setting->enum_idx;
-
-   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0,
-         (unsigned)setting->type, setting->size);
-
-   cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
-
-   widget->setToolTip(tmp);
+   if (menu_cbs_sublabel_for_enum((enum msg_hash_enums)setting->enum_idx,
+            (unsigned)setting->type, setting->size, tmp, sizeof(tmp)))
+      widget->setToolTip(tmp);
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
          tmp, sizeof(tmp));
@@ -2656,6 +2650,30 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT), m_thumbnailDropSizeSpinBox);
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
+
+   /* The same one-line help the Win32 and Cocoa companions show for
+    * these rows, on both the label and the control. */
+   {
+      struct { QWidget *w; enum msg_hash_enums help; } tips[] = {
+         { m_saveGeometryCheckBox,         MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY },
+         { m_saveLastTabCheckBox,          MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB },
+         { m_showHiddenFilesCheckBox,      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES },
+         { m_suggestLoadedCoreFirstCheckBox, MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST },
+         { m_startupPlaylistComboBox,      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST },
+         { m_thumbnailCacheSpinBox,        MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT },
+         { m_thumbnailDropSizeSpinBox,     MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT },
+         { m_themeComboBox,                MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME },
+         { m_highlightColorPushButton,     MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR },
+         { m_highlightColorLabel,          MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR },
+      };
+      for (size_t i = 0; i < sizeof(tips) / sizeof(tips[0]); i++)
+      {
+         const char *tip = msg_hash_to_str(tips[i].help);
+         tips[i].w->setToolTip(tip);
+         if (QWidget *label = form->labelForField(tips[i].w))
+            label->setToolTip(tip);
+      }
+   }
 
    layout->addLayout(form);
 
