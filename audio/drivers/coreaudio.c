@@ -727,25 +727,76 @@ static bool coreaudio_hal_device_name(AudioDeviceID id, char *s, size_t len)
          && s[0];
 }
 
+/* A CFString property of a device, as UTF-8. The microphone half has
+ * the same reader, behind HAVE_MICROPHONE, so this one stands on its
+ * own rather than reaching across that guard. */
+static bool coreaudio_hal_device_string(AudioDeviceID id,
+      UInt32 selector, char *s, size_t len)
+{
+   ca_addr_t prop;
+   CFStringRef cf = NULL;
+   UInt32 size    = sizeof(cf);
+   bool ok;
+   prop.mSelector = selector;
+   prop.mScope    = CA_SCOPE_GLOBAL;
+   prop.mElement  = CA_ELEMENT_MAIN;
+   s[0]           = 0;
+   if (ca_prop_get(id, &prop, &size, &cf, false) != noErr || !cf)
+      return false;
+   ok = CFStringGetCString(cf, s, (CFIndex)len, kCFStringEncodingUTF8) && s[0];
+   CFRelease(cf);
+   return ok;
+}
+
+/* The saved setting is matched against the device's UID first and its
+ * name second, which is what the microphone half already does.
+ *
+ * A name is what a user reads and what two devices can share - plug
+ * in a second "USB Audio Device" and which one a saved setting means
+ * is whichever the HAL happens to enumerate first - and it changes
+ * when the device is renamed. The UID does neither. A setting saved
+ * before this carries a name, which is why the name is still tried;
+ * one saved after carries the UID. */
 static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 {
-   UInt32 i, device_count = 0;
-   AudioDeviceID *devices = coreaudio_hal_devices(&device_count);
-   if (!devices)
+   UInt32 i, device_count = 0, pass;
+   AudioDeviceID *devices;
+
+   if (string_is_empty(device))
+      return;
+   if (!(devices = coreaudio_hal_devices(&device_count)))
       return;
 
-   for (i = 0; i < device_count; i++)
+   for (pass = 0; pass < 3; pass++)
    {
-      char device_name[1024];
-      if (     coreaudio_hal_device_name(devices[i], device_name, sizeof(device_name))
-            && string_is_equal(device_name, device))
+      for (i = 0; i < device_count; i++)
       {
-         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
-               kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
-         break;
+         char s[1024];
+         bool got;
+
+         if (pass == 0)
+            got = coreaudio_hal_device_string(devices[i],
+                  kAudioDevicePropertyDeviceUID, s, sizeof(s));
+         else if (pass == 1)
+            got = coreaudio_hal_device_string(devices[i],
+                  kAudioDevicePropertyDeviceNameCFString, s, sizeof(s));
+         else
+            got = coreaudio_hal_device_name(devices[i], s, sizeof(s));
+
+         if (got && string_is_equal(s, device))
+         {
+            AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
+                  kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+            RARCH_LOG("[CoreAudio] Output device \"%s\" matched by %s.\n",
+                  device, pass == 0 ? "UID" : "name");
+            free(devices);
+            return;
+         }
       }
    }
 
+   RARCH_WARN("[CoreAudio] No output device matches \"%s\"; using the default.\n",
+         device);
    free(devices);
 }
 #endif
