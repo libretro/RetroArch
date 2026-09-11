@@ -3762,20 +3762,44 @@ void audio_driver_set_nonblock_state(bool nonblock)
 
 #ifdef HAVE_THREADS
 /* What the pipe ring is to hold on purpose, in core frames. With a
- * blocking writer nothing: the device's buffer is the margin and the
- * writer waits on it. With a non-blocking writer a late frame is
- * dropped, not waited for, so the pipe holds another buffer's worth
- * ahead of the device - the setting's worth of margin against a core
- * that delivers late, at the setting's worth of latency on top of the
- * device's - within what the ring can hold with a publish in flight. */
+ * blocking writer no margin beyond the publish in flight: the device's
+ * buffer is the margin and the writer waits on it. With a non-blocking
+ * writer a late frame is dropped, not waited for, so the pipe holds
+ * another buffer's worth ahead of the device - the setting's worth of
+ * margin against a core that delivers late, at the setting's worth of
+ * latency on top of the device's - within what the ring can hold with
+ * a publish in flight.
+ *
+ * The one-publish floor below applies to both. It used to be reached
+ * only by the non-blocking side, the blocking one returning zero here
+ * before it: a pipe that is to hold nothing. It cannot hold nothing.
+ * The core publishes a frame's worth at once and the consumer can only
+ * move it at the device's pace, so a publish is in the pipe for most
+ * of every frame whatever the writer does - and this number is rate
+ * control's setpoint for the fill, which subtracts what the pipe holds
+ * (see pipe_ctrl_avail). Against a setpoint of zero the pipe's own
+ * contents read as overfill: several times the device buffer of it,
+ * so the controller's free space clamped to zero and stayed there,
+ * correcting downward at its full delta until the pipe drained. Empty,
+ * it read as no error again, so the loop turned around - and at the
+ * drained end of that cycle the consumer waits for data between
+ * publishes, with only the device's own buffer behind it, which is
+ * shorter than a video frame at the low latency settings. That is a
+ * gap at the frame rate, and it is what the threaded pipeline was
+ * doing on CoreAudio at 8 ms while the inline path was clean. */
 static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
 {
    size_t frame_bytes, target, ring_max;
-   if (config_get_ptr()->bools.audio_sync || !audio_st->buffer_size)
+   if (!audio_st->buffer_size)
       return 0;
-   frame_bytes = audio_driver_dev_frame_bytes(audio_st);
-   target      = (size_t)((double)audio_st->buffer_size / frame_bytes
-         / audio_st->src_ratio_orig);
+   if (config_get_ptr()->bools.audio_sync)
+      target      = 0;
+   else
+   {
+      frame_bytes = audio_driver_dev_frame_bytes(audio_st);
+      target      = (size_t)((double)audio_st->buffer_size / frame_bytes
+            / audio_st->src_ratio_orig);
+   }
    /* Never under one publish: the core delivers a frame at a time, and
     * a pipe holding less than that between publishes is a device that
     * runs dry between them whatever its own buffer holds. */
