@@ -239,12 +239,21 @@ typedef struct key_desc
    char desc[32];
 } key_desc_t;
 
+/* Determines the type of input that's expected for the keyboard dialog. */
+enum menu_input_dialog_kb_text_type
+{
+   MENU_INPUT_DIALOG_KB_TYPE_TEXT = 0,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD, /**< Hides typed input. */
+   MENU_INPUT_DIALOG_KB_TYPE_NUMBER
+};
+
 typedef struct menu_input_ctx_line
 {
    const char *label;
    const char *label_setting;
    unsigned type;
    unsigned idx;
+   enum menu_input_dialog_kb_text_type text_type;
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
@@ -263,6 +272,10 @@ const char *menu_input_dialog_get_buffer(void);
 bool menu_input_dialog_start_search(void);
 
 bool menu_input_dialog_get_display_kb(void);
+
+/* Text type of the currently open keyboard dialog;
+ * MENU_INPUT_DIALOG_KB_TYPE_TEXT when no dialog is open. */
+enum menu_input_dialog_kb_text_type menu_input_dialog_get_kb_text_type(void);
 
 void menu_input_dialog_end(void);
 

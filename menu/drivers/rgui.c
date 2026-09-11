@@ -5307,9 +5307,14 @@ RGUI_NOINLINE static void rgui_render_osk(
    const char *input_str          = menu_input_dialog_get_buffer();
    struct menu_state *menu_st     = menu_state_get_ptr();
    const char *input_label        = menu_st->input_dialog_kb_label;
+   /* A system keyboard panel is up and owns text entry: draw the
+    * label and the entry field, but not a second set of keys on top
+    * of it. The grid is not iterated in that state either, so
+    * osk_grid may legitimately be empty. */
+   bool native_kb                 = input_osk_native_active();
 
    /* Sanity check 1 */
-   if (osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0])
+   if (!native_kb && (osk_ptr < 0 || osk_ptr >= 44 || !osk_grid[0]))
       return;
 
    key_text_offset_x      = 8;
@@ -5321,7 +5326,7 @@ RGUI_NOINLINE static void rgui_render_osk(
    ptr_width              = key_width  - (ptr_offset_x * 2);
    ptr_height             = key_height - (ptr_offset_y * 2);
    keyboard_width         = key_width  * OSK_CHARS_PER_LINE;
-   keyboard_height        = key_height * 4;
+   keyboard_height        = native_kb ? 0 : key_height * 4;
    keyboard_offset_x      = 10;
    keyboard_offset_y      = 10 + 15 + (2 * rgui->font_height_stride);
    input_label_max_length = (keyboard_width / rgui->font_width_stride);
@@ -5376,8 +5381,9 @@ RGUI_NOINLINE static void rgui_render_osk(
          rgui_color_rect(frame_buf_data, fb_width, fb_height,
                osk_x + 5, osk_y + 5, 1, osk_height - 10, shadow_color);
          /* Divider */
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
-               osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, shadow_color);
+         if (!native_kb)
+            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+                  osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, shadow_color);
       }
 
       /* Frame */
@@ -5394,9 +5400,10 @@ RGUI_NOINLINE static void rgui_render_osk(
             osk_x, osk_y + 5, 5, osk_height - 5,
             border_dark_color, border_light_color, border_thickness);
       /* Divider */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
-            osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5,
-            border_dark_color, border_light_color, border_thickness);
+      if (!native_kb)
+         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+               osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5,
+               border_dark_color, border_light_color, border_thickness);
    }
 
    /* Draw input label text */
@@ -5544,6 +5551,9 @@ RGUI_NOINLINE static void rgui_render_osk(
    }
 
    /* Draw keyboard 'keys' */
+   if (native_kb)
+      return;
+
    for (key_index = 0; key_index < 44; key_index++)
    {
       unsigned key_row     = (unsigned)(key_index / OSK_CHARS_PER_LINE);

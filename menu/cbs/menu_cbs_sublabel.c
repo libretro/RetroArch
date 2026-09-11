@@ -506,6 +506,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_select_physical_keyboard,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_android_input_disconnect_workaround, MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_android_system_keyboard,     MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD)
 #endif
+#ifdef HAVE_SDL3
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sdl3_system_keyboard,        MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD)
+#endif
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation,       MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED)
@@ -3101,6 +3104,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_android_system_keyboard);
+            break;
+#endif
+#ifdef HAVE_SDL3
+         case MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sdl3_system_keyboard);
             break;
 #endif
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:

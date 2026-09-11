@@ -73,6 +73,7 @@
 
 #include "../gfx/gfx_animation.h"
 #include "../input/input_driver.h"
+#include "../input/input_osk.h"
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
 #include "../version.h"
@@ -4611,6 +4612,7 @@ void menu_input_dialog_end(void)
    struct menu_state *menu_st                 = &menu_driver_state;
    menu_st->input_dialog_kb_type              = 0;
    menu_st->input_dialog_kb_idx               = 0;
+   menu_st->input_dialog_kb_text_type         = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
@@ -5184,24 +5186,17 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 }
 
 
-/* True when a platform-native text-entry panel currently owns the
- * keyboard line.  The built-in on-screen keyboard must not process
- * input in that case: both paths write into input_st->keyboard_line,
- * and input_event_osk_append() calls input_keyboard_line_append(),
- * which can realloc the buffer out from under state the native path
- * is holding.  Steam's OSK already had this guard open-coded at the
- * two call sites; the iOS native keyboard needs the same. */
-static bool menu_input_native_kb_active(void)
+/* input_osk_native_active() is true when a platform-native text-entry
+ * panel currently owns the keyboard line.  The built-in on-screen
+ * keyboard must not append in that case: both paths write into
+ * input_st->keyboard_line, and input_event_osk_append() calls
+ * input_keyboard_line_append(), which can realloc the buffer out from
+ * under state the native path is holding.  Every backend answers
+ * through that one function; see input/input_osk.h. */
+
+enum menu_input_dialog_kb_text_type menu_input_dialog_get_kb_text_type(void)
 {
-#ifdef HAVE_MIST
-   if (steam_has_osk_open())
-      return true;
-#endif
-#ifdef HAVE_COCOATOUCH
-   if (ios_keyboard_active())
-      return true;
-#endif
-   return false;
+   return menu_driver_state.input_dialog_kb_text_type;
 }
 
 bool menu_input_dialog_get_display_kb(void)
@@ -5660,7 +5655,9 @@ unsigned menu_event(
       /* Menu navigation stays suppressed for the whole OSK session
        * (the trigger clear below), but the built-in keyboard only
        * consumes input when no native panel owns the line. */
-      if (!menu_input_native_kb_active())
+      bool native_kb = input_osk_native_active();
+
+      if (!native_kb)
       {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
@@ -5741,6 +5738,25 @@ unsigned menu_event(
             input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
+      /* Scan: Clear the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         input_keyboard_line_clear(input_st);
+
+      }
+      /* Cancel closes outright under a native panel: the panel owns
+       * the text, so feeding it a backspace here would only desync
+       * the two buffers. */
+      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      /* Closing the dialog stays available whichever keyboard is up.
+       * These two end the line through input_keyboard_event() and
+       * never reach input_event_osk_append(), so the realloc hazard
+       * the guard above exists for does not apply to them - and
+       * without them a native panel that emits no Return (webOS) or
+       * that the user has dismissed leaves the dialog with no way out
+       * from a pad at all. */
+
       /* Select: Clear and close the keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
       {
@@ -5748,16 +5764,10 @@ unsigned menu_event(
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
-      /* Scan: Clear the keyboard input window */
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         input_keyboard_line_clear(input_st);
-
       /* Start + Search: Send return key to close keyboard input window */
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START)
             || BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-
-      }
 
       BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
@@ -6377,7 +6387,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
              * line swallows the gesture outright - the enclosing
              * branch still runs so it does not fall through to
              * normal menu input. */
-            if (     !menu_input_native_kb_active()
+            if (     !input_osk_native_active()
                   && !(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                if (     menu_st->driver_ctx
@@ -8466,6 +8476,7 @@ bool menu_input_dialog_start_search(void)
    steam_open_osk();
 #endif
    menu_st->flags                         |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
+   menu_st->input_dialog_kb_text_type      = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    strlcpy(menu_st->input_dialog_kb_label,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
@@ -8556,8 +8567,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             line->label_setting,
             sizeof(menu_st->input_dialog_kb_label_setting));
 
-   menu_st->input_dialog_kb_type   = line->type;
-   menu_st->input_dialog_kb_idx    = line->idx;
+   menu_st->input_dialog_kb_type      = line->type;
+   menu_st->input_dialog_kb_idx       = line->idx;
+   menu_st->input_dialog_kb_text_type = line->text_type;
 
    input_keyboard_line_free(input_st);
 

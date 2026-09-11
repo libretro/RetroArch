@@ -126,4 +126,14 @@ bool sdl3_ctx_get_metrics(void *data, enum display_metric_types type,
 /* Shows or hides the mouse cursor. */
 void sdl3_show_mouse(void *data, bool state);
 
+/* Returns the active SDL_Window, whether it belongs to the sdl3
+ * video driver or one of the gl/vk sdl3 context drivers. NULL when
+ * SDL3 isn't driving the window. */
+SDL_Window *sdl3_get_window(void);
+
+/* True when SDL_StartTextInput() on this device pops up a system
+ * screen keyboard, rather than just enabling text events in the
+ * background. False whenever a physical keyboard is attached. */
+bool sdl3_uses_screen_keyboard(void);
+
 #endif

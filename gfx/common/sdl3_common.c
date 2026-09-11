@@ -275,7 +275,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
    /* SDL_EVENT_TEXT_INPUT is emitted for windows that opted in for
     * it. The SDL3 input driver handles those events for menu
     * text entry and core keyboard callbacks. */
-   SDL_StartTextInput(win);
+   if (!sdl3_uses_screen_keyboard())
+      SDL_StartTextInput(win);
 
    return win;
 }
@@ -540,4 +541,40 @@ void sdl3_show_mouse(void *data, bool state)
       SDL_ShowCursor();
    else
       SDL_HideCursor();
+}
+
+SDL_Window *sdl3_get_window(void)
+{
+   gfx_ctx_ident_t ident_info;
+
+   if (string_is_equal(video_driver_get_ident(), "sdl3"))
+   {
+      sdl3_video_t *video_ptr = (sdl3_video_t*)video_driver_get_ptr();
+      return video_ptr != NULL ? video_ptr->window : NULL;
+   }
+
+   /* gl/gl1/glcore/vulkan running on the SDL3 context drivers. They
+    * register their SDL_Window as the display userdata via sdl3_set_handles. */
+   ident_info.ident = NULL;
+   video_context_driver_get_ident(&ident_info);
+   if (string_is_equal(ident_info.ident, "gl_sdl3") || string_is_equal(ident_info.ident, "vk_sdl3"))
+      return (SDL_Window*)video_driver_display_userdata_get();
+
+   return NULL;
+}
+
+/* Whether SDL_StartTextInput() on this device means "pop up a screen
+ * keyboard" rather than "quietly enable text events".
+ *
+ * SDL_HasScreenKeyboardSupport() alone is not that question. The X11
+ * backend answers it true for the whole Steam Deck whether or not a
+ * USB keyboard is plugged in, and the GDK and OpenVR backends do the
+ * same; only Wayland checks for a physical keyboard first. Where one
+ * is attached the user is typing on it, so keep text input running in
+ * the background as on any desktop - otherwise SDL_EVENT_TEXT_INPUT
+ * never fires, sdl3_translate_control_key() returns 0 for printable
+ * keys, and nothing the user types reaches the keyboard line. */
+bool sdl3_uses_screen_keyboard(void)
+{
+   return SDL_HasScreenKeyboardSupport() && !SDL_HasKeyboard();
 }

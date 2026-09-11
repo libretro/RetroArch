@@ -2647,6 +2647,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
    SETTING_BOOL("input_android_system_keyboard", &settings->bools.input_android_system_keyboard, true, DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD, false);
+   SETTING_BOOL("input_sdl3_system_keyboard",    &settings->bools.input_sdl3_system_keyboard, true, DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD, false);
 
 
 

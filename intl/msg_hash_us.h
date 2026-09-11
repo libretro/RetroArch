@@ -10983,6 +10983,16 @@ MSG_HASH(
    "Use the Android system keyboard for menu text entry instead of the built-in on-screen keyboard. Enables clipboard paste and password managers. Requires a touchscreen or an input method that can be navigated with a gamepad."
    )
 #endif
+#ifdef HAVE_SDL3
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use System Keyboard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use the device's screen keyboard for menu text entry instead of the built-in on-screen keyboard. Only applies when the system provides a screen keyboard. Requires a touchscreen or an input method that can be navigated with a gamepad."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "OFF"

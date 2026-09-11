@@ -30,13 +30,7 @@
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_MIST
-#include "../steam/steam.h"
-#endif
-
-#ifdef HAVE_COCOATOUCH
-#include "../ui/drivers/cocoa/apple_platform.h"
-#endif
+#include "../input/input_osk.h"
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -1036,14 +1030,10 @@ void gfx_display_draw_keyboard(
       0.00f, 0.00f, 0.00f, 0.85f,
    };
 
-#ifdef HAVE_MIST
-   if (steam_has_osk_open())
+   /* A native keyboard panel is already covering the screen; drawing
+    * the built-in one on top of it gives two keyboards at once. */
+   if (input_osk_native_active())
       return;
-#endif
-#ifdef HAVE_COCOATOUCH
-   if (ios_keyboard_active())
-      return;
-#endif
 
    gfx_display_draw_quad(
          p_disp,

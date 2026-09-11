@@ -42,6 +42,14 @@
 #include "input_osk.h"
 #include "input_types.h"
 
+#ifdef HAVE_MIST
+#include "../steam/steam.h"
+#endif
+
+#ifdef HAVE_COCOATOUCH
+#include "../ui/drivers/cocoa/apple_platform.h"
+#endif
+
 #ifdef HAVE_BSV_MOVIE
 #include "bsv/bsvmovie.h"
 #endif
@@ -5125,6 +5133,38 @@ static bool input_keyboard_line_event(
             word);
 
    return ret;
+}
+
+bool input_osk_native_active(void)
+{
+   /* Drivers that can report the panel state themselves raise the
+    * flag from their poll, on the main thread. Everything below is a
+    * backend whose panel state lives outside the input driver. */
+   if (input_state_get_ptr()->flags & INP_FLAG_NATIVE_KB_SHOWN)
+      return true;
+#ifdef HAVE_MIST
+   if (steam_has_osk_open())
+      return true;
+#endif
+#ifdef HAVE_COCOATOUCH
+   if (ios_keyboard_active())
+      return true;
+#endif
+   return false;
+}
+
+bool input_osk_native_available(void)
+{
+   /* No Steam arm here: steam_has_osk_open() answers whether the
+    * panel is up, which is not the same question, and the Steam OSK
+    * has no cheap availability query. */
+   if (input_state_get_ptr()->flags & INP_FLAG_NATIVE_KB_AVAIL)
+      return true;
+#ifdef HAVE_COCOATOUCH
+   return true;
+#else
+   return false;
+#endif
 }
 
 void input_event_osk_append(

@@ -536,6 +536,7 @@ struct menu_state
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+   enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
    unsigned int runahead_mode;
 #endif

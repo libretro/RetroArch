@@ -3254,6 +3254,9 @@ enum msg_hash_enums
    MENU_LBL_H(INPUT_SELECT_PHYSICAL_KEYBOARD),
    MENU_LABEL(INPUT_ANDROID_SYSTEM_KEYBOARD),
 #endif
+#ifdef HAVE_SDL3
+   MENU_LABEL(INPUT_SDL3_SYSTEM_KEYBOARD),
+#endif
 
    /* GENERATED REGION: auto mouse grab setting enum rows (see settings/settings_def_input_auto_mouse_grab.h). */
 #define SETTINGS_DEF_ENUM_PASS
