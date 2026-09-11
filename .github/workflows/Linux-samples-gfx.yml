@@ -615,6 +615,26 @@ jobs:
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
 
+      - name: Build and run modeline_edid_parse_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/modeline_edid_parse
+        run: |
+          set -eu
+          # The EDID reader in gfx/modeline/modeline_edid.c, fed the
+          # block the writer produces (round trip), a hand-built EDID
+          # 1.4 with CTA-861 and DisplayID 2.0 extensions checked
+          # field by field, the defect cases (short, wrong header, bad
+          # checksums, a declared but missing extension, data block
+          # and section lengths running past their block), and a
+          # deterministic byte-noise sweep. The parser is handed
+          # whatever an OS reader returns, so every length and offset
+          # in the data is hostile; under ASan a read past the buffer
+          # is the failure this lane exists to catch.
+          make clean all SANITIZER=address,undefined
+          test -x modeline_edid_parse_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./modeline_edid_parse_test
+
       - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_anim
