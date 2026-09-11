@@ -133,9 +133,12 @@ RETRO_BEGIN_DECLS
    ((RETRO_SPSC_CACHE_LINE > (sizeof(uint8_t*) + sizeof(size_t))) \
       ? (RETRO_SPSC_CACHE_LINE - (sizeof(uint8_t*) + sizeof(size_t))) \
       : 1)
+/* Each cursor shares its line with that side's private copy of the
+ * other cursor (see cached_tail / cached_head below), so the pad is
+ * a line less both. */
 #define RETRO_SPSC_PAD1_BYTES \
-   ((RETRO_SPSC_CACHE_LINE > sizeof(retro_atomic_size_t)) \
-      ? (RETRO_SPSC_CACHE_LINE - sizeof(retro_atomic_size_t)) \
+   ((RETRO_SPSC_CACHE_LINE > sizeof(retro_atomic_size_t) + sizeof(size_t)) \
+      ? (RETRO_SPSC_CACHE_LINE - sizeof(retro_atomic_size_t) - sizeof(size_t)) \
       : 1)
 
 typedef struct retro_spsc
@@ -146,9 +149,19 @@ typedef struct retro_spsc
     * the buffer/capacity fields that init may touch. */
    uint8_t             _pad0[RETRO_SPSC_PAD0_BYTES];
    retro_atomic_size_t head;       /* producer publishes; consumer reads */
+   /* Producer-private copy of tail.  The producer computes room from
+    * this and only re-reads the real tail - the consumer's cache line
+    * - when the copy says there is not enough, i.e. once per fill
+    * rather than once per write.  Always <= tail, so room computed
+    * from it is never overstated.  Plain size_t: only the producer
+    * ever touches it. */
+   size_t              cached_tail;
    /* Pad so tail sits on its own cache line, isolating it from head. */
    uint8_t             _pad1[RETRO_SPSC_PAD1_BYTES];
    retro_atomic_size_t tail;       /* consumer publishes; producer reads */
+   /* Consumer-private copy of head, the mirror of cached_tail: always
+    * <= head, re-read only when it says the ring is short. */
+   size_t              cached_head;
    /* Pad past tail so an embedding struct's own fields cannot land on
     * tail's line.  Same width as _pad1. */
    uint8_t             _pad2[RETRO_SPSC_PAD1_BYTES];

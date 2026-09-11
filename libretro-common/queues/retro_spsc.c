@@ -57,7 +57,9 @@ bool retro_spsc_init(retro_spsc_t *q, size_t min_capacity)
    if (!q->buffer)
       return false;
 
-   q->capacity = cap;
+   q->capacity    = cap;
+   q->cached_tail = 0;
+   q->cached_head = 0;
    retro_atomic_size_init(&q->head, 0);
    retro_atomic_size_init(&q->tail, 0);
    return true;
@@ -84,6 +86,8 @@ void retro_spsc_clear(retro_spsc_t *q)
     * tail, so plain init is correct here -- and necessary, because
     * plain assignment to a retro_atomic_size_t is illegal under
     * the C11 stdatomic backend. */
+   q->cached_tail = 0;
+   q->cached_head = 0;
    retro_atomic_size_init(&q->head, 0);
    retro_atomic_size_init(&q->tail, 0);
 }
@@ -128,12 +132,18 @@ size_t retro_spsc_write(retro_spsc_t *q, const void *data, size_t bytes)
 {
    size_t mask, head_idx, first;
    const uint8_t *src = (const uint8_t*)data;
-   /* read tail first to know how much room there is */
-   /* head is ours (relaxed); acquire on the consumer's tail pairs
-    * with their release-store so the freed space is really free. */
+   /* head is ours (relaxed).  Room is first computed from our private
+    * copy of tail, which is never ahead of the real one; only when it
+    * says there is not enough do we acquire-load the consumer's tail
+    * (their cache line), which pairs with their release-store so the
+    * freed space is really free. */
    size_t head  = retro_atomic_load_relaxed_size(&q->head);
-   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
-   size_t avail = q->capacity - (head - tail);
+   size_t avail = q->capacity - (head - q->cached_tail);
+   if (avail < bytes)
+   {
+      q->cached_tail = retro_atomic_load_acquire_size(&q->tail);
+      avail          = q->capacity - (head - q->cached_tail);
+   }
    if (bytes > avail)
       bytes = avail;
    if (bytes == 0)
@@ -162,11 +172,17 @@ size_t retro_spsc_read(retro_spsc_t *q, void *data, size_t bytes)
    uint8_t *dst = (uint8_t*)data;
    /* acquire on head pairs with producer's release-store; this is
     * what makes the subsequent memcpys safe to read. */
-   /* acquire on the producer's head pairs with their release-store;
-    * tail is ours (relaxed). */
-   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   /* tail is ours (relaxed).  Available from our private copy of head
+    * first, never ahead of the real one; only when it says too little
+    * do we acquire-load the producer's head, which pairs with their
+    * release-store so the bytes are really there. */
    size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
-   size_t avail = head - tail;
+   size_t avail = q->cached_head - tail;
+   if (avail < bytes)
+   {
+      q->cached_head = retro_atomic_load_acquire_size(&q->head);
+      avail          = q->cached_head - tail;
+   }
    if (bytes > avail)
       bytes = avail;
    if (bytes == 0)
@@ -191,11 +207,16 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes)
 {
    size_t mask, tail_idx, first;
    uint8_t *dst = (uint8_t*)data;
-   size_t head  = retro_atomic_load_acquire_size(
-         (retro_atomic_size_t*)&q->head);
-   size_t tail = retro_atomic_load_relaxed_size(
-         (retro_atomic_size_t*)&q->tail);
-   size_t avail = head - tail;
+   /* Consumer side, same scheme as retro_spsc_read; the cast is only
+    * because peek takes a const queue and the cached copy is state. */
+   retro_spsc_t *w  = (retro_spsc_t*)q;
+   size_t tail  = retro_atomic_load_relaxed_size(&w->tail);
+   size_t avail = w->cached_head - tail;
+   if (avail < bytes)
+   {
+      w->cached_head = retro_atomic_load_acquire_size(&w->head);
+      avail          = w->cached_head - tail;
+   }
    if (bytes > avail)
       bytes = avail;
    if (bytes == 0)
@@ -217,11 +238,16 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes)
 size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr)
 {
    size_t mask, head_idx, span;
-   /* head is ours (relaxed); acquire on the consumer's tail pairs
-    * with their release-store so the freed space is really free. */
+   /* head is ours (relaxed).  Room from the private copy of tail
+    * first; re-read the consumer's tail only when that says none.
+    * See retro_spsc_write. */
    size_t head  = retro_atomic_load_relaxed_size(&q->head);
-   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
-   size_t avail = q->capacity - (head - tail);
+   size_t avail = q->capacity - (head - q->cached_tail);
+   if (avail == 0)
+   {
+      q->cached_tail = retro_atomic_load_acquire_size(&q->tail);
+      avail          = q->capacity - (head - q->cached_tail);
+   }
 
    mask     = q->capacity - 1;
    head_idx = head & mask;
@@ -250,11 +276,16 @@ void retro_spsc_write_end(retro_spsc_t *q, size_t bytes)
 size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr)
 {
    size_t mask, tail_idx, span;
-   /* acquire on the producer's head pairs with their release-store;
-    * tail is ours (relaxed). */
-   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   /* tail is ours (relaxed).  Available from the private copy of
+    * head first; re-read the producer's head only when that says
+    * none.  See retro_spsc_read. */
    size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
-   size_t avail = head - tail;
+   size_t avail = q->cached_head - tail;
+   if (avail == 0)
+   {
+      q->cached_head = retro_atomic_load_acquire_size(&q->head);
+      avail          = q->cached_head - tail;
+   }
 
    mask     = q->capacity - 1;
    tail_idx = tail & mask;
@@ -279,11 +310,17 @@ void retro_spsc_read_end(retro_spsc_t *q, size_t bytes)
 
 size_t retro_spsc_skip(retro_spsc_t *q, size_t bytes)
 {
-   /* acquire on the producer's head pairs with their release-store;
-    * tail is ours (relaxed). */
-   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   /* tail is ours (relaxed).  Available from our private copy of head
+    * first, never ahead of the real one; only when it says too little
+    * do we acquire-load the producer's head, which pairs with their
+    * release-store so the bytes are really there. */
    size_t tail  = retro_atomic_load_relaxed_size(&q->tail);
-   size_t avail = head - tail;
+   size_t avail = q->cached_head - tail;
+   if (avail < bytes)
+   {
+      q->cached_head = retro_atomic_load_acquire_size(&q->head);
+      avail          = q->cached_head - tail;
+   }
 
    if (bytes > avail)
       bytes = avail;
