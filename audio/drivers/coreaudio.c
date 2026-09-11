@@ -158,6 +158,17 @@ typedef struct coreaudio
    AudioUnit dev;
 
    /* AudioConverter for system sample-rate conversion */
+#if !TARGET_OS_IPHONE
+   /* The device the unit is bound to, and where its clock stood when
+    * the stream started. The HAL will give the device's own sample
+    * position on request, which is what frames_consumed() is
+    * specified to return - the callback counter beside it is a good
+    * approximation, since a render callback is device-paced, but it
+    * is still callbacks counted rather than the device asked. */
+   AudioDeviceID     device_id;
+   double            clock_base;      /* mSampleTime at the first read */
+   bool              clock_based;
+#endif
    AudioConverterRef converter;
    unsigned output_rate;  /* Hardware output rate */
    /* The layout the output unit's input bus was set to, as the
@@ -855,6 +866,9 @@ static void *coreaudio_init(const char *device,
                kAudioUnitScope_Global, 0, &device_id, &device_size) == noErr
             && device_id != 0)
       {
+         /* Kept for the clock, which is asked of the device rather
+          * than of this driver's own counting. */
+         dev->device_id = device_id;
          static const AudioObjectPropertySelector dev_sel[3] = {
             kAudioDevicePropertyBufferFrameSize,
             kAudioDevicePropertyLatency,
@@ -1261,6 +1275,49 @@ static size_t coreaudio_frames_consumed(void *data)
    coreaudio_t *dev = (coreaudio_t*)data;
    if (!dev)
       return 0;
+
+#if !TARGET_OS_IPHONE
+   /* The device's own sample position, where the HAL will give it.
+    * That is what this call is specified to return, and it is the
+    * device that is asked rather than this driver's count of the
+    * callbacks it was handed - which is close, a render callback
+    * being device-paced, but is still an inference.
+    *
+    * It fails while the device is not running, which is every call
+    * before the first render, so the counter answers until it
+    * succeeds and the position is taken relative to where the clock
+    * stood at that first success. */
+   if (dev->device_id)
+   {
+      AudioTimeStamp ts;
+      memset(&ts, 0, sizeof(ts));
+      if (AudioDeviceGetCurrentTime(dev->device_id, &ts) == noErr
+            && (ts.mFlags & kAudioTimeStampSampleTimeValid))
+      {
+         if (!dev->clock_based)
+         {
+            dev->clock_base  = ts.mSampleTime;
+            dev->clock_based = true;
+         }
+         if (ts.mSampleTime >= dev->clock_base)
+            return (size_t)(ts.mSampleTime - dev->clock_base);
+      }
+   }
+#endif
+
+   return retro_atomic_load_acquire_size(&dev->consumed) / dev->channels;
+}
+
+/* What this driver counted for itself: the frames each render
+ * callback asked for, summed. Reported so the two can be compared -
+ * a render callback is device-paced and this should track the
+ * device's own clock closely, and where it does not the difference
+ * is worth seeing. Never acted on. */
+static size_t coreaudio_frames_consumed_fallback(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return 0;
    return retro_atomic_load_acquire_size(&dev->consumed) / dev->channels;
 }
 
@@ -1282,7 +1339,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_wait_writable,
    coreaudio_frames_consumed,
    coreaudio_underruns,
-   coreaudio_layout
+   coreaudio_layout,
+   coreaudio_frames_consumed_fallback
 };
 
 
