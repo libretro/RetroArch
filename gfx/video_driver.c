@@ -2465,6 +2465,40 @@ void video_driver_set_output_size(unsigned width, unsigned height)
          (int)((width << 16) | height));
 }
 
+#ifdef HAVE_OVERLAY
+void video_driver_set_overlay_viewport(const struct overlay *active)
+{
+   /* The overlay whose override was last logged: compared, never read
+    * through, so logged once per overlay shown, not per publish */
+   static const struct overlay *logged = NULL;
+   video_driver_state_t *video_st      = &video_driver_st;
+   int flags                           = 0;
+   if (active && (active->flags & OVERLAY_HAS_VIEWPORT))
+      flags = active->flags & (OVERLAY_HAS_VIEWPORT | OVERLAY_VIEWPORT_FILL);
+#ifdef HAVE_THREADS
+   if (video_st->display_lock)
+      slock_lock(video_st->display_lock);
+#endif
+   if (flags)
+   {
+      video_st->overlay_vp[0] = active->viewport.x;
+      video_st->overlay_vp[1] = active->viewport.y;
+      video_st->overlay_vp[2] = active->viewport.w;
+      video_st->overlay_vp[3] = active->viewport.h;
+   }
+   retro_atomic_store_release_int(&video_st->overlay_vp_flags, flags);
+#ifdef HAVE_THREADS
+   if (video_st->display_lock)
+      slock_unlock(video_st->display_lock);
+#endif
+   if (flags && active != logged)
+   {
+      RARCH_LOG("[Overlay] Applying viewport override!\n");
+      logged = active;
+   }
+}
+#endif
+
 /**
  * video_monitor_fps_statistics
  * @refresh_rate       : Monitor refresh rate.
@@ -3227,60 +3261,68 @@ void video_driver_update_viewport(
    vp->height                      = vp->full_height;
 
 #ifdef HAVE_OVERLAY
-   /* Check if active overlay specifies viewport override.
-    * Only apply to game viewport, not UI elements (force_full=true) */
-   if (!force_full)
+   /* The active overlay's viewport override, if it has one: from the
+    * copy the main thread publishes, never the overlay, which it frees
+    * and replaces (video_driver_set_overlay_viewport()). Only applied
+    * to the game viewport, not UI elements (force_full=true) */
+   if (     !force_full
+         && retro_atomic_load_acquire_int(&video_st->overlay_vp_flags))
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-      if (input_st && input_st->overlay_ptr && input_st->overlay_ptr->active)
+      int flags;
+      float ol_vp[4];
+#ifdef HAVE_THREADS
+      if (video_st->display_lock)
+         slock_lock(video_st->display_lock);
+#endif
+      flags    = retro_atomic_load_acquire_int(&video_st->overlay_vp_flags);
+      ol_vp[0] = video_st->overlay_vp[0];
+      ol_vp[1] = video_st->overlay_vp[1];
+      ol_vp[2] = video_st->overlay_vp[2];
+      ol_vp[3] = video_st->overlay_vp[3];
+#ifdef HAVE_THREADS
+      if (video_st->display_lock)
+         slock_unlock(video_st->display_lock);
+#endif
+      if (flags & OVERLAY_HAS_VIEWPORT)
       {
-         const struct overlay *ol = input_st->overlay_ptr->active;
-         if (ol->flags & OVERLAY_HAS_VIEWPORT)
-         {
-            /* Calculate overlay's viewport bounds in pixels */
-            int ol_x      = (int)(ol->viewport.x * vp->full_width);
-            int ol_y      = (int)(ol->viewport.y * vp->full_height);
-            unsigned ol_w = (unsigned)(ol->viewport.w * vp->full_width);
-            unsigned ol_h = (unsigned)(ol->viewport.h * vp->full_height);
-            if (!ol->viewport_override_logged)
-            {
-               RARCH_LOG("[Overlay] Applying viewport override!\n");
-               ((struct overlay *)ol)->viewport_override_logged = true;
-            }
+         /* Calculate overlay's viewport bounds in pixels */
+         int ol_x      = (int)(ol_vp[0] * vp->full_width);
+         int ol_y      = (int)(ol_vp[1] * vp->full_height);
+         unsigned ol_w = (unsigned)(ol_vp[2] * vp->full_width);
+         unsigned ol_h = (unsigned)(ol_vp[3] * vp->full_height);
 
-            if (ol->flags & OVERLAY_VIEWPORT_FILL)
+         if (flags & OVERLAY_VIEWPORT_FILL)
+         {
+            /* Fill mode: stretch to fill overlay viewport exactly */
+            vp->x      = ol_x;
+            vp->y      = ol_y;
+            vp->width  = ol_w;
+            vp->height = ol_h;
+         }
+         else
+         {
+            /* Fit mode: preserve aspect ratio within overlay viewport */
+            float game_aspect = video_st->aspect_ratio;
+            float ol_aspect   = (float)ol_w / (float)ol_h;
+
+            if (game_aspect > ol_aspect)
             {
-               /* Fill mode: stretch to fill overlay viewport exactly */
-               vp->x      = ol_x;
-               vp->y      = ol_y;
+               /* Game is wider - pillarbox (bars top/bottom) */
                vp->width  = ol_w;
-               vp->height = ol_h;
+               vp->height = (unsigned)(ol_w / game_aspect);
+               vp->x      = ol_x;
+               vp->y      = ol_y + (int)(ol_h - vp->height) / 2;
             }
             else
             {
-               /* Fit mode: preserve aspect ratio within overlay viewport */
-               float game_aspect = video_st->aspect_ratio;
-               float ol_aspect   = (float)ol_w / (float)ol_h;
-
-               if (game_aspect > ol_aspect)
-               {
-                  /* Game is wider - pillarbox (bars top/bottom) */
-                  vp->width  = ol_w;
-                  vp->height = (unsigned)(ol_w / game_aspect);
-                  vp->x      = ol_x;
-                  vp->y      = ol_y + (int)(ol_h - vp->height) / 2;
-               }
-               else
-               {
-                  /* Game is taller - letterbox (bars left/right) */
-                  vp->height = ol_h;
-                  vp->width  = (unsigned)(ol_h * game_aspect);
-                  vp->x      = ol_x + (int)(ol_w - vp->width) / 2;
-                  vp->y      = ol_y;
-               }
+               /* Game is taller - letterbox (bars left/right) */
+               vp->height = ol_h;
+               vp->width  = (unsigned)(ol_h * game_aspect);
+               vp->x      = ol_x + (int)(ol_w - vp->width) / 2;
+               vp->y      = ol_y;
             }
-            return;  /* Skip all other viewport calculations */
          }
+         return;  /* Skip all other viewport calculations */
       }
    }
 #endif

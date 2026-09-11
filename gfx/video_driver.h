@@ -1084,6 +1084,18 @@ typedef struct
     * wrapper - and read by the main thread, the menu and tasks, through
     * video_driver_set_output_size() / video_driver_get_output_size(). */
    retro_atomic_int_t output_size_packed;
+#ifdef HAVE_OVERLAY
+   /* The active overlay's viewport override, published by the main
+    * thread whenever the active overlay changes
+    * (video_driver_set_overlay_viewport()) and read by
+    * video_driver_update_viewport() on whichever thread draws, which
+    * never touches the overlay itself: the main thread frees and
+    * replaces it. overlay_vp_flags (OVERLAY_HAS_VIEWPORT,
+    * OVERLAY_VIEWPORT_FILL) alone says whether there is one; the
+    * rectangle - x, y, w, h - is read and written under display_lock. */
+   retro_atomic_int_t overlay_vp_flags;
+   float overlay_vp[4];
+#endif
    unsigned scale_width;
    unsigned scale_height;
 
@@ -1427,6 +1439,13 @@ const char *video_driver_get_ident(void);
 void video_driver_get_output_size(unsigned *width, unsigned *height);
 
 void video_driver_set_output_size(unsigned width, unsigned height);
+
+#ifdef HAVE_OVERLAY
+struct overlay;
+/* Main thread: the viewport override of the overlay now active, or
+ * none for NULL, for video_driver_update_viewport(). */
+void video_driver_set_overlay_viewport(const struct overlay *active);
+#endif
 
 float video_driver_get_aspect_ratio(void);
 

@@ -6366,10 +6366,21 @@ static void input_overlay_enable_(bool enable)
    }
 }
 
+/* The video side reads the active overlay's viewport override from a
+ * copy (video_driver_update_viewport() may run on the threaded video
+ * worker, and the overlay is freed and replaced here); refreshed
+ * whenever overlay_ptr or the overlay it shows changes. */
+static void input_overlay_viewport_publish(void)
+{
+   input_overlay_t *ol = input_driver_st.overlay_ptr;
+   video_driver_set_overlay_viewport(ol ? ol->active : NULL);
+}
+
 static void input_overlay_deinit(void)
 {
    input_overlay_free(input_driver_st.overlay_ptr);
    input_driver_st.overlay_ptr = NULL;
+   input_overlay_viewport_publish();
 
    input_overlay_free(input_driver_st.overlay_cache_ptr);
    input_driver_st.overlay_cache_ptr = NULL;
@@ -6394,6 +6405,7 @@ static void input_overlay_move_to_cache(void)
    /* Move to cache */
    input_st->overlay_cache_ptr = ol;
    input_st->overlay_ptr       = NULL;
+   input_overlay_viewport_publish();
 }
 
 static void input_overlay_swap_with_cached(void)
@@ -6408,6 +6420,7 @@ static void input_overlay_swap_with_cached(void)
    ol                          = input_st->overlay_cache_ptr;
    input_st->overlay_cache_ptr = input_st->overlay_ptr;
    input_st->overlay_ptr       = ol;
+   input_overlay_viewport_publish();
 
    /* Enable and update to current settings */
    input_overlay_enable_(true);
@@ -6582,6 +6595,7 @@ static void input_overlay_loaded(retro_task_t *task,
    if (input_st->overlay_ptr)
       input_overlay_free(input_st->overlay_ptr);
    input_st->overlay_ptr = ol;
+   input_overlay_viewport_publish();
 
    /* Enable or disable the overlay */
    input_overlay_enable_(enable_overlay);
@@ -6590,6 +6604,7 @@ static void input_overlay_loaded(retro_task_t *task,
    if (!(ol->flags & INPUT_OVERLAY_ALIVE))
    {
       input_st->overlay_ptr = NULL;
+      input_overlay_viewport_publish();
       input_overlay_free(ol);
       return;
    }
