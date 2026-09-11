@@ -71,9 +71,17 @@ struct wiiusb_adapter
    uint32_t send_control_size;
 };
 
+/* How many times a failed control write is retried before the
+ * message is dropped.  These used to loop until success; a pad that
+ * had been unplugged mid-message never succeeds, and the poll
+ * thread - the one thread that reads every pad and honours
+ * poll_thread_quit - was stuck in here for good. */
+#define WIIUSB_SC_RETRIES 3
+
 static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
 {
-   int32_t r;
+   int32_t r      = 0;
+   unsigned tries = WIIUSB_SC_RETRIES;
    switch (adapter->send_control_type)
    {
       case WIIUSB_SC_INTMSG:
@@ -82,7 +90,7 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteIntrMsg(adapter->handle,
                adapter->endpoint_out, adapter->send_control_size,
                adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       case WIIUSB_SC_CTRLMSG:
          do
@@ -90,7 +98,7 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
                USB_REQ_SETREPORT, (USB_REPTYPE_FEATURE<<8) | 0xf4, 0x0,
                adapter->send_control_size, adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       case WIIUSB_SC_CTRLMSG2:
          do
@@ -98,11 +106,14 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
                   USB_REQ_SETREPORT, (USB_REPTYPE_OUTPUT<<8) | 0x01, 0x0,
                   adapter->send_control_size, adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       /*default:  any other case we do nothing */
    }
-   /* Reset the control type */
+   if (r < 0)
+      RARCH_WARN("[wiiusb] Control message to slot %d dropped after %d failed writes.\n",
+            adapter->slot, WIIUSB_SC_RETRIES);
+   /* Reset the control type: the mailbox is free for the next message. */
    adapter->send_control_type = WIIUSB_SC_NONE;
 }
 
@@ -129,15 +140,26 @@ static void wiiusb_hid_device_send_control(void *data,
    if (!adapter || !s || !adapter->send_control_buffer)
       return;
 
+   /* One message at a time.  The buffer is a single mailbox the poll
+    * thread sends from, and a blocking USB write in progress there is
+    * exactly when this thread gets to run (LWP switches on the
+    * block); writing the next message into it under the transfer
+    * handed the device a torn one.  The type is cleared when the
+    * send is done; until then the new message is dropped, which for
+    * rumble and LED updates means the next one wins. */
+   if (adapter->send_control_type != WIIUSB_SC_NONE)
+      return;
+
    /* first byte contains the type of control to use
-    * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2 */
+    * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2; the payload is
+    * what follows, and the mailbox is 128 bytes. */
+   if (len < 1 || len - 1 > 128)
+      return;
    control_type               = s[0];
-   /* decrement size by one as we are getting rid of first byte */
    adapter->send_control_size = len - 1;
-   /* increase the buffer address so we access the actual data */
    s++;
    memcpy(adapter->send_control_buffer, s, adapter->send_control_size);
-   /* Activate it so it can be processed in the adapter thread */
+   /* Publish last: the poll thread sends once it sees a type set. */
    adapter->send_control_type = control_type;
 }
 
