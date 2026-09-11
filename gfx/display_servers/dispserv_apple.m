@@ -741,11 +741,11 @@ typedef IOReturn (*apple_avservice_copy_edid_t)(IOAVServiceRef, CFDataRef*);
 /* The block a proxy reports, if it is a whole number of 128-byte
  * blocks and at least one. Returns the length, or 0. */
 static size_t apple_dcp_service_edid(apple_avservice_copy_edid_t copy_edid,
-      IOAVServiceRef av, uint8_t *out, size_t max)
+      IOAVServiceRef av, uint8_t *out, size_t max, IOReturn *rc)
 {
    CFDataRef edid = NULL;
    size_t len     = 0;
-   if (copy_edid(av, &edid) != kIOReturnSuccess || !edid)
+   if ((*rc = copy_edid(av, &edid)) != kIOReturnSuccess || !edid)
       return 0;
    len = (size_t)CFDataGetLength(edid);
    if (len > max)
@@ -770,6 +770,9 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
    int n            = -1;
    int candidates   = 0;
    int only_len     = 0;
+   int proxies      = 0;
+   int externals    = 0;
+   IOReturn last_rc = kIOReturnSuccess;
 
    if (!resolved)
    {
@@ -778,6 +781,22 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
          dlsym(RTLD_DEFAULT, "IOAVServiceCreateWithService");
       copy_edid      = (apple_avservice_copy_edid_t)
          dlsym(RTLD_DEFAULT, "IOAVServiceCopyEDID");
+      /* RTLD_DEFAULT only searches what is already loaded with global
+       * scope; open the framework by name when it comes up empty */
+      if (!create_service || !copy_edid)
+      {
+         void *iokit = dlopen(
+               "/System/Library/Frameworks/IOKit.framework/IOKit", RTLD_LAZY);
+         if (iokit)
+         {
+            if (!create_service)
+               create_service = (apple_avservice_create_t)
+                  dlsym(iokit, "IOAVServiceCreateWithService");
+            if (!copy_edid)
+               copy_edid = (apple_avservice_copy_edid_t)
+                  dlsym(iokit, "IOAVServiceCopyEDID");
+         }
+      }
       if (!create_service || !copy_edid)
          RARCH_LOG("[Video] IOAVService is not available on this macOS;"
                " the display's EDID cannot be read through the DCP.\n");
@@ -791,6 +810,7 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
 
    while ((svc = IOIteratorNext(it)))
    {
+      proxies++;
       /* Location is External on a connected display and Embedded on
        * the built-in panel, which has no EDID to read */
       CFStringRef location = (CFStringRef)IORegistryEntrySearchCFProperty(
@@ -804,9 +824,11 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
       if (external)
       {
          IOAVServiceRef av = create_service(kCFAllocatorDefault, svc);
+         externals++;
          if (av)
          {
-            size_t len = apple_dcp_service_edid(copy_edid, av, out, max);
+            size_t len = apple_dcp_service_edid(copy_edid, av, out, max,
+                  &last_rc);
             if (len)
             {
                uint32_t v  = ((uint32_t)out[8] << 8) | out[9];
@@ -836,6 +858,10 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
     * one makes the guess unsafe, so it is not made. */
    if (n < 0 && candidates == 1)
       n = only_len;
+   if (n < 0)
+      RARCH_LOG("[Video] DCP: %d service(s), %d external, %d with an EDID"
+            " (last IOAVServiceCopyEDID 0x%x). A built-in panel reports"
+            " none.\n", proxies, externals, candidates, (unsigned)last_rc);
    return n;
 }
 
@@ -873,12 +899,14 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
    serial  = CGDisplaySerialNumber(display);
 
    /* port 0 is the default master port on every release, without
-    * naming kIOMasterPortDefault (renamed in 12) */
+    * naming kIOMasterPortDefault (renamed in 12). The walk failing is
+    * not the end of it: Apple Silicon has no IODisplayConnect at all,
+    * and the DCP below is the whole answer there. */
    if (IOServiceGetMatchingServices(0, IOServiceMatching("IODisplayConnect"), &it)
          != KERN_SUCCESS)
-      return -1;
+      it = 0;
 
-   while (n < 0 && (svc = IOIteratorNext(it)))
+   while (it && n < 0 && (svc = IOIteratorNext(it)))
    {
       CFDictionaryRef info = IODisplayCreateInfoDictionary(svc,
             kIODisplayOnlyPreferredName);
@@ -917,11 +945,15 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
       }
       IOObjectRelease(svc);
    }
-   IOObjectRelease(it);
+   if (it)
+      IOObjectRelease(it);
 
    /* Apple Silicon has no IODisplayConnect; ask the DCP instead */
    if (n < 0)
       n = apple_dcp_get_edid(vendor, product, serial, out, max);
+   if (n < 0)
+      RARCH_LOG("[Video] No EDID for display 0x%x (vendor 0x%04x product 0x%04x).\n",
+            (unsigned)display, vendor, product);
    return n;
 }
 #ifdef __clang__
