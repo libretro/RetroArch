@@ -884,3 +884,155 @@ int modeline_edid_super_width(const uint8_t *data, size_t len,
    }
    return w;
 }
+
+/* ---- Synthesis ---- */
+
+/* One 18-byte detailed timing descriptor */
+static void edid_write_dtd(uint8_t *d, const video_edid_timing_t *t,
+      unsigned width_mm, unsigned height_mm)
+{
+   unsigned pclock_10k = (t->pclock + 5000) / 10000;
+   unsigned hblank     = t->hblank;
+   unsigned vblank     = t->vblank;
+
+   if (pclock_10k > 0xffff)
+      pclock_10k = 0xffff;
+   d[0]  = (uint8_t)(pclock_10k & 0xff);
+   d[1]  = (uint8_t)(pclock_10k >> 8);
+   d[2]  = (uint8_t)(t->hactive & 0xff);
+   d[3]  = (uint8_t)(hblank & 0xff);
+   d[4]  = (uint8_t)((((t->hactive >> 8) & 0x0f) << 4) | ((hblank >> 8) & 0x0f));
+   d[5]  = (uint8_t)(t->vactive & 0xff);
+   d[6]  = (uint8_t)(vblank & 0xff);
+   d[7]  = (uint8_t)((((t->vactive >> 8) & 0x0f) << 4) | ((vblank >> 8) & 0x0f));
+   d[8]  = (uint8_t)(t->hfront & 0xff);
+   d[9]  = (uint8_t)(t->hsync & 0xff);
+   d[10] = (uint8_t)(((t->vfront & 0x0f) << 4) | (t->vsync & 0x0f));
+   d[11] = (uint8_t)((((t->hfront >> 8) & 0x03) << 6)
+                   | (((t->hsync  >> 8) & 0x03) << 4)
+                   | (((t->vfront >> 4) & 0x03) << 2)
+                   |  ((t->vsync  >> 4) & 0x03));
+   d[12] = (uint8_t)(width_mm & 0xff);
+   d[13] = (uint8_t)(height_mm & 0xff);
+   d[14] = (uint8_t)((((width_mm >> 8) & 0x0f) << 4) | ((height_mm >> 8) & 0x0f));
+   d[15] = 0;
+   d[16] = 0;
+   /* interlace, digital separate sync, polarities */
+   d[17] = (uint8_t)((t->interlace ? 0x80 : 0x00) | 0x18
+         | (t->vsync_pos ? 0x04 : 0x00) | (t->hsync_pos ? 0x02 : 0x00));
+}
+
+/* A 0xFC / 0xFE / 0xFF string descriptor, newline-terminated and
+ * space-padded the way the spec asks */
+static void edid_write_text(uint8_t *d, uint8_t tag, const char *s)
+{
+   int i;
+   memset(d, 0, 18);
+   d[3] = tag;
+   for (i = 0; i < 13 && s && s[i]; i++)
+      d[5 + i] = (uint8_t)s[i];
+   if (i < 13)
+      d[5 + i++] = 0x0a;
+   for (; i < 13; i++)
+      d[5 + i] = 0x20;
+}
+
+size_t modeline_edid_synthesize(const video_edid_synth_t *in,
+      uint8_t *out, size_t max)
+{
+   static const uint8_t header[8] =
+      { 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 };
+   unsigned checksum = 0;
+   unsigned vmin, vmax, hmin_khz, hmax_khz;
+   int i, slot;
+
+   if (!in || !out || max < MODELINE_EDID_SIZE || in->n_timings < 1)
+      return 0;
+
+   memset(out, 0, MODELINE_EDID_SIZE);
+   memcpy(out, header, sizeof(header));
+
+   /* Vendor and product */
+   out[8]  = (uint8_t)((in->vendor >> 8) & 0xff);
+   out[9]  = (uint8_t)(in->vendor & 0xff);
+   out[10] = (uint8_t)(in->product & 0xff);
+   out[11] = (uint8_t)((in->product >> 8) & 0xff);
+   out[12] = (uint8_t)(in->serial & 0xff);
+   out[13] = (uint8_t)((in->serial >> 8) & 0xff);
+   out[14] = (uint8_t)((in->serial >> 16) & 0xff);
+   out[15] = (uint8_t)((in->serial >> 24) & 0xff);
+   out[16] = 0;  /* week: not reported */
+   out[17] = (in->year >= 1990 && in->year < 2245)
+      ? (uint8_t)(in->year - 1990) : 0;
+   out[18] = 1;
+   out[19] = 4;  /* the 1.4 encodings are what this fills */
+
+   /* Digital input, bit depth and interface where they are known */
+   out[20] = 0x80;
+   if (in->bit_depth >= 6 && in->bit_depth <= 16)
+      out[20] |= (uint8_t)((((in->bit_depth - 4) / 2) & 0x07) << 4);
+   out[20] |= (uint8_t)(in->interface & 0x0f);
+
+   /* Physical size, in whole centimetres as the block stores it */
+   out[21] = (uint8_t)((in->width_mm  + 5) / 10);
+   out[22] = (uint8_t)((in->height_mm + 5) / 10);
+   out[23] = 0xff;  /* gamma: undefined, since nothing reported one */
+   /* RGB 4:4:4, preferred timing is the first descriptor, continuous
+    * frequency. No power-management claims and no sRGB claim: the
+    * source said nothing about either. */
+   out[24] = 0x02 | 0x01;
+
+   /* Chromaticity: all zero, the encoding for "not stated". Inventing
+    * primaries here would read as measured data. */
+
+   /* No established or standard timings: the source reports its modes
+    * as detailed timings, and a guessed DMT bitmap would be a claim
+    * nothing made. 0x01 is the unused standard-timing encoding. */
+   for (i = 0; i < 8; i++)
+      out[38 + i * 2] = out[39 + i * 2] = 0x01;
+
+   /* Descriptor 1: the preferred timing */
+   edid_write_dtd(out + 54, &in->timing[0], in->width_mm, in->height_mm);
+
+   /* Descriptors 2-4, filled in order of usefulness until the four
+    * slots run out: a second timing, the range limits, the monitor
+    * name, then the origin note */
+   vmin     = in->vfreq_min;
+   vmax     = in->vfreq_max;
+   hmin_khz = (in->hfreq_min + 999) / 1000;
+   hmax_khz = (in->hfreq_max + 999) / 1000;
+   slot     = 1;
+
+   if (in->n_timings > 1 && slot < 4)
+      edid_write_dtd(out + 54 + slot++ * 18, &in->timing[1],
+            in->width_mm, in->height_mm);
+
+   if (vmin && vmax && hmin_khz && hmax_khz
+         && vmax < 256 && hmax_khz < 256 && slot < 4)
+   {
+      uint8_t *d = out + 54 + slot++ * 18;
+      memset(d, 0, 18);
+      d[3]  = 0xfd;
+      d[5]  = (uint8_t)vmin;
+      d[6]  = (uint8_t)vmax;
+      d[7]  = (uint8_t)hmin_khz;
+      d[8]  = (uint8_t)hmax_khz;
+      d[9]  = in->pclock_max
+         ? (uint8_t)((in->pclock_max / 1000000 + 9) / 10) : 0xff;
+      d[10] = 0x01; /* limits only: no GTF or CVT formula is implied */
+      d[11] = 0x0a;
+      for (i = 12; i < 18; i++)
+         d[i] = 0x20;
+   }
+
+   if (in->name[0] && slot < 4)
+      edid_write_text(out + 54 + slot++ * 18, 0xfc, in->name);
+   if (in->text[0] && slot < 4)
+      edid_write_text(out + 54 + slot++ * 18, 0xfe, in->text);
+
+   out[126] = 0;
+   for (i = 0; i < 127; i++)
+      checksum += out[i];
+   out[127] = (uint8_t)((256 - (checksum & 0xff)) & 0xff);
+   return MODELINE_EDID_SIZE;
+}

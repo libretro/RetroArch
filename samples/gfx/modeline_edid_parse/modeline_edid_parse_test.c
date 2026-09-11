@@ -565,9 +565,132 @@ static void test_ranges(void)
    CHECK(modeline_edid_super_width(e, 128, 16000.0, 3840) == 1920, "floor at 1920");
 }
 
+/* ---- 4. synthesis: the Apple Silicon internal panel ---- */
+
+static void test_synthesize(void)
+{
+   /* The numbers a MacBook Pro 13" M1 publishes in its DCP's
+    * TimingElements: 2560x1600, htotal 2642 / vtotal 1682, porches and
+    * sync widths as given, PreciseSyncRate 6613877 (16.16 kHz) and
+    * 3932151 (16.16 Hz), refresh range 30-60, pipe clock 533 MHz. */
+   video_edid_synth_t in;
+   video_edid_info_t info;
+   uint8_t block[MODELINE_EDID_SIZE];
+   char line[128];
+   size_t len;
+
+   memset(&in, 0, sizeof(in));
+   in.vendor      = 0x0610;   /* "APP" */
+   in.product     = 0xa049;
+   in.serial      = 4251086178u;
+   in.year        = 0;
+   in.width_mm    = 286;
+   in.height_mm   = 179;
+   in.vfreq_min   = 30;
+   in.vfreq_max   = 60;
+   in.hfreq_min   = 50460;
+   in.hfreq_max   = 100920;
+   in.pclock_max  = 533333328u;
+   in.bit_depth   = 8;
+   in.interface   = 5;        /* DisplayPort */
+   strlcpy(in.name, "Internal", sizeof(in.name));
+   strlcpy(in.text, "DCP timings", sizeof(in.text));
+   in.n_timings   = 1;
+   /* PreciseSyncRate is 16.16 fixed point, kHz horizontally */
+   in.timing[0].pclock    = (unsigned)(((uint64_t)6613877 * 1000 * 2642) >> 16);
+   in.timing[0].hactive   = 2560;
+   in.timing[0].hblank    = 2642 - 2560;
+   in.timing[0].hfront    = 8;
+   in.timing[0].hsync     = 32;
+   in.timing[0].vactive   = 1600;
+   in.timing[0].vblank    = 1682 - 1600;
+   in.timing[0].vfront    = 32;
+   in.timing[0].vsync     = 8;
+   in.timing[0].hsync_pos = true;
+   in.timing[0].vsync_pos = true;
+
+   len = modeline_edid_synthesize(&in, block, sizeof(block));
+   CHECK(len == MODELINE_EDID_SIZE, "synthesize returned %u", (unsigned)len);
+
+   /* It has to come back through the ordinary parser, checksum and
+    * all, exactly as a block read off a wire would */
+   CHECK(modeline_edid_parse(block, len, &info), "parse");
+   CHECK(info.header_ok && info.checksum_ok && !info.truncated, "flags");
+   CHECK(info.ver_major == 1 && info.ver_minor == 4, "version %u.%u",
+         info.ver_major, info.ver_minor);
+   CHECK(!strcmp(info.manufacturer, "APP"), "manufacturer '%s'", info.manufacturer);
+   CHECK(info.product == 0xa049, "product 0x%04x", info.product);
+   CHECK(info.serial == 4251086178u, "serial %lu", (unsigned long)info.serial);
+   CHECK(info.digital && info.bit_depth == 8 && info.interface == 5,
+         "input %d %u %u", info.digital, info.bit_depth, info.interface);
+   CHECK(info.width_cm == 29 && info.height_cm == 18, "size %u x %u",
+         info.width_cm, info.height_cm);
+   CHECK(info.gamma_x100 == 0, "gamma %u", info.gamma_x100);
+   CHECK(info.red_x == 0 && info.white_y == 0, "chromaticity not stated");
+   CHECK(info.established == 0 && info.n_std == 0, "no est/std timings");
+   CHECK(!strcmp(info.name, "Internal"), "name '%s'", info.name);
+   CHECK(!strcmp(info.text, "DCP timings"), "text '%s'", info.text);
+
+   CHECK(info.n_timings == 1, "timings %u", info.n_timings);
+   CHECK(info.timing[0].preferred, "preferred");
+   CHECK(info.timing[0].hactive == 2560 && info.timing[0].vactive == 1600,
+         "active %ux%u", info.timing[0].hactive, info.timing[0].vactive);
+   CHECK(info.timing[0].hblank == 82 && info.timing[0].vblank == 82,
+         "blank %u/%u", info.timing[0].hblank, info.timing[0].vblank);
+   CHECK(info.timing[0].hfront == 8 && info.timing[0].hsync == 32,
+         "h porch %u/%u", info.timing[0].hfront, info.timing[0].hsync);
+   CHECK(info.timing[0].vfront == 32 && info.timing[0].vsync == 8,
+         "v porch %u/%u", info.timing[0].vfront, info.timing[0].vsync);
+   CHECK(info.timing[0].hsync_pos && info.timing[0].vsync_pos, "polarity");
+   CHECK(info.timing[0].hsize_mm == 286 && info.timing[0].vsize_mm == 179,
+         "dtd size %u x %u", info.timing[0].hsize_mm, info.timing[0].vsize_mm);
+   /* 266.63 MHz over 2642 x 1682 is 100.92 kHz and 59.998 Hz; the
+    * block stores the clock in 10 kHz units, so the menu shows
+    * 266.63 MHz and 60.00 Hz */
+   modeline_edid_timing_str(&info.timing[0], line, sizeof(line));
+   CHECK(!strcmp(line, "2560x1600p 60.00 Hz, 266.63 MHz, 100.92 kHz"),
+         "timing '%s'", line);
+   modeline_edid_modeline_str(&info.timing[0], line, sizeof(line));
+   CHECK(!strcmp(line,
+         "Modeline \"2560x1600\" 266.630 2560 2568 2600 2642 1600 1632 1640 1682 +hsync +vsync"),
+         "modeline '%s'", line);
+
+   CHECK(info.has_range, "range");
+   CHECK(info.vfreq_min == 30 && info.vfreq_max == 60, "vfreq %u-%u",
+         info.vfreq_min, info.vfreq_max);
+   CHECK(info.hfreq_min == 51 && info.hfreq_max == 101, "hfreq %u-%u",
+         info.hfreq_min, info.hfreq_max);
+   CHECK(info.pclock_max == 540, "pclock max %u", info.pclock_max);
+   CHECK(info.range_type == 0x01, "range type %u", info.range_type);
+   CHECK(info.n_ext == 0 && info.n_ext_declared == 0, "no extensions");
+
+   /* Two timings: the second descriptor takes the timing and the
+    * range limits move down a slot */
+   in.n_timings = 2;
+   in.timing[1] = in.timing[0];
+   in.timing[1].vactive = 1200;
+   in.timing[1].vblank  = 50;
+   CHECK(modeline_edid_synthesize(&in, block, sizeof(block)) == MODELINE_EDID_SIZE,
+         "synthesize two");
+   CHECK(modeline_edid_parse(block, MODELINE_EDID_SIZE, &info), "parse two");
+   CHECK(info.n_timings == 2 && info.timing[1].vactive == 1200,
+         "second timing %u", info.n_timings);
+   CHECK(info.has_range && info.vfreq_max == 60, "range survives");
+   CHECK(!strcmp(info.name, "Internal"), "name survives '%s'", info.name);
+   CHECK(info.checksum_ok, "checksum two");
+
+   /* Nothing to describe */
+   in.n_timings = 0;
+   CHECK(modeline_edid_synthesize(&in, block, sizeof(block)) == 0, "no timing");
+   CHECK(modeline_edid_synthesize(NULL, block, sizeof(block)) == 0, "NULL in");
+   in.n_timings = 1;
+   CHECK(modeline_edid_synthesize(&in, block, 64) == 0, "short buffer");
+}
+
 int main(void)
 {
    test_round_trip();
+   test_synthesize();
    test_modern();
    test_ranges();
    test_defects();

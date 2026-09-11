@@ -22,6 +22,7 @@
 #include <string.h>
 #include "../verbosity.h"
 #include "../video_display_server.h"
+#include "../modeline/modeline_edid.h"
 #include "../video_driver.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
@@ -46,6 +47,7 @@
  * moved to DCP) and Apple published no replacement, so the walk finds
  * nothing and the op reports -1 there. */
 #include <dlfcn.h>
+#include <mach/mach_time.h>
 
 #include <IOKit/IOKitLib.h>
 #include <IOKit/graphics/IOGraphicsLib.h>
@@ -865,6 +867,248 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
    return n;
 }
 
+/* ---- Apple Silicon: a block built from what the DCP publishes ----
+ *
+ * The internal panel has no EDID: it is driven over an internal bus
+ * with no DDC behind it, so IOAVServiceCopyEDID fails and nothing
+ * ever negotiated a block. The DCP still knows the facts a block
+ * would carry, and publishes them on its AppleCLCD2 node as ordinary
+ * registry properties - no private API:
+ *
+ *   TimingElements     an array, one entry per mode, each with
+ *                      Horizontal/VerticalAttributes giving Total,
+ *                      Active, FrontPorch, SyncWidth, SyncPolarity
+ *                      and PreciseSyncRate (16.16 fixed point, kHz
+ *                      horizontally and Hz vertically), plus
+ *                      IsInterlaced and IsPreferred
+ *   IOMFBDisplayRefresh  the refresh interval bounds in mach ticks
+ *   IOMFBMaxSrcPixels    the pipe's maximum pixel clock
+ *
+ * That is a detailed timing and a range-limits descriptor. With the
+ * identity and physical size from CoreGraphics it makes a base block,
+ * which modeline_edid_synthesize() assembles so the menu decodes it
+ * with the same parser as a real one. Nothing is written anywhere.
+ *
+ * Only for Apple Silicon: Intel and PowerPC Macs have a real EDID
+ * through IODisplayConnect and must keep showing that. */
+#if defined(__aarch64__) || defined(__arm64__)
+static bool apple_dcp_num(CFDictionaryRef d, const char *key, long *out)
+{
+   CFNumberRef n;
+   CFStringRef k;
+   bool ok = false;
+   if (!d)
+      return false;
+   if (!(k = CFStringCreateWithCString(kCFAllocatorDefault, key,
+               kCFStringEncodingUTF8)))
+      return false;
+   if ((n = (CFNumberRef)CFDictionaryGetValue(d, k))
+         && CFGetTypeID(n) == CFNumberGetTypeID())
+      ok = CFNumberGetValue(n, kCFNumberLongType, out) ? true : false;
+   CFRelease(k);
+   return ok;
+}
+
+static bool apple_dcp_bool(CFDictionaryRef d, const char *key)
+{
+   CFBooleanRef b;
+   CFStringRef k;
+   bool v = false;
+   if (!d)
+      return false;
+   if (!(k = CFStringCreateWithCString(kCFAllocatorDefault, key,
+               kCFStringEncodingUTF8)))
+      return false;
+   if ((b = (CFBooleanRef)CFDictionaryGetValue(d, k))
+         && CFGetTypeID(b) == CFBooleanGetTypeID())
+      v = CFBooleanGetValue(b) ? true : false;
+   CFRelease(k);
+   return v;
+}
+
+/* One TimingElements entry. The porches and the sync width are given;
+ * the pixel clock is the horizontal rate times the line length. */
+static bool apple_dcp_timing(CFDictionaryRef elem, video_edid_timing_t *t)
+{
+   CFDictionaryRef h = (CFDictionaryRef)CFDictionaryGetValue(elem,
+         CFSTR("HorizontalAttributes"));
+   CFDictionaryRef v = (CFDictionaryRef)CFDictionaryGetValue(elem,
+         CFSTR("VerticalAttributes"));
+   long htotal = 0, hactive = 0, hfront = 0, hsync = 0, hpol = 0, hrate = 0;
+   long vtotal = 0, vactive = 0, vfront = 0, vsync = 0, vpol = 0;
+
+   if (!h || !v || CFGetTypeID(h) != CFDictionaryGetTypeID()
+              || CFGetTypeID(v) != CFDictionaryGetTypeID())
+      return false;
+   if (   !apple_dcp_num(h, "Total", &htotal)
+       || !apple_dcp_num(h, "Active", &hactive)
+       || !apple_dcp_num(v, "Total", &vtotal)
+       || !apple_dcp_num(v, "Active", &vactive))
+      return false;
+   if (htotal <= hactive || vtotal <= vactive || hactive <= 0 || vactive <= 0)
+      return false;
+   apple_dcp_num(h, "FrontPorch", &hfront);
+   apple_dcp_num(h, "SyncWidth", &hsync);
+   apple_dcp_num(h, "SyncPolarity", &hpol);
+   apple_dcp_num(v, "FrontPorch", &vfront);
+   apple_dcp_num(v, "SyncWidth", &vsync);
+   apple_dcp_num(v, "SyncPolarity", &vpol);
+   if (!apple_dcp_num(h, "PreciseSyncRate", &hrate) || hrate <= 0)
+      apple_dcp_num(h, "SyncRate", &hrate);
+   if (hrate <= 0)
+      return false;
+
+   memset(t, 0, sizeof(*t));
+   t->src       = MODELINE_EDID_SRC_BASE;
+   t->hactive   = (unsigned)hactive;
+   t->hblank    = (unsigned)(htotal - hactive);
+   t->hfront    = (unsigned)hfront;
+   t->hsync     = (unsigned)hsync;
+   t->vactive   = (unsigned)vactive;
+   t->vblank    = (unsigned)(vtotal - vactive);
+   t->vfront    = (unsigned)vfront;
+   t->vsync     = (unsigned)vsync;
+   t->hsync_pos = hpol != 0;
+   t->vsync_pos = vpol != 0;
+   t->sync_type = 3;
+   t->interlace = apple_dcp_bool(elem, "IsInterlaced");
+   /* 16.16 fixed point in kHz, so the clock is rate * 1000 * htotal */
+   t->pclock    = (unsigned)((((uint64_t)hrate * 1000) * (uint64_t)htotal) >> 16);
+   return t->pclock != 0;
+}
+
+static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
+      uint8_t *out, size_t max)
+{
+   video_edid_synth_t in;
+   io_iterator_t it = 0;
+   io_service_t svc;
+   CGSize size_mm;
+   bool built_in    = CGDisplayIsBuiltin(display) ? true : false;
+   bool got         = false;
+
+   memset(&in, 0, sizeof(in));
+   if (IOServiceGetMatchingServices(0,
+            IOServiceMatching("AppleCLCD2"), &it) != KERN_SUCCESS)
+      return -1;
+
+   while (!got && (svc = IOIteratorNext(it)))
+   {
+      CFMutableDictionaryRef props = NULL;
+      if (IORegistryEntryCreateCFProperties(svc, &props,
+               kCFAllocatorDefault, kNilOptions) == KERN_SUCCESS && props)
+      {
+         /* One node per pipe; "external" marks the ones that are not
+          * the built-in panel, and only the active pipe describes a
+          * display that is actually lit */
+         bool external = apple_dcp_bool(props, "external");
+         if (external != built_in && apple_dcp_bool(props, "NormalModeActive"))
+         {
+            CFArrayRef timings = (CFArrayRef)CFDictionaryGetValue(props,
+                  CFSTR("TimingElements"));
+            CFDictionaryRef refresh = (CFDictionaryRef)CFDictionaryGetValue(
+                  props, CFSTR("IOMFBDisplayRefresh"));
+            CFDictionaryRef maxpix  = (CFDictionaryRef)CFDictionaryGetValue(
+                  props, CFSTR("IOMFBMaxSrcPixels"));
+            CFIndex i, n = (timings && CFGetTypeID(timings) == CFArrayGetTypeID())
+               ? CFArrayGetCount(timings) : 0;
+
+            /* The preferred timing first, then one more if the block
+             * has a descriptor slot left for it */
+            for (i = 0; i < n && in.n_timings < 2; i++)
+            {
+               CFDictionaryRef elem = (CFDictionaryRef)
+                  CFArrayGetValueAtIndex(timings, i);
+               video_edid_timing_t t;
+               if (!elem || CFGetTypeID(elem) != CFDictionaryGetTypeID())
+                  continue;
+               if (!apple_dcp_timing(elem, &t))
+                  continue;
+               if (apple_dcp_bool(elem, "IsPreferred") && in.n_timings)
+               {
+                  in.timing[1] = in.timing[0];
+                  in.timing[0] = t;
+               }
+               else
+                  in.timing[in.n_timings] = t;
+               in.n_timings++;
+            }
+
+            /* Refresh bounds: mach ticks per frame, so the shorter
+             * interval is the higher rate */
+            if (refresh && CFGetTypeID(refresh) == CFDictionaryGetTypeID())
+            {
+               long lo = 0, hi = 0;
+               mach_timebase_info_data_t tb;
+               if (mach_timebase_info(&tb) == KERN_SUCCESS && tb.denom
+                     && apple_dcp_num(refresh,
+                        "displayMinRefreshIntervalMachTime", &lo)
+                     && apple_dcp_num(refresh,
+                        "displayMaxRefreshIntervalMachTime", &hi)
+                     && lo > 0 && hi > 0)
+               {
+                  double lo_s = (double)lo * tb.numer / tb.denom / 1000000000.0;
+                  double hi_s = (double)hi * tb.numer / tb.denom / 1000000000.0;
+                  in.vfreq_max = (unsigned)(1.0 / lo_s + 0.5);
+                  in.vfreq_min = (unsigned)(1.0 / hi_s + 0.5);
+               }
+            }
+            if (maxpix && CFGetTypeID(maxpix) == CFDictionaryGetTypeID())
+            {
+               long clk = 0;
+               if (apple_dcp_num(maxpix, "PixelClock", &clk) && clk > 0)
+                  in.pclock_max = (unsigned)clk;
+            }
+            got = in.n_timings > 0;
+         }
+         CFRelease(props);
+      }
+      IOObjectRelease(svc);
+   }
+   IOObjectRelease(it);
+   if (!got)
+      return -1;
+
+   /* The horizontal band the timings themselves span, when the
+    * refresh bounds did not give one */
+   {
+      unsigned i;
+      for (i = 0; i < in.n_timings; i++)
+      {
+         const video_edid_timing_t *t = &in.timing[i];
+         unsigned htotal = t->hactive + t->hblank;
+         unsigned hfreq  = htotal ? t->pclock / htotal : 0;
+         if (!hfreq)
+            continue;
+         if (!in.hfreq_min || hfreq < in.hfreq_min)
+            in.hfreq_min = hfreq;
+         if (hfreq > in.hfreq_max)
+            in.hfreq_max = hfreq;
+      }
+      /* A variable-refresh panel reaches the same lines at its lowest
+       * rate, so the band runs down with the refresh range */
+      if (in.vfreq_min && in.vfreq_max && in.hfreq_min)
+         in.hfreq_min = (unsigned)((double)in.hfreq_min
+               * in.vfreq_min / in.vfreq_max);
+   }
+
+   in.vendor    = CGDisplayVendorNumber(display);
+   in.product   = CGDisplayModelNumber(display);
+   in.serial    = CGDisplaySerialNumber(display);
+   size_mm      = CGDisplayScreenSize(display);
+   in.width_mm  = (unsigned)(size_mm.width  + 0.5);
+   in.height_mm = (unsigned)(size_mm.height + 0.5);
+   in.bit_depth = 8;   /* the DCP's ColorModes report 8 bpc per channel */
+   in.interface = 5;   /* DisplayPort, which is what the DCP drives */
+   strlcpy(in.name, built_in ? "Built-in" : "DCP display", sizeof(in.name));
+   /* The unspecified-text descriptor says where the block came from,
+    * so the menu shows it and nobody mistakes it for a read block */
+   strlcpy(in.text, "DCP timings", sizeof(in.text));
+
+   return (int)modeline_edid_synthesize(&in, out, max);
+}
+#endif
+
 /* The EDID of the display the RetroArch window is on. CoreGraphics
  * hands out the display's vendor, model and serial; the IODisplayConnect
  * service carrying the same three under kDisplayVendorID /
@@ -951,6 +1195,12 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
    /* Apple Silicon has no IODisplayConnect; ask the DCP instead */
    if (n < 0)
       n = apple_dcp_get_edid(vendor, product, serial, out, max);
+#if defined(__aarch64__) || defined(__arm64__)
+   /* Still nothing: the panel has no EDID to read, but the DCP knows
+    * the timings a block would carry. Build one for display. */
+   if (n < 0)
+      n = apple_dcp_synthesize_edid(display, out, max);
+#endif
    if (n < 0)
       RARCH_LOG("[Video] No EDID for display 0x%x (vendor 0x%04x product 0x%04x).\n",
             (unsigned)display, vendor, product);

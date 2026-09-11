@@ -203,6 +203,47 @@ typedef struct video_edid_info
    video_edid_ext_t ext[MODELINE_EDID_MAX_BLOCKS - 1];
 } video_edid_info_t;
 
+/* ---- Synthesis ----
+ *
+ * A base block assembled from what a display server knows about a
+ * display that has no EDID of its own to read. The Apple Silicon
+ * internal panel is the case: it is driven over an internal bus with
+ * no DDC behind it, so nothing ever negotiated a block, but the
+ * display coprocessor publishes the same facts a block would carry -
+ * every detailed timing with its porches, sync widths and polarities,
+ * the refresh range, the maximum dot clock - and CoreGraphics
+ * supplies the identity and the physical size.
+ *
+ * The result is a real EDID 1.4 base block, so the menu decodes it
+ * with the same parser as a block read off the wire, and it says so:
+ * the unspecified-text descriptor carries the origin, and fields
+ * nothing reported are left at their EDID "undefined" encodings
+ * rather than filled with plausible values. Nothing is written to
+ * disk and nothing is handed to a display; it exists to be shown. */
+typedef struct video_edid_synth
+{
+   uint32_t vendor;         /* EDID manufacturer word, as CoreGraphics
+                               reports it; 0 for "???" */
+   uint32_t product;
+   uint32_t serial;
+   unsigned year;           /* 0 when unknown */
+   unsigned width_mm, height_mm;   /* 0 when unknown */
+   unsigned vfreq_min, vfreq_max;  /* Hz, 0 when unknown */
+   unsigned hfreq_min, hfreq_max;  /* Hz, 0 when unknown */
+   unsigned pclock_max;            /* Hz, 0 when unknown */
+   uint8_t  bit_depth;      /* bits per colour, 0 when unknown */
+   uint8_t  interface;      /* 1 DVI 2 HDMI-a 3 HDMI-b 4 MDDI 5 DP */
+   char     name[MODELINE_EDID_TEXT_LEN];
+   char     text[MODELINE_EDID_TEXT_LEN];
+   uint8_t  n_timings;      /* the first is the preferred one */
+   video_edid_timing_t timing[2];
+} video_edid_synth_t;
+
+/* Writes MODELINE_EDID_SIZE bytes and returns that, or 0 when max is
+ * short or in carries no timing. */
+size_t modeline_edid_synthesize(const video_edid_synth_t *in,
+      uint8_t *out, size_t max);
+
 /* Monitor ranges from a display's own range limits, for the "edid"
  * preset: the EDID's horizontal and vertical bands are split at the
  * 15 / 25 / 31 kHz arcade boundaries and each piece takes its
