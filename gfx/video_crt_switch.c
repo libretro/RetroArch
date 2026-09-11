@@ -201,6 +201,12 @@ static void crt_apply_menu_preset(videocrt_switch_t *p_switch,
       case 4:
          RARCH_LOG("[CRT] CRT mode: %d - Selected from ini.\n", crt_mode);
          break;
+      case 5:
+         /* The range limits the display reports; the block itself is
+          * read once the display server is bound */
+         modeline_set_monitor(p_switch->gen, "edid");
+         RARCH_LOG("[CRT] CRT mode: %d - edid.\n", crt_mode);
+         break;
       default:
          break;
    }
@@ -347,6 +353,21 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
       modeline_parse_options(gen);
 
       crt_bind_display_server(p_switch);
+
+      /* The display's EDID, now that a server is up to read it; the
+       * "edid" preset (menu mode or an ini's monitor line) takes its
+       * ranges from it */
+      {
+         int n = video_display_server_get_edid(gen->edid, sizeof(gen->edid));
+         gen->edid_len = n > 0 ? (size_t)n : 0;
+         if (!strcmp(gen->monitor, "edid"))
+         {
+            if (gen->edid_len)
+               modeline_set_monitor(gen, "edid");
+            else
+               RARCH_WARN("[CRT] The display server could not read the display's EDID; the edid preset falls back to generic_15.\n");
+         }
+      }
 
       p_switch->rtn = modeline_list_init(gen, &p_switch->ops) ? 0 : -1;
       RARCH_LOG("[CRT] Engine rtn %d.\n", p_switch->rtn);

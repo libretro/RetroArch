@@ -211,6 +211,10 @@ typedef struct video_modeline_gen
    char     crt_range[MODELINE_MAX_RANGES][256];
    char     lcd_range[256];
    char     user_modeline[256];
+   /* The display's EDID as the display server read it, for the "edid"
+    * monitor preset; edid_len 0 when none could be read */
+   uint8_t  edid[1024];
+   size_t   edid_len;
    bool     modeline_generation;
    bool     lock_system_modes;
    bool     refresh_dont_care;

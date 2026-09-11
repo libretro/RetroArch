@@ -203,6 +203,16 @@ typedef struct video_edid_info
    video_edid_ext_t ext[MODELINE_EDID_MAX_BLOCKS - 1];
 } video_edid_info_t;
 
+/* Monitor ranges from a display's own range limits, for the "edid"
+ * preset: the EDID's horizontal and vertical bands are split at the
+ * 15 / 25 / 31 kHz arcade boundaries and each piece takes its
+ * blanking template from the matching arcade preset, with everything
+ * above 40 kHz on VESA GTF blanking. Returns the number of ranges
+ * written (0 when the EDID carries no usable range descriptor); range
+ * has room for max entries. */
+int modeline_edid_fill_ranges(const video_edid_info_t *info,
+      video_modeline_range_t *range, int max);
+
 /* Decode len bytes of EDID into info. Returns false only when data is
  * NULL, len is under one block, or the 8-byte header is wrong; every
  * other defect is reported in the flags. */

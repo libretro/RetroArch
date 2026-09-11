@@ -26,6 +26,7 @@
 
 #include "modeline_list.h"
 #include "modeline_monitor.h"
+#include "modeline_edid.h"
 
 #ifndef MODELINE_STANDALONE
 #include "../../verbosity.h"
@@ -132,6 +133,28 @@ static void modeline_set_preset(video_modeline_gen_t *gen)
    }
    else if (!strcmp(gen->monitor, "lcd"))
       modeline_monitor_fill_lcd_range(&gen->range[0], gen->lcd_range);
+   else if (!strcmp(gen->monitor, "edid"))
+   {
+      /* The display's own range limits; generic 15 kHz until the
+       * consumer has read the block, or when it carries none */
+      video_edid_info_t *info = gen->edid_len
+         ? (video_edid_info_t*)calloc(1, sizeof(*info)) : NULL;
+      int n = 0;
+      if (info)
+      {
+         if (modeline_edid_parse(gen->edid, gen->edid_len, info))
+            n = modeline_edid_fill_ranges(info, gen->range, MODELINE_MAX_RANGES);
+         free(info);
+      }
+      if (n == 0)
+      {
+         if (gen->edid_len)
+            RARCH_WARN("[Modeline] The display's EDID carries no usable range limits; using generic_15\n");
+         modeline_monitor_set_preset("generic_15", gen->range);
+      }
+      else
+         RARCH_LOG("[Modeline] %d range(s) from the display's EDID\n", n);
+   }
    else if (modeline_monitor_set_preset(gen->monitor, gen->range) == 0)
       modeline_monitor_set_preset("generic_15", gen->range);
 }

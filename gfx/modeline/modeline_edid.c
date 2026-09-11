@@ -20,6 +20,7 @@
 
 #include "modeline_edid.h"
 #include "modeline_list.h"
+#include "modeline_monitor.h"
 
 /* Layout after the EDID 1.3 base block; the fixed bytes describe a
  * 48x36 cm analog RGB display with separate syncs and no established
@@ -770,4 +771,82 @@ const char *modeline_edid_did_section_name(uint8_t version, uint8_t tag)
       case 0x7f: return "Vendor Specific";
       default:   return "Unknown";
    }
+}
+
+/* ---- Ranges from the range limits descriptor ---- */
+
+int modeline_edid_fill_ranges(const video_edid_info_t *info,
+      video_modeline_range_t *range, int max)
+{
+   /* Each band: its limits in Hz and the preset whose first range
+    * lends the blanking; NULL means VESA GTF */
+   static const struct
+   {
+      double lo, hi;
+      const char *tmpl;
+   } bands[] = {
+      { 14000.0, 20000.0, "arcade_15" },
+      { 20000.0, 28000.0, "arcade_25" },
+      { 28000.0, 40000.0, "arcade_31" },
+      { 40000.0, 540000.0, NULL }
+   };
+   double hmin, hmax, vmin, vmax;
+   int b, n = 0;
+
+   if (!info || !range || max <= 0 || !info->has_range
+         || !info->hfreq_min || !info->hfreq_max || !info->vfreq_min || !info->vfreq_max)
+      return 0;
+
+   /* The descriptor holds whole kHz and Hz, rounded by the monitor's
+    * maker: a 15.734 kHz set that says 15-16 must still admit 15.734,
+    * and one that says 15-15 must too, so the maxima extend to the
+    * next whole unit */
+   hmin = (double)info->hfreq_min * 1000.0;
+   hmax = (double)info->hfreq_max * 1000.0 + 999.0;
+   vmin = (double)info->vfreq_min;
+   vmax = (double)info->vfreq_max + 0.99;
+   if (vmin < 40.0)
+      vmin = 40.0;
+   if (vmax > 200.0)
+      vmax = 200.0;
+   if (hmax <= hmin || vmax <= vmin)
+      return 0;
+
+   for (b = 0; b < (int)(sizeof(bands) / sizeof(bands[0])) && n < max; b++)
+   {
+      double lo = hmin > bands[b].lo ? hmin : bands[b].lo;
+      double hi = hmax < bands[b].hi ? hmax : bands[b].hi;
+      video_modeline_range_t r;
+      if (hi <= lo)
+         continue;
+      memset(&r, 0, sizeof(r));
+      if (bands[b].tmpl)
+      {
+         video_modeline_range_t tmpl[MODELINE_MAX_RANGES];
+         memset(tmpl, 0, sizeof(tmpl));
+         if (modeline_monitor_set_preset(bands[b].tmpl, tmpl) < 1)
+            continue;
+         r = tmpl[0];
+      }
+      else
+      {
+         /* GTF blanking for the tallest picture the band's top rate
+          * scans at 60 Hz with 5% vertical blanking, bounded to what
+          * the generator lists */
+         int lines_max = (int)(hi / (60.0 * 1.05));
+         if (lines_max > 2048)
+            lines_max = 2048;
+         if (lines_max < 480)
+            lines_max = 480;
+         modeline_monitor_fill_vesa_range(&r, 480, lines_max);
+      }
+      r.hfreq_min = lo;
+      r.hfreq_max = hi;
+      r.vfreq_min = vmin;
+      r.vfreq_max = vmax;
+      if (modeline_monitor_evaluate_range(&r))
+         continue;
+      range[n++] = r;
+   }
+   return n;
 }

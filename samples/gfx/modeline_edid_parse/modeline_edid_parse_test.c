@@ -21,7 +21,10 @@
  *    HDMI and HDMI Forum vendor blocks, HDR static metadata, a DTD) and
  *    a DisplayID 2.0 extension with a type VII timing decodes every
  *    field the menu shows.
- * 3. Defects: short input, wrong header, bad checksums, a declared but
+ * 3. Ranges for the "edid" monitor preset: a 15 kHz consumer set, a
+ *    tri-sync arcade chassis, a VGA multisync and a range-less block
+ *    each yield the bands the generator should be handed.
+ * 4. Defects: short input, wrong header, bad checksums, a declared but
  *    missing extension, and CTA data block lengths that run past the
  *    block end all come back as flags rather than reads past the
  *    buffer. A deterministic byte-noise sweep runs the same parser
@@ -451,10 +454,98 @@ static void test_defects(void)
    }
 }
 
+/* ---- 3. ranges from the range limits descriptor ---- */
+
+static void put_range(uint8_t *base, unsigned vmin, unsigned vmax,
+      unsigned hmin, unsigned hmax)
+{
+   /* into descriptor 2 */
+   memset(base + 72, 0, 18);
+   base[75] = 0xfd;
+   base[77] = (uint8_t)vmin;
+   base[78] = (uint8_t)vmax;
+   base[79] = (uint8_t)hmin;
+   base[80] = (uint8_t)hmax;
+   base[81] = 0xff;
+   base[82] = 0x00;
+   base[83] = 0x0a;
+   seal(base);
+}
+
+static void test_ranges(void)
+{
+   uint8_t e[384];
+   video_edid_info_t info;
+   video_modeline_range_t r[MODELINE_MAX_RANGES];
+   int n;
+
+   /* A 15 kHz consumer set that rounded its rate to 15-15: the range
+    * must still admit 15.734 kHz, on arcade_15 blanking */
+   build_modern(e);
+   put_range(e, 50, 60, 15, 15);
+   CHECK(modeline_edid_parse(e, 128, &info), "parse 15k");
+   n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
+   CHECK(n == 1, "15k ranges %d", n);
+   CHECK(r[0].hfreq_min == 15000.0 && r[0].hfreq_max == 15999.0,
+         "15k h %.0f-%.0f", r[0].hfreq_min, r[0].hfreq_max);
+   CHECK(r[0].vfreq_min == 50.0 && r[0].vfreq_max == 60.99,
+         "15k v %.2f-%.2f", r[0].vfreq_min, r[0].vfreq_max);
+   CHECK(r[0].hsync_pulse == 4.7 && r[0].progressive_lines_max == 288
+         && r[0].interlaced_lines_max == 576, "15k template");
+
+   /* A tri-sync arcade chassis, 15-32 kHz: three bands */
+   put_range(e, 49, 65, 15, 32);
+   CHECK(modeline_edid_parse(e, 128, &info), "parse tri");
+   n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
+   CHECK(n == 3, "tri ranges %d", n);
+   CHECK(r[0].hfreq_min == 15000.0 && r[0].hfreq_max == 20000.0, "tri band 0");
+   CHECK(r[1].hfreq_min == 20000.0 && r[1].hfreq_max == 28000.0
+         && r[1].progressive_lines_max == 400, "tri band 1");
+   CHECK(r[2].hfreq_min == 28000.0 && r[2].hfreq_max == 32999.0
+         && r[2].progressive_lines_max == 512, "tri band 2");
+   CHECK(r[0].vfreq_min == 49.0 && r[2].vfreq_max == 65.99, "tri v");
+
+   /* A VGA multisync, 30-96 kHz: arcade_31 blanking to 40 kHz, GTF
+    * above it up to 1524 lines */
+   put_range(e, 50, 160, 30, 96);
+   CHECK(modeline_edid_parse(e, 128, &info), "parse vga");
+   n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
+   CHECK(n == 2, "vga ranges %d", n);
+   CHECK(r[0].hfreq_min == 30000.0 && r[0].hfreq_max == 40000.0, "vga band 0");
+   CHECK(r[1].hfreq_min == 40000.0 && r[1].hfreq_max == 96999.0, "vga band 1");
+   CHECK(r[1].progressive_lines_min == 480 && r[1].progressive_lines_max == 1539,
+         "vga gtf lines %d-%d", r[1].progressive_lines_min, r[1].progressive_lines_max);
+   CHECK(r[1].vfreq_max == 160.99, "vga v %.2f", r[1].vfreq_max);
+
+   /* Only room for one */
+   n = modeline_edid_fill_ranges(&info, r, 1);
+   CHECK(n == 1 && r[0].hfreq_max == 40000.0, "capped to one");
+
+   /* Vertical rates outside the engine's band are clamped, not
+    * refused */
+   put_range(e, 24, 240, 15, 16);
+   CHECK(modeline_edid_parse(e, 128, &info), "parse wide v");
+   n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
+   CHECK(n == 1 && r[0].vfreq_min == 40.0 && r[0].vfreq_max == 200.0,
+         "clamped v %d %.2f-%.2f", n, r[0].vfreq_min, r[0].vfreq_max);
+
+   /* No range descriptor: nothing */
+   build_modern(e);
+   memset(e + 72, 0, 18);
+   e[75] = 0x10;
+   seal(e);
+   CHECK(modeline_edid_parse(e, 128, &info), "parse no range");
+   CHECK(!info.has_range, "no range flag");
+   n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
+   CHECK(n == 0, "no range yields %d", n);
+   CHECK(modeline_edid_fill_ranges(NULL, r, 1) == 0, "NULL info");
+}
+
 int main(void)
 {
    test_round_trip();
    test_modern();
+   test_ranges();
    test_defects();
    if (failures)
    {
