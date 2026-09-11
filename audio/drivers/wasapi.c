@@ -148,8 +148,6 @@ typedef struct
    UINT64         clock_frequency;   /* units of an IAudioClock position, a second */
    UINT64         clock_start;
    UINT64         clock2_start;
-   bool           clock_valid;
-   bool           clock2_valid;
    /* Whether the fifo has ever been fed: a period of silence before
     * the first audio is not an underrun. On the AC-3 path the first
     * burst is 32 ms of input and an encode away from the first write,
@@ -1743,6 +1741,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
                w->ac3_in = (float*)calloc((size_t)1536 * enc_ch, sizeof(float));
                if (!w->ac3 || !w->ac3_in)
                {
+                  RELEASE(w->clock2);
+                  RELEASE(w->clock);
                   RELEASE(w->client);
                   w->client = NULL;
                }
@@ -1981,12 +1981,14 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          UINT64 pos = 0, qpc = 0;
          w->clock_frequency = freq;
          if (SUCCEEDED(_IAudioClock_GetPosition(w->clock, &pos, &qpc)))
-         {
             w->clock_start = pos;
-            w->clock_valid = true;
-         }
+         else
+            w->clock_frequency = 0;
       }
-      if (!w->clock_valid)
+      /* No frequency is no usable clock, and the pointer goes with it:
+       * what says a clock is there is the pointer, never a flag beside
+       * it - a flag outlives the interface it describes. */
+      if (!w->clock_frequency)
          RELEASE(w->clock);
    }
    if (w->clock && SUCCEEDED(_IAudioClock_QueryInterface(w->clock,
@@ -1994,16 +1996,13 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    {
       UINT64 pos = 0, qpc = 0;
       if (SUCCEEDED(_IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
-      {
          w->clock2_start = pos;
-         w->clock2_valid = true;
-      }
       else
          RELEASE(w->clock2);
    }
    RARCH_LOG("[WASAPI] Device clock: %s.\n",
-         w->clock2_valid ? "hardware position, in frames (IAudioClock2)"
-         : w->clock_valid ? "stream position (IAudioClock)"
+         w->clock2 ? "hardware position, in frames (IAudioClock2)"
+         : w->clock ? "stream position (IAudioClock)"
          : "none; the service events are counted instead");
 
    hr = _IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest);
@@ -2498,6 +2497,8 @@ static void wasapi_free(void *wh)
    if (w->client)
       _IAudioClient_Stop(w->client);
 
+   RELEASE(w->clock2);
+   RELEASE(w->clock);
    RELEASE(w->renderer);
    RELEASE(w->client);
    RELEASE(w->device);
@@ -2728,7 +2729,7 @@ static size_t wasapi_frames_consumed(void *wh)
 
    /* The hardware's position, in frames, where the endpoint reports
     * it. Nothing to convert and nothing to infer. */
-   if (w->clock2_valid && SUCCEEDED(
+   if (w->clock2 && SUCCEEDED(
             _IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
       return (size_t)(pos - w->clock2_start);
 
@@ -2737,7 +2738,7 @@ static size_t wasapi_frames_consumed(void *wh)
     * is explicit that they are not to be assumed the same - so it is
     * converted through that frequency and the rate the stream runs
     * at. */
-   if (w->clock_valid && w->clock_frequency && w->rate && SUCCEEDED(
+   if (w->clock && w->clock_frequency && w->rate && SUCCEEDED(
             _IAudioClock_GetPosition(w->clock, &pos, &qpc)))
       return (size_t)(((pos - w->clock_start) * (UINT64)w->rate)
             / w->clock_frequency);
