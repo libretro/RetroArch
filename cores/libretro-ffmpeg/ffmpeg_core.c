@@ -67,7 +67,7 @@ extern "C" {
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -702,7 +702,19 @@ typedef struct ffmpeg_core_ctx
 
    /* Threaded FIFOs */
    volatile bool decode_thread_dead;
-   fifo_buffer_t *audio_decode_fifo;
+   /* Decoded audio, decode thread -> main thread: one producer, one
+    * consumer, so a lock-free retro_spsc ring.  fifo_lock no longer
+    * covers the read and the write themselves - only the handshake
+    * around them (the waits, decode_thread_dead, main_sleeping, the
+    * seek request and decode_last_audio_time).  The three places
+    * that empty it: the main thread's seek request skips what it
+    * holds from the consumer side, which is safe against a live
+    * producer; the decode thread's post-seek and deadlock clears
+    * reset it whole, which is only legal with the consumer quiesced,
+    * and it is - both run under fifo_lock while main_sleeping says
+    * the main thread is parked in scond_wait on that same lock. */
+   retro_spsc_t audio_decode_fifo;
+   bool audio_decode_fifo_init;
    scond_t *fifo_cond;
    scond_t *fifo_decode_cond;
    slock_t *fifo_lock;
@@ -2110,8 +2122,11 @@ static void seek_frame(int seek_frames)
    }
    AUDIO_FRAMES_STR = g_ctx.decoded_frame_cnt * MEDIA_STR.sample_rate / MEDIA_STR.interpolate_fps;
 
-   if (AUDIO_DECODE_FIFO_STR)
-      fifo_clear(AUDIO_DECODE_FIFO_STR);
+   /* Consumer side: skip what is buffered rather than reset the
+    * cursors, since the decode thread may be mid-write. */
+   if (g_ctx.audio_decode_fifo_init)
+      retro_spsc_skip(&AUDIO_DECODE_FIFO_STR,
+            retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR));
    scond_signal(FIFO_DECODE_COND_STR);
 
    while (!DECODE_THREAD_DEAD_STR && DO_SEEK_STR)
@@ -2326,7 +2341,8 @@ void CORE_PREFIX(retro_run)(void)
       to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
 
       slock_lock(FIFO_LOCK_STR);
-      while (!DECODE_THREAD_DEAD_STR && FIFO_READ_AVAIL(AUDIO_DECODE_FIFO_STR) < to_read_bytes)
+      while (!DECODE_THREAD_DEAD_STR
+            && retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR) < to_read_bytes)
       {
          MAIN_SLEEPING_STR = true;
          scond_signal(FIFO_DECODE_COND_STR);
@@ -2335,7 +2351,7 @@ void CORE_PREFIX(retro_run)(void)
       }
 
       reading_pts  = DECODE_LAST_AUDIO_TIME_STR -
-         (double)FIFO_READ_AVAIL(AUDIO_DECODE_FIFO_STR) / (MEDIA_STR.sample_rate * sizeof(int16_t) * 2);
+         (double)retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR) / (MEDIA_STR.sample_rate * sizeof(int16_t) * 2);
       expected_pts = (double)AUDIO_FRAMES_STR / MEDIA_STR.sample_rate;
       old_pts_bias = PTS_BIAS_STR;
       PTS_BIAS_STR     = reading_pts - expected_pts;
@@ -2348,7 +2364,13 @@ void CORE_PREFIX(retro_run)(void)
       }
 
       if (!DECODE_THREAD_DEAD_STR)
-         fifo_read(AUDIO_DECODE_FIFO_STR, audio_buffer, to_read_bytes);
+      {
+         /* The read itself needs no lock: SPSC, this is the consumer,
+          * and the bytes were counted under the lock above. */
+         slock_unlock(FIFO_LOCK_STR);
+         retro_spsc_read(&AUDIO_DECODE_FIFO_STR, audio_buffer, to_read_bytes);
+         slock_lock(FIFO_LOCK_STR);
+      }
       scond_signal(FIFO_DECODE_COND_STR);
 
       slock_unlock(FIFO_LOCK_STR);
@@ -3204,14 +3226,16 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       slock_lock(FIFO_LOCK_STR);
 
       while (!DECODE_THREAD_DEAD_STR &&
-            FIFO_WRITE_AVAIL(AUDIO_DECODE_FIFO_STR) < required_buffer)
+            retro_spsc_write_avail(&AUDIO_DECODE_FIFO_STR) < required_buffer)
       {
          if (!MAIN_SLEEPING_STR)
             scond_wait(FIFO_DECODE_COND_STR, FIFO_LOCK_STR);
          else
          {
+            /* Main is parked in scond_wait on this lock, so it is not
+             * in a read: resetting the ring whole is legal here. */
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Thread: Audio deadlock detected.\n");
-            fifo_clear(AUDIO_DECODE_FIFO_STR);
+            retro_spsc_clear(&AUDIO_DECODE_FIFO_STR);
             break;
          }
       }
@@ -3220,7 +3244,13 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
             FCTX_STR->streams[AUDIO_STREAMS_STR[g_ctx.audio_stream_idx]]->time_base);
 
       if (!DECODE_THREAD_DEAD_STR)
-         fifo_write(AUDIO_DECODE_FIFO_STR, buffer, required_buffer);
+      {
+         /* The write itself needs no lock: SPSC, this is the producer,
+          * and the room was counted under the lock above. */
+         slock_unlock(FIFO_LOCK_STR);
+         retro_spsc_write(&AUDIO_DECODE_FIFO_STR, buffer, required_buffer);
+         slock_lock(FIFO_LOCK_STR);
+      }
 
       scond_signal(FIFO_COND_STR);
       slock_unlock(FIFO_LOCK_STR);
@@ -3355,8 +3385,11 @@ static void decode_thread(void *data)
          next_audio_start = 0.0;
          last_audio_end   = 0.0;
 
-         if (AUDIO_DECODE_FIFO_STR)
-            fifo_clear(AUDIO_DECODE_FIFO_STR);
+         /* Main is parked in its seek wait on this lock (it set the
+          * request and waits for do_seek to clear), so it is not in a
+          * read: resetting the ring whole is legal here. */
+         if (g_ctx.audio_decode_fifo_init)
+            retro_spsc_clear(&AUDIO_DECODE_FIFO_STR);
 
          packet_buffer_clear(&audio_packet_buffer);
          packet_buffer_clear(&video_packet_buffer);
@@ -3669,14 +3702,14 @@ void CORE_PREFIX(retro_unload_game)(void)
       slock_free(ASS_LOCK_STR);
 #endif
 
-   if (AUDIO_DECODE_FIFO_STR)
-      fifo_free(AUDIO_DECODE_FIFO_STR);
+   if (g_ctx.audio_decode_fifo_init)
+      retro_spsc_free(&AUDIO_DECODE_FIFO_STR);
+   g_ctx.audio_decode_fifo_init = false;
 
    FIFO_COND_STR = NULL;
    FIFO_DECODE_COND_STR = NULL;
    FIFO_LOCK_STR = NULL;
    DECODE_THREAD_LOCK_STR = NULL;
-   AUDIO_DECODE_FIFO_STR = NULL;
 #ifdef HAVE_SSA
    ASS_LOCK_STR = NULL;
 #endif
@@ -3846,7 +3879,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    if (AUDIO_STREAMS_NUM_STR > 0)
    {
       /* audio fifo is 2 seconds deep */
-      AUDIO_DECODE_FIFO_STR = fifo_new(
+      g_ctx.audio_decode_fifo_init = retro_spsc_init(&AUDIO_DECODE_FIFO_STR,
          MEDIA_STR.sample_rate * sizeof(int16_t) * 2 * 2
       );
    }
