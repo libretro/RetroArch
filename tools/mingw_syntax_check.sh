@@ -67,7 +67,8 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
  -D_GNU_SOURCE -I. -Ilibretro-common/include -Ideps -Ideps/stb -Igfx/include \
  -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
  -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
- -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE"
+ -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE \
+ -DHAVE_VULKAN"
 
 # A Win32-only translation unit cannot be C89-checked with the host gcc:
 # <windows.h> is not there, the pass dies on the include and the

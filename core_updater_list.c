@@ -27,6 +27,8 @@
 #include <array/rbuf.h>
 #include <retro_miscellaneous.h>
 
+#include <compat/strl.h>
+
 #include "file_path_special.h"
 #include "core_info.h"
 

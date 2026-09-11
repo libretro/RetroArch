@@ -34,6 +34,8 @@
 #include <queues/task_queue.h>
 #include <time/rtime.h>
 
+#include <compat/strl.h>
+
 #include "configuration.h"
 #include "content.h"
 #include "core.h"

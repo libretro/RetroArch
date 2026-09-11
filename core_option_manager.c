@@ -16,6 +16,8 @@
 
 #include <string/stdstring.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
 #endif

@@ -1516,6 +1516,8 @@ end:
 
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
+   unsigned i;
+
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Exclusive mode is bound to the swapchain; release it first. */
    if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
@@ -1523,7 +1525,6 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
             vk->context.device, vk->swapchain);
    vk->fse_acquired = false;
 #endif
-   unsigned i;
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
    if (vk->swapchain != VK_NULL_HANDLE)
@@ -2180,20 +2181,26 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          !video_windowed_fullscreen
       && settings->uints.video_fse_negotiation == VIDEO_FSE_FORCED;
    HMONITOR hmonitor;
-   VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
-      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-      NULL,
-      video_windowed_fullscreen
-         ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-         : (fse_forced
-               ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
-               : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT)
-   };
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
-      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-      NULL,
-      NULL
-   };
+   /* Assigned rather than initialised: the exclusive mode depends on
+    * two settings read above, and C89 wants an initialiser it can
+    * compute at load time. */
+   VkSurfaceFullScreenExclusiveInfoEXT fse_info;
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info;
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   fse_info.sType                          =
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT;
+   fse_info.pNext                          = NULL;
+   fse_info.fullScreenExclusive            = video_windowed_fullscreen
+      ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+      : (fse_forced
+            ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+            : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT);
+   fse_win32_info.sType                    =
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT;
+   fse_win32_info.pNext                    = NULL;
+   fse_win32_info.hmonitor                 = NULL;
 #endif
 
    format.format                           = VK_FORMAT_UNDEFINED;

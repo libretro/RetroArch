@@ -27,6 +27,8 @@
 #include <lists/dir_list.h>
 #include <retro_miscellaneous.h>
 
+#include <compat/strl.h>
+
 #include "msg_hash.h"
 #include "list_special.h"
 #include "core_info.h"
