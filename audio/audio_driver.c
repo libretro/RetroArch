@@ -6352,10 +6352,10 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
       microphone->microphone_context = NULL;
    }
 
-   if (microphone->outgoing_samples)
+   if (microphone->outgoing_init)
    {
-      fifo_free(microphone->outgoing_samples);
-      microphone->outgoing_samples = NULL;
+      retro_spsc_free(&microphone->outgoing_samples);
+      microphone->outgoing_init = false;
    }
 
    if (microphone->resampler && microphone->resampler->free && microphone->resampler_data)
@@ -6537,8 +6537,10 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    if (!mic_driver_allocate_frames(mic_st))
       goto error;
 
-   microphone->outgoing_samples = fifo_new(max_samples * sizeof(int16_t));
-   if (!microphone->outgoing_samples)
+   microphone->outgoing_size = max_samples * sizeof(int16_t);
+   microphone->outgoing_init = retro_spsc_init(&microphone->outgoing_samples,
+         microphone->outgoing_size);
+   if (!microphone->outgoing_init)
       goto error;
 
    microphone->microphone_context = mic_driver->open_mic(driver_context,
@@ -6783,6 +6785,15 @@ bool microphone_driver_get_mic_state(const retro_microphone_t *microphone)
  * @param[out] frames The buffer in which the core will receive microphone samples.
  * @param num_frames The size of \c frames, in samples.
  */
+/* Room in the outgoing ring, in bytes, against the size asked for:
+ * retro_spsc rounds capacity up to a power of two. */
+static size_t microphone_outgoing_room(const retro_microphone_t *microphone)
+{
+   size_t room   = retro_spsc_write_avail(&microphone->outgoing_samples);
+   size_t excess = microphone->outgoing_samples.capacity - microphone->outgoing_size;
+   return room > excess ? room - excess : 0;
+}
+
 static size_t microphone_driver_flush(
       microphone_driver_state_t *mic_st,
       retro_microphone_t *microphone,
@@ -6840,16 +6851,16 @@ static size_t microphone_driver_flush(
    { /* If the mic's native rate is practically the same as the requested one... */
 
       /* ...then skip the resampler, since it'll produce (more or less) identical results. */
-      frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples) / sizeof(int16_t), resampler_data.input_frames);
+      frames_to_enqueue = MIN(microphone_outgoing_room(microphone) / sizeof(int16_t), resampler_data.input_frames);
 
       /* If this mic provides floating-point samples... */
       if (sample_size == sizeof(float))
       {
          convert_float_to_s16(mic_st->final_frames, (const float*)mic_st->input_frames, resampler_data.input_frames);
-         fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
+         retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
       }
       else
-         fifo_write(microphone->outgoing_samples, mic_st->input_frames, frames_to_enqueue * sizeof(int16_t));
+         retro_spsc_write(&microphone->outgoing_samples, mic_st->input_frames, frames_to_enqueue * sizeof(int16_t));
 
       return frames_to_enqueue;
    }
@@ -6896,9 +6907,9 @@ static size_t microphone_driver_flush(
          mic_st->final_frames[n] = mic_st->resampled_frames_int16[n << 1];
 
       frames_to_enqueue = MIN(
-            FIFO_WRITE_AVAIL(microphone->outgoing_samples) / sizeof(int16_t),
+            microphone_outgoing_room(microphone) / sizeof(int16_t),
             s16.output_frames);
-      fifo_write(microphone->outgoing_samples, mic_st->final_frames,
+      retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames,
             frames_to_enqueue * sizeof(int16_t));
       return frames_to_enqueue;
    }
@@ -6935,8 +6946,8 @@ static size_t microphone_driver_flush(
    /* Finally, we convert the audio back to 16-bit ints, as the mic interface requires. */
    convert_float_to_s16(mic_st->final_frames, mic_st->resampled_mono_frames, resampler_data.output_frames);
 
-   frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples) / sizeof(int16_t), resampler_data.output_frames);
-   fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
+   frames_to_enqueue = MIN(microphone_outgoing_room(microphone) / sizeof(int16_t), resampler_data.output_frames);
+   retro_spsc_write(&microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
    return frames_to_enqueue;
 }
 
@@ -6965,15 +6976,13 @@ static void microphone_driver_capture_thread(void *data)
 
       if (     !mic_st->driver
             || !mic_st->driver->wait_readable
-            || !microphone->outgoing_samples)
+            || !microphone->outgoing_init)
          break;
 
-      /* Do not read more than the fifo can take, or the flush would
+      /* Do not read more than the ring can take, or the flush would
        * discard what it could not enqueue and the device would run
-       * ahead of the core. */
-      slock_lock(microphone->fifo_lock);
-      room = FIFO_WRITE_AVAIL(microphone->outgoing_samples);
-      slock_unlock(microphone->fifo_lock);
+       * ahead of the core.  Producer-side query, no lock needed. */
+      room = microphone_outgoing_room(microphone);
 
       sample_size = microphone->worker_sample_size;
       if (room < slice * sizeof(int16_t))
@@ -6990,8 +6999,11 @@ static void microphone_driver_capture_thread(void *data)
                microphone->microphone_context, slice * sample_size))
          continue;
 
-      slock_lock(microphone->fifo_lock);
+      /* The flush - device read, up-channel, resample, ring write -
+       * runs without the lock: SPSC, this thread is the producer.  The
+       * core's read no longer waits behind the resampler. */
       microphone_driver_flush(mic_st, microphone, slice);
+      slock_lock(microphone->fifo_lock);
       scond_signal(microphone->fifo_cond);
       slock_unlock(microphone->fifo_lock);
    }
@@ -7066,8 +7078,8 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       return -1;
    }
 
-   /* If the core asked for more frames than the FIFO can hold... */
-   if (num_frames * sizeof(int16_t) > microphone->outgoing_samples->size - 1)
+   /* If the core asked for more frames than the ring can hold... */
+   if (num_frames * sizeof(int16_t) > microphone->outgoing_size)
       return -1;
 
    retro_assert(mic_st->input_frames != NULL);
@@ -7083,15 +7095,16 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       size_t want = num_frames * sizeof(int16_t);
       size_t got;
 
-      slock_lock(microphone->fifo_lock);
-      if (FIFO_READ_AVAIL(microphone->outgoing_samples) < want)
+      if (retro_spsc_read_avail(&microphone->outgoing_samples) < want)
+      {
+         slock_lock(microphone->fifo_lock);
          scond_wait_timeout(microphone->fifo_cond, microphone->fifo_lock,
                10000);
-      got = FIFO_READ_AVAIL(microphone->outgoing_samples);
-      if (got > want)
-         got = want;
-      if (got)
-         fifo_read(microphone->outgoing_samples, frames, got);
+         slock_unlock(microphone->fifo_lock);
+      }
+      /* Consumer side, no lock: SPSC. */
+      got = retro_spsc_read(&microphone->outgoing_samples, frames, want);
+      slock_lock(microphone->fifo_lock);
       scond_signal(microphone->fifo_cond);
       slock_unlock(microphone->fifo_lock);
 
@@ -7103,7 +7116,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
    {
       unsigned stall_count = 0;
-      while (FIFO_READ_AVAIL(microphone->outgoing_samples) < num_frames * sizeof(int16_t))
+      while (retro_spsc_read_avail(&microphone->outgoing_samples) < num_frames * sizeof(int16_t))
       { /* Until we can give the core the frames it asked for... */
          size_t frames_to_read = MIN(AUDIO_CHUNK_SIZE_NONBLOCKING, frames_remaining);
          size_t frames_read    = microphone_driver_flush(
@@ -7122,7 +7135,7 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       } /* If the queue already has enough samples to give, the loop will be skipped */
    }
 
-   fifo_read(microphone->outgoing_samples, frames, num_frames * sizeof(int16_t));
+   retro_spsc_read(&microphone->outgoing_samples, frames, num_frames * sizeof(int16_t));
    return (int)num_frames;
 }
 

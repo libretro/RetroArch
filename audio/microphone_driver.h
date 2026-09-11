@@ -26,7 +26,7 @@
 #include <libretro.h>
 #include <audio/audio_resampler.h>
 #include <audio/sinc_resampler_int16.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 
 /**
  * Flags that indicate the current state of the microphone driver.
@@ -148,9 +148,18 @@ struct retro_microphone
    int flags;
 
    /**
-    * Samples that will be sent to the core.
+    * Samples that will be sent to the core.  One producer (the capture
+    * worker, or the core's own read on the frame-synchronous path) and
+    * one consumer (retro_microphone_read), so a lock-free retro_spsc
+    * ring; with the worker, fifo_lock covers only the waits, no longer
+    * the flush - the read, up-channel and resample of a slice - which
+    * the core's read used to queue behind.  retro_spsc rounds capacity
+    * up to a power of two; outgoing_size is the size asked for and the
+    * producer never fills past it.
     */
-   fifo_buffer_t *outgoing_samples;
+   retro_spsc_t outgoing_samples;
+   size_t       outgoing_size;
+   bool         outgoing_init;
 
    /**
     * The requested microphone parameters,
@@ -206,7 +215,7 @@ struct retro_microphone
    /* Threaded capture. When the driver offers wait_readable() and the
     * Threaded Pipeline setting is on, a worker owns the blocking read,
     * the dual-mono up-channel and the resampler, and the core's
-    * retro_microphone_read() becomes a fifo read that never touches the
+    * retro_microphone_read() becomes a ring read that never touches the
     * device. Without it, all three happen inside the core's call, on the
     * frame - which is what the threaded pipeline removed from the
     * playback path for the same reasons.
