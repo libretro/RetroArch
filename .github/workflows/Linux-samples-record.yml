@@ -1,0 +1,81 @@
+name: CI Linux samples/record
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'record/**'
+      - 'libretro-common/queues/**'
+      - 'libretro-common/include/retro_spsc.h'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'samples/record/**'
+      - '.github/workflows/Linux-samples-record.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'record/**'
+      - 'libretro-common/queues/**'
+      - 'libretro-common/include/retro_spsc.h'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'samples/record/**'
+      - '.github/workflows/Linux-samples-record.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-record:
+    name: Build and run samples/record
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run ffmpeg_pipeline_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/record/ffmpeg_pipeline
+        run: |
+          set -eu
+          # record/drivers/record_ffmpeg.c end to end: frames whose
+          # pixels encode their number, plus audio, pushed from the
+          # test thread while the driver's encoder thread drains the
+          # attr/video/audio rings; the file is decoded back and every
+          # frame checked in order and pixel-exact.  Covers the rings
+          # under contention, the full-queue wait, and the drain after
+          # the encoder thread is joined.  Needs libavcodec with
+          # libx264rgb (Ubuntu's has it).
+          make clean all SANITIZER=address,undefined
+          test -x ffmpeg_pipeline_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./ffmpeg_pipeline_test
+          echo "[pass] ffmpeg_pipeline_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./ffmpeg_pipeline_test
+          echo "[pass] ffmpeg_pipeline_test (TSan)"
