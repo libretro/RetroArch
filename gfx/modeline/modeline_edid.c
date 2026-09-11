@@ -16,6 +16,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "modeline_edid.h"
@@ -849,4 +850,37 @@ int modeline_edid_fill_ranges(const video_edid_info_t *info,
       range[n++] = r;
    }
    return n;
+}
+
+int modeline_edid_super_width(const uint8_t *data, size_t len,
+      double hfreq_max, int want)
+{
+   static const int widths[] = { 3840, 2560, 1920 };
+   video_edid_info_t *info;
+   double max_hz;
+   int i, w = want;
+
+   if (!data || len < MODELINE_EDID_SIZE || want < 1920 || hfreq_max <= 0.0)
+      return want;
+   info = (video_edid_info_t*)calloc(1, sizeof(*info));
+   if (!info)
+      return want;
+   max_hz = (modeline_edid_parse(data, len, info) && info->has_range)
+      ? (double)info->pclock_max * 1000000.0 : 0.0;
+   free(info);
+   if (max_hz <= 0.0)
+      return want;
+
+   /* A width needs width / 0.75 pixels per line at hfreq_max lines
+    * per second; the first listed width at or under the wanted one
+    * whose clock fits is the answer */
+   for (i = 0; i < (int)(sizeof(widths) / sizeof(widths[0])); i++)
+   {
+      if (widths[i] > want)
+         continue;
+      w = widths[i];
+      if ((double)w / 0.75 * hfreq_max <= max_hz)
+         return w;
+   }
+   return w;
 }

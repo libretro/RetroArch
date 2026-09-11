@@ -363,7 +363,29 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
          if (!strcmp(gen->monitor, "edid"))
          {
             if (gen->edid_len)
+            {
+               int i;
+               double hmax = 0.0;
+               int want    = gen->super_width;
+               int fit;
                modeline_set_monitor(gen, "edid");
+               /* The super resolution the block's maximum pixel clock
+                * can carry at the top of the display's horizontal
+                * band; a wider one the user chose is stepped down
+                * rather than handed to the display as a mode it will
+                * reject */
+               for (i = 0; i < MODELINE_MAX_RANGES; i++)
+                  if (gen->range[i].hfreq_max > hmax)
+                     hmax = gen->range[i].hfreq_max;
+               fit = modeline_edid_super_width(gen->edid, gen->edid_len, hmax, want);
+               if (want > 2 && fit != want)
+               {
+                  RARCH_LOG("[CRT] Super width %d exceeds the display's stated pixel clock at %.1f kHz; using %d.\n",
+                        want, hmax / 1000.0, fit);
+                  modeline_set_user_mode(gen, fit, 0, 0);
+                  gen->super_width = fit;
+               }
+            }
             else
                RARCH_WARN("[CRT] The display server could not read the display's EDID; the edid preset falls back to generic_15.\n");
          }

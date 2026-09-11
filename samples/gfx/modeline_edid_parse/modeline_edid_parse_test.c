@@ -539,6 +539,30 @@ static void test_ranges(void)
    n = modeline_edid_fill_ranges(&info, r, MODELINE_MAX_RANGES);
    CHECK(n == 0, "no range yields %d", n);
    CHECK(modeline_edid_fill_ranges(NULL, r, 1) == 0, "NULL info");
+
+   /* Super width against the stated maximum pixel clock. A 15 kHz
+    * set with an 80 MHz ceiling carries 3840 (5120/0.75 = 3840/0.75
+    * * 16 kHz = 82 MHz: no) -> 2560 (55 MHz: yes); at 31 kHz the same
+    * ceiling takes only 1920 (2560/0.75 * 31 kHz = 106 MHz: no);
+    * no stated maximum leaves the choice alone */
+   build_modern(e);
+   put_range(e, 50, 60, 15, 16);
+   e[81] = 8;                          /* 80 MHz */
+   seal(e);
+   CHECK(modeline_edid_super_width(e, 128, 16000.0, 3840) == 2560, "15k 80 MHz");
+   CHECK(modeline_edid_super_width(e, 128, 16000.0, 2560) == 2560, "15k fits");
+   CHECK(modeline_edid_super_width(e, 128, 31500.0, 3840) == 1920, "31k 80 MHz");
+   CHECK(modeline_edid_super_width(e, 128, 16000.0, 1920) == 1920, "1920 floor");
+   CHECK(modeline_edid_super_width(e, 128, 16000.0, 1) == 1, "dynamic untouched");
+   e[81] = 0xff;                       /* unstated */
+   seal(e);
+   CHECK(modeline_edid_super_width(e, 128, 31500.0, 3840) == 3840, "unstated clock");
+   CHECK(modeline_edid_super_width(NULL, 128, 16000.0, 3840) == 3840, "NULL data");
+   /* the tightest ceiling that still cannot carry 1920 reports 1920:
+    * the narrowest listed, never something the engine has no mode for */
+   e[81] = 1;                          /* 10 MHz */
+   seal(e);
+   CHECK(modeline_edid_super_width(e, 128, 16000.0, 3840) == 1920, "floor at 1920");
 }
 
 int main(void)

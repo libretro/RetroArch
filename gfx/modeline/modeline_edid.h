@@ -213,6 +213,14 @@ typedef struct video_edid_info
 int modeline_edid_fill_ranges(const video_edid_info_t *info,
       video_modeline_range_t *range, int max);
 
+/* The widest super resolution the display's stated maximum pixel
+ * clock can carry at hfreq_max Hz, stepping down from want through
+ * 3840 / 2560 / 1920, assuming the active line is three quarters of
+ * the line time. want when the block states no maximum, or when it
+ * already fits. */
+int modeline_edid_super_width(const uint8_t *data, size_t len,
+      double hfreq_max, int want);
+
 /* Decode len bytes of EDID into info. Returns false only when data is
  * NULL, len is under one block, or the 8-byte header is wrong; every
  * other defect is reported in the flags. */
