@@ -6706,8 +6706,6 @@ static enum runloop_state_enum runloop_check_state(
                true);
       else
 #endif
-      {
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
          gfx_widgets_iterate(
                p_disp,
                settings,
@@ -6717,8 +6715,6 @@ static enum runloop_state_enum runloop_check_state(
                settings->paths.directory_assets,
                settings->paths.path_font,
                VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-      }
    }
 #endif
 

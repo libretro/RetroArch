@@ -73,7 +73,9 @@
 #define MAX_VARIABLES 64
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (((!video_driver_is_hw_context() || video_thread_hw_allowed()) && !video_driver_render_context_is_main_thread_only() && (((video_st->threaded)) ? true : false)))
+/* The setting first: without threaded video the answer is known
+ * before video_driver_is_hw_context() takes context_lock */
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((video_st)->threaded && (!video_driver_is_hw_context() || video_thread_hw_allowed()) && !video_driver_render_context_is_main_thread_only())
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
 #endif
