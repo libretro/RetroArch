@@ -1,0 +1,85 @@
+name: CI Linux samples/cores
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'cores/libretro-ffmpeg/**'
+      - 'libretro-common/queues/**'
+      - 'libretro-common/include/retro_spsc.h'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'samples/cores/**'
+      - '.github/workflows/Linux-samples-cores.yml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'cores/libretro-ffmpeg/**'
+      - 'libretro-common/queues/**'
+      - 'libretro-common/include/retro_spsc.h'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'samples/cores/**'
+      - '.github/workflows/Linux-samples-cores.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-cores:
+    name: Build and run samples/cores
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run ffmpeg_audio_pipe_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/cores/ffmpeg_audio_pipe
+        run: |
+          set -eu
+          # cores/libretro-ffmpeg/ffmpeg_core.c as a libretro host would
+          # drive it: a generated clip (tone under a test pattern), 5 s
+          # of frames checked for the audio frame count and a tone in
+          # every batch, then R1/L1 seeks both ways - the decode-thread
+          # / main-thread handshake around the audio ring - and a
+          # teardown mid-stream, all on a watchdog.  Needs the ffmpeg
+          # CLI to generate the clip.  Leak detection off: libavutil's
+          # own HW-device probing allocates and keeps a few objects.
+          make clean all SANITIZER=address,undefined
+          test -x ffmpeg_audio_pipe_test
+          ASAN_OPTIONS=detect_leaks=0:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./ffmpeg_audio_pipe_test
+          echo "[pass] ffmpeg_audio_pipe_test (ASan)"
+          # TSan: the core has pre-existing unsynchronised flag reads
+          # (main_sleeping in decode_video, the volatile
+          # decode_thread_dead) that predate the ring; report, do not
+          # halt, so the run still checks the audio pipe end to end.
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=0 timeout 300 ./ffmpeg_audio_pipe_test
+          echo "[pass] ffmpeg_audio_pipe_test (TSan)"
