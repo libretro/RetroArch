@@ -3256,7 +3256,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
             result |= RETRO_AV_ENABLE_AUDIO;
 
-         if (      (video_st->flags & VIDEO_FLAG_ACTIVE)
+         if (      (video_st->main_flags & VIDEO_FLAG_ACTIVE)
                && !(video_st->current_video->frame == video_null.frame))
             result |= RETRO_AV_ENABLE_VIDEO;
 
@@ -4487,7 +4487,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 #if defined(HAVE_GFX_WIDGETS)
       if (      p_dispwidget->active
             && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+         video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
    }
 
@@ -5048,7 +5048,7 @@ void runloop_set_video_swap_interval(
    float video_refresh_rate       = settings->floats.video_refresh_rate;
    float audio_max_timing_skew    = settings->floats.audio_max_timing_skew;
    float input_fps                = video_st->av_info.timing.fps;
-   float timing_fps               = (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+   float timing_fps               = (video_st->main_flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
          ? input_fps : video_refresh_rate;
    float swap_ratio               = 1;
    float timing_skew              = 0;
@@ -5440,9 +5440,9 @@ void runloop_pause_checks(void)
    if (widgets_active)
    {
       if (is_paused)
-         video_st->widgets_flags |=  VIDEO_FLAG_WIDGETS_PAUSED;
+         video_st->main_flags |=  VIDEO_FLAG_WIDGETS_PAUSED;
       else
-         video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_PAUSED;
+         video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_PAUSED;
    }
 #endif
 
@@ -7333,9 +7333,9 @@ static enum runloop_state_enum runloop_check_state(
          if (widgets_active)
          {
             if (rewinding && settings->bools.notification_show_fast_forward)
-               video_st->widgets_flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
             else
-               video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
          }
          else
 #endif
@@ -7653,12 +7653,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-               video_st->widgets_flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
             else
-               video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
          }
          else
-            video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+            video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
       }
       else
 #endif
@@ -7676,7 +7676,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+      video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -7760,12 +7760,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-               video_st->widgets_flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
             else
-               video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
          }
          else
-            video_st->widgets_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+            video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
       }
 #endif
    }

@@ -1504,7 +1504,7 @@ static void driver_adjust_system_rates(
    {
       float timing_skew_hz          = video_refresh_rate;
 
-      if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+      if (video_st->main_flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
          timing_skew_hz             = input_fps;
       video_st->core_hz             = input_fps;
 
@@ -1565,7 +1565,7 @@ void driver_set_nonblock_state(void)
    bool adaptive_vsync         = settings->bools.video_adaptive_vsync;
    unsigned swap_interval      = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);
-   bool video_driver_active    = (video_st->flags  & VIDEO_FLAG_ACTIVE) ? true : false;
+   bool video_driver_active    = (video_st->main_flags  & VIDEO_FLAG_ACTIVE) ? true : false;
    bool audio_driver_active    = (AUDIO_FLAGS_GET(audio_st)  & AUDIO_FLAG_ACTIVE) ? true : false;
    bool runloop_force_nonblock = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) ? true : false;
 
@@ -2042,15 +2042,16 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
 
 #if defined(HAVE_MODELINE)
    /* Switchres deinit */
-   if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+   if (video_st->main_flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
       crt_destroy_modes(&video_st->crt_switch_st);
 #endif
 
    /* Video */
    video_display_server_destroy();
 
+   video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
    video_driver_modify_disp_flags(0,
-         VIDEO_FLAG_ACTIVE      | VIDEO_FLAG_USE_RGBA      |
+         VIDEO_FLAG_USE_RGBA    |
          VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT);
    video_driver_cache_context_ack_clear();
    video_st->record_gpu_buffer          = NULL;
@@ -6632,7 +6633,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&p_rarch->rarch_tls);
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
-   video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+   video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
 
    {
@@ -8488,7 +8489,7 @@ bool retroarch_main_init(int argc, char *argv[])
    core_info_set_savestate_probe(retroarch_core_info_savestate_probe);
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
-   video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+   video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
 
    if (setjmp(global->error_sjlj_context) > 0)

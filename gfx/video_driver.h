@@ -87,8 +87,9 @@ RETRO_BEGIN_DECLS
 enum video_driver_state_flags
 {
    VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS = (1 << 0 ),
-   /* The four VIDEO_FLAG_WIDGETS_* bits live in
-    * video_driver_state_t::widgets_flags, not in 'flags' */
+   /* The four VIDEO_FLAG_WIDGETS_* bits, VIDEO_FLAG_ACTIVE and
+    * VIDEO_FLAG_CRT_SWITCHING_ACTIVE live in
+    * video_driver_state_t::main_flags, not in 'flags' */
    VIDEO_FLAG_WIDGETS_PAUSED                      = (1 << 2 ),
    VIDEO_FLAG_WIDGETS_FASTMOTION                  = (1 << 3 ),
    VIDEO_FLAG_WIDGETS_SLOWMOTION                  = (1 << 4 ),
@@ -1055,11 +1056,13 @@ typedef struct
    size_t window_title_len;
 
    uint32_t flags;
-   /* The widgets' runloop state, the VIDEO_FLAG_WIDGETS_* bits: set by
-    * the runloop on the main thread every frame and read through the
-    * frame's snapshot (video_frame_info_t::video_st_flags), so it lives
-    * apart from 'flags' and takes no display_lock. */
-   uint32_t widgets_flags;
+   /* Display state only the main thread writes and reads - the
+    * VIDEO_FLAG_WIDGETS_* bits, VIDEO_FLAG_ACTIVE and
+    * VIDEO_FLAG_CRT_SWITCHING_ACTIVE, several of them changed every
+    * frame - apart from 'flags', which the video thread's drivers also
+    * change, so it takes no display_lock. The frame's snapshot
+    * (video_frame_info_t::video_st_flags) carries both words. */
+   uint32_t main_flags;
 
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;

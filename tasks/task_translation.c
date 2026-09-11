@@ -307,7 +307,7 @@ static void handle_translation_response(
       video_driver_pix_fmt           = video_st->pix_fmt;
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   bool gfx_widgets_paused           = (video_st->widgets_flags &
+   bool gfx_widgets_paused           = (video_st->main_flags &
       VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
 #endif
    bool ai_service_pause             = settings->bools.ai_service_pause;

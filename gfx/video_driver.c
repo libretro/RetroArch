@@ -4138,7 +4138,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
    video_info->video_st_flags              = video_st->flags
-                                           | video_st->widgets_flags;
+                                           | video_st->main_flags;
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
 #else
@@ -4383,7 +4383,7 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
    if (!ctx_data)
       return false;
 
-   if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+   if (video_st->main_flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
    {
       float refresh_holder = 0;
       if (refresh_rate)
@@ -5231,7 +5231,7 @@ void video_driver_frame(const void *data, unsigned width,
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
    bool runloop_idle              = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
-   bool video_driver_active       = (video_st->flags   & VIDEO_FLAG_ACTIVE) ? true : false;
+   bool video_driver_active       = (video_st->main_flags   & VIDEO_FLAG_ACTIVE) ? true : false;
    bool menu_is_alive             = false;
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
@@ -6146,9 +6146,9 @@ void video_driver_frame(const void *data, unsigned width,
                ? ""
                : video_driver_msg,
                &video_info))
-         video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+         video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
       else
-         video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+         video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
 
 #ifdef HAVE_THREADS
       /* Under the wrapper the video thread is the presenter and
@@ -6226,7 +6226,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned native_width     = width;
       bool dynamic_super_width  = false;
 
-      video_driver_modify_disp_flags(VIDEO_FLAG_CRT_SWITCHING_ACTIVE, 0);
+      video_st->main_flags |=  VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
 
       switch (video_info.crt_switch_resolution_super)
       {
@@ -6260,7 +6260,7 @@ void video_driver_frame(const void *data, unsigned width,
    }
    else if (!video_info.crt_switch_resolution)
 #endif
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_CRT_SWITCHING_ACTIVE);
+      video_st->main_flags &= ~VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_after_frame(video_st,

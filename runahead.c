@@ -1459,7 +1459,7 @@ static bool runahead_create(runloop_state_t *runloop_st)
       return false;
    }
 
-   if (video_st->flags & VIDEO_FLAG_ACTIVE)
+   if (video_st->main_flags & VIDEO_FLAG_ACTIVE)
       video_driver_modify_disp_flags(VIDEO_FLAG_RUNAHEAD_IS_ACTIVE, 0);
    else
       video_driver_modify_disp_flags(0, VIDEO_FLAG_RUNAHEAD_IS_ACTIVE);
@@ -1648,7 +1648,7 @@ void runahead_run(void *data,
          if (suspended_frame)
          {
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
-            video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+            video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
          }
 
          if (frame_number == 0)
@@ -1659,9 +1659,9 @@ void runahead_run(void *data,
          if (suspended_frame)
          {
             if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
-               video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+               video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
             else
-               video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+               video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
 
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
          }
@@ -1698,12 +1698,12 @@ void runahead_run(void *data,
       /* sec_status == RUNAHEAD_COPY_READY here (checked above) */
 
       /* run main core with video suspended */
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+      video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
       core_run();
       if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
-         video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+         video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
       else
-         video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+         video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
 
       if (     (runloop_st->flags & RUNLOOP_FLAG_INPUT_IS_DIRTY)
             || (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY))
@@ -1730,7 +1730,7 @@ void runahead_run(void *data,
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
-            video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+            video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
             if (secondary_core_run_use_last_input(runloop_st))
                runloop_st->flags        |=  RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
@@ -1738,9 +1738,9 @@ void runahead_run(void *data,
                runloop_st->flags        &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
             if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
-               video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+               video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
             else
-               video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+               video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
          }
       }
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
@@ -2108,7 +2108,7 @@ void preempt_run(preempt_t *preempt, void *data)
    {
       /* Suspend A/V and run preemptive frames */
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+      video_state_get_ptr()->main_flags &= ~VIDEO_FLAG_ACTIVE;
 
       if (!current_core->retro_unserialize(
             preempt->buffer[preempt->start_ptr], preempt->state_size))
@@ -2134,7 +2134,7 @@ void preempt_run(preempt_t *preempt, void *data)
       }
 
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
-      video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+      video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    }
 
    /* Save current state and set start_ptr to oldest state */
@@ -2159,7 +2159,7 @@ error:
    runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
          | RUNLOOP_FLAG_INPUT_IS_DIRTY);
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
-   video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
+   video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    preempt_deinit(runloop_st);
 
    if (!run_ahead_hide_warnings)
