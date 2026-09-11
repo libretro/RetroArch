@@ -82,6 +82,14 @@
 
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st) (&video_st->hw_render)
 
+/* The output size as one value, from one load of
+ * video_driver_state_t::output_size_packed. Take it once and read both
+ * halves from it: two loads could pair a width with another size's
+ * height. */
+#define VIDEO_DRIVER_OUTPUT_SIZE(video_st) ((unsigned)retro_atomic_load_acquire_int(&(video_st)->output_size_packed))
+#define VIDEO_DRIVER_OUTPUT_WIDTH(size)    ((unsigned)(size) >> 16)
+#define VIDEO_DRIVER_OUTPUT_HEIGHT(size)   ((unsigned)(size) & 0xFFFFu)
+
 #define VIDEO_HAS_FOCUS(video_st) ((video_st->current_video && video_st->data && video_st->current_video->focus) ? (video_st->current_video->focus(video_st->data)) : true)
 
 RETRO_BEGIN_DECLS

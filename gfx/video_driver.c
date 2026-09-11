@@ -1734,9 +1734,9 @@ bool video_display_server_has_refresh_rate(float hz)
 
    if (video_list)
    {
-      unsigned video_driver_width    = 0;
-      unsigned video_driver_height   = 0;
-      video_driver_get_output_size(&video_driver_width, &video_driver_height);
+      unsigned output_size           = VIDEO_DRIVER_OUTPUT_SIZE(&video_driver_st);
+      unsigned video_driver_width    = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
+      unsigned video_driver_height   = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 
       for (i = 0; i < size && !rate_exists; i++)
       {
@@ -2447,12 +2447,11 @@ void video_driver_set_filtering(unsigned index,
 
 void video_driver_get_output_size(unsigned *width, unsigned *height)
 {
-   unsigned packed = (unsigned)retro_atomic_load_acquire_int(
-         &video_driver_st.output_size_packed);
+   unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(&video_driver_st);
    if (width)
-      *width  = packed >> 16;
+      *width  = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
    if (height)
-      *height = packed & 0xFFFFu;
+      *height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 }
 
 void video_driver_set_output_size(unsigned width, unsigned height)
@@ -2738,10 +2737,10 @@ void video_driver_set_aspect_ratio(void)
 
       case ASPECT_RATIO_FULL:
          {
-            unsigned width  = 0;
-            unsigned height = 0;
+            unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+            unsigned width       = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
+            unsigned height      = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 
-            video_driver_get_output_size(&width, &height);
             if (width != 0 && height != 0)
                aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
          }
@@ -4037,6 +4036,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
    uint32_t disp_flags;
+   unsigned output_size;
 #ifdef HAVE_THREADS
    bool is_threaded                        =
          video_driver_thread_wrapper_active();
@@ -4133,7 +4133,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->widgets_userdata            = NULL;
 #endif
 
-   video_driver_get_output_size(&video_info->width, &video_info->height);
+   output_size                             = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+   video_info->width                       = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
+   video_info->height                      = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 #ifdef HAVE_THREADS
    if (is_threaded)
       video_thread_get_scale(video_st,
@@ -6809,8 +6811,8 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height  = (uint16_t)(retro_atomic_load_acquire_int(
-         &video_st->output_size_packed) & 0xFFFF);
+   uint16_t video_height  = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
+         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
    int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
@@ -6893,8 +6895,8 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height   = (uint16_t)(retro_atomic_load_acquire_int(
-         &video_st->output_size_packed) & 0xFFFF);
+   uint16_t video_height   = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
+         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
    int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
    int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;

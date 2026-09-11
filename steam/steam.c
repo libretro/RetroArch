@@ -343,8 +343,8 @@ bool steam_open_osk(void)
 {
    bool                     shown = false;
    bool                   on_deck = false;
-   unsigned          output_width = 0;
-   unsigned         output_height = 0;
+   unsigned           output_size = VIDEO_DRIVER_OUTPUT_SIZE(
+         video_state_get_ptr());
 
    /* Only open the Steam OSK if running on a Steam Deck,
       as currently the Big Picture OSK seems to be semi-broken */
@@ -352,13 +352,12 @@ bool steam_open_osk(void)
    if (!on_deck)
       return false;
 
-   video_driver_get_output_size(&output_width, &output_height);
    mist_steam_utils_show_floating_gamepad_text_input(
       MistFloatingGamepadTextInputMode_SingleLine,
       0,
       0,
-      output_width,
-      output_height / 2,
+      VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
+      VIDEO_DRIVER_OUTPUT_HEIGHT(output_size) / 2,
       &shown
    );
 
