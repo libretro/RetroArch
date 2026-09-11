@@ -313,6 +313,11 @@ typedef struct coreaudio
 
    /* AudioConverter for system sample-rate conversion */
 #if !TARGET_OS_IPHONE
+   /* Whether this output follows the system's default, which is only
+    * so when the user named no device: a named one is not disturbed
+    * by the default moving. */
+   bool              follows_default;
+   bool              listening_default;
    /* The device the unit is bound to, and where its clock stood when
     * the stream started. The HAL will give the device's own sample
     * position on request, which is what frames_consumed() is
@@ -577,12 +582,23 @@ static bool coreaudio_update_converter(coreaudio_t *dev,
 
 #endif /* the int16 fast path, disabled: see above */
 
+#if !TARGET_OS_IPHONE
+/* Defined with the other listeners, below the microphone half. */
+static void coreaudio_listen_default_output(coreaudio_t *dev, bool on);
+#endif
+
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
 
    if (!dev)
       return;
+
+#if !TARGET_OS_IPHONE
+   /* Before anything else: the HAL calls the listener on a thread of
+    * its own, and it is handed this pointer. */
+   coreaudio_listen_default_output(dev, false);
+#endif
 
    if (dev->dev_alive)
    {
@@ -829,6 +845,11 @@ static void *coreaudio_init(const char *device,
 #if !TARGET_OS_IPHONE
    if (device)
       coreaudio_choose_output_device(dev, device);
+   /* No device named means this follows the system's default, and a
+    * default that moves while content runs leaves the frontend on
+    * hardware the user has just stopped using. */
+   dev->follows_default = string_is_empty(device);
+   coreaudio_listen_default_output(dev, dev->follows_default);
 #endif
 
    dev->dev_alive                = true;
@@ -1784,6 +1805,73 @@ static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
       RARCH_WARN("[CoreAudio] Input device \"%s\" not found; using the default.\n",
             uid_or_name);
    return found;
+}
+
+/* The default output moving, in the two listener shapes. The unit
+ * cannot be rebound from a HAL thread with the render callback live,
+ * and rebinding at all means renegotiating the rate, the period, the
+ * layout and the latency - so what happens here is what the WASAPI
+ * device-change path does: the frontend is asked to reinitialise
+ * audio, on its own thread, in its own time, and this driver is
+ * built again against whatever the default now is. */
+static void coreaudio_output_default_moved(coreaudio_t *dev)
+{
+   if (dev && dev->follows_default)
+      retro_atomic_store_release_int(
+            &audio_state_get_ptr()->reinit_request, 1);
+}
+
+static OSStatus coreaudio_output_default_listener(ca_obj_id_t obj,
+      UInt32 n, const ca_addr_t *addrs, void *data)
+{
+   (void)obj;
+   (void)n;
+   (void)addrs;
+   coreaudio_output_default_moved((coreaudio_t*)data);
+   return noErr;
+}
+
+static OSStatus coreaudio_output_default_listener_old(UInt32 selector, void *data)
+{
+   (void)selector;
+   coreaudio_output_default_moved((coreaudio_t*)data);
+   return noErr;
+}
+
+static void coreaudio_listen_default_output(coreaudio_t *dev, bool on)
+{
+   ca_addr_t prop;
+   if (!dev || on == dev->listening_default)
+      return;
+   ca_prop_resolve();
+   prop.mSelector = kAudioHardwarePropertyDefaultOutputDevice;
+   prop.mScope    = CA_SCOPE_GLOBAL;
+   prop.mElement  = CA_ELEMENT_MAIN;
+
+   if (ca_prop.obj_addlis && ca_prop.obj_remlis)
+   {
+      if (on)
+         ca_prop.obj_addlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_output_default_listener, dev);
+      else
+         ca_prop.obj_remlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_output_default_listener, dev);
+   }
+   else if (on)
+   {
+      if (!ca_prop.hw_addlis)
+         return;
+      ca_prop.hw_addlis(prop.mSelector,
+            coreaudio_output_default_listener_old, dev);
+   }
+   else
+   {
+      if (!ca_prop.hw_remlis)
+         return;
+      ca_prop.hw_remlis(prop.mSelector,
+            coreaudio_output_default_listener_old, dev);
+   }
+   dev->listening_default = on;
 }
 
 /* Called by the HAL on a thread of its own when the default input
