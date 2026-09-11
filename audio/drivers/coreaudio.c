@@ -1364,8 +1364,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    const float *buf   = (const float *)buf_;
    size_t samples     = len / sizeof(float);
    size_t written     = 0;
-   /* Each wait below is bounded; this bounds the loop, for a unit that
-    * reports running but never renders. */
+   /* Bound consecutive waits without progress. */
    int laps           = 8;
 
    while (!dev->is_paused && samples > 0)
@@ -1394,6 +1393,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          buf     += to_write;
          written += to_write;
          samples -= to_write;
+         laps     = 8;
       }
 
       /* Whatever went in may be enough to start on. */
@@ -1415,7 +1415,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
             break;
          /* Brief timeout as safety net for the race where the unit
           * stops during the wait; we'll re-check on the next iteration. */
-         coreaudio_wait(dev, 1, 100);
+         coreaudio_wait(dev, dev->channels, 100);
       }
    }
 
