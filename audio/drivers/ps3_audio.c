@@ -129,6 +129,13 @@ static void *ps3_audio_init(const char *device,
 
    data->buffer = fifo_new(AUDIO_BLOCK_SAMPLES *
          AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
+   if (!data->buffer)
+   {
+      audioPortClose(data->audio_port);
+      audioQuit();
+      free(data);
+      return NULL;
+   }
 
    sysLwMutexCreate(&data->lock, &lock_attr);
    sysLwMutexCreate(&data->cond_lock, &cond_lock_attr);
@@ -147,13 +154,28 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
+static size_t ps3_audio_write_avail(void *data);
+
+/* Sleep on the condition the output thread signals after each block it
+ * takes.  sysLwCondWait() requires the lwcond's mutex - cond_lock, the
+ * one it was created with - to be held by the caller; called without
+ * it, it fails at once (EPERM) instead of sleeping, so the bounded
+ * waits below became a few microseconds of spinning and then gave up,
+ * returning 0 and dropping the audio, whenever the fifo was full. */
+static void ps3_audio_wait_block(ps3_audio_t *aud)
+{
+   sysLwMutexLock(&aud->cond_lock, PS3_SYS_NO_TIMEOUT);
+   sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+   sysLwMutexUnlock(&aud->cond_lock);
+}
+
 static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
 {
    ps3_audio_t *aud = data;
 
    if (aud->nonblock)
    {
-      if (FIFO_WRITE_AVAIL(aud->buffer) < len)
+      if (ps3_audio_write_avail(aud) < len)
          return 0;
    }
 
@@ -164,11 +186,11 @@ static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
        * then returns having written nothing rather than holding the
        * caller. */
       int laps = PS3_AUDIO_WAIT_LAPS;
-      while (FIFO_WRITE_AVAIL(aud->buffer) < len)
+      while (ps3_audio_write_avail(aud) < len)
       {
          if (!aud->started || aud->quit_thread)
             return 0;
-         sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+         ps3_audio_wait_block(aud);
          if (--laps < 0)
             return 0;
       }
@@ -280,7 +302,7 @@ static size_t ps3_audio_wait_writable(void *data, size_t len)
       /* Timed and capped, as in the write: no room after this many
        * waits is a thread that has stopped consuming, and the pass is
        * handed back as no space coming from this call. */
-      sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+      ps3_audio_wait_block(aud);
       if (--laps < 0)
          return 0;
    }
