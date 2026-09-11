@@ -4310,7 +4310,6 @@ static int action_ok_remap_file_flush(const char *path,
    /* Log result */
    if (ret)
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
@@ -4320,7 +4319,6 @@ static int action_ok_remap_file_flush(const char *path,
    }
    else
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");

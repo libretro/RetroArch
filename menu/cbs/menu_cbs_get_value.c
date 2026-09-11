@@ -657,9 +657,9 @@ static size_t menu_action_cpu_managed_freq_label(
    }
 
    if (freq == 1)
-      return strlcpy_lit(s, "Min.", len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIN_ABBREV), len);
    else if (freq == ~0U)
-      return strlcpy_lit(s, "Max.", len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MAX_ABBREV), len);
    return snprintf(s, len, "%u MHz", freq / 1000);
 }
 
@@ -846,9 +846,9 @@ static size_t menu_action_setting_disp_set_label_input_desc_kbd(
 
    if (key_descriptors[key_id].key != RETROK_FIRST)
    {
-      /* TODO/FIXME - Localize */
-      _len  = strlcpy_lit(s, "Keyboard ", len);
-      _len += strlcpy(s + _len, key_descriptors[key_id].desc, len - _len);
+      _len  = snprintf(s, len, /* Format string below */
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY),
+            key_descriptors[key_id].desc);
    }
    else
       _len  = strlcpy(s, RARCH_NO_BIND, len);
@@ -902,7 +902,6 @@ static size_t menu_action_setting_disp_set_label_cheat_match(
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_VIEW,
          cheat_manager_state.match_idx,
          &address, &address_mask, &prev_val, &curr_val);
-   /* TODO/FIXME - localize */
    _len = snprintf(s, len, "Prev: %u Curr: %u", prev_val, curr_val);
    *w = 19;
    if (path && *path)

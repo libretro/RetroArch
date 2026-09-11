@@ -3381,7 +3381,7 @@ static size_t setting_get_string_representation_state_slot(
    if (!setting)
       return 0;
    if (*setting->value.target.integer == -1)
-      return strlcpy_lit(s, "Auto", len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
    return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
@@ -4588,11 +4588,11 @@ static size_t setting_get_string_representation_uint_xmb_layout(
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy_lit(s, "Auto", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
          case 1:
-            return strlcpy_lit(s, "Console", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE), len);
          case 2:
-            return strlcpy_lit(s, "Handheld", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD), len);
       }
    }
    return 0;
@@ -5350,16 +5350,16 @@ static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_leng
    switch (*setting->value.target.integer)
    {
       case WASAPI_SH_BUFFER_AUDIO_LATENCY:
-         /* TODO/FIXME - localize */
-         _len += strlcpy_lit(s + _len, "Audio Latency", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY), len - _len);
          break;
       case WASAPI_SH_BUFFER_DEVICE_PERIOD:
-         /* TODO/FIXME - localize */
-         _len += strlcpy_lit(s + _len, "Device Period", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD), len - _len);
          break;
       case WASAPI_SH_BUFFER_CLIENT_BUFFER:
-         /* TODO/FIXME - localize */
-         _len += strlcpy_lit(s + _len, "Client Buffer", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER), len - _len);
          break;
       default:
          _len += snprintf(s + _len, len - _len, "%.1f ms",
@@ -5381,7 +5381,7 @@ static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer
       return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   return strlcpy_lit(s, "Auto", len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
 }
 #endif
 #endif
@@ -7164,9 +7164,9 @@ static size_t setting_get_string_representation_uint_video_sdl_display_server(
          case VIDEO_SDL_DISPLAY_SERVER_OFF:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          case VIDEO_SDL_DISPLAY_SERVER_AUTO:
-            return strlcpy_lit(s, "Auto", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
          case VIDEO_SDL_DISPLAY_SERVER_ALWAYS:
-            return strlcpy_lit(s, "Always", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ALWAYS), len);
       }
    }
    return 0;
@@ -8774,7 +8774,7 @@ static size_t setting_get_string_representation_smb_auth(
       case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
          return strlcpy_lit(s, "Kerberos", len);
       default:
-         return strlcpy_lit(s, "KRB if available, NTLM if not", len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM), len);
    }
 }
 
