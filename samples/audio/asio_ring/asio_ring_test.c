@@ -90,6 +90,55 @@ int main(void)
          "32 ms, 128-frame device, 64-frame period: %u",
          (unsigned)asio_ring_frames_for(48000, 32, 128, 64));
 
+   /* The write's frame alignment. The callback reads the ring a frame
+    * at a time, so a write has to end on one - which the driver did
+    * by cutting back to eight bytes whatever the layout, right for
+    * the stereo pair it used to open and wrong for every wider one it
+    * can open now. */
+   printf("2. a write ends on a whole frame of the layout\n");
+   /* stereo: eight bytes, so the old rule and this one agree */
+   CHECK(asio_ring_align_bytes(1000, 2) == 1000 - (1000 % 8),
+         "stereo: %u", (unsigned)asio_ring_align_bytes(1000, 2));
+   CHECK(asio_ring_align_bytes(1007, 2) == 1000,
+         "stereo, 1007 bytes: %u", (unsigned)asio_ring_align_bytes(1007, 2));
+   /* 5.1: 24 bytes a frame. 1000 is 41 frames and 16 bytes over -
+    * exactly the case the old rule passed through, since 1000 is a
+    * multiple of 8. */
+   CHECK(asio_ring_align_bytes(1000, 6) == 984,
+         "5.1, 1000 bytes: %u", (unsigned)asio_ring_align_bytes(1000, 6));
+   CHECK(asio_ring_align_bytes(984, 6) == 984,
+         "5.1, a whole number of frames: %u", (unsigned)asio_ring_align_bytes(984, 6));
+   /* 7.1: 32 bytes, which the old rule did divide - the one wider
+    * layout it happened to be right for. */
+   CHECK(asio_ring_align_bytes(1000, 8) == 992,
+         "7.1, 1000 bytes: %u", (unsigned)asio_ring_align_bytes(1000, 8));
+   /* quad: 16 bytes, also a multiple of 8 and also fine by accident. */
+   CHECK(asio_ring_align_bytes(1000, 4) == 992,
+         "quad, 1000 bytes: %u", (unsigned)asio_ring_align_bytes(1000, 4));
+   /* Less than one frame is nothing, not a partial one. */
+   CHECK(asio_ring_align_bytes(20, 6) == 0,
+         "5.1, under a frame: %u", (unsigned)asio_ring_align_bytes(20, 6));
+   /* A caller with no layout settled is treated as stereo. */
+   CHECK(asio_ring_align_bytes(1007, 0) == 1000,
+         "no layout: %u", (unsigned)asio_ring_align_bytes(1007, 0));
+   /* And the result is always a whole frame, for every layout the
+    * driver can open and every length up to a period. */
+   {
+      unsigned ch, i;
+      for (ch = 1; ch <= 8; ch++)
+         for (i = 0; i < 4096; i++)
+         {
+            size_t got = asio_ring_align_bytes(i, ch);
+            if (got % (ch * sizeof(float)) || got > i
+                  || i - got >= ch * sizeof(float))
+            {
+               CHECK(0, "%u channels, %u bytes gave %u", ch, i, (unsigned)got);
+               ch = 9;
+               break;
+            }
+         }
+   }
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);

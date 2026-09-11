@@ -905,7 +905,20 @@ static void asio_cb_buffer_switch(long index,
 
 static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
 {
-   RARCH_LOG("[ASIO] Sample rate changed to %.0f Hz.\n", rate);
+   /* The device's rate is the rate everything downstream was sized
+    * and timed from: the ring's frames-to-time conversion, what the
+    * latency is reported as, what the resampler produces, what the
+    * sink estimator compares against. A change to it invalidates all
+    * of them, so it is handled the way a reset request is - the
+    * frontend reinitialises audio on the main thread, in its own
+    * time - rather than being written to the log and otherwise
+    * ignored, which left the whole pipeline running at a rate the
+    * hardware had stopped using. */
+   RARCH_WARN("[ASIO] The device changed its sample rate to %.0f Hz; audio will reinitialise.\n",
+         (double)rate);
+   if (g_asio)
+      retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
+   retro_atomic_store_release_int(&audio_state_get_ptr()->reinit_request, 1);
 }
 
 static long asio_cb_message(long selector, long value,
@@ -1197,15 +1210,40 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
             (long)ad->sample_type);
    RARCH_LOG("[ASIO] Output sample type: %ld (%s)\n",
          (long)ad->sample_type, ch_info.name);
+   /* ASIO describes a sample type per channel, and this driver
+    * converts with one for all of them. That held while it opened a
+    * fixed stereo pair; it opens an arbitrary run of outputs now, so
+    * every one of them is asked and any that differs is refused here
+    * rather than written as the wrong format for the rest of the
+    * session. */
    {
-      ASIOChannelInfo right;
-      memset(&right, 0, sizeof(right));
-      right.channel = ad->out_left + 1;
-      right.isInput = ASIOFalse;
-      if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &right) != ASE_OK)
-         strlcpy(right.name, "?", sizeof(right.name));
-      RARCH_LOG("[ASIO] Playing through outputs %ld and %ld: \"%s\" and \"%s\".\n",
-            ad->out_left + 1, ad->out_left + 2, ch_info.name, right.name);
+      unsigned c;
+      char     names[256];
+      size_t   _len = 0;
+      names[0] = '\0';
+      for (c = 0; c < ad->channels; c++)
+      {
+         ASIOChannelInfo other;
+         memset(&other, 0, sizeof(other));
+         other.channel = ad->out_left + (long)c;
+         other.isInput = ASIOFalse;
+         if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &other) != ASE_OK)
+         {
+            RARCH_ERR("[ASIO] Failed to query output %ld.\n", other.channel + 1);
+            return false;
+         }
+         if (other.type != ad->sample_type)
+         {
+            RARCH_ERR("[ASIO] Output %ld is sample type %ld where output %ld is %ld; this driver converts one type for every channel it opens.\n",
+                  other.channel + 1, (long)other.type,
+                  ad->out_left + 1, (long)ad->sample_type);
+            return false;
+         }
+         _len += strlcpy(names + _len, c ? ", " : "", sizeof(names) - _len);
+         _len += strlcpy(names + _len, other.name, sizeof(names) - _len);
+      }
+      RARCH_LOG("[ASIO] Playing through outputs %ld to %ld: %s.\n",
+            ad->out_left + 1, ad->out_left + (long)ad->channels, names);
    }
 
    memset(ad->buf_info, 0, sizeof(ad->buf_info));
@@ -1593,8 +1631,9 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
 
       avail    = asio_ring_room(ad);
       to_write = (len < avail) ? len : avail;
-      /* Align to frame boundary (stereo float = 8 bytes) */
-      to_write = (to_write / 8) * 8;
+      /* A whole frame of the layout in use, which is what the
+       * callback reads in. */
+      to_write = asio_ring_align_bytes(to_write, ad->channels);
 
       if (to_write > 0)
       {

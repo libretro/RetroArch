@@ -538,6 +538,10 @@ jobs:
         working-directory: samples/audio/asio_ring
         run: |
           set -eu
+          # Also the write's frame alignment: the callback reads the
+          # ring a frame at a time, so a write must end on one, and
+          # the rule is checked for every layout the driver can open.
+          #
           # audio/drivers/asio_ring.h sizes the ring in front of the ASIO
           # device: the latency setting less the device's reported stage,
           # floored at four periods where that is under 6 ms, 6 ms where it

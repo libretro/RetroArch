@@ -65,4 +65,20 @@ static INLINE size_t asio_ring_frames_for(unsigned sample_rate,
    return ring_frames;
 }
 
+
+/* Bytes cut back to a whole frame of the layout in use. The ASIO
+ * callback reads the ring a frame at a time, so a write that ends
+ * part-way through one leaves its remainder to be taken as the head
+ * of the next: every channel rotated by a sample, for as long as the
+ * stream runs. Eight bytes - a stereo float frame - was hardcoded
+ * here, which was right until the driver could open a wider layout.
+ *
+ * channels of 0 is treated as stereo: a caller that has not settled
+ * its layout has not opened a device either. */
+static INLINE size_t asio_ring_align_bytes(size_t bytes, unsigned channels)
+{
+   size_t frame = (size_t)(channels ? channels : 2) * sizeof(float);
+   return bytes - (bytes % frame);
+}
+
 #endif
