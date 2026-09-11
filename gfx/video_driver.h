@@ -1675,6 +1675,11 @@ void video_driver_free_hw_context(void);
 
 #ifdef HAVE_VIDEO_FILTER
 void video_driver_filter_free(void);
+
+/* The loaded software filter outputs another pixel format than the
+ * core's, so the driver has to be set up again when it starts or stops
+ * receiving the filtered frames. */
+bool video_driver_filter_changes_format(void);
 #endif
 
 void video_driver_lock_new(void);

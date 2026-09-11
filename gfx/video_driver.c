@@ -2084,6 +2084,17 @@ void video_driver_filter_free(void)
    video_driver_modify_disp_flags(0, VIDEO_FLAG_STATE_OUT_RGB32);
 }
 
+bool video_driver_filter_changes_format(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   bool core_rgb32                = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+         || video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
+         || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010;
+   bool filter_rgb32              = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+         ? true : false;
+   return video_st->state_filter && filter_rgb32 != core_rgb32;
+}
+
 void video_driver_init_filter(enum retro_pixel_format colfmt_int,
       settings_t *settings)
 {
@@ -4905,7 +4916,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * gains native 10-bit support), so from the driver's perspective it is a
     * 32-bit frame either way. */
 #ifdef HAVE_VIDEO_FILTER
-   video.rgb32                       = video_st->state_filter
+   /* A disabled filter stays loaded for the toggle, but the driver then
+    * gets the core's frames as they are, in the core's format */
+   video.rgb32                       =
+            (video_st->state_filter && settings->bools.video_filter_enable)
          ? (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
          : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010

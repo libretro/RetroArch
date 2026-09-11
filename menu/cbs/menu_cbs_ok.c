@@ -3937,9 +3937,11 @@ static int action_ok_video_filter_remove(const char *path,
       return -1;
    if (*settings->paths.path_softfilter_plugin)
    {
-      /* Unload video filter */
+      /* Unload video filter. The driver was set up for its output
+       * (pixel format and scale), so set it up again without it, as
+       * the reset does */
       settings->paths.path_softfilter_plugin[0] = '\0';
-      video_driver_filter_free();
+      command_event(CMD_EVENT_REINIT, NULL);
       /* Refresh menu */
       menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                              |  MENU_ST_FLAG_PREVENT_POPULATE;
