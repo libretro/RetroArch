@@ -218,10 +218,18 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    if (!psp->running)
       return -1;
 
+   /* The ring is counted in uint32_t frames (write_pos, read_pos,
+    * AUDIO_BUFFER_SIZE); len is bytes.  Both room checks below used to
+    * compare the frame count against len, i.e. demanded four times the
+    * room actually needed: non-blocking writes were refused - the audio
+    * dropped - with plenty of space free, and blocking ones waited for
+    * space that rate control was not trying to free.  psp_write_avail()
+    * and psp_wait_writable() already convert; compare frames to
+    * frames here too. */
    if (psp->nonblock)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)
-               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
+               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < sample_count)
          return 0;
    }
 
@@ -233,7 +241,7 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
        * having written nothing rather than holding the caller. */
       int laps = PSP_AUDIO_WAIT_LAPS;
       while (AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < sample_count)
       {
          if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
                      PSP_AUDIO_WAIT_US)
