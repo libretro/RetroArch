@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include <rthreads/rthreads.h>
-#include <queues/fifo_queue.h>
 
 #if defined(VITA)
 #include <psp2/kernel/processmgr.h>

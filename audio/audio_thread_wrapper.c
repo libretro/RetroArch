@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include <lists/string_list.h>
-#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
