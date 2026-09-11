@@ -18,6 +18,7 @@
 
 #include <memory/mem_stats.h>
 #include <stddef.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
@@ -122,6 +123,9 @@
 #include <file/file_watch.h>
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_edid.h"
+#endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
 #endif
@@ -2048,6 +2052,609 @@ static unsigned menu_displaylist_parse_supported_cores(
 const char *vulkan_get_moltenvk_version(void);
 #endif
 
+/* System Information > Display Information: the display in use as
+ * the display server sees it. Rebuilt on every entry, so back out and
+ * in to refresh. */
+static unsigned menu_displaylist_parse_display_info(file_list_t *list)
+{
+   char entry[NAME_MAX_LENGTH];
+   unsigned count = 0;
+   size_t _len;
+   unsigned w = 0, h = 0;
+   float hz;
+   video_output_info_t outputs[8];
+   int n_out, i;
+
+   /* Display Server */
+   _len  = strlcpy(entry,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER),
+         sizeof(entry));
+   _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+   strlcpy(entry + _len, video_display_server_get_ident(), sizeof(entry) - _len);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
+      count++;
+
+   /* Outputs: name, size, placement */
+   n_out = video_display_server_list_outputs(outputs,
+         (int)(sizeof(outputs) / sizeof(outputs[0])));
+   for (i = 0; i < n_out; i++)
+   {
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT),
+            sizeof(entry));
+      _len += snprintf(entry + _len, sizeof(entry) - _len, " %d: %s %ux%u @ %d,%d%s",
+            i + 1, outputs[i].name, outputs[i].width, outputs[i].height,
+            outputs[i].x, outputs[i].y, outputs[i].primary ? " *" : "");
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Resolution: the desktop mode of the display in use */
+   {
+      char mode[64];
+      mode[0] = '\0';
+      if (video_display_server_get_video_output_size(&w, &h, mode, sizeof(mode))
+            && w && h)
+      {
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION),
+               sizeof(entry));
+         _len += snprintf(entry + _len, sizeof(entry) - _len, ": %ux%u", w, h);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+   }
+
+   /* Refresh Rate */
+   hz = video_display_server_get_refresh_rate();
+   if (hz > 0.0f)
+   {
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE),
+            sizeof(entry));
+      snprintf(entry + _len, sizeof(entry) - _len, ": %.3f Hz", hz);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Physical Size, DPI: the context's metrics, as System Information
+    * shows them, gathered onto one line each here */
+   {
+      gfx_ctx_metrics_t metrics;
+      float mm_w = 0.0f, mm_h = 0.0f, dpi = 0.0f;
+      metrics.value = &mm_w;
+      metrics.type  = DISPLAY_METRIC_MM_WIDTH;
+      video_context_driver_get_metrics(&metrics);
+      metrics.value = &mm_h;
+      metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
+      video_context_driver_get_metrics(&metrics);
+      metrics.value = &dpi;
+      metrics.type  = DISPLAY_METRIC_DPI;
+      video_context_driver_get_metrics(&metrics);
+      if (mm_w > 0.0f && mm_h > 0.0f)
+      {
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_PHYSICAL_SIZE),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.0f x %.0f", mm_w, mm_h);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+      if (dpi > 0.0f)
+      {
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_DPI),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", dpi);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+   }
+
+   /* Orientation */
+   if (video_display_server_can_set_screen_orientation())
+   {
+      enum msg_hash_enums name;
+      switch (video_display_server_get_screen_orientation())
+      {
+         case ORIENTATION_VERTICAL:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL;
+            break;
+         case ORIENTATION_FLIPPED:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED;
+            break;
+         case ORIENTATION_FLIPPED_ROTATED:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED;
+            break;
+         default:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL;
+            break;
+      }
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION),
+            sizeof(entry));
+      _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len, msg_hash_to_str(name), sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+#ifdef HAVE_MODELINE
+   /* EDID submenu */
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION),
+         MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION_STR,
+         MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+
+   return count;
+}
+
+#ifdef HAVE_MODELINE
+/* One "Label: value" line */
+static bool menu_displaylist_edid_line(file_list_t *list,
+      enum msg_hash_enums label, const char *value)
+{
+   char entry[NAME_MAX_LENGTH];
+   size_t _len = strlcpy(entry, msg_hash_to_str(label), sizeof(entry));
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+   strlcpy(entry + _len, value, sizeof(entry) - _len);
+   return menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL);
+}
+
+/* One "Label n: value" line */
+static bool menu_displaylist_edid_line_n(file_list_t *list,
+      enum msg_hash_enums label, unsigned n, const char *value)
+{
+   char entry[NAME_MAX_LENGTH];
+   size_t _len = strlcpy(entry, msg_hash_to_str(label), sizeof(entry));
+   _len       += snprintf(entry + _len, sizeof(entry) - _len, " %u: ", n);
+   strlcpy(entry + _len, value, sizeof(entry) - _len);
+   return menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL);
+}
+
+/* Append ", item" or "item" to a comma list */
+static size_t menu_displaylist_edid_cat(char *s, size_t _len, size_t len,
+      const char *item)
+{
+   if (_len > 0)
+      _len += strlcpy_lit(s + _len, ", ", len - _len);
+   return _len + strlcpy(s + _len, item, len - _len);
+}
+
+/* System Information > Display Information > EDID: the block the
+ * display server read off the display in use, decoded field by field
+ * by the reader in gfx/modeline/modeline_edid.c, then the raw bytes. */
+static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
+{
+   unsigned count = 0;
+   char value[512];
+   size_t _len;
+   int n, i;
+   uint8_t *raw;
+   video_edid_info_t *info;
+
+   raw = (uint8_t*)malloc(MODELINE_EDID_MAX_LEN + sizeof(video_edid_info_t));
+   if (!raw)
+      return 0;
+   info = (video_edid_info_t*)(raw + MODELINE_EDID_MAX_LEN);
+
+   n = video_display_server_get_edid(raw, MODELINE_EDID_MAX_LEN);
+   if (n < MODELINE_EDID_SIZE || !modeline_edid_parse(raw, (size_t)n, info))
+   {
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+         count++;
+      free(raw);
+      return count;
+   }
+
+   /* Read: "3 blocks, 384 bytes" */
+   snprintf(value, sizeof(value), "%u x %u = %u", info->n_blocks,
+         (unsigned)MODELINE_EDID_SIZE, (unsigned)info->len);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE, value))
+      count++;
+   if (info->truncated)
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED), "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+
+   /* Version */
+   snprintf(value, sizeof(value), "%u.%u", info->ver_major, info->ver_minor);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION, value))
+      count++;
+
+   /* Identity */
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+         info->manufacturer))
+      count++;
+   snprintf(value, sizeof(value), "0x%04X (%u)", info->product, info->product);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT, value))
+      count++;
+   if (info->serial_text[0])
+      snprintf(value, sizeof(value), "%s (%lu)", info->serial_text,
+            (unsigned long)info->serial);
+   else
+      snprintf(value, sizeof(value), "%lu", (unsigned long)info->serial);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL, value))
+      count++;
+   if (info->year)
+   {
+      if (info->model_year)
+         snprintf(value, sizeof(value), "%u (model year)", info->year);
+      else if (info->week)
+         snprintf(value, sizeof(value), "%u, week %u", info->year, info->week);
+      else
+         snprintf(value, sizeof(value), "%u", info->year);
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE, value))
+         count++;
+   }
+   if (info->name[0])
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+            info->name))
+         count++;
+   if (info->text[0])
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+            info->text))
+         count++;
+
+   /* Video Input */
+   if (info->digital)
+   {
+      static const char *ifaces[] = {
+         "", "DVI", "HDMI-a", "HDMI-b", "MDDI", "DisplayPort"
+      };
+      _len = strlcpy_lit(value, "Digital", sizeof(value));
+      if (info->bit_depth)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %u bpc",
+               info->bit_depth);
+      if (info->interface > 0 && info->interface < 6)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %s",
+               ifaces[info->interface]);
+      if (info->dfp1x)
+         strlcpy_lit(value + _len, ", DFP 1.x", sizeof(value) - _len);
+   }
+   else
+   {
+      static const char *levels[] = {
+         "0.700/0.300 V", "0.714/0.286 V", "1.000/0.400 V", "0.700/0.000 V"
+      };
+      _len = snprintf(value, sizeof(value), "Analog, %s", levels[info->analog_level & 3]);
+      if (info->analog_sync & 0x10) _len += strlcpy_lit(value + _len, ", blank-to-black", sizeof(value) - _len);
+      if (info->analog_sync & 0x08) _len += strlcpy_lit(value + _len, ", separate sync", sizeof(value) - _len);
+      if (info->analog_sync & 0x04) _len += strlcpy_lit(value + _len, ", composite sync", sizeof(value) - _len);
+      if (info->analog_sync & 0x02) _len += strlcpy_lit(value + _len, ", sync on green", sizeof(value) - _len);
+      if (info->analog_sync & 0x01) strlcpy_lit(value + _len, ", serration", sizeof(value) - _len);
+   }
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT, value))
+      count++;
+
+   /* Screen Size */
+   if (info->width_cm && info->height_cm)
+      snprintf(value, sizeof(value), "%u x %u cm", info->width_cm, info->height_cm);
+   else if (info->width_cm || info->height_cm)
+      /* 1.4: one byte zero means the other is an aspect ratio code */
+      snprintf(value, sizeof(value), "%s %.2f:1", "aspect",
+            info->width_cm ? (info->width_cm + 99) / 100.0
+                           : 100.0 / (info->height_cm + 99));
+   else
+      strlcpy(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(value));
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE, value))
+      count++;
+
+   /* Gamma */
+   if (info->gamma_x100)
+   {
+      snprintf(value, sizeof(value), "%.2f", info->gamma_x100 / 100.0);
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA, value))
+         count++;
+   }
+
+   /* Features */
+   {
+      static const char *analog_types[] = {
+         "monochrome", "RGB color", "non-RGB color", "undefined"
+      };
+      static const char *digital_types[] = {
+         "RGB 4:4:4", "RGB 4:4:4 + YCrCb 4:4:4", "RGB 4:4:4 + YCrCb 4:2:2",
+         "RGB 4:4:4 + YCrCb 4:4:4 + 4:2:2"
+      };
+      unsigned f = info->features;
+      _len = 0;
+      value[0] = '\0';
+      if (f & 0x80) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "standby");
+      if (f & 0x40) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "suspend");
+      if (f & 0x20) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "active off");
+      _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+            info->digital ? digital_types[(f >> 3) & 3] : analog_types[(f >> 3) & 3]);
+      if (f & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "sRGB");
+      if (f & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "preferred timing");
+      if (f & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+            info->ver_minor >= 4 ? "continuous frequency" : "GTF");
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES, value))
+         count++;
+   }
+
+   /* Chromaticity */
+   snprintf(value, sizeof(value),
+         "R %.3f %.3f, G %.3f %.3f, B %.3f %.3f, W %.3f %.3f",
+         info->red_x / 1000.0, info->red_y / 1000.0,
+         info->green_x / 1000.0, info->green_y / 1000.0,
+         info->blue_x / 1000.0, info->blue_y / 1000.0,
+         info->white_x / 1000.0, info->white_y / 1000.0);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY, value))
+      count++;
+
+   /* Range Limits */
+   if (info->has_range)
+   {
+      _len = snprintf(value, sizeof(value), "V %u-%u Hz, H %u-%u kHz",
+            info->vfreq_min, info->vfreq_max, info->hfreq_min, info->hfreq_max);
+      if (info->pclock_max)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", max %u MHz",
+               info->pclock_max);
+      switch (info->range_type)
+      {
+         case 0x00: strlcpy_lit(value + _len, ", GTF", sizeof(value) - _len); break;
+         case 0x02: strlcpy_lit(value + _len, ", secondary GTF", sizeof(value) - _len); break;
+         case 0x04: strlcpy_lit(value + _len, ", CVT", sizeof(value) - _len); break;
+         default: break;
+      }
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS, value))
+         count++;
+   }
+
+   /* Established Timings, one line */
+   if (info->established)
+   {
+      _len = 0;
+      value[0] = '\0';
+      for (i = 0; i < 17; i++)
+         if (info->established & (1u << i))
+            _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+                  modeline_edid_established_name((unsigned)i));
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS, value))
+         count++;
+   }
+
+   /* Standard Timings, one line */
+   if (info->n_std)
+   {
+      _len = 0;
+      value[0] = '\0';
+      for (i = 0; i < (int)info->n_std; i++)
+      {
+         char one[32];
+         snprintf(one, sizeof(one), "%ux%u @ %u Hz", info->std[i].width,
+               info->std[i].height, info->std[i].refresh);
+         _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+      }
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS, value))
+         count++;
+   }
+
+   /* Detailed Timings: summary and modeline, two lines each */
+   for (i = 0; i < (int)info->n_timings; i++)
+   {
+      const video_edid_timing_t *t = &info->timing[i];
+      _len = modeline_edid_timing_str(t, value, sizeof(value));
+      if (_len < sizeof(value) && t->hsize_mm && t->vsize_mm)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %u x %u mm",
+               t->hsize_mm, t->vsize_mm);
+      if (_len < sizeof(value) && t->preferred)
+         _len += snprintf(value + _len, sizeof(value) - _len, " (%s)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED));
+      if (_len < sizeof(value) && t->src != MODELINE_EDID_SRC_BASE)
+         snprintf(value + _len, sizeof(value) - _len, " [%s]",
+               t->src == MODELINE_EDID_SRC_CTA ? "CTA-861" : "DisplayID");
+      if (menu_displaylist_edid_line_n(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING, (unsigned)i + 1, value))
+         count++;
+      modeline_edid_modeline_str(t, value, sizeof(value));
+      if (menu_entries_append(list, value, "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Checksum of the base block */
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+         msg_hash_to_str(info->checksum_ok
+            ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+            : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD)))
+      count++;
+
+   /* Extensions */
+   for (i = 0; i < (int)info->n_ext; i++)
+   {
+      const video_edid_ext_t *e = &info->ext[i];
+      int j;
+      if (e->tag == MODELINE_EDID_EXT_DISPLAYID)
+         snprintf(value, sizeof(value), "%s %u.%u, %s", modeline_edid_ext_name(e->tag),
+               e->revision >> 4, e->revision & 0x0f,
+               msg_hash_to_str(e->checksum_ok
+                  ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+                  : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD));
+      else
+         snprintf(value, sizeof(value), "%s revision %u (0x%02X), %s",
+               modeline_edid_ext_name(e->tag), e->revision, e->tag,
+               msg_hash_to_str(e->checksum_ok
+                  ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+                  : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD));
+      if (menu_displaylist_edid_line_n(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION, (unsigned)i + 1, value))
+         count++;
+
+      if (e->tag == MODELINE_EDID_EXT_CTA)
+      {
+         if (e->revision >= 2)
+         {
+            _len = 0;
+            value[0] = '\0';
+            if (e->underscan)   _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "underscan");
+            if (e->basic_audio) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "basic audio");
+            if (e->ycbcr444)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:4:4");
+            if (e->ycbcr422)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:2:2");
+            if (e->ycbcr420)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:2:0");
+            if (e->native_dtds)
+            {
+               char one[32];
+               snprintf(one, sizeof(one), "%u native", e->native_dtds);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (_len && menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS, value))
+               count++;
+         }
+         if (e->n_vics)
+         {
+            _len = 0;
+            value[0] = '\0';
+            for (j = 0; j < (int)e->n_vics; j++)
+            {
+               char one[32];
+               size_t l = modeline_edid_vic_str(e->vic[j] & 0x7f, one, sizeof(one));
+               if ((e->vic[j] & 0x80) && (e->vic[j] & 0x7f) <= 64 && l < sizeof(one))
+                  strlcpy_lit(one + l, "*", sizeof(one) - l);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+               if (_len >= sizeof(value) - 1)
+                  break;
+            }
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO, value))
+               count++;
+         }
+         if (e->n_audio)
+         {
+            snprintf(value, sizeof(value), "%u", e->n_audio);
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO, value))
+               count++;
+         }
+         if (e->hdmi)
+         {
+            _len = snprintf(value, sizeof(value), "%u.%u.%u.%u",
+                  e->hdmi_phys[0] >> 4, e->hdmi_phys[0] & 0x0f,
+                  e->hdmi_phys[1] >> 4, e->hdmi_phys[1] & 0x0f);
+            if (e->hdmi_max_tmds)
+               _len += snprintf(value + _len, sizeof(value) - _len,
+                     ", max TMDS %u MHz", e->hdmi_max_tmds);
+            if (e->hdmi_forum)
+               snprintf(value + _len, sizeof(value) - _len,
+                     ", HDMI 2.x max TMDS %u MHz", e->hf_max_tmds);
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDMI, value))
+               count++;
+         }
+         if (e->hdr)
+         {
+            _len = 0;
+            value[0] = '\0';
+            if (e->hdr_eotf & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "SDR");
+            if (e->hdr_eotf & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "HDR");
+            if (e->hdr_eotf & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "PQ");
+            if (e->hdr_eotf & 0x08) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "HLG");
+            if (e->hdr_max_lum)
+            {
+               /* CTA-861-G: 50 * 2^(code/32) cd/m2 */
+               char one[48];
+               snprintf(one, sizeof(one), "max %.0f cd/m2",
+                     50.0 * pow(2.0, e->hdr_max_lum / 32.0));
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (e->hdr_max_fal)
+            {
+               char one[48];
+               snprintf(one, sizeof(one), "max frame average %.0f cd/m2",
+                     50.0 * pow(2.0, e->hdr_max_fal / 32.0));
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (e->hdr_min_lum && e->hdr_max_lum)
+            {
+               char one[48];
+               double max_lum = 50.0 * pow(2.0, e->hdr_max_lum / 32.0);
+               snprintf(one, sizeof(one), "min %.4f cd/m2",
+                     max_lum * pow(e->hdr_min_lum / 255.0, 2.0) / 100.0);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR, value))
+               count++;
+         }
+         if (e->colorimetry)
+         {
+            unsigned c = e->colorimetry_flags;
+            _len = 0;
+            value[0] = '\0';
+            if (c & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "xvYCC601");
+            if (c & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "xvYCC709");
+            if (c & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "sYCC601");
+            if (c & 0x08) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "opYCC601");
+            if (c & 0x10) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "opRGB");
+            if (c & 0x20) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 cYCC");
+            if (c & 0x40) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 YCC");
+            if (c & 0x80) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 RGB");
+            if (_len && menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY, value))
+               count++;
+         }
+      }
+      else if (e->tag == MODELINE_EDID_EXT_DISPLAYID && e->n_sections)
+      {
+         _len = 0;
+         value[0] = '\0';
+         for (j = 0; j < (int)e->n_sections; j++)
+            _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+                  modeline_edid_did_section_name(e->revision, e->section[j]));
+         if (menu_displaylist_edid_line(list,
+               MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS, value))
+            count++;
+      }
+   }
+
+   /* Raw bytes, 16 per line, for pasting into edid-decode */
+   for (i = 0; i < n; i += 16)
+   {
+      int j;
+      _len = snprintf(value, sizeof(value), "%s %04X:",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW), (unsigned)i);
+      for (j = 0; j < 16 && i + j < n; j++)
+         _len += snprintf(value + _len, sizeof(value) - _len, " %02X", raw[i + j]);
+      if (menu_entries_append(list, value, "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   free(raw);
+   return count;
+}
+#endif
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
@@ -2117,6 +2724,14 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
          0, 0, NULL))
+      count++;
+
+   /* Display Information submenu */
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION),
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR,
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
 #ifdef ANDROID
@@ -7572,6 +8187,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
        * list samples current memory use. Skipped, not built. */
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
@@ -7608,6 +8225,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
        * list samples current memory use. Skipped, not built. */
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
@@ -7645,6 +8264,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
       pid_t pid;
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
                   && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
@@ -8486,6 +9107,14 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_SYSTEM_INFO:
          count              = menu_displaylist_parse_system_info(list);
+         break;
+      case DISPLAYLIST_DISPLAY_INFO:
+         count              = menu_displaylist_parse_display_info(list);
+         break;
+      case DISPLAYLIST_DISPLAY_EDID_INFO:
+#ifdef HAVE_MODELINE
+         count              = menu_displaylist_parse_display_edid(list);
+#endif
          break;
       case DISPLAYLIST_EXPLORE:
          menu_entries_clear(list);
@@ -15573,6 +16202,8 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_EXPLORE:
          case DISPLAYLIST_SCAN_DIRECTORY_LIST:
          case DISPLAYLIST_SYSTEM_INFO:
+         case DISPLAYLIST_DISPLAY_INFO:
+         case DISPLAYLIST_DISPLAY_EDID_INFO:
          case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_NETWORKS_LIST:

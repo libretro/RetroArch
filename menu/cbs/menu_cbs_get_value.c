@@ -2078,6 +2078,8 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          case MENU_ENUM_LABEL_CORE_INFORMATION:
          case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+         case MENU_ENUM_LABEL_DISPLAY_INFORMATION:
+         case MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION:
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
 #ifdef HAVE_GAME_AI
          case MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS:
