@@ -3784,6 +3784,30 @@ void audio_driver_set_nonblock_state(bool nonblock)
 }
 
 #ifdef HAVE_THREADS
+/* The most one consumer pass may put into the device, in device bytes.
+ * A quarter of the buffer, which on a driver that sets its own IO
+ * period from the buffer - CoreAudio takes a quarter - is one period.
+ *
+ * It was a half. The consequence of the fraction is not the size of the
+ * write, it is where the device's fill sits: the pass waits for room
+ * for a whole chunk before it takes one, so the fill runs between the
+ * buffer less a chunk and the buffer, and the chunk is therefore the
+ * margin the consumer thread is given to wake up and finish. Half left
+ * half the buffer - 4 ms at an 8 ms setting - to absorb a late wake,
+ * 250 times a second. The inline path has no such band: its write
+ * blocks inside the driver and holds the device near full, which is the
+ * whole of the buffer as margin, and is why the inline path is clean on
+ * hardware where the threaded one is not.
+ *
+ * A quarter raises the floor from half the buffer to three quarters of
+ * it and makes each pass one device period, at the cost of twice as
+ * many passes - the same rate the device's own callback already runs
+ * at. */
+static size_t audio_driver_pipe_chunk_bytes(audio_driver_state_t *audio_st)
+{
+   return audio_st->buffer_size / 4;
+}
+
 /* What the pipe ring is to hold on purpose, in core frames. With a
  * blocking writer no margin beyond the publish in flight: the device's
  * buffer is the margin and the writer waits on it. With a non-blocking
@@ -3949,13 +3973,24 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          double pipe_bytes  = pipe_frames * audio_st->src_ratio_orig * frame_bytes;
          double target      = (double)audio_driver_pipe_target_frames(audio_st)
                * audio_st->src_ratio_orig * frame_bytes;
-         /* Free space as the controller reads it: the device's, plus a
-          * quarter of its buffer so its half-to-full band reads as no
-          * error, plus the pipe target so the pipe holding that much
-          * reads as none either, less what the pipe holds. */
+         /* Free space as the controller reads it: the device's, plus
+          * enough that the band the consumer actually holds it in reads
+          * as no error, plus the pipe target so the pipe holding that
+          * much reads as none either, less what the pipe holds.
+          *
+          * That band is the buffer less a chunk up to the buffer, so
+          * the free space averages half a chunk and the controller
+          * wants half the buffer; the difference between the two is the
+          * correction. It was written out as a quarter of the buffer,
+          * which is that difference for a chunk of half the buffer and
+          * for no other - a constant that silently depended on the cap
+          * in a different function. Derived from the chunk instead, so
+          * changing one moves the other. */
+         double band = (double)audio_st->buffer_size / 2.0
+               - (double)audio_driver_pipe_chunk_bytes(audio_st) / 2.0;
          double eff = (double)audio_st->current_audio->write_avail(
                   audio_st->context_audio_data)
-               + (double)audio_st->buffer_size / 4 + target - pipe_bytes;
+               + band + target - pipe_bytes;
          if (eff < 0.0)
             eff = 0.0;
          else if (eff > (double)audio_st->buffer_size)
@@ -4153,15 +4188,23 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    {
       /* The cap is the inverse of the bound, not the ratio: what this
        * pass may take is whatever the write it turns into still fits in
-       * half the device buffer. Dividing the half by the ratio left the
-       * bound's sixteen-frame margin outside the cap, so out_bytes came
-       * out a little over half the buffer on every pass - and a driver
-       * whose wait_writable() tops out at half then had to either block
-       * inside the write or drop the tail of the chunk, neither of
-       * which the pass had waited for. */
+       * the chunk. Dividing by the ratio alone left the bound's
+       * sixteen-frame margin outside the cap, so out_bytes came out a
+       * little over the chunk on every pass - and a driver whose
+       * wait_writable() tops the request out then had to either block
+       * inside the write or drop the tail, neither of which the pass
+       * had waited for.
+       *
+       * Applied whatever it works out to, with a floor rather than an
+       * escape: it used to be skipped entirely below 32 frames, which
+       * on a small buffer left have at a whole publish and asked the
+       * driver to wait for a chunk larger than its ring - a wait that
+       * can only end with the device empty. */
       size_t cap = audio_driver_input_bound(out_ratio,
-            audio_st->buffer_size / 2 / frame_bytes);
-      if (cap >= 32 && have > cap)
+            audio_driver_pipe_chunk_bytes(audio_st) / frame_bytes);
+      if (cap < 32)
+         cap = 32;
+      if (have > cap)
          have = cap;
    }
 
