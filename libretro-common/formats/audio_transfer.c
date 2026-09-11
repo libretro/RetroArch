@@ -120,6 +120,9 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
 #ifdef HAVE_RAC3
 #include <formats/rac3.h>
 #endif
+#ifdef HAVE_RLPCM
+#include <formats/rlpcm.h>
+#endif
 #ifdef HAVE_RAAC
 #include <formats/raac.h>
 #ifdef HAVE_RMP4
@@ -719,6 +722,53 @@ struct audio_transfer_mod
  * its interleave copy; rmp3's synthesis filter emits s16 directly), so
  * the s16 pipeline below never touches float. */
 
+#ifdef HAVE_RLPCM
+/* Linear PCM: the samples are the file, so the state is where in it
+ * the reader is. What the caller handed over may be raw - a shape it
+ * knows from somewhere else - or may open with a DVD or Blu-ray
+ * header, which rlpcm reads; either way the samples start at
+ * header_bytes and every frame after that is the same size, which is
+ * what makes seeking exact rather than approximate. */
+struct audio_transfer_lpcm
+{
+   const uint8_t  *buf;
+   size_t          buf_size;
+   size_t          avail;        /* resident prefix, 0 = all */
+   size_t          pos;          /* the next frame's byte offset */
+   rlpcm_format_t  fmt;
+   size_t          total_frames;
+   bool            ready;
+};
+
+static size_t audio_transfer_lpcm_end(const struct audio_transfer_lpcm *l)
+{
+   return (l->avail && l->avail < l->buf_size) ? l->avail : l->buf_size;
+}
+
+/* Frames between a byte offset and the end of what is resident. At 20
+ * bits the pair of samples is the unit, so this counts through the
+ * frame size in bits rather than in bytes. */
+static size_t audio_transfer_lpcm_frames_left(const struct audio_transfer_lpcm *l,
+      size_t at)
+{
+   size_t end = audio_transfer_lpcm_end(l);
+   if (at >= end)
+      return 0;
+   return (size_t)(((uint64_t)(end - at) * 8) / rlpcm_frame_bits(&l->fmt));
+}
+#endif
+
+void *audio_transfer_lpcm_format(void *data)
+{
+#ifdef HAVE_RLPCM
+   struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+   return l ? (void*)&l->fmt : NULL;
+#else
+   (void)data;
+   return NULL;
+#endif
+}
+
 enum audio_type_enum audio_decode_get_type(const char *path)
 {
    /* The extension, not a substring of the path.
@@ -749,6 +799,14 @@ enum audio_type_enum audio_decode_get_type(const char *path)
          || string_is_equal_noncase(ext, "eac3")
          || string_is_equal_noncase(ext, "ec3"))
       return AUDIO_TYPE_AC3;
+#endif
+#ifdef HAVE_RLPCM
+   /* Raw samples, so the name is all there is to go on; what shape
+    * they are has to come from the caller or from a disc header the
+    * buffer opens with. */
+   if (     string_is_equal_noncase(ext, "lpcm")
+         || string_is_equal_noncase(ext, "pcm"))
+      return AUDIO_TYPE_LPCM;
 #endif
 #ifdef HAVE_RMODTRACKER
    if (     string_is_equal_noncase(ext, "mod")
@@ -880,6 +938,7 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
 }
 
 #endif
+
 
 #ifdef HAVE_RAC3
 /* AC-3 or E-AC-3: a buffer of syncframes, walked with rac3_parse_frame_info and
@@ -1231,6 +1290,10 @@ void *audio_transfer_new(enum audio_type_enum type)
       case AUDIO_TYPE_AC3:
          return calloc(1, sizeof(struct audio_transfer_ac3));
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+         return calloc(1, sizeof(struct audio_transfer_lpcm));
+#endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
          return calloc(1, sizeof(struct audio_transfer_wav));
@@ -1328,6 +1391,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             a->buf      = (const uint8_t*)ptr;
             a->buf_size = len;
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         if (l)
+         {
+            l->buf      = (const uint8_t*)ptr;
+            l->buf_size = len;
          }
          break;
       }
@@ -1851,6 +1926,15 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
          struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
          if (a)
             a->avail = avail;
+         break;
+      }
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         if (l)
+            l->avail = avail;
          break;
       }
 #endif
@@ -3573,6 +3657,48 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         size_t end;
+         if (!l || !l->buf || !l->buf_size)
+            return false;
+         /* A caller that filled in a shape before starting keeps it -
+          * that is the raw case, where nothing in the bytes says what
+          * they are. Otherwise the disc headers are tried, Blu-ray's
+          * first: its four bytes carry a payload length that has to
+          * agree with the buffer, which a DVD header does not, so it
+          * is the one that can be told apart. */
+         if (l->fmt.bits && l->fmt.channels && l->fmt.sample_rate)
+         {
+            if (rlpcm_parse_format(RLPCM_KIND_RAW, NULL, 0, &l->fmt) != RLPCM_OK)
+               return false;
+         }
+         else if (rlpcm_parse_format(RLPCM_KIND_BLURAY, l->buf, l->buf_size,
+                  &l->fmt) == RLPCM_OK
+               && l->fmt.payload_bytes
+               && l->fmt.payload_bytes + l->fmt.header_bytes <= l->buf_size)
+         {
+            /* the header named a payload the buffer holds */
+         }
+         else if (rlpcm_parse_format(RLPCM_KIND_DVD, l->buf, l->buf_size,
+                  &l->fmt) != RLPCM_OK)
+            return false;
+
+         if (!rlpcm_frame_bits(&l->fmt))
+            return false;
+         l->pos = l->fmt.header_bytes;
+         end    = l->buf_size;
+         if (l->fmt.payload_bytes
+               && l->fmt.header_bytes + l->fmt.payload_bytes < end)
+            end = l->fmt.header_bytes + l->fmt.payload_bytes;
+         l->total_frames = (size_t)(((uint64_t)(end - l->fmt.header_bytes) * 8)
+               / rlpcm_frame_bits(&l->fmt));
+         l->ready        = true;
+         return true;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -3808,6 +3934,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
          return a && a->dec;
       }
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         return l && l->ready;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -3977,6 +4110,18 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          if (channels)     *channels     = a->channels;
          if (rate)         *rate         = a->rate;
          if (total_frames) *total_frames = a->total_frames;
+         return true;
+      }
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         if (!l || !l->ready)
+            return false;
+         if (channels)     *channels     = l->fmt.channels;
+         if (rate)         *rate         = l->fmt.sample_rate;
+         if (total_frames) *total_frames = l->total_frames;
          return true;
       }
 #endif
@@ -4754,6 +4899,27 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
                NULL, out, frames, frames_out);
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         size_t take;
+         if (!l || !l->ready)
+            return AUDIO_PROCESS_ERROR;
+         take = audio_transfer_lpcm_frames_left(l, l->pos);
+         if (take > frames)
+            take = frames;
+         if (take)
+         {
+            take = rlpcm_decode_s16(&l->fmt, l->buf + l->pos,
+                  audio_transfer_lpcm_end(l) - l->pos, out, take);
+            l->pos += (size_t)(((uint64_t)take * rlpcm_frame_bits(&l->fmt)) / 8);
+         }
+         if (frames_out)
+            *frames_out = take;
+         return take ? AUDIO_PROCESS_NEXT : AUDIO_PROCESS_END;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -5062,6 +5228,27 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          return audio_transfer_ac3_read((struct audio_transfer_ac3*)data,
                out, NULL, frames, frames_out);
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         size_t take;
+         if (!l || !l->ready)
+            return AUDIO_PROCESS_ERROR;
+         take = audio_transfer_lpcm_frames_left(l, l->pos);
+         if (take > frames)
+            take = frames;
+         if (take)
+         {
+            take = rlpcm_decode_f32(&l->fmt, l->buf + l->pos,
+                  audio_transfer_lpcm_end(l) - l->pos, out, take);
+            l->pos += (size_t)(((uint64_t)take * rlpcm_frame_bits(&l->fmt)) / 8);
+         }
+         if (frames_out)
+            *frames_out = take;
+         return take ? AUDIO_PROCESS_NEXT : AUDIO_PROCESS_END;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -5227,6 +5414,13 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_ac3 *a = (struct audio_transfer_ac3*)data;
          return a ? a->pos : 0;
+      }
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         return l ? l->pos : 0;
       }
 #endif
 #ifdef HAVE_RAAC
@@ -5546,6 +5740,26 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return audio_transfer_ac3_seek_to(a, frame);
       }
 #endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+      {
+         struct audio_transfer_lpcm *l = (struct audio_transfer_lpcm*)data;
+         size_t at;
+         if (!l || !l->ready)
+            return false;
+         /* Every frame is the same size, so the offset is arithmetic
+          * and the seek is exact - there is nothing to decode up to
+          * and no state to carry across it. */
+         if (frame > l->total_frames)
+            return false;
+         at = l->fmt.header_bytes
+            + (size_t)(((uint64_t)frame * rlpcm_frame_bits(&l->fmt)) / 8);
+         if (at > audio_transfer_lpcm_end(l))
+            return false;
+         l->pos = at;
+         return true;
+      }
+#endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
@@ -5680,6 +5894,12 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          }
          break;
       }
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_TYPE_LPCM:
+         /* Nothing of its own: the samples are the caller's buffer and
+          * the reader is a position in it. */
+         break;
 #endif
 #ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:

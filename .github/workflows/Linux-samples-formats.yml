@@ -64,7 +64,10 @@ jobs:
           # back is the bytes it read. 20-bit has no ffmpeg format to
           # compare against - two samples to five bytes is a disc
           # packing - so it is checked against itself, and the DVD and
-          # Blu-ray headers against their field layouts.
+          # Blu-ray headers against their field layouts. The
+          # audio_transfer arm is driven too: chunked reads against
+          # the codec's own output, the compressed frontier, and
+          # seeks, which for constant-size frames land exactly.
           make clean all
           ./dts_lpcm_test
           echo "[pass] dts_lpcm_test"

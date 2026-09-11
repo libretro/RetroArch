@@ -18,6 +18,7 @@
 
 #include <formats/rdts.h>
 #include <formats/rlpcm.h>
+#include <formats/audio.h>
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -363,6 +364,115 @@ static void lpcm_header_case(void)
          "a reserved channel assignment was accepted");
 }
 
+/* The audio_transfer arm: what the mixer and the preview actually
+ * call. Reads, seeks and the frontier, against the same file read
+ * straight through rlpcm. */
+static void transfer_case(void)
+{
+   uint8_t *raw;
+   size_t   len = 0;
+   void    *h;
+   unsigned channels = 0, rate = 0;
+   uint64_t total = 0;
+   float   *whole, *part;
+   size_t   frames, got = 0, i;
+
+   printf("   the audio_transfer arm\n");
+   raw = slurp("/tmp/rlpcm_24_be.raw", &len);
+   if (!raw)
+   {
+      printf("      (no samples to read; skipped)\n");
+      return;
+   }
+   CHECK(audio_decode_get_type("track.lpcm") == AUDIO_TYPE_LPCM,
+         ".lpcm is not recognised");
+   CHECK(audio_decode_get_type("track.pcm") == AUDIO_TYPE_LPCM,
+         ".pcm is not recognised");
+
+   h = audio_transfer_new(AUDIO_TYPE_LPCM);
+   CHECK(h != NULL, "the arm would not allocate");
+   if (!h) { free(raw); return; }
+   audio_transfer_set_buffer_ptr(h, AUDIO_TYPE_LPCM, raw, len);
+   /* Raw samples say nothing about themselves, so the shape is the
+    * caller's to give - which is what a track ripped from a disc
+    * looks like to the frontend. */
+   {
+      rlpcm_format_t *fmt = (rlpcm_format_t*)audio_transfer_lpcm_format(h);
+      CHECK(fmt != NULL, "the arm exposes no format to fill in");
+      if (fmt)
+      {
+         fmt->sample_rate = 48000;
+         fmt->bits        = 24;
+         fmt->channels    = 2;
+         fmt->big_endian  = true;
+      }
+   }
+   CHECK(audio_transfer_start(h, AUDIO_TYPE_LPCM), "the arm would not start");
+   CHECK(audio_transfer_is_valid(h, AUDIO_TYPE_LPCM), "the arm is not valid after starting");
+   CHECK(audio_transfer_info(h, AUDIO_TYPE_LPCM, &channels, &rate, &total),
+         "the arm reports no info");
+   frames = len / 6;
+   printf("      %u ch, %u Hz, %u frames (the file holds %u)\n",
+         channels, rate, (unsigned)total, (unsigned)frames);
+   CHECK(channels == 2 && rate == 48000, "the arm reports %u ch at %u Hz", channels, rate);
+   CHECK(total == frames, "the arm counts %u frames of %u", (unsigned)total, (unsigned)frames);
+
+   whole = (float*)malloc(frames * 2 * sizeof(float));
+   part  = (float*)malloc(frames * 2 * sizeof(float));
+   /* Read in chunks, as a mixer does. */
+   while (got < frames)
+   {
+      size_t n = 0;
+      int    r = audio_transfer_read_f32(h, AUDIO_TYPE_LPCM,
+            whole + got * 2, 733, &n);
+      if (r == AUDIO_PROCESS_END || !n)
+         break;
+      CHECK(r == AUDIO_PROCESS_NEXT, "a read returned %d", r);
+      got += n;
+   }
+   CHECK(got == frames, "read %u frames of %u", (unsigned)got, (unsigned)frames);
+   CHECK(audio_transfer_buffer_tell(h, AUDIO_TYPE_LPCM) == len,
+         "the frontier is %u of %u bytes",
+         (unsigned)audio_transfer_buffer_tell(h, AUDIO_TYPE_LPCM), (unsigned)len);
+
+   /* The same samples straight through rlpcm. */
+   {
+      rlpcm_format_t fmt;
+      memset(&fmt, 0, sizeof(fmt));
+      fmt.sample_rate = 48000;
+      fmt.bits        = 24;
+      fmt.channels    = 2;
+      fmt.big_endian  = true;
+      rlpcm_parse_format(RLPCM_KIND_RAW, NULL, 0, &fmt);
+      rlpcm_decode_f32(&fmt, raw, len, part, frames);
+   }
+   for (i = 0; i < frames * 2; i++)
+      if (whole[i] != part[i])
+      {
+         CHECK(0, "the arm and the codec differ at sample %u", (unsigned)i);
+         break;
+      }
+
+   /* Seeking is arithmetic here, so it lands exactly. */
+   CHECK(audio_transfer_seek(h, AUDIO_TYPE_LPCM, 1000), "the seek was refused");
+   {
+      size_t n = 0;
+      audio_transfer_read_f32(h, AUDIO_TYPE_LPCM, part, 16, &n);
+      CHECK(n == 16, "read %u frames after seeking", (unsigned)n);
+      for (i = 0; i < 32; i++)
+         if (part[i] != whole[1000 * 2 + i])
+         {
+            CHECK(0, "the seek landed elsewhere (sample %u)", (unsigned)i);
+            break;
+         }
+   }
+   CHECK(!audio_transfer_seek(h, AUDIO_TYPE_LPCM, frames + 1),
+         "a seek past the end was accepted");
+
+   audio_transfer_free(h, AUDIO_TYPE_LPCM);
+   free(whole); free(part); free(raw);
+}
+
 int main(void)
 {
    printf("dts and lpcm:\n");
@@ -381,6 +491,7 @@ int main(void)
    lpcm_case(24, 6, true);
    lpcm_20bit_case();
    lpcm_header_case();
+   transfer_case();
 
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("dts and lpcm: the frames are found where ffmpeg put them, and the samples are the samples\n");

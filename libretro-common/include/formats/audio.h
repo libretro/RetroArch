@@ -77,6 +77,12 @@ enum audio_type_enum
    AUDIO_TYPE_AAC,  /* AAC-LC (raac); demuxed path, an ADTS buffer
                     * (.aac), or a whole MP4/M4A buffer when rmp4 is
                     * built in                                          */
+   AUDIO_TYPE_LPCM, /* linear PCM (rlpcm); the samples themselves, from
+                     * a .lpcm or .pcm buffer. The shape comes from a
+                     * DVD or Blu-ray header the buffer opens with, or
+                     * from a caller that filled the format in before
+                     * starting - raw samples say nothing about
+                     * themselves                                      */
    AUDIO_TYPE_AC3   /* AC-3 or E-AC-3 (rac3); a buffer of syncframes
                     * (.ac3, .eac3, .ec3). Up
                     * to 5.1, handed over in the WAV shape for its
@@ -84,6 +90,14 @@ enum audio_type_enum
                     * lone surround becomes a phantom pair, and the
                     * LFE is kept only in 5.1                           */
 };
+
+/* The linear-PCM format an AUDIO_TYPE_LPCM handle will use, for a
+ * caller that knows the shape of raw samples - a track ripped from a
+ * disc, a core's own buffer - to fill in before starting. NULL for
+ * any other type. A buffer that opens with a DVD or Blu-ray header
+ * needs none of this: leave the format zeroed and the header is
+ * read. */
+void *audio_transfer_lpcm_format(void *data);
 
 /* Guess the codec from a file-name/extension (counterpart of
  * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised.
