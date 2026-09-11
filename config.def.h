@@ -1826,8 +1826,15 @@
 
 /* Use the system screen keyboard for menu text entry on SDL3
  * platforms that provide one. Off by default so gamepad-only
- * devices such as TVs keep the navigable on-screen keyboard. */
+ * devices such as TVs keep the navigable on-screen keyboard.
+ *
+ * webOS is the exception: its own panel is the one the remote is
+ * built to drive, and the built-in OSK is the awkward option there. */
+#ifdef WEBOS
+#define DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD true
+#else
 #define DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD false
+#endif
 
 /* Automatically enable game focus when running or
  * resuming content */
