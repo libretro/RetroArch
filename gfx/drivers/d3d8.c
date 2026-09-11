@@ -2388,12 +2388,11 @@ static bool d3d8_alive(void *data)
    bool        quit     = false;
    bool        resize   = false;
 
-   /* Read from local bookkeeping rather than video_st (which
-    * would acquire context_lock + display_lock).  d3d->vp.full_*
-    * is written at every set_size call site in this driver, so
-    * it stays in sync with video_st->width/height as long as no
-    * other code path writes them.  In practice nothing does --
-    * see video_driver.c audit. */
+   /* Read from local bookkeeping rather than video_st.
+    * d3d->vp.full_* is written at every set_size call site in
+    * this driver, so it stays in sync with the output size as
+    * long as no other code path sets it.  In practice nothing
+    * does -- see video_driver.c audit. */
    temp_width  = d3d->vp.full_width;
    temp_height = d3d->vp.full_height;
 
@@ -2523,7 +2522,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
        * them back via video_driver_get_output_size: nothing in the
-       * codebase writes video_st->width / height between the
+       * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
             info->fullscreen))

@@ -1070,8 +1070,12 @@ typedef struct
    unsigned state_scale;
    unsigned state_out_bpp;
 #endif
-   unsigned width;
-   unsigned height;
+   /* The output size: width in the high 16 bits, height in the low
+    * 16, one value so a reader gets a matching pair without a lock.
+    * Set by the drivers - on the video thread under the threaded video
+    * wrapper - and read by the main thread, the menu and tasks, through
+    * video_driver_set_output_size() / video_driver_get_output_size(). */
+   retro_atomic_int_t output_size_packed;
    unsigned scale_width;
    unsigned scale_height;
 

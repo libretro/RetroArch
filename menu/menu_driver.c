@@ -6051,7 +6051,10 @@ MENU_NOINLINE static int menu_input_post_iterate(
    menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
+   unsigned output_width                           = 0;
+   unsigned output_height                          = 0;
 
+   video_driver_get_output_size(&output_width, &output_height);
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
                 | MENU_ENTRY_FLAG_LABEL_ENABLED;
@@ -6142,7 +6145,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             /* Pointer is being held down
              * (i.e. for more than one frame) */
             float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-                  video_st->width, video_st->height) : 0.0f;
+                  output_width, output_height) : 0.0f;
 
             /* > Update deltas + acceleration & detect press direction
              *   Note: We only do this if the pointer has moved above
@@ -6380,7 +6383,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                if (     menu_st->driver_ctx
                      && menu_st->driver_ctx->osk_pointer_over_textbox
                      && menu_st->driver_ctx->osk_pointer_over_textbox(
-                        menu_st->userdata, x, y, video_st->width, video_st->height))
+                        menu_st->userdata, x, y, output_width, output_height))
                   input_st->osk_textbox_focus = true;
                else
                {
@@ -6441,7 +6444,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             {
                /* Pointer has moved - check if this is a swipe */
                float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-                     video_st->width, video_st->height) : 0.0f;
+                     output_width, output_height) : 0.0f;
 
                if (     (dpi > 0.0f)
                      && (menu_input->pointer.press_duration <
@@ -7172,11 +7175,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            video_driver_state_t
-               *video_st              = video_state_get_ptr();
-            unsigned width            = video_st->width;
-            unsigned height           = video_st->height;
+            unsigned width            = 0;
+            unsigned height           = 0;
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            video_driver_get_output_size(&width, &height);
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
             {
                point->retcode = 0;

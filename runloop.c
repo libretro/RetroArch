@@ -6204,8 +6204,7 @@ static enum runloop_state_enum runloop_check_state(
    uint64_t frame_count                = 0;
    bool focused                        = true;
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   /* Snapshot of the output size, fetched under the display lock.
-    * The video thread writes video_st->width/height through
+   /* Snapshot of the output size. The video thread sets it through
     * video_driver_set_output_size() while this function runs. */
    unsigned output_width               = 0;
    unsigned output_height              = 0;

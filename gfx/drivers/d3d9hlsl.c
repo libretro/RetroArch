@@ -7217,7 +7217,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
        * them back via video_driver_get_output_size: nothing in the
-       * codebase writes video_st->width / height between the
+       * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
             info->fullscreen))

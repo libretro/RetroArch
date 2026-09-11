@@ -256,7 +256,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
 
    /* Tell the rest of the engine about our actual window dimensions.
-    * Without this, video_st->width/height retain whatever value was
+    * Without this, the output size keeps whatever value was
     * computed from core geometry at init time (eg 320x240 for an
     * NES-like core), so menu_driver_frame and gfx_widgets_frame
     * receive a tiny video_height in video_info, position widgets

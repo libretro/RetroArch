@@ -730,6 +730,8 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   unsigned output_width          = 0;
+   unsigned output_height         = 0;
    video_driver_state_t *video_st = video_state_get_ptr();
    uint8_t *buffer                = NULL;
 
@@ -762,10 +764,11 @@ static bool take_screenshot_viewport(
                   video_st->data, hdr_buffer,
                   runloop_flags & RUNLOOP_FLAG_IDLE, &hdr))
          {
-            if (vp.width > video_st->width)
-               vp.width = video_st->width;
-            if (vp.height > video_st->height)
-               vp.height = video_st->height;
+            video_driver_get_output_size(&output_width, &output_height);
+            if (vp.width > output_width)
+               vp.width = output_width;
+            if (vp.height > output_height)
+               vp.height = output_height;
 
             /* 48-bit RGB, bottom-up (pitch = width*6, negated top-down
              * inside screenshot_dump_direct like the BGR24 path). */
@@ -789,10 +792,11 @@ static bool take_screenshot_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
    {
       /* Limit image to screen size */
-      if (vp.width > video_st->width)
-         vp.width = video_st->width;
-      if (vp.height > video_st->height)
-         vp.height = video_st->height;
+      video_driver_get_output_size(&output_width, &output_height);
+      if (vp.width > output_width)
+         vp.width = output_width;
+      if (vp.height > output_height)
+         vp.height = output_height;
 
       /* Data read from viewport is in bottom-up order, suitable for BMP. */
       if (screenshot_dump(screenshot_dir,

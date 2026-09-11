@@ -1734,9 +1734,9 @@ bool video_display_server_has_refresh_rate(float hz)
 
    if (video_list)
    {
-      video_driver_state_t *video_st = &video_driver_st;
-      unsigned video_driver_width    = video_st->width;
-      unsigned video_driver_height   = video_st->height;
+      unsigned video_driver_width    = 0;
+      unsigned video_driver_height   = 0;
+      video_driver_get_output_size(&video_driver_width, &video_driver_height);
 
       for (i = 0; i < size && !rate_exists; i++)
       {
@@ -2447,42 +2447,23 @@ void video_driver_set_filtering(unsigned index,
 
 void video_driver_get_output_size(unsigned *width, unsigned *height)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   bool is_threaded = video_driver_thread_wrapper_active();
-   if (is_threaded && video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      if (width)
-         *width     = video_st->width;
-      if (height)
-         *height    = video_st->height;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
+   unsigned packed = (unsigned)retro_atomic_load_acquire_int(
+         &video_driver_st.output_size_packed);
    if (width)
-      *width        = video_st->width;
+      *width  = packed >> 16;
    if (height)
-      *height       = video_st->height;
+      *height = packed & 0xFFFFu;
 }
 
 void video_driver_set_output_size(unsigned width, unsigned height)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   bool is_threaded = video_driver_thread_wrapper_active();
-   if (is_threaded && video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->width             = width;
-      video_st->height            = height;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->width                = width;
-   video_st->height               = height;
+   /* 16 bits each in the packed value; no display is near the limit */
+   if (width  > 0xFFFFu)
+      width  = 0xFFFFu;
+   if (height > 0xFFFFu)
+      height = 0xFFFFu;
+   retro_atomic_store_release_int(&video_driver_st.output_size_packed,
+         (int)((width << 16) | height));
 }
 
 /**
@@ -2757,9 +2738,10 @@ void video_driver_set_aspect_ratio(void)
 
       case ASPECT_RATIO_FULL:
          {
-            unsigned width  = video_st->width;
-            unsigned height = video_st->height;
+            unsigned width  = 0;
+            unsigned height = 0;
 
+            video_driver_get_output_size(&width, &height);
             if (width != 0 && height != 0)
                aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
          }
@@ -4054,15 +4036,21 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #ifdef HAVE_GFX_WIDGETS
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
+   uint32_t disp_flags;
 #ifdef HAVE_THREADS
-   /* Cached so the unlock at the end of this function pairs with the
-    * lock taken here whatever happens in between. Keyed on the wrapper,
-    * which is what makes video_st->width/height shared state. */
    bool is_threaded                        =
          video_driver_thread_wrapper_active();
+   /* Under the wrapper the video thread's drivers change their own bits
+    * of 'flags' under display_lock; one read of the word, under it */
    if (is_threaded && video_st->display_lock)
+   {
       slock_lock(video_st->display_lock);
+      disp_flags                           = video_st->flags;
+      slock_unlock(video_st->display_lock);
+   }
+   else
 #endif
+      disp_flags                           = video_st->flags;
 
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
@@ -4119,7 +4107,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
    video_info->fullscreen                  = settings->bools.video_fullscreen
-         || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
+         || (disp_flags & VIDEO_FLAG_FORCE_FULLSCREEN);
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
    video_info->monitor_index               = settings->uints.video_monitor_index;
 
@@ -4137,7 +4125,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_width        = custom_vp->full_width;
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
-   video_info->video_st_flags              = video_st->flags
+   video_info->video_st_flags              = disp_flags
                                            | video_st->main_flags;
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
@@ -4145,8 +4133,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->widgets_userdata            = NULL;
 #endif
 
-   video_info->width                       = video_st->width;
-   video_info->height                      = video_st->height;
+   video_driver_get_output_size(&video_info->width, &video_info->height);
 #ifdef HAVE_THREADS
    if (is_threaded)
       video_thread_get_scale(video_st,
@@ -4247,10 +4234,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->userdata                      = video_st->data;
 #endif
 
-#ifdef HAVE_THREADS
-   if (is_threaded && video_st->display_lock)
-      slock_unlock(video_st->display_lock);
-#endif
 }
 
 /**
@@ -6816,7 +6799,8 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height  = video_st->height;
+   uint16_t video_height  = (uint16_t)(retro_atomic_load_acquire_int(
+         &video_st->output_size_packed) & 0xFFFF);
    int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
@@ -6899,7 +6883,8 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height   = video_st->height;
+   uint16_t video_height   = (uint16_t)(retro_atomic_load_acquire_int(
+         &video_st->output_size_packed) & 0xFFFF);
    int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
    int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;

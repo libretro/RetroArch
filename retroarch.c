@@ -1792,15 +1792,18 @@ void drivers_init(
          VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
       bool video_is_fullscreen    = settings->bools.video_fullscreen
                                  || rarch_force_fullscreen;
+      unsigned output_width       = 0;
+      unsigned output_height      = 0;
 
+      video_driver_get_output_size(&output_width, &output_height);
       p_dispwidget->active= gfx_widgets_init(
             p_disp,
             anim_get_ptr(),
             settings,
             (uintptr_t)&p_dispwidget->active,
             video_is_threaded,
-            video_st->width,
-            video_st->height,
+            output_width,
+            output_height,
             video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font);
@@ -4218,14 +4221,17 @@ bool command_event(enum event_command cmd, void *data)
                      VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
                bool video_is_fullscreen = settings->bools.video_fullscreen
                      || force_fs;
+               unsigned output_width    = 0;
+               unsigned output_height   = 0;
+               video_driver_get_output_size(&output_width, &output_height);
                p_dispwidget->active     = gfx_widgets_init(
                      disp_get_ptr(),
                      anim_get_ptr(),
                      settings,
                      (uintptr_t)&p_dispwidget->active,
                      VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
-                     video_st->width,
-                     video_st->height,
+                     output_width,
+                     output_height,
                      video_is_fullscreen,
                      settings->paths.directory_assets,
                      settings->paths.path_font);
@@ -4440,6 +4446,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             bool *check_rotation           = (bool*)data;
+            unsigned output_width          = 0;
+            unsigned output_height         = 0;
             video_driver_state_t
                *video_st                   = video_state_get_ptr();
             input_driver_state_t *input_st = input_state_get_ptr();
@@ -4469,12 +4477,13 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* Check orientation, if required */
+            video_driver_get_output_size(&output_width, &output_height);
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
                      input_overlay_auto_rotate_(
-                           video_st->width,
-                           video_st->height,
+                           output_width,
+                           output_height,
                            settings->bools.input_overlay_enable,
                            ol);
          }
@@ -4850,7 +4859,8 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_OVERLAY
          {
             overlay_layout_desc_t layout_desc;
-            video_driver_state_t *video_st = video_state_get_ptr();
+            unsigned output_width          = 0;
+            unsigned output_height         = 0;
             input_driver_state_t *input_st = input_state_get_ptr();
             input_overlay_t *ol            = input_st->overlay_ptr;
 
@@ -4883,10 +4893,11 @@ bool command_event(enum event_command cmd, void *data)
                layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
             }
 
+            video_driver_get_output_size(&output_width, &output_height);
             input_overlay_set_scale_factor(ol,
                   &layout_desc,
-                  video_st->width,
-                  video_st->height);
+                  output_width,
+                  output_height);
          }
 #endif
          break;

@@ -2899,12 +2899,15 @@ void command_event_reinit(const int flags)
        * premature render). */
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
+         unsigned output_width  = 0;
+         unsigned output_height = 0;
+         video_driver_get_output_size(&output_width, &output_height);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
                   menu_st->userdata,
-                  video_st->width,
-                  video_st->height,
+                  output_width,
+                  output_height,
                   false);
 
          if (     video_st->poke
