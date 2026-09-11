@@ -1720,6 +1720,10 @@ MSG_HASH(
    "Only part of the EDID could be read"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   "A built-in laptop or all-in-one panel carries no EDID. An external display connected over DDC does."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
    "Raw"
    )

@@ -2289,8 +2289,16 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
    n = video_display_server_get_edid(raw, MODELINE_EDID_MAX_LEN);
    if (n < MODELINE_EDID_SIZE || !modeline_edid_parse(raw, (size_t)n, info))
    {
+      /* Nothing to show, and two quite different reasons for it: the
+       * display server has no way to read one, or it has and the
+       * display in use carries none. Say what would. */
       if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+         count++;
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE), "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
          count++;
       free(raw);
       return count;
