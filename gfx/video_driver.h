@@ -21,6 +21,7 @@
 
 #include <libretro.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 #include <boolean.h>
 
 #ifdef HAVE_CONFIG_H
@@ -86,7 +87,6 @@ RETRO_BEGIN_DECLS
 enum video_driver_state_flags
 {
    VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS = (1 << 0 ),
-   VIDEO_FLAG_WINDOW_TITLE_UPDATE                 = (1 << 1 ),
    /* The four VIDEO_FLAG_WIDGETS_* bits live in
     * video_driver_state_t::widgets_flags, not in 'flags' */
    VIDEO_FLAG_WIDGETS_PAUSED                      = (1 << 2 ),
@@ -1093,6 +1093,11 @@ typedef struct
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
    char window_title_prev[512];
+   /* A new window_title waits for the thread that draws: raised with
+    * the title, under display_lock, and taken with it by
+    * video_driver_get_window_title(), which reads this first so a frame
+    * with no new title takes no lock. */
+   retro_atomic_int_t window_title_update;
    char gpu_api_version_string[128];
    char title_buf[64];
    char cached_driver_id[32];

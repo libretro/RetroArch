@@ -3966,10 +3966,10 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
-/* window_title and the VIDEO_FLAG_WINDOW_TITLE_UPDATE bit are written
- * on the main thread and read on the video thread, so both sides use
- * display_lock - the same lock video_driver_modify_disp_flags() takes.
- * No-ops in a build without threads, where there is no second reader. */
+/* window_title is written on the main thread and read on the video
+ * thread, so both sides use display_lock around it; window_title_update
+ * says there is a new one. No-ops in a build without threads, where
+ * there is no second reader. */
 #ifdef HAVE_THREADS
 #define VIDEO_TITLE_LOCK(st)   do { if ((st)->display_lock) slock_lock((st)->display_lock); } while (0)
 #define VIDEO_TITLE_UNLOCK(st) do { if ((st)->display_lock) slock_unlock((st)->display_lock); } while (0)
@@ -3997,11 +3997,15 @@ size_t video_driver_get_window_title(char *s, size_t len)
    if (!s)
       return 0;
 
+   /* Nearly every frame has no new title */
+   if (!retro_atomic_load_acquire_int(&video_st->window_title_update))
+      return 0;
+
    VIDEO_TITLE_LOCK(video_st);
-   if (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE)
+   if (retro_atomic_load_acquire_int(&video_st->window_title_update))
    {
-      n               = strlcpy(s, video_st->window_title, len);
-      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      n = strlcpy(s, video_st->window_title, len);
+      retro_atomic_store_release_int(&video_st->window_title_update, 0);
    }
    VIDEO_TITLE_UNLOCK(video_st);
 
@@ -4013,18 +4017,18 @@ size_t video_driver_get_window_title(char *s, size_t len)
 void video_driver_update_title(void *data)
 {
 #ifndef _XBOX
+   char title[sizeof(video_driver_st.window_title)];
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
    video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE
-         && window)
+   /* The copy is taken under display_lock: the main thread rewrites
+    * window_title while this runs on the video thread */
+   if (     window
+         && video_driver_get_window_title(title, sizeof(title))
+         && !string_is_equal(title, video_st->window_title_prev))
    {
-      if (     video_st->window_title[0]
-            && !string_is_equal(video_st->window_title, video_st->window_title_prev))
-      {
-         window->set_title((void*)video_st->display_userdata, video_st->window_title);
-         strlcpy(video_st->window_title_prev, video_st->window_title, sizeof(video_st->window_title_prev));
-      }
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_WINDOW_TITLE_UPDATE);
+      window->set_title((void*)video_st->display_userdata, title);
+      strlcpy(video_st->window_title_prev, title,
+            sizeof(video_st->window_title_prev));
    }
 #endif
 }
@@ -5616,7 +5620,7 @@ void video_driver_frame(const void *data, unsigned width,
          }
 
          video_st->window_title_len = __len;
-         video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+         retro_atomic_store_release_int(&video_st->window_title_update, 1);
          VIDEO_TITLE_UNLOCK(video_st);
 
          curr_time                  = new_time;
@@ -5631,7 +5635,7 @@ void video_driver_frame(const void *data, unsigned width,
             video_st->window_title,
             video_st->title_buf,
             sizeof(video_st->window_title));
-      video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      retro_atomic_store_release_int(&video_st->window_title_update, 1);
       VIDEO_TITLE_UNLOCK(video_st);
 
       status_text[0] = '\0';
