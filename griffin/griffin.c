@@ -542,6 +542,14 @@ VIDEO IMAGE
 #include "../libretro-common/formats/iec61937/iec61937.c"
 #endif
 
+#ifdef HAVE_RLPCM
+#include "../libretro-common/formats/lpcm/rlpcm.c"
+#endif
+
+#ifdef HAVE_RDTS
+#include "../libretro-common/formats/dts/rdts.c"
+#endif
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif

@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 5
         run: |
-          pkgs="build-essential"
+          pkgs="build-essential ffmpeg"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -42,6 +42,35 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Build and run dts_lpcm_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/formats/dts_lpcm
+        run: |
+          set -eu
+          # The DTS frame layer and the LPCM codec against ffmpeg.
+          #
+          # rdts reads frames, it does not decode them, so what is
+          # checked is that every frame is found where ffmpeg's
+          # encoder put it, that the rate and the arrangement agree
+          # with ffprobe's reading of the same file, and that a stream
+          # byte-swapped or packed fourteen bits to the word reads
+          # back to the same core - which is what a receiver and a
+          # decoder are handed.
+          #
+          # rlpcm does decode, and is bit-exact: the samples go out
+          # through ffmpeg's own converters and come back the same, at
+          # 16 and 24 bits and both byte orders, and what rlpcm writes
+          # back is the bytes it read. 20-bit has no ffmpeg format to
+          # compare against - two samples to five bytes is a disc
+          # packing - so it is checked against itself, and the DVD and
+          # Blu-ray headers against their field layouts.
+          make clean all
+          ./dts_lpcm_test
+          echo "[pass] dts_lpcm_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./dts_lpcm_test
+          echo "[pass] dts_lpcm_test (ASan)"
 
       - name: Build and run image_decode_fuzz_test (ASan + UBSan + LSan)
         shell: bash

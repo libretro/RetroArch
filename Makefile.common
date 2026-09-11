@@ -998,6 +998,15 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.o \
        $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.o
 
+# Linear PCM, and the DTS frame layer. Neither has a dependency and
+# both are small, so they are in wherever rac3 is: LPCM is what a disc
+# carries when nothing was compressed, and rdts is what carries a DTS
+# stream to a decoder that is not this one - the bursts iec61937
+# already frames.
+DEFINES += -DHAVE_RLPCM -DHAVE_RDTS
+OBJ += $(LIBRETRO_COMM_DIR)/formats/lpcm/rlpcm.o \
+       $(LIBRETRO_COMM_DIR)/formats/dts/rdts.o
+
 ifeq ($(HAVE_RWAV), 1)
 DEFINES += -DHAVE_RWAV
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o
