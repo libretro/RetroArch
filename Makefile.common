@@ -1007,6 +1007,10 @@ DEFINES += -DHAVE_RLPCM -DHAVE_RDTS
 OBJ += $(LIBRETRO_COMM_DIR)/formats/lpcm/rlpcm.o \
        $(LIBRETRO_COMM_DIR)/formats/dts/rdts.o
 
+# The bitstream source: where a stream that arrived already coded
+# plugs into the output path, which the PCM pipeline has no place for.
+OBJ += audio/audio_bitstream.o
+
 ifeq ($(HAVE_RWAV), 1)
 DEFINES += -DHAVE_RWAV
 OBJ += $(LIBRETRO_COMM_DIR)/formats/wav/rwav.o

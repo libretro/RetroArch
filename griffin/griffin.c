@@ -550,6 +550,10 @@ VIDEO IMAGE
 #include "../libretro-common/formats/dts/rdts.c"
 #endif
 
+#if defined(HAVE_RDTS) || defined(HAVE_RAC3)
+#include "../audio/audio_bitstream.c"
+#endif
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif

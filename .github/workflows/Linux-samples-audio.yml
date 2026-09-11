@@ -252,6 +252,29 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./ealsa_test
           echo "[pass] ealsa_test (ASan)"
 
+      - name: Build and run bitstream_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/bitstream
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          # audio/audio_bitstream.c: a coded stream on its way to a
+          # receiver, which the PCM pipeline has no place for. Real
+          # DTS and AC-3 from ffmpeg, handed over frame by frame:
+          # bursts leave whole and never partial, the queue paces the
+          # source rather than the source running ahead, a gap
+          # produces the pause burst the standard has for it rather
+          # than silence (which makes a receiver drop its lock), and
+          # the PCM frames reported are the device time the bytes
+          # occupy.
+          make clean all
+          ./bitstream_test
+          echo "[pass] bitstream_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./bitstream_test
+          echo "[pass] bitstream_test (ASan)"
+
       - name: Build and run opensl_test (the Android driver against a mock OpenSL player)
         shell: bash
         working-directory: samples/audio/opensl
