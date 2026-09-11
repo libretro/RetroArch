@@ -17,7 +17,7 @@ SOURCES_C := \
 	$(CORE_DIR)/audio/drivers/sdl_audio.c \
 	$(CORE_DIR)/audio/drivers/openal.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
-	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
