@@ -38,10 +38,8 @@
 #include "../../gfx/common/sdl3_common.h"
 
 #ifdef WEBOS
-/* The webOS remote scancodes, the SDL_HINT_WEBOS_* hints and
- * SDL_webOSCursorVisibility() all arrive via SDL3/SDL.h - the
- * SDL3/SDL_webOS.h of the SDL2 port has no SDL3 counterpart. */
 #include <dlfcn.h>
+#include "../../gfx/common/sdl3_common_webos.h"
 #endif
 
 /* OVERLAY_MAX_TOUCH */

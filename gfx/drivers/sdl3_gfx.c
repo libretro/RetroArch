@@ -43,6 +43,10 @@
 #include <SDL3/SDL.h>
 #include "../common/sdl3_common.h"
 
+#ifdef WEBOS
+#include "../common/sdl3_common_webos.h"
+#endif
+
 #include "../font_driver.h"
 #include "../gfx_display.h"
 #include "../video_thread_wrapper.h"
