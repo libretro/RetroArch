@@ -57,6 +57,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Build and run camera ffmpeg_live_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/camera/ffmpeg_live
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libavdevice-dev libavfilter-dev
+          # The camera driver against lavfi: built with its input
+          # format set to libavfilter, a filter graph is the device and
+          # the whole pipeline runs with no camera attached - avformat
+          # opens the source, the poll thread reads, the decoder
+          # decodes, swscale converts and poll() takes the frame out
+          # under the buffer's lock.
+          #
+          # The cases are the ones the threading has to get right and
+          # that no eyeball on a webcam would show: start and stop
+          # repeatedly, stop while the thread is mid-frame, free
+          # without stopping, poll before starting, and a source that
+          # does not exist.
+          make clean all
+          ./ffmpeg_live_test
+          echo "[pass] ffmpeg_live_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 600 ./ffmpeg_live_test
+          echo "[pass] ffmpeg_live_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=../../cores/ffmpeg_audio_pipe/tsan.supp \
+             timeout 600 ./ffmpeg_live_test
+          echo "[pass] ffmpeg_live_test (TSan)"
+
       - name: Build and run ffmpeg_sweep_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/cores/ffmpeg_sweep

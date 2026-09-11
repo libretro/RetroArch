@@ -45,6 +45,10 @@ extern "C" {
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+/* The libavdevice input format the camera comes from. A build may name
+ * it already - a test harness points it at lavfi, which gives the
+ * whole pipeline a synthetic camera and needs no device. */
+#ifndef FFMPEG_CAMERA_DEFAULT_BACKEND
 #ifdef ANDROID
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "android_camera"
 #elif defined(__linux__)
@@ -57,6 +61,7 @@ extern "C" {
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
 #else
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
+#endif
 #endif
 
 /* lavf 59 (FFmpeg 5.0) made the demuxer/codec discovery API const-correct:
@@ -358,6 +363,20 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       goto error;
    }
 
+   /* A device the frontend named is the device, and enumeration is
+    * skipped: what the setting says is a source url for the backend
+    * in use, which is the only thing this driver could do with it.
+    * It used to be ignored outright - the argument was taken and
+    * never read, so a user who picked a camera got whichever one
+    * enumerated first. */
+   if (!string_is_empty(device))
+   {
+      strlcpy(ffmpeg->url, device, sizeof(ffmpeg->url));
+      RARCH_LOG("[FFMPEG] Using the device the frontend asked for: %s.\n",
+            ffmpeg->url);
+      goto have_device;
+   }
+
    num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
 
 #ifdef __APPLE__
@@ -397,6 +416,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 
    ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
 #endif
+have_device:
    RARCH_LOG("[FFMPEG] Using video input device: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
    avdevice_free_list_devices(&device_list);
