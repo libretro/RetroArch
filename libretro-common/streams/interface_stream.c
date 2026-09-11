@@ -68,6 +68,10 @@ struct intfstream_internal
       uint64_t pos;        /* logical read position                */
       uint64_t size;
    } buffered;
+   /* Scratch for intfstream_crc_step() on streams whose bytes are not
+    * addressable: allocated on the first step, kept for the rest,
+    * freed with the stream.  It used to malloc 256 KB per step. */
+   uint8_t *crc_scratch;
    enum intfstream_type type;
 };
 
@@ -233,6 +237,12 @@ int intfstream_close(intfstream_internal_t *intf)
    if (!intf)
       return -1;
 
+   if (intf->crc_scratch)
+   {
+      free(intf->crc_scratch);
+      intf->crc_scratch = NULL;
+   }
+
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
@@ -279,6 +289,7 @@ void *intfstream_init(intfstream_info_t *info)
 
    intf->type            = info->type;
    memset(&intf->buffered, 0, sizeof(intf->buffered));
+   intf->crc_scratch     = NULL;
    intf->file.fp         = NULL;
    intf->memory.fp       = NULL;
 #ifdef HAVE_CHD
@@ -879,31 +890,61 @@ int64_t intfstream_crc_step(intfstream_internal_t *intf,
       uint32_t *accumulator, size_t max_bytes)
 {
    int64_t data_read;
-   uint8_t *buffer;
-   /* 256 KB reads instead of a 4 KB stack buffer: CRCing a scanned
+   /* 256 KB per step instead of a 4 KB stack buffer: CRCing a scanned
     * multi-gigabyte disc image at 4 KB a call is a quarter of a
     * million reads per gigabyte, and the call overhead dominates
     * the checksum. */
-   size_t buffer_len = 256 * 1024;
+   size_t step_len = 256 * 1024;
 
    if (!intf || !accumulator)
       return -1;
 
-   if (max_bytes < buffer_len)
-      buffer_len = max_bytes;
-   if (!buffer_len)
+   if (max_bytes < step_len)
+      step_len = max_bytes;
+   if (!step_len)
       return 0;
 
-   if (!(buffer = (uint8_t*)malloc(buffer_len)))
+   /* A file the VFS has mapped whole (opened with
+    * RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS) is hashed in place:
+    * no scratch, no copy, the page cache read straight into the CRC.
+    * Whole file or nothing, so the offsets below are file offsets. */
+   if (intf->type == INTFSTREAM_FILE && intf->file.fp)
+   {
+      int64_t map_len    = 0;
+      const uint8_t *map = filestream_get_mapped_ptr(intf->file.fp, &map_len);
+      if (map && map_len == filestream_get_size(intf->file.fp))
+      {
+         int64_t pos = filestream_tell(intf->file.fp);
+         if (pos < 0)
+            return -1;
+         if (pos >= map_len)
+            return 0;
+         data_read = map_len - pos;
+         if (data_read > (int64_t)step_len)
+            data_read = (int64_t)step_len;
+         *accumulator = encoding_crc32(*accumulator, map + pos,
+               (size_t)data_read);
+         if (filestream_seek(intf->file.fp, pos + data_read,
+                  RETRO_VFS_SEEK_POSITION_START) < 0)
+            return -1;
+         return data_read;
+      }
+   }
+
+   /* Everything else: read into a scratch buffer kept for the life
+    * of the stream.  Allocating 256 KB per step, as this did, was a
+    * malloc above glibc's mmap threshold - a fresh mmap() and 64
+    * zero-filled page faults, then a munmap() - for every quarter
+    * megabyte hashed. */
+   if (!intf->crc_scratch
+         && !(intf->crc_scratch = (uint8_t*)malloc(256 * 1024)))
       return -1;
 
-   data_read = intfstream_read(intf, buffer, buffer_len);
+   data_read = intfstream_read(intf, intf->crc_scratch, step_len);
 
    if (data_read > 0)
-      *accumulator = encoding_crc32(*accumulator, buffer,
+      *accumulator = encoding_crc32(*accumulator, intf->crc_scratch,
             (size_t)data_read);
-
-   free(buffer);
 
    return data_read;
 }
