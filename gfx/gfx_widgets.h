@@ -198,7 +198,6 @@ typedef struct disp_widget_msg
 typedef struct dispgfx_widget
 {
 #ifdef HAVE_THREADS
-   slock_t* current_msgs_lock;
    /* Serialises producer and consumer access to msg_queue.
     * Producers (gfx_widgets_msg_queue_push) can be called from
     * any thread -- the threaded task system at libretro-common/
@@ -206,18 +205,18 @@ typedef struct dispgfx_widget
     * paths reach the producer without holding any other lock
     * (notably gfx/video_driver.c::video_driver_frame, which
     * releases RUNLOOP_MSG_QUEUE_LOCK before the call).  The
-    * consumer (gfx_widgets_iterate) runs on the main thread
-    * but did not previously serialise its fifo_read against
-    * concurrent producer fifo_writes.  This separates concerns:
-    * current_msgs_lock continues to guard the displayed-message
-    * deque (current_msgs[]); msg_queue_lock guards the pending
-    * ring (msg_queue[] / msg_queue_head / msg_queue_count) and is
-    * held across every push and pop of it. */
+    * consumer is whichever thread owns the widgets: the threaded
+    * video worker when it draws them, the main thread otherwise.
+    * msg_queue_lock guards the pending ring (msg_queue[] /
+    * msg_queue_head / msg_queue_count) and is held across every
+    * push and pop of it.  The displayed messages (current_msgs[])
+    * belong to that same owning thread alone and take no lock. */
    slock_t* msg_queue_lock;
    /* Everything the widgets draw. With the threaded video wrapper the
-    * worker draws it while the main thread animates, iterates and sets
-    * it, so both sides hold this: the worker across the draw, a writer
-    * across its change. Outermost of the widget locks. Recursive for
+    * worker animates, iterates and draws it while the main thread's
+    * setters, task updates and relayout change it, so both sides hold
+    * this: the worker across its step and its draw, a writer across its
+    * change. Outermost of the widget locks. Recursive for
     * its owner through state_owner/state_depth, and released for as
     * long as its owner waits on the worker (gfx_widgets_state_yield()),
     * so a writer that loads or frees a texture cannot deadlock against
@@ -234,15 +233,17 @@ typedef struct dispgfx_widget
 #endif
    /* Messages pushed but not yet on screen: a ring of pointers,
     * pushed from any thread (gfx_widgets_msg_queue_push), popped by
-    * gfx_widgets_iterate() on the main thread, one per frame.  Was a
+    * the thread that owns the widgets, one per frame.  Was a
     * fifo_buffer_t carrying sizeof(pointer)-byte records: a heap
     * buffer, byte arithmetic and a write that silently wrapped when
     * full, for what is a bounded array of MSG_QUEUE_PENDING_MAX
     * pointers.  Several producers, so this is not an SPSC ring and
-    * stays under msg_queue_lock. */
+    * stays under msg_queue_lock.  msg_queue_count is written only
+    * under it; the consumer reads it without, so a frame with nothing
+    * pending takes no lock at all. */
    disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
    unsigned msg_queue_head;
-   unsigned msg_queue_count;
+   retro_atomic_int_t msg_queue_count;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
