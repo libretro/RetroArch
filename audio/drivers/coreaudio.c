@@ -320,6 +320,10 @@ typedef struct coreaudio
     * there and pads the rest with silence, every time - which is a
     * buzz at the pull rate over a signal that is mostly gaps. */
    size_t              max_pull_frames;
+   /* The pull the unit is expected to make, on every platform: what the
+    * ring needs before starting is worth. Zero until known, which makes
+    * coreaudio_run() start on the first frame written. */
+   size_t              period_pull;
    retro_atomic_size_t max_pull_observed;
    retro_atomic_size_t oversized_pulls;
    /* Render callbacks handed a buffer list that is not the single
@@ -377,6 +381,12 @@ typedef struct coreaudio
    bool dev_alive;
    bool is_paused;
    bool nonblock;
+   /* The output unit is not started when it is asked for, it is started
+    * when there is something for it to play; see coreaudio_run(). want
+    * is what start() and stop() set, running is what the unit is
+    * actually doing. */
+   bool want_running;
+   bool unit_running;
 } coreaudio_t;
 
 static bool coreaudio_wait_init(coreaudio_t *dev)
@@ -1196,6 +1206,14 @@ static void *coreaudio_init(const char *device,
    retro_atomic_size_init(&dev->filled, 0);
    retro_atomic_size_init(&dev->consumed, 0);
    retro_atomic_size_init(&dev->underruns, 0);
+   /* What coreaudio_run() waits for before starting; the HAL's pull on
+    * macOS, and on iOS the ring's own quarter, which is what the unit
+    * was asked to use. */
+#if !TARGET_OS_IPHONE
+   dev->period_pull = dev->period_frames;
+#endif
+   if (!dev->period_pull)
+      dev->period_pull = (dev->usable / dev->channels) / 4;
    retro_atomic_size_init(&dev->max_pull_observed, 0);
    retro_atomic_size_init(&dev->oversized_pulls, 0);
    retro_atomic_size_init(&dev->format_errors, 0);
@@ -1273,8 +1291,10 @@ static void *coreaudio_init(const char *device,
    }
 #endif
 
-   if (AudioOutputUnitStart(dev->dev) != noErr)
-      goto error;
+   /* Not started here. The unit is started by coreaudio_run() once the
+    * ring has a period in it; starting it against an empty ring is a
+    * burst of underruns for the whole of the frontend's priming. */
+   dev->want_running = true;
 
    return dev;
 
@@ -1282,6 +1302,53 @@ error:
    RARCH_ERR("[CoreAudio] Failed to initialize driver.\n");
    coreaudio_free(dev);
    return NULL;
+}
+
+/* Start the unit, once there is a period in the ring for it to take.
+ *
+ * It used to start at the end of init() and in start(), with the ring
+ * empty either time. The device begins pulling immediately, the
+ * frontend has not written yet - and on the threaded pipeline it will
+ * not for a while, since the consumer's first pass deliberately waits
+ * for the pipe's target and the device's buffer before it runs - so
+ * every pull in that window is a full underrun. Measured against a
+ * clocked device (samples/audio/pipeline_clocked) it is 32 to 80 ms of
+ * unbroken silence on every init, whatever the latency setting, and an
+ * init happens on every audio latency change, every vsync toggle and
+ * every device change. That is the burst of noise heard on each of
+ * them.
+ *
+ * Waiting for a whole period rather than a single frame so the first
+ * pull is a full one; the ring being full counts too, for a period
+ * larger than the ring can be asked to hold. A caller that is waiting
+ * for room has to start it regardless - room only comes from the
+ * device - which is why wait_writable() calls this before it sleeps
+ * rather than after. */
+static void coreaudio_run(coreaudio_t *dev, bool force)
+{
+   if (!dev->want_running || dev->unit_running || dev->is_paused)
+      return;
+   if (     !force
+         && retro_atomic_load_acquire_size(&dev->filled)
+               < dev->period_pull * dev->channels
+         && rb_write_avail(dev))
+      return;
+   if (AudioOutputUnitStart(dev->dev) == noErr)
+      dev->unit_running = true;
+}
+
+/* Whether the unit is rendering, for the writer's bail-out. A unit that
+ * has not been started yet is not a stopped unit: the caller must not
+ * treat it as one and give up, it is about to be started. */
+static bool coreaudio_unit_stalled(coreaudio_t *dev)
+{
+   UInt32 running = 0;
+   UInt32 size    = sizeof(running);
+   if (!dev->unit_running)
+      return false;
+   return AudioUnitGetProperty(dev->dev,
+         kAudioOutputUnitProperty_IsRunning,
+         kAudioUnitScope_Global, 0, &running, &size) == noErr && !running;
 }
 
 static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
@@ -1322,19 +1389,20 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          samples -= to_write;
       }
 
+      /* Whatever went in may be enough to start on. */
+      coreaudio_run(dev, false);
+
       if (dev->nonblock)
          break;
 
       if (samples > 0)
       {
          /* If the audio unit has stopped (e.g. audio session interrupted
-          * by a phone call), bail out - the callback will never drain. */
-         UInt32 running = 0;
-         UInt32 size    = sizeof(running);
-         if (AudioUnitGetProperty(dev->dev,
-                  kAudioOutputUnitProperty_IsRunning,
-                  kAudioUnitScope_Global, 0,
-                  &running, &size) == noErr && !running)
+          * by a phone call), bail out - the callback will never drain.
+          * There is more to write than fits, so start now whether a
+          * period has accumulated or not: nothing else will drain it. */
+         coreaudio_run(dev, true);
+         if (coreaudio_unit_stalled(dev))
             break;
          if (--laps < 0)
             break;
@@ -1368,9 +1436,18 @@ static bool coreaudio_stop(void *data)
    coreaudio_t *dev = (coreaudio_t*)data;
    if (dev)
    {
+      dev->want_running = false;
+      if (!dev->unit_running)
+      {
+         dev->is_paused = true;
+         return true;
+      }
       dev->is_paused = (AudioOutputUnitStop(dev->dev) == noErr) ? true : false;
       if (dev->is_paused)
+      {
+         dev->unit_running = false;
          return true;
+      }
    }
    return false;
 }
@@ -1387,9 +1464,13 @@ static bool coreaudio_start(void *data, bool is_shutdown)
    coreaudio_t *dev = (coreaudio_t*)data;
    if (dev)
    {
-      dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
-      if (!dev->is_paused)
-         return true;
+      /* Asked for, not done: coreaudio_run() starts the unit when the
+       * ring has something in it. A start that put the unit straight
+       * back to pulling an empty ring is the burst of noise on every
+       * unpause and every device change. */
+      dev->want_running = true;
+      dev->is_paused    = false;
+      return true;
    }
    return false;
 }
@@ -1456,18 +1537,16 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
    for (;;)
    {
       size_t avail;
-      UInt32 running = 0;
-      UInt32 size    = sizeof(running);
 
       if (dev->is_paused)
          break;
       avail = rb_write_avail(dev);
       if (avail >= want)
          return avail * sizeof(float);
-      if (AudioUnitGetProperty(dev->dev,
-               kAudioOutputUnitProperty_IsRunning,
-               kAudioUnitScope_Global, 0,
-               &running, &size) == noErr && !running)
+      /* About to sleep on room that only the device can make, so it has
+       * to be running by now whatever the ring holds. */
+      coreaudio_run(dev, true);
+      if (coreaudio_unit_stalled(dev))
          break;
       /* Each wait is bounded; this bounds the loop, for a unit that
        * reports running but never renders. */
