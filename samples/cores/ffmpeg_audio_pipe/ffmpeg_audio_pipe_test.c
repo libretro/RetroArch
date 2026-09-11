@@ -32,7 +32,6 @@
 static unsigned frames_run;
 static uint64_t audio_frames_total;
 static unsigned batches_total, batches_silent;
-static double   last_phase_err;
 static uint32_t press_mask;
 
 static void log_cb(enum retro_log_level level, const char *fmt, ...)

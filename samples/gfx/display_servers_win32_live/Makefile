@@ -21,6 +21,7 @@ SOURCES := display_servers_win32_live_test.c \
            $(REPO_ROOT)/gfx/modeline/modeline_core.c \
            $(REPO_ROOT)/gfx/modeline/modeline_monitor.c \
            $(REPO_ROOT)/gfx/modeline/modeline_list.c \
+           $(REPO_ROOT)/gfx/modeline/modeline_edid.c \
            $(REPO_ROOT)/gfx/modeline/modeline_ini.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
            $(REPO_ROOT)/libretro-common/rthreads/rthreads.c \

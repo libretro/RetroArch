@@ -77,5 +77,11 @@ jobs:
              ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (ASan)"
           make clean all SANITIZER=thread
-          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./ffmpeg_audio_pipe_test
+          # The libav* libraries are uninstrumented, so TSan cannot see
+          # the atomics that order an AVBufferRef's reference count and
+          # reports the allocation and the release as a race. Only
+          # those libraries are suppressed; a race in the core's own
+          # code is still reported.
+          TSAN_OPTIONS=halt_on_error=1:suppressions=tsan.supp \
+             timeout 300 ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (TSan)"

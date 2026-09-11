@@ -1,0 +1,18 @@
+# ThreadSanitizer cannot see the synchronisation inside libavcodec and
+# libavutil: those are stock shared libraries built without
+# instrumentation, and an AVBufferRef's reference count is an atomic
+# compiled into them. TSan sees the two writes - a frame-threading
+# worker allocating, the decode thread releasing - and no ordering
+# between them, so it reports a race that the reference count in fact
+# orders.
+#
+# Suppressed by library rather than by call site, so a race in this
+# core's own code is still reported. Building ffmpeg with TSan would
+# be the way to check the libraries themselves, which is not what this
+# sample is for: it is here for the core's audio pipe.
+race:libavcodec.so
+race:libavutil.so
+race:libavformat.so
+race:libswresample.so
+race:av_buffer_unref
+race:av_buffer_replace
