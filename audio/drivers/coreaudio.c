@@ -114,18 +114,152 @@ static bool ca_cm_resolve(void)
    return true;
 }
 
-/* The macOS floor this file actually carries, since it is asked about:
- * the AudioComponent calls are resolved at runtime with a Component
- * Manager fallback behind them, which is what reaches back before
- * 10.6 - but the property reads here are AudioObjectGetPropertyData()
- * and friends, which Apple's own TN2223 dates to 10.5. Eleven call
- * sites, across device enumeration, the hardware rate, the latency
- * sum and the microphone half. So the macOS path needs a 10.5 SDK as
- * it stands, and 10.4 would mean a second path through
- * AudioDeviceGetProperty() for all of them - which none of the
- * recent work here changed either way.
+/* Property reads, resolved the same way and for the same reason as
+ * the Component Manager calls above.
  *
- * kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
+ * AudioObjectGetPropertyData() and its neighbours arrived in 10.5.
+ * Before that the HAL had a call per kind of object -
+ * AudioHardwareGetProperty() for the system, AudioDeviceGetProperty()
+ * for a device, AudioStreamGetProperty() for a stream - which are
+ * still there, deprecated, in every SDK since. So both sets exist in
+ * the one binary and which is used is decided when the process
+ * starts, not when it is built: a build on a current SDK still runs
+ * on 10.4, and a build on a 10.4 SDK still uses the newer calls when
+ * it finds them.
+ *
+ * The old calls take an element and an is-input flag where the new
+ * ones take an address, so the scope becomes that flag; every read
+ * here is on an output or a global scope but the microphone half
+ * asks for input, and that is the only thing the mapping has to get
+ * right.
+ *
+ * The names are looked up as strings, so neither set needs to be
+ * declared by the SDK in hand - which is what lets a 10.4 SDK, where
+ * AudioObjectGetPropertyData is not declared at all, still resolve it
+ * at runtime on a newer system. */
+typedef UInt32 ca_obj_id_t;
+
+typedef struct
+{
+   UInt32 mSelector;
+   UInt32 mScope;
+   UInt32 mElement;
+} ca_addr_t;
+
+typedef OSStatus (*ca_obj_get_t)(ca_obj_id_t, const ca_addr_t*,
+      UInt32, const void*, UInt32*, void*);
+typedef OSStatus (*ca_obj_size_t)(ca_obj_id_t, const ca_addr_t*,
+      UInt32, const void*, UInt32*);
+typedef Boolean  (*ca_obj_has_t)(ca_obj_id_t, const ca_addr_t*);
+/* The pre-10.5 calls, by object kind. */
+typedef OSStatus (*ca_hw_get_t)(UInt32, UInt32*, void*);
+typedef OSStatus (*ca_hw_info_t)(UInt32, UInt32*, Boolean*);
+typedef OSStatus (*ca_dev_get_t)(ca_obj_id_t, UInt32, Boolean, UInt32, UInt32*, void*);
+typedef OSStatus (*ca_dev_info_t)(ca_obj_id_t, UInt32, Boolean, UInt32, UInt32*, Boolean*);
+typedef OSStatus (*ca_str_get_t)(ca_obj_id_t, UInt32, UInt32, UInt32*, void*);
+typedef OSStatus (*ca_str_info_t)(ca_obj_id_t, UInt32, UInt32, UInt32*, Boolean*);
+/* Property listeners, which also come in the two shapes: the newer
+ * one is handed the object and the addresses that changed, the older
+ * one only the selector. */
+typedef OSStatus (*ca_obj_listener_t)(ca_obj_id_t, UInt32, const ca_addr_t*, void*);
+typedef OSStatus (*ca_hw_listener_t)(UInt32, void*);
+typedef OSStatus (*ca_obj_addlis_t)(ca_obj_id_t, const ca_addr_t*, ca_obj_listener_t, void*);
+typedef OSStatus (*ca_obj_remlis_t)(ca_obj_id_t, const ca_addr_t*, ca_obj_listener_t, void*);
+typedef OSStatus (*ca_hw_addlis_t)(UInt32, ca_hw_listener_t, void*);
+typedef OSStatus (*ca_hw_remlis_t)(UInt32, ca_hw_listener_t, void*);
+
+static struct
+{
+   bool          resolved;
+   ca_obj_get_t  obj_get;
+   ca_obj_size_t obj_size;
+   ca_obj_has_t  obj_has;
+   ca_hw_get_t   hw_get;
+   ca_hw_info_t  hw_info;
+   ca_dev_get_t  dev_get;
+   ca_dev_info_t dev_info;
+   ca_str_get_t  str_get;
+   ca_str_info_t str_info;
+   ca_obj_addlis_t obj_addlis;
+   ca_obj_remlis_t obj_remlis;
+   ca_hw_addlis_t  hw_addlis;
+   ca_hw_remlis_t  hw_remlis;
+} ca_prop;
+
+#define CA_SYSTEM_OBJECT 1u   /* kAudioObjectSystemObject */
+
+static void ca_prop_resolve(void)
+{
+   if (ca_prop.resolved)
+      return;
+   ca_prop.resolved = true;
+   ca_prop.obj_get  = (ca_obj_get_t) dlsym(RTLD_DEFAULT, "AudioObjectGetPropertyData");
+   ca_prop.obj_size = (ca_obj_size_t)dlsym(RTLD_DEFAULT, "AudioObjectGetPropertyDataSize");
+   ca_prop.obj_has  = (ca_obj_has_t) dlsym(RTLD_DEFAULT, "AudioObjectHasProperty");
+   ca_prop.hw_get   = (ca_hw_get_t)  dlsym(RTLD_DEFAULT, "AudioHardwareGetProperty");
+   ca_prop.hw_info  = (ca_hw_info_t) dlsym(RTLD_DEFAULT, "AudioHardwareGetPropertyInfo");
+   ca_prop.dev_get  = (ca_dev_get_t) dlsym(RTLD_DEFAULT, "AudioDeviceGetProperty");
+   ca_prop.dev_info = (ca_dev_info_t)dlsym(RTLD_DEFAULT, "AudioDeviceGetPropertyInfo");
+   ca_prop.str_get  = (ca_str_get_t) dlsym(RTLD_DEFAULT, "AudioStreamGetProperty");
+   ca_prop.str_info = (ca_str_info_t)dlsym(RTLD_DEFAULT, "AudioStreamGetPropertyInfo");
+   ca_prop.obj_addlis = (ca_obj_addlis_t)dlsym(RTLD_DEFAULT, "AudioObjectAddPropertyListener");
+   ca_prop.obj_remlis = (ca_obj_remlis_t)dlsym(RTLD_DEFAULT, "AudioObjectRemovePropertyListener");
+   ca_prop.hw_addlis  = (ca_hw_addlis_t) dlsym(RTLD_DEFAULT, "AudioHardwareAddPropertyListener");
+   ca_prop.hw_remlis  = (ca_hw_remlis_t) dlsym(RTLD_DEFAULT, "AudioHardwareRemovePropertyListener");
+}
+
+/* An input scope means the is-input flag the old calls take. */
+static Boolean ca_scope_is_input(UInt32 scope)
+{
+   return scope == kAudioDevicePropertyScopeInput;
+}
+
+static OSStatus ca_prop_get(ca_obj_id_t id, const ca_addr_t *addr,
+      UInt32 *size, void *data, bool is_stream)
+{
+   ca_prop_resolve();
+   if (ca_prop.obj_get)
+      return ca_prop.obj_get(id, addr, 0, NULL, size, data);
+   if (id == CA_SYSTEM_OBJECT)
+      return ca_prop.hw_get ? ca_prop.hw_get(addr->mSelector, size, data)
+            : kAudioHardwareUnspecifiedError;
+   if (is_stream)
+      return ca_prop.str_get ? ca_prop.str_get(id, addr->mElement,
+            addr->mSelector, size, data) : kAudioHardwareUnspecifiedError;
+   return ca_prop.dev_get ? ca_prop.dev_get(id, addr->mElement,
+         ca_scope_is_input(addr->mScope), addr->mSelector, size, data)
+         : kAudioHardwareUnspecifiedError;
+}
+
+static OSStatus ca_prop_size(ca_obj_id_t id, const ca_addr_t *addr,
+      UInt32 *size, bool is_stream)
+{
+   ca_prop_resolve();
+   if (ca_prop.obj_size)
+      return ca_prop.obj_size(id, addr, 0, NULL, size);
+   if (id == CA_SYSTEM_OBJECT)
+      return ca_prop.hw_info ? ca_prop.hw_info(addr->mSelector, size, NULL)
+            : kAudioHardwareUnspecifiedError;
+   if (is_stream)
+      return ca_prop.str_info ? ca_prop.str_info(id, addr->mElement,
+            addr->mSelector, size, NULL) : kAudioHardwareUnspecifiedError;
+   return ca_prop.dev_info ? ca_prop.dev_info(id, addr->mElement,
+         ca_scope_is_input(addr->mScope), addr->mSelector, size, NULL)
+         : kAudioHardwareUnspecifiedError;
+}
+
+/* Whether the object carries the property at all. The old calls have
+ * no such question, so asking for its size is the question. */
+static bool ca_prop_has(ca_obj_id_t id, const ca_addr_t *addr, bool is_stream)
+{
+   UInt32 size = 0;
+   ca_prop_resolve();
+   if (ca_prop.obj_has)
+      return ca_prop.obj_has(id, addr) != 0;
+   return ca_prop_size(id, addr, &size, is_stream) == noErr && size > 0;
+}
+
+/* kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
  * both are 0, and the number is what the HAL sees. */
 #define CA_ELEMENT_MAIN 0
 
@@ -533,23 +667,21 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
  * malloc'd array the caller frees, or NULL. */
 static AudioDeviceID *coreaudio_hal_devices(UInt32 *count)
 {
-   AudioObjectPropertyAddress propaddr;
+   ca_addr_t propaddr;
    AudioDeviceID *devices = NULL;
    UInt32 size            = 0;
 
    propaddr.mSelector = kAudioHardwarePropertyDevices;
    propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mElement  = CA_ELEMENT_MAIN;
-   if (!AudioObjectHasProperty(kAudioObjectSystemObject, &propaddr))
+   if (!ca_prop_has(CA_SYSTEM_OBJECT, &propaddr, false))
       propaddr.mScope = kAudioObjectPropertyScopeGlobal;
 
-   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size) != noErr || !size)
+   if (ca_prop_size(CA_SYSTEM_OBJECT, &propaddr, &size, false) != noErr || !size)
       return NULL;
    if (!(devices = (AudioDeviceID*)malloc(size)))
       return NULL;
-   if (AudioObjectGetPropertyData(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size, devices) != noErr)
+   if (ca_prop_get(CA_SYSTEM_OBJECT, &propaddr, &size, devices, false) != noErr)
    {
       free(devices);
       return NULL;
@@ -560,13 +692,13 @@ static AudioDeviceID *coreaudio_hal_devices(UInt32 *count)
 
 static bool coreaudio_hal_device_name(AudioDeviceID id, char *s, size_t len)
 {
-   AudioObjectPropertyAddress propaddr;
+   ca_addr_t propaddr;
    UInt32 size        = (UInt32)len;
    propaddr.mSelector = kAudioDevicePropertyDeviceName;
    propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mElement  = CA_ELEMENT_MAIN;
    s[0]               = 0;
-   return AudioObjectGetPropertyData(id, &propaddr, 0, 0, &size, s) == noErr
+   return ca_prop_get(id, &propaddr, &size, s, false) == noErr
          && s[0];
 }
 
@@ -612,7 +744,7 @@ static unsigned coreaudio_get_hardware_sample_rate(AudioUnit dev)
    {
       AudioDeviceID device_id = 0;
       UInt32 device_size = sizeof(device_id);
-      AudioObjectPropertyAddress prop;
+      ca_addr_t prop;
       Float64 nominal_rate = 0;
 
       /* Get the current device from the AudioUnit */
@@ -625,8 +757,7 @@ static unsigned coreaudio_get_hardware_sample_rate(AudioUnit dev)
          prop.mElement  = CA_ELEMENT_MAIN;
          size = sizeof(nominal_rate);
 
-         if (AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
-                  &size, &nominal_rate) == noErr && nominal_rate > 0)
+         if (ca_prop_get(device_id, &prop, &size, &nominal_rate, false) == noErr && nominal_rate > 0)
             return (unsigned)nominal_rate;
       }
    }
@@ -885,7 +1016,7 @@ static void *coreaudio_init(const char *device,
             kAudioDevicePropertyLatency,
             kAudioDevicePropertySafetyOffset
          };
-         AudioObjectPropertyAddress prop;
+         ca_addr_t prop;
          AudioStreamID stream_id = 0;
          UInt32 total = 0, size, i;
          prop.mScope   = kAudioDevicePropertyScopeOutput;
@@ -895,27 +1026,24 @@ static void *coreaudio_init(const char *device,
             UInt32 value   = 0;
             size           = sizeof(value);
             prop.mSelector = dev_sel[i];
-            if (     AudioObjectHasProperty(device_id, &prop)
-                  && AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
-                        &size, &value) == noErr)
+            if (     ca_prop_has(device_id, &prop, false)
+                  && ca_prop_get(device_id, &prop, &size, &value, false) == noErr)
                total += value;
          }
          /* The first output stream's latency; the property lives on
           * the stream object, not the device. */
          prop.mSelector = kAudioDevicePropertyStreams;
          size           = sizeof(stream_id);
-         if (     AudioObjectHasProperty(device_id, &prop)
-               && AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
-                     &size, &stream_id) == noErr
+         if (     ca_prop_has(device_id, &prop, false)
+               && ca_prop_get(device_id, &prop, &size, &stream_id, false) == noErr
                && stream_id != 0)
          {
             UInt32 value   = 0;
             size           = sizeof(value);
             prop.mSelector = kAudioStreamPropertyLatency;
             prop.mScope    = kAudioObjectPropertyScopeGlobal;
-            if (     AudioObjectHasProperty(stream_id, &prop)
-                  && AudioObjectGetPropertyData(stream_id, &prop, 0, NULL,
-                        &size, &value) == noErr)
+            if (     ca_prop_has(stream_id, &prop, true)
+                  && ca_prop_get(stream_id, &prop, &size, &value, true) == noErr)
                total += value;
          }
          audio_driver_set_device_latency((size_t)total);
@@ -1512,12 +1640,12 @@ static OSStatus coreaudio_mic_input_cb(void *ref,
 
 static bool coreaudio_mic_device_has_input(AudioDeviceID id)
 {
-   AudioObjectPropertyAddress prop;
+   ca_addr_t prop;
    UInt32 size        = 0;
    prop.mSelector     = kAudioDevicePropertyStreams;
    prop.mScope        = kAudioDevicePropertyScopeInput;
    prop.mElement      = CA_ELEMENT_MAIN;
-   return AudioObjectGetPropertyDataSize(id, &prop, 0, NULL, &size) == noErr
+   return ca_prop_size(id, &prop, &size, false) == noErr
          && size > 0;
 }
 
@@ -1525,7 +1653,7 @@ static bool coreaudio_mic_device_has_input(AudioDeviceID id)
 static bool coreaudio_mic_device_string(AudioDeviceID id,
       UInt32 selector, char *s, size_t len)
 {
-   AudioObjectPropertyAddress prop;
+   ca_addr_t prop;
    CFStringRef cf = NULL;
    UInt32 size    = sizeof(cf);
    bool ok;
@@ -1533,7 +1661,7 @@ static bool coreaudio_mic_device_string(AudioDeviceID id,
    prop.mScope    = kAudioObjectPropertyScopeGlobal;
    prop.mElement  = CA_ELEMENT_MAIN;
    s[0]           = 0;
-   if (AudioObjectGetPropertyData(id, &prop, 0, NULL, &size, &cf) != noErr || !cf)
+   if (ca_prop_get(id, &prop, &size, &cf, false) != noErr || !cf)
       return false;
    ok = CFStringGetCString(cf, s, (CFIndex)len, kCFStringEncodingUTF8) && s[0];
    CFRelease(cf);
@@ -1542,14 +1670,13 @@ static bool coreaudio_mic_device_string(AudioDeviceID id,
 
 static AudioDeviceID coreaudio_mic_default_device(void)
 {
-   AudioObjectPropertyAddress prop;
+   ca_addr_t prop;
    AudioDeviceID id = kAudioObjectUnknown;
    UInt32 size      = sizeof(id);
    prop.mSelector   = kAudioHardwarePropertyDefaultInputDevice;
    prop.mScope      = kAudioObjectPropertyScopeGlobal;
    prop.mElement    = CA_ELEMENT_MAIN;
-   if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &prop,
-            0, NULL, &size, &id) != noErr)
+   if (ca_prop_get(CA_SYSTEM_OBJECT, &prop, &size, &id, false) != noErr)
       return kAudioObjectUnknown;
    return id;
 }
@@ -1595,9 +1722,12 @@ static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
 }
 
 /* Called by the HAL on a thread of its own when the default input
- * device changes; the reconnect happens on the reader's thread. */
-static OSStatus coreaudio_mic_default_listener(AudioObjectID obj,
-      UInt32 n, const AudioObjectPropertyAddress addrs[], void *data)
+ * device changes; the reconnect happens on the reader's thread. One
+ * for each shape of listener the HAL has had - the newer is handed
+ * the object and what changed on it, the older only the selector -
+ * and both do the same thing with it. */
+static OSStatus coreaudio_mic_default_listener(ca_obj_id_t obj,
+      UInt32 n, const ca_addr_t *addrs, void *data)
 {
    coreaudio_mic_t *mic = (coreaudio_mic_t*)data;
    (void)obj;
@@ -1608,18 +1738,43 @@ static OSStatus coreaudio_mic_default_listener(AudioObjectID obj,
    return noErr;
 }
 
+static OSStatus coreaudio_mic_default_listener_old(UInt32 selector, void *data)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)data;
+   (void)selector;
+   if (mic)
+      retro_atomic_store_release_int(&mic->device_changed, 1);
+   return noErr;
+}
+
 static void coreaudio_mic_listen_default(coreaudio_mic_t *mic, bool on)
 {
-   AudioObjectPropertyAddress prop;
+   ca_addr_t prop;
+   ca_prop_resolve();
    prop.mSelector = kAudioHardwarePropertyDefaultInputDevice;
    prop.mScope    = kAudioObjectPropertyScopeGlobal;
    prop.mElement  = CA_ELEMENT_MAIN;
+
+   if (ca_prop.obj_addlis && ca_prop.obj_remlis)
+   {
+      if (on)
+         ca_prop.obj_addlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_mic_default_listener, mic);
+      else
+         ca_prop.obj_remlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_mic_default_listener, mic);
+      return;
+   }
+
    if (on)
-      AudioObjectAddPropertyListener(kAudioObjectSystemObject, &prop,
-            coreaudio_mic_default_listener, mic);
-   else
-      AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &prop,
-            coreaudio_mic_default_listener, mic);
+   {
+      if (ca_prop.hw_addlis)
+         ca_prop.hw_addlis(prop.mSelector,
+               coreaudio_mic_default_listener_old, mic);
+   }
+   else if (ca_prop.hw_remlis)
+      ca_prop.hw_remlis(prop.mSelector,
+            coreaudio_mic_default_listener_old, mic);
 }
 
 /* Move a mic that follows the default onto the new default, keeping
