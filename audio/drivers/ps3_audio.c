@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 
 #include <defines/ps3_defines.h>
 
@@ -34,9 +34,17 @@
 
 typedef struct
 {
-   fifo_buffer_t *buffer;
+   /* Single producer (the frontend in ps3_audio_write), single
+    * consumer (the output thread in ps3_event_loop): a lock-free
+    * retro_spsc ring, so the writer no longer takes a mutex the
+    * output thread holds across its pull, as it did with the fifo.
+    * retro_spsc rounds capacity up to a power of two; ring_size is
+    * the size asked for and the producer never fills past it.
+    * cond_lock/cond remain for the writer's bounded waits. */
+   retro_spsc_t ring;
+   size_t ring_size;
+   bool ring_init;
    sys_ppu_thread_t thread;
-   sys_lwmutex_t lock;
    sys_lwmutex_t cond_lock;
    sys_lwcond_t cond;
    uint32_t audio_port;
@@ -66,12 +74,10 @@ static void ps3_event_loop(uint64_t data)
    {
       sysEventQueueReceive(id, &event, PS3_SYS_NO_TIMEOUT);
 
-      sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-      if (FIFO_READ_AVAIL(aud->buffer) >= sizeof(out_tmp))
-         fifo_read(aud->buffer, out_tmp, sizeof(out_tmp));
+      if (retro_spsc_read_avail(&aud->ring) >= sizeof(out_tmp))
+         retro_spsc_read(&aud->ring, out_tmp, sizeof(out_tmp));
       else
          memset(out_tmp, 0, sizeof(out_tmp));
-      sysLwMutexUnlock(&aud->lock);
       sysLwCondSignal(&aud->cond);
 
       audioAddData(aud->audio_port, out_tmp,
@@ -89,17 +95,13 @@ static void *ps3_audio_init(const char *device,
    audioPortParam params;
    ps3_audio_t *data                 = NULL;
 #ifdef __PSL1GHT__
-   sys_lwmutex_attr_t lock_attr      =
-   {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwmutex_attr_t cond_lock_attr =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwcond_attr_t cond_attr       = {"\0"};
 #else
-   sys_lwmutex_attr_t lock_attr;
    sys_lwmutex_attr_t cond_lock_attr;
    sys_lwcond_attr_t cond_attr;
 
-   sys_lwmutex_attribute_initialize(lock_attr);
    sys_lwmutex_attribute_initialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);
 #endif
@@ -127,9 +129,10 @@ static void *ps3_audio_init(const char *device,
       return NULL;
    }
 
-   data->buffer = fifo_new(AUDIO_BLOCK_SAMPLES *
-         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
-   if (!data->buffer)
+   data->ring_size = AUDIO_BLOCK_SAMPLES *
+         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float);
+   data->ring_init = retro_spsc_init(&data->ring, data->ring_size);
+   if (!data->ring_init)
    {
       audioPortClose(data->audio_port);
       audioQuit();
@@ -137,7 +140,6 @@ static void *ps3_audio_init(const char *device,
       return NULL;
    }
 
-   sysLwMutexCreate(&data->lock, &lock_attr);
    sysLwMutexCreate(&data->cond_lock, &cond_lock_attr);
    sysLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
 
@@ -196,9 +198,7 @@ static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
       }
    }
 
-   sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-   fifo_write(aud->buffer, s, len);
-   sysLwMutexUnlock(&aud->lock);
+   retro_spsc_write(&aud->ring, s, len);
    return len;
 }
 
@@ -251,9 +251,9 @@ static void ps3_audio_free(void *data)
    ps3_audio_stop(aud);
    audioPortClose(aud->audio_port);
    audioQuit();
-   fifo_free(aud->buffer);
+   if (aud->ring_init)
+      retro_spsc_free(&aud->ring);
 
-   sysLwMutexDestroy(&aud->lock);
    sysLwMutexDestroy(&aud->cond_lock);
    sysLwCondDestroy(&aud->cond);
 
@@ -262,21 +262,20 @@ static void ps3_audio_free(void *data)
 
 static bool ps3_audio_use_float(void *data) { return true; }
 
+/* Room against the size asked for, not the rounded-up capacity.
+ * Producer-side query. */
 static size_t ps3_audio_write_avail(void *data)
 {
-   size_t avail;
    ps3_audio_t *aud = data;
-   sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-   avail = FIFO_WRITE_AVAIL(aud->buffer);
-   sysLwMutexUnlock(&aud->lock);
-   return avail;
+   size_t room   = retro_spsc_write_avail(&aud->ring);
+   size_t excess = aud->ring.capacity - aud->ring_size;
+   return room > excess ? room - excess : 0;
 }
 
 static size_t ps3_audio_buffer_size(void *data)
 {
    ps3_audio_t *aud = data;
-   /* The fifo's capacity, one less than its slot count. */
-   return aud->buffer->size - 1;
+   return aud->ring_size;
 }
 
 /* Sleep on the condition the output thread signals after every block
@@ -289,8 +288,8 @@ static size_t ps3_audio_wait_writable(void *data, size_t len)
    size_t avail;
    int laps         = PS3_AUDIO_WAIT_LAPS;
 
-   if (len > (aud->buffer->size - 1) / 2)
-      len = (aud->buffer->size - 1) / 2;
+   if (len > aud->ring_size / 2)
+      len = aud->ring_size / 2;
 
    for (;;)
    {
