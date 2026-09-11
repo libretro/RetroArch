@@ -3534,7 +3534,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    /* The sink estimate starts over with the driver. */
    audio_driver_st.sink_bias           = 1.0;
-   audio_driver_st.pipe_float          = false;
    retro_atomic_store_release_int(&audio_driver_st.sink_bias_q, 0);
    audio_driver_st.sink_started        = 0;
    audio_driver_st.sink_offered        = 0.0;
