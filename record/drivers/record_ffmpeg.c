@@ -23,8 +23,9 @@
 #include <compat/strl.h>
 
 #include <boolean.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <file/config_file.h>
@@ -220,13 +221,25 @@ typedef struct ffmpeg
 
    scond_t *cond;
    slock_t *cond_lock;
-   slock_t *lock;
-   fifo_buffer_t *audio_fifo;
-   fifo_buffer_t *video_fifo;
-   fifo_buffer_t *attr_fifo;
+   /* The three queues to the encoder thread.  Single producer (the
+    * main thread in ffmpeg_push_video / ffmpeg_push_audio), single
+    * consumer (ffmpeg_thread), so lock-free retro_spsc rings: the
+    * push of a frame - up to MAX_FRAMES frames of fb_width x
+    * fb_height in video_fifo - and the encoder's read of one no
+    * longer exclude each other, where before both copied the whole
+    * frame under one lock.  cond/cond_lock stay for the sleeps.
+    * After deinit_thread() has joined the encoder, the main thread
+    * drains them alone (ffmpeg_flush_buffers). */
+   retro_spsc_t audio_fifo;
+   retro_spsc_t video_fifo;
+   retro_spsc_t attr_fifo;
+   bool fifos_init;
    sthread_t *thread;
 
-   volatile bool alive;
+   /* Set by init_thread(), cleared by deinit_thread(); the encoder
+    * thread's loop condition and the push paths' bail-out.  Was a
+    * volatile bool, which TSan flagged against the clear. */
+   retro_atomic_int_t alive;
    volatile bool can_sleep;
 } ffmpeg_t;
 
@@ -1016,16 +1029,29 @@ static void ffmpeg_thread(void *data);
 
 static bool init_thread(ffmpeg_t *handle)
 {
-   handle->lock       = slock_new();
    handle->cond_lock  = slock_new();
    handle->cond       = scond_new();
-   handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
-         handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
-   handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
-   handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
-         handle->video.pix_size * MAX_FRAMES);
+   /* fifo_new() was never checked; a ring that fails to init fails
+    * the recorder now.  (retro_spsc rounds each capacity up to a
+    * power of two, so they hold at least what the fifos did; the
+    * room checks in the push paths bound both attr and video, so a
+    * larger attr ring cannot admit a frame the video ring lacks
+    * room for.) */
+   handle->fifos_init =
+         retro_spsc_init(&handle->audio_fifo, 32000 * sizeof(int16_t) *
+               handle->params.channels * MAX_FRAMES / 60) /* Some arbitrary max size. */
+      && retro_spsc_init(&handle->attr_fifo, sizeof(struct record_video_data) * MAX_FRAMES)
+      && retro_spsc_init(&handle->video_fifo, handle->params.fb_width * handle->params.fb_height *
+               handle->video.pix_size * MAX_FRAMES);
+   if (!handle->fifos_init)
+   {
+      retro_spsc_free(&handle->audio_fifo);
+      retro_spsc_free(&handle->attr_fifo);
+      retro_spsc_free(&handle->video_fifo);
+      return false;
+   }
 
-   handle->alive     = true;
+   retro_atomic_store_release_int(&handle->alive, 1);
    handle->can_sleep = true;
    handle->thread    = sthread_create(ffmpeg_thread, handle);
 
@@ -1038,14 +1064,13 @@ static void deinit_thread(ffmpeg_t *handle)
       return;
 
    slock_lock(handle->cond_lock);
-   handle->alive = false;
+   retro_atomic_store_release_int(&handle->alive, 0);
    handle->can_sleep = false;
    slock_unlock(handle->cond_lock);
 
    scond_signal(handle->cond);
    sthread_join(handle->thread);
 
-   slock_free(handle->lock);
    slock_free(handle->cond_lock);
    scond_free(handle->cond);
 
@@ -1054,23 +1079,12 @@ static void deinit_thread(ffmpeg_t *handle)
 
 static void deinit_thread_buf(ffmpeg_t *handle)
 {
-   if (handle->audio_fifo)
-   {
-      fifo_free(handle->audio_fifo);
-      handle->audio_fifo = NULL;
-   }
-
-   if (handle->attr_fifo)
-   {
-      fifo_free(handle->attr_fifo);
-      handle->attr_fifo = NULL;
-   }
-
-   if (handle->video_fifo)
-   {
-      fifo_free(handle->video_fifo);
-      handle->video_fifo = NULL;
-   }
+   if (!handle->fifos_init)
+      return;
+   retro_spsc_free(&handle->audio_fifo);
+   retro_spsc_free(&handle->attr_fifo);
+   retro_spsc_free(&handle->video_fifo);
+   handle->fifos_init = false;
 }
 
 static void ffmpeg_free(void *data)
@@ -1237,18 +1251,28 @@ static bool ffmpeg_push_video(void *data,
    if (drop_frame)
       return true;
 
+   /* Tightly pack our frame to conserve memory.
+    * libretro tends to use a very large pitch.
+    */
+   attr_data = *vid;
+
+   if (attr_data.is_dupe)
+      attr_data.width = attr_data.height = attr_data.pitch = 0;
+   else
+      attr_data.pitch = (int)(attr_data.width * handle->video.pix_size);
+
    for (;;)
    {
-      unsigned avail;
-
-      slock_lock(handle->lock);
-      avail = (unsigned)FIFO_WRITE_AVAIL(handle->attr_fifo);
-      slock_unlock(handle->lock);
-
-      if (!handle->alive)
+      /* Room for the attr and for the frame's bytes: the old check
+       * only asked the attr fifo, relying on the two being sized in
+       * step; the rings are sized independently now (power-of-two
+       * rounding), so ask both. */
+      if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (avail >= sizeof(*vid))
+      if (     retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
+            && retro_spsc_write_avail(&handle->video_fifo)
+                  >= (size_t)attr_data.height * attr_data.pitch)
          break;
 
       slock_lock(handle->cond_lock);
@@ -1264,25 +1288,14 @@ static bool ffmpeg_push_video(void *data,
       slock_unlock(handle->cond_lock);
    }
 
-   slock_lock(handle->lock);
-
-   /* Tightly pack our frame to conserve memory.
-    * libretro tends to use a very large pitch.
-    */
-   attr_data = *vid;
-
-   if (attr_data.is_dupe)
-      attr_data.width = attr_data.height = attr_data.pitch = 0;
-   else
-      attr_data.pitch = (int)(attr_data.width * handle->video.pix_size);
-
-   fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
-
+   /* Frame first, attr last: the encoder takes the attr as the
+    * signal that a whole frame is behind it, and the ring's
+    * release/acquire on each write orders the rows before it. */
    for (y = 0; y < attr_data.height; y++, offset += vid->pitch)
-      fifo_write(handle->video_fifo,
+      retro_spsc_write(&handle->video_fifo,
             (const uint8_t*)vid->data + offset, attr_data.pitch);
 
-   slock_unlock(handle->lock);
+   retro_spsc_write(&handle->attr_fifo, &attr_data, sizeof(attr_data));
    scond_signal(handle->cond);
 
    return true;
@@ -1301,17 +1314,11 @@ static bool ffmpeg_push_audio(void *data,
 
    for (;;)
    {
-      unsigned avail;
-
-      slock_lock(handle->lock);
-      avail = (unsigned)FIFO_WRITE_AVAIL(handle->audio_fifo);
-      slock_unlock(handle->lock);
-
-      if (!handle->alive)
+      if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (avail >= audio_data->frames * handle->params.channels
-            * sizeof(int16_t))
+      if (retro_spsc_write_avail(&handle->audio_fifo)
+            >= audio_data->frames * handle->params.channels * sizeof(int16_t))
          break;
 
       slock_lock(handle->cond_lock);
@@ -1327,10 +1334,8 @@ static bool ffmpeg_push_audio(void *data,
       slock_unlock(handle->cond_lock);
    }
 
-   slock_lock(handle->lock);
-   fifo_write(handle->audio_fifo, audio_data->data,
+   retro_spsc_write(&handle->audio_fifo, audio_data->data,
          audio_data->frames * handle->params.channels * sizeof(int16_t));
-   slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
    return true;
@@ -1807,13 +1812,13 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       size_t audio_buf_size)
 {
-   size_t avail = FIFO_READ_AVAIL(handle->audio_fifo);
+   size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
 
    if (avail)
    {
       struct record_audio_data aud = {0};
 
-      fifo_read(handle->audio_fifo, audio_buf, avail);
+      retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
 
       aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
       aud.data = audio_buf;
@@ -1853,11 +1858,11 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
        * subsequent ffmpeg_free teardown. */
       if (handle->config.audio_enable && audio_buf)
       {
-         if (FIFO_READ_AVAIL(handle->audio_fifo) >= audio_buf_size)
+         if (retro_spsc_read_avail(&handle->audio_fifo) >= audio_buf_size)
          {
             struct record_audio_data aud = {0};
 
-            fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
+            retro_spsc_read(&handle->audio_fifo, audio_buf, audio_buf_size);
             aud.frames = handle->audio.codec->frame_size;
             aud.data   = audio_buf;
             ffmpeg_push_audio_thread(handle, &aud, true);
@@ -1868,10 +1873,10 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
       /* Gate video-fifo drain on video_buf non-NULL: same
        * reasoning as the audio branch. */
-      if (video_buf && FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
+      if (video_buf && retro_spsc_read_avail(&handle->attr_fifo) >= sizeof(attr_buf))
       {
-         fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(handle->video_fifo, video_buf,
+         retro_spsc_read(&handle->attr_fifo, &attr_buf, sizeof(attr_buf));
+         retro_spsc_read(&handle->video_fifo, video_buf,
                attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
          ffmpeg_push_video_thread(handle, &attr_buf);
@@ -1925,21 +1930,19 @@ static void ffmpeg_thread(void *data)
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
-   while (ff->alive)
+   while (retro_atomic_load_acquire_int(&ff->alive))
    {
       struct record_video_data attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
 
-      slock_lock(ff->lock);
-      if (FIFO_READ_AVAIL(ff->attr_fifo) >= sizeof(attr_buf))
+      if (retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
       if (ff->config.audio_enable)
-         if (FIFO_READ_AVAIL(ff->audio_fifo) >= audio_buf_size)
+         if (retro_spsc_read_avail(&ff->audio_fifo) >= audio_buf_size)
             avail_audio = true;
-      slock_unlock(ff->lock);
 
       if (!avail_video && !avail_audio)
       {
@@ -1958,11 +1961,9 @@ static void ffmpeg_thread(void *data)
 
       if (avail_video && video_buf)
       {
-         slock_lock(ff->lock);
-         fifo_read(ff->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(ff->video_fifo, video_buf,
+         retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
+         retro_spsc_read(&ff->video_fifo, video_buf,
                attr_buf.height * attr_buf.pitch);
-         slock_unlock(ff->lock);
          scond_signal(ff->cond);
 
          attr_buf.data = video_buf;
@@ -1973,9 +1974,7 @@ static void ffmpeg_thread(void *data)
       {
          struct record_audio_data aud = {0};
 
-         slock_lock(ff->lock);
-         fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
-         slock_unlock(ff->lock);
+         retro_spsc_read(&ff->audio_fifo, audio_buf, audio_buf_size);
          scond_signal(ff->cond);
 
          aud.frames = ff->audio.codec->frame_size;
