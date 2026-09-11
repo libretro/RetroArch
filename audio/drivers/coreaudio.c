@@ -114,6 +114,11 @@ static bool ca_cm_resolve(void)
    return true;
 }
 
+#if !TARGET_OS_IPHONE
+/* macOS only: the HAL's device and stream objects, the property
+ * scopes and the hardware error code belong to the desktop CoreAudio
+ * the phone platforms do not carry. iOS and tvOS drive the unit
+ * directly and never ask an AudioObject for anything. */
 /* Property reads, resolved the same way and for the same reason as
  * the Component Manager calls above.
  *
@@ -258,6 +263,8 @@ static bool ca_prop_has(ca_obj_id_t id, const ca_addr_t *addr, bool is_stream)
       return ca_prop.obj_has(id, addr) != 0;
    return ca_prop_size(id, addr, &size, is_stream) == noErr && size > 0;
 }
+
+#endif /* !TARGET_OS_IPHONE */
 
 /* The constants the AudioObject era brought with it, spelled here
  * rather than taken from the SDK. A 10.4 SDK declares none of them,
@@ -1694,6 +1701,75 @@ audio_driver_t audio_coreaudio = {
 };
 
 
+#if !TARGET_OS_IPHONE
+/* The default output moving, in the two listener shapes. The unit
+ * cannot be rebound from a HAL thread with the render callback live,
+ * and rebinding at all means renegotiating the rate, the period, the
+ * layout and the latency - so what happens here is what the WASAPI
+ * device-change path does: the frontend is asked to reinitialise
+ * audio, on its own thread, in its own time, and this driver is
+ * built again against whatever the default now is. */
+static void coreaudio_output_default_moved(coreaudio_t *dev)
+{
+   if (dev && dev->follows_default)
+      retro_atomic_store_release_int(
+            &audio_state_get_ptr()->reinit_request, 1);
+}
+
+static OSStatus coreaudio_output_default_listener(ca_obj_id_t obj,
+      UInt32 n, const ca_addr_t *addrs, void *data)
+{
+   (void)obj;
+   (void)n;
+   (void)addrs;
+   coreaudio_output_default_moved((coreaudio_t*)data);
+   return noErr;
+}
+
+static OSStatus coreaudio_output_default_listener_old(UInt32 selector, void *data)
+{
+   (void)selector;
+   coreaudio_output_default_moved((coreaudio_t*)data);
+   return noErr;
+}
+
+static void coreaudio_listen_default_output(coreaudio_t *dev, bool on)
+{
+   ca_addr_t prop;
+   if (!dev || on == dev->listening_default)
+      return;
+   ca_prop_resolve();
+   prop.mSelector = kAudioHardwarePropertyDefaultOutputDevice;
+   prop.mScope    = CA_SCOPE_GLOBAL;
+   prop.mElement  = CA_ELEMENT_MAIN;
+
+   if (ca_prop.obj_addlis && ca_prop.obj_remlis)
+   {
+      if (on)
+         ca_prop.obj_addlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_output_default_listener, dev);
+      else
+         ca_prop.obj_remlis(CA_SYSTEM_OBJECT, &prop,
+               coreaudio_output_default_listener, dev);
+   }
+   else if (on)
+   {
+      if (!ca_prop.hw_addlis)
+         return;
+      ca_prop.hw_addlis(prop.mSelector,
+            coreaudio_output_default_listener_old, dev);
+   }
+   else
+   {
+      if (!ca_prop.hw_remlis)
+         return;
+      ca_prop.hw_remlis(prop.mSelector,
+            coreaudio_output_default_listener_old, dev);
+   }
+   dev->listening_default = on;
+}
+#endif /* !TARGET_OS_IPHONE */
+
 #ifdef HAVE_MICROPHONE
 /* =====================================================================
  * Microphone. One driver for macOS, iOS and tvOS, C like the rest of
@@ -1926,72 +2002,6 @@ static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
    return found;
 }
 
-/* The default output moving, in the two listener shapes. The unit
- * cannot be rebound from a HAL thread with the render callback live,
- * and rebinding at all means renegotiating the rate, the period, the
- * layout and the latency - so what happens here is what the WASAPI
- * device-change path does: the frontend is asked to reinitialise
- * audio, on its own thread, in its own time, and this driver is
- * built again against whatever the default now is. */
-static void coreaudio_output_default_moved(coreaudio_t *dev)
-{
-   if (dev && dev->follows_default)
-      retro_atomic_store_release_int(
-            &audio_state_get_ptr()->reinit_request, 1);
-}
-
-static OSStatus coreaudio_output_default_listener(ca_obj_id_t obj,
-      UInt32 n, const ca_addr_t *addrs, void *data)
-{
-   (void)obj;
-   (void)n;
-   (void)addrs;
-   coreaudio_output_default_moved((coreaudio_t*)data);
-   return noErr;
-}
-
-static OSStatus coreaudio_output_default_listener_old(UInt32 selector, void *data)
-{
-   (void)selector;
-   coreaudio_output_default_moved((coreaudio_t*)data);
-   return noErr;
-}
-
-static void coreaudio_listen_default_output(coreaudio_t *dev, bool on)
-{
-   ca_addr_t prop;
-   if (!dev || on == dev->listening_default)
-      return;
-   ca_prop_resolve();
-   prop.mSelector = kAudioHardwarePropertyDefaultOutputDevice;
-   prop.mScope    = CA_SCOPE_GLOBAL;
-   prop.mElement  = CA_ELEMENT_MAIN;
-
-   if (ca_prop.obj_addlis && ca_prop.obj_remlis)
-   {
-      if (on)
-         ca_prop.obj_addlis(CA_SYSTEM_OBJECT, &prop,
-               coreaudio_output_default_listener, dev);
-      else
-         ca_prop.obj_remlis(CA_SYSTEM_OBJECT, &prop,
-               coreaudio_output_default_listener, dev);
-   }
-   else if (on)
-   {
-      if (!ca_prop.hw_addlis)
-         return;
-      ca_prop.hw_addlis(prop.mSelector,
-            coreaudio_output_default_listener_old, dev);
-   }
-   else
-   {
-      if (!ca_prop.hw_remlis)
-         return;
-      ca_prop.hw_remlis(prop.mSelector,
-            coreaudio_output_default_listener_old, dev);
-   }
-   dev->listening_default = on;
-}
 
 /* Called by the HAL on a thread of its own when the default input
  * device changes; the reconnect happens on the reader's thread. One
