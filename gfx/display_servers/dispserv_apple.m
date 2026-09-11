@@ -45,6 +45,8 @@
  * IODisplayConnect services this walks do not exist (the display stack
  * moved to DCP) and Apple published no replacement, so the walk finds
  * nothing and the op reports -1 there. */
+#include <dlfcn.h>
+
 #include <IOKit/IOKitLib.h>
 #include <IOKit/graphics/IOGraphicsLib.h>
 /* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
@@ -708,6 +710,135 @@ static void apple_display_server_get_video_output_size(void *data,
 }
 
 #if TARGET_OS_OSX
+/* ---- Apple Silicon: the display coprocessor's copy ----
+ *
+ * On Apple Silicon the IODisplayConnect services the IOKit path below
+ * walks do not exist: the display stack moved to the DCP, a separate
+ * coprocessor with its own firmware that owns the link. What it does
+ * expose is one DCPAVServiceProxy per connected display, and IOKit
+ * carries two unpublished functions to get at it -
+ * IOAVServiceCreateWithService() to bind a proxy and
+ * IOAVServiceCopyEDID() to ask the DCP for the block it read over
+ * DDC. This is the route BetterDisplay and Lunar take; there is no
+ * public equivalent.
+ *
+ * Unpublished means the symbols can go away, so they are resolved at
+ * runtime rather than linked: a macOS that drops them leaves the
+ * pointers NULL and the menu says "not available" instead of the
+ * binary refusing to launch. Plain C throughout - no Objective-C is
+ * needed for any of it, only CoreFoundation and IOKit.
+ *
+ * The proxies are not labelled with a CoreGraphics display ID, so the
+ * one belonging to the display in use is found by reading each
+ * candidate's EDID and matching the identity bytes (manufacturer at
+ * 8-9, product at 10-11, serial at 12-15) against what CoreGraphics
+ * reports for that display. That is the same three-way match the
+ * IOKit path makes, done on the block itself. */
+typedef CFTypeRef IOAVServiceRef;
+typedef IOAVServiceRef (*apple_avservice_create_t)(CFAllocatorRef, io_service_t);
+typedef IOReturn (*apple_avservice_copy_edid_t)(IOAVServiceRef, CFDataRef*);
+
+/* The block a proxy reports, if it is a whole number of 128-byte
+ * blocks and at least one. Returns the length, or 0. */
+static size_t apple_dcp_service_edid(apple_avservice_copy_edid_t copy_edid,
+      IOAVServiceRef av, uint8_t *out, size_t max)
+{
+   CFDataRef edid = NULL;
+   size_t len     = 0;
+   if (copy_edid(av, &edid) != kIOReturnSuccess || !edid)
+      return 0;
+   len = (size_t)CFDataGetLength(edid);
+   if (len > max)
+      len = max;
+   len -= len % 128;
+   if (len >= 128)
+      memcpy(out, CFDataGetBytePtr(edid), len);
+   else
+      len = 0;
+   CFRelease(edid);
+   return len;
+}
+
+static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
+      uint32_t serial, uint8_t *out, size_t max)
+{
+   static apple_avservice_create_t    create_service;
+   static apple_avservice_copy_edid_t copy_edid;
+   static bool resolved;
+   io_iterator_t it = 0;
+   io_service_t svc;
+   int n            = -1;
+   int candidates   = 0;
+   int only_len     = 0;
+
+   if (!resolved)
+   {
+      resolved       = true;
+      create_service = (apple_avservice_create_t)
+         dlsym(RTLD_DEFAULT, "IOAVServiceCreateWithService");
+      copy_edid      = (apple_avservice_copy_edid_t)
+         dlsym(RTLD_DEFAULT, "IOAVServiceCopyEDID");
+      if (!create_service || !copy_edid)
+         RARCH_LOG("[Video] IOAVService is not available on this macOS;"
+               " the display's EDID cannot be read through the DCP.\n");
+   }
+   if (!create_service || !copy_edid)
+      return -1;
+
+   if (IOServiceGetMatchingServices(0,
+            IOServiceMatching("DCPAVServiceProxy"), &it) != KERN_SUCCESS)
+      return -1;
+
+   while ((svc = IOIteratorNext(it)))
+   {
+      /* Location is External on a connected display and Embedded on
+       * the built-in panel, which has no EDID to read */
+      CFStringRef location = (CFStringRef)IORegistryEntrySearchCFProperty(
+            svc, kIOServicePlane, CFSTR("Location"), kCFAllocatorDefault,
+            kIORegistryIterateRecursively);
+      bool external = location
+         && CFGetTypeID(location) == CFStringGetTypeID()
+         && CFStringCompare(location, CFSTR("External"), 0) == kCFCompareEqualTo;
+      if (location)
+         CFRelease(location);
+      if (external)
+      {
+         IOAVServiceRef av = create_service(kCFAllocatorDefault, svc);
+         if (av)
+         {
+            size_t len = apple_dcp_service_edid(copy_edid, av, out, max);
+            if (len)
+            {
+               uint32_t v  = ((uint32_t)out[8] << 8) | out[9];
+               uint32_t p  = out[10] | ((uint32_t)out[11] << 8);
+               uint32_t sn = out[12] | ((uint32_t)out[13] << 8)
+                           | ((uint32_t)out[14] << 16)
+                           | ((uint32_t)out[15] << 24);
+               candidates++;
+               only_len = (int)len;
+               /* the serial only separates two identical monitors,
+                * and only when both sides report one */
+               if (v == vendor && p == product
+                     && (!serial || !sn || sn == serial))
+                  n = (int)len;
+            }
+            CFRelease(av);
+         }
+      }
+      IOObjectRelease(svc);
+      if (n > 0)
+         break;
+   }
+   IOObjectRelease(it);
+
+   /* No identity match, but exactly one external display answered and
+    * out still holds its block: that is the display in use. A second
+    * one makes the guess unsafe, so it is not made. */
+   if (n < 0 && candidates == 1)
+      n = only_len;
+   return n;
+}
+
 /* The EDID of the display the RetroArch window is on. CoreGraphics
  * hands out the display's vendor, model and serial; the IODisplayConnect
  * service carrying the same three under kDisplayVendorID /
@@ -787,6 +918,10 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
       IOObjectRelease(svc);
    }
    IOObjectRelease(it);
+
+   /* Apple Silicon has no IODisplayConnect; ask the DCP instead */
+   if (n < 0)
+      n = apple_dcp_get_edid(vendor, product, serial, out, max);
    return n;
 }
 #ifdef __clang__
