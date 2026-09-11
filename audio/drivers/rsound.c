@@ -18,7 +18,7 @@
 
 #include <boolean.h>
 
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
@@ -28,7 +28,13 @@ typedef struct rsd
 {
    rsound_t *rd;
 
-   fifo_buffer_t *buffer;
+   /* Single producer (the core thread in rs_write), single consumer
+    * (librsound's worker in rsound_audio_cb): a lock-free retro_spsc
+    * ring, so neither side takes librsound's callback lock to touch
+    * it.  retro_spsc rounds capacity up to a power of two; fifo_size
+    * is the size asked for and the producer never fills past it. */
+   retro_spsc_t   ring;
+   bool           ring_init;
    slock_t *cond_lock;
    scond_t *cond;
 
@@ -43,12 +49,20 @@ typedef struct rsd
    volatile bool has_error;
 } rsd_t;
 
+/* Room in the ring against the size asked for: the physical room less
+ * the capacity beyond fifo_size (retro_spsc rounds up to a power of
+ * two). */
+static size_t rs_ring_room(const rsd_t *rsd)
+{
+   size_t room   = retro_spsc_write_avail(&rsd->ring);
+   size_t excess = rsd->ring.capacity - rsd->fifo_size;
+   return room > excess ? room - excess : 0;
+}
+
 static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
 {
    rsd_t *rsd        = (rsd_t*)userdata;
-   size_t avail      = FIFO_READ_AVAIL(rsd->buffer);
-   size_t write_size = bytes > avail ? avail : bytes;
-   fifo_read(rsd->buffer, data, write_size);
+   size_t write_size = retro_spsc_read(&rsd->ring, data, bytes);
    scond_signal(rsd->cond);
 
    return write_size;
@@ -97,7 +111,9 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
             * channels * sizeof(int16_t);
       if (rsd->fifo_size < 1024 * 4)
          rsd->fifo_size       = 1024 * 4;
-      rsd->buffer             = fifo_new(rsd->fifo_size);
+      rsd->ring_init          = retro_spsc_init(&rsd->ring, rsd->fifo_size);
+      if (!rsd->ring_init)
+         goto error;
       rsd_set_param(rd, RSD_CHANNELS, &channels);
       rsd_set_param(rd, RSD_SAMPLERATE, &rate);
       rsd_set_param(rd, RSD_LATENCY, &server_latency);
@@ -125,16 +141,22 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
       rsd->wait_us = 1000;
 
    if (rsd_start(rd) < 0)
-   {
-      free(rsd);
       goto error;
-   }
 
    rsd->rd = rd;
    return rsd;
 
 error:
+   /* Everything allocated so far: the ring (if its init got that far),
+    * the condition pair, librsound's handle (rsd_free is NULL-safe on
+    * the rsd_init-failed path) and the driver struct.  The old code
+    * freed only the handle. */
+   if (rsd->ring_init)
+      retro_spsc_free(&rsd->ring);
+   scond_free(rsd->cond);
+   slock_free(rsd->cond_lock);
    rsd_free(rd);
+   free(rsd);
    return NULL;
 }
 
@@ -153,15 +175,10 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
 
    if (rsd->nonblock)
    {
-      size_t avail;
+      size_t avail = rs_ring_room(rsd);
+      _len         = avail > len ? len : avail;
 
-      rsd_callback_lock(rsd->rd);
-
-      avail  = FIFO_WRITE_AVAIL(rsd->buffer);
-      _len   = avail > len ? len : avail;
-
-      fifo_write(rsd->buffer, buf, _len);
-      rsd_callback_unlock(rsd->rd);
+      retro_spsc_write(&rsd->ring, buf, _len);
    }
    else
    {
@@ -170,20 +187,14 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       _len = 0;
       while (_len < len && !rsd->has_error)
       {
-         size_t avail;
-         rsd_callback_lock(rsd->rd);
-
-         avail = FIFO_WRITE_AVAIL(rsd->buffer);
+         size_t avail = rs_ring_room(rsd);
 
          if (avail == 0)
          {
-            rsd_callback_unlock(rsd->rd);
             if (!rsd->has_error)
             {
-               /* Timed, not indefinite.  The predicate is guarded by
-                * librsound's callback lock, not cond_lock, and neither
-                * rsound_audio_cb nor rsound_err_cb holds cond_lock
-                * when it signals - so a signal raised between the
+               /* Timed, not indefinite.  Neither rsound_audio_cb nor
+                * rsound_err_cb holds cond_lock when it signals - so a signal raised between the
                 * has_error test above and this wait reaches no waiter.
                 *
                 * rsound_err_cb is the case that matters: librsound
@@ -206,8 +217,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
          else
          {
             size_t write_amt = len - _len > avail ? avail : len - _len;
-            fifo_write(rsd->buffer, (const char*)buf + _len, write_amt);
-            rsd_callback_unlock(rsd->rd);
+            retro_spsc_write(&rsd->ring, (const char*)buf + _len, write_amt);
             _len += write_amt;
          }
       }
@@ -256,7 +266,8 @@ static void rs_free(void *data)
    rsd_stop(rsd->rd);
    rsd_free(rsd->rd);
 
-   fifo_free(rsd->buffer);
+   if (rsd->ring_init)
+      retro_spsc_free(&rsd->ring);
    slock_free(rsd->cond_lock);
    scond_free(rsd->cond);
 
@@ -265,15 +276,11 @@ static void rs_free(void *data)
 
 static size_t rs_write_avail(void *data)
 {
-   size_t val;
    rsd_t *rsd = (rsd_t*)data;
 
    if (rsd->has_error)
       return 0;
-   rsd_callback_lock(rsd->rd);
-   val = FIFO_WRITE_AVAIL(rsd->buffer);
-   rsd_callback_unlock(rsd->rd);
-   return val;
+   return rs_ring_room(rsd);
 }
 
 /* TODO/FIXME - implement? */
@@ -304,9 +311,7 @@ static size_t rs_wait_writable(void *data, size_t len)
    {
       if (rsd->has_error)
          return 0;
-      rsd_callback_lock(rsd->rd);
-      avail = FIFO_WRITE_AVAIL(rsd->buffer);
-      rsd_callback_unlock(rsd->rd);
+      avail = rs_ring_room(rsd);
       if (avail >= len)
          return avail;
       slock_lock(rsd->cond_lock);
