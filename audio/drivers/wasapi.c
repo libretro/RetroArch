@@ -2301,6 +2301,13 @@ static void wasapi_pump_thread(void *data)
          slock_unlock(w->fifo_lock);
       }
    }
+
+   /* The class is the thread's, so it is given back where the thread
+    * ends - and the library with it. Without this the characteristic
+    * is never reverted and avrt keeps a reference for every audio
+    * init the session makes, which on a driver that reinitialises per
+    * content load is every one of them. */
+   wasapi_pump_mmcss_end(avrt, mmtask);
 }
 
 static bool wasapi_pump_start(wasapi_t *w)

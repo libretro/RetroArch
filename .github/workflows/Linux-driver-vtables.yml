@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Compile each driver with -Werror=incompatible-pointer-types
+      - name: Compile each driver against its interface
         shell: bash
         run: |
           set -eu
@@ -54,6 +54,13 @@ jobs:
           # This is that check. It compiles every driver it can on
           # Linux - the rest need SDKs that are not here - and treats a
           # mismatched function pointer as the error it is.
+          #
+          # A static function nobody calls is in the same family and is
+          # caught here too: it is what a call site that was meant to
+          # be there and is not looks like from the compiler's side.
+          # That happened as well - the pump's scheduler class was
+          # taken but never given back, and the only sign was the
+          # helper that returns it going unused.
           fail=0
           defs="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_CONFIGFILE"
           defs="$defs -DHAVE_AUDIOMIXER -DHAVE_REWIND -DHAVE_RWAV"
@@ -66,13 +73,14 @@ jobs:
              [ -f "$f" ] || continue
              out=$(gcc -fsyntax-only -std=gnu99 -Wall \
                    -Werror=incompatible-pointer-types \
+                   -Werror=unused-function \
                    $defs $have $inc "$f" 2>&1 || true)
              # A driver whose platform SDK is not here does not compile
              # at all, and that is not what this job is about: it is
              # skipped, and only a pointer mismatch fails.
-             if printf '%s' "$out" | grep -q "incompatible pointer type"; then
+             if printf '%s' "$out" | grep -qE "incompatible pointer type|defined but not used"; then
                 echo "=== $f"
-                printf '%s\n' "$out" | grep -A2 "incompatible pointer type"
+                printf '%s\n' "$out" | grep -E -A2 "incompatible pointer type|defined but not used"
                 fail=1
              elif printf '%s' "$out" | grep -q ": error:"; then
                 echo "[skip] $f (needs an SDK that is not here)"
@@ -82,8 +90,10 @@ jobs:
           done
           if [ "$fail" -ne 0 ]; then
              echo
-             echo "A driver's vtable does not match the interface it fills in."
-             echo "An optional entry belongs at the end of the structure, where"
-             echo "it cannot move the entries a positional initialiser relies on."
+             echo "A driver does not match the interface it fills in, or has a"
+             echo "static function nothing calls. An optional vtable entry belongs"
+             echo "at the end of the structure, where it cannot move the entries a"
+             echo "positional initialiser relies on; an uncalled helper usually"
+             echo "means the call site that was meant to use it is missing."
              exit 1
           fi
