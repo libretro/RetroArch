@@ -87,6 +87,8 @@ enum video_driver_state_flags
 {
    VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS = (1 << 0 ),
    VIDEO_FLAG_WINDOW_TITLE_UPDATE                 = (1 << 1 ),
+   /* The four VIDEO_FLAG_WIDGETS_* bits live in
+    * video_driver_state_t::widgets_flags, not in 'flags' */
    VIDEO_FLAG_WIDGETS_PAUSED                      = (1 << 2 ),
    VIDEO_FLAG_WIDGETS_FASTMOTION                  = (1 << 3 ),
    VIDEO_FLAG_WIDGETS_SLOWMOTION                  = (1 << 4 ),
@@ -1053,6 +1055,11 @@ typedef struct
    size_t window_title_len;
 
    uint32_t flags;
+   /* The widgets' runloop state, the VIDEO_FLAG_WIDGETS_* bits: set by
+    * the runloop on the main thread every frame and read through the
+    * frame's snapshot (video_frame_info_t::video_st_flags), so it lives
+    * apart from 'flags' and takes no display_lock. */
+   uint32_t widgets_flags;
 
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;

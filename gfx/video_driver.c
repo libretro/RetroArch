@@ -4148,7 +4148,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->custom_vp_full_width        = custom_vp->full_width;
    video_info->custom_vp_full_height       = custom_vp->full_height;
 
-   video_info->video_st_flags              = video_st->flags;
+   video_info->video_st_flags              = video_st->flags
+                                           | video_st->widgets_flags;
 #if defined(HAVE_GFX_WIDGETS)
    video_info->widgets_userdata            = p_dispwidget;
 #else
