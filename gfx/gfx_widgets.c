@@ -23,7 +23,6 @@
 #include "../config.h"
 #endif
 
-#include <queues/fifo_queue.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
@@ -204,6 +203,32 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 static void gfx_widgets_msg_queue_free(
       dispgfx_widget_t *p_dispwidget,
       disp_widget_msg_t *msg);
+
+/* The pending ring.  Caller holds msg_queue_lock (HAVE_THREADS). */
+static bool gfx_widgets_pending_push(dispgfx_widget_t *p_dispwidget,
+      disp_widget_msg_t *msg_widget)
+{
+   unsigned tail;
+   if (p_dispwidget->msg_queue_count >= MSG_QUEUE_PENDING_MAX)
+      return false;
+   tail = (p_dispwidget->msg_queue_head + p_dispwidget->msg_queue_count)
+         % MSG_QUEUE_PENDING_MAX;
+   p_dispwidget->msg_queue[tail] = msg_widget;
+   p_dispwidget->msg_queue_count++;
+   return true;
+}
+
+static disp_widget_msg_t *gfx_widgets_pending_pop(dispgfx_widget_t *p_dispwidget)
+{
+   disp_widget_msg_t *msg_widget;
+   if (!p_dispwidget->msg_queue_count)
+      return NULL;
+   msg_widget = p_dispwidget->msg_queue[p_dispwidget->msg_queue_head];
+   p_dispwidget->msg_queue_head = (p_dispwidget->msg_queue_head + 1)
+         % MSG_QUEUE_PENDING_MAX;
+   p_dispwidget->msg_queue_count--;
+   return msg_widget;
+}
 
 static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
@@ -452,30 +477,20 @@ static void gfx_widgets_msg_queue_push_state(
                msg_widget->text_height *= 2;
          }
 
-         /* Lock the FIFO across the avail re-check + fifo_write so
-          * concurrent producers can't both pass the check and
-          * overwrite each other's data.  fifo_write itself does no
-          * bounds checking -- it silently wraps -- so the inner
-          * avail check is the actual gate.
-          *
-          * The outer FIFO_WRITE_AVAIL_NONPTR check at the top of
-          * this function is a fast-path bail and is intentionally
-          * left unlocked: a stale read there at worst causes us to
-          * skip a single message that we could have queued, which
-          * is recoverable on the next call.  The check below is the
-          * one whose accuracy matters for correctness. */
+         /* Push under msg_queue_lock: several producers, and the
+          * full check and the push have to be one step so two of
+          * them cannot both pass the check for the last slot. */
          {
+            bool queue_full;
 #ifdef HAVE_THREADS
-            bool fifo_full;
             slock_lock(p_dispwidget->msg_queue_lock);
-            fifo_full = (FIFO_WRITE_AVAIL_NONPTR(p_dispwidget->msg_queue)
-                  < sizeof(msg_widget));
-            if (!fifo_full)
-               fifo_write(&p_dispwidget->msg_queue,
-                     &msg_widget, sizeof(msg_widget));
+#endif
+            queue_full = !gfx_widgets_pending_push(p_dispwidget, msg_widget);
+#ifdef HAVE_THREADS
             slock_unlock(p_dispwidget->msg_queue_lock);
+#endif
 
-            if (fifo_full)
+            if (queue_full)
             {
                /* Lost the race against another producer.  Roll back
                 * the widget we just allocated.
@@ -499,10 +514,6 @@ static void gfx_widgets_msg_queue_push_state(
                free(msg_widget);
                return;
             }
-#else
-            fifo_write(&p_dispwidget->msg_queue,
-                  &msg_widget, sizeof(msg_widget));
-#endif
          }
       }
       /* Update task info */
@@ -1256,9 +1267,7 @@ static INLINE void gfx_widgets_iterate_frame(
 #ifdef HAVE_THREADS
          slock_lock(p_dispwidget->msg_queue_lock);
 #endif
-         if (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
-            fifo_read(&p_dispwidget->msg_queue,
-                  &msg_widget, sizeof(msg_widget));
+         msg_widget = gfx_widgets_pending_pop(p_dispwidget);
 #ifdef HAVE_THREADS
          slock_unlock(p_dispwidget->msg_queue_lock);
 #endif
@@ -2290,13 +2299,12 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
    gfx_animation_kill_widget_by_tag(
          &p_dispwidget->gfx_widgets_generic_tag);
 
-   /* Purge everything from the fifo */
-   while (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
+   /* Purge everything still pending */
+   for (;;)
    {
-      disp_widget_msg_t *msg_widget;
-
-      fifo_read(&p_dispwidget->msg_queue,
-            &msg_widget, sizeof(msg_widget));
+      disp_widget_msg_t *msg_widget = gfx_widgets_pending_pop(p_dispwidget);
+      if (!msg_widget)
+         break;
 
       /* Note: task_ptr is deliberately left intact here.
        * gfx_widgets_free() is NOT only reached from main_exit():
@@ -2317,8 +2325,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
       gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
       free(msg_widget);
    }
-
-   fifo_deinitialize(&p_dispwidget->msg_queue);
 
    /* Purge everything from the list */
 #ifdef HAVE_THREADS
@@ -2488,9 +2494,8 @@ bool gfx_widgets_init(
             widget->init(p_disp, p_anim, video_is_threaded, fullscreen);
       }
 
-      if (!fifo_initialize(&p_dispwidget->msg_queue,
-            MSG_QUEUE_PENDING_MAX * sizeof(disp_widget_msg_t*)))
-         goto error;
+      p_dispwidget->msg_queue_head  = 0;
+      p_dispwidget->msg_queue_count = 0;
 
       memset(&p_dispwidget->current_msgs[0], 0, sizeof(p_dispwidget->current_msgs));
       p_dispwidget->current_msgs_size = 0;
@@ -2635,9 +2640,7 @@ static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
 #ifdef HAVE_THREADS
       slock_lock(p_dispwidget->msg_queue_lock);
 #endif
-      if (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
-         fifo_read(&p_dispwidget->msg_queue,
-               &msg_widget, sizeof(msg_widget));
+      msg_widget = gfx_widgets_pending_pop(p_dispwidget);
 #ifdef HAVE_THREADS
       slock_unlock(p_dispwidget->msg_queue_lock);
 #endif

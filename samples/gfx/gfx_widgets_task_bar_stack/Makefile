@@ -16,7 +16,6 @@ SOURCES := gfx_widgets_task_bar_stack_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
-           $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \

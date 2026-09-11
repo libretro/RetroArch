@@ -25,7 +25,6 @@
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
-#include <queues/fifo_queue.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -213,10 +212,9 @@ typedef struct dispgfx_widget
     * but did not previously serialise its fifo_read against
     * concurrent producer fifo_writes.  This separates concerns:
     * current_msgs_lock continues to guard the displayed-message
-    * deque (current_msgs[]); msg_queue_lock guards the FIFO
-    * staging buffer.  Acquired by every fifo_* call site and
-    * by FIFO_*_AVAIL checks where the result is used to gate a
-    * subsequent FIFO operation. */
+    * deque (current_msgs[]); msg_queue_lock guards the pending
+    * ring (msg_queue[] / msg_queue_head / msg_queue_count) and is
+    * held across every push and pop of it. */
    slock_t* msg_queue_lock;
    /* Everything the widgets draw. With the threaded video wrapper the
     * worker draws it while the main thread animates, iterates and sets
@@ -236,7 +234,17 @@ typedef struct dispgfx_widget
     * while the worker would read this. */
    bool worker;
 #endif
-   fifo_buffer_t msg_queue;
+   /* Messages pushed but not yet on screen: a ring of pointers,
+    * pushed from any thread (gfx_widgets_msg_queue_push), popped by
+    * gfx_widgets_iterate() on the main thread, one per frame.  Was a
+    * fifo_buffer_t carrying sizeof(pointer)-byte records: a heap
+    * buffer, byte arithmetic and a write that silently wrapped when
+    * full, for what is a bounded array of MSG_QUEUE_PENDING_MAX
+    * pointers.  Several producers, so this is not an SPSC ring and
+    * stays under msg_queue_lock. */
+   disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
+   unsigned msg_queue_head;
+   unsigned msg_queue_count;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
