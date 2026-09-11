@@ -3534,7 +3534,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "Use threaded video driver. Using this might improve performance at the possible cost of latency and more video stuttering."
+   "Run the video driver on a thread of its own. The display keeps its cadence when the core stutters, and the core runs its next frame while the last one goes through the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, which keeps latency at what Frame Delay gives."
    )
 /* GENERATED REGION: black frame insertion group (see settings_def_black_frame_insertion.h). */
 #define SETTINGS_DEF_STRINGS_PASS

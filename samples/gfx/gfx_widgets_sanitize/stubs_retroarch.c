@@ -213,10 +213,12 @@ void gfx_animation_update_widgets(retro_time_t current_time,
       float ticker_speed, unsigned video_width, unsigned video_height)
 { (void)current_time; (void)ticker_speed; (void)video_width; (void)video_height; }
 
-/* --- gfx_widgets_worker_step(), which no test here drives --- */
+/* --- the threaded video worker's widget step and its text handoff,
+ *     which no test here drives --- */
 static settings_t s_settings;
 settings_t *config_get_ptr(void) { return &s_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+void video_thread_status_text(const char *s) { (void)s; }
 
 /* --- video driver --- */
 uint32_t video_driver_get_disp_flags(void) { return 0; }

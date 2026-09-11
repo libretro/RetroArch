@@ -1039,7 +1039,9 @@ static void video_thread_loop(void *data)
                 * any are visible - where the runloop does it without
                 * the wrapper */
                if (video_info->widgets_active)
-                  gfx_widgets_worker_step(video_info);
+                  gfx_widgets_worker_step(video_info,
+                        thr->frame.slot[slot].status_text,
+                        thr->frame.slot[slot].status_text_len);
 #endif
                if (thr->frame.slot[slot].hw_slot >= 0)
                {
@@ -1477,6 +1479,14 @@ static bool video_thread_frame(void *data, const void *frame_,
                sizeof(thr->frame.slot[slot].msg));
       else
          *thr->frame.slot[slot].msg = '\0';
+
+#ifdef HAVE_GFX_WIDGETS
+      thr->frame.slot[slot].status_text_len = thr->status_text_len;
+      if (thr->status_text_len)
+         memcpy(thr->frame.slot[slot].status_text, thr->status_text,
+               thr->status_text_len + 1);
+      thr->status_text_len = 0;
+#endif
    }
 
    slock_lock(thr->lock);
@@ -2739,6 +2749,23 @@ uint64_t video_thread_swap_count(void)
    slock_unlock(thr->lock);
    return ret;
 }
+
+#ifdef HAVE_GFX_WIDGETS
+void video_thread_status_text(const char *s)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+
+   if (!video_st->thread_wrapper_active)
+      return;
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   thr->status_text_len = strlcpy(thr->status_text, s,
+         sizeof(thr->status_text));
+   if (thr->status_text_len >= sizeof(thr->status_text))
+      thr->status_text_len = sizeof(thr->status_text) - 1;
+}
+#endif
 
 void video_thread_wait_idle(void)
 {

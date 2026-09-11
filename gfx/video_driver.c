@@ -6073,6 +6073,12 @@ void video_driver_frame(const void *data, unsigned width,
       if (!video_st->thread_wrapper_active)
 #endif
          video_info.swap_count    = video_st->swap_count;
+#if defined(HAVE_THREADS) && defined(HAVE_GFX_WIDGETS)
+      /* The worker that draws the widgets takes the panels' text with
+       * the frame */
+      else if (widgets_active && p_dispwidget->worker)
+         gfx_widgets_status_text_to_frame(&video_info, status_text);
+#endif
       if (vid->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,

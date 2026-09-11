@@ -511,7 +511,14 @@ void gfx_widgets_frame(void *data);
 #ifdef HAVE_THREADS
 /* Threaded video worker, before the driver's frame: what the runloop
  * does for the widgets without the wrapper, less the layout. */
-void gfx_widgets_worker_step(void *data);
+void gfx_widgets_worker_step(void *data,
+      const char *status_text, size_t status_text_len);
+
+/* Main thread, under the wrapper: hands the on-screen panels' text to
+ * the frame about to be pushed, for gfx_widgets_worker_step(), and
+ * clears status_text, which video_driver_frame() would otherwise write
+ * into widget state after the push. */
+void gfx_widgets_status_text_to_frame(void *data, char *status_text);
 
 /* The main thread's part of gfx_widgets_iterate() while the worker
  * runs the rest: relayout on a screen, scale or font change. */

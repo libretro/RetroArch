@@ -300,6 +300,12 @@ typedef struct thread_video
    /* Widget state lock depth user_acquire() released on the owner's
     * behalf, retaken when the slot is released */
    unsigned user_widgets_depth;
+#ifdef HAVE_GFX_WIDGETS
+   /* Main thread: the panels' text for the next frame pushed,
+    * staged by video_thread_status_text() */
+   char status_text[NAME_MAX_LENGTH];
+   size_t status_text_len;
+#endif
    /* cond_ring: ring progress (frame.pending / frame.busy changing),
     * broadcast by the video thread when it claims or completes a slot.
     * Any number of waiters, each re-testing its own predicate. */
@@ -392,6 +398,12 @@ typedef struct thread_video
          unsigned height;
          unsigned pitch;
          char msg[NAME_MAX_LENGTH];
+#ifdef HAVE_GFX_WIDGETS
+         /* The on-screen panels' text for the widgets, which this
+          * thread draws; zero length leaves what they show */
+         char status_text[NAME_MAX_LENGTH];
+         size_t status_text_len;
+#endif
          /* Built by the main thread in video_thread_frame() and handed
           * to the driver's frame call by pointer on the video thread.
           * video_driver_build_info() reads video_driver_st and
@@ -560,6 +572,12 @@ void video_thread_main_pump(void);
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data);
 
 void video_thread_wait_idle(void);
+
+#ifdef HAVE_GFX_WIDGETS
+/* Main thread: stages the on-screen panels' text to travel with the
+ * next frame pushed, for the widgets the worker draws. */
+void video_thread_status_text(const char *s);
+#endif
 
 RETRO_END_DECLS
 

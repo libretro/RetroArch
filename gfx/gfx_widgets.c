@@ -33,6 +33,9 @@
 #include "gfx_display.h"
 #include "gfx_widgets.h"
 #include "font_driver.h"
+#ifdef HAVE_THREADS
+#include "video_thread_wrapper.h"
+#endif
 
 #ifdef HAVE_MENU
 #include "../menu/menu_defines.h"
@@ -2738,7 +2741,28 @@ void gfx_widgets_ai_service_overlay_unload(void)
 #endif
 
 #ifdef HAVE_THREADS
-void gfx_widgets_worker_step(void *data)
+void gfx_widgets_status_text_to_frame(void *data, char *status_text)
+{
+   video_frame_info_t *video_info = (video_frame_info_t*)data;
+
+   if (  (   video_info->fps_show
+          || video_info->framecount_show
+          || video_info->memory_show
+          || video_info->core_status_msg_show
+          || video_info->time_show
+         )
+#ifdef HAVE_MENU
+       && !((video_info->menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE))
+#endif
+       && !video_info->notifications_hidden
+       && *status_text)
+      video_thread_status_text(status_text);
+   /* Taken: video_driver_frame() writes nothing into widget state */
+   *status_text = '\0';
+}
+
+void gfx_widgets_worker_step(void *data,
+      const char *status_text, size_t status_text_len)
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data;
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
@@ -2748,6 +2772,13 @@ void gfx_widgets_worker_step(void *data)
       return;
 
    gfx_widgets_state_lock();
+   /* The panels' text, carried with the frame */
+   if (status_text_len)
+   {
+      memcpy(p_dispwidget->gfx_widgets_status_text, status_text,
+            status_text_len + 1);
+      p_dispwidget->gfx_widgets_status_text_len = status_text_len;
+   }
    gfx_animation_update_widgets(cpu_features_get_time_usec(),
          settings->floats.menu_ticker_speed,
          video_info->width, video_info->height);
