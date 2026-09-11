@@ -76,10 +76,6 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
              ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (ASan)"
-          # TSan: the core has pre-existing unsynchronised flag reads
-          # (main_sleeping in decode_video, the volatile
-          # decode_thread_dead) that predate the ring; report, do not
-          # halt, so the run still checks the audio pipe end to end.
           make clean all SANITIZER=thread
-          TSAN_OPTIONS=halt_on_error=0 timeout 300 ./ffmpeg_audio_pipe_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (TSan)"

@@ -68,6 +68,7 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
 #include <retro_spsc.h>
+#include <retro_atomic.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -701,7 +702,12 @@ typedef struct ffmpeg_core_ctx
    double pts_bias;
 
    /* Threaded FIFOs */
-   volatile bool decode_thread_dead;
+   /* Both threads' flags to each other.  Written under fifo_lock, but
+    * read in places without it - decode_thread's loop condition, the
+    * video path's deadlock check of main_sleeping - so they are
+    * atomics rather than the volatile bool / plain bool they were,
+    * which TSan flagged. */
+   retro_atomic_int_t decode_thread_dead;
    /* Decoded audio, decode thread -> main thread: one producer, one
     * consumer, so a lock-free retro_spsc ring.  fifo_lock no longer
     * covers the read and the write themselves - only the handshake
@@ -721,12 +727,14 @@ typedef struct ffmpeg_core_ctx
    slock_t *decode_thread_lock;
    sthread_t *decode_thread_handle;
    double decode_last_audio_time;
-   bool main_sleeping;
+   retro_atomic_int_t main_sleeping;
 
    uint32_t *video_frame_temp_buffer;
 
    /* Seeking */
-   bool do_seek;
+   /* Atomic for the same reason as main_sleeping: decode_video reads
+    * it in its deadlock check without fifo_lock. */
+   retro_atomic_int_t do_seek;
    double seek_time;
    int seek_l2;
    int seek_r2;
@@ -801,7 +809,8 @@ static ffmpeg_core_ctx_t g_ctx;
 #endif
 #define AUDIO_FRAMES_STR           (g_ctx.audio_frames)
 #define PTS_BIAS_STR               (g_ctx.pts_bias)
-#define DECODE_THREAD_DEAD_STR     (g_ctx.decode_thread_dead)
+#define DECODE_THREAD_DEAD_STR     retro_atomic_load_acquire_int(&g_ctx.decode_thread_dead)
+#define DECODE_THREAD_DEAD_SET(v)  retro_atomic_store_release_int(&g_ctx.decode_thread_dead, (v))
 #define AUDIO_DECODE_FIFO_STR      (g_ctx.audio_decode_fifo)
 #define FIFO_COND_STR              (g_ctx.fifo_cond)
 #define FIFO_DECODE_COND_STR       (g_ctx.fifo_decode_cond)
@@ -809,9 +818,11 @@ static ffmpeg_core_ctx_t g_ctx;
 #define DECODE_THREAD_LOCK_STR     (g_ctx.decode_thread_lock)
 #define DECODE_THREAD_HANDLE_STR   (g_ctx.decode_thread_handle)
 #define DECODE_LAST_AUDIO_TIME_STR (g_ctx.decode_last_audio_time)
-#define MAIN_SLEEPING_STR          (g_ctx.main_sleeping)
+#define MAIN_SLEEPING_STR          retro_atomic_load_acquire_int(&g_ctx.main_sleeping)
+#define MAIN_SLEEPING_SET(v)       retro_atomic_store_release_int(&g_ctx.main_sleeping, (v))
 #define VIDEO_FRAME_TEMP_BUFFER_STR (g_ctx.video_frame_temp_buffer)
-#define DO_SEEK_STR                (g_ctx.do_seek)
+#define DO_SEEK_STR                retro_atomic_load_acquire_int(&g_ctx.do_seek)
+#define DO_SEEK_SET(v)             retro_atomic_store_release_int(&g_ctx.do_seek, (v))
 #define SEEK_TIME_STR              (g_ctx.seek_time)
 #define SEEK_L2_STR                (g_ctx.seek_l2)
 #define SEEK_R2_STR                (g_ctx.seek_r2)
@@ -1789,6 +1800,9 @@ void CORE_PREFIX(retro_deinit)(void)
     * because all resources have already been freed above and in
     * retro_unload_game(). */
    memset(&g_ctx, 0, sizeof(g_ctx));
+   retro_atomic_int_init(&g_ctx.decode_thread_dead, 0);
+   retro_atomic_int_init(&g_ctx.main_sleeping, 0);
+   retro_atomic_int_init(&g_ctx.do_seek, 0);
 }
 
 unsigned CORE_PREFIX(retro_api_version)(void)
@@ -2082,7 +2096,7 @@ static void seek_frame(int seek_frames)
    }
 
    slock_lock(FIFO_LOCK_STR);
-   DO_SEEK_STR        = true;
+   DO_SEEK_SET(1);
    SEEK_TIME_STR      = g_ctx.decoded_frame_cnt / MEDIA_STR.interpolate_fps;
 
    /* Convert seek time to a printable format */
@@ -2131,9 +2145,9 @@ static void seek_frame(int seek_frames)
 
    while (!DECODE_THREAD_DEAD_STR && DO_SEEK_STR)
    {
-      MAIN_SLEEPING_STR = true;
+      MAIN_SLEEPING_SET(1);
       scond_wait(FIFO_COND_STR, FIFO_LOCK_STR);
-      MAIN_SLEEPING_STR = false;
+      MAIN_SLEEPING_SET(0);
    }
 
    slock_unlock(FIFO_LOCK_STR);
@@ -2344,10 +2358,10 @@ void CORE_PREFIX(retro_run)(void)
       while (!DECODE_THREAD_DEAD_STR
             && retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR) < to_read_bytes)
       {
-         MAIN_SLEEPING_STR = true;
+         MAIN_SLEEPING_SET(1);
          scond_signal(FIFO_DECODE_COND_STR);
          scond_wait(FIFO_COND_STR, FIFO_LOCK_STR);
-         MAIN_SLEEPING_STR = false;
+         MAIN_SLEEPING_SET(0);
       }
 
       reading_pts  = DECODE_LAST_AUDIO_TIME_STR -
@@ -3378,7 +3392,7 @@ static void decode_thread(void *data)
          decode_thread_seek(seek_time_thread);
 
          slock_lock(FIFO_LOCK_STR);
-         DO_SEEK_STR          = false;
+         DO_SEEK_SET(0);
          eof              = false;
          SEEK_TIME_STR        = 0.0;
          next_video_end   = 0.0;
@@ -3542,7 +3556,7 @@ static void decode_thread(void *data)
    av_freep(&audio_buffer);
 
    slock_lock(FIFO_LOCK_STR);
-   DECODE_THREAD_DEAD_STR = true;
+   DECODE_THREAD_DEAD_SET(1);
    scond_signal(FIFO_COND_STR);
    slock_unlock(FIFO_LOCK_STR);
 }
@@ -3681,7 +3695,7 @@ void CORE_PREFIX(retro_unload_game)(void)
 
       tpool_wait(TPOOL_STR);
       video_buffer_clear(VIDEO_BUFFER_STR);
-      DECODE_THREAD_DEAD_STR = true;
+      DECODE_THREAD_DEAD_SET(1);
       scond_signal(FIFO_DECODE_COND_STR);
 
       slock_unlock(FIFO_LOCK_STR);
@@ -3892,7 +3906,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
 
    slock_lock(FIFO_LOCK_STR);
-   DECODE_THREAD_DEAD_STR = false;
+   DECODE_THREAD_DEAD_SET(0);
    slock_unlock(FIFO_LOCK_STR);
 
    DECODE_THREAD_HANDLE_STR = sthread_create(decode_thread, NULL);
