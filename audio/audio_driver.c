@@ -6324,25 +6324,25 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    if (microphone->capture_thread)
    {
       retro_atomic_store_release_int(&microphone->capture_running, 0);
-      if (microphone->fifo_cond)
+      if (microphone->capture_cond)
       {
-         slock_lock(microphone->fifo_lock);
-         scond_signal(microphone->fifo_cond);
-         slock_unlock(microphone->fifo_lock);
+         slock_lock(microphone->capture_lock);
+         scond_signal(microphone->capture_cond);
+         slock_unlock(microphone->capture_lock);
       }
       sthread_join(microphone->capture_thread);
       microphone->capture_thread = NULL;
       microphone->worker_sample_size = 0;
    }
-   if (microphone->fifo_cond)
+   if (microphone->capture_cond)
    {
-      scond_free(microphone->fifo_cond);
-      microphone->fifo_cond = NULL;
+      scond_free(microphone->capture_cond);
+      microphone->capture_cond = NULL;
    }
-   if (microphone->fifo_lock)
+   if (microphone->capture_lock)
    {
-      slock_free(microphone->fifo_lock);
-      microphone->fifo_lock = NULL;
+      slock_free(microphone->capture_lock);
+      microphone->capture_lock = NULL;
    }
 #endif
 
@@ -6643,12 +6643,12 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    {
       /* Before the thread exists, so it never reads ::flags itself. */
       microphone->worker_sample_size = mic_driver_get_sample_size(microphone);
-      microphone->fifo_lock       = slock_new();
-      microphone->fifo_cond       = scond_new();
+      microphone->capture_lock       = slock_new();
+      microphone->capture_cond       = scond_new();
       retro_atomic_int_init(&microphone->capture_running, 1);
 
-      if (     microphone->fifo_lock
-            && microphone->fifo_cond
+      if (     microphone->capture_lock
+            && microphone->capture_cond
             && (microphone->capture_thread = sthread_create(
                   microphone_driver_capture_thread, mic_st)))
          RARCH_LOG("[Microphone] Threaded capture: the worker owns the read"
@@ -6658,12 +6658,12 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
          /* Any part missing and the whole thing is off; the
           * frame-synchronous path below needs none of it. */
          retro_atomic_store_release_int(&microphone->capture_running, 0);
-         if (microphone->fifo_cond)
-            scond_free(microphone->fifo_cond);
-         if (microphone->fifo_lock)
-            slock_free(microphone->fifo_lock);
-         microphone->fifo_cond = NULL;
-         microphone->fifo_lock = NULL;
+         if (microphone->capture_cond)
+            scond_free(microphone->capture_cond);
+         if (microphone->capture_lock)
+            slock_free(microphone->capture_lock);
+         microphone->capture_cond = NULL;
+         microphone->capture_lock = NULL;
          microphone->worker_sample_size = 0;
          RARCH_WARN("[Microphone] Could not start the capture worker;"
                " reading on the frame instead.\n");
@@ -6988,10 +6988,10 @@ static void microphone_driver_capture_thread(void *data)
       if (room < slice * sizeof(int16_t))
       {
          /* The core is not consuming; wait for it rather than spin. */
-         slock_lock(microphone->fifo_lock);
-         scond_wait_timeout(microphone->fifo_cond, microphone->fifo_lock,
+         slock_lock(microphone->capture_lock);
+         scond_wait_timeout(microphone->capture_cond, microphone->capture_lock,
                20000);
-         slock_unlock(microphone->fifo_lock);
+         slock_unlock(microphone->capture_lock);
          continue;
       }
 
@@ -7003,9 +7003,9 @@ static void microphone_driver_capture_thread(void *data)
        * runs without the lock: SPSC, this thread is the producer.  The
        * core's read no longer waits behind the resampler. */
       microphone_driver_flush(mic_st, microphone, slice);
-      slock_lock(microphone->fifo_lock);
-      scond_signal(microphone->fifo_cond);
-      slock_unlock(microphone->fifo_lock);
+      slock_lock(microphone->capture_lock);
+      scond_signal(microphone->capture_cond);
+      slock_unlock(microphone->capture_lock);
    }
 }
 
@@ -7097,16 +7097,16 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
 
       if (retro_spsc_read_avail(&microphone->outgoing_samples) < want)
       {
-         slock_lock(microphone->fifo_lock);
-         scond_wait_timeout(microphone->fifo_cond, microphone->fifo_lock,
+         slock_lock(microphone->capture_lock);
+         scond_wait_timeout(microphone->capture_cond, microphone->capture_lock,
                10000);
-         slock_unlock(microphone->fifo_lock);
+         slock_unlock(microphone->capture_lock);
       }
       /* Consumer side, no lock: SPSC. */
       got = retro_spsc_read(&microphone->outgoing_samples, frames, want);
-      slock_lock(microphone->fifo_lock);
-      scond_signal(microphone->fifo_cond);
-      slock_unlock(microphone->fifo_lock);
+      slock_lock(microphone->capture_lock);
+      scond_signal(microphone->capture_cond);
+      slock_unlock(microphone->capture_lock);
 
       if (got < want)
          memset((uint8_t*)frames + got, 0, want - got);

@@ -151,7 +151,7 @@ struct retro_microphone
     * Samples that will be sent to the core.  One producer (the capture
     * worker, or the core's own read on the frame-synchronous path) and
     * one consumer (retro_microphone_read), so a lock-free retro_spsc
-    * ring; with the worker, fifo_lock covers only the waits, no longer
+    * ring; with the worker, capture_lock covers only the waits, no longer
     * the flush - the read, up-channel and resample of a slice - which
     * the core's read used to queue behind.  retro_spsc rounds capacity
     * up to a power of two; outgoing_size is the size asked for and the
@@ -225,8 +225,12 @@ struct retro_microphone
     * this is one worker, and the scratch buffers in that state which
     * microphone_driver_flush() uses belong to it while it runs. */
    sthread_t *capture_thread;
-   slock_t   *fifo_lock;
-   scond_t   *fifo_cond;
+   /* Only for the two bounded waits: the worker's, when the ring is
+    * full, and the core's, when it is short.  Neither the ring nor the
+    * flush is under them (see outgoing_samples above); they were named
+    * fifo_lock/fifo_cond from when both were. */
+   slock_t   *capture_lock;
+   scond_t   *capture_cond;
    /* Read by the worker on every pass, cleared by the thread that tears
     * the microphone down. An atomic rather than a volatile bool: volatile
     * orders nothing between threads, which ThreadSanitizer reported here
