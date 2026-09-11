@@ -2039,6 +2039,13 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
     * pump the fifo filled and nothing drained - silence, with the
     * threaded pipeline off, since the pump replaced the writer feeding
     * the device itself. */
+   /* Before the pump exists, because the pump reads it to work out
+    * the period it is due at - and a write after sthread_create is a
+    * race with that read, which is what TSan reported. Kept for the
+    * device-clock conversion too, which turns a position in the
+    * clock's own units into frames. */
+   w->rate = rate;
+
    if (!wasapi_pump_start(w))
    {
       RARCH_ERR("[WASAPI] Failed to start the pump thread.\n");
@@ -2057,9 +2064,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    if (new_rate)
       *new_rate = rate;
-   /* Kept for the device-clock conversion, which turns a position
-    * in the clock's own units into frames. */
-   w->rate = rate;
 
    /* The device stage behind what buffer_size() reports, for the
     * statistics overlay. Exclusive: buffer_size() is the fifo, and the

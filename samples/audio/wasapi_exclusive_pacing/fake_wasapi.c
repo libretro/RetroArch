@@ -177,7 +177,8 @@ static fake_client_t *g_last = NULL;
 
 void fake_device_withhold_events(int on)
 {
-   g_cfg.withhold_events = on;
+   /* Read by the engine thread on every period. */
+   __atomic_store_n(&g_cfg.withhold_events, on, __ATOMIC_RELEASE);
 }
 
 void fake_device_configure_clock(int have_clock, int have_clock2)
@@ -236,7 +237,8 @@ static void *device_thread(void *p)
        * the signal is what a pump held past its period looks like
        * from the driver's side: the frames went out, the events that
        * would have counted them did not arrive. */
-      if (c->event && !g_cfg.withhold_events) SetEvent(c->event);
+      if (c->event && !__atomic_load_n(&g_cfg.withhold_events, __ATOMIC_ACQUIRE))
+         SetEvent(c->event);
    }
    return NULL;
 }
@@ -384,7 +386,11 @@ static HRESULT clk_getfreq(IAudioClock *t, UINT64 *f)
 static HRESULT clk_getpos(IAudioClock *t, UINT64 *p, UINT64 *q)
 {
    fake_client_t *c = (fake_client_t*)t->fake;
-   *p = (UINT64)c->stats.frames_consumed * 10000000ULL
+   size_t         n;
+   pthread_mutex_lock(&c->m);
+   n = c->stats.frames_consumed;
+   pthread_mutex_unlock(&c->m);
+   *p = (UINT64)n * 10000000ULL
       / (g_cfg.rate ? g_cfg.rate : 48000);
    if (q) *q = *p;
    return S_OK;
@@ -398,8 +404,13 @@ static DWORD clk2_addref(IAudioClock2 *t) { return ++((fake_client_t*)t->fake)->
 static DWORD clk2_release(IAudioClock2 *t) { return --((fake_client_t*)t->fake)->refs; }
 static HRESULT clk2_getpos(IAudioClock2 *t, UINT64 *p, UINT64 *q)
 {
+   /* The engine writes this under c->m, so it is read under c->m: a
+    * real device clock is coherent, and reading it torn here is the
+    * harness racing itself rather than anything the driver did. */
    fake_client_t *c = (fake_client_t*)t->fake;
+   pthread_mutex_lock(&c->m);
    *p = (UINT64)c->stats.frames_consumed;
+   pthread_mutex_unlock(&c->m);
    if (q) *q = *p;
    return S_OK;
 }
