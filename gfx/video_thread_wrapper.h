@@ -485,6 +485,11 @@ typedef struct thread_video
     * asking it directly from the runloop would read a swapchain handle
     * while this thread rebuilds it. */
    retro_atomic_int_t alive;
+   /* The worker still takes commands: set before it starts, cleared as
+    * it handles CMD_FREE. Not 'alive', which is the driver's answer for
+    * the window and goes false - on a close or a quit signal - while the
+    * worker still runs and holds the context */
+   retro_atomic_int_t worker_running;
    retro_atomic_int_t focus;
    retro_atomic_int_t presentable;
    retro_atomic_int_t suppress_screensaver;

@@ -125,15 +125,15 @@ static void video_thread_send_packet(thread_video_t *thr,
 }
 
 /* As video_thread_send_packet(), but drops the packet and reports
- * failure if the worker is no longer alive.  Tested inside the
- * critical section that queues the packet, so the worker cannot stop
- * between the test and the queueing. */
-static bool video_thread_send_packet_if_alive(thread_video_t *thr,
+ * failure once the worker takes no more commands (CMD_FREE).  Tested
+ * inside the critical section that queues the packet, so the worker
+ * cannot stop between the test and the queueing. */
+static bool video_thread_send_packet_if_running(thread_video_t *thr,
       const thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-   if (!retro_atomic_load_acquire_int(&thr->alive))
+   if (!retro_atomic_load_acquire_int(&thr->worker_running))
    {
       slock_unlock(thr->lock);
       return false;
@@ -421,6 +421,8 @@ static bool video_thread_handle_packet(
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;
+         /* The last command this thread takes */
+         retro_atomic_store_release_int(&thr->worker_running, 0);
          video_thread_reply(thr, &pkt);
          return true;
 
@@ -1734,6 +1736,7 @@ static bool video_thread_init(thread_video_t *thr,
    thr->input_data           = input_data;
    thr->info                 = info;
    retro_atomic_int_init(&thr->alive, 1);
+   retro_atomic_int_init(&thr->worker_running, 1);
    retro_atomic_int_init(&thr->focus, 1);
    /* Same default the video thread applies when the context has no
     * answer, so the runloop is not told there is nothing to present to
@@ -2690,11 +2693,13 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
    pkt.data.custom_command.method = func;
    pkt.data.custom_command.data   = data;
 
-   /* Aliveness is tested inside the send, under the lock it already
-    * takes, so the worker cannot stop between the test and the
-    * queueing. */
+   /* The worker runs func() for as long as it takes commands - also
+    * while its window is closing, when the context it holds is still
+    * current to it and cannot be made current here. Only once it has
+    * handled CMD_FREE does func() run on this thread; tested inside the
+    * send, under the lock it already takes. */
    video_thread_user_acquire(thr);
-   if (!video_thread_send_packet_if_alive(thr, &pkt))
+   if (!video_thread_send_packet_if_running(thr, &pkt))
    {
       video_thread_user_release(thr);
       return func(data);
