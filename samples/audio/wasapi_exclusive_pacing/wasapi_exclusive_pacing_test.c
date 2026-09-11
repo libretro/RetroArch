@@ -157,6 +157,86 @@ extern uint32_t stub_requested_layout;
  * over IEC 61937, report the 5.1 layout and take float, feed the
  * device every period, and what the device receives must be bursts
  * of AC-3 that decode back to what was written. */
+/* frames_consumed() against a pump that stopped being told. */
+static void clock_vs_events_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   int16_t *silence;
+   void *h;
+   unsigned new_rate = 0;
+   size_t before_driver, after_driver;
+   unsigned long long before_dev, after_dev;
+   unsigned i;
+
+   printf("6. frames_consumed() follows the device when the events stop arriving\n");
+   fake_device_configure(48000, 30000, 100000, false);
+   fake_device_configure_clock(1, 1);
+   fake_device_configure_engine(0, 0);
+
+   settings->bools.audio_wasapi_exclusive_mode = true;
+   settings->uints.audio_wasapi_sh_buffer_length = 0;
+   settings->uints.audio_output_sample_rate = 48000;
+
+   h = audio_wasapi.init(NULL, 48000, 32, &new_rate);
+   CHECK(h != NULL, "the driver would not open");
+   if (!h)
+      return;
+   silence = (int16_t*)calloc(audio_wasapi.buffer_size(h), 1);
+   if (!silence)
+   {
+      audio_wasapi.free(h);
+      return;
+   }
+   audio_wasapi.set_nonblock_state(h, true);
+   audio_wasapi.start(h, false);
+
+   /* Primed and running, with the pump hearing every period. */
+   for (i = 0; i < 40; i++)
+   {
+      audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+      Sleep(5);
+   }
+   before_driver = audio_wasapi.frames_consumed(h);
+   before_dev    = fake_device_played();
+   CHECK(before_driver > 0, "nothing consumed while running normally");
+
+   /* The events stop; the engine does not. */
+   fake_device_withhold_events(1);
+   for (i = 0; i < 40; i++)
+   {
+      audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+      Sleep(5);
+   }
+   after_driver = audio_wasapi.frames_consumed(h);
+   after_dev    = fake_device_played();
+   fake_device_withhold_events(0);
+
+   printf("   with the events withheld: the device played %llu more frames, the driver reports %llu more\n",
+         after_dev - before_dev,
+         (unsigned long long)(after_driver - before_driver));
+   CHECK(after_dev > before_dev, "the engine stopped playing when the events stopped");
+   /* The bound has to be tight enough to fail the thing it is about.
+    * Counting service events, the driver would report no frames at
+    * all across a window where none arrived - so a tolerance of a few
+    * thousand frames would pass that too. An eighth of what the
+    * device played does not: it admits the period or so between the
+    * engine's last step and the clock being read, and nothing like a
+    * window's worth of missed counting. */
+   {
+      unsigned long long played = after_dev - before_dev;
+      long long drift = (long long)(after_driver - before_driver)
+            - (long long)played;
+      if (drift < 0) drift = -drift;
+      CHECK((unsigned long long)drift <= played / 8,
+            "the driver is %lld frames from the device over %llu played: it is counting events, not reading the clock",
+            drift, played);
+   }
+
+   audio_wasapi.stop(h);
+   audio_wasapi.free(h);
+   free(silence);
+}
+
 static void ac3_bitstream_case(void)
 {
    settings_t *settings = config_get_ptr();
@@ -446,6 +526,13 @@ int main(int argc, char **argv)
                i, dropped_pct, allow_pct);
       }
    }
+
+   /* The whole point of reading the device's clock: a pump held past
+    * its periods stops counting the frames the device played, and a
+    * clock does not. The engine keeps playing here while its event
+    * goes unsignalled, and frames_consumed() has to follow the
+    * device rather than the events nobody received. */
+   clock_vs_events_case();
 
    ac3_bitstream_case();
 

@@ -50,6 +50,9 @@ void fake_device_configure_clock(int have_clock, int have_clock2);
 /* Frames the scripted engine has played, which is what the fake's
  * clock reports. */
 unsigned long long fake_device_played(void);
+/* Stop signalling the client's event while the engine keeps playing -
+ * a pump held past its period, from the driver's side. */
+void fake_device_withhold_events(int on);
 
 /* --- Wave formats ---------------------------------------------------- */
 #define WAVE_FORMAT_PCM        1

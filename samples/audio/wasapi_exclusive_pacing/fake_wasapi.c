@@ -82,12 +82,13 @@ static struct
 {
    unsigned rate;
    int      have_clock, have_clock2;
+   int      withhold_events;
    REFERENCE_TIME min_period, default_period;
    bool accept_float;
    unsigned engine_min_frames, locked_period_frames;
    unsigned max_channels;      /* PCM channels the pin takes; 0 = any */
    bool accept_iec61937_ac3;   /* the Dolby Digital subtype, exclusive */
-} g_cfg = { 48000, 0, 0, 30000, 100000, false, 0, 0, 0, false };
+} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false };
 
 /* Everything released to the device while capturing, for a harness
  * that wants to look at the bytes and not just count them. */
@@ -174,6 +175,11 @@ typedef struct fake_client
 
 static fake_client_t *g_last = NULL;
 
+void fake_device_withhold_events(int on)
+{
+   g_cfg.withhold_events = on;
+}
+
 void fake_device_configure_clock(int have_clock, int have_clock2)
 {
    g_cfg.have_clock  = have_clock;
@@ -226,7 +232,11 @@ static void *device_thread(void *p)
          else { c->stats.frames_consumed += c->padding; c->padding = 0; c->stats.periods_unanswered++; }
       }
       pthread_mutex_unlock(&c->m);
-      if (c->event) SetEvent(c->event);
+      /* The engine plays whether or not anyone is told. Withholding
+       * the signal is what a pump held past its period looks like
+       * from the driver's side: the frames went out, the events that
+       * would have counted them did not arrive. */
+      if (c->event && !g_cfg.withhold_events) SetEvent(c->event);
    }
    return NULL;
 }
