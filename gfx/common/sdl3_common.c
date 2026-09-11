@@ -275,8 +275,10 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
    /* SDL_EVENT_TEXT_INPUT is emitted for windows that opted in for
     * it. The SDL3 input driver handles those events for menu
     * text entry and core keyboard callbacks. */
+#ifndef WEBOS
    if (!sdl3_uses_screen_keyboard())
       SDL_StartTextInput(win);
+#endif
 
    return win;
 }

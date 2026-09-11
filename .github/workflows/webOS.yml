@@ -180,7 +180,8 @@ jobs:
           export SDK_PATH=/tmp/aarch64-webos-linux-gnu_sdk-buildroot
           make -f Makefile.webos clean
           bash gfx/common/wayland/generate_wayland_protos.sh
-          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=0 \
+          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} \
+          ADD_SDL2_LIB=0 HAVE_SDL2=0 HAVE_SDL3=1 \
           HAVE_XKBCOMMON=1 HAVE_USERLAND=1 HAVE_EGL=1 HAVE_WAYLAND=1 \
           HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 \
           HAVE_WAYLAND_BACKPORT=0 HAVE_64TO32BIT_BRIDGE=1 SET_ELF_INTERPRETER=1 HAVE_UDEV=1 \
