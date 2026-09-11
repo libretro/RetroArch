@@ -469,6 +469,10 @@ static int general_push(menu_displaylist_info_t *info,
                string_ext_list_merge_dedup(ext_filter, &_len, 2048, "eac3");
                string_ext_list_merge_dedup(ext_filter, &_len, 2048, "ec3");
 #endif
+#ifdef HAVE_RLPCM
+               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "lpcm");
+               string_ext_list_merge_dedup(ext_filter, &_len, 2048, "pcm");
+#endif
 #ifdef HAVE_ROPUS
                string_ext_list_merge_dedup(ext_filter, &_len, 2048, "opus");
 #endif

@@ -5174,6 +5174,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          handle = audio_mixer_load_ac3(buf, params->bufsize);
 #endif
          break;
+      case AUDIO_MIXER_TYPE_LPCM:
+#ifdef HAVE_RLPCM
+         handle = audio_mixer_load_lpcm(buf, params->bufsize);
+#endif
+         break;
       case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
          handle = audio_mixer_load_opus(buf, params->bufsize);

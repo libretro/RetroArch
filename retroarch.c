@@ -3037,6 +3037,9 @@ enum rarch_content_type path_is_media_type(const char *path)
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAC3)
       case FILE_TYPE_AC3:
 #endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RLPCM)
+      case FILE_TYPE_LPCM:
+#endif
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
       case FILE_TYPE_OPUS:
 #endif

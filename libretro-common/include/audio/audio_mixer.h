@@ -51,6 +51,13 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_WEBA, /* resolves to OPUS or OGG at load */
    AUDIO_MIXER_TYPE_AC3,  /* a .ac3 file of syncframes (rac3); up to
                            * 5.1, folded to stereo like the others */
+   AUDIO_MIXER_TYPE_LPCM, /* a .lpcm or .pcm file of samples (rlpcm).
+                           * A buffer opening with a DVD or Blu-ray
+                           * header says its own shape; raw samples do
+                           * not, so those are taken as 16-bit stereo
+                           * at 48 kHz, little-endian, which is what a
+                           * file with no header and no other word on
+                           * the matter most often is                 */
    /* A WAV played as a stream: decoded a chunk at a time out of the
     * source buffer rather than converted whole at load, so its cost
     * is the source and not the source plus a decoded copy, and its
@@ -89,6 +96,7 @@ audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_lpcm(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size);
 /* WebM audio (.weba): identifies the track's codec and returns a sound
  * of the matching existing type (OPUS or OGG), or NULL when the
