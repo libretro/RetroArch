@@ -135,6 +135,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../verbosity.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"
+#include "../input/input_osk.h"
 #include "../input/input_remapping.h"
 
 #include "../tasks/tasks_internal.h"
@@ -15099,6 +15100,17 @@ static void settings_build_input(
                   SD_FLAG_NONE);
 #endif
 #ifdef HAVE_SDL3
+      {
+         /* Only meaningful when SDL3 is driving input and the device
+          * actually has a screen keyboard to offer, the same way the
+          * Android entries above are gated on the active input driver.
+          * A gl+udev desktop build compiled with SDL3 support should
+          * not show a toggle that does nothing. */
+         input_driver_state_t *st      = input_state_get_ptr();
+         input_driver_t *current_input = st->current_driver;
+         if (     current_input
+               && string_is_equal(current_input->ident, "sdl3")
+               && input_osk_native_available())
             CONFIG_BOOL(
                   list, list_info,
                   &settings->bools.input_sdl3_system_keyboard,
@@ -15113,6 +15125,7 @@ static void settings_build_input(
                   general_write_handler,
                   general_read_handler,
                   SD_FLAG_NONE);
+      }
 #endif
 
             ADD_DESC(inp_desc_10);

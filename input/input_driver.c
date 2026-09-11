@@ -5151,6 +5151,20 @@ bool input_osk_native_active(void)
    return false;
 }
 
+bool input_osk_native_available(void)
+{
+   /* No Steam arm here: steam_has_osk_open() answers whether the
+    * panel is up, which is not the same question, and the Steam OSK
+    * has no cheap availability query. */
+   if (input_state_get_ptr()->flags & INP_FLAG_NATIVE_KB_AVAIL)
+      return true;
+#ifdef HAVE_COCOATOUCH
+   return true;
+#else
+   return false;
+#endif
+}
+
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,

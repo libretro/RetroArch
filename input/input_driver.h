@@ -191,7 +191,11 @@ enum input_driver_state_flags
    /* A system-provided keyboard panel is on screen and owns text
     * entry. Set and cleared by whichever input driver put it there,
     * once per poll; read through input_osk_native_active(). */
-   INP_FLAG_NATIVE_KB_SHOWN          = (1 << 12)
+   INP_FLAG_NATIVE_KB_SHOWN          = (1 << 12),
+   /* This device has a native keyboard panel the frontend could use
+    * in place of the built-in OSK. Published the same way; read
+    * through input_osk_native_available(). */
+   INP_FLAG_NATIVE_KB_AVAIL          = (1 << 13)
 };
 
 #ifdef HAVE_BSV_MOVIE

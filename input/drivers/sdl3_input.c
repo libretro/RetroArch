@@ -454,9 +454,10 @@ static void sdl3_input_free(void *data)
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
    SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
 
-   /* Nothing polls after this point, so the flag would stay raised
+   /* Nothing polls after this point, so the flags would stay raised
     * across a runtime driver switch. */
-   input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+   input_state_get_ptr()->flags &=
+      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
 
    SDL_QuitSubSystem(SDL_INIT_EVENTS);
    free(sdl);
@@ -631,9 +632,11 @@ static void sdl3_manage_text_input(void)
 
    if (!sdl3_uses_screen_keyboard() || !(win = sdl3_get_window()))
    {
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+      input_st->flags &= ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
       return;
    }
+
+   input_st->flags |= INP_FLAG_NATIVE_KB_AVAIL;
 
 #ifdef HAVE_MENU
    want = menu_input_dialog_get_display_kb()
