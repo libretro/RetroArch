@@ -1704,6 +1704,29 @@ static INLINE size_t audio_driver_output_bound(double ratio, size_t input_frames
    return (size_t)((double)(input_frames + 16) * ratio) + 1;
 }
 
+/* The inverse: the largest input frame count whose bound still fits in
+ * output_frames. Not output_frames/ratio - the bound adds a resampler
+ * margin of sixteen frames and a rounding frame on top of the ratio, so
+ * the plain division overshoots it by that margin, and a caller that
+ * waits for output_frames of room and then writes the bound has written
+ * more than it waited for. Solved, then walked down until the bound
+ * itself agrees, so the two can never disagree by a rounding step. */
+static INLINE size_t audio_driver_input_bound(double ratio, size_t output_frames)
+{
+   double n;
+   size_t input_frames;
+   if (ratio <= 0.0 || output_frames < 2)
+      return 0;
+   n = (double)(output_frames - 1) / ratio - 16.0;
+   if (n <= 0.0)
+      return 0;
+   input_frames = (size_t)n;
+   while (     input_frames
+         && audio_driver_output_bound(ratio, input_frames) > output_frames)
+      input_frames--;
+   return input_frames;
+}
+
 /* A harness may define this to count a flush that produced more than
  * its bound; the shipping build has no check on the audio thread. */
 #ifndef AUDIO_OUTPUT_BOUND_CHECK
@@ -4039,6 +4062,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {
    int      snap;
+   double   out_ratio;
    size_t   frame_bytes, out_bytes, have;
    const audio_driver_t *audio = audio_st->current_audio;
 
@@ -4112,10 +4136,31 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
     * arrive at a fifo without room for it - and a driver that frames
     * its output, as the AC-3 path does, then wrote part of a burst. */
    frame_bytes = audio_driver_dev_frame_bytes(audio_st);
+   /* The ratio the flush will use, needed here as well as at the wait
+    * below: the cap and the room asked for have to be the same
+    * arithmetic or the driver is asked to accept more than the cap was
+    * sized for. On this path the fast-forward multiplier is a value the
+    * producer published and does not depend on the frame count passed
+    * to it, so taking it before the cap is the same number as after. */
+   snap        = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   out_ratio   = audio_driver_effective_ratio(audio_st,
+         (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
+         config_get_ptr()->floats.slowmotion_ratio,
+         (   (snap & AUDIO_SNAP_FASTMOTION)
+          && config_get_ptr()->bools.audio_fastforward_speedup)
+            ? audio_driver_ff_mult(audio_st, have) : 1.0);
    if (audio_st->buffer_size)
    {
-      size_t cap = (size_t)((double)(audio_st->buffer_size / 2 / frame_bytes)
-            / audio_st->src_ratio_curr);
+      /* The cap is the inverse of the bound, not the ratio: what this
+       * pass may take is whatever the write it turns into still fits in
+       * half the device buffer. Dividing the half by the ratio left the
+       * bound's sixteen-frame margin outside the cap, so out_bytes came
+       * out a little over half the buffer on every pass - and a driver
+       * whose wait_writable() tops out at half then had to either block
+       * inside the write or drop the tail of the chunk, neither of
+       * which the pass had waited for. */
+      size_t cap = audio_driver_input_bound(out_ratio,
+            audio_st->buffer_size / 2 / frame_bytes);
       if (cap >= 32 && have > cap)
          have = cap;
    }
@@ -4154,7 +4199,6 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       }
    }
 
-   snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
    if (    (snap & AUDIO_SNAP_PAUSED)
         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
         || !audio_st->output_samples_buf)
@@ -4185,14 +4229,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    /* What this chunk will produce at the ratio the flush will use -
     * slow motion and fast-forward's speedup in, the same composition -
     * so the room waited for is the room the write needs. */
-   out_bytes   = audio_driver_output_bound(
-         audio_driver_effective_ratio(audio_st,
-            (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
-            config_get_ptr()->floats.slowmotion_ratio,
-            (   (snap & AUDIO_SNAP_FASTMOTION)
-             && config_get_ptr()->bools.audio_fastforward_speedup)
-               ? audio_driver_ff_mult(audio_st, have) : 1.0),
-         have) * frame_bytes;
+   out_bytes   = audio_driver_output_bound(out_ratio, have) * frame_bytes;
    if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
 
