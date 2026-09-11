@@ -19,6 +19,7 @@
 #import <AppKit/AppKit.h>
 #endif
 #include <stddef.h>
+#include <string.h>
 #include "../verbosity.h"
 #include "../video_display_server.h"
 #include "../video_driver.h"
@@ -38,6 +39,14 @@
  * happens to use stops deciding. */
 #include <AvailabilityMacros.h>
 #import <ApplicationServices/ApplicationServices.h>
+/* IOKit's display registry, for the EDID: IODisplayCreateInfoDictionary
+ * has published the block under kIODisplayEDIDKey since 10.0 and IOKit
+ * is already linked for the power-source query. On Apple Silicon the
+ * IODisplayConnect services this walks do not exist (the display stack
+ * moved to DCP) and Apple published no replacement, so the walk finds
+ * nothing and the op reports -1 there. */
+#include <IOKit/IOKitLib.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
 /* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
  * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
  * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
@@ -698,6 +707,93 @@ static void apple_display_server_get_video_output_size(void *data,
    cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
+#if TARGET_OS_OSX
+/* The EDID of the display the RetroArch window is on. CoreGraphics
+ * hands out the display's vendor, model and serial; the IODisplayConnect
+ * service carrying the same three under kDisplayVendorID /
+ * kDisplayProductID / kDisplaySerialNumber is that display, and its
+ * info dictionary holds the raw block. Matching on the identifiers
+ * rather than CGDisplayIOServicePort keeps this off an API that was
+ * deprecated in 10.9. */
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   CGDirectDisplayID display = CGMainDisplayID();
+   uint32_t vendor, product, serial;
+   io_iterator_t it          = 0;
+   io_service_t svc;
+   int n                     = -1;
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
+
+   if (!out || max < 128)
+      return -1;
+
+   if (window && [window screen])
+   {
+      NSNumber *num = [[[window screen] deviceDescription] objectForKey:@"NSScreenNumber"];
+      if (num)
+         display = (CGDirectDisplayID)[num unsignedIntValue];
+   }
+   vendor  = CGDisplayVendorNumber(display);
+   product = CGDisplayModelNumber(display);
+   serial  = CGDisplaySerialNumber(display);
+
+   /* port 0 is the default master port on every release, without
+    * naming kIOMasterPortDefault (renamed in 12) */
+   if (IOServiceGetMatchingServices(0, IOServiceMatching("IODisplayConnect"), &it)
+         != KERN_SUCCESS)
+      return -1;
+
+   while (n < 0 && (svc = IOIteratorNext(it)))
+   {
+      CFDictionaryRef info = IODisplayCreateInfoDictionary(svc,
+            kIODisplayOnlyPreferredName);
+      if (info)
+      {
+         CFNumberRef cf_vendor  = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayVendorID));
+         CFNumberRef cf_product = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayProductID));
+         CFNumberRef cf_serial  = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplaySerialNumber));
+         uint32_t v = 0, p = 0, sn = 0;
+         if (cf_vendor)
+            CFNumberGetValue(cf_vendor, kCFNumberSInt32Type, &v);
+         if (cf_product)
+            CFNumberGetValue(cf_product, kCFNumberSInt32Type, &p);
+         if (cf_serial)
+            CFNumberGetValue(cf_serial, kCFNumberSInt32Type, &sn);
+         /* the serial only separates two identical monitors, and only
+          * when both sides report one */
+         if (cf_vendor && cf_product && v == vendor && p == product
+               && (!serial || !sn || sn == serial))
+         {
+            CFDataRef edid = (CFDataRef)CFDictionaryGetValue(info, CFSTR(kIODisplayEDIDKey));
+            if (edid)
+            {
+               size_t len = (size_t)CFDataGetLength(edid);
+               if (len > max)
+                  len = max;
+               len -= len % 128;
+               if (len >= 128)
+               {
+                  memcpy(out, CFDataGetBytePtr(edid), len);
+                  n = (int)len;
+               }
+            }
+         }
+         CFRelease(info);
+      }
+      IOObjectRelease(svc);
+   }
+   IOObjectRelease(it);
+   return n;
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#endif
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
@@ -742,6 +838,10 @@ const video_display_server_t dispserv_apple = {
    NULL, /* modeline_delete */
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
+#if TARGET_OS_OSX
+   apple_display_server_get_edid,
+#else
    NULL, /* get_edid */
+#endif
    "apple"
 };
