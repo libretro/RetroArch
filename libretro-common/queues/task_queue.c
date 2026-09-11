@@ -74,6 +74,14 @@ static task_queue_t tasks_finished          = {NULL, NULL};
  * until they are fully retired, without holding finished_lock
  * across the callbacks themselves. */
 static task_queue_t tasks_retiring          = {NULL, NULL};
+/* The sizes of tasks_running and tasks_finished, for
+ * retro_task_threaded_gather(), which runs every frame and returns
+ * without a lock while both are zero. Changed only where a task enters
+ * or leaves those queues, under the lock that guards the queue; a
+ * finishing task counts as finished before it stops counting as
+ * running, so both are never zero while one is in flight. */
+static retro_atomic_int_t tasks_running_count  = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t tasks_finished_count = RETRO_ATOMIC_INT_INITIALIZER(0);
 #endif
 
 static struct retro_task_impl *impl_current = NULL;
@@ -471,6 +479,7 @@ static void retro_task_threaded_push_running(retro_task_t *task)
    slock_lock(running_lock);
    slock_lock(queue_lock);
    task_queue_put(&tasks_running, task);
+   retro_atomic_fetch_add_int(&tasks_running_count, 1);
    scond_signal(worker_cond);
    slock_unlock(queue_lock);
    slock_unlock(running_lock);
@@ -506,6 +515,13 @@ static void retro_task_threaded_cancel(void *task)
 static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
+
+   /* Nothing running and nothing finished, as on nearly every frame.
+    * A task that finishes just after this test retires on the next
+    * call. */
+   if (   !retro_atomic_load_acquire_int(&tasks_running_count)
+       && !retro_atomic_load_acquire_int(&tasks_finished_count))
+      return;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -546,6 +562,7 @@ static void retro_task_threaded_gather(void)
       slock_lock(finished_lock);
       while ((task = task_queue_get(&tasks_finished)))
          task_queue_put(&tasks_retiring, task);
+      retro_atomic_store_release_int(&tasks_finished_count, 0);
       slock_unlock(finished_lock);
 
       /* Retire outside the lock (callbacks may push tasks, taking
@@ -810,6 +827,8 @@ static void threaded_worker(void *userdata)
          /* Add task to finished queue */
          slock_lock(finished_lock);
          task_queue_put(&tasks_finished, task);
+         retro_atomic_fetch_add_int(&tasks_finished_count, 1);
+         retro_atomic_fetch_sub_int(&tasks_running_count, 1);
          scond_signal(finished_cond);
          slock_unlock(finished_lock);
          slock_unlock(running_lock);
@@ -928,6 +947,8 @@ static void gcd_worker(retro_task_t *task)
       /* Add task to finished queue */
       slock_lock(finished_lock);
       task_queue_put(&tasks_finished, task);
+      retro_atomic_fetch_add_int(&tasks_finished_count, 1);
+      retro_atomic_fetch_sub_int(&tasks_running_count, 1);
       scond_signal(finished_cond);
       slock_unlock(finished_lock);
    }
@@ -938,6 +959,7 @@ static void retro_task_gcd_push_running(retro_task_t *task)
    slock_lock(running_lock);
    slock_lock(queue_lock);
    task_queue_put(&tasks_running, task);
+   retro_atomic_fetch_add_int(&tasks_running_count, 1);
    gcd_queue_count++;
    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
                   ^{ gcd_worker(task); });
