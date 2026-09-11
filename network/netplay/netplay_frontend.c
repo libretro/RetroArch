@@ -285,8 +285,12 @@ uint32_t netplay_content_crc(void)
       }
       else
       {
+         /* The whole content file, hashed once at session start:
+          * FREQUENT_ACCESS so the VFS maps it where it can and the
+          * CRC is folded from the mapping rather than read out. */
          intfstream_t *fd = intfstream_open_file(path,
-               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+               RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
          if (fd)
          {
             if (!intfstream_get_crc(fd, &crc))

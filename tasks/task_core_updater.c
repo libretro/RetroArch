@@ -263,9 +263,11 @@ static bool task_core_updater_crc_step(core_crc_slice_t *slice,
    if (!slice->active)
    {
       slice->accumulator = 0;
+      /* FREQUENT_ACCESS: mapped where the VFS can, and each
+       * crc_step() then folds from the mapping without a read. */
       if (!(slice->file = intfstream_open_file(core_path,
                   RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
       {
          *crc = 0;
          return true;
