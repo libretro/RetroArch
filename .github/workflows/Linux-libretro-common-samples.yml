@@ -175,6 +175,9 @@ jobs:
           # regressions but not executed.
           declare -a BUILD_ONLY_DIRS=(
             formats/xml
+            # A benchmark, not a test: its numbers only mean something
+            # on two dedicated physical cores, which a runner is not.
+            queues/retro_spsc_bench
           )
 
           # Samples that are currently broken at build time on a stock
