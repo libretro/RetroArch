@@ -1565,20 +1565,38 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->usable * sizeof(float);
 }
 
-/* Wait on what the render callback signals after every pull
- * until at least len bytes fit in the ring, capped at half of it so the
- * wait always ends. Returns the free space then, or 0 once the unit has
- * stopped (paused, or interrupted, which the running check catches as
- * coreaudio_write() does). */
+/* Wait on what the render callback signals after every pull until at
+ * least len bytes fit in the ring. Returns the free space then, or 0
+ * once the unit has stopped (paused, or interrupted, which the running
+ * check catches as coreaudio_write() does).
+ *
+ * It waited for half the ring instead, whenever len was more than that.
+ * The caller's question is whether len can be accepted, and it acts on
+ * the answer by taking that much out of its own queue and writing it -
+ * so a yes that meant half of it left the write to block inside itself,
+ * or, non-blocking, to drop the tail. len was over half routinely, not
+ * rarely: the frontend capped its pass at half the buffer and then
+ * asked for the resampler's bound on it, which is that plus a margin.
+ * The cap is the inverse of the bound now, so the two agree; the clamp
+ * that was papering over the gap is gone with it. */
 static size_t coreaudio_wait_writable(void *data, size_t len)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    size_t want      = len / sizeof(float);
-   size_t half      = dev->usable / 2;
    int    laps      = 8;
 
-   if (want > half)
-      want = half;
+   if (!dev || !dev->channels)
+      return 0;
+   /* Whole frames: the writer only ever moves whole ones into the ring,
+    * so room for part of one is not room the write can use. */
+   if (want % dev->channels)
+      want += dev->channels - want % dev->channels;
+   /* The ring empty is the most that can ever be accepted at once.
+    * Above that there is no wait that could end in a yes, so the
+    * ceiling is the ring rather than half of it, and the free space
+    * returned says what was really there. */
+   if (want > dev->usable)
+      want = dev->usable;
 
    for (;;)
    {
