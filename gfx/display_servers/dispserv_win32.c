@@ -1389,6 +1389,8 @@ static bool win32_display_server_wait_vblank(void *data)
 static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
 {
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+   const char *adapter    = NULL;
    HWND win;
    HMONITOR hm;
    MONITORINFOEXA info;
@@ -1404,18 +1406,32 @@ static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
    if (!out || max < 128)
       return -1;
 
-   /* The adapter the window sits on, else the primary one */
+   /* The adapter: the one the modeline path has open when the CRT
+    * switcher is running, since that is the display being driven - on
+    * a two-head box the window sits on the desktop monitor while the
+    * CRT is the other one - else the one under the window, else the
+    * primary */
+#ifdef HAVE_MODELINE
+   if (serv && serv->ml.opened && serv->ml.device_name[0])
+      adapter = serv->ml.device_name;
+#else
+   (void)serv;
+#endif
    memset(&info, 0, sizeof(info));
    info.cbSize = sizeof(info);
-   win = win32_get_window();
-   hm  = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
-   if (!hm || !GetMonitorInfoA(hm, (LPMONITORINFO)&info) || !info.szDevice[0])
-      return -1;
+   if (!adapter)
+   {
+      win = win32_get_window();
+      hm  = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
+      if (!hm || !GetMonitorInfoA(hm, (LPMONITORINFO)&info) || !info.szDevice[0])
+         return -1;
+      adapter = info.szDevice;
+   }
 
    /* Its first monitor, as an interface name */
    memset(&dd, 0, sizeof(dd));
    dd.cb = sizeof(dd);
-   if (!EnumDisplayDevicesA(info.szDevice, 0, &dd, EDD_GET_DEVICE_INTERFACE_NAME)
+   if (!EnumDisplayDevicesA(adapter, 0, &dd, EDD_GET_DEVICE_INTERFACE_NAME)
          || !dd.DeviceID[0])
       return -1;
 
