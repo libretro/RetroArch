@@ -346,6 +346,34 @@ static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer)
    return true;
 }
 
+/* Waits up to timeout_us for a slot to open, and says whether one
+ * did. The open_cond a released slot signals has been there all
+ * along with nothing waiting on it: the decode thread asked
+ * video_buffer_has_open_slot() in a loop instead, taking and dropping
+ * the lock as fast as it could go, which is a core burned for as long
+ * as the buffer stays full - and full is the normal state whenever
+ * the decoder outruns the display, which is most of the time.
+ *
+ * Timed rather than indefinite because the caller has an escape to
+ * check: the main thread may go to sleep while this waits, and that
+ * is what the caller treats as a deadlock. */
+static bool video_buffer_wait_for_open_slot(video_buffer_t *video_buffer,
+      int64_t timeout_us)
+{
+   bool ret;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->head] != KB_OPEN)
+      scond_wait_timeout(video_buffer->open_cond, video_buffer->lock,
+            timeout_us);
+   ret = video_buffer->status[video_buffer->head] == KB_OPEN;
+
+   slock_unlock(video_buffer->lock);
+
+   return ret;
+}
+
 static bool video_buffer_has_open_slot(video_buffer_t *video_buffer)
 {
    bool ret = false;
@@ -3139,8 +3167,14 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
    int ret = 0;
    video_decoder_context_t *decoder_ctx = NULL;
 
-   /* Stop decoding thread until video_buffer is not full again */
-   while (!DECODE_THREAD_DEAD_STR && !video_buffer_has_open_slot(VIDEO_BUFFER_STR))
+   /* Stop decoding thread until video_buffer is not full again. The
+    * wait is on the condition a released slot signals, with a bound
+    * so the escape below is still reached: the main thread going to
+    * sleep with the buffer full is what this calls a deadlock, and
+    * nothing signals that. Five milliseconds is well inside a frame
+    * at any rate the core plays. */
+   while (!DECODE_THREAD_DEAD_STR
+         && !video_buffer_wait_for_open_slot(VIDEO_BUFFER_STR, 5000))
    {
       if (MAIN_SLEEPING_STR)
       {
