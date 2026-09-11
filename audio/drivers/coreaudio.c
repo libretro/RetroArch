@@ -366,7 +366,6 @@ typedef struct coreaudio
    double            clock_base;      /* mSampleTime at the first read */
    bool              clock_based;
 #endif
-   AudioConverterRef converter;
    unsigned output_rate;  /* Hardware output rate */
    /* The layout the output unit's input bus was set to, as the
     * frontend's mask, and its channel count: the unit routes each
@@ -374,27 +373,11 @@ typedef struct coreaudio
     * where it lacks one. The ring holds frames of this many floats. */
    uint32_t layout;
    unsigned channels;
-   double current_ratio;  /* Effective input rate the converter was built for */
-   unsigned last_input_rate; /* The two keys write_raw() last built it from */
-   double last_rate_adjust;
-
-   /* Temporary buffer for converter output */
-   float *conv_buffer;
-   size_t conv_buffer_frames;
-   bool converter_needs_reset;
 
    bool dev_alive;
    bool is_paused;
    bool nonblock;
 } coreaudio_t;
-
-/* Context for AudioConverter input callback */
-typedef struct
-{
-   const int16_t *data;
-   size_t frames_left;
-   unsigned channels;
-} converter_callback_ctx_t;
 
 static bool coreaudio_wait_init(coreaudio_t *dev)
 {
@@ -486,165 +469,39 @@ static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
    retro_atomic_fetch_sub_int(&dev->waiters, 1);
 }
 
-/* AudioConverter input callback - provides int16 samples */
-/* The int16 fast path is disabled. It is kept here rather than
- * deleted because what it should do is worth having - feeding the
- * core's int16 to the system converter saves the frontend's resampler
- * on every frame - and because what is wrong with it is specific and
- * known, so the next attempt should start from this rather than from
- * nothing.
+/* The int16 fast path is gone. What it did - hand the core's int16
+ * straight to an AudioConverter and let the system resample, saving
+ * the frontend's resampler every frame - is still worth having, so
+ * what was wrong with it is recorded here rather than lost with the
+ * code.
  *
- * What is wrong: the driver is handed a rate adjustment on every
- * write and is responsible for applying it, and this rebuilds the
- * converter only when that adjustment moves by more than half a
- * percent. The frontend's own rate control range is half a percent,
- * so in ordinary use every correction it makes falls inside the dead
- * zone and none is applied; and the one that eventually does not
- * arrives as a step, with the converter destroyed and remade and its
- * filter history lost. Lowering the threshold trades the dead zone
- * for a rebuild whenever the buffer moves, which is worse.
+ * The driver is handed a rate adjustment on every write and has to
+ * apply it. That path rebuilt the converter only when the adjustment
+ * moved by more than half a percent, and the frontend's rate control
+ * range is half a percent, so in ordinary use every correction fell
+ * inside the dead zone and none was applied; the one that eventually
+ * did not arrived as a step, converter destroyed and remade, filter
+ * history lost. Lowering the threshold trades the dead zone for a
+ * rebuild whenever the buffer moves, which is worse.
  *
- * What it needs before it comes back: a converter whose ratio can be
- * changed in place and keep its state, or a way for a driver to say
- * it cannot follow a rate adjustment so the frontend keeps its own
- * resampler; and then output compared against the sinc resampler's,
- * sample for sample, rather than assumed equivalent. Until then the
- * frontend resamples, which costs CPU and is correct.
+ * What a second attempt needs first: a converter whose ratio can be
+ * changed in place and keep its state, or a way for a driver to say it
+ * cannot follow a rate adjustment so the frontend keeps its own
+ * resampler - and then output compared against the sinc resampler's
+ * sample for sample rather than assumed equivalent.
  *
- * One thing the next attempt should not do, since it has been
- * suggested and reads plausibly: set kAudioConverterPrimeMethod to
+ * One thing it should not do, since it reads plausibly and has been
+ * suggested: set kAudioConverterPrimeMethod to
  * kConverterPrimeMethod_None to save latency. It does the opposite.
- * Apple's header names the three methods and what they cost -
- *
- *   Pre     primes with leading and trailing input frames
- *   Normal  primes with trailing only; leading assumed silence,
- *           "requires no pre-seeking of the input stream and
- *            generates no latency at the output"
- *   None    "acts in 'latency' mode": both assumed silence, and
- *           trailingFrames of through latency appear at the start
- *           of the converter's output
- *
- * - so Normal, which is the default and what this code left in
- * place, is the zero-latency one. None exists for a source that
- * cannot be read ahead of, live input with nothing before its first
- * frame; it buys that by accepting the latency Normal avoids. This
- * path feeds from a queue of the core's audio, where reading ahead
- * is exactly what the input proc can do, so Normal is right here for
- * the reason it is the default.
- *
- * What is worth doing instead is asking. kAudioConverterPrimeInfo
- * reports leadingFrames and trailingFrames for the converter as
- * configured, so the read-ahead can be measured and reported rather
- * than guessed at in either direction.
- */
-#if 0
-
-/* Threshold for recreating AudioConverter (0.5% change) */
-#define RATE_CHANGE_THRESHOLD 0.005
-
-static OSStatus converter_input_cb(
-      AudioConverterRef converter,
-      UInt32 *ioNumberDataPackets,
-      AudioBufferList *ioData,
-      AudioStreamPacketDescription **outDataPacketDescription,
-      void *inUserData)
-{
-   UInt32 frames_to_provide;
-   converter_callback_ctx_t *ctx = (converter_callback_ctx_t *)inUserData;
-
-   if (ctx->frames_left == 0)
-   {
-      *ioNumberDataPackets = 0;
-      return noErr;
-   }
-
-   frames_to_provide = *ioNumberDataPackets;
-   if (frames_to_provide > ctx->frames_left)
-      frames_to_provide = (UInt32)ctx->frames_left;
-
-   ioData->mBuffers[0].mData        = (void *)ctx->data;
-   ioData->mBuffers[0].mDataByteSize = frames_to_provide * ctx->channels * sizeof(int16_t);
-   ioData->mBuffers[0].mNumberChannels = ctx->channels;
-
-   ctx->data        += frames_to_provide * ctx->channels; /* advance by samples */
-   ctx->frames_left -= frames_to_provide;
-   *ioNumberDataPackets = frames_to_provide;
-
-   return noErr;
-}
-
-/* Create or update AudioConverter for the given effective input rate */
-static bool coreaudio_update_converter(coreaudio_t *dev,
-      unsigned input_rate, double rate_adjust, double effective_input_rate)
-{
-   AudioStreamBasicDescription input_desc  = {0};
-   AudioStreamBasicDescription output_desc = {0};
-   UInt32 quality                          = kAudioConverterQuality_High;
-   OSStatus err;
-
-   /* Rebuild when the source rate changes at all - a core switching
-    * its output rate is a new stream - or when rate control has moved
-    * the adjustment by more than half a percent, or when the effective
-    * rate has moved that far from what the converter was built for.
-    * Under that, keep it: rate control's ordinary jitter must not
-    * recreate a converter every frame. */
-   if (dev->converter)
-   {
-      double ratio_change = fabs(effective_input_rate - dev->current_ratio) / dev->current_ratio;
-      if (     input_rate == dev->last_input_rate
-            && fabs(rate_adjust - dev->last_rate_adjust) <= RATE_CHANGE_THRESHOLD
-            && ratio_change < RATE_CHANGE_THRESHOLD)
-         return true;
-
-
-
-      AudioConverterDispose(dev->converter);
-      dev->converter = NULL;
-   }
-
-   /* Input format: int16 stereo at effective input rate */
-   input_desc.mSampleRate       = effective_input_rate;
-   input_desc.mFormatID         = kAudioFormatLinearPCM;
-   input_desc.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
-                                | kAudioFormatFlagIsPacked;
-   input_desc.mBytesPerPacket   = dev->channels * sizeof(int16_t);
-   input_desc.mFramesPerPacket  = 1;
-   input_desc.mBytesPerFrame    = dev->channels * sizeof(int16_t);
-   input_desc.mChannelsPerFrame = dev->channels;
-   input_desc.mBitsPerChannel   = 16;
-
-   /* Output format: float32 stereo at hardware output rate */
-   output_desc.mSampleRate       = dev->output_rate;
-   output_desc.mFormatID         = kAudioFormatLinearPCM;
-   output_desc.mFormatFlags      = kAudioFormatFlagIsFloat
-                                 | kAudioFormatFlagIsPacked;
-   output_desc.mBytesPerPacket   = dev->channels * sizeof(float);
-   output_desc.mFramesPerPacket  = 1;
-   output_desc.mBytesPerFrame    = dev->channels * sizeof(float);
-   output_desc.mChannelsPerFrame = dev->channels;
-   output_desc.mBitsPerChannel   = 32;
-
-   err = AudioConverterNew(&input_desc, &output_desc, &dev->converter);
-   if (err != noErr)
-   {
-      RARCH_ERR("[CoreAudio] Failed to create AudioConverter: %d\n", (int)err);
-      return false;
-   }
-
-   dev->current_ratio         = effective_input_rate;
-   dev->last_input_rate       = input_rate;
-   dev->last_rate_adjust      = rate_adjust;
-   dev->converter_needs_reset = false;
-
-   /* Set high quality resampling */
-   AudioConverterSetProperty(dev->converter,
-         kAudioConverterSampleRateConverterQuality,
-         sizeof(quality), &quality);
-
-   return true;
-}
-
-#endif /* the int16 fast path, disabled: see above */
+ * Normal, the default, primes with trailing input only and generates
+ * no latency at the output; None assumes silence at both ends and puts
+ * trailingFrames of through latency at the start of the output. None
+ * exists for a source that cannot be read ahead of. A queue of the
+ * core's audio is exactly a source that can be, so Normal is right
+ * here for the reason it is the default. What is worth doing instead
+ * is asking: kAudioConverterPrimeInfo reports leadingFrames and
+ * trailingFrames for the converter as configured, so the read-ahead
+ * can be measured rather than guessed at in either direction. */
 
 #if !TARGET_OS_IPHONE
 /* Defined with the other listeners, below the microphone half. */
@@ -702,13 +559,6 @@ static void coreaudio_free(void *data)
       ca_cm.close(dev->dev);
    }
 
-#if 0 /* the int16 fast path, disabled: see above */
-   if (dev->converter)
-      AudioConverterDispose(dev->converter);
-
-   if (dev->conv_buffer)
-      free(dev->conv_buffer);
-#endif
 
    if (dev->buffer)
       free(dev->buffer);
@@ -1117,13 +967,6 @@ static void *coreaudio_init(const char *device,
    *new_rate = real_desc.mSampleRate;
    dev->output_rate = *new_rate;
 
-#if 0 /* the int16 fast path, disabled: see above */
-   /* Allocate converter output buffer (enough for 2048 output frames) */
-   dev->conv_buffer_frames = 2048;
-   dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * dev->channels, sizeof(float));
-   if (!dev->conv_buffer)
-      goto error;
-#endif
 
    /* Tell the HAL unit the two channels are a stereo pair. RemoteIO
     * refuses the property, hence macOS only; and it is advisory - the
@@ -1504,128 +1347,6 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    return written * sizeof(float);
 }
 
-/* Write raw int16 samples through the system sample-rate converter */
-#if 0 /* the int16 fast path, disabled: see above */
-static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
-      size_t frames, unsigned input_rate, double rate_adjust, float volume)
-{
-   coreaudio_t *dev = (coreaudio_t*)data;
-   double effective_rate;
-   size_t frames_written = 0;
-   converter_callback_ctx_t ctx;
-   AudioBufferList output_buffer;
-   OSStatus err;
-
-   if (!dev || dev->is_paused || frames == 0)
-      return 0;
-
-   /* Calculate effective input rate with rate adjustment.
-    * rate_adjust > 1.0 means we need to speed up (more output for same input),
-    * so we lower the effective input rate to produce more output frames. */
-   effective_rate = (double)input_rate / rate_adjust;
-
-   /* Update converter if needed */
-   if (!coreaudio_update_converter(dev, input_rate, rate_adjust, effective_rate))
-      return -1;
-
-   /* Set up callback context */
-   ctx.data        = samples;
-   ctx.frames_left = frames;
-   ctx.channels    = dev->channels;
-
-   /* Process in chunks that fit our conv_buffer */
-   while (ctx.frames_left > 0)
-   {
-      UInt32 output_frames = (UInt32)dev->conv_buffer_frames;
-
-      output_buffer.mNumberBuffers = 1;
-      output_buffer.mBuffers[0].mNumberChannels = dev->channels;
-      output_buffer.mBuffers[0].mDataByteSize   = output_frames * dev->channels * sizeof(float);
-      output_buffer.mBuffers[0].mData           = dev->conv_buffer;
-
-      err = AudioConverterFillComplexBuffer(dev->converter,
-            converter_input_cb, &ctx,
-            &output_frames, &output_buffer, NULL);
-
-      if (err != noErr && err != 1)  /* 1 means end of input, which is ok */
-      {
-         RARCH_ERR("[CoreAudio] AudioConverterFillComplexBuffer failed: %d\n", (int)err);
-         break;
-      }
-
-      /* If converter returned 0 output while we have input, it may be stuck
-       * in "end of stream" state (tvOS 13/14 issue). Reset and retry once. */
-      if (output_frames == 0)
-      {
-         if (ctx.frames_left > 0 && !dev->converter_needs_reset)
-         {
-            AudioConverterReset(dev->converter);
-            dev->converter_needs_reset = true;
-            continue;
-         }
-         break;
-      }
-
-      dev->converter_needs_reset = false;
-
-      /* Apply volume to converted samples. A plain loop: a few thousand
-       * multiplies per frame, which the compiler vectorises, and not
-       * worth the Accelerate umbrella that used to be pulled in for it. */
-      if (volume != 1.0f)
-      {
-         float *v = dev->conv_buffer;
-         size_t n = output_frames * dev->channels;
-         size_t k;
-         for (k = 0; k < n; k++)
-            v[k] *= volume;
-      }
-
-      /* Write converted samples to ring buffer */
-      {
-         float *out_ptr     = dev->conv_buffer;
-         size_t out_samples = output_frames * dev->channels;
-         int    laps        = 8;
-
-         while (!dev->is_paused && out_samples > 0)
-         {
-            size_t avail    = rb_write_avail(dev);
-            size_t to_write = (avail < out_samples) ? avail : out_samples;
-
-            if (to_write > 0)
-            {
-               rb_write(dev, out_ptr, to_write);
-               out_ptr       += to_write;
-               out_samples   -= to_write;
-               frames_written += to_write / dev->channels; /* count frames, not samples */
-            }
-
-            if (dev->nonblock)
-               break;
-
-            if (out_samples > 0)
-            {
-               UInt32 running = 0;
-               UInt32 sz      = sizeof(running);
-               if (AudioUnitGetProperty(dev->dev,
-                        kAudioOutputUnitProperty_IsRunning,
-                        kAudioUnitScope_Global, 0,
-                        &running, &sz) == noErr && !running)
-                  break;
-               if (--laps < 0)
-                  break;
-               coreaudio_wait(dev, 1, 100);
-            }
-         }
-      }
-
-      /* If we couldn't write all samples in nonblock mode, stop */
-      if (dev->nonblock && ctx.frames_left > 0)
-         break;
-   }
-
-   return (ssize_t)frames_written;
-}
-#endif
 
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
@@ -1658,21 +1379,14 @@ static bool coreaudio_stop(void *data)
  * the Cocoa side observes AVAudioSessionInterruptionNotification and
  * calls audio_driver_stop() at Began and audio_driver_start() at Ended,
  * which arrive here. The converter reset that used to happen here -
- * for a converter left stuck at end-of-stream when the system
- * stopped the unit, the tvOS 13/14 symptom - goes with the fast path
- * it belonged to, and comes back with it. */
+ * for a converter left stuck at end-of-stream when the system stopped
+ * the unit, the tvOS 13/14 symptom - went with the fast path it
+ * belonged to, and belongs with any second attempt at it. */
 static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    if (dev)
    {
-#if 0 /* the int16 fast path, disabled: see above */
-      if (dev->converter)
-      {
-         AudioConverterReset(dev->converter);
-         dev->converter_needs_reset = false;
-      }
-#endif
       dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
       if (!dev->is_paused)
          return true;
@@ -1892,7 +1606,7 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   NULL, /* write_raw: disabled, see the note above coreaudio_update_converter */
+   NULL, /* write_raw: see the note on the int16 fast path above */
    coreaudio_wait_writable,
    coreaudio_frames_consumed,
    coreaudio_underruns,
