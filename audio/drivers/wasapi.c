@@ -2131,9 +2131,22 @@ static bool wasapi_push_sh(wasapi_t *w);
 /* The multimedia class scheduler, where the system has it: what
  * Windows offers a thread that must run inside a device period, and
  * what Microsoft's own low-latency event-driven WASAPI sample uses.
- * Loaded by name, so no build target gains an avrt import for a
- * library that may not be there, and a system without the class falls
- * back rather than fails.
+ * Loaded by name rather than imported, and the reason is loading
+ * rather than linking: avrt.dll arrived with Vista, and this binary
+ * still runs on Windows versions that predate it. A static import is
+ * resolved before any code runs, so one would stop the whole program
+ * starting on those - including for a user who never chooses WASAPI
+ * and ends up on DirectSound. Asking for the library at the moment
+ * the pump starts makes a system without it a "no" here instead of a
+ * program that will not load.
+ *
+ * There is nothing to save by reaching past it, either: what the
+ * function does is read the task's profile out of the registry and
+ * hand the thread to the MMCSS kernel driver over a private
+ * interface, so there is no arithmetic to inline - only an
+ * undocumented handshake that a Windows update may change without
+ * saying so. And this runs once, on the pump thread, before its loop:
+ * not per period, not per frame.
  *
  * The fallback is the priority this thread has always run at, so the
  * worst case is what it did before. RETROARCH_WASAPI_NO_MMCSS in the
