@@ -316,6 +316,15 @@ typedef struct coreaudio
    /* Frames the HAL asks the render callback for at a time, as the
     * device actually settled it. The ring is sized to hold several. */
    size_t            period_frames;
+   /* The worst a callback came up short by, in samples, and how full
+    * the ring was that time. Written by the render thread with two
+    * atomic stores and read once at teardown - never logged from
+    * there. A buzz is a callback finding less than a period and
+    * padding the rest with silence, so these two numbers say whether
+    * that is what is happening and by how much, which "it buzzes"
+    * cannot. */
+   retro_atomic_size_t worst_short;
+   retro_atomic_size_t worst_short_avail;
    /* Whether this output follows the system's default, which is only
     * so when the user named no device: a named one is not disturbed
     * by the default moving. */
@@ -619,9 +628,28 @@ static void coreaudio_listen_default_output(coreaudio_t *dev, bool on);
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
+   size_t       n;
 
    if (!dev)
       return;
+
+   /* How the callback fared, said once, here. The frontend already
+    * reports the underrun count; what this adds is the size of the
+    * shortfall against the ring and the period, which is what says
+    * whether a buzz is the ring being too small for the device's
+    * period rather than the source being late. */
+   if ((n = retro_atomic_load_acquire_size(&dev->underruns)))
+      RARCH_LOG("[CoreAudio] The callback came up short %u time%s; at worst it wanted %u samples more than the %u it found, against a %u-sample ring and a %u-frame device period.\n",
+            (unsigned)n, n == 1 ? "" : "s",
+            (unsigned)retro_atomic_load_acquire_size(&dev->worst_short),
+            (unsigned)retro_atomic_load_acquire_size(&dev->worst_short_avail),
+            (unsigned)dev->usable,
+#if !TARGET_OS_IPHONE
+            (unsigned)dev->period_frames
+#else
+            0u
+#endif
+            );
 
 #if !TARGET_OS_IPHONE
    /* Before anything else: the HAL calls the listener on a thread of
@@ -694,12 +722,24 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
        *
        * And ored in, not assigned: the flags are the unit's, and it
        * may have set some of its own on the way in. */
+      /* And whole frames out, for the same reason: a short read that
+       * ends mid-frame leaves the ring's read cursor offset from its
+       * write cursor by a sample, which never comes back. */
+      avail -= avail % dev->channels;
       if (avail > 0)
          rb_read(dev, outbuf, avail);
       memset(outbuf + avail, 0, (frames_needed - avail) * sizeof(float));
       if (!avail && action_flags)
          *action_flags |= kAudioUnitRenderAction_OutputIsSilence;
       retro_atomic_fetch_add_size(&dev->underruns, 1);
+      {
+         size_t shortfall = frames_needed - avail;
+         if (shortfall > retro_atomic_load_acquire_size(&dev->worst_short))
+         {
+            retro_atomic_store_release_size(&dev->worst_short, shortfall);
+            retro_atomic_store_release_size(&dev->worst_short_avail, avail);
+         }
+      }
    }
    else
       rb_read(dev, outbuf, frames_needed);
@@ -1175,6 +1215,8 @@ static void *coreaudio_init(const char *device,
    retro_atomic_size_init(&dev->filled, 0);
    retro_atomic_size_init(&dev->consumed, 0);
    retro_atomic_size_init(&dev->underruns, 0);
+   retro_atomic_size_init(&dev->worst_short, 0);
+   retro_atomic_size_init(&dev->worst_short_avail, 0);
    dev->write_ptr = 0;
    dev->read_ptr  = 0;
 
@@ -1272,6 +1314,21 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    {
       size_t avail    = rb_write_avail(dev);
       size_t to_write = (avail < samples) ? avail : samples;
+
+      /* Whole frames only. The ring is counted in samples and the
+       * free space in it is whatever the callback happened to leave,
+       * so without this a write can end half way through a frame -
+       * and from then on every frame in the ring straddles two of the
+       * source's, with left in right's place for the rest of the
+       * session. On correlated stereo that also cancels, which is
+       * heard as a buzz over something much quieter than it should
+       * be.
+       *
+       * This was here to be found for as long as the write path
+       * existed; what uncovered it was the int16 fast path being
+       * switched off, which moved every core onto this function
+       * instead of only the float ones. */
+      to_write -= to_write % dev->channels;
 
       if (to_write > 0)
       {
