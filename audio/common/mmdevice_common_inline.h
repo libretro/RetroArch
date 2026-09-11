@@ -149,6 +149,18 @@ static const GUID mmdevice_IID_IAudioClient3 =
    { 0x7ed4ee07, 0x8e67, 0x4cd4, { 0x8c, 0x1a, 0x2b, 0x7a, 0x59, 0x87, 0xad, 0x42 } };
 #endif
 
+/* IAudioClock and IAudioClock2: the device's own playback position,
+ * which is what a sink-rate estimate wants and what counting service
+ * events only approximates. IAudioClock reports a position in units
+ * of its own frequency, paired with the QPC value it was sampled at;
+ * IAudioClock2 reports the hardware's position in frames directly and
+ * is shared-mode only. Their IIDs are defined here for the same
+ * reason IAudioClient3's is: mingw's libuuid does not export them. */
+static const GUID mmdevice_IID_IAudioClock =
+   { 0xcd63314f, 0x3fba, 0x4a1b, { 0x81, 0x2c, 0xef, 0x96, 0x35, 0x87, 0x28, 0xe7 } };
+static const GUID mmdevice_IID_IAudioClock2 =
+   { 0x6f49ff73, 0x6727, 0x49ac, { 0xa0, 0x08, 0xd9, 0x8c, 0xf5, 0xe7, 0x00, 0x48 } };
+
 #ifdef __cplusplus
 #define _IMMDeviceCollection_Item(This,nDevice,ppdevice) (This)->Item(nDevice,ppdevice)
 #define _IAudioClient_Start(This)	( (This)->Start() )
@@ -160,6 +172,10 @@ static const GUID mmdevice_IID_IAudioClient3 =
 #define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
    ( (This)->ReleaseBuffer(NumFramesWritten,dwFlags) )
 #define _IAudioClient_GetService(This,riid,ppv) ( (This)->GetService(riid,ppv) )
+#define _IAudioClock_GetFrequency(This,p) ( (This)->GetFrequency(p) )
+#define _IAudioClock_GetPosition(This,p,q) ( (This)->GetPosition(p,q) )
+#define _IAudioClock_QueryInterface(This,riid,ppv) ( (This)->QueryInterface(riid,ppv) )
+#define _IAudioClock2_GetDevicePosition(This,p,q) ( (This)->GetDevicePosition(p,q) )
 #define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->SetEventHandle(eventHandle) )
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->GetBufferSize(pNumBufferFrames) )
 #define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->GetStreamLatency(phnsLatency) )
@@ -205,6 +221,10 @@ static const GUID mmdevice_IID_IAudioClient3 =
 #define _IAudioRenderClient_ReleaseBuffer(This,NumFramesWritten,dwFlags)	\
    ( (This)->lpVtbl -> ReleaseBuffer(This,NumFramesWritten,dwFlags) )
 #define _IAudioClient_GetService(This,riid,ppv)	( (This)->lpVtbl -> GetService(This,&(riid),ppv) )
+#define _IAudioClock_GetFrequency(This,p)	( (This)->lpVtbl -> GetFrequency(This,p) )
+#define _IAudioClock_GetPosition(This,p,q)	( (This)->lpVtbl -> GetPosition(This,p,q) )
+#define _IAudioClock_QueryInterface(This,riid,ppv)	( (This)->lpVtbl -> QueryInterface(This,&(riid),ppv) )
+#define _IAudioClock2_GetDevicePosition(This,p,q)	( (This)->lpVtbl -> GetDevicePosition(This,p,q) )
 #define _IAudioClient_SetEventHandle(This,eventHandle)	( (This)->lpVtbl -> SetEventHandle(This,eventHandle) )
 #define _IAudioClient_GetBufferSize(This,pNumBufferFrames) ( (This)->lpVtbl -> GetBufferSize(This,pNumBufferFrames) )
 #define _IAudioClient_GetStreamLatency(This,phnsLatency)	( (This)->lpVtbl -> GetStreamLatency(This,phnsLatency) )

@@ -42,7 +42,14 @@ typedef WCHAR   *LPWSTR;
 typedef struct { uint32_t Data1; uint16_t Data2, Data3; uint8_t Data4[8]; } GUID;
 typedef const GUID *REFIID;
 extern const GUID IID_IAudioClient, IID_IAudioRenderClient, IID_IAudioCaptureClient,
-       mmdevice_IID_IAudioClient3, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, KSDATAFORMAT_SUBTYPE_PCM;
+       mmdevice_IID_IAudioClient3, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, KSDATAFORMAT_SUBTYPE_PCM,
+       mmdevice_IID_IAudioClock, mmdevice_IID_IAudioClock2;
+
+/* Whether the scripted endpoint offers a device clock, and which. */
+void fake_device_configure_clock(int have_clock, int have_clock2);
+/* Frames the scripted engine has played, which is what the fake's
+ * clock reports. */
+unsigned long long fake_device_played(void);
 
 /* --- Wave formats ---------------------------------------------------- */
 #define WAVE_FORMAT_PCM        1
@@ -89,6 +96,31 @@ typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } A
 #define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 
 /* --- COM objects: the vtable shapes the driver's macros dereference --- */
+typedef unsigned long long UINT64;
+
+/* IAudioClock and IAudioClock2: the device's own position. The fake
+ * advances it from the frames the scripted engine has actually
+ * played, so a test can drop service events - which is what a
+ * descheduled pump looks like - and watch the event count fall behind
+ * a clock that does not. */
+typedef struct IAudioClock IAudioClock;
+typedef struct IAudioClock2 IAudioClock2;
+typedef struct IAudioClockVtbl {
+   HRESULT (*QueryInterface)(IAudioClock *, REFIID, void **);
+   DWORD   (*AddRef)(IAudioClock *);
+   DWORD   (*Release)(IAudioClock *);
+   HRESULT (*GetFrequency)(IAudioClock *, UINT64 *);
+   HRESULT (*GetPosition)(IAudioClock *, UINT64 *, UINT64 *);
+} IAudioClockVtbl;
+struct IAudioClock { const IAudioClockVtbl *lpVtbl; void *fake; };
+typedef struct IAudioClock2Vtbl {
+   HRESULT (*QueryInterface)(IAudioClock2 *, REFIID, void **);
+   DWORD   (*AddRef)(IAudioClock2 *);
+   DWORD   (*Release)(IAudioClock2 *);
+   HRESULT (*GetDevicePosition)(IAudioClock2 *, UINT64 *, UINT64 *);
+} IAudioClock2Vtbl;
+struct IAudioClock2 { const IAudioClock2Vtbl *lpVtbl; void *fake; };
+
 typedef struct IAudioClient IAudioClient;
 typedef struct IAudioClient3 IAudioClient3;
 typedef struct IAudioRenderClient IAudioRenderClient;
@@ -138,6 +170,10 @@ struct IMMDevice { const IMMDeviceVtbl *lpVtbl; void *fake; };
 #define _IAudioRenderClient_GetBuffer(This,n,pp)        ((This)->lpVtbl->GetBuffer(This,n,pp))
 #define _IAudioRenderClient_ReleaseBuffer(This,n,f)     ((This)->lpVtbl->ReleaseBuffer(This,n,f))
 #define _IAudioClient_GetService(This,riid,ppv)         ((This)->lpVtbl->GetService(This,&(riid),ppv))
+#define _IAudioClock_GetFrequency(This,p)               ((This)->lpVtbl->GetFrequency(This,p))
+#define _IAudioClock_GetPosition(This,p,q)              ((This)->lpVtbl->GetPosition(This,p,q))
+#define _IAudioClock_QueryInterface(This,riid,ppv)      ((This)->lpVtbl->QueryInterface(This,&(riid),ppv))
+#define _IAudioClock2_GetDevicePosition(This,p,q)       ((This)->lpVtbl->GetDevicePosition(This,p,q))
 #define _IAudioClient_SetEventHandle(This,h)            ((This)->lpVtbl->SetEventHandle(This,h))
 #define _IAudioClient_GetBufferSize(This,p)             ((This)->lpVtbl->GetBufferSize(This,p))
 #define _IAudioClient_GetStreamLatency(This,p)          ((This)->lpVtbl->GetStreamLatency(This,p))

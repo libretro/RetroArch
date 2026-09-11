@@ -13,6 +13,8 @@
 
 const GUID IID_IAudioClient        = { 1, 0, 0, {0} };
 const GUID IID_IAudioRenderClient  = { 2, 0, 0, {0} };
+const GUID mmdevice_IID_IAudioClock  = { 7, 0, 0, {0} };
+const GUID mmdevice_IID_IAudioClock2 = { 8, 0, 0, {0} };
 const GUID IID_IAudioCaptureClient = { 3, 0, 0, {0} };
 const GUID mmdevice_IID_IAudioClient3 = { 4, 0, 0, {0} };
 const GUID KSDATAFORMAT_SUBTYPE_IEEE_FLOAT = { 3, 0, 16, {0x80,0,0,0xaa,0,0x38,0x9b,0x71} };
@@ -79,12 +81,13 @@ void CoTaskMemFree(void *p) { free(p); }
 static struct
 {
    unsigned rate;
+   int      have_clock, have_clock2;
    REFERENCE_TIME min_period, default_period;
    bool accept_float;
    unsigned engine_min_frames, locked_period_frames;
    unsigned max_channels;      /* PCM channels the pin takes; 0 = any */
    bool accept_iec61937_ac3;   /* the Dolby Digital subtype, exclusive */
-} g_cfg = { 48000, 30000, 100000, false, 0, 0, 0, false };
+} g_cfg = { 48000, 0, 0, 30000, 100000, false, 0, 0, 0, false };
 
 /* Everything released to the device while capturing, for a harness
  * that wants to look at the bytes and not just count them. */
@@ -147,6 +150,9 @@ typedef struct fake_client
 {
    IAudioClient       client;
    IAudioClient3      client3;
+   IAudioClock        clock;
+   IAudioClock2       clock2;
+   int                have_clock, have_clock2;
    IAudioRenderClient render;
    unsigned           refs;
    bool               initialised, running;
@@ -167,6 +173,17 @@ typedef struct fake_client
 } fake_client_t;
 
 static fake_client_t *g_last = NULL;
+
+void fake_device_configure_clock(int have_clock, int have_clock2)
+{
+   g_cfg.have_clock  = have_clock;
+   g_cfg.have_clock2 = have_clock2;
+}
+
+unsigned long long fake_device_played(void)
+{
+   fake_device_stats_t s; fake_device_stats(&s); return (unsigned long long)s.frames_consumed;
+}
 
 void fake_device_configure(unsigned rate, REFERENCE_TIME min_period_hns,
       REFERENCE_TIME default_period_hns, bool accept_float)
@@ -328,9 +345,57 @@ static HRESULT c_getservice(IAudioClient *t, REFIID iid, void **out)
 {
    fake_client_t *c = (fake_client_t*)t->fake;
    if (memcmp(iid, &IID_IAudioRenderClient, sizeof(GUID)) == 0) { c->refs++; *out = &c->render; return S_OK; }
+   if (memcmp(iid, &mmdevice_IID_IAudioClock, sizeof(GUID)) == 0 && c->have_clock)
+   { c->refs++; *out = &c->clock; return S_OK; }
    *out = NULL;
    return E_NOINTERFACE;
 }
+/* The device's position, which is the frames the scripted engine has
+ * actually played - independent of whether the driver saw the events
+ * that played them. */
+static HRESULT clk_qi(IAudioClock *t, REFIID iid, void **out)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   if (memcmp(iid, &mmdevice_IID_IAudioClock2, sizeof(GUID)) == 0 && c->have_clock2)
+   { c->refs++; *out = &c->clock2; return S_OK; }
+   *out = NULL;
+   return E_NOINTERFACE;
+}
+static DWORD clk_addref(IAudioClock *t) { return ++((fake_client_t*)t->fake)->refs; }
+static DWORD clk_release(IAudioClock *t) { return --((fake_client_t*)t->fake)->refs; }
+static HRESULT clk_getfreq(IAudioClock *t, UINT64 *f)
+{
+   /* A frequency that is not the sample rate, so a driver that
+    * assumes the position is already in frames reads wrong. */
+   (void)t;
+   *f = 10000000ULL;
+   return S_OK;
+}
+static HRESULT clk_getpos(IAudioClock *t, UINT64 *p, UINT64 *q)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   *p = (UINT64)c->stats.frames_consumed * 10000000ULL
+      / (g_cfg.rate ? g_cfg.rate : 48000);
+   if (q) *q = *p;
+   return S_OK;
+}
+static const IAudioClockVtbl clock_vtbl =
+{ clk_qi, clk_addref, clk_release, clk_getfreq, clk_getpos };
+
+static HRESULT clk2_qi(IAudioClock2 *t, REFIID iid, void **out)
+{ (void)t; (void)iid; *out = NULL; return E_NOINTERFACE; }
+static DWORD clk2_addref(IAudioClock2 *t) { return ++((fake_client_t*)t->fake)->refs; }
+static DWORD clk2_release(IAudioClock2 *t) { return --((fake_client_t*)t->fake)->refs; }
+static HRESULT clk2_getpos(IAudioClock2 *t, UINT64 *p, UINT64 *q)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   *p = (UINT64)c->stats.frames_consumed;
+   if (q) *q = *p;
+   return S_OK;
+}
+static const IAudioClock2Vtbl clock2_vtbl =
+{ clk2_qi, clk2_addref, clk2_release, clk2_getpos };
+
 static const IAudioClientVtbl client_vtbl = {
    c_qi, c_addref, c_release, c_initialize, c_getbuffersize, c_getstreamlatency,
    c_getpadding, c_isformatsupported, c_getmixformat, c_getdeviceperiod,
@@ -436,6 +501,10 @@ static HRESULT d_activate(IMMDevice *t, REFIID iid, DWORD ctx, void *pa, void **
    c = (fake_client_t*)calloc(1, sizeof(*c));
    c->client.lpVtbl  = &client_vtbl;  c->client.fake  = c;
    c->client3.lpVtbl = &client3_vtbl; c->client3.fake = c;
+   c->clock.lpVtbl   = &clock_vtbl;   c->clock.fake   = c;
+   c->clock2.lpVtbl  = &clock2_vtbl;  c->clock2.fake  = c;
+   c->have_clock     = g_cfg.have_clock;
+   c->have_clock2    = g_cfg.have_clock2;
    c->render.lpVtbl  = &render_vtbl;  c->render.fake  = c;
    c->refs = 1;
    pthread_mutex_init(&c->m, NULL);

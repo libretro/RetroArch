@@ -43,16 +43,16 @@
 #include <retro_atomic.h>
 #endif
 
-#include "../common/mmdevice_common.h"
-#include "../common/mmdevice_common_inline.h"
-#include "../common/wasapi.h"
+#include "fake_wasapi.h"
 
-#include "../audio_driver.h"
+
+
+#include "../../../audio/audio_driver.h"
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
 #endif
-#include "../../verbosity.h"
-#include "../../configuration.h"
+#include "../../../verbosity.h"
+#include "../../../configuration.h"
 
 #define WASAPI_TIMEOUT 256
 
@@ -110,7 +110,6 @@ typedef struct
    uint64_t            consumed;
    uint64_t            released;   /* shared: frames given to the engine */
    unsigned            sh_period_frames; /* shared: frames the engine takes per event */
-   unsigned            rate;             /* the stream's, for the clock conversion */
    /* Read by the pump thread instead of the EXCLUSIVE bit in flags:
     * flags is one byte that start(), stop() and set_nonblock_state()
     * write from other threads while the pump runs, and a read of one
@@ -140,16 +139,6 @@ typedef struct
     * the fifo's room and the encoder's count could be from either
     * side of a burst's push, half the buffer apart. */
    size_t         ac3_inflight;
-   /* The device's own clock, where the endpoint offers one. See the
-    * acquisition in wasapi_init_client() for why the event count is
-    * not the same thing. */
-   IAudioClock   *clock;
-   IAudioClock2  *clock2;
-   UINT64         clock_frequency;   /* units of an IAudioClock position, a second */
-   UINT64         clock_start;
-   UINT64         clock2_start;
-   bool           clock_valid;
-   bool           clock2_valid;
    /* Whether the fifo has ever been fed: a period of silence before
     * the first audio is not an underrun. On the AC-3 path the first
     * burst is 32 ms of input and an encode away from the first write,
@@ -1960,52 +1949,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (FAILED(hr))
       goto error;
 
-   /* The device's own clock, where it has one. frames_consumed() is
-    * specified as frames the device has consumed on its own clock,
-    * and what it returned was service events counted and multiplied
-    * by a period - which is the same number only while every event is
-    * seen and every event is one period. A pump descheduled past two
-    * periods wakes once and counts one, and the window it lands in
-    * reads slow by the difference.
-    *
-    * IAudioClock2 gives the hardware's position in frames and is
-    * shared-mode only; IAudioClock gives a position in units of its
-    * own frequency. Neither is required of a device, so the count
-    * stays as the fallback and as something to compare against. */
-   if (SUCCEEDED(_IAudioClient_GetService(w->client,
-               mmdevice_IID_IAudioClock, (void**)&w->clock)) && w->clock)
-   {
-      UINT64 freq = 0;
-      if (SUCCEEDED(_IAudioClock_GetFrequency(w->clock, &freq)) && freq)
-      {
-         UINT64 pos = 0, qpc = 0;
-         w->clock_frequency = freq;
-         if (SUCCEEDED(_IAudioClock_GetPosition(w->clock, &pos, &qpc)))
-         {
-            w->clock_start = pos;
-            w->clock_valid = true;
-         }
-      }
-      if (!w->clock_valid)
-         RELEASE(w->clock);
-   }
-   if (w->clock && SUCCEEDED(_IAudioClock_QueryInterface(w->clock,
-               mmdevice_IID_IAudioClock2, (void**)&w->clock2)) && w->clock2)
-   {
-      UINT64 pos = 0, qpc = 0;
-      if (SUCCEEDED(_IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
-      {
-         w->clock2_start = pos;
-         w->clock2_valid = true;
-      }
-      else
-         RELEASE(w->clock2);
-   }
-   RARCH_LOG("[WASAPI] Device clock: %s.\n",
-         w->clock2_valid ? "hardware position, in frames (IAudioClock2)"
-         : w->clock_valid ? "stream position (IAudioClock)"
-         : "none; the service events are counted instead");
-
    hr = _IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest);
    if (FAILED(hr))
       goto error;
@@ -2042,9 +1985,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    if (new_rate)
       *new_rate = rate;
-   /* Kept for the device-clock conversion, which turns a position
-    * in the clock's own units into frames. */
-   w->rate = rate;
 
    /* The device stage behind what buffer_size() reports, for the
     * statistics overlay. Exclusive: buffer_size() is the fifo, and the
@@ -2076,8 +2016,6 @@ error:
     * the event and the client it waits on go away. */
    wasapi_pump_stop(w);
 #endif
-   RELEASE(w->clock2);
-   RELEASE(w->clock);
    RELEASE(w->renderer);
    RELEASE(w->client);
    RELEASE(w->device);
@@ -2721,28 +2659,7 @@ static size_t wasapi_frames_consumed(void *wh)
 #ifdef HAVE_THREADS
    wasapi_t *w = (wasapi_t*)wh;
    size_t n;
-   UINT64  pos = 0, qpc = 0;
-
-   if (!w)
-      return 0;
-
-   /* The hardware's position, in frames, where the endpoint reports
-    * it. Nothing to convert and nothing to infer. */
-   if (w->clock2_valid && SUCCEEDED(
-            _IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
-      return (size_t)(pos - w->clock2_start);
-
-   /* Otherwise the stream's position, which is in units of the
-    * clock's own frequency rather than in frames - the documentation
-    * is explicit that they are not to be assumed the same - so it is
-    * converted through that frequency and the rate the stream runs
-    * at. */
-   if (w->clock_valid && w->clock_frequency && w->rate && SUCCEEDED(
-            _IAudioClock_GetPosition(w->clock, &pos, &qpc)))
-      return (size_t)(((pos - w->clock_start) * (UINT64)w->rate)
-            / w->clock_frequency);
-
-   if (!w->fifo_lock)
+   if (!w || !w->fifo_lock)
       return 0;
    slock_lock(w->fifo_lock);
    n = (size_t)w->consumed;
