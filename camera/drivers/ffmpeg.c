@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <retro_assert.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -97,7 +98,14 @@ typedef struct ffmpeg_camera
    uint8_t *target_buffers[2];
    size_t target_buffer_length;
    slock_t *target_buffer_lock;
-   volatile bool done;
+   /* The poll thread's loop condition: the main thread sets it in
+    * stop(), the thread reads it every turn, and nothing else is
+    * held on either side - target_buffer_lock covers the frame, not
+    * this. It was a volatile bool, which is not a synchronisation
+    * primitive: it stops the compiler caching the load and orders
+    * nothing, so the thread has no guarantee of seeing what the main
+    * thread wrote before it. */
+   retro_atomic_int_t done;
    uint8_t *active_buffer;
 } ffmpeg_camera_t;
 
@@ -617,6 +625,14 @@ static void ffmpeg_camera_stop(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
+   /* The thread first. It is the other user of the decoder - it sends
+    * every packet it reads and receives every frame - and an
+    * AVCodecContext takes one user at a time, so the flush below
+    * cannot happen while the thread is still in there. This used to
+    * flush and then join. */
+   retro_atomic_store_release_int(&ffmpeg->done, 1);
+   sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
+
    if (!ffmpeg->format_context)
    {
       RARCH_LOG("[FFMPEG] Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
@@ -633,8 +649,6 @@ static void ffmpeg_camera_stop(void *data)
    }
 
    /* these functions are noops for NULL pointers */
-   ffmpeg->done = true;
-   sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
    ffmpeg->poll_thread = NULL;
 
    slock_free(ffmpeg->target_buffer_lock);
@@ -669,7 +683,7 @@ static void ffmpeg_camera_poll_thread(void *data)
    if (!ffmpeg)
       return;
 
-   while (!ffmpeg->done)
+   while (!retro_atomic_load_acquire_int(&ffmpeg->done))
    {
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
       /* Read the raw data from the camera. If that fails... */

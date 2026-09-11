@@ -240,7 +240,12 @@ typedef struct ffmpeg
     * thread's loop condition and the push paths' bail-out.  Was a
     * volatile bool, which TSan flagged against the clear. */
    retro_atomic_int_t alive;
-   volatile bool can_sleep;
+   /* Whether the encoder thread may sleep when it finds the queues
+    * empty. Every access is under cond_lock, or - the one in
+    * init_thread() - before the thread it is read by exists, so the
+    * lock is what protects it. It carried a volatile, which says the
+    * opposite: that it is a flag crossing threads without one. */
+   bool can_sleep;
 } ffmpeg_t;
 
 AVFormatContext *ctx;
