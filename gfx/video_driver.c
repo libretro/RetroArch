@@ -4020,9 +4020,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->shader_subframes            = settings->uints.video_shader_subframes;
    video_info->current_subframe            = 0;
 #ifdef HAVE_THREADS
-   /* The video thread owns and stamps this under the wrapper. */
+   /* The video thread owns this under the wrapper; read it through the
+    * helper so callers still get a populated value. */
    if (video_st->thread_wrapper_active)
-      video_info->swap_count               = 0;
+      video_info->swap_count               = video_thread_swap_count();
    else
 #endif
       video_info->swap_count               = video_st->swap_count;
@@ -6020,10 +6021,15 @@ void video_driver_frame(const void *data, unsigned width,
    {
       video_info.current_subframe = 0;
 #ifdef HAVE_THREADS
-      /* The video thread owns and stamps this under the wrapper. */
+      /* The video thread owns this under the wrapper; read it through the
+       * helper so the wrapper callback always gets a current value. */
       if (!video_st->thread_wrapper_active)
-#endif
          video_info.swap_count    = video_st->swap_count;
+      else
+         video_info.swap_count    = video_thread_swap_count();
+#else
+      video_info.swap_count    = video_st->swap_count;
+#endif
       if (vid->frame(
                video_st->data, data, width, height,
                video_st->frame_count, (unsigned)pitch,
