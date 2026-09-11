@@ -472,6 +472,32 @@ static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
  * resampler; and then output compared against the sinc resampler's,
  * sample for sample, rather than assumed equivalent. Until then the
  * frontend resamples, which costs CPU and is correct.
+ *
+ * One thing the next attempt should not do, since it has been
+ * suggested and reads plausibly: set kAudioConverterPrimeMethod to
+ * kConverterPrimeMethod_None to save latency. It does the opposite.
+ * Apple's header names the three methods and what they cost -
+ *
+ *   Pre     primes with leading and trailing input frames
+ *   Normal  primes with trailing only; leading assumed silence,
+ *           "requires no pre-seeking of the input stream and
+ *            generates no latency at the output"
+ *   None    "acts in 'latency' mode": both assumed silence, and
+ *           trailingFrames of through latency appear at the start
+ *           of the converter's output
+ *
+ * - so Normal, which is the default and what this code left in
+ * place, is the zero-latency one. None exists for a source that
+ * cannot be read ahead of, live input with nothing before its first
+ * frame; it buys that by accepting the latency Normal avoids. This
+ * path feeds from a queue of the core's audio, where reading ahead
+ * is exactly what the input proc can do, so Normal is right here for
+ * the reason it is the default.
+ *
+ * What is worth doing instead is asking. kAudioConverterPrimeInfo
+ * reports leadingFrames and trailingFrames for the converter as
+ * configured, so the read-ahead can be measured and reported rather
+ * than guessed at in either direction.
  */
 #if 0
 
