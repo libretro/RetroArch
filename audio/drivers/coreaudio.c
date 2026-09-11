@@ -313,6 +313,9 @@ typedef struct coreaudio
 
    /* AudioConverter for system sample-rate conversion */
 #if !TARGET_OS_IPHONE
+   /* Frames the HAL asks the render callback for at a time, as the
+    * device actually settled it. The ring is sized to hold several. */
+   size_t            period_frames;
    /* Whether this output follows the system's default, which is only
     * so when the user named no device: a named one is not disturbed
     * by the default moving. */
@@ -1108,6 +1111,12 @@ static void *coreaudio_init(const char *device,
       if (AudioUnitGetProperty(dev->dev, kAudioDevicePropertyBufferFrameSize,
                kAudioUnitScope_Global, 0, &got, &size) != noErr)
          got = 0;
+      /* What the device actually took, for the ring below to be sized
+       * against. It is not necessarily what was asked for: a device
+       * whose minimum is above the quarter-ring target is clamped up
+       * to that minimum, and then the ring has to hold enough periods
+       * of it or every callback is a partial fill. */
+      dev->period_frames = got ? (size_t)got : (size_t)period;
 
       if (range.mMinimum > 0.0)
          RARCH_LOG("[CoreAudio] IO buffer: asked %u, device takes %u to %u, got %u frames (%.2f ms).\n",
@@ -1126,6 +1135,30 @@ static void *coreaudio_init(const char *device,
 
    /* Calculate buffer size in samples (stereo) */
    buffer_samples   = (latency * (*new_rate)) / 1000;
+
+#if !TARGET_OS_IPHONE
+   /* Never fewer than four of the device's periods. The latency
+    * setting alone was enough while the period was held at 512 or
+    * below, because the setting is always several times that - but
+    * the period is now whatever the device says it takes, and a
+    * device whose minimum is large (some aggregate and HDMI devices
+    * ask for thousands of frames) gets clamped up to it. A ring
+    * holding one or two such periods cannot fill a callback: rate
+    * control keeps it about half full, so every callback takes what
+    * is there and pads the rest with silence, which is heard as a
+    * buzz at the period rate and a signal that is mostly gaps. */
+   if (dev->period_frames)
+   {
+      size_t floor_frames = dev->period_frames * 4;
+      if (buffer_samples < floor_frames)
+      {
+         RARCH_LOG("[CoreAudio] The device's %u-frame period needs a larger buffer than the %u ms setting gives; using %u frames.\n",
+               (unsigned)dev->period_frames, latency, (unsigned)floor_frames);
+         buffer_samples = floor_frames;
+      }
+   }
+#endif
+
    buffer_samples  *= dev->channels;
 
    /* Round up to next power of 2 for fast modulo via masking; the ring
