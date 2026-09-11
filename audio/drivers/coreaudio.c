@@ -124,9 +124,6 @@ static bool ca_cm_resolve(void)
 #include <AudioToolbox/AudioToolbox.h>
 
 
-/* Threshold for recreating AudioConverter (0.5% change) */
-#define RATE_CHANGE_THRESHOLD 0.005
-
 typedef struct coreaudio
 {
    /* What the writer waits on between render callbacks; see
@@ -160,7 +157,7 @@ typedef struct coreaudio
     * both of which are this type on every SDK. */
    AudioUnit dev;
 
-   /* AudioConverter for hardware-accelerated resampling */
+   /* AudioConverter for system sample-rate conversion */
    AudioConverterRef converter;
    unsigned output_rate;  /* Hardware output rate */
    /* The layout the output unit's input bus was set to, as the
@@ -282,6 +279,35 @@ static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
 }
 
 /* AudioConverter input callback - provides int16 samples */
+/* The int16 fast path is disabled. It is kept here rather than
+ * deleted because what it should do is worth having - feeding the
+ * core's int16 to the system converter saves the frontend's resampler
+ * on every frame - and because what is wrong with it is specific and
+ * known, so the next attempt should start from this rather than from
+ * nothing.
+ *
+ * What is wrong: the driver is handed a rate adjustment on every
+ * write and is responsible for applying it, and this rebuilds the
+ * converter only when that adjustment moves by more than half a
+ * percent. The frontend's own rate control range is half a percent,
+ * so in ordinary use every correction it makes falls inside the dead
+ * zone and none is applied; and the one that eventually does not
+ * arrives as a step, with the converter destroyed and remade and its
+ * filter history lost. Lowering the threshold trades the dead zone
+ * for a rebuild whenever the buffer moves, which is worse.
+ *
+ * What it needs before it comes back: a converter whose ratio can be
+ * changed in place and keep its state, or a way for a driver to say
+ * it cannot follow a rate adjustment so the frontend keeps its own
+ * resampler; and then output compared against the sinc resampler's,
+ * sample for sample, rather than assumed equivalent. Until then the
+ * frontend resamples, which costs CPU and is correct.
+ */
+#if 0
+
+/* Threshold for recreating AudioConverter (0.5% change) */
+#define RATE_CHANGE_THRESHOLD 0.005
+
 static OSStatus converter_input_cb(
       AudioConverterRef converter,
       UInt32 *ioNumberDataPackets,
@@ -336,6 +362,8 @@ static bool coreaudio_update_converter(coreaudio_t *dev,
             && ratio_change < RATE_CHANGE_THRESHOLD)
          return true;
 
+
+
       AudioConverterDispose(dev->converter);
       dev->converter = NULL;
    }
@@ -382,6 +410,8 @@ static bool coreaudio_update_converter(coreaudio_t *dev,
    return true;
 }
 
+#endif /* the int16 fast path, disabled: see above */
+
 static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
@@ -395,11 +425,13 @@ static void coreaudio_free(void *data)
       ca_cm.close(dev->dev);
    }
 
+#if 0 /* the int16 fast path, disabled: see above */
    if (dev->converter)
       AudioConverterDispose(dev->converter);
 
    if (dev->conv_buffer)
       free(dev->conv_buffer);
+#endif
 
    if (dev->buffer)
       free(dev->buffer);
@@ -713,11 +745,13 @@ static void *coreaudio_init(const char *device,
    *new_rate = real_desc.mSampleRate;
    dev->output_rate = *new_rate;
 
+#if 0 /* the int16 fast path, disabled: see above */
    /* Allocate converter output buffer (enough for 2048 output frames) */
    dev->conv_buffer_frames = 2048;
    dev->conv_buffer = (float *)calloc(dev->conv_buffer_frames * dev->channels, sizeof(float));
    if (!dev->conv_buffer)
       goto error;
+#endif
 
    /* Tell the HAL unit the two channels are a stereo pair. RemoteIO
     * refuses the property, hence macOS only; and it is advisory - the
@@ -923,7 +957,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    return written * sizeof(float);
 }
 
-/* Write raw int16 samples with hardware-accelerated resampling */
+/* Write raw int16 samples through the system sample-rate converter */
+#if 0 /* the int16 fast path, disabled: see above */
 static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       size_t frames, unsigned input_rate, double rate_adjust, float volume)
 {
@@ -1043,6 +1078,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
 
    return (ssize_t)frames_written;
 }
+#endif
 
 static void coreaudio_set_nonblock_state(void *data, bool state)
 {
@@ -1074,19 +1110,22 @@ static bool coreaudio_stop(void *data)
 /* Also the far end of an audio session interruption on iOS and tvOS:
  * the Cocoa side observes AVAudioSessionInterruptionNotification and
  * calls audio_driver_stop() at Began and audio_driver_start() at Ended,
- * which arrive here. A converter that was mid-stream when the system
- * stopped the unit can come back stuck at end-of-stream - the tvOS
- * 13/14 symptom - so it is reset on every start. */
+ * which arrive here. The converter reset that used to happen here -
+ * for a converter left stuck at end-of-stream when the system
+ * stopped the unit, the tvOS 13/14 symptom - goes with the fast path
+ * it belonged to, and comes back with it. */
 static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    if (dev)
    {
+#if 0 /* the int16 fast path, disabled: see above */
       if (dev->converter)
       {
          AudioConverterReset(dev->converter);
          dev->converter_needs_reset = false;
       }
+#endif
       dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
       if (!dev->is_paused)
          return true;
@@ -1239,7 +1278,7 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   coreaudio_write_raw,
+   NULL, /* write_raw: disabled, see the note above coreaudio_update_converter */
    coreaudio_wait_writable,
    coreaudio_frames_consumed,
    coreaudio_underruns,
