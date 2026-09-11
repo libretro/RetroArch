@@ -960,17 +960,66 @@ static void *coreaudio_init(const char *device,
     * a time, and a stage of the device latency in its own right - the
     * HAL holds a whole pull before it feeds any of it on. A quarter of
     * the ring, so the stage stays small against the setting and room
-    * comes back to the writer in small pieces, within what a device
-    * takes (64 to the 512 the HAL defaults to). Advisory: a device
-    * outside that range keeps its own. */
+    * comes back to the writer in small pieces.
+    *
+    * What that is clamped to is the device's own range, asked for
+    * rather than guessed. It used to be held between 64 and 512,
+    * which is wrong in both directions: a device that will do 32
+    * frames was kept at 64 and lost half the latency it was offering,
+    * and a device whose minimum is 128 was asked for 64 and simply
+    * refused, leaving whatever it had. The property is advisory
+    * either way, so what was actually taken is read back and logged
+    * rather than assumed. */
    {
-      UInt32 period = (UInt32)((latency * (*new_rate)) / 1000 / 4);
-      if (period < 64)
+      UInt32 period    = (UInt32)((latency * (*new_rate)) / 1000 / 4);
+      UInt32 wanted    = period;
+      UInt32 got       = 0;
+      UInt32 size      = sizeof(got);
+      AudioDeviceID id = 0;
+      UInt32 id_size   = sizeof(id);
+      AudioValueRange range;
+
+      range.mMinimum = 0.0;
+      range.mMaximum = 0.0;
+      if (AudioUnitGetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0, &id, &id_size) == noErr && id != 0)
+      {
+         ca_addr_t prop;
+         UInt32 rsize   = sizeof(range);
+         prop.mSelector = kAudioDevicePropertyBufferFrameSizeRange;
+         prop.mScope    = kAudioDevicePropertyScopeOutput;
+         prop.mElement  = CA_ELEMENT_MAIN;
+         if (ca_prop_get(id, &prop, &rsize, &range, false) != noErr)
+            range.mMinimum = range.mMaximum = 0.0;
+      }
+
+      if (range.mMinimum > 0.0 && range.mMaximum >= range.mMinimum)
+      {
+         if ((double)period < range.mMinimum)
+            period = (UInt32)range.mMinimum;
+         else if ((double)period > range.mMaximum)
+            period = (UInt32)range.mMaximum;
+      }
+      else if (period < 64)   /* no range to go on: the old bounds */
          period = 64;
       else if (period > 512)
          period = 512;
+
       AudioUnitSetProperty(dev->dev, kAudioDevicePropertyBufferFrameSize,
             kAudioUnitScope_Global, 0, &period, sizeof(period));
+      if (AudioUnitGetProperty(dev->dev, kAudioDevicePropertyBufferFrameSize,
+               kAudioUnitScope_Global, 0, &got, &size) != noErr)
+         got = 0;
+
+      if (range.mMinimum > 0.0)
+         RARCH_LOG("[CoreAudio] IO buffer: asked %u, device takes %u to %u, got %u frames (%.2f ms).\n",
+               (unsigned)wanted, (unsigned)range.mMinimum,
+               (unsigned)range.mMaximum, (unsigned)got,
+               got ? (double)got * 1000.0 / (double)(*new_rate) : 0.0);
+      else
+         RARCH_LOG("[CoreAudio] IO buffer: asked %u, got %u frames (%.2f ms); the device names no range.\n",
+               (unsigned)wanted, (unsigned)got,
+               got ? (double)got * 1000.0 / (double)(*new_rate) : 0.0);
    }
 #endif
 
