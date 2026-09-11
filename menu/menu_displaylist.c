@@ -7116,9 +7116,8 @@ static int menu_displaylist_parse_input_description_kbd_list(
          strlcpy(input_description, RARCH_NO_BIND, sizeof(input_description));
       else
       {
-         /* TODO/FIXME: Localize 'Keyboard' */
-         size_t _len = strlcpy_lit(input_description, "Keyboard ", sizeof(input_description));
-         strlcpy(input_description + _len, key_label, sizeof(input_description) - _len);
+         snprintf(input_description, sizeof(input_description), /* Format string below */
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), key_label);
       }
 
       /* Add menu entry */
@@ -7801,10 +7800,13 @@ static unsigned menu_displaylist_populate_subsystem(
                 * query_enum precedent. */
                size_t pos = 0;
                int    rv  = 0;
-               /* TODO/FIXME - Localize string */
-               rv |= strlcpy_append(s, sizeof(s), &pos, "Load");
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+               {
+                  char head[256];
+                  snprintf(head, sizeof(head), /* Format string below */
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                        subsystem->desc);
+                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
+               }
                rv |= strlcpy_append(s, sizeof(s), &pos, " ");
                rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
 
@@ -7814,12 +7816,13 @@ static unsigned menu_displaylist_populate_subsystem(
                if (is_rgui && !menu_show_sublabels)
                {
                   rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  /* TODO/FIXME - Localize */
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        "Current Content:");
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        subsystem->roms[content_get_subsystem_rom_id()].desc);
+                  {
+                     char head[256];
+                     snprintf(head, sizeof(head), /* Format string below */
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                           subsystem->roms[content_get_subsystem_rom_id()].desc);
+                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
+                  }
                   rv |= strlcpy_append(s, sizeof(s), &pos, "]");
                }
 #endif
@@ -7840,10 +7843,13 @@ static unsigned menu_displaylist_populate_subsystem(
                 * unbounded subsystem->desc surface. */
                size_t pos = 0;
                int    rv  = 0;
-               /* TODO/FIXME - Localize string */
-               rv |= strlcpy_append(s, sizeof(s), &pos, "Start");
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+               {
+                  char head[256];
+                  snprintf(head, sizeof(head), /* Format string below */
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY),
+                        subsystem->desc);
+                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
+               }
                rv |= strlcpy_append(s, sizeof(s), &pos, " ");
                rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
 
@@ -7892,10 +7898,13 @@ static unsigned menu_displaylist_populate_subsystem(
             /* Same chain pattern as the two branches above. */
             size_t pos = 0;
             int    rv  = 0;
-            /* TODO/FIXME - Localize */
-            rv |= strlcpy_append(s, sizeof(s), &pos, "Load");
-            rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-            rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+            {
+               char head[256];
+               snprintf(head, sizeof(head), /* Format string below */
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                     subsystem->desc);
+               rv |= strlcpy_append(s, sizeof(s), &pos, head);
+            }
 
 #ifdef HAVE_RGUI
             /* If using RGUI with sublabels disabled, add the
@@ -7908,12 +7917,13 @@ static unsigned menu_displaylist_populate_subsystem(
                if (subsystem->num_roms > 0)
                {
                   rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  /* TODO/FIXME - Localize */
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        "Current Content:");
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        subsystem->roms[0].desc);
+                  {
+                     char head[256];
+                     snprintf(head, sizeof(head), /* Format string below */
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                           subsystem->roms[0].desc);
+                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
+                  }
                   rv |= strlcpy_append(s, sizeof(s), &pos, "]");
                }
             }
@@ -14123,198 +14133,92 @@ static bool menu_displaylist_ctl_internal(
 
                      if (media_detect_cd_info(file_path, 0, &cd_info))
                      {
-                        if (*cd_info.title)
+                        char entry[NAME_MAX_LENGTH];
+                        unsigned i;
+                        /* Format strings below */
+                        static const struct
                         {
-                           /* TODO/FIXME - localize */
-                           char title[NAME_MAX_LENGTH];
-                           size_t _len = strlcpy_lit(title, "Title: ", sizeof(title));
-                           strlcpy(title + _len, cd_info.title, sizeof(title) - _len);
+                           enum msg_hash_enums label;
+                           size_t field;
+                        } text_fields[] = {
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,        offsetof(media_detect_cd_info_t, title) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,       offsetof(media_detect_cd_info_t, system) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,       offsetof(media_detect_cd_info_t, serial) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,      offsetof(media_detect_cd_info_t, version) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE, offsetof(media_detect_cd_info_t, release_date) }
+                        };
 
-                           if (menu_entries_append(info->list,
-                                    title,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                        for (i = 0; i < sizeof(text_fields) / sizeof(text_fields[0]); i++)
+                        {
+                           const char *v = (const char*)&cd_info + text_fields[i].field;
+                           if (!*v)
+                              continue;
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(text_fields[i].label), v);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
                         }
 
-                        if (*cd_info.system)
-                        {
-                           char system[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy_lit(system, "System: ", sizeof(system));
-                           strlcpy(system + _len, cd_info.system, sizeof(system) - _len);
+                        /* Genuine disc: the ATIP is what a pressed
+                         * disc lacks */
+                        snprintf(entry, sizeof(entry),
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE),
+                              msg_hash_to_str(atip
+                                 ? MENU_ENUM_LABEL_VALUE_NO
+                                 : MENU_ENUM_LABEL_VALUE_YES));
+                        if (menu_entries_append(info->list, entry, "",
+                                 MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
+                           count++;
 
-                           if (menu_entries_append(info->list,
-                                    system,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                        snprintf(entry, sizeof(entry),
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS),
+                              toc->num_tracks);
+                        if (menu_entries_append(info->list, entry, "",
+                                 MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
+                           count++;
+
+                        for (i = 0; i < toc->num_tracks; i++)
+                        {
+                           char mode[32];
+                           unsigned char min   = 0;
+                           unsigned char sec   = 0;
+                           unsigned char frame = 0;
+
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK), i + 1);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.serial)
-                        {
-                           char serial[NAME_MAX_LENGTH];
-                           size_t _len = strlcpy(serial,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
-                                 sizeof(serial));
-                           _len += strlcpy_lit(serial + _len, "#: ",          sizeof(serial) - _len);
-                           strlcpy(serial + _len, cd_info.serial, sizeof(serial) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    serial,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           if (toc->track[i].audio)
+                              strlcpy(mode,
+                                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO),
+                                    sizeof(mode));
+                           else
+                              snprintf(mode, sizeof(mode),
+                                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE),
+                                    toc->track[i].mode % 10);
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE), mode);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.version)
-                        {
-                           char version[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - localize */
-                           size_t _len = strlcpy_lit(version, "Version: ", sizeof(version));
-                           strlcpy(version + _len, cd_info.version, sizeof(version) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    version,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE),
+                                 toc->track[i].track_bytes / 1000.0 / 1000.0);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.release_date)
-                        {
-                           char release_date[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy_lit(release_date, "Release Date: ",
-                                 sizeof(release_date));
-                           strlcpy(release_date + _len, cd_info.release_date,
-                                 sizeof(release_date) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    release_date,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH),
+                                 min, sec, frame);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
-
-                        if (atip)
-                        {
-                           /* TODO/FIXME - Localize */
-                           const char *atip_string = "Genuine Disc: No";
-                           if (menu_entries_append(info->list,
-                                    atip_string,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-                        else
-                        {
-                           /* TODO/FIXME - Localize */
-                           const char *atip_string = "Genuine Disc: Yes";
-                           if (menu_entries_append(info->list,
-                                    atip_string,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-
-                        {
-                           /* TODO/FIXME - Localize */
-                           char tracks_str[32]      = {"Number of tracks: "};
-                           size_t strlen_tracks_str = STRLEN_CONST("Number of tracks: ");
-
-                           snprintf(tracks_str      + strlen_tracks_str,
-                                 sizeof(tracks_str) - strlen_tracks_str,
-                                 "%d", toc->num_tracks);
-
-                           if (menu_entries_append(info->list,
-                                    tracks_str,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-
-                        {
-                           unsigned i;
-
-                           for (i = 0; i < toc->num_tracks; i++)
-                           {
-                              char track_str[16]      = {"Track "};
-                              char mode_str[16]       = {" - Mode: "};
-                              char size_str[32]       = {" - Size: "};
-                              char length_str[32]     = {" - Length: "};
-                              size_t strlen_track_str = STRLEN_CONST("Track ");
-                              size_t strlen_mode_str  = STRLEN_CONST(" - Mode: ");
-                              size_t strlen_size_str  = STRLEN_CONST(" - Size: ");
-
-                              snprintf(track_str      + strlen_track_str,
-                                    sizeof(track_str) - strlen_track_str,
-                                    "%d:", i + 1);
-
-                              if (menu_entries_append(info->list,
-                                       track_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              /* TODO/FIXME - localize */
-                              if (toc->track[i].audio)
-                                 snprintf(mode_str      + strlen_mode_str,
-                                       sizeof(mode_str) - strlen_mode_str,
-                                       "Audio");
-                              else
-                                 snprintf(mode_str      + strlen_mode_str,
-                                       sizeof(mode_str) - strlen_mode_str,
-                                       "Mode %d", toc->track[i].mode%10);
-
-                              if (menu_entries_append(info->list,
-                                       mode_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              snprintf(size_str      + strlen_size_str,
-                                    sizeof(size_str) - strlen_size_str,
-                                    "%.1f MB",
-                                    toc->track[i].track_bytes / 1000.0 / 1000.0);
-
-                              if (menu_entries_append(info->list,
-                                       size_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              {
-                                 unsigned char min           = 0;
-                                 unsigned char sec           = 0;
-                                 unsigned char frame         = 0;
-                                 size_t strlen_length_str    = strlen(length_str);
-
-                                 cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
-
-                                 snprintf(length_str      + strlen_length_str,
-                                       sizeof(length_str) - strlen_length_str,
-                                       "%02d:%02d.%02d", min, sec, frame);
-
-                                 if (menu_entries_append(info->list,
-                                          length_str,
-                                          "",
-                                          MSG_UNKNOWN,
-                                          FILE_TYPE_NONE, 0, 0, NULL))
-                                    count++;
-                              }
-                           }
                         }
                      }
                      else
@@ -14326,7 +14230,6 @@ static bool menu_displaylist_ctl_internal(
                else
                {
                   const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
-                  /* TODO/FIXME - localize */
                   RARCH_LOG("[CDROM] No media is inserted or drive is not ready.\n");
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

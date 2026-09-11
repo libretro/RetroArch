@@ -1230,6 +1230,70 @@ MSG_HASH(
    "Disc Information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
+   "Keyboard %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
+   "Load %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
+   "Start %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   "Title: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   "System: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   "Serial#: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
+   "Version: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   "Release Date: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   "Genuine Disc: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   "Number of tracks: %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   "Track %d:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   " - Mode: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   "Audio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   "Mode %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   " - Size: %.1f MB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   " - Length: %02d:%02d.%02d"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
    "View information about inserted media discs."
    )
