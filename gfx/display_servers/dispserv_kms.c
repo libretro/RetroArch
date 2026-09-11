@@ -36,6 +36,7 @@
 #include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
 #include "../common/drm_common.h"
 #include "../../verbosity.h"
+#include "edid_sysfs.h"
 
 typedef struct
 {
@@ -318,6 +319,56 @@ static bool kms_display_server_modeline_flush(void *data)
    return true;
 }
 
+/* The EDID property blob of the connector the context is driving.
+ * When the context is not up (g_drm_connector is NULL between a
+ * teardown and the reinit, or the menu is on another driver) the
+ * kernel's sysfs copy of the first enabled connector stands in. */
+static int kms_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   int n = -1;
+   if (!out || max < 128)
+      return -1;
+   if (g_drm_fd >= 0 && g_drm_connector)
+   {
+      drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(
+            g_drm_fd, g_drm_connector->connector_id,
+            DRM_MODE_OBJECT_CONNECTOR);
+      if (props)
+      {
+         uint32_t i;
+         for (i = 0; i < props->count_props && n < 0; i++)
+         {
+            drmModePropertyPtr prop = drmModeGetProperty(g_drm_fd,
+                  props->props[i]);
+            if (!prop)
+               continue;
+            if ((prop->flags & DRM_MODE_PROP_BLOB)
+                  && !strcmp(prop->name, "EDID"))
+            {
+               drmModePropertyBlobPtr blob = drmModeGetPropertyBlob(
+                     g_drm_fd, (uint32_t)props->prop_values[i]);
+               if (blob && blob->data && blob->length >= 128)
+               {
+                  size_t len = blob->length;
+                  if (len > max)
+                     len = max;
+                  len -= len % 128;
+                  memcpy(out, blob->data, len);
+                  n = (int)len;
+               }
+               if (blob)
+                  drmModeFreePropertyBlob(blob);
+            }
+            drmModeFreeProperty(prop);
+         }
+         drmModeFreeObjectProperties(props);
+      }
+   }
+   if (n < 0)
+      n = edid_sysfs_read(NULL, out, max);
+   return n;
+}
+
 static float kms_display_server_get_refresh_rate(void *data)
 {
    if (g_drm_mode)
@@ -365,5 +416,6 @@ const video_display_server_t dispserv_kms = {
    kms_display_server_modeline_add, /* delete: same no-op */
    kms_display_server_modeline_set,
    kms_display_server_modeline_flush,
+   kms_display_server_get_edid,
    "kms"
 };

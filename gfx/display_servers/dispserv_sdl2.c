@@ -410,5 +410,6 @@ const video_display_server_t dispserv_sdl2 = {
    NULL, /* modeline_delete */
    sdl_display_server_modeline_set,
    sdl_display_server_modeline_flush,
+   NULL, /* get_edid */
    "sdl2"
 };

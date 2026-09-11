@@ -100,6 +100,86 @@ void video_monitor_set_refresh_rate(float hz) { (void)hz; }
 
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 
+int g_drm_fd = -1;
+
+/* The connector property walk get_edid does: one fabricated
+ * property list holding a non-blob, a blob that is not the EDID,
+ * and the EDID blob itself, so the reader has to check both the
+ * flag and the name. s_edid_blob_len 0 models a connector without
+ * DDC (property present, blob empty). */
+static uint8_t  s_edid_blob[512];
+static uint32_t s_edid_blob_len;
+static uint32_t s_edid_props[3]      = { 11, 12, 13 };
+static uint64_t s_edid_prop_vals[3]  = { 1, 77, 78 };
+static drmModeObjectProperties s_edid_propset;
+static drmModePropertyRes      s_edid_propres[3];
+static drmModePropertyBlobRes  s_edid_blobres;
+static unsigned s_edid_frees_prop, s_edid_frees_blob, s_edid_frees_set;
+
+drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd,
+      uint32_t object_id, uint32_t object_type)
+{
+   if (fd < 0 || object_type != DRM_MODE_OBJECT_CONNECTOR
+         || !g_drm_connector || object_id != g_drm_connector->connector_id)
+      return NULL;
+   s_edid_propset.count_props  = 3;
+   s_edid_propset.props        = s_edid_props;
+   s_edid_propset.prop_values  = s_edid_prop_vals;
+   return &s_edid_propset;
+}
+
+void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr ptr)
+{
+   if (ptr == &s_edid_propset)
+      s_edid_frees_set++;
+}
+
+drmModePropertyPtr drmModeGetProperty(int fd, uint32_t propertyId)
+{
+   drmModePropertyRes *r;
+   (void)fd;
+   if (propertyId < 11 || propertyId > 13)
+      return NULL;
+   r = &s_edid_propres[propertyId - 11];
+   memset(r, 0, sizeof(*r));
+   r->prop_id = propertyId;
+   switch (propertyId)
+   {
+      case 11: r->flags = DRM_MODE_PROP_ENUM; strcpy(r->name, "DPMS"); break;
+      case 12: r->flags = DRM_MODE_PROP_BLOB; strcpy(r->name, "PATH"); break;
+      default: r->flags = DRM_MODE_PROP_BLOB; strcpy(r->name, "EDID"); break;
+   }
+   return r;
+}
+
+void drmModeFreeProperty(drmModePropertyPtr ptr)
+{
+   if (ptr >= s_edid_propres && ptr < s_edid_propres + 3)
+      s_edid_frees_prop++;
+}
+
+drmModePropertyBlobPtr drmModeGetPropertyBlob(int fd, uint32_t blob_id)
+{
+   (void)fd;
+   if (blob_id == 77)
+   {
+      fprintf(stderr, "FAIL: get_edid fetched a blob that is not the EDID\n");
+      exit(1);
+   }
+   if (blob_id != 78)
+      return NULL;
+   s_edid_blobres.id     = 78;
+   s_edid_blobres.length = s_edid_blob_len;
+   s_edid_blobres.data   = s_edid_blob;
+   return &s_edid_blobres;
+}
+
+void drmModeFreePropertyBlob(drmModePropertyBlobPtr ptr)
+{
+   if (ptr == &s_edid_blobres)
+      s_edid_frees_blob++;
+}
+
 /* The modeline path: set copies the timing into the CRT consumer's
  * drmModeModeInfo mirror in the video state, then asks the video
  * driver for a mode set of the mode's size. The DRM context reads
@@ -584,8 +664,95 @@ static int test_modeline_ops(void)
    return 0;
 }
 
+/* ------------------------------------------------------------------
+ * get_edid: the connector's EDID property, whole blocks only, and
+ * every libdrm object it took is released.
+ * ------------------------------------------------------------------ */
+
+static int test_get_edid(void)
+{
+   uint8_t out[512];
+   int n;
+   unsigned i;
+   const mode_spec_t specs[] = { { 640, 480, 60 } };
+
+   /* No fd, no connector: -1 unless the box has DRM sysfs, where the
+    * fallback may legitimately return a real block */
+   g_drm_fd        = -1;
+   g_drm_connector = NULL;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != -1 && (n < 128 || (n % 128) != 0))
+   {
+      fprintf(stderr, "FAIL: get_edid without a connector returned %d\n", n);
+      return 1;
+   }
+
+   g_drm_fd        = 3;
+   g_drm_connector = make_connector(specs, 1);
+   g_drm_connector->connector_id = 42;
+
+   /* Two blocks plus 17 stray bytes: the copy stops at the block */
+   s_edid_blob_len = 256 + 17;
+   for (i = 0; i < sizeof(s_edid_blob); i++)
+      s_edid_blob[i] = (uint8_t)(i * 7 + 3);
+   memset(out, 0xee, sizeof(out));
+   s_edid_frees_prop = s_edid_frees_blob = s_edid_frees_set = 0;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != 256)
+   {
+      fprintf(stderr, "FAIL: get_edid returned %d, want 256\n", n);
+      return 1;
+   }
+   if (memcmp(out, s_edid_blob, 256) || out[256] != 0xee)
+   {
+      fprintf(stderr, "FAIL: get_edid copied the wrong bytes\n");
+      return 1;
+   }
+   if (s_edid_frees_prop != 3 || s_edid_frees_blob != 1 || s_edid_frees_set != 1)
+   {
+      fprintf(stderr, "FAIL: get_edid leaked libdrm objects (%u/%u/%u)\n",
+            s_edid_frees_prop, s_edid_frees_blob, s_edid_frees_set);
+      return 1;
+   }
+
+   /* A caller buffer smaller than the blob: whole blocks that fit */
+   n = dispserv_kms.get_edid(NULL, out, 200);
+   if (n != 128)
+   {
+      fprintf(stderr, "FAIL: get_edid into 200 bytes returned %d, want 128\n", n);
+      return 1;
+   }
+
+   /* Too small for one block */
+   n = dispserv_kms.get_edid(NULL, out, 100);
+   if (n != -1)
+   {
+      fprintf(stderr, "FAIL: get_edid into 100 bytes returned %d\n", n);
+      return 1;
+   }
+
+   /* No DDC: the property exists but the blob is empty. Without a
+    * DRM sysfs on the box that is -1; with one, a block from the
+    * first enabled connector is also acceptable */
+   s_edid_blob_len = 0;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != -1 && (n < 128 || (n % 128) != 0))
+   {
+      fprintf(stderr, "FAIL: get_edid with an empty blob returned %d\n", n);
+      return 1;
+   }
+
+   free_connector(g_drm_connector);
+   g_drm_connector = NULL;
+   g_drm_fd        = -1;
+   puts("[pass] get_edid copies the connector's EDID blob in whole blocks and frees what it took");
+   return 0;
+}
+
 int main(void)
 {
+   if (test_get_edid())
+      return 1;
    if (test_null_connector())
       return 1;
    if (test_modeline_ops())

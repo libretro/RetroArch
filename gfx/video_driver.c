@@ -154,6 +154,7 @@ static const video_display_server_t dispserv_null = {
    NULL, /* modeline_delete */
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
+   NULL, /* get_edid */
    "null"
 };
 
@@ -1696,6 +1697,15 @@ int video_display_server_list_outputs(video_output_info_t *out, int max)
    if (!s || !s->modeline_list_outputs)
       return -1;
    return s->modeline_list_outputs(data, out, max);
+}
+
+int video_display_server_get_edid(uint8_t *out, size_t max)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (!current_display_server || !current_display_server->get_edid)
+      return -1;
+   return current_display_server->get_edid(
+         video_st->current_display_server_data, out, max);
 }
 
 bool video_display_server_has_resolution_list(void)

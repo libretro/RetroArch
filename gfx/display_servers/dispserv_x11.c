@@ -43,6 +43,7 @@
 #endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#include "edid_sysfs.h"
 
 enum dispserv_x11_flags
 {
@@ -1715,6 +1716,102 @@ static bool x11_get_metrics(void *data,
    return true;
 }
 
+/* The EDID of the output under the RetroArch window, through the
+ * XRandR "EDID" output property; the property is only relayed when
+ * the DDX publishes it (modesetting, intel, amdgpu, nvidia all do),
+ * so the kernel's own sysfs copy stands in when it is absent or when
+ * RandR is not compiled in. */
+static int x11_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   int n = -1;
+#ifdef HAVE_XRANDR
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   Display *dpy;
+   Window root;
+   XRRScreenResources *resources;
+   Atom edid_atom;
+   int target_x = 0, target_y = 0;
+   bool have_target;
+   int o;
+
+   if (!out || max < 128)
+      return -1;
+   if (!(dpy = x11_display_server_open_display(dispserv)))
+      return edid_sysfs_read(NULL, out, max);
+
+   root        = RootWindow(dpy, DefaultScreen(dpy));
+   edid_atom   = XInternAtom(dpy, "EDID", True);
+   have_target = x11_ml_target_point(dpy, -1, &target_x, &target_y);
+   resources   = edid_atom != None
+      ? XRRGetScreenResourcesCurrent(dpy, root) : NULL;
+
+   /* Two passes over the outputs: the one under the window, else the
+    * first connected one with a crtc (a window off every head, or no
+    * window yet) */
+   for (o = 0; resources && n < 0 && o < resources->noutput * 2; o++)
+   {
+      int idx  = o % resources->noutput;
+      bool any = o >= resources->noutput;
+      XRROutputInfo *info = XRRGetOutputInfo(dpy, resources, resources->outputs[idx]);
+      bool take = false;
+      if (!info)
+         continue;
+      if (info->connection == RR_Connected && info->crtc)
+      {
+         if (any || !have_target)
+            take = true;
+         else
+         {
+            XRRCrtcInfo *ci = XRRGetCrtcInfo(dpy, resources, info->crtc);
+            if (ci)
+            {
+               take = target_x >= ci->x && target_x < ci->x + (int)ci->width
+                   && target_y >= ci->y && target_y < ci->y + (int)ci->height;
+               XRRFreeCrtcInfo(ci);
+            }
+         }
+      }
+      if (take)
+      {
+         Atom actual_type;
+         int actual_format = 0;
+         unsigned long nitems = 0, bytes_after = 0;
+         unsigned char *prop = NULL;
+         /* length is in 32-bit units: 1 KiB, eight blocks */
+         if (XRRGetOutputProperty(dpy, resources->outputs[idx], edid_atom,
+                  0, 256, False, False,
+                  AnyPropertyType, &actual_type, &actual_format,
+                  &nitems, &bytes_after, &prop) == Success && prop)
+         {
+            if (actual_format == 8 && nitems >= 128)
+            {
+               size_t len = (size_t)nitems;
+               if (len > max)
+                  len = max;
+               len -= len % 128;
+               memcpy(out, prop, len);
+               n = (int)len;
+            }
+            XFree(prop);
+         }
+      }
+      XRRFreeOutputInfo(info);
+      /* the head under the window has no EDID (a DDC-less CRT): do
+       * not fall through to another head's */
+      if (take && !any)
+         break;
+   }
+   if (resources)
+      XRRFreeScreenResources(resources);
+   x11_display_server_close_display(dispserv, dpy);
+#else
+   (void)data;
+#endif
+   if (n < 0)
+      n = edid_sysfs_read(NULL, out, max);
+   return n;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -1772,5 +1869,6 @@ const video_display_server_t dispserv_x11 = {
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
 #endif
+   x11_display_server_get_edid,
    "x11"
 };

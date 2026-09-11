@@ -111,5 +111,6 @@ const video_display_server_t dispserv_uwp = {
    NULL, /* modeline_delete */
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
+   NULL, /* get_edid */
    "uwp"
 };

@@ -18,6 +18,9 @@
 #ifndef __VIDEO_DISPLAY_SERVER__H
 #define __VIDEO_DISPLAY_SERVER__H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <retro_common_api.h>
 #include <boolean.h>
 
@@ -134,6 +137,15 @@ typedef struct video_display_server
    bool     (*modeline_delete)(void *data, video_modeline_t *mode);
    bool     (*modeline_set)(void *data, video_modeline_t *mode);
    bool     (*modeline_flush)(void *data);
+
+   /* The EDID of the display the RetroArch window is on, copied into
+    * out (at most max bytes, whole 128-byte blocks) and its length
+    * returned, or -1 when the server has no way to read one: KMS
+    * reads the connector's EDID property, X11 the XRandR output
+    * property with the DRM sysfs node as fallback, Wayland the sysfs
+    * node for the wl_output name, Win32 the PnP monitor's registry
+    * key. Optional; the menu shows "not available" for NULL. */
+   int      (*get_edid)(void *data, uint8_t *out, size_t max);
    const char *ident;
 } video_display_server_t;
 
@@ -203,6 +215,10 @@ bool video_display_server_sdl_available(void);
 
 /* The heads the mode server can drive; count, or -1 without a list. */
 int video_display_server_list_outputs(video_output_info_t *out, int max);
+
+/* The active display's EDID through the current server's get_edid;
+ * length copied, or -1 when unsupported or unreadable. */
+int video_display_server_get_edid(uint8_t *out, size_t max);
 
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_uwp;

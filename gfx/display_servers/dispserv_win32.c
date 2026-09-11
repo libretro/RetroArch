@@ -1372,6 +1372,105 @@ static bool win32_display_server_wait_vblank(void *data)
 }
 #endif
 
+/* The EDID of the monitor under the RetroArch window, from the PnP
+ * monitor's registry key: monitor.sys has kept the raw block at
+ * HKLM\SYSTEM\CurrentControlSet\Enum\DISPLAY\<PnP id>\<instance>\
+ * Device Parameters\EDID since Windows 2000 and still does. The
+ * instance path comes from EnumDisplayDevices' second level with
+ * EDD_GET_DEVICE_INTERFACE_NAME, as a device interface name
+ * (\\?\DISPLAY#GSM5B09#5&2a1b3c4d&0&UID4352#{guid}) that maps onto
+ * the Enum key by dropping the prefix and the GUID and turning the
+ * separators back into backslashes. Windows 9x and NT4 have neither
+ * the flag nor the key: -1 there. */
+#ifndef EDD_GET_DEVICE_INTERFACE_NAME
+#define EDD_GET_DEVICE_INTERFACE_NAME 0x00000001
+#endif
+
+static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   HWND win;
+   HMONITOR hm;
+   MONITORINFOEXA info;
+   DISPLAY_DEVICEA dd;
+   char key[512];
+   const char *p;
+   size_t _len;
+   HKEY hkey;
+   DWORD type = 0, size;
+   LONG rc;
+   int n = -1;
+
+   if (!out || max < 128)
+      return -1;
+
+   /* The adapter the window sits on, else the primary one */
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   win = win32_get_window();
+   hm  = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
+   if (!hm || !GetMonitorInfoA(hm, (LPMONITORINFO)&info) || !info.szDevice[0])
+      return -1;
+
+   /* Its first monitor, as an interface name */
+   memset(&dd, 0, sizeof(dd));
+   dd.cb = sizeof(dd);
+   if (!EnumDisplayDevicesA(info.szDevice, 0, &dd, EDD_GET_DEVICE_INTERFACE_NAME)
+         || !dd.DeviceID[0])
+      return -1;
+
+   /* \\?\DISPLAY#GSM5B09#5&2a1b&0&UID4352#{guid}
+    *  -> SYSTEM\CurrentControlSet\Enum\DISPLAY\GSM5B09\5&2a1b&0&UID4352 */
+   p = dd.DeviceID;
+   if (!strncmp(p, "\\\\?\\", 4))
+      p += 4;
+   _len = strlcpy(key, "SYSTEM\\CurrentControlSet\\Enum\\", sizeof(key));
+   for (; *p && *p != '{' && _len < sizeof(key) - 1; p++)
+      key[_len++] = (*p == '#') ? '\\' : *p;
+   /* the '#' before the GUID became a trailing backslash */
+   while (_len > 0 && key[_len - 1] == '\\')
+      _len--;
+   key[_len] = '\0';
+   strlcpy(key + _len, "\\Device Parameters", sizeof(key) - _len);
+
+   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hkey) != ERROR_SUCCESS)
+      return -1;
+   /* Size first: a block longer than the caller's buffer is read
+    * through a scratch copy, since the registry API refuses a
+    * partial read rather than truncating */
+   size = 0;
+   rc   = RegQueryValueExA(hkey, "EDID", NULL, &type, NULL, &size);
+   if (rc == ERROR_SUCCESS && type == REG_BINARY && size >= 128)
+   {
+      if (size <= max)
+      {
+         if (RegQueryValueExA(hkey, "EDID", NULL, &type, out, &size) == ERROR_SUCCESS)
+            n = (int)(size - size % 128);
+      }
+      else
+      {
+         uint8_t *tmp = (uint8_t*)malloc(size);
+         if (tmp)
+         {
+            if (RegQueryValueExA(hkey, "EDID", NULL, &type, tmp, &size) == ERROR_SUCCESS)
+            {
+               n = (int)(max - max % 128);
+               memcpy(out, tmp, (size_t)n);
+            }
+            free(tmp);
+         }
+      }
+   }
+   RegCloseKey(hkey);
+   return n;
+#else
+   (void)data;
+   (void)out;
+   (void)max;
+   return -1;
+#endif
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -1424,5 +1523,6 @@ const video_display_server_t dispserv_win32 = {
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
 #endif
+   win32_display_server_get_edid,
    "win32"
 };

@@ -12,7 +12,8 @@ REPO_ROOT := ../../..
 # driver reads, which is the only way to present it with a connector
 # that is absent, empty, or reporting modes in an awkward order.
 SOURCES := display_servers_kms_test.c \
-           $(REPO_ROOT)/gfx/display_servers/dispserv_kms.c
+           $(REPO_ROOT)/gfx/display_servers/dispserv_kms.c \
+           $(REPO_ROOT)/libretro-common/compat/compat_strl.c
 
 DRM_CFLAGS ?= $(shell pkg-config --cflags libdrm 2>/dev/null || echo -I/usr/include/libdrm)
 

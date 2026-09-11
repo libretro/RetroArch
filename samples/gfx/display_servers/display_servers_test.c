@@ -109,6 +109,7 @@
 #include <string.h>
 
 #include <X11/Xlibint.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 #include "../../../gfx/video_display_server.h"
@@ -145,6 +146,11 @@ typedef struct
     * indexing one array with the other, so the modeline cases opt
     * in to the realistic layout. */
    int output_crtc_in_screen;
+
+   /* get_edid: the "EDID" output property. 0 bytes = no property (a
+    * DDX that does not relay it, or a DDC-less CRT). */
+   int edid_len;
+   int fail_output_property;
 } stub_cfg_t;
 
 typedef struct
@@ -296,6 +302,46 @@ int XDeleteProperty(Display *dpy, Window w, Atom prop)
 {
    (void)dpy; (void)w; (void)prop;
    return 0;
+}
+
+int XFree(void *p)
+{
+   stub_free(p);
+   return 1;
+}
+
+int XRRGetOutputProperty(Display *dpy, RROutput output, Atom property,
+      long offset, long length, Bool delete_, Bool pending, Atom req_type,
+      Atom *actual_type, int *actual_format, unsigned long *nitems,
+      unsigned long *bytes_after, unsigned char **prop)
+{
+   unsigned char *p;
+   int i;
+   (void)dpy; (void)output; (void)property; (void)offset; (void)delete_;
+   (void)pending; (void)req_type;
+   s_tag = "output_property";
+   *prop = NULL;
+   *nitems = 0;
+   *bytes_after = 0;
+   if (s_cfg.fail_output_property)
+      return BadAtom;
+   *actual_type   = s_cfg.edid_len ? XA_INTEGER : None;
+   *actual_format = s_cfg.edid_len ? 8 : 0;
+   if (!s_cfg.edid_len)
+      return Success;
+   if (length * 4 < s_cfg.edid_len)
+   {
+      fprintf(stderr, "FAIL: get_edid asked for %ld bytes, the property holds %d\n",
+            length * 4, s_cfg.edid_len);
+      exit(1);
+   }
+   if (!(p = (unsigned char*)stub_alloc((size_t)s_cfg.edid_len)))
+      return BadAlloc;
+   for (i = 0; i < s_cfg.edid_len; i++)
+      p[i] = (unsigned char)(i * 5 + 1);
+   *nitems = (unsigned long)s_cfg.edid_len;
+   *prop   = p;
+   return Success;
 }
 
 /* The modeline path traps X errors around each RandR call; the
@@ -970,8 +1016,83 @@ static int test_modeline_query_failures(void)
    return 0;
 }
 
+/* ------------------------------------------------------------------
+ * get_edid: the output property under the window, whole blocks only,
+ * every query freed, and no other head's block when this one has
+ * none.
+ * ------------------------------------------------------------------ */
+
+static int test_get_edid(void)
+{
+   int i;
+
+   for (i = 0; i < 6; i++)
+   {
+      stub_cfg_t cfg;
+      void *data;
+      uint8_t out[1024];
+      int n, want;
+      size_t max = sizeof(out);
+      const char *what;
+
+      cfg_default(&cfg);
+      switch (i)
+      {
+         case 0: cfg.edid_len = 256;      want = 256; what = "two blocks";     break;
+         case 1: cfg.edid_len = 256 + 17; want = 256; what = "stray bytes";    break;
+         case 2: cfg.edid_len = 256; max = 200; want = 128; what = "short buffer"; break;
+         case 3: cfg.edid_len = 0;        want = -1;  what = "no property";    break;
+         case 4: cfg.fail_output_property = 1; want = -1; what = "property error"; break;
+         default: cfg.fail_screen_resources = 1; cfg.edid_len = 256; want = -1;
+                  what = "screen_resources"; break;
+      }
+      stub_reset(&cfg);
+      memset(out, 0xee, sizeof(out));
+
+      data = dispserv_x11.init();
+      n    = dispserv_x11.get_edid(data, out, max);
+      dispserv_x11.destroy(data);
+
+      /* -1 cases may still find a real block through DRM sysfs on
+       * the box running the test */
+      if (want == -1 ? (n != -1 && (n < 128 || n % 128)) : n != want)
+      {
+         fprintf(stderr, "FAIL: get_edid %s returned %d, want %d\n", what, n, want);
+         return 1;
+      }
+      if (want > 0)
+      {
+         int b;
+         for (b = 0; b < want; b++)
+            if (out[b] != (uint8_t)(b * 5 + 1))
+            {
+               fprintf(stderr, "FAIL: get_edid %s byte %d wrong\n", what, b);
+               return 1;
+            }
+         if (out[want] != 0xee)
+         {
+            fprintf(stderr, "FAIL: get_edid %s wrote past %d\n", what, want);
+            return 1;
+         }
+      }
+      if (s_log.bad_free)
+      {
+         fprintf(stderr, "FAIL: get_edid %s produced %d bad free(s)\n",
+               what, s_log.bad_free);
+         return 1;
+      }
+      if (stub_leaks(what))
+         return 1;
+   }
+
+   printf("[pass] get_edid reads the output property in whole blocks and frees its queries\n");
+   return 0;
+}
+
 int main(void)
 {
+   if (test_get_edid())
+      return 1;
    if (test_orientation_query_failures())
       return 1;
    if (test_orientation_output_disconnected())
