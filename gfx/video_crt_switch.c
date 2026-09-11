@@ -470,7 +470,7 @@ static void switch_res_crt(
             we update the current values and make adjustments */
          strlcpy(core_name,   current_core_name,   sizeof(core_name));
          strlcpy(content_dir, current_content_dir, sizeof(content_dir));
-         strlcpy(content_name, current_content_name, sizeof(current_content_name));
+         strlcpy(content_name, current_content_name, sizeof(content_name));
          RARCH_LOG("[CRT] Current running core: %s.\n", core_name);
          crt_adjust_ini(p_switch);
          p_switch->hh_core = false;
