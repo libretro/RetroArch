@@ -3805,7 +3805,43 @@ void audio_driver_set_nonblock_state(bool nonblock)
  * at. */
 static size_t audio_driver_pipe_chunk_bytes(audio_driver_state_t *audio_st)
 {
-   return audio_st->buffer_size / 4;
+   return audio_st->buffer_size / 2;
+}
+
+/* What one pass may put into the device: everything it will accept
+ * right now, and never less than the chunk above, which is the amount
+ * the wait can always be made to yield.
+ *
+ * A fixed fraction was a ceiling on throughput, not just on the size of
+ * a write. A pass moves one chunk, the passes come at whatever rate the
+ * machine manages, and delivery is the product of the two. On a 60 Hz
+ * core at 48 kHz a publish is 800 frames; a device buffer of 8 ms makes
+ * a quarter-chunk 96, so unless the consumer completes eight or nine
+ * passes per video frame the rest of the publish never reaches the
+ * device at all. A capture of the render callback at that setting plays
+ * exactly 384 frames and then exactly 384 of silence, over and over -
+ * four passes a frame, and the other 416 frames of every publish lost.
+ * The same capture at 69 ms, where one chunk carries a whole publish,
+ * is clean. That is why the fault looked like a latency threshold at
+ * four times the frame period: it is the setting at which one pass is
+ * enough, not the setting at which the buffer is big enough.
+ *
+ * The floor keeps what the fraction was there for - the wait can always
+ * be satisfied, and a small buffer never has to drain to empty before
+ * it can take a chunk. Above the floor there is no reason to refuse
+ * room the device is already offering. */
+static size_t audio_driver_pipe_room_bytes(audio_driver_state_t *audio_st)
+{
+   size_t floor_bytes = audio_driver_pipe_chunk_bytes(audio_st);
+   size_t room;
+   if (     !audio_st->current_audio
+         || !audio_st->current_audio->write_avail
+         || !audio_st->context_audio_data)
+      return floor_bytes;
+   room = audio_st->current_audio->write_avail(audio_st->context_audio_data);
+   if (room > audio_st->buffer_size)
+      room = audio_st->buffer_size;
+   return room > floor_bytes ? room : floor_bytes;
 }
 
 /* What the pipe ring is to hold on purpose, in core frames. With a
@@ -4201,7 +4237,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
        * driver to wait for a chunk larger than its ring - a wait that
        * can only end with the device empty. */
       size_t cap = audio_driver_input_bound(out_ratio,
-            audio_driver_pipe_chunk_bytes(audio_st) / frame_bytes);
+            audio_driver_pipe_room_bytes(audio_st) / frame_bytes);
       if (cap < 32)
          cap = 32;
       if (have > cap)
