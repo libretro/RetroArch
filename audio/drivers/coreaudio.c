@@ -114,7 +114,18 @@ static bool ca_cm_resolve(void)
    return true;
 }
 
-/* kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
+/* The macOS floor this file actually carries, since it is asked about:
+ * the AudioComponent calls are resolved at runtime with a Component
+ * Manager fallback behind them, which is what reaches back before
+ * 10.6 - but the property reads here are AudioObjectGetPropertyData()
+ * and friends, which Apple's own TN2223 dates to 10.5. Eleven call
+ * sites, across device enumeration, the hardware rate, the latency
+ * sum and the microphone half. So the macOS path needs a 10.5 SDK as
+ * it stands, and 10.4 would mean a second path through
+ * AudioDeviceGetProperty() for all of them - which none of the
+ * recent work here changed either way.
+ *
+ * kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
  * both are 0, and the number is what the HAL sees. */
 #define CA_ELEMENT_MAIN 0
 
@@ -1277,7 +1288,13 @@ static size_t coreaudio_frames_consumed(void *data)
       return 0;
 
 #if !TARGET_OS_IPHONE
-   /* The device's own sample position, where the HAL will give it.
+   /* AudioDeviceGetCurrentTime() is one of the original HAL calls -
+    * available since 10.0 and not among the ones deprecated in 10.5
+    * or 10.6, which are the property accessors and the IOProc
+    * registration. So this adds nothing to what the file already
+    * needs; see the note on the macOS floor at the top.
+    *
+    * The device's own sample position, where the HAL will give it.
     * That is what this call is specified to return, and it is the
     * device that is asked rather than this driver's count of the
     * callbacks it was handed - which is close, a render callback
