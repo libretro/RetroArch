@@ -1832,9 +1832,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
 
          if (p_dispwidget->active)
+         {
+            /* msg->frames counts the core's frames, not 60 Hz ones */
+            double fps = video_state_get_ptr()->av_info.timing.fps;
+            if (fps <= 0.0)
+               fps = 60.0;
             gfx_widget_set_libretro_message(
                   msg->msg,
-                  roundf((float)msg->frames / 60.0f * 1000.0f));
+                  (unsigned)((double)msg->frames * 1000.0 / fps + 0.5));
+         }
          else
 #endif
             runloop_msg_queue_push(msg->msg, strlen(msg->msg), 3, msg->frames,
