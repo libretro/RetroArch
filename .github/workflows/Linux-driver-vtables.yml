@@ -68,8 +68,17 @@ jobs:
           have="$have -DHAVE_PIPEWIRE -DHAVE_TINYALSA -DHAVE_SDL2"
           inc="-I. -Ilibretro-common/include -Ideps -Ideps/rcheevos/include"
           inc="$inc $(pkg-config --cflags libpipewire-0.3 2>/dev/null || true)"
-          for f in audio/drivers/*.c camera/drivers/*.c record/drivers/*.c \
-                   audio/audio_driver.c; do
+          # Every file that fills one of these structures in, found by
+          # looking rather than by listing a directory: the Android
+          # build broke on audio/audio_thread_wrapper.c, which fills in
+          # an audio_driver_t and does not live under audio/drivers,
+          # and so was not in the list this job first carried.
+          files=$(grep -rl -E \
+             'audio_driver_t [a-z_]+ *=|camera_driver_t [a-z_]+ *=|record_driver_t [a-z_]+ *=|microphone_driver_t [a-z_]+ *=' \
+             --include='*.c' . | grep -v '^\./samples/' | sort)
+          echo "$files" | sed 's/^/  /'
+          echo
+          for f in $files; do
              [ -f "$f" ] || continue
              out=$(gcc -fsyntax-only -std=gnu99 -Wall \
                    -Werror=incompatible-pointer-types \
