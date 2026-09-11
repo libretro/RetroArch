@@ -4067,7 +4067,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
             size_t take = held - target;
             if (take > audio_st->pipe_pass_frames * audio_st->pipe_frame_bytes)
                take = audio_st->pipe_pass_frames * audio_st->pipe_frame_bytes;
-            if (!retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch, take))
+            /* Discarded, not consumed: skip the bytes in place rather
+             * than copy them out to be thrown away. */
+            if (!retro_spsc_skip(&audio_st->pipe_ring, take))
                break;
             held -= take;
          }
@@ -4080,10 +4082,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
         || !audio_st->output_samples_buf)
    {
       /* Nothing is going to the device while paused; the chunk is
-       * taken and dropped so the ring keeps flowing for the producer. */
-      retro_spsc_read(&audio_st->pipe_ring,
-            audio_st->pipe_channels > 2 ? audio_st->pipe_wide : audio_st->pipe_scratch,
-            have * audio_st->pipe_frame_bytes);
+       * dropped so the ring keeps flowing for the producer.  Skipped
+       * in place - nothing reads it, so nothing needs the copy. */
+      retro_spsc_skip(&audio_st->pipe_ring, have * audio_st->pipe_frame_bytes);
       slock_lock(audio_st->pipe_lock);
       audio_st->pipe_gen++;
       scond_signal(audio_st->pipe_cond);
