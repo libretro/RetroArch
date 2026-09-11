@@ -1838,12 +1838,6 @@ static bool video_thread_read_viewport(void *data,
    if (!thr)
       return false;
 
-   /* The frames already pushed are drawn first. The driver reads back
-    * what its last frame left (gl2's PBO ring, for one), so a read the
-    * worker takes ahead of a pending frame finds nothing new and fails,
-    * and GPU recording loses that frame. */
-   video_thread_wait_idle();
-
    pkt.type            = CMD_READ_VIEWPORT;
    pkt.data.v          = buffer;
    thr->is_idle        = is_idle;
