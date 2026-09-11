@@ -5987,11 +5987,21 @@ void video_driver_frame(const void *data, unsigned width,
                double sink_bias = 1.0, source_hz = 0.0;
                double sink_hz   = audio_driver_get_sink_rate_hz(&sink_bias, &source_hz);
                if (sink_hz > 0.0)
+               {
+                  /* Where the driver keeps a second, approximate count
+                   * of the device's consumption beside the clock it
+                   * reads, how far apart they are. Nothing acts on it;
+                   * it says what the approximation would have cost. */
+                  double alt_ppm = audio_driver_get_sink_alt_ppm();
                   __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                         " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
                         (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                         (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                         (sink_bias - 1.0) * 1e6);
+                  if (alt_ppm != 0.0)
+                     __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                           " Clock vs events: %+.0f ppm\n", alt_ppm);
+               }
             }
          }
 

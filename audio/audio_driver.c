@@ -1188,10 +1188,11 @@ static double audio_driver_sink_device_frames(audio_driver_state_t *audio_st)
 }
 
 static void audio_driver_sink_mark(audio_driver_state_t *audio_st,
-      audio_sink_mark_t *m, uint64_t consumed)
+      audio_sink_mark_t *m, uint64_t consumed, uint64_t consumed_alt)
 {
-   m->offered  = audio_st->sink_offered;
-   m->consumed = consumed;
+   m->offered      = audio_st->sink_offered;
+   m->consumed     = consumed;
+   m->consumed_alt = consumed_alt;
    m->pipe     = audio_driver_sink_pipe_frames(audio_st);
    m->device   = audio_driver_sink_device_frames(audio_st);
 }
@@ -1221,7 +1222,8 @@ static void audio_driver_sink_log_refused(audio_driver_state_t *audio_st,
 
 /* Closes the window that has just ended. */
 static void audio_driver_sink_window(audio_driver_state_t *audio_st,
-      int64_t now_usec, uint64_t consumed, unsigned rate)
+      int64_t now_usec, uint64_t consumed, uint64_t consumed_alt,
+      unsigned rate)
 {
    audio_sink_mark_t *at = &audio_st->sink_at_window;
    int64_t  wdt      = now_usec - (audio_st->sink_window_at - AUDIO_SINK_WINDOW_USEC);
@@ -1240,8 +1242,20 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
    double   taken    = consumed >= at->consumed ? (double)(consumed - at->consumed) : 0.0;
    bool     kept, device_ok;
 
+   /* What the driver's own approximation would have said over the
+    * same window, where it has one. Nothing is decided from it; it is
+    * reported, so that what the approximation costs on real hardware
+    * is a number someone can read rather than an argument. */
+   if (consumed_alt || at->consumed_alt)
+   {
+      double taken_alt = consumed_alt >= at->consumed_alt
+            ? (double)(consumed_alt - at->consumed_alt) : 0.0;
+      if (taken > 0.0)
+         audio_st->sink_alt_ppm = (taken_alt / taken - 1.0) * 1e6;
+   }
+
    audio_st->sink_window_at = now_usec + AUDIO_SINK_WINDOW_USEC;
-   audio_driver_sink_mark(audio_st, at, consumed);
+   audio_driver_sink_mark(audio_st, at, consumed, consumed_alt);
    if (nominal <= 0.0)
       return;
 
@@ -1480,6 +1494,7 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
 {
    const audio_driver_t *audio = audio_st->current_audio;
    uint64_t consumed;
+   uint64_t consumed_alt;
    unsigned rate = config_get_ptr()->uints.audio_output_sample_rate;
 
    if (!config_get_ptr()->bools.audio_sink_rate_estimation)
@@ -1504,7 +1519,9 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
    if (audio_st->sink_started && now_usec < audio_st->sink_window_at)
       return;
 
-   consumed = audio->frames_consumed(audio_st->context_audio_data);
+   consumed     = audio->frames_consumed(audio_st->context_audio_data);
+   consumed_alt = audio->frames_consumed_fallback
+         ? audio->frames_consumed_fallback(audio_st->context_audio_data) : 0;
 
    if (!audio_st->sink_started)
    {
@@ -1520,13 +1537,22 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       memset(audio_st->sink_recent_offered,  0, sizeof(audio_st->sink_recent_offered));
       memset(audio_st->sink_recent_consumed, 0, sizeof(audio_st->sink_recent_consumed));
       audio_st->sink_recent_head = 0;
-      audio_driver_sink_mark(audio_st, &audio_st->sink_at_window, consumed);
+      audio_driver_sink_mark(audio_st, &audio_st->sink_at_window,
+            consumed, consumed_alt);
       return;
    }
 
-   audio_driver_sink_window(audio_st, now_usec, consumed, rate);
+   audio_driver_sink_window(audio_st, now_usec, consumed, consumed_alt, rate);
 
    audio_driver_sink_apply(audio_st, now_usec, rate);
+}
+
+/* Parts per million by which the driver's own approximation of the
+ * device's consumption differs from the clock it actually reads, over
+ * the last window. Zero where a driver has only the one number. */
+double audio_driver_get_sink_alt_ppm(void)
+{
+   return audio_driver_st.sink_alt_ppm;
 }
 
 double audio_driver_get_sink_rate_hz(double *bias, double *source_hz)

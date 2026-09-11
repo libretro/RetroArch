@@ -306,7 +306,14 @@ static void ac3_bitstream_case(void)
    printf("   device took %u periods of 2-channel 16-bit at 48 kHz, %u unanswered; %u bytes captured\n",
          st.periods, st.periods_unanswered, (unsigned)cap_len);
    CHECK(st.share_mode == 1, "not exclusive");
-   CHECK(st.periods && st.periods_unanswered * 100 < st.periods, "%u of %u periods unanswered", st.periods_unanswered, st.periods);
+   /* One percent, and one period besides. Over the ninety-odd periods
+    * this case runs, a bare one percent means zero, and zero is a
+    * statement about the machine rather than about the driver: the
+    * pump here is an ordinary thread that a loaded box can hold past
+    * a period, where on Windows it runs time-critical. The same
+    * allowance the pacing scenarios make, for the same reason. */
+   CHECK(st.periods && st.periods_unanswered <= 1 + st.periods / 100,
+         "%u of %u periods unanswered", st.periods_unanswered, st.periods);
 
    /* the capture: bursts of AC-3, each 6144 bytes, decoding to the tones */
    dec = rac3_decoder_new();

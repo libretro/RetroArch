@@ -318,6 +318,25 @@ typedef struct audio_driver
     */
    size_t (*frames_consumed)(void *data);
 
+   /**
+    * Optional, and only for drivers whose frames_consumed() reads a
+    * clock the hardware provides: the same count as this driver would
+    * have produced without one, on the same terms - monotonic, in
+    * output frames, from start(). WASAPI's is its service events
+    * counted and multiplied by a period, which is what it used to
+    * return outright.
+    *
+    * It exists to be disagreed with. The two are compared over the
+    * same window and the difference reported in parts per million,
+    * which says on real hardware what the approximation costs -
+    * whether a device's events really do arrive one per period, and
+    * where they do not, by how much. Nothing is controlled from it;
+    * the estimate the frontend acts on is frames_consumed() alone.
+    * NULL where a driver has only the one number, which is most of
+    * them.
+    */
+   size_t (*frames_consumed_fallback)(void *data);
+
    /* Optional. Periods the device played silence for want of audio
     * since init: the callback found less than one period in the
     * buffer and zero-filled it. Counted where it happens, one atomic
@@ -356,6 +375,7 @@ typedef struct
 {
    double   offered;                   /* sink_offered */
    uint64_t consumed;                  /* frames_consumed() */
+   uint64_t consumed_alt;              /* frames_consumed_fallback(), where there is one */
    double   pipe;                      /* what the pipe ring held, in nominal device frames */
    double   device;                    /* what the device's buffer held, in device frames */
 } audio_sink_mark_t;
@@ -694,6 +714,7 @@ typedef struct
     * See audio_driver_sink_update(). */
    int64_t  sink_started;              /* usec; 0 = not started */
    int64_t  sink_window_at;            /* usec; when the open window closes */
+   double   sink_alt_ppm;              /* the driver's own approximation against its clock, ppm */
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
    audio_sink_mark_t sink_at_window;   /* the counts when the open window opened */
    /* The last windows' time and source count, for the source's band:
@@ -1188,6 +1209,11 @@ double audio_driver_get_device_latency_ms(void);
  * and the ratio bias applied for it; 0 when no driver reports
  * frames_consumed() or no window has completed yet. */
 double audio_driver_get_sink_rate_hz(double *bias, double *source_hz);
+
+/* Parts per million by which a driver's own approximation of the
+ * device's consumption differs from the clock it reads, over the last
+ * window; 0 where it has no second number to compare. */
+double audio_driver_get_sink_alt_ppm(void);
 
 extern audio_driver_t *audio_drivers[];
 

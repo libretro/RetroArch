@@ -2755,6 +2755,26 @@ static size_t wasapi_frames_consumed(void *wh)
 #endif
 }
 
+/* The service events counted and multiplied by a period, which is
+ * what frames_consumed() returned outright before it had a clock to
+ * read. Reported so the two can be compared, never acted on. */
+static size_t wasapi_frames_consumed_fallback(void *wh)
+{
+#ifdef HAVE_THREADS
+   wasapi_t *w = (wasapi_t*)wh;
+   size_t n;
+   if (!w || !w->fifo_lock)
+      return 0;
+   slock_lock(w->fifo_lock);
+   n = (size_t)w->consumed;
+   slock_unlock(w->fifo_lock);
+   return n;
+#else
+   (void)wh;
+   return 0;
+#endif
+}
+
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
@@ -2772,6 +2792,7 @@ audio_driver_t audio_wasapi = {
    NULL, /* write_raw */
    wasapi_wait_writable,
    wasapi_frames_consumed,
+   wasapi_frames_consumed_fallback,
    wasapi_underruns,
    wasapi_layout
 };
