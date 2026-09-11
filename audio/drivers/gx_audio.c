@@ -183,10 +183,20 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
       if (frames < to_write)
          to_write = frames;
 
-      /* FIXME: Nonblocking audio should break out of loop
-       * when it has nothing to write. */
-      while ((    wa->dma_write == wa->dma_next
-               || wa->dma_write == wa->dma_busy) && !wa->nonblock);
+      /* The chunk to fill is the one queued for DMA (dma_next) or the
+       * one the DMA is playing (dma_busy): the ring is full.  Sleep on
+       * the DMA callback's queue a chunk at a time, as wait_writable()
+       * does, rather than spin; and give up when there is no callback
+       * coming - stopped or paused, the spin never ended - or when the
+       * caller does not want to wait, returning what went in rather
+       * than writing over the chunk being played. */
+      while (    wa->dma_write == wa->dma_next
+              || wa->dma_write == wa->dma_busy)
+      {
+         if (wa->nonblock || stop_audio || wa->is_paused)
+            return (ssize_t)(len - (frames << 2));
+         OSSleepThread(wa->dma_cond);
+      }
 
       gx_audio_lr_swap(wa->data[wa->dma_write] + wa->write_ptr,
             buf, to_write);
