@@ -75,6 +75,7 @@
 #include "microphone_driver.h"
 #endif
 
+#include "../command.h"
 #include "../configuration.h"
 #include "../driver.h"
 #include "../frontend/frontend_driver.h"
