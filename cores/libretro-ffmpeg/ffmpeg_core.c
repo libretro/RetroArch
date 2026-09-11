@@ -1811,16 +1811,21 @@ void CORE_PREFIX(retro_init)(void)
 
 void CORE_PREFIX(retro_deinit)(void)
 {
-   if (VIDEO_BUFFER_STR)
-   {
-      video_buffer_destroy(VIDEO_BUFFER_STR);
-      VIDEO_BUFFER_STR = NULL;
-   }
-
+   /* The pool first: its workers write into the video buffer's slots
+    * and take its lock, so a pool that still exists is a pool that
+    * can still be inside the thing being freed. retro_unload_game()
+    * has waited for it, but the order here should not depend on
+    * that having happened. */
    if (TPOOL_STR)
    {
       tpool_destroy(TPOOL_STR);
       TPOOL_STR = NULL;
+   }
+
+   if (VIDEO_BUFFER_STR)
+   {
+      video_buffer_destroy(VIDEO_BUFFER_STR);
+      VIDEO_BUFFER_STR = NULL;
    }
 
    /* Zero the entire context so every member starts clean on the
@@ -3411,13 +3416,16 @@ static void decode_thread(void *data)
    audio_packet_buffer = packet_buffer_create();
    video_packet_buffer = packet_buffer_create();
 
+   /* The video buffer and the scaling pool are made in
+    * retro_load_game(), before this thread exists: made here they
+    * were published to the main thread by a plain store it read
+    * without synchronisation, which TSan reports and which on a clip
+    * with no audio to pace the main thread was a NULL dereference on
+    * the first frame. Made before the thread starts, the thread's own
+    * creation orders them and there is nothing to publish. */
    if (VIDEO_STREAM_INDEX_STR >= 0)
-   {
-      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32, MEDIA_STR.width, MEDIA_STR.height, 1);
-      VIDEO_BUFFER_STR = video_buffer_create(4, (int)frame_size, MEDIA_STR.width, MEDIA_STR.height);
-      TPOOL_STR = tpool_create(SW_SWS_THREADS_STR);
-      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", SW_SWS_THREADS_STR);
-   }
+      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
+            MEDIA_STR.width, MEDIA_STR.height, 1);
 
    while (!DECODE_THREAD_DEAD_STR)
    {
@@ -3757,6 +3765,20 @@ void CORE_PREFIX(retro_unload_game)(void)
 
       slock_unlock(FIFO_LOCK_STR);
       sthread_join(DECODE_THREAD_HANDLE_STR);
+
+      /* The pool was waited on above, before the decode thread was
+       * told to stop - so the thread could, and did, queue more scale
+       * work between that wait and its exit. Nothing can queue to the
+       * pool now that the thread is joined, so this wait is the one
+       * that means no worker is inside the video buffer any more.
+       *
+       * Without it a worker is still in video_buffer_finish_slot,
+       * holding the buffer's lock, when retro_deinit frees that lock:
+       * a use-after-free on every unload, which TSan reports as a
+       * race on the mutex and a user meets as a crash on closing
+       * content. */
+      if (TPOOL_STR)
+         tpool_wait(TPOOL_STR);
    }
    DECODE_THREAD_HANDLE_STR = NULL;
 
@@ -3965,6 +3987,19 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    slock_lock(FIFO_LOCK_STR);
    DECODE_THREAD_DEAD_SET(0);
    slock_unlock(FIFO_LOCK_STR);
+
+   if (VIDEO_STREAM_INDEX_STR >= 0)
+   {
+      size_t vb_frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
+            MEDIA_STR.width, MEDIA_STR.height, 1);
+      VIDEO_BUFFER_STR = video_buffer_create(4, (int)vb_frame_size,
+            MEDIA_STR.width, MEDIA_STR.height);
+      TPOOL_STR        = tpool_create(SW_SWS_THREADS_STR);
+      if (!VIDEO_BUFFER_STR || !TPOOL_STR)
+         goto error;
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n",
+            SW_SWS_THREADS_STR);
+   }
 
    DECODE_THREAD_HANDLE_STR = sthread_create(decode_thread, NULL);
 
