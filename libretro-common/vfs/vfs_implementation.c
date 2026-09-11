@@ -2971,8 +2971,14 @@ static int vfs_copy_mkdir_parents(char *dir)
 #define VFS_COPY_DBG(...) do { } while (0)
 #endif
 
-#define VFS_COPY_BUF_LARGE     (1024 * 1024)
-#define VFS_COPY_BUF_SMALL     (64 * 1024)
+/* Transfer buffer for the portable path, which is the one consoles,
+ * SAF, SMB and CDROM take -- the places with the least memory to
+ * spare.  Measured on a 512 MiB copy: 16 KiB and 64 KiB are clearly
+ * slower, and everything from 128 KiB to 1 MiB is the same within
+ * run-to-run noise, so 128 KiB is the ceiling and small files get
+ * only what they need.  The kernel fast paths allocate nothing. */
+#define VFS_COPY_BUF_MAX       (128 * 1024)
+#define VFS_COPY_BUF_MIN       (16 * 1024)
 /* Largest single kernel request per step; the loop inside a step
  * issues as many as the budget allows. */
 #define VFS_COPY_KERNEL_REQ    ((size_t)16 * 1024 * 1024)
@@ -3022,10 +3028,18 @@ static void vfs_copy_handle_free(struct retro_vfs_copy_handle *h)
  * Returns 0 or -1. */
 static int vfs_copy_open_portable(struct retro_vfs_copy_handle *h, bool resume)
 {
-   h->buf_len = VFS_COPY_BUF_LARGE;
+   /* No point in a buffer larger than what is left to copy. */
+   {
+      int64_t left = h->total - h->done;
+      h->buf_len   = VFS_COPY_BUF_MAX;
+      if (left > 0 && left < (int64_t)h->buf_len)
+         h->buf_len = (size_t)left;
+      if (h->buf_len < VFS_COPY_BUF_MIN)
+         h->buf_len = VFS_COPY_BUF_MIN;
+   }
    if (!(h->buf = (char*)malloc(h->buf_len)))
    {
-      h->buf_len = VFS_COPY_BUF_SMALL;
+      h->buf_len = VFS_COPY_BUF_MIN;
       if (!(h->buf = (char*)malloc(h->buf_len)))
          return -1;
    }

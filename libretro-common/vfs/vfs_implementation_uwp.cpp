@@ -886,8 +886,10 @@ int retro_vfs_set_mtime_impl(const char *path, int64_t mtime)
  * advances; no thread, no lock in here.  Both ends go through this
  * backend's own file I/O (CreateFile2FromAppW underneath) with one
  * transfer buffer; a step moves at most the requested bytes. */
-#define UWP_COPY_BUF_LARGE    (1024 * 1024)
-#define UWP_COPY_BUF_SMALL    (64 * 1024)
+/* Same sizing as the C backend: 128 KiB is as fast as 1 MiB and small
+ * files get only what they need. */
+#define UWP_COPY_BUF_MAX      (128 * 1024)
+#define UWP_COPY_BUF_MIN      (16 * 1024)
 #define UWP_COPY_DEFAULT_STEP ((int64_t)4 * 1024 * 1024)
 
 struct retro_vfs_copy_handle
@@ -974,10 +976,14 @@ struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
     h->status = RETRO_VFS_COPY_RUNNING;
     if (!h->src || !h->dst)
         goto fail;
-    h->buf_len = UWP_COPY_BUF_LARGE;
+    h->buf_len = UWP_COPY_BUF_MAX;
+    if (src_size > 0 && src_size < (int64_t)h->buf_len)
+        h->buf_len = (size_t)src_size;
+    if (h->buf_len < UWP_COPY_BUF_MIN)
+        h->buf_len = UWP_COPY_BUF_MIN;
     if (!(h->buf = (char*)malloc(h->buf_len)))
     {
-        h->buf_len = UWP_COPY_BUF_SMALL;
+        h->buf_len = UWP_COPY_BUF_MIN;
         if (!(h->buf = (char*)malloc(h->buf_len)))
             goto fail;
     }
