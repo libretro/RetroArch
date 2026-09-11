@@ -1,3 +1,10 @@
+/* A stand-in for the Windows SDK header, which a build treats as a
+ * system header: its C++ comments are fine there, and GCC's pedantic C89
+ * checks should not see them as the project's own. */
+#if defined(__GNUC__)
+#pragma GCC system_header
+#endif
+
 /* SAL compatibility shim for legacy MSVC and some MinGW-w64 */
 #include "dxsdk_sal_compat.h"
 

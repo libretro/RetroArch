@@ -880,10 +880,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
             float s      = sinf(draw->rotation);
             float inv_vw = 1.0f / (float)video_width;
             float inv_vh = 1.0f / (float)video_height;
-            float ox[4]  = { -half_w,  half_w, -half_w,  half_w };
-            float oy[4]  = { -half_h, -half_h,  half_h,  half_h };
+            float ox[4], oy[4];
             float rx[4], ry[4];
             int   k;
+            /* Assigned, not initialised: C89 wants constant initialisers */
+            ox[0] = -half_w; ox[1] =  half_w; ox[2] = -half_w; ox[3] =  half_w;
+            oy[0] = -half_h; oy[1] = -half_h; oy[2] =  half_h; oy[3] =  half_h;
             for (k = 0; k < 4; k++)
             {
                rx[k] = (ox[k] * c - oy[k] * s) * inv_vw;
@@ -2288,7 +2290,15 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
                pass->attrib_map, 0);
       else
       {
-         D3DVERTEXELEMENT9 elem = D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index);
+         /* D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index), field by field:
+          * C89 wants constant initialisers */
+         D3DVERTEXELEMENT9 elem;
+         elem.Stream     = (WORD)(index);
+         elem.Offset     = (WORD)(3 * sizeof(float));
+         elem.Type       = D3DDECLTYPE_FLOAT2;
+         elem.Method     = D3DDECLMETHOD_DEFAULT;
+         elem.Usage      = D3DDECLUSAGE_TEXCOORD;
+         elem.UsageIndex = (BYTE)(tex_index);
 
          unsigned_vector_list_append((struct unsigned_vector_list *)
                pass->attrib_map, index);

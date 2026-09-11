@@ -68,7 +68,12 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
  -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
  -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
  -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE \
- -DHAVE_VULKAN"
+ -DHAVE_VULKAN -DHAVE_SCREENSHOTS"
+# A Windows-only translation unit is only ever built with the Win32
+# feature set of pass 1, so pass 2 takes those defines for it too:
+# without them it checks code no build compiles and misses code every
+# Win32 build does (wnd_proc_d3d_common is declared behind HAVE_D3D*).
+WIN32DEFS=$(printf '%s\n' $FLAGS | grep '^-D' | tr '\n' ' ')
 
 # A Win32-only translation unit cannot be C89-checked with the host gcc:
 # <windows.h> is not there, the pass dies on the include and the
@@ -130,10 +135,12 @@ for f in $FILES; do
    # rather than pass silently, which is how declarations after
    # statements reached master in ui_win32_companion.c.
    cc89="$C89CC"
+   c89defs=""
    case "$f" in
       *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*)
          if [ -n "$C89CC_WIN32" ]; then
             cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
          else
             echo "skip [c89]  $f (install gcc-mingw-w64-i686 to check it)"
             continue
@@ -143,10 +150,11 @@ for f in $FILES; do
          if grep -q '#include <windows\.h>' "$f"; then
             [ -n "$C89CC_WIN32" ] || { echo "skip [c89]  $f (install gcc-mingw-w64-i686)"; continue; }
             cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
          fi
          ;;
    esac
-   err=$($cc89 $C89FLAGS -Wno-overlength-strings "$f" 2>&1 | grep -E ' error: ' \
+   err=$($cc89 $C89FLAGS $c89defs -Wno-overlength-strings "$f" 2>&1 | grep -E ' error: ' \
          | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
