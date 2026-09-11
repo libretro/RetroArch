@@ -478,7 +478,12 @@ static void coreaudio_signal(coreaudio_t *dev)
       semaphore_signal(dev->sema);
 }
 
-static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
+/* True if the room asked for is there when this returns. The callers
+ * bound their loops on how many waits produced nothing, so they need to
+ * be told - a wake that delivered no room is a wake the callback gave
+ * for something else, or the one stale count the comment above allows
+ * for, and neither is evidence that the device has stopped draining. */
+static bool coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
 {
    retro_atomic_fetch_add_int(&dev->waiters, 1);
    if (rb_write_avail(dev) < want_samples)
@@ -489,6 +494,7 @@ static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
       semaphore_timedwait(dev->sema, ts);
    }
    retro_atomic_fetch_sub_int(&dev->waiters, 1);
+   return rb_write_avail(dev) >= want_samples;
 }
 
 /* The int16 fast path is gone. What it did - hand the core's int16
@@ -1408,9 +1414,23 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    const float *buf   = (const float *)buf_;
    size_t samples     = len / sizeof(float);
    size_t written     = 0;
-   /* Each wait below is bounded; this bounds the loop, for a unit that
-    * reports running but never renders. */
-   int laps           = 8;
+   /* How many waits in a row may produce no room before this gives up,
+    * for a unit that reports running but never renders. Consecutive,
+    * and reset by every write that gets somewhere: it used to count
+    * iterations instead, which made it a limit on how much could be
+    * written rather than on how long to wait for a dead device.
+    *
+    * A write is one publish - 800 frames for a 60 Hz core at 48 kHz -
+    * and the ring is the latency setting, so anything under about 17 ms
+    * cannot take a publish in one go and the writer has to go round
+    * once per period the callback frees. At an 8 ms setting that is six
+    * times, at 4 ms thirteen, and a single stale wake costs one of them
+    * as well. Past the eighth the writer returned short with the rest
+    * of the publish still in its hands - and a short write is not
+    * retried anywhere above this, it is dropped, so those frames were
+    * gone. Silently: nothing counts them and the underrun that follows
+    * is charged to the device. */
+   int stalls         = 8;
 
    while (!dev->is_paused && samples > 0)
    {
@@ -1438,6 +1458,9 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          buf     += to_write;
          written += to_write;
          samples -= to_write;
+         /* Progress: the device is draining, so the budget is for
+          * finding out that it has stopped, not for finishing. */
+         stalls   = 8;
       }
 
       /* Whatever went in may be enough to start on. */
@@ -1455,11 +1478,13 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          coreaudio_run(dev, true);
          if (coreaudio_unit_stalled(dev))
             break;
-         if (--laps < 0)
+         /* A whole frame, not a sample: room for half a frame is room
+          * the write above cannot use, so waiting on it would spend a
+          * lap to come back and write nothing. The timeout is the
+          * safety net for the race where the unit stops during the
+          * wait; the next iteration re-checks. */
+         if (!coreaudio_wait(dev, dev->channels, 100) && --stalls < 0)
             break;
-         /* Brief timeout as safety net for the race where the unit
-          * stops during the wait; we'll re-check on the next iteration. */
-         coreaudio_wait(dev, 1, 100);
       }
    }
 
@@ -1570,7 +1595,8 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    size_t want      = len / sizeof(float);
-   int    laps      = 8;
+   /* Consecutive fruitless waits, as in coreaudio_write(). */
+   int    stalls    = 8;
 
    if (!dev || !dev->channels)
       return 0;
@@ -1599,11 +1625,12 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
       coreaudio_run(dev, true);
       if (coreaudio_unit_stalled(dev))
          break;
-      /* Each wait is bounded; this bounds the loop, for a unit that
-       * reports running but never renders. */
-      if (--laps < 0)
+      if (coreaudio_wait(dev, want, 100))
+         continue;
+      /* The wake gave nothing. Only a run of those says the device has
+       * stopped; a single one is the stale count the signal allows. */
+      if (--stalls < 0)
          break;
-      coreaudio_wait(dev, want, 100);
    }
    return 0;
 }
