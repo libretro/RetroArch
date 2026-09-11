@@ -267,6 +267,10 @@ static bool ca_prop_has(ca_obj_id_t id, const ca_addr_t *addr, bool is_stream)
  * speaks, which is what both sets of calls see. */
 #define CA_OBJECT_UNKNOWN 0u                  /* kAudioObjectUnknown */
 #define CA_SCOPE_GLOBAL   0x676C6F62u         /* 'glob', kAudioObjectPropertyScopeGlobal */
+/* kAudioDevicePropertyUsesVariableBufferFrameSizes. Where a device
+ * carries it, its value is the largest buffer the IOProc may be passed
+ * and kAudioDevicePropertyBufferFrameSize is only the smallest. */
+#define CA_PROP_VARIABLE_BUFFER_FRAMES 0x76626673u /* 'vbfs' */
 
 /* kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
  * both are 0, and the number is what the HAL sees. */
@@ -307,6 +311,35 @@ typedef struct coreaudio
     * teardown for the log. Never logged from here. */
    retro_atomic_size_t underruns;
 
+   /* The largest number_frames the callback may be handed, as the
+    * device and the unit describe themselves, and the largest it was
+    * actually handed. The two are separate on purpose: the first is
+    * what the ring is sized against before a note has played, the
+    * second is what says at teardown whether that was right. A pull
+    * larger than the ring can hold is a callback that plays what is
+    * there and pads the rest with silence, every time - which is a
+    * buzz at the pull rate over a signal that is mostly gaps. */
+   size_t              max_pull_frames;
+   retro_atomic_size_t max_pull_observed;
+   retro_atomic_size_t oversized_pulls;
+   /* Render callbacks handed a buffer list that is not the single
+    * interleaved buffer the stream format asked for. */
+   retro_atomic_size_t format_errors;
+
+   /* The worst a callback came up short by, in samples, and how full
+    * the ring was that time. Written by the render thread with two
+    * atomic stores and read once at teardown - never logged from
+    * there. A buzz is a callback finding less than a period and
+    * padding the rest with silence, so these two numbers say whether
+    * that is what is happening and by how much, which "it buzzes"
+    * cannot. Out here rather than beside period_frames, which is the
+    * HAL's and macOS-only: the callback and the teardown log read
+    * these on every Apple platform, so declaring them under
+    * !TARGET_OS_IPHONE left the iOS and tvOS builds referring to
+    * members that were not there. */
+   retro_atomic_size_t worst_short;
+   retro_atomic_size_t worst_short_avail;
+
    /* The output unit: ComponentInstance or AudioComponentInstance,
     * both of which are this type on every SDK. */
    AudioUnit dev;
@@ -314,17 +347,10 @@ typedef struct coreaudio
    /* AudioConverter for system sample-rate conversion */
 #if !TARGET_OS_IPHONE
    /* Frames the HAL asks the render callback for at a time, as the
-    * device actually settled it. The ring is sized to hold several. */
+    * device actually settled it - or zero, where neither the unit nor
+    * the device object would say. Never the value that was asked for:
+    * that is the question, not the answer. */
    size_t            period_frames;
-   /* The worst a callback came up short by, in samples, and how full
-    * the ring was that time. Written by the render thread with two
-    * atomic stores and read once at teardown - never logged from
-    * there. A buzz is a callback finding less than a period and
-    * padding the rest with silence, so these two numbers say whether
-    * that is what is happening and by how much, which "it buzzes"
-    * cannot. */
-   retro_atomic_size_t worst_short;
-   retro_atomic_size_t worst_short_avail;
    /* Whether this output follows the system's default, which is only
     * so when the user named no device: a named one is not disturbed
     * by the default moving. */
@@ -651,6 +677,19 @@ static void coreaudio_free(void *data)
 #endif
             );
 
+   /* What the device was said to be able to ask for, and what it did
+    * ask for. Said whether or not anything went wrong, because the
+    * case worth catching is the one where they disagree and the ring
+    * happened to be large enough anyway. */
+   RARCH_LOG("[CoreAudio] Pulls: %u frames the largest the device declared, %u the largest it made, %u over the declared maximum.\n",
+         (unsigned)dev->max_pull_frames,
+         (unsigned)retro_atomic_load_acquire_size(&dev->max_pull_observed),
+         (unsigned)retro_atomic_load_acquire_size(&dev->oversized_pulls));
+
+   if ((n = retro_atomic_load_acquire_size(&dev->format_errors)))
+      RARCH_WARN("[CoreAudio] %u render callback%s arrived with a buffer list this driver does not handle, and were silenced.\n",
+            (unsigned)n, n == 1 ? "" : "s");
+
 #if !TARGET_OS_IPHONE
    /* Before anything else: the HAL calls the listener on a thread of
     * its own, and it is handed this pointer. */
@@ -693,8 +732,38 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    (void)time_stamp;
    (void)bus_number;
 
-   if (!io_data || io_data->mNumberBuffers != 1)
+   if (!io_data || io_data->mNumberBuffers < 1)
       return noErr;
+
+   /* What the device actually asks for, recorded whatever happens
+    * below: two atomic operations on the render thread, and the only
+    * measurement that can contradict what init() worked out the
+    * largest pull would be. Nothing is logged from here. */
+   if ((size_t)number_frames
+         > retro_atomic_load_acquire_size(&dev->max_pull_observed))
+      retro_atomic_store_release_size(&dev->max_pull_observed,
+            (size_t)number_frames);
+   if (     dev->max_pull_frames
+         && (size_t)number_frames > dev->max_pull_frames)
+      retro_atomic_fetch_add_size(&dev->oversized_pulls, 1);
+
+   /* Not the one interleaved buffer the stream format asked for.
+    * Returning noErr with the buffers untouched hands the device
+    * whatever happened to be in them; silence all of them and count
+    * it, so a topology this driver does not handle is audibly and
+    * countably nothing rather than undefined. */
+   if (io_data->mNumberBuffers != 1)
+   {
+      UInt32 b;
+      for (b = 0; b < io_data->mNumberBuffers; b++)
+         if (io_data->mBuffers[b].mData)
+            memset(io_data->mBuffers[b].mData, 0,
+                  io_data->mBuffers[b].mDataByteSize);
+      if (action_flags)
+         *action_flags |= kAudioUnitRenderAction_OutputIsSilence;
+      retro_atomic_fetch_add_size(&dev->format_errors, 1);
+      return noErr;
+   }
 
    outbuf        = (float *)io_data->mBuffers[0].mData;
    /* What the unit asked for, which is what number_frames is: frames
@@ -1155,8 +1224,66 @@ static void *coreaudio_init(const char *device,
        * against. It is not necessarily what was asked for: a device
        * whose minimum is above the quarter-ring target is clamped up
        * to that minimum, and then the ring has to hold enough periods
-       * of it or every callback is a partial fill. */
-      dev->period_frames = got ? (size_t)got : (size_t)period;
+       * of it or every callback is a partial fill.
+       *
+       * The unit's readback is the AUHAL's view of the device; the
+       * device object is the HAL's own, and answers when the unit will
+       * not. If neither does, this stays zero - unknown. It used to
+       * take the requested value in that case, which is the one number
+       * that cannot be the answer, since the whole point of reading
+       * back is that the request is advisory. */
+      if (!got && id != 0)
+      {
+         ca_addr_t prop;
+         UInt32 fsize   = sizeof(got);
+         prop.mSelector = kAudioDevicePropertyBufferFrameSize;
+         prop.mScope    = kAudioDevicePropertyScopeOutput;
+         prop.mElement  = CA_ELEMENT_MAIN;
+         if (ca_prop_get(id, &prop, &fsize, &got, false) != noErr)
+            got = 0;
+      }
+      dev->period_frames   = (size_t)got;
+
+      /* And the largest pull, which is a different question. The
+       * period is what the device asks for normally; a device that
+       * carries kAudioDevicePropertyUsesVariableBufferFrameSizes says
+       * with it the largest it may ask for, and the period is then only
+       * the smallest. Where the device says nothing either way, the
+       * unit's MaximumFramesPerSlice is the ceiling it has been
+       * prepared for - taken only as the fallback, since it is a
+       * capability and not a pull, and sizing the ring against it
+       * unasked would throw away the latency setting on every machine
+       * that has one. */
+      dev->max_pull_frames = dev->period_frames;
+      if (id != 0)
+      {
+         ca_addr_t prop;
+         UInt32 variable = 0;
+         UInt32 vsize    = sizeof(variable);
+         prop.mSelector  = CA_PROP_VARIABLE_BUFFER_FRAMES;
+         prop.mScope     = kAudioDevicePropertyScopeOutput;
+         prop.mElement   = CA_ELEMENT_MAIN;
+         if (     ca_prop_has(id, &prop, false)
+               && ca_prop_get(id, &prop, &vsize, &variable, false) == noErr
+               && (size_t)variable > dev->max_pull_frames)
+         {
+            dev->max_pull_frames = (size_t)variable;
+            RARCH_LOG("[CoreAudio] The device varies its buffer: up to %u frames a pull, against a %u-frame nominal.\n",
+                  (unsigned)variable, (unsigned)dev->period_frames);
+         }
+      }
+      if (!dev->max_pull_frames)
+      {
+         UInt32 slice = 0;
+         UInt32 ssize = sizeof(slice);
+         if (     AudioUnitGetProperty(dev->dev,
+                  kAudioUnitProperty_MaximumFramesPerSlice,
+                  kAudioUnitScope_Global, 0, &slice, &ssize) == noErr
+               && slice)
+            dev->max_pull_frames = (size_t)slice;
+         RARCH_WARN("[CoreAudio] Neither the unit nor the device would say what buffer size it settled on; sizing the ring against the unit's %u-frame slice ceiling.\n",
+               (unsigned)dev->max_pull_frames);
+      }
 
       if (range.mMinimum > 0.0)
          RARCH_LOG("[CoreAudio] IO buffer: asked %u, device takes %u to %u, got %u frames (%.2f ms).\n",
@@ -1187,13 +1314,24 @@ static void *coreaudio_init(const char *device,
     * control keeps it about half full, so every callback takes what
     * is there and pads the rest with silence, which is heard as a
     * buzz at the period rate and a signal that is mostly gaps. */
-   if (dev->period_frames)
+   /* Two floors, and the ring takes the higher. Four of the nominal
+    * period, so the writer has somewhere to be between callbacks - and
+    * twice the largest pull, which is the harder requirement: rate
+    * control holds the ring around half full, so a ring under twice the
+    * largest pull hands the callback less than it asked for at the
+    * setpoint, every time, and the callback pads the difference with
+    * silence. Four periods was the only floor here, and on a device
+    * whose largest pull is bigger than its period it is the wrong
+    * multiple of the wrong number. */
    {
       size_t floor_frames = dev->period_frames * 4;
-      if (buffer_samples < floor_frames)
+      if (dev->max_pull_frames * 2 > floor_frames)
+         floor_frames = dev->max_pull_frames * 2;
+      if (floor_frames && buffer_samples < floor_frames)
       {
-         RARCH_LOG("[CoreAudio] The device's %u-frame period needs a larger buffer than the %u ms setting gives; using %u frames.\n",
-               (unsigned)dev->period_frames, latency, (unsigned)floor_frames);
+         RARCH_LOG("[CoreAudio] A %u-frame period and pulls of up to %u need a larger buffer than the %u ms setting gives; using %u frames.\n",
+               (unsigned)dev->period_frames, (unsigned)dev->max_pull_frames,
+               latency, (unsigned)floor_frames);
          buffer_samples = floor_frames;
       }
    }
@@ -1215,6 +1353,9 @@ static void *coreaudio_init(const char *device,
    retro_atomic_size_init(&dev->filled, 0);
    retro_atomic_size_init(&dev->consumed, 0);
    retro_atomic_size_init(&dev->underruns, 0);
+   retro_atomic_size_init(&dev->max_pull_observed, 0);
+   retro_atomic_size_init(&dev->oversized_pulls, 0);
+   retro_atomic_size_init(&dev->format_errors, 0);
    retro_atomic_size_init(&dev->worst_short, 0);
    retro_atomic_size_init(&dev->worst_short_avail, 0);
    dev->write_ptr = 0;
