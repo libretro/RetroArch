@@ -35,6 +35,7 @@
 #include <TargetConditionals.h>
 #include <lists/string_list.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -330,6 +331,17 @@ typedef struct coreaudio
     * interleaved buffer the stream format asked for. */
    retro_atomic_size_t format_errors;
 
+   /* Opt-in capture of exactly what the render callback handed the
+    * device, for when a report and the code disagree about what is
+    * coming out. Off unless RETROARCH_COREAUDIO_DUMP names a file. A
+    * fixed buffer, filled once and written at teardown: the render
+    * thread does a memcpy into memory that is already there and
+    * nothing else, so the capture cannot be what it is measuring. */
+   float              *dump;
+   size_t              dump_cap;
+   size_t              dump_len;
+   const char         *dump_path;
+
    /* The worst a callback came up short by, in samples, and how full
     * the ring was that time. Written by the render thread with two
     * atomic stores and read once at teardown - never logged from
@@ -557,6 +569,24 @@ static void coreaudio_free(void *data)
       RARCH_WARN("[CoreAudio] %u render callback%s arrived with a buffer list this driver does not handle, and were silenced.\n",
             (unsigned)n, n == 1 ? "" : "s");
 
+   if (dev->dump && dev->dump_len)
+   {
+      FILE *f = fopen(dev->dump_path, "wb");
+      if (f)
+      {
+         fwrite(dev->dump, sizeof(float), dev->dump_len, f);
+         fclose(f);
+         RARCH_LOG("[CoreAudio] Wrote %u frames of output to \"%s\": raw %u-channel float32 at %u Hz.\n",
+               (unsigned)(dev->dump_len / dev->channels), dev->dump_path,
+               dev->channels, dev->output_rate);
+      }
+      else
+         RARCH_WARN("[CoreAudio] Could not open \"%s\" for the output capture.\n",
+               dev->dump_path);
+   }
+   free(dev->dump);
+   dev->dump = NULL;
+
 #if !TARGET_OS_IPHONE
    /* Before anything else: the HAL calls the listener on a thread of
     * its own, and it is handed this pointer. */
@@ -676,6 +706,16 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    /* What the device took, silence included: an underrun still consumes
     * a period of device time, and it is device time this measures. */
    retro_atomic_fetch_add_size(&dev->consumed, frames_needed);
+
+   /* What the device is about to play, if a capture was asked for.
+    * After the padding, so an underrun appears as the silence it is. */
+   if (dev->dump && dev->dump_len < dev->dump_cap)
+   {
+      size_t room = dev->dump_cap - dev->dump_len;
+      size_t take = frames_needed < room ? frames_needed : room;
+      memcpy(dev->dump + dev->dump_len, outbuf, take * sizeof(float));
+      dev->dump_len += take;
+   }
 
    /* Wake writer if it might be waiting */
    coreaudio_signal(dev);
@@ -1217,6 +1257,17 @@ static void *coreaudio_init(const char *device,
    retro_atomic_size_init(&dev->max_pull_observed, 0);
    retro_atomic_size_init(&dev->oversized_pulls, 0);
    retro_atomic_size_init(&dev->format_errors, 0);
+
+   /* Thirty seconds of the output stream, where one was asked for. */
+   if ((dev->dump_path = getenv("RETROARCH_COREAUDIO_DUMP")))
+   {
+      dev->dump_cap = (size_t)(*new_rate) * dev->channels * 30;
+      if (!(dev->dump = (float*)calloc(dev->dump_cap, sizeof(float))))
+         dev->dump_cap = 0;
+      else
+         RARCH_LOG("[CoreAudio] Capturing the output stream to \"%s\" (%u s of %u-channel float at %u Hz).\n",
+               dev->dump_path, 30u, dev->channels, (unsigned)(*new_rate));
+   }
    retro_atomic_size_init(&dev->worst_short, 0);
    retro_atomic_size_init(&dev->worst_short_avail, 0);
    dev->write_ptr = 0;

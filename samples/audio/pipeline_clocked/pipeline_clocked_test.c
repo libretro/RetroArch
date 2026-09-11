@@ -36,7 +36,7 @@
 #include "../../../audio/audio_driver.c"
 
 #define OUT_RATE      48000
-#define CORE_RATE     48000
+#define CORE_RATE     32040   /* a real core's rate, so the resampler and rate control do work */
 #define FPS           60.0
 #define CHANNELS      2
 
@@ -52,6 +52,11 @@ static retro_atomic_size_t dev_filled;
 static retro_atomic_size_t dev_underruns;
 static retro_atomic_size_t dev_pulls;
 static retro_atomic_size_t dev_silent_samples;
+/* What the device actually played, so the output can be looked at
+ * rather than only counted. */
+static float              *dev_out;
+static size_t              dev_out_len;
+static size_t              dev_out_cap;
 static pthread_mutex_t     dev_wake_lock  = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t      dev_wake_cond  = PTHREAD_COND_INITIALIZER;
 static retro_atomic_int_t  dev_waiters    = RETRO_ATOMIC_INT_INITIALIZER(0);
@@ -105,8 +110,19 @@ static void dev_render(void)
 
    if (take)
    {
+      size_t i;
+      for (i = 0; i < take; i++)
+      {
+         if (dev_out_len < dev_out_cap)
+            dev_out[dev_out_len++] = dev_ring[(dev_read_ptr + i) & (dev_capacity - 1)];
+      }
       dev_read_ptr = (dev_read_ptr + take) & (dev_capacity - 1);
       retro_atomic_fetch_sub_size(&dev_filled, take);
+   }
+   {
+      size_t i;
+      for (i = take; i < needed && dev_out_len < dev_out_cap; i++)
+         dev_out[dev_out_len++] = 0.0f;
    }
    if (take < needed)
    {
@@ -155,12 +171,12 @@ static void *cdev_init(const char *device, unsigned rate, unsigned latency,
    return &handle;
 }
 
-static ssize_t cdev_write(void *data, const void *buf, size_t len)
+static ssize_t cdev_write(void *data, const void *buf_, size_t len)
 {
    size_t samples = len / sizeof(float);
    size_t written = 0;
    int    laps    = 8;
-   (void)data; (void)buf;
+   (void)data;
 
    while (samples > 0)
    {
@@ -169,6 +185,10 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
       to_write       -= to_write % CHANNELS;
       if (to_write > 0)
       {
+         size_t i;
+         const float *src = (const float*)buf_ + written;
+         for (i = 0; i < to_write; i++)
+            dev_ring[(dev_write_ptr + i) & (dev_capacity - 1)] = src[i];
          dev_write_ptr = (dev_write_ptr + to_write) & (dev_capacity - 1);
          retro_atomic_fetch_add_size(&dev_filled, to_write);
          written += to_write;
@@ -240,6 +260,25 @@ static void *consumer(void *arg)
 }
 
 static int16_t frame_audio[4096 * 2];
+static double  tone_phase;
+
+/* A tone whose phase carries from one publish to the next, so anything
+ * that modulates or splices in the output was put there by the pipeline
+ * and not by the source. */
+static void fill_frame(size_t frames)
+{
+   size_t i;
+   double step = 2.0 * M_PI * 440.0 / (double)CORE_RATE;
+   for (i = 0; i < frames; i++)
+   {
+      int16_t v = (int16_t)(12000.0 * sin(tone_phase));
+      frame_audio[i * 2]     = v;
+      frame_audio[i * 2 + 1] = v;
+      tone_phase += step;
+      if (tone_phase > 2.0 * M_PI)
+         tone_phase -= 2.0 * M_PI;
+   }
+}
 
 /* --- fixture --------------------------------------------------------- */
 
@@ -256,6 +295,9 @@ static bool pipeline_up(unsigned latency_ms)
    while (dev_capacity < dev_usable)
       dev_capacity <<= 1;
    dev_ring      = (float*)calloc(dev_capacity, sizeof(float));
+   dev_out_cap   = (size_t)(OUT_RATE * CHANNELS * 30);
+   dev_out       = (float*)calloc(dev_out_cap, sizeof(float));
+   dev_out_len   = 0;
    dev_write_ptr = dev_read_ptr = 0;
    retro_atomic_size_init(&dev_filled, 0);
    retro_atomic_size_init(&dev_underruns, 0);
@@ -329,7 +371,9 @@ static void pipeline_down(void)
    free(st->synth_buf);
    free(st->output_samples_int16);
    free(dev_ring);
+   free(dev_out);
    dev_ring = NULL;
+   dev_out  = NULL;
 }
 
 /* --- one run --------------------------------------------------------- */
@@ -362,6 +406,7 @@ static void run_one(unsigned latency_ms, double seconds)
       next.tv_sec  += next.tv_nsec / 1000000000L;
       next.tv_nsec %= 1000000000L;
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      fill_frame(per_frame);
       audio_driver_submit(&audio_driver_st, 1.0f, frame_audio,
             per_frame * 2, false, false, false);
       audio_driver_pipeline_signal(&audio_driver_st);
@@ -397,6 +442,22 @@ static void run_one(unsigned latency_ms, double seconds)
          (pulls - warm_pulls) ? 100.0 * (double)(under - warm_under)
                / (double)(pulls - warm_pulls) : 0.0,
          (double)(silent - warm_silent) / CHANNELS * 1000.0 / OUT_RATE);
+   /* Dump what the device played, for anything that wants to look at
+    * the waveform rather than the counters. */
+   {
+      const char *dir = getenv("DUMP_DIR");
+      if (dir)
+      {
+         char path[512];
+         FILE *f;
+         snprintf(path, sizeof(path), "%s/out_%ums.f32", dir, latency_ms);
+         if ((f = fopen(path, "wb")))
+         {
+            fwrite(dev_out, sizeof(float), dev_out_len, f);
+            fclose(f);
+         }
+      }
+   }
    pipeline_down();
 }
 
@@ -407,8 +468,8 @@ int main(int argc, char **argv)
    size_t i;
 
    memset(frame_audio, 0, sizeof(frame_audio));
-   for (i = 0; i < 4096 * 2; i++)
-      frame_audio[i] = (int16_t)(8000.0 * sin((double)i * 0.05));
+   tone_phase = 0.0;
+
 
    printf("threaded pipeline against a clocked device, %.0f s per setting, %g fps core\n",
          seconds, FPS);
