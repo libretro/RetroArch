@@ -78,4 +78,4 @@ void video_driver_set_gpu_api_devices(int api, void *list) { (void)api; (void)li
 void video_driver_set_gpu_api_version_string(const char *s) { (void)s; }
 void video_driver_cache_context_ack_set(void) { }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
-void video_driver_set_disp_flags(uint32_t f) { (void)f; }
+void video_driver_modify_disp_flags(uint32_t s, uint32_t c) { (void)s; (void)c; }

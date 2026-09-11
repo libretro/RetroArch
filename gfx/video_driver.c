@@ -2688,21 +2688,6 @@ uint32_t video_driver_get_disp_flags(void)
    return video_st->flags;
 }
 
-void video_driver_set_disp_flags(uint32_t flags)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      video_st->flags = flags;
-      slock_unlock(video_st->display_lock);
-      return;
-   }
-#endif
-   video_st->flags = flags;
-}
-
 unsigned video_driver_hdr_max_mode(void)
 {
    uint32_t flags = video_driver_get_disp_flags();

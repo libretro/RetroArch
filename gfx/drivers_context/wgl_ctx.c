@@ -419,11 +419,10 @@ void create_gl_context(HWND hwnd, bool *quit)
     * masked back out. On builds without a D3D driver the probe reports
     * false and the settings simply stay hidden, as before. */
    {
-      uint32_t disp_flags = video_driver_get_disp_flags();
-      disp_flags         &= ~(  VIDEO_FLAG_HDR_SUPPORT
-                              | VIDEO_FLAG_HDR10_SUPPORT
-                              | VIDEO_FLAG_SCRGB_SUPPORT);
-      video_driver_set_disp_flags(disp_flags);
+      video_driver_modify_disp_flags(0,
+              VIDEO_FLAG_HDR_SUPPORT
+            | VIDEO_FLAG_HDR10_SUPPORT
+            | VIDEO_FLAG_SCRGB_SUPPORT);
 
       /* The probe lives in win32_common's desktop-only region; UWP
        * configurations that define HAVE_OPENGL compile this function
@@ -433,10 +432,9 @@ void create_gl_context(HWND hwnd, bool *quit)
 #if !defined(__WINRT__)
       if (win32_display_hdr_active(win32_get_window()))
       {
-         disp_flags  = video_driver_get_disp_flags();
-         disp_flags |=  (VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
-         disp_flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
-         video_driver_set_disp_flags(disp_flags);
+         video_driver_modify_disp_flags(
+               VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT,
+               VIDEO_FLAG_HDR10_SUPPORT);
          RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
       }
 #endif
@@ -561,10 +559,10 @@ static void gfx_ctx_wgl_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-         video_driver_set_disp_flags(video_driver_get_disp_flags()
-               & ~(  VIDEO_FLAG_HDR_SUPPORT
-                   | VIDEO_FLAG_HDR10_SUPPORT
-                   | VIDEO_FLAG_SCRGB_SUPPORT));
+         video_driver_modify_disp_flags(0,
+                 VIDEO_FLAG_HDR_SUPPORT
+               | VIDEO_FLAG_HDR10_SUPPORT
+               | VIDEO_FLAG_SCRGB_SUPPORT);
          if (win32_hrc)
          {
             uint32_t video_st_flags;

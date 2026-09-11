@@ -2773,18 +2773,17 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 	  * guarantees both paths. */
          if (supported)
          {
-            uint32_t disp_flags = video_driver_get_disp_flags();
-            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
-            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
-            disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
-            video_driver_set_disp_flags(disp_flags);
+            video_driver_modify_disp_flags(
+                  VIDEO_FLAG_HDR_SUPPORT
+                | VIDEO_FLAG_HDR10_SUPPORT
+                | VIDEO_FLAG_SCRGB_SUPPORT, 0);
          }
          else
          {
             settings_t*    settings           = config_get_ptr();
             settings->flags                  |= SETTINGS_FLG_MODIFIED;
             settings->uints.video_hdr_mode    = 0;
-            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
          }
       }
       else

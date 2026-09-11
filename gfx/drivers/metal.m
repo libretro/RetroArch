@@ -4219,20 +4219,20 @@ static void metal_pull_cached_frame_cb(void *userdata,
        * uses these flags to gate the HDR menu options and to clamp the
        * user's selected mode to what the driver can actually do. */
       {
-         uint32_t disp_flags = video_driver_get_disp_flags();
+         uint32_t hdr_flags  = 0;
          bool edr_supported  = metal_display_supports_edr();
-         disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT
-                        | VIDEO_FLAG_HDR10_SUPPORT
-                        | VIDEO_FLAG_SCRGB_SUPPORT);
          if (edr_supported)
          {
             /* Both modes map to the same Metal surface path (swap the
              * CAMetalLayer pixel format + colour space), so whenever
              * EDR is available we advertise both. */
-            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT;
-            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            hdr_flags |= VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT;
+            hdr_flags |= VIDEO_FLAG_HDR_SUPPORT;
          }
-         video_driver_set_disp_flags(disp_flags);
+         video_driver_modify_disp_flags(hdr_flags,
+                 VIDEO_FLAG_HDR_SUPPORT
+               | VIDEO_FLAG_HDR10_SUPPORT
+               | VIDEO_FLAG_SCRGB_SUPPORT);
          RARCH_LOG("[Metal] HDR capability: display EDR %s, advertising HDR support %s.\n",
                edr_supported ? "detected" : "not detected",
                edr_supported ? "YES (HDR10 + scRGB)" : "NO");
@@ -4295,10 +4295,10 @@ static void metal_pull_cached_frame_cb(void *userdata,
 #if METAL_HDR_AVAILABLE
    /* Withdraw the HDR-capability flags so a subsequent driver init (e.g.
     * after the user switches to Vulkan and back) doesn't see stale bits. */
-   video_driver_set_disp_flags(video_driver_get_disp_flags()
-         & ~(VIDEO_FLAG_HDR_SUPPORT
-            | VIDEO_FLAG_HDR10_SUPPORT
-            | VIDEO_FLAG_SCRGB_SUPPORT));
+   video_driver_modify_disp_flags(0,
+           VIDEO_FLAG_HDR_SUPPORT
+         | VIDEO_FLAG_HDR10_SUPPORT
+         | VIDEO_FLAG_SCRGB_SUPPORT);
 #endif
 }
 

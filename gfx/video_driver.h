@@ -1189,8 +1189,6 @@ void video_driver_set_viewport_core(void);
 
 uint32_t video_driver_get_disp_flags(void);
 
-void video_driver_set_disp_flags(uint32_t flags);
-
 unsigned video_driver_hdr_max_mode(void);
 
 bool video_driver_get_next_video_out(void);

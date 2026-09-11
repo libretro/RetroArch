@@ -2496,20 +2496,20 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * drivers expose the extension without any HDR surface
           * formats. */
          {
-            uint32_t disp_flags = video_driver_get_disp_flags();
-            disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+            uint32_t hdr_flags = 0;
             for (i = 0; i < format_count; i++)
             {
                if (  vulkan_is_hdr10_format(formats[i].format)
                   && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
-                  disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+                  hdr_flags |= VIDEO_FLAG_HDR10_SUPPORT;
                if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
                   && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
-                  disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+                  hdr_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
             }
-            if (disp_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
-               disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
-            video_driver_set_disp_flags(disp_flags);
+            if (hdr_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
+               hdr_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            video_driver_modify_disp_flags(hdr_flags,
+                  VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
          }
 
          /* Clamp the selected mode if the surface doesn't support it */
