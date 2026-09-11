@@ -82,6 +82,10 @@ endif
 ifneq ($(FAKE_CFR),)
    CFLAGS += -DVFS_COPY_TEST_FAKE_CFR=$(FAKE_CFR)
 endif
+# Every sample build narrates the copy stepper's platform calls on
+# stderr (which path, what was asked, what came back); a frontend
+# build never defines this.
+CFLAGS += -DVFS_COPY_DEBUG
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every

@@ -2960,6 +2960,17 @@ static int vfs_copy_mkdir_parents(char *dir)
  * blocking copy would issue, so throughput is that of the primitive;
  * with a small budget it is bounded latency.  The caller picks. */
 
+/* The samples build with VFS_COPY_DEBUG so a CI lane shows which path
+ * each step took and what the platform answered; never set in a
+ * frontend build. */
+#if defined(VFS_COPY_DEBUG)
+#include <stdio.h>
+#include <errno.h>
+#define VFS_COPY_DBG(...) fprintf(stderr, "[vfs-copy] " __VA_ARGS__)
+#else
+#define VFS_COPY_DBG(...) do { } while (0)
+#endif
+
 #define VFS_COPY_BUF_LARGE     (1024 * 1024)
 #define VFS_COPY_BUF_SMALL     (64 * 1024)
 /* Largest single kernel request per step; the loop inside a step
@@ -3048,6 +3059,8 @@ static int vfs_copy_step_portable(struct retro_vfs_copy_handle *h, int64_t budge
       if ((int64_t)want > budget)
          want = (size_t)budget;
       n = retro_vfs_file_read_impl(h->in, h->buf, want);
+      VFS_COPY_DBG("portable: want %lu -> read %lld (done %lld budget %lld)\n",
+            (unsigned long)want, (long long)n, (long long)h->done, (long long)budget);
       if (n < 0)
          return RETRO_VFS_COPY_FAILED;
       if (n == 0)
@@ -3082,7 +3095,10 @@ static bool vfs_cfr_untrusted = false;
 static int vfs_copy_open_linux(struct retro_vfs_copy_handle *h)
 {
    if (vfs_cfr_untrusted)
+   {
+      VFS_COPY_DBG("open: kernel path retired, portable\n");
       return 0;
+   }
    h->in_fd = open(h->src, O_RDONLY | O_CLOEXEC);
    if (h->in_fd < 0)
       return 0;
@@ -3137,6 +3153,9 @@ static int vfs_copy_step_linux(struct retro_vfs_copy_handle *h, int64_t budget)
       n = (ssize_t)syscall(SYS_copy_file_range, (long)h->in_fd, (long)&off_in,
             (long)h->out_fd, (long)&off_out, (long)want, 0L);
 #endif
+      VFS_COPY_DBG("copy_file_range: want %lu at %lld -> %ld errno %d (budget %lld total %lld)\n",
+            (unsigned long)want, (long long)h->done, (long)n, n < 0 ? errno : 0,
+            (long long)budget, (long long)h->total);
       if (n < 0)
       {
          if (h->done == 0 && (errno == EXDEV || errno == ENOSYS
