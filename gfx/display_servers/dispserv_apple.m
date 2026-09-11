@@ -47,6 +47,7 @@
  * moved to DCP) and Apple published no replacement, so the walk finds
  * nothing and the op reports -1 there. */
 #include <dlfcn.h>
+#include <math.h>
 #include <mach/mach_time.h>
 
 #include <IOKit/IOKitLib.h>
@@ -977,6 +978,130 @@ static bool apple_dcp_timing(CFDictionaryRef elem, video_edid_timing_t *t)
    return t->pclock != 0;
 }
 
+/* s15Fixed16 as a double */
+static double apple_icc_fixed(const uint8_t *p)
+{
+   int32_t v = (int32_t)(((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+                       | ((uint32_t)p[2] << 8) | p[3]);
+   return (double)v / 65536.0;
+}
+
+/* One XYZType tag: signature, four reserved bytes, three s15Fixed16 */
+static bool apple_icc_xyz(const uint8_t *icc, size_t len, uint32_t off,
+      uint32_t size, double xyz[3])
+{
+   if (off + 20 > len || size < 20)
+      return false;
+   if (memcmp(icc + off, "XYZ ", 4))
+      return false;
+   xyz[0] = apple_icc_fixed(icc + off + 8);
+   xyz[1] = apple_icc_fixed(icc + off + 12);
+   xyz[2] = apple_icc_fixed(icc + off + 16);
+   return true;
+}
+
+static bool apple_icc_tag(const uint8_t *icc, size_t len, const char *sig,
+      uint32_t *off, uint32_t *size)
+{
+   uint32_t i, count;
+   if (len < 132)
+      return false;
+   count = ((uint32_t)icc[128] << 24) | ((uint32_t)icc[129] << 16)
+         | ((uint32_t)icc[130] << 8) | icc[131];
+   if (count > 256 || 132 + count * 12 > len)
+      return false;
+   for (i = 0; i < count; i++)
+   {
+      const uint8_t *e = icc + 132 + i * 12;
+      if (memcmp(e, sig, 4))
+         continue;
+      *off  = ((uint32_t)e[4] << 24) | ((uint32_t)e[5] << 16)
+            | ((uint32_t)e[6] << 8) | e[7];
+      *size = ((uint32_t)e[8] << 24) | ((uint32_t)e[9] << 16)
+            | ((uint32_t)e[10] << 8) | e[11];
+      return true;
+   }
+   return false;
+}
+
+/* The primaries and white point of the display's colour profile, in
+ * thousandths, as the EDID chromaticity bytes hold them.
+ *
+ * An ICC profile stores its colorants chromatically adapted to D50,
+ * with the adaptation it used in the 'chad' tag; reporting the D50
+ * numbers as the display's primaries would be wrong, so the
+ * adaptation is undone first. Without a 'chad' tag there is nothing
+ * to undo it with and nothing is reported. */
+static bool apple_display_chromaticity(CGDirectDisplayID display,
+      unsigned *out)
+{
+   CGColorSpaceRef cs = CGDisplayCopyColorSpace(display);
+   CFDataRef icc      = NULL;
+   const uint8_t *b;
+   size_t len;
+   uint32_t off, size;
+   double chad[9], inv[9], det;
+   double xyz[4][3];
+   bool ok = false;
+   int i;
+   static const char *tags[4] = { "rXYZ", "gXYZ", "bXYZ", "wtpt" };
+
+   if (!cs)
+      return false;
+   icc = CGColorSpaceCopyICCData(cs);
+   CGColorSpaceRelease(cs);
+   if (!icc)
+      return false;
+   b   = CFDataGetBytePtr(icc);
+   len = (size_t)CFDataGetLength(icc);
+
+   if (!apple_icc_tag(b, len, "chad", &off, &size) || size < 8 + 36
+         || off + 8 + 36 > len || memcmp(b + off, "sf32", 4))
+      goto done;
+   for (i = 0; i < 9; i++)
+      chad[i] = apple_icc_fixed(b + off + 8 + i * 4);
+   det = chad[0] * (chad[4] * chad[8] - chad[5] * chad[7])
+       - chad[1] * (chad[3] * chad[8] - chad[5] * chad[6])
+       + chad[2] * (chad[3] * chad[7] - chad[4] * chad[6]);
+   if (det > -1e-9 && det < 1e-9)
+      goto done;
+   inv[0] = (chad[4] * chad[8] - chad[5] * chad[7]) / det;
+   inv[1] = (chad[2] * chad[7] - chad[1] * chad[8]) / det;
+   inv[2] = (chad[1] * chad[5] - chad[2] * chad[4]) / det;
+   inv[3] = (chad[5] * chad[6] - chad[3] * chad[8]) / det;
+   inv[4] = (chad[0] * chad[8] - chad[2] * chad[6]) / det;
+   inv[5] = (chad[2] * chad[3] - chad[0] * chad[5]) / det;
+   inv[6] = (chad[3] * chad[7] - chad[4] * chad[6]) / det;
+   inv[7] = (chad[1] * chad[6] - chad[0] * chad[7]) / det;
+   inv[8] = (chad[0] * chad[4] - chad[1] * chad[3]) / det;
+
+   for (i = 0; i < 4; i++)
+   {
+      double v[3], n[3], sum;
+      if (!apple_icc_tag(b, len, tags[i], &off, &size)
+            || !apple_icc_xyz(b, len, off, size, v))
+         goto done;
+      n[0] = inv[0] * v[0] + inv[1] * v[1] + inv[2] * v[2];
+      n[1] = inv[3] * v[0] + inv[4] * v[1] + inv[5] * v[2];
+      n[2] = inv[6] * v[0] + inv[7] * v[1] + inv[8] * v[2];
+      sum  = n[0] + n[1] + n[2];
+      if (sum < 1e-9)
+         goto done;
+      xyz[i][0] = n[0] / sum;
+      xyz[i][1] = n[1] / sum;
+      ok = true;
+   }
+   if (ok)
+      for (i = 0; i < 4; i++)
+      {
+         out[i * 2]     = (unsigned)(xyz[i][0] * 1000.0 + 0.5);
+         out[i * 2 + 1] = (unsigned)(xyz[i][1] * 1000.0 + 0.5);
+      }
+done:
+   CFRelease(icc);
+   return ok;
+}
+
 static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
       uint8_t *out, size_t max)
 {
@@ -1010,6 +1135,18 @@ static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
                   props, CFSTR("IOMFBDisplayRefresh"));
             CFDictionaryRef maxpix  = (CFDictionaryRef)CFDictionaryGetValue(
                   props, CFSTR("IOMFBMaxSrcPixels"));
+            long nits = 0;
+
+            /* The peak luminance the backlight is capped at, 16.16
+             * fixed point, which is what HDR static metadata codes as
+             * 50 * 2^(v/32) cd/m2 */
+            if (apple_dcp_num(props, "BLNitsCap", &nits) && nits > 0)
+            {
+               double cd = (double)nits / 65536.0;
+               if (cd >= 50.0 && cd <= 10000.0)
+                  in.cta_hdr_max_lum =
+                     (uint8_t)(32.0 * (log(cd / 50.0) / log(2.0)) + 0.5);
+            }
             CFIndex i, n = (timings && CFGetTypeID(timings) == CFArrayGetTypeID())
                ? CFArrayGetCount(timings) : 0;
 
@@ -1024,6 +1161,45 @@ static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
                   continue;
                if (!apple_dcp_timing(elem, &t))
                   continue;
+               /* The colour modes the DCP lists for this timing: bit
+                * depth, whether anything but RGB 4:4:4 is offered, the
+                * colorimetry bits and the EOTFs. A panel with one SDR
+                * RGB mode reports exactly that. */
+               {
+                  CFArrayRef modes = (CFArrayRef)CFDictionaryGetValue(elem,
+                        CFSTR("ColorModes"));
+                  CFIndex m, mn = (modes
+                        && CFGetTypeID(modes) == CFArrayGetTypeID())
+                     ? CFArrayGetCount(modes) : 0;
+                  for (m = 0; m < mn; m++)
+                  {
+                     CFDictionaryRef cm = (CFDictionaryRef)
+                        CFArrayGetValueAtIndex(modes, m);
+                     long v = 0;
+                     if (!cm || CFGetTypeID(cm) != CFDictionaryGetTypeID())
+                        continue;
+                     if (apple_dcp_num(cm, "Depth", &v) && v >= 6 && v <= 16)
+                        in.bit_depth = (uint8_t)v;
+                     if (apple_dcp_num(cm, "PixelEncoding", &v))
+                     {
+                        if (v == 1)
+                           in.ycbcr444 = true;
+                        else if (v == 2)
+                           in.ycbcr422 = true;
+                     }
+                     if (apple_dcp_num(cm, "Colorimetry", &v) && v > 0)
+                     {
+                        in.cta_colorimetry |= (uint8_t)(v & 0xff);
+                        in.cta = true;
+                     }
+                     /* EOTF 0 is SDR, which is bit 0 of the HDR block */
+                     if (apple_dcp_num(cm, "EOTF", &v))
+                     {
+                        in.cta_hdr_eotf |= (uint8_t)(1u << (v & 3));
+                        in.cta = true;
+                     }
+                  }
+               }
                if (apple_dcp_bool(elem, "IsPreferred") && in.n_timings)
                {
                   in.timing[1] = in.timing[0];
@@ -1098,8 +1274,19 @@ static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
    size_mm      = CGDisplayScreenSize(display);
    in.width_mm  = (unsigned)(size_mm.width  + 0.5);
    in.height_mm = (unsigned)(size_mm.height + 0.5);
-   in.bit_depth = 8;   /* the DCP's ColorModes report 8 bpc per channel */
+   if (!in.bit_depth)
+      in.bit_depth = 8;   /* the DCP's ColorModes usually say; 8 if not */
    in.interface = 5;   /* DisplayPort, which is what the DCP drives */
+   {
+      unsigned c[8];
+      if (apple_display_chromaticity(display, c))
+      {
+         in.red_x   = c[0]; in.red_y   = c[1];
+         in.green_x = c[2]; in.green_y = c[3];
+         in.blue_x  = c[4]; in.blue_y  = c[5];
+         in.white_x = c[6]; in.white_y = c[7];
+      }
+   }
    strlcpy(in.name, built_in ? "Built-in" : "DCP display", sizeof(in.name));
    /* The unspecified-text descriptor says where the block came from,
     * so the menu shows it and nobody mistakes it for a read block */

@@ -233,14 +233,29 @@ typedef struct video_edid_synth
    unsigned pclock_max;            /* Hz, 0 when unknown */
    uint8_t  bit_depth;      /* bits per colour, 0 when unknown */
    uint8_t  interface;      /* 1 DVI 2 HDMI-a 3 HDMI-b 4 MDDI 5 DP */
+   /* Chromaticity in thousandths, from the display's colour profile;
+    * all zero leaves the chromaticity bytes at "not stated" */
+   unsigned red_x, red_y, green_x, green_y, blue_x, blue_y;
+   unsigned white_x, white_y;
+   unsigned gamma_x100;     /* 0 when unknown */
+   bool     ycbcr444, ycbcr422;
+   /* A CTA-861 extension block, when the display reports colour
+    * capabilities worth carrying. Nothing is invented to fill it: a
+    * panel with no audio and no TV formats gets a colorimetry data
+    * block and HDR static metadata, and nothing else. */
+   bool     cta;
+   uint8_t  cta_colorimetry;   /* byte 2 of the colorimetry block */
+   uint8_t  cta_hdr_eotf;      /* bit 0 SDR, 1 HDR, 2 PQ, 3 HLG */
+   uint8_t  cta_hdr_max_lum;   /* coded, 0 when not reported */
    char     name[MODELINE_EDID_TEXT_LEN];
    char     text[MODELINE_EDID_TEXT_LEN];
    uint8_t  n_timings;      /* the first is the preferred one */
    video_edid_timing_t timing[2];
 } video_edid_synth_t;
 
-/* Writes MODELINE_EDID_SIZE bytes and returns that, or 0 when max is
- * short or in carries no timing. */
+/* Writes MODELINE_EDID_SIZE bytes, or twice that when in asks for a
+ * CTA-861 extension, and returns the length; 0 when max is short or
+ * in carries no timing. */
 size_t modeline_edid_synthesize(const video_edid_synth_t *in,
       uint8_t *out, size_t max);
 

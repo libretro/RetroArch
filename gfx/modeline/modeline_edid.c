@@ -937,6 +937,13 @@ static void edid_write_text(uint8_t *d, uint8_t tag, const char *s)
       d[5 + i] = 0x20;
 }
 
+/* A 10-bit fraction of 1.0, which is how the chromaticity bytes hold
+ * a coordinate */
+static unsigned edid_chroma10(unsigned thousandths)
+{
+   return (thousandths * 1024u + 500u) / 1000u;
+}
+
 size_t modeline_edid_synthesize(const video_edid_synth_t *in,
       uint8_t *out, size_t max)
 {
@@ -976,14 +983,37 @@ size_t modeline_edid_synthesize(const video_edid_synth_t *in,
    /* Physical size, in whole centimetres as the block stores it */
    out[21] = (uint8_t)((in->width_mm  + 5) / 10);
    out[22] = (uint8_t)((in->height_mm + 5) / 10);
-   out[23] = 0xff;  /* gamma: undefined, since nothing reported one */
-   /* RGB 4:4:4, preferred timing is the first descriptor, continuous
-    * frequency. No power-management claims and no sRGB claim: the
-    * source said nothing about either. */
+   /* Gamma, when the profile gave one; 0xff is "undefined" */
+   out[23] = (in->gamma_x100 >= 100 && in->gamma_x100 <= 355)
+      ? (uint8_t)(in->gamma_x100 - 100) : 0xff;
+   /* Preferred timing is the first descriptor, continuous frequency,
+    * plus whatever colour formats the source reported. No
+    * power-management claims and no sRGB claim: the source said
+    * nothing about either. */
    out[24] = 0x02 | 0x01;
+   if (in->ycbcr444)
+      out[24] |= 0x08;
+   if (in->ycbcr422)
+      out[24] |= 0x10;
 
-   /* Chromaticity: all zero, the encoding for "not stated". Inventing
-    * primaries here would read as measured data. */
+   /* Chromaticity, when the display's colour profile supplied the
+    * primaries; all zero otherwise, the encoding for "not stated".
+    * Inventing primaries here would read as measured data. */
+   if (in->white_x || in->red_x)
+   {
+      unsigned c[8];
+      c[0] = edid_chroma10(in->red_x);   c[1] = edid_chroma10(in->red_y);
+      c[2] = edid_chroma10(in->green_x); c[3] = edid_chroma10(in->green_y);
+      c[4] = edid_chroma10(in->blue_x);  c[5] = edid_chroma10(in->blue_y);
+      c[6] = edid_chroma10(in->white_x); c[7] = edid_chroma10(in->white_y);
+      /* the low two bits of each live packed in bytes 25-26 */
+      out[25] = (uint8_t)(((c[0] & 3) << 6) | ((c[1] & 3) << 4)
+                        | ((c[2] & 3) << 2) |  (c[3] & 3));
+      out[26] = (uint8_t)(((c[4] & 3) << 6) | ((c[5] & 3) << 4)
+                        | ((c[6] & 3) << 2) |  (c[7] & 3));
+      for (i = 0; i < 8; i++)
+         out[27 + i] = (uint8_t)(c[i] >> 2);
+   }
 
    /* No established or standard timings: the source reports its modes
     * as detailed timings, and a guessed DMT bitmap would be a claim
@@ -1030,9 +1060,56 @@ size_t modeline_edid_synthesize(const video_edid_synth_t *in,
    if (in->text[0] && slot < 4)
       edid_write_text(out + 54 + slot++ * 18, 0xfe, in->text);
 
-   out[126] = 0;
+   out[126] = in->cta ? 1 : 0;
    for (i = 0; i < 127; i++)
       checksum += out[i];
    out[127] = (uint8_t)((256 - (checksum & 0xff)) & 0xff);
+
+   /* A CTA-861 extension carrying only what was reported: no video
+    * data block, since a native panel timing has no VIC to name, and
+    * no audio data block, since a panel that cannot make a sound has
+    * no descriptor to give. Revision 3, one native detailed timing,
+    * no basic audio. */
+   if (in->cta && max >= MODELINE_EDID_SIZE * 2)
+   {
+      uint8_t *e  = out + MODELINE_EDID_SIZE;
+      unsigned p  = 4;
+      memset(e, 0, MODELINE_EDID_SIZE);
+      e[0] = MODELINE_EDID_EXT_CTA;
+      e[1] = 3;
+      /* No native detailed timings in this block: the base block
+       * already carries the panel's timing and repeating it here
+       * would read as a second mode. */
+      e[3] = (uint8_t)((in->ycbcr444 ? 0x20 : 0)
+                     | (in->ycbcr422 ? 0x10 : 0));
+      if (in->cta_colorimetry)
+      {
+         e[p++] = (uint8_t)((7 << 5) | 3);   /* extended tag, 3 bytes */
+         e[p++] = 0x05;                      /* colorimetry data block */
+         e[p++] = in->cta_colorimetry;
+         e[p++] = 0x00;                      /* no gamut metadata profiles */
+      }
+      if (in->cta_hdr_eotf)
+      {
+         unsigned len = in->cta_hdr_max_lum ? 4 : 2;
+         e[p++] = (uint8_t)((7 << 5) | (len + 1));
+         e[p++] = 0x06;                      /* HDR static metadata */
+         e[p++] = in->cta_hdr_eotf;
+         e[p++] = 0x01;                      /* static metadata type 1 */
+         if (in->cta_hdr_max_lum)
+         {
+            e[p++] = in->cta_hdr_max_lum;
+            e[p++] = 0x00;                   /* frame average: not reported */
+         }
+      }
+      /* Byte 2 points past the data blocks, where detailed timings
+       * would start; the zeros there say there are none */
+      e[2] = (uint8_t)p;
+      checksum = 0;
+      for (i = 0; i < 127; i++)
+         checksum += e[i];
+      e[127] = (uint8_t)((256 - (checksum & 0xff)) & 0xff);
+      return MODELINE_EDID_SIZE * 2;
+   }
    return MODELINE_EDID_SIZE;
 }
