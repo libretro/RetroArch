@@ -35,6 +35,21 @@
 #include <rthreads/rthreads.h>
 #endif
 #include <lists/string_list.h>
+
+/* The WAVEFORMATEXTENSIBLE subtypes, by value. They live in ksmedia.h,
+ * which the 2005 SDK does not reach at _WIN32_WINNT=0x0400 - that
+ * build fails on them as undeclared identifiers - and where a newer
+ * SDK does declare them it declares them without an instance to link,
+ * which is why audio/common/mmdevice_common_inline.h spells them out
+ * for WASAPI as well. Their values are fixed by the WAVE format:
+ * 00000001 for integer PCM and 00000003 for float, both in the
+ * 0000-0010-8000-00AA00389B71 family. */
+static const GUID ra_dsound_subtype_pcm =
+   { 0x00000001, 0x0000, 0x0010,
+     { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
+static const GUID ra_dsound_subtype_float =
+   { 0x00000003, 0x0000, 0x0010,
+     { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 #include <retro_atomic.h>
 #include <retro_spsc.h>
 #include <string/stdstring.h>
@@ -491,7 +506,7 @@ static void dsound_set_format(WAVEFORMATEXTENSIBLE *wfx,
       wfx->Samples.wValidBitsPerSample = wBitsPerSample;
       wfx->dwChannelMask          = (DWORD)layout;
       wfx->SubFormat              = float_fmt
-            ? KSDATAFORMAT_SUBTYPE_IEEE_FLOAT : KSDATAFORMAT_SUBTYPE_PCM;
+            ? ra_dsound_subtype_float : ra_dsound_subtype_pcm;
    }
    else
    {
@@ -511,7 +526,7 @@ static const char *dsound_wave_format_name(const WAVEFORMATEX *format)
       case WAVE_FORMAT_EXTENSIBLE:
       {
          const WAVEFORMATEXTENSIBLE *x = (const WAVEFORMATEXTENSIBLE*)format;
-         if (!memcmp(&x->SubFormat, &KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, sizeof(GUID)))
+         if (!memcmp(&x->SubFormat, &ra_dsound_subtype_float, sizeof(GUID)))
             return "WAVE_FORMAT_EXTENSIBLE float";
          return "WAVE_FORMAT_EXTENSIBLE PCM";
       }
