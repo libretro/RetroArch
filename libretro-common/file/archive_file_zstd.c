@@ -122,7 +122,7 @@ static int zstd_parse_file_iterate_step(void *context,
    /* Read the frame header to get decompressed size */
    filestream_seek(state->archive_file, 0, SEEK_SET);
 
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data)
    {
       content_size = rzstd_frame_content_size(
