@@ -36,7 +36,26 @@
 #include "../../../audio/audio_driver.c"
 
 #define OUT_RATE      48000
-#define CORE_RATE     32040   /* a real core's rate, so the resampler and rate control do work */
+static unsigned CORE_RATE   = 48000; /* the core's rate; CORE_RATE= in the environment */
+/* How long the consumer is kept off the CPU after each pass, in
+ * microseconds. A light core leaves the audio thread all the time it
+ * wants and it completes as many passes a frame as it likes; a heavy
+ * one - Doom under Vulkan at 2560x1600 - does not, and delivery is
+ * passes times chunk, so the pass rate is the thing that decides
+ * whether a frame's worth gets through. LOAD= in the environment. */
+static unsigned PASS_DELAY_US = 0;
+/* Which driver's shape the device has. coreaudio makes its HAL period a
+ * quarter of the ring, so the period moves with the latency setting;
+ * wasapi keeps a fixed device period and only the ring grows. A change
+ * to the pipeline has to be shown against both, since the two put very
+ * different numbers into the same arithmetic. PROFILE= in the
+ * environment. */
+static const char *PROFILE  = "coreaudio";
+/* Passes the consumer completed, and frames the device took from
+ * them - the two numbers whose product is what actually plays. */
+static retro_atomic_size_t dev_writes;
+static retro_atomic_size_t dev_frames_taken;
+static retro_atomic_size_t dev_loops;
 #define FPS           60.0
 #define CHANNELS      2
 
@@ -173,6 +192,7 @@ static void *cdev_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t cdev_write(void *data, const void *buf_, size_t len)
 {
+   retro_atomic_fetch_add_size(&dev_writes, 1);
    size_t samples = len / sizeof(float);
    size_t written = 0;
    int    laps    = 8;
@@ -193,6 +213,7 @@ static ssize_t cdev_write(void *data, const void *buf_, size_t len)
          retro_atomic_fetch_add_size(&dev_filled, to_write);
          written += to_write;
          samples -= to_write;
+         retro_atomic_fetch_add_size(&dev_frames_taken, to_write / CHANNELS);
       }
       if (samples > 0)
       {
@@ -255,7 +276,12 @@ static void *consumer(void *arg)
 {
    (void)arg;
    while (retro_atomic_load_acquire_int(&consumer_run))
+   {
       audio_driver_pipeline_consume(&audio_driver_st);
+      retro_atomic_fetch_add_size(&dev_loops, 1);
+      if (PASS_DELAY_US)
+         usleep(PASS_DELAY_US);
+   }
    return NULL;
 }
 
@@ -290,7 +316,15 @@ static bool pipeline_up(unsigned latency_ms)
 
    /* The device, sized as coreaudio.c sizes it. */
    dev_usable   = (size_t)((latency_ms * OUT_RATE) / 1000) * CHANNELS;
-   dev_period   = (size_t)((latency_ms * OUT_RATE) / 1000 / 4);
+   if (!strcmp(PROFILE, "wasapi"))
+   {
+      /* A fixed 10 ms device period, whatever the ring. */
+      dev_period = (size_t)(10 * OUT_RATE / 1000);
+      if (dev_period > (size_t)((latency_ms * OUT_RATE) / 1000) / 2)
+         dev_period = (size_t)((latency_ms * OUT_RATE) / 1000) / 2;
+   }
+   else
+      dev_period = (size_t)((latency_ms * OUT_RATE) / 1000 / 4);
    dev_capacity = 1;
    while (dev_capacity < dev_usable)
       dev_capacity <<= 1;
@@ -303,6 +337,9 @@ static bool pipeline_up(unsigned latency_ms)
    retro_atomic_size_init(&dev_underruns, 0);
    retro_atomic_size_init(&dev_pulls, 0);
    retro_atomic_size_init(&dev_silent_samples, 0);
+   retro_atomic_size_init(&dev_writes, 0);
+   retro_atomic_size_init(&dev_frames_taken, 0);
+   retro_atomic_size_init(&dev_loops, 0);
 
    memset(st, 0, sizeof(*st));
    st->current_audio        = &clocked_driver;
@@ -432,16 +469,30 @@ static void run_one(unsigned latency_ms, double seconds)
    under  = retro_atomic_load_acquire_size(&dev_underruns);
    pulls  = retro_atomic_load_acquire_size(&dev_pulls);
    silent = retro_atomic_load_acquire_size(&dev_silent_samples);
-   printf("  %3u ms  ring %5u  period %4u | startup: short %4u, %6.1f ms silence"
-          " | steady: %5u pulls, short %4u (%5.2f%%), %6.2f ms silence\n",
-         latency_ms,
-         (unsigned)(dev_usable / CHANNELS), (unsigned)dev_period,
-         (unsigned)warm_under,
-         (double)warm_silent / CHANNELS * 1000.0 / OUT_RATE,
-         (unsigned)(pulls - warm_pulls), (unsigned)(under - warm_under),
-         (pulls - warm_pulls) ? 100.0 * (double)(under - warm_under)
-               / (double)(pulls - warm_pulls) : 0.0,
-         (double)(silent - warm_silent) / CHANNELS * 1000.0 / OUT_RATE);
+   {
+      size_t w  = retro_atomic_load_acquire_size(&dev_writes);
+      size_t fr = retro_atomic_load_acquire_size(&dev_frames_taken);
+      /* Delivery is the number that decides the outcome: frames a
+       * second reaching the device against the output rate, and the two
+       * factors whose product it is. Underruns are the symptom; this is
+       * what a change has to move.
+       *
+       * Writes, not passes: a pass can reach the driver more than once,
+       * so this counts calls into write(), which is the factor the
+       * frames-per-write figure beside it pairs with. */
+      printf("  %3u ms  ring %5u  period %4u | %5.0f writes/s x %5.0f fr = %6.0f fr/s"
+             " (%5.1f%% of rate) | short %4u (%5.2f%%), %6.1f ms silence\n",
+            latency_ms,
+            (unsigned)(dev_usable / CHANNELS), (unsigned)dev_period,
+            (double)retro_atomic_load_acquire_size(&dev_loops) / seconds,
+            w ? (double)fr / (double)w : 0.0,
+            (double)fr / seconds,
+            100.0 * (double)fr / seconds / (double)OUT_RATE,
+            (unsigned)(under - warm_under),
+            (pulls - warm_pulls) ? 100.0 * (double)(under - warm_under)
+                  / (double)(pulls - warm_pulls) : 0.0,
+            (double)(silent - warm_silent) / CHANNELS * 1000.0 / OUT_RATE);
+   }
    /* Dump what the device played, for anything that wants to look at
     * the waveform rather than the counters. */
    {
@@ -469,10 +520,15 @@ int main(int argc, char **argv)
 
    memset(frame_audio, 0, sizeof(frame_audio));
    tone_phase = 0.0;
+   if (getenv("LOAD"))
+      PASS_DELAY_US = (unsigned)atoi(getenv("LOAD"));
+   if (getenv("PROFILE"))
+      PROFILE       = getenv("PROFILE");
+   if (getenv("CORE_RATE"))
+      CORE_RATE     = (unsigned)atoi(getenv("CORE_RATE"));
 
-
-   printf("threaded pipeline against a clocked device, %.0f s per setting, %g fps core\n",
-         seconds, FPS);
+   printf("profile %s, %g fps core at %u Hz, %u us off the CPU per pass\n",
+         PROFILE, FPS, CORE_RATE, PASS_DELAY_US);
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
    return 0;
