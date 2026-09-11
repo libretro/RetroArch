@@ -57,6 +57,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Build and run ffmpeg_sweep_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/cores/ffmpeg_sweep
+        run: |
+          set -eu
+          # Breadth where ffmpeg_audio_pipe_test has depth: eight clips
+          # across containers, video and audio codecs, rates, channel
+          # counts and the one-sided cases, each loaded, run, seeked
+          # both ways, reset and unloaded in one process - so the
+          # second load is what finds what the first unload left
+          # behind - then files that are truncated, stubbed, noise,
+          # empty or absent, then teardown while the decode thread is
+          # still working.
+          #
+          # Leak detection off: libavutil's HW-device probing keeps a
+          # few objects, as the audio-pipe lane already has it. The
+          # libav* TSan suppressions are the same ones and for the
+          # same reason.
+          make clean all
+          ./ffmpeg_sweep_test
+          echo "[pass] ffmpeg_sweep_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 ./ffmpeg_sweep_test
+          echo "[pass] ffmpeg_sweep_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
+             timeout 900 ./ffmpeg_sweep_test
+          echo "[pass] ffmpeg_sweep_test (TSan)"
+
       - name: Build and run ffmpeg_audio_pipe_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/cores/ffmpeg_audio_pipe

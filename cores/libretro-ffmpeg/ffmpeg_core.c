@@ -2174,7 +2174,12 @@ static int seek_adjust(int target)
 void CORE_PREFIX(retro_run)(void)
 {
    double min_pts;
-   int16_t audio_buffer[MEDIA_STR.sample_rate / 20];
+   /* A clip with no audio stream has a sample rate of zero, and a
+    * zero-length array is not an array: the declaration alone is
+    * undefined, before anything reads it. One element costs nothing
+    * and is never used, since to_read_frames comes out of the same
+    * rate and is zero too. */
+   int16_t audio_buffer[(MEDIA_STR.sample_rate / 20) + 1];
    bool left, right, up, down, l1, l2, r1, r2;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
@@ -2414,6 +2419,15 @@ void CORE_PREFIX(retro_run)(void)
          {
             int64_t pts = 0;
 
+            /* The decode thread creates the video buffer, so on the
+             * first passes after a load there may not be one yet -
+             * and a clip with no audio has nothing to pace the main
+             * thread, so it arrives here first and dereferenced NULL.
+             * No buffer is no frame ready, which is what the dupe
+             * below is for. */
+            if (!VIDEO_BUFFER_STR)
+               break;
+
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
 
@@ -2525,6 +2539,15 @@ void CORE_PREFIX(retro_run)(void)
          while (!DECODE_THREAD_DEAD_STR && min_pts > FRAMES_STR[1].pts)
          {
             int64_t pts = 0;
+
+            /* The decode thread creates the video buffer, so on the
+             * first passes after a load there may not be one yet -
+             * and a clip with no audio has nothing to pace the main
+             * thread, so it arrives here first and dereferenced NULL.
+             * No buffer is no frame ready, which is what the dupe
+             * below is for. */
+            if (!VIDEO_BUFFER_STR)
+               break;
 
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
