@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <libretro_dspfilter.h>
 
 #define sqr(a) ((a) * (a))
@@ -240,7 +241,9 @@ static void vibrato_process_i16(void *data,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      int16_t in[2] = { out[0], out[1] };
+      int16_t in[2];
+      in[0]         = out[0];
+      in[1]         = out[1];
       out[0]        = vibratocore_core_i16(&vib->left, in[0]);
       out[1]        = vibratocore_core_i16(&vib->right, in[1]);
    }
@@ -260,7 +263,9 @@ static void vibrato_process(void *data,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      float in[2] = { out[0], out[1] };
+      float in[2];
+      in[0]       = out[0];
+      in[1]       = out[1];
       out[0]      = vibratocore_core(&vib->left, in[0]);
       out[1]      = vibratocore_core(&vib->right, in[1]);
    }

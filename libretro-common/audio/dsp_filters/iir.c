@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <libretro_dspfilter.h>
 
 #define sqr(a) ((a) * (a))
@@ -80,7 +81,7 @@ static void iir_process(void *data, struct dspfilter_output *output,
 {
    unsigned i;
    struct iir_data *iir = (struct iir_data*)data;
-   float *out           = output->samples;
+   float *out           = input->samples;
 
    float b0             = iir->b0;
    float b1             = iir->b1;

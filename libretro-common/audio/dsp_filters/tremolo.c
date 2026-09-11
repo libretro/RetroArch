@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <libretro_dspfilter.h>
 
 #define sqr(a) ((a) * (a))
@@ -110,7 +111,9 @@ static void tremolo_process(void *data, struct dspfilter_output *output,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      float in[2]      = { out[0], out[1] };
+      float in[2];
+      in[0]            = out[0];
+      in[1]            = out[1];
       out[0]           = tremolocore_core(&tre->left, in[0]);
       out[1]           = tremolocore_core(&tre->right, in[1]);
    }
@@ -146,7 +149,9 @@ static void tremolo_process_i16(void *data,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      int16_t in[2]    = { out[0], out[1] };
+      int16_t in[2];
+      in[0]            = out[0];
+      in[1]            = out[1];
       out[0]           = tremolocore_core_i16(&tre->left, in[0]);
       out[1]           = tremolocore_core_i16(&tre->right, in[1]);
    }

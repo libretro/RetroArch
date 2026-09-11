@@ -191,6 +191,18 @@ check_nothreads "no threads: widget state lock stand-ins" \
    "$GLINC -DHAVE_GFX_WIDGETS" \
    gfx/gfx_widgets.c gfx/widgets/gfx_widget_volume.c gfx/video_driver.c runloop.c
 
+# The builtin DSP filters are compiled only by console builds, through
+# griffin, and no other job compiles them as C. Each is checked on its
+# own, as the consoles build it, in the C89 lane: once with the C99 math
+# names glibc declares under _GNU_SOURCE, and once without them, as on
+# MSVC, so an undeclared sqrtf() or M_PI fails here.
+echo
+echo "== dsp filters: C89 =="
+DSP=$(ls libretro-common/audio/dsp_filters/*.c)
+check "dsp filters: C89" "$C89 -DHAVE_FILTERS_BUILTIN" $DSP
+check "dsp filters: C89, no C99 math declarations" \
+   "$(echo "$C89" | sed 's/ -D_GNU_SOURCE//') -DHAVE_FILTERS_BUILTIN" $DSP
+
 echo "== run-ahead: the dynamic-library gates =="
 # The secondary instance exists only with HAVE_DYNAMIC; a build that
 # can load libraries but links its core statically (HAVE_DYLIB alone)

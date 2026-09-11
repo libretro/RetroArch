@@ -45,7 +45,7 @@ static void panning_process(void *data, struct dspfilter_output *output,
 {
    unsigned i;
    struct panning_data *pan = (struct panning_data*)data;
-   float *out               = output->samples;
+   float *out               = input->samples;
 
    output->samples          = input->samples;
    output->frames           = input->frames;
