@@ -272,5 +272,16 @@ DWORD GetLastError(void);
 #define THREAD_PRIORITY_TIME_CRITICAL 15
 HANDLE GetCurrentThread(void);
 BOOL SetThreadPriority(HANDLE h, int prio);
+/* There is no multimedia class scheduler here, so LoadLibraryA
+ * answers no and the driver takes the fallback - which is the path
+ * this harness keeps honest. */
+typedef void *HMODULE;
+typedef const wchar_t *LPCWSTR;
+typedef DWORD *LPDWORD;
+#define WINAPI
+#define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
+HMODULE LoadLibraryA(const char *name);
+void   *GetProcAddress(HMODULE m, const char *name);
+BOOL    FreeLibrary(HMODULE m);
 
 #endif

@@ -41,6 +41,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#include <features/features_cpu.h>
 #endif
 
 #include "../common/mmdevice_common.h"
@@ -103,6 +104,21 @@ typedef struct
    /* Periods the pump filled with silence for want of audio: one
     * atomic add on that path, read by the frontend's overlay. */
    retro_atomic_size_t underruns;
+   /* How late the pump woke, against the period it was waiting for.
+    * Written by the pump alone, read by the frontend at teardown; a
+    * few atomic adds on a path that already takes a lock, and nothing
+    * is logged from the pump itself.
+    *
+    * It exists to answer a question that cannot be answered by
+    * reasoning: whether the multimedia class scheduler gets this
+    * thread to its period more reliably than a time-critical priority
+    * does. Both arrangements produce the same four numbers, so the
+    * two runs can be put beside each other. */
+   retro_atomic_size_t late_wakes;     /* wakes measured */
+   retro_atomic_size_t late_usec_sum;  /* microseconds late, summed */
+   retro_atomic_size_t late_usec_max;
+   retro_atomic_size_t late_over_period; /* wakes a whole period late or worse */
+   bool                mmcss;          /* the scheduler class took */
    /* Frames the device has consumed, kept by the pump under fifo_lock:
     * exclusive, the periods it released, each taken by the device a
     * period after; shared, the frames released less the engine's
@@ -2112,18 +2128,118 @@ error:
  * underrun counted when not. */
 static bool wasapi_push_sh(wasapi_t *w);
 
+/* The multimedia class scheduler, where the system has it: what
+ * Windows offers a thread that must run inside a device period, and
+ * what Microsoft's own low-latency event-driven WASAPI sample uses.
+ * Loaded by name, so no build target gains an avrt import for a
+ * library that may not be there, and a system without the class falls
+ * back rather than fails.
+ *
+ * The fallback is the priority this thread has always run at, so the
+ * worst case is what it did before. RETROARCH_WASAPI_NO_MMCSS in the
+ * environment forces it, which is how one binary can be run both
+ * ways and the lateness numbers compared. */
+typedef HANDLE (WINAPI *wasapi_av_set_t)(LPCWSTR, LPDWORD);
+typedef BOOL   (WINAPI *wasapi_av_revert_t)(HANDLE);
+
+static HANDLE wasapi_pump_mmcss_begin(HMODULE *avrt)
+{
+   wasapi_av_set_t set;
+   HANDLE          task = NULL;
+   DWORD           idx  = 0;
+
+   *avrt = NULL;
+   if (getenv("RETROARCH_WASAPI_NO_MMCSS"))
+      return NULL;
+   if (!(*avrt = LoadLibraryA("avrt.dll")))
+      return NULL;
+   if ((set = (wasapi_av_set_t)(void*)GetProcAddress(*avrt,
+               "AvSetMmThreadCharacteristicsW")))
+      task = set(L"Pro Audio", &idx);
+   if (!task || task == INVALID_HANDLE_VALUE)
+   {
+      FreeLibrary(*avrt);
+      *avrt = NULL;
+      return NULL;
+   }
+   return task;
+}
+
+static void wasapi_pump_mmcss_end(HMODULE avrt, HANDLE task)
+{
+   if (avrt)
+   {
+      wasapi_av_revert_t revert = (wasapi_av_revert_t)(void*)GetProcAddress(
+            avrt, "AvRevertMmThreadCharacteristics");
+      if (revert && task)
+         revert(task);
+      FreeLibrary(avrt);
+   }
+}
+
 static void wasapi_pump_thread(void *data)
 {
-   wasapi_t *w = (wasapi_t*)data;
-   /* A period late is a period of silence; above normal priority, as
-    * the wrapper's audio thread runs. */
-   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+   wasapi_t *w         = (wasapi_t*)data;
+   HMODULE   avrt      = NULL;
+   HANDLE    mmtask    = wasapi_pump_mmcss_begin(&avrt);
+   int64_t   due_usec  = 0;
+   int64_t   period_us = 0;
+
+   /* A period late is a period of silence. Under the scheduler's Pro
+    * Audio class where it took, and otherwise at the priority this
+    * thread has always run at - the two are not combined, since the
+    * class carries its own priority. */
+   w->mmcss = (mmtask != NULL);
+   if (!mmtask)
+      SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+   if (w->rate)
+   {
+      /* Shared mode names the engine's period outright; exclusive
+       * takes the whole endpoint buffer each time, which is its
+       * period. */
+      unsigned frames = w->sh_period_frames ? w->sh_period_frames
+            : (w->frame_size ? (unsigned)(w->engine_buffer_size / w->frame_size) : 0);
+      if (frames)
+         period_us = (int64_t)frames * 1000000 / w->rate;
+   }
    while (retro_atomic_load_acquire_int(&w->pump_run))
    {
+      int64_t woke_usec;
+
       if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+      {
+         /* A timeout is the device not asking, not this thread being
+          * late; the next wake starts its own reckoning. */
+         due_usec = 0;
          continue;
+      }
       if (!retro_atomic_load_acquire_int(&w->pump_run))
          break;
+
+      /* How late against the period this wake was due at. The first
+       * wake has nothing to be late against and only sets the mark. */
+      if (period_us > 0)
+      {
+         woke_usec = (int64_t)cpu_features_get_time_usec();
+         if (due_usec > 0)
+         {
+            int64_t late = woke_usec - due_usec;
+            if (late < 0)
+               late = 0;
+            retro_atomic_fetch_add_size(&w->late_wakes, 1);
+            retro_atomic_fetch_add_size(&w->late_usec_sum, (size_t)late);
+            if ((size_t)late > retro_atomic_load_acquire_size(&w->late_usec_max))
+               retro_atomic_store_release_size(&w->late_usec_max, (size_t)late);
+            if (late >= period_us)
+               retro_atomic_fetch_add_size(&w->late_over_period, 1);
+         }
+         /* Due at the period after the one just served, measured from
+          * when it was due rather than when it arrived, so lateness
+          * does not accumulate into the next reckoning. */
+         due_usec = (due_usec > 0 ? due_usec : woke_usec) + period_us;
+         if (woke_usec - due_usec > period_us * 8)
+            due_usec = woke_usec + period_us;   /* far adrift: start again */
+      }
       if (w->pump_exclusive)
       {
          BYTE *dest         = NULL;
@@ -2488,6 +2604,24 @@ static void wasapi_free(void *wh)
 {
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
+
+   /* How the pump did, said once, here - the device is going away and
+    * nothing is disturbed. Never logged from the pump itself: a line
+    * inside a three-millisecond period costs a fraction of its
+    * margin. Which scheduling it ran under is on the same line, so
+    * two runs can be put beside each other. */
+   if (w)
+   {
+      size_t wakes = retro_atomic_load_acquire_size(&w->late_wakes);
+      if (wakes)
+         RARCH_LOG("[WASAPI] Pump (%s): %u wake%s, %.2f ms late on average, %.2f ms at worst, %u a period or more late.\n",
+               w->mmcss ? "Pro Audio" : "time-critical",
+               (unsigned)wakes, wakes == 1 ? "" : "s",
+               (double)retro_atomic_load_acquire_size(&w->late_usec_sum)
+                     / (double)wakes / 1000.0,
+               (double)retro_atomic_load_acquire_size(&w->late_usec_max) / 1000.0,
+               (unsigned)retro_atomic_load_acquire_size(&w->late_over_period));
+   }
 
    if (w)
       wasapi_imm_stop_thread(w);

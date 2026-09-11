@@ -552,3 +552,6 @@ DWORD GetLastError(void) { return 0; }
 
 HANDLE GetCurrentThread(void) { return NULL; }
 BOOL SetThreadPriority(HANDLE h, int prio) { (void)h; (void)prio; return TRUE; }
+HMODULE LoadLibraryA(const char *name) { (void)name; return NULL; }
+void   *GetProcAddress(HMODULE m, const char *name) { (void)m; (void)name; return NULL; }
+BOOL    FreeLibrary(HMODULE m) { (void)m; return TRUE; }
