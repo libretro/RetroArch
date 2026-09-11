@@ -225,6 +225,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	1
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -501,7 +502,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -565,6 +565,7 @@ uint	rewind_buffer_size_step	1	10
 uint	input_block_timeout	1	1
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
@@ -880,6 +881,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -1154,7 +1156,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -1216,6 +1217,7 @@ uint	video_monitor_index	1	0
 uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
@@ -1540,6 +1542,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -1830,7 +1833,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -1893,6 +1895,7 @@ uint	video_monitor_index	1	0
 uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
