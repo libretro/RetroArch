@@ -1238,12 +1238,12 @@ audio_driver_t audio_coreaudio = {
  * Objective-C and lives in the Cocoa layer behind
  * cocoa_audio_session_begin_record().
  *
- * The fifo is guarded by a lock the callback only try-locks: a slice
- * that finds the lock held is dropped rather than making the real-time
- * thread wait. The reader blocks on the condition the callback signals,
- * timed, in blocking mode.
+ * The capture queue is a lock-free SPSC ring (retro_spsc): the
+ * real-time thread never waits and never drops a slice for contention.
+ * The reader blocks on the condition the callback signals, timed, in
+ * blocking mode.
  * ===================================================================== */
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <rthreads/rthreads.h>
 #include <string.h>
 #include "../microphone_driver.h"
@@ -1254,7 +1254,18 @@ audio_driver_t audio_coreaudio = {
 typedef struct coreaudio_mic
 {
    AudioUnit unit;
-   fifo_buffer_t *fifo;
+   /* Captured samples.  Single producer (the audio unit's IO thread in
+    * coreaudio_mic_input_cb), single consumer (the core thread in
+    * coreaudio_mic_read): a lock-free retro_spsc ring.  The callback
+    * used to slock_try_lock() a mutex around a fifo and drop the whole
+    * slice whenever the reader held it; with the ring it never waits
+    * and never drops for contention.  lock/cond remain only for the
+    * reader's timed wait.  retro_spsc rounds capacity up to a power of
+    * two; ring_size is the latency-derived size asked for and the
+    * producer never fills past it. */
+   retro_spsc_t ring;
+   size_t ring_size;
+   bool ring_init;
    slock_t *lock;
    scond_t *cond;
    AudioStreamBasicDescription format;
@@ -1304,6 +1315,17 @@ static void coreaudio_mic_set_format(coreaudio_mic_t *mic, bool use_float)
 }
 
 /* The input callback, on the real-time thread. */
+/* Discard whatever is buffered, from the consumer side: skipping
+ * read_avail() bytes is safe against a live producer, unlike
+ * retro_spsc_clear(), which requires both sides quiesced.  Every
+ * caller has stopped the unit first anyway; this just does not
+ * depend on AudioOutputUnitStop() having joined the IO thread. */
+static void coreaudio_mic_drain(coreaudio_mic_t *mic)
+{
+   if (mic && mic->ring_init)
+      retro_spsc_skip(&mic->ring, retro_spsc_read_avail(&mic->ring));
+}
+
 static OSStatus coreaudio_mic_input_cb(void *ref,
       AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts,
       UInt32 bus, UInt32 frames, AudioBufferList *io_data)
@@ -1335,14 +1357,17 @@ static OSStatus coreaudio_mic_input_cb(void *ref,
       size_t got = list.mBuffers[0].mDataByteSize;
       if (got > bytes)
          got = bytes;
-      /* Never wait here: a reader holding the lock costs one slice. */
-      if (slock_try_lock(mic->lock))
-      {
-         if (FIFO_WRITE_AVAIL(mic->fifo) >= got)
-            fifo_write(mic->fifo, list.mBuffers[0].mData, got);
-         scond_signal(mic->cond);
-         slock_unlock(mic->lock);
-      }
+      /* Lock-free: the ring is SPSC and this thread is its only
+       * producer.  Room is measured against ring_size, not the
+       * rounded-up physical capacity.  Signalled without the lock,
+       * as before; the reader's waits are timed so a signal raised
+       * between its check and its wait costs at most one timeout. */
+      size_t room   = retro_spsc_write_avail(&mic->ring);
+      size_t excess = mic->ring.capacity - mic->ring_size;
+      room          = room > excess ? room - excess : 0;
+      if (room >= got)
+         retro_spsc_write(&mic->ring, list.mBuffers[0].mData, got);
+      scond_signal(mic->cond);
    }
    /* Always noErr: an error return can stop the callbacks for good. */
    return noErr;
@@ -1495,9 +1520,7 @@ static void coreaudio_mic_reconnect(coreaudio_mic_t *mic)
       return;
    retro_atomic_store_release_int(&mic->initialized, 1);
 
-   slock_lock(mic->lock);
-   fifo_clear(mic->fifo);
-   slock_unlock(mic->lock);
+   coreaudio_mic_drain(mic);
 
    if (was_running && AudioOutputUnitStart(mic->unit) == noErr)
       retro_atomic_store_release_int(&mic->running, 1);
@@ -1534,17 +1557,17 @@ static size_t coreaudio_mic_wait_readable(void *driver_context,
    coreaudio_mic_t *mic = (coreaudio_mic_t*)mic_context;
    size_t avail;
 
-   if (!mic || !mic->fifo)
+   if (!mic || !mic->ring_init)
       return 0;
 
-   slock_lock(mic->lock);
-   avail = FIFO_READ_AVAIL(mic->fifo);
+   avail = retro_spsc_read_avail(&mic->ring);
    if (avail < len)
    {
+      slock_lock(mic->lock);
       scond_wait_timeout(mic->cond, mic->lock, 10000);
-      avail = FIFO_READ_AVAIL(mic->fifo);
+      slock_unlock(mic->lock);
+      avail = retro_spsc_read_avail(&mic->ring);
    }
-   slock_unlock(mic->lock);
    return avail;
 }
 
@@ -1555,7 +1578,7 @@ static int coreaudio_mic_read(void *driver_context, void *mic_context,
    size_t avail, n;
 
    (void)driver_context;
-   if (!mic || !mic->fifo || !buf)
+   if (!mic || !mic->ring_init || !buf)
       return -1;
 
 #if !TARGET_OS_IPHONE
@@ -1567,19 +1590,19 @@ static int coreaudio_mic_read(void *driver_context, void *mic_context,
    }
 #endif
 
-   slock_lock(mic->lock);
-   avail = FIFO_READ_AVAIL(mic->fifo);
+   avail = retro_spsc_read_avail(&mic->ring);
    n     = avail < len ? avail : len;
    if (!n && !mic->nonblock)
    {
       /* Blocking: one slice's worth of wait for the callback, timed. */
+      slock_lock(mic->lock);
       scond_wait_timeout(mic->cond, mic->lock, 10000);
-      avail = FIFO_READ_AVAIL(mic->fifo);
+      slock_unlock(mic->lock);
+      avail = retro_spsc_read_avail(&mic->ring);
       n     = avail < len ? avail : len;
    }
    if (n)
-      fifo_read(mic->fifo, buf, n);
-   slock_unlock(mic->lock);
+      retro_spsc_read(&mic->ring, buf, n);
    return (int)n;
 }
 
@@ -1794,7 +1817,8 @@ static void *coreaudio_mic_open(void *driver_context, const char *device,
    fifo_size = (size_t)latency * mic->sample_rate * mic->format.mBytesPerFrame / 1000;
    if (!fifo_size)
       fifo_size = (size_t)mic->sample_rate * mic->format.mBytesPerFrame / 10;
-   if (!(mic->fifo = fifo_new(fifo_size)))
+   mic->ring_size = fifo_size;
+   if (!(mic->ring_init = retro_spsc_init(&mic->ring, fifo_size)))
       goto error;
 
 #if !TARGET_OS_IPHONE
@@ -1840,8 +1864,8 @@ static void coreaudio_mic_close(void *driver_context, void *mic_context)
    }
    if (mic->cb_buf)
       free(mic->cb_buf);
-   if (mic->fifo)
-      fifo_free(mic->fifo);
+   if (mic->ring_init)
+      retro_spsc_free(&mic->ring);
    if (mic->lock)
       slock_free(mic->lock);
    if (mic->cond)
@@ -1866,9 +1890,7 @@ static bool coreaudio_mic_start(void *driver_context, void *mic_context)
       return false;
    if (retro_atomic_load_acquire_int(&mic->running))
       return true;
-   slock_lock(mic->lock);
-   fifo_clear(mic->fifo);
-   slock_unlock(mic->lock);
+   coreaudio_mic_drain(mic);
    if (AudioOutputUnitStart(mic->unit) != noErr)
    {
       RARCH_ERR("[CoreAudio] Failed to start the microphone.\n");
@@ -1888,12 +1910,7 @@ static bool coreaudio_mic_stop(void *driver_context, void *mic_context)
    status = AudioOutputUnitStop(mic->unit);
    /* Not running from here on either way. */
    retro_atomic_store_release_int(&mic->running, 0);
-   if (mic->fifo)
-   {
-      slock_lock(mic->lock);
-      fifo_clear(mic->fifo);
-      slock_unlock(mic->lock);
-   }
+   coreaudio_mic_drain(mic);
    return status == noErr;
 }
 
