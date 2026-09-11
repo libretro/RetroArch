@@ -28,6 +28,8 @@
 #include <libretro_gskit_ps2.h>
 #include <boolean.h>
 
+#include <compat/strl.h>
+
 #include "../video_defines.h"
 #include "../../driver.h"
 #include "../../retroarch.h"

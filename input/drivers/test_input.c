@@ -26,6 +26,8 @@
 #include <formats/rjson.h>
 #include <formats/rjson_stream.h>
 
+#include <compat/strl.h>
+
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../verbosity.h"

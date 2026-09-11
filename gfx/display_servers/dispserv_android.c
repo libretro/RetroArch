@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <android/native_window.h>
 
+#include <compat/strl.h>
+
 #include "../../verbosity.h"
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"

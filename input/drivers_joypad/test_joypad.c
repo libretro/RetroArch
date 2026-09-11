@@ -32,6 +32,8 @@
 #include <formats/rjson.h>
 #include <formats/rjson_stream.h>
 
+#include <compat/strl.h>
+
 #include "../../config.def.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"

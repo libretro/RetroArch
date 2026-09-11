@@ -78,9 +78,39 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
 C89CC_WIN32="${C89CC_WIN32:-i686-w64-mingw32-gcc}"
 command -v "$C89CC_WIN32" >/dev/null 2>&1 || C89CC_WIN32=""
 
+# Pass 0: the declaration a compiler here cannot miss.
+#
+# glibc 2.38 declares strlcpy and strlcat itself, so a .c that uses
+# them without including <compat/strl.h> compiles clean on this box
+# and on both passes below, then fails on MXE, clang and the webOS
+# toolchain, where the only declaration is libretro-common's. That is
+# how it reached master in modeline_edid.c. A grep is the only check
+# that does not depend on what the host's headers happen to provide:
+# a file that uses one of these must include the compat header
+# itself, not lean on whatever a project header dragged in.
+check_compat_include()
+{
+   f="$1"
+   miss=""
+   if grep -qE '\b(strlcpy|strlcat|strlcpy_lit|strlcat_lit)[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strl\.h' "$f"; then
+      miss="compat/strl.h"
+   fi
+   if grep -qE '\bstrcasestr[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strcasestr\.h' "$f"; then
+      miss="$miss compat/strcasestr.h"
+   fi
+   [ -z "$miss" ] && return 0
+   echo "FAIL [decl]  $f"
+   echo "     uses a libretro-common string helper without including:$miss" \
+      | sed 's/^/     /'
+   return 1
+}
+
 fail=0; n=0
 for f in $FILES; do
    n=$((n+1))
+   check_compat_include "$f" || fail=1
    # Only real errors, not warnings. A missing header named without a
    # path (d3dkmthk.h: an optional platform header this box lacks) is
    # forgiven; a missing header with a path component (../companion/x.h:
@@ -121,5 +151,5 @@ for f in $FILES; do
       echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
 done
-[ $fail = 0 ] && echo "ok: $n translation units clean (win32 gnu99 + linux c89 pedantic)"
+[ $fail = 0 ] && echo "ok: $n translation units clean (compat decls + win32 gnu99 + linux c89 pedantic)"
 exit $fail

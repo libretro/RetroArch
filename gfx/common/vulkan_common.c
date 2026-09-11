@@ -48,6 +48,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+
+#include <compat/strl.h>
 #endif
 
 #define VENDOR_ID_AMD 0x1002

@@ -30,6 +30,8 @@
 
 #include <libretro.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif

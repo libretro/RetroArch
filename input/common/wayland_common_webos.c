@@ -43,6 +43,8 @@
 
 #ifdef HAVE_USERLAND
 #include <webos-helpers/libhelpers.h>
+
+#include <compat/strl.h>
 #include "formats/rjson.h"
 HContext *g_register_ctx = NULL;
 HContext *g_screensaver_ctx = NULL;

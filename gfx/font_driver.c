@@ -31,6 +31,8 @@
 #include "video_thread_wrapper.h"
 #include <retro_atomic.h>
 
+#include <compat/strl.h>
+
 /* ------------------------------------------------------------------
  * Shared font file bytes.
  *

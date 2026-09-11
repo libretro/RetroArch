@@ -22,6 +22,8 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include <compat/strl.h>
+
 #include "../verbosity.h"
 
 #if defined(HAVE_CONFIG_H)

@@ -59,6 +59,8 @@
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_THREADS
 #include "audio_thread_wrapper.h"
 #endif

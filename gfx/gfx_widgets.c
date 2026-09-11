@@ -29,6 +29,8 @@
 #include <retro_math.h>
 #include <features/features_cpu.h>
 
+#include <compat/strl.h>
+
 #include "gfx_display.h"
 #include "gfx_widgets.h"
 #include "font_driver.h"
