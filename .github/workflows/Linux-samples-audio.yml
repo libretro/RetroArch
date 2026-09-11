@@ -629,9 +629,37 @@ jobs:
           # alsa-lib includes on it, so build the objects that way too:
           # configure with ALSA on, then compile them. That covers the
           # object a distribution ships as well as the ones the
-          # harnesses build (libretro/RetroArch#19525).
+          # harnesses build (libretro/RetroArch#19525). The embedded
+          # driver takes its define the same way and shares the file,
+          # so the arrangements below cover it too.
           ./configure --enable-alsa --disable-qt --disable-ffmpeg \
             --disable-x11 --disable-wayland
           grep -q '^HAVE_ALSA = 1' config.mk
           make obj-unix/release/audio/drivers/alsa.o \
                obj-unix/release/audio/common/alsa.o
+          echo "[pass] alsa-lib alone, through configure"
+
+          # The embedded driver is in the same file behind its own
+          # define, and configure puts HAVE_TINYALSA in config.h as
+          # well as on the command line - so it has the same question
+          # to answer as HAVE_ALSA did, and one object serves both
+          # drivers. The two arrangements a distribution can ask for:
+          # the embedded driver with no alsa-lib anywhere, and both in
+          # the one object.
+          rm -f obj-unix/release/audio/drivers/alsa.o
+          ./configure --enable-tinyalsa --disable-alsa --disable-qt \
+            --disable-ffmpeg --disable-x11 --disable-wayland
+          grep -q '^HAVE_TINYALSA = 1' config.mk
+          grep -q '^HAVE_ALSA = 0' config.mk
+          make obj-unix/release/audio/drivers/alsa.o
+          echo "[pass] the embedded driver alone, through configure"
+
+          rm -f obj-unix/release/audio/drivers/alsa.o \
+                obj-unix/release/audio/common/alsa.o
+          ./configure --enable-alsa --enable-tinyalsa --disable-qt \
+            --disable-ffmpeg --disable-x11 --disable-wayland
+          grep -q '^HAVE_TINYALSA = 1' config.mk
+          grep -q '^HAVE_ALSA = 1' config.mk
+          make obj-unix/release/audio/drivers/alsa.o \
+               obj-unix/release/audio/common/alsa.o
+          echo "[pass] both drivers in the one object, through configure"
