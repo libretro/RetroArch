@@ -306,6 +306,11 @@ typedef struct thread_video
    char status_text[NAME_MAX_LENGTH];
    size_t status_text_len;
 #endif
+#ifdef HAVE_VIDEO_FILTER
+   /* Main thread: the next frame pushed is raw, for this thread to
+    * filter; its bytes per pixel. Staged by video_thread_defer_filter() */
+   unsigned filter_next;
+#endif
    /* cond_ring: ring progress (frame.pending / frame.busy changing),
     * broadcast by the video thread when it claims or completes a slot.
     * Any number of waiters, each re-testing its own predicate. */
@@ -403,6 +408,11 @@ typedef struct thread_video
           * thread draws; zero length leaves what they show */
          char status_text[NAME_MAX_LENGTH];
          size_t status_text_len;
+#endif
+#ifdef HAVE_VIDEO_FILTER
+         /* A raw core frame for this thread to run the software filter
+          * on: its bytes per pixel, 0 for a frame ready to draw */
+         unsigned filter_bpp;
 #endif
          /* Built by the main thread in video_thread_frame() and handed
           * to the driver's frame call by pointer on the video thread.
@@ -577,6 +587,13 @@ void video_thread_wait_idle(void);
 /* Main thread: stages the on-screen panels' text to travel with the
  * next frame pushed, for the widgets the worker draws. */
 void video_thread_status_text(const char *s);
+#endif
+
+#ifdef HAVE_VIDEO_FILTER
+/* Main thread: the next frame pushed is the core's, unfiltered, in a
+ * format of in_bpp bytes per pixel; the worker runs the software
+ * filter on it before drawing. */
+void video_thread_defer_filter(unsigned in_bpp);
 #endif
 
 RETRO_END_DECLS

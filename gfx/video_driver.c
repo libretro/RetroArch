@@ -2061,6 +2061,10 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym)
 void video_driver_filter_free(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
+#ifdef HAVE_THREADS
+   /* The threaded video worker may be filtering a frame with it */
+   video_thread_wait_idle();
+#endif
    if (video_st->state_filter)
       rarch_softfilter_free(video_st->state_filter);
    video_st->state_filter    = NULL;
@@ -2093,6 +2097,12 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    enum retro_pixel_format colfmt       =
       (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555)
       ? RETRO_PIXEL_FORMAT_RGB565 : colfmt_int;
+
+#ifdef HAVE_THREADS
+   /* The threaded video worker may be filtering a frame with the old
+    * filter and buffer, which this replaces */
+   video_thread_wait_idle();
+#endif
 
    if (video_driver_is_hw_context())
    {
@@ -5166,6 +5176,28 @@ uint64_t video_driver_presents_per_frame(const video_frame_info_t *video_info)
    return n;
 }
 
+#if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
+/* Under the threaded video wrapper the worker runs the software filter
+ * on the raw frame, as it does the rest of the frame's processing -
+ * unless the filtered frame is being recorded, which happens here.
+ * True when the frame goes to the worker raw. */
+static bool video_driver_filter_on_worker(video_driver_state_t *video_st,
+      bool post_filter_record, recording_state_t *recording_st)
+{
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (     post_filter_record
+         && recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_video)
+      return false;
+   video_thread_defer_filter(
+         (video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+         ? sizeof(uint32_t) : sizeof(uint16_t));
+   return true;
+}
+#endif
+
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -5728,7 +5760,15 @@ void video_driver_frame(const void *data, unsigned width,
             pitch, runloop_idle);
 
 #ifdef HAVE_VIDEO_FILTER
-   if (settings->bools.video_filter_enable && render_frame && data && video_st->state_filter)
+   if (     settings->bools.video_filter_enable
+         && render_frame
+         && data
+         && video_st->state_filter
+#ifdef HAVE_THREADS
+         && !video_driver_filter_on_worker(video_st,
+               video_info.post_filter_record, recording_st)
+#endif
+      )
    {
       unsigned output_width                             = 0;
       unsigned output_height                            = 0;

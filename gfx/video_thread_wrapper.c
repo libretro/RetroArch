@@ -34,6 +34,9 @@
 #include "gfx_widgets.h"
 #endif
 #include "font_driver.h"
+#ifdef HAVE_VIDEO_FILTER
+#include "video_filter.h"
+#endif
 
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -888,6 +891,49 @@ void video_thread_async_poll(void)
    video_thread_async_deliver(thr);
 }
 
+#ifdef HAVE_VIDEO_FILTER
+/* The software filter, on the thread that draws: a frame staged by
+ * video_thread_defer_filter() arrives raw, in the core's format. The
+ * filter and its output buffer hold still while frames are in flight;
+ * video_driver_init_filter() and video_driver_filter_free() wait this
+ * thread idle first. */
+static void video_thread_filter(const void **data,
+      unsigned *width, unsigned *height, unsigned *pitch)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned out_width             = 0;
+   unsigned out_height            = 0;
+   unsigned out_pitch;
+
+   if (!*data || !video_st->state_filter || !video_st->state_buffer)
+      return;
+
+   rarch_softfilter_get_output_size(video_st->state_filter,
+         &out_width, &out_height, *width, *height);
+   out_pitch = out_width * video_st->state_out_bpp;
+   rarch_softfilter_process(video_st->state_filter,
+         video_st->state_buffer, out_pitch,
+         *data, *width, *height, *pitch);
+
+   *data     = video_st->state_buffer;
+   *width    = out_width;
+   *height   = out_height;
+   *pitch    = out_pitch;
+}
+
+void video_thread_defer_filter(unsigned in_bpp)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+
+   if (!video_st->thread_wrapper_active)
+      return;
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   thr->filter_next = in_bpp;
+}
+#endif
+
 static void video_thread_loop(void *data)
 {
    thread_packet_t pkt;
@@ -1061,15 +1107,23 @@ static void video_thread_loop(void *data)
                   video_thread_hw_after_frame(thr, thr->frame.slot[slot].hw_slot);
                }
                else
+               {
+                  const void *fdata = thr->frame.slot[slot].buffer;
+                  unsigned fwidth   = thr->frame.slot[slot].width;
+                  unsigned fheight  = thr->frame.slot[slot].height;
+                  unsigned fpitch   = thr->frame.slot[slot].pitch;
+#ifdef HAVE_VIDEO_FILTER
+                  if (thr->frame.slot[slot].filter_bpp)
+                     video_thread_filter(&fdata, &fwidth, &fheight, &fpitch);
+#endif
                   ret = thr->driver->frame(thr->driver_data,
-                     thr->frame.slot[slot].buffer,
-                     thr->frame.slot[slot].width,
-                     thr->frame.slot[slot].height,
+                     fdata, fwidth, fheight,
                      thr->frame.slot[slot].count,
-                     thr->frame.slot[slot].pitch,
+                     fpitch,
                      *thr->frame.slot[slot].msg
                         ? thr->frame.slot[slot].msg : NULL,
                      video_info);
+               }
 
                slock_unlock(thr->frame.lock);
 
@@ -1288,11 +1342,21 @@ static bool video_thread_frame(void *data, const void *frame_,
    bool dropped        = false;
    bool zero_copy      = false;
    bool waited         = false;
+#ifdef HAVE_VIDEO_FILTER
+   unsigned filter_bpp = 0;
+#endif
    retro_time_t now;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
+
+#ifdef HAVE_VIDEO_FILTER
+   /* Taken once, so a push that goes no further leaves nothing staged
+    * for the next frame */
+   filter_bpp          = thr->filter_next;
+   thr->filter_next    = 0;
+#endif
 
    /* Asynchronous uploads that finished since the last frame reach
     * their owners before the frame that may draw with them. */
@@ -1305,8 +1369,14 @@ static bool video_thread_frame(void *data, const void *frame_,
       thread_update_driver_state(thr);
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
+      {
+#ifdef HAVE_VIDEO_FILTER
+         if (filter_bpp)
+            video_thread_filter(&frame_, &width, &height, &pitch);
+#endif
          return thr->driver->frame(thr->driver_data, frame_,
             width, height, frame_count, pitch, msg, video_info);
+      }
 
       return false;
    }
@@ -1421,7 +1491,14 @@ static bool video_thread_frame(void *data, const void *frame_,
        * of this same buffer, so an unclamped height would be read past
        * the end of the allocation whether or not anything was copied
        * into it. A stride too wide for a single row yields zero. */
-      unsigned rows        = copy_stride
+      unsigned rows;
+
+#ifdef HAVE_VIDEO_FILTER
+      /* A frame the worker filters travels in the core's format */
+      if (filter_bpp)
+         copy_stride       = width * filter_bpp;
+#endif
+      rows                 = copy_stride
          ? (unsigned)(thr->frame.buffer_size / copy_stride)
          : 0;
 
@@ -1480,6 +1557,9 @@ static bool video_thread_frame(void *data, const void *frame_,
       else
          *thr->frame.slot[slot].msg = '\0';
 
+#ifdef HAVE_VIDEO_FILTER
+      thr->frame.slot[slot].filter_bpp = filter_bpp;
+#endif
 #ifdef HAVE_GFX_WIDGETS
       thr->frame.slot[slot].status_text_len = thr->status_text_len;
       if (thr->status_text_len)
