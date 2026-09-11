@@ -1,0 +1,89 @@
+name: CI driver vtables
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  driver-vtables:
+    name: Every driver against its interface
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential libasound2-dev libpulse-dev libjack-jackd2-dev \
+            libopenal-dev libpipewire-0.3-dev libsdl2-dev
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Compile each driver with -Werror=incompatible-pointer-types
+        shell: bash
+        run: |
+          set -eu
+          # A driver fills in a vtable of function pointers, and almost
+          # every one of them does it positionally and names nothing.
+          # So an entry added to the middle of one of those structures
+          # silently moves every entry after it in every driver that
+          # did not name its fields, and what the compiler then says is
+          # that a layout function is being installed as an underrun
+          # counter - which is an error only if you ask for it to be.
+          #
+          # That happened: frames_consumed_fallback went in between
+          # frames_consumed and underruns, three Windows drivers took
+          # the shift, and the break reached master because the check
+          # run before the commit was one file rather than all of them.
+          #
+          # This is that check. It compiles every driver it can on
+          # Linux - the rest need SDKs that are not here - and treats a
+          # mismatched function pointer as the error it is.
+          fail=0
+          defs="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_CONFIGFILE"
+          defs="$defs -DHAVE_AUDIOMIXER -DHAVE_REWIND -DHAVE_RWAV"
+          have="-DHAVE_ALSA -DHAVE_PULSE -DHAVE_JACK -DHAVE_OSS -DHAVE_OPENAL"
+          have="$have -DHAVE_PIPEWIRE -DHAVE_TINYALSA -DHAVE_SDL2"
+          inc="-I. -Ilibretro-common/include -Ideps -Ideps/rcheevos/include"
+          inc="$inc $(pkg-config --cflags libpipewire-0.3 2>/dev/null || true)"
+          for f in audio/drivers/*.c camera/drivers/*.c record/drivers/*.c \
+                   audio/audio_driver.c; do
+             [ -f "$f" ] || continue
+             out=$(gcc -fsyntax-only -std=gnu99 -Wall \
+                   -Werror=incompatible-pointer-types \
+                   $defs $have $inc "$f" 2>&1 || true)
+             # A driver whose platform SDK is not here does not compile
+             # at all, and that is not what this job is about: it is
+             # skipped, and only a pointer mismatch fails.
+             if printf '%s' "$out" | grep -q "incompatible pointer type"; then
+                echo "=== $f"
+                printf '%s\n' "$out" | grep -A2 "incompatible pointer type"
+                fail=1
+             elif printf '%s' "$out" | grep -q ": error:"; then
+                echo "[skip] $f (needs an SDK that is not here)"
+             else
+                echo "[ok]   $f"
+             fi
+          done
+          if [ "$fail" -ne 0 ]; then
+             echo
+             echo "A driver's vtable does not match the interface it fills in."
+             echo "An optional entry belongs at the end of the structure, where"
+             echo "it cannot move the entries a positional initialiser relies on."
+             exit 1
+          fi
