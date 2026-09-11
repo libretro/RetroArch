@@ -2148,10 +2148,13 @@ static bool wasapi_push_sh(wasapi_t *w);
  * saying so. And this runs once, on the pump thread, before its loop:
  * not per period, not per frame.
  *
- * The fallback is the priority this thread has always run at, so the
- * worst case is what it did before. RETROARCH_WASAPI_NO_MMCSS in the
- * environment forces it, which is how one binary can be run both
- * ways and the lateness numbers compared. */
+ * Asked for only where the setting says so, and the setting is off:
+ * the class is not reliably better than raising the priority
+ * directly, and where it is worse it is the worst wake that suffers,
+ * which is the number that matters at a period of a few
+ * milliseconds. The fallback is the priority this thread has always
+ * run at. Either way the summary at teardown says which ran and how
+ * late it woke, so the two can be measured rather than argued. */
 typedef HANDLE (WINAPI *wasapi_av_set_t)(LPCWSTR, LPDWORD);
 typedef BOOL   (WINAPI *wasapi_av_revert_t)(HANDLE);
 
@@ -2161,8 +2164,17 @@ static HANDLE wasapi_pump_mmcss_begin(HMODULE *avrt)
    HANDLE          task = NULL;
    DWORD           idx  = 0;
 
+   settings_t *settings = config_get_ptr();
+
    *avrt = NULL;
-   if (getenv("RETROARCH_WASAPI_NO_MMCSS"))
+   /* Off unless asked for. It is not reliably the better of the two:
+    * on some systems the class raises the worst wake rather than
+    * lowering it, which is the number that matters at a period of a
+    * few milliseconds. The setting says which to ask for and the
+    * summary at teardown says how each did. */
+   if (!settings || !settings->bools.audio_wasapi_mmcss)
+      return NULL;
+   if (!settings->bools.audio_thread_priority)
       return NULL;
    if (!(*avrt = LoadLibraryA("avrt.dll")))
       return NULL;

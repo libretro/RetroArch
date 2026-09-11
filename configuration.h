@@ -646,6 +646,7 @@ typedef struct settings
 
 #ifdef HAVE_WASAPI
       bool audio_wasapi_exclusive_mode;
+      bool audio_wasapi_mmcss;
 #endif
 
 #ifdef HAVE_MICROPHONE

@@ -9242,10 +9242,24 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,         PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,           PARSE_ONLY_BOOL,     true  },
+#ifdef HAVE_WASAPI
+               /* Which way the thread's priority is asked for, so it
+                * is only worth showing where one is being asked for at
+                * all: checked below against the setting above it. */
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,              PARSE_ONLY_BOOL,     false },
+#endif
                {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
             };
+
+#ifdef HAVE_WASAPI
+            /* Which way the audio thread's priority is asked for, so
+             * it is shown only where one is being asked for at all. */
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               if (build_list[i].enum_idx == MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS)
+                  build_list[i].checked = settings->bools.audio_thread_priority;
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
