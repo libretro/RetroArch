@@ -132,20 +132,18 @@ void get_ios_version(int *major, int *minor);
 #if defined(__clang__)
 /* ARC is only available for Clang */
 #if __has_feature(objc_arc)
-#define RELEASE(x)   x = nil
+#define RELEASE(x)   do { x = nil; } while (0)
 #define BRIDGE       __bridge
 #define UNSAFE_UNRETAINED __unsafe_unretained
 #else
-#define RELEASE(x)   [x release]; \
-   x = nil
+#define RELEASE(x)   do { [x release]; x = nil; } while (0)
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif
 #else
 /* On compilers other than Clang (e.g. GCC), assume ARC 
    is going to be unavailable */
-#define RELEASE(x)   [x release]; \
-   x = nil
+#define RELEASE(x)   do { [x release]; x = nil; } while (0)
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif

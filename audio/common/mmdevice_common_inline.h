@@ -34,16 +34,27 @@
 #include <retro_common_api.h>
 #include <retro_atomic.h>
 
+/* One statement, so that a RELEASE() under an unbraced if or else
+ * behaves the way it reads. It was two - the test-and-release, then
+ * the assignment - and the assignment sat outside whatever guarded
+ * the macro: written under an if, the interface was released
+ * conditionally and the pointer cleared regardless, which is a
+ * feature silently switched off rather than a crash, and the
+ * compiler's -Wmultistatement-macros is the only thing that says so. */
 #ifdef __cplusplus
 #define RELEASE(x) \
-   if (x) \
-      x->Release(); \
-   x = NULL;
+   do { \
+      if (x) \
+         (x)->Release(); \
+      (x) = NULL; \
+   } while (0)
 #else
 #define RELEASE(x) \
-   if (x) \
-      x->lpVtbl->Release(x); \
-   x = NULL;
+   do { \
+      if (x) \
+         (x)->lpVtbl->Release(x); \
+      (x) = NULL; \
+   } while (0)
 #endif
 
 #define WM_AUDIO_DEVICE_STATE_CHANGED (WM_USER + 1)
