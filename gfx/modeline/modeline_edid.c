@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <compat/strl.h>
+
 #include "modeline_edid.h"
 #include "modeline_list.h"
 #include "modeline_monitor.h"
