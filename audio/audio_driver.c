@@ -119,6 +119,14 @@
  * to slip past each other, not latency. */
 #define AUDIO_PIPE_RING_FRAMES         3
 
+/* One consumer pass takes this fraction of the device buffer; see
+ * audio_driver_pipe_chunk_bytes(). The device's fill therefore runs
+ * between the buffer less a chunk and the buffer, so the floor - what
+ * is left to play while the consumer is away - is (DIV-1)/DIV of the
+ * setting. audio_driver_init_internal() sizes its minimum against the
+ * same number. */
+#define AUDIO_PIPE_CHUNK_DIV           4
+
 /* Longest the producer waits for ring space before dropping, in
  * microseconds. With audio_sync on this wait is the frontend's audio
  * throttle, the same thing a blocking driver write was; the cap only
@@ -3190,6 +3198,47 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             "has no wait_writable(); using the inline pipeline.\n",
             audio_driver_st.current_audio->ident);
 
+   /* And not on a device buffer too short to bridge one publish.
+    *
+    * The core delivers a frame's worth of audio in one go and nothing
+    * holds a reserve between publishes: the consumer moves what was
+    * published at the device's pace and then waits for the next one. So
+    * whatever the device still holds when the pipe empties is the whole
+    * of the margin, and that is the floor - (DIV-1)/DIV of the setting,
+    * since the consumer will not begin a pass until a chunk of room has
+    * opened. Below a frame period of floor the device runs dry between
+    * publishes, every frame, and no amount of rate control helps: the
+    * audio is not late, it has not been produced yet.
+    *
+    * The inline path has no such requirement, which is why it stays
+    * clean where this does not. Its write blocks inside the driver
+    * during the frame that produced the audio, so the device is topped
+    * up continuously by the publisher itself and there is no interval
+    * to bridge. That is also the claim in config.def.h that this
+    * corrects: the threaded pipeline does not cost latency, but it does
+    * have a floor under the Audio Latency setting, and under it the
+    * inline path is not a fallback but the only thing that can work. */
+   if (     settings->bools.audio_threaded_pipeline
+         && !audio_cb_inited
+         && audio_driver_st.current_audio->wait_writable)
+   {
+      double pipe_fps  = video_state_get_ptr()->av_info.timing.fps;
+      double frame_ms  = (pipe_fps > 0.0) ? 1000.0 / pipe_fps : 0.0;
+      double need_ms   = frame_ms * (double)AUDIO_PIPE_CHUNK_DIV
+            / (double)(AUDIO_PIPE_CHUNK_DIV - 1);
+      if (frame_ms > 0.0 && (double)audio_latency < need_ms)
+      {
+         RARCH_LOG("[Audio] Threaded pipeline requested, but a %u ms audio buffer "
+               "leaves %.1f ms to play while the core produces the next %.1f ms "
+               "frame; using the inline pipeline. %.0f ms or more enables it.\n",
+               audio_latency,
+               (double)audio_latency * (double)(AUDIO_PIPE_CHUNK_DIV - 1)
+                     / (double)AUDIO_PIPE_CHUNK_DIV,
+               frame_ms, ceil(need_ms));
+         goto pipe_done;
+      }
+   }
+
    if (     settings->bools.audio_threaded_pipeline
          && !audio_cb_inited
          && audio_driver_st.current_audio->wait_writable)
@@ -3292,6 +3341,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             audio_driver_st.pipe_float ? "float" : "int16");
    }
 
+pipe_done:
    /* Before the driver's init, which is where a driver that reports a
     * device stage sets it. */
    audio_driver_st.device_latency_frames = 0;
@@ -3805,7 +3855,7 @@ void audio_driver_set_nonblock_state(bool nonblock)
  * at. */
 static size_t audio_driver_pipe_chunk_bytes(audio_driver_state_t *audio_st)
 {
-   return audio_st->buffer_size / 4;
+   return audio_st->buffer_size / AUDIO_PIPE_CHUNK_DIV;
 }
 
 /* What the pipe ring is to hold on purpose, in core frames. With a
