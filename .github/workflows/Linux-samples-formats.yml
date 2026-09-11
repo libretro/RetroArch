@@ -68,6 +68,11 @@ jobs:
           # audio_transfer arm is driven too: chunked reads against
           # the codec's own output, the compressed frontier, and
           # seeks, which for constant-size frames land exactly.
+          #
+          # And the pass-through route, which is what a format with no
+          # decoder is for: every frame repacked to the plain core,
+          # put in the IEC 61937 burst its sample count calls for, and
+          # read back out of that burst byte for byte.
           make clean all
           ./dts_lpcm_test
           echo "[pass] dts_lpcm_test"

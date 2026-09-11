@@ -107,10 +107,37 @@ typedef struct rdts_frame_info
    uint32_t layout;
    uint32_t extensions;      /* RDTS_EXT_* the frame or its substream names */
    bool     crc_present;
+   /* The primary audio coding header, which sits behind the frame
+    * header and says how the subbands are coded. What it is for here
+    * is to say whether a frame could be decoded from the published
+    * standard at all: ETSI TS 102 114's Annex D leaves out both of
+    * the large vector codebooks - D.10.1's 4096 ADPCM coefficient
+    * vectors and D.10.2's 1024 high-frequency vectors - so a frame
+    * that uses either cannot be decoded from the specification, only
+    * carried. needs_vq_tables says a frame does.
+    *
+    * Reading these costs a walk of a few hundred bits past the frame
+    * header, so it is done once per frame and only for core frames. */
+   bool     coding_header_read;
+   unsigned subframes;        /* nSUBFS: audio subframes in the frame */
+   unsigned prim_channels;    /* nPCHS: primary channels, extensions apart */
+   unsigned subbands;         /* the largest nSUBS of any channel */
+   unsigned vq_start_subband; /* the smallest nVQSUB: where the VQ begins */
+   bool     joint_intensity;  /* any channel codes another's high subbands */
+   bool     needs_vq_tables;  /* a high-frequency VQ the standard omits */
+   bool     predictor_history;/* HFLAG: ADPCM history carries across frames */
    /* Substreams only: the whole assembled frame including the core
     * that preceded it, where the substream says so. */
    unsigned peak_bitrate;
 } rdts_frame_info_t;
+
+/* Whether a frame can be decoded from what the published standard
+ * contains. False where it uses the high-frequency vector codebook,
+ * which ETSI TS 102 114 omits ("Due to its extensive size, this table
+ * is not included here"), and so cannot be decoded from the
+ * specification by anyone - only carried to a decoder that has the
+ * table. Requires coding_header_read. */
+bool rdts_decodable_from_spec(const rdts_frame_info_t *info);
 
 /* Reads the frame that starts at src. RDTS_NEED_MORE when len does
  * not reach the fields the size depends on, RDTS_NO_SYNC when no sync
@@ -132,6 +159,22 @@ size_t rdts_find_sync(const uint8_t *src, size_t len, size_t from);
  * rdts_frame_info_t::core_bytes says how much that is. */
 size_t rdts_to_core(const rdts_frame_info_t *info,
       const uint8_t *src, size_t src_len, uint8_t *out, size_t out_len);
+
+/* The IEC 61937 burst a frame belongs in, and the PCM frames it
+ * stands for, which is what the burst's period must be: DTS type I
+ * carries 512 PCM frames, type II 1024 and type III 2048, and a
+ * frame's sample count picks among them. Returns false for a frame
+ * whose sample count is none of those - a receiver has no period to
+ * put it in, and it cannot be carried.
+ *
+ * A caller sending DTS to a receiver parses the frame, repacks it
+ * with rdts_to_core() where it is 14-bit or byte-swapped, asks this
+ * for the type and the period, and hands both to
+ * iec61937_wrap_dts(). Nothing here depends on iec61937, and nothing
+ * there depends on this; the burst numbers are the contract between
+ * them. */
+bool rdts_burst_type(const rdts_frame_info_t *info,
+      unsigned *iec61937_type, unsigned *pcm_frames);
 
 /* Walks a buffer of frames and sums what they hold: the number of
  * frames, the samples they decode to, and the rate and layout of the

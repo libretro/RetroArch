@@ -331,6 +331,79 @@ enum rdts_status rdts_parse_frame_info(const uint8_t *src, size_t len,
    }
    info->channels    = channels;
 
+   /* The rest of the frame header, then the primary audio coding
+    * header behind it. Walking this costs a few hundred bits and buys
+    * the one thing a caller here needs to know beyond the shape: what
+    * a frame would take to decode. */
+   {
+      unsigned cpf = 0, vernum;
+      /* CPF sat in the header above; it is read again here rather
+       * than carried, since the bits before it are all fixed-width. */
+      rdts_br_t h;
+      rdts_br_init(&h, src, len, packing);
+      rdts_br_skip(&h, 32 + 1 + 5);
+      cpf = rdts_br_get(&h, 1);
+      rdts_br_skip(&h, 7 + 14 + 6 + 4 + 5);   /* blocks, size, amode, sfreq, rate */
+      rdts_br_skip(&h, 1 + 1 + 1 + 1 + 1);    /* reserved, dynf, timef, auxf, hdcd */
+      rdts_br_skip(&h, 3 + 1 + 1 + 2);        /* ext id, ext, aspf, lff */
+      info->predictor_history = rdts_br_get(&h, 1) != 0;
+      if (cpf)
+         rdts_br_skip(&h, 16);                /* HCRC */
+      rdts_br_skip(&h, 1);                    /* FILTS */
+      vernum = rdts_br_get(&h, 4);
+      rdts_br_skip(&h, 2 + 3 + 1 + 1);        /* CHIST, PCMR, SUMF, SUMS */
+      if (vernum < 7)
+         rdts_br_skip(&h, 4);                 /* DIALNORM, where the version has it */
+      else
+         rdts_br_skip(&h, 4);                 /* unspecified, same width */
+
+      /* Table 5-21, the primary audio coding header. */
+      {
+         unsigned nsubfs = rdts_br_get(&h, 4) + 1;
+         unsigned npchs  = rdts_br_get(&h, 3) + 1;
+         unsigned ch, subs_max = 0, vq_min = 32;
+         unsigned nsubs[8], nvqsub[8];
+         bool     joint = false;
+
+         if (npchs <= 8 && !h.over)
+         {
+            for (ch = 0; ch < npchs; ch++)
+            {
+               nsubs[ch] = rdts_br_get(&h, 5) + 2;
+               if (nsubs[ch] > subs_max)
+                  subs_max = nsubs[ch];
+            }
+            for (ch = 0; ch < npchs; ch++)
+            {
+               nvqsub[ch] = rdts_br_get(&h, 5) + 1;
+               if (nvqsub[ch] < vq_min)
+                  vq_min = nvqsub[ch];
+            }
+            for (ch = 0; ch < npchs; ch++)
+               if (rdts_br_get(&h, 3) != 0)    /* JOINX */
+                  joint = true;
+
+            if (!h.over)
+            {
+               info->coding_header_read = true;
+               info->subframes          = nsubfs;
+               info->prim_channels      = npchs;
+               info->subbands           = subs_max;
+               info->vq_start_subband   = vq_min;
+               info->joint_intensity    = joint;
+               /* Subbands from nVQSUB up to nSUBS-1 are vector
+                * quantised, so the quantiser is in use only where the
+                * start is below the subbands the channel codes -
+                * equal means the region is empty. Those subbands come
+                * from the codebook the standard leaves out. */
+               for (ch = 0; ch < npchs; ch++)
+                  if (nvqsub[ch] < nsubs[ch])
+                     info->needs_vq_tables = true;
+            }
+         }
+      }
+   }
+
    /* The extension the core names, where it says one follows. */
    if (ext_audio)
    {
@@ -343,6 +416,52 @@ enum rdts_status rdts_parse_frame_info(const uint8_t *src, size_t len,
       }
    }
    return RDTS_OK;
+}
+
+bool rdts_burst_type(const rdts_frame_info_t *info,
+      unsigned *iec61937_type, unsigned *pcm_frames)
+{
+   unsigned type, frames;
+   if (!info || info->kind != RDTS_KIND_CORE)
+      return false;
+   switch (info->samples)
+   {
+      case 512:  type = 11; frames = 512;  break;   /* IEC61937_DTS_I */
+      case 1024: type = 12; frames = 1024; break;   /* IEC61937_DTS_II */
+      case 2048: type = 13; frames = 2048; break;   /* IEC61937_DTS_III */
+      default:
+         /* A core frame's sample count is 32 times its block count,
+          * which runs from 5 to 127 - so counts other than the three
+          * the standard gives a burst for do occur, and there is
+          * nowhere to put them. */
+         return false;
+   }
+   /* The burst has to hold the frame: a frame longer than the period
+    * would overrun what the receiver expects, which is the one thing
+    * the wrap cannot paper over. */
+   if (info->core_bytes > frames * 4)
+      return false;
+   if (iec61937_type)
+      *iec61937_type = type;
+   if (pcm_frames)
+      *pcm_frames = frames;
+   return true;
+}
+
+bool rdts_decodable_from_spec(const rdts_frame_info_t *info)
+{
+   if (!info || info->kind != RDTS_KIND_CORE)
+      return false;
+   if (!info->coding_header_read)
+      return false;
+   /* The high-frequency codebook is the one the standard does not
+    * carry, so a frame that needs it cannot be decoded from the
+    * standard. The ADPCM coefficient codebook is omitted too, and a
+    * frame whose predictors are on needs that; predictor_history says
+    * the history crosses frames, which is not the same question, so
+    * what is reported here is the one that can be answered from the
+    * coding header alone. */
+   return !info->needs_vq_tables;
 }
 
 size_t rdts_find_sync(const uint8_t *src, size_t len, size_t from)

@@ -19,6 +19,7 @@
 #include <formats/rdts.h>
 #include <formats/rlpcm.h>
 #include <formats/audio.h>
+#include <formats/iec61937.h>
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -95,6 +96,28 @@ static void dts_case(const char *name, unsigned channels, unsigned rate, const c
    printf("      %-14s %u frames, %u Hz, %u ch (mask 0x%03x), %u samples/frame, %u bytes/frame\n",
          name, (unsigned)frames, first.sample_rate, first.channels,
          first.layout, first.samples, first.frame_bytes);
+   /* The coding header behind the frame header: what the frame would
+    * take to decode. */
+   CHECK(first.coding_header_read, "%s: the coding header was not read", name);
+   if (first.coding_header_read)
+   {
+      printf("                     %u subframe(s), %u primary ch, %u subbands, VQ from %u%s%s\n",
+            first.subframes, first.prim_channels, first.subbands,
+            first.vq_start_subband,
+            first.joint_intensity ? ", joint intensity" : "",
+            rdts_decodable_from_spec(&first)
+                  ? "" : ", needs the codebook the standard omits");
+      CHECK(first.subframes >= 1 && first.subframes <= 16,
+            "%s: %u subframes", name, first.subframes);
+      CHECK(first.prim_channels >= 1 && first.prim_channels <= 5,
+            "%s: %u primary channels", name, first.prim_channels);
+      /* The primary channels are the core's less the LFE. */
+      CHECK(first.prim_channels == first.channels - (first.lfe ? 1u : 0u),
+            "%s: %u primary channels against %u core channels",
+            name, first.prim_channels, first.channels);
+      CHECK(first.subbands >= 2 && first.subbands <= 32,
+            "%s: %u subbands", name, first.subbands);
+   }
    CHECK(first.sample_rate == (unsigned)probed_rate,
          "%s: rate %u, ffprobe says %.0f", name, first.sample_rate, probed_rate);
    CHECK(first.channels == (unsigned)probed_ch,
@@ -203,6 +226,74 @@ static void dts_packing_case(void)
       free(packed);
    }
    free(swapped);
+   free(buf);
+}
+
+/* The pass-through route: a DTS stream to a receiver, which is what a
+ * decoder-less path is for. Every frame is repacked to the plain core
+ * the receiver takes, put in the burst its sample count calls for,
+ * and read back out of that burst byte for byte. */
+static void dts_passthrough_case(void)
+{
+   uint8_t *buf;
+   size_t   len = 0, at = 0, bursts = 0;
+   uint8_t  core[16384], burst[32768];
+
+   printf("   the pass-through route: frames to IEC 61937 bursts and back\n");
+   buf = slurp("/tmp/rdts_5_1.dts", &len);
+   if (!buf)
+   {
+      printf("      (no stream to carry; skipped)\n");
+      return;
+   }
+   while (at + 4 <= len)
+   {
+      rdts_frame_info_t info;
+      unsigned type = 0, pcm = 0, probed = 0;
+      size_t   n, b, payload = 0;
+      if (rdts_parse_frame_info(buf + at, len - at, &info) != RDTS_OK)
+         break;
+      if (!info.frame_bytes || at + info.frame_bytes > len)
+         break;
+      CHECK(rdts_burst_type(&info, &type, &pcm),
+            "a %u-sample frame has no burst to go in", info.samples);
+      CHECK(type == IEC61937_DTS_I && pcm == 512,
+            "a 512-sample frame went to type %u, period %u", type, pcm);
+      n = rdts_to_core(&info, buf + at, len - at, core, sizeof(core));
+      CHECK(n == info.core_bytes, "repacked %u of %u core bytes",
+            (unsigned)n, info.core_bytes);
+      b = iec61937_wrap_dts(core, n, pcm, burst, sizeof(burst));
+      CHECK(b == (size_t)pcm * 4, "the burst is %u bytes for a %u-frame period",
+            (unsigned)b, pcm);
+      /* And what a receiver would see coming back out of it. */
+      CHECK(iec61937_probe(burst, b, &probed, &payload),
+            "the burst does not probe");
+      CHECK(probed == IEC61937_DTS_I, "the burst probes as type %u", probed);
+      CHECK(payload == n, "the burst carries %u bytes of a %u-byte frame",
+            (unsigned)payload, (unsigned)n);
+      {
+         /* The payload is byte-swapped into the burst, as 61937 has
+          * it; swapped back it has to be the frame that went in. */
+         uint8_t back[16384];
+         size_t  i;
+         for (i = 0; i + 1 < payload; i += 2)
+         {
+            back[i]     = burst[8 + i + 1];
+            back[i + 1] = burst[8 + i];
+         }
+         if (payload & 1)
+            back[payload - 1] = burst[8 + payload - 1];
+         CHECK(memcmp(back, core, payload) == 0,
+               "what came out of the burst is not what went in");
+      }
+      bursts++;
+      at += info.frame_bytes;
+      if (bursts >= 8)
+         break;
+   }
+   printf("      %u frame(s) carried, each in a %u-byte type I burst\n",
+         (unsigned)bursts, 512 * 4);
+   CHECK(bursts >= 8, "only %u frames were carried", (unsigned)bursts);
    free(buf);
 }
 
@@ -482,6 +573,7 @@ int main(void)
    dts_case("5_1",    6, 48000, NULL);
    dts_case("44k",    2, 44100, NULL);
    dts_packing_case();
+   dts_passthrough_case();
    dts_junk_case();
 
    printf("   LPCM against ffmpeg's own converters\n");

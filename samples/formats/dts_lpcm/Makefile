@@ -7,6 +7,7 @@ SOURCES_C := \
 	dts_lpcm_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/dts/rdts.c \
 	$(LIBRETRO_COMM_DIR)/formats/lpcm/rlpcm.c \
+	$(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.c \
 	$(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
