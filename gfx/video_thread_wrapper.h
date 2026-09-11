@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 
 #include "font_driver.h"
@@ -209,6 +210,9 @@ typedef struct thread_video
    {
       video_thread_async_load_t *in_head,  *in_tail;   /* to upload */
       video_thread_async_load_t *out_head, *out_tail;  /* to deliver */
+      /* Set with an entry on out_head, so the main thread looks for
+       * uploads to deliver without taking 'lock' when there are none */
+      retro_atomic_int_t out_ready;
    } async;
    /* Presenter state, all owned by the video thread. present_period
     * is one display period in usec, taken from the refresh rate of the
@@ -353,12 +357,13 @@ typedef struct thread_video
    struct video_viewport vp;
    struct video_viewport read_vp; /* Last viewport reported to caller. */
 
-   /* Content scale, published under 'lock' at the end of each frame.
-    * The viewport maths that produces these runs on the video thread,
-    * so video_driver_build_info() must read them from here rather than
-    * from video_driver_st directly. Statistics only. */
-   unsigned scale_width;
-   unsigned scale_height;
+   /* Content scale, published at the end of each frame. The viewport
+    * maths that produces it runs on the video thread, so
+    * video_driver_build_info() reads it from here rather than from
+    * video_driver_st. Width in the high 16 bits, height in the low, one
+    * value so the pair is read whole and without 'lock'. Statistics
+    * only. */
+   retro_atomic_int_t scale_packed;
 
    thread_packet_t cmd_data;
    /* Set by the video thread while it runs a command inline on itself:
@@ -473,16 +478,17 @@ typedef struct thread_video
       bool done;
    } waiter_call;
 
-   bool alive;
-   bool focus;
-   /* The context's answer to "have you anything to present to", polled
-    * on the video thread after each frame beside alive and focus, and
-    * read from the main thread under thr->lock. The context data
-    * belongs to the video thread; asking it directly from the runloop
-    * would read a swapchain handle while this thread rebuilds it. */
-   bool presentable;
-   bool suppress_screensaver;
-   bool has_windowed;
+   /* Published by the video thread after each frame and read by the
+    * main thread, every frame, without 'lock': each is a flag of its
+    * own. presentable is the context's answer to "have you anything to
+    * present to"; the context data belongs to the video thread, and
+    * asking it directly from the runloop would read a swapchain handle
+    * while this thread rebuilds it. */
+   retro_atomic_int_t alive;
+   retro_atomic_int_t focus;
+   retro_atomic_int_t presentable;
+   retro_atomic_int_t suppress_screensaver;
+   retro_atomic_int_t has_windowed;
    bool nonblock;
    bool is_idle;
 } thread_video_t;

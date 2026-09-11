@@ -125,16 +125,15 @@ static void video_thread_send_packet(thread_video_t *thr,
 }
 
 /* As video_thread_send_packet(), but drops the packet and reports
- * failure if the worker is no longer alive.  thr->alive is written by
- * video_thread_loop() under thr->lock, so the test has to happen with
- * that lock held; doing it here reuses the critical section this
- * function enters anyway rather than taking a second one. */
+ * failure if the worker is no longer alive.  Tested inside the
+ * critical section that queues the packet, so the worker cannot stop
+ * between the test and the queueing. */
 static bool video_thread_send_packet_if_alive(thread_video_t *thr,
       const thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-   if (!thr->alive)
+   if (!retro_atomic_load_acquire_int(&thr->alive))
    {
       slock_unlock(thr->lock);
       return false;
@@ -777,6 +776,7 @@ static void video_thread_async_run(thread_video_t *thr)
       else
          thr->async.out_head       = n;
       thr->async.out_tail          = n;
+      retro_atomic_store_release_int(&thr->async.out_ready, 1);
       slock_unlock(thr->lock);
 
       n = next;
@@ -790,9 +790,14 @@ static void video_thread_async_deliver(thread_video_t *thr)
 {
    video_thread_async_load_t *n;
 
+   /* Nearly every frame has nothing to deliver */
+   if (!retro_atomic_load_acquire_int(&thr->async.out_ready))
+      return;
+
    slock_lock(thr->lock);
    n                   = thr->async.out_head;
    thr->async.out_head = thr->async.out_tail = NULL;
+   retro_atomic_store_release_int(&thr->async.out_ready, 0);
    slock_unlock(thr->lock);
 
    while (n)
@@ -832,6 +837,7 @@ static void video_thread_async_drop_all(thread_video_t *thr)
    }
    thr->async.in_head  = thr->async.in_tail  = NULL;
    thr->async.out_head = thr->async.out_tail = NULL;
+   retro_atomic_store_release_int(&thr->async.out_ready, 0);
 }
 
 bool video_thread_texture_load_async(void *img,
@@ -861,7 +867,7 @@ bool video_thread_texture_load_async(void *img,
    n->filter  = filter;
 
    slock_lock(thr->lock);
-   if (!thr->alive)
+   if (!retro_atomic_load_acquire_int(&thr->alive))
    {
       slock_unlock(thr->lock);
       free(n);
@@ -1174,16 +1180,17 @@ static void video_thread_loop(void *data)
             slock_unlock(thr->frame.lock);
 
          slock_lock(thr->lock);
-         thr->alive         = alive;
-         thr->focus         = focus;
-         thr->presentable   = presentable;
-         thr->has_windowed  = has_windowed;
+         retro_atomic_store_release_int(&thr->alive,        alive);
+         retro_atomic_store_release_int(&thr->focus,        focus);
+         retro_atomic_store_release_int(&thr->presentable,  presentable);
+         retro_atomic_store_release_int(&thr->has_windowed, has_windowed);
          thr->vp            = vp;
          /* Statistics. The viewport maths ran on this thread during
           * thr->driver->frame() above, so publish the result rather
           * than letting the main thread read video_driver_st. */
-         thr->scale_width   = video_state_get_ptr()->scale_width;
-         thr->scale_height  = video_state_get_ptr()->scale_height;
+         retro_atomic_store_release_int(&thr->scale_packed, (int)(
+                 ((video_state_get_ptr()->scale_width  & 0xFFFFu) << 16)
+               |  (video_state_get_ptr()->scale_height & 0xFFFFu)));
          /* Under the wrapper this thread owns swap_count; every advance
           * happens here, under lock, so the main thread can read it
           * consistently through video_thread_swap_count(). */
@@ -1262,7 +1269,6 @@ static void video_thread_loop(void *data)
 
 static bool video_thread_alive(void *data)
 {
-   bool ret;
    uint32_t runloop_flags;
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -1281,56 +1287,37 @@ static bool video_thread_alive(void *data)
       return pkt.data.b;
    }
 
-   slock_lock(thr->lock);
-   ret = thr->alive;
-   slock_unlock(thr->lock);
-
-   return ret;
+   return retro_atomic_load_acquire_int(&thr->alive) != 0;
 }
 
 static bool video_thread_focus(void *data)
 {
-   bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
 
-   slock_lock(thr->lock);
-   ret = thr->focus;
-   slock_unlock(thr->lock);
-
-   return ret;
+   return retro_atomic_load_acquire_int(&thr->focus) != 0;
 }
 
 static bool video_thread_suppress_screensaver(void *data, bool enable)
 {
-   bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
 
-   slock_lock(thr->lock);
-   ret = thr->suppress_screensaver;
-   slock_unlock(thr->lock);
-
-   return ret;
+   return retro_atomic_load_acquire_int(&thr->suppress_screensaver) != 0;
 }
 
 static bool video_thread_has_windowed(void *data)
 {
-   bool ret;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
 
-   slock_lock(thr->lock);
-   ret = thr->has_windowed;
-   slock_unlock(thr->lock);
-
-   return ret;
+   return retro_atomic_load_acquire_int(&thr->has_windowed) != 0;
 }
 
 static bool video_thread_frame(void *data, const void *frame_,
@@ -1746,14 +1733,16 @@ static bool video_thread_init(thread_video_t *thr,
    thr->input                = input;
    thr->input_data           = input_data;
    thr->info                 = info;
-   thr->alive                = true;
-   thr->focus                = true;
+   retro_atomic_int_init(&thr->alive, 1);
+   retro_atomic_int_init(&thr->focus, 1);
    /* Same default the video thread applies when the context has no
     * answer, so the runloop is not told there is nothing to present to
     * during the frames before the first one completes. */
-   thr->presentable          = true;
-   thr->has_windowed         = true;
-   thr->suppress_screensaver = true;
+   retro_atomic_int_init(&thr->presentable, 1);
+   retro_atomic_int_init(&thr->has_windowed, 1);
+   retro_atomic_int_init(&thr->suppress_screensaver, 1);
+   retro_atomic_int_init(&thr->scale_packed, 0);
+   retro_atomic_int_init(&thr->async.out_ready, 0);
    thr->last_time            = cpu_features_get_time_usec();
 
    if (!(thr->thread = sthread_create(video_thread_loop, thr)))
@@ -2702,8 +2691,8 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
    pkt.data.custom_command.data   = data;
 
    /* Aliveness is tested inside the send, under the lock it already
-    * takes.  Reading thr->alive here instead would race the worker's
-    * write in video_thread_loop(). */
+    * takes, so the worker cannot stop between the test and the
+    * queueing. */
    video_thread_user_acquire(thr);
    if (!video_thread_send_packet_if_alive(thr, &pkt))
    {
@@ -2728,7 +2717,6 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
  * itself (would deadlock). */
 bool video_thread_presentable(void)
 {
-   bool ret;
    thread_video_t *thr;
    video_driver_state_t *video_st = video_state_get_ptr();
 
@@ -2746,10 +2734,7 @@ bool video_thread_presentable(void)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return video_context_driver_presentable_direct();
 
-   slock_lock(thr->lock);
-   ret = thr->presentable;
-   slock_unlock(thr->lock);
-   return ret;
+   return retro_atomic_load_acquire_int(&thr->presentable) != 0;
 }
 
 /* Presenter statistics for the overlay: repeats made this session, and

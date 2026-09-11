@@ -865,10 +865,11 @@ static void video_thread_get_scale(video_driver_state_t *video_st,
       *height = video_st->scale_height;
       return;
    }
-   slock_lock(thr->lock);
-   *width  = thr->scale_width;
-   *height = thr->scale_height;
-   slock_unlock(thr->lock);
+   {
+      unsigned packed = (unsigned)retro_atomic_load_acquire_int(&thr->scale_packed);
+      *width          = packed >> 16;
+      *height         = packed & 0xFFFFu;
+   }
 }
 #endif
 
