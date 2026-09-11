@@ -807,6 +807,16 @@ static void asio_log_stages(const ra_asio_t *ad, unsigned latency)
 /* Singleton — ASIO callbacks have no user-data parameter */
 static ra_asio_t *g_asio = NULL;
 
+/* Callbacks that have entered and not yet left. It lives outside the
+ * instance because its whole purpose is to be readable after the
+ * instance is gone, and it is raised before g_asio is read rather
+ * than after: a callback that observes a live pointer has already
+ * counted itself, so a teardown that clears the pointer and then
+ * waits for this to reach zero cannot be running while one is
+ * inside. Raised after the read, a callback preempted between the
+ * two would be invisible to that wait. */
+static retro_atomic_int_t g_asio_in_callback;
+
 /* Persistent instance that survives free/init cycles (core switches).
  * ASIO4ALL crashes if we destroy and recreate its COM object, so we
  * keep the driver alive and reuse it on the next init.  free() parks
@@ -866,7 +876,10 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
 static void asio_cb_buffer_switch(long index,
       ASIOBool direct_process)
 {
-   ra_asio_t *ad = g_asio;
+   ra_asio_t *ad;
+
+   retro_atomic_fetch_add_int(&g_asio_in_callback, 1);
+   ad = g_asio;
 
    if (     !ad || !ad->ring_initialized || !ad->scratch
          || retro_atomic_load_acquire_int(&ad->is_paused)
@@ -884,6 +897,7 @@ static void asio_cb_buffer_switch(long index,
          if (ad->output_ready_supported)
             ASIO_CALL_OUTPUT_READY(ad->iasio);
       }
+      retro_atomic_fetch_sub_int(&g_asio_in_callback, 1);
       return;
    }
 
@@ -901,6 +915,8 @@ static void asio_cb_buffer_switch(long index,
     * every call, and was being called every period regardless. */
    if (ad->output_ready_supported)
       ASIO_CALL_OUTPUT_READY(ad->iasio);
+
+   retro_atomic_fetch_sub_int(&g_asio_in_callback, 1);
 }
 
 static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
@@ -993,17 +1009,63 @@ static ASIOCallbacks g_asio_callbacks = {
 
 /* Called at process exit to clean up a parked ASIO instance.
  * This prevents COM object leaks and satisfies leak checkers. */
+/* Waits until no callback is inside, or until the deadline. Some
+ * drivers - ASIO4ALL among them - still have one in flight when
+ * ASIOStop returns, and the buffers it is writing into are about to
+ * be disposed.
+ *
+ * This used to be Sleep(20), which is a guess: too long on a machine
+ * where the callback had already left and, on a driver or a machine
+ * where it had not, not a wait at all but a gap before the same
+ * use-after-free. Waiting on the count is the same idea made
+ * answerable. The deadline is there because a driver that never
+ * returns from its callback must not hang the process on exit; at
+ * that point there is nothing left to do but proceed and say so. */
+static void asio_wait_callbacks_out(void)
+{
+   /* Yields before it sleeps. A callback in flight is part-way through
+    * one period and finishes in well under one, so yielding to it is
+    * all that is usually needed - and Sleep(1) is not one millisecond
+    * unless something has raised the timer resolution, it is the
+    * scheduler's tick, which is about fifteen. Sleeping first would
+    * have made the common case cost more than the Sleep(20) this
+    * replaces rather than less.
+    *
+    * The deadline is measured in time rather than counted in
+    * iterations, so it means 200 ms whatever either of those costs. */
+   ULONGLONG deadline = GetTickCount64() + 200;
+   unsigned  yields   = 1000;
+
+   while (retro_atomic_load_acquire_int(&g_asio_in_callback) > 0)
+   {
+      if (yields)
+      {
+         yields--;
+         SwitchToThread();
+      }
+      else
+      {
+         if (GetTickCount64() >= deadline)
+         {
+            RARCH_WARN("[ASIO] A callback is still running after 200 ms; tearing down anyway.\n");
+            return;
+         }
+         Sleep(1);
+      }
+   }
+}
+
 /* The whole teardown: stop, dispose, release the COM object, free what
  * the instance owns. The callback is gated on g_asio, which the caller
- * has cleared; the pause after the stop lets a callback that some
- * drivers - ASIO4ALL among them - still have in flight when ASIOStop
- * returns run out before the buffers under it go. */
+ * has cleared, and counts itself in before it reads that pointer - so
+ * waiting for the count to fall to zero is what says no callback is
+ * inside the buffers about to go. */
 static void asio_destroy(ra_asio_t *ad)
 {
    if (ad->iasio)
    {
       ASIO_CALL_STOP(ad->iasio);
-      Sleep(20);
+      asio_wait_callbacks_out();
       if (ad->buffers_created)
          ASIO_CALL_DISPOSE_BUFFERS(ad->iasio);
       ASIO_CALL_RELEASE(ad->iasio);
@@ -1333,6 +1395,15 @@ static void *ra_asio_init(const char *device, unsigned rate,
    {
       ra_asio_t *ad = g_asio_persistent;
       g_asio_persistent = NULL;
+
+      /* Nothing was freed when this was parked, so a callback still
+       * in flight from then was harmless - it read a cleared g_asio
+       * and left. What follows here is not harmless: the ring is
+       * cleared and resized. So the same wait the teardown makes is
+       * made here, and "no callback is inside" stops being an
+       * argument about ASIOStop and becomes a thing that was
+       * checked. */
+      asio_wait_callbacks_out();
 
       RARCH_LOG("[ASIO] Reclaiming parked driver instance.\n");
 
