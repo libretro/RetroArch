@@ -259,6 +259,15 @@ static bool ca_prop_has(ca_obj_id_t id, const ca_addr_t *addr, bool is_stream)
    return ca_prop_size(id, addr, &size, is_stream) == noErr && size > 0;
 }
 
+/* The constants the AudioObject era brought with it, spelled here
+ * rather than taken from the SDK. A 10.4 SDK declares none of them,
+ * and they are enumerators rather than macros, so there is nothing to
+ * test with #ifndef - the only way to name them on every SDK is to
+ * name them ourselves. Their values are fixed by the ABI the HAL
+ * speaks, which is what both sets of calls see. */
+#define CA_OBJECT_UNKNOWN 0u                  /* kAudioObjectUnknown */
+#define CA_SCOPE_GLOBAL   0x676C6F62u         /* 'glob', kAudioObjectPropertyScopeGlobal */
+
 /* kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
  * both are 0, and the number is what the HAL sees. */
 #define CA_ELEMENT_MAIN 0
@@ -675,7 +684,7 @@ static AudioDeviceID *coreaudio_hal_devices(UInt32 *count)
    propaddr.mScope    = kAudioDevicePropertyScopeOutput;
    propaddr.mElement  = CA_ELEMENT_MAIN;
    if (!ca_prop_has(CA_SYSTEM_OBJECT, &propaddr, false))
-      propaddr.mScope = kAudioObjectPropertyScopeGlobal;
+      propaddr.mScope = CA_SCOPE_GLOBAL;
 
    if (ca_prop_size(CA_SYSTEM_OBJECT, &propaddr, &size, false) != noErr || !size)
       return NULL;
@@ -753,7 +762,7 @@ static unsigned coreaudio_get_hardware_sample_rate(AudioUnit dev)
             && device_id != 0)
       {
          prop.mSelector = kAudioDevicePropertyNominalSampleRate;
-         prop.mScope    = kAudioObjectPropertyScopeGlobal;
+         prop.mScope    = CA_SCOPE_GLOBAL;
          prop.mElement  = CA_ELEMENT_MAIN;
          size = sizeof(nominal_rate);
 
@@ -1040,8 +1049,15 @@ static void *coreaudio_init(const char *device,
          {
             UInt32 value   = 0;
             size           = sizeof(value);
-            prop.mSelector = kAudioStreamPropertyLatency;
-            prop.mScope    = kAudioObjectPropertyScopeGlobal;
+            /* The stream's latency selector is the same four
+             * characters as the device's - 'ltnc' - and the HAL reads
+             * the number, not the spelling. kAudioDevicePropertyLatency
+             * is the spelling every SDK back to 10.0 declares, where
+             * kAudioStreamPropertyLatency is not; asking through the
+             * one that is always there costs nothing and removes a
+             * name a 10.4 SDK may not have. */
+            prop.mSelector = kAudioDevicePropertyLatency;
+            prop.mScope    = CA_SCOPE_GLOBAL;
             if (     ca_prop_has(stream_id, &prop, true)
                   && ca_prop_get(stream_id, &prop, &size, &value, true) == noErr)
                total += value;
@@ -1658,7 +1674,7 @@ static bool coreaudio_mic_device_string(AudioDeviceID id,
    UInt32 size    = sizeof(cf);
    bool ok;
    prop.mSelector = selector;
-   prop.mScope    = kAudioObjectPropertyScopeGlobal;
+   prop.mScope    = CA_SCOPE_GLOBAL;
    prop.mElement  = CA_ELEMENT_MAIN;
    s[0]           = 0;
    if (ca_prop_get(id, &prop, &size, &cf, false) != noErr || !cf)
@@ -1671,13 +1687,13 @@ static bool coreaudio_mic_device_string(AudioDeviceID id,
 static AudioDeviceID coreaudio_mic_default_device(void)
 {
    ca_addr_t prop;
-   AudioDeviceID id = kAudioObjectUnknown;
+   AudioDeviceID id = CA_OBJECT_UNKNOWN;
    UInt32 size      = sizeof(id);
    prop.mSelector   = kAudioHardwarePropertyDefaultInputDevice;
-   prop.mScope      = kAudioObjectPropertyScopeGlobal;
+   prop.mScope      = CA_SCOPE_GLOBAL;
    prop.mElement    = CA_ELEMENT_MAIN;
    if (ca_prop_get(CA_SYSTEM_OBJECT, &prop, &size, &id, false) != noErr)
-      return kAudioObjectUnknown;
+      return CA_OBJECT_UNKNOWN;
    return id;
 }
 
@@ -1687,15 +1703,15 @@ static AudioDeviceID coreaudio_mic_default_device(void)
 static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
 {
    UInt32 i, count = 0, pass;
-   AudioDeviceID found = kAudioObjectUnknown;
+   AudioDeviceID found = CA_OBJECT_UNKNOWN;
    AudioDeviceID *devices;
 
    if (string_is_empty(uid_or_name) || string_is_equal(uid_or_name, "default"))
-      return kAudioObjectUnknown;
+      return CA_OBJECT_UNKNOWN;
    if (!(devices = coreaudio_hal_devices(&count)))
-      return kAudioObjectUnknown;
+      return CA_OBJECT_UNKNOWN;
 
-   for (pass = 0; pass < 2 && found == kAudioObjectUnknown; pass++)
+   for (pass = 0; pass < 2 && found == CA_OBJECT_UNKNOWN; pass++)
    {
       for (i = 0; i < count; i++)
       {
@@ -1715,7 +1731,7 @@ static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
    }
 
    free(devices);
-   if (found == kAudioObjectUnknown)
+   if (found == CA_OBJECT_UNKNOWN)
       RARCH_WARN("[CoreAudio] Input device \"%s\" not found; using the default.\n",
             uid_or_name);
    return found;
@@ -1752,7 +1768,7 @@ static void coreaudio_mic_listen_default(coreaudio_mic_t *mic, bool on)
    ca_addr_t prop;
    ca_prop_resolve();
    prop.mSelector = kAudioHardwarePropertyDefaultInputDevice;
-   prop.mScope    = kAudioObjectPropertyScopeGlobal;
+   prop.mScope    = CA_SCOPE_GLOBAL;
    prop.mElement  = CA_ELEMENT_MAIN;
 
    if (ca_prop.obj_addlis && ca_prop.obj_remlis)
@@ -1785,7 +1801,7 @@ static void coreaudio_mic_reconnect(coreaudio_mic_t *mic)
    AudioDeviceID dev = coreaudio_mic_default_device();
    bool was_running;
 
-   if (dev == kAudioObjectUnknown || dev == mic->device)
+   if (dev == CA_OBJECT_UNKNOWN || dev == mic->device)
       return;
    RARCH_LOG("[CoreAudio] Default input device changed; reconnecting.\n");
 
@@ -2014,7 +2030,7 @@ static void *coreaudio_mic_open(void *driver_context, const char *device,
 #else
    retro_atomic_int_init(&mic->device_changed, 0);
    mic->device = coreaudio_mic_find_device(device);
-   if (mic->device == kAudioObjectUnknown)
+   if (mic->device == CA_OBJECT_UNKNOWN)
    {
       mic->device         = coreaudio_mic_default_device();
       mic->follow_default = true;
@@ -2040,16 +2056,16 @@ static void *coreaudio_mic_open(void *driver_context, const char *device,
          kAudioUnitScope_Output, 0, &zero, sizeof(zero));
 
 #if !TARGET_OS_IPHONE
-   if (mic->device != kAudioObjectUnknown
+   if (mic->device != CA_OBJECT_UNKNOWN
          && AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_CurrentDevice,
             kAudioUnitScope_Global, 0, &mic->device, sizeof(mic->device)) != noErr)
    {
       RARCH_WARN("[CoreAudio] Input device %u refused; using the default.\n",
             (unsigned)mic->device);
-      mic->device = kAudioObjectUnknown;
+      mic->device = CA_OBJECT_UNKNOWN;
    }
    {
-      AudioDeviceID actual = kAudioObjectUnknown;
+      AudioDeviceID actual = CA_OBJECT_UNKNOWN;
       UInt32 size          = sizeof(actual);
       if (AudioUnitGetProperty(mic->unit, kAudioOutputUnitProperty_CurrentDevice,
                kAudioUnitScope_Global, 0, &actual, &size) == noErr)
