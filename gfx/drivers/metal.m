@@ -357,6 +357,13 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 @property(nonatomic, readonly) ViewDrawState drawState;
 @property(nonatomic, readonly) struct video_shader *shader;
 @property(nonatomic, readwrite) uint64_t frameCount;
+/* SwapCount, TotalSubFrames and CurrentSubFrame for the shader chain,
+ * taken from the frame info each render: presents the display has
+ * seen before this one (advanced per shader sub-frame), the sub-frame
+ * count and the 1-based index of the one being drawn. */
+@property(nonatomic, readwrite) uint64_t swapCount;
+@property(nonatomic, readwrite) uint32_t totalSubframes;
+@property(nonatomic, readwrite) uint32_t currentSubframe;
 
 /* Final pass of the shader chain normally renders into the backbuffer
  * drawable.  When HDR is on, it must render into the HDR offscreen
@@ -4418,7 +4425,15 @@ static void metal_pull_cached_frame_cb(void *userdata,
          [_context begin];
       }
 
-      _frameView.frameCount = frameCount;
+      _frameView.frameCount      = frameCount;
+      /* The sub-frame index is 0 on the core frame and j on the j-th
+       * re-render below; the shader sees it 1-based, and each
+       * sub-frame is one more present on the display */
+      _frameView.swapCount       = video_info->swap_count
+                                 + video_info->current_subframe;
+      _frameView.totalSubframes  = video_info->shader_subframes > 1
+                                 ? video_info->shader_subframes : 1;
+      _frameView.currentSubframe = video_info->current_subframe + 1;
       if (frame && width && height)
       {
          _frameView.size      = CGSizeMake(width, height);
@@ -4683,6 +4698,9 @@ typedef struct MTLALIGN(16)
       uint32_t rotation;
       float_t core_aspect;
       float_t core_aspect_rot;
+      uint32_t total_subframes;
+      uint32_t current_subframe;
+      uint32_t swap_count;
       pass_semantics_t semantics;
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
@@ -5169,6 +5187,10 @@ typedef struct MTLALIGN(16)
       _engine.pass[i].frame_count = (uint32_t)_frameCount;
       if (_shader->pass[i].frame_count_mod)
          _engine.pass[i].frame_count %= _shader->pass[i].frame_count_mod;
+      /* Not modulo'd: SwapCount counts what the display was shown */
+      _engine.pass[i].swap_count       = (uint32_t)_swapCount;
+      _engine.pass[i].total_subframes  = _totalSubframes;
+      _engine.pass[i].current_subframe = _currentSubframe;
 
 #ifdef HAVE_REWIND
       if (state_manager_frame_is_reversed())
@@ -5537,6 +5559,23 @@ typedef struct MTLALIGN(16)
                &_engine.pass[i].rotation,        /* Rotation */
                &_engine.pass[i].core_aspect,     /* OriginalAspect */
                &_engine.pass[i].core_aspect_rot, /* OriginalAspectRotated */
+               &_engine.pass[i].total_subframes, /* TotalSubFrames */
+               &_engine.pass[i].current_subframe,/* CurrentSubFrame */
+               /* The HDR and sensor semantics have no Metal source yet;
+                * slang_process leaves an unwired slot at its zero
+                * default. The table is positional, so they are named
+                * here to keep SwapCount at its index. */
+               NULL,                             /* HDRMode */
+               NULL,                             /* BrightnessNits */
+               NULL,                             /* Scanlines */
+               NULL,                             /* SubpixelLayout */
+               NULL,                             /* ExpandGamut */
+               NULL,                             /* InverseTonemap */
+               NULL,                             /* HDR10 */
+               NULL,                             /* Gyroscope */
+               NULL,                             /* Accelerometer */
+               NULL,                             /* AccelerometerRest */
+               &_engine.pass[i].swap_count,      /* SwapCount */
             }
          };
          /* clang-format on */
@@ -6084,13 +6123,17 @@ static bool metal_frame(void *data, const void *frame,
       metal_subframe_lock = true;
       for (j = 1; j < (int)video_info->shader_subframes; j++)
       {
-         /* Re-render and present with NULL frame data (reuse previous frame) */
+         /* Re-render and present with NULL frame data (reuse previous
+          * frame); the index tells the shader which sub-frame this is */
+         video_info->current_subframe = (unsigned)j;
          if (!metal_frame(data, NULL, 0, 0, frame_count, 0, msg, video_info))
          {
+            video_info->current_subframe = 0;
             metal_subframe_lock = false;
             return false;
          }
       }
+      video_info->current_subframe = 0;
       metal_subframe_lock = false;
    }
 
