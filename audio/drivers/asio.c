@@ -56,6 +56,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <retro_atomic.h>
+#include <features/features_cpu.h>
 
 #include "asio_convert.h"
 #include "asio_ring.h"
@@ -1033,13 +1034,16 @@ static void asio_wait_callbacks_out(void)
     *
     * The deadline is measured in time rather than counted in
     * iterations, so it means 200 ms whatever either of those costs. */
-   /* GetTickCount, not GetTickCount64: the latter is Vista and this
-    * binary still builds for older Windows, where the 32-bit mingw
-    * import library has no such symbol. The wrap at 49 days costs
-    * nothing here because the comparison is on the unsigned
-    * difference, which is correct across it. */
-   DWORD     started  = GetTickCount();
-   unsigned  yields   = 1000;
+   /* cpu_features_get_time_usec(), which is this project's clock and
+    * is QueryPerformanceCounter on Windows: microseconds, monotonic,
+    * no wrap to reason about, and the same call the WASAPI pump
+    * already measures its lateness with. The tick counters are the
+    * wrong reach here - GetTickCount64 is Vista and not in the 32-bit
+    * mingw import library at all, and GetTickCount resolves to the
+    * scheduler tick, some fifteen milliseconds, which is most of a
+    * period. */
+   retro_time_t started = cpu_features_get_time_usec();
+   unsigned     yields  = 1000;
 
    while (retro_atomic_load_acquire_int(&g_asio_in_callback) > 0)
    {
@@ -1050,7 +1054,7 @@ static void asio_wait_callbacks_out(void)
       }
       else
       {
-         if (GetTickCount() - started >= 200)
+         if (cpu_features_get_time_usec() - started >= 200 * 1000)
          {
             RARCH_WARN("[ASIO] A callback is still running after 200 ms; tearing down anyway.\n");
             return;
