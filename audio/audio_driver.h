@@ -318,24 +318,6 @@ typedef struct audio_driver
     */
    size_t (*frames_consumed)(void *data);
 
-   /**
-    * Optional, and only for drivers whose frames_consumed() reads a
-    * clock the hardware provides: the same count as this driver would
-    * have produced without one, on the same terms - monotonic, in
-    * output frames, from start(). WASAPI's is its service events
-    * counted and multiplied by a period, which is what it used to
-    * return outright.
-    *
-    * It exists to be disagreed with. The two are compared over the
-    * same window and the difference reported in parts per million,
-    * which says on real hardware what the approximation costs -
-    * whether a device's events really do arrive one per period, and
-    * where they do not, by how much. Nothing is controlled from it;
-    * the estimate the frontend acts on is frames_consumed() alone.
-    * NULL where a driver has only the one number, which is most of
-    * them.
-    */
-   size_t (*frames_consumed_fallback)(void *data);
 
    /* Optional. Periods the device played silence for want of audio
     * since init: the callback found less than one period in the
@@ -359,6 +341,30 @@ typedef struct audio_driver
     * buffer_size(), what write() accepts - is in frames of that
     * layout's channels. */
    uint32_t (*layout)(void *data);
+   /**
+    * Optional, and only for drivers whose frames_consumed() reads a
+    * clock the hardware provides: the same count as this driver would
+    * have produced without one, on the same terms - monotonic, in
+    * output frames, from start(). WASAPI's is its service events
+    * counted and multiplied by a period, which is what it used to
+    * return outright.
+    *
+    * It exists to be disagreed with. The two are compared over the
+    * same window and the difference reported in parts per million,
+    * which says on real hardware what the approximation costs -
+    * whether a device's events really do arrive one per period, and
+    * where they do not, by how much. Nothing is controlled from it;
+    * the estimate the frontend acts on is frames_consumed() alone.
+    * NULL where a driver has only the one number, which is most of
+    * them.
+    *
+    * Last in this structure deliberately. Most drivers initialise it
+    * positionally and name nothing, so an entry added anywhere but
+    * the end silently moves every one after it - which is how this
+    * one first went in, giving three drivers a layout function where
+    * their underrun counter should have been.
+    */
+   size_t (*frames_consumed_fallback)(void *data);
 } audio_driver_t;
 
 /* The layout the user asked for, one of the AUDIO_LAYOUT_ masks. A

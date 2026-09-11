@@ -2792,7 +2792,7 @@ audio_driver_t audio_wasapi = {
    NULL, /* write_raw */
    wasapi_wait_writable,
    wasapi_frames_consumed,
-   wasapi_frames_consumed_fallback,
    wasapi_underruns,
-   wasapi_layout
+   wasapi_layout,
+   wasapi_frames_consumed_fallback
 };
