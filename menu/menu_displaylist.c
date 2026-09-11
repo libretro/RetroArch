@@ -2125,42 +2125,69 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
          count++;
    }
 
-   /* Physical Size, DPI: the context's metrics, as System Information
-    * shows them, gathered onto one line each here */
+   /* Display Width / Height (mm), DPI: the context's metrics */
    {
       gfx_ctx_metrics_t metrics;
-      float mm_w = 0.0f, mm_h = 0.0f, dpi = 0.0f;
-      metrics.value = &mm_w;
+      float val = 0.0f;
+
+      metrics.value = &val;
+
       metrics.type  = DISPLAY_METRIC_MM_WIDTH;
-      video_context_driver_get_metrics(&metrics);
-      metrics.value = &mm_h;
+      if (video_context_driver_get_metrics(&metrics))
+      {
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+
       metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
-      video_context_driver_get_metrics(&metrics);
-      metrics.value = &dpi;
+      if (video_context_driver_get_metrics(&metrics))
+      {
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+
       metrics.type  = DISPLAY_METRIC_DPI;
-      video_context_driver_get_metrics(&metrics);
-      if (mm_w > 0.0f && mm_h > 0.0f)
+      if (video_context_driver_get_metrics(&metrics))
       {
-         _len  = strlcpy(entry,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_PHYSICAL_SIZE),
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
                sizeof(entry));
-         snprintf(entry + _len, sizeof(entry) - _len, ": %.0f x %.0f", mm_w, mm_h);
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                0, 0, NULL))
             count++;
       }
-      if (dpi > 0.0f)
-      {
-         _len  = strlcpy(entry,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_DPI),
-               sizeof(entry));
-         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", dpi);
-         if (menu_entries_append(list, entry, "",
-               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-               0, 0, NULL))
-            count++;
-      }
+   }
+
+   /* Pacing: the same line as the statistics overlay, here because
+    * the overlay does not draw over the menu, and what paces the
+    * menu is exactly the question this answers. Read at build; the
+    * list rebuilds on entry, so back out and in again to refresh. */
+   {
+      char pbuf[64];
+      runloop_pace_string(pbuf, sizeof(pbuf));
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING),
+            sizeof(entry));
+      _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
    }
 
    /* Orientation */
@@ -3049,73 +3076,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;
-
-      /* Pacing: the same line as the statistics overlay, here because
-       * the overlay does not draw over the menu, and what paces the
-       * menu is exactly the question this answers. Read at build; the
-       * list rebuilds on entry, so back out and in again to refresh. */
-      {
-         char pbuf[64];
-         runloop_pace_string(pbuf, sizeof(pbuf));
-         _len  = strlcpy(entry,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING),
-               sizeof(entry));
-         _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
-         strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
-         if (menu_entries_append(list, entry, "",
-               MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-               0, 0, NULL))
-            count++;
-      }
-
-      {
-         gfx_ctx_metrics_t metrics;
-         float val = 0.0f;
-
-         metrics.value = &val;
-
-         /* Display Width (mm) */
-         metrics.type  = DISPLAY_METRIC_MM_WIDTH;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-
-         /* Display Height (mm) */
-         metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-
-         /* DPI */
-         metrics.type  = DISPLAY_METRIC_DPI;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-      }
    }
 #endif
 
