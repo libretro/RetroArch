@@ -2442,6 +2442,12 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
    if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY, value))
       count++;
 
+   /* What those primaries amount to */
+   if (modeline_edid_gamut_str(info, value, sizeof(value)))
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT, value))
+         count++;
+
    /* Range Limits */
    if (info->has_range)
    {

@@ -292,6 +292,13 @@ size_t modeline_edid_timing_str(const video_edid_timing_t *t,
 /* The same timing as an xorg-style modeline */
 size_t modeline_edid_modeline_str(const video_edid_timing_t *t,
       char *s, size_t len);
+/* The colour gamut the chromaticity describes, as a standard's name
+ * where the primaries land on one and "custom" where they do not,
+ * with the white point and the area against sRGB: "Display P3, D65,
+ * 125%% of sRGB". Returns 0 when the block states no chromaticity. */
+size_t modeline_edid_gamut_str(const video_edid_info_t *info,
+      char *s, size_t len);
+
 /* Name of an established timing bit (0-16), "" past the end */
 const char *modeline_edid_established_name(unsigned bit);
 /* CTA-861 VIC as "1920x1080p60", or "VIC n" when unlisted */

@@ -1652,6 +1652,10 @@ MSG_HASH(
    "Chromaticity"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   "Colour Gamut"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
    "Range Limits"
    )

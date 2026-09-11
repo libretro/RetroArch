@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -630,6 +631,120 @@ size_t modeline_edid_modeline_str(const video_edid_timing_t *t,
          t->vactive + t->vfront + t->vsync, t->vactive + t->vblank,
          t->hsync_pos ? '+' : '-', t->vsync_pos ? '+' : '-',
          t->interlace ? " interlace" : "");
+}
+
+/* The area a set of primaries encloses in the xy plane */
+static double edid_gamut_area(const double *p)
+{
+   return fabs((p[2] - p[0]) * (p[5] - p[1])
+             - (p[4] - p[0]) * (p[3] - p[1])) / 2.0;
+}
+
+size_t modeline_edid_gamut_str(const video_edid_info_t *info,
+      char *s, size_t len)
+{
+   /* The standards a display's primaries are likely to sit on, red,
+    * green then blue. sRGB and BT.709 share theirs, as do DCI-P3 and
+    * Display P3 - the difference there is the white point, so the
+    * two are told apart by that. */
+   static const struct
+   {
+      const char *name;
+      double p[6];
+      /* Only where two standards share primaries and the white point
+       * is what separates them; 0 elsewhere, so a panel calibrated to
+       * another white still gets its primaries named. */
+      double white_x, white_y;
+   } gamuts[] = {
+      { "sRGB / BT.709",  { 0.640, 0.330, 0.300, 0.600, 0.150, 0.060 }, 0.0, 0.0 },
+      { "Display P3",     { 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 }, 0.3127, 0.3290 },
+      { "DCI-P3",         { 0.680, 0.320, 0.265, 0.690, 0.150, 0.060 }, 0.3140, 0.3510 },
+      { "Adobe RGB",      { 0.640, 0.330, 0.210, 0.710, 0.150, 0.060 }, 0.0, 0.0 },
+      { "BT.2020",        { 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 }, 0.0, 0.0 },
+      { "BT.601 (SMPTE C)", { 0.630, 0.340, 0.310, 0.595, 0.155, 0.070 }, 0.0, 0.0 }
+   };
+   static const struct
+   {
+      const char *name;
+      double x, y;
+   } whites[] = {
+      { "D65", 0.3127, 0.3290 },
+      { "D50", 0.3457, 0.3585 },
+      { "DCI", 0.3140, 0.3510 },
+      { "D75", 0.2990, 0.3150 },
+      { "D93", 0.2831, 0.2971 }
+   };
+   static const double srgb[6] =
+      { 0.640, 0.330, 0.300, 0.600, 0.150, 0.060 };
+   double p[6], wx, wy, best = 0.0, area;
+   const char *gamut = NULL;
+   const char *white = NULL;
+   size_t _len;
+   int i;
+
+   if (!info || !s || !len)
+      return 0;
+   if (!info->red_x && !info->green_x && !info->blue_x && !info->white_x)
+      return 0;
+
+   p[0] = info->red_x   / 1000.0; p[1] = info->red_y   / 1000.0;
+   p[2] = info->green_x / 1000.0; p[3] = info->green_y / 1000.0;
+   p[4] = info->blue_x  / 1000.0; p[5] = info->blue_y  / 1000.0;
+   wx   = info->white_x / 1000.0; wy   = info->white_y / 1000.0;
+
+   /* A standard's name only when every primary lands on it. EDID
+    * stores each coordinate in ten bits, about a thousandth, and
+    * panels are binned rather than exact, so the window is 0.015 -
+    * wide enough for a real display, far too tight to confuse the
+    * gamuts above with each other. */
+   for (i = 0; i < (int)(sizeof(gamuts) / sizeof(gamuts[0])); i++)
+   {
+      double worst = 0.0;
+      int j;
+      for (j = 0; j < 6; j++)
+      {
+         double d = p[j] - gamuts[i].p[j];
+         if (d < 0.0)
+            d = -d;
+         if (d > worst)
+            worst = d;
+      }
+      if (worst > 0.015)
+         continue;
+      /* Same primaries, different white: DCI-P3 against Display P3.
+       * Everything else takes its name from the primaries alone. */
+      if (gamuts[i].white_x && (wx || wy))
+      {
+         double dw = fabs(wx - gamuts[i].white_x) + fabs(wy - gamuts[i].white_y);
+         if (dw > 0.010)
+            continue;
+      }
+      gamut = gamuts[i].name;
+      break;
+   }
+
+   for (i = 0; i < (int)(sizeof(whites) / sizeof(whites[0])); i++)
+   {
+      double dw = fabs(wx - whites[i].x) + fabs(wy - whites[i].y);
+      if (dw <= 0.006)
+      {
+         white = whites[i].name;
+         break;
+      }
+   }
+
+   /* The area against sRGB's: not a coverage figure, which needs the
+    * two triangles intersected, but the size of what the display can
+    * show against the size of what sRGB asks for. */
+   area = edid_gamut_area(srgb);
+   best = area > 0.0 ? edid_gamut_area(p) / area * 100.0 : 0.0;
+
+   _len = strlcpy(s, gamut ? gamut : "custom primaries", len);
+   if (white && _len < len)
+      _len += snprintf(s + _len, len - _len, ", %s", white);
+   if (best > 0.0 && _len < len)
+      _len += snprintf(s + _len, len - _len, ", %.0f%% of sRGB area", best);
+   return _len;
 }
 
 const char *modeline_edid_established_name(unsigned bit)
