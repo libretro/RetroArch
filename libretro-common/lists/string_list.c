@@ -56,6 +56,14 @@ bool string_list_capacity(struct string_list *list, size_t cap)
 {
    struct string_list_elem *new_data;
 
+   /* Public API, so hold it to its contract.  A cap below size would
+    * realloc the array out from under the live elements while size
+    * still counted them, and the next walk or free ran off the end;
+    * a cap of zero is a realloc(p, 0), which on glibc frees p and
+    * returns NULL - reported here as failure with elems dangling. */
+   if (!list || cap < list->size || cap == 0)
+      return false;
+
    /* Guard the byte-count multiplication: a huge cap would wrap and
     * realloc a buffer far smaller than the caller expects. */
    if (cap > SIZE_MAX / sizeof(*new_data))
@@ -187,6 +195,11 @@ bool string_list_append_n(struct string_list *list, const char *elem,
          return false;
    }
 
+   /* len + 1 wraps to 0 at SIZE_MAX; the memcpy below would then run
+    * len bytes into a zero-byte allocation.  Not reachable from a real
+    * string, but this is a public entry point taking any size_t. */
+   if (len == SIZE_MAX)
+      return false;
    data_dup = (char*)malloc(len + 1);
    if (!data_dup)
       return false;
