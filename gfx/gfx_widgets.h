@@ -197,8 +197,6 @@ typedef struct disp_widget_msg
 
 typedef struct dispgfx_widget
 {
-   uint64_t gfx_widgets_frame_count;
-
 #ifdef HAVE_THREADS
    slock_t* current_msgs_lock;
    /* Serialises producer and consumer access to msg_queue.

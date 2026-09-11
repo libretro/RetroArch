@@ -50,7 +50,7 @@
 #define BASE_FONT_SIZE      32.0f
 #define MSG_QUEUE_FONT_SIZE 20.0f
 
-static dispgfx_widget_t dispwidget_st = {0}; /* uint64_t alignment */
+static dispgfx_widget_t dispwidget_st = {0};
 static uint64_t widget_icon_load_gen  = 0;
 
 /* Recompute the layout variables that depend on whether widget icons
@@ -230,6 +230,88 @@ static disp_widget_msg_t *gfx_widgets_pending_pop(dispgfx_widget_t *p_dispwidget
    return msg_widget;
 }
 
+/* Width, wrap and height of a plain message, from the font the widgets
+ * draw with, on the thread that owns it: the consumer of the message
+ * queue (gfx_widgets_iterate_frame()), not whoever pushed it. Task
+ * messages are measured at push, where their updates happen. */
+static void gfx_widgets_msg_measure(dispgfx_widget_t *p_dispwidget,
+      disp_widget_msg_t *msg_widget)
+{
+   size_t len = msg_widget->msg_len;
+   /* Compute rect width, wrap if necessary */
+   /* Single line text > two lines text > two lines
+    * text with expanded width */
+   char *msg_new                       = NULL;
+   size_t msg_len                      = 0;
+   unsigned rect_width                 = p_dispwidget->msg_queue_default_rect_width;
+   unsigned text_width                 = font_driver_get_message_width(
+         p_dispwidget->gfx_widget_fonts.msg_queue.font,
+         msg_widget->msg,
+         len,
+         1.0f);
+   msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
+   /* +1 for potential '\n' insertion, +1 for NUL */
+   msg_len                             = len + 1 + 1;
+   if (!(msg_new = (char*)malloc(msg_len)))
+   {
+      /* Unwrapped, at its full width */
+      msg_widget->width        = text_width + (p_dispwidget->simple_widget_padding / 2);
+      return;
+   }
+   msg_new[0] = '\0';
+
+   /* Text is too wide, split it into two lines */
+   if (text_width > rect_width)
+   {
+      int wrap_length          = 0;
+
+      /* If the second line is too short, the widget may
+       * look unappealing - ensure that second line is at
+       * least 25% of the total width */
+      if ((text_width - (text_width >> 2)) < rect_width)
+         rect_width = text_width - (text_width >> 2);
+
+      msg_widget->msg_len      = word_wrap(msg_new, msg_len, msg_widget->msg, len,
+            (int)((len * rect_width) / text_width),
+            100, 2);
+
+      /* Recalculate widget width with longest wrapped line */
+      wrap_length              = string_index_last_occurance(msg_new, '\n');
+      if (wrap_length != -1)
+      {
+         len                  -= wrap_length;
+
+         if ((int)len < wrap_length)
+            len       = wrap_length;
+
+         text_width            = font_driver_get_message_width(
+            p_dispwidget->gfx_widget_fonts.msg_queue.font,
+            msg_widget->msg, len, 1.0f);
+
+         rect_width            = text_width;
+      }
+
+      msg_widget->text_height *= 2;
+   }
+   else
+   {
+      rect_width               = text_width;
+      msg_widget->msg_len      = strlcpy(msg_new, msg_widget->msg, msg_len);
+   }
+
+   free(msg_widget->msg);
+   msg_widget->msg             = msg_new;
+   msg_widget->width           = rect_width + (p_dispwidget->simple_widget_padding / 2);
+
+   /* Use big size only when needed */
+   if (strchr(msg_widget->msg, '\n'))
+   {
+      msg_widget->flags &= ~DISPWIDG_FLAG_SMALL;
+      if (msg_widget->text_height == p_dispwidget->gfx_widget_fonts.msg_queue.line_height)
+         msg_widget->text_height *= 2;
+   }
+}
+
 static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
       const char *msg,
@@ -402,75 +484,19 @@ static void gfx_widgets_msg_queue_push_state(
          }
          else
          {
-            /* Compute rect width, wrap if necessary */
-            /* Single line text > two lines text > two lines
-             * text with expanded width */
-            char *msg_new                       = NULL;
-            size_t msg_len                      = 0;
-            unsigned rect_width                 = p_dispwidget->msg_queue_default_rect_width;
-            unsigned text_width                 = font_driver_get_message_width(
-                  p_dispwidget->gfx_widget_fonts.msg_queue.font,
-                  msg_title,
-                  len,
-                  1.0f);
-            msg_widget->text_height             = p_dispwidget->gfx_widget_fonts.msg_queue.line_height;
-            /* +1 for potential '\n' insertion, +1 for NUL */
-            msg_len                             = len + 1 + 1;
-            if (!(msg_new = (char*)malloc(msg_len)))
+            /* Measured by the consumer, which owns the font */
+            msg_widget->msg                     = strdup(msg_title);
+            msg_widget->msg_len                 = len;
+            if (!msg_widget->msg)
             {
                free(msg_widget);
                return;
             }
-            msg_new[0] = '\0';
-
-            /* Text is too wide, split it into two lines */
-            if (text_width > rect_width)
-            {
-               int wrap_length          = 0;
-
-               /* If the second line is too short, the widget may
-                * look unappealing - ensure that second line is at
-                * least 25% of the total width */
-               if ((text_width - (text_width >> 2)) < rect_width)
-                  rect_width = text_width - (text_width >> 2);
-
-               msg_widget->msg_len      = word_wrap(msg_new, msg_len, msg_title, len,
-                     (int)((len * rect_width) / text_width),
-                     100, 2);
-
-               /* Recalculate widget width with longest wrapped line */
-               wrap_length              = string_index_last_occurance(msg_new, '\n');
-               if (wrap_length != -1)
-               {
-                  len                  -= wrap_length;
-
-                  if ((int)len < wrap_length)
-                     len       = wrap_length;
-
-                  text_width            = font_driver_get_message_width(
-                     p_dispwidget->gfx_widget_fonts.msg_queue.font,
-                     msg_title, len, 1.0f);
-
-                  rect_width            = text_width;
-               }
-
-               msg_widget->text_height *= 2;
-            }
-            else
-            {
-               rect_width               = text_width;
-               msg_widget->msg_len      = strlcpy(msg_new, msg_title, msg_len);
-            }
-
-            msg_widget->msg             = strdup(msg_new);
-            msg_widget->width           = rect_width + (p_dispwidget->simple_widget_padding / 2);
-
-            free(msg_new);
-            msg_new = NULL;
          }
 
-         /* Use big size only when needed */
-         if (strchr(msg_widget->msg, '\n'))
+         /* Use big size only when needed; plain messages are measured
+          * when the consumer takes them */
+         if (task && strchr(msg_widget->msg, '\n'))
          {
             msg_widget->flags &= ~DISPWIDG_FLAG_SMALL;
             if (msg_widget->text_height == p_dispwidget->gfx_widget_fonts.msg_queue.line_height)
@@ -506,11 +532,22 @@ static void gfx_widgets_msg_queue_push_state(
                 * widget never reached current_msgs, so it was never
                 * counted in msg_queue_tasks_count and must not
                 * decrement it on the way out. */
-               if (task && task->frontend_userdata == msg_widget)
-                  task->frontend_userdata = NULL;
-               msg_widget->task_ptr  = NULL;
-               msg_widget->flags    &= ~DISPWIDG_FLAG_TASK;
-               gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
+               if (task)
+               {
+                  if (task->frontend_userdata == msg_widget)
+                     task->frontend_userdata = NULL;
+                  msg_widget->task_ptr  = NULL;
+                  msg_widget->flags    &= ~DISPWIDG_FLAG_TASK;
+                  gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
+               }
+               else
+               {
+                  /* Never animated and never shown: nothing of the
+                   * widgets' own state to unwind, and the caller need
+                   * not hold the widget state lock */
+                  free(msg_widget->msg);
+                  free(msg_widget->msg_new);
+               }
                free(msg_widget);
                return;
             }
@@ -594,6 +631,15 @@ void gfx_widgets_msg_queue_push(
       unsigned prio, bool flush,
       bool menu_is_alive)
 {
+   /* A plain message touches only the queue, under its own lock, and
+    * the widget it allocates, which the consumer measures; a task's
+    * reads and updates the widget it may already have on screen */
+   if (!task)
+   {
+      gfx_widgets_msg_queue_push_state(task, msg, len, duration, title,
+            icon, category, prio, flush, menu_is_alive);
+      return;
+   }
    gfx_widgets_state_lock();
    gfx_widgets_msg_queue_push_state(task, msg, len, duration, title, icon, category, prio, flush, menu_is_alive);
    gfx_widgets_state_unlock();
@@ -1274,6 +1320,10 @@ static INLINE void gfx_widgets_iterate_frame(
 
          if (msg_widget)
          {
+            /* Plain messages arrive unmeasured; this thread owns the font */
+            if (!(msg_widget->flags & DISPWIDG_FLAG_TASK) && !msg_widget->width)
+               gfx_widgets_msg_measure(p_dispwidget, msg_widget);
+
             /* Task messages always appear from the bottom of the screen, append it */
             if (   p_dispwidget->msg_queue_tasks_count == 0
                 || (msg_widget->flags & DISPWIDG_FLAG_TASK))
@@ -1923,8 +1973,6 @@ static void gfx_widgets_frame_state(void *data)
    bool notifications_hidden        = video_info->notifications_hidden || video_info->msg_queue_delay;
    int top_right_x_advance          = video_width;
 
-   p_dispwidget->gfx_widgets_frame_count++;
-
    /* Second-pass icon layout: when async widget icons finish loading,
     * detect the transition and recompute icon-dependent layout.
     * Wait until ALL icons are loaded before flipping the flag —
@@ -2484,7 +2532,6 @@ bool gfx_widgets_init(
    if (!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED))
    {
       char theme_path[PATH_MAX_LENGTH];
-      p_dispwidget->gfx_widgets_frame_count = 0;
 
       for (i = 0; i < ARRAY_SIZE(widgets); i++)
       {
