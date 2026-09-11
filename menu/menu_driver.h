@@ -533,10 +533,10 @@ struct menu_state
    /* unsigned alignment */
    unsigned input_dialog_kb_type;
    unsigned input_dialog_kb_idx;
-   enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+   enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
    unsigned int runahead_mode;
 #endif

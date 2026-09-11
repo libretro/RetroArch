@@ -693,9 +693,12 @@ static int setting_generic_action_ok_linefeed(
       case ST_SIZE:
       case ST_UINT:
          cb = menu_input_st_uint_cb;
-         text_type = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
+         /* menu_input_st_uint_cb() parses with strtoul(base 0), which
+          * accepts a '0x' prefix; a numeric keypad cannot type one. */
          break;
       case ST_INT:
+         /* menu_input_st_int_cb() takes digits only - already rejects
+          * a leading sign - so a numeric keypad loses nothing. */
          cb = menu_input_st_int_cb;
          text_type = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
          break;
