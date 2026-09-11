@@ -5655,7 +5655,9 @@ unsigned menu_event(
       /* Menu navigation stays suppressed for the whole OSK session
        * (the trigger clear below), but the built-in keyboard only
        * consumes input when no native panel owns the line. */
-      if (!input_osk_native_active())
+      bool native_kb = input_osk_native_active();
+
+      if (!native_kb)
       {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
@@ -5736,6 +5738,25 @@ unsigned menu_event(
             input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
+      /* Scan: Clear the keyboard input window */
+      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
+         input_keyboard_line_clear(input_st);
+
+      }
+      /* Cancel closes outright under a native panel: the panel owns
+       * the text, so feeding it a backspace here would only desync
+       * the two buffers. */
+      else if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+
+      /* Closing the dialog stays available whichever keyboard is up.
+       * These two end the line through input_keyboard_event() and
+       * never reach input_event_osk_append(), so the realloc hazard
+       * the guard above exists for does not apply to them - and
+       * without them a native panel that emits no Return (webOS) or
+       * that the user has dismissed leaves the dialog with no way out
+       * from a pad at all. */
+
       /* Select: Clear and close the keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
       {
@@ -5743,16 +5764,10 @@ unsigned menu_event(
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
-      /* Scan: Clear the keyboard input window */
-      if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         input_keyboard_line_clear(input_st);
-
       /* Start + Search: Send return key to close keyboard input window */
       if (     BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_START)
             || BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-
-      }
 
       BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
