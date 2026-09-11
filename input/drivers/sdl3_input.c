@@ -629,7 +629,7 @@ static void sdl3_manage_text_input(void)
    input_driver_state_t *input_st = input_state_get_ptr();
    SDL_Window *win;
 
-   if (!SDL_HasScreenKeyboardSupport() || !(win = sdl3_get_window()))
+   if (!sdl3_uses_screen_keyboard() || !(win = sdl3_get_window()))
    {
       input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
       return;

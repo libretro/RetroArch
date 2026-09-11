@@ -131,4 +131,9 @@ void sdl3_show_mouse(void *data, bool state);
  * SDL3 isn't driving the window. */
 SDL_Window *sdl3_get_window(void);
 
+/* True when SDL_StartTextInput() on this device pops up a system
+ * screen keyboard, rather than just enabling text events in the
+ * background. False whenever a physical keyboard is attached. */
+bool sdl3_uses_screen_keyboard(void);
+
 #endif
