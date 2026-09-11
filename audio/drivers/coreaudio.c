@@ -417,26 +417,46 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    size_t avail;
    float *outbuf;
    size_t frames_needed;
+   size_t have_bytes;
    coreaudio_t *dev = (coreaudio_t*)userdata;
 
    (void)time_stamp;
    (void)bus_number;
-   (void)number_frames;
 
    if (!io_data || io_data->mNumberBuffers != 1)
       return noErr;
 
    outbuf        = (float *)io_data->mBuffers[0].mData;
-   frames_needed = io_data->mBuffers[0].mDataByteSize / sizeof(float);
+   /* What the unit asked for, which is what number_frames is: frames
+    * of every channel. The byte capacity of the buffer was being used
+    * to infer it, which happens to agree for the interleaved format
+    * this driver sets up and is a different question - a buffer is
+    * allowed to be larger than the request. */
+   frames_needed = (size_t)number_frames * dev->channels;
+   have_bytes    = io_data->mBuffers[0].mDataByteSize;
+   if (frames_needed * sizeof(float) > have_bytes)
+      frames_needed = have_bytes / sizeof(float);
    avail         = retro_atomic_load_acquire_size(&dev->filled);
 
    if (avail < frames_needed)
    {
-      /* Underrun: read what we have, fill rest with silence */
-      *action_flags = kAudioUnitRenderAction_OutputIsSilence;
+      /* Underrun: what there is, and silence after it.
+       *
+       * The silence flag says the buffer holds nothing but silence,
+       * and a unit is entitled to skip a buffer that says so. Setting
+       * it for a partial underrun therefore threw away the samples
+       * just read into the buffer: a period that should have been
+       * mostly audio became one of silence entirely, every time the
+       * ring ran a little short. It is set only when there was
+       * nothing at all.
+       *
+       * And ored in, not assigned: the flags are the unit's, and it
+       * may have set some of its own on the way in. */
       if (avail > 0)
          rb_read(dev, outbuf, avail);
       memset(outbuf + avail, 0, (frames_needed - avail) * sizeof(float));
+      if (!avail && action_flags)
+         *action_flags |= kAudioUnitRenderAction_OutputIsSilence;
       retro_atomic_fetch_add_size(&dev->underruns, 1);
    }
    else
