@@ -187,7 +187,11 @@ enum input_driver_state_flags
    INP_FLAG_DEFERRED_WAIT_KEYS       = (1 << 8),
    INP_FLAG_WAIT_INPUT_RELEASE       = (1 << 9),
    INP_FLAG_MENU_PRESS_PENDING       = (1 << 10),
-   INP_FLAG_MENU_PRESS_CANCEL        = (1 << 11)
+   INP_FLAG_MENU_PRESS_CANCEL        = (1 << 11),
+   /* A system-provided keyboard panel is on screen and owns text
+    * entry. Set and cleared by whichever input driver put it there,
+    * once per poll; read through input_osk_native_active(). */
+   INP_FLAG_NATIVE_KB_SHOWN          = (1 << 12)
 };
 
 #ifdef HAVE_BSV_MOVIE

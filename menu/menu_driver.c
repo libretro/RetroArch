@@ -73,6 +73,7 @@
 
 #include "../gfx/gfx_animation.h"
 #include "../input/input_driver.h"
+#include "../input/input_osk.h"
 #include "../input/input_remapping.h"
 #include "../performance_counters.h"
 #include "../version.h"
@@ -90,10 +91,6 @@
 #ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/cocoa/apple_platform.h"
 #include <compat/strl.h>
-#endif
-
-#ifdef HAVE_SDL3
-#include "../gfx/common/sdl3_common.h"
 #endif
 
 typedef struct menu_input_ctx_bind
@@ -5189,29 +5186,13 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 }
 
 
-/* True when a platform-native text-entry panel currently owns the
- * keyboard line.  The built-in on-screen keyboard must not process
- * input in that case: both paths write into input_st->keyboard_line,
- * and input_event_osk_append() calls input_keyboard_line_append(),
- * which can realloc the buffer out from under state the native path
- * is holding.  Steam's OSK already had this guard open-coded at the
- * two call sites; the iOS native keyboard and SDL3 need the same. */
-static bool menu_input_native_kb_active(void)
-{
-#ifdef HAVE_MIST
-   if (steam_has_osk_open())
-      return true;
-#endif
-#ifdef HAVE_COCOATOUCH
-   if (ios_keyboard_active())
-      return true;
-#endif
-#ifdef HAVE_SDL3
-   if (sdl3_screen_keyboard_shown())
-      return true;
-#endif
-   return false;
-}
+/* input_osk_native_active() is true when a platform-native text-entry
+ * panel currently owns the keyboard line.  The built-in on-screen
+ * keyboard must not append in that case: both paths write into
+ * input_st->keyboard_line, and input_event_osk_append() calls
+ * input_keyboard_line_append(), which can realloc the buffer out from
+ * under state the native path is holding.  Every backend answers
+ * through that one function; see input/input_osk.h. */
 
 enum menu_input_dialog_kb_text_type menu_input_dialog_get_kb_text_type(void)
 {
@@ -5674,7 +5655,7 @@ unsigned menu_event(
       /* Menu navigation stays suppressed for the whole OSK session
        * (the trigger clear below), but the built-in keyboard only
        * consumes input when no native panel owns the line. */
-      if (!menu_input_native_kb_active())
+      if (!input_osk_native_active())
       {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
@@ -6388,7 +6369,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
              * line swallows the gesture outright - the enclosing
              * branch still runs so it does not fall through to
              * normal menu input. */
-            if (     !menu_input_native_kb_active()
+            if (     !input_osk_native_active()
                   && !(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                if (     menu_st->driver_ctx

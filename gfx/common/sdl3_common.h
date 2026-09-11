@@ -131,8 +131,4 @@ void sdl3_show_mouse(void *data, bool state);
  * SDL3 isn't driving the window. */
 SDL_Window *sdl3_get_window(void);
 
-/* True if the on-screen keyboard is being displayed for the SDL3
- * window. */
-bool sdl3_screen_keyboard_shown(void);
-
 #endif

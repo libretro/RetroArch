@@ -454,6 +454,10 @@ static void sdl3_input_free(void *data)
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
    SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
 
+   /* Nothing polls after this point, so the flag would stay raised
+    * across a runtime driver switch. */
+   input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+
    SDL_QuitSubSystem(SDL_INIT_EVENTS);
    free(sdl);
 }
@@ -609,17 +613,27 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
    return mod;
 }
 
-/* On mobile devices, SDL_StartTextInput() brings up the
- * on-screen keyboard. On desktop, text input stays quietly
- * enabled in the background, ensuring normal keyboard
- * controls work. */
+/* On devices where SDL_StartTextInput() brings up the system
+ * keyboard, hold it back until a menu dialog actually wants text and
+ * the user has opted in. On desktop, text input stays quietly enabled
+ * in the background, ensuring normal keyboard controls work.
+ *
+ * Also publishes INP_FLAG_NATIVE_KB_SHOWN for the frontend: this runs
+ * once per poll on the main thread, so consumers on the video thread
+ * (gfx_display_draw_keyboard) read a plain flag instead of calling
+ * into SDL from a thread SDL does not expect. */
 static void sdl3_manage_text_input(void)
 {
-   bool want = false;
+   bool want                    = false;
+   bool shown                   = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
    SDL_Window *win;
 
    if (!SDL_HasScreenKeyboardSupport() || !(win = sdl3_get_window()))
+   {
+      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
       return;
+   }
 
 #ifdef HAVE_MENU
    want = menu_input_dialog_get_display_kb()
@@ -627,7 +641,7 @@ static void sdl3_manage_text_input(void)
 #endif
 
    if (want == SDL_TextInputActive(win))
-      return;
+      goto publish;
 
    if (want)
    {
@@ -666,6 +680,16 @@ static void sdl3_manage_text_input(void)
    }
    else
       SDL_StopTextInput(win);
+
+publish:
+   /* SDL_StartTextInput() only asks; the panel can take a frame to
+    * appear and the user can dismiss it behind our back. Report what
+    * is actually on screen. */
+   shown = SDL_ScreenKeyboardShown(win);
+   if (shown)
+      input_st->flags |=  INP_FLAG_NATIVE_KB_SHOWN;
+   else
+      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
 }
 
 /* Translates control/modifier keys into their ASCII character counterpart. */

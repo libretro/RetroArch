@@ -562,9 +562,3 @@ SDL_Window *sdl3_get_window(void)
 
    return NULL;
 }
-
-bool sdl3_screen_keyboard_shown(void)
-{
-   SDL_Window *win = sdl3_get_window();
-   return win && SDL_ScreenKeyboardShown(win);
-}
