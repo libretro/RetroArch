@@ -600,6 +600,73 @@ static void ac3_bitstream_case(void)
    st->context_audio_data = NULL;
 }
 
+/* Headphones: a stereo device with the virtual surround on. The
+ * binaural stage renders a 5.1 to two ears, and that 5.1 was always
+ * the upmix's guess - the stereo widened, its rears a copy of its
+ * fronts. A 5.1 core's own rears were folded into the stereo and then
+ * invented again from it, so a sound that was only ever behind the
+ * listener arrived in front and was placed behind. What says it is
+ * fixed is the rear channel's own tone reaching the ears at all:
+ * under the guess there is nothing at that frequency anywhere in the
+ * output, because the rear was a copy of the front. */
+static void virtual_surround_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t frames = 4410 * 2, f;
+   unsigned c;
+   float *inf = (float*)malloc(frames * 6 * sizeof(float));
+   double rear_energy, front_energy;
+
+   printf("   5.1 core to headphones: the core's rears reach the ears\n");
+   CHECK(up(true, AUDIO_LAYOUT_STEREO, true), "stand-up");
+   /* The virtual 5.1, as audio_driver_init stands it up. */
+   {
+      size_t up_frames = st->output_samples_buf_length / (2 * sizeof(float));
+      st->virt_buf     = (float*)malloc(up_frames * 6 * sizeof(float));
+      free(st->upmix_buf);
+      free(st->upmix_i16);
+      st->upmix_buf    = (float*)malloc(up_frames * 2 * sizeof(float));
+      st->upmix_i16    = (int16_t*)malloc(up_frames * 6 * sizeof(int16_t));
+      CHECK(st->virt_buf && st->upmix_buf && st->upmix_i16, "no room for the virtual 5.1");
+      CHECK(audio_upmix_init(&st->upmix, AUDIO_LAYOUT_5POINT1, 48000), "upmix");
+      CHECK(audio_binaural_init(&st->binaural, AUDIO_LAYOUT_5POINT1, 48000), "binaural");
+      st->virtualize   = true;
+      st->upmix_frames = up_frames;
+      st->out_layout   = AUDIO_LAYOUT_STEREO;
+      st->out_channels = 2;
+   }
+
+   /* A sound only ever behind the listener: the rear pair carries a
+    * tone and every other channel is silent. Its presence at the ears
+    * proves nothing either way - the fold puts it into the stereo, so
+    * it arrives under both behaviours. What differs is where it sits
+    * in the 5.1 the binaural stage renders, and that is what is
+    * measured: the virtual fronts. Carried, they stay silent, because
+    * the core's fronts were. Invented, they hold the folded rear and
+    * the rears hold a copy of it - the sound is placed in front of
+    * the listener and then a copy is placed behind. */
+   for (f = 0; f < frames; f++)
+      for (c = 0; c < 6; c++)
+         inf[f * 6 + c] = (c == 4 || c == 5)
+               ? 0.4f * (float)sin(2 * M_PI * tone_hz[4] * f / 44100.0)
+               : 0.0f;
+
+   audio_driver_sample_batch_multi_float(inf, 735, 6, AUDIO_LAYOUT_5POINT1);
+
+   /* virt_buf holds the 5.1 the binaural stage was handed for the
+    * last write. */
+   front_energy = tone_energy(st->virt_buf, 700, 6, 0, tone_hz[4]);
+   rear_energy  = tone_energy(st->virt_buf, 700, 6, 4, tone_hz[4]);
+   printf("      the virtual 5.1: front left %.4f, back left %.4f, at the rear's frequency\n",
+         front_energy, rear_energy);
+   CHECK(rear_energy > 0.01,
+         "the rear tone is not in the virtual rear (%.5f)", rear_energy);
+   CHECK(front_energy < rear_energy / 20.0,
+         "the virtual front holds %.4f of a rear-only sound against %.4f behind: the rears were invented from a fold, not carried",
+         front_energy, rear_energy);
+   free(inf);
+}
+
 static void fold_case(void)
 {
    size_t frames = 4410, f; unsigned c;
@@ -638,6 +705,7 @@ int main(void)
    RUN("threaded", stereo_on_wide_ring_case());
    RUN("record",   record_case());
    RUN("ac3",      ac3_bitstream_case());
+   RUN("virtual",  virtual_surround_case());
    RUN("fold",     fold_case());
    audio_driver_deinit_internal(true);
    free(cap); free(rec_cap);

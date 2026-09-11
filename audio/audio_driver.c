@@ -1912,13 +1912,13 @@ static int audio_driver_extra_slot(uint32_t layout, uint32_t position)
    return (int)audio_layout_channels(below);
 }
 
-static void audio_driver_extra_merge_f32(audio_driver_state_t *audio_st,
-      float *dev, size_t frames)
+static void audio_driver_extra_merge_layout_f32(audio_driver_state_t *audio_st,
+      float *dev, size_t frames, uint32_t into_layout, unsigned into_channels)
 {
    const unsigned ch  = audio_st->extra.channels;
-   const unsigned och = audio_st->out_channels;
+   const unsigned och = into_channels;
    const uint32_t pos = audio_st->extra.positions;
-   const uint32_t dev_layout = audio_st->out_layout;
+   const uint32_t dev_layout = into_layout;
    int dst[11], srcslot[11];
    unsigned n = 0, bit, k;
    size_t f;
@@ -1960,6 +1960,14 @@ static void audio_driver_extra_merge_f32(audio_driver_state_t *audio_st,
          }
       }
    }
+}
+
+/* The device's own frame, which is the usual case. */
+static void audio_driver_extra_merge_f32(audio_driver_state_t *audio_st,
+      float *dev, size_t frames)
+{
+   audio_driver_extra_merge_layout_f32(audio_st, dev, frames,
+         audio_st->out_layout, audio_st->out_channels);
 }
 
 static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
@@ -2032,6 +2040,23 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
          src = stage;
       }
       audio_upmix_process(&audio_st->upmix, audio_st->virt_buf, src, frames);
+      /* The virtual 5.1 the binaural stage renders was, until here,
+       * always the upmix's guess at one: the stereo widened, with the
+       * rears a copy of the fronts at -3 dB. A core that delivered its
+       * own rears had them folded into that stereo and then invented
+       * again from it. Where the entry left the core's channels
+       * beside the fronts, they replace the invented ones - so what
+       * reaches the ears is the core's rear, placed behind the
+       * listener, rather than its front placed behind them. */
+      if (audio_st->extra.out_frames >= frames && audio_st->extra.channels)
+      {
+         if (audio_st->extra.res_int16)
+            convert_s16_to_float(audio_st->extra.out_f, audio_st->extra.out_i,
+                  frames * audio_st->extra.channels, 1.0f);
+         audio_driver_extra_merge_layout_f32(audio_st, audio_st->virt_buf,
+               frames, AUDIO_LAYOUT_5POINT1, 6);
+         audio_st->extra.out_frames = 0;
+      }
       audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
       if (dev_float)
          return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
@@ -4441,9 +4466,14 @@ static bool audio_driver_multi_layout_ok(unsigned channels, unsigned layout)
  * threaded ring in between (it carries stereo). Otherwise the fold. */
 static bool audio_driver_multi_discrete(audio_driver_state_t *audio_st, unsigned layout)
 {
-   return audio_st->out_channels > 2
-       && (layout & AUDIO_LAYOUT_STEREO) == AUDIO_LAYOUT_STEREO
-       && !audio_st->virtualize;
+   /* A device wider than stereo takes the channels as they are; a
+    * stereo device with headphone virtualisation on has a virtual 5.1
+    * behind it, and the core's own channels belong in that rather
+    * than the upmix's guess at one. Either way the front pair goes
+    * through the pipeline and the rest beside it. */
+   return ((audio_st->out_channels > 2)
+          || (audio_st->virtualize && audio_st->virt_buf))
+       && (layout & AUDIO_LAYOUT_STEREO) == AUDIO_LAYOUT_STEREO;
 }
 
 /* On the threaded pipeline the ring carries the canonical wide frame
