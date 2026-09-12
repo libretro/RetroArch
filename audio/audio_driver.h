@@ -48,12 +48,23 @@ typedef struct scond scond_t;
 #endif
 #include <audio/audio_resampler.h>
 #include <audio/sinc_resampler_int16.h>
+#ifdef HAVE_AUDIO_TIMESTRETCH
+#include <audio/audio_time_stretch.h>
+#endif
+#ifdef HAVE_AUDIO_LOWPASS
+#include <audio/audio_low_pass.h>
+#endif
 
 #include "audio_defines.h"
 #include "audio_upmix.h"
 #include "audio_binaural.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+
+/* Output frames of played audio kept for the pause tail. Must hold the
+ * longest period the tail search may pick plus the window it is matched
+ * over, which at 48kHz is about 21ms and 3ms respectively. */
+#define AUDIO_PAUSE_HIST_FRAMES         2048
 
 RETRO_BEGIN_DECLS
 
@@ -479,6 +490,46 @@ typedef struct
    void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
    void (*resampler_int16_free)(void *);
 
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   /* WSOLA time-stretcher for FASTFORWARD_AUDIO_TIMESTRETCH. Lazily
+    * allocated by audio_driver_flush() on first use; freed in
+    * audio_driver_deinit_internal(). */
+   audio_time_stretch_t *time_stretch;
+   /* Exponential average of frames arriving per flush, for the stretch
+    * ratio. Separate from avg_flush_delta, which averages wall-clock
+    * intervals rather than frame counts. */
+   double                stretch_arrival_avg;
+   /* The same speed estimate as audio_driver_fastforward_ratio_mult()'s
+    * return, but clamped to the range the stretcher can synthesise rather
+    * than to the resampler's buffer-sizing ceiling. */
+   double                stretch_speed_mult;
+   /* Output frames the device is owed but has not been given, carried across
+    * flushes. A read that comes up short must return its deficit here or the
+    * output rate settles below real time and never recovers. */
+   double                stretch_output_credit;
+   /* Previous flush's stretch ratio, for the slew limit. */
+   double                stretch_ratio_prev;
+   /* Device occupancy in output frames, averaged over the same window as
+    * stretch_arrival_avg; negative until a synthesis flush seeds it. The
+    * output pacing steers it toward a setpoint, see
+    * audio_driver_time_stretch(). */
+   double                stretch_device_fill;
+   /* Whether the previous flush engaged the stretcher; either edge resets it,
+    * so synthesis never splices across a gap where it went unfed. */
+   bool                  stretch_was_engaged;
+#endif
+#ifdef HAVE_AUDIO_LOWPASS
+   /* Speed-linked low-pass for fast-forward audio. Lazily allocated by
+    * audio_driver_flush() on first use, same as the stretcher; freed in
+    * audio_driver_deinit_internal(). */
+   audio_low_pass_t     *lowpass;
+   /* Whether the previous flush applied the low-pass; either edge resets the
+    * filter, so it never rejoins on stale memory. Its own flag rather than
+    * the stretcher's: the low-pass also applies under
+    * FASTFORWARD_AUDIO_SPEEDUP, and is a separate build option. */
+   bool                  lowpass_was_engaged;
+#endif
+
    /**
     * The current audio driver.
     */
@@ -636,6 +687,18 @@ typedef struct
     * pipe's target then, not just a frame. Consumer thread only after
     * init. */
    bool     pipe_priming;
+   /* Bytes ever published into and taken out of pipe_ring, each counted
+    * by its own thread. pipe_discard_to is a position in that stream,
+    * set under pipe_lock: what was published before a pause is stale
+    * behind the tail, and the consumer takes it out unplayed. */
+   size_t   pipe_published;
+   size_t   pipe_consumed;
+   size_t   pipe_discard_to;
+   /* Where the core's audio resumes after a pause, set under pipe_lock
+    * by the producer: the consumer arms the resume ramp on reaching it
+    * and never takes a chunk across it. */
+   size_t   pipe_fade_in_at;
+   bool     pipe_fade_in_set;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
@@ -646,6 +709,12 @@ typedef struct
     * value. The consumer's own cadence is the device's, so it cannot
     * measure how fast the core is running; only the producer can. */
    retro_atomic_int_t pipe_ff_mult_q16;
+   /* The rest of the producer's estimate, for the stretcher: its speed
+    * multiplier in Q16, the averaged flush interval in microseconds, and
+    * whether the last fast-forward edge anchored it. */
+   retro_atomic_int_t pipe_stretch_mult_q16;
+   retro_atomic_int_t pipe_flush_delta_us;
+   retro_atomic_int_t pipe_ff_anchored;
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;
@@ -698,10 +767,60 @@ typedef struct
    uint8_t mixer_streams_playing;  /* Count of currently playing mixer streams */
 #endif
 
+   /* Last stereo frame handed to the device, and how many frames of the
+    * next flush still have the resume ramp to apply. See
+    * audio_driver_pause_fade(). */
+   float                 last_out[2];
+   unsigned              fade_in_frames;
+   /* A resume ramp owed to the core's first audio after the pause; the
+    * menu's silence in between must not spend it. */
+   bool                  fade_in_pending;
+   /* Frames of the ramp down still to emit at a fast-forward edge, and the
+    * level it started from. Counted across flushes rather than spent on one:
+    * a flush can be a handful of frames, and a ramp squeezed into that is as
+    * abrupt as the splice it replaces. */
+   unsigned              fade_out_frames;
+   float                 fade_out_from[2];
+
+   /* Rolling copy of the most recent output frames, and how much of it is
+    * valid. A copy of what has already gone to the device, never a delay
+    * line, so it costs nothing on the fast-forward path. Lets a pause be
+    * concealed with a continuation of the waveform rather than a decaying DC
+    * level. See audio_driver_pause_fade(). */
+   float                 pause_hist[AUDIO_PAUSE_HIST_FRAMES * 2];
+   unsigned              pause_hist_pos;
+   unsigned              pause_hist_fill;
+   /* Output frames still to be dropped after a pause tail has been written.
+    * The tail goes straight to the device, ahead of whatever the resampler
+    * and stretcher still hold, so without this their leftovers are spliced in
+    * behind it. */
+   unsigned              pause_mute_frames;
+   /* Non-zero between the pause tail and the resume ramp. Read from
+    * whichever thread the core hands its audio over on, hence atomic. See
+    * audio_driver_core_silenced(). */
+   retro_atomic_int_t    core_silenced;
+
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
    /* Exponential moving average */
    retro_time_t avg_flush_delta;
+   /* Exponential moving average of the flush size, over the same window. The
+    * speed estimate is avg_flush_delta measured against how long
+    * avg_flush_frames should take at the core's rate; averaging both terms is
+    * what makes it invariant to how the core chops its audio up. */
+   double       avg_flush_frames;
+   /* Flushes since the fast-forward edge, and whether the estimate was
+    * anchored to a configured rate there. The average widens its window
+    * from the edge so it settles in a few flushes instead of thirty; an
+    * anchored estimate already starts at the right answer.  stretch_was_ff
+    * tracks the edge. Outside HAVE_AUDIO_TIMESTRETCH because the Speed Up
+    * estimator shares them. */
+   unsigned     stretch_ff_settle;
+   bool         stretch_ff_anchored;
+   bool         stretch_was_ff;
+   /* The flush's own copy: on the threaded pipeline the estimator's
+    * edge runs on the producer and the stretcher's on the consumer. */
+   bool         stretch_was_ff_out;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -858,6 +977,29 @@ typedef struct
    bool             virtualize;
    audio_binaural_t binaural;
    float           *virt_buf;      /* frames * 6 floats, the virtual 5.1 */
+
+   /* Fast-forward release carry: interleaved stereo frames at the core's
+    * rate that the device had no room for while the driver is non-blocking,
+    * held for the next flush instead of being dropped. Not part of either
+    * arena - lazily allocated on the first deferral and freed in
+    * audio_driver_deinit_internal().  ff_carry_is_float says which flush arm
+    * stashed them, since the two work in different sample formats. See
+    * audio_driver_ff_carry_append(). */
+   void    *ff_carry;
+   size_t   ff_carry_frames;
+   bool     ff_carry_is_float;
+
+   /* Speed the machine actually reached during the last fast-forward hold,
+    * measured at its release; 0 until one has happened. The configured
+    * fastforward_ratio is a ceiling, not a promise - a heavy core on a
+    * handheld can sit well under it - so this is what the next engage
+    * anchors the speed estimate to. See audio_driver_flush(). */
+   double   ff_speed_achieved;
+
+   /* Set by a resume in audio_driver_pause_fade(); the first flush after it
+    * fills the device with silence before writing. See
+    * audio_driver_resume_topup(). */
+   bool     resume_topup_pending;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -904,6 +1046,45 @@ void audio_driver_setup_rewind(void);
  * directly goes through here.
  **/
 void audio_driver_set_nonblock_state(bool nonblock);
+
+/**
+ * audio_driver_pause_fade:
+ * @paused : true when the runloop has just paused, false when it has just
+ *           resumed.
+ *
+ * Ramps the audio down when the core stops and back up when it starts,
+ * instead of ending and restarting the stream mid-waveform. The ramp down
+ * is written onto audio already at the device; the ramp up is applied by
+ * audio_driver_flush() to the first frames the core produces afterwards.
+ **/
+void audio_driver_pause_fade(bool paused);
+
+/**
+ * audio_driver_core_silenced:
+ *
+ * True between the pause tail and the resume ramp, while the frontend has
+ * deliberately ended the core's audio. Lets a caller that would ramp out for
+ * its own reasons - a state load - leave an already-down stream alone rather
+ * than bring it back up on the way out.
+ **/
+bool audio_driver_core_silenced(void);
+
+/**
+ * audio_driver_jump_fade_begin:
+ * audio_driver_jump_fade_end:
+ * @ramped : what _begin returned.
+ *
+ * Bracket a jump the frontend makes in the game's state - a state load, an
+ * undo, a core reset - with the pause tail and the resume ramp, so both the
+ * splice and whatever gap the work leaves behind land in silence.
+ *
+ * A stream already down - the jump was made from the menu, or while paused -
+ * is left alone: _begin returns false and _end then does nothing, so the ramp
+ * back up stays with whatever took the stream down.
+ **/
+bool audio_driver_jump_fade_begin(void);
+
+void audio_driver_jump_fade_end(bool ramped);
 
 /**
  * audio_driver_pipeline_consumer_exit:

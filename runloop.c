@@ -4436,7 +4436,7 @@ static bool core_unload_game(void)
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
-      bool audio_fastforward_mute)
+      unsigned audio_fastforward_mode)
 {
    float fastforward_ratio_current;
    video_driver_state_t *video_st                     = video_state_get_ptr();
@@ -4464,7 +4464,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       else
          runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
 
-      if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      if (     (audio_fastforward_mode == FASTFORWARD_AUDIO_MUTE)
+            && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
          AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
       else
          AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
@@ -4584,7 +4585,7 @@ void runloop_event_deinit_core(void)
       runloop_apply_fastmotion_override(runloop_st,
             settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
-            settings->bools.audio_fastforward_mute
+            settings->uints.audio_fastforward_mode
             );
       runloop_st->fastmotion_override.pending = false;
    }
@@ -5469,6 +5470,9 @@ void runloop_pause_checks(void)
          video_driver_cached_frame();
 
       midi_driver_set_all_sounds_off();
+      /* Same idea as the MIDI silence above, for the audio stream: end it on
+       * a ramp rather than wherever the waveform happened to be. */
+      audio_driver_pause_fade(true);
 
 #ifdef HAVE_PRESENCE
       userdata.status = PRESENCE_GAME_PAUSED;
@@ -5497,6 +5501,19 @@ void runloop_pause_checks(void)
 
       /* Restore frame limit. */
       runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+
+      /* Ramp back up rather than restarting mid-waveform. Not while the
+       * menu still holds the core: nothing resumes until it closes, and
+       * that close ramps it. */
+#ifdef HAVE_MENU
+      if (!(   (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            && settings->bools.menu_pause_libretro
+#ifdef HAVE_NETWORKING
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+#endif
+         ))
+#endif
+         audio_driver_pause_fade(false);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -7362,6 +7379,7 @@ static enum runloop_state_enum runloop_check_state(
             {
                runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
                runloop_st->run_frames_and_pause = 3;
+               audio_driver_pause_fade(false);
             }
             return RUNLOOP_STATE_ITERATE;
          }
@@ -7574,7 +7592,7 @@ static enum runloop_state_enum runloop_check_state(
       runloop_apply_fastmotion_override(runloop_st,
             settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
-            settings->bools.audio_fastforward_mute);
+            settings->uints.audio_fastforward_mode);
       runloop_st->fastmotion_override.pending = false;
    }
 
@@ -7611,7 +7629,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (check2)
       {
-         bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
+         unsigned audio_fastforward_mode = settings->uints.audio_fastforward_mode;
          bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
          if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
@@ -7626,7 +7644,8 @@ static enum runloop_state_enum runloop_check_state(
             command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
          }
 
-         if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+         if (     (audio_fastforward_mode == FASTFORWARD_AUDIO_MUTE)
+               && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
          else
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
@@ -8266,6 +8285,7 @@ int runloop_iterate(void)
          {
             runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
             runloop_st->run_frames_and_pause = 2;
+            audio_driver_pause_fade(false);
          }
 #endif
          video_driver_cached_frame();
@@ -8615,7 +8635,10 @@ end:
    {
       runloop_st->run_frames_and_pause--;
       if (!runloop_st->run_frames_and_pause)
+      {
          runloop_st->flags |= RUNLOOP_FLAG_PAUSED;
+         audio_driver_pause_fade(true);
+      }
    }
 
    return 0;

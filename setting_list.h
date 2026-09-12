@@ -64,6 +64,9 @@ enum ui_setting_type
    ST_UI_TYPE_STRING_COMBOBOX,
    ST_UI_TYPE_STRING_LINE_EDIT,
    ST_UI_TYPE_PASSWORD_LINE_EDIT,
+   /* As UINT_COMBOBOX, listed high-to-low, for ranges where the largest
+    * value is the mildest setting. */
+   ST_UI_TYPE_UINT_COMBOBOX_DESC,
    ST_UI_TYPE_LAST
 };
 

@@ -68,6 +68,9 @@ else
 	HAVE_AUDIOMIXER = 1
 	HAVE_RWAV = 1
 	HAVE_DSP_FILTER = 1
+	# Software doubles on the R5900: neither module runs in real time.
+	HAVE_AUDIO_TIMESTRETCH = 0
+	HAVE_AUDIO_LOWPASS = 0
 	HAVE_VIDEO_FILTER = 1
 	HAVE_FILTERS_BUILTIN = 1
 	HAVE_WINDOW_OFFSET = 1

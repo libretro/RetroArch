@@ -186,6 +186,9 @@ static bool pipeline_up(size_t ring_bytes)
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
+   /* Audio paces the frontend here: the producer blocking on the ring
+    * is the contract under test. */
+   config_get_ptr()->bools.audio_sync = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED);
    return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
@@ -223,7 +226,7 @@ static double produce_frame(void)
 {
    double t0 = now_ms();
    audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-         sizeof(frame_audio) / sizeof(int16_t), false, false, false);
+         sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
    audio_driver_pipeline_signal(&audio_driver_st);
    return now_ms() - t0;
 }
@@ -337,7 +340,7 @@ int main(void)
    retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
    for (i = 0; i < 20; i++)
       audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-            sizeof(frame_audio) / sizeof(int16_t), false, false, false);
+            sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
    CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
    CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
 

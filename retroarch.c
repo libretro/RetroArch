@@ -3849,7 +3849,14 @@ bool command_event(enum event_command cmd, void *data)
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-            core_reset();
+            /* A reset throws the game's audio away mid-waveform, and
+             * re-initialising the machine is long enough to empty the device
+             * on the way. See audio_driver_jump_fade_begin(). */
+            {
+               bool ramped = audio_driver_jump_fade_begin();
+               core_reset();
+               audio_driver_jump_fade_end(ramped);
+            }
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
             rcheevos_reset_game(dispwidget_get_ptr()->active);
@@ -4923,6 +4930,21 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_AUDIO_REINIT:
          driver_uninit(DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET);
          drivers_init(settings, DRIVER_AUDIO_MASK, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
+         /* The teardown drops the record that the core is held. */
+         {
+            bool core_held = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+#ifdef HAVE_MENU
+            if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
+                  && settings->bools.menu_pause_libretro
+#ifdef HAVE_NETWORKING
+                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+#endif
+               )
+               core_held = true;
+#endif
+            if (core_held)
+               audio_driver_pause_fade(true);
+         }
 #ifdef HAVE_MENU
          menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 #endif
@@ -5318,9 +5340,7 @@ bool command_event(enum event_command cmd, void *data)
          runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
-         /* Audio is not stopped or started around the menu any more;
-          * see the menu toggle. Only the microphone follows the pause. */
-#if defined(HAVE_MENU) && defined(HAVE_MICROPHONE)
+#ifdef HAVE_MENU
          {
 #ifdef HAVE_NETWORKING
             bool menu_pause_libretro = settings->bools.menu_pause_libretro
@@ -5328,10 +5348,18 @@ bool command_event(enum event_command cmd, void *data)
 #else
             bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
+            /* Changed from inside the menu: the core stops or resumes
+             * behind it on the next iteration, so the audio ramp follows
+             * the new state here rather than at the menu toggle. Either
+             * direction is a no-op when nothing changes. */
+            if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+               audio_driver_pause_fade(menu_pause_libretro);
+#ifdef HAVE_MICROPHONE
             if (menu_pause_libretro)
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
             else
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
+#endif
          }
 #endif
          break;

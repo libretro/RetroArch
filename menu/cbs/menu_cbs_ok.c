@@ -7581,7 +7581,23 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          break;
       case ST_UINT:
          {
-            unsigned value = (unsigned)((idx * setting->step) + setting->offset_by);
+            unsigned value;
+            /* Listed high-to-low, so index 0 is the maximum and the value
+             * steps down from there. */
+            if (setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX_DESC)
+            {
+               /* The same fallback the list builder counts down from. */
+               float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+                     ? setting->max : 9999.00f;
+               float v   = max - ((float)idx * setting->step);
+               float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+                     ? setting->min : 0.0f;
+               if (v < min)
+                  v = min;
+               value = (unsigned)v;
+            }
+            else
+               value = (unsigned)((idx * setting->step) + setting->offset_by);
             *setting->value.target.unsigned_integer = value;
          }
          break;

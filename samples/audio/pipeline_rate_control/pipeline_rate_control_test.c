@@ -442,10 +442,10 @@ int main(int argc, char **argv)
       }
       if (dev_float)
          audio_driver_submit(&audio_driver_st, 3.0f, frame_audio_f,
-               sizeof(frame_audio_f) / sizeof(float), true, false, false);
+               sizeof(frame_audio_f) / sizeof(float), true, false, false, true);
       else
          audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-               sizeof(frame_audio) / sizeof(int16_t), false, false, false);
+               sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
       audio_driver_pipeline_signal(&audio_driver_st);
    }
    if (dbg_n)

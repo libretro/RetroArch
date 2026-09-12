@@ -188,6 +188,8 @@ typedef struct settings
       unsigned input_block_timeout;
 
       unsigned audio_resampler_quality;
+      unsigned audio_fastforward_mode;
+      unsigned audio_fastforward_lowpass;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;
@@ -636,8 +638,6 @@ typedef struct settings
       bool audio_threaded_pipeline;
       bool audio_thread_priority;
       bool audio_rate_control;
-      bool audio_fastforward_mute;
-      bool audio_fastforward_speedup;
       bool audio_fastpath_s16;
       bool audio_rewind_mute;
 #if TARGET_OS_IPHONE

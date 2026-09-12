@@ -7252,6 +7252,40 @@ static bool config_load_file(global_t *global,
       }
    }
 
+   /* Zero from an older configuration means off; see
+    * AUDIO_FASTFORWARD_LOWPASS_OFF. */
+   if (settings->uints.audio_fastforward_lowpass == 0)
+      settings->uints.audio_fastforward_lowpass = AUDIO_FASTFORWARD_LOWPASS_OFF;
+
+   /* Migrate the pre-enum fast-forward audio bools. Only applied when the
+    * new key is absent, so an explicit audio_fastforward_mode always wins.
+    * Old bools must fully determine the mode, including DISCARD. */
+   if (     !config_get_entry(conf, "audio_fastforward_mode")
+         && (config_get_entry(conf, "audio_fastforward_mute")
+         ||  config_get_entry(conf, "audio_fastforward_speedup")))
+   {
+      bool old_val         = false;
+      const char *mode_str = "discard";
+
+      settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_DISCARD;
+
+      if (config_get_bool(conf, "audio_fastforward_mute", &old_val) && old_val)
+      {
+         settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_MUTE;
+         mode_str = "mute";
+      }
+      else if (config_get_bool(conf, "audio_fastforward_speedup", &old_val)
+            && old_val)
+      {
+         settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_SPEEDUP;
+         mode_str = "speedup";
+      }
+
+      RARCH_LOG("[Config] Migrated \"audio_fastforward_mute\"/"
+            "\"audio_fastforward_speedup\" to \"audio_fastforward_mode\" = \"%s\".\n",
+            mode_str);
+   }
+
    if (conf)
       config_file_free(conf);
    if (bool_settings)
@@ -9268,6 +9302,21 @@ bool config_save_file(const char *path)
       struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
       if (tmp)
          config_unset(conf, tmp->key);
+   }
+
+   /* Remove unused fast-forward audio bools after migrating to
+    * "audio_fastforward_mode" */
+   {
+      const char *old_keys[2];
+      size_t i;
+      old_keys[0] = "audio_fastforward_mute";
+      old_keys[1] = "audio_fastforward_speedup";
+      for (i = 0; i < 2; i++)
+      {
+         struct config_entry_list *tmp = config_get_entry(conf, old_keys[i]);
+         if (tmp)
+            config_unset(conf, tmp->key);
+      }
    }
 
    ret = config_file_write(conf, path, true);

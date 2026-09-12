@@ -26,6 +26,7 @@
 #endif
 
 #include "configuration.h"
+#include "audio/audio_defines.h"
 #include "gfx/video_defines.h"
 #include "input/input_defines.h"
 
@@ -1393,10 +1394,12 @@
 #define DEFAULT_AUDIO_RESPECT_SILENT_MODE true
 #endif
 
-/* Automatically mute audio when fast forward is enabled. */
-#define DEFAULT_AUDIO_FASTFORWARD_MUTE false
-/* Speed up audio to match fast forward speed up. */
-#define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* What to do with audio while fast-forwarding.
+ * See enum fastforward_audio_mode. */
+#define DEFAULT_AUDIO_FASTFORWARD_MODE FASTFORWARD_AUDIO_DISCARD
+/* Reference low-pass cutoff (Hz) applied to fast-forward audio, divided by
+ * the speed multiplier. */
+#define DEFAULT_AUDIO_FASTFORWARD_LOWPASS AUDIO_FASTFORWARD_LOWPASS_OFF
 /* When a core outputs 16-bit integer audio, the deterministic
  * fixed-point (int16) resampler variant of the selected backend
  * (sinc, nearest, or CC) can be preferred over the float one for any
