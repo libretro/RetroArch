@@ -8101,7 +8101,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          continue;
 
       base                                 = keybind->base;
@@ -8109,7 +8109,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
-      input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+      input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), btn, sizeof(btn));
 
       config_set_string(conf, key, btn);
       save_keybind_joykey (conf, prefix, base, bind, true);
@@ -8148,7 +8148,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          return;
 
       base                                 = keybind->base;
@@ -8156,7 +8156,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
-      input_keymaps_translate_rk_to_str(override_bind->key, btn, sizeof(btn));
+      input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(override_bind), btn, sizeof(btn));
 
       config_set_string(conf, key, btn);
 
@@ -8200,14 +8200,14 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          continue;
 
       base                                 = keybind->base;
       btn[0]                               = '\0';
 
       /* Check if any component differs from default */
-      differs_from_default = (bind->key     != def_bind->key)
+      differs_from_default = (RETRO_KEYBIND_KEY(bind)     != RETRO_KEYBIND_KEY(def_bind))
                           || (bind->joykey  != def_bind->joykey)
                           || (bind->joyaxis != def_bind->joyaxis)
                           || (bind->mbutton != def_bind->mbutton);
@@ -8217,7 +8217,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       if (differs_from_default)
       {
          /* Save the current bind */
-         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+         input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), btn, sizeof(btn));
          config_set_string(conf, key, btn);
          save_keybind_joykey (conf, prefix, base, bind, false);
          save_keybind_axis   (conf, prefix, base, bind, false);
@@ -8407,7 +8407,7 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
       unsigned id                      = input_config_bind_order[i];
       const struct retro_keybind *bind = &input_config_binds[user][id];
 
-      if (bind->valid)
+      if (RETRO_KEYBIND_VALID(bind))
       {
          save_keybind_joykey(conf, "input", input_config_bind_map_get_base(id), bind, false);
          save_keybind_axis(conf, "input", input_config_bind_map_get_base(id), bind, false);
@@ -8420,7 +8420,7 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
       const struct retro_keybind *bind = &input_config_binds[user][id];
       struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
 
-      if (bind->valid)
+      if (RETRO_KEYBIND_VALID(bind))
       {
          if (lbl->joykey && *lbl->joykey)
          {
@@ -9686,7 +9686,7 @@ int8_t config_save_overrides(enum override_type type,
 
             if (     config_bind->joyaxis != override_bind->joyaxis
                   || config_bind->joykey  != override_bind->joykey
-                  || config_bind->key     != override_bind->key
+                  || RETRO_KEYBIND_KEY(config_bind)     != RETRO_KEYBIND_KEY(override_bind)
                   || config_bind->mbutton != override_bind->mbutton
                )
                input_config_save_keybinds_user_override(conf, i, j, override_bind);
@@ -10367,7 +10367,7 @@ void input_config_reset_autoconfig_binds(unsigned port)
    {
       input_autoconf_binds[port][i].joykey  = NO_BTN;
       input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
-      input_autoconf_binds[port][i].valid   = false;
+      RETRO_KEYBIND_SET_VALID(&input_autoconf_binds[port][i], false);
 
       if (input_autoconf_bind_labels[port][i].joykey)
       {
@@ -10558,7 +10558,7 @@ void input_config_parse_joy_axis(char *s,
          else
             bind->joyaxis = AXIS_NEG(i_axis);
 
-         bind->valid = true;
+         RETRO_KEYBIND_SET_VALID(bind, true);
       }
    }
 
@@ -10649,7 +10649,7 @@ void input_config_parse_joy_button(
          }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
-         bind->valid = true;
+         RETRO_KEYBIND_SET_VALID(bind, true);
       }
    }
    fill_pathname_join_delim(key, s,

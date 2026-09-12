@@ -150,11 +150,11 @@ struct input_remote
  **/
 #define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
 ( \
-         (((normal_bind)->key      != RETROK_UNKNOWN) \
+         (((RETRO_KEYBIND_KEY(normal_bind))      != RETROK_UNKNOWN) \
       || ((normal_bind)->mbutton   != NO_BTN) \
       || ((normal_bind)->joykey    != NO_BTN) \
       || ((normal_bind)->joyaxis   != AXIS_NONE) \
-      || ((autoconf_bind)->key     != RETROK_UNKNOWN) \
+      || ((RETRO_KEYBIND_KEY(autoconf_bind))     != RETROK_UNKNOWN) \
       || ((autoconf_bind)->joykey  != NO_BTN) \
       || ((autoconf_bind)->joyaxis != AXIS_NONE)) \
 )
@@ -938,7 +938,7 @@ static int32_t input_state_wrap(
          /* Extended bind IDs (turbo, hold, meta keys) are not
           * covered by joypad->state(), so use the original
           * per-button dispatch path. */
-         if (binds[_port][id].valid)
+         if (RETRO_KEYBIND_VALID(&binds[_port][id]))
          {
             const uint64_t bind_joykey     = binds[_port][id].joykey;
             const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
@@ -1201,7 +1201,7 @@ static int16_t input_joypad_analog_axis(
    bind_minus   = &binds[ident_minus];
    bind_plus    = &binds[ident_plus];
 
-   if (!bind_minus->valid || !bind_plus->valid)
+   if (!RETRO_KEYBIND_VALID(bind_minus) || !RETRO_KEYBIND_VALID(bind_plus))
       return 0;
 
    input_conv_analog_id_to_bind_id(idx,
@@ -1210,7 +1210,7 @@ static int16_t input_joypad_analog_axis(
    bind_x_minus = &binds[ident_x_minus];
    bind_x_plus  = &binds[ident_x_plus];
 
-   if (!bind_x_minus->valid || !bind_x_plus->valid)
+   if (!RETRO_KEYBIND_VALID(bind_x_minus) || !RETRO_KEYBIND_VALID(bind_x_plus))
       return 0;
 
    input_conv_analog_id_to_bind_id(idx,
@@ -1219,16 +1219,16 @@ static int16_t input_joypad_analog_axis(
    bind_y_minus = &binds[ident_y_minus];
    bind_y_plus  = &binds[ident_y_plus];
 
-   if (!bind_y_minus->valid || !bind_y_plus->valid)
+   if (!RETRO_KEYBIND_VALID(bind_y_minus) || !RETRO_KEYBIND_VALID(bind_y_plus))
       return 0;
 
    /* Keyboard bind priority */
-   if (     bind_plus->key  != RETROK_UNKNOWN
-         || bind_minus->key != RETROK_UNKNOWN)
+   if (     RETRO_KEYBIND_KEY(bind_plus)  != RETROK_UNKNOWN
+         || RETRO_KEYBIND_KEY(bind_minus) != RETROK_UNKNOWN)
    {
       input_driver_state_t *input_st = &input_driver_st;
 
-      if (bind_plus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_plus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1237,9 +1237,9 @@ static int16_t input_joypad_analog_axis(
             (*input_st->libretro_input_binds),
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_plus->key))
+            RETRO_KEYBIND_KEY(bind_plus)))
          res  = 0x7fff;
-      if (bind_minus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_minus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1248,7 +1248,7 @@ static int16_t input_joypad_analog_axis(
             (*input_st->libretro_input_binds),
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_minus->key))
+            RETRO_KEYBIND_KEY(bind_minus)))
          res += -0x7fff;
 
       if (res)
@@ -1425,18 +1425,18 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
    bind_y_minus = &binds[ident_y_minus];
    bind_y_plus  = &binds[ident_y_plus];
 
-   if (   !bind_x_minus->valid || !bind_x_plus->valid
-       || !bind_y_minus->valid || !bind_y_plus->valid)
+   if (   !RETRO_KEYBIND_VALID(bind_x_minus) || !RETRO_KEYBIND_VALID(bind_x_plus)
+       || !RETRO_KEYBIND_VALID(bind_y_minus) || !RETRO_KEYBIND_VALID(bind_y_plus))
       return false;
 
    /* Keyboard bind priority — check X */
-   if (     bind_x_plus->key  != RETROK_UNKNOWN
-         || bind_x_minus->key != RETROK_UNKNOWN)
+   if (     RETRO_KEYBIND_KEY(bind_x_plus)  != RETROK_UNKNOWN
+         || RETRO_KEYBIND_KEY(bind_x_minus) != RETROK_UNKNOWN)
    {
       input_driver_state_t *input_st = &input_driver_st;
       bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
-      if (bind_x_plus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_x_plus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1444,9 +1444,9 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_x_plus->key))
+            RETRO_KEYBIND_KEY(bind_x_plus)))
          *out_x  = 0x7fff;
-      if (bind_x_minus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_x_minus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1454,18 +1454,18 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_x_minus->key))
+            RETRO_KEYBIND_KEY(bind_x_minus)))
          *out_x += -0x7fff;
    }
 
    /* Keyboard bind priority — check Y */
-   if (     bind_y_plus->key  != RETROK_UNKNOWN
-         || bind_y_minus->key != RETROK_UNKNOWN)
+   if (     RETRO_KEYBIND_KEY(bind_y_plus)  != RETROK_UNKNOWN
+         || RETRO_KEYBIND_KEY(bind_y_minus) != RETROK_UNKNOWN)
    {
       input_driver_state_t *input_st = &input_driver_st;
       bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
-      if (bind_y_plus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_y_plus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1473,9 +1473,9 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_y_plus->key))
+            RETRO_KEYBIND_KEY(bind_y_plus)))
          *out_y  = 0x7fff;
-      if (bind_y_minus->key && input_state_wrap(
+      if (RETRO_KEYBIND_KEY(bind_y_minus) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
@@ -1483,7 +1483,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
-            bind_y_minus->key))
+            RETRO_KEYBIND_KEY(bind_y_minus)))
          *out_y += -0x7fff;
    }
 
@@ -1943,7 +1943,7 @@ static int16_t input_state_device(
 #endif
             {
                bool bind_valid       = input_st->libretro_input_binds[port]
-                  && (*input_st->libretro_input_binds[port])[id].valid;
+                  && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
                unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
                /* TODO/FIXME: What on earth is this code doing...? */
@@ -2206,7 +2206,7 @@ static int16_t input_state_device(
                if (id < RARCH_FIRST_META_KEY)
                {
                   bool bind_valid         = input_st->libretro_input_binds[port]
-                     && (*input_st->libretro_input_binds[port])[id].valid;
+                     && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
 
                   if (bind_valid)
                   {
@@ -2327,7 +2327,7 @@ static int16_t input_state_device(
          if (id < RARCH_FIRST_META_KEY)
          {
             bool bind_valid = input_st->libretro_input_binds[port]
-               && (*input_st->libretro_input_binds[port])[id].valid;
+               && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
 
             if (bind_valid)
             {
@@ -2468,7 +2468,7 @@ static int16_t input_state_internal(
                    * due to the way that mapping is handled elsewhere. We
                    * cannot fix this without rewriting the entire mess that
                    * is the input remapping system... */
-                  bool valid_bind = (*input_st->libretro_input_binds[mapped_port])[id].valid &&
+                  bool valid_bind = RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[mapped_port])[id]) &&
                         (id == settings->uints.input_remap_ids[mapped_port][id]);
 
                   if (valid_bind)
@@ -4646,7 +4646,7 @@ size_t input_config_get_bind_string(
       char key[64];
       key[0] = '\0';
 
-      input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
+      input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), key, sizeof(key));
       if (     key[0] == 'n'
             && key[1] == 'u'
             && key[2] == 'l'
@@ -6164,7 +6164,7 @@ void config_read_keybinds_conf(void *data)
          const char *btn                 = NULL;
          struct config_entry_list *entry = NULL;
 
-         if (!bind || !bind->valid || !keybind || !keybind->valid)
+         if (!bind || !RETRO_KEYBIND_VALID(bind) || !keybind || !keybind->valid)
             continue;
 
          meta                       = keybind->meta;
@@ -6179,18 +6179,19 @@ void config_read_keybinds_conf(void *data)
          fill_pathname_join_delim(str, prefix, btn,  '_', sizeof(str));
 
          /* Clear old mapping bit unless just recently set */
-         if (!key_store[bind->key])
-            input_keyboard_mapping_bits(0, bind->key);
+         if (!key_store[RETRO_KEYBIND_KEY(bind)])
+            input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(bind));
 
          entry                      = config_get_entry(conf, str);
          if (entry && entry->value && *entry->value)
-            bind->key               = input_config_translate_str_to_rk(
-                  entry->value, strlen(entry->value));
+            RETRO_KEYBIND_SET_KEY(bind,
+                  input_config_translate_str_to_rk(
+                     entry->value, strlen(entry->value)));
 
          /* Store new mapping bit and remember it for a while
           * so that next clear leaves the new key alone */
-         input_keyboard_mapping_bits(1, bind->key);
-         key_store[bind->key]       = true;
+         input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(bind));
+         key_store[RETRO_KEYBIND_KEY(bind)]       = true;
 
          input_config_parse_joy_button  (str, conf, prefix, btn, bind,
                &input_config_bind_labels[i][j]);
@@ -6880,7 +6881,7 @@ static void input_keys_pressed(
          || binds_auto->joykey  != NO_BTN
          || binds_auto->joyaxis != AXIS_NONE;
    bool keyboard_hotkey_set       =
-         binds_norm->key != RETROK_UNKNOWN;
+         RETRO_KEYBIND_KEY(binds_norm) != RETROK_UNKNOWN;
 
    if (!binds)
       return;
@@ -6894,7 +6895,7 @@ static void input_keys_pressed(
       bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
    if (     (port == hotkey_port)
-         && (binds_norm->valid || binds_auto->valid)
+         && (RETRO_KEYBIND_VALID(binds_norm) || RETRO_KEYBIND_VALID(binds_auto))
          && CHECK_INPUT_DRIVER_BLOCK_HOTKEY(binds_norm, binds_auto))
    {
       if (input_state_wrap(
@@ -6984,7 +6985,7 @@ static void input_keys_pressed(
        * is not part of the usual buttons. */
       i = RARCH_MENU_TOGGLE;
 
-      if (!(binds[port][i].valid
+      if (!(RETRO_KEYBIND_VALID(&binds[port][i])
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
@@ -6994,9 +6995,9 @@ static void input_keys_pressed(
                   binds,
                   !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                   port, RETRO_DEVICE_KEYBOARD, 0,
-                  input_config_binds[port][i].key)))
+                  RETRO_KEYBIND_KEY(&input_config_binds[port][i]))))
       {
-         bool bit_pressed = binds[port][i].valid
+         bool bit_pressed = RETRO_KEYBIND_VALID(&binds[port][i])
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
@@ -7026,11 +7027,11 @@ static void input_keys_pressed(
    if (     !any_pressed
          && !(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
          && !(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED)
-         && binds[port][RARCH_MENU_TOGGLE].key == binds[port][RARCH_ENABLE_HOTKEY].key)
+         && RETRO_KEYBIND_KEY(&binds[port][RARCH_MENU_TOGGLE]) == RETRO_KEYBIND_KEY(&binds[port][RARCH_ENABLE_HOTKEY]))
    {
       i = RARCH_MENU_TOGGLE;
 
-      if (     binds[port][i].valid
+      if (     RETRO_KEYBIND_VALID(&binds[port][i])
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
@@ -7040,7 +7041,7 @@ static void input_keys_pressed(
                   binds,
                   !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                   port, RETRO_DEVICE_KEYBOARD, 0,
-                  input_config_binds[port][i].key))
+                  RETRO_KEYBIND_KEY(&input_config_binds[port][i])))
          input_st->flags |= INP_FLAG_MENU_PRESS_PENDING;
       else if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
          /* Also set 'enable_hotkey' to prevent hotkey delay untrigger */
@@ -7094,7 +7095,7 @@ static void input_keys_pressed(
                      binds,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_KEYBOARD, 0,
-                     input_config_binds[port][i].key))
+                     RETRO_KEYBIND_KEY(&input_config_binds[port][i])))
                {
                   keyboard_hotkey_pressed = true;
 
@@ -7126,7 +7127,7 @@ static void input_keys_pressed(
          /* No 'enable_hotkey' in keyboard */
          if (!keyboard_hotkey_set)
          {
-            if (binds[port][i].key != RETROK_UNKNOWN)
+            if (RETRO_KEYBIND_KEY(&binds[port][i]) != RETROK_UNKNOWN)
             {
                /* Deny blocking if keyboard hotkey is pressed */
                if (input_state_wrap(
@@ -7138,7 +7139,7 @@ static void input_keys_pressed(
                      binds,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      port, RETRO_DEVICE_KEYBOARD, 0,
-                     input_config_binds[port][i].key))
+                     RETRO_KEYBIND_KEY(&input_config_binds[port][i])))
                {
                   keyboard_hotkey_pressed = true;
 
@@ -7177,7 +7178,7 @@ static void input_keys_pressed(
          block_hotkey[i] = false;
    }
 
-   if (!is_menu && binds[port][RARCH_GAME_FOCUS_TOGGLE].valid)
+   if (!is_menu && RETRO_KEYBIND_VALID(&binds[port][RARCH_GAME_FOCUS_TOGGLE]))
    {
       /* Never block Game Focus toggle hotkey */
       block_hotkey[RARCH_GAME_FOCUS_TOGGLE] = false;
@@ -7186,7 +7187,7 @@ static void input_keys_pressed(
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
       bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-      bool bit_pressed   = binds[port][i].valid
+      bool bit_pressed   = RETRO_KEYBIND_VALID(&binds[port][i])
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
@@ -7467,7 +7468,7 @@ void input_driver_poll(void)
 
          /* --- Turbo button state --- */
          input_st->turbo_btns.frame_enable[i] =
-                  (*input_st->libretro_input_binds[i])[turbo_btn_id].valid
+                  RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[turbo_btn_id])
                && turbo_enable ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
@@ -7488,7 +7489,7 @@ void input_driver_poll(void)
 
          /* --- Hold button modifier state --- */
          input_st->hold_btns.frame_enable[i] =
-                  (*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE].valid ?
+                  RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE]) ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
                   joypad, sec_joypad, &joypad_info[i],
@@ -7577,7 +7578,7 @@ void input_driver_poll(void)
                      if (ret & (1 << k))
                      {
                         bool valid_bind  =
-                           (*input_st->libretro_input_binds[i])[k].valid;
+                           RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[k]);
 
                         if (valid_bind)
                         {
@@ -8382,11 +8383,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {0,                RARCH_BIND_LIST_END_NULL      },
          };
 
-         ids[14][0] = input_config_binds[0][RARCH_QUIT_KEY].key;
-         ids[15][0] = input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY].key;
-         ids[16][0] = input_config_binds[0][RARCH_UI_COMPANION_TOGGLE].key;
-         ids[17][0] = input_config_binds[0][RARCH_FPS_TOGGLE].key;
-         ids[18][0] = input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE].key;
+         ids[14][0] = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_QUIT_KEY]);
+         ids[15][0] = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_FULLSCREEN_TOGGLE_KEY]);
+         ids[16][0] = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_UI_COMPANION_TOGGLE]);
+         ids[17][0] = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_FPS_TOGGLE]);
+         ids[18][0] = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_NETPLAY_HOST_TOGGLE]);
          ids[19][0] = RETROK_ESCAPE;
 
          /* Escape cancels dialogs */
@@ -8777,7 +8778,7 @@ void input_keyboard_event(bool down, unsigned code,
          for (j = 0; j < max_users; j++)
          {
             unsigned k;
-            unsigned hotkey_code = input_config_binds[0][RARCH_ENABLE_HOTKEY].key;
+            unsigned hotkey_code = RETRO_KEYBIND_KEY(&input_config_binds[0][RARCH_ENABLE_HOTKEY]);
 
             /* Block hotkey key events based on 'enable_hotkey' modifier,
              * and only when modifier is a keyboard key. */
@@ -8789,7 +8790,7 @@ void input_keyboard_event(bool down, unsigned code,
             {
                for (k = RARCH_FIRST_META_KEY; k < RARCH_BIND_LIST_END; k++)
                {
-                  if (input_config_binds[j][k].key == code)
+                  if (RETRO_KEYBIND_KEY(&input_config_binds[j][k]) == code)
                   {
                      block_key_event = true;
                      break;
@@ -8804,7 +8805,7 @@ void input_keyboard_event(bool down, unsigned code,
             {
                for (k = 0; k < RARCH_FIRST_META_KEY; k++)
                {
-                  if (input_config_binds[j][k].key == code)
+                  if (RETRO_KEYBIND_KEY(&input_config_binds[j][k]) == code)
                   {
                      block_key_event = true;
                      break;

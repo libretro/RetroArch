@@ -6548,7 +6548,7 @@ static int menu_displaylist_parse_input_retropad_bind_list(
             &input_config_binds[0][retro_id];
 
       snprintf(id, sizeof(id), "%d", retro_id);
-      strlcpy(name, msg_hash_to_str(keyptr->enum_idx), sizeof(name));
+      strlcpy(name, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), sizeof(name));
 
       if (!turbo_bind && i >= RARCH_FIRST_CUSTOM_BIND)
          continue;
@@ -14074,7 +14074,7 @@ static bool menu_displaylist_ctl_internal(
                            const struct retro_keybind *keyptr =
                                  &input_config_binds[port][retro_id];
                            _len         = strlcpy(desc_lbl,
-                                 msg_hash_to_str(keyptr->enum_idx),
+                                 msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)),
                                  sizeof(desc_lbl));
                            _len        += strlcpy_lit(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
                            strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);

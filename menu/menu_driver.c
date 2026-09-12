@@ -1657,7 +1657,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
       if (!found)
          continue;
 
-      output->key = (enum retro_key)b;
+      RETRO_KEYBIND_SET_KEY(output, (enum retro_key)b);
       return true;
    }
 
@@ -1773,7 +1773,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       if (!found)
          continue;
 
-      output->key = (enum retro_key)b;
+      RETRO_KEYBIND_SET_KEY(output, (enum retro_key)b);
       return true;
    }
 
@@ -5016,7 +5016,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       struct menu_bind_state new_binds      = *_binds;
       unsigned bind_index                   = _binds->begin - MENU_SETTINGS_BIND_BEGIN;
       const struct retro_keybind *old_binds = &input_config_binds[new_binds.port][bind_index];
-      unsigned old_key                      = old_binds->key;
+      unsigned old_key                      = RETRO_KEYBIND_KEY(old_binds);
 
       input_st->flags                      &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
@@ -5127,10 +5127,10 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          *(new_binds.output)                 = new_binds.buffer;
 
          /* Update keyboard mapping bits */
-         if (new_binds.buffer.key)
+         if (RETRO_KEYBIND_KEY(&new_binds.buffer))
          {
             input_keyboard_mapping_bits(0, old_key);
-            input_keyboard_mapping_bits(1, new_binds.buffer.key);
+            input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(&new_binds.buffer));
          }
 
          /* Avoid new binds triggering things right away. */
@@ -5789,7 +5789,7 @@ unsigned menu_event(
          for (i = RETRO_DEVICE_ID_JOYPAD_L2; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
          {
             if (     (menu_toggle_bind.joykey != NO_BTN && menu_toggle_bind.joykey == input_config_binds[0][i].joykey)
-                  || (menu_toggle_bind.key != RETROK_UNKNOWN && menu_toggle_bind.key == input_config_binds[0][i].key))
+                  || (RETRO_KEYBIND_KEY(&menu_toggle_bind) != RETROK_UNKNOWN && RETRO_KEYBIND_KEY(&menu_toggle_bind) == RETRO_KEYBIND_KEY(&input_config_binds[0][i])))
                onkeyup |= (1 << i);
          }
       }

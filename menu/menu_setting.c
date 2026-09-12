@@ -832,18 +832,19 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    keybind->joyaxis = AXIS_NONE;
 
    /* Clear old mapping bit */
-   input_keyboard_mapping_bits(0, keybind->key);
+   input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
 
    if (setting->index_offset)
       def_binds     = (struct retro_keybind*)retro_keybinds_rest;
 
    bind_type        = setting->bind_type;
 
-   keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   RETRO_KEYBIND_SET_KEY(keybind,
+         RETRO_KEYBIND_KEY(&def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN]));
    keybind->mbutton = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].mbutton;
 
    /* Store new mapping bit */
-   input_keyboard_mapping_bits(1, keybind->key);
+   input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(keybind));
 
    return 0;
 }
@@ -2807,7 +2808,8 @@ static int setting_action_ok_bind_defaults(
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      RETRO_KEYBIND_SET_KEY(target,
+            RETRO_KEYBIND_KEY(&def_binds[i - MENU_SETTINGS_BIND_BEGIN]));
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
       target->mbutton = NO_BTN;
@@ -7537,7 +7539,7 @@ static size_t setting_get_string_representation_retropad_bind(
          const struct retro_keybind *keyptr =
                &input_config_binds[0][retro_id];
 
-         return strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
+         return strlcpy(s, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), len);
       }
    }
    return 0;
