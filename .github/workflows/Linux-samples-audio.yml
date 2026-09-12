@@ -94,6 +94,37 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 600 ./thread_handshake_test
           echo "[pass] thread_handshake_test (TSan)"
 
+      - name: Build and run alsa_clock_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/alsa_clock
+        run: |
+          set -eu
+          # The ALSA device-clock estimate, driving the shipping
+          # audio/drivers/alsa.c on a real PCM opened on the null
+          # device. The four libasound calls the estimate is built from
+          # are scripted via --wrap, so a device can be made to run at a
+          # chosen offset and the driver's own answer read back out of
+          # what it logs - what is asserted is the line a user sees.
+          #
+          # Two clocks are covered. The audio timestamp, where a driver
+          # counts one, is the DMA or link clock compared straight
+          # against the system clock and needs neither a rate nor a
+          # delay. Where there is none - the null PCM reports none, and
+          # nor do plenty of real devices - the position is fitted
+          # against the timestamp it was taken with. That position is
+          # inferred from the write count less the delay, so one case
+          # puts an absurd but constant delay in: it shifts the line
+          # and leaves its slope alone, which is why this is a fit and
+          # not a difference of two samples.
+          make clean all SANITIZER=address,undefined
+          test -x alsa_clock_test
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./alsa_clock_test
+          echo "[pass] alsa_clock_test (ASan)"
+          make clean all SANITIZER=thread
+          timeout 60 ./alsa_clock_test
+          echo "[pass] alsa_clock_test (TSan)"
+
       - name: Build and run alsa_wait_writable_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/audio/alsa_wait_writable

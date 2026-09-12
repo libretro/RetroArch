@@ -407,6 +407,44 @@ typedef struct alsa
     * its buffer discarded, to be prepared again on start. */
    bool is_paused;
    bool held;
+
+   /* The device clock, fitted from what snd_pcm_status() reports.
+    *
+    * frames_consumed() below is this driver's own write count less
+    * what the device still holds - close, and what the sink estimator
+    * has always used, but an inference either way. snd_pcm_status()
+    * hands over the delay and a timestamp for it in one snapshot, and
+    * the slope of position against that timestamp is the rate the
+    * hardware is really running at.
+    *
+    * Where the driver fills in an audio timestamp as well - the DMA or
+    * link clock, which is the hardware counting itself rather than
+    * anything inferred - the ratio of that against the system
+    * timestamp is the same number more directly, and it is taken in
+    * preference. Plenty of devices leave it at zero; the null PCM
+    * does, which is what the harness sees.
+    *
+    * A fit over every sample, not two points: noise on a single anchor
+    * divides by the window and reads as drift, fifty parts per million
+    * for half a millisecond at a ten-second window. Sums in seconds
+    * and frames relative to the anchor, because a fit on raw
+    * nanoseconds loses its answer to cancellation.
+    *
+    * Sampled from the writer thread, which is the only thread that
+    * touches any of it. Nothing here feeds rate control. */
+   uint64_t clk_anchor_pos;
+   uint64_t clk_anchor_ns;
+   int      clk_have_anchor;
+   double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int      clk_ppm;
+   int      clk_valid;
+   /* The same from the audio timestamp, where the driver provides one. */
+   uint64_t clk_a_anchor_audio_ns;
+   uint64_t clk_a_anchor_sys_ns;
+   int      clk_a_have_anchor;
+   double   clk_a_sx, clk_a_sy, clk_a_sxx, clk_a_sxy, clk_a_n;
+   int      clk_a_ppm;
+   int      clk_a_valid;
 } alsa_t;
 
 /* The layout the device actually has, from its channel map; the
@@ -431,6 +469,7 @@ static bool alsa_use_float(void *data)
 }
 
 static void alsa_free(void *data);
+static void alsa_clock_sample(alsa_t *alsa);
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
@@ -525,6 +564,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
 
          _len  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          alsa->frames_written += (uint64_t)frames;
+         alsa_clock_sample(alsa);
          buf   += (frames << 1) * frames_size;
          size  -= frames;
       }
@@ -573,6 +613,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          waits = 0;
          _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          alsa->frames_written += (uint64_t)frames;
+         alsa_clock_sample(alsa);
          buf  += (frames << 1) * frames_size;
          size -= frames;
       }
@@ -625,6 +666,23 @@ static void alsa_free(void *data)
 
    if (alsa)
    {
+      /* What the device clock was doing, against the rate this driver
+       * asked for. Logged, not acted on: until these have been read
+       * off a range of hardware they are measurements, and a clock
+       * estimate that is wrong is worse than one that is absent.
+       * Where both appear they should agree, and a disagreement is
+       * the result worth having. */
+      if (alsa->clk_a_valid)
+         RARCH_LOG("[ALSA] Device clock, from the driver's audio"
+               " timestamp: %+d ppm.\n", alsa->clk_a_ppm);
+      if (alsa->clk_valid)
+         RARCH_LOG("[ALSA] Device clock, fitted from the position and"
+               " its timestamp: %+d ppm against %u Hz.\n",
+               alsa->clk_ppm, alsa->stream_info.rate);
+      else if (!alsa->clk_a_valid)
+         RARCH_LOG("[ALSA] Device clock: not enough usable timestamps"
+               " to fit one.\n");
+
       alsa_free_pcm(alsa->pcm);
 
       snd_config_update_free_global();
@@ -746,6 +804,137 @@ void alsa_device_list_free(void *data, void *array_list_data)
  * queued in front of it. snd_pcm_delay() is that queue when the stream
  * runs; while it does not - paused, or recovering from an underrun -
  * the count holds. */
+/* One step of a least-squares fit of y against x, returning the slope
+ * once there is a second of span to take it across. The two clock
+ * estimates below are the same fit on different pairs. */
+static bool alsa_clk_fit(double *sx, double *sy, double *sxx, double *sxy,
+      double *n, double x, double y, double *slope)
+{
+   double d;
+   *sx  += x;
+   *sy  += y;
+   *sxx += x * x;
+   *sxy += x * y;
+   *n   += 1.0;
+   d     = *n * *sxx - *sx * *sx;
+   if (x < 1.0 || d <= 0.0)
+      return false;
+   *slope = (*n * *sxy - *sx * *sy) / d;
+   return true;
+}
+
+static INLINE uint64_t alsa_ts_ns(snd_htimestamp_t t)
+{
+   return (uint64_t)t.tv_sec * 1000000000ULL + (uint64_t)t.tv_nsec;
+}
+
+/* Samples the device clock. Called from the writer, which is the only
+ * thread that touches this state. Measured and logged, never acted
+ * on - see the note on the fields. */
+static void alsa_clock_sample(alsa_t *alsa)
+{
+   snd_pcm_status_t *status = NULL;
+   snd_htimestamp_t  sys, aud;
+   snd_pcm_sframes_t delay;
+   uint64_t          sys_ns, aud_ns, pos;
+   unsigned          rate = alsa->stream_info.rate;
+
+   if (!alsa->pcm || !rate)
+      return;
+
+   snd_pcm_status_alloca(&status);
+   if (snd_pcm_status(alsa->pcm, status) < 0)
+      return;
+
+   snd_pcm_status_get_htstamp(status, &sys);
+   snd_pcm_status_get_audio_htstamp(status, &aud);
+   delay  = snd_pcm_status_get_delay(status);
+   sys_ns = alsa_ts_ns(sys);
+   aud_ns = alsa_ts_ns(aud);
+
+   if (!sys_ns)
+      return;
+
+   /* The hardware's own clock against the system's, where the driver
+    * counts one. This needs no rate and no delay - it is two clocks
+    * compared directly. */
+   if (aud_ns)
+   {
+      if (!alsa->clk_a_have_anchor)
+      {
+         alsa->clk_a_anchor_audio_ns = aud_ns;
+         alsa->clk_a_anchor_sys_ns   = sys_ns;
+         alsa->clk_a_have_anchor     = 1;
+         alsa->clk_a_sx = alsa->clk_a_sy = alsa->clk_a_sxx = 0.0;
+         alsa->clk_a_sxy = alsa->clk_a_n = 0.0;
+      }
+      else if (     sys_ns > alsa->clk_a_anchor_sys_ns
+                 && aud_ns >= alsa->clk_a_anchor_audio_ns)
+      {
+         double slope = 0.0;
+         double x = (double)(sys_ns - alsa->clk_a_anchor_sys_ns) / 1000000000.0;
+         double y = (double)(aud_ns - alsa->clk_a_anchor_audio_ns) / 1000000000.0;
+         if (alsa_clk_fit(&alsa->clk_a_sx, &alsa->clk_a_sy, &alsa->clk_a_sxx,
+                  &alsa->clk_a_sxy, &alsa->clk_a_n, x, y, &slope))
+         {
+            double ppm = (slope - 1.0) * 1000000.0;
+            if (ppm > -100000.0 && ppm < 100000.0)
+            {
+               alsa->clk_a_ppm   = (int)ppm;
+               alsa->clk_a_valid = 1;
+            }
+         }
+      }
+      else
+      {
+         alsa->clk_a_anchor_audio_ns = aud_ns;
+         alsa->clk_a_anchor_sys_ns   = sys_ns;
+         alsa->clk_a_sx = alsa->clk_a_sy = alsa->clk_a_sxx = 0.0;
+         alsa->clk_a_sxy = alsa->clk_a_n = 0.0;
+      }
+   }
+
+   /* And the position against the timestamp it was taken with, which
+    * every device can answer. An error in the delay shifts the whole
+    * line and leaves its slope alone, which is why this is worth
+    * fitting even though the position itself is inferred. */
+   if (delay < 0 || (uint64_t)delay > alsa->frames_written)
+      return;
+   pos = alsa->frames_written - (uint64_t)delay;
+
+   if (!alsa->clk_have_anchor)
+   {
+      alsa->clk_anchor_pos  = pos;
+      alsa->clk_anchor_ns   = sys_ns;
+      alsa->clk_have_anchor = 1;
+      alsa->clk_sx = alsa->clk_sy = alsa->clk_sxx = 0.0;
+      alsa->clk_sxy = alsa->clk_n = 0.0;
+   }
+   else if (sys_ns > alsa->clk_anchor_ns && pos >= alsa->clk_anchor_pos)
+   {
+      double slope = 0.0;
+      double x = (double)(sys_ns - alsa->clk_anchor_ns) / 1000000000.0;
+      double y = (double)(pos - alsa->clk_anchor_pos);
+      if (alsa_clk_fit(&alsa->clk_sx, &alsa->clk_sy, &alsa->clk_sxx,
+               &alsa->clk_sxy, &alsa->clk_n, x, y, &slope))
+      {
+         double ppm = (slope / (double)rate - 1.0) * 1000000.0;
+         if (ppm > -100000.0 && ppm < 100000.0)
+         {
+            alsa->clk_ppm   = (int)ppm;
+            alsa->clk_valid = 1;
+         }
+      }
+   }
+   else
+   {
+      alsa->clk_anchor_pos = pos;
+      alsa->clk_anchor_ns  = sys_ns;
+      alsa->clk_sx = alsa->clk_sy = alsa->clk_sxx = 0.0;
+      alsa->clk_sxy = alsa->clk_n = 0.0;
+   }
+}
+
 static size_t alsa_frames_consumed(void *data)
 {
    alsa_t *alsa            = (alsa_t*)data;
