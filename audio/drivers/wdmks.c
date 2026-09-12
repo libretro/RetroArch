@@ -1455,6 +1455,18 @@ typedef struct
    size_t          rt_write;
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
    HANDLE          rt_event;    /* signalled per notification, if offered */
+   /* The register wraps, so what it is worth as a count is the sum of
+    * its steps - and that is only right while it is read more often
+    * than it wraps. Every read of the play offset adds its step here,
+    * and the play offset is read on every write, every write_avail
+    * and every lap of the wait, which is far more often than once a
+    * frame. It is still a poll, and a process the scheduler has
+    * stopped favouring can outrun it; that is the same shortcoming as
+    * the write path's, and the same answer - a thread of this
+    * driver's own - which is not here yet. */
+   uint64_t        rt_played;
+   ULONG           rt_last_pos;
+   bool            rt_have_last;
    bool            rt_barrier;  /* writes need a barrier to be seen */
    bool            running;
    bool            dead;      /* an I/O failed; stop writing, still reclaim */
@@ -1533,7 +1545,9 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
       return false;
 
    memset(w->rt_buf, 0, w->rt_size);
-   w->rt_write   = 0;
+   w->rt_write    = 0;
+   w->rt_played   = 0;
+   w->rt_have_last = false;
    return true;
 }
 
@@ -1627,6 +1641,23 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
       ULONG v = *w->rt_pos;
       if (v >= (ULONG)w->rt_size)
          v %= (ULONG)w->rt_size;
+
+      /* Every read advances the count, which is what makes the count
+       * usable: a wrap between two reads is one wrap, and reads are
+       * frequent because everything that asks about room comes
+       * through here. */
+      if (!w->rt_have_last)
+      {
+         w->rt_last_pos  = v;
+         w->rt_have_last = true;
+      }
+      else if (v >= w->rt_last_pos)
+         w->rt_played += (uint64_t)(v - w->rt_last_pos) / w->frame_bytes;
+      else
+         w->rt_played += (uint64_t)(v + w->rt_size - w->rt_last_pos)
+            / w->frame_bytes;
+      w->rt_last_pos = v;
+
       *offset = v;
       return true;
    }
@@ -1886,7 +1917,15 @@ static void wdmks_clock_sample(wdmks_t *w)
    if (!w->clk_freq || !w->rate)
       return;
    if (!wdmks_position(w, &frames))
-      return;
+   {
+      if (!w->stream.looped || !w->rt_pos)
+         return;
+      {
+         ULONG now = 0;
+         wdmks_rt_play_offset(w, &now);
+         frames = w->rt_played;
+      }
+   }
    if (!QueryPerformanceCounter(&now))
       return;
 
@@ -1955,9 +1994,21 @@ static size_t wdmks_frames_consumed(void *data)
     * job it is good at, which is saying where in the loop it is safe
     * to write, and that is read far more often than it wraps. */
    wdmks_clock_sample(w);
-   if (!wdmks_position(w, &frames))
-      return 0;
-   return (size_t)frames;
+   if (wdmks_position(w, &frames))
+      return (size_t)frames;
+
+   /* A WaveRT driver exposes its position through the register it
+    * mapped and is not obliged to answer the older position property
+    * at all - which is what leaves this at zero on an HDMI output,
+    * and with it the sink estimate and the device clock. The register
+    * is what that device does answer. */
+   if (w->stream.looped && w->rt_pos)
+   {
+      ULONG now = 0;
+      wdmks_rt_play_offset(w, &now);
+      return (size_t)w->rt_played;
+   }
+   return 0;
 }
 
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
@@ -2341,6 +2392,13 @@ static void *wdmks_init(const char *device, unsigned rate,
       wdmks_rt_get_position_register(w);
       wdmks_rt_register_event(w);
 
+      {
+         uint64_t probe = 0;
+         RARCH_LOG("[WDM-KS] WaveRT position: register %s, position"
+               " property %s.\n",
+               w->rt_pos ? "yes" : "no",
+               wdmks_position(w, &probe) ? "yes" : "no");
+      }
       RARCH_LOG("[WDM-KS] WaveRT buffer of %u bytes, %u ms%s.\n",
             (unsigned)w->rt_size,
             (unsigned)(w->rt_size * 1000 / (w->frame_bytes * w->rate)),
