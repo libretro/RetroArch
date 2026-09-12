@@ -533,6 +533,32 @@ jobs:
              ./asio_convert_test
           echo "[pass] asio_convert_test (ASan)"
 
+      - name: Build and run coreaudio_clock_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/coreaudio_clock
+        run: |
+          set -eu
+          # The device clock fitted from the timestamp the render
+          # callback is handed, which the driver used to discard.
+          #
+          # The fit is the same shape as the ASIO one and is checked
+          # there. What is different is the time axis: mHostTime is in
+          # mach absolute units, not nanoseconds, and the ratio is one
+          # to one on Intel and 125 to 3 on Apple silicon. Ignoring it
+          # reads a 48 kHz device as 1152 Hz - invisible on Intel and
+          # wrong on every Mac since 2020 - so the same clock is driven
+          # through both timebases here.
+          #
+          # Also mRateScalar, which is the HAL's own figure for the
+          # same thing, read only where it is flagged valid.
+          #
+          # Arithmetic only, so it runs here without a Mac.
+          make clean all SANITIZER=address,undefined
+          test -x coreaudio_clock_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./coreaudio_clock_test
+          echo "[pass] coreaudio_clock_test (ASan)"
+
       - name: Build and run coreaudio_ring_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/coreaudio_ring

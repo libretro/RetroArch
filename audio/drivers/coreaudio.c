@@ -57,6 +57,7 @@
 #include "../../verbosity.h"
 
 #include <mach/mach.h>
+#include <mach/mach_time.h>
 #include <mach/semaphore.h>
 #include <mach/task.h>
 #include <dlfcn.h>
@@ -376,6 +377,41 @@ typedef struct coreaudio
    double            clock_base;      /* mSampleTime at the first read */
    bool              clock_based;
 #endif
+   /* The device clock, fitted from the timestamp the render callback
+    * is handed. Every platform, not only the desktop: the timestamp
+    * arrives on iOS and tvOS the same way, and mach_timebase_info is
+    * there too - this is the one piece of clock work that does not
+    * belong behind the HAL guard above.
+    *
+    * The callback already carries both halves of the answer and was
+    * throwing them away. mSampleTime is where the device is; mHostTime
+    * is when, in mach units; the slope of one against the other is the
+    * rate the hardware is really running at. It costs a handful of
+    * flops per period and no call of any kind.
+    *
+    * A fit over every callback, not two points: whatever noise sits on
+    * the anchor is divided by the window and reads as drift, so half a
+    * millisecond on it is fifty parts per million at ten seconds -
+    * which is larger than what is being looked for. The sums are in
+    * seconds and frames relative to the anchor, because a fit on raw
+    * mach ticks loses its answer to cancellation.
+    *
+    * Touched only by the callback thread; the result is published as
+    * one int, in ppm, which is a single aligned word and what the
+    * overlay already speaks. Nothing here feeds rate control. */
+   double            ct_ns_per_tick;
+   double            ct_anchor_sample;
+   uint64_t          ct_anchor_host;
+   int               ct_have_anchor;
+   double            ct_sx, ct_sy, ct_sxx, ct_sxy, ct_n;
+   retro_atomic_int_t ct_ppm;
+   retro_atomic_int_t ct_valid;
+   /* What the HAL says itself, where it fills it in: mRateScalar is
+    * the device clock against nominal, already computed by someone
+    * with better information than this fit has. Kept beside it rather
+    * than instead of it, so the two can be compared on hardware. */
+   retro_atomic_int_t ct_scalar_ppm;
+   retro_atomic_int_t ct_scalar_valid;
    unsigned output_rate;  /* Hardware output rate */
    /* The layout the output unit's input bus was set to, as the
     * frontend's mask, and its channel count: the unit routes each
@@ -550,6 +586,25 @@ static void coreaudio_free(void *data)
 #endif
             );
 
+   /* The device clock, as the render callback's own timestamps had it,
+    * against the rate this driver asked for - and beside it what the
+    * HAL said itself, where it filled mRateScalar in. Logged, not
+    * acted on: until these have been read off real hardware they are
+    * measurements, and a clock estimate that is wrong is worse than
+    * one that is absent. Where both appear they should agree, and a
+    * disagreement is the interesting result. */
+   if (retro_atomic_load_acquire_int(&dev->ct_valid))
+      RARCH_LOG("[CoreAudio] Device clock, fitted from the callback's"
+            " timestamps: %+d ppm against %u Hz.\n",
+            retro_atomic_load_acquire_int(&dev->ct_ppm), dev->output_rate);
+   else
+      RARCH_LOG("[CoreAudio] Device clock: not enough usable timestamps"
+            " to fit one.\n");
+   if (retro_atomic_load_acquire_int(&dev->ct_scalar_valid))
+      RARCH_LOG("[CoreAudio] Device clock, as the HAL reports it"
+            " (mRateScalar): %+d ppm.\n",
+            retro_atomic_load_acquire_int(&dev->ct_scalar_ppm));
+
    /* What the device was said to be able to ask for, and what it did
     * ask for. Said whether or not anything went wrong, because the
     * case worth catching is the one where they disagree and the ring
@@ -595,8 +650,79 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    size_t have_bytes;
    coreaudio_t *dev = (coreaudio_t*)userdata;
 
-   (void)time_stamp;
    (void)bus_number;
+
+   /* The device clock, before the period is filled, so the reading is
+    * not charged for the work below it. Measured and logged only -
+    * see the note on the fields. */
+   if (dev && time_stamp)
+   {
+      UInt32 f = time_stamp->mFlags;
+
+      if (     (f & kAudioTimeStampRateScalarValid)
+            && time_stamp->mRateScalar > 0.9
+            && time_stamp->mRateScalar < 1.1)
+      {
+         retro_atomic_store_release_int(&dev->ct_scalar_ppm,
+               (int)((time_stamp->mRateScalar - 1.0) * 1000000.0));
+         retro_atomic_store_release_int(&dev->ct_scalar_valid, 1);
+      }
+
+      if (     (f & kAudioTimeStampSampleTimeValid)
+            && (f & kAudioTimeStampHostTimeValid)
+            && dev->ct_ns_per_tick > 0.0)
+      {
+         double   sample = time_stamp->mSampleTime;
+         uint64_t host   = time_stamp->mHostTime;
+
+         if (!dev->ct_have_anchor)
+         {
+            dev->ct_anchor_sample = sample;
+            dev->ct_anchor_host   = host;
+            dev->ct_have_anchor   = 1;
+            dev->ct_sx = dev->ct_sy = dev->ct_sxx = dev->ct_sxy = 0.0;
+            dev->ct_n  = 0.0;
+         }
+         /* Both forward, or the fit starts again: a device that is
+          * restarted resets its sample time, and a window across that
+          * is not a measurement of anything. */
+         else if (host > dev->ct_anchor_host && sample >= dev->ct_anchor_sample)
+         {
+            double x = (double)(host - dev->ct_anchor_host)
+               * dev->ct_ns_per_tick / 1000000000.0;
+            double y = sample - dev->ct_anchor_sample;
+            double d;
+
+            dev->ct_sx  += x;
+            dev->ct_sy  += y;
+            dev->ct_sxx += x * x;
+            dev->ct_sxy += x * y;
+            dev->ct_n   += 1.0;
+
+            d = dev->ct_n * dev->ct_sxx - dev->ct_sx * dev->ct_sx;
+            if (x >= 1.0 && d > 0.0 && dev->output_rate)
+            {
+               double measured = (dev->ct_n * dev->ct_sxy
+                     - dev->ct_sx * dev->ct_sy) / d;
+               double ppm      = (measured / (double)dev->output_rate - 1.0)
+                  * 1000000.0;
+
+               if (ppm > -100000.0 && ppm < 100000.0)
+               {
+                  retro_atomic_store_release_int(&dev->ct_ppm, (int)ppm);
+                  retro_atomic_store_release_int(&dev->ct_valid, 1);
+               }
+            }
+         }
+         else
+         {
+            dev->ct_anchor_sample = sample;
+            dev->ct_anchor_host   = host;
+            dev->ct_sx = dev->ct_sy = dev->ct_sxx = dev->ct_sxy = 0.0;
+            dev->ct_n  = 0.0;
+         }
+      }
+   }
 
    if (!io_data || io_data->mNumberBuffers < 1)
       return noErr;
@@ -1220,6 +1346,25 @@ static void *coreaudio_init(const char *device,
 
    retro_atomic_size_init(&dev->filled, 0);
    retro_atomic_size_init(&dev->consumed, 0);
+
+   /* mach_timebase_info converts mHostTime's ticks to nanoseconds: one
+    * to one on Intel, 125 to 3 on Apple silicon, and asked for rather
+    * than assumed either way. Without it the fit has no time axis, and
+    * the callback checks for that. */
+   {
+      mach_timebase_info_data_t tb;
+      memset(&tb, 0, sizeof(tb));
+      if (mach_timebase_info(&tb) == KERN_SUCCESS && tb.denom)
+         dev->ct_ns_per_tick = (double)tb.numer / (double)tb.denom;
+      else
+         dev->ct_ns_per_tick = 0.0;
+   }
+   dev->ct_have_anchor = 0;
+   dev->ct_n           = 0.0;
+   retro_atomic_int_init(&dev->ct_ppm, 0);
+   retro_atomic_int_init(&dev->ct_valid, 0);
+   retro_atomic_int_init(&dev->ct_scalar_ppm, 0);
+   retro_atomic_int_init(&dev->ct_scalar_valid, 0);
    retro_atomic_size_init(&dev->underruns, 0);
    /* What coreaudio_run() waits for before starting; the HAL's pull on
     * macOS, and on iOS the ring's own quarter, which is what the unit
