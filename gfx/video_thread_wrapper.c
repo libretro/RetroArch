@@ -478,6 +478,17 @@ static bool video_thread_handle_packet(
                   thr->input, thr->input_data);
             if (thr->driver_data && thr->driver->viewport_info)
                thr->driver->viewport_info(thr->driver_data, &thr->vp);
+#ifdef HAVE_OVERLAY
+            /* Taken here, on the thread that reads it: the frame path
+             * and the overlay commands both run on this one, and a
+             * driver hands back a table of its own that outlives the
+             * call. Taking it from the main thread instead is a write
+             * against those reads with nothing between them. */
+            thr->overlay = NULL;
+            if (thr->driver_data && thr->driver->overlay_interface)
+               thr->driver->overlay_interface(thr->driver_data,
+                     &thr->overlay);
+#endif
             /* Drivers that have handed the OSD font lifecycle up get
              * it created here rather than in video_driver.c, because
              * this runs on the video thread that owns the graphics
@@ -2415,10 +2426,10 @@ static void thread_overlay_enable(void *data, bool state)
       pkt.type   = CMD_OVERLAY_ENABLE;
       pkt.data.b = state;
 
-      /* Not queued: video_thread_get_overlay_interface() writes
-       * thr->overlay from the main thread, and these handlers read
-       * it here - waiting is what orders the two. */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2455,10 +2466,10 @@ static void thread_overlay_tex_geom(void *data,
       pkt.data.rect.w     = w;
       pkt.data.rect.h     = h;
 
-      /* Not queued: video_thread_get_overlay_interface() writes
-       * thr->overlay from the main thread, and these handlers read
-       * it here - waiting is what orders the two. */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2477,10 +2488,10 @@ static void thread_overlay_vertex_geom(void *data,
       pkt.data.rect.w     = w;
       pkt.data.rect.h     = h;
 
-      /* Not queued: video_thread_get_overlay_interface() writes
-       * thr->overlay from the main thread, and these handlers read
-       * it here - waiting is what orders the two. */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2494,10 +2505,10 @@ static void thread_overlay_full_screen(void *data, bool enable)
       pkt.type   = CMD_OVERLAY_FULL_SCREEN;
       pkt.data.b = enable;
 
-      /* Not queued: video_thread_get_overlay_interface() writes
-       * thr->overlay from the main thread, and these handlers read
-       * it here - waiting is what orders the two. */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2529,12 +2540,11 @@ static void video_thread_get_overlay_interface(void *data,
 {
    thread_video_t *thr = (thread_video_t*)data;
 
+   /* The video thread took the driver's table as it initialised it;
+    * this only says whether there is one. */
    if (thr && thr->driver_data &&
          thr->driver && thr->driver->overlay_interface)
-   {
-      thr->driver->overlay_interface(thr->driver_data, &thr->overlay);
       *iface = &thread_overlay;
-   }
    else
       *iface = NULL;
 }
