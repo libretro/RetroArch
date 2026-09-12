@@ -1571,6 +1571,7 @@ typedef struct
    size_t          rt_write;
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
    bool            rt_presentation;
+   retro_time_t    rt_last_usec;  /* when the cursor was last read */
    HANDLE          rt_event;    /* signalled per notification, if offered */
    /* The register wraps, so what it is worth as a count is the sum of
     * its steps - and that is only right while it is read more often
@@ -1839,7 +1840,22 @@ static void wdmks_rt_wait_room(wdmks_t *w)
 
    if (w->rt_event)
    {
-      WaitForSingleObject(w->rt_event, 100);
+      /* A watchdog, not a wait: the event normally arrives within a
+       * notification. A hundred milliseconds was a number rather than
+       * a bound - at an 8 ms ring that is twelve times round before
+       * this gives up, where the packet path a few lines away already
+       * derives its own from the stream's duration. Two rings, with
+       * ends so a tiny buffer does not make a watchdog that fires on
+       * ordinary scheduling and a huge one does not make it useless. */
+      DWORD wait_ms = (w->frame_bytes && w->rate)
+         ? (DWORD)((uint64_t)(w->rt_size / w->frame_bytes) * 2 * 1000
+               / w->rate)
+         : 100;
+      if (wait_ms < 4)
+         wait_ms = 4;
+      else if (wait_ms > 100)
+         wait_ms = 100;
+      WaitForSingleObject(w->rt_event, wait_ms);
       return;
    }
 
@@ -1926,6 +1942,33 @@ static void wdmks_rt_unregister_event(wdmks_t *w)
  * by up to a frame per read, which the sink estimate reads as drift. */
 static void wdmks_rt_advance(wdmks_t *w, ULONG v)
 {
+   /* How long since the last read, against how long the ring takes to
+    * go round. Past that, the step between two cursor readings is
+    * ambiguous - the hardware may have gone round once or five times
+    * and a position modulo the ring cannot say which.
+    *
+    * The laps that went by unobserved are lost either way; nothing
+    * reconstructs them from a cursor. What this prevents is worse
+    * than the loss: a delta that looks like a normal step, is not
+    * one, and lands in a ten-second least-squares window as though it
+    * were measured. One stall would otherwise move the fitted rate by
+    * as much as the stall was long. */
+   {
+      retro_time_t now_usec  = cpu_features_get_time_usec();
+      retro_time_t ring_usec = (w->frame_bytes && w->rate)
+         ? (retro_time_t)(w->rt_size / w->frame_bytes) * 1000000 / w->rate
+         : 0;
+
+      if (     w->rt_have_last && ring_usec
+            && now_usec - w->rt_last_usec > ring_usec)
+      {
+         w->rt_have_last    = false;
+         w->clk_have_anchor = false;
+         w->clk_n           = 0.0;
+      }
+      w->rt_last_usec = now_usec;
+   }
+
    if (!w->rt_have_last)
    {
       w->rt_last_pos  = v;
