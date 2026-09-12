@@ -271,6 +271,10 @@ gfx/common/wayland/tearing-control-v1.c
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
 samples/**/*.o
+# Harness executables that are not named <dir>_test. This one had been
+# committed as a built binary, which made any make clean in that
+# directory show up as a deletion.
+samples/audio/embedded_alsa/abi_check
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
