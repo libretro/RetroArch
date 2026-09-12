@@ -128,6 +128,9 @@ jobs:
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
+            # The PS2 EE backend, built off-target against a stub
+            # <kernel.h>: the PS2 CI lane compiles it, this runs it.
+            retro_atomic_ps2_backend_test
             retro_spsc_test
             msg_fifo_queue_test
             audio_mixer_loop_test
