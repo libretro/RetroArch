@@ -1582,6 +1582,10 @@ typedef struct
    size_t          ac3_frame_size;
    uint8_t         ac3_frame[RAC3_MAX_FRAME_BYTES];
    uint8_t         ac3_burst[IEC61937_AC3_BURST_BYTES];
+   /* What is left of a burst the pin took only part of.  A burst is
+    * one frame to the receiver and has to go out whole. */
+   size_t          ac3_burst_len;
+   size_t          ac3_burst_at;
    bool            running;
    bool            dead;      /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
@@ -2024,6 +2028,25 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
       size_t frames = size / w->ac3_frame_size;
       size_t at     = 0;
 
+      /* A burst the pin took only part of last time goes first, and
+       * nothing new is encoded until it is out: a receiver handed the
+       * front of one burst and then the front of the next has lost
+       * the stream, so a short write here is a short write upward
+       * rather than a hole in the bit stream. */
+      if (w->ac3_burst_at < w->ac3_burst_len)
+      {
+         ssize_t sent = wdmks_write_packets(w,
+               w->ac3_burst + w->ac3_burst_at,
+               w->ac3_burst_len - w->ac3_burst_at);
+         if (sent < 0)
+            return -1;
+         w->ac3_burst_at += (size_t)sent;
+         if (w->ac3_burst_at < w->ac3_burst_len)
+            return 0;
+         w->ac3_burst_at  = 0;
+         w->ac3_burst_len = 0;
+      }
+
       while (at < frames)
       {
          size_t take = 1536 - w->ac3_in_frames;
@@ -2052,6 +2075,15 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
             written = wdmks_write_packets(w, w->ac3_burst, b);
             if (written < 0)
                return -1;
+            if ((size_t)written < b)
+            {
+               /* The rest is held for the next call, and the input
+                * that made this burst counts as taken - it is in the
+                * burst. */
+               w->ac3_burst_len = b;
+               w->ac3_burst_at  = (size_t)written;
+               return (ssize_t)(at * w->ac3_frame_size);
+            }
          }
       }
       return (ssize_t)(at * w->ac3_frame_size);
@@ -2275,12 +2307,27 @@ static uint32_t wdmks_layout(void *data)
    return w->layout;
 }
 
+/* Room and size are answered in the units the caller writes in.  On
+ * the bit-stream path those are the encoder's float frames and not the
+ * carrier's samples: 1536 input frames become one burst, so an input
+ * frame is worth one carrier frame and the two differ by the width of
+ * a float frame. Answering in carrier bytes understates the queue by
+ * that factor - six times over on 5.1 - and the fill the frontend
+ * steers by is the one it wrote. */
+static size_t wdmks_caller_bytes(wdmks_t *w, size_t carrier_bytes)
+{
+   if (!w->ac3 || !w->frame_bytes)
+      return carrier_bytes;
+   return carrier_bytes / w->frame_bytes * w->ac3_frame_size;
+}
+
 static size_t wdmks_write_avail(void *data)
 {
    wdmks_t *w = (wdmks_t*)data;
    if (!w)
       return 0;
-   return w->stream.looped ? wdmks_rt_free(w) : wdmks_free_bytes(w);
+   return wdmks_caller_bytes(w, w->stream.looped
+         ? wdmks_rt_free(w) : wdmks_free_bytes(w));
 }
 
 /* Blocks until at least len bytes will fit, and returns what fits.
@@ -2350,7 +2397,8 @@ static size_t wdmks_buffer_size(void *data)
    wdmks_t *w = (wdmks_t*)data;
    if (!w)
       return 0;
-   return w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS;
+   return wdmks_caller_bytes(w, w->stream.looped
+         ? w->rt_size : w->packet_bytes * WDMKS_PACKETS);
 }
 
 static bool wdmks_start(void *data, bool is_shutdown)
@@ -2667,7 +2715,11 @@ static void *wdmks_init(const char *device, unsigned rate,
    w->is_float    = w->stream.fmt.is_float;
    w->frame_bytes = w->stream.fmt.channels
       * (w->stream.fmt.container_bits / 8);
-   w->layout      = wdmks_layout_for(w->stream.fmt.channels);
+   /* The pin's own channel count, except on the bit-stream path, where
+    * what the frontend hands over is the encoder's layout and the pin
+    * only carries it. */
+   if (!w->ac3)
+      w->layout   = wdmks_layout_for(w->stream.fmt.channels);
    if (new_rate)
       *new_rate   = w->rate;
 
