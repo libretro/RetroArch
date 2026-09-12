@@ -445,13 +445,16 @@ def drop_format_mismatches(rows, source, lang):
     """
     import msg_hash_format_check as fmt
 
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    formatted = fmt.format_site_keys(root)
     kept = []
     for key, val, guard in rows:
         en = source.get(key)
         if en is not None:
             why = fmt.row_error(key, en.decode('utf-8', 'replace'),
                                 decode_c_literal(val).decode('utf-8',
-                                                             'replace'))
+                                                             'replace'),
+                                formatted)
             if why:
                 print('%s: dropping %s - it %s' % (lang, key, why),
                       file=sys.stderr)

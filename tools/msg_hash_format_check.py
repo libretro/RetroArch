@@ -21,15 +21,17 @@ the English row in intl/msg_hash_us.h and enforces:
   * no translation uses a positional %n$ conversion - it is POSIX, the
     MSVC runtime does not implement it, and the MSVC jobs build the
     same headers;
-  * where an MSG_* row has no conversions in English, the translation
-    has none either. MSG_* is the message-queue namespace, which is
-    where the non-literal snprintf() format strings live. Outside it a
-    row with no English conversion is displayed rather than formatted -
-    menu_driver.c strlcpy()s sublabels, and help text resolves through
-    msg_hash_get_help_us_enum(), which returns English whatever the
-    language - so a stray %% in prose there is cosmetic, and enforcing
-    it would reject Hungarian's "50%-a" and every other language whose
-    percent sign takes a suffix.
+  * where a row that is used as a format string has no conversions in
+    English, the translation has none either. That set is measured:
+    format_site_keys() walks the sources for printf-family calls whose
+    format argument resolves to msg_hash_to_str(), directly or through
+    a local, and the MSG_* namespace is added to it so a site the scan
+    cannot see still gets the rule. Everything else is displayed rather
+    than formatted - menu_driver.c strlcpy()s sublabels, help resolves
+    through msg_hash_get_help_us_enum(), which returns English whatever
+    the language - so a percent sign in prose stays legal there, as it
+    must: enforcing it would reject Hungarian's "50%-a" and every other
+    language whose percent sign takes a suffix.
 
 A space flag counts as prose rather than a conversion. C defines that
 flag for signed conversions only, no English row uses it deliberately,
@@ -85,6 +87,92 @@ def conversions(s):
     return tuple(convs), positional
 
 
+FMT_ARG = {'snprintf': 2, 'vsnprintf': 2, 'sprintf': 1, 'printf': 0,
+           'fprintf': 1, 'asprintf': 1, 'vasprintf': 1, 'swprintf': 2,
+           'rcheevos_log': 0, 'runloop_msg_queue_pushf': 0,
+           'RARCH_LOG': 0, 'RARCH_ERR': 0, 'RARCH_WARN': 0, 'RARCH_DBG': 0,
+           'RARCH_LOG_OUTPUT': 0, 'CHEEVOS_LOG': 0, 'CHEEVOS_ERR': 0}
+CALL    = re.compile(r'\b(' + '|'.join(FMT_ARG) + r')\s*\(')
+ALIAS   = re.compile(r'\b(\w+)\s*=\s*msg_hash_to_str\w*\('
+                     r'\s*([A-Z][A-Z0-9_]*)\s*\)')
+TO_STR  = re.compile(r'msg_hash_to_str\w*\(\s*([A-Z][A-Z0-9_]*)')
+BARE    = re.compile(r'\(?\s*(?:\(\s*const\s+char\s*\*\s*\)\s*)?(\w+)\s*\)?\Z')
+SKIP    = ('.git', 'deps', 'intl', 'libretro-common')
+
+
+def call_args(text, open_paren):
+    """Split the argument list whose '(' is at open_paren."""
+    depth = 0
+    cur   = []
+    out   = []
+    i     = open_paren
+    while i < len(text):
+        c = text[i]
+        if c == '"':
+            j = i + 1
+            while j < len(text) and not (text[j] == '"' and text[j - 1] != '\\'):
+                j += 1
+            cur.append(text[i:j + 1])
+            i = j + 1
+            continue
+        if c in '([{':
+            depth += 1
+        elif c in ')]}':
+            depth -= 1
+            if depth == 0:
+                out.append(''.join(cur))
+                return out
+        if c == ',' and depth == 1:
+            out.append(''.join(cur))
+            cur = []
+            i  += 1
+            continue
+        if depth >= 1:
+            cur.append(c)
+        i += 1
+    return out
+
+
+def format_site_text(text):
+    """Keys whose string this translation unit uses as a format string."""
+    keys    = set()
+    aliases = {}
+    for m in ALIAS.finditer(text):
+        aliases.setdefault(m.group(1), set()).add(m.group(2))
+    for m in CALL.finditer(text):
+        args = call_args(text, m.end() - 1)
+        i    = FMT_ARG[m.group(1)]
+        if len(args) <= i:
+            continue
+        fmt = args[i].strip()
+        keys.update(TO_STR.findall(fmt))
+        v = BARE.match(fmt)
+        if v and v.group(1) in aliases:
+            keys |= aliases[v.group(1)]
+    return keys
+
+
+def format_site_keys(root):
+    """Keys used as a format string anywhere in the tree.
+
+    Heuristic in one direction only: a site it misses keeps whatever
+    the MSG_* namespace already gives it, and a site it invents costs
+    at most a rule applied to a row that did not need it.
+    """
+    keys = set()
+    for base, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in SKIP and not d.startswith('.')]
+        for fn in files:
+            if not fn.endswith(('.c', '.cpp', '.m', '.mm')):
+                continue
+            with open(os.path.join(base, fn), encoding='utf-8',
+                      errors='ignore') as f:
+                text = f.read()
+            if 'msg_hash_to_str' in text:
+                keys |= format_site_text(text)
+    return keys
+
+
 def english_rows(root):
     """key -> English string, from the expanded intl/msg_hash_us.h."""
     path = os.path.join(root, 'intl', 'msg_hash_us.h')
@@ -125,8 +213,12 @@ def packed_rows(text, lang):
     return list(zip(keys, rows))
 
 
-def row_error(key, english, translation):
-    """Return why this row may not ship, or None."""
+def row_error(key, english, translation, formatted=None):
+    """Return why this row may not ship, or None.
+
+    formatted is the set of keys used as a format string; a key in the
+    MSG_* namespace counts as formatted whether or not it is in there.
+    """
     ec, _ep = conversions(english)
     tc,  tp = conversions(translation)
     if tp:
@@ -137,13 +229,13 @@ def row_error(key, english, translation):
             return 'has conversions %s where English has %s' \
                    % (''.join('%' + c for c in tc) or 'none',
                       ''.join('%' + c for c in ec))
-    elif tc and key.startswith('MSG_'):
+    elif tc and (key.startswith('MSG_') or (formatted and key in formatted)):
         return 'has conversions %s where English has none' \
                % ''.join('%' + c for c in tc)
     return None
 
 
-def check_file(path, english):
+def check_file(path, english, formatted=None):
     lang = os.path.basename(path)[len('msg_hash_'):-len('.h')]
     with open(path, encoding='utf-8') as f:
         text = f.read()
@@ -153,7 +245,7 @@ def check_file(path, english):
     for key, s in packed_rows(text, lang):
         if key not in english:
             continue
-        why = row_error(key, english[key], s)
+        why = row_error(key, english[key], s, formatted)
         if why:
             errors.append('%s: %s %s' % (path, key, why))
     return errors
@@ -182,6 +274,12 @@ CASES = [
     ('a percent sign taking a suffix',
      'MENU_ENUM_SUBLABEL_X', 'Set to 100% for symmetry.',
      '50%-a szimmetria.', None),
+    ('a conversion invented in a format row outside MSG_',
+     'MENU_ENUM_LABEL_VALUE_FMT', 'Applying: Default', 'Toepassen: %s',
+     'where English has none'),
+    ('a percent sign in a row that is only displayed',
+     'MENU_ENUM_LABEL_VALUE_X', 'Applying: Default', 'Toepassen: 50%-a',
+     None),
     ('a doubled percent sign',
      'MSG_X', 'Filled to %u%%', 'Gevuld tot %u%%', None),
     ('prose percent in a formatted row',
@@ -192,11 +290,37 @@ CASES = [
      'MSG_X', 'Address %08X', 'Adres %08s', 'where English has'),
 ]
 
+# The format-site scan, which decides whether the third rule applies to a
+# row outside the MSG_* namespace.
+SITE_CASES = [
+    ('a format argument straight from the table',
+     'snprintf(b, sizeof(b), msg_hash_to_str(MENU_ENUM_LABEL_VALUE_A), n);',
+     True),
+    ('a format argument through a local',
+     'const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_A);\n'
+     'snprintf(b, sizeof(b), fmt, n);', True),
+    ('a table string copied rather than formatted',
+     'strlcpy(b, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_A), sizeof(b));',
+     False),
+    ('a table string passed as a value',
+     'snprintf(b, sizeof(b), "%s: %u", '
+     'msg_hash_to_str(MENU_ENUM_LABEL_VALUE_A), n);', False),
+    ('a local that is split rather than formatted',
+     'const char *fmt = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_A);\n'
+     'snprintf(b, sizeof(b), "%.*s%u", (int)(p - fmt), fmt, n);', False),
+]
+
 
 def selftest():
     failures = 0
+    for label, source, want in SITE_CASES:
+        got = 'MENU_ENUM_LABEL_VALUE_A' in format_site_text(source)
+        ok  = got == want
+        print('%-40s %s' % (label, 'ok' if ok else 'FAILED'))
+        if not ok:
+            failures += 1
     for label, key, en, tl, want in CASES:
-        got = row_error(key, en, tl)
+        got = row_error(key, en, tl, {'MENU_ENUM_LABEL_VALUE_FMT'})
         ok  = (got is None) if want is None else (got is not None
                                                   and want in got)
         print('%-40s %s' % (label, 'ok' if ok else 'FAILED'))
@@ -210,13 +334,14 @@ def main(argv):
     args = argv[1:]
     if '--selftest' in args:
         return selftest()
-    root    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    english = english_rows(root)
-    paths   = args or sorted(glob.glob(os.path.join(root, 'intl',
-                                                    'msg_hash_*.h')))
+    root      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    english   = english_rows(root)
+    formatted = format_site_keys(root)
+    paths     = args or sorted(glob.glob(os.path.join(root, 'intl',
+                                                      'msg_hash_*.h')))
     failed = 0
     for path in paths:
-        errors = check_file(path, english)
+        errors = check_file(path, english, formatted)
         for e in errors:
             print(e)
         if errors:
@@ -225,8 +350,9 @@ def main(argv):
         print('%u header(s) hold a row whose conversions do not match '
               'English' % failed)
         return 1
-    print('%u header(s) checked against %u English rows'
-          % (len(paths), len(english)))
+    print('%u header(s) checked against %u English rows, %u of them used '
+          'as a format string' % (len(paths), len(english),
+                                  len(formatted & set(english))))
     return 0
 
 

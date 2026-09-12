@@ -86,6 +86,10 @@ jobs:
           # lost, invented, retyped or reordered positionally is caught,
           # and a percent sign in prose - English's "50% of this value",
           # Hungarian's "50%-a", a doubled %% - is not mistaken for one.
+          # The format-site scan is measured too: it must see a format
+          # argument taken from the table directly and through a local,
+          # and must not see a string that is copied, passed as a value,
+          # or split on a placeholder rather than formatted.
           python3 tools/msg_hash_format_check.py --selftest
 
       - name: Format parity tree check
@@ -94,6 +98,9 @@ jobs:
           set -eu
           # Every translated row against its English source: the same
           # conversions in the same order wherever English has any, no
-          # positional %n$ anywhere, and no conversion invented in an
-          # MSG_* row that has none in English.
+          # positional %n$ anywhere, and no conversion invented in a row
+          # that is used as a format string and has none in English.
+          # That last set is measured from the call sites rather than
+          # assumed from the namespace: ninety rows reach a printf-family
+          # format argument today and twenty-nine of them are not MSG_*.
           python3 tools/msg_hash_format_check.py
