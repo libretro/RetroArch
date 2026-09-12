@@ -29,6 +29,10 @@
  * that is answering, so anything near this is a device that has
  * stopped returning from a call; the wait continues either way. */
 #define AUDIO_THREAD_HANDSHAKE_WARN_US (2 * 1000 * 1000)
+/* Long past any device that is merely slow to open: a driver's init()
+ * that has not returned by now is not going to, and the frontend goes
+ * on without audio rather than never returning from drivers_init(). */
+#define AUDIO_THREAD_HANDSHAKE_GIVEUP_US (30 * 1000 * 1000)
 
 typedef struct audio_thread
 {
@@ -42,6 +46,9 @@ typedef struct audio_thread
    unsigned *new_rate;
 
    int inited;
+   /* The frontend stopped waiting for init(): this thread owns its own
+    * state from there and frees it when init() finally returns. */
+   bool abandoned;
 
    /* Initialization options. */
    unsigned out_rate;
@@ -101,7 +108,22 @@ static void audio_thread_loop(void *data)
    if (thr->inited > 0 && thr->driver->layout)
       thr->layout     = thr->driver->layout(thr->driver_data);
    scond_signal(thr->cond);
-   slock_unlock(thr->lock);
+   {
+      bool abandoned = thr->abandoned;
+      slock_unlock(thr->lock);
+
+      /* Nobody is waiting for this any more, and nobody else will free
+       * it: init() took longer than the frontend was willing to wait. */
+      if (abandoned)
+      {
+         if (thr->driver_data && thr->driver->free)
+            thr->driver->free(thr->driver_data);
+         slock_free(thr->lock);
+         scond_free(thr->cond);
+         free(thr);
+         return;
+      }
+   }
 
    if (thr->inited < 0)
       return;
@@ -556,15 +578,32 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    if (!(thr->thread   = sthread_create(audio_thread_loop, thr)))
       goto error;
 
-   /* Wait until thread has initialized (or failed) the driver. Not
-    * abandoned either: the thread owns thr until it is joined, so
-    * returning early would free it underneath. A driver whose init()
-    * does not return is reported instead of stalling silently. */
+   /* Wait until thread has initialized (or failed) the driver, but not
+    * for ever: a driver whose init() never returns, or a thread that
+    * died inside it, would otherwise leave the frontend waiting here
+    * with no way out. Past the deadline the thread is told it owns its
+    * own state and this returns without it - freeing it here would pull
+    * it out from under a thread still using it. */
    slock_lock(thr->lock);
    {
-      bool warned = false;
+      bool warned         = false;
+      retro_time_t giveup = cpu_features_get_time_usec()
+         + AUDIO_THREAD_HANDSHAKE_GIVEUP_US;
       while (!thr->inited)
       {
+         retro_time_t now = cpu_features_get_time_usec();
+         if (now >= giveup)
+         {
+            thr->abandoned = true;
+            slock_unlock(thr->lock);
+            RARCH_ERR("[Audio] Driver \"%s\" did not return from init after %d seconds; going on without audio.\n",
+                  thr->driver->ident ? thr->driver->ident : "?",
+                  (int)(AUDIO_THREAD_HANDSHAKE_GIVEUP_US / 1000000));
+            sthread_detach(thr->thread);
+            *out_driver = NULL;
+            *out_data   = NULL;
+            return false;
+         }
          if (scond_wait_timeout(thr->cond, thr->lock,
                   AUDIO_THREAD_HANDSHAKE_WARN_US))
             continue;
