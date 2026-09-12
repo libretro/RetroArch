@@ -5572,9 +5572,9 @@ QWidget *UserBindsPage::widget()
          const struct retro_keybind *keyptr =
             &input_config_binds[p][retro_id];
 
-         QString label = msg_hash_to_str(keyptr->enum_idx);
+         QString label = msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr));
 
-         form->addRow(QString(msg_hash_to_str(keyptr->enum_idx)),
+         form->addRow(QString(msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr))),
                new QPushButton(QString(descriptor)));
       }
 

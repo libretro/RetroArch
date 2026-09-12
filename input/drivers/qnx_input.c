@@ -755,7 +755,7 @@ static int16_t qnx_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (binds[port][i].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
                      if (qnx_keyboard_pressed(qnx, key))
                         ret |= (1 << i);
@@ -768,7 +768,7 @@ static int16_t qnx_input_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (
                      ((id == RARCH_GAME_FOCUS_TOGGLE) ||

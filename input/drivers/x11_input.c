@@ -231,7 +231,7 @@ static int16_t x_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
                         if (x_mouse_button_pressed(x11, port, binds[port][i].mbutton))
                            ret |= (1 << i);
@@ -243,10 +243,10 @@ static int16_t x_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
-                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                              && x_keyboard_pressed(x11, binds[port][i].key))
+                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][i])))
                            ret |= (1 << i);
                      }
                   }
@@ -257,10 +257,10 @@ static int16_t x_input_state(
 
             if (id < RARCH_BIND_LIST_END)
             {
-               if (binds[port][id].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][id]))
                {
-                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                        && x_keyboard_pressed(x11, binds[port][id].key)
+                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                        && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][id]))
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -285,10 +285,10 @@ static int16_t x_input_state(
 
                input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-               id_minus_valid        = binds[port][id_minus].valid;
-               id_plus_valid         = binds[port][id_plus].valid;
-               id_minus_key          = binds[port][id_minus].key;
-               id_plus_key           = binds[port][id_plus].key;
+               id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+               id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+               id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+               id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
                if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
@@ -435,7 +435,7 @@ static int16_t x_input_state(
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
 
-                     if (binds[port][new_id].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
                                  joyport, (uint16_t)joykey))
@@ -444,9 +444,9 @@ static int16_t x_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                        else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && x_keyboard_pressed(x11, binds[port][new_id].key)
+                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                            )
                            return 1;
                         else if (x_mouse_button_pressed(x11, port, binds[port][new_id].mbutton))

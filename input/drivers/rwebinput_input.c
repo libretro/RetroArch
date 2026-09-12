@@ -620,7 +620,7 @@ static int16_t rwebinput_is_pressed(
       bool keyboard_mapping_blocked)
 {
    const struct retro_keybind *bind = &binds[id];
-   int key                          = bind->key;
+   int key                          = RETRO_KEYBIND_KEY(bind);
 
    if (     (key && key < RETROK_LAST)
          && rwebinput_key_pressed(rwebinput, key)
@@ -655,7 +655,7 @@ static int16_t rwebinput_input_state(
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (binds[port][i].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][i]))
                {
                   if (rwebinput_is_pressed(
                            rwebinput, binds[port], port, i,
@@ -669,7 +669,7 @@ static int16_t rwebinput_input_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (rwebinput_is_pressed(rwebinput,
                         binds[port],
@@ -692,10 +692,10 @@ static int16_t rwebinput_input_state(
 
             input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-            id_minus_valid        = binds[port][id_minus].valid;
-            id_plus_valid         = binds[port][id_plus].valid;
-            id_minus_key          = binds[port][id_minus].key;
-            id_plus_key           = binds[port][id_plus].key;
+            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
