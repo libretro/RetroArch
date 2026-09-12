@@ -2113,11 +2113,6 @@ void playlist_write_runtime_file(playlist_t *playlist)
             write_path);
    writer                    = NULL;
 
-   if (wrote_ok)
-      playlist->flags       &= ~(CNT_PLAYLIST_FLG_MOD
-                               | CNT_PLAYLIST_FLG_OLD_FMT
-                               | CNT_PLAYLIST_FLG_COMPRESSED);
-
 end:
    intfstream_close(file);
    free(file);
@@ -2126,8 +2121,16 @@ end:
     * above failed, the temporary is discarded and what is on disk is
     * exactly what it was. */
    if (wrote_ok && filestream_rename(write_path, playlist->config.path) == 0)
+   {
+      /* Cleared here rather than above, because the rename is what
+       * puts the data on disk: a successful write followed by a
+       * failed move used to clear the dirty bit anyway. */
+      playlist->flags       &= ~(CNT_PLAYLIST_FLG_MOD
+                               | CNT_PLAYLIST_FLG_OLD_FMT
+                               | CNT_PLAYLIST_FLG_COMPRESSED);
       RARCH_DBG("[Playlist] Runtime written to file: \"%s\".\n",
             playlist->config.path);
+   }
    else
    {
       filestream_delete(write_path);
@@ -2265,7 +2268,6 @@ void playlist_write_file(playlist_t *playlist)
             playlist->right_thumbnail_mode, playlist->left_thumbnail_mode,
             playlist->sort_mode);
 
-      playlist->flags  |=  (CNT_PLAYLIST_FLG_OLD_FMT);
       /* intfstream_printf reports nothing useful per call here, so the
        * old format's success is "we reached the end without bailing" -
        * the same guarantee it gave before, now made explicit because
@@ -2576,16 +2578,7 @@ void playlist_write_file(playlist_t *playlist)
                playlist->config.path);
       else
          wrote_ok = true;
-
-      playlist->flags  &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
    }
-
-   playlist->flags     &= ~CNT_PLAYLIST_FLG_MOD;
-
-   if (compressed)
-      playlist->flags  |=  (CNT_PLAYLIST_FLG_COMPRESSED);
-   else
-      playlist->flags  &= ~(CNT_PLAYLIST_FLG_COMPRESSED);
 
 end:
    intfstream_close(file);
@@ -2596,6 +2589,28 @@ end:
     * is exactly what it was. */
    if (wrote_ok && filestream_rename(write_path, playlist->config.path) == 0)
    {
+      /* These three are the whole reason this function runs at all:
+       * the early return above skips the write unless the dirty bit
+       * is set or the on-disk format or compression state differs
+       * from what was asked for.  They used to be updated before the
+       * commit and regardless of whether the write had succeeded, so
+       * a failed save cleared every trigger that would have caused a
+       * retry - the edits stayed in memory, the file kept its old
+       * contents, and nothing tried again. */
+#ifdef RARCH_INTERNAL
+      if (playlist->config.old_format)
+         playlist->flags  |=  (CNT_PLAYLIST_FLG_OLD_FMT);
+      else
+#endif
+         playlist->flags  &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
+
+      playlist->flags     &= ~CNT_PLAYLIST_FLG_MOD;
+
+      if (compressed)
+         playlist->flags  |=  (CNT_PLAYLIST_FLG_COMPRESSED);
+      else
+         playlist->flags  &= ~(CNT_PLAYLIST_FLG_COMPRESSED);
+
       RARCH_LOG("[Playlist] Written to file: \"%s\".\n",
             playlist->config.path);
       playlist_cached_after_write(playlist);
