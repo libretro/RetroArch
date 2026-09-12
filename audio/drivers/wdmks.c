@@ -2643,7 +2643,6 @@ static size_t wdmks_wait_writable(void *data, size_t len)
       size_t          avail = w->stream.looped
          ? wdmks_rt_free(w) : wdmks_free_bytes(w);
       wdmks_packet_t *p;
-      DWORD           timeout;
 
       if (avail >= len)
          return avail;
@@ -2668,14 +2667,11 @@ static size_t wdmks_wait_writable(void *data, size_t len)
       if (wdmks_packet_done(w, p))
          continue;
 
-      /* Two packets' worth of time: enough for the one being waited
-       * on to come back on any device that is still running, short
-       * enough that four laps of it is not a hang. */
-      timeout = (DWORD)(2 * w->packet_bytes * 1000
-            / (w->frame_bytes * w->rate));
-      if (timeout < 2)
-         timeout = 2;
-      if (WaitForSingleObject(p->overlapped.hEvent, timeout) != WAIT_OBJECT_0)
+      /* The same watchdog the write path uses for the same wait -
+       * this had grown its own copy of the arithmetic, with its own
+       * floor and no ceiling, which is two policies for one question. */
+      if (WaitForSingleObject(p->overlapped.hEvent,
+               wdmks_watchdog_ms(w, w->packet_bytes)) != WAIT_OBJECT_0)
          continue;
       p->pending = false;
    }
