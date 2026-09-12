@@ -25,6 +25,16 @@ static struct
 
 static void (*q_cb)(SLAndroidSimpleBufferQueueItf, void*);
 static void  *q_cb_ctx;
+/* The callback cannot be held under q_lock - the driver's callback
+ * enqueues, which takes it - so it is entered outside. That leaves a
+ * window where a destroy could clear it between the read and the call,
+ * which is what the pump would then walk into: TSan reported the
+ * unlocked read, and the freed-memory call behind it is the reason the
+ * read mattered. So the pump publishes that it is inside one and a
+ * destroy waits for it to leave, which is what the real thing
+ * guarantees by not calling back after the player is gone. */
+static unsigned q_cb_inflight;
+static pthread_cond_t q_cb_idle = PTHREAD_COND_INITIALIZER;
 static SLAndroidSimpleBufferQueueItf q_itf;
 
 static int      mock_float_ok = 1, mock_frozen, mock_playing, mock_objects, mock_is_float;
@@ -83,10 +93,26 @@ static void *pump_thread(void *arg)
          unsigned frames = bytes / (is_float ? 8 : 4);
          unsigned usec   = rate_milli
                ? (unsigned)((uint64_t)frames * 1000000u / (rate_milli / 1000)) : 1000;
+         void (*cb)(SLAndroidSimpleBufferQueueItf, void*);
+         void  *ctx;
          if (usec > 100000) usec = 100000;
          usleep(usec);
-         if (q_cb)
-            q_cb(q_itf, q_cb_ctx);
+
+         pthread_mutex_lock(&q_lock);
+         cb  = q_cb;
+         ctx = q_cb_ctx;
+         if (cb)
+            q_cb_inflight++;
+         pthread_mutex_unlock(&q_lock);
+
+         if (cb)
+         {
+            cb(q_itf, ctx);
+            pthread_mutex_lock(&q_lock);
+            if (!--q_cb_inflight)
+               pthread_cond_broadcast(&q_cb_idle);
+            pthread_mutex_unlock(&q_lock);
+         }
       }
       else
          usleep(500);
@@ -103,7 +129,7 @@ void opensl_mock_reset(void)
    }
    pthread_mutex_lock(&q_lock);
    memset(&q, 0, sizeof(q));
-   q_cb = NULL; q_cb_ctx = NULL;
+   q_cb = NULL; q_cb_ctx = NULL; q_cb_inflight = 0;
    mock_float_ok = 1; mock_frozen = 0; mock_playing = 0; mock_objects = 0;
    mock_is_float = 0; mock_num_buffers = mock_buffer_bytes = mock_rate_milli = 0;
    mock_queue_limit = 0; mock_enq_fail = 0; mock_consumed = 0;
@@ -190,6 +216,10 @@ static void obj_destroy(SLObjectItf self)
       q_cb_ctx    = NULL;
       q.head      = q.count = 0;
       mock_playing = 0;
+      /* Not until the pump has left any callback it was already
+       * inside: the driver frees its context right after this. */
+      while (q_cb_inflight)
+         pthread_cond_wait(&q_cb_idle, &q_lock);
       pthread_mutex_unlock(&q_lock);
    }
    mock_objects--;
