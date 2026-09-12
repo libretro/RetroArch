@@ -425,6 +425,11 @@ typedef struct thread_video
           * runloop_state, both of which the main thread mutates, so it
           * must not be called from the worker. */
          video_frame_info_t video_info;
+         /* Textures the frontend released before this frame was handed
+          * over: every frame that could still name one is drawn by the
+          * time this one is, so the video thread frees them once it
+          * has drawn it (video_thread_tex_retire_t). */
+         void *tex_retire;
          /* The statistics overlay's text for this frame, which the main
           * thread's buffer will not hold by the time this thread draws:
           * video_info.stat_text points here. Only copied when there is
@@ -455,6 +460,11 @@ typedef struct thread_video
    } frame;
 
    bool apply_state_changes;
+
+   /* Textures the frontend has released since the last frame was handed
+    * over, waiting for one to carry them to the video thread. Held
+    * under thr->lock, as the frame handoff is. */
+   void *tex_retire;
 
    /* Which thread is currently blocked on cond_reply, and how deep,
     * both guarded by lock; see the note on cond_reply. Maintained

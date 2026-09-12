@@ -1195,8 +1195,34 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
 #endif
 }
 
+/* A texture the frontend released, waiting for the video thread to free
+ * it: the thread that holds the GPU context is the only one that may,
+ * and only once every frame that could still name it has been drawn. */
+typedef struct video_thread_tex_retire
+{
+   struct video_thread_tex_retire *next;
+   uintptr_t id;
+} video_thread_tex_retire_t;
+
+/* Video thread: frees the textures the frame just drawn carried. Called
+ * with no lock held, after the frame, so the driver's delete runs on
+ * the thread whose context it belongs to. */
+static void video_thread_tex_retire_run(thread_video_t *thr,
+      video_thread_tex_retire_t *list)
+{
+   while (list)
+   {
+      video_thread_tex_retire_t *next = list->next;
+      if (thr->poke && thr->poke->unload_texture && thr->driver_data)
+         thr->poke->unload_texture(thr->driver_data, false, list->id);
+      free(list);
+      list = next;
+   }
+}
+
 static void video_thread_loop(void *data)
 {
+   video_thread_tex_retire_t *tex_retire = NULL;
    thread_packet_t pkt;
    unsigned slot;
    bool claimed;
@@ -1501,7 +1527,19 @@ static void video_thread_loop(void *data)
          }
          thr->frame.busy    = false;
          scond_broadcast(thr->cond_ring);
+         /* The textures this frame carried: every frame that could name
+          * one has been drawn now, so they can go. Taken here and freed
+          * below, with no lock held. */
+         tex_retire         = (video_thread_tex_retire_t*)
+            thr->frame.slot[slot].tex_retire;
+         thr->frame.slot[slot].tex_retire = NULL;
          slock_unlock(thr->lock);
+
+         if (tex_retire)
+         {
+            video_thread_tex_retire_run(thr, tex_retire);
+            tex_retire = NULL;
+         }
       }
       else if (repeat_due)
       {
@@ -1803,6 +1841,22 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].count  = frame_count;
       thr->frame.slot[slot].pushed_at = now;
       thr->frame.slot[slot].hw_slot = hw_slot;
+      /* Textures released since the last handoff ride with this frame */
+      if (thr->tex_retire)
+      {
+         video_thread_tex_retire_t *tail =
+            (video_thread_tex_retire_t*)thr->frame.slot[slot].tex_retire;
+         if (tail)
+         {
+            video_thread_tex_retire_t *last =
+               (video_thread_tex_retire_t*)thr->tex_retire;
+            while (last->next)
+               last = last->next;
+            last->next = tail;
+         }
+         thr->frame.slot[slot].tex_retire = thr->tex_retire;
+         thr->tex_retire                  = NULL;
+      }
       ((video_thread_private_t*)thr)->rec_slot[slot]     = ((video_thread_private_t*)thr)->rec;
       thr->frame.slot[slot].pitch  = copy_stride;
 
@@ -2167,6 +2221,33 @@ static void video_thread_free(void *data)
        * briefly tells the rest of the frontend the wrapper is gone
        * while its thread is still presenting. */
       video_state_get_ptr()->thread_wrapper_active = false;
+
+      /* Textures still waiting to be freed: the driver is gone, and
+       * with it the textures themselves, so only the nodes are left. */
+      {
+         unsigned i;
+         video_thread_tex_retire_t *l;
+         for (i = 0; i < 2; i++)
+         {
+            l                             = (video_thread_tex_retire_t*)
+               thr->frame.slot[i].tex_retire;
+            thr->frame.slot[i].tex_retire = NULL;
+            while (l)
+            {
+               video_thread_tex_retire_t *next = l->next;
+               free(l);
+               l = next;
+            }
+         }
+         l               = (video_thread_tex_retire_t*)thr->tex_retire;
+         thr->tex_retire = NULL;
+         while (l)
+         {
+            video_thread_tex_retire_t *next = l->next;
+            free(l);
+            l = next;
+         }
+      }
 
       /* The video thread is gone: every recording buffer can go */
       video_thread_record_stop(thr);
@@ -2644,15 +2725,36 @@ static void thread_unload_texture(void *data,
 
    if (thr && thr->driver_data && thr->poke && thr->poke->unload_texture)
    {
+      video_thread_tex_retire_t *node;
+
       /* Releasing a GPU texture while the video thread is mid-frame can
        * free something the in-flight frame still references -- the AI
        * service overlay is drawn straight from
        * dispgfx_widget_t::ai_service_overlay_texture after a plain
-       * ai_service_overlay_state test, with no handshake.  Drain any
-       * pending frame first; no-op when this is the video thread or
-       * when the wrapper is not running. */
-      video_thread_wait_idle();
-      thr->poke->unload_texture(thr->driver_data, threaded, id);
+       * ai_service_overlay_state test, with no handshake. So the
+       * texture waits for the frames that could name it: the next frame
+       * handed over carries it, and the video thread frees it once it
+       * has drawn that frame, by which time every earlier frame is
+       * drawn too. Neither thread waits.
+       *
+       * On this thread only, and only while the worker runs: from the
+       * worker, or with no wrapper running, the driver's own call is
+       * already on the right thread. */
+      if (     !threaded
+            || !thr->thread
+            || sthread_get_thread_id(thr->thread)
+               == sthread_get_current_thread_id()
+            || !(node = (video_thread_tex_retire_t*)malloc(sizeof(*node))))
+      {
+         thr->poke->unload_texture(thr->driver_data, threaded, id);
+         return;
+      }
+
+      slock_lock(thr->lock);
+      node->id        = id;
+      node->next      = (video_thread_tex_retire_t*)thr->tex_retire;
+      thr->tex_retire = node;
+      slock_unlock(thr->lock);
    }
 }
 
