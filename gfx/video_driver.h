@@ -1126,7 +1126,11 @@ typedef struct
    unsigned scale_height;
 
    float core_hz;
-   float aspect_ratio;
+   /* The bits of the aspect ratio, not the float: the main thread
+    * writes it and whichever thread draws reads it, with nothing
+    * between them to order the two. Reached through
+    * VIDEO_DRIVER_ASPECT_RATIO() and video_driver_store_aspect_ratio(). */
+   retro_atomic_int_t aspect_ratio_bits;
    float video_refresh_rate_original;
 
    enum retro_pixel_format pix_fmt;
@@ -1481,6 +1485,28 @@ void video_driver_set_overlay_viewport(const struct overlay *active);
 #endif
 
 float video_driver_get_aspect_ratio(void);
+
+/* The aspect ratio, as the bits of the float in an atomic word. A
+ * union, not a cast through a pointer, so it stays inside what the
+ * standard allows and MSVC's aliasing rules. */
+static INLINE float video_driver_aspect_ratio_of(
+      const retro_atomic_int_t *bits)
+{
+   union { int i; float f; } u;
+   u.i = retro_atomic_load_acquire_int((retro_atomic_int_t*)bits);
+   return u.f;
+}
+
+static INLINE void video_driver_aspect_ratio_put(
+      retro_atomic_int_t *bits, float aspect)
+{
+   union { int i; float f; } u;
+   u.f = aspect;
+   retro_atomic_store_release_int(bits, u.i);
+}
+
+#define VIDEO_DRIVER_ASPECT_RATIO(video_st) \
+   video_driver_aspect_ratio_of(&(video_st)->aspect_ratio_bits)
 
 void video_driver_menu_settings(void **list_data, void *list_info_data,
       void *group_data, void *subgroup_data, const char *parent_group);

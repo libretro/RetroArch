@@ -2627,7 +2627,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 float video_driver_get_aspect_ratio(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   return video_st->aspect_ratio;
+   return VIDEO_DRIVER_ASPECT_RATIO(video_st);
 }
 
 void video_driver_lock_new(void)
@@ -2845,7 +2845,8 @@ void video_driver_set_aspect_ratio(void)
          break;
    }
 
-   video_st->aspect_ratio = aspectratio_lut[aspect_ratio_idx].value;
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
+         aspectratio_lut[aspect_ratio_idx].value);
 
    if (poke && poke->set_aspect_ratio)
       poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
@@ -3010,7 +3011,7 @@ static void video_viewport_get_scaled_integer(
    if (content_width > width || content_height > height)
    {
       float device_aspect      = (float)width / height;
-      float desired_aspect     = video_st->aspect_ratio;
+      float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       video_viewport_get_scaled_aspect2(vp, width, height,
             y_down, device_aspect, desired_aspect);
       return;
@@ -3140,7 +3141,7 @@ static void video_viewport_get_scaled_integer(
                if (content_width > width || content_height > height)
                {
                   float device_aspect      = (float)width / height;
-                  float desired_aspect     = video_st->aspect_ratio;
+                  float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
                   video_viewport_get_scaled_aspect2(vp, width, height,
                         y_down, device_aspect, desired_aspect);
                   return;
@@ -3266,7 +3267,7 @@ static void video_viewport_get_scaled_integer(
             if (MAX(height_utilization, width_utilization) < 0.88)
             {
                float device_aspect      = (float)width / height;
-               float desired_aspect     = video_st->aspect_ratio;
+               float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
                video_viewport_get_scaled_aspect2(vp, width, height,
                      y_down, device_aspect, desired_aspect);
                return;
@@ -3278,7 +3279,7 @@ static void video_viewport_get_scaled_integer(
                || padding_y <= (int)-video_st->av_info.geometry.base_height)
          {
             float device_aspect      = (float)width / height;
-            float desired_aspect     = video_st->aspect_ratio;
+            float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
             video_viewport_get_scaled_aspect2(vp, width, height,
                   y_down, device_aspect, desired_aspect);
             return;
@@ -3317,7 +3318,7 @@ void video_driver_update_viewport(
    video_driver_state_t *video_st  = &video_driver_st;
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
-   float video_driver_aspect_ratio = video_st->aspect_ratio;
+   float video_driver_aspect_ratio = VIDEO_DRIVER_ASPECT_RATIO(video_st);
    unsigned int rotation           = retroarch_get_rotation();
 
    vp->x                           = 0;
@@ -3367,7 +3368,7 @@ void video_driver_update_viewport(
          else
          {
             /* Fit mode: preserve aspect ratio within overlay viewport */
-            float game_aspect = video_st->aspect_ratio;
+            float game_aspect = VIDEO_DRIVER_ASPECT_RATIO(video_st);
             float ol_aspect   = (float)ol_w / (float)ol_h;
 
             if (game_aspect > ol_aspect)
@@ -5127,7 +5128,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
       if (new_aspect_idx > ASPECT_RATIO_END)
          new_aspect_idx       = settings->uints.video_aspect_ratio_idx = 0;
-      video_st->aspect_ratio  = aspectratio_lut[new_aspect_idx].value;
+      video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
+            aspectratio_lut[new_aspect_idx].value);
    }
 
    if (     settings->bools.video_fullscreen
@@ -5208,7 +5210,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                    /* Do rounding here to simplify integer
                     * scale correctness. */
                    unsigned base_width = roundf(geom->base_width *
-                      video_st->aspect_ratio);
+                      VIDEO_DRIVER_ASPECT_RATIO(video_st));
                    width = base_width * video_scale;
                 }
                 else
@@ -5225,7 +5227,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
                    /* Do rounding here to simplify integer
                     * scale correctness. */
                    unsigned base_width = roundf(geom->base_height *
-                      video_st->aspect_ratio);
+                      VIDEO_DRIVER_ASPECT_RATIO(video_st));
                    width = base_width * video_scale;
                 }
                 else

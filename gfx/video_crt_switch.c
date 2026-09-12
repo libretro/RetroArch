@@ -106,12 +106,12 @@ static void crt_aspect_ratio_switch(
    /* We only force aspect ratio for the core provided setting */
    if (video_aspect_ratio_idx != ASPECT_RATIO_CORE)
    {
-      RARCH_LOG("[CRT] Aspect ratio forced by user: %f.\n", video_st->aspect_ratio);
+      RARCH_LOG("[CRT] Aspect ratio forced by user: %f.\n", VIDEO_DRIVER_ASPECT_RATIO(video_st));
       return;
    }
 
    /* Send aspect float to video_driver */
-   video_st->aspect_ratio         = fly_aspect;
+   video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, fly_aspect);
    RARCH_LOG("[CRT] Setting aspect ratio: %f.\n", fly_aspect);
    RARCH_LOG("[CRT] Setting screen size: %dx%d.\n",
          width, height);
@@ -710,7 +710,7 @@ void crt_switch_res_core(
          video_driver_state_t *video_st = video_state_get_ptr();
          float fly_aspect               = (float)p_switch->fly_aspect;
          RARCH_LOG("[CRT] Restoring aspect ratio: %f.\n", fly_aspect);
-         video_st->aspect_ratio         = fly_aspect;
+         video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits, fly_aspect);
          command_event(CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, NULL);
       }
    }
