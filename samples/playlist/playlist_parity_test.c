@@ -275,11 +275,11 @@ static void check_json_full_contents(playlist_t *pl, const char *lane)
             && streq(e->subsystem_roms->elems[0].data, "/games/snes/SGB.sfc")
             && streq(e->subsystem_roms->elems[1].data, "/games/gb/Game.gb"),
             "%s: e0 subsystem_roms", lane);
-      CHECK(e->runtime_hours == 12 && e->runtime_minutes == 34
-            && e->runtime_seconds == 56, "%s: e0 runtime", lane);
-      CHECK(e->last_played_year == 2026 && e->last_played_month == 8
-            && e->last_played_day == 15 && e->last_played_hour == 1
-            && e->last_played_minute == 2 && e->last_played_second == 3,
+      CHECK(PLAYLIST_RUNTIME_HOURS(e) == 12 && PLAYLIST_RUNTIME_MINUTES(e) == 34
+            && PLAYLIST_RUNTIME_SECONDS(e) == 56, "%s: e0 runtime", lane);
+      CHECK(PLAYLIST_LAST_PLAYED_YEAR(e) == 2026 && PLAYLIST_LAST_PLAYED_MONTH(e) == 8
+            && PLAYLIST_LAST_PLAYED_DAY(e) == 15 && PLAYLIST_LAST_PLAYED_HOUR(e) == 1
+            && PLAYLIST_LAST_PLAYED_MINUTE(e) == 2 && PLAYLIST_LAST_PLAYED_SECOND(e) == 3,
             "%s: e0 last_played", lane);
    }
 

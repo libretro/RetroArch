@@ -1385,22 +1385,38 @@ void runtime_update_playlist(
       if (runtime_log_has_runtime(runtime_log))
       {
          /* Read current runtime */
-         runtime_log_get_runtime_hms(runtime_log,
-               &update_entry.runtime_hours,
-               &update_entry.runtime_minutes,
-               &update_entry.runtime_seconds);
+         {
+            unsigned rt_h = 0;
+            unsigned rt_m = 0;
+            unsigned rt_s = 0;
+
+            runtime_log_get_runtime_hms(runtime_log, &rt_h, &rt_m, &rt_s);
+            PLAYLIST_SET_RUNTIME_HOURS(&update_entry, rt_h);
+            PLAYLIST_SET_RUNTIME_MINUTES(&update_entry, rt_m);
+            PLAYLIST_SET_RUNTIME_SECONDS(&update_entry, rt_s);
+         }
 
          runtime_log_get_runtime_str(runtime_log,
                runtime_str, sizeof(runtime_str));
 
          /* Read last played timestamp */
-         runtime_log_get_last_played(runtime_log,
-               &update_entry.last_played_year,
-               &update_entry.last_played_month,
-               &update_entry.last_played_day,
-               &update_entry.last_played_hour,
-               &update_entry.last_played_minute,
-               &update_entry.last_played_second);
+         {
+            unsigned lp_y  = 0;
+            unsigned lp_mo = 0;
+            unsigned lp_d  = 0;
+            unsigned lp_h  = 0;
+            unsigned lp_mi = 0;
+            unsigned lp_s  = 0;
+
+            runtime_log_get_last_played(runtime_log,
+                  &lp_y, &lp_mo, &lp_d, &lp_h, &lp_mi, &lp_s);
+            PLAYLIST_SET_LAST_PLAYED_YEAR(&update_entry,   lp_y);
+            PLAYLIST_SET_LAST_PLAYED_MONTH(&update_entry,  lp_mo);
+            PLAYLIST_SET_LAST_PLAYED_DAY(&update_entry,    lp_d);
+            PLAYLIST_SET_LAST_PLAYED_HOUR(&update_entry,   lp_h);
+            PLAYLIST_SET_LAST_PLAYED_MINUTE(&update_entry, lp_mi);
+            PLAYLIST_SET_LAST_PLAYED_SECOND(&update_entry, lp_s);
+         }
 
          runtime_log_get_last_played_str(runtime_log,
                last_played_str, sizeof(last_played_str),

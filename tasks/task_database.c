@@ -2210,15 +2210,15 @@ static bool manual_scan_end_flush_tick(
          entry.subsystem_name    = NULL;
          entry.subsystem_roms    = NULL;
          entry.entry_slot        = 0;
-         entry.runtime_hours     = 0;
-         entry.runtime_minutes   = 0;
-         entry.runtime_seconds   = 0;
-         entry.last_played_year  = 0;
-         entry.last_played_month = 0;
-         entry.last_played_day   = 0;
-         entry.last_played_hour  = 0;
-         entry.last_played_minute= 0;
-         entry.last_played_second= 0;
+         PLAYLIST_SET_RUNTIME_HOURS(&entry, 0);
+         PLAYLIST_SET_RUNTIME_MINUTES(&entry, 0);
+         PLAYLIST_SET_RUNTIME_SECONDS(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_YEAR(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_MONTH(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_DAY(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_HOUR(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_MINUTE(&entry, 0);
+         PLAYLIST_SET_LAST_PLAYED_SECOND(&entry, 0);
 
          /* Absence is proven: the existence check above said so, or
           * this is an m3u whose previous entries were just deleted.

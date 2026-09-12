@@ -18,6 +18,7 @@
 #ifndef _PLAYLIST_H__
 #define _PLAYLIST_H__
 
+#include <stdint.h>
 #include <boolean.h>
 #include <stddef.h>
 
@@ -130,21 +131,59 @@ struct playlist_entry
    struct string_list *subsystem_roms;
    playlist_path_id_t *path_id;
    unsigned entry_slot;
-   unsigned runtime_hours;
-   unsigned runtime_minutes;
-   unsigned runtime_seconds;
    /* Note: due to platform dependence, have to record
     * timestamp as either a string or independent integer
-    * values. The latter is more verbose, but more efficient. */
-   unsigned last_played_year;
-   unsigned last_played_month;
-   unsigned last_played_day;
-   unsigned last_played_hour;
-   unsigned last_played_minute;
-   unsigned last_played_second;
+    * values. The latter is more verbose, but more efficient.
+    *
+    * Packed: a playlist holds one of these per item and each of
+    * these nine values is a handful of bits, so they ride in three
+    * words rather than nine. That is 24 bytes off every entry, which
+    * on a large playlist is hundreds of kilobytes. The hour count
+    * gets 20 bits, which is 119 years of play; the rest are what a
+    * calendar and a clock allow. Reach them through the accessors
+    * below rather than the words. */
+   uint32_t runtime;            /* hours:20 | minutes:6 | seconds:6 */
+   uint32_t last_played_ymd;    /* year:16  | month:4   | day:5     */
+   uint32_t last_played_hms;    /* hour:5   | minute:6  | second:6  */
    enum playlist_runtime_status runtime_status;
    int thumbnail_flags;
 };
+
+#define PLAYLIST_RUNTIME_HOURS(e)      ((e)->runtime >> 12)
+#define PLAYLIST_RUNTIME_MINUTES(e)    (((e)->runtime >> 6) & 0x3fu)
+#define PLAYLIST_RUNTIME_SECONDS(e)    ((e)->runtime & 0x3fu)
+#define PLAYLIST_SET_RUNTIME_HOURS(e, v) \
+   ((e)->runtime = ((e)->runtime & 0xfffu) | (((uint32_t)(v) & 0xfffffu) << 12))
+#define PLAYLIST_SET_RUNTIME_MINUTES(e, v) \
+   ((e)->runtime = ((e)->runtime & ~0xfc0u) | (((uint32_t)(v) & 0x3fu) << 6))
+#define PLAYLIST_SET_RUNTIME_SECONDS(e, v) \
+   ((e)->runtime = ((e)->runtime & ~0x3fu) | ((uint32_t)(v) & 0x3fu))
+
+#define PLAYLIST_LAST_PLAYED_YEAR(e)   ((e)->last_played_ymd >> 9)
+#define PLAYLIST_LAST_PLAYED_MONTH(e)  (((e)->last_played_ymd >> 5) & 0xfu)
+#define PLAYLIST_LAST_PLAYED_DAY(e)    ((e)->last_played_ymd & 0x1fu)
+#define PLAYLIST_SET_LAST_PLAYED_YEAR(e, v) \
+   ((e)->last_played_ymd = ((e)->last_played_ymd & 0x1ffu) \
+                         | (((uint32_t)(v) & 0xffffu) << 9))
+#define PLAYLIST_SET_LAST_PLAYED_MONTH(e, v) \
+   ((e)->last_played_ymd = ((e)->last_played_ymd & ~0x1e0u) \
+                         | (((uint32_t)(v) & 0xfu) << 5))
+#define PLAYLIST_SET_LAST_PLAYED_DAY(e, v) \
+   ((e)->last_played_ymd = ((e)->last_played_ymd & ~0x1fu) \
+                         | ((uint32_t)(v) & 0x1fu))
+
+#define PLAYLIST_LAST_PLAYED_HOUR(e)   ((e)->last_played_hms >> 12)
+#define PLAYLIST_LAST_PLAYED_MINUTE(e) (((e)->last_played_hms >> 6) & 0x3fu)
+#define PLAYLIST_LAST_PLAYED_SECOND(e) ((e)->last_played_hms & 0x3fu)
+#define PLAYLIST_SET_LAST_PLAYED_HOUR(e, v) \
+   ((e)->last_played_hms = ((e)->last_played_hms & 0xfffu) \
+                         | (((uint32_t)(v) & 0x1fu) << 12))
+#define PLAYLIST_SET_LAST_PLAYED_MINUTE(e, v) \
+   ((e)->last_played_hms = ((e)->last_played_hms & ~0xfc0u) \
+                         | (((uint32_t)(v) & 0x3fu) << 6))
+#define PLAYLIST_SET_LAST_PLAYED_SECOND(e, v) \
+   ((e)->last_played_hms = ((e)->last_played_hms & ~0x3fu) \
+                         | ((uint32_t)(v) & 0x3fu))
 
 /* Holds all configuration parameters required
  * when initialising/saving playlists */
