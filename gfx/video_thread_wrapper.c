@@ -754,18 +754,31 @@ static void video_thread_schedule_next(thread_video_t *thr)
 static void video_thread_async_run(thread_video_t *thr)
 {
    video_thread_async_load_t *n;
+   /* The driver to upload through, taken once under the lock that the
+    * list comes out of rather than read per node out from under it.
+    * The upload itself stays outside the lock, where it belongs - it
+    * is the driver talking to the GPU and can take as long as it
+    * likes - so what is held is a snapshot and not the pointer.
+    *
+    * This matters where the pair can be replaced while this thread
+    * runs, which is what the threaded-video harness does when it
+    * swaps a counting poke in around a batch of uploads. */
+   const video_poke_interface_t *poke;
+   void                         *driver_data;
 
    slock_lock(thr->lock);
    n                 = thr->async.in_head;
    thr->async.in_head = thr->async.in_tail = NULL;
+   poke              = thr->poke;
+   driver_data       = thr->driver_data;
    slock_unlock(thr->lock);
 
    while (n)
    {
       video_thread_async_load_t *next = n->next;
       n->handle = 0;
-      if (thr->driver_data && thr->poke && thr->poke->load_texture)
-         n->handle = thr->poke->load_texture(thr->driver_data,
+      if (driver_data && poke && poke->load_texture)
+         n->handle = poke->load_texture(driver_data,
                n->img, false, n->filter);
       if (n->release)
          n->release(n->img);
