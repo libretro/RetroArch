@@ -950,7 +950,17 @@ void video_thread_defer_filter(unsigned in_bpp)
  * one exchange of 'ready', and the main thread takes the newest with
  * another. Each buffer is at any time the video thread's, the main
  * thread's or the one in 'ready', so neither side ever waits. The main
- * thread frees it once no slot the video thread holds names it. */
+ * thread frees it once no slot the video thread holds names it.
+ *
+ * The hand-off is the exchange, so the feature needs a backend that
+ * has one. retro_atomic.h offers the extended operations on the
+ * backends that can express them and asks callers to gate on the
+ * primitive; a target without one takes the -2 from
+ * video_thread_record_take() and records off the frontend's own frame
+ * copy, as it does whenever the driver has no read-back. */
+#if defined(RETRO_ATOMIC_LOCK_FREE) && defined(retro_atomic_exchange_int)
+#define VIDEO_THREAD_HAS_REC 1
+#endif
 #define VIDEO_THREAD_REC_FRESH 4
 typedef struct video_thread_rec
 {
@@ -981,9 +991,9 @@ typedef struct video_thread_private
    video_thread_rec_t *rec_slot[2];
 } video_thread_private_t;
 
+#ifdef VIDEO_THREAD_HAS_REC
 static video_record_read_t video_thread_record_reader(thread_video_t *thr)
 {
-#ifdef RETRO_ATOMIC_LOCK_FREE
 #ifdef HAVE_OPENGL
    if (thr->driver == &video_gl2)
       return gl2_get_record_read();
@@ -991,7 +1001,6 @@ static video_record_read_t video_thread_record_reader(thread_video_t *thr)
 #ifdef HAVE_VULKAN
    if (thr->driver == &video_vulkan)
       return vulkan_get_record_read();
-#endif
 #endif
    (void)thr;
    return NULL;
@@ -1061,6 +1070,7 @@ static void video_thread_rec_read(thread_video_t *thr,
    rec->back = (unsigned)retro_atomic_exchange_int(&rec->ready,
          (int)(rec->back | VIDEO_THREAD_REC_FRESH)) & 3u;
 }
+#endif
 
 /* Main thread, under thr->lock: whether a slot the video thread is
  * drawing or will claim names rec. The pending slot is tail, both are
@@ -1137,6 +1147,7 @@ void video_thread_record_stop(void *data)
 int video_thread_record_take(void *data, unsigned width, unsigned height,
       const uint8_t **frame)
 {
+#ifdef VIDEO_THREAD_HAS_REC
    thread_video_t     *thr = (thread_video_t*)data;
    video_thread_rec_t *rec;
    video_record_read_t read = thr ? video_thread_record_reader(thr) : NULL;
@@ -1177,6 +1188,13 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
    rec->taken = true;
    *frame     = rec->buf[rec->front];
    return 1;
+#else
+   (void)data;
+   (void)width;
+   (void)height;
+   (void)frame;
+   return -2;
+#endif
 }
 
 static void video_thread_loop(void *data)
@@ -1416,9 +1434,11 @@ static void video_thread_loop(void *data)
                thr->driver->viewport_info(thr->driver_data, &vp);
 
             /* GPU recording: what was just drawn, read back */
+#ifdef VIDEO_THREAD_HAS_REC
             if (ret_frame && ((video_thread_private_t*)thr)->rec_slot[slot])
                video_thread_rec_read(thr,
                      ((video_thread_private_t*)thr)->rec_slot[slot], &vp);
+#endif
          }
          else
             slock_unlock(thr->frame.lock);
