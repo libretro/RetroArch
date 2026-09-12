@@ -177,6 +177,11 @@ struct gl2
       GLint    loc_mode;
       GLint    loc_ui_nits;
       bool   active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 
 };

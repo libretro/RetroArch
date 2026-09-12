@@ -8026,8 +8026,7 @@ static bool vulkan_frame(void *data, const void *frame,
          {
             struct vk_draw_quad quad;
             struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
-            settings_t *settings       = config_get_ptr();
-            bool menu_linear_filter    = settings->bools.menu_linear_filter;
+            bool menu_linear_filter    = video_info->menu_linear_filter;
 
             vulkan_set_viewport(vk, width, height, ((vk->flags &
                      VK_FLAG_MENU_FULLSCREEN) > 0), false);
@@ -8443,8 +8442,7 @@ static bool vulkan_frame(void *data, const void *frame,
        * format.  Force recreation when the depth we want and the depth
        * we have disagree. */
       {
-         settings_t *settings   = config_get_ptr();
-         bool want_10bit        = (settings->uints.video_swapchain_bit_depth == 2);
+         bool want_10bit        = (video_info->swapchain_bit_depth == 2);
          bool have_10bit        =
                (   vk->context->swapchain_format
                      == VK_FORMAT_A2B10G10R10_UNORM_PACK32

@@ -191,6 +191,11 @@ typedef struct gl3
       unsigned width;
       unsigned height;
       bool     active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 #endif /* HAVE_SLANG */
 
@@ -4650,7 +4655,7 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 
    memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
    ubo_data[16] = settings
-         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+         ? gl->scrgb.paper_white_nits : 200.0f;
    ubo_data[17] = 0.0f;
    ubo_data[18] = 2.0f;   /* PQ -> SDR */
    ubo_data[19] = 0.0f;   /* no separate UI layer on this path */
@@ -4729,6 +4734,13 @@ static bool gl3_frame(void *data, const void *frame,
 
    if (!gl)
       return false;
+
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl3_encode_pq_to_sdr()
+    * read the latched copies. */
+   gl->scrgb.menu_nits        = video_info->hdr_menu_nits;
+   gl->scrgb.paper_white_nits = video_info->hdr_paper_white_nits;
+   gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
 
    /* Whether to read frames back travels with the frame, so this thread
     * does not read the recording state the main thread writes. */
@@ -5161,7 +5173,6 @@ static bool gl3_frame(void *data, const void *frame,
     * the backbuffer as before. */
    if (gl->scrgb.active && gl->scrgb.fbo && gl->pipelines.hdr_scrgb)
    {
-      settings_t *settings = config_get_ptr();
       float ubo_data[20];
       bool ui_visible      = false;
       static const float quad_pos[8] = {
@@ -5195,10 +5206,8 @@ static bool gl3_frame(void *data, const void *frame,
       {
          bool  pq         = gl->video_info.source_hdr10
                          && gl->scrgb.ui_fbo != 0;
-         float paper_white = settings
-               ? settings->floats.video_hdr_paper_white_nits : 200.0f;
-         float menu_nits   = settings
-               ? settings->floats.video_hdr_menu_nits : 200.0f;
+         float paper_white = gl->scrgb.paper_white_nits;
+         float menu_nits   = gl->scrgb.menu_nits;
 
          memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
          /* SDR content keeps the existing single-target behaviour,
@@ -5209,8 +5218,7 @@ static bool gl3_frame(void *data, const void *frame,
          ubo_data[16] = pq
                ? paper_white
                : (ui_visible ? menu_nits : paper_white);
-         ubo_data[17] = settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
+         ubo_data[17] = (float)gl->scrgb.expand_gamut;
          /* 0 = SDR -> scRGB, 1 = PQ -> scRGB (2 is the SDR-output
           * fallback, issued from gl3_encode_pq_to_sdr instead). */
          ubo_data[18] = pq ? 1.0f : 0.0f;

@@ -4528,6 +4528,17 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
    video_info->hdr_mode                    = settings->uints.video_hdr_mode;
+   video_info->hdr_menu_nits                = settings->floats.video_hdr_menu_nits;
+   video_info->hdr_paper_white_nits         = settings->floats.video_hdr_paper_white_nits;
+   video_info->hdr_expand_gamut             = settings->uints.video_hdr_expand_gamut;
+   video_info->menu_linear_filter           = settings->bools.menu_linear_filter;
+   video_info->scale_integer                = settings->bools.video_scale_integer;
+   video_info->video_smooth                 = settings->bools.video_smooth;
+   video_info->swapchain_bit_depth          = settings->uints.video_swapchain_bit_depth;
+#ifdef GEKKO
+   video_info->overscan_correction_top      = settings->uints.video_overscan_correction_top;
+   video_info->overscan_correction_bottom   = settings->uints.video_overscan_correction_bottom;
+#endif
 
    video_info->libretro_running            = false;
    video_info->msg_bgcolor_enable          = settings->bools.video_msg_bgcolor_enable;

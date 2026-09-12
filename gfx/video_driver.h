@@ -416,6 +416,15 @@ typedef struct video_frame_info
    unsigned runahead_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
+   /* Settings a driver reads while it draws a frame: they arrive with
+    * the frame, so the thread that draws never reads what the menu
+    * writes on the main thread. */
+   unsigned hdr_expand_gamut;
+   unsigned swapchain_bit_depth;
+#ifdef GEKKO
+   unsigned overscan_correction_top;
+   unsigned overscan_correction_bottom;
+#endif
    unsigned monitor_index;
    unsigned crt_switch_resolution;
    unsigned crt_switch_resolution_super;
@@ -507,6 +516,9 @@ typedef struct video_frame_info
    bool fullscreen;
    bool font_enable;
    bool hdr_support;
+   bool menu_linear_filter;
+   bool scale_integer;
+   bool video_smooth;
    bool libretro_running;
    /* The core ran this iteration: not paused, and not stopped under
     * the menu by menu_pause_libretro. The threaded wrapper's display
@@ -522,6 +534,8 @@ typedef struct video_frame_info
    bool msg_bgcolor_enable;
    bool crt_switch_hires_menu;
    unsigned hdr_mode;
+   float hdr_menu_nits;
+   float hdr_paper_white_nits;
    bool overlay_behind_menu;
    bool scan_subframes;
    bool shader_active;

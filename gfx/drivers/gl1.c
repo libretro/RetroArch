@@ -289,6 +289,11 @@ typedef struct gl1
       unsigned width;
       unsigned height;
       bool   active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 
    /* Captured from video_info_t at init: whether the source frames are
@@ -1609,7 +1614,7 @@ static void gl1_tonemap_pq_rows(gl1_t *gl1, const void *frame,
    static bool    warned     = false;
    settings_t *settings      = config_get_ptr();
    float paper_white         = settings
-         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+         ? gl1->scrgb.paper_white_nits : 200.0f;
    unsigned x, y;
 
    if (paper_white < 1.0f)
@@ -2216,6 +2221,13 @@ static bool gl1_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    bool overlay_behind_menu         = video_info->overlay_behind_menu;
 
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl1_tonemap_pq_rows()
+    * read the latched copies. */
+   gl1->scrgb.menu_nits             = video_info->hdr_menu_nits;
+   gl1->scrgb.paper_white_nits      = video_info->hdr_paper_white_nits;
+   gl1->scrgb.expand_gamut          = video_info->hdr_expand_gamut;
+
    /* gl1 fixed-function has no programmable pipeline, so the
     * animated XMB backgrounds (Ribbon / Snow / Bokeh / etc.) can't
     * run -- force that off so XMB falls back to the static gradient. */
@@ -2496,7 +2508,6 @@ static bool gl1_frame(void *data, const void *frame,
     * otherwise; both read live per frame. */
    if (gl1->scrgb.active && gl1->scrgb.fbo && gl1->scrgb.program)
    {
-      settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
       bool pq              = gl1->source_hdr10
@@ -2522,10 +2533,9 @@ static bool gl1_frame(void *data, const void *frame,
        * does not apply to it - and its UI is composited separately at
        * the menu setting; SDR content keeps the existing whole-frame
        * behaviour. */
-      if (settings)
-         nits = (!pq && ui_visible)
-               ? settings->floats.video_hdr_menu_nits
-               : settings->floats.video_hdr_paper_white_nits;
+      nits = (!pq && ui_visible)
+            ? gl1->scrgb.menu_nits
+            : gl1->scrgb.paper_white_nits;
 
       gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
       glViewport(0, 0, video_width, video_height);
@@ -2539,14 +2549,13 @@ static bool gl1_frame(void *data, const void *frame,
       if (gl1->scrgb.loc_nits >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_nits, nits);
       if (gl1->scrgb.loc_expand >= 0)
-         gl1->scrgb.Uniform1f(gl1->scrgb.loc_expand, settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_expand,
+               (float)gl1->scrgb.expand_gamut);
       if (gl1->scrgb.loc_mode >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_mode, pq ? 1.0f : 0.0f);
       if (gl1->scrgb.loc_ui_nits >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_ui_nits,
-               (pq && settings)
-               ? settings->floats.video_hdr_menu_nits : 0.0f);
+               pq ? gl1->scrgb.menu_nits : 0.0f);
 
       /* Unit 1 must hold something valid even when the shader will not
        * sample it. ActiveTexture is guaranteed resolved here: the

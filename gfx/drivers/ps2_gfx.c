@@ -871,7 +871,6 @@ static bool ps2_frame(void *data, const void *frame,
    GSGLOBAL *gsGlobal             = ps2->gsGlobal;
    struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;
    bool statistics_show           = video_info->statistics_show;
-   settings_t *settings           = config_get_ptr();
    GSTEXTURE *tex                 = ps2->coreTexture;
 
    if (!width || !height)
@@ -889,7 +888,7 @@ static bool ps2_frame(void *data, const void *frame,
    {
       /* New frame from core, update */
       float fDAR = ps2->force_aspect ? video_driver_get_aspect_ratio() : 0;
-      bool bScaleInteger = settings->bools.video_scale_integer;
+      bool bScaleInteger = video_info->scale_integer;
 
       /* Checking if the transfer is done in the core */
       if (frame != RETRO_HW_FRAME_BUFFER_VALID)

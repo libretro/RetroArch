@@ -4161,7 +4161,7 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
       glUniform1i(gl->scrgb.loc_ui_tex, 0);
    if (gl->scrgb.loc_nits >= 0)
       glUniform1f(gl->scrgb.loc_nits, settings
-            ? settings->floats.video_hdr_paper_white_nits : 200.0f);
+            ? gl->scrgb.paper_white_nits : 200.0f);
    if (gl->scrgb.loc_expand >= 0)
       glUniform1f(gl->scrgb.loc_expand, 0.0f);
    if (gl->scrgb.loc_mode >= 0)
@@ -4309,10 +4309,17 @@ static bool gl2_frame(void *data, const void *frame,
    bool widgets_active                 = video_info->widgets_active;
 #endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
-   bool video_scale_integer            = config_get_ptr()->bools.video_scale_integer;
+   bool video_scale_integer            = video_info->scale_integer;
 
    if (!gl)
       return false;
+
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl2_encode_pq_to_sdr()
+    * read the latched copies. */
+   gl->scrgb.menu_nits        = video_info->hdr_menu_nits;
+   gl->scrgb.paper_white_nits = video_info->hdr_paper_white_nits;
+   gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
 
    /* Whether to read frames back travels with the frame, so this thread
     * does not read the recording state the main thread writes. */
@@ -4614,7 +4621,6 @@ static bool gl2_frame(void *data, const void *frame,
     * frame, paper white otherwise. */
    if (gl->scrgb.active && gl->scrgb.fbo && gl->scrgb.program)
    {
-      settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
       bool pq              = gl->video_info.source_hdr10
@@ -4647,10 +4653,9 @@ static bool gl2_frame(void *data, const void *frame,
        * not apply to it - and the UI is composited separately at the
        * menu setting instead, which is what that setting means on the
        * other HDR paths. */
-      if (settings)
-         nits = (!pq && ui_visible)
-               ? settings->floats.video_hdr_menu_nits
-               : settings->floats.video_hdr_paper_white_nits;
+      nits = (!pq && ui_visible)
+            ? gl->scrgb.menu_nits
+            : gl->scrgb.paper_white_nits;
 
       gl2_bind_fb(0);
       glViewport(0, 0, gl->video_width, gl->video_height);
@@ -4663,14 +4668,13 @@ static bool gl2_frame(void *data, const void *frame,
       if (gl->scrgb.loc_nits >= 0)
          glUniform1f(gl->scrgb.loc_nits, nits);
       if (gl->scrgb.loc_expand >= 0)
-         glUniform1f(gl->scrgb.loc_expand, settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+         glUniform1f(gl->scrgb.loc_expand,
+               (float)gl->scrgb.expand_gamut);
       if (gl->scrgb.loc_mode >= 0)
          glUniform1f(gl->scrgb.loc_mode, pq ? 1.0f : 0.0f);
       if (gl->scrgb.loc_ui_nits >= 0)
          glUniform1f(gl->scrgb.loc_ui_nits,
-               (pq && settings)
-               ? settings->floats.video_hdr_menu_nits : 0.0f);
+               pq ? gl->scrgb.menu_nits : 0.0f);
 
       /* Unit 1 must hold something valid even when the shader will
        * not sample it (uUINits == 0): a stale binding on the unit is
