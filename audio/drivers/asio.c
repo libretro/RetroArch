@@ -45,6 +45,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -129,7 +130,78 @@ typedef struct ASIOBufferInfo
    void *buffers[2];
 } ASIOBufferInfo;
 
-typedef struct ASIOTime ASIOTime;
+/* The time information the driver hands the callback, laid out as the
+ * SDK lays it out - this is an ABI, not an interface of ours, so the
+ * field order and the widths are the SDK's and nothing here may be
+ * rearranged.
+ *
+ * ASIOSamples and ASIOTimeStamp are 64-bit quantities that the SDK
+ * carries as two 32-bit halves on Windows: asiosys.h leaves
+ * NATIVE_INT64 at 0 there, so the struct form is what a Windows driver
+ * writes and the struct form is what has to be read back. They are
+ * recombined below rather than being declared as long long, which
+ * would be the wrong size on nothing but would be the wrong LAYOUT
+ * here. */
+typedef struct ASIOSamples
+{
+   unsigned long hi;
+   unsigned long lo;
+} ASIOSamples;
+
+typedef struct ASIOTimeStamp
+{
+   unsigned long hi;
+   unsigned long lo;
+} ASIOTimeStamp;
+
+typedef struct ASIOTimeCode
+{
+   double        speed;
+   ASIOSamples   timeCodeSamples;
+   unsigned long flags;
+   char          future[64];
+} ASIOTimeCode;
+
+typedef struct AsioTimeInfo
+{
+   double         speed;
+   ASIOTimeStamp  systemTime;     /* nanoseconds */
+   ASIOSamples    samplePosition;
+   ASIOSampleRate sampleRate;
+   unsigned long  flags;
+   char           reserved[12];
+} AsioTimeInfo;
+
+typedef struct ASIOTime
+{
+   long         reserved[4];
+   AsioTimeInfo timeInfo;
+   ASIOTimeCode timeCode;
+} ASIOTime;
+
+/* The layout above is only right if a long is four bytes here, which
+ * it is on Windows and is the whole reason the 64-bit fields are split
+ * in two. These fail the build rather than the stream if that ever
+ * stops being true - a wrong layout does not misbehave visibly, it
+ * reads a driver's numbers as garbage inside a real-time callback.
+ * samples/audio/asio_clock asserts the same offsets against the SDK's
+ * published ones. */
+typedef char asio_assert_long_is_32[(sizeof(unsigned long) == 4) ? 1 : -1];
+typedef char asio_assert_timeinfo_size[(sizeof(AsioTimeInfo) == 48) ? 1 : -1];
+typedef char asio_assert_samplepos_at_16[
+   (offsetof(AsioTimeInfo, samplePosition) == 16) ? 1 : -1];
+typedef char asio_assert_systemtime_at_8[
+   (offsetof(AsioTimeInfo, systemTime) == 8) ? 1 : -1];
+typedef char asio_assert_flags_at_32[
+   (offsetof(AsioTimeInfo, flags) == 32) ? 1 : -1];
+typedef char asio_assert_timeinfo_at_16[
+   (offsetof(ASIOTime, timeInfo) == 16) ? 1 : -1];
+
+/* AsioTimeInfo::flags. Only the two that say whether the two numbers
+ * this driver wants are meaningful at all; a driver is entitled to
+ * leave either unset on any given callback. */
+#define kSystemTimeValid     (1UL << 0)
+#define kSamplePositionValid (1UL << 1)
 
 /* Callback function signatures */
 typedef void (*asio_buffer_switch_fn)(long index, ASIOBool directProcess);
@@ -690,6 +762,42 @@ typedef struct ra_asio
    /* Periods that ended in silence for want of audio: one atomic add
     * on that path, read by the frontend's overlay. */
    retro_atomic_size_t underruns;
+
+   /* The device clock, measured from the driver's own time information
+    * rather than from when its callbacks happened to arrive.
+    *
+    * A callback timestamp carries the OS's scheduling jitter; the
+    * sample position and system time the driver reports do not, so the
+    * ratio between them over a long window is a much cleaner reading
+    * of what the hardware clock is actually doing. The anchors are
+    * touched only by the callback thread and need no synchronisation.
+    * The result is published as one int - parts per million against
+    * the nominal rate - because a single aligned word is the only
+    * thing that can be handed across cheaply and correctly, and
+    * because ppm is what the WASAPI overlay already reports. */
+   uint64_t            clk_anchor_pos;
+   uint64_t            clk_anchor_ns;
+   int                 clk_have_anchor;
+   /* A least-squares fit of sample position against system time, taken
+    * over every callback rather than between two of them.
+    *
+    * Two points cannot do this: whatever noise sits on the anchor's
+    * timestamp is divided by the window and appears in the answer as
+    * drift, so half a millisecond on the anchor is fifty parts per
+    * million at a ten-second window - larger than the drift being
+    * looked for. A fit over every observation has no privileged point
+    * for the noise to hide in.
+    *
+    * The sums are kept in seconds and samples relative to the anchor,
+    * not in raw nanoseconds: a fit on numbers of the order 1e10 loses
+    * the answer to cancellation when the squares are subtracted. */
+   double              clk_sx;
+   double              clk_sy;
+   double              clk_sxx;
+   double              clk_sxy;
+   double              clk_n;
+   retro_atomic_int_t  clk_ppm;
+   retro_atomic_int_t  clk_valid;
    /* Frames the device has taken: a period per callback, silence
     * included. Written by the callback thread, read by the writer, so
     * atomic: an aligned word is what the machine will not tear, which
@@ -995,9 +1103,93 @@ static long asio_cb_message(long selector, long value,
    }
 }
 
+/* Recombines one of the SDK's split 64-bit quantities. */
+static INLINE uint64_t asio_int64(unsigned long hi, unsigned long lo)
+{
+   return ((uint64_t)(uint32_t)hi << 32) | (uint32_t)lo;
+}
+
 static ASIOTime * asio_cb_buffer_switch_time_info(
       ASIOTime *params, long index, ASIOBool direct_process)
 {
+   /* The driver's own account of where the hardware is, taken before
+    * the period is filled so the reading is not charged for the
+    * conversion work below it.
+    *
+    * Nothing here feeds rate control. This measures the device clock
+    * beside the estimator that already drives it, so the two can be
+    * compared on real hardware before either is trusted over the
+    * other - and so that saying yes to kAsioSupportsTimeInfo stops
+    * being a claim this driver does not act on. */
+   if (params)
+   {
+      ra_asio_t *ad = g_asio;
+      unsigned long flags = params->timeInfo.flags;
+
+      if (     ad
+            && (flags & kSamplePositionValid)
+            && (flags & kSystemTimeValid))
+      {
+         uint64_t pos = asio_int64(params->timeInfo.samplePosition.hi,
+                                   params->timeInfo.samplePosition.lo);
+         uint64_t ns  = asio_int64(params->timeInfo.systemTime.hi,
+                                   params->timeInfo.systemTime.lo);
+
+         if (!ad->clk_have_anchor)
+         {
+            ad->clk_anchor_pos  = pos;
+            ad->clk_anchor_ns   = ns;
+            ad->clk_have_anchor = 1;
+            ad->clk_sx = ad->clk_sy = ad->clk_sxx = ad->clk_sxy = 0.0;
+            ad->clk_n  = 0.0;
+         }
+         /* Both must move forward: a driver that resets its position,
+          * or reports the same instant twice, starts the fit again
+          * rather than feeding it a negative or zero step. */
+         else if (pos >= ad->clk_anchor_pos && ns > ad->clk_anchor_ns)
+         {
+            double x = (double)(ns  - ad->clk_anchor_ns) / 1000000000.0;
+            double y = (double)(pos - ad->clk_anchor_pos);
+            double d;
+
+            ad->clk_sx  += x;
+            ad->clk_sy  += y;
+            ad->clk_sxx += x * x;
+            ad->clk_sxy += x * y;
+            ad->clk_n   += 1.0;
+
+            /* A second of window before the first reading, so the fit
+             * has a span to work across and not just a cluster. */
+            d = ad->clk_n * ad->clk_sxx - ad->clk_sx * ad->clk_sx;
+            if (x >= 1.0 && d > 0.0 && ad->sample_rate)
+            {
+               /* Samples per second: the slope of position against
+                * time, which is the hardware rate. */
+               double measured = (ad->clk_n * ad->clk_sxy
+                     - ad->clk_sx * ad->clk_sy) / d;
+               double ppm      = (measured / (double)ad->sample_rate - 1.0)
+                  * 1000000.0;
+
+               /* Ten percent out is not a clock, it is a driver
+                * reporting something this code has misread; it is
+                * dropped rather than published. */
+               if (ppm > -100000.0 && ppm < 100000.0)
+               {
+                  retro_atomic_store_release_int(&ad->clk_ppm, (int)ppm);
+                  retro_atomic_store_release_int(&ad->clk_valid, 1);
+               }
+            }
+         }
+         else
+         {
+            ad->clk_anchor_pos = pos;
+            ad->clk_anchor_ns  = ns;
+            ad->clk_sx = ad->clk_sy = ad->clk_sxx = ad->clk_sxy = 0.0;
+            ad->clk_n  = 0.0;
+         }
+      }
+   }
+
    asio_cb_buffer_switch(index, direct_process);
    return params;
 }
@@ -1424,6 +1616,16 @@ static void *ra_asio_init(const char *device, unsigned rate,
       retro_atomic_int_init(&ad->is_paused, 0);
       ad->nonblock  = false;
 
+      /* The clock measurement starts again with this session. Its
+       * window is anchored against a sample position and a rate, and
+       * this path is where both may change - carrying the old anchor
+       * across would measure the gap between two sessions and call it
+       * drift. */
+      ad->clk_have_anchor = 0;
+      ad->clk_n           = 0.0;
+      retro_atomic_store_release_int(&ad->clk_valid, 0);
+      retro_atomic_store_release_int(&ad->clk_ppm, 0);
+
       /* The rate, settled before anything is sized from it.
        *
        * ad->sample_rate is only ever what this driver last asked for.
@@ -1524,6 +1726,9 @@ static void *ra_asio_init(const char *device, unsigned rate,
    if (!ad)
       return NULL;
    retro_atomic_size_init(&ad->underruns, 0);
+   retro_atomic_int_init(&ad->clk_ppm, 0);
+   retro_atomic_int_init(&ad->clk_valid, 0);
+   ad->clk_have_anchor = 0;
    retro_atomic_size_init(&ad->consumed, 0);
 
    /* Register cleanup for process exit — ensures the parked
@@ -1843,6 +2048,18 @@ static void ra_asio_free(void *data)
    ra_asio_t *ad = (ra_asio_t *)data;
    if (!ad)
       return;
+
+   /* What the driver's own time information said the hardware clock
+    * was doing, against the rate this driver asked for. Logged beside
+    * the underrun count rather than acted on: until this has been read
+    * off real interfaces it is a measurement, not an input. */
+   if (retro_atomic_load_acquire_int(&ad->clk_valid))
+      RARCH_LOG("[ASIO] Device clock, from the driver's time information:"
+            " %+d ppm against %u Hz.\n",
+            retro_atomic_load_acquire_int(&ad->clk_ppm), ad->sample_rate);
+   else
+      RARCH_LOG("[ASIO] Device clock: the driver reported no usable time"
+            " information.\n");
 
    retro_atomic_store_release_int(&ad->shutdown, 1);
    retro_atomic_store_release_int(&ad->is_paused, 0);

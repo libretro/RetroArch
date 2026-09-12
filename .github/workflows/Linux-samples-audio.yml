@@ -559,6 +559,35 @@ jobs:
              ./coreaudio_ring_test
           echo "[pass] coreaudio_ring_test (ASan)"
 
+      - name: Build and run asio_clock_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/asio_clock
+        run: |
+          set -eu
+          # The device clock read from the driver's own time
+          # information, rather than from when its callbacks arrived.
+          #
+          # Two things here do not need an interface. The ASIOTime
+          # layout is an ABI: the sample position and system time are
+          # 64-bit values the SDK splits into 32-bit halves on Windows,
+          # and getting that wrong does not fail to build, it reads a
+          # driver's numbers as garbage in a real-time callback. The
+          # offsets are asserted against the SDK's, and asio.c carries
+          # the same assertions for the compiler that sees the real
+          # Windows ABI.
+          #
+          # And the estimate itself: a clock at a known offset is fed
+          # in with scheduling jitter on the timestamps, and the answer
+          # has to be the clock. A two-point estimate fails that - the
+          # anchor's own noise divided by the window reads as drift,
+          # 50 ppm for half a millisecond at ten seconds - which is why
+          # it is a least-squares fit over every callback instead.
+          make clean all SANITIZER=address,undefined
+          test -x asio_clock_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./asio_clock_test
+          echo "[pass] asio_clock_test (ASan)"
+
       - name: Build and run asio_ring_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/asio_ring
