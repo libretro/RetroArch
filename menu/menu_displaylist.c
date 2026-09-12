@@ -11419,6 +11419,7 @@ unsigned menu_displaylist_build_list(
                   static const menu_displaylist_settings_row_t dl_rows_10[] = {
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED, PARSE_ONLY_FLOAT, false },
+                     { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED_AUTO, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, false },
                      /* Governs the estimate on the row above; lives beside it. */
                      { MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY, PARSE_ONLY_BOOL, false },

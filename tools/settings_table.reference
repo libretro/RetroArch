@@ -161,6 +161,7 @@ bool	log_to_file	1	0
 bool	log_to_file_timestamp	1	0
 bool	fastforward_frameskip	1	1
 bool	vrr_runloop_enable	1	0
+bool	video_refresh_rate_polled_auto	1	0
 bool	wifi_enabled	1	1
 bool	history_list_enable	1	1
 bool	ozone_truncate_playlist_name	1	1
@@ -817,6 +818,7 @@ bool	log_to_file	1	0
 bool	log_to_file_timestamp	1	0
 bool	fastforward_frameskip	1	1
 bool	vrr_runloop_enable	1	0
+bool	video_refresh_rate_polled_auto	1	0
 bool	wifi_enabled	1	1
 bool	history_list_enable	1	1
 bool	ozone_truncate_playlist_name	1	1
@@ -1478,6 +1480,7 @@ bool	log_to_file	1	0
 bool	log_to_file_timestamp	1	0
 bool	fastforward_frameskip	1	1
 bool	vrr_runloop_enable	1	0
+bool	video_refresh_rate_polled_auto	1	0
 bool	wifi_enabled	1	1
 bool	history_list_enable	1	1
 bool	ozone_truncate_playlist_name	1	1
