@@ -17,7 +17,8 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
