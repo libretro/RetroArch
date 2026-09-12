@@ -1860,14 +1860,21 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       size_t size)
 {
    size_t done = 0;
+   /* Asked for once and then spent, rather than asked again on every
+    * lap. The device only ever frees more room as it plays, so room
+    * read a moment ago is a lower bound and writing against it is
+    * safe; it is re-read when it runs out, which is when the answer
+    * would have changed. On a pin with no position register that read
+    * is an ioctl, and a frontend write of a video frame's worth takes
+    * several laps of this loop. */
+   size_t room = 0;
 
    while (done < size)
    {
-      size_t room = wdmks_rt_free(w);
       size_t chunk;
       size_t first;
 
-      if (!room)
+      if (!room && !(room = wdmks_rt_free(w)))
       {
          if (w->nonblock)
             break;
@@ -1904,6 +1911,7 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
 
       w->rt_write = (w->rt_write + chunk) % w->rt_size;
       done       += chunk;
+      room       -= chunk;
    }
    return (ssize_t)done;
 }
@@ -2132,23 +2140,18 @@ static bool wdmks_position(wdmks_t *w, uint64_t *frames)
    return true;
 }
 
-static void wdmks_clock_sample(wdmks_t *w)
+/* frames is what the caller has just read, so this does not read it
+ * again. On a pin with no position register that read is an ioctl,
+ * and doing it twice a frame for two consumers of the same number is
+ * the plainest waste on this path. */
+static void wdmks_clock_sample(wdmks_t *w, uint64_t frames)
 {
    LARGE_INTEGER now;
-   uint64_t      frames = 0;
    double        x, y, d;
 
    if (!w->clk_freq || !w->rate)
       return;
-   /* Same order as frames_consumed, and for the same reason. */
-   if (w->stream.looped)
-   {
-      ULONG now = 0;
-      if (!wdmks_rt_play_offset(w, &now))
-         return;
-      frames = w->rt_played;
-   }
-   else if (!wdmks_position(w, &frames))
+   if (!frames)
       return;
    if (!QueryPerformanceCounter(&now))
       return;
@@ -2204,21 +2207,6 @@ static size_t wdmks_frames_consumed(void *data)
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE)
       return 0;
 
-   /* Not the position register, on either path. That register is a
-    * byte offset into the loop and it wraps at the end of it - every
-    * 8 ms at this buffer size - so accumulating the steps between
-    * reads only works while the reads are closer together than the
-    * wrap. The frontend asks once a frame, 16 ms apart, and misses a
-    * wrap every time; backgrounded and throttled it misses ten. The
-    * sink estimate read -999043 ppm because of it.
-    *
-    * KSPROPERTY_AUDIO_POSITION's PlayOffset does not wrap - it is
-    * what the device has played since the stream started - so it is
-    * what answers this question on both paths. The register keeps the
-    * job it is good at, which is saying where in the loop it is safe
-    * to write, and that is read far more often than it wraps. */
-   wdmks_clock_sample(w);
-
    /* The register first on a looped pin, not the property.
     *
     * A WaveRT driver exposes its position through the register it
@@ -2246,10 +2234,14 @@ static size_t wdmks_frames_consumed(void *data)
       ULONG now = 0;
       if (!wdmks_rt_play_offset(w, &now))
          return 0;
+      wdmks_clock_sample(w, w->rt_played);
       return (size_t)w->rt_played;
    }
    if (wdmks_position(w, &frames))
+   {
+      wdmks_clock_sample(w, frames);
       return (size_t)frames;
+   }
    return 0;
 }
 
