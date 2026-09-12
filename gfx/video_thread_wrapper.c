@@ -2554,8 +2554,6 @@ static bool thread_get_current_software_framebuffer(void *data,
       return false;
    }
    thr->frame.lent        = (int)slot;
-   thr->frame.lent_width  = fb->width;
-   thr->frame.lent_height = fb->height;
    slock_unlock(thr->lock);
 
    fb->data         = thr->frame.slot[slot].buffer;

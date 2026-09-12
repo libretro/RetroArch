@@ -451,8 +451,6 @@ typedef struct thread_video
        * Opaque here so this header needs no API types; see
        * video_thread_hw.c. */
       void *hw_ring;
-      unsigned lent_width;
-      unsigned lent_height;
       uint64_t zero_copy_count;
    } frame;
 
