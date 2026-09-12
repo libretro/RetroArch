@@ -1276,7 +1276,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
       if (   [[NSDate date] timeIntervalSinceDate:self.bgDate] > 60.0f
           && (   !(runloop_get_flags() & RUNLOOP_FLAG_CORE_RUNNING)
               || retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)))
-         task_push_cloud_sync();
+         task_push_cloud_sync(NULL, NULL);
       self.bgDate = nil;
    }
 #endif

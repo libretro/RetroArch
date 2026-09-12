@@ -25,6 +25,7 @@
 - CONFIG: Fix saving main configuration after load configuration
 - DOS: RetroArch for DOS can now start up and handle keyboard correctly
 - CLOUDSYNC: Conflict resolution options
+- CLOUDSYNC: Add --cloudsync command line option to run a sync and exit
 - EMSCRIPTEN: Added dice to core selection dropdown
 - EMSCRIPTEN: Numerous bugfixes
 - FFMPEG: new features for save state, variable strength seek, audio/subtitle stream controls

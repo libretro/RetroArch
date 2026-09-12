@@ -332,7 +332,8 @@ enum
    RA_OPT_SET_SHADER,
    RA_OPT_DATABASE_SCAN,
    RA_OPT_ACCESSIBILITY,
-   RA_OPT_LOAD_MENU_ON_ERROR
+   RA_OPT_LOAD_MENU_ON_ERROR,
+   RA_OPT_CLOUDSYNC
 };
 
 /* DRIVERS */
@@ -4143,7 +4144,7 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_CLOUDSYNC
             /* Sync on core unload if in automatic mode */
             if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
-               task_push_cloud_sync();
+               task_push_cloud_sync(NULL, NULL);
 #endif
          }
 
@@ -5156,7 +5157,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
 #ifdef HAVE_CLOUDSYNC
       case CMD_EVENT_CLOUD_SYNC:
-         task_push_cloud_sync();
+         task_push_cloud_sync(NULL, NULL);
          break;
       case CMD_EVENT_CLOUD_SYNC_RESOLVE_KEEP_LOCAL:
          task_push_cloud_sync_resolve_keep_local();
@@ -6689,7 +6690,7 @@ int rarch_main(int argc, char *argv[], void *data)
          );
 #ifdef HAVE_CLOUDSYNC
    if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
-      task_push_cloud_sync();
+      task_push_cloud_sync(NULL, NULL);
 #endif
 #ifdef HAVE_LAKKA
    sd_notify(0, "READY=1");
@@ -7274,6 +7275,11 @@ static void retroarch_print_help(const char *arg0)
          "      --scan=PATH|FILE           "
          "Import content from path.\n");
 #endif
+#ifdef HAVE_CLOUDSYNC
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --cloudsync                "
+         "Run a cloud sync, then exits.\n");
+#endif
 
    strlcpy_append(buf, sizeof(buf), &_len,
          "  -f, --fullscreen               "
@@ -7593,6 +7599,15 @@ void handle_dbscan_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err);
 #endif
 
+#ifdef HAVE_CLOUDSYNC
+/* --cloudsync: records the verdict where the blocked caller can read it. */
+static void handle_cloud_sync_cli_finished(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   *(int*)user_data = err ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+#endif
+
 /**
  * retroarch_parse_input_and_config:
  * @argc                 : Count of (commandline) arguments.
@@ -7686,6 +7701,9 @@ static bool retroarch_parse_input_and_config(
       { "entryslot",          1, NULL, 'e' },
 #ifdef HAVE_LIBRETRODB
       { "scan",               1, NULL, RA_OPT_DATABASE_SCAN },
+#endif
+#ifdef HAVE_CLOUDSYNC
+      { "cloudsync",          0, NULL, RA_OPT_CLOUDSYNC },
 #endif
       { NULL, 0, NULL, 0 }
    };
@@ -7869,6 +7887,13 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_LIBRETRODB
                verbosity_enable();
                retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+#endif
+               break;
+            case RA_OPT_CLOUDSYNC:
+#ifdef HAVE_CLOUDSYNC
+               /* Enable verbosity so that the sync's summary is printed. */
+               verbosity_enable();
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
 #endif
                break;
 
@@ -8324,6 +8349,46 @@ static bool retroarch_parse_input_and_config(
                      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
                      exit(0);
                   }
+               }
+#endif
+               break;
+            case RA_OPT_CLOUDSYNC:
+#ifdef HAVE_CLOUDSYNC
+               {
+                  int result           = -1;
+                  settings_t *settings = config_get_ptr();
+                  int reinit_flags     = DRIVERS_CMD_ALL &
+                        ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
+
+                  if (!settings->bools.cloud_sync_enable)
+                  {
+                     RARCH_WARN("[CloudSync] Cloud Sync is disabled, nothing to sync.\n");
+                     exit(0);
+                  }
+
+                  /* This is normally done in retroarch_main_init(), which isn't run here. */
+                  drivers_init(settings, reinit_flags, (enum driver_lifetime_flags)0, false);
+                  retroarch_init_task_queue();
+                  cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
+                        "cloud sync driver", verbosity_is_enabled());
+
+                  /* Create the task queue and repeatedly check it until it's complete. */
+                  if (task_push_cloud_sync(handle_cloud_sync_cli_finished, &result))
+                  {
+                     while (result < 0)
+                     {
+                        task_queue_check();
+                        retro_sleep(10);
+                     }
+                  }
+                  else
+                     result = EXIT_FAILURE;
+                  driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+                  task_queue_deinit();
+#ifdef HAVE_NETWORKING
+                  net_http_deinit();
+#endif
+                  exit(result);
                }
 #endif
                break;
