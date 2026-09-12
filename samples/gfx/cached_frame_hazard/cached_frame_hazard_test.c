@@ -66,14 +66,22 @@ int main(void)
 #define FRAME_BYTES    4096
 #define RUN_MSEC       4000
 #define READER_THREADS 6
+/* Bound on the producer's wait for a reader to pick up the frame it
+ * just published.  Generous: it is a liveness guard, not a timeout
+ * anyone should hit in a healthy run. */
+#define OVERLAP_SPIN_BOUND 2000000
 
 /* Mirrors the file-scope state in gfx/video_driver.c. */
-static retro_atomic_ptr_t hazard[HAZARD_SLOTS];
-static retro_atomic_int_t generation;
-static slock_t           *tuple_lock;
-static const void        *cache_data;
-static unsigned           cache_width;
-static unsigned           cache_height;
+static retro_atomic_ptr_t  hazard[HAZARD_SLOTS];
+static retro_atomic_int_t  generation;
+/* The tuple is published exactly as gfx/video_driver.c publishes it,
+ * so the two stay in step.  Whether that seqlock hands out torn
+ * tuples is libretro-common/samples/atomic's business; what this
+ * harness tests is the hazard protocol layered over it. */
+static retro_atomic_size_t cache_seq;
+static retro_atomic_ptr_t  cache_data;
+static retro_atomic_int_t  cache_width;
+static retro_atomic_int_t  cache_height;
 
 static retro_atomic_int_t stop;
 
@@ -114,24 +122,67 @@ static void hazard_drain(void)
       }
 }
 
+#define SEQ_TRIES 64
+
+static bool cache_snapshot(const void **data,
+      unsigned *width, unsigned *height)
+{
+   unsigned tries;
+
+   for (tries = 0; tries < SEQ_TRIES; tries++)
+   {
+      size_t s2;
+      size_t s1 = retro_atomic_load_acquire_size(&cache_seq);
+
+      if (s1 & 1)
+      {
+         retro_cpu_relax();
+         continue;
+      }
+
+      *data   = (const void*)retro_atomic_load_relaxed_ptr(&cache_data);
+      *width  = (unsigned)retro_atomic_load_relaxed_int(&cache_width);
+      *height = (unsigned)retro_atomic_load_relaxed_int(&cache_height);
+
+      retro_atomic_thread_fence_acquire();
+      s2      = retro_atomic_load_acquire_size(&cache_seq);
+      if (s1 == s2)
+         return true;
+   }
+
+   *data   = NULL;
+   *width  = 0;
+   *height = 0;
+   return false;
+}
+
+static void cache_store(const void *data, unsigned width, unsigned height)
+{
+   size_t s = retro_atomic_load_relaxed_size(&cache_seq);
+
+   retro_atomic_store_release_size(&cache_seq, s + 1);
+   retro_atomic_thread_fence_release();
+
+   retro_atomic_store_relaxed_ptr(&cache_data,   (void*)data);
+   retro_atomic_store_relaxed_int(&cache_width,  (int)width);
+   retro_atomic_store_relaxed_int(&cache_height, (int)height);
+
+   retro_atomic_store_release_size(&cache_seq, s + 2);
+}
+
 static void cached_frame_publish(const void *data,
       unsigned width, unsigned height)
 {
-   slock_lock(tuple_lock);
    if (data)
-      cache_data   = data;
-   cache_width     = width;
-   cache_height    = height;
-   slock_unlock(tuple_lock);
+      cache_store(data, width, height);
+   else
+      cache_store((const void*)retro_atomic_load_relaxed_ptr(&cache_data),
+            width, height);
 }
 
 static void cached_frame_invalidate(void)
 {
-   slock_lock(tuple_lock);
-   cache_data   = NULL;
-   cache_width  = 0;
-   cache_height = 0;
-   slock_unlock(tuple_lock);
+   cache_store(NULL, 0, 0);
 }
 
 static void cached_frame_retire(void)
@@ -157,11 +208,7 @@ static void cached_frame_read(void)
       /* Generation BEFORE the tuple. See the header comment. */
       gen    = retro_atomic_load_acquire_int(&generation);
 
-      slock_lock(tuple_lock);
-      data   = cache_data;
-      width  = cache_width;
-      height = cache_height;
-      slock_unlock(tuple_lock);
+      cache_snapshot(&data, &width, &height);
 
 #ifdef TORTURE
       /* The delay belongs HERE, between the tuple snapshot and
@@ -242,9 +289,6 @@ int main(void)
    sthread_t *producer;
    int        i;
 
-   if (!(tuple_lock = slock_new()))
-      return 1;
-
    for (i = 0; i < READER_THREADS; i++)
       readers[i] = sthread_create(reader_thread, NULL);
    producer = sthread_create(producer_thread, NULL);
@@ -255,7 +299,6 @@ int main(void)
    sthread_join(producer);
    for (i = 0; i < READER_THREADS; i++)
       sthread_join(readers[i]);
-   slock_free(tuple_lock);
 
    printf("backend=%s\n", RETRO_ATOMIC_BACKEND_NAME);
    {

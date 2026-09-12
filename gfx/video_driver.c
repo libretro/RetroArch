@@ -711,10 +711,37 @@ static const video_display_server_t *video_display_server_modes(void **data)
  * video_driver_state_t after the API migration landed so the
  * privacy is structural (file-scope static) rather than
  * convention (struct field accessed only through helpers). */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE) \
+ && defined(RETRO_ATOMIC_HAS_PTR) && defined(RETRO_ATOMIC_HAS_CAS)
+#define FRAME_CACHE_HAZARDS 1
+#endif
+
+/* Published as a seqlock where the atomics allow it, so the fields are
+ * spelled as relaxed-access atomics: the stamp and the fences around
+ * it carry the ordering, and the accesses themselves need only be
+ * indivisible.  Elsewhere they are plain words under a lock. */
+#ifdef FRAME_CACHE_HAZARDS
+static retro_atomic_ptr_t  frame_cache_data;
+static retro_atomic_int_t  frame_cache_width;
+static retro_atomic_int_t  frame_cache_height;
+static retro_atomic_size_t frame_cache_pitch;
+#else
 static const void *frame_cache_data    = NULL;
 static unsigned    frame_cache_width   = 0;
 static unsigned    frame_cache_height  = 0;
 static size_t      frame_cache_pitch   = 0;
+#endif
+
+/* Defined with the rest of the cached-frame machinery further down;
+ * declared here because the viewport and replay paths above it read
+ * the tuple.  snapshot() is for any thread and retries against the
+ * stamp; peek() is the producer reading fields only it writes. */
+static bool frame_cache_snapshot(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch);
+static void frame_cache_peek(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch);
+static void frame_cache_store(const void *data,
+      unsigned width, unsigned height, size_t pitch);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
@@ -2936,8 +2963,12 @@ static void video_viewport_get_scaled_integer(
    int padding_y                   = 0;
    float vp_bias_x                 = settings->floats.video_vp_bias_x;
    float vp_bias_y                 = settings->floats.video_vp_bias_y;
-   unsigned content_width          = frame_cache_width;
-   unsigned content_height         = frame_cache_height;
+   const void *cache_data          = NULL;
+   unsigned content_width          = 0;
+   unsigned content_height         = 0;
+   size_t   cache_pitch            = 0;
+   frame_cache_peek(&cache_data, &content_width, &content_height,
+         &cache_pitch);
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
@@ -3085,8 +3116,8 @@ static void video_viewport_get_scaled_integer(
 
             /* Reset width to exact width */
             content_width = (rotation % 2)
-                  ? ((frame_cache_height <= 4) ? video_st->av_info.geometry.base_height : frame_cache_height)
-                  : ((frame_cache_width  <= 4) ? video_st->av_info.geometry.base_width  : frame_cache_width);
+                  ? ((content_height <= 4) ? video_st->av_info.geometry.base_height : content_height)
+                  : ((content_width  <= 4) ? video_st->av_info.geometry.base_width  : content_width);
 
             overscale_w   = (width / content_width) + !!(width % content_width);
 
@@ -3801,13 +3832,24 @@ void video_driver_cached_frame(void)
    recording_st->data             = NULL;
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
+   {
+      const void *data;
+      unsigned    width;
+      unsigned    height;
+      size_t      pitch;
+
+      /* The tuple has to arrive whole: a pointer paired with another
+       * frame's dimensions has the driver read height * pitch bytes
+       * out of a buffer that holds fewer.  frame_cb() re-enters the
+       * producer, which the compare in
+       * video_driver_cached_frame_publish() turns into a no-op for
+       * the tuple read here. */
+      frame_cache_snapshot(&data, &width, &height, &pitch);
+
       cbs->frame_cb(
-            (frame_cache_data != RETRO_HW_FRAME_BUFFER_VALID)
-            ? frame_cache_data
-            : NULL,
-            frame_cache_width,
-            frame_cache_height,
-            frame_cache_pitch);
+            (data != RETRO_HW_FRAME_BUFFER_VALID) ? data : NULL,
+            width, height, pitch);
+   }
 
    recording_st->data             = recording;
 }
@@ -3849,10 +3891,6 @@ void video_driver_cached_frame(void)
  * If a seq_cst primitive is ever added to retro_atomic.h this is
  * the call site that should adopt it.
  * --------------------------------------------------------------- */
-
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE) && defined(RETRO_ATOMIC_HAS_PTR) && defined(RETRO_ATOMIC_HAS_CAS)
-#define FRAME_CACHE_HAZARDS 1
-#endif
 
 #ifdef FRAME_CACHE_HAZARDS
 /* Bounded by the number of consumers that can be inside a read at
@@ -3915,15 +3953,104 @@ static void frame_cache_hazard_drain(const void *ptr)
 #define frame_cache_hazard_drain(ptr)    ((void)0)
 #endif
 
-/* Tuple lock.  Guards the atomicity of the
- * (data, width, height, pitch) tuple; lifetime is the hazard
- * array's job above.  Readers do not hold it across their callback,
- * so a publish waits at most on another publish's four stores.
- * A seqlock here would drop the publish side's lock entirely.
+/* Tuple publication.
  *
- * HAVE_THREADS-gated: builds without threading support degenerate
- * to no-op locking, same as the rest of video_driver.c. */
-#ifdef HAVE_THREADS
+ * The (data, width, height, pitch) tuple is published under a
+ * seqlock: the producer stamps an odd sequence, writes the fields,
+ * then stamps the next even one, and a reader that sees the stamp
+ * move across its read starts over.  Readers hold nothing a publish
+ * waits for, so video_driver_frame() pays two release stores and a
+ * fence, and a replay -- which re-enters the producer from inside a
+ * read -- is expressible without a recursive lock.
+ *
+ * The fields are relaxed-access atomics.  The stamp and the fences
+ * carry the ordering; the accesses themselves need only be
+ * indivisible, and spelling them that way keeps the pattern free of
+ * formal data races so a real one in this file still stands out
+ * under ThreadSanitizer.
+ *
+ * Lifetime is the hazard array's job above; this only makes the four
+ * fields move together.  Where the hazard path is compiled out, a
+ * plain lock serves both jobs, as the single-threaded and
+ * non-lock-free targets need.
+ */
+#ifdef FRAME_CACHE_HAZARDS
+static retro_atomic_size_t frame_cache_seq;
+
+/* A publish is four relaxed stores, so a reader that lands mid-write
+ * is one relax away from a clean sample.  The bound keeps a reader
+ * from spinning behind a producer descheduled mid-publish; on expiry
+ * the caller is told there is no frame, which is what an invalidated
+ * cache would have told it. */
+#define FRAME_CACHE_SEQ_TRIES 64
+
+static bool frame_cache_snapshot(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch)
+{
+   unsigned tries;
+
+   for (tries = 0; tries < FRAME_CACHE_SEQ_TRIES; tries++)
+   {
+      size_t s2;
+      size_t s1 = retro_atomic_load_acquire_size(&frame_cache_seq);
+
+      if (s1 & 1)
+      {
+         retro_cpu_relax();
+         continue;
+      }
+
+      *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
+      *width  = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_width);
+      *height = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_height);
+      *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
+
+      retro_atomic_thread_fence_acquire();
+      s2      = retro_atomic_load_acquire_size(&frame_cache_seq);
+      if (s1 == s2)
+         return true;
+   }
+
+   *data   = NULL;
+   *width  = 0;
+   *height = 0;
+   *pitch  = 0;
+   return false;
+}
+
+/* Producer-side read: the runloop thread reading fields only it
+ * writes, so there is no stamp to lose a race against. */
+static void frame_cache_peek(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch)
+{
+   *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
+   *width  = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_width);
+   *height = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_height);
+   *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
+}
+
+/* Single producer: every caller runs on the runloop thread, and the
+ * replay path reaches here only with the tuple it just read, which
+ * the compare in video_driver_cached_frame_publish() drops before it
+ * gets this far. */
+static void frame_cache_store(const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   size_t s = retro_atomic_load_relaxed_size(&frame_cache_seq);
+
+   retro_atomic_store_release_size(&frame_cache_seq, s + 1);
+   /* Keeps the field stores below from being hoisted above the odd
+    * stamp, which is what tells a reader the tuple is in flux. */
+   retro_atomic_thread_fence_release();
+
+   retro_atomic_store_relaxed_ptr(&frame_cache_data,   (void*)data);
+   retro_atomic_store_relaxed_int(&frame_cache_width,  (int)width);
+   retro_atomic_store_relaxed_int(&frame_cache_height, (int)height);
+   retro_atomic_store_relaxed_size(&frame_cache_pitch, pitch);
+
+   retro_atomic_store_release_size(&frame_cache_seq, s + 2);
+}
+#else
 static slock_t *cached_frame_lock = NULL;
 
 static INLINE void cached_frame_lock_acquire(void)
@@ -3936,43 +4063,64 @@ static INLINE void cached_frame_lock_release(void)
    if (cached_frame_lock)
       slock_unlock(cached_frame_lock);
 }
-#else
-#define cached_frame_lock_acquire() ((void)0)
-#define cached_frame_lock_release() ((void)0)
+
+static bool frame_cache_snapshot(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch)
+{
+   cached_frame_lock_acquire();
+   *data   = frame_cache_data;
+   *width  = frame_cache_width;
+   *height = frame_cache_height;
+   *pitch  = frame_cache_pitch;
+   cached_frame_lock_release();
+   return true;
+}
+
+static void frame_cache_peek(const void **data,
+      unsigned *width, unsigned *height, size_t *pitch)
+{
+   frame_cache_snapshot(data, width, height, pitch);
+}
+
+static void frame_cache_store(const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   cached_frame_lock_acquire();
+   frame_cache_data   = data;
+   frame_cache_width  = width;
+   frame_cache_height = height;
+   frame_cache_pitch  = pitch;
+   cached_frame_lock_release();
+}
 #endif
 
 bool video_driver_cached_frame_info(
       unsigned *width, unsigned *height, size_t *pitch,
       bool *has_cpu_pixels)
 {
-   const void           *data;
-   bool                  has_frame;
+   const void *data;
+   unsigned    w;
+   unsigned    h;
+   size_t      p;
 
-   cached_frame_lock_acquire();
-   data      = frame_cache_data;
-   has_frame = (data != NULL);
-
-   if (has_frame)
+   if (     frame_cache_snapshot(&data, &w, &h, &p)
+         && data)
    {
-      if (width)          *width          = frame_cache_width;
-      if (height)         *height         = frame_cache_height;
-      if (pitch)          *pitch          = frame_cache_pitch;
+      if (width)          *width          = w;
+      if (height)         *height         = h;
+      if (pitch)          *pitch          = p;
       if (has_cpu_pixels) *has_cpu_pixels =
          (data != RETRO_HW_FRAME_BUFFER_VALID);
+      return true;
    }
-   cached_frame_lock_release();
 
-   if (!has_frame)
-   {
-      /* No cached frame yet, or it was invalidated.  Zero outputs
-       * and report not-available so the caller can branch. */
-      if (width)          *width          = 0;
-      if (height)         *height         = 0;
-      if (pitch)          *pitch          = 0;
-      if (has_cpu_pixels) *has_cpu_pixels = false;
-      return false;
-   }
-   return true;
+   /* No cached frame yet, or it was invalidated.  Zero outputs
+    * and report not-available so the caller can branch. */
+   if (width)          *width          = 0;
+   if (height)         *height         = 0;
+   if (pitch)          *pitch          = 0;
+   if (has_cpu_pixels) *has_cpu_pixels = false;
+   return false;
 }
 
 void video_driver_cached_frame_read(
@@ -3993,29 +4141,9 @@ void video_driver_cached_frame_read(
    if (!cb)
       return;
 
-#ifndef FRAME_CACHE_HAZARDS
-   /* No hazard support on this target (no threads, or no lock-free
-    * atomics): hold the tuple lock across the callback instead.
-    * Correct, at the cost of stalling a concurrent publish for the
-    * callback's duration.  Single-threaded builds degenerate to
-    * no-op locking and pay nothing. */
-   cached_frame_lock_acquire();
-   data   = frame_cache_data;
-   if (data && data != RETRO_HW_FRAME_BUFFER_VALID)
-   {
-      width  = frame_cache_width;
-      height = frame_cache_height;
-      pitch  = frame_cache_pitch;
-   }
-   else
-      data   = NULL;
-   cb(userdata, data, width, height, pitch);
-   cached_frame_lock_release();
-   (void)hazard;
-   return;
-#else
    for (;;)
    {
+#ifdef FRAME_CACHE_HAZARDS
       /* Sample the generation BEFORE the tuple.  Every retire from
        * this point on is then caught by the re-validate below.
        * Sampling it after the snapshot leaves a window in which a
@@ -4023,14 +4151,9 @@ void video_driver_cached_frame_read(
        * generation, the re-validate compares equal, and the callback
        * runs on freed memory.  samples/gfx/cached_frame_hazard
        * guards this ordering. */
-      gen    = retro_atomic_load_acquire_int(&frame_cache_generation);
-
-      cached_frame_lock_acquire();
-      data   = frame_cache_data;
-      width  = frame_cache_width;
-      height = frame_cache_height;
-      pitch  = frame_cache_pitch;
-      cached_frame_lock_release();
+      gen = retro_atomic_load_acquire_int(&frame_cache_generation);
+#endif
+      frame_cache_snapshot(&data, &width, &height, &pitch);
 
       /* Nothing to guard: the sentinel is not a pointer and an
        * empty cache has nothing to free.  Hand the callback NULL so
@@ -4042,6 +4165,7 @@ void video_driver_cached_frame_read(
          return;
       }
 
+#ifdef FRAME_CACHE_HAZARDS
       hazard = frame_cache_hazard_acquire(data);
       if (hazard < 0)
       {
@@ -4064,23 +4188,44 @@ void video_driver_cached_frame_read(
          hazard = -1;
          continue;
       }
-
+#else
+      /* No hazard support on this target (no threads, or no
+       * lock-free atomics): hold the tuple lock across the callback
+       * instead.  Correct, at the cost of stalling a concurrent
+       * publish for the callback's duration.  Single-threaded builds
+       * degenerate to no-op locking and pay nothing. */
+      cached_frame_lock_acquire();
+      data   = frame_cache_data;
+      width  = frame_cache_width;
+      height = frame_cache_height;
+      pitch  = frame_cache_pitch;
+      if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
+      {
+         data   = NULL;
+         width  = 0;
+         height = 0;
+         pitch  = 0;
+      }
+      cb(userdata, data, width, height, pitch);
+      cached_frame_lock_release();
+      return;
+#endif
       break;
    }
 
    cb(userdata, data, width, height, pitch);
    frame_cache_hazard_release(hazard);
-#endif
 }
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
-   bool is_hw;
-   cached_frame_lock_acquire();
-   is_hw =    frame_cache_data
-           && frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
-   cached_frame_lock_release();
-   return is_hw;
+   const void *data;
+   unsigned    width;
+   unsigned    height;
+   size_t      pitch;
+
+   frame_cache_snapshot(&data, &width, &height, &pitch);
+   return (data == RETRO_HW_FRAME_BUFFER_VALID);
 }
 
 /* Producer-side publish: install a new cached frame metadata
@@ -4088,18 +4233,31 @@ bool video_driver_cached_frame_is_hw_render(void)
  * command_event_reinit replay path, and from the
  * task_screenshot.c::supports_read_frame_raw block.
  *
- * Never waits on a reader: readers hold a hazard slot, not this
- * lock, so the longest a publish can be delayed is another
- * publisher's four stores. */
+ * Never waits on a reader: readers hold a hazard slot, and the tuple
+ * itself is published with a seqlock the reader retries against.
+ *
+ * A publish that would change nothing returns without stamping the
+ * sequence.  That covers a core reusing its framebuffer, and it
+ * covers the replay path, which re-enters here from inside a read
+ * with the tuple it just took -- leaving the producer side single
+ * writer and the replay free of a lock it would otherwise have to
+ * re-enter. */
 void video_driver_cached_frame_publish(
       const void *data, unsigned width, unsigned height, size_t pitch)
 {
-   cached_frame_lock_acquire();
+   const void *cur;
+   const void *next;
+   unsigned    cur_width;
+   unsigned    cur_height;
+   size_t      cur_pitch;
+
+   frame_cache_peek(&cur, &cur_width, &cur_height, &cur_pitch);
+
    if (data)
-      frame_cache_data    = data;
-   else if (   width  != frame_cache_width
-            || height != frame_cache_height
-            || pitch  != frame_cache_pitch)
+      next = data;
+   else if (   width  != cur_width
+            || height != cur_height
+            || pitch  != cur_pitch)
       /* A duped frame carries no pixels, so the pointer retained above
        * still describes the buffer the *previous* frame arrived in.
        * Publishing new dimensions alongside it would leave a tuple that
@@ -4108,12 +4266,17 @@ void video_driver_cached_frame_publish(
        * pointer instead: the dimensions stay live for the viewport and
        * aspect-ratio consumers, and a replay with no data re-presents
        * the frame the driver already has. */
-      frame_cache_data    = NULL;
+      next = NULL;
+   else
+      next = cur;
 
-   frame_cache_width      = width;
-   frame_cache_height     = height;
-   frame_cache_pitch      = pitch;
-   cached_frame_lock_release();
+   if (     next   == cur
+         && width  == cur_width
+         && height == cur_height
+         && pitch  == cur_pitch)
+      return;
+
+   frame_cache_store(next, width, height, pitch);
 }
 
 /* Producer-side invalidate: forget the cached frame.
@@ -4126,12 +4289,7 @@ void video_driver_cached_frame_publish(
  * that releases memory, call video_driver_cached_frame_retire(). */
 void video_driver_cached_frame_invalidate(void)
 {
-   cached_frame_lock_acquire();
-   frame_cache_data   = NULL;
-   frame_cache_width  = 0;
-   frame_cache_height = 0;
-   frame_cache_pitch  = 0;
-   cached_frame_lock_release();
+   frame_cache_store(NULL, 0, 0, 0);
 }
 
 /* Producer-side retire: forget the cached frame and guarantee no
@@ -4880,10 +5038,13 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_driver_init_filter(video_driver_pix_fmt, settings);
 #endif
 
-#ifdef HAVE_THREADS
-   /* Lazily allocate the cached-frame lifetime lock on first video
+#if defined(HAVE_THREADS) && !defined(FRAME_CACHE_HAZARDS)
+   /* Lazily allocate the cached-frame tuple lock on first video
     * driver init.  Kept across video driver reinits (HDR toggle,
-    * fullscreen change) -- only freed at deinit_drivers / shutdown. */
+    * fullscreen change) and for the rest of the process: the cache is
+    * still invalidated from retroarch_deinit_drivers() after the video
+    * driver itself is gone, so there is no point at which freeing
+    * this would be safe. */
    if (!cached_frame_lock)
       cached_frame_lock = slock_new();
 #endif
