@@ -1916,16 +1916,15 @@ static void wdmks_clock_sample(wdmks_t *w)
 
    if (!w->clk_freq || !w->rate)
       return;
-   if (!wdmks_position(w, &frames))
+   /* Same order as frames_consumed, and for the same reason. */
+   if (w->stream.looped && w->rt_pos)
    {
-      if (!w->stream.looped || !w->rt_pos)
-         return;
-      {
-         ULONG now = 0;
-         wdmks_rt_play_offset(w, &now);
-         frames = w->rt_played;
-      }
+      ULONG now = 0;
+      wdmks_rt_play_offset(w, &now);
+      frames = w->rt_played;
    }
+   else if (!wdmks_position(w, &frames))
+      return;
    if (!QueryPerformanceCounter(&now))
       return;
 
@@ -1994,20 +1993,25 @@ static size_t wdmks_frames_consumed(void *data)
     * job it is good at, which is saying where in the loop it is safe
     * to write, and that is read far more often than it wraps. */
    wdmks_clock_sample(w);
-   if (wdmks_position(w, &frames))
-      return (size_t)frames;
 
-   /* A WaveRT driver exposes its position through the register it
-    * mapped and is not obliged to answer the older position property
-    * at all - which is what leaves this at zero on an HDMI output,
-    * and with it the sink estimate and the device clock. The register
-    * is what that device does answer. */
+   /* The register first on a looped pin, not the property.
+    *
+    * A WaveRT driver exposes its position through the register it
+    * mapped; the older position property it may answer, may refuse,
+    * or may answer with nothing in it - and the last of those is the
+    * one that bites, because asking the property first and falling
+    * back only when it FAILS means a property that succeeds with a
+    * standing zero is believed for ever. That is the sink estimate
+    * reading a million ppm out while the register sitting next to it
+    * was right the whole time. */
    if (w->stream.looped && w->rt_pos)
    {
       ULONG now = 0;
       wdmks_rt_play_offset(w, &now);
       return (size_t)w->rt_played;
    }
+   if (wdmks_position(w, &frames))
+      return (size_t)frames;
    return 0;
 }
 
