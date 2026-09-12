@@ -481,12 +481,10 @@ static bool video_thread_handle_packet(
                 * be called from this thread, causing a timeout, and
                 * no frame to be rendered.
                 *
-                * To avoid this, set a flag so wrapper can see if
-                * it's called in this "special" way. */
-               thr->frame.within_thread = true;
+                * video_thread_frame() sees that it is on this thread
+                * and renders straight through. */
                pkt.data.b = thr->driver->read_viewport(thr->driver_data,
                      (uint8_t*)pkt.data.v, thr->is_idle);
-               thr->frame.within_thread = false;
             }
             else
             {
@@ -1613,9 +1611,17 @@ static bool video_thread_frame(void *data, const void *frame_,
     * their owners before the frame that may draw with them. */
    video_thread_async_deliver(thr);
 
-   /* If called from within read_viewport, we're actually in the
-    * driver thread, so just render directly. */
-   if (thr->frame.within_thread)
+   /* Already on the video thread: render straight through rather than
+    * hand off to a thread that is here.  Two callers arrive this way --
+    * a driver's read_viewport(), which renders a cached frame to get
+    * the back buffer it reads, and the Win32 modal size/move loop,
+    * which pumps on the thread that owns the window and is this one.
+    *
+    * Thread identity rather than a flag: the runloop thread can be
+    * inside this function at the same time, parked on the ring while
+    * the video thread sits in a modal loop, and a flag one thread sets
+    * is a flag the other can read. */
+   if (video_thread_is_self(thr))
    {
       thread_update_driver_state(thr);
 

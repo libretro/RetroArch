@@ -780,7 +780,11 @@ void win32_sizemove_abort(void)
 }
 
 /* WM_TIMER with WIN32_SIZEMOVE_TIMER_ID, delivered on the thread that
- * owns the driver. Presents only after a resize: with vsync on, a
+ * owns the window, which is the thread that created the driver: the
+ * video thread when video is threaded, the run loop's otherwise.
+ * Either way the two calls below land on the thread that may touch
+ * the driver, and video_thread_frame() takes its direct path when it
+ * finds itself already on the video thread. Presents only after a resize: with vsync on, a
  * present blocks for a refresh, and one per tick starved the modal
  * loop on D3D12 and Vulkan (drag lagged the mouse, picture refreshed
  * late). Then the same two calls the run loop makes per frame and
@@ -793,7 +797,7 @@ void win32_sizemove_tick(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
 
-   if (!win32_sizemove_depth || video_driver_is_threaded())
+   if (!win32_sizemove_depth)
       return;
    if (!win32_sizemove_dirty)
       return;

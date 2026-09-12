@@ -644,6 +644,105 @@ static void lane_reentrant_from_frame(void)
       fprintf(stderr, "[pass] reentrant-from-frame lane (%u frames)\n", reentrant_frames);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Lane: the window thread presents a cached frame                     */
+/*   Win32's modal size/move loop pumps on the thread that owns the    */
+/*   window, and under threaded video that is the video thread. The    */
+/*   tick calls alive() then video_driver_cached_frame(), so the       */
+/*   cached frame is presented from the video thread while the runloop */
+/*   thread is pushing frames of its own.                              */
+/*                                                                     */
+/*   The invariant this guards is that the driver's frame() only ever  */
+/*   runs on the video thread. A reentrancy check keyed on a shared    */
+/*   flag rather than on thread identity breaks it here: the runloop   */
+/*   thread reads the flag the video thread set and renders from the   */
+/*   wrong thread.                                                     */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t       wintick_driver;
+static const video_driver_t *wintick_inner;
+static uint64_t             wintick_frame_thread;
+static unsigned             wintick_frames;
+static unsigned             wintick_thread_mismatch;
+static unsigned             wintick_alive_calls;
+static uint64_t             wintick_main_thread;
+
+static bool wintick_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   uint64_t self = (uint64_t)sthread_get_current_thread_id();
+
+   if (!wintick_frames)
+      wintick_frame_thread = self;
+   else if (self != wintick_frame_thread)
+      wintick_thread_mismatch++;
+   if (self == wintick_main_thread)
+      wintick_thread_mismatch++;
+   wintick_frames++;
+
+   return wintick_inner->frame(data, frame, width, height,
+         frame_count, pitch, msg, video_info);
+}
+
+/* Stands in for win32_sizemove_tick(): alive() is handled on the video
+ * thread, so a cached-frame present issued from here is issued from
+ * exactly where the modal loop issues it. */
+static bool wintick_alive(void *data)
+{
+   wintick_alive_calls++;
+   if ((wintick_alive_calls % 4) == 0)
+      video_driver_cached_frame();
+   return wintick_inner->alive(data);
+}
+
+static void lane_window_thread_present(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   unsigned i;
+
+   wintick_main_thread     = (uint64_t)sthread_get_current_thread_id();
+   wintick_frames          = 0;
+   wintick_thread_mismatch = 0;
+   wintick_alive_calls     = 0;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "window-thread present lane");
+   thr = (thread_video_t*)video_st->data;
+
+   video_thread_wait_idle();
+   wintick_inner          = thr->driver;
+   wintick_driver         = *thr->driver;
+   wintick_driver.frame   = wintick_frame;
+   wintick_driver.alive   = wintick_alive;
+   thr->driver            = &wintick_driver;
+
+   /* Frames from the runloop thread while alive() -- on the video
+    * thread -- presents cached frames underneath them. */
+   for (i = 0; i < 80; i++)
+      run_frames(1);
+   video_thread_wait_idle();
+
+   CHECK(wintick_frames > 0, "driver frame() never ran");
+   CHECK(wintick_alive_calls > 0,
+         "alive() never reached the video thread, so no cached frame "
+         "was presented from there");
+   CHECK(wintick_thread_mismatch == 0,
+         "driver frame() ran on %u call(s) from a thread other than "
+         "the video thread", wintick_thread_mismatch);
+
+   thr->driver = wintick_inner;
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] window-thread present lane (%u frames, "
+            "%u ticks)\n", wintick_frames, wintick_alive_calls);
+}
+
 /* ------------------------------------------------------------------ */
 /* Lane: display-phase scheduling with a stale report                  */
 /*   The presenter schedules the next repeat from the driver's display */
@@ -1583,6 +1682,7 @@ int main(int argc, char *argv[])
    lane_every_command_replies();
    lane_second_ring_waiter();
    lane_reentrant_from_frame();
+   lane_window_thread_present();
    lane_display_phase();
    lane_command_runs_once();
    lane_font_marshal();
