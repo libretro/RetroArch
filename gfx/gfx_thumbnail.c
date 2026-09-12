@@ -63,7 +63,11 @@
 #include "../paths.h"
 #include "../file_path_special.h"
 
+
 #ifdef HAVE_MENU
+/* Only for the playlist/state-name helper far below, which reads
+ * menu_state directly.  The animation pacing above takes the frame's
+ * time as a parameter and needs nothing from the menu. */
 #include "../menu/menu_driver.h"
 #endif
 
@@ -1160,11 +1164,12 @@ static bool gfx_thumb_frame_budget(void *ud, size_t avail, size_t len)
    return cpu_features_get_time_usec() - *(int64_t*)ud < 2000;
 }
 
-void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
+      retro_time_t current_time)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
    const uint32_t *frame              = NULL;
-   int64_t now;
+   int64_t now                        = (int64_t)current_time;
    int64_t decode_start;
    int duration_ms                    = 0;
    bool sync_use_rgba                 = false;
@@ -1187,19 +1192,12 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          return;
    }
 
-   /* The runloop samples the monotonic counter once per iteration and
-    * threads it down (runloop_iterate -> menu_st->current_time_us),
-    * and gfx_animation and the menu's own timers pace off that same
-    * value.  Re-reading the counter here cost a read per animated
-    * thumbnail per frame and, worse, gave two thumbnails advancing in
-    * the same frame two different "now"s - deadlines that should be
-    * coherent within a frame drifting apart from each other and from
-    * the animation tick.  Take the frame's sample; fall back to
-    * reading only if a caller outside the menu iterate ever arrives,
-    * where it would be zero. */
-   now  = menu_driver_get_current_time();
-   if (now == 0)
-      now = cpu_features_get_time_usec();
+   /* No clock is read here.  The runloop samples the monotonic
+    * counter once per iteration and hands it to the frame's consumers
+    * (gfx_animation_update takes it the same way), so every thumbnail
+    * advanced in a frame paces off one coherent "now" rather than its
+    * own read - and a harness can drive this with synthetic time,
+    * which a private clock read made impossible. */
    type = (enum image_type_enum)thumbnail->anim_type;
 
    /* Windowed playback: the shared session feeds the preview audio's

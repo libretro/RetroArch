@@ -457,7 +457,13 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
  * thread, for every on-screen thumbnail. Non-animated thumbnails and
  * non-WebP image types return immediately (single flag test), so this
  * is safe and near-free to call for every thumbnail unconditionally. */
-void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail);
+/* @current_time is the frame's monotonic timestamp, as sampled once
+ * per iteration by the runloop and handed to gfx_animation_update():
+ * this function reads no clock of its own, so every thumbnail
+ * advanced in a frame paces off one coherent 'now', and a harness can
+ * drive it with synthetic time. */
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
+      retro_time_t current_time);
 
 /* Stream processing */
 

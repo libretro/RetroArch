@@ -8023,9 +8023,12 @@ static void xmb_render(void *data,
 
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
-   gfx_thumbnail_animate(&xmb->thumbnails.right);
-   gfx_thumbnail_animate(&xmb->thumbnails.left);
-   gfx_thumbnail_animate(&xmb->thumbnails.icon);
+   gfx_thumbnail_animate(&xmb->thumbnails.right,
+            menu_driver_get_current_time());
+   gfx_thumbnail_animate(&xmb->thumbnails.left,
+            menu_driver_get_current_time());
+   gfx_thumbnail_animate(&xmb->thumbnails.icon,
+            menu_driver_get_current_time());
 
    /* Fire deferred dynamic-icon repopulate once input has settled.
     * Set by xmb_populate_entries when it wanted to run the work but

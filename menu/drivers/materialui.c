@@ -4024,9 +4024,11 @@ static bool materialui_render_process_entry_playlist_thumb_list(
     * still images) */
    if (on_screen)
    {
-      gfx_thumbnail_animate(&node->thumbnails.primary);
+      gfx_thumbnail_animate(&node->thumbnails.primary,
+            menu_driver_get_current_time());
       if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
-         gfx_thumbnail_animate(&node->thumbnails.secondary);
+         gfx_thumbnail_animate(&node->thumbnails.secondary,
+            menu_driver_get_current_time());
    }
 
    /* Load thumbnails for all on-screen entries
@@ -4076,8 +4078,10 @@ static bool materialui_render_process_entry_playlist_dual_icon(
     * still images) */
    if (on_screen)
    {
-      gfx_thumbnail_animate(&node->thumbnails.primary);
-      gfx_thumbnail_animate(&node->thumbnails.secondary);
+      gfx_thumbnail_animate(&node->thumbnails.primary,
+            menu_driver_get_current_time());
+      gfx_thumbnail_animate(&node->thumbnails.secondary,
+            menu_driver_get_current_time());
    }
 
    /* Load thumbnails for all on-screen entries
@@ -4133,8 +4137,10 @@ static bool materialui_render_process_entry_playlist_desktop(
     * still images) */
    if (is_on_screen)
    {
-      gfx_thumbnail_animate(&node->thumbnails.primary);
-      gfx_thumbnail_animate(&node->thumbnails.secondary);
+      gfx_thumbnail_animate(&node->thumbnails.primary,
+            menu_driver_get_current_time());
+      gfx_thumbnail_animate(&node->thumbnails.secondary,
+            menu_driver_get_current_time());
    }
 
    /* Load thumbnails for selected (and last

@@ -58,6 +58,7 @@
  * test can call it directly, upstream of the task queue.
  */
 
+#include <features/features_cpu.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -167,7 +168,7 @@ int main(void)
       }
       for (i = 0; i < 240 && gt_uploads < 3; i++)
       {
-         gfx_thumbnail_animate(&th);
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          usleep(16666);
       }
       if (gt_uploads >= 2)
@@ -203,13 +204,13 @@ int main(void)
       int posted_before_flush;
       for (i = 0; i < 120 && gt_async_posted < 1; i++)
       {
-         gfx_thumbnail_animate(&th);
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          usleep(16666);
       }
       /* keep animating without delivering: nothing more may be posted */
       for (i = 0; i < 20; i++)
       {
-         gfx_thumbnail_animate(&th);
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          usleep(16666);
       }
       posted_before_flush = gt_async_posted;
@@ -231,7 +232,7 @@ int main(void)
       /* the next frame may travel now */
       for (i = 0; i < 120 && gt_async_posted < 2; i++)
       {
-         gfx_thumbnail_animate(&th);
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          usleep(16666);
       }
       if (gt_async_posted != 2)

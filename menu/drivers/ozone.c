@@ -10926,8 +10926,10 @@ static void ozone_render(void *data,
 
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
-   gfx_thumbnail_animate(&ozone->thumbnails.right);
-   gfx_thumbnail_animate(&ozone->thumbnails.left);
+   gfx_thumbnail_animate(&ozone->thumbnails.right,
+            menu_driver_get_current_time());
+   gfx_thumbnail_animate(&ozone->thumbnails.left,
+            menu_driver_get_current_time());
 
    /* Check whether screen dimensions or menu scale
     * factor have changed */

@@ -15,6 +15,7 @@
  * R3 is the one that was broken: R1/R2/R4 all passed while every
  * frame drew at zero opacity.
  */
+#include <features/features_cpu.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,7 +94,7 @@ static void run(const char *path, const char *label, int expect_video)
       int nf = fe ? atoi(fe) : 12;
       double after_open = rss_mib();
       for (i = 0; i < nf; i++)
-         gfx_thumbnail_animate(&th);
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
       peak = rss_mib();
       printf("      RSS after open=%.1f MiB, after %d frames=%.1f MiB\n",
             after_open, nf, peak);
