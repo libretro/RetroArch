@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../video_record.h"
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
@@ -315,6 +316,15 @@ typedef struct vk
 
    struct
    {
+      struct
+      {
+         uint64_t serial;
+         unsigned width;
+         unsigned height;
+         VkFormat format;
+      } record[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      uint64_t serial;
+      uint64_t consumed;
       struct scaler_ctx scaler_bgr;
       struct scaler_ctx scaler_rgb;
       struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
@@ -5523,6 +5533,9 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record)
       return;
    }
 
+   memset(vk->readback.record, 0, sizeof(vk->readback.record));
+   scaler_ctx_gen_reset(&vk->readback.scaler_bgr);
+   scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
    vk->flags                          |=  VK_FLAG_READBACK_STREAMED;
 
    vk->readback.scaler_bgr.in_width    = vk->vp.width;
@@ -5873,6 +5886,7 @@ static void vulkan_check_swapchain(vk_t *vk)
 {
    struct vulkan_filter_chain_swapchain_info filter_info;
 
+   memset(vk->readback.record, 0, sizeof(vk->readback.record));
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
@@ -6470,6 +6484,9 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    struct vk_texture *staging;
    struct video_viewport vp;
    VkMemoryBarrier barrier;
+   unsigned slot = vk->context->current_frame_index;
+
+   vk->readback.record[slot].serial = 0;
 
    vp.x                                   = 0;
    vp.y                                   = 0;
@@ -6551,6 +6568,23 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
             vk->vp.width, vk->vp.height,
             staging_format,
             NULL, NULL, VULKAN_TEXTURE_READBACK);
+   }
+
+   if (!staging->memory || !staging->buffer)
+      return;
+   if (vk->flags & VK_FLAG_READBACK_STREAMED)
+   {
+      VkFormat format = vk->context->swapchain_format;
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->flags & VK_FLAG_READBACK_HDR)
+         format = VK_FORMAT_UNDEFINED;
+      else if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         format = VK_FORMAT_B8G8R8A8_UNORM;
+#endif
+      vk->readback.record[slot].width  = region.imageExtent.width;
+      vk->readback.record[slot].height = region.imageExtent.height;
+      vk->readback.record[slot].format = format;
+      vk->readback.record[slot].serial = ++vk->readback.serial;
    }
 
    vkCmdCopyImageToBuffer(vk->cmd, readback_image->image,
@@ -9393,6 +9427,109 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    *vp             = vk->vp;
    vp->full_width  = width;
    vp->full_height = height;
+}
+
+static bool vulkan_record_read(void *data, uint8_t *buffer)
+{
+   vk_t *vk = (vk_t*)data;
+   struct vk_texture *staging;
+   const uint8_t *src;
+   void *mapped = NULL;
+   uint64_t newest;
+   unsigned i, slot = VULKAN_MAX_SWAPCHAIN_IMAGES;
+   unsigned width, height, x, y;
+   VkFormat format;
+
+   if (!vk || !vk->vp.width || !vk->vp.height)
+      return false;
+   if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
+   {
+      memset(vk->readback.record, 0, sizeof(vk->readback.record));
+      return false;
+   }
+   if (     !(vk->flags & VK_FLAG_READBACK_STREAMED)
+         || (unsigned)vk->readback.scaler_bgr.in_width != vk->vp.width
+         || (unsigned)vk->readback.scaler_bgr.in_height != vk->vp.height)
+   {
+      vulkan_init_readback(vk, true);
+      return false;
+   }
+
+   newest = vk->readback.consumed;
+   for (i = 0; i < vk->context->num_swapchain_images; i++)
+   {
+      VkFence fence = vk->context->swapchain_fences[i];
+      if (vk->readback.record[i].serial <= newest
+            || !vk->readback.staging[i].memory
+            || vk->readback.staging[i].width != vk->vp.width
+            || vk->readback.staging[i].height != vk->vp.height)
+         continue;
+      /* Acquire already waited and reset the current slot's fence.
+       * Other submitted slots must be polled before touching memory. */
+      if (vk->context->swapchain_fences_signalled[i])
+      {
+         if (!fence || vkGetFenceStatus(vk->context->device, fence) != VK_SUCCESS)
+            continue;
+      }
+      else if (i != vk->context->current_frame_index)
+         continue;
+      newest = vk->readback.record[i].serial;
+      slot   = i;
+   }
+   if (slot == VULKAN_MAX_SWAPCHAIN_IMAGES)
+      return false;
+
+   format = vk->readback.record[slot].format;
+   if (format != VK_FORMAT_B8G8R8A8_UNORM
+         && format != VK_FORMAT_R8G8B8A8_UNORM
+         && format != VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+      return false;
+   staging = &vk->readback.staging[slot];
+   if (staging->mapped)
+      return false;
+   if (vkMapMemory(vk->context->device, staging->memory,
+            0, VK_WHOLE_SIZE, 0, &mapped) != VK_SUCCESS)
+      return false;
+   if (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+   {
+      VkMappedMemoryRange range;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.memory = staging->memory;
+      range.offset = 0;
+      range.size   = VK_WHOLE_SIZE;
+      if (vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range) != VK_SUCCESS)
+      {
+         vkUnmapMemory(vk->context->device, staging->memory);
+         return false;
+      }
+   }
+   width  = vk->readback.record[slot].width;
+   height = vk->readback.record[slot].height;
+   if (width > vk->vp.width)
+      width = vk->vp.width;
+   if (height > vk->vp.height)
+      height = vk->vp.height;
+   memset(buffer, 0, (size_t)vk->vp.width * vk->vp.height * 3);
+   src = (const uint8_t*)mapped + staging->offset;
+   for (y = 0; y < height; y++, src += staging->stride)
+   {
+      uint8_t *dst = buffer + (size_t)(vk->vp.height - 1 - y) * vk->vp.width * 3;
+      for (x = 0; x < width; x++)
+      {
+         dst[3 * x + 0] = src[4 * x + (format == VK_FORMAT_B8G8R8A8_UNORM ? 0 : 2)];
+         dst[3 * x + 1] = src[4 * x + 1];
+         dst[3 * x + 2] = src[4 * x + (format == VK_FORMAT_B8G8R8A8_UNORM ? 2 : 0)];
+      }
+   }
+   vkUnmapMemory(vk->context->device, staging->memory);
+   vk->readback.consumed = newest;
+   return true;
+}
+
+video_record_read_t vulkan_get_record_read(void)
+{
+   return vulkan_record_read;
 }
 
 static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)

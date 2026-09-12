@@ -22,6 +22,7 @@
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <memalign.h>
+#include <gfx/video_frame.h>
 
 #ifdef _3DS
 #include <3ds/types.h>
@@ -45,6 +46,7 @@
 #include <retro_assert.h>
 
 #include "video_thread_hw.h"
+#include "video_record.h"
 
 /* cond_reply is woken with scond_signal() and carries one command's
  * reply, so at most one thread may wait on it; see the note in
@@ -942,6 +944,241 @@ void video_thread_defer_filter(unsigned in_bpp)
 }
 #endif
 
+/* GPU recording under the wrapper. The main thread names one of these
+ * in every frame it hands over while recording; the video thread reads
+ * each such frame back into buf[back] once drawn and publishes it with
+ * one exchange of 'ready', and the main thread takes the newest with
+ * another. Each buffer is at any time the video thread's, the main
+ * thread's or the one in 'ready', so neither side ever waits. The main
+ * thread frees it once no slot the video thread holds names it. */
+#define VIDEO_THREAD_REC_FRESH 4
+typedef struct video_thread_rec
+{
+   struct video_thread_rec *next;  /* the main thread's retired list */
+   uint8_t *buf[3];
+   unsigned width;
+   unsigned height;
+   /* The buffer holding the newest frame read back, with
+    * VIDEO_THREAD_REC_FRESH until the main thread takes it */
+   retro_atomic_int_t ready;
+   unsigned back;                  /* the video thread's */
+   unsigned front;                 /* the main thread's */
+   bool taken;                     /* the main thread has taken one */
+   video_record_read_t read;
+   uint8_t *source;
+   size_t source_size;
+   unsigned source_width;
+   unsigned source_height;
+   struct scaler_ctx scaler;
+} video_thread_rec_t;
+
+/* Keep the shared wrapper and frame-slot layouts unchanged. */
+typedef struct video_thread_private
+{
+   thread_video_t base;
+   video_thread_rec_t *rec;
+   video_thread_rec_t *rec_retired;
+   video_thread_rec_t *rec_slot[2];
+} video_thread_private_t;
+
+static video_record_read_t video_thread_record_reader(thread_video_t *thr)
+{
+#ifdef RETRO_ATOMIC_LOCK_FREE
+#ifdef HAVE_OPENGL
+   if (thr->driver == &video_gl2)
+      return gl2_get_record_read();
+#endif
+#ifdef HAVE_VULKAN
+   if (thr->driver == &video_vulkan)
+      return vulkan_get_record_read();
+#endif
+#endif
+   (void)thr;
+   return NULL;
+}
+
+/* Resize on the worker, preserving the encoder's dimensions and aspect. */
+static void video_thread_rec_read(thread_video_t *thr,
+      video_thread_rec_t *rec, const struct video_viewport *vp)
+{
+   uint8_t *out = rec->buf[rec->back];
+   if (!vp->width || !vp->height || vp->width > INT_MAX / 4
+         || vp->height > INT_MAX
+         || (size_t)vp->width > (size_t)-1 / 3 / vp->height)
+      return;
+   if (vp->width != rec->width || vp->height != rec->height)
+   {
+      struct scaler_ctx *ctx = &rec->scaler;
+      size_t size = (size_t)vp->width * vp->height * 3;
+      unsigned x, y;
+      if (size > rec->source_size)
+      {
+         uint8_t *source = (uint8_t*)realloc(rec->source, size);
+         if (!source)
+            return;
+         rec->source      = source;
+         rec->source_size = size;
+      }
+      if (rec->source_width != vp->width || rec->source_height != vp->height)
+      {
+         unsigned width, height;
+         if ((uint64_t)vp->width * rec->height > (uint64_t)vp->height * rec->width)
+         {
+            width  = rec->width;
+            height = (unsigned)((uint64_t)vp->height * width / vp->width);
+         }
+         else
+         {
+            height = rec->height;
+            width  = (unsigned)((uint64_t)vp->width * height / vp->height);
+         }
+         scaler_ctx_gen_reset(ctx);
+         ctx->in_width    = vp->width;
+         ctx->in_height   = vp->height;
+         ctx->in_stride   = vp->width * 3;
+         ctx->out_width   = width ? width : 1;
+         ctx->out_height  = height ? height : 1;
+         ctx->out_stride  = rec->width * 3;
+         ctx->in_fmt      = SCALER_FMT_BGR24;
+         ctx->out_fmt     = SCALER_FMT_BGR24;
+         ctx->scaler_type = SCALER_TYPE_BILINEAR;
+         /* A failed rebuild must also invalidate the previous dimensions. */
+         rec->source_width = rec->source_height = 0;
+         if (!scaler_ctx_gen_filter(ctx))
+            return;
+         rec->source_width  = vp->width;
+         rec->source_height = vp->height;
+      }
+      if (!rec->read(thr->driver_data, rec->source))
+         return;
+      x = (rec->width  - ctx->out_width)  / 2;
+      y = (rec->height - ctx->out_height) / 2;
+      memset(out, 0, (size_t)rec->width * rec->height * 3);
+      scaler_ctx_scale_direct(ctx, out + ((size_t)y * rec->width + x) * 3, rec->source);
+   }
+   else if (!rec->read(thr->driver_data, out))
+      return;
+   rec->back = (unsigned)retro_atomic_exchange_int(&rec->ready,
+         (int)(rec->back | VIDEO_THREAD_REC_FRESH)) & 3u;
+}
+
+/* Main thread, under thr->lock: whether a slot the video thread is
+ * drawing or will claim names rec. The pending slot is tail, both are
+ * pending at two, and the one being drawn is tail ^ 1. */
+static bool video_thread_rec_in_flight(const thread_video_t *thr,
+      const video_thread_rec_t *rec)
+{
+   unsigned s;
+   for (s = 0; s < 2; s++)
+   {
+      if (((video_thread_private_t*)thr)->rec_slot[s] != rec)
+         continue;
+      if (     thr->frame.pending == 2
+            || (thr->frame.pending == 1 && s == thr->frame.tail)
+            || (thr->frame.busy && s == (thr->frame.tail ^ 1)))
+         return true;
+   }
+   return false;
+}
+
+static void video_thread_rec_free_list(video_thread_rec_t *rec)
+{
+   while (rec)
+   {
+      video_thread_rec_t *next = rec->next;
+      scaler_ctx_gen_reset(&rec->scaler);
+      free(rec->source);
+      free(rec);
+      rec = next;
+   }
+}
+
+/* Main thread: frees the retired buffers no slot in flight names, once
+ * a recording has stopped - taking thr->lock for the test only, never
+ * around free(). Out of line and never inlined: video_thread_frame()
+ * reaches it only through a pointer test, and it runs for a handful of
+ * frames after a recording ends, not on the per-frame path. */
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static void video_thread_rec_reap(thread_video_t *thr)
+{
+   video_thread_rec_t *done = NULL;
+   video_thread_rec_t **pp  = &((video_thread_private_t*)thr)->rec_retired;
+   slock_lock(thr->lock);
+   while (*pp)
+   {
+      video_thread_rec_t *rec = *pp;
+      if (video_thread_rec_in_flight(thr, rec))
+         pp = &rec->next;
+      else
+      {
+         *pp       = rec->next;
+         rec->next = done;
+         done      = rec;
+      }
+   }
+   slock_unlock(thr->lock);
+   video_thread_rec_free_list(done);
+}
+
+void video_thread_record_stop(void *data)
+{
+   thread_video_t     *thr = (thread_video_t*)data;
+   video_thread_rec_t *rec;
+   if (!thr || !(rec = ((video_thread_private_t*)thr)->rec))
+      return;
+   /* Named in no frame from here on; freed once none in flight does */
+   rec->next        = ((video_thread_private_t*)thr)->rec_retired;
+   ((video_thread_private_t*)thr)->rec_retired = rec;
+   ((video_thread_private_t*)thr)->rec         = NULL;
+}
+
+int video_thread_record_take(void *data, unsigned width, unsigned height,
+      const uint8_t **frame)
+{
+   thread_video_t     *thr = (thread_video_t*)data;
+   video_thread_rec_t *rec;
+   video_record_read_t read = thr ? video_thread_record_reader(thr) : NULL;
+   if (!read)
+      return -2;
+   if (!width || !height || width > INT_MAX / 4
+         || height > INT_MAX
+         || (size_t)width > (((size_t)-1 - sizeof(*rec)) / 9) / height)
+      return -1;
+   rec           = ((video_thread_private_t*)thr)->rec;
+   if (!rec || rec->width != width || rec->height != height)
+   {
+      /* One allocation: the header, then the three buffers */
+      size_t size = (size_t)width * height * 3;
+      video_thread_record_stop(thr);
+      if (!(rec = (video_thread_rec_t*)malloc(sizeof(*rec) + 3 * size)))
+         return -1;
+      memset(rec, 0, sizeof(*rec));
+      rec->next   = NULL;
+      rec->buf[0] = (uint8_t*)(rec + 1);
+      rec->buf[1] = rec->buf[0] + size;
+      rec->buf[2] = rec->buf[1] + size;
+      rec->width  = width;
+      rec->height = height;
+      retro_atomic_int_init(&rec->ready, 0);
+      rec->front  = 1;
+      rec->back   = 2;
+      rec->taken  = false;
+      rec->read   = read;
+      ((video_thread_private_t*)thr)->rec    = rec;
+      return -1;
+   }
+   if (!(retro_atomic_load_acquire_int(&rec->ready) & VIDEO_THREAD_REC_FRESH))
+      return rec->taken ? 0 : -1;
+   /* Hands the buffer read last back, takes the newest */
+   rec->front = (unsigned)retro_atomic_exchange_int(&rec->ready,
+         (int)rec->front) & 3u;
+   rec->taken = true;
+   *frame     = rec->buf[rec->front];
+   return 1;
+}
+
 static void video_thread_loop(void *data)
 {
    thread_packet_t pkt;
@@ -1177,6 +1414,11 @@ static void video_thread_loop(void *data)
 
             if (thr->driver->viewport_info)
                thr->driver->viewport_info(thr->driver_data, &vp);
+
+            /* GPU recording: what was just drawn, read back */
+            if (ret_frame && ((video_thread_private_t*)thr)->rec_slot[slot])
+               video_thread_rec_read(thr,
+                     ((video_thread_private_t*)thr)->rec_slot[slot], &vp);
          }
          else
             slock_unlock(thr->frame.lock);
@@ -1469,6 +1711,10 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
+   /* Recording buffers stopped earlier that no slot in flight names */
+   if (((video_thread_private_t*)thr)->rec_retired)
+      video_thread_rec_reap(thr);
+
    {
       const uint8_t *src   = (const uint8_t*)frame_;
       uint8_t       *dst   = thr->frame.slot[slot].buffer;
@@ -1531,6 +1777,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].count  = frame_count;
       thr->frame.slot[slot].pushed_at = now;
       thr->frame.slot[slot].hw_slot = hw_slot;
+      ((video_thread_private_t*)thr)->rec_slot[slot]     = ((video_thread_private_t*)thr)->rec;
       thr->frame.slot[slot].pitch  = copy_stride;
 
       /* Hand the caller's video_frame_info_t across with the frame data.
@@ -1877,6 +2124,11 @@ static void video_thread_free(void *data)
        * briefly tells the rest of the frontend the wrapper is gone
        * while its thread is still presenting. */
       video_state_get_ptr()->thread_wrapper_active = false;
+
+      /* The video thread is gone: every recording buffer can go */
+      video_thread_record_stop(thr);
+      video_thread_rec_free_list(((video_thread_private_t*)thr)->rec_retired);
+      ((video_thread_private_t*)thr)->rec_retired = NULL;
 
       free(thr->texture.frame);
 #ifdef _3DS
@@ -2592,7 +2844,7 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
       input_driver_t **input, void **input_data,
       const video_driver_t *drv, const video_info_t info)
 {
-   thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(*thr));
+   thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(video_thread_private_t));
    if (!thr)
       return false;
 

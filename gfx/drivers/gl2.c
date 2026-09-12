@@ -30,6 +30,7 @@
 #endif
 #endif
 
+#include "../video_record.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -2353,6 +2354,70 @@ static void gl2_renderchain_bind_prev_texture(
    }
 }
 
+#ifdef HAVE_GL_ASYNC_READBACK
+static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
+{
+   const uint8_t *ptr = NULL;
+#ifdef HAVE_OPENGLES3
+   unsigned num_pixels = gl->vp.width * gl->vp.height;
+#endif
+
+   /* Don't readback if we're in menu mode.
+    * We haven't buffered up enough frames yet, come back later. */
+   if (!gl->pbo_readback_valid[gl->pbo_readback_index])
+      return false;
+
+   gl->pbo_readback_valid[gl->pbo_readback_index] = false;
+   glBindBuffer(GL_PIXEL_PACK_BUFFER,
+         gl->pbo_readback[gl->pbo_readback_index]);
+
+#ifdef HAVE_OPENGLES3
+   /* Slower path, but should work on all implementations at least. */
+   ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+         0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+
+   if (ptr)
+   {
+      /* Clamp to the region glReadPixels actually wrote
+       * (see gl2_renderchain_readback). */
+      unsigned rb_w = (gl->vp.width  > gl->video_width)
+         ? gl->video_width  : gl->vp.width;
+      unsigned rb_h = (gl->vp.height > gl->video_height)
+         ? gl->video_height : gl->vp.height;
+      video_frame_convert_rgba_to_bgr(
+            (const void*)ptr,
+            buffer,
+            rb_w * sizeof(uint32_t),
+            rb_w * 3,
+            rb_w,
+            rb_h);
+   }
+#else
+   ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+   if (ptr)
+   {
+      struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
+      scaler_ctx_scale_direct(ctx, buffer, ptr);
+   }
+#endif
+
+   if (!ptr)
+   {
+      RARCH_ERR("[GL] Failed to map pixel unpack buffer.\n");
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      return false;
+   }
+
+   if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+   {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      return false;
+   }
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   return true;
+}
+#endif
+
 static bool gl2_renderchain_read_viewport(
       gl2_t *gl,
       uint8_t *buffer, bool is_idle)
@@ -2390,55 +2455,8 @@ static bool gl2_renderchain_read_viewport(
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
-      const uint8_t *ptr  = NULL;
-
-      /* Don't readback if we're in menu mode.
-       * We haven't buffered up enough frames yet, come back later. */
-      if (!gl->pbo_readback_valid[gl->pbo_readback_index])
+      if (!gl2_read_pbo(gl, buffer))
          goto error;
-
-      gl->pbo_readback_valid[gl->pbo_readback_index] = false;
-      glBindBuffer(GL_PIXEL_PACK_BUFFER,
-            gl->pbo_readback[gl->pbo_readback_index]);
-
-#ifdef HAVE_OPENGLES3
-      /* Slower path, but should work on all implementations at least. */
-      ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
-            0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
-
-      if (ptr)
-      {
-         /* Clamp to the region glReadPixels actually wrote
-          * (see gl2_renderchain_readback). */
-         unsigned rb_w = (gl->vp.width  > gl->video_width)
-            ? gl->video_width  : gl->vp.width;
-         unsigned rb_h = (gl->vp.height > gl->video_height)
-            ? gl->video_height : gl->vp.height;
-         video_frame_convert_rgba_to_bgr(
-               (const void*)ptr,
-               buffer,
-               rb_w * sizeof(uint32_t),
-               rb_w * 3,
-               rb_w,
-               rb_h);
-      }
-#else
-      ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-      if (ptr)
-      {
-         struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
-         scaler_ctx_scale_direct(ctx, buffer, ptr);
-      }
-#endif
-
-      if (!ptr)
-      {
-         RARCH_ERR("[GL] Failed to map pixel unpack buffer.\n");
-         goto error;
-      }
-
-      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
    else
 #endif
@@ -3775,12 +3793,25 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
 #endif
 
-   gl2_renderchain_bind_pbo(
-         gl->pbo_readback[gl->pbo_readback_index++]);
-   gl->pbo_readback_index &= 3;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* Resize the destination before issuing a copy at the new extent. */
+   if ((unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
+         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      glDeleteBuffers(4, gl->pbo_readback);
+      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      if (!gl2_init_pbo_readback(gl))
+      {
+         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+         return;
+      }
+   }
+#endif
 
-   /* 4 frames back, we can readback. */
+   gl2_renderchain_bind_pbo(
+         gl->pbo_readback[gl->pbo_readback_index]);
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
+   gl->pbo_readback_index = (gl->pbo_readback_index + 1) & 3;
 
    gl2_renderchain_readback(gl, gl->renderchain_data,
          gl2_get_alignment(gl->vp.width * sizeof(uint32_t)),
@@ -5093,6 +5124,8 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    int i;
 
+   gl->pbo_readback_index = 0;
+   memset(gl->pbo_readback_valid, 0, sizeof(gl->pbo_readback_valid));
    glGenBuffers(4, gl->pbo_readback);
 
    for (i = 0; i < 4; i++)
@@ -6036,6 +6069,39 @@ static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return false;
 
    return gl2_renderchain_read_viewport(gl, buffer, is_idle);
+}
+
+#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+static bool gl2_record_read(void *data, uint8_t *buffer)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !gl->vp.width || !gl->vp.height)
+      return false;
+   if (     !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+         || (unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
+         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+      {
+         glDeleteBuffers(4, gl->pbo_readback);
+         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      }
+      gl->flags |= GL2_FLAG_PBO_READBACK_ENABLE;
+      if (!gl2_init_pbo_readback(gl))
+         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+      return false;
+   }
+   return gl2_read_pbo(gl, buffer);
+}
+#endif
+
+video_record_read_t gl2_get_record_read(void)
+{
+#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   return gl2_record_read;
+#else
+   return NULL;
+#endif
 }
 
 #if 0

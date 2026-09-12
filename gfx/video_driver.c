@@ -1447,6 +1447,10 @@ error:
 void video_driver_gpu_record_deinit(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_THREADS
+   if (video_st->thread_wrapper_active)
+      video_thread_record_stop(video_st->data);
+#endif
    if (video_st->record_gpu_buffer)
       free(video_st->record_gpu_buffer);
    video_st->record_gpu_buffer = NULL;
@@ -1469,54 +1473,74 @@ static void recording_dump_frame(
 
    if (video_st->record_gpu_buffer)
    {
-      struct video_viewport vp;
-
-      vp.x                        = 0;
-      vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
-
-      if (vid && vid->viewport_info && video_st->data)
-         vid->viewport_info(video_st->data, &vp);
-
-      if (!vp.width || !vp.height)
+      const uint8_t *gpu_frame = video_st->record_gpu_buffer;
+#ifdef HAVE_THREADS
+      int taken = -2;
+      if (video_st->thread_wrapper_active)
+         taken = video_thread_record_take(video_st->data,
+               (unsigned)record_st->gpu_width,
+               (unsigned)record_st->gpu_height, &gpu_frame);
+      if (taken == -1)
+         return;
+      if (!taken)
       {
-         RARCH_WARN("[Recording] %s\n",
-               msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
-         video_driver_gpu_record_deinit();
-         recording_dump_frame(
-               data, width, height, pitch, is_idle);
+         ffemu_data.is_dupe = true;
+         record_st->driver->push_video(record_st->data, &ffemu_data);
          return;
       }
-
-      /* User has resized. We kinda have a problem now. */
-      if (     (vp.width  != record_st->gpu_width)
-            || (vp.height != record_st->gpu_height))
+      if (taken == -2)
+#endif
       {
-         const char *_msg =
-            msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
-         RARCH_WARN("[Recording] %s\n", _msg);
+         struct video_viewport vp;
 
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
-               NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-         return;
+         vp.x                        = 0;
+         vp.y                        = 0;
+         vp.width                    = 0;
+         vp.height                   = 0;
+         vp.full_width               = 0;
+         vp.full_height              = 0;
+
+         if (vid && vid->viewport_info && video_st->data)
+            vid->viewport_info(video_st->data, &vp);
+
+         if (!vp.width || !vp.height)
+         {
+            RARCH_WARN("[Recording] %s\n",
+                  msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
+            video_driver_gpu_record_deinit();
+            recording_dump_frame(
+                  data, width, height, pitch, is_idle);
+            return;
+         }
+
+         /* User has resized. We kinda have a problem now. */
+         if (     (vp.width  != record_st->gpu_width)
+               || (vp.height != record_st->gpu_height))
+         {
+            const char *_msg =
+               msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
+            RARCH_WARN("[Recording] %s\n", _msg);
+
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
+                  NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+            return;
+         }
+
+         /* Big bottleneck.
+          * Since we might need to do read-backs asynchronously,
+          * it might take 3-4 times before this returns true. */
+         if (!(      vid->read_viewport
+                  && vid->read_viewport(
+                     video_st->data, video_st->record_gpu_buffer, is_idle)))
+            return;
+
       }
-
-      /* Big bottleneck.
-       * Since we might need to do read-backs asynchronously,
-       * it might take 3-4 times before this returns true. */
-      if (!(      vid->read_viewport
-               && vid->read_viewport(
-                  video_st->data, video_st->record_gpu_buffer, is_idle)))
-         return;
 
       ffemu_data.pitch  = (int)(record_st->gpu_width * 3);
       ffemu_data.width  = (unsigned)record_st->gpu_width;
       ffemu_data.height = (unsigned)record_st->gpu_height;
-      ffemu_data.data   = video_st->record_gpu_buffer + (ffemu_data.height - 1) * ffemu_data.pitch;
+      ffemu_data.data   = gpu_frame + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }

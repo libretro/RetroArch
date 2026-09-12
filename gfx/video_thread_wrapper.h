@@ -594,6 +594,20 @@ void video_thread_call_on_waiter(void (*fn)(void *data), void *data);
 
 void video_thread_wait_idle(void);
 
+/* GPU recording under the wrapper, main thread. The video thread reads
+ * back each frame it draws through a dedicated recording reader; this
+ * takes the newest since the last call without waiting for one.
+ * Returns 1 with *frame set (width * height BGR24 rows, bottom up, as
+ * read_viewport() leaves them), 0 when nothing new has arrived since a
+ * frame was last taken, -1 when there is nothing to record yet, and -2
+ * when the driver has no recording reader, for the caller to use
+ * read_viewport(). Starts the readbacks on first use and again at a new
+ * output size. Viewport changes are scaled and letterboxed by the worker. */
+int video_thread_record_take(void *data, unsigned width, unsigned height,
+      const uint8_t **frame);
+/* Stops the readbacks; the buffers go once no frame names them. */
+void video_thread_record_stop(void *data);
+
 #ifdef HAVE_GFX_WIDGETS
 /* Main thread: stages the on-screen panels' text to travel with the
  * next frame pushed, for the widgets the worker draws. */
