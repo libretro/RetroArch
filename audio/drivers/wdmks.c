@@ -304,7 +304,10 @@ RA_KS_GUID(ra_ks_mediumsetid_standard,
 RA_KS_GUID(ra_ks_propsetid_connection,
       0x1D58C920, 0xAC9B, 0x11CF, 0xA5, 0xD6, 0x28, 0xDB, 0x04, 0xC1, 0x00, 0x00);
 
-#define RA_KSINTERFACE_STANDARD_STREAMING 0
+#define RA_KSINTERFACE_STANDARD_STREAMING        0
+/* What a WaveRT pin offers instead: the buffer loops, and the caller
+ * writes into it rather than handing packets over. */
+#define RA_KSINTERFACE_STANDARD_LOOPED_STREAMING 1
 #define RA_KSMEDIUM_TYPE_ANYINSTANCE      0
 #define RA_KSPRIORITY_NORMAL              0x40000000
 #define RA_KSPROPERTY_CONNECTION_STATE    0
@@ -1225,6 +1228,7 @@ typedef struct
    HANDLE handle;
    ULONG  pin_id;
    wdmks_format_t fmt;
+   bool   looped;          /* opened on the WaveRT interface */
 } wdmks_stream_t;
 
 /* Asks the filter for one pin in one format. Returns the pin handle,
@@ -1232,7 +1236,7 @@ typedef struct
  * the device does not want, and is how the ranges are turned into
  * fact. */
 static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
-      const wdmks_format_t *fmt)
+      const wdmks_format_t *fmt, bool looped)
 {
    /* Big enough for either form. The extensible one is a
     * WAVEFORMATEX with twenty-two bytes behind it, and the data
@@ -1251,7 +1255,9 @@ static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
    memset(buf, 0, sizeof(buf));
 
    connect->Interface.Set   = ra_ks_interfacesetid_standard;
-   connect->Interface.Id    = RA_KSINTERFACE_STANDARD_STREAMING;
+   connect->Interface.Id    = looped
+      ? RA_KSINTERFACE_STANDARD_LOOPED_STREAMING
+      : RA_KSINTERFACE_STANDARD_STREAMING;
    connect->Interface.Flags = 0;
    connect->Medium.Set      = ra_ks_mediumsetid_standard;
    connect->Medium.Id       = RA_KSMEDIUM_TYPE_ANYINSTANCE;
@@ -1313,7 +1319,8 @@ static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
  * (the frontend's own pipeline is float, so that is one conversion
  * fewer), and the widest integer before the narrowest. */
 static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
-      unsigned wanted_rate, unsigned channels, wdmks_stream_t *out)
+      unsigned wanted_rate, unsigned channels, bool looped,
+      wdmks_stream_t *out)
 {
    unsigned r;
 
@@ -1351,16 +1358,18 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
          if (!wdmks_format_in_pin(pin, &fmt))
             continue;
 
-         h = wdmks_pin_try(filter, pin->pin_id, &fmt);
+         h = wdmks_pin_try(filter, pin->pin_id, &fmt, looped);
          if (h == INVALID_HANDLE_VALUE)
             continue;
 
          out->handle = h;
          out->pin_id = pin->pin_id;
          out->fmt    = fmt;
-         RARCH_LOG("[WDM-KS] Pin %u opened at %u Hz, %u channel(s), %s,"
-               " %u-byte frame.\n",
-               (unsigned)pin->pin_id, fmt.rate, fmt.channels,
+         out->looped = looped;
+         RARCH_LOG("[WDM-KS] Pin %u opened %s at %u Hz, %u channel(s),"
+               " %s, %u-byte frame.\n",
+               (unsigned)pin->pin_id, looped ? "(WaveRT)" : "(WaveCyclic)",
+               fmt.rate, fmt.channels,
                fmt.is_float ? "32-bit float" : "16-bit integer",
                fmt.channels * (fmt.container_bits / 8));
          return true;
@@ -1436,6 +1445,18 @@ typedef struct
    unsigned        next;         /* the packet a write fills */
    unsigned        frame_bytes;
    unsigned        rate;
+   /* WaveRT: the driver's own buffer, mapped here, and the register
+    * it updates as the hardware plays out of it. rt_write is where
+    * this side will put the next frame; the register says where the
+    * hardware has got to, and the gap between them is what is safe to
+    * fill. */
+   unsigned char  *rt_buf;
+   size_t          rt_size;
+   size_t          rt_write;
+   volatile ULONG *rt_pos;      /* byte offset, updated by the device */
+   bool            rt_barrier;  /* writes need a barrier to be seen */
+   uint64_t        rt_played;   /* frames, accumulated across wraps */
+   ULONG           rt_last_pos;
    bool            running;
    bool            dead;      /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
@@ -1452,6 +1473,183 @@ typedef struct
    int             clk_ppm;
    bool            clk_valid;
 } wdmks_t;
+
+/* ---- WaveRT: the mapped buffer and the position register ---------- */
+
+static bool wdmks_position(wdmks_t *w, uint64_t *frames);
+
+/* Asks the pin for its buffer. The notification form is tried first
+ * because a driver that supports it will also signal an event, which
+ * a later revision can wait on; the plain form is what every WaveRT
+ * driver has. The buffer belongs to the driver - it is not freed
+ * here, it goes away with the pin. */
+static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
+{
+   ra_ksrtaudio_buffer_property_notify_t inn;
+   ra_ksrtaudio_buffer_t                 out;
+   DWORD                                 written = 0;
+
+   memset(&inn, 0, sizeof(inn));
+   memset(&out, 0, sizeof(out));
+   inn.Property.Set      = ra_ks_propsetid_rtaudio;
+   inn.Property.Id       = RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION;
+   inn.Property.Flags    = RA_KSPROPERTY_TYPE_GET;
+   inn.BaseAddress       = NULL;   /* the driver chooses where */
+   inn.RequestedBufferSize = (ULONG)wanted;
+   inn.NotificationCount = 2;
+
+   if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+            &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
+         || written < sizeof(out) || !out.BufferAddress)
+   {
+      ra_ksrtaudio_buffer_property_t plain;
+      memset(&plain, 0, sizeof(plain));
+      memset(&out,   0, sizeof(out));
+      plain.Property.Set   = ra_ks_propsetid_rtaudio;
+      plain.Property.Id    = RA_KSPROPERTY_RTAUDIO_BUFFER;
+      plain.Property.Flags = RA_KSPROPERTY_TYPE_GET;
+      plain.BaseAddress    = NULL;
+      plain.RequestedBufferSize = (ULONG)wanted;
+
+      written = 0;
+      if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+               &plain, sizeof(plain), &out, sizeof(out), &written, NULL)
+            || written < sizeof(out) || !out.BufferAddress)
+      {
+         RARCH_ERR("[WDM-KS] The pin would not give a buffer: 0x%08lx.\n",
+               (unsigned long)GetLastError());
+         return false;
+      }
+   }
+
+   w->rt_buf     = (unsigned char*)out.BufferAddress;
+   w->rt_size    = (size_t)out.ActualBufferSize;
+   w->rt_barrier = out.CallMemoryBarrier ? true : false;
+
+   /* Whole frames: the loop wraps at the end of the buffer, and a
+    * wrap mid-frame rotates every channel after it for good - the
+    * same hazard the packet path guards against. */
+   w->rt_size   -= w->rt_size % w->frame_bytes;
+   if (!w->rt_size)
+      return false;
+
+   memset(w->rt_buf, 0, w->rt_size);
+   w->rt_write   = 0;
+   w->rt_played  = 0;
+   w->rt_last_pos = 0;
+   return true;
+}
+
+/* The position register, where the driver offers one: a pointer it
+ * updates with the byte offset the hardware has reached. Reading a
+ * word is cheaper and steadier than an ioctl per query, which is the
+ * whole point of WaveRT. */
+static void wdmks_rt_get_position_register(wdmks_t *w)
+{
+   ra_ksrtaudio_hwregister_property_t inn;
+   ra_ksrtaudio_hwregister_t          out;
+   DWORD                              written = 0;
+
+   memset(&inn, 0, sizeof(inn));
+   memset(&out, 0, sizeof(out));
+   inn.Property.Set   = ra_ks_propsetid_rtaudio;
+   inn.Property.Id    = RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER;
+   inn.Property.Flags = RA_KSPROPERTY_TYPE_GET;
+   inn.BaseAddress    = NULL;
+
+   if (DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+            &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
+         && written >= sizeof(out) && out.Register)
+      w->rt_pos = (volatile ULONG*)out.Register;
+   else
+      RARCH_LOG("[WDM-KS] No position register; asking the pin instead.\n");
+}
+
+/* Where the hardware is, as a byte offset into the buffer. The
+ * register if there is one, the pin's own position otherwise - which
+ * is an ioctl, but correct. */
+static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
+{
+   if (w->rt_pos)
+   {
+      ULONG v = *w->rt_pos;
+      if (v >= (ULONG)w->rt_size)
+         v %= (ULONG)w->rt_size;
+      *offset = v;
+      return true;
+   }
+   {
+      uint64_t frames = 0;
+      if (!wdmks_position(w, &frames))
+         return false;
+      *offset = (ULONG)((frames * w->frame_bytes) % w->rt_size);
+      return true;
+   }
+}
+
+/* Free space: from where this side will write, forward to where the
+ * hardware is reading. One frame is kept back so a full buffer is
+ * never mistaken for an empty one. */
+static size_t wdmks_rt_free(wdmks_t *w)
+{
+   ULONG  play = 0;
+   size_t gap;
+
+   if (!w->rt_buf || !wdmks_rt_play_offset(w, &play))
+      return 0;
+   gap = (size_t)((play + w->rt_size - w->rt_write) % w->rt_size);
+   if (gap < w->frame_bytes)
+      return 0;
+   return gap - w->frame_bytes;
+}
+
+static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
+      size_t size)
+{
+   size_t done = 0;
+
+   while (done < size)
+   {
+      size_t room = wdmks_rt_free(w);
+      size_t chunk;
+      size_t first;
+
+      if (!room)
+      {
+         if (w->nonblock)
+            break;
+         /* A quarter of the buffer is the longest this can usefully
+          * wait: the hardware frees space continuously, and anything
+          * longer risks outliving a device that has stopped. */
+         Sleep(1);
+         if (!(room = wdmks_rt_free(w)))
+            continue;
+      }
+
+      chunk = size - done;
+      if (chunk > room)
+         chunk = room;
+      chunk -= chunk % w->frame_bytes;
+      if (!chunk)
+         break;
+
+      first = w->rt_size - w->rt_write;
+      if (first > chunk)
+         first = chunk;
+      memcpy(w->rt_buf + w->rt_write, src + done, first);
+      if (chunk > first)
+         memcpy(w->rt_buf, src + done + first, chunk - first);
+
+      /* Where the driver said one is needed, the write has to be
+       * visible to the hardware before the cursor moves past it. */
+      if (w->rt_barrier)
+         MemoryBarrier();
+
+      w->rt_write = (w->rt_write + chunk) % w->rt_size;
+      done       += chunk;
+   }
+   return (ssize_t)done;
+}
 
 /* Has this packet come back? A packet the device still holds is not
  * free to refill. GetOverlappedResult without waiting is the question
@@ -1535,6 +1733,8 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
       return -1;
    if (w->dead)
       return -1;
+   if (w->stream.looped)
+      return wdmks_rt_write(w, src, size);
 
    while (done < size)
    {
@@ -1684,6 +1884,24 @@ static size_t wdmks_frames_consumed(void *data)
 
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE)
       return 0;
+
+   if (w->stream.looped)
+   {
+      /* The register is a byte offset that wraps, so the steps
+       * between reads are accumulated: a position that went backwards
+       * is a wrap and not a rewind. */
+      ULONG now = 0;
+      if (!w->rt_size || !wdmks_rt_play_offset(w, &now))
+         return (size_t)w->rt_played;
+      if (now >= w->rt_last_pos)
+         w->rt_played += (uint64_t)(now - w->rt_last_pos) / w->frame_bytes;
+      else
+         w->rt_played += (uint64_t)((now + w->rt_size - w->rt_last_pos))
+            / w->frame_bytes;
+      w->rt_last_pos = now;
+      return (size_t)w->rt_played;
+   }
+
    wdmks_clock_sample(w);
    if (!wdmks_position(w, &frames))
       return 0;
@@ -1710,7 +1928,9 @@ static uint32_t wdmks_layout(void *data)
 static size_t wdmks_write_avail(void *data)
 {
    wdmks_t *w = (wdmks_t*)data;
-   return w ? wdmks_free_bytes(w) : 0;
+   if (!w)
+      return 0;
+   return w->stream.looped ? wdmks_rt_free(w) : wdmks_free_bytes(w);
 }
 
 /* Blocks until at least len bytes will fit, and returns what fits.
@@ -1737,13 +1957,14 @@ static size_t wdmks_wait_writable(void *data, size_t len)
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE || w->dead)
       return 0;
 
-   cap = (w->packet_bytes * WDMKS_PACKETS) / 2;
+   cap = (w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS) / 2;
    if (len > cap)
       len = cap;
 
    for (;;)
    {
-      size_t          avail = wdmks_free_bytes(w);
+      size_t          avail = w->stream.looped
+         ? wdmks_rt_free(w) : wdmks_free_bytes(w);
       wdmks_packet_t *p;
       DWORD           timeout;
 
@@ -1751,6 +1972,13 @@ static size_t wdmks_wait_writable(void *data, size_t len)
          return avail;
       if (!laps--)
          return 0;
+      if (w->stream.looped)
+      {
+         /* No packet to wait on: the hardware frees room as it plays,
+          * so this waits a slice of the buffer and looks again. */
+         Sleep(1);
+         continue;
+      }
 
       p = &w->packets[w->next];
       if (wdmks_packet_done(w, p))
@@ -1772,7 +2000,9 @@ static size_t wdmks_wait_writable(void *data, size_t len)
 static size_t wdmks_buffer_size(void *data)
 {
    wdmks_t *w = (wdmks_t*)data;
-   return w ? w->packet_bytes * WDMKS_PACKETS : 0;
+   if (!w)
+      return 0;
+   return w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS;
 }
 
 static bool wdmks_start(void *data, bool is_shutdown)
@@ -1837,7 +2067,15 @@ static void wdmks_free(void *data)
       RARCH_LOG("[WDM-KS] Device clock, fitted from the pin's position:"
             " %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
 
-   if (w->stream.handle != INVALID_HANDLE_VALUE)
+   if (w->stream.handle != INVALID_HANDLE_VALUE && w->stream.looped)
+   {
+      /* The buffer is the driver's - closing the pin is what releases
+       * it, and nothing here may touch it afterwards. */
+      wdmks_pin_close(&w->stream);
+      w->rt_buf = NULL;
+      w->rt_pos = NULL;
+   }
+   else if (w->stream.handle != INVALID_HANDLE_VALUE)
    {
       /* Every outstanding packet has to come back before the buffers
        * it points at are freed: the device is writing out of them. */
@@ -1967,44 +2205,13 @@ static void *wdmks_init(const char *device, unsigned rate,
             : (wanted == AUDIO_LAYOUT_QUAD)    ? 4 : 2;
          unsigned c;
 
-         /* A WaveRT filter is passed over rather than asked twelve
-          * times: its pins do not offer the streaming interface this
-          * driver opens them with - which is what ERROR_NOT_FOUND
-          * from KsCreatePin means - and no rate or width changes
-          * that. continue, not break: the next filter may well be one
-          * that works, and on this machine it is. */
-         if (devices[i].wavert)
-         {
-            const char *what = devices[i].name
-               ? devices[i].name : "unnamed device";
-            CloseHandle(w->filter);
-            w->filter = INVALID_HANDLE_VALUE;
-
-            /* A device the user named is not something to walk past.
-             * Wandering on to the next one and failing there reports
-             * the wrong device and the wrong reason - which is what
-             * the last report showed: the setting named a WaveRT
-             * output, this skipped it, the neighbour refused, and the
-             * error blamed a format. */
-            if (device && *device)
-            {
-               RARCH_ERR("[WDM-KS] \"%s\" streams WaveRT, which this"
-                     " driver does not do yet. Choose another device,"
-                     " or another audio driver for this one.\n", what);
-               break;
-            }
-            RARCH_WARN("[WDM-KS] \"%s\" streams WaveRT, which this driver"
-                  " does not do yet - skipping it.\n", what);
-            continue;
-         }
-
-      for (c = 0; c < sizeof(widths) / sizeof(*widths) && !opened; c++)
+         for (c = 0; c < sizeof(widths) / sizeof(*widths) && !opened; c++)
          {
             if (widths[c] > want_ch)
                continue;
             for (p = 0; p < devices[i].pin_count && !opened; p++)
                opened = wdmks_pin_open(w->filter, &devices[i].pins[p],
-                     rate, widths[c], &w->stream);
+                     rate, widths[c], devices[i].wavert, &w->stream);
          }
       }
 
@@ -2061,6 +2268,30 @@ static void *wdmks_init(const char *device, unsigned rate,
       if (!each)
          each = w->frame_bytes;
       w->packet_bytes = each;
+   }
+
+   if (w->stream.looped)
+   {
+      /* The whole latency setting is the loop, not a quarter of it:
+       * there are no packets to divide it between. */
+      size_t wanted = (size_t)latency * w->rate / 1000 * w->frame_bytes;
+      if (wanted < w->frame_bytes * 64)
+         wanted = w->frame_bytes * 64;
+
+      if (     !wdmks_rt_get_buffer(w, wanted)
+            || !wdmks_start(w, false))
+      {
+         RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
+         wdmks_free(w);
+         return NULL;
+      }
+      wdmks_rt_get_position_register(w);
+
+      RARCH_LOG("[WDM-KS] WaveRT buffer of %u bytes, %u ms%s.\n",
+            (unsigned)w->rt_size,
+            (unsigned)(w->rt_size * 1000 / (w->frame_bytes * w->rate)),
+            w->rt_barrier ? ", writes need a barrier" : "");
+      return w;
    }
 
    for (i = 0; i < WDMKS_PACKETS; i++)
