@@ -19,6 +19,7 @@
 
 #include <lists/string_list.h>
 #include <rthreads/rthreads.h>
+#include <features/features_cpu.h>
 
 #include "audio_thread_wrapper.h"
 #include "audio_driver.h"
