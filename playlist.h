@@ -130,7 +130,6 @@ struct playlist_entry
    char *last_played_str;
    struct string_list *subsystem_roms;
    playlist_path_id_t *path_id;
-   unsigned entry_slot;
    /* Note: due to platform dependence, have to record
     * timestamp as either a string or independent integer
     * values. The latter is more verbose, but more efficient.
@@ -145,9 +144,26 @@ struct playlist_entry
    uint32_t runtime;            /* hours:20 | minutes:6 | seconds:6 */
    uint32_t last_played_ymd;    /* year:16  | month:4   | day:5     */
    uint32_t last_played_hms;    /* hour:5   | minute:6  | second:6  */
-   enum playlist_runtime_status runtime_status;
-   int thumbnail_flags;
+   /* Packed, for the same reason as the timestamps above: the slot
+    * index is a subsystem content slot, the runtime status has three
+    * values and the thumbnail flags are five bits. */
+   uint32_t attr;               /* slot:16  | status:3  | thumbs:5  */
 };
+
+#define PLAYLIST_ENTRY_SLOT(e)         ((e)->attr & 0xffffu)
+#define PLAYLIST_RUNTIME_STATUS(e) \
+   ((enum playlist_runtime_status)(((e)->attr >> 16) & 0x7u))
+#define PLAYLIST_THUMBNAIL_FLAGS(e)    ((int)(((e)->attr >> 19) & 0x1fu))
+#define PLAYLIST_SET_ENTRY_SLOT(e, v) \
+   ((e)->attr = ((e)->attr & ~0xffffu) | ((uint32_t)(v) & 0xffffu))
+#define PLAYLIST_SET_RUNTIME_STATUS(e, v) \
+   ((e)->attr = ((e)->attr & ~(0x7u << 16)) \
+              | (((uint32_t)(v) & 0x7u) << 16))
+#define PLAYLIST_SET_THUMBNAIL_FLAGS(e, v) \
+   ((e)->attr = ((e)->attr & ~(0x1fu << 19)) \
+              | (((uint32_t)(v) & 0x1fu) << 19))
+#define PLAYLIST_OR_THUMBNAIL_FLAGS(e, v) \
+   PLAYLIST_SET_THUMBNAIL_FLAGS((e), PLAYLIST_THUMBNAIL_FLAGS(e) | (int)(v))
 
 #define PLAYLIST_RUNTIME_HOURS(e)      ((e)->runtime >> 12)
 #define PLAYLIST_RUNTIME_MINUTES(e)    (((e)->runtime >> 6) & 0x3fu)

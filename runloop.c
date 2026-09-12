@@ -4801,8 +4801,8 @@ static bool event_init_content(
          if (menu_st && menu_st->driver_data)
             playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
 
-         if (entry && entry->entry_slot > 0)
-            runloop_st->entry_state_slot = entry->entry_slot;
+         if (entry && PLAYLIST_ENTRY_SLOT(entry) > 0)
+            runloop_st->entry_state_slot = PLAYLIST_ENTRY_SLOT(entry);
 
          entry_state_load = runloop_st->entry_state_slot > -1;
 

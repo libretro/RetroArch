@@ -1275,11 +1275,11 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Check whether runtime info should be loaded from log file */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+   if (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_UNKNOWN)
       runtime_update_playlist(playlist, playlist_index);
 
    /* Check whether runtime info is valid */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
+   if (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_VALID)
    {
       size_t n = 0;
       char tmp[128];

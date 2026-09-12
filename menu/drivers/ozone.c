@@ -4659,7 +4659,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
 
       if (entry)
       {
-         if (     (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+         if (     (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_UNKNOWN)
                || (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU))
             runtime_update_playlist(playlist, playlist_index);
 

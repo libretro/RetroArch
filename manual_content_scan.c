@@ -1870,7 +1870,7 @@ void manual_content_scan_add_content_to_playlist(
       entry.core_name  = (char*)FILE_PATH_DETECT;
       entry.crc32      = (char*)"00000000|crc";
       entry.db_name    = task_config->database_name;
-      entry.entry_slot = 0;
+      PLAYLIST_SET_ENTRY_SLOT(&entry, 0);
 
       /* Add entry to playlist */
       playlist_push(playlist, &entry);

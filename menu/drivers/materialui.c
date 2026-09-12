@@ -4234,7 +4234,7 @@ static bool materialui_render_process_entry_playlist_desktop(
             /* Get runtime info, if available */
             if (content_runtime_log || content_runtime_log_aggregate)
             {
-               if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+               if (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_UNKNOWN)
                   runtime_update_playlist(mui->playlist, playlist_idx);
 
                if (entry->runtime_str && *entry->runtime_str)

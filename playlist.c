@@ -120,6 +120,7 @@ enum json_ctx_flags
 enum playlist_json_packed_val
 {
    PLAYLIST_JSON_PACKED_NONE = 0,
+   PLAYLIST_JSON_PACKED_ENTRY_SLOT,
    PLAYLIST_JSON_PACKED_RUNTIME_HOURS,
    PLAYLIST_JSON_PACKED_RUNTIME_MINUTES,
    PLAYLIST_JSON_PACKED_RUNTIME_SECONDS,
@@ -686,8 +687,8 @@ static void playlist_free_entry(struct playlist_entry *entry)
    entry->last_played_str    = NULL;
    entry->subsystem_roms     = NULL;
    entry->path_id            = NULL;
-   entry->entry_slot         = 0;
-   entry->runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
+   PLAYLIST_SET_ENTRY_SLOT(entry, 0);
+   PLAYLIST_SET_RUNTIME_STATUS(entry, PLAYLIST_RUNTIME_UNKNOWN);
    PLAYLIST_SET_RUNTIME_HOURS(entry, 0);
    PLAYLIST_SET_RUNTIME_MINUTES(entry, 0);
    PLAYLIST_SET_RUNTIME_SECONDS(entry, 0);
@@ -1211,9 +1212,9 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
          playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
-   if (update_entry->runtime_status != entry->runtime_status)
+   if (PLAYLIST_RUNTIME_STATUS(update_entry) != PLAYLIST_RUNTIME_STATUS(entry))
    {
-      entry->runtime_status = update_entry->runtime_status;
+      PLAYLIST_SET_RUNTIME_STATUS(entry, PLAYLIST_RUNTIME_STATUS(update_entry));
       if (register_update)
          playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
@@ -1399,7 +1400,8 @@ bool playlist_push_runtime(playlist_t *playlist,
       if (*real_core_path)
          playlist->entries[0].core_path       = strdup(real_core_path);
 
-      playlist->entries[0].runtime_status     = entry->runtime_status;
+      PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
+            PLAYLIST_RUNTIME_STATUS(entry));
       PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], PLAYLIST_RUNTIME_HOURS(entry));
       PLAYLIST_SET_RUNTIME_MINUTES(&playlist->entries[0], PLAYLIST_RUNTIME_MINUTES(entry));
       PLAYLIST_SET_RUNTIME_SECONDS(&playlist->entries[0], PLAYLIST_RUNTIME_SECONDS(entry));
@@ -1437,7 +1439,7 @@ void playlist_update_thumbnail_name_flag(playlist_t *playlist, size_t idx,
       return;
 
    entry                   = &playlist->entries[idx];
-   entry->thumbnail_flags |= thumbnail_flags;
+   PLAYLIST_OR_THUMBNAIL_FLAGS(entry, thumbnail_flags);
 }
 
 enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlist_t *playlist, size_t idx)
@@ -1446,7 +1448,7 @@ enum playlist_thumbnail_name_flags playlist_get_curr_thumbnail_name_flag(playlis
    if (!playlist || idx >= RBUF_LEN(playlist->entries))
       return    PLAYLIST_THUMBNAIL_FLAG_NONE;
    entry = &playlist->entries[idx];
-   return (enum playlist_thumbnail_name_flags)entry->thumbnail_flags;
+   return (enum playlist_thumbnail_name_flags)PLAYLIST_THUMBNAIL_FLAGS(entry);
 }
 
 
@@ -1458,11 +1460,11 @@ enum playlist_thumbnail_name_flags playlist_get_next_thumbnail_name_flag(playlis
       return    PLAYLIST_THUMBNAIL_FLAG_NONE;
    entry = (struct playlist_entry*)&playlist->entries[idx];
 
-   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+   if (PLAYLIST_THUMBNAIL_FLAGS(entry) & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
             return PLAYLIST_THUMBNAIL_FLAG_NONE;
-   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
+   if (PLAYLIST_THUMBNAIL_FLAGS(entry) & PLAYLIST_THUMBNAIL_FLAG_STD_NAME)
             return PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME;
-   if (entry->thumbnail_flags & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
+   if (PLAYLIST_THUMBNAIL_FLAGS(entry) & PLAYLIST_THUMBNAIL_FLAG_FULL_NAME)
             return PLAYLIST_THUMBNAIL_FLAG_STD_NAME;
    /* Special case: only one entry in playlist, only one query is possible
     * as flag swapping relies on going back and forth among entries
@@ -1735,7 +1737,8 @@ static bool playlist_push_new_entry(playlist_t *playlist,
       playlist->entries[0].last_played_str    = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].path_id            = NULL;
-      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
+      PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
+            PLAYLIST_RUNTIME_UNKNOWN);
       PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], 0);
       PLAYLIST_SET_RUNTIME_MINUTES(&playlist->entries[0], 0);
       PLAYLIST_SET_RUNTIME_SECONDS(&playlist->entries[0], 0);
@@ -1750,7 +1753,8 @@ static bool playlist_push_new_entry(playlist_t *playlist,
          playlist->entries[0].path            = strdup(path_id->real_path);
       playlist->entries[0].path_id            = path_id;
 
-      playlist->entries[0].entry_slot         = entry->entry_slot;
+      PLAYLIST_SET_ENTRY_SLOT(&playlist->entries[0],
+            PLAYLIST_ENTRY_SLOT(entry));
 
       if (entry->label && *entry->label)
          playlist->entries[0].label           = strdup(entry->label);
@@ -1898,10 +1902,11 @@ bool playlist_push(playlist_t *playlist,
       }
 
       /* Only write non-redundant entry slot numbers */
-      if (     playlist->entries[i].entry_slot != entry->entry_slot
-            && (int)entry->entry_slot > 0)
+      if (     PLAYLIST_ENTRY_SLOT(&playlist->entries[i]) != PLAYLIST_ENTRY_SLOT(entry)
+            && (int)PLAYLIST_ENTRY_SLOT(entry) > 0)
       {
-         playlist->entries[i].entry_slot  = entry->entry_slot;
+         PLAYLIST_SET_ENTRY_SLOT(&playlist->entries[i],
+               PLAYLIST_ENTRY_SLOT(entry));
          entry_updated                    = true;
       }
 
@@ -2482,7 +2487,7 @@ void playlist_write_file(playlist_t *playlist)
          /* Typecast required because playlist_entry.entry_slot is unsigned,
           * and 0 and -1 are redundant, but runloop.entry_state_slot is int16_t
           * and must be able to be negative, because 0 is a valid slot */
-         if (     (int)playlist->entries[i].entry_slot > 0
+         if (     (int)PLAYLIST_ENTRY_SLOT(&playlist->entries[i]) > 0
                && !strstr(playlist->config.path, FILE_PATH_BUILTIN))
          {
             rjsonwriter_raw(writer, ",", 1);
@@ -2490,7 +2495,8 @@ void playlist_write_file(playlist_t *playlist)
             rjsonwriter_add_spaces(writer, 6);
             rjsonwriter_add_string(writer, "entry_slot");
             rjsonwriter_raw(writer, ": ", 2);
-            rjsonwriter_rawf(writer, "%d", (int)playlist->entries[i].entry_slot);
+            rjsonwriter_rawf(writer, "%d",
+                  (int)PLAYLIST_ENTRY_SLOT(&playlist->entries[i]));
          }
 
          if (playlist->entries[i].subsystem_ident && *playlist->entries[i].subsystem_ident)
@@ -2874,6 +2880,9 @@ static bool JSONNumberHandler(void *context, const char *pValue, size_t len)
             unsigned v = (unsigned)strtoul(pValue, NULL, 10);
             switch (pCtx->current_entry_packed_val)
             {
+               case PLAYLIST_JSON_PACKED_ENTRY_SLOT:
+                  PLAYLIST_SET_ENTRY_SLOT(pCtx->current_entry, v);
+                  break;
                case PLAYLIST_JSON_PACKED_RUNTIME_HOURS:
                   PLAYLIST_SET_RUNTIME_HOURS(pCtx->current_entry, v);
                   break;
@@ -2989,7 +2998,7 @@ static bool JSONObjectMemberHandler(void *context, const char *pValue, size_t le
                      break;
                case 'e':
                      if (!strcmp(pValue, "entry_slot"))
-                        pCtx->current_entry_uint_val = &pCtx->current_entry->entry_slot;
+                        pCtx->current_entry_packed_val = PLAYLIST_JSON_PACKED_ENTRY_SLOT;
                      break;
                case 'l':
                      if (!strcmp(pValue, "label"))

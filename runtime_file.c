@@ -1362,7 +1362,7 @@ void runtime_update_playlist(
 
    /* Set fallback playlist 'runtime_status'
     * (saves 'if' checks later...) */
-   update_entry.runtime_status = PLAYLIST_RUNTIME_MISSING;
+   PLAYLIST_SET_RUNTIME_STATUS(&update_entry, PLAYLIST_RUNTIME_MISSING);
 
    /* 'Attach' runtime/last played strings */
    runtime_str[0]               = '\0';
@@ -1423,7 +1423,7 @@ void runtime_update_playlist(
                timedate_style, date_separator);
 
          /* Playlist entry now contains valid runtime data */
-         update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
+         PLAYLIST_SET_RUNTIME_STATUS(&update_entry, PLAYLIST_RUNTIME_VALID);
       }
 
       /* Clean up */
@@ -1433,7 +1433,7 @@ void runtime_update_playlist(
 #if defined(HAVE_MENU) && (defined(HAVE_OZONE) || defined(HAVE_MATERIALUI))
    /* Ozone and GLUI require runtime/last played strings
     * to be populated even when no runtime is recorded */
-   if (update_entry.runtime_status != PLAYLIST_RUNTIME_VALID)
+   if (PLAYLIST_RUNTIME_STATUS(&update_entry) != PLAYLIST_RUNTIME_VALID)
    {
       const char *menu_ident = menu_driver_ident();
       if (     !strcmp(menu_ident, "ozone")
@@ -1447,7 +1447,7 @@ void runtime_update_playlist(
 
          /* While runtime data does not exist, the playlist
           * entry does now contain valid information... */
-         update_entry.runtime_status = PLAYLIST_RUNTIME_VALID;
+         PLAYLIST_SET_RUNTIME_STATUS(&update_entry, PLAYLIST_RUNTIME_VALID);
       }
    }
 #endif

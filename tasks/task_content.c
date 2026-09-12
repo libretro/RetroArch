@@ -2199,7 +2199,7 @@ static void task_push_to_history_list(
             entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM);
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
-            entry.entry_slot      = runloop_st->entry_state_slot;
+            PLAYLIST_SET_ENTRY_SLOT(&entry, runloop_st->entry_state_slot);
 
             command_playlist_push_write(playlist_hist, &entry);
 #if TARGET_OS_TV
@@ -2295,7 +2295,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
                   {
                      label         = pl_entry->label;
                      crc32         = pl_entry->crc32;
-                     ss_entry_slot = pl_entry->entry_slot;
+                     ss_entry_slot = PLAYLIST_ENTRY_SLOT(pl_entry);
                   }
 
                   playlist_get_db_name(playlist_curr,
@@ -2323,7 +2323,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       new_entry.core_name  = (char*)core_name;
       new_entry.crc32      = (char*)crc32;
       new_entry.db_name    = (char*)db_name;
-      new_entry.entry_slot = ss_entry_slot;
+      PLAYLIST_SET_ENTRY_SLOT(&new_entry, ss_entry_slot);
 
       /* TODO/FIXME: Subsystems are not properly supported
        * on static platforms, so exclude the following:

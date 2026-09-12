@@ -2209,7 +2209,7 @@ static bool manual_scan_end_flush_tick(
          entry.subsystem_ident   = NULL;
          entry.subsystem_name    = NULL;
          entry.subsystem_roms    = NULL;
-         entry.entry_slot        = 0;
+         PLAYLIST_SET_ENTRY_SLOT(&entry, 0);
          PLAYLIST_SET_RUNTIME_HOURS(&entry, 0);
          PLAYLIST_SET_RUNTIME_MINUTES(&entry, 0);
          PLAYLIST_SET_RUNTIME_SECONDS(&entry, 0);
