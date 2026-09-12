@@ -16,6 +16,8 @@ on:
       - runloop.h
       - samples/state_rewind/**
       - samples/runahead/**
+      - tasks/task_nbio_slice.c
+      - tasks/tasks_internal.h
       - libretro-common/queues/task_queue.c
       - .github/workflows/Linux-state-runahead-tests.yml
   pull_request:
@@ -28,6 +30,8 @@ on:
       - runloop.h
       - samples/state_rewind/**
       - samples/runahead/**
+      - tasks/task_nbio_slice.c
+      - tasks/tasks_internal.h
       - libretro-common/queues/task_queue.c
       - .github/workflows/Linux-state-runahead-tests.yml
   workflow_dispatch:

@@ -12,9 +12,13 @@ flags   += -std=gnu99
 # markers and depends only on libretro-common plus libc; it is
 # extracted verbatim at build time so the harness runs the shipping
 # code. The task queue is the real one, built without threads so a
-# pushed task runs inside task_queue_check() on this thread.
+# pushed task runs inside task_queue_check() on this thread. The
+# shared per-frame I/O window the copy charges its steps against is
+# the real one as well - task_nbio_slice.c is a TU of its own so a
+# harness can link the window rather than reimplement it.
 SOURCES_C := \
 	runahead_copy_test.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
@@ -24,7 +28,10 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-CFLAGS += -Wall $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE
+# A helper the fragment calls that the harness has not kept up with
+# must fail here, at the call, rather than as an undefined symbol
+# with no name attached to it at link time.
+CFLAGS += -Wall -Werror=implicit-function-declaration $(INCDIRS) -DRARCH_INTERNAL -D_GNU_SOURCE
 LDFLAGS += -lm -lpthread
 
 ifneq ($(SAN),)

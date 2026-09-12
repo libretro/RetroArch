@@ -1,12 +1,14 @@
 /* The run-ahead core-copy protocol, driven directly.
  *
  * The fragment of runahead.c between its BEGIN/END markers is
- * extracted verbatim at build time and included here. The file
- * system it copies through is a stub that records every destination
- * path it is asked to open and can be told to refuse writes, so the
- * temporary-name generation is observable; the task queue is the
- * real one built without threads, so a pushed task runs when this
- * thread calls task_queue_check(). */
+ * extracted verbatim at build time and included here. The VFS copy
+ * it runs through is a stub that records every destination path it
+ * is asked to open and can be told to refuse the open, so the
+ * temporary-name generation is observable, and that hands its bytes
+ * out one bounded step at a time, so the per-pass stepping is too;
+ * the task queue and the shared I/O window are the real ones, the
+ * queue built without threads so a pushed task runs when this thread
+ * calls task_queue_check(). */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,47 +33,71 @@ static unsigned failures = 0;
 /* --- the file system, stubbed ------------------------------------------ */
 
 #define MAX_DST 64
+/* Ten megabytes of source, so the 4MB step bound is reached more than
+ * once and a copy cannot finish in a single step. */
+#define COPY_SRC_BYTES  ((int64_t)10 * 1024 * 1024)
+
 static char     *dst_paths[MAX_DST];
 static unsigned  dst_count;
-static unsigned  refuse_writes;      /* refuse the next N write opens */
+static unsigned  refuse_opens;       /* refuse the next N copy opens */
 static unsigned  deleted;
 static char      last_deleted[512];
+static unsigned  copy_steps;         /* filestream_copy_step calls    */
+static int64_t   copy_step_bound;    /* max_bytes of the last step    */
+static unsigned  copy_closed_unfinished;
 
-struct RFILE { int is_src; size_t pos; };
+struct retro_vfs_copy_handle { int64_t left; bool done; };
 
-RFILE *filestream_open(const char *path, unsigned mode, unsigned hints)
+struct retro_vfs_copy_handle *filestream_copy_begin(const char *src_path,
+      const char *dst_path, unsigned flags)
 {
-   RFILE *f;
-   (void)hints;
-   if (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+   struct retro_vfs_copy_handle *c;
+   (void)src_path;
+   (void)flags;
+   if (dst_count < MAX_DST)
+      dst_paths[dst_count++] = strdup(dst_path);
+   if (refuse_opens)
    {
-      if (dst_count < MAX_DST)
-         dst_paths[dst_count++] = strdup(path);
-      if (refuse_writes)
-      {
-         refuse_writes--;
-         return NULL;
-      }
-      f = (RFILE*)calloc(1, sizeof(*f));
-      f->is_src = 0;
-      return f;
+      refuse_opens--;
+      return NULL;
    }
-   f = (RFILE*)calloc(1, sizeof(*f));
-   f->is_src = 1;
-   return f;
+   c       = (struct retro_vfs_copy_handle*)calloc(1, sizeof(*c));
+   c->left = COPY_SRC_BYTES;
+   return c;
 }
-int64_t filestream_read(RFILE *f, void *buf, int64_t len)
+
+int filestream_copy_step(struct retro_vfs_copy_handle *c, int64_t max_bytes,
+      int64_t *bytes_done, int64_t *bytes_total)
 {
-   /* a 1000-byte source */
-   int64_t left = 1000 - (int64_t)f->pos;
-   if (left <= 0) return 0;
-   if (len > left) len = left;
-   memset(buf, 0x5A, (size_t)len);
-   f->pos += (size_t)len;
-   return len;
+   int64_t n = (max_bytes > 0 && max_bytes < c->left) ? max_bytes : c->left;
+   copy_steps++;
+   copy_step_bound = max_bytes;
+   c->left        -= n;
+   if (bytes_total)
+      *bytes_total = COPY_SRC_BYTES;
+   if (bytes_done)
+      *bytes_done  = COPY_SRC_BYTES - c->left;
+   if (c->left > 0)
+      return RETRO_VFS_COPY_RUNNING;
+   c->done = true;
+   return RETRO_VFS_COPY_DONE;
 }
-int64_t filestream_write(RFILE *f, const void *buf, int64_t len) { (void)f; (void)buf; return len; }
-int filestream_close(RFILE *f) { free(f); return 0; }
+
+/* Closing an unfinished copy removes the partial destination, which
+ * the real VFS does itself rather than through filestream_delete -
+ * counted separately here for the same reason. */
+int filestream_copy_close(struct retro_vfs_copy_handle *c)
+{
+   int ret;
+   if (!c)
+      return -1;
+   ret = c->done ? 0 : -1;
+   if (!c->done)
+      copy_closed_unfinished++;
+   free(c);
+   return ret;
+}
+
 int filestream_delete(const char *path) { deleted++; strlcpy(last_deleted, path, sizeof(last_deleted)); return 0; }
 bool path_mkdir(const char *dir) { (void)dir; return true; }
 
@@ -212,7 +238,18 @@ static void reset_fs(void)
 {
    unsigned i;
    for (i = 0; i < dst_count; i++) free(dst_paths[i]);
-   dst_count = 0; refuse_writes = 0; deleted = 0; last_deleted[0] = '\0';
+   dst_count = 0; refuse_opens = 0; deleted = 0; last_deleted[0] = '\0';
+   copy_steps = 0; copy_step_bound = 0; copy_closed_unfinished = 0;
+}
+
+/* The handler opens on its first pass and only then moves bytes, so a
+ * copy is never done in one pass; run the queue until the callback
+ * that frees the pipeline has run. */
+static void run_copy_to_completion(void)
+{
+   unsigned pass;
+   for (pass = 0; pass < 16 && runahead_copy_task_pending; pass++)
+      task_queue_check();
 }
 
 /* --- cases ------------------------------------------------------------ */
@@ -224,15 +261,16 @@ static bool names_advance = true;
 static void t_lcg_names(void)
 {
    char *tmp = NULL;
-   bool ok;
+   struct retro_vfs_copy_handle *copy;
    unsigned i, distinct = 0;
    printf("   lcg_collision_walk: the first four candidates refused, the fifth taken\n");
    reset_fs();
-   refuse_writes = 4;
+   refuse_opens = 4;
    tmp = strdup("core_libretro.so");
-   ok = copy_file_with_random_name(&tmp, "/tmpdir", "/cores/core_libretro.so");
-   CHECK(ok, "the copy did not succeed once a candidate was free");
+   copy = copy_begin_with_random_name(&tmp, "/tmpdir", "/cores/core_libretro.so");
+   CHECK(copy != NULL, "no copy was opened once a candidate was free");
    CHECK(dst_count == 5, "%u candidates tried, expected 5", dst_count);
+   CHECK(copy_steps == 0, "%u bytes-moving steps ran inside the open", copy_steps);
    for (i = 1; i < dst_count; i++)
       if (strcmp(dst_paths[i], dst_paths[0]) != 0) distinct++;
    if (names_advance)
@@ -240,18 +278,20 @@ static void t_lcg_names(void)
    else if (distinct != dst_count - 1)
       printf("      (candidates did not advance: %u of %u distinct - generator not yet fixed)\n", distinct + 1, dst_count);
    CHECK(tmp && strstr(tmp, "/tmpdir/tmp") && strstr(tmp, ".so"), "the chosen path is %s", tmp ? tmp : "(null)");
+   if (copy)
+      filestream_copy_close(copy);
    free(tmp);
 }
 
 static void t_lcg_all_fail(void)
 {
    char *tmp = strdup("core_libretro.so");
-   bool ok;
+   struct retro_vfs_copy_handle *copy;
    printf("   lcg_all_fail: every candidate refused\n");
    reset_fs();
-   refuse_writes = 1000;
-   ok = copy_file_with_random_name(&tmp, "/tmpdir", "/cores/core_libretro.so");
-   CHECK(!ok, "the copy reported success with every write refused");
+   refuse_opens = 1000;
+   copy = copy_begin_with_random_name(&tmp, "/tmpdir", "/cores/core_libretro.so");
+   CHECK(!copy, "a copy was opened with every candidate refused");
    CHECK(dst_count == 30, "%u attempts, expected 30", dst_count);
    free(tmp);
 }
@@ -270,9 +310,18 @@ static void t_copy_protocol(void)
    CHECK(runahead_copy_task_pending, "a task was not marked pending");
    st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_PENDING, "second poll before the task ran returned %d", (int)st);
-   task_queue_check();                                     /* the task runs, the callback publishes */
+   task_queue_check();                                     /* pass one: the destination is opened */
+   CHECK(runahead_copy_task_pending, "the task finished in the pass that only opens the copy");
+   CHECK(dst_count == 1, "%u copies opened for one poll sequence", dst_count);
+   CHECK(copy_steps == 0, "%u bytes-moving steps ran in the opening pass", copy_steps);
+   run_copy_to_completion();                               /* the copy runs, the callback publishes */
    CHECK(!runahead_copy_task_pending, "pending still set after the task ran");
    CHECK(dst_count == 1, "%u copies made for one poll sequence", dst_count);
+   /* Every step is bounded: a 10MB source cannot be one 10MB call. */
+   CHECK(copy_steps >= 3, "a %lldMB source was moved in %u step(s)",
+         (long long)(COPY_SRC_BYTES >> 20), copy_steps);
+   CHECK(copy_step_bound == RUNAHEAD_COPY_STEP_BYTES,
+         "a step was offered %lld bytes, not the step bound", (long long)copy_step_bound);
    st = runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_READY && out != NULL, "poll after completion returned %d", (int)st);
    if (out) free(out);
@@ -289,12 +338,12 @@ static void t_generation_discard(void)
    st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_PENDING, "poll returned %d", (int)st);
    runahead_copy_reset(true);          /* generation bumps; the in-flight result must be dropped */
-   task_queue_check();
+   run_copy_to_completion();
    CHECK(!runahead_copy_slot_done, "a stale result was published after a reset");
    CHECK(deleted >= 1, "the stale temp file was not deleted");
    st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_PENDING, "poll after a discarded result returned %d, not a fresh PENDING", (int)st);
-   task_queue_check();
+   run_copy_to_completion();
    st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_READY, "the fresh copy did not complete: %d", (int)st);
    if (out) free(out);
@@ -309,12 +358,12 @@ static void t_stale_src(void)
    reset_fs();
    task_queue_init(false, NULL);
    runahead_copy_poll("/cores/a_libretro.so", "/tmpdir", &out);
-   task_queue_check();
+   run_copy_to_completion();
    CHECK(runahead_copy_slot_done, "core A's copy did not publish");
    st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_PENDING, "polling core B returned %d, not PENDING", (int)st);
    CHECK(deleted >= 1, "core A's temp file was not deleted");
-   task_queue_check();
+   run_copy_to_completion();
    st = runahead_copy_poll("/cores/b_libretro.so", "/tmpdir", &out);
    CHECK(st == RUNAHEAD_COPY_READY, "core B's copy did not complete: %d", (int)st);
    if (out) free(out);
