@@ -288,26 +288,43 @@ static bool video_thread_handle_packet(thread_video_t *thr,
 static bool video_thread_defer_packet(thread_video_t *thr,
       const thread_packet_t *pkt)
 {
-   bool queued = false;
+   int head, tail;
 
    if (     !thr->thread
          || sthread_get_thread_id(thr->thread)
             == sthread_get_current_thread_id())
       return false;
 
-   slock_lock(thr->lock);
    /* The worker still takes commands, as for the waiting send: 'alive'
     * is the window's answer and goes false while it still runs. */
-   if (     retro_atomic_load_acquire_int(&thr->worker_running)
-         && thr->deferred_count < VIDEO_THREAD_DEFERRED_MAX)
-   {
-      thr->deferred[thr->deferred_count++] = *pkt;
-      queued                               = true;
-      scond_signal(thr->cond_thread);
-   }
-   slock_unlock(thr->lock);
+   if (     !thr->deferred
+         || !retro_atomic_load_acquire_int(&thr->worker_running))
+      return false;
 
-   return queued;
+   /* This thread owns head, so it may read it plainly; tail is the
+    * video thread's and is read with an acquire. */
+   head = retro_atomic_load_acquire_int(&thr->deferred_head);
+   tail = retro_atomic_load_acquire_int(&thr->deferred_tail);
+   if (head - tail >= VIDEO_THREAD_DEFERRED_MAX)
+      return false;
+
+   thr->deferred[head & (VIDEO_THREAD_DEFERRED_MAX - 1)] = *pkt;
+   /* The packet is written before the video thread is told it is
+    * there. */
+   retro_atomic_store_release_int(&thr->deferred_head, head + 1);
+
+   /* A ring that was empty may have a sleeping thread to wake, and the
+    * lock is what makes the wakeup safe against its wait. A ring that
+    * was not empty has a thread that cannot sleep before draining it,
+    * so a burst takes the lock once rather than once a packet. */
+   if (head == tail)
+   {
+      slock_lock(thr->lock);
+      scond_signal(thr->cond_thread);
+      slock_unlock(thr->lock);
+   }
+
+   return true;
 }
 
 /* Video thread: runs what was queued, with the replies going nowhere -
@@ -315,26 +332,29 @@ static bool video_thread_defer_packet(thread_video_t *thr,
  * on one. */
 static void video_thread_run_deferred(thread_video_t *thr)
 {
-   thread_packet_t queued[VIDEO_THREAD_DEFERRED_MAX];
    thread_packet_t sink;
    thread_packet_t *saved_reply;
-   unsigned i, count;
+   int head, tail;
 
-   slock_lock(thr->lock);
-   if (!(count = thr->deferred_count))
-   {
-      slock_unlock(thr->lock);
+   if (!thr->deferred)
       return;
-   }
-   for (i = 0; i < count; i++)
-      queued[i] = thr->deferred[i];
-   thr->deferred_count = 0;
-   slock_unlock(thr->lock);
+
+   /* The empty check is one load of the producer's index: no lock, and
+    * nothing copied, on a pass with nothing queued. */
+   tail = retro_atomic_load_acquire_int(&thr->deferred_tail);
+   if ((head = retro_atomic_load_acquire_int(&thr->deferred_head)) == tail)
+      return;
 
    saved_reply       = thr->inline_reply;
    thr->inline_reply = &sink;
-   for (i = 0; i < count; i++)
-      video_thread_handle_packet(thr, &queued[i]);
+   /* Run where they lie: the producer cannot reuse a slot before tail
+    * says it is free, which is after the packet has run. */
+   for (; tail != head; tail++)
+   {
+      video_thread_handle_packet(thr,
+            &thr->deferred[tail & (VIDEO_THREAD_DEFERRED_MAX - 1)]);
+      retro_atomic_store_release_int(&thr->deferred_tail, tail + 1);
+   }
    thr->inline_reply = saved_reply;
 }
 
@@ -348,9 +368,14 @@ static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, threa
     * may have sent meanwhile. */
    if (video_thread_is_self(thr))
    {
-      thr->inline_reply = pkt;
+      /* Saved and put back, not cleared: this can be reached from
+       * inside another packet's handler, and leaving NULL behind would
+       * send that one's reply to the mailbox - where it would answer,
+       * or cancel, whatever the main thread is waiting on. */
+      thread_packet_t *saved_reply = thr->inline_reply;
+      thr->inline_reply            = pkt;
       video_thread_handle_packet(thr, pkt);
-      thr->inline_reply = NULL;
+      thr->inline_reply            = saved_reply;
       return;
    }
 
@@ -1306,9 +1331,16 @@ static void video_thread_loop(void *data)
       bool repeat_due = false;
 
       slock_lock(thr->lock);
+      /* The deferred ring belongs in this test as much as the rest: a
+       * packet queued while nothing else is due has no frame behind it
+       * to carry it, and this thread would wake on the signal, find
+       * nothing here to stop it and sleep again with the packet
+       * unrun - for as long as no frame arrives. */
       while (     thr->send_cmd == CMD_VIDEO_NONE
                && !thr->frame.pending
-               && !thr->async.in_head)
+               && !thr->async.in_head
+               && retro_atomic_load_acquire_int(&thr->deferred_head)
+                  == retro_atomic_load_acquire_int(&thr->deferred_tail))
       {
          /* With a frame retained, the wait has a deadline: the next
           * display period after the last present. Passing it with
@@ -2153,6 +2185,12 @@ static bool video_thread_init(thread_video_t *thr,
    thr->info                 = info;
    retro_atomic_int_init(&thr->alive, 1);
    retro_atomic_int_init(&thr->worker_running, 1);
+   retro_atomic_int_init(&thr->deferred_head,  0);
+   retro_atomic_int_init(&thr->deferred_tail,  0);
+   /* A ring that cannot be allocated is simply never used: every
+    * setter then sends the waiting way, as it did before. */
+   thr->deferred = (thread_packet_t*)calloc(VIDEO_THREAD_DEFERRED_MAX,
+         sizeof(*thr->deferred));
    retro_atomic_int_init(&thr->focus, 1);
    /* Same default the video thread applies when the context has no
     * answer, so the runloop is not told there is nothing to present to
@@ -2325,6 +2363,9 @@ static void video_thread_free(void *data)
       video_thread_record_stop(thr);
       video_thread_rec_free_list(((video_thread_private_t*)thr)->rec_retired);
       ((video_thread_private_t*)thr)->rec_retired = NULL;
+
+      free(thr->deferred);
+      thr->deferred = NULL;
 
       free(thr->texture.frame);
 #ifdef _3DS
@@ -2516,10 +2557,7 @@ static void thread_set_filtering(void *data,
       pkt.data.filtering.index  = idx;
       pkt.data.filtering.smooth = smooth;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2533,10 +2571,7 @@ static void thread_set_hdr_menu_nits(void *data, float menu_nits)
       pkt.type               = CMD_POKE_SET_HDR_MENU_NITS;
       pkt.data.hdr.menu_nits = menu_nits;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2550,10 +2585,7 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
       pkt.type                      = CMD_POKE_SET_HDR_PAPER_WHITE_NITS;
       pkt.data.hdr.paper_white_nits = paper_white_nits;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2567,10 +2599,7 @@ static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
       pkt.type                  = CMD_POKE_SET_HDR_EXPAND_GAMUT;
       pkt.data.hdr.expand_gamut = expand_gamut;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2584,10 +2613,7 @@ static void thread_set_hdr_scanlines(void *data, bool hdr_scanlines)
       pkt.type                = CMD_POKE_SET_HDR_SCANLINES;
       pkt.data.hdr.scanlines  = hdr_scanlines;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2601,10 +2627,7 @@ static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_lay
       pkt.type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
       pkt.data.hdr.subpixel_layout    = hdr_subpixel_layout;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2648,10 +2671,7 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       pkt.type   = CMD_POKE_SET_ASPECT_RATIO;
       pkt.data.i = aspect_ratio_idx;
 
-      /* Nothing comes back from this, so it does not wait for the
-       * video thread: queued, and run before the next frame. */
-      if (!video_thread_defer_packet(thr, &pkt))
-         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 

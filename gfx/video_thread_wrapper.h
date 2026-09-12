@@ -202,9 +202,14 @@ typedef struct video_thread_async_load
    enum texture_filter_type filter;
 } video_thread_async_load_t;
 
-/* Deep enough for the settings changes a menu page can issue between
- * two frames; past it the sender waits, as it always did. */
-#define VIDEO_THREAD_DEFERRED_MAX 24
+/* Deep enough for the burst an overlay issues between two frames - one
+ * geometry call per descriptor, and a pad's worth of those is dozens -
+ * as well as the settings a menu page changes. Past it the sender
+ * waits, as it always did. At 192 bytes a packet this is 24 KiB of the
+ * wrapper's own state; the video thread runs the packets where they
+ * lie, so none of it reaches a stack frame. A power of two: the index
+ * wraps with a mask. */
+#define VIDEO_THREAD_DEFERRED_MAX 128
 
 typedef struct thread_video
 {
@@ -380,8 +385,6 @@ typedef struct thread_video
     * thread on its next pass, so the caller does not wait for a round
     * trip. Under thr->lock, as send_cmd is. A full queue falls back to
     * the synchronous send, so nothing is ever dropped. */
-   thread_packet_t deferred[VIDEO_THREAD_DEFERRED_MAX];
-   unsigned deferred_count;
    video_driver_t video_thread;
 
    enum thread_cmd send_cmd;
@@ -519,6 +522,21 @@ typedef struct thread_video
    retro_atomic_int_t has_windowed;
    bool nonblock;
    bool is_idle;
+
+   /* Commands that want nothing back, for the video thread to run on
+    * its next pass. One producer (whichever thread calls the setters)
+    * and one consumer (the video thread), so the ring needs no lock:
+    * the producer moves head after writing a slot, the consumer moves
+    * tail after running one, and each reads the other's index with an
+    * acquire. The indices only grow; the slot is the index modulo the
+    * size. Allocated once, so the ring's size is not this struct's.
+    *
+    * Last in the struct on purpose: everything above keeps the offset
+    * it had, so an object built against an older copy of this header
+    * still finds the fields it knows where it left them. */
+   thread_packet_t *deferred;
+   retro_atomic_int_t deferred_head;
+   retro_atomic_int_t deferred_tail;
 } thread_video_t;
 
 /**
