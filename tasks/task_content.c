@@ -1533,7 +1533,6 @@ static bool content_file_load(
                uwp_set_acl(wcontent_path, L"S-1-15-2-1");
                if (!is_path_accessible_using_standard_io(content_path))
                {
-                  wchar_t wnew_path[MAX_PATH];
                   /* Fallback to a file copy into an accessible directory */
                   char new_basedir[DIR_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
@@ -1571,11 +1570,11 @@ static bool content_file_load(
                   fill_pathname_join_special(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
-                  mbstowcs(wnew_path, new_path, MAX_PATH);
-                  /* TODO: This may fail on very large files...
-                   * but copying large files is not a good idea anyway
-                   * (This disclaimer is out dated but I don't want to remove it)*/
-                  if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
+                  /* filestream_copy() reaches CopyFileFromAppW through
+                   * the UWP VFS backend, so this is the same kernel
+                   * copy without the local UTF-16 conversion, and the
+                   * destination directory is created for us. */
+                  if (filestream_copy(content_path, new_path) != 0)
                   {
                      char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */

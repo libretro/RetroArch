@@ -36,6 +36,7 @@
 
 #include <compat/strl.h>
 
+#include "tasks/tasks_internal.h"
 #include "configuration.h"
 #include "content.h"
 #include "core.h"
@@ -353,7 +354,12 @@ static char *get_tmpdir_alloc(const char *override_dir)
  * touched only from the main thread (the task callback runs on the
  * main thread); the worker touches only its own task state. */
 
-#define RUNAHEAD_COPY_CHUNK_SIZE (1 * 1024 * 1024)
+/* Bytes offered to one step of the VFS copy.  On the kernel paths
+ * (copy_file_range, CopyFileW, clonefile) this is a request the
+ * kernel satisfies without the bytes entering user space; elsewhere
+ * it bounds the buffered loop.  What ends a handler pass is the
+ * shared per-frame I/O window, not this. */
+#define RUNAHEAD_COPY_STEP_BYTES ((int64_t)4 * 1024 * 1024)
 
 /* Result slot, published by the task callback (main thread) */
 static char *runahead_copy_slot_path     = NULL;
@@ -384,64 +390,66 @@ typedef struct runahead_copy_handle
    char *src_path;
    char *dir_libretro;
    char *out_path;   /* produced temp file on success */
+   /* In-flight VFS copy, advanced one window's worth per handler
+    * pass.  NULL before the first pass has opened one and after the
+    * copy has been closed. */
+   struct retro_vfs_copy_handle *copy;
+   char *copy_dst;   /* destination the open copy is writing to */
+   bool  started;    /* the open was attempted (once, on pass one) */
    bool  failed;
    unsigned generation;
 } runahead_copy_handle_t;
 
-static bool runahead_copy_file_chunked(const char *src_path,
-      const char *dst_path)
+/* Copies a core through the VFS copy, which uses the platform's own
+ * copy primitive where there is one: copy_file_range on Linux,
+ * CopyFileW on Windows, clonefile on APFS (constant time, no bytes
+ * move at all).  Nothing is buffered in user space on those paths, so
+ * a 40MB core costs no transfer buffer; elsewhere the VFS uses one
+ * bounded buffer of its own.  A failed or abandoned copy leaves no
+ * partial file behind.
+ *
+ * Advances an in-flight copy by one share of the shared per-frame
+ * I/O window and returns; it never runs the copy to completion and
+ * never sleeps.  The handler is re-entered next tick to continue.
+ *
+ * @return 1 done, 0 still running, -1 failed. */
+static int runahead_copy_step(struct retro_vfs_copy_handle *copy)
 {
-   RFILE *src   = NULL;
-   RFILE *dst   = NULL;
-   char *buf    = NULL;
-   bool  okay   = false;
+   nbio_budget_t b;
+   int st = RETRO_VFS_COPY_RUNNING;
 
-   if (!(buf = (char*)malloc(RUNAHEAD_COPY_CHUNK_SIZE)))
-      return false;
-
-   if (!(src = filestream_open(src_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      goto end;
-
-   if (!(dst = filestream_open(dst_path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      goto end;
-
-   for (;;)
+   /* The window is shared with the file-transfer spine and the
+    * content scanner, so a copy running alongside them costs the
+    * frame the window once rather than a slice each. */
+   task_nbio_slice_open(&b);
+   /* do/while: the floor guarantees one step even when the window is
+    * already spent, or a busy queue would never advance the copy. */
+   do
    {
-      int64_t n = filestream_read(src, buf, RUNAHEAD_COPY_CHUNK_SIZE);
-      if (n < 0)
-         goto end;
-      if (n == 0)
-         break;
-      if (filestream_write(dst, buf, n) != n)
-         goto end;
-   }
+      st = filestream_copy_step(copy, RUNAHEAD_COPY_STEP_BYTES, NULL, NULL);
+   } while (     st == RETRO_VFS_COPY_RUNNING
+              && task_nbio_slice_within_budget(&b, 0, 0));
+   task_nbio_slice_close(&b);
 
-   okay = true;
-
-end:
-   if (src)
-      filestream_close(src);
-   if (dst)
-   {
-      filestream_close(dst);
-      /* Don't leave a truncated copy behind on failure */
-      if (!okay)
-         filestream_delete(dst_path);
-   }
-   free(buf);
-   return okay;
+   if (st == RETRO_VFS_COPY_DONE)
+      return 1;
+   if (st == RETRO_VFS_COPY_RUNNING)
+      return 0;
+   return -1;
 }
 
-static bool copy_file_with_random_name(char **temp_dll_path,
+/* Opens a VFS copy to a randomly named destination under @tmp_path,
+ * used when the plain basename is taken (another instance holds it).
+ * Only begin() runs here: no bytes move, so this cannot block.
+ * On success *temp_dll_path owns the chosen path and the returned
+ * handle must be stepped to completion by the caller. */
+static struct retro_vfs_copy_handle *copy_begin_with_random_name(
+      char **temp_dll_path,
       const char *tmp_path, const char *src_dll_path)
 {
    int i;
+   struct retro_vfs_copy_handle *copy = NULL;
    char number_buf[32];
-   bool okay                = false;
    const char *prefix       = "tmp";
    char *ext                = NULL;
    time_t time_value        = time(NULL);
@@ -490,70 +498,125 @@ static bool copy_file_with_random_name(char **temp_dll_path,
       strcat_alloc(temp_dll_path, number_buf);
       strcat_alloc(temp_dll_path, ext);
 
-      if (runahead_copy_file_chunked(src_dll_path, *temp_dll_path))
-      {
-         okay = true;
+      if ((copy = filestream_copy_begin(src_dll_path, *temp_dll_path,
+                  RETRO_VFS_COPY_OVERWRITE)))
          break;
-      }
    }
 
    if (ext)
       free(ext);
    ext = NULL;
-   return okay;
+   return copy;
 }
 
 /* Worker: builds the temp path and performs the chunked copy into
  * the task's own state. No shared state is touched here. */
+/* Pass one: pick the destination and open the copy (no bytes move).
+ * Leaves h->copy set on success, h->failed set on failure. */
+static void runahead_copy_task_begin(runahead_copy_handle_t *h)
+{
+   char tmp_path[PATH_MAX_LENGTH];
+   char *tmpdir          = NULL;
+   char *dst             = NULL;
+   const char *core_base = path_basename_nocompression(h->src_path);
+
+   h->started = true;
+   h->failed  = true;
+
+   if (     !core_base || !*core_base
+         || !(tmpdir = get_tmpdir_alloc(h->dir_libretro)))
+      return;
+
+   fill_pathname_join_special(tmp_path, tmpdir, "retroarch_temp",
+         sizeof(tmp_path));
+
+   if (path_mkdir(tmp_path))
+   {
+      strcat_alloc(&dst, tmp_path);
+      strcat_alloc(&dst, PATH_DEFAULT_SLASH());
+      strcat_alloc(&dst, core_base);
+
+      if ((h->copy = filestream_copy_begin(h->src_path, dst,
+                  RETRO_VFS_COPY_OVERWRITE)))
+      {
+         h->copy_dst = dst;
+         dst         = NULL;
+         h->failed   = false;
+      }
+      /* Basename taken (another instance is running this core):
+       * fall back to a random name under the same directory. */
+      else if ((h->copy = copy_begin_with_random_name(&dst, tmp_path,
+                  h->src_path)))
+      {
+         h->copy_dst = dst;
+         dst         = NULL;
+         h->failed   = false;
+      }
+   }
+
+   if (dst)
+      free(dst);
+   free(tmpdir);
+}
+
+/* Advances the copy by one share of the shared per-frame I/O window
+ * and returns.  The task is re-entered next tick until the copy
+ * finishes, so a 40MB core never holds the handler for more than a
+ * window - and on a threaded task queue it never holds the frame at
+ * all. */
 static void runahead_copy_task_handler(retro_task_t *task)
 {
-   if (task)
+   runahead_copy_handle_t *h;
+   int st;
+
+   if (!task)
+      return;
+   if (!(h = (runahead_copy_handle_t*)task->state))
    {
-      runahead_copy_handle_t *h = (runahead_copy_handle_t*)task->state;
-      if (h)
-      {
-         char tmp_path[PATH_MAX_LENGTH];
-         char *tmpdir              = NULL;
-         char *dst                 = NULL;
-         const char *core_base     = path_basename_nocompression(h->src_path);
-
-         h->failed = true;
-
-         if (     core_base && *core_base
-               && (tmpdir = get_tmpdir_alloc(h->dir_libretro)))
-         {
-            fill_pathname_join_special(tmp_path,
-                  tmpdir, "retroarch_temp", sizeof(tmp_path));
-
-            if (path_mkdir(tmp_path))
-            {
-               strcat_alloc(&dst, tmp_path);
-               strcat_alloc(&dst, PATH_DEFAULT_SLASH());
-               strcat_alloc(&dst, core_base);
-
-               if (runahead_copy_file_chunked(h->src_path, dst))
-               {
-                  h->out_path = dst;
-                  h->failed   = false;
-                  dst         = NULL;
-               }
-               else if (copy_file_with_random_name(&dst,
-                        tmp_path, h->src_path))
-               {
-                  h->out_path = dst;
-                  h->failed   = false;
-                  dst         = NULL;
-               }
-            }
-         }
-
-         if (dst)
-            free(dst);
-         if (tmpdir)
-            free(tmpdir);
-      }
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
    }
+
+   if (!h->started)
+   {
+      runahead_copy_task_begin(h);
+      if (!h->copy)
+      {
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         return;
+      }
+      /* Opening is this pass's work; the first bytes move next tick. */
+      return;
+   }
+
+   if (!h->copy)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
+   if (!(st = runahead_copy_step(h->copy)))
+      return;   /* still running: come back next tick */
+
+   /* close() removes a partial destination when the copy did not
+    * finish, so a failure needs no cleanup of its own. */
+   filestream_copy_close(h->copy);
+   h->copy = NULL;
+
+   if (st > 0)
+   {
+      h->out_path = h->copy_dst;
+      h->copy_dst = NULL;
+      h->failed   = false;
+   }
+   else
+   {
+      free(h->copy_dst);
+      h->copy_dst = NULL;
+      h->failed   = true;
+   }
+
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 /* Main thread: publish the result to the slot - unless teardown
@@ -596,6 +659,12 @@ static void runahead_copy_task_free(retro_task_t *task)
       return;
    if ((h = (runahead_copy_handle_t*)task->state))
    {
+      /* A task cancelled mid-copy still has one open: closing an
+       * unfinished copy removes the partial destination. */
+      if (h->copy)
+         filestream_copy_close(h->copy);
+      if (h->copy_dst)
+         free(h->copy_dst);
       if (h->src_path)
          free(h->src_path);
       if (h->dir_libretro)
