@@ -67,9 +67,9 @@ int main(void)
 #define RUN_MSEC       4000
 #define READER_THREADS 6
 /* Bound on the producer's wait for a reader to pick up the frame it
- * just published.  Generous: it is a liveness guard, not a timeout
- * anyone should hit in a healthy run. */
-#define OVERLAP_SPIN_BOUND 2000000
+ * just published, counted in scheduler handoffs rather than spins.
+ * A liveness guard, not a timeout anyone should hit. */
+#define OVERLAP_YIELD_BOUND 10000
 
 /* Mirrors the file-scope state in gfx/video_driver.c. */
 static retro_atomic_ptr_t  hazard[HAZARD_SLOTS];
@@ -277,6 +277,24 @@ static void producer_thread(void *unused)
 
       cached_frame_publish(buf, 64, 64);
       cached_frame_publish(NULL, 64, 64);  /* a duped frame */
+
+      /* Wait for a reader to take this frame before retiring it.
+       * Publishing and retiring back to back leaves the overlap to
+       * chance -- a publish is a handful of stores -- and a run where
+       * no reader was ever inside the buffer exercises neither the
+       * drain nor the re-validate.  Each turn yields rather than
+       * spins: on one core, or on a loaded machine, spinning is what
+       * stops the reader being waited for from ever running. */
+      {
+         int before = retro_atomic_load_acquire_int(&reads_with_pixels);
+         int turns  = 0;
+
+         while (retro_atomic_load_acquire_int(&reads_with_pixels) == before
+               && turns++ < OVERLAP_YIELD_BOUND
+               && !retro_atomic_load_acquire_int(&stop))
+            retro_sleep(0);
+      }
+
       cached_frame_retire();
       retires++;
       free(buf);                           /* safe iff the protocol holds */
