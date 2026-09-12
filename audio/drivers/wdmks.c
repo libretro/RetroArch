@@ -1576,6 +1576,52 @@ static void wdmks_rt_get_position_register(wdmks_t *w)
       RARCH_LOG("[WDM-KS] No position register; asking the pin instead.\n");
 }
 
+/* What the hardware adds after this driver's buffer: the FIFO the
+ * device reads through, plus whatever the chipset and codec hold.
+ *
+ * The 8 ms the statistics line has been showing is this driver's own
+ * loop and nothing else, which is why it never matched what WASAPI
+ * reports - that figure includes the device's share. This is where
+ * kernel streaming keeps it. FifoSize is in bytes, so it divides by
+ * the frame to give what the frontend wants; the chipset and codec
+ * figures are in different units again and are read only to be
+ * logged, because a wrong conversion added to a latency figure is
+ * worse than an absent one.
+ *
+ * It is a WaveRT property: the packet path has no equivalent, and
+ * asking for it there gets a refusal, so it is asked for only where
+ * it exists. */
+static void wdmks_rt_report_latency(wdmks_t *w)
+{
+   ra_ksproperty_t          inn;
+   ra_ksrtaudio_hwlatency_t out;
+   DWORD                    written = 0;
+
+   memset(&inn, 0, sizeof(inn));
+   memset(&out, 0, sizeof(out));
+   inn.Set   = ra_ks_propsetid_rtaudio;
+   inn.Id    = RA_KSPROPERTY_RTAUDIO_HWLATENCY;
+   inn.Flags = RA_KSPROPERTY_TYPE_GET;
+
+   if (     !DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+               &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
+         || written < sizeof(out))
+   {
+      RARCH_LOG("[WDM-KS] The pin reports no hardware latency.\n");
+      return;
+   }
+
+   RARCH_LOG("[WDM-KS] Hardware latency: %u-byte FIFO (%u frames),"
+         " chipset %u, codec %u.\n",
+         (unsigned)out.FifoSize,
+         (unsigned)(w->frame_bytes ? out.FifoSize / w->frame_bytes : 0),
+         (unsigned)out.ChipsetDelay, (unsigned)out.CodecDelay);
+
+   if (w->frame_bytes && out.FifoSize)
+      audio_driver_set_device_latency(
+            (size_t)(out.FifoSize / w->frame_bytes));
+}
+
 /* The event the driver signals as it passes each notification point.
  * Without one the write path can only poll, and polling is what falls
  * apart when the process is backgrounded: the scheduler stops giving
@@ -2395,6 +2441,7 @@ static void *wdmks_init(const char *device, unsigned rate,
       }
       wdmks_rt_get_position_register(w);
       wdmks_rt_register_event(w);
+      wdmks_rt_report_latency(w);
 
       {
          uint64_t probe = 0;
