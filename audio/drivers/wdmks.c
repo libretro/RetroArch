@@ -1851,6 +1851,7 @@ static void wdmks_rt_report_latency(wdmks_t *w)
  * and the same clock. */
 static size_t wdmks_rt_free(wdmks_t *w);
 static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
+static DWORD  wdmks_watchdog_ms(const wdmks_t *w, size_t bytes);
 
 static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
 {
@@ -1866,15 +1867,7 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
        * derives its own from the stream's duration. Two rings, with
        * ends so a tiny buffer does not make a watchdog that fires on
        * ordinary scheduling and a huge one does not make it useless. */
-      DWORD wait_ms = (w->frame_bytes && w->rate)
-         ? (DWORD)((uint64_t)(w->rt_size / w->frame_bytes) * 2 * 1000
-               / w->rate)
-         : 100;
-      if (wait_ms < 4)
-         wait_ms = 4;
-      else if (wait_ms > 100)
-         wait_ms = 100;
-      WaitForSingleObject(w->rt_event, wait_ms);
+      WaitForSingleObject(w->rt_event, wdmks_watchdog_ms(w, w->rt_size));
       return;
    }
 
@@ -2171,6 +2164,35 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
    return (ssize_t)done;
 }
 
+/* How long to wait for something that should take one period, in
+ * milliseconds: twice its duration, with ends on it.
+ *
+ * Every wait in this driver is a watchdog rather than a schedule -
+ * the event or the packet normally arrives first - so what it wants
+ * is a bound that scales with the stream instead of a number. Twice
+ * is enough to be certain something is wrong without being so tight
+ * that ordinary scheduling trips it. The floor keeps a very small
+ * buffer from producing a watchdog that fires on a busy machine; the
+ * ceiling keeps a very large one from producing a watchdog that never
+ * fires at all.
+ *
+ * bytes is the thing being waited for: one packet on the packet path,
+ * the whole ring on the WaveRT one. */
+static DWORD wdmks_watchdog_ms(const wdmks_t *w, size_t bytes)
+{
+   uint64_t ms;
+
+   if (!w->frame_bytes || !w->rate || !bytes)
+      return 100;
+
+   ms = (uint64_t)(bytes / w->frame_bytes) * 2 * 1000 / w->rate;
+   if (ms < 4)
+      ms = 4;
+   else if (ms > 100)
+      ms = 100;
+   return (DWORD)ms;
+}
+
 /* Has this packet come back? A packet the device still holds is not
  * free to refill. GetOverlappedResult without waiting is the question
  * being asked; the event is what a blocking write waits on. */
@@ -2352,7 +2374,8 @@ static ssize_t wdmks_write_packets(wdmks_t *w, const unsigned char *src,
           * cannot use. Bounded, so a device that stops taking
           * packets returns what it took rather than holding the
           * audio thread for good. */
-         if (WaitForSingleObject(p->overlapped.hEvent, 1000) != WAIT_OBJECT_0)
+         if (WaitForSingleObject(p->overlapped.hEvent,
+                  wdmks_watchdog_ms(w, w->packet_bytes)) != WAIT_OBJECT_0)
             break;
          p->pending = false;
       }
