@@ -15,6 +15,11 @@ SAME(rt_buffer,    sizeof(ra_ksrtaudio_buffer_t),                 sizeof(KSRTAUD
 SAME(rt_hwlat,     sizeof(ra_ksrtaudio_hwlatency_t),              sizeof(KSRTAUDIO_HWLATENCY));
 SAME(rt_hwregp,    sizeof(ra_ksrtaudio_hwregister_property_t),    sizeof(KSRTAUDIO_HWREGISTER_PROPERTY));
 SAME(rt_hwreg,     sizeof(ra_ksrtaudio_hwregister_t),             sizeof(KSRTAUDIO_HWREGISTER));
+SAME(rt_present,   sizeof(ra_ksaudio_presentation_position_t),    sizeof(KSAUDIO_PRESENTATION_POSITION));
+SAME(o_pp_blocks,  offsetof(ra_ksaudio_presentation_position_t,u64PositionInBlocks), offsetof(KSAUDIO_PRESENTATION_POSITION,u64PositionInBlocks));
+SAME(o_pp_qpc,     offsetof(ra_ksaudio_presentation_position_t,u64QPCPosition),      offsetof(KSAUDIO_PRESENTATION_POSITION,u64QPCPosition));
+SAME(e_present,    RA_KSPROPERTY_RTAUDIO_PRESENTATION_POSITION,  KSPROPERTY_RTAUDIO_PRESENTATION_POSITION);
+SAME(e_pktcount,   RA_KSPROPERTY_RTAUDIO_PACKETCOUNT,            KSPROPERTY_RTAUDIO_PACKETCOUNT);
 SAME(rt_notify,    sizeof(ra_ksrtaudio_notification_event_property_t), sizeof(KSRTAUDIO_NOTIFICATION_EVENT_PROPERTY));
 SAME(o_bp_base,    offsetof(ra_ksrtaudio_buffer_property_t,BaseAddress),         offsetof(KSRTAUDIO_BUFFER_PROPERTY,BaseAddress));
 SAME(o_bp_size,    offsetof(ra_ksrtaudio_buffer_property_t,RequestedBufferSize), offsetof(KSRTAUDIO_BUFFER_PROPERTY,RequestedBufferSize));

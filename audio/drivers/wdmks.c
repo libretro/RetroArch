@@ -425,8 +425,26 @@ enum
    RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION,
    RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT,
    RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT,
-   RA_KSPROPERTY_RTAUDIO_QUERY_NOTIFICATION_SUPPORT
+   RA_KSPROPERTY_RTAUDIO_QUERY_NOTIFICATION_SUPPORT,
+   RA_KSPROPERTY_RTAUDIO_PACKETCOUNT,
+   RA_KSPROPERTY_RTAUDIO_PRESENTATION_POSITION
 };
+
+/* What this driver has been synthesising, offered directly where a
+ * miniport is new enough: the position from the start of the stream,
+ * which does not wrap, and the performance counter read by the
+ * endpoint at the same instant it read that position.
+ *
+ * The cyclic register cannot give either. It wraps, so the count is
+ * only right while it is sampled more often than it laps - a process
+ * descheduled for five laps of an 8 ms buffer loses five and cannot
+ * know it - and its QPC is read by this process afterwards rather
+ * than by the device at the same moment. */
+typedef struct
+{
+   UINT64 u64PositionInBlocks;
+   UINT64 u64QPCPosition;
+} ra_ksaudio_presentation_position_t;
 
 /* What is asked for: a buffer of this size at this address (NULL to
  * let the driver choose), and for the notification form, how many
@@ -1552,6 +1570,7 @@ typedef struct
    size_t          rt_size;
    size_t          rt_write;
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
+   bool            rt_presentation;
    HANDLE          rt_event;    /* signalled per notification, if offered */
    /* The register wraps, so what it is worth as a count is the sum of
     * its steps - and that is only right while it is read more often
@@ -1675,6 +1694,56 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
  * updates with the byte offset the hardware has reached. Reading a
  * word is cheaper and steadier than an ioctl per query, which is the
  * whole point of WaveRT. */
+/* The presentation position, where the miniport offers it: an absolute
+ * block count and the performance counter the endpoint read it at.
+ * Both halves come from the device in one call, which is what the
+ * cyclic register and a local QueryPerformanceCounter cannot be. */
+static bool wdmks_rt_presentation(wdmks_t *w, uint64_t *frames,
+      uint64_t *qpc)
+{
+   ra_ksproperty_t                    inn;
+   ra_ksaudio_presentation_position_t out;
+   DWORD                              written = 0;
+
+   if (!w->rt_presentation)
+      return false;
+
+   memset(&inn, 0, sizeof(inn));
+   memset(&out, 0, sizeof(out));
+   inn.Set   = ra_ks_propsetid_rtaudio;
+   inn.Id    = RA_KSPROPERTY_RTAUDIO_PRESENTATION_POSITION;
+   inn.Flags = RA_KSPROPERTY_TYPE_GET;
+
+   if (     !DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+               &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
+         || written < sizeof(out))
+      return false;
+
+   *frames = out.u64PositionInBlocks;
+   *qpc    = out.u64QPCPosition;
+   return true;
+}
+
+/* Asked once at init: a miniport that answers it is one whose position
+ * never has to be inferred from a wrapping cursor again. */
+static void wdmks_rt_probe_presentation(wdmks_t *w)
+{
+   uint64_t frames = 0, qpc = 0;
+
+   w->rt_presentation = true;
+   if (wdmks_rt_presentation(w, &frames, &qpc) && qpc)
+   {
+      RARCH_LOG("[WDM-KS] Presentation position: available, and the"
+            " device timestamps it - the wrapping cursor is not used"
+            " for the count or the clock.\n");
+      return;
+   }
+   w->rt_presentation = false;
+   RARCH_LOG("[WDM-KS] No presentation position; the count comes from"
+         " the cyclic cursor, which is only right while it is read"
+         " more often than it wraps.\n");
+}
+
 static void wdmks_rt_get_position_register(wdmks_t *w)
 {
    ra_ksrtaudio_hwregister_property_t inn;
@@ -2233,37 +2302,36 @@ static bool wdmks_position(wdmks_t *w, uint64_t *frames)
  * again. On a pin with no position register that read is an ioctl,
  * and doing it twice a frame for two consumers of the same number is
  * the plainest waste on this path. */
-static void wdmks_clock_sample(wdmks_t *w, uint64_t frames)
+/* The fit proper. ticks is a performance-counter value: the device's
+ * own where it timestamps its position, this thread's otherwise. The
+ * first is better by exactly the gap between the two reads. */
+static void wdmks_clock_sample_qpc(wdmks_t *w, uint64_t frames,
+      uint64_t ticks)
 {
-   LARGE_INTEGER now;
-   double        x, y, d;
+   double x, y, d;
 
-   if (!w->clk_freq || !w->rate)
-      return;
-   if (!frames)
-      return;
-   if (!QueryPerformanceCounter(&now))
+   if (!w->clk_freq || !w->rate || !frames || !ticks)
       return;
 
    if (!w->clk_have_anchor)
    {
       w->clk_anchor_frames = frames;
-      w->clk_anchor_ticks  = (uint64_t)now.QuadPart;
+      w->clk_anchor_ticks  = ticks;
       w->clk_have_anchor   = true;
       w->clk_sx = w->clk_sy = w->clk_sxx = w->clk_sxy = w->clk_n = 0.0;
       return;
    }
-   if (     (uint64_t)now.QuadPart <= w->clk_anchor_ticks
+   if (     ticks <= w->clk_anchor_ticks
          || frames < w->clk_anchor_frames)
    {
       /* The pin was restarted, or the counter did not move. */
       w->clk_anchor_frames = frames;
-      w->clk_anchor_ticks  = (uint64_t)now.QuadPart;
+      w->clk_anchor_ticks  = ticks;
       w->clk_sx = w->clk_sy = w->clk_sxx = w->clk_sxy = w->clk_n = 0.0;
       return;
    }
 
-   x = (double)((uint64_t)now.QuadPart - w->clk_anchor_ticks)
+   x = (double)(ticks - w->clk_anchor_ticks)
       / (double)w->clk_freq;
    y = (double)(frames - w->clk_anchor_frames);
 
@@ -2285,6 +2353,17 @@ static void wdmks_clock_sample(wdmks_t *w, uint64_t frames)
       }
    }
 }
+
+/* Takes this thread's performance counter, for the sources that do
+ * not carry one of their own. */
+static void wdmks_clock_sample(wdmks_t *w, uint64_t frames)
+{
+   LARGE_INTEGER now;
+   if (!QueryPerformanceCounter(&now))
+      return;
+   wdmks_clock_sample_qpc(w, frames, (uint64_t)now.QuadPart);
+}
+
 
 /* What the device has played. The hardware's own count, sampled with
  * the clock so the two are taken together. */
@@ -2320,7 +2399,18 @@ static size_t wdmks_frames_consumed(void *data)
     * and the accumulation never happened. */
    if (w->stream.looped)
    {
-      ULONG now = 0;
+      ULONG    now = 0;
+      uint64_t abs_frames = 0, abs_qpc = 0;
+
+      /* The absolute position where the miniport gives one: it does
+       * not wrap, so nothing is lost to a process that missed several
+       * laps, and its timestamp was taken by the device rather than
+       * by this thread afterwards. */
+      if (wdmks_rt_presentation(w, &abs_frames, &abs_qpc))
+      {
+         wdmks_clock_sample_qpc(w, abs_frames, abs_qpc);
+         return (size_t)abs_frames;
+      }
       if (!wdmks_rt_play_offset(w, &now))
          return 0;
       wdmks_clock_sample(w, w->rt_played);
@@ -2806,6 +2896,7 @@ static void *wdmks_init(const char *device, unsigned rate,
          wdmks_free(w);
          return NULL;
       }
+      wdmks_rt_probe_presentation(w);
       wdmks_rt_get_position_register(w);
       wdmks_rt_register_event(w);
       wdmks_rt_report_latency(w);
