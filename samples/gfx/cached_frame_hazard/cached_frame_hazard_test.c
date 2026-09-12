@@ -80,8 +80,13 @@ static retro_atomic_int_t  generation;
  * harness tests is the hazard protocol layered over it. */
 static retro_atomic_size_t cache_seq;
 static retro_atomic_ptr_t  cache_data;
-static retro_atomic_int_t  cache_width;
-static retro_atomic_int_t  cache_height;
+/* Both dimensions in one word, as gfx/video_driver.c packs them: one
+ * relaxed store out, one relaxed load back, and they cannot be seen
+ * half-updated even without the stamp. */
+static retro_atomic_int_t  cache_dims;
+#define CACHE_DIMS_PACK(w, h) ((int)(((unsigned)(h) << 16) | ((unsigned)(w) & 0xffffu)))
+#define CACHE_DIMS_W(d)       ((unsigned)(d) & 0xffffu)
+#define CACHE_DIMS_H(d)       (((unsigned)(d) >> 16) & 0xffffu)
 
 static retro_atomic_int_t stop;
 
@@ -140,9 +145,12 @@ static bool cache_snapshot(const void **data,
          continue;
       }
 
-      *data   = (const void*)retro_atomic_load_relaxed_ptr(&cache_data);
-      *width  = (unsigned)retro_atomic_load_relaxed_int(&cache_width);
-      *height = (unsigned)retro_atomic_load_relaxed_int(&cache_height);
+      {
+         int dims = retro_atomic_load_relaxed_int(&cache_dims);
+         *data    = (const void*)retro_atomic_load_relaxed_ptr(&cache_data);
+         *width   = CACHE_DIMS_W(dims);
+         *height  = CACHE_DIMS_H(dims);
+      }
 
       retro_atomic_thread_fence_acquire();
       s2      = retro_atomic_load_acquire_size(&cache_seq);
@@ -163,9 +171,8 @@ static void cache_store(const void *data, unsigned width, unsigned height)
    retro_atomic_store_release_size(&cache_seq, s + 1);
    retro_atomic_thread_fence_release();
 
-   retro_atomic_store_relaxed_ptr(&cache_data,   (void*)data);
-   retro_atomic_store_relaxed_int(&cache_width,  (int)width);
-   retro_atomic_store_relaxed_int(&cache_height, (int)height);
+   retro_atomic_store_relaxed_ptr(&cache_data, (void*)data);
+   retro_atomic_store_relaxed_int(&cache_dims, CACHE_DIMS_PACK(width, height));
 
    retro_atomic_store_release_size(&cache_seq, s + 2);
 }
