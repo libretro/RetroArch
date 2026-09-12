@@ -942,13 +942,30 @@ typedef volatile size_t retro_atomic_size_t;
 /* No barriers.  Correct only on single-core or x86 TSO. */
 #define retro_atomic_load_acquire_int(p)         (*(p))
 #define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
-#define retro_atomic_fetch_add_int(p, v)         ((*(p) += (v)) - (v))
-#define retro_atomic_fetch_sub_int(p, v)         ((*(p) -= (v)) + (v))
-/* OR and AND are not invertible, so the old value cannot be recovered
- * arithmetically the way it is for add/sub above.  Use a helper rather
- * than a statement expression, which MSVC does not support. */
+/* Every read-modify-write goes through a helper rather than an
+ * expression: an expression that recovers the old value arithmetically
+ * ("(*(p) += (v)) - (v)") evaluates v twice and draws -Wunused-value at
+ * the call sites that discard the result, of which the tree has many.
+ * A helper is also what OR and AND need, since they are not
+ * invertible, and MSVC has no statement expressions to fall back on. */
+#define retro_atomic_fetch_add_int(p, v) retro_atomic_fetch_add_int_fb((p), (v))
+#define retro_atomic_fetch_sub_int(p, v) retro_atomic_fetch_sub_int_fb((p), (v))
 #define retro_atomic_fetch_or_int(p, v)  retro_atomic_fetch_or_int_fb((p), (v))
 #define retro_atomic_fetch_and_int(p, v) retro_atomic_fetch_and_int_fb((p), (v))
+
+static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old + v;
+   return old;
+}
+
+static INLINE int retro_atomic_fetch_sub_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old - v;
+   return old;
+}
 
 static INLINE int retro_atomic_fetch_or_int_fb(retro_atomic_int_t *p, int v)
 {
@@ -967,8 +984,26 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 #define retro_atomic_load_acquire_size(p)        (*(p))
 #define retro_atomic_load_relaxed_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
-#define retro_atomic_fetch_add_size(p, v)        ((*(p) += (v)) - (v))
-#define retro_atomic_fetch_sub_size(p, v)        ((*(p) -= (v)) + (v))
+#define retro_atomic_fetch_add_size(p, v) \
+   retro_atomic_fetch_add_size_fb((p), (v))
+#define retro_atomic_fetch_sub_size(p, v) \
+   retro_atomic_fetch_sub_size_fb((p), (v))
+
+static INLINE size_t retro_atomic_fetch_add_size_fb(retro_atomic_size_t *p,
+      size_t v)
+{
+   size_t old = *p;
+   *p         = old + v;
+   return old;
+}
+
+static INLINE size_t retro_atomic_fetch_sub_size_fb(retro_atomic_size_t *p,
+      size_t v)
+{
+   size_t old = *p;
+   *p         = old - v;
+   return old;
+}
 
 #endif /* backend selection */
 
