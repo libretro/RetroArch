@@ -4074,8 +4074,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
        || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
    {
-      recording_state_t *rec_st = recording_state_get_ptr();
-      if (rec_st && rec_st->enable)
+      if (gl->flags & GL3_FLAG_GPU_RECORDING)
       {
          /* Tear down old PBO resources before reinitializing */
          if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -4731,6 +4730,13 @@ static bool gl3_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+   /* Whether to read frames back travels with the frame, so this thread
+    * does not read the recording state the main thread writes. */
+   if (video_info->gpu_recording)
+      gl->flags |=  GL3_FLAG_GPU_RECORDING;
+   else
+      gl->flags &= ~GL3_FLAG_GPU_RECORDING;
+
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    glBindVertexArray(gl->vao);
@@ -5300,7 +5306,7 @@ static bool gl3_frame(void *data, const void *frame,
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {
       /* If recording has stopped, tear down PBO readback */
-      if (!recording_state_get_ptr()->enable)
+      if (!(gl->flags & GL3_FLAG_GPU_RECORDING))
       {
          gl3_deinit_pbo_readback(gl);
          gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;

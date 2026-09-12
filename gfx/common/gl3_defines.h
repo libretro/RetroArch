@@ -55,7 +55,11 @@ enum gl3_flags
    /* The threaded wrapper's hardware ring is driving this driver: the
     * core's context is current on the main thread, so this thread
     * never takes it, and the frame reads the ring's slot. */
-   GL3_FLAG_HW_RING                = (1 << 14)
+   GL3_FLAG_HW_RING                = (1 << 14),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   GL3_FLAG_GPU_RECORDING          = (1 << 15)
 };
 
 RETRO_END_DECLS
