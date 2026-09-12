@@ -59,6 +59,7 @@
 #include <mmreg.h>
 
 #include <boolean.h>
+#include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -1741,6 +1742,52 @@ static void wdmks_rt_report_latency(wdmks_t *w)
             (size_t)(out.FifoSize / w->frame_bytes));
 }
 
+/* Waits for the device to free room, for as long as one period is
+ * worth waiting and no longer.
+ *
+ * The notification event where the driver gives one: that is the
+ * device saying it has moved on, which is both the earliest and the
+ * cheapest this can be woken.
+ *
+ * Where it gives none, this yields rather than sleeps. Sleep(1) is not
+ * one millisecond unless something has raised the timer resolution -
+ * it is the scheduler's tick, about fifteen - and at an 8 ms loop that
+ * is a wait longer than the whole buffer, which is a hole in the
+ * stream rather than a pause before one. Another thread that is ready
+ * runs; if none is, the yield returns at once and the deadline below
+ * is what stops this spinning.
+ *
+ * The deadline is measured with this project's clock rather than
+ * counted in iterations, so it means the same length of time whatever
+ * an iteration costs - the same reasoning as the ASIO teardown wait,
+ * and the same clock. */
+static size_t wdmks_rt_free(wdmks_t *w);
+
+static void wdmks_rt_wait_room(wdmks_t *w)
+{
+   retro_time_t deadline;
+   retro_time_t period_usec;
+
+   if (w->rt_event)
+   {
+      WaitForSingleObject(w->rt_event, 100);
+      return;
+   }
+
+   period_usec = (w->frame_bytes && w->rate)
+      ? (retro_time_t)(w->rt_size / w->frame_bytes) * 1000000 / w->rate
+      : 1000;
+   if (period_usec < 500)
+      period_usec = 500;
+
+   deadline = cpu_features_get_time_usec() + period_usec;
+   do
+   {
+      SwitchToThread();
+   } while (cpu_features_get_time_usec() < deadline
+         && !wdmks_rt_free(w));
+}
+
 /* The event the driver signals as it passes each notification point.
  * Without one the write path can only poll, and polling is what falls
  * apart when the process is backgrounded: the scheduler stops giving
@@ -1899,10 +1946,7 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
          /* The event where the driver gives one, which is what keeps
           * this fed when the process is not in the foreground; a
           * millisecond otherwise. */
-         if (w->rt_event)
-            WaitForSingleObject(w->rt_event, 100);
-         else
-            Sleep(1);
+         wdmks_rt_wait_room(w);
          if (!(room = wdmks_rt_free(w)))
             continue;
       }
@@ -2378,10 +2422,7 @@ static size_t wdmks_wait_writable(void *data, size_t len)
           *
           * Bounded either way: a device that has stopped returns
           * nothing rather than holding the audio thread. */
-         if (w->rt_event)
-            WaitForSingleObject(w->rt_event, 100);
-         else
-            Sleep(1);
+         wdmks_rt_wait_room(w);
          continue;
       }
 
