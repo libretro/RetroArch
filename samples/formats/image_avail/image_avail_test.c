@@ -43,6 +43,7 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/rtga.h>
+#include <formats/rbmp.h>
 
 static int failures = 0;
 
@@ -165,15 +166,90 @@ static fixture_t fx_tga_indexed(unsigned w, unsigned h, unsigned pal_len)
    return f;
 }
 
+/* BMP: BITMAPINFOHEADER, rows bottom-up unless @top_down, each row
+ * padded to a four-byte boundary. */
+static fixture_t fx_bmp(unsigned w, unsigned h, int bpp, int top_down,
+      unsigned pal_len)
+{
+   fixture_t f;
+   unsigned  row   = ((w * bpp + 31) / 32) * 4;   /* padded row size */
+   unsigned  polen = pal_len * 4;
+   unsigned  off   = 14 + 40 + polen;
+   size_t    len   = off + (size_t)row * h;
+   uint8_t  *p     = (uint8_t*)calloc(1, len);
+   unsigned  i, y, x;
+
+   p[0] = 'B'; p[1] = 'M';
+   p[2] = (uint8_t)len; p[3] = (uint8_t)(len >> 8);
+   p[4] = (uint8_t)(len >> 16); p[5] = (uint8_t)(len >> 24);
+   p[10] = (uint8_t)off; p[11] = (uint8_t)(off >> 8);
+   p[14] = 40;                                    /* DIB header size */
+   p[18] = (uint8_t)w; p[19] = (uint8_t)(w >> 8);
+   if (top_down)
+   {
+      int nh = -(int)h;
+      p[22] = (uint8_t)nh;         p[23] = (uint8_t)(nh >> 8);
+      p[24] = (uint8_t)(nh >> 16); p[25] = (uint8_t)(nh >> 24);
+   }
+   else
+   {
+      p[22] = (uint8_t)h; p[23] = (uint8_t)(h >> 8);
+   }
+   p[26] = 1;                                     /* planes */
+   p[28] = (uint8_t)bpp;
+   p[46] = (uint8_t)pal_len;                      /* colours used */
+
+   for (i = 0; i < pal_len; i++)
+   {
+      p[54 + i * 4 + 0] = (uint8_t)(i * 7);
+      p[54 + i * 4 + 1] = (uint8_t)(i * 11 + 3);
+      p[54 + i * 4 + 2] = (uint8_t)(i * 5 + 9);
+   }
+   for (y = 0; y < h; y++)
+      for (x = 0; x < row; x++)
+         p[off + (size_t)y * row + x] =
+            (uint8_t)((y * 131u + x * 37u + (x >> 3) * 17u) & 0xff);
+
+   f.buf = p;
+   f.len = len;
+   return f;
+}
+
 /* ---- the two decodes --------------------------------------------- */
+
+typedef enum { CODEC_TGA, CODEC_BMP } codec_t;
+static codec_t codec = CODEC_TGA;
 
 /* Whole file resident from the first call: what shipped before. */
 static uint32_t *decode_whole(const uint8_t *data, size_t len,
       unsigned *w, unsigned *h)
 {
    void *out   = NULL;
-   rtga_t *tga = rtga_alloc();
    int ret;
+   if (codec == CODEC_BMP)
+   {
+      rbmp_t *bmp = rbmp_alloc();
+      if (!bmp)
+         return NULL;
+      if (!rbmp_set_buf_ptr(bmp, (void*)data))
+      {
+         rbmp_free(bmp);
+         return NULL;
+      }
+      do
+      {
+         ret = rbmp_process_image(bmp, &out, len, w, h, true);
+      } while (ret == IMAGE_PROCESS_NEXT);
+      rbmp_free(bmp);
+      if (ret != IMAGE_PROCESS_END)
+      {
+         free(out);
+         return NULL;
+      }
+      return (uint32_t*)out;
+   }
+   {
+   rtga_t *tga = rtga_alloc();
    if (!tga)
       return NULL;
    if (!rtga_set_buf_ptr(tga, (void*)data))
@@ -192,6 +268,7 @@ static uint32_t *decode_whole(const uint8_t *data, size_t len,
       return NULL;
    }
    return (uint32_t*)out;
+   }
 }
 
 /* Frontier raised by @step bytes between calls.  Every WAIT must be
@@ -201,30 +278,37 @@ static uint32_t *decode_sliced(const uint8_t *data, size_t len,
       size_t step, unsigned *w, unsigned *h, unsigned *waits)
 {
    void *out     = NULL;
-   rtga_t *tga   = rtga_alloc();
+   rtga_t *tga   = (codec == CODEC_TGA) ? rtga_alloc() : NULL;
+   rbmp_t *bmp   = (codec == CODEC_BMP) ? rbmp_alloc() : NULL;
    size_t avail  = 0;
    unsigned n    = 0;
    unsigned guard = 0;
    int ret       = IMAGE_PROCESS_NEXT;
 
-   if (!tga)
+   if (!tga && !bmp)
       return NULL;
-   if (!rtga_set_buf_ptr(tga, (void*)data))
+   if (tga && !rtga_set_buf_ptr(tga, (void*)data))
    {
       rtga_free(tga);
       return NULL;
    }
+   if (bmp && !rbmp_set_buf_ptr(bmp, (void*)data))
+   {
+      rbmp_free(bmp);
+      return NULL;
+   }
 
-   rtga_set_avail(tga, avail);
+   if (tga) rtga_set_avail(tga, avail); else rbmp_set_avail(bmp, avail);
    for (;;)
    {
       if (++guard > 100000000u)
          break;
-      ret = rtga_process_image(tga, &out, len, w, h, true);
+      ret = tga ? rtga_process_image(tga, &out, len, w, h, true)
+                : rbmp_process_image(bmp, &out, len, w, h, true);
       if (ret == IMAGE_PROCESS_WAIT)
       {
          n++;
-         if (!rtga_need_more(tga))
+         if (!(tga ? rtga_need_more(tga) : rbmp_need_more(bmp)))
          {
             printf("  FAIL WAIT without need_more\n");
             failures++;
@@ -239,13 +323,13 @@ static uint32_t *decode_sliced(const uint8_t *data, size_t len,
          avail += step;
          if (avail > len)
             avail = len;
-         rtga_set_avail(tga, avail);
+         if (tga) rtga_set_avail(tga, avail); else rbmp_set_avail(bmp, avail);
          continue;
       }
       if (ret != IMAGE_PROCESS_NEXT)
          break;
    }
-   rtga_free(tga);
+   if (tga) rtga_free(tga); else rbmp_free(bmp);
    if (waits)
       *waits = n;
    if (ret != IMAGE_PROCESS_END)
@@ -308,7 +392,7 @@ int main(void)
    static const size_t steps[] = { 1, 3, 7, 1024 };
    unsigned s;
 
-   printf("image_avail_test: TGA partial-buffer decode vs whole-buffer\n");
+   printf("image_avail_test: TGA/BMP partial-buffer decode vs whole-buffer\n");
 
    for (s = 0; s < sizeof(steps) / sizeof(steps[0]); s++)
    {
@@ -322,6 +406,18 @@ int main(void)
       f = fx_tga_rle(29, 13, 32);    compare("RLE 32bpp",           f, steps[s]); fx_free(&f);
       f = fx_tga_rle(29, 13, 24);    compare("RLE 24bpp",           f, steps[s]); fx_free(&f);
       f = fx_tga_indexed(23, 11, 200); compare("indexed 8bpp",      f, steps[s]); fx_free(&f);
+
+      codec = CODEC_BMP;
+      /* Rows are bottom-up by default, so a prefix of the file is the
+       * bottom of the image: a stall that resumes on the wrong row
+       * shows up as a vertically displaced surface. */
+      f = fx_bmp(31, 17, 32, 0, 0);   compare("BMP 32bpp bottom-up", f, steps[s]); fx_free(&f);
+      f = fx_bmp(31, 17, 24, 0, 0);   compare("BMP 24bpp bottom-up", f, steps[s]); fx_free(&f);
+      f = fx_bmp(31, 17, 24, 1, 0);   compare("BMP 24bpp top-down",  f, steps[s]); fx_free(&f);
+      f = fx_bmp(23, 11, 16, 0, 0);   compare("BMP 16bpp",           f, steps[s]); fx_free(&f);
+      f = fx_bmp(23, 11,  8, 0, 200); compare("BMP 8bpp indexed",    f, steps[s]); fx_free(&f);
+      f = fx_bmp(22, 11,  4, 0, 16);  compare("BMP 4bpp indexed",    f, steps[s]); fx_free(&f);
+      codec = CODEC_TGA;
    }
 
    /* A truncated file is not a stall: the frontier reaches the real

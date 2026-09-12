@@ -114,9 +114,10 @@
  *
  * - set_avail (the still-image byte wall) is honoured by PNG and JPEG,
  *   where it surfaces as need_more(), and by TGA, WEBM and MP4, where
- *   it surfaces as IMAGE_PROCESS_WAIT out of process().  BMP, WEBP and
- *   DDS have no partial-buffer decode and must be handed fully
- *   resident data.
+ *   it surfaces as IMAGE_PROCESS_WAIT out of process(), and by BMP the
+ *   same way.  WEBP and DDS have no partial-buffer decode and must be
+ *   handed fully resident data: a WEBP still is a VP8 keyframe, which
+ *   cannot be decoded in part at all.
  *
  * - 10-bit output is a property of the source, not of this layer: PNG
  *   (from 16-bit-per-channel RGB) and the two video types (from 10-bit
@@ -787,6 +788,11 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          rtga_set_avail((rtga_t*)data, avail);
+#endif
+         break;
+      case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
+         rbmp_set_avail((rbmp_t*)data, avail);
 #endif
          break;
       case IMAGE_TYPE_WEBM:

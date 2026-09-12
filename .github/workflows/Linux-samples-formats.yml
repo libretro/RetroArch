@@ -124,7 +124,8 @@ jobs:
         working-directory: samples/formats/image_avail
         run: |
           set -eu
-          # Partial-buffer ("avail-aware") still decoding, checked
+          # Partial-buffer ("avail-aware") still decoding for TGA and
+          # BMP, checked
           # against the whole-buffer decode that has always been
           # there: every fixture is decoded once with the file fully
           # resident and again with the frontier raised a few bytes at
@@ -136,6 +137,12 @@ jobs:
           # an RLE run re-emitted after a stall, a cursor resumed off
           # by a pixel.  It found all three of those on its first runs
           # while TGA was being converted.
+          #
+          # BMP rows are bottom-up, so a prefix of the file is the
+          # bottom of the image and a stall resumed on the wrong row
+          # shows up as a vertically displaced surface rather than as
+          # noise.  The 4bpp and 8bpp fixtures put the wall inside the
+          # palette as well.
           #
           # Steps of 1, 3 and 7 bytes put the wall inside every field,
           # inside RLE packets and mid-pixel for both 24bpp and 32bpp;

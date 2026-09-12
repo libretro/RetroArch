@@ -5,7 +5,8 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 # The decoder is self-contained; nothing else is needed.
 SOURCES := image_avail_test.c \
-           $(LIBRETRO_COMM_DIR)/formats/tga/rtga.c
+           $(LIBRETRO_COMM_DIR)/formats/tga/rtga.c \
+           $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -I$(LIBRETRO_COMM_DIR)/include

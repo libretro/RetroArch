@@ -674,7 +674,7 @@ bool task_image_load_handler(retro_task_t *task)
                    || (image->type == IMAGE_TYPE_MP4);
       /* Types whose decoders decode against a growing buffer with a
        * resident-frontier wall: video stills, and (avail-aware) PNG,
-       * JPEG and TGA.  Their avail must be raised each tick as the read
+       * JPEG, TGA and BMP.  Their avail must be raised each tick as the read
        * advances.  WEBP is excluded - it has no wall and instead starts
        * only once its still chunk is wholly resident. */
       bool is_prefix = is_video
@@ -686,6 +686,9 @@ bool task_image_load_handler(retro_task_t *task)
 #endif
 #ifdef HAVE_RTGA
                     || (image->type == IMAGE_TYPE_TGA)
+#endif
+#ifdef HAVE_RBMP
+                    || (image->type == IMAGE_TYPE_BMP)
 #endif
                     ;
 
