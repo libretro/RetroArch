@@ -87,6 +87,7 @@ struct rbmp
     * A caller that never calls set_avail leaves avail_set false and
     * nothing below changes behaviour. */
    unsigned char *true_end;
+   size_t         avail_req;    /* frontier asked for, clamped at IDLE */
    bool           avail_set;
    bool           need_more;
 };
@@ -908,17 +909,28 @@ bool rbmp_header_ready(const uint8_t *data, size_t len)
 
 void rbmp_set_avail(rbmp_t *rbmp, size_t avail)
 {
-   unsigned char *wall;
-   if (!rbmp || !rbmp->buff_data)
+   if (!rbmp)
       return;
    rbmp->avail_set = true;
-   wall            = rbmp->buff_data + avail;
-   if (rbmp->true_end && wall > rbmp->true_end)
-      wall = rbmp->true_end;
-   /* Monotonic: a caller raising the frontier each tick must not be
-    * able to lower it. */
-   if (wall > rbmp->s.img_buffer_end)
-      rbmp->s.img_buffer_end = wall;
+   /* Only ever forward.  The request is recorded rather than turned
+    * into a pointer here: a caller may raise the frontier before the
+    * first process() call, when the buffer length - and so the end it
+    * has to be clamped against - is not yet known.  task_image does
+    * exactly that, with (size_t)-1, the moment a small file finishes
+    * reading before any decode has run; computing buff_data + that
+    * wraps the pointer and every later comparison against it is
+    * nonsense. */
+   if (avail > rbmp->avail_req)
+      rbmp->avail_req = avail;
+   if (rbmp->true_end && rbmp->buff_data)
+   {
+      unsigned char *wall = (rbmp->avail_req
+            > (size_t)(rbmp->true_end - rbmp->buff_data))
+                          ? rbmp->true_end
+                          : rbmp->buff_data + rbmp->avail_req;
+      if (wall > rbmp->s.img_buffer_end)
+         rbmp->s.img_buffer_end = wall;
+   }
 }
 
 bool rbmp_need_more(rbmp_t *rbmp)
@@ -951,6 +963,11 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       rbmp->true_end              = rbmp->buff_data + (int)size;
       if (!rbmp->avail_set)
          rbmp->s.img_buffer_end   = rbmp->true_end;
+      else
+         /* Now the length is known, resolve the recorded frontier. */
+         rbmp->s.img_buffer_end   = (rbmp->avail_req >= size)
+                                  ? rbmp->true_end
+                                  : rbmp->buff_data + rbmp->avail_req;
 
       /* rbmp_begin walks the file header, the DIB header (whose size
        * the file states), any bitfield masks and the whole palette,

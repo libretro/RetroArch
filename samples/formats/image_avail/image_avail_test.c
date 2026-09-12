@@ -499,6 +499,93 @@ int main(void)
       codec = CODEC_TGA;
    }
 
+   /* The task layer raises the frontier BEFORE the first process()
+    * call, and when a file finishes reading before any decode has run
+    * it raises it to (size_t)-1 outright (task_image.c: "the frontier
+    * is now the whole buffer").  At that moment the decoder does not
+    * know the buffer length, so a set_avail that turns the request
+    * into a pointer there computes buff_data + SIZE_MAX and wraps;
+    * every later comparison against that end is nonsense, the header
+    * check sees a negative length and waits for bytes that already
+    * arrived.  That shipped: BMP and TGA thumbnails went blank in the
+    * file browser, and small files - every file-browser icon - take
+    * this path every time.
+    *
+    * Both orderings must decode exactly as the untouched path does. */
+   {
+      struct { const char *name; fixture_t f; int bmp; } cs[4];
+      unsigned c;
+      cs[0].name = "TGA raw 32bpp"; cs[0].f = fx_tga_raw(31, 17, 32, 0);   cs[0].bmp = 0;
+      cs[1].name = "TGA indexed";   cs[1].f = fx_tga_indexed(23, 11, 200); cs[1].bmp = 0;
+      cs[2].name = "BMP 24bpp";     cs[2].f = fx_bmp(31, 17, 24, 0, 0);    cs[2].bmp = 1;
+      cs[3].name = "BMP 8bpp";      cs[3].f = fx_bmp(23, 11, 8, 0, 200);   cs[3].bmp = 1;
+
+      printf("-- frontier set before the first process() call --\n");
+      for (c = 0; c < 4; c++)
+      {
+         fixture_t f = cs[c].f;
+         size_t    avails[2];
+         unsigned  k, w0 = 0, h0 = 0;
+         uint32_t *ref;
+
+         codec = cs[c].bmp ? CODEC_BMP : CODEC_TGA;
+         ref   = decode_whole(f.buf, f.len, &w0, &h0);
+
+         avails[0] = (size_t)-1;   /* what task_image actually passes */
+         avails[1] = f.len;        /* the honest equivalent           */
+
+         for (k = 0; k < 2; k++)
+         {
+            void    *out = NULL;
+            unsigned w = 0, h = 0;
+            int      ret = IMAGE_PROCESS_NEXT, guard = 0;
+            char     what[176];
+
+            if (cs[c].bmp)
+            {
+               rbmp_t *b = rbmp_alloc();
+               rbmp_set_buf_ptr(b, f.buf);
+               rbmp_set_avail(b, avails[k]);      /* before any process */
+               while (ret == IMAGE_PROCESS_NEXT && ++guard < 100000)
+                  ret = rbmp_process_image(b, &out, f.len, &w, &h, true);
+               rbmp_free(b);
+            }
+            else
+            {
+               rtga_t *t = rtga_alloc();
+               rtga_set_buf_ptr(t, f.buf);
+               rtga_set_avail(t, avails[k]);
+               while (ret == IMAGE_PROCESS_NEXT && ++guard < 100000)
+                  ret = rtga_process_image(t, &out, f.len, &w, &h, true);
+               rtga_free(t);
+            }
+
+            snprintf(what, sizeof(what),
+                  "%s: set_avail(%s) before process still completes",
+                  cs[c].name, k ? "len" : "(size_t)-1");
+            CHECK(ret == IMAGE_PROCESS_END, what);
+
+            snprintf(what, sizeof(what),
+                  "%s: set_avail(%s) before process is byte-exact",
+                  cs[c].name, k ? "len" : "(size_t)-1");
+            if (ret == IMAGE_PROCESS_END && ref && w == w0 && h == h0)
+            {
+               size_t n = (size_t)w0 * h0, i, bad = 0;
+               for (i = 0; i < n; i++)
+                  if (((uint32_t*)out)[i] != ref[i])
+                     bad++;
+               CHECK(bad == 0, what);
+            }
+            else
+               CHECK(0, what);
+            free(out);
+         }
+         free(ref);
+         fx_free(&cs[c].f);
+      }
+      codec = CODEC_TGA;
+   }
+
    /* A truncated file is not a stall: the frontier reaches the real
     * end of the data and the decode has to settle, not wait forever. */
    {

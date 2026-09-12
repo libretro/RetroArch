@@ -87,6 +87,7 @@ struct rtga
     * calls set_avail, and then true_end == the end passed to
     * process() and nothing below changes behaviour. */
    uint8_t *true_end;
+   size_t   avail_req;           /* frontier asked for, clamped at IDLE */
    bool     avail_set;
    bool     need_more;           /* last slice stopped at the wall */
 };
@@ -808,17 +809,25 @@ bool rtga_header_ready(const uint8_t *data, size_t len)
 
 void rtga_set_avail(rtga_t *rtga, size_t avail)
 {
-   uint8_t *wall;
-   if (!rtga || !rtga->buff_data)
+   if (!rtga)
       return;
    rtga->avail_set = true;
-   wall            = rtga->buff_data + avail;
-   /* Monotonic, and never past the file: a caller raising the
-    * frontier each tick must not be able to lower it. */
-   if (rtga->true_end && wall > rtga->true_end)
-      wall = rtga->true_end;
-   if (wall > rtga->s.img_buffer_end)
-      rtga->s.img_buffer_end = wall;
+   /* Recorded, not resolved: a caller may raise the frontier before
+    * the first process() call, when the buffer length is not yet
+    * known.  task_image does exactly that with (size_t)-1 when a
+    * small file finishes reading before any decode has run, and
+    * buff_data + that wraps the pointer. */
+   if (avail > rtga->avail_req)
+      rtga->avail_req = avail;
+   if (rtga->true_end && rtga->buff_data)
+   {
+      uint8_t *wall = (rtga->avail_req
+            > (size_t)(rtga->true_end - rtga->buff_data))
+                    ? rtga->true_end
+                    : rtga->buff_data + rtga->avail_req;
+      if (wall > rtga->s.img_buffer_end)
+         rtga->s.img_buffer_end = wall;
+   }
 }
 
 bool rtga_need_more(rtga_t *rtga)
@@ -850,9 +859,10 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
       rtga->s.img_buffer          = rtga->buff_data;
       rtga->s.img_buffer_original = rtga->buff_data;
       rtga->true_end              = rtga->buff_data + (int)size;
-      rtga->s.img_buffer_end      = rtga->avail_set
-                                  ? rtga->s.img_buffer_end
-                                  : rtga->true_end;
+      rtga->s.img_buffer_end      = !rtga->avail_set ? rtga->true_end
+                                  : ((rtga->avail_req >= size)
+                                     ? rtga->true_end
+                                     : rtga->buff_data + rtga->avail_req);
       /* The header, the colour map and the first pixel must be
        * resident before anything can be parsed at all; below that
        * the caller has to come back with more. */
