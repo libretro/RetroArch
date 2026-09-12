@@ -158,6 +158,87 @@ extern uint32_t stub_requested_layout;
  * device every period, and what the device receives must be bursts
  * of AC-3 that decode back to what was written. */
 /* frames_consumed() against a pump that stopped being told. */
+/* The device-clock estimate: the driver fits the position against the
+ * QPC timestamp handed back beside it, and this runs a device at a
+ * known offset from nominal and reads the answer back out of the
+ * driver. The pair the fit needs is the one both clock interfaces
+ * already return, so this exercises the shipping code and not a copy
+ * of its arithmetic. */
+static void device_clock_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   struct { const char *name; double ppm; int want; } cases[] = {
+      { "exact",   0.0,     0 },
+      { "+50 ppm", 50.0,   50 },
+      { "-80 ppm", -80.0, -80 }
+   };
+   unsigned c;
+
+   printf("7. the device clock, fitted against the QPC timestamps\n");
+
+   for (c = 0; c < sizeof(cases) / sizeof(*cases); c++)
+   {
+      int16_t *silence;
+      void    *h;
+      unsigned new_rate = 0;
+      unsigned i;
+      double   ppm   = 0.0;
+      bool     got   = false;
+
+      fake_device_configure(48000, 30000, 100000, false);
+      fake_device_configure_clock(1, 1);
+      fake_device_configure_engine(0, 0);
+      fake_device_configure_drift(cases[c].ppm);
+
+      settings->bools.audio_wasapi_exclusive_mode   = true;
+      settings->uints.audio_wasapi_sh_buffer_length = 0;
+      settings->uints.audio_output_sample_rate      = 48000;
+
+      h = audio_wasapi.init(NULL, 48000, 32, &new_rate);
+      CHECK(h != NULL, "the driver would not open");
+      if (!h)
+         return;
+      silence = (int16_t*)calloc(audio_wasapi.buffer_size(h), 1);
+      if (!silence)
+      {
+         audio_wasapi.free(h);
+         return;
+      }
+      audio_wasapi.set_nonblock_state(h, true);
+      audio_wasapi.start(h, false);
+
+      /* The fit wants a second of window, and frames_consumed() is
+       * what samples the clock - the frontend calls it once a frame,
+       * so it is called here the same way. */
+      for (i = 0; i < 400; i++)
+      {
+         audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+         audio_wasapi.frames_consumed(h);
+         Sleep(4);
+      }
+
+      if (audio_wasapi.device_clock_ppm)
+         got = audio_wasapi.device_clock_ppm(h, &ppm);
+
+      if (!got)
+         CHECK(false, "the driver fitted no device clock");
+      else if (ppm < cases[c].want - 3 || ppm > cases[c].want + 3)
+      {
+         printf("   device at %+d ppm: driver read %+.0f ppm\n",
+               cases[c].want, ppm);
+         CHECK(false, "the device clock estimate is off");
+      }
+      else
+         printf("   device at %+4d ppm: driver read %+.0f ppm\n",
+               cases[c].want, ppm);
+
+      audio_wasapi.free(h);
+      free(silence);
+   }
+
+   fake_device_configure_drift(0.0);
+}
+
 static void clock_vs_events_case(void)
 {
    settings_t *settings = config_get_ptr();
@@ -540,6 +621,7 @@ int main(int argc, char **argv)
     * goes unsignalled, and frames_consumed() has to follow the
     * device rather than the events nobody received. */
    clock_vs_events_case();
+   device_clock_case();
 
    ac3_bitstream_case();
 

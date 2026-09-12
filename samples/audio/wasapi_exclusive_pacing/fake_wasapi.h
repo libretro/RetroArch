@@ -47,6 +47,9 @@ extern const GUID IID_IAudioClient, IID_IAudioRenderClient, IID_IAudioCaptureCli
 
 /* Whether the scripted endpoint offers a device clock, and which. */
 void fake_device_configure_clock(int have_clock, int have_clock2);
+/* How far the device's clock runs from nominal, in ppm: the QPC
+ * timestamp handed back beside the position is derived from it. */
+void fake_device_configure_drift(double ppm);
 /* Frames the scripted engine has played, which is what the fake's
  * clock reports. */
 unsigned long long fake_device_played(void);

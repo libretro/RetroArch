@@ -88,7 +88,28 @@ static struct
    unsigned engine_min_frames, locked_period_frames;
    unsigned max_channels;      /* PCM channels the pin takes; 0 = any */
    bool accept_iec61937_ac3;   /* the Dolby Digital subtype, exclusive */
-} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false };
+   /* How far the device's own clock runs from nominal, in parts per
+    * million. Both clock interfaces hand back a QPC timestamp beside
+    * the position, and that pair is what the driver fits its clock
+    * estimate from - so a device that runs fast or slow is scripted
+    * here by deriving the timestamp from the position at a rate that
+    * is not quite the nominal one. */
+   double   clock_ppm;
+} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false, 0.0 };
+
+/* The QPC timestamp that goes with a position, in 100 ns units, which
+ * is what both clock interfaces specify. */
+static UINT64 fake_qpc_for(size_t frames)
+{
+   double rate = (double)(g_cfg.rate ? g_cfg.rate : 48000)
+      * (1.0 + g_cfg.clock_ppm / 1000000.0);
+   return (UINT64)((double)frames * 10000000.0 / rate);
+}
+
+void fake_device_configure_drift(double ppm)
+{
+   g_cfg.clock_ppm = ppm;
+}
 
 /* Everything released to the device while capturing, for a harness
  * that wants to look at the bytes and not just count them. */
@@ -392,7 +413,7 @@ static HRESULT clk_getpos(IAudioClock *t, UINT64 *p, UINT64 *q)
    pthread_mutex_unlock(&c->m);
    *p = (UINT64)n * 10000000ULL
       / (g_cfg.rate ? g_cfg.rate : 48000);
-   if (q) *q = *p;
+   if (q) *q = fake_qpc_for(n);
    return S_OK;
 }
 static const IAudioClockVtbl clock_vtbl =
@@ -408,10 +429,12 @@ static HRESULT clk2_getpos(IAudioClock2 *t, UINT64 *p, UINT64 *q)
     * real device clock is coherent, and reading it torn here is the
     * harness racing itself rather than anything the driver did. */
    fake_client_t *c = (fake_client_t*)t->fake;
+   size_t         n;
    pthread_mutex_lock(&c->m);
-   *p = (UINT64)c->stats.frames_consumed;
+   n = c->stats.frames_consumed;
    pthread_mutex_unlock(&c->m);
-   if (q) *q = *p;
+   *p = (UINT64)n;
+   if (q) *q = fake_qpc_for(n);
    return S_OK;
 }
 static const IAudioClock2Vtbl clock2_vtbl =

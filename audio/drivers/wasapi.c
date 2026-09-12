@@ -164,6 +164,31 @@ typedef struct
    UINT64         clock_frequency;   /* units of an IAudioClock position, a second */
    UINT64         clock_start;
    UINT64         clock2_start;
+   /* The device clock against the rate the stream runs at, in parts
+    * per million.
+    *
+    * Both clock calls already return a QPC timestamp beside the
+    * position - the instant the position was taken at, in hundreds of
+    * nanoseconds - and this driver was reading it into a variable and
+    * dropping it. Position against that timestamp is the rate the
+    * hardware is really running at, for no call that was not already
+    * being made.
+    *
+    * This is not the Clock-vs-events line, which compares the clock
+    * against this driver's own event count and says what the
+    * approximation costs. This compares the clock against nominal and
+    * says what the hardware is doing.
+    *
+    * A fit over every sample, not two points: noise on a single anchor
+    * divides by the window and reads as drift. Touched from the
+    * frontend thread that calls frames_consumed(), and from nowhere
+    * else. Nothing acts on it. */
+   UINT64         clk_anchor_pos;
+   UINT64         clk_anchor_qpc;
+   int            clk_have_anchor;
+   double         clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int            clk_ppm;
+   int            clk_valid;
    /* Whether the fifo has ever been fed: a period of silence before
     * the first audio is not an underrun. On the AC-3 path the first
     * burst is 32 ms of input and an encode away from the first write,
@@ -2646,6 +2671,12 @@ static void wasapi_free(void *wh)
     * inside a three-millisecond period costs a fraction of its
     * margin. Which scheduling it ran under is on the same line, so
     * two runs can be put beside each other. */
+   /* And what the device's clock was doing against nominal, for the
+    * same reason the other drivers say it: logged, never acted on. */
+   if (w && w->clk_valid)
+      RARCH_LOG("[WASAPI] Device clock, fitted against the QPC"
+            " timestamps: %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
+
    if (w)
    {
       size_t wakes = retro_atomic_load_acquire_size(&w->late_wakes);
@@ -2887,6 +2918,67 @@ static size_t wasapi_underruns(void *wh)
    return w ? retro_atomic_load_acquire_size(&w->underruns) : 0;
 }
 
+/* One step of the device-clock fit. frames is the position since the
+ * stream started; qpc is the timestamp both clock calls hand back
+ * beside it, in hundreds of nanoseconds. See the note on the fields. */
+static void wasapi_clock_fit(wasapi_t *w, UINT64 frames, UINT64 qpc)
+{
+   double x, y, d;
+
+   if (!qpc || !w->rate)
+      return;
+
+   if (!w->clk_have_anchor)
+   {
+      w->clk_anchor_pos   = frames;
+      w->clk_anchor_qpc   = qpc;
+      w->clk_have_anchor  = 1;
+      w->clk_sx = w->clk_sy = w->clk_sxx = w->clk_sxy = w->clk_n = 0.0;
+      return;
+   }
+   if (qpc <= w->clk_anchor_qpc || frames < w->clk_anchor_pos)
+   {
+      /* The stream restarted, or the timestamp did not move. */
+      w->clk_anchor_pos = frames;
+      w->clk_anchor_qpc = qpc;
+      w->clk_sx = w->clk_sy = w->clk_sxx = w->clk_sxy = w->clk_n = 0.0;
+      return;
+   }
+
+   /* QPC positions here are in 100 ns units, which the interface
+    * specifies - not the raw counter, so no frequency is needed. */
+   x = (double)(qpc - w->clk_anchor_qpc) / 10000000.0;
+   y = (double)(frames - w->clk_anchor_pos);
+
+   w->clk_sx  += x;
+   w->clk_sy  += y;
+   w->clk_sxx += x * x;
+   w->clk_sxy += x * y;
+   w->clk_n   += 1.0;
+
+   d = w->clk_n * w->clk_sxx - w->clk_sx * w->clk_sx;
+   if (x >= 1.0 && d > 0.0)
+   {
+      double slope = (w->clk_n * w->clk_sxy - w->clk_sx * w->clk_sy) / d;
+      double ppm   = (slope / (double)w->rate - 1.0) * 1000000.0;
+      if (ppm > -100000.0 && ppm < 100000.0)
+      {
+         w->clk_ppm   = (int)ppm;
+         w->clk_valid = 1;
+      }
+   }
+}
+
+/* The device clock, for the statistics overlay. */
+static bool wasapi_device_clock_ppm(void *wh, double *ppm)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   if (!w || !w->clk_valid)
+      return false;
+   *ppm = (double)w->clk_ppm;
+   return true;
+}
+
 static size_t wasapi_frames_consumed(void *wh)
 {
 #ifdef HAVE_THREADS
@@ -2901,7 +2993,10 @@ static size_t wasapi_frames_consumed(void *wh)
     * it. Nothing to convert and nothing to infer. */
    if (w->clock2 && SUCCEEDED(
             _IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
+   {
+      wasapi_clock_fit(w, pos - w->clock2_start, qpc);
       return (size_t)(pos - w->clock2_start);
+   }
 
    /* Otherwise the stream's position, which is in units of the
     * clock's own frequency rather than in frames - the documentation
@@ -2910,8 +3005,12 @@ static size_t wasapi_frames_consumed(void *wh)
     * at. */
    if (w->clock && w->clock_frequency && w->rate && SUCCEEDED(
             _IAudioClock_GetPosition(w->clock, &pos, &qpc)))
-      return (size_t)(((pos - w->clock_start) * (UINT64)w->rate)
-            / w->clock_frequency);
+   {
+      UINT64 frames = ((pos - w->clock_start) * (UINT64)w->rate)
+            / w->clock_frequency;
+      wasapi_clock_fit(w, frames, qpc);
+      return (size_t)frames;
+   }
 
    if (!w->fifo_lock)
       return 0;
@@ -2964,5 +3063,6 @@ audio_driver_t audio_wasapi = {
    wasapi_frames_consumed,
    wasapi_underruns,
    wasapi_layout,
-   wasapi_frames_consumed_fallback
+   wasapi_frames_consumed_fallback,
+   wasapi_device_clock_ppm
 };
