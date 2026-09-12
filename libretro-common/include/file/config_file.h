@@ -551,8 +551,14 @@ bool config_file_write(config_file_t *conf, const char *path, bool val);
  *
  * Dump the current config to an already opened file.
  * Does not close the file.
+ *
+ * @return true if the whole config was written.  false means
+ * nothing - or not all - of it reached @file: the stream is in
+ * error, or the dump buffer could not be allocated.  A caller
+ * replacing an existing file must not commit the result when this
+ * returns false.
  **/
-void config_file_dump(config_file_t *conf, FILE *file, bool val);
+bool config_file_dump(config_file_t *conf, FILE *file, bool val);
 
 RETRO_END_DECLS
 
