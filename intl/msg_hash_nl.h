@@ -255,7 +255,6 @@ static const struct
    char s_4e447c6c[54];
    char s_d9a51d02[14];
    char s_98760b94[29];
-   char s_af6007a1[12];
    char s_da068369[15];
    char s_daead8a5[7];
    char s_48c208ee[17];
@@ -4385,7 +4384,6 @@ static const struct
    "Tijdelijke oplossing voor het loskoppelen van Android",
    "App-pictogram",
    "Open het ASIO Controlepaneel",
-   "Blok Frames",
    "Audio Apparaat",
    "Geluid",
    "Audio DSP Plugin",
@@ -8572,7 +8570,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174351u
+      (sizeof(msg_hash_nl_blob) == (174339u
 #ifdef ANDROID
        + 375u
 #endif

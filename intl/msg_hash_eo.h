@@ -265,7 +265,6 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[9];
    char s_98760b94[29];
-   char s_af6007a1[17];
    char s_da068369[8];
    char s_daead8a5[5];
    char s_48c208ee[16];
@@ -4612,7 +4611,6 @@ static const struct
    "Aplika\304\265a piktogramo",
    "Hava\304\265oj",
    "Malfermi stirpanelon de ASIO",
-   "Baritaj filmeroj",
    "Aparato",
    "Sono",
    "Kroma\304\265o de DSP",
@@ -9058,7 +9056,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172566u
+      (sizeof(msg_hash_eo_blob) == (172549u
 #ifdef ANDROID
        + 312u
 #endif

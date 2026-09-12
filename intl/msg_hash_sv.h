@@ -259,7 +259,6 @@ static const struct
    char s_d9a51d02[12];
    char s_12e77e8f[9];
    char s_98760b94[26];
-   char s_af6007a1[19];
    char s_da068369[6];
    char s_daead8a5[5];
    char s_48c208ee[18];
@@ -4455,7 +4454,6 @@ static const struct
    "Programikon",
    "Resurser",
    "\303\226ppna ASIO-kontrollpanel",
-   "Blockera bildrutor",
    "Enhet",
    "Ljud",
    "DSP-insticksmodul",
@@ -8897,7 +8895,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (170667u
+      (sizeof(msg_hash_sv_blob) == (170648u
 #ifdef ANDROID
        + 361u
 #endif

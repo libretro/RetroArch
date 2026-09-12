@@ -263,7 +263,6 @@ static const struct
    char s_d9a51d02[10];
    char s_98760b94[27];
    char s_b81eb68d[20];
-   char s_af6007a1[23];
    char s_da068369[12];
    char s_daead8a5[13];
    char s_48c208ee[11];
@@ -2381,7 +2380,6 @@ static const struct
    char s_310ec7bd[80];
    char s_5832a2c2[108];
    char s_6f6e337b[441];
-   char s_f47e544f[294];
    char s_20cc6597[110];
    char s_21b0bad3[54];
    char s_66e9521c[96];
@@ -4628,7 +4626,6 @@ static const struct
    "Appsymbol",
    "ASIO Control Panel \303\266ffnen",
    "ASIO-Ausgabekan\303\244le",
-   "Warte auf Audio-Frames",
    "Audioger\303\244t",
    "Audiotreiber",
    "DSP-Plugin",
@@ -6777,10 +6774,6 @@ static const struct
    "e Lautsprecher oder Kopfh\303\266rer angeschlossen sind. Bitte das Paar ausw\303\244hlen, \303"
    "\274ber das geh\303\266rt wird \342\200\223 so wie vom Ger\303\244t benannt. Ger\303\244te mit z"
    "wei Ausg\303\244ngen haben nur die Paare 1 und 2.",
-   "Anzahl der Frames, die der Audiotreiber pro Block verschiebt. Bei 0 wird der Treiber nach dem ge"
-   "r\303\244tespezifischen Wert gefragt, was in den meisten Konfigurationen gew\303\274nscht ist; e"
-   "in gr\303\266\303\237erer Block geht zu Lasten der Latenz, bietet daf\303\274r aber eine h\303"
-   "\266here Ausfallsicherheit gegen Aussetzer.",
    "Das Standard-Audioger\303\244t, welches vom Audiotreiber verwendet wird, \303\274berschreiben. D"
    "ies ist treiberabh\303\244ngig.",
    "Zu verwendender Audiotreiber. (Neustart erforderlich)",
@@ -9266,7 +9259,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (201319u
+      (sizeof(msg_hash_de_blob) == (201002u
 #ifdef ANDROID
        + 358u
 #endif

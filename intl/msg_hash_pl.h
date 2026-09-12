@@ -267,7 +267,6 @@ static const struct
    char s_12e77e8f[7];
    char s_98760b94[30];
    char s_b81eb68d[24];
-   char s_af6007a1[16];
    char s_da068369[12];
    char s_48c208ee[11];
    char s_a38cafbb[19];
@@ -2448,7 +2447,6 @@ static const struct
    char s_f7cc6630[25];
    char s_310ec7bd[71];
    char s_5832a2c2[103];
-   char s_f47e544f[242];
    char s_20cc6597[86];
    char s_21b0bad3[47];
    char s_66e9521c[82];
@@ -4731,7 +4729,6 @@ static const struct
    "Assety",
    "Otw\303\263rz panel sterowania ASIO",
    "Kana\305\202y wyj\305\233ciowe ASIO",
-   "Zablokuj klatki",
    "Urz\304\205dzenie",
    "Plugin DSP",
    "Usu\305\204 wtyczk\304\231 DSP",
@@ -6954,10 +6951,6 @@ static const struct
    "Zasoby menu u\305\274ywane przez RetroArch s\304\205 przechowywane w tym katalogu.",
    "Otw\303\263rz panel sterowania sterownika ASIO, aby skonfigurowa\304\207 ustawienia routingu i b"
    "uforu urz\304\205dzenia.",
-   "Liczba klatek, kt\303\263r\304\205 przesuwa sterownik audio na blok. 0 pyta sterownik o w\305"
-   "\202asn\304\205 warto\305\233\304\207 urz\304\205dzenia, co jest chciane w wi\304\231kszo\305"
-   "\233ci konfiguracji; wi\304\231kszy blok ma wi\304\231ksze op\303\263\305\272nienie, ale ma wi"
-   "\304\231ksz\304\205 odporno\305\233\304\207 na braki d\305\272wi\304\231ku.",
    "Zast\304\205p domy\305\233lne urz\304\205dzenie audio u\305\274ywane przez sterownik. Zale\305"
    "\274ne od sterownika.",
    "Sterownik audio do u\305\274ycia. (Wymagany restart)",
@@ -9612,7 +9605,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (191859u
+      (sizeof(msg_hash_pl_blob) == (191601u
 #ifdef ANDROID
        + 385u
 #endif

@@ -267,7 +267,6 @@ static const struct
    char s_12e77e8f[9];
    char s_98760b94[31];
    char s_b81eb68d[26];
-   char s_af6007a1[30];
    char s_da068369[12];
    char s_48c208ee[11];
    char s_a38cafbb[18];
@@ -2466,7 +2465,6 @@ static const struct
    char s_310ec7bd[74];
    char s_5832a2c2[106];
    char s_6f6e337b[484];
-   char s_f47e544f[283];
    char s_20cc6597[99];
    char s_21b0bad3[79];
    char s_66e9521c[75];
@@ -4735,7 +4733,6 @@ static const struct
    "Recursos",
    "Abrir panel de control de ASIO",
    "Canales de salida de ASIO",
-   "Fotogramas por trama de audio",
    "Dispositivo",
    "Plugin DSP",
    "Quitar plugin DSP",
@@ -6973,10 +6970,6 @@ static const struct
    "us altavoces o auriculares. Selecciona la pareja que coincida con las clavijas que est\303\251s "
    "escuchando seg\303\272n est\303\251n nombradas por el dispositivo. Los dispositivos con solo dos"
    " salidas solo tendr\303\241n las salidas 1-2.",
-   "Indica la cantidad de fotogramas que mover\303\241 el controlador de audio por bloque. Un valor "
-   "de 0 pedir\303\241 al controlador el valor del dispositivo, que es lo que esperan la mayor\303"
-   "\255a de configuraciones; un valor m\303\241s grande compensa la resistencia contra p\303\251rdi"
-   "das de audio con latencia.",
    "Fuerza el dispositivo que utilizar\303\241 el controlador de audio. Este ajuste depende del cont"
    "rolador.",
    "Selecciona el controlador de audio que se utilizar\303\241 (es necesario reiniciar).",
@@ -9598,7 +9591,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (218493u
+      (sizeof(msg_hash_es_blob) == (218180u
 #ifdef ANDROID
        + 329u
 #endif

@@ -572,6 +572,25 @@ def pack(text, lang, source=None):
     out.append('')
     return '\n'.join(out)
 
+def verify(text, lang, name):
+    """Refuse to write a header whose blob and ids[] disagree.
+
+    The two are paired by position at runtime and by nothing the
+    compiler can check, so tools/msg_hash_packed_check.py re-derives the
+    pairing from the member names and the guards. Running it here means
+    a header in the tree has passed it whatever route it arrived by.
+    """
+    sys.path.insert(0, os.path.join(
+          os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
+    import msg_hash_packed_check
+    errors = msg_hash_packed_check.check_text(text, lang, name)
+    if errors:
+        for e in errors:
+            print(e, file=sys.stderr)
+        raise SystemExit('packed emitter: %s failed verification' % name)
+    return text
+
+
 LANG = h_basename.replace('msg_hash_', '').replace('.h', '')
 
 if repack_mode:
@@ -587,7 +606,7 @@ if repack_mode:
             sys.exit(0)
         raise SystemExit('packed emitter: no MSG_HASH rows in ' + h_filename)
     with open(h_filename, 'w', encoding='utf-8') as f:
-        f.write(pack(text, LANG))
+        f.write(verify(pack(text, LANG), LANG, h_filename))
     sys.exit(0)
 
 with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
@@ -601,5 +620,6 @@ with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
                 h_file.seek(0)
                 _src_bytes = dict((k, v.encode('utf-8'))
                                   for k, v in source_messages.items())
-                h_file.write(pack(new_translation, LANG, _src_bytes))
+                h_file.write(verify(pack(new_translation, LANG, _src_bytes),
+                                    LANG, h_filename))
                 h_file.truncate()

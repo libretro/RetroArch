@@ -178,7 +178,6 @@ static const struct
    char s_4e447c6c[38];
    char s_d9a51d02[19];
    char s_12e77e8f[10];
-   char s_af6007a1[14];
    char s_da068369[6];
    char s_daead8a5[7];
    char s_48c208ee[19];
@@ -3661,7 +3660,6 @@ static const struct
    "Android-yhteyden katkaisun kiertotapa",
    "Sovelluksen kuvake",
    "Resurssit",
-   "Est\303\244 kuvissa",
    "Laite",
    "\303\204\303\244ni",
    "DSP-liit\303\244nn\303\244inen",
@@ -7457,7 +7455,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124130u
+      (sizeof(msg_hash_fi_blob) == (124116u
 #ifdef HAVE_LAKKA
        + 257u
 #endif

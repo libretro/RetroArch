@@ -258,7 +258,6 @@ static const struct
    char s_4e447c6c[48];
    char s_d9a51d02[17];
    char s_12e77e8f[12];
-   char s_af6007a1[17];
    char s_da068369[7];
    char s_daead8a5[4];
    char s_48c208ee[14];
@@ -4483,7 +4482,6 @@ static const struct
    "Android ba\304\237lant\304\261 kesilmesi ge\303\247ici \303\247\303\266z\303\274m\303\274",
    "Uygulama Simgesi",
    "\304\260\303\247erikler",
-   "Kareleri Engelle",
    "Ayg\304\261t",
    "Ses",
    "DSP Eklentisi",
@@ -9180,7 +9178,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170931u
+      (sizeof(msg_hash_tr_blob) == (170914u
 #ifdef ANDROID
        + 340u
 #endif

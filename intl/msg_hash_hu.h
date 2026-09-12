@@ -262,7 +262,6 @@ static const struct
    char s_d9a51d02[22];
    char s_12e77e8f[26];
    char s_98760b94[31];
-   char s_af6007a1[21];
    char s_da068369[8];
    char s_daead8a5[5];
    char s_48c208ee[17];
@@ -4644,7 +4643,6 @@ static const struct
    "Az alkalmaz\303\241s ikonja",
    "Be\303\251p\303\255tett m\303\251diaf\303\241jlok",
    "ASIO vez\303\251rl\305\221pult megnyit\303\241sa",
-   "Keretek blokkonk\303\251nt",
    "Eszk\303\266z",
    "Hang",
    "DSP b\305\221v\303\255tm\303\251ny",
@@ -9718,7 +9716,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188989u
+      (sizeof(msg_hash_hu_blob) == (188968u
 #ifdef ANDROID
        + 316u
 #endif

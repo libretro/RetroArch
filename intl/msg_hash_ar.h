@@ -138,7 +138,6 @@ static const struct
    char s_e011fe61[79];
 #endif
    char s_12e77e8f[13];
-   char s_af6007a1[24];
    char s_da068369[13];
    char s_daead8a5[31];
    char s_48c208ee[15];
@@ -2767,7 +2766,6 @@ static const struct
    "\210\331\211",
 #endif
    "\330\247\331\204\330\243\330\265\331\210\331\204",
-   "\330\255\330\270\330\261 \330\247\331\204\330\245\330\267\330\247\330\261\330\247\330\252",
    "\330\247\331\204\330\254\331\207\330\247\330\262",
    "\331\206\330\270\330\247\331\205 \330\252\330\264\330\272\331\212\331\204 \330\247\331\204\330"
    "\265\331\210\330\252",
@@ -7925,7 +7923,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107560u
+      (sizeof(msg_hash_ar_blob) == (107536u
 #ifdef HAVE_LAKKA
        + 287u
 #endif

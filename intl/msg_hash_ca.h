@@ -265,7 +265,6 @@ static const struct
    char s_12e77e8f[9];
    char s_98760b94[40];
    char s_b81eb68d[23];
-   char s_af6007a1[22];
    char s_da068369[11];
    char s_daead8a5[7];
    char s_48c208ee[14];
@@ -2414,7 +2413,6 @@ static const struct
    char s_310ec7bd[72];
    char s_5832a2c2[111];
    char s_6f6e337b[402];
-   char s_f47e544f[243];
    char s_20cc6597[92];
    char s_21b0bad3[57];
    char s_66e9521c[80];
@@ -4647,7 +4645,6 @@ static const struct
    "Recursos",
    "Obre el panell de configuraci\303\263 de ASIO",
    "Canals de sortida ASIO",
-   "Bloquejant fotogrames",
    "Dispositiu",
    "\303\200udio",
    "Connector DSP",
@@ -6836,9 +6833,6 @@ static const struct
    "imera parella no sempre \303\251s la que tenen els altaveus o auriculars. Trieu la parella que c"
    "oincideixi amb els jacks que esteu escoltant, tal com els anomena el dispositiu. Els dispositius"
    " de dues sortides nom\303\251s tenen 1-2.",
-   "Nombre de fotogrames que el controlador d'\303\240udio mou per bloc. L'opci\303\263 0 pregunta a"
-   "l controlador pel seu propi valor, el qual \303\251s el millor valor per moltes configuracions; "
-   "un valor alt augmenta la lat\303\250ncia a canvi de reduir les estrebades.",
    "For\303\247a el dispositiu que fa servir el controlador d\342\200\231\303\240udio. Aix\303\262 d"
    "ep\303\250n del controlador.",
    "Controlador d'\303\240udio que es far\303\240 servir (cal reiniciar)",
@@ -9344,7 +9338,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (203358u
+      (sizeof(msg_hash_ca_blob) == (203093u
 #ifdef ANDROID
        + 281u
 #endif

@@ -261,7 +261,6 @@ static const struct
    char s_4e447c6c[31];
    char s_d9a51d02[10];
    char s_12e77e8f[14];
-   char s_af6007a1[14];
    char s_da068369[18];
    char s_48c208ee[17];
    char s_a38cafbb[19];
@@ -4436,7 +4435,6 @@ static const struct
    "Disconnetti Android workaround",
    "Icona App",
    "Risorse/Asset",
-   "Blocchi Frame",
    "Dispositivo audio",
    "Plugin Audio DSP",
    "Rimuovi plugin DSP",
@@ -8694,7 +8692,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183539u
+      (sizeof(msg_hash_it_blob) == (183525u
 #ifdef ANDROID
        + 376u
 #endif

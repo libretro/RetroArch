@@ -262,7 +262,6 @@ static const struct
    char s_d9a51d02[17];
    char s_12e77e8f[7];
    char s_98760b94[31];
-   char s_af6007a1[18];
    char s_da068369[11];
    char s_daead8a5[5];
    char s_48c208ee[20];
@@ -4592,7 +4591,6 @@ static const struct
    "Ikona aplik\303\241cie",
    "Assety",
    "Otvori\305\245 ovl\303\241dac\303\255 panel ASIO",
-   "Blokova\305\245 sn\303\255mky",
    "Zariadenie",
    "Zvuk",
    "DPS z\303\241suvn\303\275 modul",
@@ -9416,7 +9414,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179358u
+      (sizeof(msg_hash_sk_blob) == (179340u
 #ifdef ANDROID
        + 389u
 #endif

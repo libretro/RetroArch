@@ -265,7 +265,6 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[8];
    char s_98760b94[28];
-   char s_af6007a1[18];
    char s_da068369[12];
    char s_daead8a5[4];
    char s_48c208ee[16];
@@ -4576,7 +4575,6 @@ static const struct
    "Icona da aplicaci\303\263n",
    "Activos",
    "Abrir panel de control ASIO",
-   "Bloque fotogramas",
    "Dispositivo",
    "Son",
    "Complemento DSP",
@@ -9092,7 +9090,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (193900u
+      (sizeof(msg_hash_gl_blob) == (193882u
 #ifdef ANDROID
        + 365u
 #endif

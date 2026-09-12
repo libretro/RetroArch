@@ -1,0 +1,79 @@
+name: CI msg_hash packed tables
+
+# intl/msg_hash_<lang>.h is generated as two objects that are paired by
+# position: the blob struct holds every row as one run of NUL-terminated
+# strings, and ids[] names the enum each row belongs to.
+# msg_hash_strtab_index_build() walks the blob once and hands row N to
+# ids[N].
+#
+# Nothing in the C ties them together. Both objects are well formed on
+# their own, and the sizeof() contiguity check inside the header only
+# measures the blob against itself, so a row removed from one side and
+# left on the other compiles clean everywhere and renames every row
+# after it at runtime. The menu then shows real translated strings
+# belonging to other entries - which is what #19534 reported, in every
+# language at once. English is unaffected, because msg_hash_us.c is a
+# switch rather than a packed table, so no English-language test, manual
+# or automated, can see it either.
+#
+# 5d0f721 did exactly that: retiring audio_block_frames took
+# MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES and its sublabel out of ids[]
+# in twenty-nine headers and left the two blob members behind. From the
+# audio device row onward every language was off by one or two.
+#
+# The check re-derives the pairing from the member names - json2h.py
+# names each member after the djb2 hash of the key its row was emitted
+# for - and compares it against ids[] row for row, under the guards. It
+# reads the files rather than building them, so it covers every
+# language and every #ifdef configuration at once, which no build job
+# does. intl/json2h.py runs the same check on its own output before
+# writing, so this is the lane that catches a header edited by hand.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  msg-hash-packed-check:
+    name: blob and ids[] pairing
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: a consistent table is clean, 5d0f721's shape
+          # (a row dropped from ids[] only) is caught, so is its mirror,
+          # a member one byte wider than its string, a guard present on
+          # one side only, and a contiguity constant left stale.
+          #
+          # The fixtures are built by the checker rather than lifted
+          # from intl/, so this reports the same thing whether or not
+          # the shipped headers currently pass - it is measuring the
+          # checker, not the tree.
+          python3 tools/msg_hash_packed_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # Every packed header: row N's member name must be what the
+          # key in ids[N] hashes to and carry the same guard, each
+          # member must be exactly its string plus the NUL (or exactly
+          # the chunk, for a non-final chunk of a split row), no row may
+          # hold an embedded NUL, and the sizeof() check must still add
+          # up to the members it guards.
+          python3 tools/msg_hash_packed_check.py

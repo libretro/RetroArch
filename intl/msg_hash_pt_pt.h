@@ -120,7 +120,6 @@ static const struct
    char s_29398124[35];
    char s_2e5078b2[12];
    char s_12e77e8f[9];
-   char s_af6007a1[20];
    char s_da068369[19];
    char s_daead8a5[7];
    char s_48c208ee[18];
@@ -1558,7 +1557,6 @@ static const struct
    "Adicionar \303\240 lista de reprodu\303\247\303\243o",
    "Servi\303\247o IA",
    "Recursos",
-   "Bloquear fotogramas",
    "Dispositivo de som",
    "\303\201udio",
    "Plugin de som DSP",
@@ -2985,7 +2983,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54869u
+      (sizeof(msg_hash_pt_pt_blob) == (54849u
 #ifdef HAVE_LAKKA
        + 17u
 #endif

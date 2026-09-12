@@ -269,7 +269,6 @@ static const struct
    char s_12e77e8f[12];
    char s_98760b94[40];
    char s_b81eb68d[22];
-   char s_af6007a1[17];
    char s_da068369[16];
    char s_daead8a5[7];
    char s_48c208ee[12];
@@ -2456,7 +2455,6 @@ static const struct
    char s_310ec7bd[80];
    char s_5832a2c2[132];
    char s_6f6e337b[468];
-   char s_f47e544f[288];
    char s_20cc6597[108];
    char s_21b0bad3[48];
    char s_66e9521c[77];
@@ -4762,7 +4760,6 @@ static const struct
    "Ressources ",
    "Ouvrir le panneau de configuration ASIO",
    "Canaux de sortie ASIO",
-   "Taille des blocs",
    "P\303\251riph\303\251rique ",
    "Audio ",
    "Module DSP ",
@@ -6998,10 +6995,6 @@ static const struct
    "ant aux prises utilis\303\251es pour l'\303\251coute, telles qu'indiqu\303\251es par le p\303"
    "\251riph\303\251rique. Les p\303\251riph\303\251riques \303\240 deux sorties n'affichent que les"
    " sorties 1 et 2.",
-   "Nombre d'images que le pilote audio traite par bloc. 0 demande au pilote d'utiliser la valeur pr"
-   "opre au p\303\251riph\303\251rique, ce qui convient \303\240 la plupart des configurations ; une"
-   " taille de bloc plus importante privil\303\251gie la stabilit\303\251 (en \303\251vitant les cou"
-   "pures) au d\303\251triment de la latence.",
    "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
    "io. Cette option d\303\251pend du pilote.",
    "Pilote audio \303\240 utiliser. (Red\303\251marrage requis)",
@@ -9747,7 +9740,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (226416u
+      (sizeof(msg_hash_fr_blob) == (226111u
 #ifdef ANDROID
        + 373u
 #endif

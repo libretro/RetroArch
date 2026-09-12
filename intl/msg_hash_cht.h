@@ -243,7 +243,6 @@ static const struct
 #endif
    char s_4e447c6c[38];
    char s_12e77e8f[13];
-   char s_af6007a1[13];
    char s_da068369[7];
    char s_daead8a5[7];
    char s_48c208ee[13];
@@ -4494,7 +4493,6 @@ static const struct
    "\346\216\247\345\210\266\345\231\250\346\226\267\351\226\213\350\247\243\346\261\272\346\226\271"
    "\346\263\225 (Android)",
    "\351\201\270\345\226\256\344\270\273\351\241\214",
-   "\345\215\200\345\241\212\345\271\200\346\225\270",
    "\350\243\235\347\275\256",
    "\351\237\263\346\225\210",
    "\351\237\263\350\250\212\346\217\222\344\273\266",
@@ -10470,7 +10468,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (121375u
+      (sizeof(msg_hash_cht_blob) == (121362u
 #ifdef ANDROID
        + 157u
 #endif
