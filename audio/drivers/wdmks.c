@@ -1832,8 +1832,9 @@ static void wdmks_rt_report_latency(wdmks_t *w)
  * an iteration costs - the same reasoning as the ASIO teardown wait,
  * and the same clock. */
 static size_t wdmks_rt_free(wdmks_t *w);
+static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
 
-static void wdmks_rt_wait_room(wdmks_t *w)
+static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
 {
    retro_time_t deadline;
    retro_time_t period_usec;
@@ -1859,11 +1860,50 @@ static void wdmks_rt_wait_room(wdmks_t *w)
       return;
    }
 
-   period_usec = (w->frame_bytes && w->rate)
-      ? (retro_time_t)(w->rt_size / w->frame_bytes) * 1000000 / w->rate
-      : 1000;
+   /* No event, so the wait has to be computed - but from the device's
+    * own progress rather than from a fixed interval.
+    *
+    * The cursor says where the hardware is; the rate says how fast it
+    * moves. Between them they say when the room being waited for will
+    * exist, which is a far better thing to wait for than "a while":
+    * a ring's worth of time was an upper bound that had nothing to do
+    * with how much was actually needed.
+    *
+    * want is what the caller could not fit. If the answer comes out
+    * at nothing - no rate, or the room is already there - this falls
+    * through to a short yield and looks again. */
+   period_usec = 0;
+   if (w->frame_bytes && w->rate && want)
+   {
+      ULONG  play = 0;
+      size_t have = 0;
+
+      if (wdmks_rt_play_offset(w, &play))
+      {
+         size_t gap = (size_t)((play + w->rt_size - w->rt_write)
+               % w->rt_size);
+         have = (gap > w->frame_bytes) ? gap - w->frame_bytes : 0;
+      }
+      if (want > have)
+      {
+         size_t short_by = want - have;
+         period_usec     = (retro_time_t)(short_by / w->frame_bytes)
+            * 1000000 / w->rate;
+      }
+   }
+
+   /* Floors and ceilings on it: below a few hundred microseconds the
+    * wait costs more than the yield it replaces, and no wait here
+    * should outlive the ring - past that something has stopped and
+    * the caller's own bound should be what notices. */
    if (period_usec < 500)
       period_usec = 500;
+   {
+      retro_time_t ring_usec = (retro_time_t)(w->rt_size / w->frame_bytes)
+         * 1000000 / w->rate;
+      if (ring_usec && period_usec > ring_usec)
+         period_usec = ring_usec;
+   }
 
    deadline = cpu_features_get_time_usec() + period_usec;
    do
@@ -2056,9 +2096,10 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
          if (!laps--)
             break;
          /* The event where the driver gives one, which is what keeps
-          * this fed when the process is not in the foreground; a
-          * millisecond otherwise. */
-         wdmks_rt_wait_room(w);
+          * this fed when the process is not in the foreground; where
+          * there is none, a wait computed from what is still to be
+          * placed and how fast the device is taking it. */
+         wdmks_rt_wait_room(w, size - done);
          if (!(room = wdmks_rt_free(w)))
             continue;
       }
@@ -2555,7 +2596,7 @@ static size_t wdmks_wait_writable(void *data, size_t len)
           *
           * Bounded either way: a device that has stopped returns
           * nothing rather than holding the audio thread. */
-         wdmks_rt_wait_room(w);
+         wdmks_rt_wait_room(w, len);
          continue;
       }
 
