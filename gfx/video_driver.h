@@ -1273,11 +1273,16 @@ bool video_driver_cached_frame_info(
  * post-invalidation), the callback is invoked with data == NULL
  * so the caller can branch cleanly.
  *
- * Safe to call from any thread.  Holds the cached-frame lifetime
- * lock for the duration of the callback, so the caller should
- * copy out anything it needs to retain.  Concurrent core close /
- * driver reinit will block until the callback returns; keep the
- * callback short.
+ * Safe to call from any thread.  The pointer is protected by a
+ * hazard slot for the duration of the callback, so the memory
+ * cannot be freed underneath it; the caller must still copy out
+ * anything it needs to retain past the return.  A concurrent
+ * teardown (video_driver_cached_frame_retire) spins until the
+ * callback returns, so keep it short -- but note that ordinary
+ * frame publishing is never blocked by a reader.
+ *
+ * If every hazard slot is busy the callback is invoked with
+ * data == NULL rather than waiting.
  */
 void video_driver_cached_frame_read(
       void *userdata,
@@ -1323,33 +1328,35 @@ void video_driver_cached_frame_publish(
 /**
  * video_driver_cached_frame_invalidate:
  *
- * Producer-side clear: NULL out the cached frame's data pointer
- * and zero its dims, atomically, under the lifetime lock.  Called
- * from driver-resource teardown sites that are about to free
- * memory the cached frame might point into (vulkan's
- * swapchain-texture deinit, d3d12's SW FB Release / Unmap), and
- * from runloop lifecycle transitions (content unload, core
- * deinit, video driver reinit).
+ * Producer-side clear: forget the cached frame.  Does NOT wait for
+ * readers.  Use at lifecycle points where the cached frame merely
+ * stops being meaningful and the memory it named is not being
+ * released (content unload, core deinit, a reinit that leaves core
+ * memory alone).
  *
- * On return, the buffer the cached frame previously pointed at
- * is safe to free -- any concurrent reader has completed.  This
- * is the key contract the rest of the redesign rests on.
+ * If the buffer is about to be freed or unmapped, use
+ * video_driver_cached_frame_retire() instead.
  *
  * Safe from any thread.
  */
 void video_driver_cached_frame_invalidate(void);
 
 /**
- * video_driver_cached_frame_invalidate_if:
+ * video_driver_cached_frame_retire:
  *
- * Conditionally invalidates the cached frame while holding its lifetime
- * lock. The predicate must not call another cached-frame API.
+ * Producer-side clear that additionally guarantees no reader is
+ * still inside the cached frame.  Call immediately before freeing
+ * or unmapping memory the cache may point into -- driver teardown,
+ * swapchain texture recreation, core close.  On return the memory
+ * is safe to release.
  *
- * Returns true when the cached frame was invalidated.
+ * Spins until in-flight readers finish, so it belongs on lifecycle
+ * paths only, never on the frame path.  Correct regardless of who
+ * owns the buffer, which is why it needs no predicate.
+ *
+ * Safe from any thread.
  */
-bool video_driver_cached_frame_invalidate_if(
-      void *userdata,
-      bool (*predicate)(void *userdata, const void *data));
+void video_driver_cached_frame_retire(void);
 
 bool video_driver_is_hw_context(void);
 

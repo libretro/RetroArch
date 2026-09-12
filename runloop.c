@@ -4414,7 +4414,9 @@ static bool core_unload_game(void)
 
    video_driver_free_hw_context();
 
-   video_driver_cached_frame_invalidate();
+   /* The core owns the buffer the cache points at and is about to
+    * close: wait out any reader before it goes. */
+   video_driver_cached_frame_retire();
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -4563,7 +4565,7 @@ void runloop_event_deinit_core(void)
       input_st->core_gyro_rate       = 0;
    }
 
-   video_driver_cached_frame_invalidate();
+   video_driver_cached_frame_retire();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -9125,7 +9127,8 @@ void core_reset(void)
     * cores or on drivers that do not implement the hook. */
    video_driver_invalidate_hw_render_cache();
 
-   video_driver_cached_frame_invalidate();
+   /* retro_reset() may reallocate the core's framebuffer. */
+   video_driver_cached_frame_retire();
    runloop_st->current_core.retro_reset();
 }
 

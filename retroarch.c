@@ -1986,6 +1986,10 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 
    if (flags & DRIVER_VIDEO_AND_INPUT_MASK)
    {
+      /* video_driver_free_internal() releases driver memory the
+       * cached frame can point into (a lent software framebuffer),
+       * so retire while that memory is still mapped. */
+      video_driver_cached_frame_retire();
       video_driver_free_internal();
 #ifdef HAVE_THREADS
       slock_free(video_st->display_lock);
@@ -1994,7 +1998,6 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       video_st->context_lock      = NULL;
 #endif
       video_st->data              = NULL;
-      video_driver_cached_frame_invalidate();
    }
 
    if (flags & DRIVER_AUDIO_MASK)

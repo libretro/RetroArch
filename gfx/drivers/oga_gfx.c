@@ -43,6 +43,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -329,6 +330,11 @@ static void oga_free(void *data)
 
    for (i = 0; i < NUM_PAGES; ++i)
       oga_destroy_framebuf(vid->pages[i]);
+
+   /* frame_surface->map is handed to the core through
+    * oga_get_current_software_framebuffer, so the cached frame can
+    * point straight into it. Retire before tearing it down. */
+   video_driver_cached_frame_retire();
 
    oga_destroy_surface(vid->frame_surface);
    oga_destroy_surface(vid->msg_surface);

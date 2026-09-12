@@ -20,6 +20,7 @@
 
 #include <retro_atomic.h>
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
 #include <memalign.h>
@@ -3811,29 +3812,117 @@ void video_driver_cached_frame(void)
    recording_st->data             = recording;
 }
 
-/* Commit 1 of the frame-cache redesign: new API surface implemented
- * as thin wrappers over the existing video_driver_state_t fields.
- * No behavioural change vs accessing frame_cache_data directly.
- * Lifetime / thread-safety guarantees described in the headers are
- * NOT yet enforced -- they become real in the later commit that
- * makes the storage private and adds the lifetime lock.  Until
- * then these wrappers are equivalent to direct field reads and
- * exist so consumers can be migrated one at a time without
- * waiting on the structural work.
- */
-/* Lifetime lock for the frame_cache_* fields.  Reads
- * (cached_frame_info / cached_frame_read / cached_frame_is_hw_render)
- * take it shared with writes (publish / invalidate).  The
- * cached_frame_read callback runs inside the lock so that any
- * buffer the cached pointer references is guaranteed to remain
- * mapped / allocated for the duration of the callback -- the
- * write side (in particular the driver-resource teardown paths
- * that previously had to use cooperative defensive NULL-outs)
- * blocks here until the callback returns.
+/* ---------------------------------------------------------------
+ * Cached-frame lifetime
+ *
+ * frame_cache_data is a borrowed pointer.  Three kinds of owner:
+ *
+ *   - the core's own framebuffer (the common case),
+ *   - memory the video driver lent the core through
+ *     GET_CURRENT_SOFTWARE_FRAMEBUFFER (vulkan swapchain texture
+ *     maps, d3d12's persistent map, oga's RGA surface).  Note this
+ *     only happens on the non-threaded path: the threaded wrapper
+ *     lends one of its own slot buffers and never forwards the hook
+ *     to the driver,
+ *   - the RETRO_HW_FRAME_BUFFER_VALID sentinel, which is not a
+ *     pointer at all.
+ *
+ * Only the first two can be freed underneath a reader, and only at
+ * lifecycle transitions: driver teardown / unmap, core unload,
+ * driver reinit.  Steady-state frame publishing never frees
+ * anything.
+ *
+ * So readers are protected with hazard pointers rather than a lock.
+ * A reader arms a slot with the pointer it is about to touch and
+ * re-validates; a teardown path bumps the generation and then spins
+ * until no slot still names memory it is about to release.  The
+ * waiting is entirely on the teardown side, which already does
+ * vkDeviceWaitIdle-class work and runs once per lifecycle event.
+ * video_driver_frame()'s publish never blocks on a reader.
+ *
+ * The protocol needs StoreLoad ordering on both sides: the reader
+ * arms then re-reads the generation, the retiring side bumps the
+ * generation then reads the slots.  Both use acq_rel read-modify-
+ * write ops, which every backend retro_atomic.h currently selects
+ * implements with a full barrier (lock-prefixed on x86/MSVC,
+ * ldaxr/stlxr on ARM, __sync_* full barriers, OSAtomic barriers).
+ * If a seq_cst primitive is ever added to retro_atomic.h this is
+ * the call site that should adopt it.
+ * --------------------------------------------------------------- */
+
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE) && defined(RETRO_ATOMIC_HAS_PTR) && defined(RETRO_ATOMIC_HAS_CAS)
+#define FRAME_CACHE_HAZARDS 1
+#endif
+
+#ifdef FRAME_CACHE_HAZARDS
+/* Bounded by the number of consumers that can be inside a read at
+ * once: screenshot, translation, GameAI, the reinit snapshot and
+ * the win32 sizemove tick.  Eight leaves headroom; a reader that
+ * finds none free falls back to reporting no frame rather than
+ * waiting, which is the same answer it would get from an
+ * invalidated cache. */
+#define FRAME_CACHE_HAZARD_SLOTS 8
+
+static retro_atomic_ptr_t frame_cache_hazard[FRAME_CACHE_HAZARD_SLOTS];
+
+/* Bumped by every retire.  A reader that sees it move between
+ * arming and re-validating knows a teardown raced it and retries
+ * against the new state. */
+static retro_atomic_int_t frame_cache_generation;
+
+/* Arm a hazard slot with @ptr.  Returns the slot index, or -1 when
+ * every slot is taken. */
+static int frame_cache_hazard_acquire(const void *ptr)
+{
+   int i;
+   for (i = 0; i < FRAME_CACHE_HAZARD_SLOTS; i++)
+      if (retro_atomic_cas_ptr(&frame_cache_hazard[i], NULL, (void*)ptr))
+         return i;
+   return -1;
+}
+
+static INLINE void frame_cache_hazard_release(int slot)
+{
+   if (slot >= 0)
+      retro_atomic_store_release_ptr(&frame_cache_hazard[slot], NULL);
+}
+
+/* Spin until no hazard slot names @ptr.  @ptr == NULL means "any
+ * pointer", used by the unconditional teardown paths.  The
+ * callbacks readers run under a hazard are bounded (a framebuffer
+ * memcpy at worst), so this is a short spin on a path that is
+ * already slow; there is deliberately no yield, because the PS2
+ * backend is excluded from this whole codepath and every target
+ * that reaches here is preemptively scheduled. */
+static void frame_cache_hazard_drain(const void *ptr)
+{
+   int i;
+   for (i = 0; i < FRAME_CACHE_HAZARD_SLOTS; i++)
+   {
+      const void *held;
+      while ((held = (const void*)
+               retro_atomic_load_acquire_ptr(&frame_cache_hazard[i])))
+      {
+         if (ptr && held != ptr)
+            break;
+         retro_cpu_relax();
+      }
+   }
+}
+#else
+#define frame_cache_hazard_acquire(ptr) (0)
+#define frame_cache_hazard_release(slot) ((void)0)
+#define frame_cache_hazard_drain(ptr)    ((void)0)
+#endif
+
+/* Tuple lock.  Guards the atomicity of the
+ * (data, width, height, pitch) tuple; lifetime is the hazard
+ * array's job above.  Readers do not hold it across their callback,
+ * so a publish waits at most on another publish's four stores.
+ * A seqlock here would drop the publish side's lock entirely.
  *
  * HAVE_THREADS-gated: builds without threading support degenerate
- * to no-op locking, same as the rest of video_driver.c.
- */
+ * to no-op locking, same as the rest of video_driver.c. */
 #ifdef HAVE_THREADS
 static slock_t *cached_frame_lock = NULL;
 
@@ -3892,42 +3981,101 @@ void video_driver_cached_frame_read(
                  const void *data,
                  unsigned width, unsigned height, size_t pitch))
 {
-   const void           *data;
-   unsigned              width    = 0;
-   unsigned              height   = 0;
-   size_t                pitch    = 0;
-   bool                  hw_or_empty;
+   const void *data;
+   unsigned    width  = 0;
+   unsigned    height = 0;
+   size_t      pitch  = 0;
+   int         hazard = -1;
+#ifdef FRAME_CACHE_HAZARDS
+   int         gen;
+#endif
 
    if (!cb)
       return;
 
-   /* Hold the lock for the duration of the callback so that any
-    * concurrent driver-resource teardown (vulkan_deinit_textures,
-    * d3d12_sw_fb_ensure / _gfx_free, runloop lifecycle resets)
-    * blocks until the callback returns.  This is the core safety
-    * guarantee the redesign introduces: the pointer handed to the
-    * callback cannot be freed out from under it. */
+#ifndef FRAME_CACHE_HAZARDS
+   /* No hazard support on this target (no threads, or no lock-free
+    * atomics): hold the tuple lock across the callback instead.
+    * Correct, at the cost of stalling a concurrent publish for the
+    * callback's duration.  Single-threaded builds degenerate to
+    * no-op locking and pay nothing. */
    cached_frame_lock_acquire();
-   data        = frame_cache_data;
-   hw_or_empty = (!data || data == RETRO_HW_FRAME_BUFFER_VALID);
-   if (!hw_or_empty)
+   data   = frame_cache_data;
+   if (data && data != RETRO_HW_FRAME_BUFFER_VALID)
    {
       width  = frame_cache_width;
       height = frame_cache_height;
       pitch  = frame_cache_pitch;
    }
-
-   /* Hand the callback NULL when no CPU pixels are available, so
-    * the consumer doesn't have to special-case the HW-render
-    * sentinel or a yet-uninitialised cache.  Same convention as
-    * cached_frame_info()'s has_cpu_pixels=false. */
-   cb(userdata, hw_or_empty ? NULL : data, width, height, pitch);
+   else
+      data   = NULL;
+   cb(userdata, data, width, height, pitch);
    cached_frame_lock_release();
+   (void)hazard;
+   return;
+#else
+   for (;;)
+   {
+      /* Sample the generation BEFORE the tuple.  Every retire from
+       * this point on is then caught by the re-validate below.
+       * Sampling it after the snapshot leaves a window in which a
+       * whole retire fits: it frees the buffer and bumps the
+       * generation, the re-validate compares equal, and the callback
+       * runs on freed memory.  samples/gfx/cached_frame_hazard
+       * guards this ordering. */
+      gen    = retro_atomic_load_acquire_int(&frame_cache_generation);
+
+      cached_frame_lock_acquire();
+      data   = frame_cache_data;
+      width  = frame_cache_width;
+      height = frame_cache_height;
+      pitch  = frame_cache_pitch;
+      cached_frame_lock_release();
+
+      /* Nothing to guard: the sentinel is not a pointer and an
+       * empty cache has nothing to free.  Hand the callback NULL so
+       * the consumer doesn't have to special-case either, matching
+       * cached_frame_info()'s has_cpu_pixels == false. */
+      if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
+      {
+         cb(userdata, NULL, 0, 0, 0);
+         return;
+      }
+
+      hazard = frame_cache_hazard_acquire(data);
+      if (hazard < 0)
+      {
+         /* Every slot busy.  Report no pixels rather than spin: the
+          * caller gets the same answer an invalidated cache would
+          * give it, and nothing upstream of here is allowed to block
+          * on a reader. */
+         cb(userdata, NULL, 0, 0, 0);
+         return;
+      }
+
+      /* Re-validate under the hazard.  If a retire ran between the
+       * snapshot above and the arm, the generation moved and the
+       * pointer we are holding may already be gone -- drop it and
+       * start over against whatever is published now.  If the retire
+       * starts after this point it will see our slot and wait. */
+      if (retro_atomic_load_acquire_int(&frame_cache_generation) != gen)
+      {
+         frame_cache_hazard_release(hazard);
+         hazard = -1;
+         continue;
+      }
+
+      break;
+   }
+
+   cb(userdata, data, width, height, pitch);
+   frame_cache_hazard_release(hazard);
+#endif
 }
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
-   bool                  is_hw;
+   bool is_hw;
    cached_frame_lock_acquire();
    is_hw =    frame_cache_data
            && frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID;
@@ -3938,9 +4086,11 @@ bool video_driver_cached_frame_is_hw_render(void)
 /* Producer-side publish: install a new cached frame metadata
  * tuple.  Called from video_driver_frame, from the
  * command_event_reinit replay path, and from the
- * task_screenshot.c::supports_read_frame_raw block.  Takes the
- * lock; any in-flight cached_frame_read callback completes before
- * the publish becomes visible. */
+ * task_screenshot.c::supports_read_frame_raw block.
+ *
+ * Never waits on a reader: readers hold a hazard slot, not this
+ * lock, so the longest a publish can be delayed is another
+ * publisher's four stores. */
 void video_driver_cached_frame_publish(
       const void *data, unsigned width, unsigned height, size_t pitch)
 {
@@ -3966,13 +4116,14 @@ void video_driver_cached_frame_publish(
    cached_frame_lock_release();
 }
 
-/* Producer-side invalidate: clear the cached frame.  Drivers call
- * this before releasing any buffer they suspect the cached frame
- * might point into; runloop calls it at content / core / driver
- * lifecycle transitions.  Takes the lock; any in-flight
- * cached_frame_read callback completes before the invalidation
- * becomes visible, so the buffer is safe to free immediately
- * after this returns. */
+/* Producer-side invalidate: forget the cached frame.
+ *
+ * This does NOT wait for readers, and must not be used when the
+ * buffer the cache points at is about to be freed -- a reader may
+ * still be inside it.  Use it for lifecycle points where the cached
+ * frame merely stops being meaningful (content unload, core deinit,
+ * a driver reinit that leaves core memory alone).  For anything
+ * that releases memory, call video_driver_cached_frame_retire(). */
 void video_driver_cached_frame_invalidate(void)
 {
    cached_frame_lock_acquire();
@@ -3983,28 +4134,27 @@ void video_driver_cached_frame_invalidate(void)
    cached_frame_lock_release();
 }
 
-bool video_driver_cached_frame_invalidate_if(
-      void *userdata,
-      bool (*predicate)(void *userdata, const void *data))
+/* Producer-side retire: forget the cached frame and guarantee no
+ * reader is still inside it.
+ *
+ * Call immediately before freeing or unmapping memory the cache may
+ * point into -- driver teardown, a swapchain texture being
+ * recreated, a core being closed.  On return the memory is safe to
+ * release.
+ *
+ * Cheap enough to call unconditionally on a teardown path, and
+ * correct whoever owns the buffer, so a driver never has to prove
+ * the cached pointer is one of its own allocations. */
+void video_driver_cached_frame_retire(void)
 {
-   bool invalidated = false;
-
-   if (!predicate)
-      return false;
-
-   cached_frame_lock_acquire();
-   if (     frame_cache_data
-         && predicate(userdata, frame_cache_data))
-   {
-      frame_cache_data   = NULL;
-      frame_cache_width  = 0;
-      frame_cache_height = 0;
-      frame_cache_pitch  = 0;
-      invalidated        = true;
-   }
-   cached_frame_lock_release();
-
-   return invalidated;
+   video_driver_cached_frame_invalidate();
+#ifdef FRAME_CACHE_HAZARDS
+   /* Bump first, then scan: a reader that armed before the bump is
+    * visible to the scan below, and one that arms after it sees the
+    * new generation and retries. */
+   retro_atomic_fetch_add_int(&frame_cache_generation, 1);
+#endif
+   frame_cache_hazard_drain(NULL);
 }
 
 bool video_driver_has_focus(void)

@@ -3786,7 +3786,7 @@ static void d3d12_gfx_free(void* data)
        * takes the cached-frame lifetime lock, ensuring no
        * off-thread consumer is mid-read on the mapped pages when
        * we Unmap and Release. */
-      video_driver_cached_frame_invalidate();
+      video_driver_cached_frame_retire();
       if (d3d12->sw_fb.mapped)
       {
          d3d12->sw_fb.buffer->lpVtbl->Unmap(d3d12->sw_fb.buffer, 0, NULL);
@@ -8044,7 +8044,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
        * Cost is one mutex acquire on a code path that already
        * does a full GPU fence-wait (the caller's responsibility),
        * so the lock cost is below noise. */
-      video_driver_cached_frame_invalidate();
+      video_driver_cached_frame_retire();
       Release(d3d12->sw_fb.buffer);
       d3d12->sw_fb.buffer = NULL;
       d3d12->sw_fb.mapped = NULL;
