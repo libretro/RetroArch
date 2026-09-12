@@ -1555,6 +1555,22 @@ double audio_driver_get_sink_alt_ppm(void)
    return audio_driver_st.sink_alt_ppm;
 }
 
+/* The device's own clock against the rate the driver asked for, in
+ * parts per million, where the driver can measure one. False until
+ * there is an estimate, and for every driver that has no clock to
+ * read. Nothing acts on this; it is shown beside the sink estimate so
+ * the two can be compared on real hardware. */
+bool audio_driver_get_device_clock_ppm(double *ppm)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (     !audio_st->current_audio
+         || !audio_st->current_audio->device_clock_ppm
+         || !audio_st->context_audio_data)
+      return false;
+   return audio_st->current_audio->device_clock_ppm(
+         audio_st->context_audio_data, ppm);
+}
+
 double audio_driver_get_sink_rate_hz(double *bias, double *source_hz)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;

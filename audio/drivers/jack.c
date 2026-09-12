@@ -132,6 +132,16 @@ static size_t ja_read_deinterleaved(jack_t *jd, float *dst[JACK_MAX_PORTS], jack
  * counting what it asks for counts device time; there is no queue to
  * subtract, unlike ALSA, because the callback is the device consuming
  * the audio rather than a queue being filled. */
+/* The server clock, for the statistics overlay. */
+static bool ja_device_clock_ppm(void *data, double *ppm)
+{
+   jack_t *jd = (jack_t*)data;
+   if (!jd || !retro_atomic_load_acquire_int(&jd->clk_valid))
+      return false;
+   *ppm = (double)retro_atomic_load_acquire_int(&jd->clk_ppm);
+   return true;
+}
+
 static size_t ja_frames_consumed(void *data)
 {
    jack_t *jd = (jack_t*)data;
@@ -845,5 +855,7 @@ audio_driver_t audio_jack = {
    ja_wait_writable,
    ja_frames_consumed,
    ja_underruns,
-   ja_layout
+   ja_layout,
+   NULL, /* frames_consumed_fallback */
+   ja_device_clock_ppm
 };

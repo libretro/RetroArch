@@ -365,6 +365,28 @@ typedef struct audio_driver
     * their underrun counter should have been.
     */
    size_t (*frames_consumed_fallback)(void *data);
+
+   /* The device's clock against the rate the driver asked for, in
+    * parts per million, where the driver can measure one: fitted from
+    * whatever pairing of position and time its API provides - the
+    * ASIO time information, CoreAudio's callback timestamp, ALSA's
+    * audio or system timestamp, PipeWire's time report, JACK's cycle
+    * times.
+    *
+    * This is a measurement and nothing acts on it. It exists so the
+    * figure can be watched live beside the sink estimate that does
+    * drive rate control, on real hardware, before anyone decides
+    * whether it should be preferred.
+    *
+    * Returns false, leaving *ppm alone, until there is an estimate -
+    * which takes a second of window at least, and never arrives on a
+    * device that reports nothing usable. NULL where a driver has no
+    * clock to read, which is most of them.
+    *
+    * ADD NEW MEMBERS AT THE END. A member inserted above this line
+    * shifts every driver's initialiser by one and the compiler will
+    * not always say so; that has broken the Android build before. */
+   bool (*device_clock_ppm)(void *data, double *ppm);
 } audio_driver_t;
 
 /* The layout the user asked for, one of the AUDIO_LAYOUT_ masks. A
@@ -1220,6 +1242,10 @@ double audio_driver_get_sink_rate_hz(double *bias, double *source_hz);
  * device's consumption differs from the clock it reads, over the last
  * window; 0 where it has no second number to compare. */
 double audio_driver_get_sink_alt_ppm(void);
+
+/* The device's own clock against the rate the driver asked for, ppm.
+ * False where the driver has no clock or has not fitted one yet. */
+bool audio_driver_get_device_clock_ppm(double *ppm);
 
 extern audio_driver_t *audio_drivers[];
 

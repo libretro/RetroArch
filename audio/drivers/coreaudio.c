@@ -1774,6 +1774,27 @@ static void coreaudio_device_list_free(void *data, void *array_list_data)
  *
  * The ring is counted in samples, so the interleaved stereo the output
  * bus is fixed to makes a frame two of them. */
+/* The device clock, for the statistics overlay. What the HAL reports
+ * itself where it does, since it is computed by something with better
+ * information than this fit has; the fit otherwise. */
+static bool coreaudio_device_clock_ppm(void *data, double *ppm)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return false;
+   if (retro_atomic_load_acquire_int(&dev->ct_scalar_valid))
+   {
+      *ppm = (double)retro_atomic_load_acquire_int(&dev->ct_scalar_ppm);
+      return true;
+   }
+   if (retro_atomic_load_acquire_int(&dev->ct_valid))
+   {
+      *ppm = (double)retro_atomic_load_acquire_int(&dev->ct_ppm);
+      return true;
+   }
+   return false;
+}
+
 static size_t coreaudio_frames_consumed(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
@@ -1850,7 +1871,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_frames_consumed,
    coreaudio_underruns,
    coreaudio_layout,
-   coreaudio_frames_consumed_fallback
+   coreaudio_frames_consumed_fallback,
+   coreaudio_device_clock_ppm
 };
 
 

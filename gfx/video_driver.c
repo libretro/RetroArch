@@ -6070,6 +6070,18 @@ void video_driver_frame(const void *data, unsigned width,
                   if (alt_ppm != 0.0)
                      __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                            " Clock vs events: %+.0f ppm\n", alt_ppm);
+                  /* What the device's own clock says it is doing,
+                   * where the driver can measure it - fitted from
+                   * whatever pairing of position and time its API
+                   * provides. Nothing acts on it. It is here so it
+                   * can be watched settle against the sink figure
+                   * above, live, on real hardware. */
+                  {
+                     double dev_ppm = 0.0;
+                     if (audio_driver_get_device_clock_ppm(&dev_ppm))
+                        __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                              " Device clock: %+.0f ppm\n", dev_ppm);
+                  }
                }
             }
          }

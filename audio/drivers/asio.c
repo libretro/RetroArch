@@ -2167,6 +2167,16 @@ static size_t ra_asio_underruns(void *data)
    return ad ? retro_atomic_load_acquire_size(&ad->underruns) : 0;
 }
 
+/* The device clock, for the statistics overlay. */
+static bool ra_asio_device_clock_ppm(void *data, double *ppm)
+{
+   ra_asio_t *ad = (ra_asio_t*)data;
+   if (!ad || !retro_atomic_load_acquire_int(&ad->clk_valid))
+      return false;
+   *ppm = (double)retro_atomic_load_acquire_int(&ad->clk_ppm);
+   return true;
+}
+
 static size_t ra_asio_frames_consumed(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
@@ -2247,7 +2257,9 @@ audio_driver_t audio_asio = {
    ra_asio_wait_writable,
    ra_asio_frames_consumed,
    ra_asio_underruns,
-   asio_layout
+   asio_layout,
+   NULL, /* frames_consumed_fallback */
+   ra_asio_device_clock_ppm
 };
 
 /* Called from the menu to open the ASIO driver's control panel.

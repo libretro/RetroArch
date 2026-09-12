@@ -935,6 +935,27 @@ static void alsa_clock_sample(alsa_t *alsa)
    }
 }
 
+/* The device clock, for the statistics overlay. The audio timestamp
+ * where the driver counts one, since it is two clocks compared
+ * directly; the fitted position otherwise. */
+static bool alsa_device_clock_ppm(void *data, double *ppm)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (!alsa)
+      return false;
+   if (alsa->clk_a_valid)
+   {
+      *ppm = (double)alsa->clk_a_ppm;
+      return true;
+   }
+   if (alsa->clk_valid)
+   {
+      *ppm = (double)alsa->clk_ppm;
+      return true;
+   }
+   return false;
+}
+
 static size_t alsa_frames_consumed(void *data)
 {
    alsa_t *alsa            = (alsa_t*)data;
@@ -966,7 +987,9 @@ audio_driver_t audio_alsa = {
    alsa_wait_writable,
    alsa_frames_consumed,
    NULL, /* underruns */
-   alsa_layout
+   alsa_layout,
+   NULL, /* frames_consumed_fallback */
+   alsa_device_clock_ppm
 };
 
 #endif /* HAVE_ALSA */

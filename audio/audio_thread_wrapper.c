@@ -410,6 +410,14 @@ static size_t audio_thread_frames_consumed(void *data)
  * beside the device clock. Not forwarded before, so the sink-rate
  * comparison this exists for went missing on exactly the configuration
  * it is most wanted on - the threaded one. */
+static bool audio_thread_device_clock_ppm(void *data, double *ppm)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->device_clock_ppm || !thr->driver_data)
+      return false;
+   return thr->driver->device_clock_ppm(thr->driver_data, ppm);
+}
+
 static size_t audio_thread_frames_consumed_fallback(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -498,7 +506,8 @@ static const audio_driver_t audio_thread = {
    audio_thread_frames_consumed,
    audio_thread_underruns,
    audio_thread_layout,
-   audio_thread_frames_consumed_fallback
+   audio_thread_frames_consumed_fallback,
+   audio_thread_device_clock_ppm
 };
 
 /**

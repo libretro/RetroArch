@@ -688,6 +688,16 @@ static void pwire_playback_process_cb(void *data)
  * callback is the graph asking for a quantum, so counting what it takes
  * counts device time - JACK's shape rather than ALSA's, with no queue
  * to subtract. */
+/* The graph clock, for the statistics overlay. */
+static bool pwire_device_clock_ppm(void *data, double *ppm)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   if (!audio || !audio->clk_valid)
+      return false;
+   *ppm = (double)audio->clk_ppm;
+   return true;
+}
+
 static size_t pwire_frames_consumed(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
@@ -1267,5 +1277,7 @@ audio_driver_t audio_pipewire = {
       pwire_wait_writable,
       pwire_frames_consumed,
       NULL, /* underruns */
-      pwire_layout
+      pwire_layout,
+      NULL, /* frames_consumed_fallback */
+      pwire_device_clock_ppm
 };
