@@ -94,6 +94,40 @@ jobs:
           done
           echo "[pass] modeline C89 syntax check"
 
+      - name: Atomic backend portability of the gfx sources
+        shell: bash
+        run: |
+          set -eu
+          # The gfx sources that use retro_atomic.h have to build on
+          # every backend, not just the one this host selects.  The
+          # extended operations (exchange, CAS, the pointer ops) are
+          # offered only where a backend can express them, so a caller
+          # that uses one without gating on it builds here and breaks
+          # on whichever console lands elsewhere; the counters have to
+          # stay warning-clean as statements, which an expression-form
+          # fetch_add is not.  Both have reached a console lane before
+          # this one, hence -Werror.
+          INC="-Ilibretro-common/include -I. -Ideps"
+          DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_RGUI"
+          DEF="$DEF -DHAVE_CONFIGFILE -DHAVE_CHEATS -D_GNU_SOURCE"
+          DEF="$DEF -DRETRO_ATOMIC_SUPPRESS_WARNING"
+          # The PS2 backend needs ps2sdk's <kernel.h>; the sample under
+          # libretro-common/samples/atomic carries a stand-in for it.
+          PS2STUB="libretro-common/samples/atomic/retro_atomic_ps2_backend"
+          for backend in C11 GCC_NEW SYNC PS2 VOLATILE; do
+             EXTRA=""
+             if [ "$backend" = "PS2" ]; then EXTRA="-I$PS2STUB/ps2stub"; fi
+             for f in gfx/video_thread_wrapper.c \
+                      gfx/font_driver.c \
+                      gfx/gfx_thumbnail.c \
+                      libretro-common/queues/task_queue.c; do
+                gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
+                   "-DRETRO_ATOMIC_FORCE_$backend" -c "$f" -o /dev/null
+             done
+             echo "[pass] RETRO_ATOMIC_FORCE_$backend"
+          done
+          echo "[pass] atomic backend portability"
+
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_extension_count
