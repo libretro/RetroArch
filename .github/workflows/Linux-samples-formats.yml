@@ -151,6 +151,16 @@ jobs:
           # one case where stopping at the frontier and stopping at
           # the end of the data have to be told apart.
           #
+          # One set of checks replays task_image's real call sequence
+          # rather than an order this test invented - set_buffer_ptr,
+          # then set_avail BEFORE each process(), then set_avail
+          # ((size_t)-1) the instant the read completes, which for a
+          # small file is before any process() has run - at four read
+          # granularities.  Inventing the order instead of replaying
+          # it is exactly how the blank-BMP/TGA-thumbnail regression
+          # got past this file: every other check here raised the
+          # frontier only after the first process() call.
+          #
           # It also checks header_ready, the gate the task layer uses
           # to start a decode early, against the decoder itself: every
           # prefix it accepts must be one the decoder can actually

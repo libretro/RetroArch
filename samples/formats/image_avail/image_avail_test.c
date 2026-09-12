@@ -586,6 +586,133 @@ int main(void)
       codec = CODEC_TGA;
    }
 
+   /* Replay of task_image's actual call sequence, rather than an
+    * order this test invented.
+    *
+    * That distinction is the whole reason the blank-thumbnail
+    * regression shipped: every check here raised the frontier only
+    * AFTER the first process() call, which is not how the caller
+    * drives it.  task_image does, in order:
+    *
+    *   set_buffer_ptr(ptr, len)      once the read starts
+    *   set_avail(done)               BEFORE any process(), each tick
+    *   process() ...                 until END, WAIT means come back
+    *   set_avail((size_t)-1)         the moment the read completes,
+    *                                 which for a small file is before
+    *                                 any process() has run at all
+    *
+    * The read granularity is the variable: a file that arrives in one
+    * chunk hits the completion raise first, a file that dribbles in
+    * gets many partial raises.  Both must land on the same pixels as
+    * the untouched whole-buffer decode. */
+   {
+      struct { const char *name; fixture_t f; int bmp; } cs[4];
+      static const size_t chunks[] = { 0, 1, 64, 4096 };
+      unsigned c, q;
+
+      cs[0].name = "TGA raw 32bpp"; cs[0].f = fx_tga_raw(31, 17, 32, 0);   cs[0].bmp = 0;
+      cs[1].name = "TGA RLE 24bpp"; cs[1].f = fx_tga_rle(29, 13, 24);      cs[1].bmp = 0;
+      cs[2].name = "BMP 24bpp";     cs[2].f = fx_bmp(31, 17, 24, 0, 0);    cs[2].bmp = 1;
+      cs[3].name = "BMP 8bpp";      cs[3].f = fx_bmp(23, 11, 8, 0, 200);   cs[3].bmp = 1;
+
+      printf("-- task_image call sequence replayed --\n");
+      for (c = 0; c < 4; c++)
+      {
+         fixture_t f  = cs[c].f;
+         unsigned  w0 = 0, h0 = 0;
+         uint32_t *ref;
+
+         codec = cs[c].bmp ? CODEC_BMP : CODEC_TGA;
+         ref   = decode_whole(f.buf, f.len, &w0, &h0);
+
+         for (q = 0; q < sizeof(chunks) / sizeof(chunks[0]); q++)
+         {
+            size_t   chunk = chunks[q];   /* 0 = whole file in one go */
+            size_t   done  = chunk ? 0 : f.len;
+            void    *out   = NULL;
+            unsigned w = 0, h = 0;
+            int      ret   = IMAGE_PROCESS_NEXT, guard = 0;
+            bool     finished = (chunk == 0);
+            char     what[192];
+            rbmp_t  *b = NULL;
+            rtga_t  *t = NULL;
+
+            if (cs[c].bmp)
+            {
+               b = rbmp_alloc();
+               rbmp_set_buf_ptr(b, f.buf);
+            }
+            else
+            {
+               t = rtga_alloc();
+               rtga_set_buf_ptr(t, f.buf);
+            }
+
+            /* The completion raise happens the instant the read ends,
+             * which for chunk == 0 is before the first process(). */
+            if (finished)
+            {
+               if (b) rbmp_set_avail(b, (size_t)-1);
+               else   rtga_set_avail(t, (size_t)-1);
+            }
+
+            while (ret == IMAGE_PROCESS_NEXT || ret == IMAGE_PROCESS_WAIT)
+            {
+               if (++guard > 200000)
+                  break;
+               /* Per-tick raise, before process, exactly as the
+                * status machine does it. */
+               if (!finished)
+               {
+                  done += chunk;
+                  if (done >= f.len)
+                  {
+                     done     = f.len;
+                     finished = true;
+                     if (b) rbmp_set_avail(b, (size_t)-1);
+                     else   rtga_set_avail(t, (size_t)-1);
+                  }
+                  else
+                  {
+                     if (b) rbmp_set_avail(b, done);
+                     else   rtga_set_avail(t, done);
+                  }
+               }
+               ret = b ? rbmp_process_image(b, &out, f.len, &w, &h, true)
+                       : rtga_process_image(t, &out, f.len, &w, &h, true);
+            }
+            if (b) rbmp_free(b); else rtga_free(t);
+
+            snprintf(what, sizeof(what), "%s: read in %s completes",
+                  cs[c].name,
+                  chunk ? (chunk == 1 ? "1-byte reads"
+                        : (chunk == 64 ? "64-byte reads" : "4 KiB reads"))
+                        : "one chunk");
+            CHECK(ret == IMAGE_PROCESS_END, what);
+
+            snprintf(what, sizeof(what), "%s: read in %s is byte-exact",
+                  cs[c].name,
+                  chunk ? (chunk == 1 ? "1-byte reads"
+                        : (chunk == 64 ? "64-byte reads" : "4 KiB reads"))
+                        : "one chunk");
+            if (ret == IMAGE_PROCESS_END && ref && w == w0 && h == h0)
+            {
+               size_t n = (size_t)w0 * h0, i, bad = 0;
+               for (i = 0; i < n; i++)
+                  if (((uint32_t*)out)[i] != ref[i])
+                     bad++;
+               CHECK(bad == 0, what);
+            }
+            else
+               CHECK(0, what);
+            free(out);
+         }
+         free(ref);
+         fx_free(&cs[c].f);
+      }
+      codec = CODEC_TGA;
+   }
+
    /* A truncated file is not a stall: the frontier reaches the real
     * end of the data and the decode has to settle, not wait forever. */
    {
