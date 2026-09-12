@@ -2711,11 +2711,10 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       pkt.type   = CMD_POKE_SET_ASPECT_RATIO;
       pkt.data.i = aspect_ratio_idx;
 
-      /* Not queued with the rest: this one sets the driver's resize
-       * flag, and a swapchain rebuilt while the main thread is still
-       * handing over frames is what the video thread waiting here
-       * has always prevented. */
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
