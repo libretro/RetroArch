@@ -37,7 +37,20 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+check: all
+	./$(TARGET)
+	./check-barriers.sh
+
+# The seqlock's fences cannot be checked by running the test: x86_64
+# supplies the ordering they ask for, and qemu-aarch64 does not model
+# reordering either, so a build with a fence deleted passes on both.
+# The emitted code does change, so check-barriers.sh cross compiles
+# and looks for the barriers.  It skips when no aarch64 toolchain is
+# installed.
+check-barriers:
+	./check-barriers.sh
+
 clean:
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: clean
+.PHONY: all check check-barriers clean
