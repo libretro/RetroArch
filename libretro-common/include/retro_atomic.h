@@ -49,12 +49,50 @@
  * tags for every backend:
  *
  *   retro_atomic_load_acquire   - acquire load   (pairs with release store)
- *   retro_atomic_load_relaxed_size - relaxed load of a size_t; no ordering.
- *                                 For a thread reading a counter that
- *                                 only it writes (e.g. an SPSC producer
- *                                 reading its own head).  Not offered for
- *                                 int: no caller needs it yet.
  *   retro_atomic_store_release  - release store  (pairs with acquire load)
+ *   retro_atomic_load_relaxed   - relaxed load;  no ordering at all
+ *   retro_atomic_store_relaxed  - relaxed store; no ordering at all
+ *                                 Offered on int, size_t, pointer and
+ *                                 int64_t, each gated exactly as that
+ *                                 width's other operations already are
+ *                                 (RETRO_ATOMIC_HAS_PTR,
+ *                                 RETRO_ATOMIC_HAS_64).
+ *                                 Two kinds of caller want these: a
+ *                                 thread reading a counter only it
+ *                                 writes (an SPSC producer reading its
+ *                                 own head), and a seqlock, whose data
+ *                                 fields are ordered by the stamp and
+ *                                 the fences around it rather than by
+ *                                 the accesses themselves.
+ *
+ *                                 Spelling those accesses as relaxed
+ *                                 atomics rather than as plain writes
+ *                                 costs nothing -- every backend emits
+ *                                 the same instruction a plain access
+ *                                 would -- and it is what keeps a
+ *                                 seqlock free of formal data races,
+ *                                 so ThreadSanitizer stays quiet and a
+ *                                 real race in the same code is still
+ *                                 visible.  On the backends where a
+ *                                 relaxed access is spelled as a
+ *                                 volatile one (MSVC, Apple OSAtomic,
+ *                                 __sync, PS2, the fallback) the
+ *                                 compiler does not model it as atomic;
+ *                                 that costs nothing in practice
+ *                                 because TSan runs only under
+ *                                 GCC/Clang, which select one of the
+ *                                 three real-atomic backends.
+ *
+ *                                 Where a width is not indivisible in
+ *                                 a single instruction -- int64_t on
+ *                                 any 32-bit target, and on the PS2
+ *                                 EE, whose ABI moves a 64-bit integer
+ *                                 as a register pair -- the relaxed
+ *                                 form rides the same primitive as the
+ *                                 ordered one.  It is then relaxed in
+ *                                 ordering only, never in cost; the
+ *                                 operation is still offered so a
+ *                                 caller never has to branch on width.
  *   retro_atomic_fetch_add      - acq_rel RMW
  *   retro_atomic_fetch_sub      - acq_rel RMW
  *   retro_atomic_fetch_or       - acq_rel RMW, int only, returns old value
@@ -440,8 +478,12 @@ typedef atomic_size_t retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_int(p) \
    atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_load_relaxed_int(p) \
+   atomic_load_explicit((p), memory_order_relaxed)
 #define retro_atomic_store_release_int(p, v) \
    atomic_store_explicit((p), (v), memory_order_release)
+#define retro_atomic_store_relaxed_int(p, v) \
+   atomic_store_explicit((p), (v), memory_order_relaxed)
 #define retro_atomic_fetch_add_int(p, v) \
    atomic_fetch_add_explicit((p), (v), memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
@@ -457,6 +499,8 @@ typedef atomic_size_t retro_atomic_size_t;
    atomic_load_explicit((p), memory_order_relaxed)
 #define retro_atomic_store_release_size(p, v) \
    atomic_store_explicit((p), (v), memory_order_release)
+#define retro_atomic_store_relaxed_size(p, v) \
+   atomic_store_explicit((p), (v), memory_order_relaxed)
 #define retro_atomic_fetch_add_size(p, v) \
    atomic_fetch_add_explicit((p), (v), memory_order_acq_rel)
 #define retro_atomic_fetch_sub_size(p, v) \
@@ -499,8 +543,12 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_int(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
+#define retro_atomic_load_relaxed_int(p) \
+   std::atomic_load_explicit((p), std::memory_order_relaxed)
 #define retro_atomic_store_release_int(p, v) \
    std::atomic_store_explicit((p), (v), std::memory_order_release)
+#define retro_atomic_store_relaxed_int(p, v) \
+   std::atomic_store_explicit((p), (v), std::memory_order_relaxed)
 #define retro_atomic_fetch_add_int(p, v) \
    std::atomic_fetch_add_explicit((p), (v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
@@ -516,6 +564,8 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
    std::atomic_load_explicit((p), std::memory_order_relaxed)
 #define retro_atomic_store_release_size(p, v) \
    std::atomic_store_explicit((p), (std::size_t)(v), std::memory_order_release)
+#define retro_atomic_store_relaxed_size(p, v) \
+   std::atomic_store_explicit((p), (std::size_t)(v), std::memory_order_relaxed)
 #define retro_atomic_fetch_add_size(p, v) \
    std::atomic_fetch_add_explicit((p), (std::size_t)(v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_sub_size(p, v) \
@@ -535,8 +585,12 @@ typedef size_t retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_int(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_int(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
 #define retro_atomic_store_release_int(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_int(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 #define retro_atomic_fetch_add_int(p, v) \
    __atomic_fetch_add((p), (v), __ATOMIC_ACQ_REL)
 #define retro_atomic_fetch_sub_int(p, v) \
@@ -552,6 +606,8 @@ typedef size_t retro_atomic_size_t;
    __atomic_load_n((p), __ATOMIC_RELAXED)
 #define retro_atomic_store_release_size(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_size(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 #define retro_atomic_fetch_add_size(p, v) \
    __atomic_fetch_add((p), (v), __ATOMIC_ACQ_REL)
 #define retro_atomic_fetch_sub_size(p, v) \
@@ -616,6 +672,12 @@ typedef volatile LONG_PTR retro_atomic_size_t;
 
 #define retro_atomic_load_acquire_int(p) \
    InterlockedCompareExchangeAcquire((LONG volatile*)(p), 0, 0)
+/* Relaxed int load/store: retro_atomic_int_t is volatile LONG, so a
+ * plain access is an aligned native-width volatile load or store,
+ * which MSVC guarantees is indivisible on every architecture it
+ * targets.  No LOCK prefix, no barrier -- which is the point. */
+#define retro_atomic_load_relaxed_int(p)      ((int)(*(p)))
+#define retro_atomic_store_relaxed_int(p, v)  do { *(p) = (LONG)(v); } while (0)
 #define retro_atomic_store_release_int(p, v)                              \
    do {                                                                   \
       RETRO_ATOMIC_MSVC_ARM_FENCE();                                      \
@@ -693,6 +755,8 @@ static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
  * is atomic (no tearing) on every architecture it targets.  This is
  * the one load here that is not a locked RMW. */
 #define retro_atomic_load_relaxed_size(p) ((size_t)(*(p)))
+#define retro_atomic_store_relaxed_size(p, v) \
+   do { *(p) = (LONG_PTR)(v); } while (0)
 
 #if defined(_WIN64)
 #define retro_atomic_load_acquire_size(p) \
@@ -740,6 +804,11 @@ typedef volatile intptr_t retro_atomic_size_t;
 #define retro_atomic_size_init(p, v)   (*(p) = (intptr_t)(v))
 
 #define retro_atomic_load_acquire_int(p)  OSAtomicAdd32Barrier(0, (p))
+/* Relaxed int load/store: aligned native-width volatile access, which
+ * is indivisible on every Apple target; unlike the barrier'd Add(0)
+ * above it is neither an RMW nor a barrier. */
+#define retro_atomic_load_relaxed_int(p)      ((int)(*(p)))
+#define retro_atomic_store_relaxed_int(p, v)  do { *(p) = (v); } while (0)
 #define retro_atomic_store_release_int(p, v) \
    do { OSMemoryBarrier(); *(p) = (v); } while (0)
 #define retro_atomic_fetch_add_int(p, v) \
@@ -758,6 +827,8 @@ typedef volatile intptr_t retro_atomic_size_t;
  * Apple target (no tearing); unlike the barrier'd Add(0) above it is
  * not an RMW. */
 #define retro_atomic_load_relaxed_size(p) ((size_t)(*(p)))
+#define retro_atomic_store_relaxed_size(p, v) \
+   do { *(p) = (intptr_t)(v); } while (0)
 
 #if defined(__LP64__)
 #define retro_atomic_load_acquire_size(p) \
@@ -796,6 +867,10 @@ typedef volatile size_t retro_atomic_size_t;
  * canonical way to get an atomic load/store out of __sync. */
 #define retro_atomic_load_acquire_int(p) \
    __sync_fetch_and_add((p), 0)
+/* Relaxed int load/store: aligned volatile int access, no RMW and no
+ * __sync_synchronize. */
+#define retro_atomic_load_relaxed_int(p)      (*(p))
+#define retro_atomic_store_relaxed_int(p, v)  do { *(p) = (v); } while (0)
 #define retro_atomic_store_release_int(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
 #define retro_atomic_fetch_add_int(p, v) \
@@ -811,6 +886,8 @@ typedef volatile size_t retro_atomic_size_t;
    __sync_fetch_and_add((p), (size_t)0)
 /* Relaxed load: aligned volatile size_t read, no RMW. */
 #define retro_atomic_load_relaxed_size(p) (*(p))
+#define retro_atomic_store_relaxed_size(p, v) \
+   do { *(p) = (v); } while (0)
 #define retro_atomic_store_release_size(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
 #define retro_atomic_fetch_add_size(p, v) \
@@ -853,10 +930,13 @@ static INLINE void retro_atomic_ee_unmask_(int masked)
  * indivisible and needs no barrier, so only the read-modify-writes
  * take the mask.  volatile supplies the compiler barrier. */
 #define retro_atomic_load_acquire_int(p)         (*(p))
+#define retro_atomic_load_relaxed_int(p)         (*(p))
 #define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
+#define retro_atomic_store_relaxed_int(p, v)     do { *(p) = (v); } while (0)
 #define retro_atomic_load_acquire_size(p)        (*(p))
 #define retro_atomic_load_relaxed_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
+#define retro_atomic_store_relaxed_size(p, v)    do { *(p) = (v); } while (0)
 
 static INLINE int retro_atomic_ee_fetch_add_int_(retro_atomic_int_t *p, int v)
 {
@@ -939,9 +1019,14 @@ typedef volatile size_t retro_atomic_size_t;
 #define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
-/* No barriers.  Correct only on single-core or x86 TSO. */
+/* No barriers.  Correct only on single-core or x86 TSO.  The relaxed
+ * forms are spelled separately anyway: they carry no ordering on any
+ * backend, so a caller that uses them here gets exactly what it asked
+ * for rather than a silently weakened acquire/release. */
 #define retro_atomic_load_acquire_int(p)         (*(p))
+#define retro_atomic_load_relaxed_int(p)         (*(p))
 #define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
+#define retro_atomic_store_relaxed_int(p, v)     do { *(p) = (v); } while (0)
 /* Every read-modify-write goes through a helper rather than an
  * expression: an expression that recovers the old value arithmetically
  * ("(*(p) += (v)) - (v)") evaluates v twice and draws -Wunused-value at
@@ -984,6 +1069,7 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 #define retro_atomic_load_acquire_size(p)        (*(p))
 #define retro_atomic_load_relaxed_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
+#define retro_atomic_store_relaxed_size(p, v)    do { *(p) = (v); } while (0)
 #define retro_atomic_fetch_add_size(p, v) \
    retro_atomic_fetch_add_size_fb((p), (v))
 #define retro_atomic_fetch_sub_size(p, v) \
@@ -1038,8 +1124,12 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    retro_atomic_cas_int_impl_((p), (expected), (desired))
 #define retro_atomic_load_acquire_ptr(p) \
    atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_load_relaxed_ptr(p) \
+   atomic_load_explicit((p), memory_order_relaxed)
 #define retro_atomic_store_release_ptr(p, v) \
    atomic_store_explicit((p), (v), memory_order_release)
+#define retro_atomic_store_relaxed_ptr(p, v) \
+   atomic_store_explicit((p), (v), memory_order_relaxed)
 #define retro_atomic_exchange_ptr(p, v) \
    atomic_exchange_explicit((p), (v), memory_order_acq_rel)
 static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
@@ -1073,8 +1163,12 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    retro_atomic_cas_int_impl_((p), (expected), (desired))
 #define retro_atomic_load_acquire_ptr(p) \
    ((p)->load(std::memory_order_acquire))
+#define retro_atomic_load_relaxed_ptr(p) \
+   ((p)->load(std::memory_order_relaxed))
 #define retro_atomic_store_release_ptr(p, v) \
    ((p)->store((v), std::memory_order_release))
+#define retro_atomic_store_relaxed_ptr(p, v) \
+   ((p)->store((v), std::memory_order_relaxed))
 #define retro_atomic_exchange_ptr(p, v) \
    ((p)->exchange((v), std::memory_order_acq_rel))
 static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
@@ -1108,8 +1202,12 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    retro_atomic_cas_int_impl_((p), (expected), (desired))
 #define retro_atomic_load_acquire_ptr(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_ptr(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
 #define retro_atomic_store_release_ptr(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_store_relaxed_ptr(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 #define retro_atomic_exchange_ptr(p, v) \
    __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
 static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
@@ -1143,6 +1241,11 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
 /* CAS-with-identical-values is the canonical Interlocked atomic load. */
 #define retro_atomic_load_acquire_ptr(p) \
    InterlockedCompareExchangePointer((void* volatile*)(p), NULL, NULL)
+/* Relaxed pointer load/store: aligned pointer-width volatile access,
+ * indivisible on every MSVC target, with neither the CAS nor the
+ * barrier the acquire/release forms carry. */
+#define retro_atomic_load_relaxed_ptr(p)      (*(p))
+#define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
 #define retro_atomic_store_release_ptr(p, v) \
    ((void)InterlockedExchangePointer((void* volatile*)(p), (void*)(v)))
 #define retro_atomic_exchange_ptr(p, v) \
@@ -1177,6 +1280,10 @@ static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
 }
 #define retro_atomic_load_acquire_ptr(p) \
    retro_atomic_load_acquire_ptr_impl_((p))
+/* Relaxed pointer load/store: aligned pointer-width volatile access,
+ * no OSMemoryBarrier. */
+#define retro_atomic_load_relaxed_ptr(p)      (*(p))
+#define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
 static INLINE void retro_atomic_store_release_ptr_impl_(retro_atomic_ptr_t *p, void* v)
 {
    OSMemoryBarrier();
@@ -1221,6 +1328,10 @@ static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
 }
 #define retro_atomic_load_acquire_ptr(p) \
    retro_atomic_load_acquire_ptr_impl_((p))
+/* Relaxed pointer load/store: aligned pointer-width volatile access,
+ * no __sync_synchronize. */
+#define retro_atomic_load_relaxed_ptr(p)      (*(void* volatile*)(p))
+#define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
 #define retro_atomic_store_release_ptr(p, v) \
    do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
 static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
@@ -1291,7 +1402,9 @@ static INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
 #define retro_atomic_cas_int(p, expected, desired) \
    retro_atomic_ee_cas_int_((p), (expected), (desired))
 #define retro_atomic_load_acquire_ptr(p)      (*(p))
+#define retro_atomic_load_relaxed_ptr(p)      (*(p))
 #define retro_atomic_store_release_ptr(p, v)  do { *(p) = (v); } while (0)
+#define retro_atomic_store_relaxed_ptr(p, v)  do { *(p) = (void*)(v); } while (0)
 #define retro_atomic_exchange_ptr(p, v) \
    retro_atomic_ee_exchange_ptr_((p), (void*)(v))
 #define retro_atomic_cas_ptr(p, expected, desired) \
@@ -1350,6 +1463,10 @@ typedef _Atomic(int64_t) retro_atomic_64_t;
 #define retro_atomic_64_init(p, v)     atomic_init((p), (v))
 #define retro_atomic_load_acquire_64(p) \
    atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_load_relaxed_64(p) \
+   atomic_load_explicit((p), memory_order_relaxed)
+#define retro_atomic_store_relaxed_64(p, v) \
+   atomic_store_explicit((p), (v), memory_order_relaxed)
 #define retro_atomic_store_release_64(p, v) \
    atomic_store_explicit((p), (v), memory_order_release)
 #define retro_atomic_exchange_64(p, v) \
@@ -1371,6 +1488,10 @@ typedef std::atomic<int64_t> retro_atomic_64_t;
 #define retro_atomic_64_init(p, v)     ((p)->store((v), std::memory_order_relaxed))
 #define retro_atomic_load_acquire_64(p) \
    ((p)->load(std::memory_order_acquire))
+#define retro_atomic_load_relaxed_64(p) \
+   ((p)->load(std::memory_order_relaxed))
+#define retro_atomic_store_relaxed_64(p, v) \
+   ((p)->store((v), std::memory_order_relaxed))
 #define retro_atomic_store_release_64(p, v) \
    ((p)->store((v), std::memory_order_release))
 #define retro_atomic_exchange_64(p, v) \
@@ -1392,6 +1513,10 @@ typedef int64_t retro_atomic_64_t;
 #define retro_atomic_64_init(p, v)     (*(p) = (v))
 #define retro_atomic_load_acquire_64(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_load_relaxed_64(p) \
+   __atomic_load_n((p), __ATOMIC_RELAXED)
+#define retro_atomic_store_relaxed_64(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELAXED)
 #define retro_atomic_store_release_64(p, v) \
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
 #define retro_atomic_exchange_64(p, v) \
@@ -1463,6 +1588,23 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expec
 }
 #define retro_atomic_cas_64(p, expected, desired) \
    retro_atomic_cas_64_impl_((p), (expected), (desired))
+/* Relaxed 64: on Win64 an aligned LONGLONG volatile access is
+ * indivisible, so this is a plain load or store.  On 32-bit x86 there
+ * is no plain 64-bit atomic access -- the operation is CMPXCHG8B
+ * whichever ordering is asked for -- so the relaxed spelling buys
+ * ordering freedom, not cost, and is implemented on the same
+ * primitive as the acquire/release forms.  Same shape as the 32-bit
+ * fallbacks elsewhere in this header: the operation is always
+ * offered, the cost is what the target can do. */
+#if defined(_WIN64)
+#define retro_atomic_load_relaxed_64(p)      ((int64_t)(*(p)))
+#define retro_atomic_store_relaxed_64(p, v)  do { *(p) = (LONGLONG)(v); } while (0)
+#else
+#define retro_atomic_load_relaxed_64(p) \
+   RETRO_ATOMIC_MSVC_CMPX64_((p), 0, 0)
+#define retro_atomic_store_relaxed_64(p, v) \
+   ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
+#endif
 #define RETRO_ATOMIC_HAS_64 1
 
 #endif /* !(_M_IX86 && _MSC_VER < 1400) */
@@ -1495,6 +1637,19 @@ static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64
 }
 #define retro_atomic_exchange_64(p, v) \
    retro_atomic_exchange_64_impl_((p), (v))
+/* Relaxed 64: a plain access on LP64, where an aligned int64_t load or
+ * store is indivisible; on 32-bit Apple targets there is no such
+ * access, so it rides the same compare-and-swap the acquire/release
+ * forms use and is relaxed in ordering only. */
+#if defined(__LP64__)
+#define retro_atomic_load_relaxed_64(p)      (*(p))
+#define retro_atomic_store_relaxed_64(p, v)  do { *(p) = (int64_t)(v); } while (0)
+#else
+#define retro_atomic_load_relaxed_64(p) \
+   retro_atomic_load_acquire_64_impl_((p))
+#define retro_atomic_store_relaxed_64(p, v) \
+   retro_atomic_store_release_64_impl_((p), (int64_t)(v))
+#endif
 #define retro_atomic_cas_64(p, expected, desired) \
    OSAtomicCompareAndSwap64Barrier((expected), (desired), (volatile int64_t*)(p))
 #define RETRO_ATOMIC_HAS_64 1
@@ -1519,6 +1674,16 @@ static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64
    retro_atomic_exchange_64_impl_((p), (v))
 #define retro_atomic_cas_64(p, expected, desired) \
    __sync_bool_compare_and_swap((p), (expected), (desired))
+/* Relaxed 64: a 32-bit __sync target keeps an int64_t in a register
+ * pair, so a plain access is not indivisible, and the family has no
+ * relaxed form in any case -- every __sync builtin is sequentially
+ * consistent.  These are therefore the acquire/release forms under a
+ * relaxed name: the ordering freedom is real for the caller, the cost
+ * is what the target can do. */
+#define retro_atomic_load_relaxed_64(p) \
+   __sync_fetch_and_add((int64_t volatile*)(p), (int64_t)0)
+#define retro_atomic_store_relaxed_64(p, v) \
+   do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
 #define RETRO_ATOMIC_HAS_64 1
 #endif /* __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 */
 
@@ -1547,6 +1712,14 @@ static INLINE void retro_atomic_ee_store_64_(retro_atomic_64_t *p, int64_t v)
    *p         = v;
    retro_atomic_ee_unmask_(masked);
 }
+
+/* Relaxed 64: the mask is what makes a 64-bit access indivisible on
+ * the EE, so the relaxed forms are the same helpers.  Nothing is lost:
+ * the ordering the mask implies is free on one in-order core. */
+#define retro_atomic_load_relaxed_64(p) \
+   retro_atomic_ee_load_64_((p))
+#define retro_atomic_store_relaxed_64(p, v) \
+   retro_atomic_ee_store_64_((p), (int64_t)(v))
 
 static INLINE int64_t retro_atomic_ee_exchange_64_(retro_atomic_64_t *p,
       int64_t v)

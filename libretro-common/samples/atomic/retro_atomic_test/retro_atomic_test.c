@@ -44,14 +44,42 @@
  *     on.  A backend that releases without ordering would be flagged
  *     by a counter going backwards or by the consumer seeing the flag
  *     before the writes that should have preceded it.
- *  7. The test prints which backend was selected and whether
+ *  7. Relaxed load/store round-trip on every width the backend
+ *     offers, and agree with the ordered forms on the same object.
+ *  8. Seqlock stress (HAVE_THREADS only): a writer publishes three
+ *     fields that always sum to zero, stamping an odd sequence around
+ *     the write; four readers snapshot them the seqlock way and check
+ *     the sum.  A tuple assembled from two writer passes does not sum
+ *     to zero, so a stamp protocol that lets one through is caught
+ *     here.  The run also asserts that a reader landed inside a write
+ *     at least once, since a run with no overlap has tested nothing.
+ *     This is the shape gfx/video_driver.c publishes its cached frame
+ *     with, and the reason the relaxed forms exist.
+ *  9. The test prints which backend was selected and whether
  *     RETRO_ATOMIC_LOCK_FREE is defined, so a CI diff makes accidental
  *     backend regressions obvious.
  *
  * What this test does NOT assert
  * ------------------------------
  * It does not validate hardware ordering on weakly-ordered SMP from
- * a single host run on x86_64 (TSO masks most reordering bugs).  For
+ * a single host run on x86_64 (TSO masks most reordering bugs).
+ *
+ * That limit is sharp for the seqlock lane, and measured rather than
+ * assumed.  Mutating the lane and re-running on x86_64 gives:
+ *
+ *   reader drops the closing stamp re-check -> caught (torn tuples)
+ *   writer never stamps odd                 -> caught (no overlap)
+ *   reader drops the odd-stamp fast path    -> passes, correctly:
+ *       the closing re-check subsumes it, so that branch is an
+ *       optimisation rather than a correctness requirement
+ *   either fence removed                    -> NOT caught
+ *   relaxed accesses replaced by plain ones -> caught by TSan
+ *
+ * So this lane tests the stamp protocol and the race-freedom the
+ * relaxed spelling buys, but NOT the fences: on TSO the hardware
+ * supplies the ordering the code forgot to ask for, and TSan does not
+ * model a missing fence between atomics.  An aarch64 or PowerPC run
+ * is what closes that.  For
  * the GCC backend, AArch64 / ARMv7 cross-compile + qemu user-mode
  * has been verified locally: the test passes and the emitted asm
  * contains real ldar/stlr instructions and ldadd*_acq_rel libcalls.
@@ -166,6 +194,147 @@ static int check_store_load(void)
    if ((size_t)retro_atomic_load_acquire_size(&vs) != 123456)
    {
       fprintf(stderr, "FAIL store_load_size\n");
+      return 1;
+   }
+   return 0;
+}
+
+static int check_relaxed_store_load(void)
+{
+   retro_atomic_int_t  vi;
+   retro_atomic_size_t vs;
+
+   retro_atomic_int_init(&vi, 0);
+   retro_atomic_size_init(&vs, 0);
+
+   retro_atomic_store_relaxed_int(&vi, 42);
+   retro_atomic_store_relaxed_size(&vs, (size_t)123456);
+
+   if (retro_atomic_load_relaxed_int(&vi) != 42)
+   {
+      fprintf(stderr, "FAIL relaxed_store_load_int\n");
+      return 1;
+   }
+   if ((size_t)retro_atomic_load_relaxed_size(&vs) != 123456)
+   {
+      fprintf(stderr, "FAIL relaxed_store_load_size\n");
+      return 1;
+   }
+
+   /* Relaxed and ordered accesses name the same object: a value put
+    * there by one form must be visible through the other. */
+   retro_atomic_store_release_int(&vi, 7);
+   if (retro_atomic_load_relaxed_int(&vi) != 7)
+   {
+      fprintf(stderr, "FAIL relaxed load of a released int\n");
+      return 1;
+   }
+   retro_atomic_store_relaxed_int(&vi, 8);
+   if (retro_atomic_load_acquire_int(&vi) != 8)
+   {
+      fprintf(stderr, "FAIL acquire load of a relaxed-stored int\n");
+      return 1;
+   }
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+   {
+      retro_atomic_ptr_t vp;
+      retro_atomic_ptr_init(&vp, NULL);
+
+      retro_atomic_store_relaxed_ptr(&vp, (void*)&vi);
+      if (retro_atomic_load_relaxed_ptr(&vp) != (void*)&vi)
+      {
+         fprintf(stderr, "FAIL relaxed_store_load_ptr\n");
+         return 1;
+      }
+      retro_atomic_store_release_ptr(&vp, (void*)&vs);
+      if (retro_atomic_load_relaxed_ptr(&vp) != (void*)&vs)
+      {
+         fprintf(stderr, "FAIL relaxed load of a released ptr\n");
+         return 1;
+      }
+   }
+#endif
+
+#ifdef RETRO_ATOMIC_HAS_64
+   {
+      retro_atomic_64_t vq;
+      retro_atomic_64_init(&vq, 0);
+
+      retro_atomic_store_relaxed_64(&vq, (int64_t)0x1234567890ABCDEFLL);
+      if ((int64_t)retro_atomic_load_relaxed_64(&vq)
+            != (int64_t)0x1234567890ABCDEFLL)
+      {
+         fprintf(stderr, "FAIL relaxed_store_load_64\n");
+         return 1;
+      }
+      retro_atomic_store_release_64(&vq, (int64_t)-1);
+      if ((int64_t)retro_atomic_load_relaxed_64(&vq) != (int64_t)-1)
+      {
+         fprintf(stderr, "FAIL relaxed load of a released 64\n");
+         return 1;
+      }
+   }
+#endif
+   return 0;
+}
+
+/* A seqlock built on the relaxed forms: the shape gfx/video_driver.c
+ * publishes its cached frame with, and the reason the relaxed
+ * accessors exist.  A reader that samples an even stamp, reads the
+ * fields, and sees the same stamp afterwards must have a tuple from
+ * one writer pass -- here, three fields that always sum to zero. */
+static int check_seqlock_shape(void)
+{
+   retro_atomic_size_t seq;
+   retro_atomic_int_t  a, b, c;
+   int                 pass;
+
+   retro_atomic_size_init(&seq, 0);
+   retro_atomic_int_init(&a, 0);
+   retro_atomic_int_init(&b, 0);
+   retro_atomic_int_init(&c, 0);
+
+   for (pass = 1; pass <= 64; pass++)
+   {
+      size_t s = retro_atomic_load_relaxed_size(&seq);
+      int    x, y, z;
+      size_t s1, s2;
+
+      retro_atomic_store_release_size(&seq, s + 1);
+      retro_atomic_thread_fence_release();
+      retro_atomic_store_relaxed_int(&a,  pass);
+      retro_atomic_store_relaxed_int(&b,  pass * 2);
+      retro_atomic_store_relaxed_int(&c, -pass * 3);
+      retro_atomic_store_release_size(&seq, s + 2);
+
+      s1 = retro_atomic_load_acquire_size(&seq);
+      if (s1 & 1)
+      {
+         fprintf(stderr, "FAIL seqlock: stamp odd outside a write\n");
+         return 1;
+      }
+      x  = retro_atomic_load_relaxed_int(&a);
+      y  = retro_atomic_load_relaxed_int(&b);
+      z  = retro_atomic_load_relaxed_int(&c);
+      retro_atomic_thread_fence_acquire();
+      s2 = retro_atomic_load_acquire_size(&seq);
+
+      if (s1 != s2)
+      {
+         fprintf(stderr, "FAIL seqlock: stamp moved with no writer\n");
+         return 1;
+      }
+      if (x + y + z != 0)
+      {
+         fprintf(stderr, "FAIL seqlock: torn tuple %d/%d/%d\n", x, y, z);
+         return 1;
+      }
+   }
+
+   if ((size_t)retro_atomic_load_acquire_size(&seq) != 128)
+   {
+      fprintf(stderr, "FAIL seqlock: stamp did not advance by two a pass\n");
       return 1;
    }
    return 0;
@@ -383,6 +552,178 @@ static int check_spsc_stress(void)
    return 0;
 }
 
+
+/* ---- Threaded seqlock stress ------------------------------------------
+ *
+ * The reason the relaxed load/store forms exist.  A seqlock takes its
+ * ordering from the stamp and the fences around it, not from the data
+ * accesses, so those accesses are spelled relaxed: ordered enough to
+ * be correct, cheap enough to be worth doing, and atomic enough that
+ * ThreadSanitizer does not have to be told to look away.
+ *
+ * A writer publishes three fields that always sum to zero.  Readers
+ * take a snapshot the seqlock way and check the sum.  A tuple
+ * assembled from two different writer passes will not sum to zero, so
+ * a stamp protocol that lets one through is caught here rather than by
+ * a caller months later.  Under TSan the same run also proves the
+ * accesses are free of formal data races, which is the property that
+ * keeps a real race in seqlock-using code visible.
+ *
+ * Runs on x86_64 CI, where TSO hides a missing fence from the hardware
+ * but not from TSan.  The ordering itself still wants an aarch64 or
+ * PowerPC run to be fully exercised; see the header comment. */
+
+#define SEQ_READERS      4
+#define SEQ_WRITER_PASSES 200000
+/* A reader that never lands inside a write has not tested anything, so
+ * the run asserts it saw the stamp move under it at least once. */
+#define SEQ_READ_TRIES   64
+
+typedef struct
+{
+   retro_atomic_size_t seq;
+   retro_atomic_int_t  a;
+   retro_atomic_int_t  b;
+   retro_atomic_int_t  c;
+   retro_atomic_int_t  writer_done;
+   retro_atomic_int_t  torn;         /* tuples that did not sum to zero */
+   retro_atomic_int_t  retried;      /* reads that saw the stamp move   */
+   retro_atomic_int_t  sampled;      /* reads that completed cleanly    */
+   retro_atomic_int_t  gave_up;      /* reads that exhausted the bound  */
+} seqlock_state_t;
+
+static void seqlock_writer(void *userdata)
+{
+   seqlock_state_t *st = (seqlock_state_t*)userdata;
+   int pass;
+
+   for (pass = 1; pass <= SEQ_WRITER_PASSES; pass++)
+   {
+      size_t s = retro_atomic_load_relaxed_size(&st->seq);
+
+      retro_atomic_store_release_size(&st->seq, s + 1);
+      /* Keeps the field stores below from being hoisted above the odd
+       * stamp that tells a reader the tuple is in flux. */
+      retro_atomic_thread_fence_release();
+
+      retro_atomic_store_relaxed_int(&st->a,  pass);
+      retro_atomic_store_relaxed_int(&st->b,  pass * 2);
+      retro_atomic_store_relaxed_int(&st->c, -pass * 3);
+
+      retro_atomic_store_release_size(&st->seq, s + 2);
+   }
+
+   retro_atomic_store_release_int(&st->writer_done, 1);
+}
+
+static void seqlock_reader(void *userdata)
+{
+   seqlock_state_t *st = (seqlock_state_t*)userdata;
+
+   while (!retro_atomic_load_acquire_int(&st->writer_done))
+   {
+      int tries;
+
+      for (tries = 0; tries < SEQ_READ_TRIES; tries++)
+      {
+         size_t s1 = retro_atomic_load_acquire_size(&st->seq);
+         size_t s2;
+         int    x, y, z;
+
+         if (s1 & 1)
+         {
+            retro_atomic_inc_int(&st->retried);
+            continue;
+         }
+
+         x  = retro_atomic_load_relaxed_int(&st->a);
+         y  = retro_atomic_load_relaxed_int(&st->b);
+         z  = retro_atomic_load_relaxed_int(&st->c);
+
+         retro_atomic_thread_fence_acquire();
+         s2 = retro_atomic_load_acquire_size(&st->seq);
+
+         if (s1 != s2)
+         {
+            retro_atomic_inc_int(&st->retried);
+            continue;
+         }
+
+         if (x + y + z != 0)
+            retro_atomic_inc_int(&st->torn);
+         retro_atomic_inc_int(&st->sampled);
+         break;
+      }
+
+      if (tries == SEQ_READ_TRIES)
+         retro_atomic_inc_int(&st->gave_up);
+   }
+}
+
+static int check_seqlock_stress(void)
+{
+   seqlock_state_t st;
+   sthread_t      *readers[SEQ_READERS];
+   sthread_t      *writer;
+   int             i;
+   int             torn, sampled, retried;
+
+   retro_atomic_size_init(&st.seq, 0);
+   retro_atomic_int_init(&st.a, 0);
+   retro_atomic_int_init(&st.b, 0);
+   retro_atomic_int_init(&st.c, 0);
+   retro_atomic_int_init(&st.writer_done, 0);
+   retro_atomic_int_init(&st.torn, 0);
+   retro_atomic_int_init(&st.retried, 0);
+   retro_atomic_int_init(&st.sampled, 0);
+   retro_atomic_int_init(&st.gave_up, 0);
+
+   for (i = 0; i < SEQ_READERS; i++)
+      if (!(readers[i] = sthread_create(seqlock_reader, &st)))
+      {
+         fprintf(stderr, "FAIL seqlock: sthread_create returned NULL\n");
+         return 1;
+      }
+   if (!(writer = sthread_create(seqlock_writer, &st)))
+   {
+      fprintf(stderr, "FAIL seqlock: sthread_create returned NULL\n");
+      return 1;
+   }
+
+   sthread_join(writer);
+   for (i = 0; i < SEQ_READERS; i++)
+      sthread_join(readers[i]);
+
+   torn    = retro_atomic_load_acquire_int(&st.torn);
+   sampled = retro_atomic_load_acquire_int(&st.sampled);
+   retried = retro_atomic_load_acquire_int(&st.retried);
+
+   if (torn)
+   {
+      fprintf(stderr, "FAIL seqlock: %d tuples assembled from two "
+            "writer passes\n", torn);
+      return 1;
+   }
+   if (!sampled)
+   {
+      fprintf(stderr, "FAIL seqlock: readers never completed a snapshot\n");
+      return 1;
+   }
+   if (!retried)
+   {
+      fprintf(stderr, "FAIL seqlock: no reader ever landed inside a "
+            "write, so the stamp protocol went untested\n");
+      return 1;
+   }
+   if ((size_t)retro_atomic_load_acquire_size(&st.seq)
+         != (size_t)SEQ_WRITER_PASSES * 2)
+   {
+      fprintf(stderr, "FAIL seqlock: stamp did not advance by two a pass\n");
+      return 1;
+   }
+   return 0;
+}
+
 #endif /* HAVE_THREADS */
 
 int main(void)
@@ -398,14 +739,18 @@ int main(void)
 
    fails += check_init();
    fails += check_store_load();
+   fails += check_relaxed_store_load();
+   fails += check_seqlock_shape();
    fails += check_fetch_add_returns_previous();
    fails += check_fetch_sub_returns_previous();
    fails += check_inc_dec_wrappers();
 
 #ifdef HAVE_THREADS
    fails += check_spsc_stress();
+   fails += check_seqlock_stress();
 #else
-   printf("[skip] SPSC stress test (HAVE_THREADS not defined)\n");
+   printf("[skip] SPSC + seqlock stress tests "
+         "(HAVE_THREADS not defined)\n");
 #endif
 
    if (fails == 0)
