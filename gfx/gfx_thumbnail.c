@@ -335,10 +335,20 @@ static void gfx_thumbnail_init_fade(
  * a container whose metadata will not fit simply gets no audio. */
 #define GFX_THUMB_AUDIO_HEAD_MAX    (32 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
- * (browsers substitute 100 ms); very small durations are floored so
- * a hostile file cannot request thousands of decodes per second. */
+ * (browsers substitute 100 ms).
+ *
+ * The floor is a guard against a hostile file asking for thousands of
+ * decodes per second, and nothing more.  It used to be 16 ms, which
+ * silently assumed a 62.5 Hz presenter and, worse, was applied to the
+ * duration BEFORE it was accumulated into the next-frame deadline: a
+ * 120 fps source's 8.33 ms frames each became 16 ms, so a 60-second
+ * clip played for 120.  Anything faster than the presenter is dropped
+ * by the deadline comparison anyway - which adapts to whatever rate
+ * the caller runs at, with no refresh-rate query needed - so the
+ * floor only has to stop a zero or negative duration from spinning
+ * the decoder. */
 #define GFX_THUMB_ANIM_DUR_DEFAULT  100
-#define GFX_THUMB_ANIM_DUR_MIN      16
+#define GFX_THUMB_ANIM_DUR_MIN      1
 
 /* Preview audio: decode the animated thumbnail's audio track and loop
  * it through the audio mixer while the animation is shown. */
@@ -431,18 +441,59 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    if (job->sess && !gfx_anim_preview_feed((gfx_anim_preview_t*)job->sess))
       return false;
 
-   if (!(frame = image_transfer_anim_stream_next(job->stream, type,
-         &duration_ms)))
+   /* Frames the display will never show cost nothing but their
+    * decode.  The presenter holds a frame for at least
+    * GFX_THUMB_ANIM_DUR_MIN, so a source faster than that - a 120fps
+    * capture, and every video shot on a modern phone - has frames
+    * that are consumed and immediately superseded.  Where the stream
+    * can pass over one without producing its pixels (the video types
+    * decode into planes they own and convert separately), collapse
+    * them: consume until the accumulated display time reaches the
+    * presenter's floor and convert only the last.  The decode still
+    * happens - later frames reference it - but the colour conversion,
+    * which is what scales with a 4K source, happens once instead of
+    * two or four times.
+    *
+    * Types that cannot defer (animated WEBP and APNG composite onto a
+    * persistent canvas, so the per-frame work is state) report so and
+    * take the single-frame path below unchanged. */
    {
-      /* End of one pass: honour the container loop count */
-      if (job->loops_left > 0)
-         job->loops_left--;
-      if (job->loops_left == 0)
+      int             acc  = 0;
+      const uint32_t *done = NULL;
+
+      for (;;)
+      {
+         int r = image_transfer_anim_stream_skip(job->stream, type,
+               &duration_ms, &done);
+
+         if (!r)
+         {
+            /* End of one pass: honour the container loop count */
+            if (job->loops_left > 0)
+               job->loops_left--;
+            if (job->loops_left == 0)
+               return false;
+            image_transfer_anim_stream_rewind(job->stream, type);
+            acc = 0;
+            if (!image_transfer_anim_stream_skip(job->stream, type,
+                     &duration_ms, &done))
+               return false;
+         }
+
+         acc += (duration_ms > 0) ? duration_ms : GFX_THUMB_ANIM_DUR_DEFAULT;
+         /* done != NULL means the type rendered anyway: nothing was
+          * saved by passing over it, so stop at one frame. */
+         if (done || acc >= GFX_THUMB_ANIM_DUR_MIN)
+            break;
+      }
+
+      if (!(frame = done ? done
+                         : image_transfer_anim_stream_render(job->stream,
+                              type)))
          return false;
-      image_transfer_anim_stream_rewind(job->stream, type);
-      if (!(frame = image_transfer_anim_stream_next(job->stream, type,
-            &duration_ms)))
-         return false;
+      /* Report the time actually consumed, so collapsing frames does
+       * not make the animation play faster than the container says. */
+      duration_ms = acc;
    }
 
    n = (size_t)job->width * job->height;
@@ -1111,6 +1162,9 @@ static void gfx_thumbnail_anim_schedule(gfx_thumbnail_t *thumbnail,
       duration_ms = GFX_THUMB_ANIM_DUR_DEFAULT;
    else if (duration_ms < GFX_THUMB_ANIM_DUR_MIN)
       duration_ms = GFX_THUMB_ANIM_DUR_MIN;
+   /* Note the container's own duration goes into the deadline below
+    * unmodified for anything above the guard, so playback runs at the
+    * speed the file asks for whatever the presenter's cadence is. */
 
    if (thumbnail->anim_next_us == 0)
       thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
@@ -1174,7 +1228,19 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          return;
    }
 
-   now  = cpu_features_get_time_usec();
+   /* The runloop samples the monotonic counter once per iteration and
+    * threads it down (runloop_iterate -> menu_st->current_time_us),
+    * and gfx_animation and the menu's own timers pace off that same
+    * value.  Re-reading the counter here cost a read per animated
+    * thumbnail per frame and, worse, gave two thumbnails advancing in
+    * the same frame two different "now"s - deadlines that should be
+    * coherent within a frame drifting apart from each other and from
+    * the animation tick.  Take the frame's sample; fall back to
+    * reading only if a caller outside the menu iterate ever arrives,
+    * where it would be zero. */
+   now  = menu_driver_get_current_time();
+   if (now == 0)
+      now = cpu_features_get_time_usec();
    type = (enum image_type_enum)thumbnail->anim_type;
 
    /* Windowed playback: the shared session feeds the preview audio's
