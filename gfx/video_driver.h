@@ -524,6 +524,10 @@ typedef struct video_frame_info
     * so a later poke->present_last() can show it again without
     * re-rendering. Off unless a presenter is going to repeat frames. */
    bool retain_output;
+   /* GPU recording is on, for a driver that reads frames back as it
+    * draws them: it travels with the frame, so the thread that draws
+    * never reads the recording state the main thread writes. */
+   bool gpu_recording;
    bool threaded_present_repeat;
    bool threaded_display_pacing;
    bool present_timing_from_display;

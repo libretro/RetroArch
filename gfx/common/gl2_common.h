@@ -65,7 +65,11 @@ enum gl2_flags
    /* The threaded wrapper's hardware ring is driving this driver: the
     * core's context is current on the main thread, so this thread
     * never takes it, and the frame reads the ring's slot. */
-   GL2_FLAG_HW_RING                = (1 << 23)
+   GL2_FLAG_HW_RING                = (1 << 23),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   GL2_FLAG_GPU_RECORDING          = (1 << 24)
 };
 
 struct gl2

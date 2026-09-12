@@ -2434,8 +2434,7 @@ static bool gl2_renderchain_read_viewport(
        || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
        || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
    {
-      recording_state_t *rec_st = recording_state_get_ptr();
-      if (rec_st && rec_st->enable)
+      if (gl->flags & GL2_FLAG_GPU_RECORDING)
       {
          /* Tear down old PBO resources before reinitializing */
          if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
@@ -4315,6 +4314,13 @@ static bool gl2_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+   /* Whether to read frames back travels with the frame, so this thread
+    * does not read the recording state the main thread writes. */
+   if (video_info->gpu_recording)
+      gl->flags |=  GL2_FLAG_GPU_RECORDING;
+   else
+      gl->flags &= ~GL2_FLAG_GPU_RECORDING;
+
    /* Resolved only after the guard above: initialising these at
     * declaration dereferenced 'data' before the NULL check ever ran,
     * so a frame call issued with no driver instance (e.g. the
@@ -4713,7 +4719,7 @@ static bool gl2_frame(void *data, const void *frame,
    else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
       /* If recording has stopped, tear down PBO readback */
-      if (!recording_state_get_ptr()->enable)
+      if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
       {
          glDeleteBuffers(4, gl->pbo_readback);
          scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
