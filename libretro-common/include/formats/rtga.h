@@ -43,6 +43,13 @@ typedef struct rtga rtga_t;
  * forward. Never calling this decodes the whole buffer exactly as
  * before.
  */
+/** True when @len bytes from the head of a TGA are enough for
+ * rtga_process_image() to parse the header, id field and colour map
+ * and begin painting pixels, i.e. when a partial-buffer decode can
+ * usefully start. False for a type this decoder does not slice, so a
+ * caller falls back to loading the file whole. */
+bool rtga_header_ready(const uint8_t *data, size_t len);
+
 void rtga_set_avail(rtga_t *rtga, size_t avail);
 
 /** True when the last rtga_process_image() stopped at the frontier

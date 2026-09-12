@@ -112,6 +112,11 @@ bool rbmp_save_image(
  * forward. Never calling this decodes the whole buffer exactly as
  * before.
  */
+/** True when @len bytes from the head of a BMP reach bfOffBits, i.e.
+ * when the header, any bitfield masks and the palette are resident
+ * and a partial-buffer decode can begin painting rows. */
+bool rbmp_header_ready(const uint8_t *data, size_t len);
+
 void rbmp_set_avail(rbmp_t *rbmp, size_t avail);
 
 /** True when the last rbmp_process_image() stopped at the frontier

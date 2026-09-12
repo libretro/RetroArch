@@ -28,6 +28,12 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#ifdef HAVE_RTGA
+#include <formats/rtga.h>
+#endif
+#ifdef HAVE_RBMP
+#include <formats/rbmp.h>
+#endif
 #include <formats/image.h>
 #include <gfx/scaler/scaler.h>
 #include <compat/strl.h>
@@ -748,6 +754,21 @@ bool task_image_load_handler(retro_task_t *task)
                    * whole-buffer as before. */
                   if (!ready && image->type == IMAGE_TYPE_JPEG)
                      ready = rjpeg_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RTGA
+                  /* TGA starts once the header, id field and colour
+                   * map are resident; rows are then painted from the
+                   * prefix, walling at the resident frontier. */
+                  if (!ready && image->type == IMAGE_TYPE_TGA)
+                     ready = rtga_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RBMP
+                  /* BMP starts once bfOffBits is resident, i.e. the
+                   * DIB header, masks and palette have all arrived. */
+                  if (!ready && image->type == IMAGE_TYPE_BMP)
+                     ready = rbmp_header_ready(
                            nbio_xfer_ptr(nbio, NULL), done);
 #endif
                }

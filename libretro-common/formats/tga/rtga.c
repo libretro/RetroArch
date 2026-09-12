@@ -775,6 +775,37 @@ static bool rtga_stalled(rtga_t *tga, int before_row, int before_pixel)
    return true;
 }
 
+bool rtga_header_ready(const uint8_t *data, size_t len)
+{
+   size_t need;
+   if (!data || len < RTGA_MIN_HEADER)
+      return false;
+   /* TGA has no magic, so the check is that the header describes
+    * something this decoder handles and that everything begin() reads
+    * before the pixels - the id field and the colour map, both sized
+    * by the header - is already here.  A file whose type byte is not
+    * one of the supported ones is declined, and the caller loads it
+    * whole exactly as before. */
+   switch (data[2])
+   {
+      case 1:  /* indexed          */
+      case 2:  /* truecolour       */
+      case 3:  /* grayscale        */
+      case 9:  /* RLE indexed      */
+      case 10: /* RLE truecolour   */
+      case 11: /* RLE grayscale    */
+         break;
+      default:
+         return false;
+   }
+   if (!(data[12] | (data[13] << 8)) || !(data[14] | (data[15] << 8)))
+      return false;   /* zero width or height */
+   need  = RTGA_MIN_HEADER + data[0];
+   need += (size_t)(data[5] | (data[6] << 8))
+         * (size_t)((data[7] + 7) / 8);
+   return len >= need;
+}
+
 void rtga_set_avail(rtga_t *rtga, size_t avail)
 {
    uint8_t *wall;

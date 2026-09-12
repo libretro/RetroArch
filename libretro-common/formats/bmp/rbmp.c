@@ -889,6 +889,23 @@ static bool rbmp_stalled(rbmp_t *bmp, int before_row, size_t before_fixup)
    return true;
 }
 
+bool rbmp_header_ready(const uint8_t *data, size_t len)
+{
+   size_t off;
+   if (!data || len < 14)
+      return false;
+   if (data[0] != 'B' || data[1] != 'M')
+      return false;
+   /* bfOffBits: where the pixel data starts, and everything begin()
+    * reads - the DIB header, any bitfield masks, the palette - lies
+    * below it.  Once that much is resident the decode can start. */
+   off = (size_t)data[10] | ((size_t)data[11] << 8)
+       | ((size_t)data[12] << 16) | ((size_t)data[13] << 24);
+   if (off < 14)
+      return false;
+   return len >= off;
+}
+
 void rbmp_set_avail(rbmp_t *rbmp, size_t avail)
 {
    unsigned char *wall;

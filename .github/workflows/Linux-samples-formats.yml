@@ -150,6 +150,13 @@ jobs:
           # must still settle rather than wait forever, which is the
           # one case where stopping at the frontier and stopping at
           # the end of the data have to be told apart.
+          #
+          # It also checks header_ready, the gate the task layer uses
+          # to start a decode early, against the decoder itself: every
+          # prefix it accepts must be one the decoder can actually
+          # begin on, it must accept before the whole file has arrived
+          # (or partial decoding is silently off), and it must be
+          # monotonic in the prefix length.
           make clean all SANITIZER=address,undefined
           test -x image_avail_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \

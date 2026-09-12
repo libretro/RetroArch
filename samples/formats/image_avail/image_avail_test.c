@@ -420,6 +420,85 @@ int main(void)
       codec = CODEC_TGA;
    }
 
+   /* header_ready is the gate the task layer uses to decide a decode
+    * can start early.  It has to agree with the decoder: any prefix
+    * it accepts must be one the decoder can actually begin on, and it
+    * must accept eventually rather than never (which would silently
+    * restore whole-file loading).  Both directions are checked by
+    * walking the prefix length up one byte at a time. */
+   {
+      struct { const char *name; fixture_t f; int bmp; } cases[6];
+      unsigned c;
+      cases[0].name = "TGA raw 32bpp";   cases[0].f = fx_tga_raw(31, 17, 32, 0);   cases[0].bmp = 0;
+      cases[1].name = "TGA RLE 24bpp";   cases[1].f = fx_tga_rle(29, 13, 24);      cases[1].bmp = 0;
+      cases[2].name = "TGA indexed";     cases[2].f = fx_tga_indexed(23, 11, 200); cases[2].bmp = 0;
+      cases[3].name = "BMP 24bpp";       cases[3].f = fx_bmp(31, 17, 24, 0, 0);    cases[3].bmp = 1;
+      cases[4].name = "BMP 8bpp";        cases[4].f = fx_bmp(23, 11, 8, 0, 200);   cases[4].bmp = 1;
+      cases[5].name = "BMP 4bpp";        cases[5].f = fx_bmp(22, 11, 4, 0, 16);    cases[5].bmp = 1;
+
+      printf("-- header_ready agrees with the decoder --\n");
+      for (c = 0; c < 6; c++)
+      {
+         fixture_t f  = cases[c].f;
+         size_t   n   = 0;
+         size_t   first_ready = 0;
+         bool     ok  = true;
+         char     what[160];
+
+         codec = cases[c].bmp ? CODEC_BMP : CODEC_TGA;
+
+         for (n = 0; n <= f.len; n++)
+         {
+            bool r = cases[c].bmp ? rbmp_header_ready(f.buf, n)
+                                  : rtga_header_ready(f.buf, n);
+            if (r && !first_ready)
+               first_ready = n;
+            /* Monotonic: more bytes may not un-ready a file. */
+            if (first_ready && !r)
+               ok = false;
+         }
+         snprintf(what, sizeof(what), "%s: header_ready is monotonic in the prefix length", cases[c].name);
+         CHECK(ok, what);
+         snprintf(what, sizeof(what), "%s: header_ready eventually accepts (at %u of %u bytes)",
+               cases[c].name, (unsigned)first_ready, (unsigned)f.len);
+         CHECK(first_ready != 0, what);
+         snprintf(what, sizeof(what), "%s: accepts before the whole file (%u < %u)",
+               cases[c].name, (unsigned)first_ready, (unsigned)f.len);
+         CHECK(first_ready > 0 && first_ready < f.len, what);
+
+         /* The prefix it accepts must be one the decoder can start
+          * on: opening at exactly that frontier must not error. */
+         if (first_ready)
+         {
+            void *out = NULL;
+            unsigned w = 0, h = 0;
+            int ret;
+            if (cases[c].bmp)
+            {
+               rbmp_t *b = rbmp_alloc();
+               rbmp_set_buf_ptr(b, f.buf);
+               rbmp_set_avail(b, first_ready);
+               ret = rbmp_process_image(b, &out, f.len, &w, &h, true);
+               rbmp_free(b);
+            }
+            else
+            {
+               rtga_t *t = rtga_alloc();
+               rtga_set_buf_ptr(t, f.buf);
+               rtga_set_avail(t, first_ready);
+               ret = rtga_process_image(t, &out, f.len, &w, &h, true);
+               rtga_free(t);
+            }
+            free(out);
+            snprintf(what, sizeof(what),
+                  "%s: decoder starts at the frontier header_ready accepted", cases[c].name);
+            CHECK(ret != IMAGE_PROCESS_ERROR, what);
+         }
+         fx_free(&cases[c].f);
+      }
+      codec = CODEC_TGA;
+   }
+
    /* A truncated file is not a stall: the frontier reaches the real
     * end of the data and the decode has to settle, not wait forever. */
    {
