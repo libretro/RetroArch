@@ -54,6 +54,20 @@ RETRO_BEGIN_DECLS
 enum config_file_flags
 {
    CONF_FILE_FLG_MODIFIED                 = (1 << 0),
+   /* Asserts that no key passed to a setter is already in the
+    * config, letting the setters skip the lookup that would find
+    * it.  Set this ONLY on a config whose whole content the caller
+    * writes - typically a fresh config_file_new_alloc().  On a
+    * config parsed from a file it is a promise the caller cannot
+    * keep: the setter appends a second entry with the same key, the
+    * file is written with both, and on reload the stale one wins,
+    * so the edit is silently lost and the file grows by a duplicate
+    * set per save.
+    *
+    * It buys much less than it used to.  Skipping the lookup once
+    * also skipped an O(n) walk to the end of the list; that walk is
+    * gone, and what remains is one hash probe per set - about 11ms
+    * across 203701 inserts. */
    CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES = (1 << 1)
 };
 

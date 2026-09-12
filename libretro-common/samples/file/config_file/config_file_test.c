@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
@@ -1447,6 +1448,88 @@ static void test_config_include_order_preserved(void)
    printf("[SUCCESS] include order survives O(1) appending\n");
 }
 
+/* Setting a key a parsed config already holds must replace it, not
+ * append a second copy: the file is written with both, and the first
+ * of a duplicate pair is what wins on reload, so a duplicate-writing
+ * save silently keeps the old value and grows the file by a copy
+ * every time.  This is the cheat_manager.c save shape. */
+static void test_config_set_over_parsed_keys_round_trips(void)
+{
+   config_file_t *cfg = cfg_from("cheats = \"2\"\ncheat0_desc = \"A\"\n"
+                                 "cheat1_desc = \"B\"\n");
+   config_file_t *back;
+   const struct config_entry_list *e;
+   char *dumped;
+   size_t n = 0;
+
+   config_set_string(cfg, "cheats",      "3");
+   config_set_string(cfg, "cheat0_desc", "EDITED");
+   config_set_string(cfg, "cheat2_desc", "C");
+
+   dumped = cfg_dump_to_string(cfg, false);
+   back   = cfg_from(dumped);
+
+   for (e = back->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   if (n != 4)
+   {
+      printf("[FAILED] round-trip carries %u entries, expected 4 - "
+            "duplicates were written:\n%s", (unsigned)n, dumped);
+      abort();
+   }
+   if (     strcmp(config_get_entry(back, "cheats")->value,      "3")
+         || strcmp(config_get_entry(back, "cheat0_desc")->value, "EDITED")
+         || strcmp(config_get_entry(back, "cheat1_desc")->value, "B")
+         || strcmp(config_get_entry(back, "cheat2_desc")->value, "C"))
+   {
+      printf("[FAILED] a value did not survive the round trip:\n%s",
+            dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   config_file_free(back);
+   printf("[SUCCESS] setting over parsed keys replaces rather than "
+         "duplicating\n");
+}
+
+/* The list is only ever appended to at conf->tail, so an inserting
+ * set no longer walks to find the end.  Quadratic insert behaviour
+ * would take this from milliseconds to minutes, so a generous wall
+ * clock bound is enough to catch a regression without being flaky. */
+static void test_config_set_insert_is_not_quadratic(void)
+{
+   const int n        = 40000;
+   config_file_t *cfg = config_file_new_alloc();
+   clock_t t0;
+   double elapsed;
+   int i;
+
+   if (!cfg)
+      abort();
+   t0 = clock();
+   for (i = 0; i < n; i++)
+   {
+      char key[32];
+      snprintf(key, sizeof(key), "cheat%d_value", i);
+      config_set_string(cfg, key, "1");
+   }
+   elapsed = (double)(clock() - t0) / CLOCKS_PER_SEC;
+   if (elapsed > 5.0)
+   {
+      printf("[FAILED] %d inserts took %.2fs - the insert path is "
+            "walking the list again\n", n, elapsed);
+      abort();
+   }
+   if (!config_get_entry(cfg, "cheat0_value")
+         || !config_get_entry(cfg, "cheat39999_value"))
+      abort();
+   config_file_free(cfg);
+   printf("[SUCCESS] %d inserts in %.2fs without the no-duplicates "
+         "flag\n", n, elapsed);
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -1508,4 +1591,6 @@ int main(void)
    test_config_file_dump_sort_fallback();
    test_config_tail_is_single_authority();
    test_config_include_order_preserved();
+   test_config_set_over_parsed_keys_round_trips();
+   test_config_set_insert_is_not_quadratic();
 }

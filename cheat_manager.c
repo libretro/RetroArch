@@ -192,10 +192,18 @@ bool cheat_manager_save(
       conf = config_file_new_from_path_to_string(cheats_file);
 
    if (!conf)
+   {
       if (!(conf = config_file_new_alloc()))
          return false;
-
-   conf->flags |= CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+      /* Only a config this function fills from empty can promise
+       * the setters that no key is already present.  The parsed
+       * one above already holds every key written below - claiming
+       * otherwise appended a duplicate of each, and since the
+       * first of a duplicate pair wins on reload, the save looked
+       * fine in memory while the file kept its old values and grew
+       * by a full copy on every save. */
+      conf->flags |= CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+   }
 
    config_set_int(conf, "cheats", cheat_st->size);
 

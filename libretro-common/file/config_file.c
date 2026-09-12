@@ -1666,32 +1666,6 @@ config_file_t *config_file_new_alloc(void)
    return conf;
 }
 
-/**
- * config_get_entry_internal:
- *
- * Leaf function.
- **/
-static struct config_entry_list *config_get_entry_internal(
-      const config_file_t *conf,
-      const char *key, struct config_entry_list **prev)
-{
-   struct config_entry_list *entry = RHMAP_GET_FULL(conf->entries_map, config_hash_span(key, strlen(key)), key);
-
-   if (entry)
-      return entry;
-
-   if (prev)
-   {
-      struct config_entry_list *previous = *prev;
-      for (entry = conf->entries; entry; entry = entry->next)
-         previous = entry;
-
-      *prev = previous;
-   }
-
-   return NULL;
-}
-
 struct config_entry_list *config_get_entry(
       const config_file_t *conf, const char *key)
 {
@@ -2027,13 +2001,18 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    struct config_entry_list *entry = NULL;
    if (!conf || !key || !val)
       return;
-   /* conf->tail is authoritative: every path that can extend the
-    * list writes it, so the no-duplicates fast path appends straight
-    * onto it and skips the lookup. */
+   /* conf->tail is authoritative, so an insert appends onto it
+    * whichever path got here - the lookup below decides only whether
+    * this is an insert at all.  It used to also have to find the end
+    * of the list, walking every entry on each miss, which is what
+    * made CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES worth setting:
+    * 203701 fresh inserts took 126s through the walk against 0.17s
+    * past it.  That difference is gone, and with it the only reason
+    * to skip the lookup. */
    last                            = conf->tail;
    if (!(conf->flags & CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES))
    {
-      if ((entry = config_get_entry_internal(conf, key, &last)))
+      if ((entry = config_get_entry(conf, key)))
       {
          /* The replacement is built before the old value is
           * released, the way the insert path below already treats
@@ -2105,15 +2084,12 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
 void config_unset(config_file_t *conf, const char *key)
 {
-   struct config_entry_list *last  = NULL;
    struct config_entry_list *entry = NULL;
 
    if (!conf || !key)
       return;
 
-   last  = conf->entries;
-
-   if (!(entry = config_get_entry_internal(conf, key, &last)))
+   if (!(entry = config_get_entry(conf, key)))
       return;
 
    (void)RHMAP_DEL_FULL(conf->entries_map, config_hash_span(entry->key, strlen(entry->key)), entry->key);
