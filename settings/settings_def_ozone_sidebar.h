@@ -7,12 +7,11 @@
 /* Descriptor and configuration rows are #ifdef HAVE_OZONE; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_OZONE) || defined(SETTINGS_DEF_STRINGS_PASS)
-/* The configuration row lives under defined(HAVE_MENU); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
-S_UINT_EX(menu_ozone_color_theme, OZONE_MENU_COLOR_THEME,
+/* The configuration.c row stays literal for this setting. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS)
+S_STRING(menu_ozone_color_theme, OZONE_MENU_COLOR_THEME,
       "ozone_menu_color_theme",
-      DEFAULT_OZONE_COLOR_THEME, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, OZONE_COLOR_THEME_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_ozone_menu_color_theme, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_OZONE_COLOR_THEME, SD_FLAG_NONE, 0, setting_action_ok_uint, setting_get_string_representation_ozone_menu_color_theme, setting_generic_action_start_default, NULL, setting_string_action_left_ozone_menu_color_theme, setting_string_action_right_ozone_menu_color_theme, ST_UI_TYPE_STRING_COMBOBOX,
       "Color Theme",
       "Select a different color theme.")
 #endif
