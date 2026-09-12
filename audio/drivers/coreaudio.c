@@ -333,8 +333,7 @@ typedef struct coreaudio
    size_t              period_pull;
    retro_atomic_size_t max_pull_observed;
    retro_atomic_size_t oversized_pulls;
-   /* Render callbacks handed a buffer list that is not the single
-    * interleaved buffer the stream format asked for. */
+   /* Render callbacks handed invalid output buffers. */
    retro_atomic_size_t format_errors;
 
    /* The worst a callback came up short by, in samples, and how full
@@ -561,7 +560,7 @@ static void coreaudio_free(void *data)
          (unsigned)retro_atomic_load_acquire_size(&dev->oversized_pulls));
 
    if ((n = retro_atomic_load_acquire_size(&dev->format_errors)))
-      RARCH_WARN("[CoreAudio] %u render callback%s arrived with a buffer list this driver does not handle, and were silenced.\n",
+      RARCH_WARN("[CoreAudio] %u render callback%s had invalid output buffers.\n",
             (unsigned)n, n == 1 ? "" : "s");
 
 #if !TARGET_OS_IPHONE
@@ -614,12 +613,12 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
          && (size_t)number_frames > dev->max_pull_frames)
       retro_atomic_fetch_add_size(&dev->oversized_pulls, 1);
 
-   /* Not the one interleaved buffer the stream format asked for.
+   /* Not the interleaved storage the stream format asked for.
     * Returning noErr with the buffers untouched hands the device
     * whatever happened to be in them; silence all of them and count
     * it, so a topology this driver does not handle is audibly and
     * countably nothing rather than undefined. */
-   if (io_data->mNumberBuffers != 1)
+   if (io_data->mNumberBuffers != 1 || !io_data->mBuffers[0].mData)
    {
       UInt32 b;
       for (b = 0; b < io_data->mNumberBuffers; b++)
@@ -641,7 +640,16 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    frames_needed = (size_t)number_frames * dev->channels;
    have_bytes    = io_data->mBuffers[0].mDataByteSize;
    if (frames_needed * sizeof(float) > have_bytes)
+   {
       frames_needed = have_bytes / sizeof(float);
+      frames_needed -= frames_needed % dev->channels;
+      /* Never consume a partial frame or leave its bytes uninitialized. */
+      memset((uint8_t*)outbuf + frames_needed * sizeof(float), 0,
+            have_bytes - frames_needed * sizeof(float));
+      if (!frames_needed && action_flags)
+         *action_flags |= kAudioUnitRenderAction_OutputIsSilence;
+      retro_atomic_fetch_add_size(&dev->format_errors, 1);
+   }
    avail         = retro_atomic_load_acquire_size(&dev->filled);
 
    if (avail < frames_needed)
@@ -1525,7 +1533,7 @@ static size_t coreaudio_buffer_size(void *data)
 static size_t coreaudio_wait_writable(void *data, size_t len)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
-   size_t want      = len / sizeof(float);
+   size_t want      = len / sizeof(float) + (len % sizeof(float) != 0);
    int    laps      = 8;
 
    if (!dev || !dev->channels)

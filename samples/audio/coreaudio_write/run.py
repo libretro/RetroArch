@@ -46,7 +46,10 @@ def main():
         subprocess.run([args.cc, "-std=gnu89", "-Wall", "-Wextra", "-Werror",
                         "-I" + str(ROOT / "libretro-common/include"),
                         str(test), "-o", str(exe)], check=True)
-        return subprocess.run([str(exe)]).returncode
+        result = subprocess.run([str(exe)])
+        if result.returncode:
+            return result.returncode
+        return subprocess.run([str(exe), "null-output"]).returncode
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ typedef int AudioTimeStamp;
 typedef long long retro_time_t;
 typedef struct { unsigned tv_sec, tv_nsec; } mach_timespec_t;
 typedef struct { void *mData; size_t mDataByteSize; } AudioBuffer;
-typedef struct { unsigned mNumberBuffers; AudioBuffer mBuffers[1]; } AudioBufferList;
+typedef struct { unsigned mNumberBuffers; AudioBuffer mBuffers[2]; } AudioBufferList;
 typedef struct coreaudio
 {
    float *buffer;
@@ -136,7 +136,82 @@ static void batch(unsigned ms, unsigned channels, unsigned frames)
    free(dev.buffer);
 }
 
-int main(void)
+static void short_buffer(unsigned channels, bool underrun)
+{
+   coreaudio_t dev;
+   float data[32], next[32];
+   AudioBufferList list;
+   AudioUnitRenderActionFlags flags = 0;
+   size_t bytes = (2 * channels - 1) * sizeof(float) + 1;
+   size_t queued = (underrun ? 0 : 4) * channels;
+   size_t i;
+
+   init(&dev, 8, channels);
+   if (queued)
+      rb_write(&dev, input, queued);
+   memset(data, 0x5a, sizeof(data));
+   list.mNumberBuffers = 1;
+   list.mBuffers[0].mData = data;
+   list.mBuffers[0].mDataByteSize = bytes;
+   coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 2, &list);
+   CHECK(dev.read_ptr == (underrun ? 0 : channels),
+         "undersized output consumes whole frames only");
+   CHECK(underrun || !memcmp(data, input, channels * sizeof(float)),
+         "undersized output preserves complete frame");
+   for (i = channels * sizeof(float); i < bytes; i++)
+      if (((unsigned char*)data)[i])
+         break;
+   CHECK(i == bytes, "incomplete output frame and trailing byte are silent");
+   CHECK(((unsigned char*)data)[bytes] == 0x5a, "output respects byte capacity");
+   list.mBuffers[0].mData = next;
+   list.mBuffers[0].mDataByteSize = channels * sizeof(float);
+   coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 1, &list);
+   CHECK(underrun || !memcmp(next, input + channels, channels * sizeof(float)),
+         "next callback retains channel alignment");
+   free(dev.buffer);
+}
+
+static void partial_byte_request(unsigned channels)
+{
+   coreaudio_t dev;
+   init(&dev, 8, channels);
+   rb_write(&dev, input, dev.usable - channels);
+   frozen = true;
+   CHECK(coreaudio_wait_writable(&dev, channels * sizeof(float) + 1) == 0,
+         "one byte beyond a free frame needs another complete frame");
+   CHECK(waits == 8, "unaligned byte request obeys the existing bounded wait");
+   free(dev.buffer);
+}
+
+static void fragment_buffer(unsigned channels)
+{
+   coreaudio_t dev;
+   float data[8];
+   AudioBufferList list;
+   AudioUnitRenderActionFlags flags = 0x100;
+   size_t bytes = channels * sizeof(float) - 1;
+   size_t i;
+   init(&dev, 8, channels);
+   rb_write(&dev, input, channels);
+   memset(data, 0x5a, sizeof(data));
+   list.mNumberBuffers = 1;
+   list.mBuffers[0].mData = data;
+   list.mBuffers[0].mDataByteSize = bytes;
+   coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 1, &list);
+   CHECK(dev.read_ptr == 0, "fragment-only output preserves the complete frame");
+   for (i = 0; i < bytes; i++)
+      if (((unsigned char*)data)[i])
+         break;
+   CHECK(i == bytes, "fragment-only output is fully silenced");
+   CHECK(((unsigned char*)data)[bytes] == 0x5a, "fragment output respects capacity");
+   CHECK(flags == (0x100 | kAudioUnitRenderAction_OutputIsSilence),
+         "fragment output preserves flags and marks silence");
+   CHECK(retro_atomic_load_acquire_size(&dev.format_errors) == 1,
+         "short output storage records a format error");
+   free(dev.buffer);
+}
+
+int main(int argc, char **argv)
 {
    coreaudio_t dev;
    unsigned i, j, k;
@@ -145,6 +220,32 @@ int main(void)
    size_t result;
    for (i = 0; i < sizeof(input) / sizeof(input[0]); i++)
       input[i] = (float)(i + 1);
+   if (argc > 1 && !strcmp(argv[1], "null-output"))
+   {
+      AudioBufferList list;
+      AudioUnitRenderActionFlags flags = 0;
+      init(&dev, 8, 2);
+      rb_write(&dev, input, 4);
+      list.mNumberBuffers = 1;
+      list.mBuffers[0].mData = NULL;
+      list.mBuffers[0].mDataByteSize = 16;
+      coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 2, &list);
+      CHECK(dev.read_ptr == 0, "missing output storage preserves queued audio");
+      CHECK((flags & kAudioUnitRenderAction_OutputIsSilence) != 0,
+            "missing output storage marks silence");
+      CHECK(retro_atomic_load_acquire_size(&dev.format_errors) == 1,
+            "missing output storage records a format error");
+      free(dev.buffer);
+      printf("%u checks, %u failures (null output)\n", cases, failures);
+      return failures ? 1 : 0;
+   }
+   for (j = 2; j <= 6; j += 4)
+   {
+      short_buffer(j, false);
+      short_buffer(j, true);
+      partial_byte_request(j);
+      fragment_buffer(j);
+   }
    for (i = 0; i < 3; i++)
       for (j = 2; j <= 6; j += 4)
          for (k = 0; k < 4; k++)
