@@ -324,7 +324,22 @@
  * which is exactly the condition under which the volatile fallback is
  * sound. */
 #elif defined(__GCC_ATOMIC_INT_LOCK_FREE) && __GCC_ATOMIC_INT_LOCK_FREE != 2
+/* ARM before v6 has no ldrex/strex, so the compiler cannot inline a
+ * read-modify-write and leaves __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4
+ * undefined.  The __sync_* family is still there out of line: libgcc
+ * builds config/arm/linux-atomic.c for every arm*-*-linux* target, and
+ * those helpers go through the kernel's __kuser_cmpxchg, so they are
+ * atomic against preemption on the single core these devices have.
+ * That is what separates this case from a target where nothing
+ * supplies the call at all.  The ARMv5 handhelds - Miyoo, RS-90 and
+ * the rest of the Dingux family - land here, and their threads are
+ * preemptive, so the fallback's non-atomic fetch_add would be a real
+ * race on the task counters. */
+#if defined(__arm__) && defined(__linux__)
+#define RETRO_ATOMIC_BACKEND_SYNC 1
+#else
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
+#endif
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && \
     !defined(__STDC_NO_ATOMICS__)
 #define RETRO_ATOMIC_BACKEND_C11 1
