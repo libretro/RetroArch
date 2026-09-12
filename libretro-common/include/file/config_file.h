@@ -98,9 +98,16 @@ struct config_file
     * lifetime and pilfer semantics match owned_bufs. */
    struct config_file_entry_pool *entry_pool;
    struct config_entry_list *entries;
+   /* The last node of 'entries'.  There used to be a second tracker,
+    * 'last', maintained only by config_set_string() while this one
+    * was maintained only by the parser; they drifted and dropped
+    * entries.  One field, written by everything that can extend the
+    * list. */
    struct config_entry_list *tail;
-   struct config_entry_list *last;
    struct config_include_list *includes;
+   /* Last node of 'includes', so adding one is O(1) instead of a
+    * walk per '#include'. */
+   struct config_include_list *includes_tail;
    struct path_linked_list *references;
    unsigned include_depth;
    uint8_t flags;

@@ -954,8 +954,7 @@ static void test_config_file_per_config_io(void)
 }
 
 /* Regression: config_file_append_conf() into an EMPTY destination
- * left conf->entries non-NULL with conf->tail and conf->last still
- * NULL.  The parser's insert path does "if (conf->entries)
+ * left conf->entries non-NULL with conf->tail still NULL.  The parser's insert path does "if (conf->entries)
  * conf->tail->next = list", so the next load through the same conf
  * dereferenced NULL; config_set_string() under
  * CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES fell back to
@@ -1320,6 +1319,134 @@ static void test_config_file_dump_sort_fallback(void)
          "merge and leaves the list consistent\n");
 }
 
+/* conf->tail is the only tracker now, so the paths that extend the
+ * list all have to write it: parse, append, set, include merge and
+ * the sort fallback.  This exercises them in sequence through one
+ * config and checks the invariant after each, which is what the two
+ * drifting fields used to break.
+ *
+ * The GUARANTEED_NO_DUPLICATES leg is the cheat_manager.c shape:
+ * parse a file, flag it, then set into it.  With two trackers that
+ * dropped every parsed entry but the first. */
+static void test_config_tail_is_single_authority(void)
+{
+   const char *inc_path  = "/tmp/cfg_tail_inc.cfg";
+   const char *main_path = "/tmp/cfg_tail_main.cfg";
+   config_file_t *cfg;
+   config_file_t *donor;
+   const struct config_entry_list *e;
+   size_t n = 0;
+   FILE *f;
+
+   f = fopen(inc_path, "w");
+   fprintf(f, "inc_a = \"1\"\ninc_b = \"2\"\n");
+   fclose(f);
+   f = fopen(main_path, "w");
+   fprintf(f, "main_a = \"1\"\n#include \"cfg_tail_inc.cfg\"\nmain_b = \"2\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(main_path)))
+      abort();
+   cfg_check_tail(cfg, "after parse with an #include");
+
+   donor = cfg_from("donor_a = \"1\"\n");
+   if (!config_file_append_conf(cfg, donor))
+      abort();
+   cfg_check_tail(cfg, "after append_conf");
+
+   /* No-duplicates fast path: appends onto the tail with no lookup. */
+   cfg->flags |= CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+   config_set_string(cfg, "fast_a", "1");
+   config_set_string(cfg, "fast_b", "2");
+   cfg_check_tail(cfg, "after two no-duplicate sets");
+   cfg->flags &= (uint8_t)~CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+
+   config_set_string(cfg, "slow_a", "1");
+   cfg_check_tail(cfg, "after a lookup-path set");
+
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   /* main_a, main_b, inc_a, inc_b, donor_a, fast_a, fast_b, slow_a */
+   if (n != 8)
+   {
+      printf("[FAILED] entries lost across the tail-writing paths "
+            "(%u != 8)\n", (unsigned)n);
+      abort();
+   }
+   if (     !config_get_entry(cfg, "inc_a")
+         || !config_get_entry(cfg, "donor_a")
+         || !config_get_entry(cfg, "fast_a")
+         || !config_get_entry(cfg, "slow_a"))
+   {
+      printf("[FAILED] an entry became unreachable\n");
+      abort();
+   }
+   config_file_free(cfg);
+   remove(inc_path);
+   remove(main_path);
+   printf("[SUCCESS] conf->tail stays authoritative across parse, "
+         "include, append and both set paths\n");
+}
+
+/* Includes are appended through conf->includes_tail rather than by
+ * walking the list.  Their order is user-visible - config_file_dump()
+ * writes the '#include' lines back in list order - so it has to
+ * survive. struct config_include_list is private to config_file.c,
+ * so the check goes through the serialised form, which is the part
+ * that actually matters anyway. */
+static void test_config_include_order_preserved(void)
+{
+   const char *paths[3] = { "/tmp/cfg_inc_1.cfg",
+                            "/tmp/cfg_inc_2.cfg",
+                            "/tmp/cfg_inc_3.cfg" };
+   const char *main_path = "/tmp/cfg_inc_main.cfg";
+   config_file_t *cfg;
+   char *dumped;
+   const char *p1;
+   const char *p2;
+   const char *p3;
+   FILE *f;
+   int i;
+
+   for (i = 0; i < 3; i++)
+   {
+      f = fopen(paths[i], "w");
+      fprintf(f, "k%d = \"%d\"\n", i, i);
+      fclose(f);
+   }
+   f = fopen(main_path, "w");
+   fprintf(f, "#include \"cfg_inc_1.cfg\"\n#include \"cfg_inc_2.cfg\"\n"
+              "#include \"cfg_inc_3.cfg\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(main_path)))
+      abort();
+   dumped = cfg_dump_to_string(cfg, false);
+
+   p1 = strstr(dumped, "#include \"cfg_inc_1.cfg\"");
+   p2 = strstr(dumped, "#include \"cfg_inc_2.cfg\"");
+   p3 = strstr(dumped, "#include \"cfg_inc_3.cfg\"");
+   if (!p1 || !p2 || !p3)
+   {
+      printf("[FAILED] an #include went missing from the dump:\n%s",
+            dumped);
+      abort();
+   }
+   if (!(p1 < p2 && p2 < p3))
+   {
+      printf("[FAILED] #include lines came back out of order:\n%s",
+            dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   for (i = 0; i < 3; i++)
+      remove(paths[i]);
+   remove(main_path);
+   printf("[SUCCESS] include order survives O(1) appending\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -1379,4 +1506,6 @@ int main(void)
    test_config_file_dump_sort_is_side_effect_free();
    test_config_set_string_on_readonly_entry();
    test_config_file_dump_sort_fallback();
+   test_config_tail_is_single_authority();
+   test_config_include_order_preserved();
 }

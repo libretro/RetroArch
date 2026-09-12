@@ -17,8 +17,9 @@
  *   3. TAIL VALIDITY: conf->tail is the actual last list node -
  *      checked after parsing AND after a config_set_string()
  *      applied identically to both configs.  The set path keeps its
- *      own tail tracker (conf->last) and used to leave conf->tail
- *      stale, which no parse-only check could see.
+ *      own tail tracker and used to leave conf->tail stale, which
+ *      no parse-only check could see.  The two trackers have since
+ *      been collapsed into conf->tail alone.
  *
  * No io interface is registered, so '#include' directives are
  * recorded but never touch the file system - both paths behave

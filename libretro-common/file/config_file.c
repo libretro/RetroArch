@@ -747,7 +747,6 @@ static void config_file_get_realpath(char *s, size_t len,
 static void config_file_add_sub_conf(config_file_t *conf, char *path,
       char *s, size_t len, config_file_cb_t *cb)
 {
-   struct config_include_list *head = conf->includes;
    struct config_include_list *node = (struct config_include_list*)
       malloc(sizeof(*node));
 
@@ -761,15 +760,15 @@ static void config_file_add_sub_conf(config_file_t *conf, char *path,
          goto realpath;
       }
 
-      if (head)
-      {
-         while (head->next)
-            head        = head->next;
-
-         head->next     = node;
-      }
+      /* Order is user-visible - config_file_dump() writes the
+       * '#include' lines back in list order - so this appends rather
+       * than prepends, but through the tracked tail instead of a
+       * walk per include. */
+      if (conf->includes_tail)
+         conf->includes_tail->next = node;
       else
-         conf->includes = node;
+         conf->includes            = node;
+      conf->includes_tail          = node;
    }
 
 realpath:
@@ -1227,10 +1226,10 @@ bool config_file_deinitialize(config_file_t *conf)
     * the struct itself immediately after this, so for that path the
     * NULLs are redundant but harmless; config_file_deinitialize()
     * is a public API callable on its own. */
-   conf->entries     = NULL;
-   conf->tail        = NULL;
-   conf->last        = NULL;
-   conf->includes    = NULL;
+   conf->entries       = NULL;
+   conf->tail          = NULL;
+   conf->includes      = NULL;
+   conf->includes_tail = NULL;
    conf->references  = NULL;
    conf->path        = NULL;
    /* entries_map is cleared by RHMAP_FREE */
@@ -1285,17 +1284,12 @@ bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf)
    {
       /* The donor list is prepended, so an already-populated
        * destination keeps its own tail.  An empty one has none:
-       * leaving tail (and last, which config_set_string uses under
-       * CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES) NULL while entries
-       * became non-NULL is the state that made a subsequent
-       * config_file_load_file() dereference conf->tail, and a
-       * subsequent set splice onto the head and orphan everything
-       * behind it. */
+       * leaving tail NULL while entries became non-NULL is the
+       * state that made a subsequent config_file_load_file()
+       * dereference conf->tail, and a subsequent set splice onto the
+       * head and orphan everything behind it. */
       if (!conf->entries)
-      {
          conf->tail        = new_conf->tail;
-         conf->last        = new_conf->tail;
-      }
       new_conf->tail->next = conf->entries;
       conf->entries        = new_conf->entries; /* Pilfer. */
       new_conf->entries    = NULL;
@@ -1645,9 +1639,9 @@ void config_file_initialize(struct config_file *conf)
    conf->entries_map              = NULL;
    conf->entries                  = NULL;
    conf->tail                     = NULL;
-   conf->last                     = NULL;
    conf->references               = NULL;
    conf->includes                 = NULL;
+   conf->includes_tail            = NULL;
    conf->include_depth            = 0;
    conf->flags                    = 0;
 
@@ -2027,27 +2021,17 @@ bool config_get_bool(config_file_t *conf, const char *key, bool *in)
 
 void config_set_string(config_file_t *conf, const char *key, const char *val)
 {
+   size_t key_len;
+   size_t val_len;
    struct config_entry_list *last  = NULL;
    struct config_entry_list *entry = NULL;
    if (!conf || !key || !val)
       return;
-   /* conf->tail and conf->last are two trackers for the same node
-    * and they drift: the parse path maintains tail only, this
-    * function maintained last only.  So a config that was parsed
-    * and then flagged GUARANTEED_NO_DUPLICATES (cheat_manager.c
-    * does exactly that on a loaded cheat file) had last == NULL
-    * with a populated list, fell back to conf->entries, and linked
-    * the new entry onto the HEAD - silently dropping every parsed
-    * entry after the first.  Both are written below; they should be
-    * collapsed into one field the next time this struct's layout
-    * can change. */
+   /* conf->tail is authoritative: every path that can extend the
+    * list writes it, so the no-duplicates fast path appends straight
+    * onto it and skips the lookup. */
    last                            = conf->tail;
-   if (conf->flags & CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES)
-   {
-      if (conf->last)
-         last                      = conf->last;
-   }
-   else
+   if (!(conf->flags & CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES))
    {
       if ((entry = config_get_entry_internal(conf, key, &last)))
       {
@@ -2079,6 +2063,11 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
          return;
       }
    }
+   /* Both strings are measured once and copied, rather than strdup'd
+    * and then measured again for the length cache and a third time
+    * for the hash below. */
+   key_len          = strlen(key);
+   val_len          = strlen(val);
    if (!(entry = (struct config_entry_list*)malloc(sizeof(*entry))))
       return;
    entry->readonly  = false;
@@ -2086,11 +2075,11 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    entry->next      = NULL;
    entry->key_len   = 0;
    entry->value_len = 0;
-   entry->key       = strdup(key);
-   entry->value     = strdup(val);
-   /* If either strdup failed, don't insert a half-initialised entry
-    * into the list or hash map -- RHMAP_SET_STR with a NULL key
-    * is undefined, and subsequent config_get_string/config_set_*
+   entry->key       = (char*)malloc(key_len + 1);
+   entry->value     = (char*)malloc(val_len + 1);
+   /* If either allocation failed, don't insert a half-initialised
+    * entry into the list or hash map -- RHMAP_SET_STR with a NULL
+    * key is undefined, and subsequent config_get_string/config_set_*
     * calls on this key would chase a NULL key. */
    if (!entry->key || !entry->value)
    {
@@ -2099,16 +2088,19 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       free(entry);
       return;
    }
-   entry->key_len   = config_file_cache_len(strlen(entry->key));
-   entry->value_len = config_file_cache_len(strlen(entry->value));
+   memcpy(entry->key,   key, key_len + 1);
+   memcpy(entry->value, val, val_len + 1);
+   entry->key_len   = config_file_cache_len(key_len);
+   entry->value_len = config_file_cache_len(val_len);
    conf->flags     |= CONF_FILE_FLG_MODIFIED;
    if (last)
       last->next    = entry;
    else
       conf->entries = entry;
    conf->tail       = entry;
-   conf->last       = entry;
-   RHMAP_SET_FULL(conf->entries_map, config_hash_span(entry->key, strlen(entry->key)), entry->key, entry);
+   /* key_len, not entry->key_len: the cache saturates to 0 above
+    * 64 KiB and the hash must span the whole key. */
+   RHMAP_SET_FULL(conf->entries_map, config_hash_span(entry->key, key_len), entry->key, entry);
 }
 
 void config_unset(config_file_t *conf, const char *key)
@@ -2365,7 +2357,6 @@ bool config_file_dump(config_file_t *conf, FILE *file, bool sort)
             conf->entries = config_file_sort_list_in_place(
                   conf->entries, &tail);
             conf->tail    = tail;
-            conf->last    = tail;
             for (list = conf->entries; list; list = list->next)
                if (CONFIG_FILE_ENTRY_SERIALISABLE(list))
                   config_file_dump_entry(buf, list);
