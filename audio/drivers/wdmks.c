@@ -1520,6 +1520,10 @@ static void wdmks_pin_close(wdmks_stream_t *s)
  * does this. */
 
 #define WDMKS_PACKETS 4
+/* How many bounded waits a write or a room request makes before it
+ * gives up and returns what it has: a device that has stopped frees no
+ * room however long it is waited on. */
+#define WDMKS_WAIT_LAPS 4
 
 typedef struct
 {
@@ -1558,6 +1562,10 @@ typedef struct
     * the write path's, and the same answer - a thread of this
     * driver's own - which is not here yet. */
    uint64_t        rt_played;
+   /* The count is kept in bytes and converted on demand: a position
+    * that lands mid-frame would otherwise lose its remainder to the
+    * division on every read, and every read of free room takes one. */
+   uint64_t        rt_played_bytes;
    ULONG           rt_last_pos;
    bool            rt_have_last;
    bool            rt_barrier;  /* writes need a barrier to be seen */
@@ -1653,6 +1661,7 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    memset(w->rt_buf, 0, w->rt_size);
    w->rt_write    = 0;
    w->rt_played   = 0;
+   w->rt_played_bytes = 0;
    w->rt_have_last = false;
    return true;
 }
@@ -1786,6 +1795,31 @@ static void wdmks_rt_unregister_event(wdmks_t *w)
 /* Where the hardware is, as a byte offset into the buffer. The
  * register if there is one, the pin's own position otherwise - which
  * is an ioctl, but correct. */
+/* Every read advances the count, which is what makes the count usable:
+ * a wrap between two reads is one wrap, and reads are frequent because
+ * everything that asks about room comes through here.
+ *
+ * What is accumulated is the byte distance, not frames: a driver whose
+ * position lands mid-frame gives a distance that is not a whole number
+ * of frames, and dividing each one on its own discards the remainder
+ * every time. At a read per write_avail that is a count running slow
+ * by up to a frame per read, which the sink estimate reads as drift. */
+static void wdmks_rt_advance(wdmks_t *w, ULONG v)
+{
+   if (!w->rt_have_last)
+   {
+      w->rt_last_pos  = v;
+      w->rt_have_last = true;
+   }
+   else if (v >= w->rt_last_pos)
+      w->rt_played_bytes += (uint64_t)(v - w->rt_last_pos);
+   else
+      w->rt_played_bytes += (uint64_t)(v + w->rt_size - w->rt_last_pos);
+
+   w->rt_last_pos = v;
+   w->rt_played   = w->rt_played_bytes / w->frame_bytes;
+}
+
 static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
 {
    if (w->rt_pos)
@@ -1794,22 +1828,7 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
       if (v >= (ULONG)w->rt_size)
          v %= (ULONG)w->rt_size;
 
-      /* Every read advances the count, which is what makes the count
-       * usable: a wrap between two reads is one wrap, and reads are
-       * frequent because everything that asks about room comes
-       * through here. */
-      if (!w->rt_have_last)
-      {
-         w->rt_last_pos  = v;
-         w->rt_have_last = true;
-      }
-      else if (v >= w->rt_last_pos)
-         w->rt_played += (uint64_t)(v - w->rt_last_pos) / w->frame_bytes;
-      else
-         w->rt_played += (uint64_t)(v + w->rt_size - w->rt_last_pos)
-            / w->frame_bytes;
-      w->rt_last_pos = v;
-
+      wdmks_rt_advance(w, v);
       *offset = v;
       return true;
    }
@@ -1819,22 +1838,10 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
 
       if (!wdmks_position(w, &frames))
          return false;
+      /* A position in the loop, the same as the register above. */
       v = (ULONG)((frames * w->frame_bytes) % w->rt_size);
 
-      /* Same accumulation as the register above: this wraps too, and
-       * for the same reason - it is a position in the loop. */
-      if (!w->rt_have_last)
-      {
-         w->rt_last_pos  = v;
-         w->rt_have_last = true;
-      }
-      else if (v >= w->rt_last_pos)
-         w->rt_played += (uint64_t)(v - w->rt_last_pos) / w->frame_bytes;
-      else
-         w->rt_played += (uint64_t)(v + w->rt_size - w->rt_last_pos)
-            / w->frame_bytes;
-      w->rt_last_pos = v;
-
+      wdmks_rt_advance(w, v);
       *offset = v;
       return true;
    }
@@ -1868,6 +1875,11 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
     * is an ioctl, and a frontend write of a video frame's worth takes
     * several laps of this loop. */
    size_t room = 0;
+   /* The waits are bounded and so is the number of them: a device that
+    * has stopped playing frees no room however long this waits on it,
+    * and an audio thread held here for good is a frozen frontend. What
+    * was taken is returned instead, which is a short write. */
+   unsigned laps = WDMKS_WAIT_LAPS;
 
    while (done < size)
    {
@@ -1878,10 +1890,11 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       {
          if (w->nonblock)
             break;
+         if (!laps--)
+            break;
          /* The event where the driver gives one, which is what keeps
           * this fed when the process is not in the foreground; a
-          * millisecond otherwise. Bounded either way, so a device
-          * that has stopped returns what it took. */
+          * millisecond otherwise. */
          if (w->rt_event)
             WaitForSingleObject(w->rt_event, 100);
          else
@@ -2283,8 +2296,6 @@ static size_t wdmks_write_avail(void *data)
  * a pass to skip, rather than holding the audio thread for good. The
  * request is capped at half the queue so a caller asking for more
  * than can ever fit is not waited on for ever. */
-#define WDMKS_WAIT_LAPS 4
-
 static size_t wdmks_wait_writable(void *data, size_t len)
 {
    wdmks_t *w    = (wdmks_t*)data;
