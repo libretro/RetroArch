@@ -533,6 +533,32 @@ jobs:
              ./asio_convert_test
           echo "[pass] asio_convert_test (ASan)"
 
+      - name: Build and run coreaudio_ring_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/coreaudio_ring
+        run: |
+          set -eu
+          # The CoreAudio ring keeps a frame's channels together. Its
+          # capacity is the sample count rounded up to a power of two,
+          # which for six channels is not a whole number of frames, so
+          # the cursors wrap mid-frame - and that does not matter,
+          # because a FIFO returns samples in the order they went in
+          # wherever they sit. This runs the traffic for every layout,
+          # then forces every transfer across the wrap, to keep that
+          # answer honest rather than assumed.
+          #
+          # What does rotate the channels is a transfer whose count is
+          # not a whole number of frames, which is why the callback
+          # trims short reads. The last case does that on purpose and
+          # fails if it goes unnoticed, so the trim has a guard.
+          #
+          # Arithmetic only, so it runs here without a Mac.
+          make clean all SANITIZER=address,undefined
+          test -x coreaudio_ring_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./coreaudio_ring_test
+          echo "[pass] coreaudio_ring_test (ASan)"
+
       - name: Build and run asio_ring_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/asio_ring
