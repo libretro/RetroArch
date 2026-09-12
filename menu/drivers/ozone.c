@@ -416,11 +416,37 @@ typedef struct ozone_node
    char *console_name;        /* Console tab name */
    uintptr_t icon;            /* Console tab icon */
    uintptr_t content_icon;    /* console content icon */
-   unsigned height;           /* Entry height */
    unsigned position_y;       /* Entry position Y */
-   uint8_t sublabel_lines;    /* Entry sublabel lines */
-   bool wrap;                 /* Wrap entry? */
+   /* Entry height, its sublabel line count and its wrap flag share one
+    * word: an entry taller than 65535 pixels is not an entry, and a
+    * line count past 255 is not a sublabel.  A list holds one node per
+    * entry, so the eight bytes this takes off the struct are eight
+    * bytes times the length of a playlist. */
+   unsigned attr;
 } ozone_node_t;
+
+#define OZONE_NODE_HEIGHT_MASK         0x0000ffffu
+#define OZONE_NODE_SUBLABEL_SHIFT      16
+#define OZONE_NODE_SUBLABEL_MASK       0x00ff0000u
+#define OZONE_NODE_WRAP_BIT            0x01000000u
+
+#define OZONE_NODE_HEIGHT(n)           ((n)->attr & OZONE_NODE_HEIGHT_MASK)
+#define OZONE_NODE_SUBLABEL_LINES(n) \
+   (((n)->attr & OZONE_NODE_SUBLABEL_MASK) >> OZONE_NODE_SUBLABEL_SHIFT)
+#define OZONE_NODE_WRAP(n)             (((n)->attr & OZONE_NODE_WRAP_BIT) != 0)
+
+#define OZONE_NODE_SET_HEIGHT(n, v) \
+   ((n)->attr = ((n)->attr & ~OZONE_NODE_HEIGHT_MASK) \
+              | ((unsigned)(v) & OZONE_NODE_HEIGHT_MASK))
+#define OZONE_NODE_ADD_HEIGHT(n, v) \
+   OZONE_NODE_SET_HEIGHT((n), OZONE_NODE_HEIGHT(n) + (unsigned)(v))
+#define OZONE_NODE_SET_SUBLABEL_LINES(n, v) \
+   ((n)->attr = ((n)->attr & ~OZONE_NODE_SUBLABEL_MASK) \
+              | ((((unsigned)(v)) << OZONE_NODE_SUBLABEL_SHIFT) \
+                 & OZONE_NODE_SUBLABEL_MASK))
+#define OZONE_NODE_SET_WRAP(n, v) \
+   ((n)->attr = (v) ? ((n)->attr |  OZONE_NODE_WRAP_BIT) \
+                    : ((n)->attr & ~OZONE_NODE_WRAP_BIT))
 
 /* One visible entry of the outgoing list, captured when the list is
  * cached rather than re-derived every frame of the transition.
@@ -4899,21 +4925,21 @@ static void ozone_list_cache(void *data,
    {
       ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
 
-      if (!node || !node->height)
+      if (!node || !OZONE_NODE_HEIGHT(node))
          continue;
 
-      if (y + ozone->animations.scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
+      if (y + ozone->animations.scroll_y + OZONE_NODE_HEIGHT(node) + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
       {
          first++;
          goto text_iterate;
       }
-      else if (y + ozone->animations.scroll_y - node->height - 20 * scale_factor > bottom_boundary)
+      else if (y + ozone->animations.scroll_y - OZONE_NODE_HEIGHT(node) - 20 * scale_factor > bottom_boundary)
          goto text_iterate;
 
       last++;
 
 text_iterate:
-      y += node->height;
+      y += OZONE_NODE_HEIGHT(node);
    }
 
    if (last)
@@ -5324,14 +5350,14 @@ static ozone_node_t *ozone_alloc_node(void)
    ozone_node_t *node   = (ozone_node_t*)malloc(sizeof(*node));
    if (!node)
       return NULL;
-   node->height         = 0;
    node->position_y     = 0;
+   OZONE_NODE_SET_HEIGHT(node, 0);
    node->console_name   = NULL;
    node->icon           = 0;
    node->content_icon   = 0;
    node->fullpath       = NULL;
-   node->sublabel_lines = 0;
-   node->wrap           = false;
+   OZONE_NODE_SET_SUBLABEL_LINES(node, 0);
+   OZONE_NODE_SET_WRAP(node, false);
    return node;
 }
 
@@ -5775,7 +5801,7 @@ static void ozone_update_scroll(ozone_handle_t *ozone,
          + ozone->dimensions.entry_padding_vertical
          + ozone->animations.scroll_y
          + node->position_y
-         + node->height / 2;
+         + OZONE_NODE_HEIGHT(node) / 2;
 
    bottom_boundary                      = video_info_height
          - ozone->dimensions.header_height
@@ -5905,7 +5931,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
          if (!node)
             continue;
 
-         if ((float)(node->position_y + node->height) > view_top)
+         if ((float)(node->position_y + OZONE_NODE_HEIGHT(node)) > view_top)
          {
             anchor_idx    = i;
             anchor_offset = view_top - (float)node->position_y;
@@ -5927,9 +5953,9 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       if (!(node = (ozone_node_t*)selection_buf->list[i].userdata))
          continue;
 
-      node->height             = ozone->dimensions.entry_height;
-      node->wrap               = false;
-      node->sublabel_lines     = 0;
+      OZONE_NODE_SET_HEIGHT(node, ozone->dimensions.entry_height);
+      OZONE_NODE_SET_WRAP(node, false);
+      OZONE_NODE_SET_SUBLABEL_LINES(node, 0);
 
       /* Empty playlist detection only needed when there is exactly one entry
        * in a playlist - avoid the full entry fetch otherwise */
@@ -5961,7 +5987,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
          }
 
          node->position_y       = ozone->entries_height;
-         ozone->entries_height += node->height;
+         ozone->entries_height += OZONE_NODE_HEIGHT(node);
          continue;
       }
 
@@ -5983,19 +6009,24 @@ compute_sublabel:
                   ozone->fonts.entries_sublabel.wideglyph_width,
                   0);
 
-            node->sublabel_lines = ozone_count_lines(wrapped_sublabel_str);
-            node->height        += ozone->dimensions.entry_spacing + (ozone->fonts.entries_sublabel.line_height * 2);
+            OZONE_NODE_SET_SUBLABEL_LINES(node,
+                  ozone_count_lines(wrapped_sublabel_str));
+            OZONE_NODE_ADD_HEIGHT(node,
+                  ozone->dimensions.entry_spacing
+                  + (ozone->fonts.entries_sublabel.line_height * 2));
 
-            if (node->sublabel_lines > 1)
+            if (OZONE_NODE_SUBLABEL_LINES(node) > 1)
             {
-               node->height += (node->sublabel_lines - 1) * ozone->fonts.entries_sublabel.line_height;
-               node->wrap    = true;
+               OZONE_NODE_ADD_HEIGHT(node,
+                     (OZONE_NODE_SUBLABEL_LINES(node) - 1)
+                     * ozone->fonts.entries_sublabel.line_height);
+               OZONE_NODE_SET_WRAP(node, true);
             }
          }
       }
 
       node->position_y       = ozone->entries_height;
-      ozone->entries_height += node->height;
+      ozone->entries_height += OZONE_NODE_HEIGHT(node);
    }
 
    /* Update scrolling */
@@ -6169,15 +6200,15 @@ static void ozone_draw_entries(
          goto border_iterate;
 
       if (entry_selected)
-         selection_height = node->height;
+         selection_height = OZONE_NODE_HEIGHT(node);
 
-      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
+      if (y + scroll_y + OZONE_NODE_HEIGHT(node) + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
          goto border_iterate;
-      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
+      else if (y + scroll_y - OZONE_NODE_HEIGHT(node) - 20 * scale_factor > bottom_boundary)
       {
          /* All remaining entries are also below the boundary - stop iterating */
          if (node)
-            y += node->height;
+            y += OZONE_NODE_HEIGHT(node);
          break;
       }
 
@@ -6221,7 +6252,7 @@ static void ozone_draw_entries(
 
 border_iterate:
       if (node)
-         y += node->height;
+         y += OZONE_NODE_HEIGHT(node);
    }
 
    if (menu_show_sublabels && menu_current_sel_only && !old_list && (selection < selection_old))
@@ -6310,12 +6341,12 @@ border_iterate:
       if (!node)
          continue;
 
-      if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
+      if (y + scroll_y + OZONE_NODE_HEIGHT(node) + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
       {
-         y += node->height;
+         y += OZONE_NODE_HEIGHT(node);
          continue;
       }
-      else if (y + scroll_y - node->height - 20 * scale_factor > bottom_boundary)
+      else if (y + scroll_y - OZONE_NODE_HEIGHT(node) - 20 * scale_factor > bottom_boundary)
       {
          /* All remaining entries are also below the boundary - stop iterating */
          break;
@@ -6384,7 +6415,7 @@ border_iterate:
 
       if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
       {
-         if (node->wrap && (sublabel_str && *sublabel_str))
+         if (OZONE_NODE_WRAP(node) && (sublabel_str && *sublabel_str))
          {
             wrapped_sublabel_str[0] = '\0';
 
@@ -6655,9 +6686,9 @@ border_iterate:
                   y
                         + ozone->dimensions.entry_height
                         - ozone->dimensions.spacer_1px
-                        + (node->height
+                        + (OZONE_NODE_HEIGHT(node)
                               - ozone->dimensions.entry_height
-                              - (node->sublabel_lines * ozone->fonts.entries_sublabel.line_height)) / 2.0f
+                              - (OZONE_NODE_SUBLABEL_LINES(node) * ozone->fonts.entries_sublabel.line_height)) / 2.0f
                         + ozone->fonts.entries_sublabel.line_ascender
                         + scroll_y,
                   video_width,
@@ -6739,7 +6770,7 @@ border_iterate:
             &entry,
             mymat);
 
-      y += node->height;
+      y += OZONE_NODE_HEIGHT(node);
    }
 
    /* Text layer */
@@ -11282,7 +11313,7 @@ static void ozone_render(void *data,
          /* Check whether this is the first on screen entry */
          if (!first_entry_found)
          {
-            if ((entry_y + node->height) > ozone->dimensions.header_height)
+            if ((entry_y + OZONE_NODE_HEIGHT(node)) > ozone->dimensions.header_height)
             {
                ozone->first_onscreen_entry = i;
                first_entry_found = true;
@@ -11313,7 +11344,7 @@ static void ozone_render(void *data,
             if (     (ozone->pointer.x > entry_x)
                   && (ozone->pointer.x < entry_x + entry_width)
                   && (ozone->pointer.y > entry_y)
-                  && (ozone->pointer.y < entry_y + node->height))
+                  && (ozone->pointer.y < entry_y + OZONE_NODE_HEIGHT(node)))
             {
                /* Pointer selection is always updated */
                menu_input->ptr = (unsigned)i;
