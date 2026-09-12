@@ -87,9 +87,30 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL;
 
 static bool apple_key_state[MAX_KEYS];
 
+/* Drops every key that is currently held. The release is published to
+ * the input layer as well as cleared locally, so a core's keyboard
+ * callback, the menu's flush-and-wait-for-release and anything else
+ * driven by key events see the key-up that the window or the
+ * application never got to deliver. */
 void apple_input_keyboard_reset(void)
 {
-   memset(apple_key_state, 0, sizeof(apple_key_state));
+   unsigned i;
+
+   for (i = 1; i < MAX_KEYS; i++)
+   {
+      if (!apple_key_state[i])
+         continue;
+      apple_key_state[i] = false;
+      input_keyboard_event(false,
+            input_keymaps_translate_keysym_to_rk(i),
+            0, 0, RETRO_DEVICE_KEYBOARD);
+   }
+
+#if TARGET_OS_IPHONE
+   /* The small-keyboard layer latches on a held modifier, so it goes
+    * with the keys it was tracking. */
+   small_keyboard_active = false;
+#endif
 }
 
 /* Send keyboard inputs directly using RETROK_* codes

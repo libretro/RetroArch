@@ -461,6 +461,14 @@ void rarch_stop_draw_observer(void)
     }
 }
 
+/* A cancelled press is the last thing UIKit delivers for that button -
+ * no pressesEnded: follows it - so it releases the key it mapped to
+ * exactly as an ended press does. */
+-(void)pressesCancelled:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+    [self pressesEnded:presses withEvent:event];
+}
+
 -(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
 }
