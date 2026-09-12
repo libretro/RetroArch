@@ -2415,6 +2415,9 @@ static void thread_overlay_enable(void *data, bool state)
       pkt.type   = CMD_OVERLAY_ENABLE;
       pkt.data.b = state;
 
+      /* Not queued: video_thread_get_overlay_interface() writes
+       * thr->overlay from the main thread, and these handlers read
+       * it here - waiting is what orders the two. */
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
@@ -2452,6 +2455,9 @@ static void thread_overlay_tex_geom(void *data,
       pkt.data.rect.w     = w;
       pkt.data.rect.h     = h;
 
+      /* Not queued: video_thread_get_overlay_interface() writes
+       * thr->overlay from the main thread, and these handlers read
+       * it here - waiting is what orders the two. */
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
@@ -2471,6 +2477,9 @@ static void thread_overlay_vertex_geom(void *data,
       pkt.data.rect.w     = w;
       pkt.data.rect.h     = h;
 
+      /* Not queued: video_thread_get_overlay_interface() writes
+       * thr->overlay from the main thread, and these handlers read
+       * it here - waiting is what orders the two. */
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
@@ -2485,6 +2494,9 @@ static void thread_overlay_full_screen(void *data, bool enable)
       pkt.type   = CMD_OVERLAY_FULL_SCREEN;
       pkt.data.b = enable;
 
+      /* Not queued: video_thread_get_overlay_interface() writes
+       * thr->overlay from the main thread, and these handlers read
+       * it here - waiting is what orders the two. */
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
@@ -2557,7 +2569,10 @@ static void thread_set_filtering(void *data,
       pkt.data.filtering.index  = idx;
       pkt.data.filtering.smooth = smooth;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2571,7 +2586,10 @@ static void thread_set_hdr_menu_nits(void *data, float menu_nits)
       pkt.type               = CMD_POKE_SET_HDR_MENU_NITS;
       pkt.data.hdr.menu_nits = menu_nits;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2585,7 +2603,10 @@ static void thread_set_hdr_paper_white_nits(void *data, float paper_white_nits)
       pkt.type                      = CMD_POKE_SET_HDR_PAPER_WHITE_NITS;
       pkt.data.hdr.paper_white_nits = paper_white_nits;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2599,7 +2620,10 @@ static void thread_set_hdr_expand_gamut(void *data, unsigned expand_gamut)
       pkt.type                  = CMD_POKE_SET_HDR_EXPAND_GAMUT;
       pkt.data.hdr.expand_gamut = expand_gamut;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2613,7 +2637,10 @@ static void thread_set_hdr_scanlines(void *data, bool hdr_scanlines)
       pkt.type                = CMD_POKE_SET_HDR_SCANLINES;
       pkt.data.hdr.scanlines  = hdr_scanlines;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2627,7 +2654,10 @@ static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_lay
       pkt.type                        = CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT;
       pkt.data.hdr.subpixel_layout    = hdr_subpixel_layout;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+      /* Nothing comes back from this, so it does not wait for the
+       * video thread: queued, and run before the next frame. */
+      if (!video_thread_defer_packet(thr, &pkt))
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
 
@@ -2671,6 +2701,10 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
       pkt.type   = CMD_POKE_SET_ASPECT_RATIO;
       pkt.data.i = aspect_ratio_idx;
 
+      /* Not queued with the rest: this one sets the driver's resize
+       * flag, and a swapchain rebuilt while the main thread is still
+       * handing over frames is what the video thread waiting here
+       * has always prevented. */
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
    }
 }
