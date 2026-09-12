@@ -691,9 +691,12 @@ typedef struct ra_asio
     * on that path, read by the frontend's overlay. */
    retro_atomic_size_t underruns;
    /* Frames the device has taken: a period per callback, silence
-    * included. Written by the callback thread, read by the writer; a
-    * single aligned word, and a count only ever compared with itself. */
-   size_t             consumed;
+    * included. Written by the callback thread, read by the writer, so
+    * atomic: an aligned word is what the machine will not tear, which
+    * is not the same as the language allowing the unsynchronised pair
+    * - and the underrun counter beside it is already atomic for the
+    * same reason. */
+   retro_atomic_size_t consumed;
    /* Set by the message callback on kAsioResetRequest or
     * kAsioBufferSizeChange: the buffers are to be disposed and created
     * anew - the driver's preferred size may have changed - when the
@@ -867,7 +870,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    ad->last_underran = (have < frames);
    if (have < frames)
       retro_atomic_fetch_add_size(&ad->underruns, 1);
-   ad->consumed     += (size_t)frames;
+   retro_atomic_fetch_add_size(&ad->consumed, (size_t)frames);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1402,7 +1405,8 @@ static void *ra_asio_init(const char *device, unsigned rate,
     * synchronously with ASIOStop. */
    if (g_asio_persistent)
    {
-      ra_asio_t *ad = g_asio_persistent;
+      ra_asio_t *ad     = g_asio_persistent;
+      bool rate_moved   = false;
       g_asio_persistent = NULL;
 
       /* Nothing was freed when this was parked, so a callback still
@@ -1420,17 +1424,55 @@ static void *ra_asio_init(const char *device, unsigned rate,
       retro_atomic_int_init(&ad->is_paused, 0);
       ad->nonblock  = false;
 
+      /* The rate, settled before anything is sized from it.
+       *
+       * ad->sample_rate is only ever what this driver last asked for.
+       * A reset that came from the driver's own control panel may have
+       * moved the hardware since - which is exactly what the rate-change
+       * callback reports - so the driver is asked what it is at now.
+       * Without that, the comparison below is the request against a
+       * stale number, finds them equal, sets nothing, and the buffers,
+       * the period, the latency conversion and the ring are all built
+       * from a rate the hardware had stopped using. */
+      {
+         ASIOSampleRate actual = 0.0;
+         if (     ASIO_CALL_GET_SAMPLE_RATE(ad->iasio, &actual) == ASE_OK
+               && actual > 0.0
+               && (unsigned)actual != ad->sample_rate)
+         {
+            RARCH_LOG("[ASIO] The driver is at %u Hz where this driver had %u Hz.\n",
+                  (unsigned)actual, ad->sample_rate);
+            ad->sample_rate = (unsigned)actual;
+         }
+      }
+
+      /* Then what the core wants, if the driver will take it. A rate
+       * that moves needs the buffers made again around it, so it joins
+       * the reasons to rebuild below rather than being applied after
+       * them as it was. */
+      if (     rate != ad->sample_rate
+            && ASIO_CALL_CAN_SAMPLE_RATE(ad->iasio, (ASIOSampleRate)rate) == ASE_OK
+            && ASIO_CALL_SET_SAMPLE_RATE(ad->iasio, (ASIOSampleRate)rate) == ASE_OK)
+      {
+         RARCH_LOG("[ASIO] The core asks for %u Hz; the driver took it.\n", rate);
+         ad->sample_rate = rate;
+         rate_moved      = true;
+      }
+
       /* The driver asked for a reset while it ran - its buffer size or
        * sample rate changed, from its control panel or otherwise - and
        * the frontend reinitialised audio for it. The buffers are
        * disposed and made again at whatever size it prefers now, in
        * place of ending audio for the session. */
       if (     retro_atomic_load_acquire_int(&ad->rebuild_pending)
+            || rate_moved
             || (long)config_get_ptr()->uints.audio_asio_output_channel != ad->out_left)
       {
          RARCH_LOG("[ASIO] Rebuilding buffers: %s.\n",
                retro_atomic_load_acquire_int(&ad->rebuild_pending)
-               ? "the driver asked for a reset" : "the output channels changed");
+               ? "the driver asked for a reset"
+               : rate_moved ? "the sample rate changed"
+               : "the output channels changed");
          retro_atomic_store_release_int(&ad->rebuild_pending, 0);
          asio_dispose_buffers(ad);
          g_asio = ad;
@@ -1441,14 +1483,6 @@ static void *ra_asio_init(const char *device, unsigned rate,
             return NULL;
          }
          g_asio = NULL;
-      }
-
-      /* Update sample rate if the new core wants something different */
-      if (rate != ad->sample_rate
-            && ASIO_CALL_CAN_SAMPLE_RATE(ad->iasio, (ASIOSampleRate)rate) == ASE_OK)
-      {
-         ASIO_CALL_SET_SAMPLE_RATE(ad->iasio, (ASIOSampleRate)rate);
-         ad->sample_rate = rate;
       }
 
       if (new_rate)
@@ -1490,6 +1524,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
    if (!ad)
       return NULL;
    retro_atomic_size_init(&ad->underruns, 0);
+   retro_atomic_size_init(&ad->consumed, 0);
 
    /* Register cleanup for process exit — ensures the parked
     * instance is properly torn down even if free() only parks it. */
@@ -1918,7 +1953,7 @@ static size_t ra_asio_underruns(void *data)
 static size_t ra_asio_frames_consumed(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
-   return ad ? ad->consumed : 0;
+   return ad ? retro_atomic_load_acquire_size(&ad->consumed) : 0;
 }
 
 static size_t ra_asio_write_avail(void *data)
