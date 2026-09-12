@@ -1530,6 +1530,71 @@ static void test_config_set_insert_is_not_quadratic(void)
          "flag\n", n, elapsed);
 }
 
+/* Setter-created entries are slab-allocated like parsed ones, so
+ * they must not be free()d individually at teardown and a failed
+ * insert must give its slot back.  Both are invisible in a plain
+ * run and immediate under the sanitizers this suite runs with, so
+ * this exercises the mix that would catch a mistake: pooled entries
+ * either side of a parsed one, entries whose values are later
+ * replaced and unset, and a config pilfered by append_conf. */
+static void test_config_setter_entries_are_pooled(void)
+{
+   config_file_t *cfg = cfg_from("parsed_a = \"1\"\nparsed_b = \"2\"\n");
+   config_file_t *donor;
+   struct config_entry_list *entry;
+   const struct config_entry_list *e;
+   size_t n = 0;
+   int i;
+
+   /* Enough to cross the pool's block growth more than once. */
+   for (i = 0; i < 200; i++)
+   {
+      char key[32];
+      snprintf(key, sizeof(key), "set_%d", i);
+      config_set_string(cfg, key, "v");
+   }
+   if (!(entry = config_get_entry(cfg, "set_0")))
+      abort();
+   if (!(entry->flags & CONF_ENTRY_FLG_POOLED))
+   {
+      printf("[FAILED] a setter-created entry is not pooled\n");
+      abort();
+   }
+   /* Replacing a value must not disturb the entry's pooled-ness -
+    * clearing it made teardown free() a pool-interior pointer. */
+   config_set_string(cfg, "set_0", "replaced");
+   if (!(entry->flags & CONF_ENTRY_FLG_POOLED))
+   {
+      printf("[FAILED] replacing a value cleared POOLED\n");
+      abort();
+   }
+   config_unset(cfg, "set_1");
+   config_set_string(cfg, "parsed_a", "overwritten");
+
+   donor = cfg_from("donor = \"1\"\n");
+   config_set_string(donor, "donor_set", "1");
+   if (!config_file_append_conf(cfg, donor))
+      abort();
+   cfg_check_tail(cfg, "after appending a config with pooled entries");
+
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   /* 2 parsed + 200 set - 1 unset + 2 donor */
+   if (n != 203)
+   {
+      printf("[FAILED] entry count is %u, expected 203\n", (unsigned)n);
+      abort();
+   }
+   if (     strcmp(config_get_entry(cfg, "set_0")->value, "replaced")
+         || strcmp(config_get_entry(cfg, "parsed_a")->value, "overwritten")
+         || !config_get_entry(cfg, "donor_set"))
+      abort();
+   config_file_free(cfg);
+   printf("[SUCCESS] setter entries share the parser's pool and "
+         "survive replace, unset and append\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -1593,4 +1658,5 @@ int main(void)
    test_config_include_order_preserved();
    test_config_set_over_parsed_keys_round_trips();
    test_config_set_insert_is_not_quadratic();
+   test_config_setter_entries_are_pooled();
 }

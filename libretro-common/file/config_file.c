@@ -2047,10 +2047,13 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
     * for the hash below. */
    key_len          = strlen(key);
    val_len          = strlen(val);
-   if (!(entry = (struct config_entry_list*)malloc(sizeof(*entry))))
+   /* Setter-created entries come from the same slab the parser
+    * uses, so a generated config gets the parser's node density and
+    * one allocation per entry instead of two. */
+   if (!(entry = config_file_entry_pool_alloc(conf, 0)))
       return;
    entry->readonly  = false;
-   entry->flags     = 0;
+   entry->flags     = CONF_ENTRY_FLG_POOLED;
    entry->next      = NULL;
    entry->key_len   = 0;
    entry->value_len = 0;
@@ -2064,7 +2067,9 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    {
       free(entry->key);
       free(entry->value);
-      free(entry);
+      /* This is the pool's most recent handout, which is the only
+       * one unwind can take back. */
+      config_file_entry_pool_unwind(conf);
       return;
    }
    memcpy(entry->key,   key, key_len + 1);
@@ -2084,6 +2089,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
 
 void config_unset(config_file_t *conf, const char *key)
 {
+   size_t key_len;
    struct config_entry_list *entry = NULL;
 
    if (!conf || !key)
@@ -2092,7 +2098,11 @@ void config_unset(config_file_t *conf, const char *key)
    if (!(entry = config_get_entry(conf, key)))
       return;
 
-   (void)RHMAP_DEL_FULL(conf->entries_map, config_hash_span(entry->key, strlen(entry->key)), entry->key);
+   /* The entry's key was measured when it was parsed or set; the
+    * cache saturates to 0 above 64 KiB, which is the only case that
+    * has to measure again. */
+   key_len = entry->key_len ? entry->key_len : strlen(entry->key);
+   (void)RHMAP_DEL_FULL(conf->entries_map, config_hash_span(entry->key, key_len), entry->key);
 
    if (entry->key && !(entry->flags & CONF_ENTRY_FLG_KEY_BORROWED))
       free(entry->key);
