@@ -477,7 +477,12 @@ typedef struct video_frame_info
 
    uint16_t frame_time_target;
 
-   char stat_text[1024];
+   /* The statistics overlay's text, or an empty string when it is not
+    * shown: a pointer, so a frame descriptor stays small enough to
+    * build and hand over cheaply. It points at video_driver_state_t's
+    * buffer, which the main thread owns, or under the threaded wrapper
+    * at the frame's own copy. Never NULL. */
+   const char *stat_text;
    size_t stat_text_len;
 
    bool widgets_active;
@@ -1088,6 +1093,9 @@ typedef struct
     * wrapper - and read by the main thread, the menu and tasks, through
     * video_driver_set_output_size() / video_driver_get_output_size(). */
    retro_atomic_int_t output_size_packed;
+   /* Where the statistics overlay's text is built, for the frame
+    * descriptor to point at (video_frame_info_t::stat_text) */
+   char stat_text[1024];
 #ifdef HAVE_OVERLAY
    /* The active overlay's viewport override, published by the main
     * thread whenever the active overlay changes

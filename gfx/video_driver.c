@@ -4313,6 +4313,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->filter_enable               = settings->bools.video_filter_enable;
    video_info->memory_show                 = settings->bools.video_memory_show;
    video_info->statistics_show             = settings->bools.video_statistics_show;
+   /* Empty until the statistics block below fills it, so a driver that
+    * tests the text finds nothing rather than the last frame's */
+   video_st->stat_text[0]                  = '\0';
+   video_info->stat_text                   = video_st->stat_text;
+   video_info->stat_text_len               = 0;
    video_info->framecount_show             = settings->bools.video_framecount_show;
    video_info->time_show                   = settings->uints.video_time_show;
    video_info->core_status_msg_show        = runloop_st->core_status_msg.set;
@@ -6106,7 +6111,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.color_hp    = NULL;
 
       {
-         size_t __len = snprintf(video_info.stat_text, sizeof(video_info.stat_text),
+         size_t __len = snprintf(video_st->stat_text, sizeof(video_st->stat_text),
                "CORE AV_INFO\n"
                " Size:       %ux%u\n"
                " -Base:      %ux%u\n"
@@ -6166,7 +6171,7 @@ void video_driver_frame(const void *data, unsigned width,
             double      buffer_ms     = audio_driver_get_buffer_latency_ms();
             char        layout_desc[48];
             audio_driver_get_layout_desc(layout_desc, sizeof(layout_desc));
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   "AUDIO: %s %s\n"
                   " SampleRate: %u %s\n"
                   " Speakers: %s\n"
@@ -6190,11 +6195,11 @@ void video_driver_frame(const void *data, unsigned width,
                else
                   strlcpy(stage, "n/a", sizeof(stage));
                if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
-                  __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                         " Buffer:  %s ms (held ~%.0f)\n",
                         stage, buffer_ms / 2.0);
                else
-                  __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                         " Buffer:  %s ms\n",
                         stage);
             }
@@ -6212,13 +6217,13 @@ void video_driver_frame(const void *data, unsigned width,
                    * reads, how far apart they are. Nothing acts on it;
                    * it says what the approximation would have cost. */
                   double alt_ppm = audio_driver_get_sink_alt_ppm();
-                  __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                         " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
                         (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                         (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                         (sink_bias - 1.0) * 1e6);
                   if (alt_ppm != 0.0)
-                     __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                            " Clock vs events: %+.0f ppm\n", alt_ppm);
                   /* What the device's own clock says it is doing,
                    * where the driver can measure it - fitted from
@@ -6229,7 +6234,7 @@ void video_driver_frame(const void *data, unsigned width,
                   {
                      double dev_ppm = 0.0;
                      if (audio_driver_get_device_clock_ppm(&dev_ppm))
-                        __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                        __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                               " Device clock: %+.0f ppm\n", dev_ppm);
                   }
                }
@@ -6237,7 +6242,7 @@ void video_driver_frame(const void *data, unsigned width,
          }
 
          if (audio_st->rate_control_delta)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Saturation:%6.2f %%\n"
                   " Deviation: %6.2f %%\n"
                   " Underrun:  %6.2f %%\n"
@@ -6255,18 +6260,18 @@ void video_driver_frame(const void *data, unsigned width,
           * says whether a stutter was heard, against the percentages
           * above that say how near the buffer came. */
          if (audio_st->current_audio && audio_st->current_audio->underruns)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
 
-         __len += strlcpy_lit(video_info.stat_text + __len, "LATENCY\n",
-               sizeof(video_info.stat_text) - __len);
+         __len += strlcpy_lit(video_st->stat_text + __len, "LATENCY\n",
+               sizeof(video_st->stat_text) - __len);
 
-         __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                " Core:       %5.2f ms\n",
                runloop_st->core_run_time / 1000.0f);
 
          if (video_info.scanline_sync)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Scanline:   %5d\n",
                   video_st->scanline[SCANLINE_NEXT]);
 
@@ -6275,7 +6280,7 @@ void video_driver_frame(const void *data, unsigned width,
          {
             char pbuf[64];
             runloop_pace_string(pbuf, sizeof(pbuf));
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Pacing:     %s\n", pbuf);
          }
 
@@ -6284,7 +6289,7 @@ void video_driver_frame(const void *data, unsigned width,
             uint64_t repeats;
             bool display_phase;
             if (video_thread_presenter_stats(&repeats, &display_phase))
-               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                      " Repeat:     %llu (%s phase)\n",
                      (unsigned long long)repeats,
                      display_phase ? "display" : "timer");
@@ -6294,7 +6299,7 @@ void video_driver_frame(const void *data, unsigned width,
             retro_time_t core_time, render_time;
             if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
                   && display_pacing)
-               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                      " Core Start: display (core %.2f ms, render %.2f ms)\n",
                      core_time / 1000.0f, render_time / 1000.0f);
          }
@@ -6302,7 +6307,7 @@ void video_driver_frame(const void *data, unsigned width,
             retro_time_t lat_avg, lat_max;
             bool lat_display;
             if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
-               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                      " Latency:    %.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
                      lat_avg / 1000.0f,
                      lat_display ? "" : " (est.)",
@@ -6311,7 +6316,7 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
 
          if (video_st->frame_delay_target > 0)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Frame Delay:%2u.00 ms\n"
                   " -Target:    %2u.00 ms\n"
                   " -Idle:      %5.2f ms\n"
@@ -6322,15 +6327,15 @@ void video_driver_frame(const void *data, unsigned width,
                   video_st->frame_time_reserve / 1000.0f);
 
          if (video_info.runahead && !video_info.runahead_second_instance)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Run-Ahead: %u SinInst\n",
                   video_info.runahead_frames);
          else if (video_info.runahead && video_info.runahead_second_instance)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Run-Ahead: %u SecInst\n",
                   video_info.runahead_frames);
          else if (video_info.preemptive_frames)
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
                   " Run-Ahead: %u Preempt\n",
                   video_info.runahead_frames);
 

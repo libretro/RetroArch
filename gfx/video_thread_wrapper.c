@@ -1805,7 +1805,24 @@ static bool video_thread_frame(void *data, const void *frame_,
        * it on the worker races the main thread's writes to
        * video_driver_st and runloop_state. */
       if (video_info)
+      {
          thr->frame.slot[slot].video_info = *video_info;
+         /* The text belongs to the main thread's buffer, which it
+          * rewrites next frame: this frame keeps its own copy. */
+         if (video_info->stat_text_len)
+         {
+            size_t _len = strlcpy(thr->frame.slot[slot].stat_text,
+                  video_info->stat_text,
+                  sizeof(thr->frame.slot[slot].stat_text));
+            if (_len >= sizeof(thr->frame.slot[slot].stat_text))
+               _len = sizeof(thr->frame.slot[slot].stat_text) - 1;
+            thr->frame.slot[slot].video_info.stat_text_len = _len;
+         }
+         else
+            thr->frame.slot[slot].stat_text[0]             = '\0';
+         thr->frame.slot[slot].video_info.stat_text        =
+            thr->frame.slot[slot].stat_text;
+      }
 
       if (msg)
          strlcpy(thr->frame.slot[slot].msg, msg,

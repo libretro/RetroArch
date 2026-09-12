@@ -425,6 +425,11 @@ typedef struct thread_video
           * runloop_state, both of which the main thread mutates, so it
           * must not be called from the worker. */
          video_frame_info_t video_info;
+         /* The statistics overlay's text for this frame, which the main
+          * thread's buffer will not hold by the time this thread draws:
+          * video_info.stat_text points here. Only copied when there is
+          * text, so a frame without the overlay carries none. */
+         char stat_text[1024];
       } slot[2];
       /* Slot the video thread claims next. Claiming flips it. */
       unsigned tail;
