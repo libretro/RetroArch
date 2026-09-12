@@ -441,59 +441,18 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    if (job->sess && !gfx_anim_preview_feed((gfx_anim_preview_t*)job->sess))
       return false;
 
-   /* Frames the display will never show cost nothing but their
-    * decode.  The presenter holds a frame for at least
-    * GFX_THUMB_ANIM_DUR_MIN, so a source faster than that - a 120fps
-    * capture, and every video shot on a modern phone - has frames
-    * that are consumed and immediately superseded.  Where the stream
-    * can pass over one without producing its pixels (the video types
-    * decode into planes they own and convert separately), collapse
-    * them: consume until the accumulated display time reaches the
-    * presenter's floor and convert only the last.  The decode still
-    * happens - later frames reference it - but the colour conversion,
-    * which is what scales with a 4K source, happens once instead of
-    * two or four times.
-    *
-    * Types that cannot defer (animated WEBP and APNG composite onto a
-    * persistent canvas, so the per-frame work is state) report so and
-    * take the single-frame path below unchanged. */
+   if (!(frame = image_transfer_anim_stream_next(job->stream, type,
+         &duration_ms)))
    {
-      int             acc  = 0;
-      const uint32_t *done = NULL;
-
-      for (;;)
-      {
-         int r = image_transfer_anim_stream_skip(job->stream, type,
-               &duration_ms, &done);
-
-         if (!r)
-         {
-            /* End of one pass: honour the container loop count */
-            if (job->loops_left > 0)
-               job->loops_left--;
-            if (job->loops_left == 0)
-               return false;
-            image_transfer_anim_stream_rewind(job->stream, type);
-            acc = 0;
-            if (!image_transfer_anim_stream_skip(job->stream, type,
-                     &duration_ms, &done))
-               return false;
-         }
-
-         acc += (duration_ms > 0) ? duration_ms : GFX_THUMB_ANIM_DUR_DEFAULT;
-         /* done != NULL means the type rendered anyway: nothing was
-          * saved by passing over it, so stop at one frame. */
-         if (done || acc >= GFX_THUMB_ANIM_DUR_MIN)
-            break;
-      }
-
-      if (!(frame = done ? done
-                         : image_transfer_anim_stream_render(job->stream,
-                              type)))
+      /* End of one pass: honour the container loop count */
+      if (job->loops_left > 0)
+         job->loops_left--;
+      if (job->loops_left == 0)
          return false;
-      /* Report the time actually consumed, so collapsing frames does
-       * not make the animation play faster than the container says. */
-      duration_ms = acc;
+      image_transfer_anim_stream_rewind(job->stream, type);
+      if (!(frame = image_transfer_anim_stream_next(job->stream, type,
+            &duration_ms)))
+         return false;
    }
 
    n = (size_t)job->width * job->height;
