@@ -5519,15 +5519,13 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->get_instance_proc_addr = vulkan_symbol_wrapper_instance_proc_addr();
 }
 
-static void vulkan_init_readback(vk_t *vk, bool video_gpu_record)
+/* recording: whether GPU recording is on. VK_FLAG_GPU_RECORDING at
+ * every call from the frame path, where it came with the frame; the
+ * recording state itself only at init, before the video thread runs. */
+static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
+      bool recording)
 {
-   /* Only bother with this if we're doing GPU recording.
-    * Check rec_st->enable and not driver.recording_data,
-    * because recording is not initialized yet.
-    */
-   recording_state_t *rec_st = recording_state_get_ptr();
-
-   if (!(video_gpu_record && rec_st->enable))
+   if (!(video_gpu_record && recording))
    {
       vk->flags                       &= ~VK_FLAG_READBACK_STREAMED;
       return;
@@ -5871,7 +5869,10 @@ static void *vulkan_init(const video_info_t *video,
    }
 #endif
 
-   vulkan_init_readback(vk, settings->bools.video_gpu_record);
+   /* Not a frame yet, so the recording state is read here, on the
+    * thread that writes it: video_thread_init() has not returned. */
+   vulkan_init_readback(vk, settings->bools.video_gpu_record,
+         recording_state_get_ptr()->enable);
 
    /* Driver resources now match the context's current swapchain. */
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
@@ -7505,6 +7506,13 @@ static bool vulkan_frame(void *data, const void *frame,
       return vulkan_recreate_context_swapchain(vk);
    }
 
+   /* Whether to read frames back travels with the frame, so this thread
+    * does not read the recording state the main thread writes. */
+   if (video_info->gpu_recording)
+      vk->flags |=  VK_FLAG_GPU_RECORDING;
+   else
+      vk->flags &= ~VK_FLAG_GPU_RECORDING;
+
    /* Fast toggle shader filter chain logic */
    filter_chain = vk->filter_chain;
 
@@ -8164,7 +8172,7 @@ static bool vulkan_frame(void *data, const void *frame,
        * (e.g. auto-terminated on resize), tear down readback to avoid
        * stale readback ops that can cause VK_ERROR_DEVICE_LOST. */
       if (  (vk->flags & VK_FLAG_READBACK_STREAMED)
-          && !recording_state_get_ptr()->enable)
+          && !(vk->flags & VK_FLAG_GPU_RECORDING))
       {
          scaler_ctx_gen_reset(&vk->readback.scaler_bgr);
          scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
@@ -9451,7 +9459,8 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
          || (unsigned)vk->readback.scaler_bgr.in_width != vk->vp.width
          || (unsigned)vk->readback.scaler_bgr.in_height != vk->vp.height)
    {
-      vulkan_init_readback(vk, true);
+      vulkan_init_readback(vk, true,
+            (vk->flags & VK_FLAG_GPU_RECORDING) ? true : false);
       return false;
    }
 
@@ -9547,10 +9556,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        || (unsigned)vk->readback.scaler_bgr.in_width  != vk->vp.width
        || (unsigned)vk->readback.scaler_bgr.in_height != vk->vp.height)
    {
-      recording_state_t *rec_st = recording_state_get_ptr();
-      if (rec_st && rec_st->enable)
+      if (vk->flags & VK_FLAG_GPU_RECORDING)
       {
-         vulkan_init_readback(vk, true);
+         vulkan_init_readback(vk, true, true);
          if (vk->flags & VK_FLAG_READBACK_STREAMED)
             RARCH_LOG("[Vulkan] (Re)initialized async readback for recording.\n");
       }

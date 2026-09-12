@@ -118,7 +118,11 @@ enum vk_flags
     * should copy the HDR backbuffer (not the tone-mapped SDR one) into the
     * HDR readback staging buffer. Distinct from READBACK_PENDING so the two
     * never interfere. */
-   VK_FLAG_READBACK_HDR        = (1 << 18)
+   VK_FLAG_READBACK_HDR        = (1 << 18),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   VK_FLAG_GPU_RECORDING       = (1 << 19)
 };
 
 enum vk_texture_type
