@@ -29,6 +29,8 @@ check:
 	   $(CC32) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_abi_check.c && \
 	   echo "  i686   gnu99: same sizes on 32-bit, as they must be"; \
 	 else echo "  i686: no $(CC32), skipped"; fi
+	@$(CC64) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_ioctl_check.c
+	@echo "  x86-64 gnu99: the CTL_CODE fallbacks match winioctl.h"
 	@python3 $(CORE_DIR)/tools/wdmks_abi_guids.py
 
 clean:

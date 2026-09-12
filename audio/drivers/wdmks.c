@@ -175,6 +175,22 @@ enum
  * CTL_CODE(FILE_DEVICE_KS, 0x000, METHOD_NEITHER, FILE_ANY_ACCESS).
  * Spelled as the arithmetic rather than the number so it can be read
  * against the definition. */
+/* CTL_CODE's own pieces. They live in winioctl.h, which windows.h
+ * pulls in for some toolchains and not for others - the griffin build
+ * under MSVC gets neither - and including it here would drag the whole
+ * device-control surface into a translation unit that holds every
+ * driver in the tree. Three constants is the smaller thing to carry,
+ * and they are as fixed as the rest of the interface above. */
+#ifndef METHOD_NEITHER
+#define METHOD_NEITHER 3
+#endif
+#ifndef FILE_ANY_ACCESS
+#define FILE_ANY_ACCESS 0
+#endif
+#ifndef FILE_WRITE_ACCESS
+#define FILE_WRITE_ACCESS 0x0002
+#endif
+
 #define RA_FILE_DEVICE_KS 0x0000002f
 #define RA_KS_CTL_CODE(fn) \
    (((RA_FILE_DEVICE_KS) << 16) | ((FILE_ANY_ACCESS) << 14) | ((fn) << 2) | (METHOD_NEITHER))
