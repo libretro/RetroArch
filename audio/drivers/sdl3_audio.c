@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -60,6 +61,29 @@ typedef struct sdl3_audio
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
    bool data_moved; /**< Wake token set by the stream callback, consumed by waiters. Guarded by lock; makes the queue-full test race-free. */
    SDL_AtomicInt defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
+
+   /* Frames the device has taken since the stream opened, for the sink
+    * rate estimate that drives rate control.
+    *
+    * This driver reported nothing at all before, so the estimate had
+    * only the frontend's own accounting to work from on SDL3. SDL
+    * exposes no device clock - there is no position and no timestamp
+    * to be had from it - but it does say how much of what was put in
+    * is still queued, and what went in less what is still waiting is
+    * what the device has taken. That is the shape ALSA uses.
+    *
+    * Counted in device frames: the write_raw path puts int16 stereo in
+    * at the core's rate and lets SDL resample, so its frames are
+    * converted by the rate ratio on the way in, the same conversion
+    * write_avail() applies to the queue depth.
+    *
+    * What this does NOT account for is the frequency ratio rate
+    * control sets on the stream, which shifts the input-to-output
+    * ratio by its own correction - a fraction of a percent. The count
+    * is therefore an estimate of the device's consumption and not a
+    * reading of it, which is the same standing as the ALSA position
+    * and unlike a real device clock. */
+   retro_atomic_size_t consumed_frames;
 } sdl3_audio_t;
 
 /**
@@ -332,10 +356,21 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
    sdl->gain = 1.0f;
+   retro_atomic_size_init(&sdl->consumed_frames, 0);
 
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
-      SDL_PutAudioStreamData(sdl->stream, tmp, (int)sdl->buffer_size);
+      if (SDL_PutAudioStreamData(sdl->stream, tmp, (int)sdl->buffer_size))
+      {
+         /* The priming silence counts too: it is queued like anything
+          * else, and leaving it out of what went in while it sits in
+          * what is still queued would hold the count at zero until it
+          * had drained, and short by that much for ever after. */
+         size_t fb = SDL_AUDIO_FRAMESIZE(sdl->spec);
+         if (fb)
+            retro_atomic_fetch_add_size(&sdl->consumed_frames,
+                  sdl->buffer_size / fb);
+      }
       free(tmp);
    }
 
@@ -443,6 +478,39 @@ static void *sdl3_audio_init(const char *device,
 error:
    sdl3_audio_free(sdl);
    return NULL;
+}
+
+/* What the device has taken: everything put in, less what is still
+ * queued behind it. See the note on consumed_frames - an estimate of
+ * the device's consumption, not a clock read off it, which is why it
+ * is reported through frames_consumed() and there is no
+ * device_clock_ppm() beside it. */
+static size_t sdl3_audio_frames_consumed(void *data)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   int           queued;
+   size_t        put, waiting, frame_bytes;
+
+   if (!sdl || !sdl->stream)
+      return 0;
+
+   put    = retro_atomic_load_acquire_size(&sdl->consumed_frames);
+   queued = SDL_GetAudioStreamQueued(sdl->stream);
+   if (queued <= 0)
+      return put;
+
+   /* SDL counts the queue in the stream's input format, which is the
+    * core's on the raw path and the device's otherwise. */
+   frame_bytes = sdl->raw_rate ? (2 * sizeof(int16_t))
+                               : SDL_AUDIO_FRAMESIZE(sdl->spec);
+   if (!frame_bytes)
+      return put;
+   waiting = (size_t)queued / frame_bytes;
+   if (sdl->raw_rate && sdl->spec.freq)
+      waiting = (size_t)((uint64_t)waiting * (unsigned)sdl->spec.freq
+            / (unsigned)sdl->raw_rate);
+
+   return (waiting < put) ? put - waiting : 0;
 }
 
 static size_t sdl3_audio_write_avail(void *data)
@@ -611,6 +679,16 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
             break;
          }
          size += write_amt;
+         /* In device frames, so the raw path's core-rate input is
+          * converted the way write_avail() converts the queue. */
+         if (frame_size)
+         {
+            size_t f = write_amt / frame_size;
+            if (sdl->raw_rate && sdl->spec.freq)
+               f = (size_t)((uint64_t)f * (unsigned)sdl->spec.freq
+                     / (unsigned)sdl->raw_rate);
+            retro_atomic_fetch_add_size(&sdl->consumed_frames, f);
+         }
       }
    }
 
@@ -783,7 +861,7 @@ audio_driver_t audio_sdl3 = {
    sdl3_audio_buffer_size,
    sdl3_audio_write_raw,
    sdl3_audio_wait_writable,
-   NULL, /* frames_consumed */
+   sdl3_audio_frames_consumed,
    NULL, /* underruns */
    sdl3_audio_layout
 };
