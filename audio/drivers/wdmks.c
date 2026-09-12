@@ -1676,10 +1676,28 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    w->rt_size    = (size_t)out.ActualBufferSize;
    w->rt_barrier = out.CallMemoryBarrier ? true : false;
 
-   /* Whole frames: the loop wraps at the end of the buffer, and a
-    * wrap mid-frame rotates every channel after it for good - the
-    * same hazard the packet path guards against. */
-   w->rt_size   -= w->rt_size % w->frame_bytes;
+   /* The ring is the driver's and wraps where the driver wraps it.
+    *
+    * This used to trim the size down to whole frames, which sounds
+    * like the same guard the packet path applies to a transfer and is
+    * not: trimming a modulus does not shorten anybody's ring. It
+    * makes ours wrap at N-r while the hardware keeps wrapping at N,
+    * so the two diverge by r bytes every lap and never come back -
+    * which is worse than the misalignment it was meant to answer, and
+    * silent.
+    *
+    * A WaveRT driver is supposed to return a size aligned to the
+    * format it accepted, so this should never fire. If one does not,
+    * saying so and declining is the honest answer: there is no
+    * arithmetic here that makes a ring with a partial frame in it
+    * play correctly. */
+   if (w->rt_size % w->frame_bytes)
+   {
+      RARCH_ERR("[WDM-KS] The pin returned a %u-byte buffer, which is"
+            " not a whole number of %u-byte frames.\n",
+            (unsigned)w->rt_size, (unsigned)w->frame_bytes);
+      return false;
+   }
    if (!w->rt_size)
       return false;
 
@@ -1906,11 +1924,33 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
    }
 
    deadline = cpu_features_get_time_usec() + period_usec;
-   do
+
+   /* How the deadline is waited out depends on what asking the device
+    * where it is actually costs, and the two are not close.
+    *
+    * With a mapped position register it is a volatile word: polling it
+    * on every yield is free, and finding the room early is worth
+    * having, so the loop asks each time.
+    *
+    * Without one, every ask is a DeviceIoControl - a kernel
+    * transition - and a yield that returns at once because nothing
+    * else wants the processor turns a six-millisecond wait into
+    * thousands of them. There the deadline is what is waited out, and
+    * the device is asked once at the end. That is what the deadline
+    * is for: it was computed from the cursor and the rate precisely
+    * so that it does not need checking on the way. */
+   if (w->rt_pos)
    {
+      do
+      {
+         SwitchToThread();
+      } while (cpu_features_get_time_usec() < deadline
+            && !wdmks_rt_free(w));
+      return;
+   }
+
+   while (cpu_features_get_time_usec() < deadline)
       SwitchToThread();
-   } while (cpu_features_get_time_usec() < deadline
-         && !wdmks_rt_free(w));
 }
 
 /* The event the driver signals as it passes each notification point.
@@ -2097,8 +2137,9 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
             break;
          /* The event where the driver gives one, which is what keeps
           * this fed when the process is not in the foreground; where
-          * there is none, a wait computed from what is still to be
-          * placed and how fast the device is taking it. */
+          * there is none, wdmks_rt_wait_room() waits out an interval
+          * computed from what is still to be placed and how fast the
+          * device is taking it. */
          wdmks_rt_wait_room(w, size - done);
          if (!(room = wdmks_rt_free(w)))
             continue;
@@ -2589,10 +2630,10 @@ static size_t wdmks_wait_writable(void *data, size_t len)
       {
          /* The notification event where the driver gives one - which
           * is what the frontend's audio thread ends up blocked on,
-          * so it sleeps until the device has actually freed room
-          * rather than waking every millisecond to find out. Cheaper,
-          * steadier, and it is the same wait the write path already
-          * uses; a sleep only where there is no event to wait on.
+          * so it waits until the device has actually freed room
+          * rather than waking on a timer to find out. It is the same
+          * wait the write path uses, and where a driver offers no
+          * event it becomes the computed one rather than a sleep.
           *
           * Bounded either way: a device that has stopped returns
           * nothing rather than holding the audio thread. */
