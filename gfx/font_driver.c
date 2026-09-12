@@ -84,13 +84,17 @@ static font_file_use_t *font_file_uses;
  * the case this exists for.  The file read deliberately happens outside
  * the lock; spinning while another thread pulls megabytes off a memory
  * card would be far worse than the contention it avoids. */
-/* retro_atomic.h's fallback backend has no compare-and-swap: it is
- * selected precisely on the targets whose toolchains offer no
- * lock-free integer atomics, which are the single-core consoles, and
- * there the list is only ever touched from one thread.  Gate on the
- * primitive rather than on a platform list, so a target that gains
- * atomics gains the locking with them. */
-#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int)
+/* Gate on the primitives rather than on a platform list, so a target
+ * that gains atomics gains the locking with them.  Both gates are
+ * needed: the fallback backend has no compare-and-swap at all, and the
+ * PS2 backend has one that is atomic but not lock-free, taken with the
+ * interrupts masked.  Spinning on it would hang the EE outright -- one
+ * core, and a kernel that reschedules only out of an interrupt, so the
+ * thread holding the word never runs again.  Those targets keep the
+ * unlocked path, where the list is only ever touched from one
+ * thread. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
+ && defined(RETRO_ATOMIC_LOCK_FREE)
 static retro_atomic_int_t font_file_lock_word;
 #define FONT_FILE_LOCK() \
    do { while (!retro_atomic_cas_int(&font_file_lock_word, 0, 1)) { } } while (0)

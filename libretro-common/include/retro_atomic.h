@@ -78,7 +78,9 @@
  *                                    Xbox 360 XDK, modern Win32/x64)
  *   5. Mach OSAtomic*               (Apple PPC / pre-10.7)
  *   6. GCC __sync_*                 (very old GCC, GCC 4.1-4.6)
- *   7. volatile fallback            (single-core, x86 TSO, or last resort)
+ *   7. PS2 EE interrupt mask        (R5900: no LL/SC, one core, ps2sdk
+ *                                    DIntr/EIntr around the RMW)
+ *   8. volatile fallback            (single-core, x86 TSO, or last resort)
  *
  * Capability macros (defined after backend selection):
  *
@@ -87,10 +89,23 @@
  *                                 of any code that uses the API at all.
  *   RETRO_ATOMIC_LOCK_FREE     -> 1 if a real lock-free backend was
  *                                 selected (1, 2, 3, 4, 5, or 6).  NOT
- *                                 defined if the volatile fallback (7)
- *                                 was selected.  SPSC fifos and other
- *                                 lock-free data structures should gate
- *                                 on this.
+ *                                 defined for the PS2 backend (7) or
+ *                                 the volatile fallback (8).  SPSC
+ *                                 fifos and other lock-free data
+ *                                 structures should gate on this.
+ *
+ *                                 The PS2 backend is genuinely atomic
+ *                                 but not lock-free: it masks
+ *                                 interrupts for the length of the
+ *                                 read-modify-write.  The distinction
+ *                                 matters to callers that would spin.
+ *                                 The EE has one core and its kernel
+ *                                 only reschedules out of an
+ *                                 interrupt, so a thread spinning on a
+ *                                 word another thread owns never lets
+ *                                 that thread run: spin loops must
+ *                                 gate on RETRO_ATOMIC_LOCK_FREE, not
+ *                                 merely on the primitive existing.
  *
  *                                 Strictly speaking, the C and C++
  *                                 standards do not guarantee that
@@ -265,8 +280,12 @@
  *   RETRO_ATOMIC_FORCE_MSVC
  *   RETRO_ATOMIC_FORCE_APPLE
  *   RETRO_ATOMIC_FORCE_SYNC
+ *   RETRO_ATOMIC_FORCE_PS2
  *   RETRO_ATOMIC_FORCE_VOLATILE
- * to bypass auto-detection.  Useful for porting and for testing.       */
+ * to bypass auto-detection.  Useful for porting and for testing.
+ * RETRO_ATOMIC_FORCE_VOLATILE is also the escape hatch for a PS2 TU
+ * built without ps2sdk's include path, since the PS2 backend needs
+ * <kernel.h>.                                                         */
 #if defined(RETRO_ATOMIC_FORCE_C11)
 #define RETRO_ATOMIC_BACKEND_C11 1
 #elif defined(RETRO_ATOMIC_FORCE_CXX11)
@@ -279,17 +298,31 @@
 #define RETRO_ATOMIC_BACKEND_APPLE 1
 #elif defined(RETRO_ATOMIC_FORCE_SYNC)
 #define RETRO_ATOMIC_BACKEND_SYNC 1
+#elif defined(RETRO_ATOMIC_FORCE_PS2)
+#define RETRO_ATOMIC_BACKEND_PS2 1
 #elif defined(RETRO_ATOMIC_FORCE_VOLATILE)
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
-/* Some targets ship a modern C11/GCC toolchain on hardware with no
- * usable atomic instruction -- the PS2 R5900 is the case in point.  The
- * builtins compile there, but the compiler lowers them to __atomic_*
- * libcalls, and those SDKs do not ship libatomic, so the link fails with
- * undefined references to e.g. __atomic_fetch_or_4.  GCC and Clang both
- * publish __GCC_ATOMIC_INT_LOCK_FREE: 2 means always lock-free, anything
- * less means the compiler may emit a call.  Only take a builtin backend
- * when it is 2.  Such targets are single-core in practice, which is
- * exactly the condition under which the volatile fallback is sound. */
+/* The R5900 has no LL/SC: GCC's ISA_HAS_LL_SC excludes TARGET_MIPS5900
+ * outright, so the compiler lowers every builtin RMW to an __atomic_*
+ * libcall and the ps2sdk toolchain does not ship libatomic to resolve
+ * it.  The EE has one core and its kernel reschedules only out of an
+ * interrupt, so masking interrupts across a read-modify-write is a
+ * real atomic there, and ps2sdk hands us the mask: DIntr()/EIntr()
+ * are a Status read plus di/ei, carrying the erratum retry loop the
+ * di needs.  That beats the volatile fallback, whose fetch_add and
+ * fetch_or are plain non-atomic sequences -- rthreads.c's PS2 thread
+ * lifecycle publishes PS2_THREAD_DONE/PS2_THREAD_DETACHED with
+ * fetch_or precisely to have the last writer win. */
+#elif defined(PS2) || defined(_EE)
+#define RETRO_ATOMIC_BACKEND_PS2 1
+/* Other targets ship a modern C11/GCC toolchain on hardware with no
+ * usable atomic instruction, or with one the toolchain will not use.
+ * GCC and Clang both publish __GCC_ATOMIC_INT_LOCK_FREE: 2 means
+ * always lock-free, anything less means the compiler may emit a call
+ * into a libatomic such an SDK will not have.  Only take a builtin
+ * backend when it is 2.  Such targets are single-core in practice,
+ * which is exactly the condition under which the volatile fallback is
+ * sound. */
 #elif defined(__GCC_ATOMIC_INT_LOCK_FREE) && __GCC_ATOMIC_INT_LOCK_FREE != 2
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && \
@@ -350,6 +383,15 @@
 #elif defined(RETRO_ATOMIC_BACKEND_SYNC)
 #define RETRO_ATOMIC_LOCK_FREE 1
 #define RETRO_ATOMIC_BACKEND_NAME "GCC __sync_*"
+#elif defined(RETRO_ATOMIC_BACKEND_PS2)
+#define RETRO_ATOMIC_BACKEND_NAME "PS2 EE interrupt mask"
+/* Atomic against every other EE thread, and against the interrupt
+ * handlers themselves, but not lock-free: RETRO_ATOMIC_LOCK_FREE stays
+ * undefined so that a caller which would spin keeps its locked path on
+ * this target. */
+#if defined(RETRO_ATOMIC_REQUIRE_LOCK_FREE)
+#error "retro_atomic.h: RETRO_ATOMIC_REQUIRE_LOCK_FREE was set, but the PS2 EE backend is interrupt-masked rather than lock-free: the R5900 has no LL/SC to build a lock-free RMW on. The operations are atomic, so a caller that only needs atomicity can drop the requirement; a caller that needs to spin on them cannot run on a single core and should keep its locked implementation."
+#endif
 #else /* RETRO_ATOMIC_BACKEND_VOLATILE */
 /* RETRO_ATOMIC_LOCK_FREE intentionally NOT defined for the volatile
  * fallback; callers that gate on it will compile without the
@@ -761,6 +803,115 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_fetch_sub_size(p, v) \
    __sync_fetch_and_sub((p), (v))
 
+/* ---- PS2 EE interrupt mask --------------------------------------------- */
+#elif defined(RETRO_ATOMIC_BACKEND_PS2)
+
+#include <stddef.h>
+#include <kernel.h>
+
+typedef volatile int    retro_atomic_int_t;
+typedef volatile size_t retro_atomic_size_t;
+
+#define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
+#define retro_atomic_size_init(p, v)   (*(p) = (v))
+
+/* DIntr() returns non-zero only when that call is the one that masked
+ * the interrupts, so nesting leaves them masked until the outermost
+ * section ends; ps2sdk's own kernel sources take the return value and
+ * call EIntr() on it exactly this way.  Both are a COP0 Status read
+ * plus one di/ei, and DIntr() carries the retry loop the EE's di
+ * needs, which is why this calls into the SDK rather than emitting
+ * the instructions here. */
+static INLINE int retro_atomic_ee_mask_(void)
+{
+   return DIntr();
+}
+
+static INLINE void retro_atomic_ee_unmask_(int masked)
+{
+   if (masked)
+      EIntr();
+}
+
+/* One in-order core: an aligned word load or store is already
+ * indivisible and needs no barrier, so only the read-modify-writes
+ * take the mask.  volatile supplies the compiler barrier. */
+#define retro_atomic_load_acquire_int(p)         (*(p))
+#define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
+#define retro_atomic_load_acquire_size(p)        (*(p))
+#define retro_atomic_load_relaxed_size(p)        (*(p))
+#define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
+
+static INLINE int retro_atomic_ee_fetch_add_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old + v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_fetch_sub_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old - v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_fetch_or_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old | v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_fetch_and_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old & v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE size_t retro_atomic_ee_fetch_add_size_(retro_atomic_size_t *p,
+      size_t v)
+{
+   size_t old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old + v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE size_t retro_atomic_ee_fetch_sub_size_(retro_atomic_size_t *p,
+      size_t v)
+{
+   size_t old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = old - v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+#define retro_atomic_fetch_add_int(p, v)  retro_atomic_ee_fetch_add_int_((p), (v))
+#define retro_atomic_fetch_sub_int(p, v)  retro_atomic_ee_fetch_sub_int_((p), (v))
+#define retro_atomic_fetch_or_int(p, v)   retro_atomic_ee_fetch_or_int_((p), (v))
+#define retro_atomic_fetch_and_int(p, v)  retro_atomic_ee_fetch_and_int_((p), (v))
+#define retro_atomic_fetch_add_size(p, v) retro_atomic_ee_fetch_add_size_((p), (v))
+#define retro_atomic_fetch_sub_size(p, v) retro_atomic_ee_fetch_sub_size_((p), (v))
+
 /* ---- Volatile fallback ------------------------------------------------- */
 #else /* RETRO_ATOMIC_BACKEND_VOLATILE */
 
@@ -1037,6 +1188,75 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 
+#elif defined(RETRO_ATOMIC_BACKEND_PS2)
+
+typedef void* volatile retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+
+static INLINE int retro_atomic_ee_exchange_int_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_cas_int_(retro_atomic_int_t *p,
+      int expected, int desired)
+{
+   int ok;
+   int masked = retro_atomic_ee_mask_();
+   if ((ok = (*p == expected)))
+      *p = desired;
+   retro_atomic_ee_unmask_(masked);
+   return ok;
+}
+
+static INLINE void *retro_atomic_ee_exchange_ptr_(retro_atomic_ptr_t *p,
+      void *v)
+{
+   void *old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_cas_ptr_(retro_atomic_ptr_t *p,
+      void *expected, void *desired)
+{
+   int ok;
+   int masked = retro_atomic_ee_mask_();
+   if ((ok = (*p == expected)))
+      *p = desired;
+   retro_atomic_ee_unmask_(masked);
+   return ok;
+}
+
+#define retro_atomic_exchange_int(p, v) \
+   retro_atomic_ee_exchange_int_((p), (v))
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_ee_cas_int_((p), (expected), (desired))
+#define retro_atomic_load_acquire_ptr(p)      (*(p))
+#define retro_atomic_store_release_ptr(p, v)  do { *(p) = (v); } while (0)
+#define retro_atomic_exchange_ptr(p, v) \
+   retro_atomic_ee_exchange_ptr_((p), (void*)(v))
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   retro_atomic_ee_cas_ptr_((p), (void*)(expected), (void*)(desired))
+/* A compiler barrier is the whole of a fence on one in-order core with
+ * no store buffer another thread can observe.  Memory shared with the
+ * DMAC, the VUs or the IOP is a different problem, answered by the
+ * uncached segment and the cache ops in ps2sdk, not by this header. */
+#define retro_atomic_thread_fence_acquire() \
+   __asm__ __volatile__("" ::: "memory")
+#define retro_atomic_thread_fence_release() \
+   __asm__ __volatile__("" ::: "memory")
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
 #else
 /* RETRO_ATOMIC_BACKEND_VOLATILE: no CAS, no pointer ops.
  * RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR stay undefined.
@@ -1251,6 +1471,61 @@ static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64
    __sync_bool_compare_and_swap((p), (expected), (desired))
 #define RETRO_ATOMIC_HAS_64 1
 #endif /* __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 */
+
+#elif defined(RETRO_ATOMIC_BACKEND_PS2)
+
+#include <stdint.h>
+typedef volatile int64_t retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     (*(p) = (v))
+
+/* The load and the store take the mask here, unlike their int-width
+ * counterparts: the EE's ABI keeps a 64-bit integer in a register pair
+ * and the compiler is free to move it in two instructions, so the
+ * access is not indivisible on its own. */
+static INLINE int64_t retro_atomic_ee_load_64_(retro_atomic_64_t *p)
+{
+   int64_t v;
+   int masked = retro_atomic_ee_mask_();
+   v          = *p;
+   retro_atomic_ee_unmask_(masked);
+   return v;
+}
+
+static INLINE void retro_atomic_ee_store_64_(retro_atomic_64_t *p, int64_t v)
+{
+   int masked = retro_atomic_ee_mask_();
+   *p         = v;
+   retro_atomic_ee_unmask_(masked);
+}
+
+static INLINE int64_t retro_atomic_ee_exchange_64_(retro_atomic_64_t *p,
+      int64_t v)
+{
+   int64_t old;
+   int masked = retro_atomic_ee_mask_();
+   old        = *p;
+   *p         = v;
+   retro_atomic_ee_unmask_(masked);
+   return old;
+}
+
+static INLINE int retro_atomic_ee_cas_64_(retro_atomic_64_t *p,
+      int64_t expected, int64_t desired)
+{
+   int ok;
+   int masked = retro_atomic_ee_mask_();
+   if ((ok = (*p == expected)))
+      *p = desired;
+   retro_atomic_ee_unmask_(masked);
+   return ok;
+}
+
+#define retro_atomic_load_acquire_64(p)     retro_atomic_ee_load_64_((p))
+#define retro_atomic_store_release_64(p, v) retro_atomic_ee_store_64_((p), (v))
+#define retro_atomic_exchange_64(p, v)      retro_atomic_ee_exchange_64_((p), (v))
+#define retro_atomic_cas_64(p, expected, desired) \
+   retro_atomic_ee_cas_64_((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
 
 #else
 /* volatile fallback: RETRO_ATOMIC_HAS_64 stays undefined. */
