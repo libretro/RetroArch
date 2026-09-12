@@ -129,8 +129,15 @@
  * once here before any driver sees it. The setting's range starts at
  * zero, and zero reached the drivers: some floored it themselves, each
  * at its own value, one refused to open, one fell back to a fixed
- * fifo. A driver keeps only a floor of its hardware's own. */
-#define AUDIO_LATENCY_MIN_MS           8
+ * fifo. A driver keeps only a floor of its hardware's own.
+ *
+ * Eight is the default and was for a long time the only value. It is a
+ * setting now - audio_latency_floor - because the reasoning above is
+ * about drivers mishandling zero rather than about hardware, and an
+ * exclusive-mode driver that negotiates its period with the device can
+ * go below it where the device allows. Never below one: zero is the
+ * value that caused the trouble this floor exists for. */
+#define AUDIO_LATENCY_MIN_MS           1
 
 /* Region spacing inside the two scratch arenas, in elements: 64 bytes
  * for either type. Every region starts on a 64-byte boundary for the
@@ -3128,12 +3135,19 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    convert_float_to_s16_init_simd();
    audio_driver_clamp_init_simd();
 
-   if (audio_latency < AUDIO_LATENCY_MIN_MS)
    {
-      RARCH_WARN("[Audio] Latency setting of %u ms is below the %u ms minimum; using %u ms.\n",
-            audio_latency, AUDIO_LATENCY_MIN_MS, AUDIO_LATENCY_MIN_MS);
-      latency_floored = true;
-      audio_latency   = AUDIO_LATENCY_MIN_MS;
+      unsigned floor_ms = settings->uints.audio_latency_floor;
+      if (floor_ms < AUDIO_LATENCY_MIN_MS)
+         floor_ms = AUDIO_LATENCY_MIN_MS;
+
+      if (audio_latency < floor_ms)
+      {
+         RARCH_WARN("[Audio] Latency setting of %u ms is below the %u ms"
+               " floor; using %u ms.\n",
+               audio_latency, floor_ms, floor_ms);
+         latency_floored = true;
+         audio_latency   = floor_ms;
+      }
    }
 
    if (!arena_int16 || !arena_float)

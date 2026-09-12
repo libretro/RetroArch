@@ -1315,6 +1315,15 @@
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
+/* The floor applied to the audio latency setting before any driver
+ * sees it, in milliseconds. Eight is what it was fixed at, and the
+ * reason it existed: zero used to reach the drivers and each handled
+ * it differently. Lower it and an exclusive-mode driver - WASAPI,
+ * ASIO, WDM-KS - will negotiate a shorter period with the device
+ * where the device allows one; a driver that cannot goes no lower
+ * than its own hardware floor either way. */
+#define DEFAULT_AUDIO_LATENCY_FLOOR 8
+
 #define DEFAULT_AUDIO_DEVICE NULL
 
 /* Desired audio latency in milliseconds. Might not be honored

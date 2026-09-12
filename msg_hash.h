@@ -20757,6 +20757,7 @@ enum msg_hash_enums
    MENU_LABEL(AUDIO_MIXER_VOLUME),
    MENU_LBL_H(AUDIO_RATE_CONTROL_DELTA),
    MENU_LABEL(AUDIO_LATENCY),
+   MENU_LABEL(AUDIO_LATENCY_FLOOR),
    /* GENERATED REGION: resampler quality group enum rows (see settings/settings_def_audio_resampler_quality.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

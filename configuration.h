@@ -164,6 +164,13 @@ typedef struct settings
       unsigned audio_output_sample_rate;
       unsigned audio_output_layout;
       unsigned audio_latency;
+      /* The floor applied to audio_latency before any driver sees it,
+       * in milliseconds. Eight by default, which is what it was fixed
+       * at; lower it and an exclusive-mode driver that can negotiate a
+       * shorter period with the device will. Never zero - zero is the
+       * value that reached the drivers before this floor existed, and
+       * each did something different with it. */
+      unsigned audio_latency_floor;
       unsigned audio_format_negotiation;
 
 #ifdef HAVE_WASAPI

@@ -3351,6 +3351,7 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("audio_latency_floor",           &settings->uints.audio_latency_floor, true, DEFAULT_AUDIO_LATENCY_FLOOR, false);
 
 
 #ifdef HAVE_MICROPHONE
@@ -5567,6 +5568,7 @@ void config_set_defaults(void *data)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
 
    settings->uints.audio_latency               = g_defaults.settings_out_latency;
+   settings->uints.audio_latency_floor         = DEFAULT_AUDIO_LATENCY_FLOOR;
 
    if (!g_defaults.settings_in_latency)
       g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
