@@ -34,13 +34,12 @@
  * it, and the producer frees it behind a retire().  Under ASan any
  * hole in the protocol surfaces as a heap-use-after-free.
  *
- * Build with -DTORTURE to widen the window between a reader's
- * generation sample and its hazard arm.  That is the ordering the
- * first draft of this code got wrong -- it sampled the generation
- * after the tuple snapshot instead of before, which let a whole
- * retire slip into the gap unnoticed -- and the plain build does
- * not hit it reliably.  The torture build fails in under a second
- * if that ordering regresses.
+ * Build with -DTORTURE to widen the window that follows the tuple
+ * snapshot.  A reader must sample the generation before that
+ * snapshot; sample it after and a whole retire fits in the gap, so
+ * the re-validate compares equal and the callback runs on freed
+ * memory.  The plain build does not reach that ordering reliably,
+ * the torture build fails on it in under a second.
  */
 
 #include <stdio.h>
@@ -165,11 +164,11 @@ static void cached_frame_read(void)
       slock_unlock(tuple_lock);
 
 #ifdef TORTURE
-      /* The delay belongs HERE: between the tuple snapshot and
-       * everything that follows.  That is the window a retire has to
-       * slip through unnoticed if the generation is sampled after
-       * the snapshot instead of before it.  Move this line and the
-       * regression test stops testing the regression. */
+      /* The delay belongs HERE, between the tuple snapshot and
+       * everything that follows: that is the window a retire slips
+       * through unnoticed when the generation is sampled after the
+       * snapshot rather than before it.  Move this line and the
+       * regression stops being tested. */
       retro_sleep(1);
 #endif
 
