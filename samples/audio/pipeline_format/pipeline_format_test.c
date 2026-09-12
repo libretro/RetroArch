@@ -96,6 +96,76 @@ static void run_case(bool floating, bool threaded, unsigned latency)
    audio_driver_deinit();
 }
 
+/* The stride against the width, when the float negotiation lands after
+ * the pipe came up wide.
+ *
+ * audio_driver_set_core_float() takes the format when the ring is
+ * still empty, which it must - the negotiation can arrive after init.
+ * But it recomputed the stride for a stereo frame while the ring had
+ * been built for the canonical wide one, so the two disagreed: a
+ * stride of 8 bytes against a frame 11 slots across. Every count on
+ * the pipe is in frames and only the edge speaks bytes, so what that
+ * disagreement produces is a ring read at a fraction of the frames it
+ * holds.
+ *
+ * The order here is the one that reaches it: multi negotiated first,
+ * the pipe built wide, float negotiated after, on an empty ring. */
+static void wide_then_float_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   size_t want;
+
+   memset(settings, 0, sizeof(*settings));
+   settings->bools.audio_enable            = true;
+   settings->bools.audio_sync              = true;
+   settings->bools.audio_threaded_pipeline = true;
+   settings->uints.audio_output_sample_rate = 48000;
+   settings->uints.audio_latency           = 64;
+   settings->floats.slowmotion_ratio       = 1.0f;
+   strcpy(settings->arrays.audio_resampler, "sinc");
+   settings->uints.audio_resampler_quality = RESAMPLER_QUALITY_NORMAL;
+
+   st->input       = 48000;
+   st->volume_gain = 1.0f;
+   video_state_get_ptr()->av_info.timing.fps         = 60.0;
+   video_state_get_ptr()->av_info.timing.sample_rate = 48000;
+
+   /* A core that took the multi-channel entry and int16 output. */
+   audio_driver_set_core_multi(true);
+   audio_driver_set_core_float(false);
+   if (!audio_driver_init_internal(settings, false))
+      abort();
+
+   if (st->pipe_channels != AUDIO_PIPE_CANON_CHANNELS)
+   {
+      printf("wide+float: the pipe did not come up wide (%u channels)\n",
+            st->pipe_channels);
+      failures++;
+      audio_driver_set_core_multi(false);
+      return;
+   }
+
+   /* And the float entry lands afterwards, on an empty ring. */
+   audio_driver_set_core_float(true);
+
+   want = (size_t)st->pipe_channels * sizeof(float);
+   if (st->pipe_frame_bytes != want)
+   {
+      printf("wide+float: stride is %u bytes for a %u-slot frame,"
+             " should be %u\n",
+            (unsigned)st->pipe_frame_bytes, st->pipe_channels,
+            (unsigned)want);
+      failures++;
+   }
+   else
+      printf("wide+float: stride %u bytes for a %u-slot frame\n",
+            (unsigned)st->pipe_frame_bytes, st->pipe_channels);
+
+   audio_driver_set_core_multi(false);
+   audio_driver_set_core_float(false);
+}
+
 int main(void)
 {
    static const unsigned latencies[] = {0, 8, 16, 32, 64, 66, 67, 68, 80};
@@ -117,6 +187,7 @@ int main(void)
       for (threaded = 0; threaded < 2; threaded++)
          for (i = 0; i < sizeof(latencies) / sizeof(latencies[0]); i++)
             run_case(format != 0, threaded != 0, latencies[i]);
-   printf("36 cases, %u failures\n", failures);
+   wide_then_float_case();
+   printf("36 cases plus the wide-then-float one, %u failures\n", failures);
    return failures ? 1 : 0;
 }

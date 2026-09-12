@@ -5987,7 +5987,14 @@ void audio_driver_set_core_float(bool core_float)
          && retro_spsc_read_avail(&audio_st->pipe_ring) == 0)
    {
       audio_st->pipe_float       = core_float;
-      audio_st->pipe_frame_bytes = core_float ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+      /* Against the width the ring was built for, not a stereo frame:
+       * a core that took the multi-channel entry has a ring of the
+       * canonical wide frame, and assuming two slots here left the
+       * stride disagreeing with the width it was built at. The ring
+       * is not rebuilt, only the format it carries is taken, so the
+       * width is the one already in pipe_channels. */
+      audio_st->pipe_frame_bytes = (size_t)audio_st->pipe_channels
+            * (core_float ? sizeof(float) : sizeof(int16_t));
    }
 #endif
 }
