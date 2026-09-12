@@ -58,6 +58,16 @@ typedef void (AL_APIENTRY *al_event_control_t)(ALsizei count,
 typedef void (AL_APIENTRY *al_event_callback_t)(al_event_proc_t callback,
       void *user);
 
+/* ALC_SOFT_device_clock, declared here for the same reason and
+ * resolved the same way: the device's own clock, in nanoseconds. Core
+ * OpenAL has nothing of the kind and Apple's framework does not carry
+ * this extension, so a library without it simply reports no clock and
+ * nothing here refers to a symbol it lacks. */
+#define ALC_DEVICE_CLOCK_SOFT 0x1600
+typedef int64_t al_clock_int64_t;
+typedef void (ALC_APIENTRY *al_get_integer64v_t)(ALCdevice *device,
+      ALCenum pname, ALsizei size, al_clock_int64_t *values);
+
 /* The unit queued to the source: 1024 bytes for stereo, as it always
  * was, made a multiple of the frame for a wider layout (3072 for six
  * channels), since a buffer's size must be whole frames. */
@@ -92,6 +102,33 @@ typedef struct al
    bool nonblock;
    bool is_paused;
    bool events;
+
+   /* The device clock, where the implementation counts one.
+    *
+    * ALC_SOFT_device_clock is an OpenAL Soft extension - core OpenAL
+    * has nothing of the kind, and Apple's implementation does not
+    * carry it - so it is asked for at open and simply absent where it
+    * is not offered. It reports the device's own clock in
+    * nanoseconds, which paired against the frames this driver has
+    * seen consumed is the rate the hardware is really running at.
+    *
+    * The frame count is quantised to a queued buffer, since that is
+    * when a buffer is reported processed. That shifts the line and
+    * leaves its slope alone, which is what the fit reads, so it costs
+    * nothing here - the same reason ALSA can fit a delay-corrected
+    * position.
+    *
+    * A fit over every sample, not two points: noise on a single
+    * anchor divides by the window and reads as drift. Touched from
+    * the frontend thread that calls frames_consumed(), and nowhere
+    * else. Nothing acts on it. */
+   al_get_integer64v_t clk_get;
+   al_clock_int64_t    clk_anchor_ns;
+   size_t       clk_anchor_frames;
+   int          clk_have_anchor;
+   double       clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int          clk_ppm;
+   int          clk_valid;
    /* Raised by the DISCONNECTED event: the device is not coming back,
     * so no wait for it has anything to wait for. */
    bool disconnected;
@@ -106,6 +143,12 @@ static void al_free(void *data)
 
    if (!al)
       return;
+
+   /* What the device clock was doing against the rate the source
+    * played at. Logged, never acted on, as with the other drivers. */
+   if (al->clk_valid)
+      RARCH_LOG("[OpenAL] Device clock, fitted from ALC_SOFT_device_clock:"
+            " %+d ppm against %d Hz.\n", al->clk_ppm, al->rate);
 
    /* Before the source and context go: the mixer thread may call back
     * until the callback is cleared. */
@@ -284,6 +327,16 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    dev_id = NULL;
    if (!al->handle)
       goto error;
+
+   /* The device clock, where this implementation counts one. An
+    * OpenAL Soft extension, so asked for rather than assumed: core
+    * OpenAL has nothing of the kind and Apple's does not carry it. */
+   if (alcIsExtensionPresent(al->handle, "ALC_SOFT_device_clock"))
+      al->clk_get = (al_get_integer64v_t)alcGetProcAddress(
+            al->handle, "alcGetInteger64vSOFT");
+   RARCH_LOG("[OpenAL] Device clock: %s.\n",
+         al->clk_get ? "reported by the implementation (ALC_SOFT_device_clock)"
+                     : "not offered by this implementation");
 
    al->ctx = alcCreateContext(al->handle, NULL);
    if (!al->ctx)
@@ -617,12 +670,79 @@ static size_t al_wait_writable(void *data, size_t len)
  * estimator is already specified to tolerate, so the extra resolution
  * would buy nothing.
  */
+/* The device clock against the rate the source plays at - see the
+ * note on the fields. Sampled where the frontend reads the position,
+ * so the two are taken together. */
+static void al_clock_sample(al_t *al, size_t frames)
+{
+   al_clock_int64_t ns = 0;
+   double x, y, d;
+
+   if (!al->clk_get || !al->rate)
+      return;
+
+   al->clk_get(al->handle, ALC_DEVICE_CLOCK_SOFT, 1, &ns);
+   if (ns <= 0)
+      return;
+
+   if (!al->clk_have_anchor)
+   {
+      al->clk_anchor_ns     = ns;
+      al->clk_anchor_frames = frames;
+      al->clk_have_anchor   = 1;
+      al->clk_sx = al->clk_sy = al->clk_sxx = al->clk_sxy = al->clk_n = 0.0;
+      return;
+   }
+   if (ns <= al->clk_anchor_ns || frames < al->clk_anchor_frames)
+   {
+      /* The clock went backwards, or the source was rewound. */
+      al->clk_anchor_ns     = ns;
+      al->clk_anchor_frames = frames;
+      al->clk_sx = al->clk_sy = al->clk_sxx = al->clk_sxy = al->clk_n = 0.0;
+      return;
+   }
+
+   x = (double)(ns - al->clk_anchor_ns) / 1000000000.0;
+   y = (double)(frames - al->clk_anchor_frames);
+
+   al->clk_sx  += x;
+   al->clk_sy  += y;
+   al->clk_sxx += x * x;
+   al->clk_sxy += x * y;
+   al->clk_n   += 1.0;
+
+   d = al->clk_n * al->clk_sxx - al->clk_sx * al->clk_sx;
+   if (x >= 1.0 && d > 0.0)
+   {
+      double slope = (al->clk_n * al->clk_sxy - al->clk_sx * al->clk_sy) / d;
+      double ppm   = (slope / (double)al->rate - 1.0) * 1000000.0;
+      if (ppm > -100000.0 && ppm < 100000.0)
+      {
+         al->clk_ppm   = (int)ppm;
+         al->clk_valid = 1;
+      }
+   }
+}
+
 static size_t al_frames_consumed(void *data)
 {
-   al_t *al = (al_t*)data;
+   al_t  *al = (al_t*)data;
+   size_t n;
    if (!al)
       return 0;
-   return retro_atomic_load_acquire_size(&al->consumed);
+   n = retro_atomic_load_acquire_size(&al->consumed);
+   al_clock_sample(al, n);
+   return n;
+}
+
+/* The device clock, for the statistics overlay. */
+static bool al_device_clock_ppm(void *data, double *ppm)
+{
+   al_t *al = (al_t*)data;
+   if (!al || !al->clk_valid)
+      return false;
+   *ppm = (double)al->clk_ppm;
+   return true;
 }
 
 static bool al_use_float(void *data)
@@ -663,5 +783,7 @@ audio_driver_t audio_openal = {
    al_wait_writable,
    al_frames_consumed,
    NULL, /* underruns */
-   al_layout
+   al_layout,
+   NULL, /* frames_consumed_fallback */
+   al_device_clock_ppm
 };
