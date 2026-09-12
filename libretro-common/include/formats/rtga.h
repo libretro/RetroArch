@@ -34,6 +34,21 @@ RETRO_BEGIN_DECLS
 
 typedef struct rtga rtga_t;
 
+/**
+ * Raises the resident-byte frontier for a decode running against a
+ * partially filled buffer. Bytes at or past @avail are not read; a
+ * slice that reaches the frontier with more of the file still to
+ * arrive returns \c IMAGE_PROCESS_WAIT and sets rtga_need_more()
+ * rather than treating the wall as EOF. The frontier only ever moves
+ * forward. Never calling this decodes the whole buffer exactly as
+ * before.
+ */
+void rtga_set_avail(rtga_t *rtga, size_t avail);
+
+/** True when the last rtga_process_image() stopped at the frontier
+ * set by rtga_set_avail() rather than finishing. */
+bool rtga_need_more(rtga_t *rtga);
+
 int rtga_process_image(rtga_t *rtga, void **buf,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba);

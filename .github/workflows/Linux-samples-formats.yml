@@ -118,3 +118,33 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_decode_fuzz_test
           echo "[pass] image_decode_fuzz_test"
+
+      - name: Build and run image_avail_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_avail
+        run: |
+          set -eu
+          # Partial-buffer ("avail-aware") still decoding, checked
+          # against the whole-buffer decode that has always been
+          # there: every fixture is decoded once with the file fully
+          # resident and again with the frontier raised a few bytes at
+          # a time, and the two surfaces must be bit-identical.
+          #
+          # The oracle is the decoder itself, so this catches the
+          # failures that do not crash: a wall mistaken for EOF (the
+          # decode pads the rest of the surface and reports success),
+          # an RLE run re-emitted after a stall, a cursor resumed off
+          # by a pixel.  It found all three of those on its first runs
+          # while TGA was being converted.
+          #
+          # Steps of 1, 3 and 7 bytes put the wall inside every field,
+          # inside RLE packets and mid-pixel for both 24bpp and 32bpp;
+          # 1024 is a realistic read granularity.  A truncated file
+          # must still settle rather than wait forever, which is the
+          # one case where stopping at the frontier and stopping at
+          # the end of the data have to be told apart.
+          make clean all SANITIZER=address,undefined
+          test -x image_avail_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_avail_test
+          echo "[pass] image_avail_test"
