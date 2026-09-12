@@ -8,30 +8,8 @@ import re
 import sys
 import json
 
-repack_mode = (len(sys.argv) > 2 and sys.argv[1] == '--repack')
-
-try:
-    if repack_mode:
-        h_filename = sys.argv[2]
-        json_filename = None
-    else:
-        json_filename = sys.argv[1]
-        h_filename = json_filename.replace('.json', '.h')
-except IndexError:
-    print("Usage: ./json2h.py <msg_hash_xx.json> | --repack <msg_hash_xx.h>")
-    sys.exit(1)
-
-# Compare and derive the language tag on the basename: the arguments may
-# carry a directory (intl/msg_hash_fr.json), and matching the raw string
-# would both miss the skip list and, worse, bake the path into every
-# emitted C symbol via LANG below.
-h_basename = os.path.basename(h_filename)
-json_basename = os.path.basename(json_filename) if json_filename else None
-
-if h_basename in ('msg_hash_us.h', 'msg_hash_lbl.h') or (
-      json_basename in ('msg_hash_us.json', 'msg_hash_lbl.json')):
-    print("Skip")
-    sys.exit(0)
+sys.path.insert(0, os.path.join(
+      os.path.dirname(os.path.abspath(__file__)), '..', 'tools'))
 
 p = re.compile(
     r'MSG_HASH\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\(\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*[a-zA-Z0-9_]+\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*,\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\".*\"\s*(?:\/\*(?:.|[\r\n])*?\*\/\s*)*\)')
@@ -453,6 +431,35 @@ def member_base_names(rows):
                 names[key] = 's_%08x_c%u' % (h, n)
     return names
 
+
+def drop_format_mismatches(rows, source, lang):
+    """Leave out rows whose conversions differ from the English row.
+
+    A row that reaches snprintf() is formatted with the arguments its
+    call site passes, whatever language is loaded, so one that gains or
+    loses a conversion reads the argument list wrongly. The runtime
+    falls back to the English row for anything absent from the table,
+    which is the safe reading of a translation nobody here can fix, so
+    the row is left out rather than emitted. See
+    tools/msg_hash_format_check.py for the rules.
+    """
+    import msg_hash_format_check as fmt
+
+    kept = []
+    for key, val, guard in rows:
+        en = source.get(key)
+        if en is not None:
+            why = fmt.row_error(key, en.decode('utf-8', 'replace'),
+                                decode_c_literal(val).decode('utf-8',
+                                                             'replace'))
+            if why:
+                print('%s: dropping %s - it %s' % (lang, key, why),
+                      file=sys.stderr)
+                continue
+        kept.append((key, val, guard))
+    return kept
+
+
 def pack(text, lang, source=None):
     rows = parse_rows_with_guards(text)
     if source is not None:
@@ -465,6 +472,7 @@ def pack(text, lang, source=None):
         rows = [r for r in rows
                 if decode_c_literal(r[1]) != b'null'
                 and decode_c_literal(r[1]) != source.get(r[0], None)]
+        rows = drop_format_mismatches(rows, source, lang)
     if not rows:
         raise SystemExit('packed emitter: no rows for ' + lang)
     # A single def file can define one enum key in two build-variant rows
@@ -591,35 +599,61 @@ def verify(text, lang, name):
     return text
 
 
-LANG = h_basename.replace('msg_hash_', '').replace('.h', '')
+if __name__ == '__main__':
+    repack_mode = (len(sys.argv) > 2 and sys.argv[1] == '--repack')
 
-if repack_mode:
-    with open(h_filename, 'r', encoding='utf-8') as f:
-        text = f.read()
-    if not parse_rows_with_guards(text):
-        # --repack converts a hand-written MSG_HASH header into packed form.
-        # A header that has already been packed carries no MSG_HASH rows, so
-        # the parser legitimately finds nothing; that is a no-op, not the
-        # "no rows" failure below, which means the input is neither form.
-        if re.search(r'static const uint32_t msg_hash_\w+_ids\[\]', text):
-            print('%s is already packed; nothing to do' % h_filename)
-            sys.exit(0)
-        raise SystemExit('packed emitter: no MSG_HASH rows in ' + h_filename)
-    with open(h_filename, 'w', encoding='utf-8') as f:
-        f.write(verify(pack(text, LANG), LANG, h_filename))
-    sys.exit(0)
+    try:
+        if repack_mode:
+            h_filename = sys.argv[2]
+            json_filename = None
+        else:
+            json_filename = sys.argv[1]
+            h_filename = json_filename.replace('.json', '.h')
+    except IndexError:
+        print("Usage: ./json2h.py <msg_hash_xx.json> | --repack <msg_hash_xx.h>")
+        sys.exit(1)
 
-with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
-    template = expand_template(template_file.read())
-    with open('msg_hash_us.json', 'r+', encoding='utf-8') as source_json_file:
-        source_messages = json.load(source_json_file)
-        with open(json_filename, 'r+', encoding='utf-8') as json_file:
-            messages = json.load(json_file)
-            new_translation = update(messages, template, source_messages)
-            with open(h_filename, 'w', encoding='utf-8') as h_file:
-                h_file.seek(0)
-                _src_bytes = dict((k, v.encode('utf-8'))
-                                  for k, v in source_messages.items())
-                h_file.write(verify(pack(new_translation, LANG, _src_bytes),
-                                    LANG, h_filename))
-                h_file.truncate()
+    # Compare and derive the language tag on the basename: the arguments may
+    # carry a directory (intl/msg_hash_fr.json), and matching the raw string
+    # would both miss the skip list and, worse, bake the path into every
+    # emitted C symbol via LANG below.
+    h_basename = os.path.basename(h_filename)
+    json_basename = os.path.basename(json_filename) if json_filename else None
+
+    if h_basename in ('msg_hash_us.h', 'msg_hash_lbl.h') or (
+          json_basename in ('msg_hash_us.json', 'msg_hash_lbl.json')):
+        print("Skip")
+        sys.exit(0)
+
+    LANG = h_basename.replace('msg_hash_', '').replace('.h', '')
+
+    if repack_mode:
+        with open(h_filename, 'r', encoding='utf-8') as f:
+            text = f.read()
+        if not parse_rows_with_guards(text):
+            # --repack converts a hand-written MSG_HASH header into packed form.
+            # A header that has already been packed carries no MSG_HASH rows, so
+            # the parser legitimately finds nothing; that is a no-op, not the
+            # "no rows" failure below, which means the input is neither form.
+            if re.search(r'static const uint32_t msg_hash_\w+_ids\[\]', text):
+                print('%s is already packed; nothing to do' % h_filename)
+                sys.exit(0)
+            raise SystemExit('packed emitter: no MSG_HASH rows in ' + h_filename)
+        with open(h_filename, 'w', encoding='utf-8') as f:
+            f.write(verify(pack(text, LANG), LANG, h_filename))
+        sys.exit(0)
+
+    with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
+        template = expand_template(template_file.read())
+        with open('msg_hash_us.json', 'r+', encoding='utf-8') as source_json_file:
+            source_messages = json.load(source_json_file)
+            with open(json_filename, 'r+', encoding='utf-8') as json_file:
+                messages = json.load(json_file)
+                new_translation = update(messages, template, source_messages)
+                with open(h_filename, 'w', encoding='utf-8') as h_file:
+                    h_file.seek(0)
+                    _src_bytes = dict((k, v.encode('utf-8'))
+                                      for k, v in source_messages.items())
+                    h_file.write(verify(pack(new_translation, LANG, _src_bytes),
+                                        LANG, h_filename))
+                    h_file.truncate()

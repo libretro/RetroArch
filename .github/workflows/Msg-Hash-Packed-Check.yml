@@ -77,3 +77,23 @@ jobs:
           # hold an embedded NUL, and the sizeof() check must still add
           # up to the members it guards.
           python3 tools/msg_hash_packed_check.py
+
+      - name: Format parity self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: matching conversions are clean, a conversion
+          # lost, invented, retyped or reordered positionally is caught,
+          # and a percent sign in prose - English's "50% of this value",
+          # Hungarian's "50%-a", a doubled %% - is not mistaken for one.
+          python3 tools/msg_hash_format_check.py --selftest
+
+      - name: Format parity tree check
+        shell: bash
+        run: |
+          set -eu
+          # Every translated row against its English source: the same
+          # conversions in the same order wherever English has any, no
+          # positional %n$ anywhere, and no conversion invented in an
+          # MSG_* row that has none in English.
+          python3 tools/msg_hash_format_check.py

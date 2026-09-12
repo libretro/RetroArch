@@ -3966,7 +3966,6 @@ static const struct
    char s_1f2be238[67];
    char s_f250153f[80];
    char s_0e086f97[42];
-   char s_f279fcb2[67];
    char s_8b487430[36];
 #endif
    char s_a602dd84[44];
@@ -4128,7 +4127,6 @@ static const struct
    char s_3112d333[107];
    char s_636e37aa[41];
    char s_1490e77d[73];
-   char s_2f16f307[101];
    char s_6f3d7be7[99];
    char s_424b76b8[66];
    char s_ae27f3c7[63];
@@ -9325,7 +9323,6 @@ static const struct
    "Niepoprawny plik konfiguracyjny - nie mo\305\274na znale\305\272\304\207 APNAME lub PASSWORD w %"
    "s",
    "Punkt dost\304\231pu Wi-Fi nie jest uruchomiony",
-   "Uruchamianie punktu dost\304\231pu Wi-Fi z SSID =% i kluczem dost\304\231pu=%s",
    "Wy\305\202\304\205czanie punktu dost\304\231pu Wi-Fi.",
 #endif
    "Wybrano nieprawid\305\202owy plik automatowy DAT.",
@@ -9515,8 +9512,6 @@ static const struct
    "Wykonywanie z wyprzedzeniem wy\305\202\304\205czone.",
    "W\305\202\304\205czono wykonywanie z wyprzedzeniem. Ramki op\303\263\305\272nie\305\204 usuni"
    "\304\231te: %u.",
-   "Wykonywanie z wyprzedzeniem w\305\202\304\205czone z drugorz\304\231dn\304\205 instancj\304\205."
-   " Usuni\304\231te ramki op\303\263\305\272nienia:% u.",
    "Nie uda\305\202o si\304\231 utworzy\304\207 drugiej instancji. Run-Ahead wykorzystuje teraz tylk"
    "o jedn\304\205 instancj\304\231.",
    "Nie uda\305\202o si\304\231 za\305\202adowa\304\207 stanu. Run-Ahead zosta\305\202 wy\305\202"
@@ -9605,7 +9600,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (191601u
+      (sizeof(msg_hash_pl_blob) == (191500u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10023,7 +10018,6 @@ typedef char msg_hash_pl_blob_check[
        + 67u
        + 80u
        + 42u
-       + 67u
        + 36u
        + 22u
        + 27u
@@ -13976,7 +13970,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MSG_LOCALAP_ERROR_CONFIG_CREATE,
    (uint32_t)MSG_LOCALAP_ERROR_CONFIG_PARSE,
    (uint32_t)MSG_LOCALAP_NOT_RUNNING,
-   (uint32_t)MSG_LOCALAP_STARTING,
    (uint32_t)MSG_LOCALAP_SWITCHING_OFF,
 #endif
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
@@ -14138,7 +14131,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    (uint32_t)MSG_RUNAHEAD_DISABLED,
    (uint32_t)MSG_RUNAHEAD_ENABLED,
-   (uint32_t)MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
    (uint32_t)MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
    (uint32_t)MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
    (uint32_t)MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
