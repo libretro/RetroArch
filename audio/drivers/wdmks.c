@@ -1454,9 +1454,8 @@ typedef struct
    size_t          rt_size;
    size_t          rt_write;
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
+   HANDLE          rt_event;    /* signalled per notification, if offered */
    bool            rt_barrier;  /* writes need a barrier to be seen */
-   uint64_t        rt_played;   /* frames, accumulated across wraps */
-   ULONG           rt_last_pos;
    bool            running;
    bool            dead;      /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
@@ -1535,8 +1534,6 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
 
    memset(w->rt_buf, 0, w->rt_size);
    w->rt_write   = 0;
-   w->rt_played  = 0;
-   w->rt_last_pos = 0;
    return true;
 }
 
@@ -1563,6 +1560,61 @@ static void wdmks_rt_get_position_register(wdmks_t *w)
       w->rt_pos = (volatile ULONG*)out.Register;
    else
       RARCH_LOG("[WDM-KS] No position register; asking the pin instead.\n");
+}
+
+/* The event the driver signals as it passes each notification point.
+ * Without one the write path can only poll, and polling is what falls
+ * apart when the process is backgrounded: the scheduler stops giving
+ * this thread the millisecond it was counting on, the loop is not
+ * refilled in time, and the hardware plays whatever is still in it -
+ * which is the distortion, and it is the loop repeating rather than
+ * the samples being wrong.
+ *
+ * Not every driver offers one; the buffer request above asks for the
+ * notification form first so that those which do will accept it. */
+static void wdmks_rt_register_event(wdmks_t *w)
+{
+   ra_ksrtaudio_notification_event_property_t p;
+   DWORD written = 0;
+
+   if (!(w->rt_event = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return;
+
+   memset(&p, 0, sizeof(p));
+   p.Property.Set        = ra_ks_propsetid_rtaudio;
+   p.Property.Id         = RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT;
+   p.Property.Flags      = RA_KSPROPERTY_TYPE_SET;
+   p.NotificationEvent   = w->rt_event;
+
+   if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+            &p, sizeof(p), &p, sizeof(p), &written, NULL))
+   {
+      CloseHandle(w->rt_event);
+      w->rt_event = NULL;
+      RARCH_LOG("[WDM-KS] No notification event; the write path will"
+            " poll, which is worse when backgrounded.\n");
+   }
+}
+
+static void wdmks_rt_unregister_event(wdmks_t *w)
+{
+   ra_ksrtaudio_notification_event_property_t p;
+   DWORD written = 0;
+
+   if (!w->rt_event)
+      return;
+   if (w->stream.handle != INVALID_HANDLE_VALUE)
+   {
+      memset(&p, 0, sizeof(p));
+      p.Property.Set      = ra_ks_propsetid_rtaudio;
+      p.Property.Id       = RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT;
+      p.Property.Flags    = RA_KSPROPERTY_TYPE_SET;
+      p.NotificationEvent = w->rt_event;
+      DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
+            &p, sizeof(p), &p, sizeof(p), &written, NULL);
+   }
+   CloseHandle(w->rt_event);
+   w->rt_event = NULL;
 }
 
 /* Where the hardware is, as a byte offset into the buffer. The
@@ -1618,10 +1670,14 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       {
          if (w->nonblock)
             break;
-         /* A quarter of the buffer is the longest this can usefully
-          * wait: the hardware frees space continuously, and anything
-          * longer risks outliving a device that has stopped. */
-         Sleep(1);
+         /* The event where the driver gives one, which is what keeps
+          * this fed when the process is not in the foreground; a
+          * millisecond otherwise. Bounded either way, so a device
+          * that has stopped returns what it took. */
+         if (w->rt_event)
+            WaitForSingleObject(w->rt_event, 100);
+         else
+            Sleep(1);
          if (!(room = wdmks_rt_free(w)))
             continue;
       }
@@ -1885,23 +1941,19 @@ static size_t wdmks_frames_consumed(void *data)
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE)
       return 0;
 
-   if (w->stream.looped)
-   {
-      /* The register is a byte offset that wraps, so the steps
-       * between reads are accumulated: a position that went backwards
-       * is a wrap and not a rewind. */
-      ULONG now = 0;
-      if (!w->rt_size || !wdmks_rt_play_offset(w, &now))
-         return (size_t)w->rt_played;
-      if (now >= w->rt_last_pos)
-         w->rt_played += (uint64_t)(now - w->rt_last_pos) / w->frame_bytes;
-      else
-         w->rt_played += (uint64_t)((now + w->rt_size - w->rt_last_pos))
-            / w->frame_bytes;
-      w->rt_last_pos = now;
-      return (size_t)w->rt_played;
-   }
-
+   /* Not the position register, on either path. That register is a
+    * byte offset into the loop and it wraps at the end of it - every
+    * 8 ms at this buffer size - so accumulating the steps between
+    * reads only works while the reads are closer together than the
+    * wrap. The frontend asks once a frame, 16 ms apart, and misses a
+    * wrap every time; backgrounded and throttled it misses ten. The
+    * sink estimate read -999043 ppm because of it.
+    *
+    * KSPROPERTY_AUDIO_POSITION's PlayOffset does not wrap - it is
+    * what the device has played since the stream started - so it is
+    * what answers this question on both paths. The register keeps the
+    * job it is good at, which is saying where in the loop it is safe
+    * to write, and that is read far more often than it wraps. */
    wdmks_clock_sample(w);
    if (!wdmks_position(w, &frames))
       return 0;
@@ -2071,6 +2123,7 @@ static void wdmks_free(void *data)
    {
       /* The buffer is the driver's - closing the pin is what releases
        * it, and nothing here may touch it afterwards. */
+      wdmks_rt_unregister_event(w);
       wdmks_pin_close(&w->stream);
       w->rt_buf = NULL;
       w->rt_pos = NULL;
@@ -2286,6 +2339,7 @@ static void *wdmks_init(const char *device, unsigned rate,
          return NULL;
       }
       wdmks_rt_get_position_register(w);
+      wdmks_rt_register_event(w);
 
       RARCH_LOG("[WDM-KS] WaveRT buffer of %u bytes, %u ms%s.\n",
             (unsigned)w->rt_size,
