@@ -545,7 +545,12 @@ static void input_autoconfigure_index_write(
    fill_pathname_join_special(index_path, dir,
          AUTOCONFIG_INDEX_NAME, sizeof(index_path));
    index_build->flags |= CONF_FILE_FLG_MODIFIED;
-   config_file_write(index_build, index_path, false);
+   /* Not fatal - a missing index just means the next connect does
+    * the full directory scan - but silently rebuilding it on every
+    * boot is worth a line in the log. */
+   if (!config_file_write(index_build, index_path, false))
+      RARCH_WARN("[Autoconf] Failed to write controller profile index to \"%s\".\n",
+            index_path);
 
    config_file_free(index_build);
    autoconfig_handle->index_build       = NULL;

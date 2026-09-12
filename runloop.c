@@ -1158,9 +1158,16 @@ static void runloop_deinit_core_options(
          core_option_manager_flush(
                core_options,
                conf_tmp);
-         RARCH_LOG("[Core] Saved %s-specific core options to \"%s\".\n",
-               game_options_active ? "game" : "folder", path_core_options);
-         config_file_write(conf_tmp, path_core_options, true);
+         /* Log what happened, not what was attempted: this claimed
+          * a successful save before the write and then discarded
+          * its result, so a failed one told the user their options
+          * were saved. */
+         if (config_file_write(conf_tmp, path_core_options, true))
+            RARCH_LOG("[Core] Saved %s-specific core options to \"%s\".\n",
+                  game_options_active ? "game" : "folder", path_core_options);
+         else
+            RARCH_ERR("[Core] Failed to save %s-specific core options to \"%s\".\n",
+                  game_options_active ? "game" : "folder", path_core_options);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
       }
@@ -1172,8 +1179,11 @@ static void runloop_deinit_core_options(
       core_option_manager_flush(
             core_options,
             core_options->conf);
-      RARCH_LOG("[Core] Saved core options file to \"%s\".\n", path);
-      config_file_write(core_options->conf, path, true);
+      if (config_file_write(core_options->conf, path, true))
+         RARCH_LOG("[Core] Saved core options file to \"%s\".\n", path);
+      else
+         RARCH_ERR("[Core] Failed to save core options file to \"%s\".\n",
+               path);
    }
 
    if (core_options)
