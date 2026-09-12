@@ -2369,9 +2369,19 @@ static size_t wdmks_wait_writable(void *data, size_t len)
          return 0;
       if (w->stream.looped)
       {
-         /* No packet to wait on: the hardware frees room as it plays,
-          * so this waits a slice of the buffer and looks again. */
-         Sleep(1);
+         /* The notification event where the driver gives one - which
+          * is what the frontend's audio thread ends up blocked on,
+          * so it sleeps until the device has actually freed room
+          * rather than waking every millisecond to find out. Cheaper,
+          * steadier, and it is the same wait the write path already
+          * uses; a sleep only where there is no event to wait on.
+          *
+          * Bounded either way: a device that has stopped returns
+          * nothing rather than holding the audio thread. */
+         if (w->rt_event)
+            WaitForSingleObject(w->rt_event, 100);
+         else
+            Sleep(1);
          continue;
       }
 
