@@ -4848,13 +4848,13 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    uint64_t current_usec            = cpu_features_get_time_usec();
 
    /* Clear old mapping bit */
-   input_keyboard_mapping_bits(0, binds->buffer.key);
+   input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(&binds->buffer));
 
    /* Store key in bind */
-   binds->buffer.key                = (enum retro_key)code;
+   RETRO_KEYBIND_SET_KEY(&binds->buffer, (enum retro_key)code);
 
    /* Store new mapping bit */
-   input_keyboard_mapping_bits(1, binds->buffer.key);
+   input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(&binds->buffer));
 
    /* Write out the bind */
    *(binds->output)                 = binds->buffer;

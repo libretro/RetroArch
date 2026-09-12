@@ -1143,7 +1143,7 @@ static const char *win32_meta_key_to_name(unsigned int meta_key,
 {
    int i = 0;
    const struct retro_keybind* key = &input_config_binds[0][meta_key];
-   int key_code                    = key->key;
+   int key_code                    = RETRO_KEYBIND_KEY(key);
 
    for (;;)
    {
