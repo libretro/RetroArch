@@ -1709,9 +1709,27 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
    }
    {
       uint64_t frames = 0;
+      ULONG    v;
+
       if (!wdmks_position(w, &frames))
          return false;
-      *offset = (ULONG)((frames * w->frame_bytes) % w->rt_size);
+      v = (ULONG)((frames * w->frame_bytes) % w->rt_size);
+
+      /* Same accumulation as the register above: this wraps too, and
+       * for the same reason - it is a position in the loop. */
+      if (!w->rt_have_last)
+      {
+         w->rt_last_pos  = v;
+         w->rt_have_last = true;
+      }
+      else if (v >= w->rt_last_pos)
+         w->rt_played += (uint64_t)(v - w->rt_last_pos) / w->frame_bytes;
+      else
+         w->rt_played += (uint64_t)(v + w->rt_size - w->rt_last_pos)
+            / w->frame_bytes;
+      w->rt_last_pos = v;
+
+      *offset = v;
       return true;
    }
 }
@@ -1963,10 +1981,11 @@ static void wdmks_clock_sample(wdmks_t *w)
    if (!w->clk_freq || !w->rate)
       return;
    /* Same order as frames_consumed, and for the same reason. */
-   if (w->stream.looped && w->rt_pos)
+   if (w->stream.looped)
    {
       ULONG now = 0;
-      wdmks_rt_play_offset(w, &now);
+      if (!wdmks_rt_play_offset(w, &now))
+         return;
       frames = w->rt_played;
    }
    else if (!wdmks_position(w, &frames))
@@ -2050,10 +2069,23 @@ static size_t wdmks_frames_consumed(void *data)
     * standing zero is believed for ever. That is the sink estimate
     * reading a million ppm out while the register sitting next to it
     * was right the whole time. */
-   if (w->stream.looped && w->rt_pos)
+   /* Everything on a looped pin goes through the play offset, whether
+    * that comes from a register or from the position property, and
+    * what it returns is the accumulated count rather than the offset.
+    *
+    * Because on a WaveRT pin the property's PlayOffset is a position
+    * WITHIN the loop and wraps with it - it is not the count since
+    * the stream started that the same property gives on a packet pin.
+    * Reading it as though it were is the whole of why this estimate
+    * has been dead on an HDMI output: the number goes round every
+    * 8 ms, and a count that goes backwards is no count at all. This
+    * device has no position register, so that path was never taken
+    * and the accumulation never happened. */
+   if (w->stream.looped)
    {
       ULONG now = 0;
-      wdmks_rt_play_offset(w, &now);
+      if (!wdmks_rt_play_offset(w, &now))
+         return 0;
       return (size_t)w->rt_played;
    }
    if (wdmks_position(w, &frames))
