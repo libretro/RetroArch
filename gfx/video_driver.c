@@ -4051,6 +4051,9 @@ static void frame_cache_store(const void *data,
    retro_atomic_store_release_size(&frame_cache_seq, s + 2);
 }
 #else
+/* A build without threads has no second thread to serialise against,
+ * so the lock degenerates to nothing, same as the rest of this file. */
+#ifdef HAVE_THREADS
 static slock_t *cached_frame_lock = NULL;
 
 static INLINE void cached_frame_lock_acquire(void)
@@ -4063,6 +4066,10 @@ static INLINE void cached_frame_lock_release(void)
    if (cached_frame_lock)
       slock_unlock(cached_frame_lock);
 }
+#else
+#define cached_frame_lock_acquire() ((void)0)
+#define cached_frame_lock_release() ((void)0)
+#endif
 
 static bool frame_cache_snapshot(const void **data,
       unsigned *width, unsigned *height, size_t *pitch)
@@ -4133,8 +4140,8 @@ void video_driver_cached_frame_read(
    unsigned    width  = 0;
    unsigned    height = 0;
    size_t      pitch  = 0;
-   int         hazard = -1;
 #ifdef FRAME_CACHE_HAZARDS
+   int         hazard = -1;
    int         gen;
 #endif
 
