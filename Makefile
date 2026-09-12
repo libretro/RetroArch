@@ -113,7 +113,11 @@ endif
 
 ifneq ($(CXX_BUILD), 1)
    ifneq ($(C89_BUILD),)
-      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros
+      # The shader sources built into gfx/drivers/gl_shaders are longer
+      # than the 509 characters C90 guarantees a compiler will take in a
+      # string literal, which no declaration of ours can help: this lane
+      # is here for declarations, comments and C99 syntax.
+      CFLAGS += -std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros -Wno-overlength-strings
    else ifeq ($(HAVE_C99), 1)
       CFLAGS += $(C99_CFLAGS)
    endif
