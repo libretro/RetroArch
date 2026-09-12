@@ -722,8 +722,17 @@ static const video_display_server_t *video_display_server_modes(void **data)
  * indivisible.  Elsewhere they are plain words under a lock. */
 #ifdef FRAME_CACHE_HAZARDS
 static retro_atomic_ptr_t  frame_cache_data;
-static retro_atomic_int_t  frame_cache_width;
-static retro_atomic_int_t  frame_cache_height;
+/* Both dimensions in one word, so they move in one store and arrive
+ * from one load.  16 bits each: a frame wider or taller than 65535 is
+ * past what any driver here will allocate, and the clamp keeps a core
+ * that declares one from writing over the other field. */
+static retro_atomic_int_t  frame_cache_dims;
+#define FRAME_CACHE_DIM_MAX   0xffffu
+#define FRAME_CACHE_DIMS_PACK(w, h) \
+   ((int)((((h) > FRAME_CACHE_DIM_MAX ? FRAME_CACHE_DIM_MAX : (h)) << 16) \
+        |  ((w) > FRAME_CACHE_DIM_MAX ? FRAME_CACHE_DIM_MAX : (w))))
+#define FRAME_CACHE_DIMS_W(d) ((unsigned)(d) & FRAME_CACHE_DIM_MAX)
+#define FRAME_CACHE_DIMS_H(d) (((unsigned)(d) >> 16) & FRAME_CACHE_DIM_MAX)
 static retro_atomic_size_t frame_cache_pitch;
 #else
 static const void *frame_cache_data    = NULL;
@@ -4001,8 +4010,11 @@ static bool frame_cache_snapshot(const void **data,
       }
 
       *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
-      *width  = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_width);
-      *height = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_height);
+      {
+         int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
+         *width   = FRAME_CACHE_DIMS_W(dims);
+         *height  = FRAME_CACHE_DIMS_H(dims);
+      }
       *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 
       retro_atomic_thread_fence_acquire();
@@ -4024,8 +4036,11 @@ static void frame_cache_peek(const void **data,
       unsigned *width, unsigned *height, size_t *pitch)
 {
    *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
-   *width  = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_width);
-   *height = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_height);
+   {
+      int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
+      *width   = FRAME_CACHE_DIMS_W(dims);
+      *height  = FRAME_CACHE_DIMS_H(dims);
+   }
    *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 }
 
@@ -4044,8 +4059,8 @@ static void frame_cache_store(const void *data,
    retro_atomic_thread_fence_release();
 
    retro_atomic_store_relaxed_ptr(&frame_cache_data,   (void*)data);
-   retro_atomic_store_relaxed_int(&frame_cache_width,  (int)width);
-   retro_atomic_store_relaxed_int(&frame_cache_height, (int)height);
+   retro_atomic_store_relaxed_int(&frame_cache_dims,
+         FRAME_CACHE_DIMS_PACK(width, height));
    retro_atomic_store_relaxed_size(&frame_cache_pitch, pitch);
 
    retro_atomic_store_release_size(&frame_cache_seq, s + 2);
@@ -6253,6 +6268,10 @@ void video_driver_frame(const void *data, unsigned width,
       double stddev                          = 0.0;
       /* The driver's name, not the wrapper's under threaded video. */
       const char *video_ident                = video_driver_get_ident();
+      const void *cache_data                 = NULL;
+      unsigned cache_width                   = 0;
+      unsigned cache_height                  = 0;
+      size_t   cache_pitch                   = 0;
       float font_size_ratio                  = (float)(DEFAULT_FONT_SIZE / video_info.font_size);
       float scale                            = (float)video_info.height / (video_info.font_size * 30)
             * 0.50f * font_size_ratio;
@@ -6273,6 +6292,8 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
       video_monitor_fps_statistics(NULL, &stddev, NULL);
+      frame_cache_peek(&cache_data, &cache_width, &cache_height,
+            &cache_pitch);
 
       video_info.osd_stat_params.x           = 0.001f;
       video_info.osd_stat_params.y           = 0.970f;
@@ -6310,8 +6331,8 @@ void video_driver_frame(const void *data, unsigned width,
                " Frames:  %8" PRIu64"\n"
                " -Dropped:  %6u\n"
                ,
-               frame_cache_width,
-               frame_cache_height,
+               cache_width,
+               cache_height,
                av_info->geometry.base_width,
                av_info->geometry.base_height,
                av_info->geometry.max_width,
@@ -6327,9 +6348,9 @@ void video_driver_frame(const void *data, unsigned width,
                video_info.scale_width,
                video_info.scale_height,
                (float)video_info.scale_width  / ((rotation % 2)
-                     ? (float)frame_cache_height : (float)frame_cache_width),
+                     ? (float)cache_height : (float)cache_width),
                (float)video_info.scale_height / ((rotation % 2)
-                     ? (float)frame_cache_width : (float)frame_cache_height),
+                     ? (float)cache_width : (float)cache_height),
                video_info.refresh_rate,
                last_fps,
                frame_time / 1000.0f,
