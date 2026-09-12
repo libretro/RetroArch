@@ -359,6 +359,102 @@ typedef struct
    DWORDLONG WriteOffset;
 } ra_ksaudio_position_t;
 
+/* ---- WaveRT ------------------------------------------------------ */
+
+/* The other streaming family: instead of submitting packets, the
+ * driver hands over a buffer it owns, the frontend writes into it in
+ * a loop, and a position register says where the hardware has got to.
+ * Filters carrying KSCATEGORY_REALTIME stream this way and their pins
+ * refuse the standard streaming interface - which is the
+ * ERROR_NOT_FOUND that every format on an HDMI or Realtek output came
+ * back with.
+ *
+ * These declarations are from a Windows SDK ksmedia.h, which is the
+ * only place they exist - the mingw headers stop at
+ * KSPROPERTY_RTAUDIO_GETPOSITIONFUNCTION, and PortAudio does not
+ * carry them either, it takes them from the SDK. So unlike everything
+ * above, samples/audio/wdmks_abi cannot cross-check these against a
+ * system header; the assertions below are absolute sizes, taken from
+ * that header and checked against it once by compiling the two side
+ * by side. If a Windows SDK ever becomes available to the check, this
+ * is the block to point it at.
+ *
+ * The 32-bit variants the header also declares are for a 64-bit
+ * driver serving a 32-bit caller; nothing here needs them. */
+RA_KS_GUID(ra_ks_propsetid_rtaudio,
+      0xA855A48C, 0x2F78, 0x4729, 0x90, 0x51, 0x19, 0x68, 0x74, 0x6B, 0x9E, 0xEF);
+
+enum
+{
+   RA_KSPROPERTY_RTAUDIO_GETPOSITIONFUNCTION = 0,
+   RA_KSPROPERTY_RTAUDIO_BUFFER,
+   RA_KSPROPERTY_RTAUDIO_HWLATENCY,
+   RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER,
+   RA_KSPROPERTY_RTAUDIO_CLOCKREGISTER,
+   RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION,
+   RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT,
+   RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT,
+   RA_KSPROPERTY_RTAUDIO_QUERY_NOTIFICATION_SUPPORT
+};
+
+/* What is asked for: a buffer of this size at this address (NULL to
+ * let the driver choose), and for the notification form, how many
+ * times per buffer the driver should signal. */
+typedef struct
+{
+   ra_ksproperty_t Property;
+   void           *BaseAddress;
+   ULONG           RequestedBufferSize;
+} ra_ksrtaudio_buffer_property_t;
+
+typedef struct
+{
+   ra_ksproperty_t Property;
+   void           *BaseAddress;
+   ULONG           RequestedBufferSize;
+   ULONG           NotificationCount;
+} ra_ksrtaudio_buffer_property_notify_t;
+
+/* What comes back: where the buffer is, how large it actually is, and
+ * whether writes into it need a memory barrier before the hardware
+ * will see them. */
+typedef struct
+{
+   void *BufferAddress;
+   ULONG ActualBufferSize;
+   BOOL  CallMemoryBarrier;
+} ra_ksrtaudio_buffer_t;
+
+typedef struct
+{
+   ULONG FifoSize;
+   ULONG ChipsetDelay;
+   ULONG CodecDelay;
+} ra_ksrtaudio_hwlatency_t;
+
+/* The position register: a pointer the hardware updates, read rather
+ * than asked for, which is what makes it worth having. */
+typedef struct
+{
+   ra_ksproperty_t Property;
+   void           *BaseAddress;
+} ra_ksrtaudio_hwregister_property_t;
+
+typedef struct
+{
+   void     *Register;
+   ULONG     Width;
+   ULONGLONG Numerator;
+   ULONGLONG Denominator;
+   ULONG     Accuracy;
+} ra_ksrtaudio_hwregister_t;
+
+typedef struct
+{
+   ra_ksproperty_t Property;
+   HANDLE          NotificationEvent;
+} ra_ksrtaudio_notification_event_property_t;
+
 /* ---- the layout is the system's, and the build says so ------------ */
 
 /* A wrong layout here does not misbehave visibly - it hands the kernel
@@ -375,6 +471,19 @@ typedef char ra_ks_assert_guid[(sizeof(GUID) == 16) ? 1 : -1];
 typedef char ra_ks_assert_priority[(sizeof(ra_kspriority_t) == 8) ? 1 : -1];
 typedef char ra_ks_assert_kstime[(sizeof(ra_kstime_t) == 16) ? 1 : -1];
 typedef char ra_ks_assert_position[(sizeof(ra_ksaudio_position_t) == 16) ? 1 : -1];
+
+/* WaveRT, against the SDK header rather than a system one this build
+ * can see - so these are absolute, and they differ by word size
+ * because four of the seven hold a pointer. */
+#ifdef _WIN64
+typedef char ra_ks_assert_rt_bufprop[(sizeof(ra_ksrtaudio_buffer_property_t) == 40) ? 1 : -1];
+typedef char ra_ks_assert_rt_bufpropn[(sizeof(ra_ksrtaudio_buffer_property_notify_t) == 40) ? 1 : -1];
+typedef char ra_ks_assert_rt_buffer[(sizeof(ra_ksrtaudio_buffer_t) == 16) ? 1 : -1];
+typedef char ra_ks_assert_rt_hwregprop[(sizeof(ra_ksrtaudio_hwregister_property_t) == 32) ? 1 : -1];
+typedef char ra_ks_assert_rt_hwreg[(sizeof(ra_ksrtaudio_hwregister_t) == 40) ? 1 : -1];
+typedef char ra_ks_assert_rt_notify[(sizeof(ra_ksrtaudio_notification_event_property_t) == 32) ? 1 : -1];
+#endif
+typedef char ra_ks_assert_rt_hwlatency[(sizeof(ra_ksrtaudio_hwlatency_t) == 12) ? 1 : -1];
 /* Packed, so 64 + 18 with nothing between or after. */
 typedef char ra_ks_assert_wfx[(sizeof(ra_ksdataformat_wfx_t) == 82) ? 1 : -1];
 

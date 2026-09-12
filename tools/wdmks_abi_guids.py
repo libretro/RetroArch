@@ -35,6 +35,7 @@ PAIRS = {
     "ra_ks_mediumsetid_standard":     "KSMEDIUMSETID_Standard",
     "ra_ks_propsetid_connection":     "KSPROPSETID_Connection",
     "ra_ks_propsetid_audio":          "KSPROPSETID_Audio",
+    "ra_ks_propsetid_rtaudio":        "KSPROPSETID_RtAudio",
     "ra_ks_dataformat_type_audio":    "KSDATAFORMAT_TYPE_AUDIO",
     "ra_ks_dataformat_subtype_pcm":   "KSDATAFORMAT_SUBTYPE_PCM",
     "ra_ks_dataformat_specifier_wfx": "KSDATAFORMAT_SPECIFIER_WAVEFORMATEX",

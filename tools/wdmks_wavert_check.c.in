@@ -1,0 +1,34 @@
+/* Generated into a temporary file by tools/wdmks_wavert_check.sh, which
+ * substitutes the SDK header's path for @SDK@. See that script for why
+ * this is not part of samples/audio/wdmks_abi. */
+#include <windows.h>
+#include <mmreg.h>
+#include <ks.h>
+#undef  NTDDI_VERSION
+#define NTDDI_VERSION 0x0A000000
+#include "@SDK@"
+#include "audio/drivers/wdmks.c"
+#define SAME(n,a,b) typedef char assert_##n[((long)(a)==(long)(b))?1:-1]
+SAME(rt_bufprop,   sizeof(ra_ksrtaudio_buffer_property_t),        sizeof(KSRTAUDIO_BUFFER_PROPERTY));
+SAME(rt_bufpropn,  sizeof(ra_ksrtaudio_buffer_property_notify_t), sizeof(KSRTAUDIO_BUFFER_PROPERTY_WITH_NOTIFICATION));
+SAME(rt_buffer,    sizeof(ra_ksrtaudio_buffer_t),                 sizeof(KSRTAUDIO_BUFFER));
+SAME(rt_hwlat,     sizeof(ra_ksrtaudio_hwlatency_t),              sizeof(KSRTAUDIO_HWLATENCY));
+SAME(rt_hwregp,    sizeof(ra_ksrtaudio_hwregister_property_t),    sizeof(KSRTAUDIO_HWREGISTER_PROPERTY));
+SAME(rt_hwreg,     sizeof(ra_ksrtaudio_hwregister_t),             sizeof(KSRTAUDIO_HWREGISTER));
+SAME(rt_notify,    sizeof(ra_ksrtaudio_notification_event_property_t), sizeof(KSRTAUDIO_NOTIFICATION_EVENT_PROPERTY));
+SAME(o_bp_base,    offsetof(ra_ksrtaudio_buffer_property_t,BaseAddress),         offsetof(KSRTAUDIO_BUFFER_PROPERTY,BaseAddress));
+SAME(o_bp_size,    offsetof(ra_ksrtaudio_buffer_property_t,RequestedBufferSize), offsetof(KSRTAUDIO_BUFFER_PROPERTY,RequestedBufferSize));
+SAME(o_bn_count,   offsetof(ra_ksrtaudio_buffer_property_notify_t,NotificationCount), offsetof(KSRTAUDIO_BUFFER_PROPERTY_WITH_NOTIFICATION,NotificationCount));
+SAME(o_b_addr,     offsetof(ra_ksrtaudio_buffer_t,BufferAddress),     offsetof(KSRTAUDIO_BUFFER,BufferAddress));
+SAME(o_b_actual,   offsetof(ra_ksrtaudio_buffer_t,ActualBufferSize),  offsetof(KSRTAUDIO_BUFFER,ActualBufferSize));
+SAME(o_b_barrier,  offsetof(ra_ksrtaudio_buffer_t,CallMemoryBarrier), offsetof(KSRTAUDIO_BUFFER,CallMemoryBarrier));
+SAME(o_hr_reg,     offsetof(ra_ksrtaudio_hwregister_t,Register),      offsetof(KSRTAUDIO_HWREGISTER,Register));
+SAME(o_hr_num,     offsetof(ra_ksrtaudio_hwregister_t,Numerator),     offsetof(KSRTAUDIO_HWREGISTER,Numerator));
+SAME(o_hr_acc,     offsetof(ra_ksrtaudio_hwregister_t,Accuracy),      offsetof(KSRTAUDIO_HWREGISTER,Accuracy));
+SAME(o_ne_event,   offsetof(ra_ksrtaudio_notification_event_property_t,NotificationEvent), offsetof(KSRTAUDIO_NOTIFICATION_EVENT_PROPERTY,NotificationEvent));
+SAME(e_buffer,     RA_KSPROPERTY_RTAUDIO_BUFFER,                      KSPROPERTY_RTAUDIO_BUFFER);
+SAME(e_hwlat,      RA_KSPROPERTY_RTAUDIO_HWLATENCY,                   KSPROPERTY_RTAUDIO_HWLATENCY);
+SAME(e_posreg,     RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER,            KSPROPERTY_RTAUDIO_POSITIONREGISTER);
+SAME(e_bufn,       RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION,    KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION);
+SAME(e_regev,      RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT, KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT);
+SAME(e_qns,        RA_KSPROPERTY_RTAUDIO_QUERY_NOTIFICATION_SUPPORT,  KSPROPERTY_RTAUDIO_QUERY_NOTIFICATION_SUPPORT);
