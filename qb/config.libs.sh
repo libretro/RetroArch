@@ -562,6 +562,7 @@ check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
 check_platform Win32 ASIO 'ASIO is' true
+check_platform Win32 WDMKS 'WDM-KS is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
    # Linux resolves the pad type through hidraw and only falls back to

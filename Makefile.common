@@ -952,6 +952,14 @@ ifeq ($(HAVE_XAUDIO), 1)
    LIBS += -lole32
 endif
 
+# WDM-KS: kernel streaming. setupapi and ksuser are resolved at
+# runtime rather than linked, so that a binary carrying this driver
+# still loads on a Windows that has neither.
+ifeq ($(HAVE_WDMKS), 1)
+   OBJ += audio/drivers/wdmks.o
+   DEFINES += -DHAVE_WDMKS
+endif
+
 ifeq ($(HAVE_MMDEVAPI), 1)
 	OBJ += audio/common/mmdevice_common.o
 endif

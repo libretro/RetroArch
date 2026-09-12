@@ -1018,6 +1018,10 @@ AUDIO
 #include "../audio/drivers/xaudio.c"
 #endif
 
+#ifdef HAVE_WDMKS
+#include "../audio/drivers/wdmks.c"
+#endif
+
 #if defined(HAVE_SDL3)
 #include "../input/drivers_joypad/sdl3_joypad.c"
 #include "../input/drivers/sdl3_input.c"

@@ -244,6 +244,9 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ASIO
    &audio_asio,
 #endif
+#ifdef HAVE_WDMKS
+   &audio_wdmks,
+#endif
 #ifdef HAVE_XAUDIO
    &audio_xa,
 #endif

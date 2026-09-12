@@ -182,6 +182,32 @@ jobs:
           sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine xvfb > /dev/null
           tools/companion_win32_test.sh
 
+      - name: WDM-KS ABI against the system ks.h
+        shell: bash
+        working-directory: samples/audio/wdmks_abi
+        run: |
+          set -eu
+          # audio/common/wdmks_ks.h declares the kernel-streaming
+          # interface the WDM-KS driver uses, because ks.h and
+          # ksmedia.h ship with the driver kit rather than the
+          # Platform SDK and not every toolchain here has them.
+          #
+          # That is only safe while what is declared matches what the
+          # system declares. A wrong layout does not fail to build and
+          # does not misbehave visibly: it hands the kernel a structure
+          # whose fields are in the wrong places. So this compiles ours
+          # beside the real headers and asserts every size, every field
+          # offset, every constant and the IOCTL code, on both word
+          # sizes, and in C89 as well as gnu99.
+          #
+          # It has already earned it. KSDATAFORMAT is a union with a
+          # LONGLONG that aligns it to eight; declared as the plain
+          # struct it resembles, KSDATARANGE_AUDIO came out 84 bytes
+          # against 88 and every field past the first would have been
+          # read four bytes off.
+          make check
+          echo "[pass] wdmks_abi"
+
       - name: Check stack frame budget
         shell: bash
         working-directory: ${{ github.workspace }}

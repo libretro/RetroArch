@@ -32,6 +32,7 @@ HAVE_DSOUND=auto           # DirectSound support
 HAVE_XAUDIO=auto           # XAudio support
 HAVE_WASAPI=auto           # WASAPI support
 HAVE_ASIO=auto             # ASIO support (Windows only, requires ASIO-compatible driver)
+HAVE_WDMKS=auto            # WDM-KS support (Windows 2000 and up, kernel streaming)
 HAVE_WINMM=auto            # WinMM support
 HAVE_NEAREST_RESAMPLER=yes # Nearest resampler
 HAVE_CC_RESAMPLER=yes      # CC Resampler
