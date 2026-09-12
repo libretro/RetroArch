@@ -94,6 +94,36 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 600 ./thread_handshake_test
           echo "[pass] thread_handshake_test (TSan)"
 
+      - name: Build and run graph_clock_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/graph_clock
+        run: |
+          set -eu
+          # The two conversions the JACK and PipeWire clock fits add.
+          # Neither a JACK server nor a PipeWire daemon can be started
+          # here, so unlike alsa_clock this mirrors the arithmetic
+          # rather than driving the drivers - a weaker check, said
+          # plainly, and aimed at the parts where being wrong is
+          # silent.
+          #
+          # JACK's current_frames is 32 bits and wraps in about a day
+          # at 48 kHz, sooner if the server was up before RetroArch
+          # started, since the counter is the server's. The difference
+          # is taken in 32 bits where the wrap cancels; widening first
+          # turns one wrap into a four-billion-frame jump. A run is
+          # started two seconds short of the wrap so it goes round
+          # mid-measurement.
+          #
+          # PipeWire's ticks are in units of pw_time.rate, a fraction
+          # that is 1/samplerate. The same physical drift has to read
+          # the same ppm at 44.1k and 48k, which is what the fraction
+          # is there for.
+          make clean all SANITIZER=address,undefined
+          test -x graph_clock_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./graph_clock_test
+          echo "[pass] graph_clock_test (ASan)"
+
       - name: Build and run alsa_clock_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/alsa_clock

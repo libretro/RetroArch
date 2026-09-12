@@ -56,6 +56,29 @@ typedef struct pipewire_audio
     * way. Written only by the callback, read by the frontend through
     * pwire_frames_consumed(). */
    retro_atomic_size_t consumed;
+
+   /* The device clock, fitted from the time report the graph already
+    * hands over.
+    *
+    * pw_time carries three things worth having and this driver was
+    * using one of them: now, the nanosecond time the report was taken
+    * at; ticks, the position the far end is reading, in units of rate;
+    * and delay, which is what the latency line uses. ticks against now
+    * is the graph's clock against the wall, and since ticks are in
+    * 1/samplerate units both sides are seconds - so the slope is the
+    * ratio directly and needs no sample rate to interpret.
+    *
+    * A fit over every sample, not two points: noise on a single anchor
+    * divides by the window and reads as drift. Touched under the
+    * thread loop lock, beside the call that already fetches the
+    * report, so this adds no call and nothing to the data thread.
+    * Nothing here feeds rate control. */
+   int64_t  clk_anchor_now;
+   uint64_t clk_anchor_ticks;
+   int      clk_have_anchor;
+   double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int      clk_ppm;
+   int      clk_valid;
 } pipewire_audio_t;
 
 static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
@@ -1043,6 +1066,19 @@ static void pwire_free(void *data)
    if (!audio)
       return;
 
+   /* What the graph's clock was doing against the wall. Logged, not
+    * acted on: until these have been read off a range of hardware
+    * they are measurements, and a clock estimate that is wrong is
+    * worse than one that is absent. Note this is the graph's clock -
+    * with a device driving it that is the device, and with something
+    * else driving it, it is that. */
+   if (audio->clk_valid)
+      RARCH_LOG("[PipeWire] Graph clock, fitted from the time report:"
+            " %+d ppm.\n", audio->clk_ppm);
+   else
+      RARCH_LOG("[PipeWire] Graph clock: not enough usable time reports"
+            " to fit one.\n");
+
    if (audio->stream)
    {
       pw_thread_loop_lock(audio->pw->thread_loop);
@@ -1112,6 +1148,56 @@ static size_t pwire_write_avail(void *data)
       if (rc == 0 && t.rate.denom && t.delay > 0 && audio->info.rate)
          audio_driver_set_device_latency((size_t)
                ((uint64_t)t.delay * t.rate.num * audio->info.rate / t.rate.denom));
+
+      /* And the clock, from the same report - see the note on the
+       * fields. ticks are in units of t.rate, which for an audio
+       * stream is 1/samplerate, so both axes are seconds and the
+       * slope is the ratio. */
+      if (rc == 0 && t.rate.denom && t.now > 0 && t.ticks)
+      {
+         if (!audio->clk_have_anchor)
+         {
+            audio->clk_anchor_now   = t.now;
+            audio->clk_anchor_ticks = t.ticks;
+            audio->clk_have_anchor  = 1;
+            audio->clk_sx = audio->clk_sy = audio->clk_sxx = 0.0;
+            audio->clk_sxy = audio->clk_n = 0.0;
+         }
+         else if (     t.now   > audio->clk_anchor_now
+                    && t.ticks >= audio->clk_anchor_ticks)
+         {
+            double x = (double)(t.now - audio->clk_anchor_now) / 1000000000.0;
+            double y = (double)(t.ticks - audio->clk_anchor_ticks)
+               * (double)t.rate.num / (double)t.rate.denom;
+            double d;
+
+            audio->clk_sx  += x;
+            audio->clk_sy  += y;
+            audio->clk_sxx += x * x;
+            audio->clk_sxy += x * y;
+            audio->clk_n   += 1.0;
+
+            d = audio->clk_n * audio->clk_sxx - audio->clk_sx * audio->clk_sx;
+            if (x >= 1.0 && d > 0.0)
+            {
+               double slope = (audio->clk_n * audio->clk_sxy
+                     - audio->clk_sx * audio->clk_sy) / d;
+               double ppm   = (slope - 1.0) * 1000000.0;
+               if (ppm > -100000.0 && ppm < 100000.0)
+               {
+                  audio->clk_ppm   = (int)ppm;
+                  audio->clk_valid = 1;
+               }
+            }
+         }
+         else
+         {
+            audio->clk_anchor_now   = t.now;
+            audio->clk_anchor_ticks = t.ticks;
+            audio->clk_sx = audio->clk_sy = audio->clk_sxx = 0.0;
+            audio->clk_sxy = audio->clk_n = 0.0;
+         }
+      }
    }
    pw_thread_loop_unlock(audio->pw->thread_loop);
 

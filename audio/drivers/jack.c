@@ -67,6 +67,34 @@ typedef struct jack
     * for the second. */
    retro_atomic_size_t underruns;
    retro_atomic_size_t xruns;
+
+   /* The device clock, from the cycle times the server keeps.
+    *
+    * consumed above counts the frames the server asked for, which is
+    * device-paced and is what the sink estimate uses - but it says
+    * nothing about when those frames went out.
+    * jack_get_cycle_times() does: it returns the frame time at the
+    * start of the cycle together with the microsecond time of the same
+    * instant, which is the pair this needs, and it is meant to be
+    * called from the process callback.
+    *
+    * current_frames is 32 bits and wraps in about a day at 48 kHz, so
+    * the difference is taken between cycles and accumulated, which is
+    * correct across the wrap as long as a cycle is shorter than the
+    * wrap - which it is by nine orders of magnitude.
+    *
+    * A fit over every cycle, not two points: noise on a single anchor
+    * divides by the window and reads as drift. Touched only by the
+    * process callback; the result is published as one int, in ppm.
+    * Nothing here feeds rate control. */
+   jack_nframes_t     clk_last_frames;
+   uint64_t           clk_frames_total;
+   uint64_t           clk_anchor_usec;
+   int                clk_have_anchor;
+   double             clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   unsigned           clk_rate;
+   retro_atomic_int_t clk_ppm;
+   retro_atomic_int_t clk_valid;
    /* The server saying its rate or its period has changed. Both make
     * everything downstream wrong - what the resampler produces, what
     * the ring was sized for, how long a write waits - so both ask the
@@ -123,6 +151,71 @@ static int ja_process_cb(jack_nframes_t nframes, void *data)
    if (nframes > 0)
    {
       retro_atomic_fetch_add_size(&jd->consumed, (size_t)nframes);
+
+      /* The device clock - see the note on the fields. Two reads and a
+       * handful of flops, on a call meant for this thread. */
+      {
+         jack_nframes_t cur_f = 0;
+         jack_time_t    cur_u = 0, next_u = 0;
+         float          per_u = 0.0f;
+
+         if (     jd->clk_rate
+               && jack_get_cycle_times(jd->client, &cur_f, &cur_u,
+                     &next_u, &per_u) == 0)
+         {
+            if (!jd->clk_have_anchor)
+            {
+               jd->clk_last_frames  = cur_f;
+               jd->clk_frames_total = 0;
+               jd->clk_anchor_usec  = (uint64_t)cur_u;
+               jd->clk_have_anchor  = 1;
+               jd->clk_sx = jd->clk_sy = jd->clk_sxx = 0.0;
+               jd->clk_sxy = jd->clk_n = 0.0;
+            }
+            else if ((uint64_t)cur_u > jd->clk_anchor_usec)
+            {
+               /* Wrap-safe in 32 bits, which is what the difference of
+                * two jack_nframes_t is. */
+               jack_nframes_t step = cur_f - jd->clk_last_frames;
+               double x, y, d;
+
+               jd->clk_last_frames   = cur_f;
+               jd->clk_frames_total += (uint64_t)step;
+
+               x = (double)((uint64_t)cur_u - jd->clk_anchor_usec)
+                  / 1000000.0;
+               y = (double)jd->clk_frames_total;
+
+               jd->clk_sx  += x;
+               jd->clk_sy  += y;
+               jd->clk_sxx += x * x;
+               jd->clk_sxy += x * y;
+               jd->clk_n   += 1.0;
+
+               d = jd->clk_n * jd->clk_sxx - jd->clk_sx * jd->clk_sx;
+               if (x >= 1.0 && d > 0.0)
+               {
+                  double slope = (jd->clk_n * jd->clk_sxy
+                        - jd->clk_sx * jd->clk_sy) / d;
+                  double ppm   = (slope / (double)jd->clk_rate - 1.0)
+                     * 1000000.0;
+                  if (ppm > -100000.0 && ppm < 100000.0)
+                  {
+                     retro_atomic_store_release_int(&jd->clk_ppm, (int)ppm);
+                     retro_atomic_store_release_int(&jd->clk_valid, 1);
+                  }
+               }
+            }
+            else
+            {
+               jd->clk_last_frames  = cur_f;
+               jd->clk_frames_total = 0;
+               jd->clk_anchor_usec  = (uint64_t)cur_u;
+               jd->clk_sx = jd->clk_sy = jd->clk_sxx = 0.0;
+               jd->clk_sxy = jd->clk_n = 0.0;
+            }
+         }
+      }
 
       for (i = 0; i < jd->channels; i++)
          dst[i] = (float *)jack_port_get_buffer(jd->ports[i], nframes);
@@ -329,7 +422,10 @@ static void *ja_init(const char *device,
    if (!jd->client)
       goto error;
 
-   *new_rate = jack_get_sample_rate(jd->client);
+   *new_rate     = jack_get_sample_rate(jd->client);
+   jd->clk_rate  = *new_rate;
+   retro_atomic_int_init(&jd->clk_ppm, 0);
+   retro_atomic_int_init(&jd->clk_valid, 0);
 
    jack_set_process_callback(jd->client, ja_process_cb, jd);
    /* Registered before activation, as JACK requires of a client that
@@ -582,6 +678,19 @@ static void ja_free(void *data)
    size_t  x;
 
    retro_atomic_store_release_int(&jd->shutdown, 1);
+
+   /* What the server's clock was doing against the wall. Logged, not
+    * acted on: until these have been read off a range of hardware they
+    * are measurements, and a clock estimate that is wrong is worse
+    * than one that is absent. With a device driving the graph this is
+    * that device; with something else driving it, it is that. */
+   if (retro_atomic_load_acquire_int(&jd->clk_valid))
+      RARCH_LOG("[JACK] Server clock, fitted from the cycle times:"
+            " %+d ppm against %u Hz.\n",
+            retro_atomic_load_acquire_int(&jd->clk_ppm), jd->clk_rate);
+   else
+      RARCH_LOG("[JACK] Server clock: not enough usable cycle times to"
+            " fit one.\n");
 
    /* The server's own missed deadlines, said once, here. Kept apart
     * from this driver's underruns because the answers differ: a
