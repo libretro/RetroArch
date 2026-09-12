@@ -71,6 +71,12 @@
 static retro_vfs_stat_t path_stat32_cb = retro_vfs_stat_impl;
 static retro_vfs_stat_64_t path_stat64_cb = retro_vfs_stat_64_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
+/* VFS API v5.  NULL when a frontend older than v5 is in use, so the
+ * wrappers report failure instead of touching the local file system
+ * behind a foreign frontend's back. */
+static retro_vfs_set_readonly_t path_set_readonly_cb = retro_vfs_set_readonly_impl;
+static retro_vfs_get_mtime_t    path_get_mtime_cb    = retro_vfs_get_mtime_impl;
+static retro_vfs_set_mtime_t    path_set_mtime_cb    = retro_vfs_set_mtime_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
@@ -80,6 +86,9 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_stat32_cb         = retro_vfs_stat_impl;
    path_stat64_cb         = retro_vfs_stat_64_impl;
    path_mkdir_cb          = retro_vfs_mkdir_impl;
+   path_set_readonly_cb   = retro_vfs_set_readonly_impl;
+   path_get_mtime_cb      = retro_vfs_get_mtime_impl;
+   path_set_mtime_cb      = retro_vfs_set_mtime_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
@@ -91,6 +100,46 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
       path_stat64_cb = vfs_iface->stat_64;
    else
       path_stat64_cb = NULL;
+
+   /* Members a v5 frontend left NULL stay NULL: the wrappers then
+    * report "unavailable" rather than dereferencing them. */
+   path_set_readonly_cb = NULL;
+   path_get_mtime_cb    = NULL;
+   path_set_mtime_cb    = NULL;
+   if (vfs_info->required_interface_version >= METADATA_REQUIRED_VFS_VERSION)
+   {
+      path_set_readonly_cb = vfs_iface->set_readonly;
+      path_get_mtime_cb    = vfs_iface->get_mtime;
+      path_set_mtime_cb    = vfs_iface->set_mtime;
+   }
+}
+
+bool path_is_readonly(const char *path)
+{
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+}
+
+bool path_set_readonly(const char *path, bool readonly)
+{
+   if (!path_set_readonly_cb)
+      return false;
+   return path_set_readonly_cb(path, readonly ? 1 : 0) == 0;
+}
+
+bool path_get_mtime(const char *path, int64_t *mtime)
+{
+   if (!path_get_mtime_cb || !mtime)
+      return false;
+   return path_get_mtime_cb(path, mtime) == 0;
+}
+
+bool path_set_mtime(const char *path, int64_t mtime)
+{
+   if (!path_set_mtime_cb)
+      return false;
+   return path_set_mtime_cb(path, mtime) == 0;
 }
 
 int path_stat(const char *path)

@@ -99,6 +99,7 @@ jobs:
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test
+            vfs_v5_metadata_test
             vfs_hybrid_test
             filestream_rbuf_fault_test
             cdrom_cuesheet_overflow_test
@@ -819,3 +820,22 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
              ./vfs_mapped_ptr_test
           echo "[pass] vfs_mapped_ptr_test (MMAP=0, ASan)"
+
+      - name: Run vfs_v5_metadata_test against a copy_file_range that ignores len
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -eu
+          # A sandboxed kernel (gVisor on some hosted runners) answers
+          # copy_file_range by copying to EOF regardless of len.  The
+          # VFS must account the bytes, retire the kernel path for the
+          # process, and finish the copy in place on the portable path.
+          # FAKE_CFR=1 is the to-EOF case, FAKE_CFR=2 a partial overshoot
+          # that leaves the copy part-way and has to be resumed.
+          for mode in 1 2; do
+            make clean >/dev/null
+            make vfs_v5_metadata_test FAKE_CFR=$mode SANITIZER=address,undefined
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+               ./vfs_v5_metadata_test
+            echo "[pass] vfs_v5_metadata_test (FAKE_CFR=$mode, ASan)"
+          done

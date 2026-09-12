@@ -762,13 +762,305 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
                }
            }
            free(path_wide);
-           return (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-              ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY
-              : RETRO_VFS_STAT_IS_VALID;
+           {
+               int ret = RETRO_VFS_STAT_IS_VALID;
+               if (attribdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                   ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+               if (attribdata.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+                   ret |= RETRO_VFS_STAT_IS_READONLY;
+               return ret;
+           }
        }
    }
    free(path_wide);
    return 0;
+}
+
+/* VFS API v5 ------------------------------------------------------- */
+
+/* FILETIME is 100 ns ticks since 1601-01-01; Unix time is seconds
+ * since 1970-01-01.  Kept in uint64_t so the offset is never a
+ * signed-overflow site.  Same helpers as vfs_implementation.c. */
+static const uint64_t UWP_FILETIME_EPOCH_DIFF  = 116444736000000000ULL;
+static const uint64_t UWP_FILETIME_TICKS_PER_S = 10000000ULL;
+
+static int64_t uwp_filetime_to_unix(const FILETIME &ft)
+{
+    uint64_t t = ((uint64_t)ft.dwHighDateTime << 32) | (uint64_t)ft.dwLowDateTime;
+    if (t < UWP_FILETIME_EPOCH_DIFF)
+        return -(int64_t)((UWP_FILETIME_EPOCH_DIFF - t) / UWP_FILETIME_TICKS_PER_S);
+    return (int64_t)((t - UWP_FILETIME_EPOCH_DIFF) / UWP_FILETIME_TICKS_PER_S);
+}
+
+/* FILETIME covers 1601-01-01 .. ~30828 AD; out-of-range values clamp
+ * to the nearest end rather than wrapping.  -unix_s is never formed. */
+static void uwp_unix_to_filetime(int64_t unix_s, FILETIME &ft)
+{
+    const int64_t min_unix = -(int64_t)(UWP_FILETIME_EPOCH_DIFF / UWP_FILETIME_TICKS_PER_S);
+    const int64_t max_unix = (int64_t)((0x7fffffffffffffffULL - UWP_FILETIME_EPOCH_DIFF) / UWP_FILETIME_TICKS_PER_S);
+    uint64_t t;
+    if (unix_s <= min_unix)
+        t = 0;
+    else if (unix_s >= max_unix)
+        t = 0x7fffffffffffffffULL;
+    else if (unix_s < 0)
+        t = UWP_FILETIME_EPOCH_DIFF - ((uint64_t)0 - (uint64_t)unix_s) * UWP_FILETIME_TICKS_PER_S;
+    else
+        t = UWP_FILETIME_EPOCH_DIFF + (uint64_t)unix_s * UWP_FILETIME_TICKS_PER_S;
+    ft.dwLowDateTime  = (DWORD)(t & 0xffffffffULL);
+    ft.dwHighDateTime = (DWORD)(t >> 32);
+}
+
+int retro_vfs_set_readonly_impl(const char *path, int readonly)
+{
+    wchar_t *path_wide;
+    _WIN32_FILE_ATTRIBUTE_DATA attribdata;
+    DWORD attrs;
+    BOOL ok = FALSE;
+
+    if (!path || !*path)
+        return -1;
+
+    path_wide = utf8_to_utf16_string_alloc(path);
+    windowsize_path(path_wide);
+
+    if (GetFileAttributesExFromAppW(path_wide, GetFileExInfoStandard, &attribdata)
+            && attribdata.dwFileAttributes != INVALID_FILE_ATTRIBUTES)
+    {
+        attrs = attribdata.dwFileAttributes;
+        if (readonly)
+            attrs |=  FILE_ATTRIBUTE_READONLY;
+        else
+            attrs &= ~FILE_ATTRIBUTE_READONLY;
+        /* No FromApp variant exists; the plain call is in the UWP API
+         * set and works on any path the app already has access to. */
+        ok = SetFileAttributesW(path_wide, attrs);
+    }
+    free(path_wide);
+    return ok ? 0 : -1;
+}
+
+int retro_vfs_get_mtime_impl(const char *path, int64_t *mtime)
+{
+    wchar_t *path_wide;
+    _WIN32_FILE_ATTRIBUTE_DATA attribdata;
+    BOOL ok;
+
+    if (!path || !*path || !mtime)
+        return -1;
+
+    path_wide = utf8_to_utf16_string_alloc(path);
+    windowsize_path(path_wide);
+    ok = GetFileAttributesExFromAppW(path_wide, GetFileExInfoStandard, &attribdata);
+    free(path_wide);
+    if (!ok || attribdata.dwFileAttributes == INVALID_FILE_ATTRIBUTES)
+        return -1;
+    *mtime = uwp_filetime_to_unix(attribdata.ftLastWriteTime);
+    return 0;
+}
+
+int retro_vfs_set_mtime_impl(const char *path, int64_t mtime)
+{
+    wchar_t *path_wide;
+    HANDLE h;
+    FILETIME ft;
+    BOOL ok;
+
+    if (!path || !*path)
+        return -1;
+
+    uwp_unix_to_filetime(mtime, ft);
+    path_wide = utf8_to_utf16_string_alloc(path);
+    windowsize_path(path_wide);
+    h = CreateFile2FromAppW(path_wide, FILE_WRITE_ATTRIBUTES,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, NULL);
+    free(path_wide);
+    if (h == INVALID_HANDLE_VALUE)
+        return -1;
+    ok = SetFileTime(h, NULL, NULL, &ft);
+    CloseHandle(h);
+    return ok ? 0 : -1;
+}
+
+/* copy: begin / step / close.  A resumable state machine the caller
+ * advances; no thread, no lock in here.  Both ends go through this
+ * backend's own file I/O (CreateFile2FromAppW underneath) with one
+ * transfer buffer; a step moves at most the requested bytes. */
+/* Same sizing as the C backend: 128 KiB is as fast as 1 MiB and small
+ * files get only what they need. */
+#define UWP_COPY_BUF_MAX      (128 * 1024)
+#define UWP_COPY_BUF_MIN      (16 * 1024)
+#define UWP_COPY_DEFAULT_STEP ((int64_t)4 * 1024 * 1024)
+
+struct retro_vfs_copy_handle
+{
+    char     *src;
+    char     *dst;
+    int64_t   total;
+    int64_t   done;
+    int       status;
+    libretro_vfs_implementation_file *in;
+    libretro_vfs_implementation_file *out;
+    char     *buf;
+    size_t    buf_len;
+};
+
+static void uwp_copy_release_ends(struct retro_vfs_copy_handle *h)
+{
+    if (h->in)  { retro_vfs_file_close_impl(h->in);  h->in  = NULL; }
+    if (h->out) { retro_vfs_file_close_impl(h->out); h->out = NULL; }
+}
+
+static void uwp_copy_handle_free(struct retro_vfs_copy_handle *h)
+{
+    if (!h)
+        return;
+    uwp_copy_release_ends(h);
+    free(h->buf);
+    free(h->src);
+    free(h->dst);
+    free(h);
+}
+
+struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(
+        const char *src, const char *dst, unsigned flags)
+{
+    struct retro_vfs_copy_handle *h;
+    int64_t src_size = 0;
+    int sflags, dflags;
+
+    if (!src || !*src || !dst || !*dst)
+        return NULL;
+    if (_stricmp(src, dst) == 0)
+        return NULL;
+
+    sflags = retro_vfs_stat_64_impl(src, &src_size);
+    if (!(sflags & RETRO_VFS_STAT_IS_VALID) || (sflags & RETRO_VFS_STAT_IS_DIRECTORY))
+        return NULL;
+
+    dflags = retro_vfs_stat_64_impl(dst, NULL);
+    if (dflags & RETRO_VFS_STAT_IS_VALID)
+    {
+        if (dflags & RETRO_VFS_STAT_IS_DIRECTORY)
+            return NULL;
+        if (!(flags & RETRO_VFS_COPY_OVERWRITE))
+            return NULL;
+        /* cp -f: a read-only stale dst must not defeat an explicit
+         * overwrite; Windows refuses to delete a read-only file, so
+         * clear the attribute and try once more. */
+        if (retro_vfs_file_remove_impl(dst) != 0)
+        {
+            if (   !(dflags & RETRO_VFS_STAT_IS_READONLY)
+                || retro_vfs_set_readonly_impl(dst, 0) != 0
+                || retro_vfs_file_remove_impl(dst) != 0)
+                return NULL;
+        }
+    }
+    else
+    {
+        std::filesystem::path parent = std::filesystem::path(dst).parent_path();
+        if (!parent.empty())
+        {
+            uwp_mkdir_impl(parent);
+            if (!(retro_vfs_stat_64_impl(parent.string().c_str(), NULL) & RETRO_VFS_STAT_IS_DIRECTORY))
+                return NULL;
+        }
+    }
+
+    h = (struct retro_vfs_copy_handle*)calloc(1, sizeof(*h));
+    if (!h)
+        return NULL;
+    h->src    = strdup(src);
+    h->dst    = strdup(dst);
+    h->total  = src_size;
+    h->status = RETRO_VFS_COPY_RUNNING;
+    if (!h->src || !h->dst)
+        goto fail;
+    h->buf_len = UWP_COPY_BUF_MAX;
+    if (src_size > 0 && src_size < (int64_t)h->buf_len)
+        h->buf_len = (size_t)src_size;
+    if (h->buf_len < UWP_COPY_BUF_MIN)
+        h->buf_len = UWP_COPY_BUF_MIN;
+    if (!(h->buf = (char*)malloc(h->buf_len)))
+    {
+        h->buf_len = UWP_COPY_BUF_MIN;
+        if (!(h->buf = (char*)malloc(h->buf_len)))
+            goto fail;
+    }
+    h->in = retro_vfs_file_open_impl(src, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+    if (!h->in)
+        goto fail;
+    h->out = retro_vfs_file_open_impl(dst, RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+    if (!h->out)
+        goto fail;
+    return h;
+
+fail:
+    uwp_copy_handle_free(h);
+    retro_vfs_file_remove_impl(dst);
+    return NULL;
+}
+
+int retro_vfs_copy_step_impl(struct retro_vfs_copy_handle *h,
+        int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total)
+{
+    if (!h)
+        return RETRO_VFS_COPY_FAILED;
+    if (h->status == RETRO_VFS_COPY_RUNNING)
+    {
+        int64_t budget = max_bytes > 0 ? max_bytes : UWP_COPY_DEFAULT_STEP;
+        while (budget > 0 && h->status == RETRO_VFS_COPY_RUNNING)
+        {
+            size_t  want = h->buf_len;
+            int64_t n;
+            if ((int64_t)want > budget)
+                want = (size_t)budget;
+            n = retro_vfs_file_read_impl(h->in, h->buf, want);
+            if (n < 0)
+                h->status = RETRO_VFS_COPY_FAILED;
+            else if (n == 0)
+            {
+                libretro_vfs_implementation_file *out = h->out;
+                h->out = NULL;
+                h->status = (retro_vfs_file_close_impl(out) == 0)
+                        ? RETRO_VFS_COPY_DONE : RETRO_VFS_COPY_FAILED;
+            }
+            else if (retro_vfs_file_write_impl(h->out, h->buf, (uint64_t)n) != n)
+                h->status = RETRO_VFS_COPY_FAILED;
+            else
+            {
+                h->done += n;
+                budget  -= n;
+            }
+        }
+        if (h->status == RETRO_VFS_COPY_FAILED)
+        {
+            uwp_copy_release_ends(h);
+            retro_vfs_file_remove_impl(h->dst);
+        }
+    }
+    if (bytes_done)
+        *bytes_done  = h->done;
+    if (bytes_total)
+        *bytes_total = h->total;
+    return h->status;
+}
+
+int retro_vfs_copy_close_impl(struct retro_vfs_copy_handle *h)
+{
+    int status;
+    if (!h)
+        return -1;
+    status = h->status;
+    if (status == RETRO_VFS_COPY_RUNNING)
+    {
+        uwp_copy_release_ends(h);
+        retro_vfs_file_remove_impl(h->dst);
+    }
+    uwp_copy_handle_free(h);
+    return status == RETRO_VFS_COPY_DONE ? 0 : -1;
 }
 
 int retro_vfs_stat_impl(const char *path, int32_t *size)
@@ -927,6 +1219,38 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir* rdir)
 #endif
     const WIN32_FIND_DATA* entry = (const WIN32_FIND_DATA*)&rdir->entry;
     return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir* rdir,
+        int64_t *size, int64_t *mtime)
+{
+    int ret = RETRO_VFS_STAT_IS_VALID;
+
+    if (!rdir)
+        return 0;
+#ifdef HAVE_SMBCLIENT
+    if (rdir->smb_handle && rdir->smb_handle->dir != 0)
+    {
+       char full[PATH_MAX_LENGTH];
+       const char *name = retro_vfs_dirent_get_name_impl(rdir);
+       if (!name)
+          return 0;
+       fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
+       /* The SMB stat helper carries no mtime. */
+       return retro_vfs_stat_smb(full, size);
+    }
+#endif
+    /* All of it is already in the find data: no I/O. */
+    if (size)
+        *size = (int64_t)(((uint64_t)rdir->entry.nFileSizeHigh << 32)
+                | (uint64_t)rdir->entry.nFileSizeLow);
+    if (mtime)
+        *mtime = uwp_filetime_to_unix(rdir->entry.ftLastWriteTime);
+    if (rdir->entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        ret |= RETRO_VFS_STAT_IS_DIRECTORY;
+    if (rdir->entry.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+        ret |= RETRO_VFS_STAT_IS_READONLY;
+    return ret;
 }
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir* rdir)

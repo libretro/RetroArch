@@ -37,6 +37,8 @@
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
@@ -182,6 +184,13 @@ static retro_vfs_write_t filestream_write_cb       = NULL;
 static retro_vfs_flush_t filestream_flush_cb       = NULL;
 static retro_vfs_remove_t filestream_remove_cb     = NULL;
 static retro_vfs_rename_t filestream_rename_cb     = NULL;
+/* VFS API v5.  NULL when a frontend older than v5 (or one that left
+ * the members unset) owns the files: the local _impl must not run
+ * behind its back, so the begin/poll/close wrappers report failure. */
+static retro_vfs_copy_begin_t filestream_copy_begin_cb = NULL;
+static retro_vfs_copy_step_t  filestream_copy_step_cb  = NULL;
+static retro_vfs_copy_close_t filestream_copy_close_cb = NULL;
+static bool filestream_copy_unavailable                = false;
 
 /* VFS Initialization */
 
@@ -202,6 +211,10 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_flush_cb    = NULL;
    filestream_remove_cb   = NULL;
    filestream_rename_cb   = NULL;
+   filestream_copy_begin_cb = NULL;
+   filestream_copy_step_cb  = NULL;
+   filestream_copy_close_cb = NULL;
+   filestream_copy_unavailable = false;
 
    if (
              (vfs_info->required_interface_version <
@@ -221,6 +234,16 @@ void filestream_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    filestream_flush_cb    = vfs_iface->flush;
    filestream_remove_cb   = vfs_iface->remove;
    filestream_rename_cb   = vfs_iface->rename;
+
+   if (vfs_info->required_interface_version >= FILESTREAM_COPY_REQUIRED_VFS_VERSION
+         && vfs_iface->copy_begin && vfs_iface->copy_step && vfs_iface->copy_close)
+   {
+      filestream_copy_begin_cb = vfs_iface->copy_begin;
+      filestream_copy_step_cb  = vfs_iface->copy_step;
+      filestream_copy_close_cb = vfs_iface->copy_close;
+   }
+   else
+      filestream_copy_unavailable = true;
 }
 
 /* Callback wrappers */
@@ -1618,40 +1641,93 @@ int filestream_rename(const char *old_path, const char *new_path)
    return retro_vfs_file_rename_impl(old_path, new_path);
 }
 
-int filestream_copy(const char *src, const char *dst)
+/* v1-only frontends: copy through their open/read/write.  Large
+ * heap buffer rather than the historical 256-byte stack one; the
+ * destination directory is created before the destination is opened,
+ * which the old order got backwards. */
+static int filestream_copy_loop(const char *src, const char *dst)
 {
-   char buf[256] = {0};
-   int64_t n     = 0;
-   int ret       = 0;
-   char path_dst[PATH_MAX_LENGTH] = {0};
+   char   *buf                = NULL;
+   size_t  buf_len            = 256 * 1024;
+   int64_t n                  = 0;
+   int     ret                = -1;
+   RFILE  *fp_src             = NULL;
+   RFILE  *fp_dst             = NULL;
+   char    path_dst[PATH_MAX_LENGTH];
 
-   RFILE *fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   RFILE *fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!(buf = (char*)malloc(buf_len)))
+      return -1;
 
-   if (!fp_src || !fp_dst)
-      ret = -1;
-
-   if (ret < 0)
-      goto close;
-
-   snprintf(path_dst, sizeof(path_dst), "%s", dst);
+   strlcpy(path_dst, dst, sizeof(path_dst));
    path_basedir(path_dst);
-
    if (!path_is_directory(path_dst))
       path_mkdir(path_dst);
 
-   while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0 && ret == 0)
+   fp_src = filestream_open(src, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+   if (!fp_src)
+      goto end;
+   fp_dst = filestream_open(dst, RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!fp_dst)
+      goto end;
+
+   while ((n = filestream_read(fp_src, buf, buf_len)) > 0)
    {
       if (filestream_write(fp_dst, buf, n) != n)
-         ret = -1;
+         goto end;
    }
+   ret = (n < 0) ? -1 : 0;
 
-close:
+end:
    if (fp_src)
       filestream_close(fp_src);
    if (fp_dst)
       filestream_close(fp_dst);
+   if (ret != 0)
+      filestream_delete(dst);
+   free(buf);
    return ret;
+}
+
+struct retro_vfs_copy_handle *filestream_copy_begin(
+      const char *src, const char *dst, unsigned flags)
+{
+   if (filestream_copy_begin_cb)
+      return filestream_copy_begin_cb(src, dst, flags);
+   if (filestream_copy_unavailable)
+      return NULL;
+   return retro_vfs_copy_begin_impl(src, dst, flags);
+}
+
+int filestream_copy_step(struct retro_vfs_copy_handle *handle,
+      int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total)
+{
+   if (filestream_copy_step_cb)
+      return filestream_copy_step_cb(handle, max_bytes, bytes_done, bytes_total);
+   if (filestream_copy_unavailable)
+      return RETRO_VFS_COPY_FAILED;
+   return retro_vfs_copy_step_impl(handle, max_bytes, bytes_done, bytes_total);
+}
+
+int filestream_copy_close(struct retro_vfs_copy_handle *handle)
+{
+   if (filestream_copy_close_cb)
+      return filestream_copy_close_cb(handle);
+   if (filestream_copy_unavailable)
+      return -1;
+   return retro_vfs_copy_close_impl(handle);
+}
+
+/* Pre-v5 helper, kept for its existing callers.  Blocks by design;
+ * new code uses filestream_copy_begin/poll/close. */
+int filestream_copy(const char *src, const char *dst)
+{
+   if (!src || !*src || !dst || !*dst || string_is_equal(src, dst))
+      return -1;
+   if (!path_is_valid(src) || path_is_directory(src) || path_is_directory(dst))
+      return -1;
+   return filestream_copy_loop(src, dst);
 }
 
 int filestream_cmp(const char *src, const char *dst)

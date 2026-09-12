@@ -104,6 +104,15 @@ int retro_vfs_mkdir_impl(const char *dir);
  **/
 int retro_vfs_restrict_permissions_impl(const char *path);
 
+/* VFS API v5 */
+int retro_vfs_set_readonly_impl(const char *path, int readonly);
+int retro_vfs_get_mtime_impl(const char *path, int64_t *mtime);
+int retro_vfs_set_mtime_impl(const char *path, int64_t mtime);
+struct retro_vfs_copy_handle *retro_vfs_copy_begin_impl(const char *src, const char *dst, unsigned flags);
+int retro_vfs_copy_step_impl(struct retro_vfs_copy_handle *handle, int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total);
+int retro_vfs_copy_close_impl(struct retro_vfs_copy_handle *handle);
+int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir *rdir, int64_t *size, int64_t *mtime);
+
 libretro_vfs_implementation_dir *retro_vfs_opendir_impl(const char *dir, bool include_hidden);
 
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *dirstream);

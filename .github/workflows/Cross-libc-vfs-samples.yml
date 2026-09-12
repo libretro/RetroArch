@@ -89,6 +89,7 @@ jobs:
             ASAN_OPTIONS=${{ matrix.asan_opts }} ./vfs_bulk_read_test
             ./vfs_seek_contract_test
             ./vfs_mapped_ptr_test
+            ./vfs_v5_metadata_test
           }
           # Mapping on (what the platform actually ships), mapping off
           # with the descriptor path forced (what the consoles have),
@@ -158,6 +159,9 @@ jobs:
           make MMAP=0
           ./vfs_bulk_read_test.exe
           ./vfs_seek_contract_test.exe
+          # Win32 branches of the v5 metadata ops: attributes,
+          # SetFileTime, CopyFileW, find-data dirent_stat.
+          ./vfs_v5_metadata_test.exe
           # Exercises the Win32 CreateFileMapping/MapViewOfFile
           # backend, which no other job in the tree reaches.
           ./vfs_mapped_ptr_test.exe

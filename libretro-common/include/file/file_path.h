@@ -37,6 +37,7 @@ RETRO_BEGIN_DECLS
 
 #define PATH_REQUIRED_VFS_VERSION 3
 #define STAT64_REQUIRED_VFS_VERSION 4
+#define METADATA_REQUIRED_VFS_VERSION 5
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
@@ -695,6 +696,48 @@ bool path_is_valid(const char *path);
  * doing), false if the platform supports it and it failed.
  **/
 bool path_set_private(const char *path);
+
+/**
+ * path_is_readonly:
+ * @path               : path
+ *
+ * Whether the current user cannot write to @path. Reads the
+ * RETRO_VFS_STAT_IS_READONLY flag, which frontends older than
+ * VFS API v5 never set, so the answer there is always false.
+ *
+ * @return true if @path exists and is read-only.
+ **/
+bool path_is_readonly(const char *path);
+
+/**
+ * path_set_readonly:
+ * @path               : path
+ * @readonly           : true to make read-only, false to make writable
+ *
+ * POSIX: toggles the write bits. Windows: FILE_ATTRIBUTE_READONLY.
+ *
+ * @return true on success, false if unsupported on this platform,
+ * the file system, or the negotiated VFS version (< 5).
+ **/
+bool path_set_readonly(const char *path, bool readonly);
+
+/**
+ * path_get_mtime:
+ * @path               : path
+ * @mtime              : receives seconds since 1970-01-01T00:00:00Z
+ *
+ * @return true on success, false if unavailable.
+ **/
+bool path_get_mtime(const char *path, int64_t *mtime);
+
+/**
+ * path_set_mtime:
+ * @path               : path
+ * @mtime              : seconds since 1970-01-01T00:00:00Z
+ *
+ * @return true on success, false if unsupported or it failed.
+ **/
+bool path_set_mtime(const char *path, int64_t mtime);
 
 int64_t path_get_size(const char *path);
 

@@ -4,6 +4,7 @@ TARGET_TEST2 := vfs_large_file_test
 TARGET_TEST3 := vfs_seek_contract_test
 TARGET_TEST4 := vfs_bulk_read_test
 TARGET_TEST5 := filestream_rbuf_fault_test
+TARGET_TEST6 := vfs_v5_metadata_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -13,6 +14,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
@@ -21,7 +23,8 @@ COMMON_SOURCES := \
 COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
-	vfs_bulk_read_test.o filestream_rbuf_fault_test.o $(COMMON_OBJS)
+	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
+	vfs_v5_metadata_test.o $(COMMON_OBJS)
 
 # filestream_rbuf_fault_test drives the two arms on which
 # filestream_rbuf_fill() gives up and hands the caller back to the
@@ -72,6 +75,17 @@ ifeq ($(DESCRIPTOR_IO),1)
    CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
 endif
 
+# FAKE_CFR=1 stands in a copy_file_range that copies to EOF whatever
+# len it was given (what gVisor was observed doing); FAKE_CFR=2 one
+# that copies three times len.  Both exercise vfs_v5_metadata_test's
+# distrust-and-resume path on a kernel that would never trip it.
+ifneq ($(FAKE_CFR),)
+   CFLAGS += -DVFS_COPY_TEST_FAKE_CFR=$(FAKE_CFR)
+endif
+# Every sample build narrates the copy stepper's platform calls on
+# stderr (which path, what was asked, what came back); a frontend
+# build never defines this.
+CFLAGS += -DVFS_COPY_DEBUG
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
@@ -83,7 +97,7 @@ ifneq ($(SANITIZER),)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-	$(TARGET_TEST5)
+	$(TARGET_TEST5) $(TARGET_TEST6)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -125,9 +139,18 @@ $(FAULT_FS_OBJ): $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 $(TARGET_TEST5): filestream_rbuf_fault_test.o $(FAULT_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# vfs_v5_metadata_test covers the VFS API v5 additions (read-only
+# state, mtime, begin/step/close copy, dirent_stat) through the path_*,
+# filestream_copy* and retro_dirent_stat wrappers.  The copy is a
+# caller-stepped state machine: no threads, no extra objects.
+$(TARGET_TEST6): vfs_v5_metadata_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
-		$(TARGET_TEST4) $(TARGET_TEST5) $(OBJS) $(FAULT_FS_OBJ)
+		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
+		$(OBJS) $(FAULT_FS_OBJ)
+	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \
