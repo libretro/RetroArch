@@ -276,69 +276,80 @@ enum
 /* This is specifically for iOS 9, according to the private headers */
 -(void)handleKeyUIEvent:(UIEvent *)event
 {
-    /* This gets called twice with the same timestamp
-     * for each keypress, that's fine for polling
-     * but is bad for business with events. The de-dup has
-     * to be per key: two keys going down or up in the same
-     * frame share a timestamp, and dropping the second
-     * event leaves its key stuck. */
-    static double last_time_stamp;
-    static long long last_key_code;
-    static _Bool last_key_down;
+    /* UIKit hands every key event over twice. Polling does not care,
+     * the event path does, so one event per (key, direction) pair is
+     * accepted per timestamp and the rest go straight to super.
+     * The record is a bitmap rather than a single slot because any
+     * number of keys can change state within one frame and they all
+     * carry that frame's timestamp - a single slot only keeps the
+     * key that happened to arrive last, and the others are either
+     * dropped or let through twice depending on the order UIKit
+     * chose. */
+    static double   last_time_stamp;
+    static uint32_t seen[2][MAX_KEYS / 32];
+    NSString       *ch;
+    uint32_t       *row;
+    NSUInteger      mods;
+    long long       code;
+    uint32_t        character = 0;
+    uint32_t        mod       = 0;
 
     /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
     if (!event._hidEvent)
        return [super handleKeyUIEvent:event];
 
-    if (   last_time_stamp == event.timestamp
-        && last_key_code   == event._keyCode
-        && last_key_down   == event._isKeyDown)
+    /* apple_input_keyboard_event() indexes apple_key_state with the
+     * keycode and ignores anything outside it. */
+    code = event._keyCode;
+    if (code <= 0 || code >= MAX_KEYS)
        return [super handleKeyUIEvent:event];
 
-    last_time_stamp        = event.timestamp;
-    last_key_code          = event._keyCode;
-    last_key_down          = event._isKeyDown;
-
-    if (event._hidEvent)
+    if (last_time_stamp != event.timestamp)
     {
-        NSString       *ch = (NSString*)event._privateInput;
-        uint32_t character = 0;
-        uint32_t mod       = 0;
-        NSUInteger mods    = event._modifierFlags;
+        last_time_stamp = event.timestamp;
+        memset(seen, 0, sizeof(seen));
+    }
 
-        if (mods & NSAlphaShiftKeyMask)
-           mod |= RETROKMOD_CAPSLOCK;
-        if (mods & NSShiftKeyMask)
-           mod |= RETROKMOD_SHIFT;
-        if (mods & NSControlKeyMask)
-           mod |= RETROKMOD_CTRL;
-        if (mods & NSAlternateKeyMask)
-           mod |= RETROKMOD_ALT;
-        if (mods & NSCommandKeyMask)
-           mod |= RETROKMOD_META;
-        if (mods & NSNumericPadKeyMask)
-           mod |= RETROKMOD_NUMLOCK;
+    row = seen[event._isKeyDown ? 1 : 0];
+    if (row[code >> 5] & (1u << (code & 31)))
+       return [super handleKeyUIEvent:event];
+    row[code >> 5] |= 1u << (code & 31);
 
-        if (ch && ch.length != 0)
-        {
-            unsigned i;
-            character = [ch characterAtIndex:0];
+    ch   = (NSString*)event._privateInput;
+    mods = event._modifierFlags;
 
-            apple_input_keyboard_event(event._isKeyDown,
-                  (uint32_t)event._keyCode, 0, mod,
-                  RETRO_DEVICE_KEYBOARD);
+    if (mods & NSAlphaShiftKeyMask)
+       mod |= RETROKMOD_CAPSLOCK;
+    if (mods & NSShiftKeyMask)
+       mod |= RETROKMOD_SHIFT;
+    if (mods & NSControlKeyMask)
+       mod |= RETROKMOD_CTRL;
+    if (mods & NSAlternateKeyMask)
+       mod |= RETROKMOD_ALT;
+    if (mods & NSCommandKeyMask)
+       mod |= RETROKMOD_META;
+    if (mods & NSNumericPadKeyMask)
+       mod |= RETROKMOD_NUMLOCK;
 
-            for (i = 1; i < ch.length; i++)
-                apple_input_keyboard_event(event._isKeyDown,
-                      0, [ch characterAtIndex:i], mod,
-                      RETRO_DEVICE_KEYBOARD);
-        }
+    if (ch && ch.length != 0)
+    {
+        unsigned i;
+        character = [ch characterAtIndex:0];
 
         apple_input_keyboard_event(event._isKeyDown,
-              (uint32_t)event._keyCode, character, mod,
+              (uint32_t)code, 0, mod,
               RETRO_DEVICE_KEYBOARD);
+
+        for (i = 1; i < ch.length; i++)
+            apple_input_keyboard_event(event._isKeyDown,
+                  0, [ch characterAtIndex:i], mod,
+                  RETRO_DEVICE_KEYBOARD);
     }
+
+    apple_input_keyboard_event(event._isKeyDown,
+          (uint32_t)code, character, mod,
+          RETRO_DEVICE_KEYBOARD);
 
     [super handleKeyUIEvent:event];
 }
@@ -346,69 +357,72 @@ enum
 /* This is for iOS versions < 9.0 */
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   /* This gets called twice with the same timestamp
-    * for each keypress, that's fine for polling
-    * but is bad for business with events. The de-dup has
-    * to be per key: two keys going down or up in the same
-    * frame share a timestamp, and dropping the second
-    * event leaves its key stuck. */
-   static double last_time_stamp;
-   static long long last_key_code;
-   static _Bool last_key_down;
+   /* Same per (key, direction) record as -handleKeyUIEvent:, kept
+    * separately because only one of the two paths is live on any
+    * given iOS version. */
+   static double   last_time_stamp;
+   static uint32_t seen[2][MAX_KEYS / 32];
+   NSString       *ch;
+   uint32_t       *row;
+   NSUInteger      mods;
+   long long       code;
+   uint32_t        character = 0;
+   uint32_t        mod       = 0;
 
    /* If the _hidEvent is null, [event _keyCode] will crash.
     * (This happens with the on screen keyboard). */
    if (!event._hidEvent)
       return [super _keyCommandForEvent:event];
 
-   if (   last_time_stamp == event.timestamp
-       && last_key_code   == event._keyCode
-       && last_key_down   == event._isKeyDown)
+   code = event._keyCode;
+   if (code <= 0 || code >= MAX_KEYS)
       return [super _keyCommandForEvent:event];
 
-   last_time_stamp = event.timestamp;
-   last_key_code   = event._keyCode;
-   last_key_down   = event._isKeyDown;
-
-   if (event._hidEvent)
+   if (last_time_stamp != event.timestamp)
    {
-      NSString       *ch = (NSString*)event._privateInput;
-      uint32_t character = 0;
-      uint32_t mod       = 0;
-      NSUInteger mods    = event._modifierFlags;
+      last_time_stamp = event.timestamp;
+      memset(seen, 0, sizeof(seen));
+   }
 
-      if (mods & NSAlphaShiftKeyMask)
-         mod |= RETROKMOD_CAPSLOCK;
-      if (mods & NSShiftKeyMask)
-         mod |= RETROKMOD_SHIFT;
-      if (mods & NSControlKeyMask)
-         mod |= RETROKMOD_CTRL;
-      if (mods & NSAlternateKeyMask)
-         mod |= RETROKMOD_ALT;
-      if (mods & NSCommandKeyMask)
-         mod |= RETROKMOD_META;
-      if (mods & NSNumericPadKeyMask)
-         mod |= RETROKMOD_NUMLOCK;
+   row = seen[event._isKeyDown ? 1 : 0];
+   if (row[code >> 5] & (1u << (code & 31)))
+      return [super _keyCommandForEvent:event];
+   row[code >> 5] |= 1u << (code & 31);
 
-      if (ch && ch.length != 0)
-      {
-         unsigned i;
-         character = [ch characterAtIndex:0];
+   ch   = (NSString*)event._privateInput;
+   mods = event._modifierFlags;
 
-         apple_input_keyboard_event(event._isKeyDown,
-               (uint32_t)event._keyCode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
+   if (mods & NSAlphaShiftKeyMask)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (mods & NSShiftKeyMask)
+      mod |= RETROKMOD_SHIFT;
+   if (mods & NSControlKeyMask)
+      mod |= RETROKMOD_CTRL;
+   if (mods & NSAlternateKeyMask)
+      mod |= RETROKMOD_ALT;
+   if (mods & NSCommandKeyMask)
+      mod |= RETROKMOD_META;
+   if (mods & NSNumericPadKeyMask)
+      mod |= RETROKMOD_NUMLOCK;
 
-         for (i = 1; i < ch.length; i++)
-            apple_input_keyboard_event(event._isKeyDown,
-                  0, [ch characterAtIndex:i], mod,
-                  RETRO_DEVICE_KEYBOARD);
-      }
+   if (ch && ch.length != 0)
+   {
+      unsigned i;
+      character = [ch characterAtIndex:0];
 
       apple_input_keyboard_event(event._isKeyDown,
-            (uint32_t)event._keyCode, character, mod,
+            (uint32_t)code, 0, mod,
             RETRO_DEVICE_KEYBOARD);
+
+      for (i = 1; i < ch.length; i++)
+         apple_input_keyboard_event(event._isKeyDown,
+               0, [ch characterAtIndex:i], mod,
+               RETRO_DEVICE_KEYBOARD);
    }
+
+   apple_input_keyboard_event(event._isKeyDown,
+         (uint32_t)code, character, mod,
+         RETRO_DEVICE_KEYBOARD);
 
    return [super _keyCommandForEvent:event];
 }
