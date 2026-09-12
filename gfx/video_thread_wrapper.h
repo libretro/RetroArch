@@ -202,6 +202,10 @@ typedef struct video_thread_async_load
    enum texture_filter_type filter;
 } video_thread_async_load_t;
 
+/* Deep enough for the settings changes a menu page can issue between
+ * two frames; past it the sender waits, as it always did. */
+#define VIDEO_THREAD_DEFERRED_MAX 24
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -371,6 +375,13 @@ typedef struct thread_video
     * main thread sent meanwhile is neither answered nor overwritten.
     * Video thread only. */
    thread_packet_t *inline_reply;
+
+   /* Commands that want nothing back: queued here and run by the video
+    * thread on its next pass, so the caller does not wait for a round
+    * trip. Under thr->lock, as send_cmd is. A full queue falls back to
+    * the synchronous send, so nothing is ever dropped. */
+   thread_packet_t deferred[VIDEO_THREAD_DEFERRED_MAX];
+   unsigned deferred_count;
    video_driver_t video_thread;
 
    enum thread_cmd send_cmd;
