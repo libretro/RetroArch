@@ -999,7 +999,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
 # IEC 61937 burst framing, no dependencies. The decoder is an arm of
 # audio_transfer (an .ac3 file in the mixer); the encoder and the
 # framing carry a wider layout to a device that decodes Dolby Digital
-# but takes stereo PCM only (WASAPI exclusive mode today).
+# but takes stereo PCM only (WASAPI exclusive mode, and WDM-KS).
 DEFINES += -DHAVE_RAC3
 OBJ += $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.o \
        $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.o \

@@ -63,6 +63,9 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#include <formats/rac3.h>
+#include <formats/iec61937.h>
+
 #include "../audio_upmix.h"
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -110,6 +113,16 @@ RA_KS_GUID(ra_ks_dataformat_subtype_pcm,
       0x00000001, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 RA_KS_GUID(ra_ks_dataformat_subtype_float,
       0x00000003, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+/* AC-3 over IEC 61937: the subtype names the codec and the carrier is
+ * two channels of 16-bit PCM at the encoded rate. It is a WAVE format
+ * tag in the same family as PCM and float - 0x0092 - which is how
+ * tools/wdmks_abi_guids.py checks it without a header to compare
+ * against, since neither the mingw nor the SDK headers this build can
+ * reach declare it. audio/common/mmdevice_common_inline.h carries the
+ * same value for WASAPI. */
+RA_KS_GUID(ra_ks_dataformat_subtype_ac3,
+      0x00000092, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+
 RA_KS_GUID(ra_ks_dataformat_specifier_wfx,
       0x05589F81, 0xC356, 0x11CE, 0xBF, 0x01, 0x00, 0xAA, 0x00, 0x55, 0x59, 0x5A);
 
@@ -281,6 +294,20 @@ typedef struct
    HANDLE               PinToHandle;
    ra_kspriority_t      Priority;
 } ra_kspin_connect_t;
+
+/* The extended WAVEFORMATEXTENSIBLE an IEC 61937 stream is described
+ * by: the carrier's format, then what the encoded stream inside it
+ * is. Same shape as audio/common/mmdevice_common_inline.h's, which
+ * WASAPI uses for the same purpose. */
+#pragma pack(push, 1)
+typedef struct
+{
+   WAVEFORMATEXTENSIBLE FormatExt;
+   DWORD dwEncodedSamplesPerSec;
+   DWORD dwEncodedChannelCount;
+   DWORD dwAverageBytesPerSec;
+} ra_iec61937_format_t;
+#pragma pack(pop)
 
 /* KSDATAFORMAT_WAVEFORMATEX, which the system declares inside
  * pshpack1.h - it is packed to one, not padded. A WAVEFORMATEX is 18
@@ -1313,6 +1340,72 @@ static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
    return pin;
 }
 
+/* Asks a pin for AC-3 over IEC 61937. The carrier is always two
+ * channels of 16-bit PCM at the encoded rate; what varies is what the
+ * stream inside says it is. A refusal is the ordinary answer on a
+ * device with no receiver behind it, and the caller has PCM to fall
+ * back on. */
+static HANDLE wdmks_pin_try_ac3(HANDLE filter, ULONG pin_id,
+      unsigned rate, unsigned enc_channels, unsigned kbps)
+{
+   unsigned char          buf[sizeof(ra_kspin_connect_t)
+                            + sizeof(ra_ksdataformat_t)
+                            + sizeof(ra_iec61937_format_t) + 8];
+   ra_kspin_connect_t    *connect = (ra_kspin_connect_t*)buf;
+   ra_ksdataformat_wfx_t *format  = (ra_ksdataformat_wfx_t*)(connect + 1);
+   ra_iec61937_format_t   wf;
+   HANDLE                 pin     = INVALID_HANDLE_VALUE;
+   DWORD                  res;
+
+   memset(buf, 0, sizeof(buf));
+   memset(&wf, 0, sizeof(wf));
+
+   connect->Interface.Set   = ra_ks_interfacesetid_standard;
+   connect->Interface.Id    = RA_KSINTERFACE_STANDARD_STREAMING;
+   connect->Medium.Set      = ra_ks_mediumsetid_standard;
+   connect->Medium.Id       = RA_KSMEDIUM_TYPE_ANYINSTANCE;
+   connect->PinId           = pin_id;
+   connect->PinToHandle     = NULL;
+   connect->Priority.PriorityClass    = RA_KSPRIORITY_NORMAL;
+   connect->Priority.PrioritySubClass = 1;
+
+   wf.FormatExt.Format.wFormatTag      = (WORD)0xFFFE;
+   wf.FormatExt.Format.nChannels       = 2;
+   wf.FormatExt.Format.nSamplesPerSec  = rate;
+   wf.FormatExt.Format.wBitsPerSample  = 16;
+   wf.FormatExt.Format.nBlockAlign     = 4;
+   wf.FormatExt.Format.nAvgBytesPerSec = rate * 4;
+   wf.FormatExt.Format.cbSize          =
+      (WORD)(sizeof(wf) - sizeof(WAVEFORMATEX));
+   wf.FormatExt.Samples.wValidBitsPerSample = 16;
+   wf.FormatExt.dwChannelMask          = 0x3;   /* FL FR: the carrier */
+   memcpy(&wf.FormatExt.SubFormat, &ra_ks_dataformat_subtype_ac3,
+         sizeof(GUID));
+   wf.dwEncodedSamplesPerSec           = rate;
+   wf.dwEncodedChannelCount            = enc_channels;
+   wf.dwAverageBytesPerSec             = kbps * 1000 / 8;
+
+   format->DataFormat.f.FormatSize  =
+      (ULONG)(sizeof(ra_ksdataformat_t) + sizeof(wf));
+   format->DataFormat.f.SampleSize  = 4;
+   format->DataFormat.f.MajorFormat = ra_ks_dataformat_type_audio;
+   format->DataFormat.f.SubFormat   = ra_ks_dataformat_subtype_ac3;
+   format->DataFormat.f.Specifier   = ra_ks_dataformat_specifier_wfx;
+   memcpy(&format->WaveFormatEx, &wf, sizeof(wf));
+
+   if (!wdmks_ksuser_init())
+      return INVALID_HANDLE_VALUE;
+
+   if ((res = g_ks_create_pin(filter, connect, GENERIC_WRITE, &pin)) != 0)
+   {
+      RARCH_DBG("[WDM-KS] Pin %u refused AC-3 at %u Hz, %u channel(s),"
+            " %u kbps: 0x%08lx.\n", (unsigned)pin_id, rate, enc_channels,
+            kbps, (unsigned long)res);
+      return INVALID_HANDLE_VALUE;
+   }
+   return pin;
+}
+
 /* Opens the best format a pin will actually take, rather than the
  * best its ranges claim. Preference order: the rate asked for before
  * any other, float before integer where the pin says it takes both
@@ -1468,6 +1561,19 @@ typedef struct
    ULONG           rt_last_pos;
    bool            rt_have_last;
    bool            rt_barrier;  /* writes need a barrier to be seen */
+
+   /* AC-3 over IEC 61937, where the device takes it and the frontend
+    * asked for it: the frontend's float frames are gathered a block
+    * at a time, encoded, wrapped in a burst and written as the
+    * 16-bit stereo carrier the pin was opened for. */
+   rac3_encoder_t *ac3;
+   float          *ac3_in;
+   unsigned        ac3_in_frames;
+   unsigned        ac3_channels;
+   unsigned        ac3_kbps;
+   size_t          ac3_frame_size;
+   uint8_t         ac3_frame[RAC3_MAX_FRAME_BYTES];
+   uint8_t         ac3_burst[IEC61937_AC3_BURST_BYTES];
    bool            running;
    bool            dead;      /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
@@ -1874,11 +1980,13 @@ static size_t wdmks_free_bytes(wdmks_t *w)
    return total;
 }
 
+static ssize_t wdmks_write_packets(wdmks_t *w, const unsigned char *src,
+      size_t size);
+
 static ssize_t wdmks_write(void *data, const void *buf, size_t size)
 {
    wdmks_t       *w    = (wdmks_t*)data;
    const unsigned char *src = (const unsigned char*)buf;
-   size_t         done = 0;
 
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE)
       return -1;
@@ -1886,6 +1994,58 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
       return -1;
    if (w->stream.looped)
       return wdmks_rt_write(w, src, size);
+
+   /* The bit-stream path. What arrives is float frames in the encoded
+    * layout, not the carrier's samples, so nothing here is written
+    * through until a whole A/52 frame's worth has been gathered. */
+   if (w->ac3)
+   {
+      size_t frames = size / w->ac3_frame_size;
+      size_t at     = 0;
+
+      while (at < frames)
+      {
+         size_t take = 1536 - w->ac3_in_frames;
+         if (take > frames - at)
+            take = frames - at;
+
+         memcpy((uint8_t*)w->ac3_in
+                  + (size_t)w->ac3_in_frames * w->ac3_frame_size,
+               src + at * w->ac3_frame_size, take * w->ac3_frame_size);
+         w->ac3_in_frames += (unsigned)take;
+         at               += take;
+
+         if (w->ac3_in_frames == 1536)
+         {
+            size_t  n = rac3_encode_frame(w->ac3, w->ac3_in,
+                  w->ac3_frame, sizeof(w->ac3_frame));
+            size_t  b = n ? iec61937_wrap_ac3(w->ac3_frame, n, 0,
+                  w->ac3_burst, sizeof(w->ac3_burst)) : 0;
+            ssize_t written;
+
+            w->ac3_in_frames = 0;
+            if (!b)
+               return -1;
+            /* The burst goes out as the carrier's own samples, which
+             * is what the packet path below already does. */
+            written = wdmks_write_packets(w, w->ac3_burst, b);
+            if (written < 0)
+               return -1;
+         }
+      }
+      return (ssize_t)(at * w->ac3_frame_size);
+   }
+
+   return wdmks_write_packets(w, src, size);
+}
+
+/* The packet path proper, split out so the bit-stream path above can
+ * hand it a burst: what goes to the device is the carrier's samples
+ * either way. */
+static ssize_t wdmks_write_packets(wdmks_t *w, const unsigned char *src,
+      size_t size)
+{
+   size_t done = 0;
 
    while (done < size)
    {
@@ -2235,7 +2395,13 @@ static void wdmks_set_nonblock_state(void *data, bool state)
 static bool wdmks_use_float(void *data)
 {
    wdmks_t *w = (wdmks_t*)data;
-   return w && w->is_float;
+   if (!w)
+      return false;
+   /* On the bit-stream path what the frontend hands over is float
+    * frames in the encoded layout - the encoder's input - and not the
+    * carrier's 16-bit samples, so this answers for the encoder rather
+    * than for the pin. */
+   return w->ac3 ? true : w->is_float;
 }
 
 static void wdmks_free(void *data)
@@ -2289,6 +2455,10 @@ static void wdmks_free(void *data)
          CloseHandle(w->packets[i].overlapped.hEvent);
       free(w->packets[i].data);
    }
+
+   if (w->ac3)
+      rac3_encoder_free(w->ac3);
+   free(w->ac3_in);
 
    if (w->filter && w->filter != INVALID_HANDLE_VALUE)
       CloseHandle(w->filter);
@@ -2398,6 +2568,44 @@ static void *wdmks_init(const char *device, unsigned rate,
             for (p = 0; p < devices[i].pin_count && !opened; p++)
                opened = wdmks_pin_open(w->filter, &devices[i].pins[p],
                      rate, widths[c], devices[i].wavert, &w->stream);
+
+            /* A wider layout the pin will not take as PCM is tried as
+             * AC-3 over IEC 61937 before narrowing, which is what the
+             * WASAPI driver does and for the same reason: an HDMI
+             * output to a receiver commonly advertises stereo PCM and
+             * decodes Dolby Digital, so the layout survives as a bit
+             * stream where it would otherwise be folded away. A/52
+             * carries 1.0 to 5.1, so 7.1 goes as 5.1. */
+            if (!opened && widths[c] > 2 && !devices[i].wavert)
+            {
+               unsigned enc_ch  = widths[c] > 6 ? 6 : widths[c];
+               unsigned kbps    = enc_ch >= 5 ? 640 : enc_ch >= 3 ? 448 : 256;
+               unsigned enc_rate = (rate == 44100 || rate == 32000)
+                  ? rate : 48000;
+
+               for (p = 0; p < devices[i].pin_count && !opened; p++)
+               {
+                  HANDLE h = wdmks_pin_try_ac3(w->filter,
+                        devices[i].pins[p].pin_id, enc_rate, enc_ch, kbps);
+                  if (h == INVALID_HANDLE_VALUE)
+                     continue;
+
+                  w->stream.handle         = h;
+                  w->stream.pin_id         = devices[i].pins[p].pin_id;
+                  w->stream.looped         = false;
+                  w->stream.fmt.rate       = enc_rate;
+                  w->stream.fmt.channels   = 2;    /* the carrier */
+                  w->stream.fmt.bits       = 16;
+                  w->stream.fmt.container_bits = 16;
+                  w->stream.fmt.is_float   = false;
+                  w->ac3_channels          = enc_ch;
+                  w->ac3_kbps              = kbps;
+                  opened                   = true;
+                  RARCH_LOG("[WDM-KS] Pin %u opened for AC-3 over IEC 61937:"
+                        " %u channel(s) at %u kbps, %u Hz carrier.\n",
+                        (unsigned)w->stream.pin_id, enc_ch, kbps, enc_rate);
+               }
+            }
          }
       }
 
@@ -2431,6 +2639,27 @@ static void *wdmks_init(const char *device, unsigned rate,
       w->clk_freq = QueryPerformanceFrequency(&f)
          ? (uint64_t)f.QuadPart : 0;
    }
+   /* The encoder, where a pin took AC-3. The frontend will hand over
+    * float frames in the layout the hook reports; each block of 1536
+    * becomes one A/52 frame, one burst, and one write of the carrier. */
+   if (w->ac3_channels)
+   {
+      uint32_t enc_layout = wdmks_layout_for(w->ac3_channels);
+
+      w->ac3            = rac3_encoder_new(w->stream.fmt.rate, enc_layout,
+            w->ac3_kbps);
+      w->ac3_frame_size = (size_t)w->ac3_channels * sizeof(float);
+      w->ac3_in         = (float*)calloc((size_t)1536 * w->ac3_channels,
+            sizeof(float));
+      if (!w->ac3 || !w->ac3_in)
+      {
+         RARCH_ERR("[WDM-KS] The AC-3 encoder would not start.\n");
+         wdmks_free(w);
+         return NULL;
+      }
+      w->layout = enc_layout;
+   }
+
    w->rate        = w->stream.fmt.rate;
    w->is_float    = w->stream.fmt.is_float;
    w->frame_bytes = w->stream.fmt.channels

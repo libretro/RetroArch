@@ -44,6 +44,10 @@ PAIRS = {
 # The WAVE format family: xxxxxxxx-0000-0010-8000-00aa00389b71.
 WAVE_FAMILY = {
     "ra_ks_dataformat_subtype_float": 0x0003,
+    # AC-3 over IEC 61937. No header this build can reach declares it,
+    # so the family rule is the whole check: same 16 bytes as PCM and
+    # float with the WAVE format tag in front.
+    "ra_ks_dataformat_subtype_ac3":   0x0092,
 }
 
 
