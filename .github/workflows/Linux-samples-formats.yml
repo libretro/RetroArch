@@ -161,6 +161,17 @@ jobs:
           # got past this file: every other check here raised the
           # frontier only after the first process() call.
           #
+          # One set of checks drives every avail-aware still decoder -
+          # PNG and JPEG as well as TGA and BMP - through the
+          # image_transfer facade in task_image's order.  PNG, JPEG,
+          # WEBM and MP4 clamp the requested frontier in the size
+          # domain because their set_buf_ptr is given the buffer
+          # length; rtga's and rbmp's are not, which is why those two
+          # were the only ones that could turn (size_t)-1 into a
+          # wrapped pointer, and did.  A sixth avail-aware decoder
+          # inherits whichever shape it copies, so the check lives
+          # here rather than in anyone's memory.
+          #
           # It also checks header_ready, the gate the task layer uses
           # to start a decode early, against the decoder itself: every
           # prefix it accepts must be one the decoder can actually
