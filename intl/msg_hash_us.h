@@ -9009,6 +9009,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this value. Might not be honored if the audio driver can't provide given latency."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
+   "Minimum Audio Latency (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
+   "The lowest audio latency RetroArch will ask a driver for. Eight milliseconds by default, which is what it was fixed at for a long time: a setting of zero used to reach the drivers and they handled it inconsistently. Drivers that talk to the device directly - WASAPI in exclusive mode, ASIO, WDM-KS - can often negotiate a shorter period than that, so lowering this lets them. A driver that cannot go lower will not; it keeps its own hardware floor either way."
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
