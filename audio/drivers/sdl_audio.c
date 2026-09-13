@@ -33,7 +33,7 @@
 
 /* Upper bound on how long a blocking write or read will wait for the
  * SDL callback before giving up and reporting a short count.  Never
- * reached in normal operation - the callback signals every period -
+ * reached in normal operation - the callback notifies every period -
  * so the exact value only decides how long a stalled device takes to
  * be noticed.  coreaudio.c already uses a flat 300ms for the same
  * purpose on iOS. */
@@ -403,8 +403,8 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
 
 /* Sleeps until the capture queue holds len bytes, then says how many it
  * holds. The same bounded wait sdl_microphone_read() does - the SDL
- * capture callback is the only thing that ever signals this condition,
- * so an untimed wait never returns once the device stops calling back -
+ * capture callback is the only thing that ever notifies this park, so
+ * an untimed wait never returns once the device stops calling back -
  * without the copy out. */
 static size_t sdl_microphone_wait_readable(void *driver_context,
       void *mic_context, size_t len)

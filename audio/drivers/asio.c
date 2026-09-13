@@ -1900,7 +1900,7 @@ error:
 
 /* How many period-long waits a blocked write or wait_writable() may
  * take before giving up on the callback making room. The callback
- * drains and signals every period while streaming; a driver that has
+ * drains and notifies every period while streaming; a driver that has
  * stopped calling it back - reset, device lost, stalled - never does,
  * and shutdown is not raised for that. */
 #define ASIO_WAIT_LAPS 8
@@ -1967,7 +1967,7 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       else if (!ad->nonblock)
       {
          /* Paused, the callback zero-fills and returns before it drains
-          * or signals: nothing here would ever be woken. The write
+          * or notifies: nothing here would ever be woken. The write
           * returns what went; the rest is the caller's to retry once
           * the stream is started. */
          if (retro_atomic_load_acquire_int(&ad->is_paused))
@@ -2114,10 +2114,13 @@ static void ra_asio_free(void *data)
 
 static bool ra_asio_use_float(void *data) { return true; }
 
-/* Sleep on the condition the ASIO buffer-switch callback signals until
- * at least len bytes fit in the ring, capped at half of it so the wait
- * always ends; timed at one hardware buffer, as ra_asio_write() waits.
- * Returns the free space then, or 0 once the driver has shut down. */
+/* Park on the eventcount the ASIO buffer-switch callback notifies,
+ * until at least len bytes fit in the ring, capped at half of it so the
+ * wait always ends; timed at one hardware buffer, as ra_asio_write()
+ * waits. The bound stays because the callback stops notifying once
+ * shutdown or is_paused is set, so a park entered after that has
+ * nothing left to end it. Returns the free space then, or 0 once the
+ * driver has shut down. */
 static size_t ra_asio_wait_writable(void *data, size_t len)
 {
    ra_asio_t *ad   = (ra_asio_t *)data;
@@ -2138,7 +2141,7 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      /* Shut down or paused, the callback drains nothing and signals
+      /* Shut down or paused, the callback drains nothing and notifies
        * nothing: no space is coming from this call. */
       if (     retro_atomic_load_acquire_int(&ad->shutdown)
             || retro_atomic_load_acquire_int(&ad->is_paused))

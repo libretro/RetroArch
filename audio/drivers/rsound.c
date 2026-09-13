@@ -317,11 +317,20 @@ static size_t rs_buffer_size(void *data)
    return rsd ? rsd->fifo_size : 0;
 }
 
-/* Sleep on the condition librsound's audio callback signals after every
- * pull until at least len bytes fit in the fifo, capped at half the
- * reported buffer so the wait always ends. Timed, for the same reason
- * rs_write()'s wait is: the error callback's signal can be lost. Returns
- * the free space then, or 0 once librsound has reported an error. */
+/* Park on the eventcount librsound's audio callback notifies after
+ * every pull, until at least len bytes fit in the fifo, capped at half
+ * the reported buffer so the wait always ends.
+ *
+ * Still timed, but no longer for the reason it used to be: the error
+ * callback's announcement could be lost to the gap between the test
+ * and the wait, and it is the last one librsound ever makes. That gap
+ * is closed - the wait window is opened before the predicate is read
+ * again. What the bound is for now is the other failure, where the
+ * server stops draining without erroring and neither callback runs at
+ * all, so there is nothing to be notified by.
+ *
+ * Returns the free space then, or 0 once librsound has reported an
+ * error. */
 static size_t rs_wait_writable(void *data, size_t len)
 {
    rsd_t *rsd = (rsd_t*)data;
