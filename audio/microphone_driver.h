@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 #endif
 #include <libretro.h>
@@ -151,7 +152,7 @@ struct retro_microphone
     * Samples that will be sent to the core.  One producer (the capture
     * worker, or the core's own read on the frame-synchronous path) and
     * one consumer (retro_microphone_read), so a lock-free retro_spsc
-    * ring; with the worker, capture_lock covers only the waits, no longer
+    * ring; with the worker, capture_park covers only the waits, never
     * the flush - the read, up-channel and resample of a slice - which
     * the core's read used to queue behind.  retro_spsc rounds capacity
     * up to a power of two; outgoing_size is the size asked for and the
@@ -227,10 +228,19 @@ struct retro_microphone
    sthread_t *capture_thread;
    /* Only for the two bounded waits: the worker's, when the ring is
     * full, and the core's, when it is short.  Neither the ring nor the
-    * flush is under them (see outgoing_samples above); they were named
-    * fifo_lock/fifo_cond from when both were. */
-   slock_t   *capture_lock;
-   scond_t   *capture_cond;
+    * flush is under it (see outgoing_samples above), so there is no
+    * lock here any more - the ring carries the data and this carries
+    * only the parking.
+    *
+    * One object for both directions, though a notify releases every
+    * waiter rather than one.  The two park conditions cannot hold at
+    * once: the ring is AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO
+    * samples, the worker parks with room for less than one slice of
+    * it, and the core parks holding less than the frame it was asked
+    * for, which is at most a slice.  Both would need the ring nearly
+    * full and nearly empty together.  samples/audio/mic_handshake
+    * measures it rather than leaving it to the sum. */
+   retro_eventcount_t capture_park;
    /* Read by the worker on every pass, cleared by the thread that tears
     * the microphone down. An atomic rather than a volatile bool: volatile
     * orders nothing between threads, which ThreadSanitizer reported here
