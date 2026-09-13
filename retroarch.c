@@ -1598,9 +1598,6 @@ void drivers_init(
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
    input_driver_state_t *input_st    = input_state_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
-#ifdef HAVE_MICROPHONE
-   microphone_driver_state_t *mic_st = microphone_state_get_ptr();
-#endif
 #ifdef HAVE_MENU
    struct menu_state *menu_st     = menu_state_get_ptr();
 #endif
