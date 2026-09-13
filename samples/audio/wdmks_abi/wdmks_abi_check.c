@@ -112,4 +112,19 @@ SAME(s_run,         RA_KSSTATE_RUN,                  KSSTATE_RUN);
 SAME(t_get,         RA_KSPROPERTY_TYPE_GET,          KSPROPERTY_TYPE_GET);
 SAME(t_set,         RA_KSPROPERTY_TYPE_SET,          KSPROPERTY_TYPE_SET);
 SAME(t_topo,        RA_KSPROPERTY_TYPE_TOPOLOGY,     KSPROPERTY_TYPE_TOPOLOGY);
+/* The one WaveRT property ID any ksmedia.h has. The rest of
+ * KSPROPERTY_RTAUDIO is driver-kit only - mingw-w64's ksmedia.h
+ * declares the enumeration with this single enumerator in it - so
+ * tools/wdmks_wavert_check.sh against a Windows SDK header is still
+ * what covers the other ten.
+ *
+ * Worth having anyway, because it is the anchor: the driver's
+ * enumeration is written out in the kit's order and takes its values
+ * from the position of each name. If the base were wrong every
+ * property ID after it would be wrong by the same amount, and the
+ * symptom would be the kernel answering a different property rather
+ * than refusing. This pins the base in a check that runs on any
+ * toolchain. */
+SAME(rt_getposfn,   RA_KSPROPERTY_RTAUDIO_GETPOSITIONFUNCTION,
+                    KSPROPERTY_RTAUDIO_GETPOSITIONFUNCTION);
 int main(void){ return 0; }

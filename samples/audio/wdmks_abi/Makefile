@@ -20,17 +20,29 @@ CFLAGS   += -Wall -Wextra -Wno-unused-const-variable -Wno-unused-function \
 
 all: check
 
+# The GUID comparison is pure python against the system headers and
+# runs wherever they are; everything else needs a cross compiler, and
+# its absence is a missing tool rather than a failing check.  Saying so
+# and carrying on is the difference between a suite run that is red for
+# a reason and one that is red on every machine without mingw - which
+# this was, printing only "No such file or directory".
+#
+#   apt install gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
+#
+# is enough; the headers being checked against come with it.
 check:
-	@$(CC64) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_abi_check.c
-	@echo "  x86-64 gnu99: sizes, offsets and constants match ks.h"
-	@$(CC64) $(CFLAGS) -std=c89 -pedantic -Wno-long-long -c -o /dev/null wdmks_abi_check.c
-	@echo "  x86-64 c89:   the header is C89, which the 2005 toolchain needs"
+	@if command -v $(CC64) >/dev/null 2>&1; then \
+	   $(CC64) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_abi_check.c && \
+	   echo "  x86-64 gnu99: sizes, offsets and constants match ks.h" && \
+	   $(CC64) $(CFLAGS) -std=c89 -pedantic -Wno-long-long -c -o /dev/null wdmks_abi_check.c && \
+	   echo "  x86-64 c89:   the header is C89, which the 2005 toolchain needs" && \
+	   $(CC64) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_ioctl_check.c && \
+	   echo "  x86-64 gnu99: the CTL_CODE fallbacks match winioctl.h"; \
+	 else echo "  x86-64: no $(CC64), the layout checks did not run"; fi
 	@if command -v $(CC32) >/dev/null 2>&1; then \
 	   $(CC32) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_abi_check.c && \
 	   echo "  i686   gnu99: same sizes on 32-bit, as they must be"; \
-	 else echo "  i686: no $(CC32), skipped"; fi
-	@$(CC64) $(CFLAGS) -std=gnu99 -c -o /dev/null wdmks_ioctl_check.c
-	@echo "  x86-64 gnu99: the CTL_CODE fallbacks match winioctl.h"
+	 else echo "  i686:   no $(CC32), the 32-bit sizes were not proved"; fi
 	@python3 $(CORE_DIR)/tools/wdmks_abi_guids.py
 
 clean:
