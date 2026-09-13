@@ -21,6 +21,23 @@ LDFLAGS += -lrt
 # the BSDs and the console ports get.  'check' runs both: the default
 # build covers this host's address-wait path, the SCOND build covers
 # the path most targets actually take.
+#
+# The Windows tiers are not covered by 'check' because they need a
+# cross compiler and something to run the result on, but they are
+# testable from a Linux host and worth doing after any change to
+# retro_eventcount.c's win32 half:
+#
+#   x86_64-w64-mingw32-gcc -o ec.exe retro_eventcount_test.c \
+#       ../../../rthreads/retro_eventcount.c \
+#       ../../../rthreads/rthreads.c \
+#       -Wall -W -std=gnu99 -O1 -DHAVE_THREADS -I../../../include
+#   for t in alert keyed event none; do \
+#       RETRO_EVENTCOUNT_WIN32=$$t wine64 ./ec.exe; done
+#
+# RETRO_EVENTCOUNT_WIN32 pins the sleep tier.  'none' pins the case
+# where no tier is available at all, which otherwise needs the process
+# to run out of TLS indices; that path used to hang, and is the reason
+# the knob exists.
 ifneq ($(SCOND),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SCOND
    TARGET := retro_eventcount_test_scond

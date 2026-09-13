@@ -243,14 +243,18 @@ static unsigned ec_spin_for_budget(unsigned budget_us)
 
 static void ec_win32_resolve(void)
 {
-   HMODULE nt = GetModuleHandleA("ntdll.dll");
+   HMODULE nt        = GetModuleHandleA("ntdll.dll");
+   /* alert / keyed / event pin a tier; none pins the case where no tier
+    * is usable, which is otherwise only reachable by exhausting the
+    * process's TLS indices.  That case has its own code path and had
+    * never been run - see the fallback at the end of this function. */
+   const char *force = getenv("RETRO_EVENTCOUNT_WIN32");
 
    ec_g.sleep = EC_SLEEP_EVENT;
 
-   if (nt)
+   if (nt && !(force && !strcmp(force, "none")))
    {
       ec_nt_create_keyed_t create_keyed;
-      const char *force  = getenv("RETRO_EVENTCOUNT_WIN32");
 
       ec_g.wait_alert    = (ec_nt_wait_alert_t)(void (*)(void))
          GetProcAddress(nt, "NtWaitForAlertByThreadId");
@@ -275,9 +279,14 @@ static void ec_win32_resolve(void)
 
    if (ec_g.sleep == EC_SLEEP_EVENT)
    {
-      ec_g.tls_event = TlsAlloc();
+      ec_g.tls_event = (force && !strcmp(force, "none"))
+         ? TLS_OUT_OF_INDEXES : TlsAlloc();
       /* Nothing else can park on this tier without it, so fall through
-       * to the condition variable rather than handing out a bad index. */
+       * to the condition variable rather than handing out a bad index.
+       * sleep == 0 is read by retro_eventcount_init(), which then gives
+       * the object a mutex and a condition variable instead of the
+       * waiter list, and by every path that would otherwise have used
+       * that list. */
       if (ec_g.tls_event == TLS_OUT_OF_INDEXES)
          ec_g.sleep = 0;
    }
@@ -563,8 +572,17 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
    lockless = 1;
 #elif defined(RETRO_EC_ADDR_WIN32)
    ec_win32_init();
-   retro_atomic_ptr_init(&ec->waitlist, NULL);
-   lockless = 1;
+   /* Only if a sleep tier resolved. With none - no ntdll entry points
+    * and no TLS index for the per-thread event - the waiter list has
+    * nothing to sleep on, so this object takes a mutex and a condition
+    * variable and every path below follows it there. ec->cond is what
+    * says which of the two this object is, rather than the global:
+    * one load of a field that never changes after this point. */
+   if (ec_g.sleep)
+   {
+      retro_atomic_ptr_init(&ec->waitlist, NULL);
+      lockless = 1;
+   }
 #endif
 
    if (lockless)
@@ -636,8 +654,11 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
          INT_MAX, NULL, NULL, 0);
 #else
 #if defined(RETRO_EC_ADDR_WIN32)
-   ec_wake_all(ec);
-   return;
+   if (!ec->cond)
+   {
+      ec_wake_all(ec);
+      return;
+   }
 #endif
    /* Taking the lock here cannot overtake a waiter's own re-check,
     * because commit_wait does that re-check under this same lock and
@@ -653,9 +674,13 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
 
 int retro_eventcount_prepare_wait(retro_eventcount_t *ec)
 {
-   /* Mirror of notify: register, fence, then read.  Between the two
-    * fences it is impossible for a notify to see no waiters and for
-    * this thread to read the pre-notify epoch.
+   /* Mirror of notify: register with a sequentially-consistent
+    * read-modify-write, then take a sequentially-consistent load of the
+    * epoch.  There are no standalone fences here any more - this
+    * comment used to name two.  The pair here and the pair in notify
+    * share one total order, which is what makes it impossible for a
+    * notify to see no waiters and for this thread to read the
+    * pre-notify epoch.
     *
     * Lock-free backends register with atomics alone. Where the
     * atomics are not lock-free the bookkeeping is protected by
@@ -701,10 +726,13 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
 #else
 #if defined(RETRO_EC_ADDR_WIN32)
-   if (retro_atomic_load_acquire_int(&ec->epoch) == key)
-      ec_win32_park(ec, key, false, 0);
-   retro_atomic_fetch_sub_int(&ec->waiters, 1);
-   return;
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+         ec_win32_park(ec, key, false, 0);
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return;
+   }
 #endif
    /* The mutex is taken here, not in prepare_wait: it has to cover the
     * epoch re-check and the sleep together, and nothing before that.  A
@@ -742,10 +770,13 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
 #else
 #if defined(RETRO_EC_ADDR_WIN32)
-   if (retro_atomic_load_acquire_int(&ec->epoch) == key)
-      signalled = ec_win32_park(ec, key, true, timeout_us);
-   retro_atomic_fetch_sub_int(&ec->waiters, 1);
-   return signalled;
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+         signalled = ec_win32_park(ec, key, true, timeout_us);
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return signalled;
+   }
 #endif
    slock_lock(ec->lock);
    if (retro_atomic_load_acquire_int(&ec->epoch) == key)
@@ -761,7 +792,9 @@ unsigned retro_eventcount_spin_iters(void)
 {
 #if defined(RETRO_EC_ADDR_WIN32)
    ec_win32_init();
-   return ec_g.spin;
+   /* The fallback parks on a condition variable, which has no flag word
+    * to spin on. */
+   return ec_g.sleep ? ec_g.spin : 0;
 #else
    return 0;
 #endif
@@ -777,7 +810,8 @@ const char *retro_eventcount_backend_name(void)
    {
       case EC_SLEEP_ALERT: return "ntdll alert-by-thread-id";
       case EC_SLEEP_KEYED: return "ntdll keyed event";
-      default:             return "win32 event";
+      case EC_SLEEP_EVENT: return "win32 event";
+      default:             return "scond (no win32 sleep primitive)";
    }
 #elif !defined(RETRO_ATOMIC_LOCK_FREE)
    return "scond (atomics not lock-free)";

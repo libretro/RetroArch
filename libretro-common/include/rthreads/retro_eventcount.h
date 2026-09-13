@@ -92,7 +92,7 @@
  *    one it named.  Keeping the window short, which rule 2 asks for
  *    anyway, is several orders of magnitude more than enough.
  *
- * 4. A consumer that spins before parking must gate the spin on
+ * 5. A consumer that spins before parking must gate the spin on
  *    RETRO_ATOMIC_LOCK_FREE, not merely on this header existing.  On a
  *    backend where the atomics are real but not lock-free -- the PS2 EE
  *    masks interrupts around a read-modify-write and reschedules only
@@ -108,7 +108,10 @@
  *                        NtWaitForAlertByThreadId on 8 and newer,
  *                        NtWaitForKeyedEvent back to XP, and a per-thread
  *                        auto-reset event on anything older, including 9x.
- *                        No mutex on any tier.
+ *                        No mutex on any tier.  If none of the three can
+ *                        be had - no ntdll entry points and no TLS index
+ *                        left for the event - the object falls back to
+ *                        the scond backend below rather than failing.
  *   everything else      rthreads scond, with the lock taken only across
  *                        the sleep itself
  *
@@ -177,8 +180,9 @@ void retro_eventcount_free(retro_eventcount_t *ec);
  * prepare_wait that has already run to return without blocking.  Call
  * after the work is published, never before.
  *
- * With nobody parked this is one read-modify-write, one fence and one
- * load: no lock, no syscall.
+ * With nobody parked this is one sequentially-consistent
+ * read-modify-write and one sequentially-consistent load: no lock, no
+ * syscall.
  */
 void retro_eventcount_notify(retro_eventcount_t *ec);
 
