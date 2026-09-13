@@ -6579,6 +6579,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    GFX_VIDEO_DRIVER_DIRECT3D11,
    "d3d11",
    true,
+   true,
    gfx_display_d3d11_scissor_begin,
    gfx_display_d3d11_scissor_end
 };

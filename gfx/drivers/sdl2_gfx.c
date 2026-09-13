@@ -2278,6 +2278,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
    GFX_VIDEO_DRIVER_SDL2,
    "sdl2",
    false,
+   true,
    gfx_display_sdl2_scissor_begin,
    gfx_display_sdl2_scissor_end
 };

@@ -8535,6 +8535,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    GFX_VIDEO_DRIVER_DIRECT3D12,
    "d3d12",
    true,
+   true,
    gfx_display_d3d12_scissor_begin,
    gfx_display_d3d12_scissor_end
 };

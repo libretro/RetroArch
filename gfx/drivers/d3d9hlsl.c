@@ -8492,6 +8492,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    "d3d9_hlsl",
    true,
+   true,
    gfx_display_d3d9_hlsl_scissor_begin,
    gfx_display_d3d9_hlsl_scissor_end
 };

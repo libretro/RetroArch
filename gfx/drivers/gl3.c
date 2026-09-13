@@ -6210,6 +6210,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    GFX_VIDEO_DRIVER_OPENGL_CORE,
    "glcore",
    false,
+   true,
    gfx_display_gl3_scissor_begin,
    gfx_display_gl3_scissor_end
 };

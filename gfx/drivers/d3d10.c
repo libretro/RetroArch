@@ -4014,6 +4014,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    GFX_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
    true,
+   true,
    gfx_display_d3d10_scissor_begin,
    gfx_display_d3d10_scissor_end
 };

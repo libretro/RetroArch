@@ -1769,6 +1769,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {
    GFX_VIDEO_DRIVER_SDL3,
    "sdl3",
    false,
+   true,
    gfx_display_sdl3_scissor_begin,
    gfx_display_sdl3_scissor_end
 };

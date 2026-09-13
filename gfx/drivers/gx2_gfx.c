@@ -2709,6 +2709,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",
    true,
+   true,
    gfx_display_wiiu_scissor_begin,
    gfx_display_wiiu_scissor_end
 };

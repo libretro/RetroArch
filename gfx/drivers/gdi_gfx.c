@@ -3906,6 +3906,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
    GFX_VIDEO_DRIVER_GDI,
    "gdi",
    false,
+   false,
    gfx_display_gdi_scissor_begin,
    gfx_display_gdi_scissor_end
 };

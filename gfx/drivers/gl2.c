@@ -6894,6 +6894,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,
+   true,
    gfx_display_gl2_scissor_begin,
    gfx_display_gl2_scissor_end
 };

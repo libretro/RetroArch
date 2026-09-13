@@ -764,6 +764,17 @@ void gfx_display_draw_texture_slice(
             qv[0] = ty[row + 1]; qv[1] = ty[row + 1];
             qv[2] = ty[row];     qv[3] = ty[row];
 
+            if (v && !dispctx->handles_vertex_strip)
+            {
+               /* A driver that reads a fixed four vertices gets one
+                * piece at a time, as it did before the pieces were
+                * joined: it ends in a blit, and a blit has no use for
+                * geometry it cannot walk. */
+               coords.vertices = v;
+               coords.color    = vert_color;
+               dispctx->draw(&draw, userdata, video_width, video_height);
+               v = 0;
+            }
             if (v)
             {
                /* Seam: the piece before ends where this one starts */

@@ -3396,6 +3396,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    GFX_VIDEO_DRIVER_DIRECT3D8,
    "d3d8",
    false,
+   true,
    gfx_display_d3d8_scissor_begin,
    gfx_display_d3d8_scissor_end
 };

@@ -10493,6 +10493,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    GFX_VIDEO_DRIVER_VULKAN,
    "vulkan",
    false,
+   true,
    gfx_display_vk_scissor_begin,
    gfx_display_vk_scissor_end
 };

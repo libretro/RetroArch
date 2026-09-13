@@ -2718,6 +2718,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
    GFX_VIDEO_DRIVER_RSX,
    "rsx",
    true,
+   true,
    gfx_display_rsx_scissor_begin,
    gfx_display_rsx_scissor_end
 };

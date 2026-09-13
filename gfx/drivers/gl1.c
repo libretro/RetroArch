@@ -3562,6 +3562,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    GFX_VIDEO_DRIVER_OPENGL1,
    "gl1",
    false,
+   true,
    gfx_display_gl1_scissor_begin,
    gfx_display_gl1_scissor_end
 };

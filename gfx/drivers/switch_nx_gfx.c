@@ -1010,6 +1010,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    GFX_VIDEO_DRIVER_SWITCH,
    "switch",
    false,
+   false,
    NULL,                                         /* scissor_begin */
    NULL                                          /* scissor_end   */
 };

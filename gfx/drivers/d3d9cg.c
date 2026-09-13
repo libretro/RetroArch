@@ -5052,6 +5052,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    GFX_VIDEO_DRIVER_DIRECT3D9_CG,
    "d3d9_cg",
    true,
+   true,
    gfx_display_d3d9_cg_scissor_begin,
    gfx_display_d3d9_cg_scissor_end
 };
