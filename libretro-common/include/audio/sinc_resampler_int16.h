@@ -71,6 +71,10 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
 void  sinc_resampler_int16_process(void *re,
       struct resampler_data_int16 *data);
 
+/* Clear stream history and timing without allocating or rebuilding tables.
+ * Call on the processing owner, or after processing has stopped. NULL is safe. */
+void  sinc_resampler_int16_reset(void *re);
+
 void  sinc_resampler_int16_free(void *re);
 
 #ifdef __cplusplus

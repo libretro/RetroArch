@@ -141,6 +141,33 @@ static void bypass(double ratio, enum resampler_quality quality, int hq)
    reference_i_free(old_i); sinc_resampler_int16_free(now_i);
 }
 
+static void reset_integer(double ratio, enum sinc_int16_quality quality, int hq)
+{
+   void *dirty = sinc_resampler_int16_init_hq(ratio, quality, hq);
+   void *fresh = sinc_resampler_int16_init_hq(ratio, quality, hq);
+   size_t na, nb;
+   unsigned pass;
+   unsigned long calls_before;
+   CHECK(dirty && fresh);
+   if (!dirty || !fresh) exit(2);
+   run_i(dirty, ai, ratio * 0.9995, 1, sinc_resampler_int16_process);
+   run_i(dirty, ai, ratio * 1.0005, 127, sinc_resampler_int16_process);
+   calls_before = allocator_calls;
+   sinc_resampler_int16_reset(NULL);
+   sinc_resampler_int16_reset(dirty);
+   sinc_resampler_int16_reset(dirty);
+   CHECK(allocator_calls == calls_before);
+   for (pass = 0; pass < 3; pass++)
+   {
+      double live = pass == 0 ? ratio : ratio * 1.0005;
+      na = run_i(dirty, ai, live, 127, sinc_resampler_int16_process);
+      nb = run_i(fresh, bi, live, INPUT, sinc_resampler_int16_process);
+      CHECK(na == nb && memcmp(ai, bi, na * 2 * sizeof(int16_t)) == 0);
+   }
+   sinc_resampler_int16_free(dirty);
+   sinc_resampler_int16_free(fresh);
+}
+
 static void active(double ratio)
 {
    void *c = sinc_resampler_init_hq(ratio, RESAMPLER_QUALITY_NORMAL, 0, 1);
@@ -263,6 +290,10 @@ int main(int argc, char **argv)
    {
       for (q = RESAMPLER_QUALITY_DONTCARE; q <= RESAMPLER_QUALITY_HIGHEST; q++)
       {
+         enum sinc_int16_quality iq = q == RESAMPLER_QUALITY_DONTCARE
+            ? SINC_INT16_QUALITY_NORMAL : (enum sinc_int16_quality)(q - 1);
+         reset_integer(ratios[r], iq, 0);
+         reset_integer(ratios[r], iq, 1);
          bypass(ratios[r], (enum resampler_quality)q, 0);
          if (ratios[r] < 2.0) bypass(ratios[r], (enum resampler_quality)q, 1);
       }

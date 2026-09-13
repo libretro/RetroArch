@@ -33,7 +33,8 @@ with tempfile.TemporaryDirectory(prefix="audio-baseline-", dir=args.work_dir) as
             "sinc_resampler_int16_init=reference_i_init",
             "sinc_resampler_int16_init_hq=reference_i_init_hq",
             "sinc_resampler_int16_process=reference_i_process",
-            "sinc_resampler_int16_free=reference_i_free"]),
+            "sinc_resampler_int16_free=reference_i_free",
+            "sinc_resampler_int16_reset=reference_i_reset"]),
     ]
     hq_reference = False
     for name, source, defines in original:

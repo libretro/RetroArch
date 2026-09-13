@@ -461,6 +461,18 @@ void sinc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
 /* Lifecycle.                                                                */
 /* ------------------------------------------------------------------------- */
 
+void sinc_resampler_int16_reset(void *re_)
+{
+   rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
+   if (!re)
+      return;
+   memset(re->buffer_l, 0, 4 * re->taps * sizeof(*re->buffer_l));
+   re->ptr         = 0;
+   re->time        = 0;
+   re->ratio_fixed = 0;
+   re->ratio_bits  = 0;
+}
+
 void sinc_resampler_int16_free(void *re_)
 {
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
