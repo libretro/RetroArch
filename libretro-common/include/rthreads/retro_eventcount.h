@@ -32,8 +32,8 @@
  * every publish whether or not anyone is asleep.  An eventcount is the
  * third answer: the consumer registers its intent to sleep, re-checks
  * its own condition, and only then blocks, and the producer pays one
- * atomic read-modify-write, one fence and one load when nobody is
- * parked.
+ * sequentially-consistent read-modify-write and one sequentially-
+ * consistent load when nobody is parked - no lock, no syscall.
  *
  * The pairing this exists for is retro_spsc plus retro_atomic: the queue
  * moves the data, a retired-work counter published by the consumer

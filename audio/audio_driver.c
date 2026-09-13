@@ -4555,8 +4555,17 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
  * thread's loop. Pulls up to one slice out of pipe_ring and runs the
  * pipeline on it; the write at the end goes to the real driver through
  * the wrapper and blocks when the device is full, which is what paces
- * this loop. With nothing to pull it sleeps a millisecond rather than
- * spin: the producer never signals it, the ring is the only channel.
+ * this loop. With nothing to pull it waits on pipe_data_cond rather
+ * than spin, with a timeout so a missed wake costs a millisecond
+ * rather than the stream.
+ *
+ * The producer does signal it - once per frame, from
+ * audio_driver_pipeline_signal(), and not per publish. Some cores
+ * hand over audio a scanline at a time, and waking the consumer on
+ * every retro_spsc_write() would turn one frame's audio into hundreds
+ * of tiny passes. This comment used to say the producer never signals
+ * at all, which was true of an earlier shape and has not been for a
+ * while.
  **/
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {

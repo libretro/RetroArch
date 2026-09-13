@@ -617,10 +617,16 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
 #endif
 
 #if defined(RETRO_ATOMIC_LOCK_FREE)
-   /* Only sound where the fence above is a real barrier.  Where it
-    * degrades to a compiler barrier the handshake cannot be relied on,
-    * so that build takes the lock on every notify instead -- which is
-    * the single-core case, where the lock is uncontended anyway. */
+   /* The ordering is the sequentially-consistent bump above and this
+    * sequentially-consistent load, as a pair: the store is visible
+    * before the load is taken, so a notify cannot read zero waiters
+    * while a registering waiter reads the pre-notify epoch. There is
+    * no separate fence here any more - there was, and this comment
+    * used to name it.
+    *
+    * Where the atomics degrade to a compiler barrier the pair carries
+    * no such guarantee, so that build takes the lock on every notify
+    * instead -- the single-core case, where it is uncontended. */
    if (retro_atomic_load_seq_cst_int(&ec->waiters) == 0)
       return;
 #endif
@@ -633,9 +639,12 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
    ec_wake_all(ec);
    return;
 #endif
-   /* A registered waiter holds the lock from prepare_wait until
-    * scond_wait releases it, so taking it here cannot overtake the
-    * consumer's own re-check. */
+   /* Taking the lock here cannot overtake a waiter's own re-check,
+    * because commit_wait does that re-check under this same lock and
+    * then sleeps on the condition variable, which releases it
+    * atomically. prepare_wait does NOT hold it - it registers and
+    * reads the epoch with atomics alone, which is what keeps N
+    * waiters from serialising here just to announce themselves. */
    slock_lock(ec->lock);
    scond_broadcast(ec->cond);
    slock_unlock(ec->lock);
@@ -648,11 +657,13 @@ int retro_eventcount_prepare_wait(retro_eventcount_t *ec)
     * fences it is impossible for a notify to see no waiters and for
     * this thread to read the pre-notify epoch.
     *
-    * No lock is taken here on any backend.  The epoch carries the
-    * whole handshake, so the condition-variable backend needs its
-    * mutex only across the re-check-and-sleep in commit_wait, not
-    * across the caller's window -- which is what keeps N waiters from
-    * serialising on this object to register. */
+    * Lock-free backends register with atomics alone. Where the
+    * atomics are not lock-free the bookkeeping is protected by
+    * ec->lock, just below -- but never held across the caller's
+    * predicate window either way. The epoch carries the handshake, so
+    * the condition-variable backend needs its mutex only across the
+    * re-check-and-sleep in commit_wait, which is what keeps N waiters
+    * from serialising on this object to register. */
 #if defined(RETRO_EC_LOCKED_BOOKKEEPING)
    {
       int key;
