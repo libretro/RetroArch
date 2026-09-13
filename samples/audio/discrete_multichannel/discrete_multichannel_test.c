@@ -1078,7 +1078,10 @@ static void layout_epoch_pressure_case(bool floating)
       config_get_ptr()->bools.audio_fastforward_speedup = true;
       audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, true, 11);
       config_get_ptr()->bools.audio_fastforward_speedup = speedup;
-      CHECK(st->last_flush_time > 0, "metadata pressure skipped source cadence accounting");
+      CHECK(st->pipe_ff_frames == 1, "metadata pressure skipped source cadence accounting");
+      audio_driver_frame_end();
+      CHECK(st->last_flush_time > 0 && !st->pipe_ff_frames,
+            "frame end did not measure source dropped by metadata pressure");
    }
    CHECK(retro_spsc_read_avail(&st->pipe_ring) == held,
          "unlabelled frame entered a full metadata queue");

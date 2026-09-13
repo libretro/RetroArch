@@ -1797,7 +1797,7 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * cadence is set by the device draining, not by the core: a flush
  * interval there is the previous ratio played back, and measuring it
  * would only confirm whatever the last multiplier was. The producer
- * measures instead, at its own publish cadence on the core's thread,
+ * measures instead, at frame boundaries on the core's thread,
  * and hands the result to the consumer in pipe_ff_mult_q16. */
 /* Bound a resampler ratio against the capacity of the output scratch.
  *
@@ -1932,7 +1932,34 @@ static double audio_driver_fastforward_ratio_mult(
 static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
 {
    audio_st->last_flush_time = 0;
+#ifdef HAVE_THREADS
+   audio_st->pipe_ff_frames = 0;
+#endif
 }
+
+#ifdef HAVE_THREADS
+static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
+{
+   size_t frames;
+   if (!audio_st->pipe_threaded) return;
+   frames = audio_st->pipe_ff_frames;
+   if (!frames)
+   {
+      /* Some cores deliver audio only every few video frames. Keep their
+       * interval while fast-forward runs, but exclude paused/released gaps. */
+      if (audio_st->last_flush_time)
+      {
+         int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+         if (!(snap & AUDIO_SNAP_FASTMOTION) || (snap & AUDIO_SNAP_PAUSED))
+            audio_driver_ff_mult_reset(audio_st);
+      }
+      return;
+   }
+   audio_st->pipe_ff_frames = 0;
+   retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+         (int)(audio_driver_fastforward_ratio_mult(audio_st, frames) * 65536.0));
+}
+#endif
 
 /* The speedup multiplier for a flush: measured here on the inline
  * pipeline, where the flush runs at the core's cadence; taken from the
@@ -3472,6 +3499,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_int_init(&audio_driver_st.pipe_gen, 0);
       retro_atomic_int_init(&audio_driver_st.pipe_stalled, 0);
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
+      audio_driver_ff_mult_reset(&audio_driver_st);
       retro_atomic_int_init(&audio_driver_st.pipe_data_gen, 0);
       retro_atomic_int_init(&audio_driver_st.pipe_wake, 0);
       if (     !retro_eventcount_init(&audio_driver_st.pipe_space)
@@ -4271,15 +4299,11 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          retro_atomic_store_release_int(&audio_st->pipe_ctrl_avail, (int)eff);
 
       }
-      /* The speedup multiplier is measured here, at the core's publish
-       * cadence, and handed to the consumer; see
-       * audio_driver_fastforward_ratio_mult(). Measured before the ring
-       * write so a block the full ring drops still counts as the time
-       * the core took to produce it. */
+      /* Count before the ring write so dropped source still contributes.
+       * Measure once at frame end, independently of publish granularity. */
       if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
-         retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
-               (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
-                  * 65536.0));
+         audio_st->pipe_ff_frames = frames > SIZE_MAX - audio_st->pipe_ff_frames
+            ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
       else
          audio_driver_ff_mult_reset(audio_st);
       /* Never publish samples without their preceding layout boundary. */
@@ -5162,6 +5186,9 @@ void audio_driver_frame_end(void)
    if (audio_st->data_ptr)
       audio_driver_sample_accum_flush(audio_st);
 
+#ifdef HAVE_THREADS
+   audio_driver_ff_frame_end(audio_st);
+#endif
    audio_driver_pipeline_signal(audio_st);
 }
 
@@ -7188,6 +7215,9 @@ void audio_driver_menu_sample(void)
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
    /* This is the menu's frame; no frame end follows it. */
+#ifdef HAVE_THREADS
+   audio_driver_ff_frame_end(audio_st);
+#endif
    audio_driver_pipeline_signal(audio_st);
 }
 #endif

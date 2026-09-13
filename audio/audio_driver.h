@@ -888,6 +888,8 @@ typedef struct
    void *pipe_transport_output;
    uint32_t pipe_transport_serial, pipe_transport_search;
    unsigned pipe_transport_rate;
+   /* Producer-owned source count for the current fast-forward frame. */
+   size_t pipe_ff_frames;
 #endif
 } audio_driver_state_t;
 

@@ -10,9 +10,10 @@
  *    that. On the threaded pipeline the flush runs on the audio
  *    thread, whose interval is the device draining the previous chunk
  *    - i.e. the previous multiplier played back, which measuring only
- *    confirms. There the producer measures at its publish cadence and
+ *    confirms. There the producer counts source and measures at frame end,
  *    the consumer takes the figure from pipe_ff_mult_q16; nothing the
- *    consumer does can move it.
+ *    consumer does can move it. Splitting a frame into publishes must not
+ *    change the estimate, and source dropped by a full ring still counts.
  *  - The first sample of a fast-forward returns 1.0 and seeds the
  *    average at the 1.0x interval, and releasing fast-forward arms
  *    that seed again. The idle time between two fast-forwards is not a
@@ -187,6 +188,7 @@ static void test_producer_publishes_at_its_cadence(void)
    {
       fake_now += ONE_X / 4;
       audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_frame_end();
    }
    got = (double)retro_atomic_load_acquire_int(
          &audio_driver_st.pipe_ff_mult_q16) / 65536.0;
@@ -202,6 +204,78 @@ static void test_producer_publishes_at_its_cadence(void)
    retro_eventcount_free(&audio_driver_st.pipe_data);
 }
 
+static void test_fragmented_frame_cadence(void)
+{
+   static const unsigned batches[] = { 1, 2, 64, 262, 312 };
+   int16_t block[FRAMES * 4];
+   int reference = 0;
+   unsigned b, frame;
+   memset(block, 0, sizeof(block));
+   for (b = 0; b < sizeof(batches) / sizeof(batches[0]); b++)
+   {
+      fresh();
+      runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_FASTMOTION;
+      config_get_ptr()->bools.audio_fastforward_speedup = true;
+      audio_driver_st.pipe_threaded = true;
+      audio_driver_st.pipe_channels = 2;
+      audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
+      audio_driver_st.pipe_pass_frames = FRAMES;
+      AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
+      if (!retro_spsc_init(&audio_driver_st.pipe_ring, 4096)) abort();
+      if (!retro_eventcount_init(&audio_driver_st.pipe_space)
+            || !retro_eventcount_init(&audio_driver_st.pipe_data)) abort();
+      retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
+      for (frame = 0; frame < 128; frame++)
+      {
+         unsigned part;
+         size_t used = 0;
+         fake_now += ONE_X / 4;
+         for (part = 0; part < batches[b]; part++)
+         {
+            size_t n = part + 1 == batches[b] ? FRAMES - used : FRAMES / batches[b];
+            audio_driver_submit(&audio_driver_st, 1.0f, block + used * 2,
+                  n * 2, false, false, true);
+            used += n;
+         }
+         audio_driver_frame_end();
+      }
+      {
+         int got = retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16);
+         if (!b) reference = got;
+         CHECK(got == reference && near(got / 65536.0, 0.25),
+               "4x frame estimate is invariant under fragmented/dropped publishes");
+      }
+      for (frame = 0; frame < 128; frame++)
+      {
+         fake_now += ONE_X / 4;
+         if (frame & 1)
+            audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 4,
+                  false, false, true);
+         audio_driver_frame_end();
+      }
+      CHECK(near(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16)
+               / 65536.0, 0.25), "sparse audio frames retain the measured 4x cadence");
+      runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
+      fake_now += 60000000;
+      audio_driver_frame_end();
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_frame_end();
+      CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
+            "paused fast-forward resumes from unity");
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+      fake_now += 10000000;
+      audio_driver_frame_end(); /* silent frames re-arm the seed */
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_frame_end();
+      CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
+            "source resumes from unity after an empty frame outside fast-forward");
+      retro_spsc_free(&audio_driver_st.pipe_ring);
+      retro_eventcount_free(&audio_driver_st.pipe_space);
+      retro_eventcount_free(&audio_driver_st.pipe_data);
+   }
+}
+
 int main(void)
 {
    printf("fast-forward audio speedup:\n");
@@ -209,6 +283,7 @@ int main(void)
    test_reentry_ignores_idle_gap();
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();
+   test_fragmented_frame_cadence();
 
    if (failures)
    {
