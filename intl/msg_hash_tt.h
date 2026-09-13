@@ -18,6 +18,7 @@ static const struct
    char s_79e212bd[13];
    char s_daead8a5[11];
    char s_dcf2e800[11];
+   char s_fcd64038[13];
    char s_49b0b12a[11];
    char s_ed31b08a[9];
    char s_00614813[9];
@@ -28,6 +29,8 @@ static const struct
    char s_0fd30a6d[9];
    char s_e68b50a2[21];
    char s_49c9bf91[17];
+   char s_6996339b[11];
+   char s_690efede[9];
    char s_99eaf2ff[13];
    char s_c0d9bee1[13];
    char s_e2f27171[11];
@@ -102,6 +105,7 @@ static const struct
    "\320\221\320\260\321\200\320\273\321\213\320\272",
    "\320\220\321\203\320\264\320\270\320\276",
    "\320\220\321\203\320\264\320\270\320\276",
+   "\320\241\321\202\320\265\321\200\320\265\320\276",
    "\320\220\321\203\320\264\320\270\320\276",
    "\320\257\321\200\320\260\321\200",
    "\320\247\321\213\320\263\321\203",
@@ -112,6 +116,8 @@ static const struct
    "\320\230\321\201\320\265\320\274",
    "[\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\320\272]",
    "\320\233\320\270\321\206\320\265\320\275\320\267\320\270\321\217",
+   "\320\220\321\203\320\264\320\270\320\276",
+   "\320\257\321\200\320\260\321\200",
    "\320\221\320\260\321\200\320\273\321\213\320\272",
    "\320\234\321\203\320\267\321\213\320\272\320\260",
    "\320\257\321\200\320\264\323\231\320\274",
@@ -187,7 +193,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tt_blob_check[
-      (sizeof(msg_hash_tt_blob) == (835u
+      (sizeof(msg_hash_tt_blob) == (868u
 #ifdef HAVE_MICROPHONE
        + 17u
 #endif
@@ -216,6 +222,7 @@ static const uint32_t msg_hash_tt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -226,6 +233,8 @@ static const uint32_t msg_hash_tt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,

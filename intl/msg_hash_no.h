@@ -50,6 +50,7 @@ static const struct
    char s_29398124[21];
    char s_0615a7c8[11];
    char s_35a1323d[10];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[46];
 #endif
@@ -214,7 +215,9 @@ static const struct
    char s_15f24ff4[15];
    char s_ec7e8026[8];
    char s_5d29b870[17];
+   char s_6996339b[4];
    char s_4927597c[15];
+   char s_ddf679b9[7];
    char s_10342503[13];
    char s_d31f6d88[19];
    char s_f03e9c42[17];
@@ -1305,6 +1308,7 @@ static const struct
    "Legg til spilleliste",
    "Bildemodus",
    "Talemodus",
+   "Alltid",
 #ifndef HAVE_DYNAMIC
    "Alltid start kjerne p\303\245nytt ved Kj\303\270r innhold",
 #endif
@@ -1469,7 +1473,9 @@ static const struct
    "Satt P\303\245 Pause",
    "Spiller",
    "Disk informasjon",
+   "Lyd",
    "L\303\270s ut platen",
+   "Utdata",
    "Nedlastinger",
    "Last ned en Kjerne",
    "Innholdnedlaster",
@@ -2576,7 +2582,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28852u
+      (sizeof(msg_hash_no_blob) == (28870u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -2756,6 +2762,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -2920,7 +2927,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

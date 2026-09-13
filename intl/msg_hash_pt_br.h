@@ -207,7 +207,6 @@ static const struct
    char s_9834febe[475];
    char s_93805cc8_0[500];
    char s_93805cc8_1[94];
-   char s_b495662b[135];
    char s_9953f4e2[245];
    char s_de76d2dc[23];
    char s_79e212bd[6];
@@ -259,6 +258,7 @@ static const struct
    char s_35a1323d[10];
    char s_f72667c9[18];
    char s_adce4374[22];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[55];
 #endif
@@ -282,6 +282,7 @@ static const struct
    char s_76e73138[16];
    char s_e2062515[21];
    char s_ad791974[19];
+   char s_fcd64038[9];
    char s_b271ae95[37];
    char s_fb84857a[7];
    char s_3943c7ae[44];
@@ -303,6 +304,7 @@ static const struct
    char s_e5aeacf9[22];
    char s_24976a5b[34];
    char s_5209cc72[42];
+   char s_e2eedfe1[12];
    char s_9f1f3534[64];
    char s_e66b1cb9[53];
    char s_1bf49fce[49];
@@ -631,11 +633,14 @@ static const struct
    char s_15f24ff4[8];
    char s_ec7e8026[8];
    char s_5d29b870[6];
+   char s_6996339b[7];
    char s_08e9410c[20];
    char s_d95824aa[23];
    char s_639f529e[18];
    char s_4927597c[13];
    char s_77b74366[14];
+   char s_ab49119c[14];
+   char s_ddf679b9[7];
    char s_3b7e9d77[8];
    char s_d31f6d88[18];
    char s_f03e9c42[17];
@@ -934,6 +939,9 @@ static const struct
    char s_d7c1d887[26];
    char s_8c49943c[26];
    char s_d2c6b214[26];
+#ifdef HAVE_SDL3
+   char s_ba511c01[24];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[27];
 #endif
@@ -4558,8 +4566,6 @@ static const struct
    " o ",
    "VRR do sistema ligado n\303\243o tem problema, apenas n\303\243o utilize essa configura\303\247"
    "\303\243o espec\303\255fica.",
-   "Use um driver de v\303\255deo multitarefa. Usar isto pode melhorar o desempenho a custo de poss"
-   "\303\255vel lat\303\252ncia e mais travamentos de v\303\255deo.",
    "Sincronizar com a Taxa de Quadros Exata do Conte\303\272do. Essa op\303\247\303\243o \303\251 eq"
    "uivalente a for\303\247ar velocidade x1, ainda permitindo avan\303\247o r\303\241pido. Sem desvi"
    "os da taxa de atualiza\303\247\303\243o solicitada pelo n\303\272cleo, sem controle din\303\242m"
@@ -4614,6 +4620,7 @@ static const struct
    "Modo fala",
    "Idioma de destino",
    "URL do servi\303\247o de IA",
+   "Sempre",
 #ifndef HAVE_DYNAMIC
    "Sempre recarregar o n\303\272cleo na execu\303\247\303\243o de conte\303\272do",
 #endif
@@ -4637,6 +4644,7 @@ static const struct
    "Silenciar mixer",
    "Volume do mixer (dB)",
    "Desabilitar \303\241udio",
+   "Est\303\251reo",
    "Frequ\303\252ncia da sa\303\255da de \303\241udio (Hz)",
    "Sa\303\255da",
    "Controle din\303\242mico da frequ\303\252ncia de \303\241udio",
@@ -4658,6 +4666,7 @@ static const struct
    "Modo WASAPI exclusivo",
    "Formato WASAPI de ponto flutuante",
    "Tamanho do buffer compartilhado de WASAPI",
+   "Autom\303\241tico",
    "Arquivo de Save: Intervalo de Salvamento Autom\303\241tico da SaveRAM",
    "Carrega automaticamente arquivos de personaliza\303\247\303\243o",
    "Carrega automaticamente arquivos de remapeamento",
@@ -4988,11 +4997,14 @@ static const struct
    "Pausado",
    "Jogando",
    "Disco",
+   "\303\201udio",
    "Carregar novo disco",
    "\303\215ndice atual do disco",
    "Controle de Disco",
    "Ejetar disco",
    "Inserir disco",
+   "Formato bruto",
+   "Sa\303\255da",
    "Padr\303\243o",
    "Baixar um n\303\272cleo",
    "Baixar conte\303\272do",
@@ -5292,6 +5304,9 @@ static const struct
    "Vincula\303\247\303\265es do RetroPad",
    "Intensidade da vibra\303\247\303\243o",
    "Salvar perfil de controle",
+#ifdef HAVE_SDL3
+   "Usar teclado do sistema",
+#endif
 #ifdef ANDROID
    "Selecionar Teclado F\303\255sico",
 #endif
@@ -9278,7 +9293,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194799u
+      (sizeof(msg_hash_pt_br_blob) == (194720u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9339,6 +9354,9 @@ typedef char msg_hash_pt_br_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 56u
+#endif
+#ifdef HAVE_SDL3
+       + 24u
 #endif
 #ifdef ANDROID
        + 27u
@@ -9891,7 +9909,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9943,6 +9960,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9966,6 +9984,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -9987,6 +10006,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10315,11 +10335,14 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -10618,6 +10641,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif

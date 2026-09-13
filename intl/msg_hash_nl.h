@@ -201,7 +201,6 @@ static const struct
    char s_ae87ea53[258];
    char s_9834febe[467];
    char s_93805cc8[471];
-   char s_b495662b[151];
    char s_9953f4e2[250];
    char s_79e212bd[5];
    char s_6342700c[10];
@@ -249,6 +248,7 @@ static const struct
    char s_35a1323d[12];
    char s_f72667c9[9];
    char s_adce4374[15];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
@@ -287,6 +287,7 @@ static const struct
    char s_e5aeacf9[23];
    char s_24976a5b[21];
    char s_5209cc72[29];
+   char s_e2eedfe1[12];
    char s_9f1f3534[59];
    char s_e66b1cb9[36];
    char s_1bf49fce[33];
@@ -595,11 +596,13 @@ static const struct
    char s_15f24ff4[11];
    char s_ec7e8026[9];
    char s_5d29b870[18];
+   char s_6996339b[7];
    char s_08e9410c[19];
    char s_d95824aa[20];
    char s_639f529e[12];
    char s_4927597c[17];
    char s_77b74366[21];
+   char s_ddf679b9[8];
    char s_3b7e9d77[10];
    char s_d31f6d88[20];
    char s_f03e9c42[18];
@@ -4327,8 +4330,6 @@ static const struct
    "oor weergave. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165"
    "Hz, etc. Niet combineren met Swap Interval > 1, BFI, Frame Delay, of synchroniseren naar Exact C"
    "ontent Framerate. VRR van het systeem aan laten staan is ok, maar die instelling niet.",
-   "Gebruik threaded video stuurprogramma. Gebruik hiervan kan de prestaties verbeteren tegen de mog"
-   "elijke kosten van vertraging en meer video stottering.",
    "Synchroniseer met Exacte Content Framerate. Deze optie staat gelijk aan het forceren van x1 snel"
    "heid terwijl snel vooruit gaat nog altijd toegestaan is. Geen afwijking van de core gevraagde ve"
    "rnieuwingssnelheid, geen geluid Dynamisch Ratio Controle.",
@@ -4378,6 +4379,7 @@ static const struct
    "Spraakmodus",
    "Doeltaal",
    "AI-Service URL",
+   "Altijd",
 #ifndef HAVE_DYNAMIC
    "Herlaad de Core Altijd bij \"Inhoud Invoeren\"",
 #endif
@@ -4416,6 +4418,7 @@ static const struct
    "WASAPI Exclusieve mode",
    "WASAPI Float formaat",
    "WASAPI Gedeelde bufferlengte",
+   "Automatisch",
    "Opslagbestand: interval om SaveRam automatisch op te slaan",
    "Laad Override Bestanden Automatisch",
    "Laad Remap Bestanden Automatisch",
@@ -4724,11 +4727,13 @@ static const struct
    "Gepauzeerd",
    "Afspelen",
    "Schijf Informatie",
+   "Geluid",
    "Laad nieuwe schijf",
    "Huidige schijfindex",
    "Disk Beheer",
    "Schijf Uitwerpen",
    "Disk Image Toevoegen",
+   "Uitvoer",
    "Standaard",
    "Een Core Downloaden",
    "Inhoud-downloader",
@@ -8570,7 +8575,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174339u
+      (sizeof(msg_hash_nl_blob) == (174222u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9164,7 +9169,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9212,6 +9216,7 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9250,6 +9255,7 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -9558,11 +9564,13 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

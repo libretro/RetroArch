@@ -92,7 +92,9 @@ static const struct
    char s_f0ce97f7[27];
    char s_b92166cd[13];
    char s_5d29b870[20];
+   char s_6996339b[5];
    char s_4927597c[12];
+   char s_ddf679b9[6];
    char s_10342503[9];
    char s_d31f6d88[15];
    char s_f03e9c42[21];
@@ -549,7 +551,9 @@ static const struct
    "Upravljanje bazom podataka",
    "Direktorijum",
    "Informacije o disku",
+   "Zvuk",
    "Izvadi disk",
+   "Izlaz",
    "Preuzeto",
    "Preuzmi jezgro",
    "Preuzima\304\215 sadr\305\276aja",
@@ -961,7 +965,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12211u
+      (sizeof(msg_hash_sr_blob) == (12222u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1108,7 +1112,9 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

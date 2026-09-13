@@ -206,7 +206,6 @@ static const struct
    char s_9834febe[489];
    char s_93805cc8_0[500];
    char s_93805cc8_1[134];
-   char s_b495662b[161];
    char s_9953f4e2[258];
    char s_79e212bd[6];
    char s_6342700c[10];
@@ -255,6 +254,7 @@ static const struct
    char s_35a1323d[17];
    char s_f72667c9[23];
    char s_adce4374[20];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
@@ -614,6 +614,8 @@ static const struct
    char s_639f529e[20];
    char s_4927597c[14];
    char s_77b74366[15];
+   char s_ab49119c[7];
+   char s_ddf679b9[7];
    char s_3b7e9d77[12];
    char s_10342503[10];
    char s_d31f6d88[16];
@@ -4377,8 +4379,6 @@ static const struct
    "a frequenza esatta del contenu",
    "to. \303\210 possibile lasciare attivo il VRR (frequenza di aggiornamento variabile) di sistema,"
    " purch\303\251 non si attivi questa impostazione.",
-   "Usa driver video multithread. Il suo utilizzo potrebbe migliorare le prestazioni, al costo di un"
-   "a possibile latenza maggiore e di un aumento degli scatti video.",
    "Sincronizza con Esact Content Framerate. Questa opzione equivale a forzare la velocit\303\240 di"
    " x1 pur consentendo un rapido avanzamento. Nessuna deviazione dalla frequenza di aggiornamento r"
    "ichiesta dal core, nessun controllo della velocit\303\240 dinamica del suono.",
@@ -4429,6 +4429,7 @@ static const struct
    "Modalit\303\240 vocale",
    "Lingua di destinazione",
    "URL del servizio IA",
+   "Sempre",
 #ifndef HAVE_DYNAMIC
    "Ricarica sempre il Core in esecuzione dei contenuti",
 #endif
@@ -4788,6 +4789,8 @@ static const struct
    "Controllo del disco",
    "Espelli Disco",
    "Inserire disco",
+   "Grezzo",
+   "Uscita",
    "Predefinito",
    "Scaricati",
    "Scarica un core",
@@ -8692,7 +8695,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183525u
+      (sizeof(msg_hash_it_blob) == (183385u
 #ifdef ANDROID
        + 376u
 #endif
@@ -9289,7 +9292,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9338,6 +9340,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9697,6 +9700,8 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

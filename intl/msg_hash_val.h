@@ -47,6 +47,7 @@ static const struct
    char s_e5aeacf9[21];
    char s_24976a5b[30];
    char s_5209cc72[36];
+   char s_e2eedfe1[22];
    char s_14ec7b7e[10];
    char s_005cc6dc[12];
    char s_00614813[17];
@@ -123,7 +124,9 @@ static const struct
    char s_f0ce97f7[34];
    char s_b92166cd[11];
    char s_5d29b870[21];
+   char s_6996339b[7];
    char s_4927597c[14];
+   char s_ddf679b9[7];
    char s_10342503[9];
    char s_d31f6d88[16];
    char s_f03e9c42[22];
@@ -748,6 +751,7 @@ static const struct
    "Mode WASAPI exclusiu",
    "Format WASAPI de punt flotant",
    "Mida del b\303\272fer compartit de WASAPI",
+   "Selecci\303\263 autom\303\240tica",
    "Confirmar",
    "Informaci\303\263",
    "Tancar RetroArch",
@@ -825,7 +829,9 @@ static const struct
    "Administrador de la base de dades",
    "Directoris",
    "Informaci\303\263 del disc",
+   "\303\200udio",
    "Expulsar disc",
+   "Eixida",
    "Baixades",
    "Baixar un nucli",
    "Baixador de contingut",
@@ -1516,7 +1522,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25599u
+      (sizeof(msg_hash_val_blob) == (25635u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -1646,6 +1652,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -1722,7 +1729,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

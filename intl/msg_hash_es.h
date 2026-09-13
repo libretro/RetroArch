@@ -208,7 +208,8 @@ static const struct
    char s_9834febe_1[2];
    char s_93805cc8_0[500];
    char s_93805cc8_1[152];
-   char s_b495662b[147];
+   char s_b495662b_0[500];
+   char s_b495662b_1[8];
    char s_9953f4e2[263];
    char s_de76d2dc[27];
    char s_79e212bd[6];
@@ -247,7 +248,7 @@ static const struct
    char s_b562e394[21];
    char s_e914b65b[34];
    char s_0c7e02de[34];
-   char s_29398124[36];
+   char s_29398124[33];
    char s_cab81c29[27];
    char s_826b2d88[23];
    char s_0615a7c8[12];
@@ -259,6 +260,7 @@ static const struct
    char s_35a1323d[9];
    char s_f72667c9[18];
    char s_adce4374[23];
+   char s_5984f4f9[8];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[50];
 #endif
@@ -277,12 +279,15 @@ static const struct
    char s_aafc147d[17];
    char s_734f5242[47];
    char s_55404857[10];
+   char s_f08d700c[40];
    char s_792e0069[23];
    char s_a9d2227f[42];
    char s_76e73138[29];
    char s_c82d0aee[10];
    char s_e2062515[37];
    char s_ad791974[10];
+   char s_079ba7c7[36];
+   char s_fcd64038[9];
    char s_b271ae95[26];
    char s_fb84857a[7];
    char s_3943c7ae[41];
@@ -303,7 +308,9 @@ static const struct
    char s_04b30c51[25];
    char s_e5aeacf9[22];
    char s_24976a5b[32];
+   char s_59512220[44];
    char s_5209cc72[40];
+   char s_e2eedfe1[12];
    char s_9f1f3534[63];
    char s_e66b1cb9[53];
    char s_1bf49fce[50];
@@ -655,11 +662,60 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[8];
    char s_5d29b870[23];
+   char s_3cc9b420[18];
+   char s_bdea22f3[25];
+   char s_54250975[18];
+   char s_558faf3a[12];
+   char s_5fb85af7[12];
+   char s_5fbcf86a[10];
+   char s_575c05fd[19];
+   char s_9104dbe7[8];
+   char s_b4e9520b[29];
+   char s_12bd74ce[12];
+   char s_12c0a864[21];
+   char s_bfba8cdb[13];
    char s_08e9410c[22];
    char s_d95824aa[24];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[17];
+   char s_5266be65[22];
+   char s_8aeea24b[9];
+   char s_690efede[8];
+   char s_a18bec42[13];
+   char s_bf07df5b[25];
+   char s_b6df3202[14];
+   char s_bf5d5d76[20];
+   char s_0ec02c87[28];
+   char s_c07d4ce0[26];
+   char s_146397b0[22];
+   char s_c8d6f855[21];
+   char s_fda5cd4a[23];
+   char s_8e5cb774[23];
+   char s_d3deb2af[22];
+   char s_2821fa51[13];
+   char s_a10cbbd0[16];
+   char s_a1381a82[18];
+   char s_f3a18a9f[11];
+   char s_14691293[19];
+   char s_cab4e5d1[10];
+   char s_f3b9b113[20];
+   char s_b6d851f0[19];
+   char s_ab49119c[15];
+   char s_94ab8f8c[20];
+   char s_deed0812[17];
+   char s_dfa3c8c3[8];
+   char s_52dea05d[21];
+   char s_146c6f57[6];
+   char s_7ec63ffc[38];
+   char s_7f004a36[142];
+   char s_a3825f18[17];
+   char s_ef2d0a03[21];
+   char s_ad17a194[13];
+   char s_ddf679b9[7];
+   char s_7137e7c2[29];
+   char s_f9fe3b9c[12];
+   char s_e62892df[19];
    char s_3b7e9d77[15];
    char s_10342503[10];
    char s_d31f6d88[18];
@@ -834,6 +890,7 @@ static const struct
    char s_56e1b336[21];
    char s_313d15c0[9];
    char s_e9f0dd82[50];
+   char s_0bebb490[12];
    char s_72765a06[13];
    char s_72765a07[13];
    char s_72765a08[13];
@@ -967,6 +1024,9 @@ static const struct
    char s_d7c1d887[25];
    char s_8c49943c[25];
    char s_d2c6b214[24];
+#ifdef HAVE_SDL3
+   char s_ba511c01[29];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[28];
 #endif
@@ -1115,6 +1175,7 @@ static const struct
    char s_d3574e33[11];
    char s_9d0bdde1[16];
    char s_eded64b9[17];
+   char s_b429d6df[6];
    char s_e22edcd8[8];
    char s_d86adca1[27];
    char s_a17f6a67[64];
@@ -1262,6 +1323,7 @@ static const struct
    char s_8be7813a[8];
    char s_1757647b[7];
    char s_273a9f02[8];
+   char s_1d7b0e1d[6];
    char s_e1a8f707[33];
    char s_51844cc2[34];
    char s_df610c7f[11];
@@ -1473,7 +1535,7 @@ static const struct
    char s_012938fb[31];
    char s_a747cdc9[66];
    char s_2f169651[16];
-   char s_73674a86[20];
+   char s_73674a86[23];
    char s_705eee28[37];
    char s_62af62ac[40];
    char s_12b25a4b[50];
@@ -1538,7 +1600,7 @@ static const struct
    char s_f70406ce[28];
    char s_66df5c89[29];
    char s_ca981b76[11];
-   char s_5c3ed998[33];
+   char s_5c3ed998[34];
    char s_26d7f366[20];
    char s_26e72a47[20];
    char s_04390070[19];
@@ -1981,6 +2043,9 @@ static const struct
    char s_8d5f85ee[20];
    char s_9b023eee[36];
    char s_ccae82ba[19];
+#endif
+   char s_35808dba[48];
+#ifdef HAVE_SMBCLIENT
    char s_ad6e88de[16];
    char s_c7bc8298[19];
    char s_e63b035a[36];
@@ -2020,7 +2085,9 @@ static const struct
    char s_52e94a24[15];
    char s_d748f469[42];
    char s_9f006f5c[21];
+   char s_773482e7[10];
    char s_7fec5ca7[12];
+   char s_f05bb3b5[11];
    char s_9374b989[19];
    char s_7943e750[25];
    char s_cec8f66d[30];
@@ -2369,6 +2436,9 @@ static const struct
    char s_b9e24170[33];
    char s_30140cb5[20];
    char s_25a21976[48];
+   char s_95a59dc0[18];
+   char s_24244577[19];
+   char s_39143931[24];
    char s_7f2380a0[12];
    char s_1c0a61e2[5];
    char s_e0609921[13];
@@ -2389,6 +2459,8 @@ static const struct
    char s_f3977aca[7];
    char s_650f496e[13];
    char s_226e4c6c[13];
+   char s_565fbcfe[8];
+   char s_88ddcfc3[10];
    char s_3e3caa7d[31];
    char s_8d5d41b3[16];
    char s_988f5574[14];
@@ -2478,12 +2550,15 @@ static const struct
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[143];
+   char s_014d553a[402];
    char s_98b02857[235];
    char s_6c3c586d[209];
    char s_950e7a66[32];
    char s_ce113b1c[43];
    char s_272471c3[108];
    char s_cb649822[19];
+   char s_f0838a35_0[500];
+   char s_f0838a35_1[212];
    char s_95821d83[56];
    char s_bdeebb68[42];
    char s_f9005edc[155];
@@ -2501,6 +2576,7 @@ static const struct
    char s_4b78ee7f[87];
    char s_aed11d67[145];
    char s_dbe6e749[106];
+   char s_9e6f6ece[472];
    char s_ed8a1060[106];
    char s_822fa422[91];
    char s_a8d552a7[51];
@@ -2540,7 +2616,7 @@ static const struct
    char s_4be2cc7b[57];
    char s_11577805[26];
    char s_6cc5ba39[56];
-   char s_5ac97310[59];
+   char s_5ac97310[58];
    char s_547057db[52];
    char s_cd5f01df[33];
    char s_5a446688[45];
@@ -2703,6 +2779,8 @@ static const struct
    char s_aa6534cc[35];
    char s_51d334ea[34];
    char s_95de8c94[36];
+   char s_f43bec66[150];
+   char s_d814ec71[98];
    char s_f2a19576[66];
    char s_b2a8d230[60];
    char s_11c7fa0c[108];
@@ -2896,6 +2974,9 @@ static const struct
    char s_dda608b5[316];
    char s_6f5a032a[59];
    char s_9530e802[120];
+#ifdef HAVE_SDL3
+   char s_5b9036af[290];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[69];
 #endif
@@ -3252,6 +3333,19 @@ static const struct
    char s_0e319bcf[54];
    char s_c11a10f0[172];
    char s_e8bf64a4[34];
+   char s_1e8b7442[169];
+   char s_bbc238b8[163];
+   char s_a71a2320[84];
+   char s_3a5444c9[92];
+   char s_e24628cd[121];
+   char s_5587ebcb[112];
+   char s_992f7725[60];
+   char s_d17500b1[70];
+   char s_bd5d9b57[148];
+   char s_f373722c[92];
+   char s_00544646[163];
+   char s_8594f008[196];
+   char s_72a5ea43[186];
    char s_b4bf3f71[71];
    char s_b91e9f23[44];
    char s_66664762[60];
@@ -3362,7 +3456,7 @@ static const struct
    char s_98d47f8f[333];
    char s_9385fbef[46];
    char s_efb7504d[79];
-   char s_6b4a7333[373];
+   char s_6b4a7333[494];
    char s_70d6077c[49];
    char s_31124733[206];
    char s_2d24a503[175];
@@ -3697,7 +3791,7 @@ static const struct
 #endif
    char s_007587a5[79];
    char s_52c66e88[19];
-   char s_63a238b1[18];
+   char s_63a238b1[30];
    char s_fef5e730[43];
    char s_06fb676c[66];
    char s_7ba0622b[64];
@@ -3743,7 +3837,7 @@ static const struct
    char s_fa1942bb[39];
    char s_c95a9db6[35];
    char s_5aeda955[32];
-   char s_839395b2[34];
+   char s_839395b2[29];
    char s_3267601f[69];
    char s_35b0efd4[22];
    char s_321ebfd1[51];
@@ -4670,8 +4764,14 @@ static const struct
    "\303\263n de fotogramas negros, con el retraso de fotogramas o con Sincroniza",
    "r FPS al contenido. No pasa nada por dejar activada la frecuencia de actualizaci\303\263n variab"
    "le/VRR del sistema, pero no se puede utilizar con ese ajuste.",
-   "Utiliza un controlador de v\303\255deo multihilos. Esta opci\303\263n podr\303\255a mejorar el r"
-   "endimiento a costa de ganar retraso y provocar tirones en la imagen.",
+   "Ejecuta el controlador de v\303\255deo en un hilo independiente. La pantalla conservar\303\241 s"
+   "u cadencia cuando el n\303\272cleo tenga tirones y el n\303\272cleo seguir\303\241 ejecutando su"
+   " siguiente fotograma mientras el anterior pasa por la cadena de shaders y de fotogramas presenta"
+   "dos. Si se utiliza esta opci\303\263n con Ritmo de visualizaci\303\263n con el v\303\255deo mult"
+   "ihilo, el n\303\272cleo funcionar\303\241 con el mayor retraso que permita la pr\303\263xima act"
+   "ualizaci\303\263n de pantalla, correspondiendo con la latencia de la opci\303\263n Retraso de fo"
+   "to",
+   "gramas.",
    "Sincroniza los FPS seg\303\272n el contenido. Esta opci\303\263n es la equivalente a forzar una "
    "velocidad de 1x en el avance r\303\241pido. No habr\303\241 alteraciones respecto a la frecuenci"
    "a de actualizaci\303\263n solicitada por el n\303\272cleo ni control din\303\241mico de la frecu"
@@ -4707,13 +4807,13 @@ static const struct
    "No se encuentra el servidor de RetroAchievements",
    "Importar contenido",
    "Importar contenido",
-   "Agregar a Favoritos",
-   "Agregar a Favoritos",
-   "Agregar al mezclador",
-   "Agregar al mezclador",
-   "Agregar al mezclador y reproducir",
-   "Agregar al mezclador y reproducir",
-   "Agregar a la lista de reproducci\303\263n",
+   "A\303\261adir a Favoritos",
+   "A\303\261adir a Favoritos",
+   "A\303\261adir al mezclador",
+   "A\303\261adir al mezclador",
+   "A\303\261adir al mezclador y reproducir",
+   "A\303\261adir al mezclador y reproducir",
+   "A\303\261adir a lista de reproducci\303\263n",
    "Back-end de servicio de IA",
    "Activar servicio de IA",
    "Modo imagen",
@@ -4725,6 +4825,7 @@ static const struct
    "Modo voz",
    "Idioma de destino",
    "URL del servicio de IA",
+   "Siempre",
 #ifndef HAVE_DYNAMIC
    "Recargar siempre el n\303\272cleo al ejecutar contenido",
 #endif
@@ -4743,12 +4844,15 @@ static const struct
    "Filtros de audio",
    "Negociaci\303\263n del formato de audio (sugerencia)",
    "\302\253Float\302\273",
+   "Sonido surround virtual con auriculares",
    "Latencia de audio (ms)",
    "Variaci\303\263n m\303\241xima de sincron\303\255a de audio",
    "Silenciar mezclador de audio",
    "Mezclador",
    "Ganancia del mezclador de audio (dB)",
    "Silenciar",
+   "Disposici\303\263n de altavoces de salida",
+   "Est\303\251reo",
    "Frecuencia de salida (Hz)",
    "Salida",
    "Control din\303\241mico de frecuencia de audio",
@@ -4769,7 +4873,9 @@ static const struct
    "Ganancia de volumen (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de coma flotante",
+   "Preferir programaci\303\263n profesional de audio",
    "Tama\303\261o del b\303\272fer compartido de WASAPI",
+   "Autom\303\241tico",
    "Archivos de guardado: intervalo de autoguardados de la SaveRAM",
    "Cargar archivos de personalizaci\303\263n autom\303\241ticamente",
    "Cargar archivos de reasignaci\303\263n autom\303\241ticamente",
@@ -4817,11 +4923,11 @@ static const struct
    "Truco",
    "Direcci\303\263n de memoria",
    "M\303\241scara de direcci\303\263n de memoria",
-   "Agregar %u coincidencias a lista",
-   "Agregar un truco nuevo despu\303\251s de este",
-   "Agregar un truco nuevo antes de este",
-   "Agregar truco nuevo al final",
-   "Agregar truco nuevo al principio",
+   "A\303\261adir %u coincidencias a lista",
+   "A\303\261adir un truco nuevo despu\303\251s de este",
+   "A\303\261adir un truco nuevo antes de este",
+   "A\303\261adir truco nuevo al final",
+   "A\303\261adir truco nuevo al principio",
    "Autoaplicar trucos al cargar el juego",
    "Aplicar nada m\303\241s activar",
    "Aplicar cambios",
@@ -5125,11 +5231,61 @@ static const struct
    "En pausa",
    "Jugando",
    "Informaci\303\263n del disco",
+   "Disco genuino: %s",
+   "Fecha de lanzamiento: %s",
+   "N.\302\272 de serie: %s",
+   "Sistema: %s",
+   "T\303\255tulo: %s",
+   "Pista %d:",
+   "N.\302\272 de pistas: %d",
+   "Modo %d",
+   " - Duraci\303\263n: %02d:%02d.%02d",
+   " - Modo: %s",
+   " - Tama\303\261o: %.1f\302\240MB",
+   "Versi\303\263n: %s",
    "Cargar un disco nuevo",
    "\303\215ndice de disco actual",
    "Control de disco",
    "Expulsar disco",
    "Introducir disco",
+   "Suma de verificaci\303\263n",
+   "Err\303\263neo",
+   "Aceptar",
+   "Cromaticidad",
+   "Formatos de audio de CTA",
+   "Colorimetr\303\255a",
+   "Prestaciones de CTA",
+   "Metadatos est\303\241ticos de HDR",
+   "Formatos de v\303\255deo de CTA",
+   "Fecha de fabricaci\303\263n",
+   "Frecuencia detallada",
+   "Secciones de DisplayID",
+   "Frecuencia establecida",
+   "Bloque de extensiones",
+   "Prestaciones",
+   "Gama de colores",
+   "Entrada de v\303\255deo",
+   "Fabricante",
+   "Nombre del monitor",
+   "preferida",
+   "C\303\263digo de producto",
+   "L\303\255mites de rangos",
+   "Datos en bruto",
+   "Tama\303\261o de pantalla",
+   "N\303\272mero de serie",
+   "Lectura",
+   "Frecuencia est\303\241ndar",
+   "Texto",
+   "Solo se ha podido leer parte del EDID",
+   "Un PC port\303\241til o un panel integrado todo en uno no transmite datos EDID, pero una pantall"
+   "a externa conectada mediante DDC s\303\255 los transmite.",
+   "Versi\303\263n de EDID",
+   "Mostrar informaci\303\263n",
+   "Orientaci\303\263n",
+   "Salida",
+   "Frecuencia de actualizaci\303\263n",
+   "Resoluci\303\263n",
+   "Servidor de imagen",
    "Predeterminado",
    "Descargas",
    "Descargar n\303\272cleo",
@@ -5304,6 +5460,7 @@ static const struct
    "Bot\303\263n Y (izquierdo)",
    "Tecla %s",
    "Tipo de configuraci\303\263n del modo teclado del mando",
+   "Teclado: %s",
    "Arma: Aux. A",
    "Arma: Aux. B",
    "Arma: Aux. C",
@@ -5437,6 +5594,9 @@ static const struct
    "Asignaciones de RetroPad",
    "Intensidad de vibraci\303\263n",
    "Guardar perfil de mando",
+#ifdef HAVE_SDL3
+   "Utilizar teclado del sistema",
+#endif
 #ifdef ANDROID
    "Seleccionar teclado f\303\255sico",
 #endif
@@ -5585,6 +5745,7 @@ static const struct
    "Dos iconos",
    "Lista (mediana)",
    "Lista (peque\303\261a)",
+   "M\303\241x.",
    "Soporte",
    "Mostrar consumo de memoria",
    "Intervalo de actualizaci\303\263n del consumo de memoria (fotogramas)",
@@ -5732,6 +5893,7 @@ static const struct
    "Entrada",
    "Salida",
    "Volumen",
+   "M\303\255n.",
    "Archivo no encontrado, opcional:",
    "Archivo no encontrado, necesario:",
    "Reproducir",
@@ -5944,7 +6106,7 @@ static const struct
    "Factor de escala de miniaturas",
    "Partir nombres de lista de reproducci\303\263n (es necesario reiniciar)",
    "Usar modo PAL60",
-   "<Carpeta principal>",
+   "<Directorio principal>",
    "Pausar contenido al activar el men\303\272",
    "Pausar contenido cuando no est\303\251 activo",
    "Pausar el contenido cuando se desconecte un mando",
@@ -6010,10 +6172,10 @@ static const struct
    "Archivo presente, opcional:",
    "Archivo presente, necesario:",
    "Privacidad",
-   "Agregando archivos a la lista...",
-   "Agregar elemento...",
-   "Agregar archivos...",
-   "Agregar carpeta...",
+   "A\303\261adiendo archivos a la lista...",
+   "A\303\261adir elemento...",
+   "A\303\261adir archivos...",
+   "A\303\261adir carpeta...",
    "Todas las listas de reproducci\303\263n",
    "Aplicar",
    "Asociar n\303\272cleo",
@@ -6134,7 +6296,7 @@ static const struct
    "Seleccionar archivos",
    "Seleccionar carpeta",
    "Seleccionar tema",
-   "Agregar pasada",
+   "A\303\261adir pasada",
    "Quitar todas las pasadas",
    "No hay pasadas de shaders.",
    "Detener",
@@ -6155,8 +6317,8 @@ static const struct
    "Lista",
    "Advertencia",
    "Personalizaciones",
-   "Mostrar Agregar a favoritos",
-   "Mostrar Agregar a la lista de reproducci\303\263n",
+   "Mostrar A\303\261adir a favoritos",
+   "Mostrar A\303\261adir a la lista de reproducci\303\263n",
    "Mostrar Trucos",
    "Mostrar Cerrar contenido",
    "Mostrar Controles",
@@ -6459,6 +6621,9 @@ static const struct
    "Activar cliente SMB",
    "N.\302\272 de conexiones m\303\241ximas por SMB",
    "Contrase\303\261a de SMB",
+#endif
+   "KRB si est\303\241 disponible, en caso contrario NTLM",
+#ifdef HAVE_SMBCLIENT
    "Servidor de SMB",
    "Ajustes de red SMB",
    "Nombre de recurso compartido de SMB",
@@ -6498,7 +6663,9 @@ static const struct
    "URL del stream",
    "Configuraci\303\263n personalizada de streaming",
    "Contenido actual: %s",
+   "Cargar %s",
    "Subsistemas",
+   "Iniciar %s",
    "N\303\272cleos sugeridos",
    "Suspender salvapantallas",
    "Modo de rendimiento sostenido",
@@ -6851,6 +7018,9 @@ static const struct
    "Mostrar decoraciones de ventanas",
    "Ancho de la ventana",
    "Sincronizar FPS al contenido (G-Sync, FreeSync)",
+   "Latencia de audio",
+   "B\303\272fer del cliente",
+   "Periodo del dispositivo",
    "Desconectar",
    "Wifi",
    "Activar wifi",
@@ -6871,6 +7041,8 @@ static const struct
    "P\303\255xel",
    "Sistem\303\241tico",
    "Disposici\303\263n",
+   "Consola",
+   "Port\303\241til",
    "Mostrar la secci\303\263n de Ajustes",
    "Tema de colores",
    "Verde manzana",
@@ -6933,13 +7105,13 @@ static const struct
    "Uno o m\303\241s desbloqueos de logros no han sido comunicados al servidor. Se intentar\303\241 "
    "reenviar la informaci\303\263n mientras mantengas la aplicaci\303\263n abierta.",
    "Busca contenidos para crear y actualizar las listas de reproducci\303\263n.",
-   "Agrega el contenido a la secci\303\263n Favoritos.",
-   "Agrega el contenido a la secci\303\263n Favoritos.",
-   "Agrega esta pista de audio a un espacio de secuencias de audio. Si no hay espacios disponibles, "
-   "se ignorar\303\241.",
-   "Agrega esta pista de audio a un espacio de secuencias de audio y la reproduce. Si no hay espacio"
-   "s disponibles, se ignorar\303\241.",
-   "Agrega este elemento a una lista de reproducci\303\263n.",
+   "A\303\261ade el contenido a la secci\303\263n Favoritos.",
+   "A\303\261ade el contenido a la secci\303\263n Favoritos.",
+   "A\303\261ade esta pista de audio a un espacio de secuencias de audio. Si no hay espacios disponi"
+   "bles, se ignorar\303\241.",
+   "A\303\261ade esta pista de audio a un espacio de secuencias de audio y la reproduce. Si no hay e"
+   "spacios disponibles, se ignorar\303\241.",
+   "A\303\261ade este elemento a una lista de reproducci\303\263n.",
    "Selecciona el back-end de traducci\303\263n a utilizar. HTTP utilizar\303\241 un servidor remoto"
    " localizable en la direcci\303\263n URL configurada. Apple utilizar\303\241 los sistemas interno"
    "s del propio dispositivo para reconocimiento de texto OCR y traducci\303\263n (en macOS/iOS).",
@@ -6997,6 +7169,11 @@ static const struct
    "n \302\253In",
    "t16\302\273 deber\303\255a ir acompa\303\261ada con Remuestrear a n\303\272mero entero fijo para"
    " que toda la ruta de audio se mantenga dentro de los n\303\272meros enteros.",
+   "Ampliar la mezcla de un dispositivo est\303\251reo a 5.1 virtual y renderizarlo a dos o\303\255d"
+   "os tal y como oir\303\255a una cabeza dichos altavoces: los canales traseros tras el oyente y un"
+   "a mezcla cruzada suave en los canales delanteros. Solo usar con auriculares, con altavoces esto "
+   "solo limita la se\303\261al est\303\251reo. Esta opci\303\263n no hace efecto si el dispositivo "
+   "tiene una disposici\303\263n de canales mayor que est\303\251reo.",
    "Establece la latencia m\303\241xima del audio en milisegundos. El controlador intentar\303\241 m"
    "antener la latencia real en un 50\302\240% de este valor. Puede que este no se respete si el con"
    "trolador de audio no puede producir la latencia establecida.",
@@ -7008,6 +7185,15 @@ static const struct
    "Amplifica el volumen global del mezclador de audio (en dB). 0 dB es el volumen normal, sin ganan"
    "cia alguna.",
    "Silencia el audio.",
+   "Establece la disposici\303\263n de los altavoces con la que se abrir\303\241 el dispositivo de s"
+   "alida. Est\303\251reo es la canalizaci\303\263n de siempre. Las disposiciones m\303\241s amplias"
+   " abren un dispositivo m\303\241s amplio cuando le sea posible al controlador y la mezcla est\303"
+   "\251reo es remezclada en el paso final: los canales frontales se dejan como est\303\251n, la par"
+   "eja de traseros se reproducen a -3\302\240dB y los bajos se transmiten al LFE. 5.1 sit\303\272a "
+   "la pareja de canales traseros atr\303\241s, 5.1 Surround la sit\303\272a en los laterales. C",
+   "ualquier dispositivo que las lleve desde la otra posici\303\263n informar\303\241 de este cambio"
+   " y se tratar\303\241 de esa forma. Los controladores que no puedan producir m\303\241s que est"
+   "\303\251reo, solo reproducir\303\241n sonido en est\303\251reo.",
    "Ajusta la frecuencia de muestreo de la salida de audio.",
    "Cambia los ajustes de la salida de audio.",
    "Suaviza las imperfecciones de ritmo al sincronizar audio y v\303\255deo. Cuidado: Si se desactiv"
@@ -7045,6 +7231,12 @@ static const struct
    "ctiva esta opci\303\263n se usar\303\241 el modo compartido.",
    "Usa el formato de coma flotante para el controlador WASAPI, si es compatible con tu dispositivo "
    "de audio.",
+   "Env\303\255a el hilo del dispositivo WASAPI al programador de clases multimedia de Windows en lu"
+   "gar de elevar directamente su prioridad. Esta opci\303\263n est\303\241 pensada para un ajuste d"
+   "e latencia de audio muy bajo: no siempre ser\303\241 el mejor de los casos y en ciertos sistemas"
+   " podr\303\255a empeorar los fotogramas, as\303\255 que est\303\241 desactivada a menos que se ha"
+   "ya medido primero. El controlador informa del retraso en la activaci\303\263n, qu\303\251 progra"
+   "maci\303\263n utiliza y cu\303\241ndo se separa el audio.",
    "Asigna el tama\303\261o del b\303\272fer intermedio (en fotogramas) al usar el controlador WASAP"
    "I en modo compartido.",
    "Guarda de forma autom\303\241tica la SaveRAM no vol\303\241til a intervalos peri\303\263dicos (e"
@@ -7091,7 +7283,7 @@ static const struct
    "En este directorio se guardar\303\241n los archivos de trucos.",
    "Borra la lista de trucos.",
    "Carga un archivo de trucos reemplazando los existentes.",
-   "Carga un archivo de trucos agreg\303\241ndolos a los existentes.",
+   "Carga un archivo de trucos y los a\303\261ade a los existentes.",
    "Guarda los trucos actuales en un archivo de trucos.",
    "Posici\303\263n del truco en la lista.",
    "Vuelve a cargar todos los trucos existentes.",
@@ -7288,7 +7480,7 @@ static const struct
    "Incluye n\303\272cleos \302\253experimentales\302\273 en la lista del descargador de n\303\272cl"
    "eos. Suelen utilizarse solo para fines de desarrollo o para pruebas y no se recomienda su uso ge"
    "neralizado.",
-   "Crea una lista de reproducci\303\263n nueva y agrega a la misma este elemento.",
+   "Crea una lista de reproducci\303\263n nueva y a\303\261ade a la misma este elemento.",
    "Genera se\303\261ales de v\303\255deo a baja resoluci\303\263n para pantallas CRT.",
    "Cambia a una l\303\255nea de modo (\302\253modeline\302\273) en alta resoluci\303\263n para los "
    "men\303\272s cuando no se haya cargado un contenido.",
@@ -7343,6 +7535,10 @@ static const struct
    "Administra las im\303\241genes de disco.",
    "Abre la bandeja de disco virtual.",
    "Cierra la bandeja de disco virtual.",
+   "Muestra los datos EDID de los que informa la pantalla que se est\303\241 usando: identidad, pres"
+   "taciones, frecuencias compatibles y bloques de extensiones.",
+   "Muestra los datos de servidor, salida, modo y tama\303\261o f\303\255sico de la pantalla que se "
+   "est\303\241 usando.",
    "Descarga e instala un n\303\272cleo mediante el actualizador en l\303\255nea.",
    "Descarga contenidos gratuitos para el n\303\272cleo seleccionado.",
    "Descarga los archivos auxiliares de sistema que son necesarios para el buen funcionamiento de lo"
@@ -7410,7 +7606,7 @@ static const struct
    "argar un contenido.",
    "Explora todos los contenidos que coincidan con las bases de datos mediante una interfaz de b\303"
    "\272squeda por categor\303\255as.",
-   "Aqu\303\255 aparecer\303\241n los contenidos agregados a Favoritos.",
+   "Aqu\303\255 aparecer\303\241n los contenidos a\303\261adidos a Favoritos.",
    "Aqu\303\255 aparecer\303\241n las im\303\241genes que se hayan visualizado.",
    "Aqu\303\255 aparecer\303\241 la m\303\272sica que se haya reproducido.",
    "Aqu\303\255 aparecer\303\241n los v\303\255deos que se hayan reproducido.",
@@ -7650,6 +7846,12 @@ static const struct
    "Especifica la fuerza de los efectos de respuesta h\303\241ptica.",
    "Guarda un archivo de autoconfiguraci\303\263n que se aplicar\303\241 autom\303\241ticamente cada"
    " vez que se vuelva a detectar este mando.",
+#ifdef HAVE_SDL3
+   "Utiliza el teclado en pantalla del dispositivo para introducir textos en los men\303\272s en vez"
+   " del integrado. Esta opci\303\263n solo se aplicar\303\241 cuando el sistema tenga un teclado en"
+   " pantalla. Es necesario tener una pantalla t\303\241ctil o un m\303\251todo de entrada en el que"
+   " se pueda navegar con un mando.",
+#endif
 #ifdef ANDROID
    "Utiliza este dispositivo como un teclado f\303\255sico y no como un mando.",
 #endif
@@ -8237,9 +8439,35 @@ static const struct
    "Ajusta el n\303\272mero de fotogramas preventivos que se ejecutar\303\241n. Puede haber distorsi"
    "ones visuales si el n\303\272mero de fotogramas retrasados supera al valor interno del juego.",
    "Cambia los ajustes de privacidad.",
+   "Indica la cantidad m\303\241xima de elementos que mostrar\303\241 la vista Todas las listas de r"
+   "eproducci\303\263n en el modo de cuadr\303\255cula. Un valor de 0 mostrar\303\241 todos sus elem"
+   "entos.",
+   "Indica la cantidad m\303\241xima de elementos que mostrar\303\241 la vista Todas las listas de r"
+   "eproducci\303\263n en el modo de lista. Un valor de 0 mostrar\303\241 todos sus elementos.",
+   "Selecciona el archivo de hoja de estilos que se utilizar\303\241 como tema personalizado.",
+   "Establece el color que se utilizar\303\241 para resaltar la fila seleccionada en formato #rrggbb"
+   ".",
+   "Restablece la ventana del men\303\272 de escritorio al tama\303\261o y posici\303\263n que ten"
+   "\303\255an la \303\272ltima vez que se cerr\303\263 RetroArch.",
+   "Abre el explorador de contenidos en la secci\303\263n que estaba seleccionada la \303\272ltima v"
+   "ez que se cerr\303\263 RetroArch.",
+   "Muestra un mensaje al terminar una b\303\272squeda de contenidos.",
+   "Muestra los archivos y carpetas ocultos en el explorador de archivos.",
+   "Indica la lista de reproducci\303\263n que se mostrar\303\241 al abrir el men\303\272 de escrito"
+   "rio. Deja esta opci\303\263n en blanco para que se cargue la primera lista.",
+   "Cuando se haya cargado un n\303\272cleo, mostrarlo como primera opci\303\263n al ejecutar un con"
+   "tenido.",
+   "Selecciona el tema de colores del men\303\272 de escritorio: respetar el tema del sistema, utili"
+   "zar el tema oscuro integrado o cargar una hoja de estilos personalizada.",
+   "Establece la memoria que se reservar\303\241 para las miniaturas decodificadas (en megabytes). U"
+   "n valor m\303\241s grande permitir\303\241 que el desplazamiento por listas de reproducci\303"
+   "\263n grandes sea m\303\241s fluido.",
+   "Indica el tama\303\261o del borde m\303\241s grande (en p\303\255xeles) que se usar\303\241 para"
+   " reducir la escala de una imagen que vaya a usarse como miniatura. Un valor de 0 conservar\303"
+   "\241 su tama\303\261o original.",
    "Opciones para utilizar configuraciones personalizadas individualmente.",
-   "Muestra la opci\303\263n \302\253Agregar a favoritos\302\273.",
-   "Muestra la opci\303\263n \302\253Agregar a la lista de reproducci\303\263n\302\273.",
+   "Muestra la opci\303\263n \302\253A\303\261adir a favoritos\302\273.",
+   "Muestra la opci\303\263n \302\253A\303\261adir a la lista de reproducci\303\263n\302\273.",
    "Muestra la opci\303\263n \302\253Trucos\302\273.",
    "Muestra la opci\303\263n que permite cerrar el contenido actual.",
    "Muestra la opci\303\263n \302\253Controles\302\273.",
@@ -8407,11 +8635,13 @@ static const struct
    "\303\272mero ilimitado de guardados r\303\241pidos.",
    "Muestra miniaturas de los guardados r\303\241pidos.",
    "Guarda la configuraci\303\263n actual en un archivo de configuraci\303\263n personalizada.",
-   "Establece el c\303\263dec con el que se guardar\303\241n los archivos de guardado y los guardado"
-   "s r\303\241pidos comprimidos. Zstandard tiene una velocidad de carga muy superior a Deflate y un"
-   "a velocidad de guardado algo m\303\241s r\303\241pida, pero sus archivos ser\303\241n m\303\241s"
-   " grandes. Los archivos guardados con cualquiera de estos c\303\263decs podr\303\241n volver a le"
-   "erse, solo cambiar\303\241n los archivos nuevos.",
+   "Establece el c\303\263dec con el que se guardar\303\241n todos los archivos comprimidos, como pu"
+   "eden ser los archivos de guardado, las listas de reproducci\303\263n, las copias de seguridad de"
+   " n\303\272cleos y la cach\303\251 de informaci\303\263n de los n\303\272cleos. Zstandard tiene u"
+   "na velocidad de carga muy superior a Deflate y una velocidad de guardado algo m\303\241s r\303"
+   "\241pida, pero sus archivos ser\303\241n m\303\241s grandes. Los archivos guardados con cualquie"
+   "ra de estos c\303\263decs podr\303\241n volver a leerse, solo cambiar\303\241n los archivos nuev"
+   "os.",
    "Sobrescribe el archivo de configuraci\303\263n actual.",
    "Guarda un archivo de configuraci\303\263n personalizada que se aplicar\303\241 a todos los conte"
    "nidos cargados desde el mismo directorio que el archivo actual y que tendr\303\241 prioridad sob"
@@ -8893,7 +9123,7 @@ static const struct
    "\303\263n con el v\303\255deo multihilo, el n\303\272cleo funcionar\303\241 con el mayor retraso"
    " que permita la pr\303\263xima actualizaci\303\263n de pantalla, correspondiendo con la latencia"
    " de la opci\303\263n Retraso de fotogramas. Los n\303\272cleos que se rendericen en la GPU pu",
-   "eden ejecutarse en otros hilos con los controladores para Vulkna, Direct3D\302\24011, Direct3D"
+   "eden ejecutarse en otros hilos con los controladores para Vulkan, Direct3D\302\24011, Direct3D"
    "\302\24012 y gl, otros controladores se ejecutar\303\241n en el mismo hilo, ignorando este ajust"
    "e.",
    "Al activar el v\303\255deo multihilo, se ejecutar\303\241 cada fotograma en el n\303\272cleo con"
@@ -9005,8 +9235,8 @@ static const struct
 #endif
    "La accesibilidad de RetroArch est\303\241 activada. Men\303\272 principal, cargar n\303\272cleo.",
    "Logro desbloqueado",
-   "Favorito agregado",
-   "Se ha agregado a la lista de reproducci\303\263n",
+   "Elemento a\303\261adido a Favoritos",
+   "Elemento a\303\261adido a lista de reproducci\303\263n",
    "Error al a\303\261adir favorito: la lista de reproducci\303\263n est\303\241 llena.",
    "Error al a\303\261adir a lista de reproducci\303\263n: la lista est\303\241 llena",
    "detenido.",
@@ -9051,8 +9281,8 @@ static const struct
    "Error al iniciar b\303\272squeda de trucos.",
    "Se ha iniciado la b\303\272squeda de trucos.",
    "Se han recargado todos los trucos.",
-   "Error al agregar coincidencias.",
-   "Se han agregado %u coincidencias.",
+   "Error al a\303\261adir coincidencias.",
+   "Coincidencias a\303\261adidas: %u.",
    "No hay espacio. Solo se pueden introducir hasta 100 trucos a la vez.",
    "Error al crear truco.",
    "Se ha creado el truco a partir de la coincidencia.",
@@ -9591,7 +9821,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (218180u
+      (sizeof(msg_hash_es_blob) == (223464u
 #ifdef ANDROID
        + 329u
 #endif
@@ -9652,6 +9882,9 @@ typedef char msg_hash_es_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 76u
+#endif
+#ifdef HAVE_SDL3
+       + 29u
 #endif
 #ifdef ANDROID
        + 28u
@@ -9846,6 +10079,9 @@ typedef char msg_hash_es_blob_check[
 #endif
 #if defined(ANDROID)
        + 155u
+#endif
+#ifdef HAVE_SDL3
+       + 290u
 #endif
 #ifdef ANDROID
        + 69u
@@ -10252,6 +10488,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -10270,12 +10507,15 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -10296,7 +10536,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10648,11 +10890,60 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10827,6 +11118,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10960,6 +11252,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -11108,6 +11403,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAX_ABBREV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -11255,6 +11551,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIN_ABBREV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
@@ -11973,6 +12270,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
@@ -12012,7 +12312,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -12361,6 +12663,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
@@ -12381,6 +12686,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -12468,12 +12775,14 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
@@ -12490,6 +12799,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -12692,6 +13002,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -12885,6 +13197,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -13241,6 +13556,19 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,

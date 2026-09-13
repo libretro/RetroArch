@@ -172,6 +172,7 @@ static const struct
    char s_35a1323d[9];
    char s_f72667c9[11];
    char s_adce4374[24];
+   char s_5984f4f9[5];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
@@ -209,6 +210,7 @@ static const struct
    char s_e5aeacf9[27];
    char s_24976a5b[18];
    char s_5209cc72[30];
+   char s_e2eedfe1[14];
    char s_e66b1cb9[38];
    char s_1bf49fce[51];
    char s_11e34db0[47];
@@ -508,11 +510,14 @@ static const struct
    char s_15f24ff4[12];
    char s_ec7e8026[6];
    char s_5d29b870[13];
+   char s_6996339b[7];
    char s_08e9410c[16];
    char s_d95824aa[21];
    char s_639f529e[15];
    char s_4927597c[21];
    char s_77b74366[21];
+   char s_ab49119c[11];
+   char s_ddf679b9[9];
    char s_3b7e9d77[7];
    char s_10342503[10];
    char s_d31f6d88[11];
@@ -3654,6 +3659,7 @@ static const struct
    "Puhetila",
    "Kohdekieli",
    "Teko\303\244lypalvelun osoite",
+   "Aina",
 #ifndef HAVE_DYNAMIC
    "Lataa ydin aina uudelleen kun sis\303\244lt\303\266 suoritetaan",
 #endif
@@ -3691,6 +3697,7 @@ static const struct
    "WASAPI-eksklusiivinen tila",
    "WASAPI-liukumuoto",
    "WASAPI-jaetun puskurin pituus",
+   "Automaattinen",
    "Lataa ohitustiedostot automaattisesti",
    "Lataa uudelleenm\303\244\303\244ritystiedostot automaattisesti",
    "Lataa varjostimen esiasetukset automaattisesti",
@@ -3991,11 +3998,14 @@ static const struct
    "Keskeytetty",
    "Pelaa",
    "Levyn tiedot",
+   "\303\204\303\244ni",
    "Lataa uusi levy",
    "Nykyinen levyindeksi",
    "Levyn hallinta",
    "Poista levy asemasta",
    "Sy\303\266t\303\244 levy asemaan",
+   "Tavallinen",
+   "Ulostulo",
    "Oletus",
    "Lataukset",
    "Lataa ydin",
@@ -7455,7 +7465,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124116u
+      (sizeof(msg_hash_fi_blob) == (124162u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7918,6 +7928,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -7955,6 +7966,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -8254,11 +8266,14 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

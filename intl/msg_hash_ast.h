@@ -34,6 +34,7 @@ static const struct
    char s_71b54013[16];
    char s_f72667c9[19];
    char s_adce4374[22];
+   char s_5984f4f9[8];
    char s_12e77e8f[10];
    char s_da068369[8];
    char s_daead8a5[6];
@@ -41,6 +42,7 @@ static const struct
    char s_dcf2e800[6];
    char s_f7e668f4[8];
    char s_c82d0aee[8];
+   char s_fcd64038[9];
    char s_fb84857a[7];
    char s_49b0b12a[6];
    char s_ad7c73f6[16];
@@ -160,6 +162,10 @@ static const struct
    char s_eae59928[26];
    char s_b92166cd[12];
    char s_b18effee[33];
+   char s_6996339b[6];
+   char s_690efede[10];
+   char s_ab49119c[9];
+   char s_ddf679b9[7];
    char s_10342503[11];
    char s_d31f6d88[16];
    char s_f03e9c42[21];
@@ -1035,6 +1041,7 @@ static const struct
    "Llingua d'orixe",
    "Llingua de dest\303\255n",
    "URL del serviciu d'IA",
+   "Siempre",
    "Gr\303\241ficos",
    "Pres\303\251u",
    "Audiu",
@@ -1042,6 +1049,7 @@ static const struct
    "Audiu",
    "Mecedor",
    "Mecedor",
+   "Est\303\251reu",
    "Salida",
    "Audiu",
    "Sincronizaci\303\263n",
@@ -1161,6 +1169,10 @@ static const struct
    "Nun s'atop\303\263'l direutoriu",
    "Direutorios",
    "Presencia arriquecida de Discord",
+   "Audiu",
+   "D'acuerdu",
+   "En bruto",
+   "Salida",
    "Descargues",
    "Baxar un nucleu",
    "Baxador de conten\303\255u",
@@ -2058,7 +2070,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24487u
+      (sizeof(msg_hash_ast_blob) == (24536u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2166,6 +2178,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -2173,6 +2186,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
@@ -2292,6 +2306,10 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

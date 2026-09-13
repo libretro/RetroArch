@@ -204,7 +204,6 @@ static const struct
    char s_ae87ea53[260];
    char s_9834febe[492];
    char s_93805cc8[474];
-   char s_b495662b[132];
    char s_9953f4e2[263];
    char s_de76d2dc[19];
    char s_79e212bd[8];
@@ -255,6 +254,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[10];
    char s_adce4374[28];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[42];
 #endif
@@ -281,6 +281,7 @@ static const struct
    char s_c82d0aee[8];
    char s_e2062515[23];
    char s_ad791974[11];
+   char s_fcd64038[9];
    char s_b271ae95[38];
    char s_fb84857a[8];
    char s_3943c7ae[25];
@@ -300,6 +301,7 @@ static const struct
    char s_e5aeacf9[26];
    char s_24976a5b[31];
    char s_5209cc72[32];
+   char s_e2eedfe1[12];
    char s_9f1f3534[39];
    char s_e66b1cb9[48];
    char s_1bf49fce[38];
@@ -628,11 +630,14 @@ static const struct
    char s_15f24ff4[15];
    char s_ec7e8026[11];
    char s_5d29b870[26];
+   char s_6996339b[5];
    char s_08e9410c[22];
    char s_d95824aa[26];
    char s_639f529e[16];
    char s_4927597c[15];
    char s_77b74366[19];
+   char s_ab49119c[6];
+   char s_ddf679b9[8];
    char s_3b7e9d77[17];
    char s_10342503[13];
    char s_d31f6d88[18];
@@ -4578,9 +4583,6 @@ static const struct
    "\303\251l nagyobb v\303\241lt\303\263peri\303\263dussal, a fekete k\303\251pkocka besz\303\272r"
    "\303\241ssal, a k\303\251pv\303\241rakoztat\303\241ssal, vagy a tartalom pontos k\303\251pfriss"
    "\303\255t\303\251s\303\251hez igaz\303\255t\303\241s\303\241val.",
-   "T\303\266bbsz\303\241las videoilleszt\305\221 haszn\303\241lata. Jav\303\255thatja a teljes\303"
-   "\255tm\303\251nyt a k\303\251sleltet\303\251s \303\251s a k\303\251p daraboss\303\241g\303\241na"
-   "k roml\303\241sa \303\241r\303\241n.",
    "Igazod\303\241s a tartalom pontos k\303\251pfriss\303\255t\303\251s\303\251hez. Ez ugyanaz, mint"
    " az 1x-es sebess\303\251gre k\303\251nyszer\303\255t\303\251s, de a gyors\303\255t\303\241s tov"
    "\303\241bbra is enged\303\251lyezett. Nem lehet elt\303\251r\303\251s a mag \303\241ltal ig\303"
@@ -4636,6 +4638,7 @@ static const struct
    "Besz\303\251d m\303\263d",
    "C\303\251lnyelv",
    "Az AI szolg\303\241ltat\303\241s URL-je",
+   "Mindig",
 #ifndef HAVE_DYNAMIC
    "Mag \303\272jrat\303\266lt\303\251se tartalom futtat\303\241sakor",
 #endif
@@ -4662,6 +4665,7 @@ static const struct
    "Kever\305\221",
    "Kever\305\221 hangereje (dB)",
    "N\303\251m\303\255t\303\241s",
+   "Sztere\303\263",
    "Kimen\305\221 friss\303\255t\303\251si gyakoris\303\241g (Hz)",
    "Kimenet",
    "Dinamikus hangvez\303\251rl\303\251s",
@@ -4681,6 +4685,7 @@ static const struct
    "WASAPI kiz\303\241r\303\263lagos m\303\263d",
    "WASAPI lebeg\305\221pontos form\303\241tum",
    "WASAPI megosztott puffer m\303\251ret",
+   "Automatikus",
    "SaveRAM automatikus ment\303\251s\303\251nek ideje",
    "Fel\303\274lb\303\255r\303\241l\303\263 f\303\241jlok automatikus bet\303\266lt\303\251se",
    "Remap f\303\241jlok automatikus bet\303\266lt\303\251se",
@@ -5015,11 +5020,14 @@ static const struct
    "Sz\303\274neteltetve",
    "J\303\241t\303\251kban",
    "Inform\303\241ci\303\263k a lemezr\305\221l",
+   "Hang",
    "\303\232j lemez bet\303\266lt\303\251se",
    "Aktu\303\241lis lemez sorsz\303\241ma",
    "Lemezm\305\261veletek",
    "Lemez kiad\303\241sa",
    "Lemez behelyez\303\251se",
+   "Nyers",
+   "Kimenet",
    "Alap\303\251rtelmezett",
    "Let\303\266lt\303\251sek",
    "Magok let\303\266lt\303\251se",
@@ -9716,7 +9724,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188968u
+      (sizeof(msg_hash_hu_blob) == (188883u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10310,7 +10318,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -10361,6 +10368,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -10387,6 +10395,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -10406,6 +10415,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10734,11 +10744,14 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

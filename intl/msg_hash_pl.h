@@ -207,7 +207,6 @@ static const struct
    char s_9834febe_1[15];
    char s_93805cc8_0[500];
    char s_93805cc8_1[122];
-   char s_b495662b[153];
    char s_9953f4e2[241];
    char s_79e212bd[10];
    char s_6342700c[13];
@@ -259,6 +258,7 @@ static const struct
    char s_35a1323d[10];
    char s_f72667c9[16];
    char s_adce4374[21];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[63];
 #endif
@@ -304,6 +304,7 @@ static const struct
    char s_e5aeacf9[23];
    char s_24976a5b[22];
    char s_5209cc72[29];
+   char s_e2eedfe1[13];
    char s_9f1f3534[42];
    char s_e66b1cb9[46];
    char s_1bf49fce[45];
@@ -657,11 +658,13 @@ static const struct
    char s_15f24ff4[11];
    char s_ec7e8026[4];
    char s_5d29b870[19];
+   char s_6996339b[9];
    char s_08e9410c[19];
    char s_d95824aa[13];
    char s_639f529e[15];
    char s_4927597c[12];
    char s_77b74366[13];
+   char s_ddf679b9[9];
    char s_3b7e9d77[10];
    char s_10342503[18];
    char s_d31f6d88[15];
@@ -968,6 +971,9 @@ static const struct
    char s_d7c1d887[23];
    char s_8c49943c[15];
    char s_d2c6b214[25];
+#ifdef HAVE_SDL3
+   char s_ba511c01[28];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[30];
 #endif
@@ -3340,7 +3346,6 @@ static const struct
    char s_98d47f8f[301];
    char s_9385fbef[35];
    char s_efb7504d[71];
-   char s_6b4a7333[273];
    char s_70d6077c[39];
    char s_31124733[215];
    char s_2d24a503[182];
@@ -4662,9 +4667,6 @@ static const struct
    "\263\305\272nienie klatek lub Synchronizuj do d",
    "ok\305\202adnego framerate'u zawarto\305\233ci. Pozostawienie w\305\202\304\205czonego systemowe"
    "go VRR jest w porz\304\205dku, tylko nie to ustawienie.",
-   "U\305\274yj wielow\304\205tkowego sterownika wideo. U\305\274ycie tej opcji mo\305\274e poprawi"
-   "\304\207 wydajno\305\233\304\207 kosztem mo\305\274liwych op\303\263\305\272nie\305\204 i wi\304"
-   "\231kszego zacinania si\304\231 obrazu.",
    "Synchronizuj do dok\305\202adnego klatkarzu tre\305\233ci. Opcja ta jest odpowiednikiem wymuszen"
    "ia pr\304\231dko\305\233ci x1, jednocze\305\233nie umo\305\274liwiaj\304\205c szybkie przewijani"
    "e do przodu. Brak odchyle\305\204 od \305\274\304\205danej cz\304\231stotliwo\305\233ci od\305"
@@ -4719,6 +4721,7 @@ static const struct
    "Tryb mowy",
    "J\304\231zyk docelowy",
    "Adres URL us\305\202ugi SI",
+   "Zawsze",
 #ifndef HAVE_DYNAMIC
    "Zawsze \305\202aduj ponownie rdze\305\204 podczas uruchamiania zawarto\305\233ci",
 #endif
@@ -4764,6 +4767,7 @@ static const struct
    "Wy\305\202\304\205czny tryb WASAPI",
    "Format WASAPI ruchomy",
    "Wsp\303\263\305\202dzielony bufor WASAPI",
+   "Automatyczny",
    "Plik zapisu: interwa\305\202 autozapisu SaveRAM",
    "Automatyczne \305\202adowanie zast\304\205pionych plik\303\263w",
    "Automatyczne \305\202adowanie plik\303\263w przemapowa\305\204",
@@ -5117,11 +5121,13 @@ static const struct
    "Wstrzymane",
    "Gra",
    "Informacje o dysku",
+   "D\305\272wi\304\231k",
    "Za\305\202aduj nowy dysk",
    "Indeks dysku",
    "Kontrola dysku",
    "Wysu\305\204 dysk",
    "W\305\202\303\263\305\274 dysk",
+   "Wyj\305\233cie",
    "Domy\305\233lny",
    "Pliki do pobrania",
    "Pobierz rdze\305\204",
@@ -5428,6 +5434,9 @@ static const struct
    "Przypisania RetroPad-a",
    "Si\305\202a wibracji",
    "Zapisz profil kontrolera",
+#ifdef HAVE_SDL3
+   "U\305\274yj klawiatury systemowej",
+#endif
 #ifdef ANDROID
    "Wybierz klawiatur\304\231 fizyczn\304\205",
 #endif
@@ -8427,10 +8436,6 @@ static const struct
    "apis\303\263w stanu.",
    "Pokazuj miniaturki zapis\303\263w stanu.",
    "Zapisz bie\305\274\304\205c\304\205 konfiguracj\304\231 jako niestandardowy plik konfiguracji.",
-   "Kodek u\305\274ywany do kompresji plik\303\263w zapisu i zapisu stan\303\263w. Zstandard \305"
-   "\202aduje si\304\231 par\304\231 razy szybciej ni\305\274 Deflate i zapisuje pliki nieco szybcie"
-   "j, dla nieco wi\304\231kszych plik\303\263w. Pliki zapisywane przy ich u\305\274yciu s\304\205 o"
-   "dczytywane wstecznie; zmieniane s\304\205 tylko nowe pliki.",
    "Nadpisz bie\305\274\304\205cy plik konfiguracyjny.",
    "Zapisz plik nadpisywania konfiguracji, kt\303\263ry b\304\231dzie mia\305\202 zastosowanie do ws"
    "zystkich tre\305\233ci za\305\202adowanych z tego samego katalogu co bie\305\274\304\205cy plik."
@@ -9600,7 +9605,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (191500u
+      (sizeof(msg_hash_pl_blob) == (191112u
 #ifdef ANDROID
        + 385u
 #endif
@@ -9661,6 +9666,9 @@ typedef char msg_hash_pl_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 55u
+#endif
+#ifdef HAVE_SDL3
+       + 28u
 #endif
 #ifdef ANDROID
        + 30u
@@ -10214,7 +10222,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -10266,6 +10273,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -10311,6 +10319,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10664,11 +10673,13 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10975,6 +10986,9 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -13344,7 +13358,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,

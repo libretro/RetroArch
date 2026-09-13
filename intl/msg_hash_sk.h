@@ -204,7 +204,6 @@ static const struct
    char s_ae87ea53[264];
    char s_9834febe[433];
    char s_93805cc8[488];
-   char s_b495662b[125];
    char s_9953f4e2[260];
    char s_de76d2dc[21];
    char s_79e212bd[8];
@@ -255,6 +254,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[16];
    char s_adce4374[15];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[49];
 #endif
@@ -619,11 +619,14 @@ static const struct
    char s_15f24ff4[13];
    char s_ec7e8026[7];
    char s_5d29b870[18];
+   char s_6996339b[5];
    char s_08e9410c[22];
    char s_d95824aa[22];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[13];
+   char s_ab49119c[8];
+   char s_ddf679b9[8];
    char s_3b7e9d77[12];
    char s_10342503[12];
    char s_d31f6d88[16];
@@ -931,6 +934,9 @@ static const struct
    char s_d7c1d887[20];
    char s_8c49943c[21];
    char s_d2c6b214[27];
+#ifdef HAVE_SDL3
+   char s_ba511c01[33];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[29];
 #endif
@@ -4528,9 +4534,6 @@ static const struct
    "\304\217. Nekombinujte so Swap Interval > 1, BFI, Frame Delay alebo Sync to Exact Content Framer"
    "ate. Syst\303\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303\251, len nie toto"
    " nastavenie.",
-   "Pou\305\276i\305\245 vl\303\241knov\303\275 video ovl\303\241da\304\215. Pou\305\276itie m\303"
-   "\264\305\276e zlep\305\241i\305\245 v\303\275kon za mo\305\276n\303\272 cenu latencie a v\303"
-   "\244\304\215\305\241ieho video trhania.",
    "Synchronizova\305\245 s presnou frekvenciou obsahu. T\303\241to mo\305\276nos\305\245 je ekvival"
    "entom vyn\303\272tenia x1 r\303\275chlosti pri zachovan\303\255 mo\305\276nosti r\303\275chleho "
    "prev\303\255jania. \305\275iadna odch\303\275lka od obnovovacej frekvencie po\305\276adovanej co"
@@ -4584,6 +4587,7 @@ static const struct
    "Re\305\276im re\304\215i",
    "Cie\304\276ov\303\275 jazyk",
    "URL slu\305\276by AI",
+   "V\305\276dy",
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znova na\304\215\303\255ta\305\245 core pri spusten\303\255 obsahu",
 #endif
@@ -4952,11 +4956,14 @@ static const struct
    "Pozastaven\303\251",
    "Hranie",
    "Inform\303\241cie disku",
+   "Zvuk",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
    "Ovl\303\241danie disku",
    "Vysun\303\272\305\245 disk",
    "Vlo\305\276te disk",
+   "\304\214ist\303\251",
+   "V\303\275stup",
    "Predvolen\303\251",
    "S\305\245ahovanie",
    "Stiahnu\305\245 jadro",
@@ -5264,6 +5271,9 @@ static const struct
    "Priradenia RetroPad",
    "Intenzita vibr\303\241ci\303\255",
    "Ulo\305\276i\305\245 profil kontroleru",
+#ifdef HAVE_SDL3
+   "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu",
+#endif
 #ifdef ANDROID
    "Vybra\305\245 fyzick\303\272 kl\303\241vesnicu",
 #endif
@@ -9414,7 +9424,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179340u
+      (sizeof(msg_hash_sk_blob) == (179242u
 #ifdef ANDROID
        + 389u
 #endif
@@ -9472,6 +9482,9 @@ typedef char msg_hash_sk_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 55u
+#endif
+#ifdef HAVE_SDL3
+       + 33u
 #endif
 #ifdef ANDROID
        + 29u
@@ -10018,7 +10031,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -10069,6 +10081,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -10433,11 +10446,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10745,6 +10761,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif

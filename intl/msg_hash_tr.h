@@ -203,7 +203,6 @@ static const struct
    char s_ae87ea53[307];
    char s_9834febe[444];
    char s_93805cc8[484];
-   char s_b495662b[147];
    char s_9953f4e2[206];
    char s_de76d2dc[34];
    char s_79e212bd[7];
@@ -252,6 +251,7 @@ static const struct
    char s_35a1323d[14];
    char s_f72667c9[10];
    char s_adce4374[20];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[59];
 #endif
@@ -292,6 +292,7 @@ static const struct
    char s_e5aeacf9[26];
    char s_24976a5b[21];
    char s_5209cc72[40];
+   char s_e2eedfe1[9];
    char s_e66b1cb9[46];
    char s_1bf49fce[55];
    char s_11e34db0[59];
@@ -611,11 +612,15 @@ static const struct
    char s_15f24ff4[11];
    char s_ec7e8026[14];
    char s_5d29b870[13];
+   char s_6996339b[4];
    char s_08e9410c[17];
    char s_d95824aa[19];
    char s_639f529e[15];
    char s_4927597c[14];
    char s_77b74366[10];
+   char s_690efede[6];
+   char s_ab49119c[14];
+   char s_ddf679b9[10];
    char s_3b7e9d77[12];
    char s_10342503[14];
    char s_d31f6d88[21];
@@ -4421,9 +4426,6 @@ static const struct
    "kullan\304\261lmaz. Takas Aral\304\261\304\237\304\261 > 1, BFI, Kare Gecikmesi veya Tam \304"
    "\260\303\247erik Kare H\304\261z\304\261na E\305\237itle ile birle\305\237tirmeyin. Sistem VRR a"
    "\303\247\304\261k b\304\261rakmak bu ayarda sorun \303\247\304\261karmaz.",
-   "Zorlu video s\303\274r\303\274c\303\274s\303\274n\303\274 kullan\304\261n. Bunu kullanmak, olas"
-   "\304\261 gecikme s\303\274resi ve daha fazla video kekemeli\304\237i pahas\304\261na performans"
-   "\304\261 art\304\261rabilir.",
    "Tam \304\260\303\247erik Kare H\304\261z\304\261na E\305\237itleyin. Bu se\303\247enek, h\304"
    "\261zl\304\261 ileri sarmaya izin verirken x1 h\304\261z\304\261n\304\261 zorlamaya e\305\237de"
    "\304\237erdir. \303\207ekirdek istenen yenileme h\304\261z\304\261ndan sapma yok, ses Dinamik H"
@@ -4475,6 +4477,7 @@ static const struct
    "Konu\305\237ma Kipi",
    "Hedef Dil",
    "\303\207eviri Servisi URL",
+   "Daima",
 #ifndef HAVE_DYNAMIC
    "Her \303\207al\304\261\305\237t\304\261rmada \304\260\303\247erik \303\207ekirde\304\237ini Yeni"
    "den Y\303\274kle",
@@ -4516,6 +4519,7 @@ static const struct
    "WASAPI Ayr\304\261cal\304\261kl\304\261 Kip",
    "WASAPI Float Bi\303\247imi",
    "WASAPI Payla\305\237\304\261lan Arabellek Uzunlu\304\237u",
+   "Otomatik",
    "\303\226zelle\305\237tirilmi\305\237 Dosyalar\304\261 Otomatik Y\303\274kle",
    "Yeniden E\305\237le\305\237me Dosyalar\304\261n\304\261 Otomatik Olarak Y\303\274kle",
    "G\303\266lgelendirici Haz\304\261r Ayarlar\304\261n\304\261 Otomatik Olarak Y\303\274kle",
@@ -4836,11 +4840,15 @@ static const struct
    "Durduruldu",
    "Oynat\304\261l\304\261yor",
    "Disk Bilgisi",
+   "Ses",
    "Yeni Disk Y\303\274kle",
    "Mevcut Disk Dizini",
    "Disk Kontrol\303\274",
    "Diski \303\207\304\261kar",
    "Diski Tak",
+   "Tamam",
+   "\304\260\305\237lenmemi\305\237",
+   "\303\207\304\261k\304\261\305\237",
    "Varsay\304\261lan",
    "\304\260ndirilenler",
    "Bir \303\207ekirdek \304\260ndir",
@@ -9178,7 +9186,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170914u
+      (sizeof(msg_hash_tr_blob) == (170816u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9740,7 +9748,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9789,6 +9796,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9829,6 +9837,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -10148,11 +10157,15 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

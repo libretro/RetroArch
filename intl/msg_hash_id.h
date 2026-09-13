@@ -65,6 +65,7 @@ static const struct
    char s_e5aeacf9[22];
    char s_24976a5b[20];
    char s_5209cc72[29];
+   char s_e2eedfe1[9];
    char s_14ec7b7e[11];
    char s_00614813[9];
    char s_8584f1d6[15];
@@ -163,11 +164,13 @@ static const struct
    char s_15f24ff4[7];
    char s_ec7e8026[12];
    char s_5d29b870[17];
+   char s_6996339b[6];
    char s_08e9410c[17];
    char s_d95824aa[14];
    char s_639f529e[20];
    char s_4927597c[17];
    char s_77b74366[16];
+   char s_ddf679b9[9];
    char s_10342503[8];
    char s_d31f6d88[11];
    char s_f03e9c42[17];
@@ -1040,6 +1043,7 @@ static const struct
    "Mode Eksklusif WASAPI",
    "Format Apung WASAPI",
    "Panjang Dapar Bersama WASAPI",
+   "Otomatis",
    "Konfirmasi",
    "Berhenti",
    "Gulir ke Bawah",
@@ -1138,11 +1142,13 @@ static const struct
    "Dijeda",
    "Sedang Main",
    "Informasi Cakram",
+   "Suara",
    "Muat Cakram Baru",
    "Indeks Cakram",
    "Pengendalian Cakram",
    "Keluarkan Cakram",
    "Sisipkan Cakram",
+   "Keluaran",
    "Unduhan",
    "Unduh Core",
    "Pengunduh Konten",
@@ -2006,7 +2012,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26809u
+      (sizeof(msg_hash_id_blob) == (26833u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2168,6 +2174,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
@@ -2266,11 +2273,13 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

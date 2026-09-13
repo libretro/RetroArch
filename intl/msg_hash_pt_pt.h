@@ -100,7 +100,6 @@ static const struct
    char s_2d9d0a50[265];
    char s_93805cc8_0[500];
    char s_93805cc8_1[99];
-   char s_b495662b[130];
    char s_9953f4e2[266];
    char s_de76d2dc[35];
    char s_929e8e7a[22];
@@ -140,6 +139,7 @@ static const struct
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
    char s_04b30c51[29];
+   char s_e2eedfe1[12];
    char s_e66b1cb9[53];
    char s_1bf49fce[52];
    char s_11e34db0[36];
@@ -254,10 +254,12 @@ static const struct
    char s_b18effee[15];
    char s_15f24ff4[8];
    char s_5d29b870[23];
+   char s_6996339b[7];
    char s_d95824aa[17];
    char s_639f529e[18];
    char s_4927597c[13];
    char s_77b74366[26];
+   char s_ddf679b9[7];
    char s_10342503[16];
    char s_d31f6d88[21];
    char s_f03e9c42[26];
@@ -1533,8 +1535,6 @@ static const struct
    "ncia de fotog",
    "ramas exata do conte\303\272do. Deixar o VRR do sistema ligado \303\251 aceit\303\241vel, mas n"
    "\303\243o esta defini\303\247\303\243o.",
-   "Use um driver de v\303\255deo thread. Usar isto pode melhorar o desempenho a custo de lat\303"
-   "\252ncia poss\303\255vel e mais travamentos de v\303\255deo.",
    "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do. Esta"
    " op\303\247\303\243o \303\251 o equivalente a for\303\247ar a velocidade x1, permitindo ainda o "
    "avan\303\247o r\303\241pido. N\303\243o h\303\241 desvio da taxa de atualiza\303\247\303\243o so"
@@ -1577,6 +1577,7 @@ static const struct
    "Sincronizar som",
    "Sincronizar som",
    "N\303\255vel de volume de som (dB)",
+   "Autom\303\241tico",
    "Carregar ficheiros de substitui\303\247\303\243o automaticamente",
    "Carregar os ficheiros de mapeamento automaticamente",
    "Carregar os shaders automaticamente",
@@ -1691,10 +1692,12 @@ static const struct
    "Enable Discord",
    "Pausado",
    "Informa\303\247\303\265es do Disco",
+   "\303\201udio",
    "\303\215ndice do disco",
    "Controlo de disco",
    "Ejetar Disco",
    "Adicionar imagem de disco",
+   "Sa\303\255da",
    "Transfer\303\252ncias",
    "Transfira um n\303\272cleo",
    "Transferidor de conte\303\272do",
@@ -2983,7 +2986,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54849u
+      (sizeof(msg_hash_pt_pt_blob) == (54745u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3168,7 +3171,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
@@ -3208,6 +3210,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -3322,10 +3325,12 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

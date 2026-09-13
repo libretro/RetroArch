@@ -201,7 +201,6 @@ static const struct
    char s_9834febe_1[4];
    char s_93805cc8_0[500];
    char s_93805cc8_1[58];
-   char s_b495662b[140];
    char s_9953f4e2[273];
    char s_79e212bd[5];
    char s_6342700c[7];
@@ -250,6 +249,7 @@ static const struct
    char s_35a1323d[14];
    char s_f72667c9[15];
    char s_adce4374[15];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
@@ -591,11 +591,14 @@ static const struct
    char s_15f24ff4[12];
    char s_ec7e8026[15];
    char s_5d29b870[18];
+   char s_6996339b[5];
    char s_08e9410c[20];
    char s_d95824aa[23];
    char s_639f529e[18];
    char s_4927597c[14];
    char s_77b74366[13];
+   char s_ab49119c[19];
+   char s_ddf679b9[8];
    char s_3b7e9d77[10];
    char s_10342503[19];
    char s_d31f6d88[17];
@@ -4237,9 +4240,6 @@ static const struct
    "\231esn\303\251 sn\303\255mkov\303\251 frekvence obsahu. Ponech\303\241n\303\255 zapnut\303\251h"
    "o ",
    "syst\303\251mov\303\251ho VRR je v po\305\231\303\241dku, jen ne toto nastaven\303\255.",
-   "Pou\305\276ijte ovlada\304\215 videa se z\303\241vitem. Jeho pou\305\276it\303\255 m\305\257\305"
-   "\276e zv\303\275\305\241it v\303\275kon za cenu mo\305\276n\303\251ho zpo\305\276d\304\233n\303"
-   "\255 a v\304\233t\305\241\303\255ho zadrh\303\241v\303\241n\303\255 videa.",
    "Synchronizace s p\305\231esn\303\275m sn\303\255mkov\303\275m kmito\304\215tem obsahu. Tato mo"
    "\305\276nost je ekvivalentem vynucen\303\255 rychlosti x1 a z\303\241rove\305\210 umo\305\276"
    "\305\210uje rychl\303\251 p\305\231ev\303\255jen\303\255 vp\305\231ed. \305\275\303\241dn\303"
@@ -4292,6 +4292,7 @@ static const struct
    "Re\305\276im \305\231e\304\215i",
    "C\303\255lov\303\275 jazyk",
    "AI slu\305\276ba URL",
+   "V\305\276dy",
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znovu na\304\215\303\255st j\303\241dro p\305\231i spu\305\241t\304\233n\303\255 obs"
    "ahu",
@@ -4638,11 +4639,14 @@ static const struct
    "Pozastaveno",
    "P\305\231ehr\303\241v\303\241 se",
    "Informace o disku",
+   "Zvuk",
    "Na\304\215\303\255st nov\303\275 disk",
    "Aktu\303\241ln\303\255 index disku",
    "Ovl\303\241d\303\241n\303\255 disku",
    "Vysunout disk",
    "Vlo\305\276it disk",
+   "Nezpracovan\303\241 Data",
+   "V\303\275stup",
    "V\303\275choz\303\255",
    "Sta\305\276en\303\251 polo\305\276ky",
    "St\303\241hnout j\303\241dro",
@@ -8805,7 +8809,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (163078u
+      (sizeof(msg_hash_cs_blob) == (162976u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9356,7 +9360,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9405,6 +9408,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9746,11 +9750,14 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

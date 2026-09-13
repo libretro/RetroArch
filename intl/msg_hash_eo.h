@@ -207,7 +207,6 @@ static const struct
    char s_9834febe[440];
    char s_93805cc8_0[500];
    char s_93805cc8_1[10];
-   char s_b495662b[134];
    char s_9953f4e2[236];
    char s_de76d2dc[24];
    char s_79e212bd[6];
@@ -258,6 +257,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[10];
    char s_adce4374[13];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[42];
 #endif
@@ -283,6 +283,7 @@ static const struct
    char s_c82d0aee[11];
    char s_e2062515[34];
    char s_ad791974[10];
+   char s_fcd64038[9];
    char s_b271ae95[21];
    char s_fb84857a[6];
    char s_3943c7ae[31];
@@ -302,6 +303,7 @@ static const struct
    char s_e5aeacf9[30];
    char s_24976a5b[29];
    char s_5209cc72[41];
+   char s_e2eedfe1[10];
    char s_9f1f3534[57];
    char s_e66b1cb9[40];
    char s_1bf49fce[38];
@@ -637,11 +639,15 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[8];
    char s_5d29b870[16];
+   char s_6996339b[5];
    char s_08e9410c[20];
    char s_d95824aa[25];
    char s_639f529e[14];
    char s_4927597c[15];
    char s_77b74366[14];
+   char s_690efede[5];
+   char s_ab49119c[6];
+   char s_ddf679b9[6];
    char s_3b7e9d77[10];
    char s_10342503[12];
    char s_d31f6d88[15];
@@ -4550,8 +4556,6 @@ static const struct
    "era prokrasto a\305\255 sinkronigi al \304\235usta filmerofteco de enhavo. Lasi la VRR de sistem"
    "o estas bone, sed ne estas uzebla kun \304\211i ti",
    "u agordo.",
-   "Uzi pelilon de fadenigita video. Uzi \304\211i tio povas plibonigi rendimenton, eble kontra\305"
-   "\255 respondotempo kaj pli videa \"mikrobalbutado\".",
    "Sinkronigi la filmer-oftecon la\305\255 la enhavo. \304\210i tiu opcio egalas al devigi rapidon "
    "de \303\2271 dum ankora\305\255 permesante rapidpluigon. Ne estos deklini\304\235oj el la ofteco"
    " de aktualigo postulata de la kerno, nek dinamika rego de ofteco de sono.",
@@ -4604,6 +4608,7 @@ static const struct
    "Parolre\304\235imo",
    "Cellingvo",
    "AI-serva URL",
+   "\304\210iam",
 #ifndef HAVE_DYNAMIC
    "\304\210iam re\305\235argi kernon \304\211e rulante enhavon",
 #endif
@@ -4629,6 +4634,7 @@ static const struct
    "Sonmiksilo",
    "Sonmiksila gajno de la\305\255teco (dB)",
    "Silentigi",
+   "Dukanala",
    "Ofteco de eligo (Hz)",
    "Eligo",
    "Dinamika regado de sona ofteco",
@@ -4648,6 +4654,7 @@ static const struct
    "Re\304\235imo ekskluzivo por WASAPI",
    "Glitpunkta formato de WASAPI",
    "Grando de la kunhavigita bufro de WASAPI",
+   "A\305\255tomata",
    "Konservdosieroj: intervalo de a\305\255tomate konservi SaveRAM",
    "\305\234argi transpasontaj dosieroj a\305\255tomate",
    "\305\234argi reasignajn dosierojn a\305\255tomate",
@@ -4983,11 +4990,15 @@ static const struct
    "Pa\305\255zita",
    "Ludante",
    "Diskaj informoj",
+   "Sono",
    "\305\234argi novan diskon",
    "Indekso de kuranta disko",
    "Rego de disko",
    "El\304\265eti diskon",
    "Enmeti diskon",
+   "Bone",
+   "Kruda",
+   "Eligo",
    "Defa\305\255lta",
    "El\305\235uta\304\265oj",
    "El\305\235uti kernon",
@@ -9056,7 +9067,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172549u
+      (sizeof(msg_hash_eo_blob) == (172462u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9653,7 +9664,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9704,6 +9714,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9729,6 +9740,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -9748,6 +9760,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10083,11 +10096,15 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

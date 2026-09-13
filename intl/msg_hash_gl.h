@@ -207,7 +207,6 @@ static const struct
    char s_9834febe[479];
    char s_93805cc8_0[500];
    char s_93805cc8_1[82];
-   char s_b495662b[134];
    char s_9953f4e2[256];
    char s_de76d2dc[28];
    char s_79e212bd[5];
@@ -258,6 +257,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[18];
    char s_adce4374[18];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
@@ -283,6 +283,7 @@ static const struct
    char s_c82d0aee[11];
    char s_e2062515[38];
    char s_ad791974[7];
+   char s_fcd64038[9];
    char s_b271ae95[20];
    char s_fb84857a[7];
    char s_3943c7ae[35];
@@ -631,11 +632,14 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[8];
    char s_5d29b870[27];
+   char s_6996339b[4];
    char s_08e9410c[18];
    char s_d95824aa[24];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[14];
+   char s_690efede[8];
+   char s_ddf679b9[7];
    char s_3b7e9d77[12];
    char s_10342503[10];
    char s_d31f6d88[21];
@@ -4513,8 +4517,6 @@ static const struct
    "iplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combine con Intervalo de intercambio > 1, BFI, Ret"
    "raso de fotogramas ou Sincronizaci\303\263n con frecuencia de fotogramas de cont",
    "ido exacto. Deixar o sistema VRR activado est\303\241 ben, pero non esa configuraci\303\263n.",
-   "Usa un controlador de v\303\255deo enroscado. Usalo pode mellorar o rendemento polo posible cust"
-   "o da latencia e m\303\241is tartamudeo de v\303\255deo.",
    "Sincronizar coa taxa de fotogramas de contido exacto. Esta opci\303\263n \303\251 o equivalente "
    "a forzar a velocidade x1 a\303\255nda que permite un avance r\303\241pido. Sen desviaci\303\263n"
    " da frecuencia de actualizaci\303\263n do n\303\272cleo solicitada, nin control din\303\241mico "
@@ -4568,6 +4570,7 @@ static const struct
    "Modo de fala",
    "Lingua de destino",
    "URL do servizo AI",
+   "Sempre",
 #ifndef HAVE_DYNAMIC
    "Recarga sempre o n\303\272cleo ao executar contido",
 #endif
@@ -4593,6 +4596,7 @@ static const struct
    "Mesturador",
    "Ganancia de volume do mesturador (dB)",
    "Acalar",
+   "Est\303\251reo",
    "Taxa de sa\303\255da (Hz)",
    "Sa\303\255da",
    "Control din\303\241mico da taxa de audio",
@@ -4942,11 +4946,14 @@ static const struct
    "En pausa",
    "En xogo",
    "Informaci\303\263n sobre o disco",
+   "Son",
    "Cargar disco novo",
    "\303\215ndice actual do disco",
    "Control de disco",
    "Expulsar Disco",
    "Inserir disco",
+   "Dacordo",
+   "Sa\303\255da",
    "Por defecto",
    "Descargas",
    "Descargar un n\303\272cleo",
@@ -9090,7 +9097,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (193882u
+      (sizeof(msg_hash_gl_blob) == (193783u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9676,7 +9683,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9727,6 +9733,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9752,6 +9759,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -10100,11 +10108,14 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,

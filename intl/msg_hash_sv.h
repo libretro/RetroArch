@@ -78,6 +78,7 @@ static const struct
    char s_2aa9ecfe[146];
    char s_d179d08d[173];
    char s_70c7c198[334];
+   char s_bed75ef8[175];
    char s_a4d0f03f[307];
    char s_1aa5e88e[360];
    char s_5d67fad5[294];
@@ -144,6 +145,7 @@ static const struct
    char s_1382c258[220];
    char s_4caab10c[243];
    char s_03580e17[163];
+   char s_9998fdce[300];
    char s_1d269383[163];
    char s_34c6f6e4[68];
    char s_4dc69fe8[449];
@@ -203,7 +205,7 @@ static const struct
    char s_9834febe[455];
    char s_93805cc8_0[499];
    char s_93805cc8_1[12];
-   char s_b495662b[137];
+   char s_b495662b[367];
    char s_9953f4e2[236];
    char s_de76d2dc[21];
    char s_79e212bd[5];
@@ -218,6 +220,7 @@ static const struct
    char s_fc24216f[16];
    char s_728aa9b3[17];
    char s_929e8e7a[21];
+   char s_51edb70d[15];
    char s_9b914f7f[24];
    char s_4ad41e20[16];
    char s_24c106e6[10];
@@ -252,6 +255,7 @@ static const struct
    char s_35a1323d[9];
    char s_f72667c9[11];
    char s_adce4374[15];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[48];
 #endif
@@ -259,6 +263,7 @@ static const struct
    char s_d9a51d02[12];
    char s_12e77e8f[9];
    char s_98760b94[26];
+   char s_b81eb68d[21];
    char s_da068369[6];
    char s_daead8a5[5];
    char s_48c208ee[18];
@@ -266,12 +271,18 @@ static const struct
    char s_dcf2e800[5];
    char s_f4740f16[28];
    char s_d95f1db1[34];
+   char s_3c9950ad[43];
    char s_aafc147d[11];
+   char s_734f5242[44];
+   char s_55404857[8];
+   char s_f08d700c[38];
    char s_792e0069[23];
+   char s_9908b98a[23];
    char s_a9d2227f[22];
    char s_76e73138[11];
    char s_e2062515[31];
    char s_ad791974[6];
+   char s_079ba7c7[35];
    char s_b271ae95[24];
    char s_fb84857a[10];
    char s_3943c7ae[30];
@@ -280,6 +291,7 @@ static const struct
    char s_d2d4c381[22];
    char s_a95aa0fc[31];
    char s_49b0b12a[5];
+   char s_532d60d5[41];
    char s_13d32d54[31];
    char s_91e41658[19];
    char s_30375dfa[28];
@@ -287,9 +299,12 @@ static const struct
    char s_8c7495e3[20];
    char s_ad7c73f6[15];
    char s_30acd6fb[15];
+   char s_35dcde4f[17];
+   char s_ce7da552[28];
    char s_04b30c51[18];
    char s_e5aeacf9[23];
    char s_24976a5b[20];
+   char s_59512220[50];
    char s_5209cc72[27];
    char s_9f1f3534[44];
    char s_e66b1cb9[42];
@@ -583,6 +598,7 @@ static const struct
    char s_dd6afca3[21];
    char s_4bcbcc14[30];
    char s_e97bb565[20];
+   char s_47e8dc21[37];
    char s_da7a38eb[23];
 #ifdef _3DS
    char s_9db0c321[25];
@@ -593,7 +609,26 @@ static const struct
    char s_f0ce97f7[17];
    char s_704e200c[8];
    char s_a82728ec[17];
+   char s_2fab99c4[58];
+   char s_cce25e3a[55];
    char s_7ca0c97c[32];
+   char s_a85293bc[38];
+   char s_e05e1cdf[29];
+   char s_fb4bba8f[43];
+   char s_6e8d7d8d[39];
+   char s_b3ffd267[51];
+   char s_ab72ef00[37];
+   char s_b65fb6ee[48];
+   char s_ed8d3608[21];
+   char s_95e923ca[47];
+   char s_c36b0d98[46];
+   char s_cbaa86a1[38];
+   char s_00602cda[33];
+   char s_ac5d5951[28];
+   char s_ce501285[30];
+   char s_3d9f9d8c[30];
+   char s_62302004[35];
+   char s_62302005[35];
    char s_328dfd67[17];
    char s_6831e4b8[18];
    char s_b48bf607[12];
@@ -607,11 +642,56 @@ static const struct
    char s_15f24ff4[7];
    char s_ec7e8026[7];
    char s_5d29b870[16];
+   char s_3cc9b420[16];
+   char s_bdea22f3[20];
+   char s_54250975[16];
+   char s_5fb85af7[10];
+   char s_5fbcf86a[10];
+   char s_575c05fd[16];
+   char s_6996339b[5];
+   char s_9104dbe7[9];
+   char s_b4e9520b[26];
+   char s_12bd74ce[13];
+   char s_12c0a864[20];
    char s_08e9410c[17];
    char s_d95824aa[19];
    char s_639f529e[14];
    char s_4927597c[14];
    char s_77b74366[14];
+   char s_5266be65[14];
+   char s_8aeea24b[9];
+   char s_a18bec42[13];
+   char s_bf07df5b[15];
+   char s_b6df3202[12];
+   char s_bf5d5d76[15];
+   char s_0ec02c87[21];
+   char s_c07d4ce0[16];
+   char s_146397b0[11];
+   char s_c8d6f855[28];
+   char s_fda5cd4a[18];
+   char s_8e5cb774[29];
+   char s_d3deb2af[16];
+   char s_2821fa51[11];
+   char s_a10cbbd0[13];
+   char s_a1381a82[13];
+   char s_f3a18a9f[12];
+   char s_14691293[16];
+   char s_cab4e5d1[12];
+   char s_f3b9b113[11];
+   char s_b6d851f0[29];
+   char s_94ab8f8c[19];
+   char s_deed0812[12];
+   char s_dfa3c8c3[5];
+   char s_52dea05d[25];
+   char s_7ec63ffc[50];
+   char s_7f004a36[124];
+   char s_a3825f18[13];
+   char s_ef2d0a03[23];
+   char s_ad17a194[12];
+   char s_ddf679b9[10];
+   char s_7137e7c2[21];
+   char s_f9fe3b9c[12];
+   char s_e62892df[18];
    char s_3b7e9d77[9];
    char s_10342503[12];
    char s_d31f6d88[21];
@@ -686,6 +766,7 @@ static const struct
    char s_cb7ae477[52];
    char s_5333adbc[22];
    char s_a46a4178[22];
+   char s_0ef6cd3a[51];
    char s_1c0f54f0[24];
    char s_97c02a5a[18];
    char s_998d1a40[29];
@@ -781,6 +862,7 @@ static const struct
    char s_56e1b336[19];
    char s_313d15c0[9];
    char s_e9f0dd82[41];
+   char s_0bebb490[15];
    char s_72765a06[15];
    char s_72765a07[15];
    char s_72765a08[15];
@@ -851,6 +933,7 @@ static const struct
    char s_75408168[20];
    char s_8c477d6f[24];
    char s_44b4bf9f[24];
+   char s_6f4cf03a[31];
    char s_652788cc[10];
    char s_0cc981b9[10];
    char s_6b84e5e6[64];
@@ -913,6 +996,9 @@ static const struct
    char s_d7c1d887[20];
    char s_8c49943c[17];
    char s_d2c6b214[27];
+#ifdef HAVE_SDL3
+   char s_ba511c01[26];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[26];
 #endif
@@ -948,6 +1034,7 @@ static const struct
    char s_4e2f19db[22];
    char s_9e66791a[13];
    char s_f3076af9[4];
+   char s_168d155d[23];
    char s_c64d260f[10];
 #ifdef HAVE_LAKKA_SWITCH
    char s_becdc648[32];
@@ -1090,6 +1177,7 @@ static const struct
    char s_d05c8ee3[22];
    char s_13bce77f[19];
    char s_1b2ee6c4[32];
+   char s_81589fd5[22];
    char s_26e9cde7[38];
    char s_b539ec6c[16];
    char s_f89e1cbc[58];
@@ -1128,6 +1216,7 @@ static const struct
    char s_b4c3612a[27];
    char s_f638f238[17];
    char s_f3358a59[22];
+   char s_f8098721[53];
    char s_0d7d9688[25];
    char s_b00815b8[9];
    char s_1ef8917a[20];
@@ -1137,6 +1226,7 @@ static const struct
    char s_d3213ff3[23];
    char s_ac60056b[14];
    char s_1ad09b45[24];
+   char s_774e2332[35];
    char s_87064238[37];
    char s_2a273dd7[15];
    char s_5e5fc0ee[19];
@@ -1146,6 +1236,7 @@ static const struct
    char s_1193e37b[44];
    char s_729a38da[26];
    char s_4ca32b24[14];
+   char s_b51fb85c[26];
    char s_9b2a97d9[15];
    char s_94ce603f[33];
    char s_0c1e1a65[39];
@@ -1389,6 +1480,7 @@ static const struct
    char s_012938fb[19];
    char s_a747cdc9[48];
    char s_2f169651[21];
+   char s_73674a86[22];
    char s_705eee28[37];
    char s_62af62ac[32];
    char s_12b25a4b[47];
@@ -1769,6 +1861,7 @@ static const struct
    char s_8dec52be[40];
    char s_8fa632ab[12];
    char s_7614d29f[48];
+   char s_827ceb62[40];
    char s_b191aa47[42];
    char s_71fe510f[41];
    char s_7201eede[39];
@@ -1778,6 +1871,7 @@ static const struct
    char s_53b632e1[59];
    char s_f246e141[34];
    char s_dff02a9f[24];
+   char s_5b997f85[19];
    char s_87ee250e[30];
    char s_91e11405[47];
    char s_04681a15[36];
@@ -1870,6 +1964,9 @@ static const struct
    char s_8d5f85ee[20];
    char s_9b023eee[37];
    char s_ccae82ba[14];
+#endif
+   char s_35808dba[34];
+#ifdef HAVE_SMBCLIENT
    char s_ad6e88de[11];
    char s_c7bc8298[33];
    char s_e63b035a[19];
@@ -1906,7 +2003,9 @@ static const struct
    char s_b24d8753[13];
    char s_d748f469[32];
    char s_9f006f5c[23];
+   char s_773482e7[11];
    char s_7fec5ca7[10];
+   char s_f05bb3b5[10];
    char s_9374b989[20];
    char s_7943e750[26];
    char s_cec8f66d[27];
@@ -1946,6 +2045,7 @@ static const struct
    char s_d9b00fbd[28];
    char s_9c6ed9ca[14];
    char s_68664e16[19];
+   char s_9ad2e88b[26];
    char s_d4aabe7f[21];
    char s_4674fab3[11];
    char s_904219cb[21];
@@ -1987,6 +2087,7 @@ static const struct
    char s_f808254b[29];
    char s_77e3256e[30];
    char s_eea0ed20[16];
+   char s_a2cb8534[36];
    char s_7f75b005[33];
    char s_c7e66e0a[33];
    char s_48da4695[15];
@@ -2070,13 +2171,17 @@ static const struct
    char s_6083fff7[22];
    char s_44e1c38f[29];
    char s_57047267[9];
+   char s_8a600be0[36];
+   char s_6665b7fc[45];
    char s_2e6ad26e[8];
+   char s_43e9897c[42];
    char s_7fbf0860[11];
    char s_f417f6f1[18];
    char s_020e2bc5[16];
    char s_59f183c8[21];
    char s_59f183c9[21];
    char s_6b395e21[11];
+   char s_00ab7f5e[42];
    char s_71747541[10];
    char s_b45e4c28[23];
    char s_e92f8e07[24];
@@ -2086,6 +2191,7 @@ static const struct
    char s_a12ce1bf[9];
    char s_bfa23080[11];
    char s_ec326380[5];
+   char s_8a86d1de[19];
    char s_8fc1e4da[3];
    char s_14ed14d0[11];
    char s_5c87e95b[16];
@@ -2112,6 +2218,7 @@ static const struct
    char s_0e2c0fca[35];
    char s_93ac5ec8[33];
    char s_6cdf4f07[35];
+   char s_a03f132e[42];
    char s_b3d1e989[8];
    char s_50eb4c56[5];
    char s_a023adce[12];
@@ -2142,6 +2249,7 @@ static const struct
    char s_69b801ef[9];
    char s_a40653a7[25];
    char s_52e3d6ea[34];
+   char s_c992346c[33];
    char s_f5911f43[25];
    char s_55f488d2[11];
    char s_d5901b68[18];
@@ -2174,6 +2282,8 @@ static const struct
    char s_730df420[15];
    char s_bcddf275[7];
    char s_258060bf[14];
+   char s_3bbc8b05[39];
+   char s_e595f6df[36];
    char s_f90edcc2[50];
 #if defined(RARCH_MOBILE)
    char s_774121c7[66];
@@ -2206,13 +2316,18 @@ static const struct
    char s_b9e24170[26];
    char s_30140cb5[14];
    char s_25a21976[70];
+   char s_95a59dc0[11];
+   char s_24244577[14];
+   char s_39143931[13];
    char s_7f2380a0[13];
    char s_e0609921[15];
    char s_b3c7fa93[21];
    char s_f6a0db44[21];
+   char s_4eecff92[31];
    char s_0ca1128d[17];
    char s_65e6ea7c[6];
    char s_232d9d6e[6];
+   char s_7b6369fb[11];
    char s_26928c45[9];
    char s_b878faaf[11];
    char s_af483c4f[22];
@@ -2220,6 +2335,8 @@ static const struct
    char s_9ccb925f[9];
    char s_92b879ff[20];
    char s_650f496e[12];
+   char s_565fbcfe[7];
+   char s_88ddcfc3[12];
    char s_3e3caa7d[27];
    char s_8d5d41b3[10];
    char s_988f5574[12];
@@ -2261,6 +2378,7 @@ static const struct
    char s_9ca4bbd7[43];
    char s_9ca4bbd8[43];
    char s_5508c468[64];
+   char s_ed6dfafb[48];
    char s_e59c4ded[40];
    char s_5a8511ce[52];
    char s_579b5e71[39];
@@ -2275,6 +2393,9 @@ static const struct
    char s_243da114[67];
    char s_f4805a53[38];
    char s_9211eac4[38];
+   char s_55809ae5[149];
+   char s_cee838cc[167];
+   char s_31e55c92[43];
    char s_0fd668d7[176];
    char s_657b9c76[82];
    char s_703e1cd4[149];
@@ -2290,6 +2411,7 @@ static const struct
    char s_f7cc6630[20];
    char s_310ec7bd[63];
    char s_5832a2c2[104];
+   char s_6f6e337b[369];
    char s_20cc6597[104];
    char s_21b0bad3[46];
    char s_66e9521c[83];
@@ -2298,13 +2420,22 @@ static const struct
    char s_daf6d7e2[45];
    char s_042502c4[66];
    char s_90ae9a9f[90];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[31];
    char s_c9235dab[39];
+   char s_330be970_0[500];
+   char s_330be970_1[13];
+   char s_014d553a[338];
    char s_98b02857[236];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[6];
    char s_6c3c586d[216];
    char s_950e7a66[30];
    char s_ce113b1c[38];
    char s_272471c3[90];
    char s_cb649822[18];
+   char s_f0838a35_0[500];
+   char s_f0838a35_1[43];
    char s_95821d83[36];
    char s_bdeebb68[42];
    char s_f9005edc[175];
@@ -2313,11 +2444,16 @@ static const struct
    char s_8a24406f[34];
    char s_8c6b0fea[47];
    char s_5977d6d8[43];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[92];
    char s_cb67f2a4[34];
    char s_3c3598a9[47];
+   char s_3bac47bd[352];
+   char s_90e7db40[416];
    char s_4b78ee7f[77];
    char s_aed11d67[143];
    char s_dbe6e749[77];
+   char s_9e6f6ece[430];
    char s_ed8a1060[85];
    char s_822fa422[76];
    char s_a8d552a7[45];
@@ -2354,6 +2490,7 @@ static const struct
    char s_96bda3d0[50];
    char s_4f627df2[38];
    char s_af2a7718[40];
+   char s_ecebea7a[54];
    char s_4be2cc7b[34];
    char s_11577805[18];
    char s_6cc5ba39[48];
@@ -2394,6 +2531,7 @@ static const struct
    char s_6d9948ee[73];
    char s_a1358509[78];
    char s_e08d9e1a[94];
+   char s_69ad6757[179];
    char s_2e28a155[54];
    char s_40e095c6[71];
    char s_6fc5fb8e[52];
@@ -2483,6 +2621,7 @@ static const struct
    char s_c3968f26[82];
    char s_a2b65159[63];
    char s_9831f77b[170];
+   char s_dd6f37e4[60];
    char s_79b8ce4a[81];
    char s_a1a8257e[107];
    char s_282f7955[109];
@@ -2490,21 +2629,40 @@ static const struct
    char s_a68d6d11[57];
    char s_74022c02[89];
    char s_8abad013[79];
+   char s_0a53120f[414];
    char s_a39ca959[79];
    char s_16b9856e[26];
    char s_0ef5e125[16];
    char s_b714023a[37];
    char s_b0d3045a[36];
+   char s_b50332b2[65];
+   char s_5239f728[65];
+   char s_7175042a[24];
+   char s_a2c852cd[35];
+   char s_32ab82b6[57];
+   char s_d6370c78[44];
+   char s_400c0506[46];
    char s_d733484f[14];
+   char s_c9829d48[63];
+   char s_bc0e4cff[23];
+   char s_6f8f2d33[80];
+   char s_f4ef1a7a[80];
+   char s_249a55f2[81];
+   char s_249a55f3[81];
    char s_fe3fb37b[45];
+   char s_d11127dc[119];
    char s_7b51019e[37];
+   char s_ebf9affa[70];
    char s_f743a358[109];
    char s_aa6534cc[22];
    char s_51d334ea[27];
    char s_95de8c94[27];
+   char s_f43bec66[143];
+   char s_d814ec71[90];
    char s_f2a19576[62];
    char s_b2a8d230[46];
    char s_11c7fa0c[78];
+   char s_28700070[70];
    char s_3f2095b2[45];
    char s_711cd0b9[95];
    char s_4db83281[107];
@@ -2527,6 +2685,8 @@ static const struct
    char s_b462c6e5[70];
    char s_5bdf892a[44];
    char s_aa39aae6[77];
+   char s_aa771128[450];
+   char s_e531c55e[109];
    char s_deab66ee[112];
    char s_5ce79fca[178];
 #ifdef HAVE_GAME_AI
@@ -2556,6 +2716,9 @@ static const struct
    char s_5c8a1d63[84];
    char s_744c0f80[53];
    char s_2aa39081[43];
+#ifdef ANDROID
+   char s_50f43cfa[255];
+#endif
    char s_e85b309d[79];
    char s_cd94bb16[222];
    char s_a17a67e1[56];
@@ -2579,6 +2742,7 @@ static const struct
    char s_6da9b571[273];
    char s_c2827177[137];
    char s_09f2837b[282];
+   char s_85147d5c[72];
    char s_0b56ad4c[58];
    char s_c312b1ca[43];
    char s_35c689e5[151];
@@ -2637,6 +2801,7 @@ static const struct
    char s_3e62f1d6[80];
    char s_79b7fb9d[31];
    char s_503d814d[99];
+   char s_7ad5b1e8[54];
    char s_74d87c7a[34];
    char s_12adb1e7[32];
    char s_070529d4[64];
@@ -2687,6 +2852,9 @@ static const struct
    char s_dda608b5[301];
    char s_6f5a032a[52];
    char s_9530e802[110];
+#ifdef HAVE_SDL3
+   char s_5b9036af[263];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[78];
 #endif
@@ -2803,6 +2971,7 @@ static const struct
    char s_87ac0bd1[71];
    char s_236ddb2d[97];
    char s_d27e63b2[262];
+   char s_2297ba83[259];
    char s_32728f95[88];
    char s_c4eae01a[123];
    char s_bb0852aa[193];
@@ -2814,6 +2983,7 @@ static const struct
    char s_7963c9c6[74];
    char s_ee3a489b[51];
    char s_236bd8d5[52];
+   char s_87c7d8b8[140];
 #ifdef HAVE_MIST
    char s_40e907c6[50];
 #endif
@@ -2824,6 +2994,7 @@ static const struct
    char s_6435c857[48];
 #endif
 #endif
+   char s_acca011c[112];
    char s_01efec73[41];
    char s_d3fc9970[46];
    char s_740bd7c4[52];
@@ -2836,10 +3007,13 @@ static const struct
    char s_7de5d198[54];
    char s_3b573ee6[31];
    char s_dc1d6cc7[46];
+   char s_28543dcf[63];
    char s_aebcb136[126];
    char s_8b636a26[37];
    char s_8f707459[31];
+   char s_5aa622cc[201];
    char s_2b908073[258];
+   char s_64bea160[176];
    char s_97c62766[163];
    char s_6f458a85[92];
    char s_41702fdc[54];
@@ -2847,6 +3021,7 @@ static const struct
    char s_0a583569[83];
    char s_5b821b48[51];
    char s_5c6a50d2[114];
+   char s_c4d0ac0a[34];
    char s_84127a47[73];
    char s_a47f53ed[113];
    char s_cbdab193[278];
@@ -2855,7 +3030,12 @@ static const struct
    char s_70e21550[54];
    char s_f3e3ccc1[63];
    char s_0ca85937[54];
+   char s_23709d35[64];
+   char s_48b0d8fa[42];
    char s_9ce2f939[82];
+   char s_20f7870f[52];
+   char s_ed2240de[43];
+   char s_51e884d7[64];
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    char s_b40b91b9[114];
@@ -3018,9 +3198,11 @@ static const struct
    char s_70a53ed8[39];
    char s_78c7d8fd[100];
    char s_d86c49f4[111];
+   char s_c84a34ce[170];
    char s_d4095cc4[156];
    char s_49a0a568[142];
    char s_e75f4bb2[189];
+   char s_00a68235[163];
    char s_e33b9334[108];
    char s_7ff41c9a[115];
    char s_fb6c33d8[60];
@@ -3029,6 +3211,19 @@ static const struct
    char s_0e319bcf[57];
    char s_c11a10f0[136];
    char s_e8bf64a4[32];
+   char s_1e8b7442[97];
+   char s_bbc238b8[93];
+   char s_a71a2320[65];
+   char s_3a5444c9[66];
+   char s_e24628cd[115];
+   char s_5587ebcb[87];
+   char s_992f7725[57];
+   char s_d17500b1[46];
+   char s_bd5d9b57[79];
+   char s_f373722c[81];
+   char s_00544646[114];
+   char s_8594f008[104];
+   char s_72a5ea43[147];
    char s_b4bf3f71[55];
    char s_b91e9f23[44];
    char s_66664762[44];
@@ -3129,6 +3324,7 @@ static const struct
    char s_0a8d4a2c[58];
    char s_d4c47f59[127];
    char s_86d4b7cd[63];
+   char s_6fed6990[96];
    char s_b775da75[168];
    char s_5ae6337d[73];
    char s_5ae9d14c[148];
@@ -3138,6 +3334,7 @@ static const struct
    char s_98d47f8f[278];
    char s_9385fbef[45];
    char s_efb7504d[60];
+   char s_6b4a7333[355];
    char s_70d6077c[41];
    char s_31124733[193];
    char s_2d24a503[166];
@@ -3204,10 +3401,15 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
    char s_69c0e487[53];
+   char s_706ff4dc[278];
    char s_a0d1a85c[63];
+   char s_b5966528[194];
    char s_907ef7cc[36];
    char s_b0a46506[54];
+   char s_04624c88[138];
+   char s_91976dbe[60];
    char s_f6492edc[37];
+   char s_9bb85635[202];
    char s_22a05685[63];
 #endif
    char s_f3bfa8b9[81];
@@ -3248,6 +3450,7 @@ static const struct
    char s_ffd591e0[48];
    char s_a51ab538[24];
    char s_55d6cc44[39];
+   char s_5a8f7fb9[203];
    char s_f2963d2d[31];
    char s_4c592ae1[90];
    char s_52ac4fb9[109];
@@ -3258,6 +3461,8 @@ static const struct
 #ifdef HAVE_LAKKA
    char s_f77f7a41[65];
 #endif
+   char s_e7cb5685[35];
+   char s_8bb367a2[133];
    char s_2beab583[24];
    char s_a1c071eb[106];
    char s_0d9ceefa[100];
@@ -3308,6 +3513,7 @@ static const struct
    char s_135d20b8[47];
    char s_17663212[175];
    char s_e4aa2e10[49];
+   char s_b853a798[110];
    char s_d60aa85f[46];
    char s_2d09f049[25];
    char s_e670cb8f[41];
@@ -3316,10 +3522,14 @@ static const struct
    char s_fc2d67bb[149];
    char s_43946ee5[73];
    char s_5492b73d[52];
+   char s_15cad80e[410];
+   char s_01e5fbea[332];
+   char s_0653bf6a[446];
    char s_123f401f[91];
    char s_0d96ed73[44];
    char s_9f0fd076[136];
    char s_9f0fd077[135];
+   char s_c315b54c[427];
    char s_7a2050af[38];
    char s_d2859556[49];
    char s_ef13be35[56];
@@ -3327,6 +3537,7 @@ static const struct
    char s_698d5124[89];
    char s_7e43d750[203];
    char s_87ca7bc6[185];
+   char s_cfa51e8c[429];
    char s_b62c2f7e[302];
    char s_456fcbc9[387];
    char s_82fab47a[38];
@@ -3349,6 +3560,8 @@ static const struct
    char s_1eebf4f8[181];
    char s_2f2ca2b6[185];
    char s_2c9be635[133];
+   char s_c8fb9e1c[317];
+   char s_05ec12e6[217];
    char s_b5a603de[68];
    char s_d9c2db25[67];
 #ifdef HAVE_ODROIDGO2
@@ -3361,6 +3574,7 @@ static const struct
    char s_7968f59d[42];
    char s_8cee3615[148];
    char s_58c80718[291];
+   char s_894ecb9a[376];
    char s_67d549fd[43];
    char s_afac733c[37];
    char s_3aaf6bf1[126];
@@ -3388,8 +3602,13 @@ static const struct
    char s_3c679f0a[291];
    char s_5b059407[132];
    char s_36033606[181];
+   char s_d62ed5dc[354];
    char s_2e69508b[331];
    char s_7e96b5ce[48];
+   char s_3547866d_0[500];
+   char s_3547866d_1[16];
+   char s_d73ccef3[394];
+   char s_81163acd[402];
    char s_c2314d30[215];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[195];
@@ -3424,7 +3643,9 @@ static const struct
    char s_6ac06624[143];
    char s_f765b650[48];
    char s_7059a595[56];
+   char s_6d1448c0[39];
    char s_cf0b487b[86];
+   char s_840f4569[29];
    char s_c4928773[69];
    char s_4059cb1a[46];
    char s_d9bcee6b[64];
@@ -3457,6 +3678,7 @@ static const struct
    char s_25e53d33[27];
    char s_26cce51e[21];
    char s_07dd4745[18];
+   char s_72293658[104];
    char s_aaaaf898[22];
    char s_4173591b[15];
    char s_c2b63d3e[18];
@@ -3499,6 +3721,7 @@ static const struct
    char s_8db0184a[41];
    char s_08abd26f[22];
    char s_48f0233f[55];
+   char s_63ab0b54[11];
    char s_510c1140[50];
    char s_3b592d2d[14];
    char s_ec5751c3[34];
@@ -3581,6 +3804,8 @@ static const struct
    char s_5eafa434[28];
    char s_7f1e25bf[40];
    char s_ed9e4f6f[215];
+   char s_ecbaddbe[81];
+   char s_c860f446[67];
    char s_30da3845[24];
    char s_d50c6bf1[30];
    char s_64a038aa[31];
@@ -3658,6 +3883,7 @@ static const struct
    char s_55479240[50];
    char s_db6ac45f[49];
    char s_d7c90346[51];
+   char s_4312c647[29];
    char s_e4f79c50[54];
    char s_8d677b5b[66];
    char s_e68913bc[44];
@@ -3884,6 +4110,7 @@ static const struct
    char s_676d783e[62];
    char s_c9e2427f[40];
    char s_a15486f0[23];
+   char s_604cc576[68];
    char s_f38897e5[46];
    char s_7200d586[59];
    char s_7eb26812[17];
@@ -4073,6 +4300,9 @@ static const struct
    "en i rotmappen.\nOm k\303\244rnmappen \303\244r en katalog, kommer menyn att anv\303\244nda den "
    "som \303\266versta mapp. Om s\303\266kv\303\244gen till k\303\244rnmappen \303\244r en fullst"
    "\303\244ndig s\303\266kv\303\244g, b\303\266rjar den i mappen d\303\244r filen finns.",
+   "V\303\244lj en ny skiva fr\303\245n filsystemet och l\303\244gg till den i indexlistan.\nOBS: De"
+   "tta \303\244r en \303\244ldre funktion. F\303\266r titlar med flera skivor rekommenderas i st"
+   "\303\244llet M3U-spellistor.",
    "Vissa k\303\244rnor kan ha en avst\303\244ngningsfunktion. Om det h\303\244r alternativet l\303"
    "\244mnas inaktiverat, skulle valet av avst\303\244ngningsproceduren utl\303\266sa att RetroArch "
    "st\303\244ngs av.\nAtt aktivera det h\303\244r alternativet kommer att ladda en dummyk\303\244rn"
@@ -4235,6 +4465,10 @@ static const struct
    "ekunder. Ett v\303\244rde p\303\245 0 avaktiverar inspelning av kontrollpunkter.",
    "Spara alla filer (*.srm) till denna katalog. Detta inkluderar relaterade filer som .rt, .psrm, e"
    "tc... Detta kommer att \303\245sidos\303\244ttas av explicita kommandoradsval.",
+   "Sparar automatiskt ett tillst\303\245nd med ett regelbundet intervall, m\303\244tt i sekunder. D"
+   "etta \303\244r anv\303\244ndbart f\303\266r att skapa regelbundna s\303\244kerhetskopior av dina"
+   " spelframsteg, s\303\244rskilt p\303\245 enheter som kan st\303\244ngas av ov\303\244ntat p\303"
+   "\245 grund av batteriet eller andra problem. V\303\244rdet 0 inaktiverar funktionen.",
    "Spara ett tillst\303\245nd till aktuella valda platsen. Observera: sparade tillst\303\245nd \303"
    "\244r oftast inte portabla och kanske inte fungerar andra versioner av denna k\303\244rna.",
    "V\303\244lj detta f\303\266r att skanna den aktuella katalogen efter inneh\303\245ll.",
@@ -4395,8 +4629,12 @@ static const struct
    "er Sync to Exact Content Framerate. Att l\303\245ta systemets VRR vara p\303\245 \303\244r ok, m"
    "en inte den inst",
    "\303\244llningen.",
-   "Anv\303\244nd tr\303\245dad videodrivrutin. Att anv\303\244nda detta kan f\303\266rb\303\244ttra"
-   " prestandan till den m\303\266jliga kostnaden f\303\266r latens och mer videolagg.",
+   "K\303\266r videodrivrutinen i en egen tr\303\245d. Bildsk\303\244rmen beh\303\245ller sin takt n"
+   "\303\244r k\303\244rnan hackar, och k\303\244rnan k\303\266r n\303\244sta bildruta medan den f"
+   "\303\266reg\303\245ende g\303\245r genom shaderkedjan och presentationen. Med \342\200\235Tr\303"
+   "\245dad synkronisering av videovisning\342\200\235 startar k\303\244rnan s\303\245 sent som n"
+   "\303\244sta uppdatering till\303\245ter, vilket h\303\245ller latensen p\303\245 samma niv\303"
+   "\245 som bildrutef\303\266rdr\303\266jning.",
    "Synkronisera till exakt inneh\303\245llsframerate. Det h\303\244r alternativet motsvarar att tvi"
    "nga fram x1-hastighet samtidigt som snabbspolning till\303\245ts. Ingen avvikelse fr\303\245n de"
    "n beg\303\244rda uppdateringsfrekvensen, inget ljud Dynamic Rate Control.",
@@ -4413,6 +4651,7 @@ static const struct
    "< Rumble-v\303\244rde",
    "!= Rumble-v\303\244rde",
    "Aktivera hj\303\244lpmedel",
+   "Talsyntesmotor",
    "Text-till-tal-hastighet",
    "Tillg\303\244nglighet",
    "L\303\266senord",
@@ -4447,6 +4686,7 @@ static const struct
    "Tall\303\244ge",
    "M\303\245lspr\303\245k",
    "AI-tj\303\244nst URL",
+   "Alltid",
 #ifndef HAVE_DYNAMIC
    "L\303\244s alltid om k\303\244rna n\303\244r inneh\303\245ll ska k\303\266ras",
 #endif
@@ -4454,6 +4694,7 @@ static const struct
    "Programikon",
    "Resurser",
    "\303\226ppna ASIO-kontrollpanel",
+   "ASIO-utg\303\245ngskanaler",
    "Enhet",
    "Ljud",
    "DSP-insticksmodul",
@@ -4461,12 +4702,18 @@ static const struct
    "Ljud",
    "Tyst ljud vid snabbspolning",
    "Uppsnabbat ljud vid snabbspolning",
+   "Omsampla till fast heltal (rekommendation)",
    "Ljudfilter",
+   "F\303\266rhandling om ljudformat (rekommendation)",
+   "Flyttal",
+   "Virtuellt surroundljud f\303\266r h\303\266rlurar",
    "Ljudf\303\266rdr\303\266jning (ms)",
+   "Minsta ljudlatens (ms)",
    "Maximal tidsavvikelse",
    "Mixer Tyst",
    "Mixer-volymf\303\266rst\303\244rkning (dB)",
    "Tysta",
+   "H\303\266gtalarkonfiguration f\303\266r utdata",
    "Utmatningsfrekvens (Hz)",
    "Utmatning",
    "Dynamisk ljudfrekvenskontroll",
@@ -4475,6 +4722,7 @@ static const struct
    "Respektera tyst l\303\244ge",
    "Tyst ljud vid tillbakaspolning",
    "Ljud",
+   "Uppskattning av utdataenhetens hastighet",
    "Tillst\303\245nd: Inte tillg\303\244ngligt",
    "Tillst\303\245nd: Spelar",
    "Tillst\303\245nd: Spelar (slinga)",
@@ -4482,9 +4730,12 @@ static const struct
    "Tillst\303\245nd: Stoppad",
    "Synkronisering",
    "Synkronisering",
+   "Tr\303\245dad pipeline",
+   "H\303\266j ljudtr\303\245dens prioritet",
    "Volym\303\266kning (dB)",
    "WASAPI Exklusivt l\303\244ge",
    "WASAPI Float-format",
+   "F\303\266redra schemal\303\244ggning f\303\266r professionellt ljud",
    "WASAPI delad buffertl\303\244ngd",
    "Sparad fil: Intervall f\303\266r SaveRAM Autosave",
    "L\303\244s automatiskt in \303\245sidos\303\244ttningsfiler",
@@ -4778,6 +5029,7 @@ static const struct
    "CRT Superuppl\303\266sning",
    "Anpassad uppdateringsfrekvens",
    "Vertikal centrering",
+   "Skriv EDID f\303\266r CRT-f\303\266rinst\303\244llning",
    "Horisontell centrering",
 #ifdef _3DS
    "2D (pixelrutn\303\244tseffekt)",
@@ -4788,7 +5040,26 @@ static const struct
    "Databashanterare",
    "Ta bort",
    "Radera Spellista",
+   "Skrivbordsmeny: H\303\266gsta antal i rutn\303\244tet Alla spellistor",
+   "Skrivbordsmeny: H\303\266gsta antal i listan Alla spellistor",
    "Skrivbordsmeny (omstart kr\303\244vs)",
+   "Skrivbordsmeny: Zoomniv\303\245 f\303\266r ikonvy",
+   "Skrivbordsmeny: Senaste flik",
+   "Skrivbordsmeny: Kom ih\303\245g f\303\266nstergeometri",
+   "Skrivbordsmeny: Kom ih\303\245g senaste flik",
+   "Skrivbordsmeny: Bekr\303\244fta n\303\244r s\303\266kningen \303\244r klar",
+   "Skrivbordsmeny: Visa v\303\244lkomstsk\303\244rm",
+   "Skrivbordsmeny: F\303\266resl\303\245 inl\303\244st k\303\244rna f\303\266rst",
+   "Skrivbordsmeny: Tema",
+   "Skrivbordsmeny: Gr\303\244ns f\303\266r miniatyrbildscache",
+   "Skrivbordsmeny: St\303\266rsta miniatyrbildsstorlek",
+   "Skrivbordsmeny: Miniatyrbildskvalitet",
+   "Skrivbordsmeny: Miniatyrbildstyp",
+   "Skrivbordsmeny: Visningstyp",
+   "Skrivbordsmeny: F\303\266nsterh\303\266jd",
+   "Skrivbordsmeny: F\303\266nsterbredd",
+   "Skrivbordsmeny: F\303\266nsterposition X",
+   "Skrivbordsmeny: F\303\266nsterposition Y",
    "Nuvarande k\303\244rna",
    "Ingen reservation",
    "F\303\266redragen",
@@ -4802,11 +5073,57 @@ static const struct
    "Pausad",
    "Spelar",
    "Skivinformation",
+   "\303\204kta skiva: %s",
+   "Utgivningsdatum: %s",
+   "Serienummer: %s",
+   "Titel: %s",
+   "Sp\303\245r %d:",
+   "Antal sp\303\245r: %d",
+   "Ljud",
+   "L\303\244ge %d",
+   " - L\303\244ngd: %02d:%02d.%02d",
+   " - L\303\244ge: %s",
+   " - Storlek: %.1f MB",
    "L\303\244s in ny skiva",
    "Aktuellt skivindex",
    "Skivhantering",
    "Mata ut skiva",
    "S\303\244tt i skiva",
+   "Kontrollsumma",
+   "Felaktig",
+   "Kromaticitet",
+   "CTA-ljudformat",
+   "Kolorimetri",
+   "CTA-funktioner",
+   "Statisk HDR-metadata",
+   "CTA-videoformat",
+   "Tillverkad",
+   "Detaljerad tidsinst\303\244llning",
+   "DisplayID-avsnitt",
+   "Fastst\303\244lld tidsinst\303\244llning",
+   "Ut\303\266kningsblock",
+   "Funktioner",
+   "F\303\244rgomf\303\245ng",
+   "Videoing\303\245ng",
+   "Tillverkare",
+   "Bildsk\303\244rmsnamn",
+   "f\303\266redragen",
+   "Produktkod",
+   "Gr\303\244nsv\303\244rden f\303\266r intervall",
+   "Bildsk\303\244rmsstorlek",
+   "Serienummer",
+   "L\303\244s",
+   "Standardtidsinst\303\244llning",
+   "Endast en del av EDID-informationen kunde l\303\244sas.",
+   "En inbyggd bildsk\303\244rm i en b\303\244rbar eller allt-i-ett-dator har ingen EDID. En extern "
+   "bildsk\303\244rm som ansluts via DDC har det.",
+   "EDID-version",
+   "Bildsk\303\244rmsinformation",
+   "Orientering",
+   "Utmatning",
+   "Uppdateringsfrekvens",
+   "Uppl\303\266sning",
+   "Bildsk\303\244rmsserver",
    "Standard",
    "H\303\244mtningar",
    "H\303\244mta ner en k\303\244rna",
@@ -4881,6 +5198,7 @@ static const struct
    "Bildfrekvensens uppdateringsintervall (i bildrutor)",
    "Visa bildruter\303\244knare",
    "Bildfrekvensstrypning",
+   "\303\205terst\303\244ll automatiskt efter st\303\266rande h\303\244ndelser",
    "R\303\244knare f\303\266r bildtider",
    "Frontend-r\303\244knare",
    "Loggningsniv\303\245 f\303\266r Frontend",
@@ -4976,6 +5294,7 @@ static const struct
    "Y-knapp (V\303\244nstra)",
    "Knapp %s",
    "Mappningstyp f\303\266r tangentbordskontroller",
+   "Tangentbord %s",
    "Pistol knapp A",
    "Pistol knapp B",
    "Pistol knapp C",
@@ -5046,6 +5365,7 @@ static const struct
    "Str\303\266mning (v\303\244xla)",
    "Turboavfyrning (v\303\244xla)",
    "Skrivbordsmeny (v\303\244xla)",
+   "Till\303\244mpa videofilter (v\303\244xla)",
    "Volym ner",
    "Volym upp",
    "Synkronisera till exakt bildhastighet f\303\266r inneh\303\245llet (P\303\245/Av)",
@@ -5108,6 +5428,9 @@ static const struct
    "RetroPad-bindningar",
    "Vibrationsstyrka",
    "Spara spelkontrolls-profil",
+#ifdef HAVE_SDL3
+   "Anv\303\244nd Systemtangentbord",
+#endif
 #ifdef ANDROID
    "V\303\244lj fysiskt tangentbord",
 #endif
@@ -5143,6 +5466,7 @@ static const struct
    "Spelkontrollsprofiler",
    "Spelkontroll",
    "Tgb",
+   "Str\303\266mnyckel f\303\266r Kick",
    "Tj\303\244nster",
 #ifdef HAVE_LAKKA_SWITCH
    "Alternativ f\303\266r Nintendo Switch",
@@ -5285,6 +5609,7 @@ static const struct
    "V\303\244xla miniatyrbilder",
    "Skifta ikoner/text",
    "Miniatyrbildsf\303\266rdr\303\266jning (ms)",
+   "Dithra miniatyrbilder",
    "Nedskalningsmetod f\303\266r miniatyrbilder",
    "Genomskinlighet",
    "\303\205teruppta inneh\303\245llet efter att anv\303\244nt Spara tillst\303\245nd",
@@ -5323,6 +5648,7 @@ static const struct
    "Visa 'Starta om RetroArch'",
    "Visa 'St\303\244ng av'",
    "Visa Meny-undertitlar",
+   "Visa menyunderrubriker endast f\303\266r aktuell markering",
    "Spellistor med ett klick",
    "Menyljud",
    "Aktivera f\303\266r 'BGM'",
@@ -5332,6 +5658,7 @@ static const struct
    "Aktivera f\303\266r 'Scroll'",
    "Uppstartssida",
    "Miniatyrbildsbakgrunder",
+   "Ljud f\303\266r animerade miniatyrbilder",
    "Miniatyrbilders uppskalningstr\303\266skel",
    "Mjuk Rull-text",
    "Rull-texthastighet",
@@ -5341,6 +5668,7 @@ static const struct
    "Anv\303\244nd f\303\266redraget f\303\244rgtema f\303\266r systemet",
    "Synlighet f\303\266r menyobjekt",
    "Bakgrundsbild",
+   "Bakgrundsbildens opacitet",
    "Grafikwidgetar",
    "Skala grafikwidgetar automatiskt",
    "\303\205sidos\303\244tt skalning av grafikwidgetar",
@@ -5586,6 +5914,7 @@ static const struct
    "Miniatyrskalfaktor",
    "Korta ner namn f\303\266r spellistor (omstart kr\303\244vs)",
    "Anv\303\244nd PAL60-l\303\244get",
+   "<\303\226verordnad katalog>",
    "Pausa inneh\303\245ll n\303\244r menyn \303\244r aktiv",
    "Pausa inneh\303\245ll vid inaktivitet",
    "Pausa inneh\303\245ll vid fr\303\245nkoppling av styrenhet",
@@ -5973,6 +6302,7 @@ static const struct
    "Spara fil: Skriv till inneh\303\245llskatalog",
    "Spara filer",
    "Sparat tillst\303\245nd: Skriv till inneh\303\245llskatalog",
+   "Spara tillst\303\245nd: Automatiskt intervall",
    "Sparat tillst\303\245nd: \303\226ka index automatiskt",
    "Sparat tillst\303\245nd: Automatisk inl\303\244sning",
    "Sparat tillst\303\245nd: Automatisk sparning",
@@ -5982,6 +6312,7 @@ static const struct
    "Sparat tillst\303\245nd: Maximal automatisk \303\266kning att beh\303\245lla",
    "Sparat tillst\303\245nd: Miniatyrbilder",
    "Spara konfiguration som",
+   "Komprimeringskodek",
    "Spara nuvarande konfiguration",
    "Spara \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog",
    "Spara \303\245sidos\303\244ttningar f\303\266r k\303\244rna",
@@ -6074,6 +6405,9 @@ static const struct
    "Aktivera SMB-klient",
    "Maximalt antal anslutningar f\303\266r SMB",
    "SMB-l\303\266senord",
+#endif
+   "KRB om tillg\303\244ngligt, annars NTLM",
+#ifdef HAVE_SMBCLIENT
    "SMB-server",
    "N\303\244tverksinst\303\244llningar f\303\266r SMB",
    "SMB-utdelningsnamn",
@@ -6110,7 +6444,9 @@ static const struct
    "Stream Titel",
    "Anpassad streamingkonfiguration",
    "Aktuellt Inneh\303\245ll: %s",
+   "L\303\244s in %s",
    "Delsystem",
+   "Starta %s",
    "F\303\266reslagna k\303\244rnor",
    "St\303\244ng av sk\303\244rmsl\303\244ckare",
    "L\303\245ngvarigt prestandal\303\244ge",
@@ -6150,6 +6486,7 @@ static const struct
    "Drivrutin f\303\266r videokontext",
    "Ta sk\303\244rmdump",
    "Tr\303\245dade uppgifter",
+   "F\303\266redra prestandak\303\244rnor",
    "Prim\303\244r miniatyrbild",
    "Miniatyrer",
    "Prim\303\244r miniatyrbild",
@@ -6191,6 +6528,7 @@ static const struct
    "Twin-Stick-analoga (tvingad)",
    "Str\303\266mningsnyckel f\303\266r Twitch",
    "Stream UDP Port",
+   "Kompletterande anv\303\244ndargr\303\244nssnitt",
    "Starta UI Companion vid uppstart",
    "\303\226ppna skrivbordsmenyn vid start",
    "Visa menyf\303\244lt",
@@ -6276,13 +6614,17 @@ static const struct
    "Bildrutef\303\266rdr\303\266jning",
    "Automatisk bildf\303\266rdr\303\266jning",
    "effektiv",
+   "M\303\244t bildrutetid fr\303\245n bildsk\303\244rmen",
+   "M\303\244t bildrutetid endast i stabilt tillst\303\245nd",
    "Tvingad",
+   "F\303\266rhandling om exklusivt helsk\303\244rmsl\303\244ge",
    "Avslappnad",
    "Helsk\303\244rmsvisning",
    "Helsk\303\244rmsl\303\244ge",
    "Bredd f\303\266r helsk\303\244rm",
    "H\303\266jd f\303\266r helsk\303\244rm",
    "Videogamma",
+   "Direkt st\303\266d f\303\266r SPIR-V (rekommendation)",
    "GPU-index",
    "Anv\303\244nd GPU-inspelning",
    "Sk\303\244rmdump: Anv\303\244nd GPU",
@@ -6292,6 +6634,7 @@ static const struct
    "Noggrann",
    "Expanderad",
    "Bred",
+   "H\303\266gsta ljusstyrka",
    "Av",
    "Ljusstyrka",
    "Skanningslinjer",
@@ -6318,6 +6661,7 @@ static const struct
    "\303\226verskanningskorrigering (Botten)",
    "\303\226verskanningskorrigering (Topp)",
    "Anv\303\244nd inspelning med efterfilter",
+   "Styr upprepningstakten fr\303\245n bildsk\303\244rmen",
    "Anpassa",
    "H\303\266g",
    "F\303\266rlustfri",
@@ -6348,6 +6692,7 @@ static const struct
    "Skalning",
    "Skannlinjesynkronisering",
    "Rullande skanningslinjesimulering",
+   "Byte av bildsk\303\244rmsl\303\244ge med SDL",
    "Autoshader-f\303\266rdr\303\266jning",
    "Shaderpass",
    "Shader parametrar",
@@ -6380,6 +6725,8 @@ static const struct
    "Synkronisering",
    "Videor",
    "Tr\303\245dad video",
+   "Synkronisering av tr\303\245dad videovisning",
+   "Upprepa bildrutor med tr\303\245dad video",
    "Anv\303\244nd Metal-argumentbuffertar (kr\303\244ver omstart)",
 #if defined(RARCH_MOBILE)
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X (st\303\245ende orientering)",
@@ -6412,13 +6759,18 @@ static const struct
    "Visa f\303\266nsterdekorationer",
    "F\303\266nsterbredd",
    "Synkronisera exakt till inneh\303\245llets bildhastighet (G-Sync, FreeSync)",
+   "Ljudlatens",
+   "Klientbuffert",
+   "Enhetsperiod",
    "Koppla fr\303\245n",
    "Aktivera Wi-Fi",
    "Anslut till n\303\244tverk",
    "Anslut till n\303\244tverk",
+   "Opacitetsfaktor f\303\266r f\303\244rgtema",
    "Aktuell menyikon",
    "Ingen",
    "Titel",
+   "Postikoner",
    "Typsnitt",
    "Automatisk",
    "Automatisk inverterad",
@@ -6426,6 +6778,8 @@ static const struct
    "Monokrom",
    "Monokrom inverterad",
    "Systematisk",
+   "Konsol",
+   "Handh\303\245llen",
    "Aktivera inst\303\244llningsflik",
    "F\303\244rgtema",
    "\303\204ppelgr\303\266n",
@@ -6467,6 +6821,7 @@ static const struct
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, X",
    "Ankarf\303\266rskjutning f\303\266r visningsomr\303\245de, Y",
    "Aktivera text-till-tal f\303\266r att underl\303\244tta navigering i menyn.",
+   "Talsyntesmotorn som ber\303\244ttarr\303\266sten anv\303\244nder.",
    "Hastigheten f\303\266r text-till-tal-r\303\266sten.",
    "\303\204ndra inst\303\244llningar f\303\266r hj\303\244lpmedelsber\303\244ttaren.",
    "Hantera aktuella konfigurerade konton.",
@@ -6491,6 +6846,13 @@ static const struct
    "Skapa eller uppdatera spellistor genom att s\303\266ka igenom inneh\303\245ll.",
    "L\303\244gg till Inneh\303\245llet i 'Favoriter'.",
    "L\303\244gg till Inneh\303\245llet i 'Favoriter'.",
+   "L\303\244gg till det h\303\244r ljudsp\303\245ret i en tillg\303\244nglig plats f\303\266r ljuds"
+   "tr\303\266m. Om det f\303\266r n\303\244rvarande inte finns n\303\245gon tillg\303\244nglig plat"
+   "s ignoreras det.",
+   "L\303\244gg till det h\303\244r ljudsp\303\245ret i en tillg\303\244nglig plats f\303\266r ljuds"
+   "tr\303\266m och spela upp det. Om det f\303\266r n\303\244rvarande inte finns n\303\245gon tillg"
+   "\303\244nglig plats ignoreras det.",
+   "L\303\244gg till den h\303\244r posten i en spellista.",
    "V\303\244lj vilken \303\266vers\303\244ttningsbak\303\244nde att anv\303\244nda. HTTP anv\303"
    "\244nder en fj\303\244rrserver p\303\245 den konfigurerade webbadressen. Apple anv\303\244nder O"
    "CR-enhet och \303\266vers\303\244ttning (macOS/iOS).",
@@ -6521,6 +6883,12 @@ static const struct
    "Menyresurser som anv\303\244nds av RetroArch lagras i denna katalog.",
    "\303\226ppna ASIO-drivrutinens kontrollpanel f\303\266r att konfigurera enhetsdirigering och buf"
    "fertinst\303\244llningar.",
+   "Vilka tv\303\245 utg\303\245ngar p\303\245 ljudenheten som RetroArch spelar upp genom. En ASIO-e"
+   "nhet listar sina utg\303\245ngar i numrerade par; p\303\245 en enhet med fler \303\244n tv\303"
+   "\245 utg\303\245ngar \303\244r det f\303\266rsta paret inte alltid det som h\303\266gtalarna ell"
+   "er h\303\266rlurarna anv\303\244nder. V\303\244lj paret som motsvarar uttagen du lyssnar via, en"
+   "ligt enhetens ben\303\244mning. Enheter med tv\303\245 utg\303\245ngar har endast 1\342\200\2232"
+   ".",
    "\303\205sidos\303\244tt den f\303\266rvalda ljudenheten som ljuddrivrutinen anv\303\244nder. Det"
    "ta \303\244r beroende av drivrutinen.",
    "Ljuddrivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
@@ -6531,11 +6899,40 @@ static const struct
    "St\303\244ng av ljudet automatiskt n\303\244r snabbspolning fram\303\245t anv\303\244nds.",
    "Snabba upp ljudet vid snabbspolning fram\303\245t. F\303\266rhindrar knastrande men \303\244ndra"
    "r tonh\303\266jd.",
+   "Anv\303\244nd omsamplaren med fast punkt (heltal) i st\303\244llet f\303\266r flyttalsvarianten "
+   "n\303\244r en k\303\244rna ger ut 16-bitarsljud. Det ger bitidentisk utdata p\303\245 alla platt"
+   "formar, vilket g\303\266r ljudet reproducerbart mellan k\303\266rningar och system. Funktionen "
+   "\303\244r avsedd f\303\266r reproducerbarhet, inte hastighet: d\303\244r CPU:n har en vektor-FPU"
+   " \303\244r heltalsomsamplaren l\303\245ngsammare, eftersom endast flyttalsvarianten \303\244r ve"
+   "ktoriserad. Har ingen effekt p\303\245 k\303\244rnor som ger ut flyttalsljud; \303\245terg\303"
+   "\245r till flyttal medan ett inkomp",
+   "atibelt DSP-filter \303\244r aktivt.",
    "DSP-ljudfilter lagras i denna katalog.",
+   "Samplingsformat som ljuddrivrutinen beg\303\244r fr\303\245n utdataenheten. \342\200\235Flyttal"
+   "\342\200\235 beg\303\244r 32-bitars flyttal och \342\200\235Int16\342\200\235 16-bitars heltal. "
+   "P\303\245verkar endast drivrutiner som kan f\303\266rhandla om formatet (WASAPI, DirectSound, XA"
+   "udio2, ALSA och SDL2); andra anv\303\244nder sitt fasta format. Detta \303\244r endast en rekomm"
+   "endation: en drivrutin \303\245terg\303\245r om enheten avvisar det beg\303\244rda formatet. "
+   "\342\200\235Int16\342\200\235 kan kombineras med rekommendationen \342\200\235Omsampla till fast"
+   " heltal\342\200\235 f\303\266r att beh\303\245lla hela ljudkedjan i helt",
+   "alsdom\303\244nen.",
+   "P\303\245 en stereoenhet breddas mixen till virtuell 5.1 och \303\245terges f\303\266r tv\303"
+   "\245 \303\266ron s\303\245 som ett huvud skulle h\303\266ra h\303\266gtalarna: bakre paret bakom"
+   " lyssnaren och en mild \303\266verh\303\266rning mellan de fr\303\244mre kanalerna. Avsett f\303"
+   "\266r h\303\266rlurar; p\303\245 h\303\266gtalare f\303\266rsn\303\244var det endast stereon. Ha"
+   "r ingen effekt n\303\244r enheten \303\266ppnas med en bredare layout.",
    "Maximal ljudf\303\266rdr\303\266jning i millisekunder. Drivrutinen str\303\244var efter att h"
    "\303\245lla den faktiska latensen p\303\245 50 % av detta v\303\244rde. Det kan h\303\244nda att"
    " v\303\244rdet inte uppfylls om ljuddrivrutinen inte kan tillhandah\303\245lla den angivna laten"
    "sen.",
+   "Den l\303\244gsta ljudlatens som RetroArch beg\303\244r fr\303\245n en drivrutin. Standardv\303"
+   "\244rdet \303\244r \303\245tta millisekunder, vilket l\303\244nge var ett fast v\303\244rde: ins"
+   "t\303\244llningen noll skickades tidigare till drivrutinerna och hanterades olika av dem. Drivru"
+   "tiner som kommunicerar direkt med enheten \342\200\223 WASAPI i exklusivt l\303\244ge, ASIO och "
+   "WDM-KS \342\200\223 kan ofta f\303\266rhandla fram en kortare period, vilket blir m\303\266jligt"
+   " om du s\303\244nker v\303\244rdet. En drivrutin som inte kan g\303\245 l\303\244gre g\303\266r "
+   "inte det utan beh\303\245ller sin egen maskinvarugr",
+   "\303\244ns.",
    "Den maximala f\303\266r\303\244ndringen i ljudinmatningshastighet. Om du \303\266kar detta m\303"
    "\266jligg\303\266rs mycket stora f\303\266r\303\244ndringar i timing p\303\245 bekostnad av en f"
    "elaktig ljudtonh\303\266jd (t.ex. k\303\266rning av PAL-k\303\244rnor p\303\245 NTSC-sk\303\244r"
@@ -6545,6 +6942,14 @@ static const struct
    "Global ljudmixervolym (i dB). 0 dB \303\244r normal volym, och ingen f\303\266rst\303\244rkning "
    "till\303\244mpas.",
    "St\303\244ng av ljudet.",
+   "H\303\266gtalarlayouten som utdataenheten \303\266ppnas med. \342\200\235Stereo\342\200\235 anv"
+   "\303\244nder den vanliga kedjan. Bredare layouter \303\266ppnar en bredare enhet d\303\244r driv"
+   "rutinen kan det och stereomixen mixas upp i sista steget: fr\303\244mre kanaler beh\303\245lls, "
+   "centern skapas fr\303\245n summan, bakre paret f\303\245r -3 dB och basen g\303\245r till LFE. "
+   "\342\200\2355.1\342\200\235 placerar bakre paret bakom lyssnaren och \342\200\2355.1-surround"
+   "\342\200\235 p\303\245 sidorna; en enhet som driver dem fr\303\245n den andra positionen rapport"
+   "erar det och behandlas d\303\244refter. Drivrutiner som inte ",
+   "kan \303\266ppna mer \303\244n stereo f\303\266rblir stereo.",
    "Samplingsfrekvens f\303\266r ljudutg\303\245ng.",
    "\303\204ndra inst\303\244llningar f\303\266r ljudutg\303\245ngen.",
    "Hj\303\244lper till att j\303\244mna ut brister i timing n\303\244r ljud och video synkroniseras"
@@ -6557,13 +6962,39 @@ static const struct
    "St\303\244ng av allt ljud i tyst l\303\244ge.",
    "Tysta ljudet automatiskt vid tillbakaspolning.",
    "\303\204ndra ljuding\303\245ng/utg\303\245ngsinst\303\244llningar.",
+   "M\303\244t hur snabbt ljudenheten faktiskt f\303\266rbrukar samplingar i f\303\266rh\303\245llan"
+   "de till systemklockan och justera omsamplaren med motsvarande m\303\244ngd. Varje ljudkorts kris"
+   "tall avviker med n\303\245gra miljondelar; n\303\244r synkronisering \303\244r av korrigeras det"
+   " inte p\303\245 annat s\303\244tt och bufferten glider l\303\245ngsamt mot ett ljudfel som ingen"
+   " buffertstorlek kan l\303\266sa. Korrigeringen \303\244r mycket liten och oh\303\266rbar. N\303"
+   "\244r synkronisering \303\244r p\303\245 f\303\266ljer k\303\244rnan redan enheten och ingen kor"
+   "rigering till\303\244mpas. Endast drivrutiner",
+   " som rapporterar f\303\266rbrukning deltar; \303\266verl\303\244gget visar hastigheten som \342"
+   "\200\235utdataenhet\342\200\235.",
    "Synkronisera ljud. Rekommenderas.",
    "\303\204ndra inst\303\244llningar f\303\266r ljudsynkronisering.",
+   "Omsampla, filtrera och mixa ljud i ljudtr\303\245den i st\303\244llet f\303\266r i varje bildrut"
+   "a. Ger samma latens som den bildrutesynkrona kedjan vid alla inst\303\244llningar f\303\266r lju"
+   "dlatens, med frekvenskontroll uppm\303\244tt i enhetens egen takt och omsamplaren utanf\303\266r"
+   " bildrutebudgeten. Ljuddrivrutiner som inte kan v\303\244ckas av enheten beh\303\245ller den bil"
+   "drutesynkrona kedjan.",
+   "Be operativsystemet prioritera ljudtr\303\245den f\303\266re resten av gr\303\244nssnittet, s"
+   "\303\245 att en belastad bildruta mer s\303\244llan g\303\266r att ljudenheten f\303\245r f\303"
+   "\266r lite processortid. G\303\266r det m\303\266jligt att anv\303\244nda l\303\244gre ljudlaten"
+   "s p\303\245 system som beviljar det; om systemet avvisar det anv\303\244nds standardprioriteten "
+   "och inget annat \303\244ndras. G\303\244ller ljudtr\303\245den som den tr\303\245dade pipelinefu"
+   "nktionen och k\303\244rnans ljud\303\245teranrop k\303\266rs p\303\245.",
    "Ljudvolym (i dB). 0 dB \303\244r normal volym och ingen f\303\266rst\303\244rkning till\303\244m"
    "pas.",
    "Till\303\245t WASAPI-drivrutinen att ta exklusiv kontroll \303\266ver ljudenheten. Om detta \303"
    "\244r inaktiverat kommer den att anv\303\244nda delat l\303\244ge ist\303\244llet.",
    "Anv\303\244nd floatformat f\303\266r WASAPI-drivrutinen, om det st\303\266ds av din ljudenhet.",
+   "L\303\244mna WASAPI-enhetstr\303\245den till Windows schemal\303\244ggare f\303\266r multimediak"
+   "lasser i st\303\244llet f\303\266r att h\303\266ja dess prioritet direkt. Avsett f\303\266r myck"
+   "et l\303\245g ljudlatens; det \303\244r inte alltid det b\303\244ttre alternativet och p\303\245"
+   " vissa system f\303\266rs\303\244mrar det den s\303\244msta bildrutan, s\303\245 funktionen \303"
+   "\244r av tills den har utv\303\244rderats. N\303\244r ljudet st\303\244ngs ned rapporterar drivr"
+   "utinen hur sent den vaknade och vilken schemal\303\244ggning som anv\303\244ndes.",
    "Mellanbuffertl\303\244ngd (i rutor) vid anv\303\244ndning av WASAPI-drivrutinen i delningsl\303"
    "\244ge.",
    "Spara automatiskt icke-flyktigt SaveRAM vid fasta intervaller (i sekunder).",
@@ -6604,6 +7035,7 @@ static const struct
    "Till\303\244mpa fusk automatiskt n\303\244r spelet l\303\244ses in.",
    "Till\303\244mpa fusk direkt efter v\303\244xling.",
    "Fusk\303\244ndringar kommer aktiveras direkt.",
+   "Big endian: 258 = 0x0102, little endian: 258 = 0x0201",
    "Fuskfiler lagras i denna katalog.",
    "Rensa fusklistan.",
    "L\303\244s in en fuskfil och ers\303\244tt befintliga fusk.",
@@ -6665,6 +7097,9 @@ static const struct
    "oner.",
    "\303\204ndra vilka meddelanden och element p\303\245 sk\303\244rmen som visas. Inaktiverar inte "
    "funktionalitet.",
+   "Visar information om spelet som l\303\244ses in och anv\303\244ndarens aktuella framsteg. \342"
+   "\200\235Alla identifierade spel\342\200\235 visar en sammanfattning \303\244ven f\303\266r spel "
+   "utan publicerade prestationer.",
    "Visar ett meddelande n\303\244r en prestation \303\244r uppl\303\245st.",
    "St\303\244ng inneh\303\245llet. Eventuella osparade \303\244ndringar kan g\303\245 f\303\266rlor"
    "ade.",
@@ -6805,6 +7240,7 @@ static const struct
    "Inkludera 'experimentella' k\303\244rnor i H\303\244mta ner k\303\244rnor-listan. Dessa \303\244"
    "r vanligen endast f\303\266r utveckling/test\303\244ndam\303\245l, och rekommenderas inte f\303"
    "\266r allm\303\244n anv\303\244ndning.",
+   "Skapa en ny spellista och l\303\244gg till den h\303\244r posten i den.",
    "S\303\244nd ut ursprungliga, l\303\245guppl\303\266sta signaler f\303\266r anv\303\244ndning med"
    " CRT-sk\303\244rmar.",
    "V\303\244xla till h\303\266guppl\303\266st modell f\303\266r anv\303\244ndning med h\303\266gupp"
@@ -6818,24 +7254,55 @@ static const struct
    "\266vs.",
    "G\303\245 igenom dessa alternativ om bilden inte \303\244r korrekt centrerad p\303\245 sk\303"
    "\244rmen.",
+   "Skriv ett EDID-block som beskriver den valda CRT-f\303\266rinst\303\244llningen till konfigurati"
+   "onskatalogen. N\303\244r blocket l\303\244ses in som EDID-firmware i Linux (drm.edid_firmware) e"
+   "ller som EDID-\303\245sidos\303\244ttning i Windows kan en bildsk\303\244rm utan DDC rapportera "
+   "sina synkroniseringsgr\303\244nser, s\303\245 att systemet startar med en frekvens som CRT-sk"
+   "\303\244rmen kan visa. Inget installeras; loggen anger var filen finns och hur den anv\303\244nd"
+   "s.",
    "G\303\245 igenom dessa alternativ om bilden inte \303\244r korrekt centrerad p\303\245 sk\303"
    "\244rmen.",
    "Visa tidigare s\303\266kningar.",
    "Visa databaser.",
    "Ta bort denna post fr\303\245n spellistan.",
    "Ta bort spellistan fr\303\245n filsystem.",
+   "Poster som visas f\303\266r Alla spellistor i ikonvy; 0 = obegr\303\244nsat.",
+   "Poster som visas f\303\266r Alla spellistor i listvy; 0 = obegr\303\244nsat.",
+   "Zoomniv\303\245 f\303\266r ikonvyn.",
+   "0 = spellistor, 1 = filbl\303\244ddrare.",
+   "0 = systemstandard, 1 = m\303\266rkt, 2 = anpassad formatmall.",
+   "Antal miniatyrbilder som beh\303\245lls i minnet.",
+   "L\303\244ngsta kant i bildpunkter; 0 = obegr\303\244nsat.",
    "0 = standard.",
+   "0 = omslagsbild, 1 = sk\303\244rmbild, 2 = titelsk\303\244rm, 3 = logotyp.",
+   "0 = lista, 1 = ikoner.",
+   "Sparad f\303\266nsterstorlek; anv\303\244nds n\303\244r Kom ih\303\245g f\303\266nstergeometri "
+   "\303\244r aktiverat.",
+   "Sparad f\303\266nsterstorlek; anv\303\244nds n\303\244r Kom ih\303\245g f\303\266nstergeometri "
+   "\303\244r aktiverat.",
+   "Sparad f\303\266nsterposition; anv\303\244nds n\303\244r Kom ih\303\245g f\303\266nstergeometri "
+   "\303\244r aktiverat.",
+   "Sparad f\303\266nsterposition; anv\303\244nds n\303\244r Kom ih\303\245g f\303\266nstergeometri "
+   "\303\244r aktiverat.",
    "\303\204ndra standardkataloger d\303\244r filerna finns.",
+   "L\303\245t Discord-appen visa uppgifter om inneh\303\245llet som spelas. Endast tillg\303\244ngl"
+   "igt med den inbyggda skrivbordsklienten.",
    "Visa information om inmatade skivor.",
+   "V\303\244lj en ny skiva fr\303\245n filsystemet och l\303\244gg till den i indexlistan.",
    "V\303\244lj aktuell skiva fr\303\245n listan \303\266ver tillg\303\244ngliga avbildningar. Virtu"
    "ella skivfacket kommer vara st\303\244ngt.",
    "Skivavbildshantering.",
    "\303\226ppna virtuellt skivfack.",
    "St\303\244ng virtuellt skivfack.",
+   "Visa den EDID-information som den anv\303\244nda bildsk\303\244rmen rapporterar: identitet, funk"
+   "tioner, tidsinst\303\244llningar som st\303\266ds och ut\303\266kningsblock.",
+   "Visa bildsk\303\244rmsservern, utdata, l\303\244ge och fysisk storlek f\303\266r bildsk\303\244r"
+   "men som anv\303\244nds.",
    "H\303\244mtar ner och installerar k\303\244rna fr\303\245n online-uppdateraren.",
    "H\303\244mta ner gratis inneh\303\245ll f\303\266r vald k\303\244rna.",
    "H\303\244mta ner hj\303\244lpfiler som system kr\303\244ver f\303\266r en korrekt/optimal k\303"
    "\244rndrift.",
+   "H\303\244mta miniatyrbilder f\303\266r inneh\303\245llet. Uppdaterar befintliga bilder.",
    "\303\204ndra drivrutiner som anv\303\244nds av systemet.",
    "Till\303\245t k\303\244rnor att byta till en annan videodrivrutin \303\244n den som f\303\266r n"
    "\303\244rvarande \303\244r laddad.",
@@ -6868,6 +7335,15 @@ static const struct
    "Visa aktuell bildrutsr\303\244kning p\303\245 sk\303\244rmen.",
    "\303\204ndra inst\303\244llningar f\303\266r Spola bak\303\245t, Snabbspola fram\303\245t och Sl"
    "ow-motion.",
+   "T\303\266m samplingsbufferten f\303\266r \342\200\235Uppskattad sk\303\244rmuppdateringsfrekvens"
+   "\342\200\235 efter snabbspolning fram\303\245t, sparat tillst\303\245nd eller inl\303\244sning a"
+   "v tillst\303\245nd. Dessa \303\245tg\303\244rder ger tidssamplingar som inte motsvarar normal bi"
+   "ldfrekvens och skulle snedvrida avvikelsem\303\244tningen. Rensningen g\303\266rs efter b\303"
+   "\244sta f\303\266rm\303\245ga och har ingen verkan n\303\244r \342\200\235Sampla bildrutetid end"
+   "ast i stabilt tillst\303\245nd\342\200\235 \303\244r aktiverat (vilket f\303\266rhindrar f\303"
+   "\266roreningen vid k\303\244llan).",
+   "\303\204ndra inst\303\244llningar som p\303\245verkar bildrutetidsr\303\244knaren. Aktivt endast"
+   " n\303\244r tr\303\245dad video \303\244r inaktiverad.",
    "Ange loggniv\303\245 f\303\266r frontend. Om en loggniv\303\245 som utf\303\244rdats av frontend"
    " \303\244r under detta v\303\244rde, ignoreras den.",
    "Kan f\303\266rb\303\244ttra prestanda, minska f\303\266rdr\303\266jningar och \303\245tg\303\244"
@@ -6907,6 +7383,12 @@ static const struct
    "Till\303\245t alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn.",
    "Ignorera analoga spakr\303\266relser under d\303\266dzon-v\303\244rde.",
    "Justera k\303\244nsligheten f\303\266r analoga spakar.",
+#ifdef ANDROID
+   "Anv\303\244nd Androids systemtangentbord f\303\266r textinmatning i menyn i st\303\244llet f\303"
+   "\266r det inbyggda sk\303\244rmtangentbordet. Aktiverar inklistring fr\303\245n urklipp och l"
+   "\303\266senordshanterare. Kr\303\244ver peksk\303\244rm eller en inmatningsmetod som kan naviger"
+   "as med en handkontroll.",
+#endif
    "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play-stil.",
    "Aktivera alltid 'Spelfokus' -l\303\244get n\303\244r inneh\303\245ll startar eller \303\245terup"
    "ptas. N\303\244r inst\303\244llt p\303\245 \"Identifiera\" kommer alternativet att aktiveras om "
@@ -6948,6 +7430,8 @@ static const struct
    "igeras till en annan anv\303\244ndare. Observera! Snabbtangenterna p\303\245 tangentbordet funge"
    "rar inte om k\303\244rnport 1 omdirigeras till n\303\245gon annan anv\303\244ndare \303\244n > 1"
    " (tangentbordsinmatningen kommer fr\303\245n anv\303\244ndare 1).",
+   "H\303\266gsta antal anv\303\244ndare som RetroArch har st\303\266d f\303\266r. (Omstart kr\303"
+   "\244vs)",
    "Spelkontrolls knappkombination f\303\266r att visa/d\303\266lj menyn.",
    "\303\204ndra inst\303\244llningar f\303\266r menykontroller.",
    "F\303\245ngar en bild av aktuellt inneh\303\245ll f\303\266r att \303\266vers\303\244tta och/ell"
@@ -7030,6 +7514,7 @@ static const struct
    "V\303\244xlar turboavfyrning p\303\245/av.",
    "\303\226ppnar det kompletterande WIMP (Windows, Icons, Menus, Pointer) skrivbordsanv\303\244ndar"
    "gr\303\244nssnittet.",
+   "V\303\244xlar programvarans \342\200\235videofilter\342\200\235 p\303\245 eller av.",
    "Minskar utg\303\245ende ljudvolymniv\303\245.",
    "\303\226kar utg\303\245ende ljudvolymniv\303\245.",
    "Sl\303\245r p\303\245/av synkronisering till exakt inneh\303\245llsbildhastighet.",
@@ -7116,6 +7601,12 @@ static const struct
    "Ange storleken p\303\245 haptiska \303\245terkopplingseffekter.",
    "Spara en autokonfigurationsfil som kommer att anv\303\244ndas automatiskt n\303\244r den h\303"
    "\244r styrenheten uppt\303\244cks igen.",
+#ifdef HAVE_SDL3
+   "Anv\303\244nd enhetens sk\303\244rmtangentbord f\303\266r textinmatning i menyn i st\303\244llet"
+   " f\303\266r det inbyggda sk\303\244rmtangentbordet. G\303\244ller endast n\303\244r systemet til"
+   "lhandah\303\245ller ett sk\303\244rmtangentbord. Kr\303\244ver peksk\303\244rm eller en inmatnin"
+   "gsmetod som kan navigeras med en handkontroll.",
+#endif
 #ifdef ANDROID
    "Anv\303\244nd denna enhet som ett fysiskt tangentbord och inte som en spelkontroll.",
 #endif
@@ -7306,6 +7797,10 @@ static const struct
    "n av dess tillh\303\266rande miniatyrbilder. Om du st\303\244ller in detta till ett v\303\244rde"
    " p\303\245 minst 256 ms m\303\266jligg\303\266rs snabb och f\303\266rdr\303\266jningsfri rullnin"
    "g \303\244ven p\303\245 de l\303\245ngsammaste enheterna.",
+   "J\303\244mna ut f\303\244rgbandning i miniatyrbilder och bakgrundsbilder genom att dithra dem ti"
+   "ll menyns begr\303\244nsade palett. Ditherm\303\266nstret f\303\266rstoras tillsammans med allt "
+   "annat vid h\303\266g \342\200\235Menyskala\342\200\235 och kan d\303\245 bli synligt som en text"
+   "ur; inaktivera det i s\303\245 fall.",
    "Omsamplingsmetod som anv\303\244nds n\303\244r stora miniatyrbilder krymps f\303\266r att passa "
    "sk\303\244rmen.",
    "Aktivera bakgrundsvisning av inneh\303\245ll n\303\244r snabbmenyn \303\244r aktiv. Om du inakti"
@@ -7325,6 +7820,9 @@ static const struct
    ".",
    "\303\204ndra inst\303\244llningar f\303\266r menysk\303\244rmens utseende.",
    "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
+   "Be om bekr\303\244ftelse innan programmet avslutas, \303\245terst\303\244lls eller inneh\303\245"
+   "ll st\303\244ngs. N\303\244r detta \303\244r inaktiverat utf\303\266rs \303\245tg\303\244rderna "
+   "direkt.",
 #ifdef HAVE_MIST
    "Visa alternativet 'Hantera k\303\244rnor' i huvudmenyn.",
 #endif
@@ -7336,6 +7834,8 @@ static const struct
    "Visa alternativet 'Mata ut skiva' i huvudmenyn.",
 #endif
 #endif
+   "Visa fullst\303\244ndiga s\303\266kv\303\244gar f\303\266r kataloginst\303\244llningar i st\303"
+   "\244llet f\303\266r endast namnet p\303\245 den valda katalogen.",
    "Visa alternativet 'Hj\303\244lp' i huvudmenyn.",
    "Visa alternativet 'Information' i huvudmenyn.",
    "Visa alternativet 'L\303\244s in inneh\303\245ll' i huvudmenyn.",
@@ -7349,14 +7849,21 @@ static const struct
    "Visa alternativet 'Starta om RetroArch' i huvudmenyn.",
    "Visa alternativet 'St\303\244ng av'.",
    "Visa ytterligare information f\303\266r menyobjekt.",
+   "Visa endast en underrubrik f\303\266r den menypost som \303\244r markerad.",
    "Hoppa \303\266ver 'K\303\266r'-menyn n\303\244r du startar spellistposter. Tryck p\303\245 D-Pad"
    " medan du h\303\245ller OK f\303\266r att komma \303\245t 'K\303\266r'-menyn.",
    "\303\204ndra inst\303\244llningar f\303\266r menyljud.",
    "Initial menysida vid uppstart.",
+   "Generera mipmaps f\303\266r menybilder. H\303\245ller ikoner, miniatyrbilder och bakgrundsbilder"
+   " j\303\244mna n\303\244r de ritas mindre \303\244n sin ursprungliga storlek, p\303\245 bekostnad"
+   " av n\303\245got h\303\266gre anv\303\244ndning av videominne.",
    "M\303\266jligg\303\266r utfyllnad av oanv\303\244nt utrymme i miniatyrbilder med en solid bakgru"
    "nd. Detta s\303\244kerst\303\244ller en enhetlig visningsstorlek f\303\266r alla bilder, vilket "
    "f\303\266rb\303\244ttrar menyutseendet n\303\244r du tittar p\303\245 miniatyrbilder av blandat "
    "inneh\303\245ll med olika basm\303\245tt.",
+   "Spelar upp ljudsp\303\245ret f\303\266r animerade WebM-miniatyrbilder medan de visas. Ljud i Vor"
+   "bis och Opus st\303\266ds. Ljudet loopas med animeringen och stoppas n\303\244r miniatyrbilden s"
+   "t\303\244ngs.",
    "Uppskala automatiskt miniatyrbilder med en bredd/h\303\266jd som \303\244r mindre \303\244n det "
    "angivna v\303\244rdet. F\303\266rb\303\244ttrar bildkvalit\303\251n. Har en m\303\245ttlig inver"
    "kan p\303\245 prestanda.",
@@ -7370,6 +7877,7 @@ static const struct
    "V\303\244lj synligheten f\303\266r menyalternativ i RetroArch.",
    "V\303\244lj en bild att st\303\244lla in som menybakgrund. Manuella och dynamiska bilder kommer "
    "att \303\245sidos\303\244tta 'F\303\244rgtema'.",
+   "\303\204ndra bakgrundsbildens opacitet.",
    "Anv\303\244nd dekorerade animationer, meddelanden, indikatorer och kontroller.",
    "\303\204ndra automatiskt storlek p\303\245 dekorerade meddelanden, indikatorer och kontroller ba"
    "serat p\303\245 aktuell menyskala.",
@@ -7389,7 +7897,12 @@ static const struct
    "Animeringen som aktiveras vid rullning mellan flikar.",
    "Animationen som aktiveras n\303\244r du flyttar upp\303\245t eller ned\303\245t.",
    "Animationen som aktiveras n\303\244r ett undermeny \303\266ppnas.",
+   "Aktivera den huvudsakliga v\303\245gr\303\244ta fliklistan f\303\266r navigering.",
+   "Visa den aktuella menyplatsen i rubriken.",
    "Minska visningsstorlek f\303\266r miniatyrbild genom att skala maximal till\303\245ten bredd.",
+   "Justera titelrubrikens avst\303\245nd fr\303\245n sk\303\244rmkanten.",
+   "Justera titelrubrikens v\303\245gr\303\244ta avst\303\245nd.",
+   "Justera toningsniv\303\245n f\303\266r synliga objekt n\303\244ra sk\303\244rmkanterna.",
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    "\303\205sidos\303\244tt den f\303\266rvalda inmatningsenheten som mikrofondrivrutinen anv\303"
@@ -7663,6 +8176,9 @@ static const struct
    "enydrivrutinen.",
    "Visa specifika ikoner f\303\266r varje post i historik- och favoritspellistan. Har en varierande"
    " prestandap\303\245verkan.",
+   "Ange n\303\244r spellisteposter ska m\303\244rkas med den f\303\266r n\303\244rvarande kopplade "
+   "k\303\244rnan, om n\303\245gon. Den h\303\244r inst\303\244llningen ignoreras n\303\244r spellis"
+   "teunderrubriker \303\244r aktiverade.",
    "Visa ytterligare information f\303\266r varje spellistepost, t. ex. aktuell k\303\244rnassociati"
    "on och k\303\266rtid (om tillg\303\244nglig). Har en varierande prestandap\303\245verkan.",
    "Sortera inneh\303\245llsspellistor i alfabetisk ordning, med undantag f\303\266r spellistorna "
@@ -7671,6 +8187,9 @@ static const struct
    "St\303\244ll in stilen f\303\266r datum och tid som visas f\303\266r tidsst\303\244mpelinformati"
    "on f\303\266r \342\200\235Senast spelad\342\200\235. Alternativet \342\200\235(AM/PM)\342\200"
    "\235 har en liten p\303\245verkan p\303\245 prestandan p\303\245 vissa plattformar.",
+   "V\303\244lj vilken typ av k\303\266rtidsloggpost som ska visas i spellistornas underrubriker. Mo"
+   "tsvarande k\303\266rtidslogg m\303\245ste vara aktiverad i alternativmenyn \342\200\235Sparning"
+   "\342\200\235.",
    "N\303\244r den \303\244r aktiverad kommer miniatyrbilder att hittas utifr\303\245n postens filna"
    "mn, snarare \303\244n dess etikett.",
    "Skriv spellistor med f\303\266r\303\245ldrat klartextformat. N\303\244r funktionen \303\244r ina"
@@ -7682,6 +8201,28 @@ static const struct
    "Antalet bildrutor att spela upp igen. Orsakar problem i spel s\303\245som jitter om antalet lagg"
    "ade bildrutor internt f\303\266r spelet \303\266verstigs.",
    "\303\204ndra sekretessinst\303\244llningar.",
+   "H\303\266gsta antal poster som vyn Alla spellistor visar i rutn\303\244tsl\303\244ge. V\303\244r"
+   "det 0 visar alla poster.",
+   "H\303\266gsta antal poster som vyn Alla spellistor visar i listl\303\244ge. V\303\244rdet 0 visa"
+   "r alla poster.",
+   "Stilmallsfil som anv\303\244nds n\303\244r temat \303\244r inst\303\244llt p\303\245 Anpassat.",
+   "F\303\244rg som anv\303\244nds f\303\266r att markera den valda raden, som #rrggbb.",
+   "\303\205terst\303\244ll skrivbordsmenyns f\303\266nster till den position och storlek som det ha"
+   "de n\303\244r RetroArch senast avslutades.",
+   "\303\226ppna inneh\303\245llsbl\303\244ddraren p\303\245 fliken som var vald n\303\244r RetroArc"
+   "h senast avslutades.",
+   "Visa ett meddelande n\303\244r en inneh\303\245llsskanning avslutas.",
+   "Visa dolda filer och mappar i filbl\303\244ddraren.",
+   "Spellista att visa n\303\244r skrivbordsmenyn \303\266ppnas. L\303\244mna tomt f\303\266r den f"
+   "\303\266rsta.",
+   "N\303\244r en k\303\244rna redan \303\244r inl\303\244st ska den erbjudas f\303\266rst n\303\244"
+   "r inneh\303\245ll startas.",
+   "Skrivbordsmenyns f\303\244rgtema: f\303\266lj systemet, anv\303\244nd det inbyggda m\303\266rka "
+   "temat eller l\303\244s in en anpassad stilmall.",
+   "Minne f\303\266r avkodade miniatyrbilder, i megabyte. H\303\266gre v\303\244rden ger mjukare rul"
+   "lning i stora spellistor.",
+   "St\303\266rsta kant, i bildpunkter, som en bild som sl\303\244pps p\303\245 en miniatyrbild skal"
+   "as ned till f\303\266re sparande. V\303\244rdet 0 beh\303\245ller ursprunglig storlek.",
    "Alternativ f\303\266r att \303\245sidos\303\244tta global konfiguration.",
    "Visa alternativet 'L\303\244gg till i favoriter'.",
    "Visa alternativet 'L\303\244gg till i spellista'.",
@@ -7826,6 +8367,8 @@ static const struct
    "Spara alla sparningsfiler till denna katalog. Om den inte \303\244r inst\303\244lld f\303\266rs"
    "\303\266ker den spara i inneh\303\245llsfilens arbetskatalog.",
    "Anv\303\244nd inneh\303\245llskatalog som katalog f\303\266r sparade tillst\303\245nd.",
+   "Spara automatiskt ett tillst\303\245nd med j\303\244mna intervall (i sekunder). Ange 0 f\303\266"
+   "r att inaktivera.",
    "Innan ett sparat tillst\303\245nd skapas, \303\266kas sparat tillst\303\245nd-index automatiskt."
    " N\303\244r inneh\303\245ll laddas in kommer indexet att s\303\244ttas till det h\303\266gsta be"
    "fintliga indexet.",
@@ -7846,6 +8389,11 @@ static const struct
    "t\303\245nd sparas.",
    "Visa miniatyrbilder f\303\266r sparade tillst\303\245nd.",
    "Spara aktuell konfiguration som anpassad konfigurationsfil.",
+   "Kodeken som anv\303\244nds f\303\266r varje komprimerad fil, inklusive sparfiler, sparade tillst"
+   "\303\245nd, spellistor, s\303\244kerhetskopior av k\303\244rnor och cachen med k\303\244rninform"
+   "ation. Zstandard l\303\244ser in flera g\303\245nger snabbare \303\244n Deflate och sparar n\303"
+   "\245got snabbare, men filerna blir n\303\245got st\303\266rre. Filer som skrivits med endera kod"
+   "eken kan l\303\244sas; endast nya filer \303\244ndras.",
    "Skriv \303\266ver nuvarande konfigurationsfil.",
    "Spara en \303\266verordnad konfigurationsfil som kommer att g\303\244lla f\303\266r allt inneh"
    "\303\245ll som laddas fr\303\245n samma katalog som den aktuella filen. Kommer att ha f\303\266r"
@@ -7934,10 +8482,24 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "V\303\244lj den autentisering som anv\303\244nds i din milj\303\266.",
    "Bl\303\244ddra efter filer p\303\245 konfigurerad SMB-utdelning.",
+   "Aktivera \303\245tkomst till SMB-n\303\244tverksresurser. Ethernet rekommenderas starkt framf"
+   "\303\266r Wi-Fi f\303\266r en tillf\303\266rlitligare anslutning. Obs: \303\204ndringarna tr\303"
+   "\244der i kraft n\303\244sta g\303\245ng en resurs bl\303\244ddras, och inneh\303\245ll som reda"
+   "n k\303\266rs fr\303\245n en resurs beh\303\245ller sin aktuella anslutning.",
    "V\303\244lj maximala antalet anslutningar som anv\303\244nds i din milj\303\266.",
+   "L\303\266senord f\303\266r autentisering. Detta \303\244r valfritt n\303\244r g\303\244st\303"
+   "\245tkomst \303\244r aktiverad p\303\245 servern. I Windows 10 och senare \303\244r g\303\244st"
+   "\303\245tkomst inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett l\303\266senord.",
    "Serverns IP-adress eller v\303\244rdnamn.",
    "Konfigurera inst\303\244llningar f\303\266r SMB-n\303\244tverksdelning.",
+   "Namn p\303\245 n\303\244tverksresursen som ska anv\303\244ndas. L\303\244mna tomt f\303\266r att"
+   " lista alla resurser som servern delar ut och v\303\244lja en vid bl\303\244ddring.",
+   "S\303\266kv\303\244g till underkatalog p\303\245 n\303\244tverksresursen. Valfritt.",
    "V\303\244lj standardtidsgr\303\244ns i sekunder.",
+   "Anv\303\244ndarnamn f\303\266r autentisering. Detta \303\244r valfritt n\303\244r g\303\244st"
+   "\303\245tkomst \303\244r aktiverad p\303\245 servern. I Windows 10 och senare \303\244r g\303"
+   "\244st\303\245tkomst inaktiverad som standard, s\303\245 h\303\244r kr\303\244vs ett anv\303\244"
+   "ndarnamn.",
    "Arbetsgrupp eller dom\303\244nnamn. Valfritt i vissa inst\303\244llningar.",
 #endif
    "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
@@ -7980,6 +8542,9 @@ static const struct
    "Visa information som \303\244r specifik f\303\266r enheten.",
    "Ta en bild av sk\303\244rmen.",
    "Utf\303\266r uppgifter p\303\245 en separat tr\303\245d.",
+   "H\303\245ll huvud- och ljudtr\303\245darna p\303\245 de snabbaste processork\303\244rnorna i en "
+   "processor med blandade k\303\244rntyper. Har ingen effekt p\303\245 processorer d\303\244r alla "
+   "k\303\244rnor \303\244r likadana. Tr\303\244der i kraft efter omstart.",
    "Typ av miniatyr som ska visas.",
    "Omslagsbilder, sk\303\244rmbilder och miniatyrbilder f\303\266r titelsk\303\244rmar lagras i den"
    "na katalog.",
@@ -7994,6 +8559,9 @@ static const struct
 #ifdef HAVE_LAKKA
    "V\303\244lj din tidszon f\303\266r att justera datum och tid till din plats.",
 #endif
+   "Visa aktuell tid i \303\266nskat format.",
+   "Drivrutin f\303\266r kompletterande anv\303\244ndargr\303\244nssnitt p\303\245 skrivbordet som a"
+   "nv\303\244nds n\303\244r skrivbordsmenyn \303\244r aktiverad. (Omstart kr\303\244vs)",
    "Visa f\303\266nstermenyf\303\244lt.",
    "Om ett tillst\303\245nd har l\303\244sts in \303\245terg\303\245r inneh\303\245llet till det til"
    "lst\303\245nd som g\303\244llde f\303\266re inl\303\244sningen.",
@@ -8079,6 +8647,8 @@ static const struct
    "ssa videofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars elle"
    "r 16-bitars f\303\244rg.",
    "CPU-baserade videofilter lagras i denna katalog.",
+   "Till\303\244mpa videofilter. Detta \303\244r en rekommendation som videodrivrutinen inte n\303"
+   "\266dv\303\244ndigtvis beh\303\266ver f\303\266lja.",
    "St\303\244ng av alla aktiva CPU-drivna videofilter.",
    "Visa Sk\303\244rm-meddelanden.",
    "V\303\244lj typsnittet f\303\266r sk\303\244rmmeddelanden.",
@@ -8090,6 +8660,24 @@ static const struct
    "\245 Windows har videoproblem med sRGB FBOer. Att aktivera detta kan l\303\266sa det.",
    "Minskar latensen p\303\245 bekostnad av en h\303\266gre risk f\303\266r att videon hackar.",
    "Justera effektiv 'Bildrutef\303\266rdr\303\266jning' dynamiskt.",
+   "L\303\244s \342\200\235Uppskattad uppdateringsfrekvens\342\200\235 fr\303\245n bildsk\303\244rme"
+   "ns egen rapport om n\303\244r varje bildruta n\303\245dde den, i st\303\244llet f\303\266r att m"
+   "\303\244ta gr\303\244nssnittets bildruteslinga. Endast avl\303\244sningen \303\244ndras: den p"
+   "\303\245verkas inte l\303\244ngre av k\303\244rnans bildfrekvens och slingans tidsbrus. P\303"
+   "\245verkar inte hur bildrutor synkroniseras eller visas. G\303\244ller d\303\244r videodrivrutin"
+   "en kan rapportera detta; annars m\303\244ts bildruteslingan.",
+   "Begr\303\244nsa provtagning av \342\200\235Uppskattad uppdateringsfrekvens\342\200\235 till bild"
+   "rutor d\303\244r inneh\303\245llet k\303\266rs utan st\303\266rningar (inte i menyn, inte pausat"
+   ", inte vid snabbspolning och med bildrutetid inom rimliga gr\303\244nser). Den diagnostiska avl"
+   "\303\244sningen blir en verklig signal, men stabiliseras l\303\245ngsammare efter att inneh\303"
+   "\245ll har l\303\244sts in.",
+   "Hur kraftfullt drivrutinen ska beg\303\244ras om exklusivt helsk\303\244rmsl\303\244ge n\303\244"
+   "r f\303\266nsterbaserat helsk\303\244rmsl\303\244ge \303\244r av. \342\200\235Avslappnat\342\200"
+   "\235 till\303\245ter endast l\303\244get och drivrutinen kan avb\303\266ja; i Vulkan-drivrutinen"
+   " \303\244r det en rekommendation som drivrutinen kan ignorera, vilket l\303\244mnar v\303\244xli"
+   "ngskedjan p\303\245 kompositorns oberoende v\303\244xlingss\303\266kv\303\244g. \342\200\235Tvin"
+   "gat\342\200\235 v\303\244ljer uttryckligen exklusivt l\303\244ge och beh\303\245ller det. Kr\303"
+   "\244ver VK_EXT_full_screen_exclusive.",
    "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
    "d en kommandoradsv\303\244xel.",
    "\303\204ndra inst\303\244llningar f\303\266r helsk\303\244rmsl\303\244ge.",
@@ -8098,6 +8686,12 @@ static const struct
    "St\303\244ll in anpassad h\303\266jdstorlek f\303\266r helsk\303\244rmsl\303\244ge utan f\303"
    "\266nster. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sni"
    "ngen.",
+   "Skicka shaders till grafikdrivrutinen som SPIR-V i st\303\244llet f\303\266r att f\303\266rst ko"
+   "rskompilera dem till GLSL, vilket kan f\303\266rkorta inl\303\244sningstiden f\303\266r shader-f"
+   "\303\266rinst\303\244llningar. Detta \303\244r endast en rekommendation: det kr\303\244ver drivr"
+   "utinstill\303\244gget \342\200\235GL_ARB_gl_spirv\342\200\235, och en shader eller drivrutin som"
+   " inte kan anv\303\244nda det \303\245terg\303\245r tyst till korskompilering. Tr\303\244der i kr"
+   "aft n\303\244sta g\303\245ng en shader-f\303\266rinst\303\244llning l\303\244ses in.",
    "V\303\244lj vilket grafikkort att anv\303\244nda.",
    "Spela in GPU-skuggade material om tillg\303\244ngligt.",
    "Sk\303\244rmdumpar f\303\245ngar GPU-skuggat material om det finns.",
@@ -8110,6 +8704,13 @@ static const struct
    "Anv\303\244nder sk\303\244rmens hela f\303\244rgomf\303\245ng f\303\266r att skapa en ljusare oc"
    "h mer m\303\244ttad bild. F\303\266r f\303\244rger som mer troget \303\245terger den ursprunglig"
    "a speldesignen st\303\244ller du in detta p\303\245 Exakt.",
+   "H\303\266gsta ljusstyrka som bildsk\303\244rmen kan n\303\245, i nit. Anger hur mycket utrymme s"
+   "om finns \303\266ver Ljusstyrka f\303\266r h\303\266gdagrar, s\303\245 att k\303\244rnor som sj"
+   "\303\244lva renderar HDR vet hur l\303\245ngt de kan g\303\245 innan tonomf\303\245nget komprime"
+   "ras. Kontrollera bildsk\303\244rmens specifikation; l\303\244mna v\303\244rdet 1000 om du \303"
+   "\244r os\303\244ker. Ett h\303\266gre v\303\244rde \303\244n bildsk\303\244rmen faktiskt kan n"
+   "\303\245 g\303\266r att ljusa detaljer klipps i st\303\244llet f\303\266r att tonomf\303\245nget"
+   " komprimeras.",
    "Anger HDR-ljusstyrkan i nit. Anv\303\244nd tillsammans med sk\303\244rmens fysiska ljusstyrkeins"
    "t\303\244llningar. Som utg\303\245ngspunkt st\303\244ller du in detta p\303\245 80 och sk\303"
    "\244rmens ljusstyrka p\303\245 fullt. Alternativt st\303\244ller du in detta p\303\245 sk\303"
@@ -8156,6 +8757,14 @@ static const struct
    " orsaka skalningsartefakter.",
    "F\303\245nga bilden efter att filter (men inte shaders) har till\303\244mpats. Videon kommer att"
    " se lika snygg ut som det du ser p\303\245 din sk\303\244rm.",
+   "Tidsbest\303\244m upprepade bildrutor fr\303\245n tidpunkten d\303\245 bildsk\303\244rmen rappor"
+   "terar att en bild faktiskt n\303\245dde den, i st\303\244llet f\303\266r fr\303\245n gr\303\244n"
+   "ssnittets egen klocka. G\303\244ller d\303\244r videodrivrutinen kan rapportera detta; klockan a"
+   "nv\303\244nds annars och n\303\244r rapporten blir inaktuell. Inaktivera f\303\266r att alltid a"
+   "nv\303\244nda klockan.",
+   "Bildsk\303\244rmens vertikala uppdateringsfrekvens. Anv\303\244nds f\303\266r att ber\303\244kna"
+   " en l\303\244mplig ljudinmatningsfrekvens och som den bildsk\303\244rmsperiod som tr\303\245dad "
+   "video synkroniseras efter n\303\244r drivrutinen inte kan rapportera en.",
    "Den noggrant uppskattade uppdateringsfrekvensen f\303\266r sk\303\244rmen i Hz.",
    "Uppdateringsfrekvensen som rapporterats av bildsk\303\244rmsdrivrutinen.",
 #ifdef HAVE_ODROIDGO2
@@ -8178,6 +8787,12 @@ static const struct
    "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
    "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "L\303\245t SDL-f\303\266nstret v\303\244xla mellan bildsk\303\244rmsl\303\244gena som det listar"
+   ". \342\200\235Automatiskt\342\200\235 anv\303\244nder detta endast n\303\244r den inbyggda bilds"
+   "k\303\244rmsservern inte kan v\303\244xla l\303\244ge. \342\200\235Alltid\342\200\235 \303\245si"
+   "dos\303\244tter den inbyggda servern: CRT SwitchRes v\303\244ljer d\303\245 bland de listade l"
+   "\303\244gena, \303\244ven l\303\244gen utan k\303\244nda tidsinst\303\244llningar, och anpassade"
+   " CRT-tidsinst\303\244llningar \303\244r inte tillg\303\244ngliga.",
    "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
    "Aktivera pipeline f\303\266r video shader.",
    "F\303\266rdr\303\266j automatisk inl\303\244sning av Shaders (i ms). Kan kringg\303\245 grafiska"
@@ -8227,12 +8842,37 @@ static const struct
    "L\303\244gg till en liten osk\303\244rpa i bilden f\303\266r att mjuka upp h\303\245rda pixelkan"
    "ter. Det h\303\244r alternativet har mycket liten inverkan p\303\245 prestandan. B\303\266r inak"
    "tiveras n\303\244r Shaders anv\303\244nds.",
+   "Bitdjup f\303\266r den slutliga utdataytan n\303\244r HDR \303\244r av. 10 bitar tar bort bandni"
+   "ng som orsakas av shadrar som m\303\266rkar ned bilden kraftigt, till exempel CRT-str\303\245lpr"
+   "ofiler och maskeringsgaller f\303\266r apertur. Faller tillbaka till 8 bitar om bildsk\303\244rm"
+   "en eller kompositorn inte erbjuder det. Ignoreras n\303\244r HDR \303\244r aktiverat, eftersom H"
+   "DR v\303\244ljer eget format.",
    "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
    "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
    "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
    "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
    "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
    "\303\204ndra inst\303\244llningar f\303\266r videosynkronisering.",
+   "K\303\266r k\303\244rnan och videodrivrutinen i separata tr\303\245dar s\303\245 att bildsk\303"
+   "\244rmen beh\303\245ller sin takt n\303\244r k\303\244rnan hackar, och s\303\245 att k\303\244rn"
+   "an \303\266verlappar shaderkedjan och presentationen. Med \342\200\235Tr\303\245dad synkroniseri"
+   "ng av videovisning\342\200\235 startar k\303\244rnan s\303\245 sent som n\303\244sta uppdatering"
+   " till\303\245ter, vilket ger samma latens som bildrutef\303\266rdr\303\266jning. K\303\244rnor s"
+   "om renderar p\303\245 GPU:n k\303\266rs tr\303\245dat med drivrutinerna Vulkan, Direct3D 11, Dir"
+   "ect3D 12 och gl; med andra drivrutiner k\303\266rs de entr\303\245dat oavsett den h\303\244r ",
+   "inst\303\244llningen.",
+   "Med tr\303\245dad video startar varje bildruta fr\303\245n k\303\244rnan s\303\245 sent som n"
+   "\303\244sta bildsk\303\244rmsuppdatering till\303\245ter, utifr\303\245n uppm\303\244tta tider f"
+   "\303\266r k\303\244rna och rendering, i st\303\244llet f\303\266r med en fast timer. Det s\303"
+   "\244nker latensen till samma niv\303\245 som bildrutef\303\266rdr\303\266jning med entr\303\245d"
+   "ad video, och en bildruta som tar f\303\266r l\303\245ng tid upprepas i st\303\244llet f\303\266"
+   "r att missas. Av: timern styr takten som tidigare.",
+   "Med tr\303\245dad video forts\303\244tter den senaste bildrutan att visas med bildsk\303\244rmen"
+   "s uppdateringsfrekvens n\303\244r k\303\244rnan hamnar efter, i st\303\244llet f\303\266r att de"
+   "n tidigare presentationen l\303\244mnas p\303\245 sk\303\244rmen. H\303\245ller ins\303\244ttnin"
+   "g av svarta bildrutor och shader-effekter f\303\266r uppdateringsfrekvens stabila n\303\244r k"
+   "\303\244rnan hackar. G\303\244ller d\303\244r videodrivrutinen kan upprepa en bildruta, men inte"
+   " med shader-delbildrutor.",
    "F\303\266rs\303\266k att f\303\266rb\303\244ttra prestandan genom att anv\303\244nda Metal-argum"
    "entbuffertar. Vissa k\303\244rnor kan kr\303\244va detta. Detta kan g\303\266ra att vissa shader"
    "s slutar fungera, s\303\244rskilt p\303\245 \303\244ldre h\303\245rdvara eller operativsystem.",
@@ -8295,7 +8935,9 @@ static const struct
    "sk\303\244rmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR).",
    "Wi-Fi-drivrutin att anv\303\244nda. (Kr\303\244ver omstart)",
    "S\303\266k efter tr\303\245dl\303\266sa n\303\244tverk och etablera anslutning.",
+   "\303\204ndra f\303\244rgtemats opacitet i procent.",
    "Aktuell menyikon kan d\303\266ljas, under den horisontella menyn eller i sidhuvudets titel.",
+   "Rita ikoner f\303\266r menyposter.",
    "V\303\244lj ett annat huvudsakligt teckensnitt som ska anv\303\244ndas av menyn.",
    "V\303\244lj en annan layout f\303\266r XMB-gr\303\244nssnittet.",
    "Visa inst\303\244llningsfliken som inneh\303\245ller programinst\303\244llningar.",
@@ -8333,6 +8975,8 @@ static const struct
    "Till\303\244mpar fusk\303\244ndringar.",
    "Till\303\244mpar patch: %s",
    "Till\303\244mpar shader",
+   "ASIO \303\244r \303\244nnu inte den aktiva ljuddrivrutinen. Starta om RetroArch f\303\266r att "
+   "\303\266ppna dess kontrollpanel.",
    "Global ljudmixervolym",
    "Ljudet tystat.",
    "Ljudet aktiverat.",
@@ -8375,6 +9019,7 @@ static const struct
    "S\303\266kningen har inte initierats/startats.",
    "Kontrollerar k\303\244rna: ",
    "Alla %d prestationer har aktiverats f\303\266r denna session",
+   "Avslappnat",
    "Mediabyte f\303\266r RetroAchievements misslyckades: %s",
    "Klarade av %s",
    "Detta spel har inga prestationer.",
@@ -8472,6 +9117,9 @@ static const struct
    "CRC32-kontrollsumman st\303\244mmer inte \303\266verens mellan inneh\303\245llsfilen och kontrol"
    "lsumman f\303\266r sparat inneh\303\245ll i uppspelningsfilens huvud. Uppspelningen kommer med s"
    "tor sannolikhet att desynkroniseras vid uppspelning.",
+   "Det gick inte att skriva EDID-information f\303\266r den valda CRT-f\303\266rinst\303\244llninge"
+   "n.",
+   "EDID-information skrevs till %s. Se loggen f\303\266r hur den l\303\244ses in.",
    "Anpassad timing angiven",
    "Dekomprimering p\303\245g\303\245r redan.",
    "Dekomprimeringen misslyckades.",
@@ -8552,6 +9200,7 @@ static const struct
    "Misslyckades med att skicka smeknamn till klient.",
    "Misslyckades med att skicka smeknamn till v\303\244rd.",
    "Misslyckades med att skicka SRAM-data till klient.",
+   "Det gick inte att ange skiva",
    "Misslyckades med att st\303\244lla in sista anv\303\244nda skiva.",
    "Misslyckades med att starta ljuddrivrutin. Forts\303\244tter utan ljud.",
    "Misslyckades med att starta filminspelning.",
@@ -8788,6 +9437,8 @@ static const struct
    "Startar om inspelning p\303\245 grund av ominitiering av drivrutin.",
    "\303\205terst\303\244llde \303\244ldre sparat tillst\303\245nd.",
    "\303\205terst\303\244ller k\303\244rna: ",
+   "Shaders: \303\245terst\303\244ller standardf\303\266rinst\303\244llningen f\303\266r shaders til"
+   "l",
    "\303\205terst\303\244ller katalog f\303\266r sparade filer till",
    "\303\205terst\303\244ller katalogen f\303\266r sparade tillst\303\245ndsfiler till",
    "Spolar tillbaka.",
@@ -8895,7 +9546,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (170648u
+      (sizeof(msg_hash_sv_blob) == (190566u
 #ifdef ANDROID
        + 361u
 #endif
@@ -8953,6 +9604,9 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 51u
+#endif
+#ifdef HAVE_SDL3
+       + 26u
 #endif
 #ifdef ANDROID
        + 26u
@@ -9136,6 +9790,9 @@ typedef char msg_hash_sv_blob_check[
        + 23u
        + 17u
 #endif
+#ifdef ANDROID
+       + 255u
+#endif
 #ifdef GEKKO
        + 54u
 #endif
@@ -9144,6 +9801,9 @@ typedef char msg_hash_sv_blob_check[
 #endif
 #if defined(ANDROID)
        + 138u
+#endif
+#ifdef HAVE_SDL3
+       + 263u
 #endif
 #ifdef ANDROID
        + 78u
@@ -9215,10 +9875,15 @@ typedef char msg_hash_sv_blob_check[
        + 39u
        + 51u
        + 53u
+       + 278u
        + 63u
+       + 194u
        + 36u
        + 54u
+       + 138u
+       + 60u
        + 37u
+       + 202u
        + 63u
 #endif
 #ifdef HAVE_LAKKA
@@ -9370,6 +10035,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_CONFIG_SAVE_MINIMAL,
    (uint32_t)MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
    (uint32_t)MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
@@ -9434,6 +10100,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
    (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SAVESTATE_AUTOMATIC_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_HELP_SAVE_STATE,
    (uint32_t)MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
@@ -9505,6 +10172,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -9539,6 +10207,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9546,6 +10215,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9553,12 +10223,18 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -9567,6 +10243,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -9574,9 +10251,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -9870,6 +10550,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
@@ -9880,7 +10561,26 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SHOW_WELCOME_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
@@ -9894,11 +10594,56 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -9973,6 +10718,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_AUTO_RESET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
@@ -10068,6 +10814,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10138,6 +10885,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -10200,6 +10948,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -10235,6 +10986,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
 #ifdef HAVE_LAKKA_SWITCH
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
@@ -10377,6 +11129,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -10415,6 +11168,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -10424,6 +11178,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -10433,6 +11188,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
@@ -10676,6 +11432,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -11055,6 +11812,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTOMATIC_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
@@ -11064,6 +11822,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -11156,6 +11915,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
@@ -11192,7 +11954,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11232,6 +11996,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11273,6 +12038,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
@@ -11356,13 +12122,17 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -11372,6 +12142,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -11398,6 +12169,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -11428,6 +12200,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
@@ -11460,6 +12233,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -11492,13 +12267,18 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ENTRY_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_FONT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
@@ -11506,6 +12286,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -11547,6 +12329,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
@@ -11561,6 +12344,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_MIXER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_PLAYLIST,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
@@ -11576,6 +12362,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -11584,13 +12371,18 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
@@ -11599,11 +12391,15 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -11640,6 +12436,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_BIG_ENDIAN,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DELETE_ALL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -11680,6 +12477,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SUMMARY,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
@@ -11769,6 +12567,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
@@ -11776,21 +12575,40 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
    (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
@@ -11813,6 +12631,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_AUTO_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
 #ifdef HAVE_GAME_AI
@@ -11842,6 +12662,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -11865,6 +12688,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
@@ -11923,6 +12747,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
@@ -11973,6 +12798,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -12089,6 +12917,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -12100,6 +12929,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
@@ -12110,6 +12940,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -12122,10 +12953,13 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -12133,6 +12967,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
@@ -12141,7 +12976,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
@@ -12304,9 +13144,11 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
    (uint32_t)MENU_ENUM_SUBLABEL_PLAY_REPLAY,
@@ -12315,6 +13157,19 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
@@ -12415,6 +13270,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTOMATIC_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
@@ -12424,6 +13280,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -12490,10 +13347,15 @@ static const uint32_t msg_hash_sv_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -12534,6 +13396,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -12544,6 +13407,8 @@ static const uint32_t msg_hash_sv_ids[] =
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -12594,6 +13459,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
@@ -12602,10 +13468,14 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -12613,6 +13483,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -12635,6 +13506,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -12647,6 +13520,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -12674,8 +13548,12 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -12710,7 +13588,9 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
@@ -12743,6 +13623,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
@@ -12785,6 +13666,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
    (uint32_t)MSG_CHECKING_CORE,
    (uint32_t)MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_CASUAL_MODE,
    (uint32_t)MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    (uint32_t)MSG_CHEEVOS_COMPLETED_GAME,
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
@@ -12867,6 +13749,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_CRT_SWITCH_EDID_FAILED,
+   (uint32_t)MSG_CRT_SWITCH_EDID_WRITTEN,
    (uint32_t)MSG_CUSTOM_TIMING_GIVEN,
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,
@@ -12944,6 +13828,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    (uint32_t)MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_SET_DISK,
    (uint32_t)MSG_FAILED_TO_SET_INITIAL_DISK,
    (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
@@ -13170,6 +14055,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
    (uint32_t)MSG_RESTORED_OLD_SAVE_STATE,
    (uint32_t)MSG_RESTORING_CORE,
+   (uint32_t)MSG_RESTORING_DEFAULT_SHADER_PRESET_TO,
    (uint32_t)MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
    (uint32_t)MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
    (uint32_t)MSG_REWINDING,
