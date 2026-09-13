@@ -2517,10 +2517,17 @@ void MainWindow::onGotStatusMessage(
       if (m_statusMessageElapsedTimer.elapsed() >= STATUS_MSG_THROTTLE_MSEC)
       {
          qint64 msg_duration;
-         QScreen *screen    = qApp->primaryScreen();
          int msec_duration  = 0;
-         if (screen)
-            msec_duration   = (duration / screen->refreshRate()) * 1000;
+         /* QScreen, and a refresh rate to ask it for, are Qt 5. Qt 4
+          * has no way to ask, so it takes the second below - which is
+          * also what Qt 5 takes when there is no screen to ask. */
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+         {
+            QScreen *screen = qApp->primaryScreen();
+            if (screen)
+               msec_duration = (duration / screen->refreshRate()) * 1000;
+         }
+#endif
          if (msec_duration <= 0)
             msec_duration   = 1000;
          msg_duration       = ((msec_duration) > (STATUS_MSG_THROTTLE_MSEC) ? (msec_duration) : (STATUS_MSG_THROTTLE_MSEC));
@@ -5151,7 +5158,6 @@ static void* ui_companion_qt_init(void)
    ui_companion_qt_t *handle               = (ui_companion_qt_t*)
       calloc(1, sizeof(*handle));
    MainWindow *mainwindow                  = NULL;
-   QScreen *screen                         = NULL;
    QStackedWidget *centralWidget           = NULL;
    QStackedWidget *widget                  = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
@@ -5168,9 +5174,22 @@ static void* ui_companion_qt_init(void)
          handle);
    qt_companion_core = handle->core;
 
-   screen          = qApp->primaryScreen();
-   if (screen)
-      desktopRect  = screen->availableGeometry();
+   /* The usable area of the primary screen, asked for the way the rest
+    * of this file asks: QScreen is Qt 5 and later, QDesktopWidget is
+    * Qt 4 and Qt 5 and gone in Qt 6. */
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+   {
+      QScreen *screen = QGuiApplication::primaryScreen();
+      if (screen)
+         desktopRect  = screen->availableGeometry();
+   }
+#else
+   {
+      QDesktopWidget *desktop = QApplication::desktop();
+      if (desktop)
+         desktopRect  = desktop->availableGeometry();
+   }
+#endif
 
    mainwindow      = handle->window->qtWindow;
 
