@@ -398,6 +398,7 @@ static unsigned transport_mode;
 static unsigned fixture_failures;
 static bool use_wrapper;
 static bool source_float;
+static bool live_controls;
 static double source_tempo = 1.0;
 static uint32_t tempo_q16 = 65536;
 static retro_atomic_int_t in_callback = RETRO_ATOMIC_INT_INITIALIZER(0);
@@ -569,6 +570,61 @@ static void discard_parked(void *userdata)
 }
 
 static void submit_frame(size_t per_frame, unsigned publishes);
+
+struct live_control_check
+{
+   uint32_t serial, control, cutoff;
+   bool initial;
+};
+
+static void check_live_control(void *userdata)
+{
+   struct live_control_check *check = (struct live_control_check*)userdata;
+   audio_pipeline_layout_t *q = &audio_driver_st.pipe_layouts;
+   if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
+   if (check->initial) check->serial = q->reset_serial;
+   else if (q->reset_serial != check->serial || q->current_control != check->control
+         || q->current_cutoff != check->cutoff) fixture_failures++;
+}
+
+static void wrapper_live_controls(unsigned publishes)
+{
+   static const double tempos[] = { 0.25, 1, 32, 0.5, 1, 16, 2, 4 };
+   audio_driver_state_t *st = &audio_driver_st;
+   struct live_control_check check;
+   unsigned step;
+   check.initial = true;
+   audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
+   check.initial = false;
+   for (step = 0; step < 8; step++)
+   {
+      bool active = step != 1 && step != 4;
+      size_t boundary, before = retro_atomic_load_acquire_size(&cnt_writes);
+      unsigned retry;
+      uint32_t tempo = (uint32_t)(tempos[step] * 65536.0);
+      check.control = active ? tempo | AUDIO_PIPELINE_STRETCH : 65536;
+      check.cutoff = step & 1 ? 1000 : 0;
+      if (!audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff))
+      {
+         fixture_failures++;
+         return;
+      }
+      boundary = retro_atomic_load_relaxed_size(&st->pipe_layouts.head);
+      for (retry = 0; retry < 3; retry++)
+         submit_frame((size_t)(CORE_RATE / FPS *
+                  (tempos[step] < 1 ? 1 : tempos[step])), publishes);
+      for (retry = 0; retry < 2000; retry++)
+      {
+         if (retro_spsc_read_avail(&st->pipe_ring) == 0
+               && retro_atomic_load_acquire_size(&st->pipe_layouts.tail) == boundary
+               && retro_atomic_load_acquire_size(&cnt_writes) != before) break;
+         usleep(1000);
+      }
+      if (retry == 2000) fixture_failures++;
+      /* Observe consumer-owned metadata only while the real worker is parked. */
+      audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
+   }
+}
 
 static void wrapper_restart(void)
 {
@@ -748,6 +804,7 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    if (use_wrapper)
    {
       audio_driver_state_t *st = &audio_driver_st;
+      if (live_controls) wrapper_live_controls(publishes);
       wrapper_restart();
       if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
       audio_driver_pipeline_transport_release();
@@ -824,6 +881,7 @@ int main(int argc, char **argv)
    device_int16 = getenv("DEVICE_INT16") != NULL;
    device_sample_bytes = device_int16 ? sizeof(int16_t) : sizeof(float);
    track_conversions = use_wrapper;
+   live_controls = getenv("LIVE_CONTROLS") != NULL;
 
    if (transport)
    {
@@ -846,6 +904,11 @@ int main(int argc, char **argv)
          return 1;
       }
       tempo_q16 = (uint32_t)(source_tempo * 65536.0);
+   }
+   if (live_controls && (!use_wrapper || transport_mode != 3))
+   {
+      fprintf(stderr, "LIVE_CONTROLS requires WRAPPER and TRANSPORT=stretch\n");
+      return 1;
    }
 
    lat_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t));
@@ -896,6 +959,7 @@ int main(int argc, char **argv)
 
    free(lat_us);
    if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
+   if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }

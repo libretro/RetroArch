@@ -109,8 +109,14 @@ check-tempo: $(TARGET)
 		WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch TEMPO=$$tempo ./$(TARGET) 0.25 || exit 1; \
 	done
 
+check-live: $(TARGET)
+	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch DEVICE_INT16=1 ./$(TARGET) 0.25
+	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 ./$(TARGET) 0.25
+	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch ./$(TARGET) 0.25
+	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 DEVICE_INT16=1 ./$(TARGET) 0.25
+
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport check-wrapper check-tempo
+.PHONY: clean all check check-transport check-wrapper check-tempo check-live

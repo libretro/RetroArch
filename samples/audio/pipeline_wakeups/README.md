@@ -46,3 +46,17 @@ progress and conversion invariants, not exact duration, sound quality or
 steady-state throughput. Put it under an external timeout to catch lost wakes.
 Automatic speed-policy, settings activation and multichannel acceptance remain
 separate; the fixture explicitly publishes a fixed tempo before its source.
+
+`make check-live` tests all four source/device combinations with
+`LIVE_CONTROLS=1 WRAPPER=1 TRANSPORT=stretch`. Before the existing restart stress,
+each setting publishes eight live processing requests: 0.25x, bypass, 32x,
+0.5x, bypass, 16x, 2x and 4x, alternating dry and 1 kHz LPF targets. No request
+sets the reset bit. Source is published after each request; the test requires
+its boundary to retire, its source to drain and device writes to advance within
+two seconds. Consumer metadata is inspected only in a parked control transaction,
+requiring the requested control/cutoff and an unchanged reset serial.
+
+The ring and processing budgets remain fixed, and conversion invariants still
+apply. This checks live control progress and ordering, not sample continuity,
+pitch accuracy or waveform identity. Parking for observation preserves stream
+history, but this is not a physical-device uninterrupted-playback test.
