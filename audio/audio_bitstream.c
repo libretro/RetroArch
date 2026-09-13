@@ -61,6 +61,13 @@ struct audio_bitstream
    /* One pause burst, built once. Its own length is what it accounts
     * for; a receiver takes it as "nothing here" and keeps its lock. */
    uint8_t  pause[IEC61937_PAUSE_BURST_BYTES];
+#ifdef HAVE_RDTS
+   /* Where a DTS frame's core is taken out before it is wrapped. Here
+    * rather than on the stack of the function that submits: twelve
+    * kilobytes is three times what this tree allows a frame, and audio
+    * is submitted from whichever thread feeds the device. */
+   uint8_t  dts_core[IEC61937_AC3_BURST_BYTES * 2];
+#endif
    size_t   pause_bytes;
 };
 
@@ -179,14 +186,14 @@ bool audio_bitstream_submit(audio_bitstream_t *bs,
       {
          rdts_frame_info_t info;
          unsigned type = 0, pcm = 0;
-         uint8_t  core[IEC61937_AC3_BURST_BYTES * 2];
+         uint8_t *core = bs->dts_core;
          size_t   n;
 
          if (rdts_parse_frame_info(frame, len, &info) != RDTS_OK)
             return false;
          if (!rdts_burst_type(&info, &type, &pcm))
             return false;
-         if (info.core_bytes > sizeof(core))
+         if (info.core_bytes > (size_t)(IEC61937_AC3_BURST_BYTES * 2))
             return false;
 
          /* The first frame settles the burst, and the queue with it. */
@@ -209,7 +216,7 @@ bool audio_bitstream_submit(audio_bitstream_t *bs,
 
          /* Whatever packing it arrived in, a receiver takes the plain
           * one. */
-         n = rdts_to_core(&info, frame, len, core, sizeof(core));
+         n = rdts_to_core(&info, frame, len, core, (size_t)(IEC61937_AC3_BURST_BYTES * 2));
          if (!n)
             return false;
          if (!iec61937_wrap_dts(core, n, bs->burst_frames,
