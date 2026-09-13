@@ -15,6 +15,7 @@ SOURCES_C := \
 	../../../audio/audio_stretch.c \
 	../../../audio/audio_pipeline_stretch.c \
 	../../../audio/audio_speed_lpf.c \
+	../../../audio/audio_thread_wrapper.c \
 	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
@@ -88,8 +89,16 @@ check-transport: $(TARGET)
 	TRANSPORT=lpf ./$(TARGET) 1
 	TRANSPORT=stretch ./$(TARGET) 1
 
+check-wrapper: $(TARGET)
+	WRAPPER=1 TRANSPORT=dry ./$(TARGET) 1
+	WRAPPER=1 TRANSPORT=lpf ./$(TARGET) 1
+	WRAPPER=1 TRANSPORT=stretch ./$(TARGET) 1
+	WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=dry ./$(TARGET) 1
+	WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=lpf ./$(TARGET) 1
+	WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch ./$(TARGET) 1
+
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport
+.PHONY: clean all check check-transport check-wrapper

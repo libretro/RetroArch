@@ -81,7 +81,9 @@
 #include <boolean.h>
 #include <retro_atomic.h>
 
+#define audio_driver_callback pipeline_callback_impl
 #include "../../../audio/audio_driver.c"
+#undef audio_driver_callback
 
 #define OUT_RATE      48000
 #define CORE_RATE     48000
@@ -361,6 +363,19 @@ static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
 /* TRANSPORT=dry|lpf|stretch compares the optional native consumer. */
 static unsigned transport_mode;
 static unsigned fixture_failures;
+static bool use_wrapper;
+static bool source_float;
+static retro_atomic_int_t in_callback = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+bool audio_driver_callback(void)
+{
+   bool result;
+   if (use_wrapper) retro_atomic_store_release_int(&in_callback, 1);
+   result = pipeline_callback_impl();
+   retro_atomic_fetch_add_size(&cnt_wakes, 1);
+   if (use_wrapper) retro_atomic_store_release_int(&in_callback, 0);
+   return result;
+}
 
 /* Every return from the callback is one wake: the call either parked and
  * came back, or found work without parking. Counting the loop rather
@@ -372,12 +387,12 @@ static void *consumer(void *arg)
    while (retro_atomic_load_acquire_int(&consumer_run))
    {
       audio_driver_callback();
-      retro_atomic_fetch_add_size(&cnt_wakes, 1);
    }
    return NULL;
 }
 
 static int16_t frame_audio[4096 * 2];
+static float frame_audio_float[4096 * 2];
 
 /* --- fixture --------------------------------------------------------- */
 
@@ -429,9 +444,9 @@ static bool pipeline_up(unsigned latency_ms)
    st->pipe_scratch         = (uint8_t*)malloc(1 << 20);
    st->pipe_conv            = (uint8_t*)malloc(1 << 20);
    st->pipe_pass_frames     = per_frame;
-   st->pipe_float           = false;
+   st->pipe_float           = source_float;
    st->pipe_channels        = CHANNELS;
-   st->pipe_frame_bytes     = CHANNELS * sizeof(int16_t);
+   st->pipe_frame_bytes     = CHANNELS * (source_float ? sizeof(float) : sizeof(int16_t));
    audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
    strcpy(st->resampler_ident, "sinc");
@@ -461,6 +476,10 @@ static bool pipeline_up(unsigned latency_ms)
    if (   !st->state_lock || !st->output_samples_buf || !st->pipe_scratch
          || !st->input_data || !st->synth_buf || !dev_ring)
       return false;
+   if (use_wrapper && !audio_init_thread(&st->current_audio,
+            &st->context_audio_data, NULL, OUT_RATE, NULL, latency_ms,
+            false, false, &clocked_driver))
+      return false;
    if (transport_mode && (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
             || !audio_driver_pipeline_transport_request(65536,
                transport_mode == 3, false, transport_mode == 2 ? 1000 : 0)))
@@ -473,6 +492,8 @@ static void pipeline_down(void)
    audio_driver_state_t *st = &audio_driver_st;
    /* Both worker threads have joined. */
    audio_driver_pipeline_transport_release();
+   if (st->resampler && st->resampler_data)
+      st->resampler->free(st->resampler_data);
    retro_spsc_free(&st->pipe_ring);
    retro_eventcount_free(&st->pipe_space);
    retro_eventcount_free(&st->pipe_data);
@@ -485,6 +506,50 @@ static void pipeline_down(void)
    free(st->output_samples_int16);
    free(dev_ring);
    dev_ring = NULL;
+}
+
+/* Called through the real wrapper's parked control transaction. */
+static void discard_parked(void *userdata)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   (void)userdata;
+   if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
+   if (transport_mode && !audio_driver_pipeline_transport_discard(
+            retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes))
+      fixture_failures++;
+}
+
+static void submit_frame(size_t per_frame, unsigned publishes);
+
+static void wrapper_restart(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned cycle;
+   for (cycle = 0; cycle < 8; cycle++)
+   {
+      size_t before;
+      unsigned retry;
+      audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
+      if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
+      before = retro_atomic_load_acquire_size(&cnt_wakes);
+      audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
+      if (transport_mode)
+      {
+         audio_driver_pipeline_transport_release();
+         if (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
+               || !audio_driver_pipeline_transport_request(65536,
+                  transport_mode == 3, true, transport_mode == 2 ? 1000 : 0))
+            fixture_failures++;
+      }
+      if (before != retro_atomic_load_acquire_size(&cnt_wakes)) fixture_failures++;
+      before = retro_atomic_load_acquire_size(&cnt_writes);
+      if (!st->current_audio->start(st->context_audio_data, false)) fixture_failures++;
+      for (retry = 0; retry < 3; retry++)
+         submit_frame((size_t)(CORE_RATE / FPS), 1);
+      for (retry = 0; retry < 1000 && before ==
+            retro_atomic_load_acquire_size(&cnt_writes); retry++) usleep(1000);
+      if (before == retro_atomic_load_acquire_size(&cnt_writes)) fixture_failures++;
+   }
 }
 
 /* --- one run --------------------------------------------------------- */
@@ -518,8 +583,10 @@ static void submit_frame(size_t per_frame, unsigned publishes)
       size_t n = (k + 1 == publishes) ? per_frame - done : chunk;
       if (done + n > per_frame)
          n = per_frame - done;
-      audio_driver_submit(&audio_driver_st, 1.0f, frame_audio, n * 2,
-            false, false, false);
+      audio_driver_submit(&audio_driver_st, 1.0f,
+            source_float ? (const void*)(frame_audio_float + done * 2)
+                         : (const void*)(frame_audio + done * 2), n * 2,
+            source_float, false, false);
       done += n;
       if (spread_publishes && publishes > 1 && k + 1 < publishes)
       {
@@ -594,7 +661,12 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    retro_atomic_store_release_int(&dev_running, 1);
    retro_atomic_store_release_int(&consumer_run, 1);
    pthread_create(&dev,  NULL, dev_thread, NULL);
-   pthread_create(&cons, NULL, consumer,   NULL);
+   if (use_wrapper)
+   {
+      if (!audio_driver_st.current_audio->start(audio_driver_st.context_audio_data, false))
+         fixture_failures++;
+   }
+   else pthread_create(&cons, NULL, consumer, NULL);
 
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
@@ -622,17 +694,28 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    }
 
    usleep(50000);
+   if (use_wrapper)
+   {
+      audio_driver_state_t *st = &audio_driver_st;
+      wrapper_restart();
+      if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
+      audio_driver_pipeline_transport_release();
+      st->current_audio->free(st->context_audio_data);
+      st->current_audio = &clocked_driver;
+      st->context_audio_data = NULL;
+   }
    retro_atomic_store_release_int(&consumer_run, 0);
    retro_atomic_store_release_int(&dev_running, 0);
    audio_driver_pipeline_wake();
    dev_signal();
-   pthread_join(cons, NULL);
+   if (!use_wrapper) pthread_join(cons, NULL);
    pthread_join(dev,  NULL);
 
    wakes  = retro_atomic_load_acquire_size(&cnt_wakes)  - warm_wakes;
    writes = retro_atomic_load_acquire_size(&cnt_writes) - warm_writes;
    under  = retro_atomic_load_acquire_size(&dev_underruns) - warm_under;
    pulls  = retro_atomic_load_acquire_size(&dev_pulls) - warm_pulls;
+   if (use_wrapper && (!writes || !wakes)) fixture_failures++;
    nlat   = retro_atomic_load_acquire_size(&lat_count);
    frames = frames - warm_frames;
 
@@ -644,7 +727,10 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       worst = (double)lat_us[nlat - 1];
    }
 
-   printf("  %4u  %8.2f  %8.2f | %7.0f %7.0f %7.0f | %8.1f %5u %7.0f | %5u %5u\n",
+   if (use_wrapper)
+      printf("wrapper pubs=%u backpressure=%u: %u callbacks, %u writes, 8 restarts\n",
+            publishes, backpressure, (unsigned)wakes, (unsigned)writes);
+   else printf("  %4u  %8.2f  %8.2f | %7.0f %7.0f %7.0f | %8.1f %5u %7.0f | %5u %5u\n",
          publishes,
          frames ? (double)wakes  / (double)frames : 0.0,
          frames ? (double)writes / (double)frames : 0.0,
@@ -666,6 +752,8 @@ int main(int argc, char **argv)
    double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
    const char *transport = getenv("TRANSPORT");
    size_t i;
+   use_wrapper = getenv("WRAPPER") != NULL;
+   source_float = getenv("SOURCE_FLOAT") != NULL;
 
    if (transport)
    {
@@ -680,7 +768,10 @@ int main(int argc, char **argv)
       return 1;
 
    for (i = 0; i < 4096 * 2; i++)
+   {
       frame_audio[i] = (int16_t)(8000.0 * sin((double)i * 0.05));
+      frame_audio_float[i] = frame_audio[i] / 32768.0f;
+   }
 
    notify_per_publish = getenv("NOTIFY_PER_PUBLISH") ? true : false;
    spread_publishes   = getenv("SPREAD")             ? true : false;
@@ -689,6 +780,8 @@ int main(int argc, char **argv)
          " %u ms device\n", seconds, FPS, LATENCY_MS);
    printf("publishes per frame swept; the audio submitted is identical at every setting\n");
    printf("consumer: %s\n", transport ? transport : "legacy");
+   printf("source: %s\n", source_float ? "float" : "int16");
+   if (use_wrapper) printf("real wrapper: restart/rebuild stress; not steady-state timing\n");
    printf("publishes %s\n", spread_publishes
          ? "paced across the frame (SPREAD) - a core whose retro_run fills its budget"
          : "in a burst, as one retro_run call emits them");
@@ -696,18 +789,25 @@ int main(int argc, char **argv)
          ? "once per publish (NOTIFY_PER_PUBLISH) - the shape a mechanical conversion produces"
          : "once per frame, as the tree does");
    printf("-- device applies backpressure (Audio Sync against a real card) --\n");
+   if (!use_wrapper)
+   {
    printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
    printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
+   }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds, true);
 
    printf("\n-- device applies none; the data handshake is the only pacer --\n");
+   if (!use_wrapper)
+   {
    printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
    printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
+   }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds, false);
 
    free(lat_us);
+   if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }

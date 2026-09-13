@@ -249,30 +249,6 @@ bool midi_driver_render_audio(float *out, size_t frames, unsigned rate)
    return false;
 }
 
-const char *audio_thread_wrapped_ident(void *data)
-{
-   (void)data;
-   return NULL;
-}
-
-const audio_driver_t *audio_thread_wrapped_driver(void *data)
-{
-   (void)data;
-   return NULL;
-}
-
-bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
-      const char *device, unsigned out_rate, unsigned *new_rate,
-      unsigned latency, bool raise_priority,
-      bool prefer_fast_cores, const audio_driver_t *driver)
-{
-   (void)out_driver; (void)out_data; (void)device; (void)out_rate;
-   (void)new_rate; (void)latency;
-   (void)raise_priority; (void)prefer_fast_cores; (void)driver;
-   unreachable("audio_init_thread");
-   return false;
-}
-
 size_t fill_pathname_application_special(char *s, size_t len,
       enum application_special_type type)
 {
@@ -294,11 +270,3 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
  * reads the device's transfer granularity from here, and no platform
  * in a harness reports one. */
 struct defaults g_defaults;
-
-/* These fixtures have no wrapper worker; control runs synchronously. */
-void audio_thread_apply_control(void *data,
-      void (*control)(void *userdata), void *userdata)
-{
-   (void)data;
-   if (control) control(userdata);
-}
