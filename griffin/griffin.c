@@ -919,6 +919,13 @@ FIFO BUFFER
 #include "../libretro-common/queues/fifo_queue.c"
 #include "../libretro-common/queues/retro_spsc.c"
 #include "../libretro-common/queues/retro_waitable_spsc.c"
+/* The waitable queue parks on an eventcount, so it goes in wherever
+ * the queue does. It was under HAVE_THREADS, which left every build
+ * without threads - DOS and PSL1GHT among them - linking a queue whose
+ * parking half was never compiled. It has no thread dependency of its
+ * own: with no lock or condition variable it degrades to a spin, which
+ * is what a build with no threads needs from it. */
+#include "../libretro-common/rthreads/retro_eventcount.c"
 
 /*============================================================
 AUDIO RESAMPLER
@@ -1439,7 +1446,6 @@ THREAD
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
-#include "../libretro-common/rthreads/retro_eventcount.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../gfx/video_thread_hw.c"
 #include "../audio/audio_thread_wrapper.c"

@@ -6731,6 +6731,15 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    GFX_VIDEO_DRIVER_METAL,
    "metal",
    false,
+   /* handles_vertex_strip: this driver's draw walks
+    * draw->coords->vertices rather than reading a fixed four, so a
+    * strip may be handed to it whole.
+    *
+    * It was missing entirely, which is what the pointer-to-bool
+    * warning was reporting: scissor_begin was landing in this bool,
+    * scissor_end in scissor_begin, and scissor_end was left null. The
+    * compiler had been saying so for a while. */
+   true,
    gfx_display_metal_scissor_begin,
    gfx_display_metal_scissor_end
 };

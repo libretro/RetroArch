@@ -4306,7 +4306,6 @@ static bool gl2_frame(void *data, const void *frame,
    unsigned height                     = 0;
    bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
-   bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
