@@ -605,6 +605,9 @@ static bool video_thread_handle_packet(
             pkt.data.b = thr->driver->alive(thr->driver_data);
          else
             pkt.data.b = false;
+         /* Published as a frame's would be, so a caller that asked
+          * without waiting has it on its next pass. */
+         retro_atomic_store_release_int(&thr->alive, pkt.data.b);
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1692,14 +1695,24 @@ static bool video_thread_alive(void *data)
 
    runloop_flags       = runloop_get_flags();
 
+   /* Paused, the video thread draws nothing, and what it publishes
+    * after a frame is where this answer comes from: without a frame it
+    * would never hear that the window had gone. So it is asked - but
+    * not waited on. The answer lands in the same word the frames
+    * publish to, and is read here on the next pass through, a frame
+    * later than a driver that drew would have said it. Waiting for it
+    * meant a round trip to the video thread for every iteration of a
+    * paused frontend. */
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
       thread_packet_t pkt;
       pkt.type = CMD_ALIVE;
 
-      video_thread_send_and_wait_user_to_thread(thr, &pkt);
-
-      return pkt.data.b;
+      if (!video_thread_defer_packet(thr, &pkt))
+      {
+         video_thread_send_and_wait_user_to_thread(thr, &pkt);
+         return pkt.data.b;
+      }
    }
 
    return retro_atomic_load_acquire_int(&thr->alive) != 0;
