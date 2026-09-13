@@ -80,10 +80,41 @@
 
 #include <boolean.h>
 #include <retro_atomic.h>
+#include <audio/conversion/float_to_s16.h>
+#include <audio/conversion/s16_to_float.h>
+
+static bool track_conversions;
+static retro_atomic_size_t to_float;
+static retro_atomic_size_t to_int16;
+
+static void counted_to_float(float *out, const int16_t *in, size_t n, float gain)
+{
+   if (track_conversions) retro_atomic_fetch_add_size(&to_float, n);
+   convert_s16_to_float(out, in, n, gain);
+}
+
+static void counted_to_int16(int16_t *out, const float *in, size_t n)
+{
+   if (track_conversions) retro_atomic_fetch_add_size(&to_int16, n);
+   convert_float_to_s16(out, in, n);
+}
 
 #define audio_driver_callback pipeline_callback_impl
+#define convert_s16_to_float counted_to_float
+#define convert_float_to_s16 counted_to_int16
 #include "../../../audio/audio_driver.c"
 #undef audio_driver_callback
+#undef convert_s16_to_float
+#undef convert_float_to_s16
+
+static retro_atomic_size_t int16_src_frames;
+
+static void counted_int16_src(void *state, struct resampler_data_int16 *data)
+{
+   if (track_conversions)
+      retro_atomic_fetch_add_size(&int16_src_frames, data->input_frames);
+   sinc_resampler_int16_process(state, data);
+}
 
 #define OUT_RATE      48000
 #define CORE_RATE     48000
@@ -95,6 +126,8 @@
 /* --- the device ------------------------------------------------------ */
 
 static float              *dev_ring;
+static bool                device_int16;
+static size_t              device_sample_bytes = sizeof(float);
 static size_t              dev_usable;
 static size_t              dev_capacity;
 static size_t              dev_period;
@@ -268,7 +301,7 @@ static void note_write(void)
 
 static ssize_t cdev_write(void *data, const void *buf, size_t len)
 {
-   size_t samples = len / sizeof(float);
+   size_t samples = len / device_sample_bytes;
    size_t written = 0;
    int    laps    = 8;
    (void)data; (void)buf;
@@ -309,12 +342,12 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
          dev_wait(1, 100);
       }
    }
-   return (ssize_t)(written * sizeof(float));
+   return (ssize_t)(written * device_sample_bytes);
 }
 
 static size_t cdev_wait_writable(void *data, size_t len)
 {
-   size_t want = len / sizeof(float);
+   size_t want = len / device_sample_bytes;
    int    laps = 8;
    (void)data;
    if (want % CHANNELS)
@@ -327,7 +360,7 @@ static size_t cdev_wait_writable(void *data, size_t len)
    {
       size_t avail = dev_rb_write_avail();
       if (avail >= want)
-         return avail * sizeof(float);
+         return avail * device_sample_bytes;
       if (--laps < 0)
          break;
       dev_wait(want, 100);
@@ -340,9 +373,9 @@ static bool   cdev_start(void *d, bool s)       { (void)d; (void)s; return true;
 static bool   cdev_alive(void *d)               { (void)d; return true; }
 static void   cdev_set_nonblock(void *d, bool s){ (void)d; (void)s; }
 static void   cdev_free(void *d)                { (void)d; }
-static bool   cdev_use_float(void *d)           { (void)d; return true; }
-static size_t cdev_write_avail(void *d)         { (void)d; return dev_rb_write_avail() * sizeof(float); }
-static size_t cdev_buffer_size(void *d)         { (void)d; return dev_usable * sizeof(float); }
+static bool   cdev_use_float(void *d)           { (void)d; return !device_int16; }
+static size_t cdev_write_avail(void *d)         { (void)d; return dev_rb_write_avail() * device_sample_bytes; }
+static size_t cdev_buffer_size(void *d)         { (void)d; return dev_usable * device_sample_bytes; }
 static size_t cdev_underruns(void *d)           { (void)d; return retro_atomic_load_acquire_size(&dev_underruns); }
 static size_t cdev_frames_consumed(void *d)
 {
@@ -415,6 +448,9 @@ static bool pipeline_up(unsigned latency_ms)
    retro_atomic_size_init(&dev_silent_samples, 0);
 
    retro_atomic_size_init(&cnt_wakes, 0);
+   retro_atomic_size_init(&to_float, 0);
+   retro_atomic_size_init(&to_int16, 0);
+   retro_atomic_size_init(&int16_src_frames, 0);
    retro_atomic_size_init(&cnt_writes, 0);
    retro_atomic_size_init(&sig_seq, 0);
    retro_atomic_size_init(&lat_count, 0);
@@ -448,12 +484,21 @@ static bool pipeline_up(unsigned latency_ms)
    st->pipe_channels        = CHANNELS;
    st->pipe_frame_bytes     = CHANNELS * (source_float ? sizeof(float) : sizeof(int16_t));
    audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
-   AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
+   if (!device_int16) AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
    strcpy(st->resampler_ident, "sinc");
    st->resampler_quality    = RESAMPLER_QUALITY_NORMAL;
    if (!retro_resampler_realloc(&st->resampler_data, &st->resampler,
             st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
       return false;
+   config_get_ptr()->bools.audio_fastpath_s16 = device_int16 && !source_float;
+   if (device_int16 && !source_float)
+   {
+      st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+      st->resampler_int16_process = counted_int16_src;
+      st->resampler_int16_free = sinc_resampler_int16_free;
+      st->resampler_int16_reset = sinc_resampler_int16_reset;
+      if (!st->resampler_data_int16) return false;
+   }
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
    st->rate_control_delta   = 0.005f;
    st->drc_threshold_int16s = 1600;
@@ -494,6 +539,8 @@ static void pipeline_down(void)
    audio_driver_pipeline_transport_release();
    if (st->resampler && st->resampler_data)
       st->resampler->free(st->resampler_data);
+   if (st->resampler_data_int16 && st->resampler_int16_free)
+      st->resampler_int16_free(st->resampler_data_int16);
    retro_spsc_free(&st->pipe_ring);
    retro_eventcount_free(&st->pipe_space);
    retro_eventcount_free(&st->pipe_data);
@@ -716,6 +763,21 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    under  = retro_atomic_load_acquire_size(&dev_underruns) - warm_under;
    pulls  = retro_atomic_load_acquire_size(&dev_pulls) - warm_pulls;
    if (use_wrapper && (!writes || !wakes)) fixture_failures++;
+   if (use_wrapper)
+   {
+      size_t f = retro_atomic_load_acquire_size(&to_float);
+      size_t n = retro_atomic_load_acquire_size(&to_int16);
+      size_t native_frames = retro_atomic_load_acquire_size(&int16_src_frames);
+      /* Matching lanes stay native; mixed lanes convert only toward the sink. */
+      if (source_float == !device_int16)
+      {
+         if (f || n) fixture_failures++;
+         if (device_int16 && !native_frames) fixture_failures++;
+      }
+      else if (source_float ? (f || !n) : (n || !f)) fixture_failures++;
+      printf("converted samples: int16-to-float=%u float-to-int16=%u; int16 SRC frames=%u\n",
+            (unsigned)f, (unsigned)n, (unsigned)native_frames);
+   }
    nlat   = retro_atomic_load_acquire_size(&lat_count);
    frames = frames - warm_frames;
 
@@ -754,6 +816,9 @@ int main(int argc, char **argv)
    size_t i;
    use_wrapper = getenv("WRAPPER") != NULL;
    source_float = getenv("SOURCE_FLOAT") != NULL;
+   device_int16 = getenv("DEVICE_INT16") != NULL;
+   device_sample_bytes = device_int16 ? sizeof(int16_t) : sizeof(float);
+   track_conversions = use_wrapper;
 
    if (transport)
    {
@@ -781,6 +846,7 @@ int main(int argc, char **argv)
    printf("publishes per frame swept; the audio submitted is identical at every setting\n");
    printf("consumer: %s\n", transport ? transport : "legacy");
    printf("source: %s\n", source_float ? "float" : "int16");
+   printf("device: %s\n", device_int16 ? "int16" : "float");
    if (use_wrapper) printf("real wrapper: restart/rebuild stress; not steady-state timing\n");
    printf("publishes %s\n", spread_publishes
          ? "paced across the frame (SPREAD) - a core whose retro_run fills its budget"
