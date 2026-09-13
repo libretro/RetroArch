@@ -104,6 +104,15 @@ typedef struct _sdl2_video
    unsigned overlays_size;
    bool overlays_enabled;
 #endif
+
+   /* What a display draw hands SDL_RenderGeometry. Grown as needed and
+    * kept, rather than alloca'd per draw: the count comes from the
+    * caller, so the stack cost was whatever geometry someone asked to
+    * draw - a nine-slice is 52 vertices and a pipeline is thousands. */
+   void   *display_verts;
+   size_t  display_verts_cap;
+   int    *display_indices;
+   size_t  display_indices_cap;
 } sdl2_video_t;
 
 void sdl2_set_handles(void *data, enum rarch_display_type 
