@@ -476,7 +476,6 @@ static struct slang_include_cache_entry *slang_include_cache_find(
 static bool slang_include_cache_read(struct slang_include_cache *cache,
       const char *path, const uint8_t **buf, int64_t *len, bool *owned)
 {
-   size_t i;
    uint8_t *data = NULL;
    int64_t  n    = 0;
 

@@ -1085,13 +1085,22 @@ static uint64_t cpu_features_probe(void)
 #else
    _val = 0;
    _len = sizeof(_val);
-   /* Older key first; newer systems also carry the FEAT_ spelling. */
-   if (   (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
-           && _val)
-       || (_val = 0, _len = sizeof(_val),
-           sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
-           && _val))
+   /* Older key first; newer systems also carry the FEAT_ spelling.
+    * Written out rather than folded into one condition with a comma
+    * operator: the second query needs the buffer and its length reset
+    * first, and doing that inside a short-circuit || is both a warning
+    * and a thing to read twice. */
+   if (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
+         && _val)
       cpu |= RETRO_SIMD_CRC32;
+   else
+   {
+      _val = 0;
+      _len = sizeof(_val);
+      if (sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
+            && _val)
+         cpu |= RETRO_SIMD_CRC32;
+   }
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.arm.FEAT_AES", &_val, &_len, NULL, 0) == 0
