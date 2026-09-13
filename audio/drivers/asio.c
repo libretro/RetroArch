@@ -65,6 +65,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 #include "../audio_driver.h"
@@ -733,8 +734,13 @@ typedef struct ra_asio
    retro_spsc_t       ring;
    bool               ring_initialized;
 #ifdef HAVE_THREADS
-   scond_t           *cond;
-   slock_t           *cond_lock;
+   /* Only the bounded wait a full ring puts the writer into; the ring
+    * is a retro_spsc and the callback is a real-time one that must not
+    * take a lock, so a lock here could never have guarded the
+    * predicate - which is exactly the window asio_write() describes.
+    * prepare_wait registers before the re-check, so a callback that
+    * drains from that point on cannot be slept through. */
+   retro_eventcount_t park;
 #endif
    ASIOBufferInfo     buf_info[8];  /* one per output channel played */
    unsigned           channels;     /* how many of them: the layout's */
@@ -1016,8 +1022,7 @@ static void asio_cb_buffer_switch(long index,
    asio_deinterleave_to_buffers(ad, index, ad->buffer_frames);
 
 #ifdef HAVE_THREADS
-   if (ad->cond)
-      scond_signal(ad->cond);
+   retro_eventcount_notify(&ad->park);
 #endif
 
    /* After the last store to this half, and only on a driver that
@@ -1288,10 +1293,7 @@ static void asio_destroy(ra_asio_t *ad)
    }
 
 #ifdef HAVE_THREADS
-   if (ad->cond_lock)
-      slock_free(ad->cond_lock);
-   if (ad->cond)
-      scond_free(ad->cond);
+   retro_eventcount_free(&ad->park);
 #endif
 
    if (ad->com_initialized)
@@ -1841,9 +1843,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
 
    /* Query buffer size */
 #ifdef HAVE_THREADS
-   ad->cond      = scond_new();
-   ad->cond_lock = slock_new();
-   if (!ad->cond || !ad->cond_lock)
+   if (!retro_eventcount_init(&ad->park))
    {
       RARCH_ERR("[ASIO] Failed to create sync primitives.\n");
       goto error;
@@ -1890,10 +1890,7 @@ error:
       ad->scratch = NULL;
    }
 #ifdef HAVE_THREADS
-   if (ad->cond_lock)
-      slock_free(ad->cond_lock);
-   if (ad->cond)
-      scond_free(ad->cond);
+   retro_eventcount_free(&ad->park);
 #endif
    if (ad->com_initialized)
       CoUninitialize();
@@ -1976,26 +1973,32 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
          if (retro_atomic_load_acquire_int(&ad->is_paused))
             break;
 #ifdef HAVE_THREADS
-         /* Timed, not indefinite.  The predicate here is the ring's
-          * write_avail, which is lock-free by design - the consumer is
-          * a real-time ASIO callback and must not take a lock - so
-          * cond_lock cannot also guard the predicate and a signal
-          * raised between the write_avail test above and this wait has
-          * no waiter to reach.  Where a condition variable can lose a
-          * wakeup by construction, the correct shape is a timed wait
-          * inside a loop that rechecks, which is what the enclosing
-          * while does: it retests ad->shutdown and write_avail on
-          * every pass.
+         /* Registered before the ring and the two flags are read
+          * again, so a callback that drains from here on either shows
+          * up in the re-check or ends the park at once. The predicate
+          * is the ring's write_avail, which is lock-free by design -
+          * the consumer is a real-time ASIO callback and must not take
+          * a lock - so a lock here could never have guarded it, and a
+          * signal raised between the test above and the wait reached
+          * no waiter. That is what this closes.
           *
-          * This is also the only thing standing between a driver reset
-          * and a hung emulator thread.  asio_cb_buffer_switch is the
-          * sole routine that signals during streaming, and it returns
-          * early - before signalling - once shutdown or is_paused is
-          * set.  An untimed wait entered before that point was never
-          * woken again. */
-         slock_lock(ad->cond_lock);
-         scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
-         slock_unlock(ad->cond_lock);
+          * Still timed, for the reason that has not changed:
+          * asio_cb_buffer_switch is the only thing that notifies
+          * during streaming and it returns early - before notifying -
+          * once shutdown or is_paused is set. A park entered before
+          * that point has nothing left to end it, so the bound and the
+          * laps below are what stand between a driver reset and a hung
+          * emulator thread. */
+         {
+            int key = retro_eventcount_prepare_wait(&ad->park);
+            if (     asio_ring_room(ad)
+                  || retro_atomic_load_acquire_int(&ad->shutdown)
+                  || retro_atomic_load_acquire_int(&ad->is_paused))
+               retro_eventcount_cancel_wait(&ad->park);
+            else
+               retro_eventcount_commit_wait_timeout(&ad->park, key,
+                     wait_us);
+         }
 #else
          Sleep(1);
 #endif
@@ -2065,8 +2068,7 @@ static void ra_asio_free(void *data)
    retro_atomic_store_release_int(&ad->is_paused, 0);
 
 #ifdef HAVE_THREADS
-   if (ad->cond)
-      scond_signal(ad->cond);
+   retro_eventcount_notify(&ad->park);
 #endif
 
    /* Park the instance for reuse on the next init() call.
@@ -2149,9 +2151,20 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
       if (--laps < 0)
          return 0;
 #ifdef HAVE_THREADS
-      slock_lock(ad->cond_lock);
-      scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
-      slock_unlock(ad->cond_lock);
+      {
+         /* Registered before the ring and the flags are read again, so
+          * a callback that drains from here on cannot be slept
+          * through. The two returns above are the reasons this stays
+          * bounded: nothing notifies once shutdown or is_paused is
+          * set. */
+         int key = retro_eventcount_prepare_wait(&ad->park);
+         if (     asio_ring_room(ad) >= len
+               || retro_atomic_load_acquire_int(&ad->shutdown)
+               || retro_atomic_load_acquire_int(&ad->is_paused))
+            retro_eventcount_cancel_wait(&ad->park);
+         else
+            retro_eventcount_commit_wait_timeout(&ad->park, key, wait_us);
+      }
 #else
       /* Nothing to wait on without threads, and nothing calls this
        * without them either: the threaded pipeline is the only caller.

@@ -20,6 +20,8 @@
 
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include <retro_atomic.h>
 
 #include "../audio_driver.h"
 #include "rsound.h"
@@ -35,8 +37,20 @@ typedef struct rsd
     * is the size asked for and the producer never fills past it. */
    retro_spsc_t   ring;
    bool           ring_init;
-   slock_t *cond_lock;
-   scond_t *cond;
+   /* Only the bounded waits a full ring puts the writer into; the ring
+    * above is a retro_spsc and carries the data on its own.
+    *
+    * An eventcount rather than a lock and a condition variable, and
+    * here that is a fix rather than a tidy-up. Neither callback held
+    * the lock when it signalled, so a signal raised between the
+    * writer's test and its wait reached no waiter - and rsound_err_cb
+    * is the last signal that will ever be raised, because librsound
+    * calls it and returns from its worker thread. Losing that one left
+    * the writer parked with nothing alive to wake it, and only the
+    * bound got it out. prepare_wait registers before the re-check, so
+    * the window is closed and the bound goes back to being what it is
+    * named for. */
+   retro_eventcount_t park;
 
    /* Bound for the blocking wait in rs_write, one callback period.
     * See the note there. */
@@ -46,7 +60,11 @@ typedef struct rsd
 
    bool nonblock;
    bool is_paused;
-   volatile bool has_error;
+   /* Set by rsound_err_cb on librsound's worker thread and read by the
+    * writer, including inside its wait window: an atomic, because
+    * volatile orders nothing between threads and the re-check below
+    * has to see the store that came before the notify. */
+   retro_atomic_int_t has_error;
 } rsd_t;
 
 /* Room in the ring against the size asked for: the physical room less
@@ -63,7 +81,7 @@ static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
 {
    rsd_t *rsd        = (rsd_t*)userdata;
    size_t write_size = retro_spsc_read(&rsd->ring, data, bytes);
-   scond_signal(rsd->cond);
+   retro_eventcount_notify(&rsd->park);
 
    return write_size;
 }
@@ -71,8 +89,11 @@ static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
 static void rsound_err_cb(void *userdata)
 {
    rsd_t *rsd = (rsd_t*)userdata;
-   rsd->has_error = true;
-   scond_signal(rsd->cond);
+   /* Published before the notify, so a writer released by it sees the
+    * error rather than parking again on a callback that will not
+    * come. */
+   retro_atomic_store_release_int(&rsd->has_error, 1);
+   retro_eventcount_notify(&rsd->park);
 }
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency,
@@ -87,8 +108,8 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
    if (rsd_init(&rd) < 0)
       goto error;
 
-   rsd->cond_lock = slock_new();
-   rsd->cond      = scond_new();
+   retro_atomic_int_init(&rsd->has_error, 0);
+   retro_eventcount_init(&rsd->park);
 
    channels       = 2;
    format         = RSD_S16_NE;
@@ -153,8 +174,7 @@ error:
     * freed only the handle. */
    if (rsd->ring_init)
       retro_spsc_free(&rsd->ring);
-   scond_free(rsd->cond);
-   slock_free(rsd->cond_lock);
+   retro_eventcount_free(&rsd->park);
    rsd_free(rd);
    free(rsd);
    return NULL;
@@ -170,7 +190,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
    size_t _len;
    rsd_t *rsd = (rsd_t*)data;
 
-   if (rsd->has_error)
+   if (retro_atomic_load_acquire_int(&rsd->has_error))
       return -1;
 
    if (rsd->nonblock)
@@ -185,29 +205,30 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       int laps = RSOUND_WAIT_LAPS;
 
       _len = 0;
-      while (_len < len && !rsd->has_error)
+      while (_len < len && !retro_atomic_load_acquire_int(&rsd->has_error))
       {
          size_t avail = rs_ring_room(rsd);
 
          if (avail == 0)
          {
-            if (!rsd->has_error)
+            if (!retro_atomic_load_acquire_int(&rsd->has_error))
             {
-               /* Timed, not indefinite.  Neither rsound_audio_cb nor
-                * rsound_err_cb holds cond_lock when it signals - so a signal raised between the
-                * has_error test above and this wait reaches no waiter.
+               /* Registered before room and the error flag are read
+                * again, so neither a pull nor the error callback can
+                * be missed from here on - and the error callback is
+                * the one that matters, being the last notify librsound
+                * will ever raise before its worker returns.
                 *
-                * rsound_err_cb is the case that matters: librsound
-                * calls it and immediately returns from its worker
-                * thread, at every one of its error exits.  It is
-                * therefore the last signal that will ever be raised,
-                * and losing it to the window left this thread parked
-                * with nothing alive to wake it.  A timed wait returns
-                * to the enclosing loop, which rechecks has_error. */
-               slock_lock(rsd->cond_lock);
-               scond_wait_timeout(rsd->cond, rsd->cond_lock,
-                     rsd->wait_us);
-               slock_unlock(rsd->cond_lock);
+                * Still timed: a server that stops draining without
+                * erroring raises nothing at all, and the laps below
+                * are what ends the write then. */
+               int key = retro_eventcount_prepare_wait(&rsd->park);
+               if (     rs_ring_room(rsd)
+                     || retro_atomic_load_acquire_int(&rsd->has_error))
+                  retro_eventcount_cancel_wait(&rsd->park);
+               else
+                  retro_eventcount_commit_wait_timeout(&rsd->park, key,
+                        rsd->wait_us);
                /* And bounded overall: a server that stops draining
                 * without erroring ends the write with what went. */
                if (--laps < 0)
@@ -268,8 +289,7 @@ static void rs_free(void *data)
 
    if (rsd->ring_init)
       retro_spsc_free(&rsd->ring);
-   slock_free(rsd->cond_lock);
-   scond_free(rsd->cond);
+   retro_eventcount_free(&rsd->park);
 
    free(rsd);
 }
@@ -278,7 +298,7 @@ static size_t rs_write_avail(void *data)
 {
    rsd_t *rsd = (rsd_t*)data;
 
-   if (rsd->has_error)
+   if (retro_atomic_load_acquire_int(&rsd->has_error))
       return 0;
    return rs_ring_room(rsd);
 }
@@ -309,14 +329,20 @@ static size_t rs_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (rsd->has_error)
+      if (retro_atomic_load_acquire_int(&rsd->has_error))
          return 0;
       avail = rs_ring_room(rsd);
       if (avail >= len)
          return avail;
-      slock_lock(rsd->cond_lock);
-      scond_wait_timeout(rsd->cond, rsd->cond_lock, rsd->wait_us);
-      slock_unlock(rsd->cond_lock);
+      {
+         int key = retro_eventcount_prepare_wait(&rsd->park);
+         if (     rs_ring_room(rsd) >= len
+               || retro_atomic_load_acquire_int(&rsd->has_error))
+            retro_eventcount_cancel_wait(&rsd->park);
+         else
+            retro_eventcount_commit_wait_timeout(&rsd->park, key,
+                  rsd->wait_us);
+      }
       /* No room after this many waits: the server is not draining and
        * has not said so; the pass is handed back rather than waited
        * on further. */
