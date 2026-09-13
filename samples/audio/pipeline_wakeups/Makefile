@@ -68,17 +68,27 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
+pipeline_wakeups_test.o: $(CORE_DIR)/audio/audio_driver.c $(CORE_DIR)/audio/audio_driver.h
+
 # One second a setting keeps the suite quick; it is enough to show the
 # shape and not enough to trust the last digit. A real before/after
 # comparison wants the default four, and the other two modes:
 #   ./pipeline_wakeups_test 4
 #   SPREAD=1 ./pipeline_wakeups_test 4
 #   SPREAD=1 NOTIFY_PER_PUBLISH=1 ./pipeline_wakeups_test 4
+#   TRANSPORT=dry ./pipeline_wakeups_test 4
+#   TRANSPORT=lpf ./pipeline_wakeups_test 4
+#   TRANSPORT=stretch SPREAD=1 ./pipeline_wakeups_test 4
 check: $(TARGET)
 	./$(TARGET) 1
+
+check-transport: $(TARGET)
+	TRANSPORT=dry ./$(TARGET) 1
+	TRANSPORT=lpf ./$(TARGET) 1
+	TRANSPORT=stretch ./$(TARGET) 1
 
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check
+.PHONY: clean all check check-transport

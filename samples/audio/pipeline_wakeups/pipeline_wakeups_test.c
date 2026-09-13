@@ -16,7 +16,7 @@
  *
  * Reported per setting:
  *
- *   wakes/frame    returns from audio_driver_pipeline_consume(). What
+ *   wakes/frame    returns from audio_driver_callback(). What
  *                  the handshake costs the consumer thread.
  *   writes/frame   calls that reached the device, as against wakes that
  *                  found nothing.
@@ -28,7 +28,7 @@
  *                  buys its cheapness with underruns is visible here
  *                  rather than only in pipeline_clocked.
  *
- * Three things had to be true at once before a per-publish notify cost
+ * In the legacy consumer, three things had to be true before a per-publish notify cost
  * anything measurable, which is worth knowing before reading a flat
  * column as proof that nothing is wrong:
  *
@@ -53,7 +53,7 @@
  * that batches per scanline and is slow enough to spread them, against
  * a driver that is not applying backpressure.
  *
- * There is no pass/fail line. The numbers are a baseline to compare a
+ * There is no performance pass/fail threshold. The numbers compare a
  * changed handshake against, and the comparison is the test - run it
  * before and after. It is a measurement, so expect the last digit to
  * move between runs and run it on an idle machine.
@@ -358,8 +358,11 @@ static audio_driver_t clocked_driver = {
 /* --- threads --------------------------------------------------------- */
 
 static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
+/* TRANSPORT=dry|lpf|stretch compares the optional native consumer. */
+static unsigned transport_mode;
+static unsigned fixture_failures;
 
-/* Every return from consume() is one wake: the call either parked and
+/* Every return from the callback is one wake: the call either parked and
  * came back, or found work without parking. Counting the loop rather
  * than anything inside the driver is what keeps this number meaningful
  * across a change of primitive. */
@@ -368,7 +371,7 @@ static void *consumer(void *arg)
    (void)arg;
    while (retro_atomic_load_acquire_int(&consumer_run))
    {
-      audio_driver_pipeline_consume(&audio_driver_st);
+      audio_driver_callback();
       retro_atomic_fetch_add_size(&cnt_wakes, 1);
    }
    return NULL;
@@ -427,7 +430,9 @@ static bool pipeline_up(unsigned latency_ms)
    st->pipe_conv            = (uint8_t*)malloc(1 << 20);
    st->pipe_pass_frames     = per_frame;
    st->pipe_float           = false;
+   st->pipe_channels        = CHANNELS;
    st->pipe_frame_bytes     = CHANNELS * sizeof(int16_t);
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
    strcpy(st->resampler_ident, "sinc");
    st->resampler_quality    = RESAMPLER_QUALITY_NORMAL;
@@ -453,14 +458,22 @@ static bool pipeline_up(unsigned latency_ms)
    st->pipe_priming   = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
-   return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
-      && st->state_lock && st->output_samples_buf && st->pipe_scratch
-      && st->input_data && st->synth_buf && dev_ring;
+   if (!st->pipe_lock || !st->pipe_cond || !st->pipe_data_cond
+         || !st->state_lock || !st->output_samples_buf || !st->pipe_scratch
+         || !st->input_data || !st->synth_buf || !dev_ring)
+      return false;
+   if (transport_mode && (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
+            || !audio_driver_pipeline_transport_request(65536,
+               transport_mode == 3, false, transport_mode == 2 ? 1000 : 0)))
+      return false;
+   return true;
 }
 
 static void pipeline_down(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
+   /* Both worker threads have joined. */
+   audio_driver_pipeline_transport_release();
    retro_spsc_free(&st->pipe_ring);
    slock_free(st->pipe_lock);
    scond_free(st->pipe_cond);
@@ -495,11 +508,13 @@ static void submit_frame(size_t per_frame, unsigned publishes)
    size_t done  = 0;
    unsigned k;
    retro_time_t t0, t1, slept = 0;
+   struct timespec spread_start;
 
    if (!chunk)
       chunk = 1;
 
    t0 = cpu_features_get_time_usec();
+   if (spread_publishes) clock_gettime(CLOCK_MONOTONIC, &spread_start);
    for (k = 0; k < publishes && done < per_frame; k++)
    {
       size_t n = (k + 1 == publishes) ? per_frame - done : chunk;
@@ -514,7 +529,13 @@ static void submit_frame(size_t per_frame, unsigned publishes)
           * subtracted below, or the producer column in SPREAD mode
           * would just be reporting these sleeps back. */
          retro_time_t s0 = cpu_features_get_time_usec();
-         usleep((useconds_t)(1e6 / FPS * 0.8) / publishes);
+         struct timespec deadline = spread_start;
+         /* Absolute deadlines prevent short-sleep rounding accumulating
+          * hundreds of times in a scanline-sized publish sweep. */
+         deadline.tv_nsec += (long)(1e9 / FPS * 0.8 * (k + 1) / publishes);
+         deadline.tv_sec += deadline.tv_nsec / 1000000000L;
+         deadline.tv_nsec %= 1000000000L;
+         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, NULL);
          slept += cpu_features_get_time_usec() - s0;
       }
       /* The failure mode this harness exists to catch, on demand. A
@@ -568,6 +589,7 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    if (!pipeline_up(LATENCY_MS))
    {
       printf("  %4u: fixture failed\n", publishes);
+      fixture_failures++;
       return;
    }
 
@@ -644,7 +666,16 @@ int main(int argc, char **argv)
     * only its endpoints. */
    static const unsigned sweep[] = { 1, 2, 4, 8, 16, 64, 262, 312 };
    double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
+   const char *transport = getenv("TRANSPORT");
    size_t i;
+
+   if (transport)
+   {
+      if (!strcmp(transport, "dry")) transport_mode = 1;
+      else if (!strcmp(transport, "lpf")) transport_mode = 2;
+      else if (!strcmp(transport, "stretch")) transport_mode = 3;
+      else { fprintf(stderr, "TRANSPORT must be dry, lpf or stretch\n"); return 1; }
+   }
 
    lat_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t));
    if (!lat_us)
@@ -659,6 +690,7 @@ int main(int argc, char **argv)
    printf("threaded pipeline handshake cost, %.0f s per setting, %g fps core,"
          " %u ms device\n", seconds, FPS, LATENCY_MS);
    printf("publishes per frame swept; the audio submitted is identical at every setting\n");
+   printf("consumer: %s\n", transport ? transport : "legacy");
    printf("publishes %s\n", spread_publishes
          ? "paced across the frame (SPREAD) - a core whose retro_run fills its budget"
          : "in a burst, as one retro_run call emits them");
@@ -678,5 +710,6 @@ int main(int argc, char **argv)
       run_one(sweep[i], seconds, false);
 
    free(lat_us);
-   return 0;
+   printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
+   return fixture_failures ? 1 : 0;
 }
