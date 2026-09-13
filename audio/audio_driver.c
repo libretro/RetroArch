@@ -4472,6 +4472,28 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
    audio_driver_state_unlock();
 }
 
+bool audio_driver_pipeline_transport_discard(size_t frames)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (!audio_st->pipe_transport
+         || !audio_pipeline_stretch_discard(audio_st->pipe_transport, frames))
+      return false;
+   audio_st->pipe_pending = NULL;
+   audio_st->pipe_pending_bytes = 0;
+   audio_driver_state_lock();
+   audio_driver_reset_resamplers(audio_st);
+   audio_driver_state_unlock();
+   if (frames)
+   {
+      slock_lock(audio_st->pipe_lock);
+      audio_st->pipe_gen++;
+      audio_st->pipe_stalled = false;
+      scond_signal(audio_st->pipe_cond);
+      slock_unlock(audio_st->pipe_lock);
+   }
+   return true;
+}
+
 bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
       uint32_t *serial, size_t input_budget, size_t output_budget,
       bool finishing, bool *complete)
@@ -6735,14 +6757,15 @@ bool audio_driver_stop(void)
    {
       /* The wrapper has parked the consumer before returning from stop. */
 #ifdef HAVE_THREADS
-      if (audio_st->pipe_transport)
-         audio_pipeline_stretch_discard(audio_st->pipe_transport, 0);
+      if (!audio_driver_pipeline_transport_discard(0))
 #endif
-      audio_st->pipe_pending = NULL;
-      audio_st->pipe_pending_bytes = 0;
-      audio_driver_state_lock();
-      audio_driver_reset_resamplers(audio_st);
-      audio_driver_state_unlock();
+      {
+         audio_st->pipe_pending = NULL;
+         audio_st->pipe_pending_bytes = 0;
+         audio_driver_state_lock();
+         audio_driver_reset_resamplers(audio_st);
+         audio_driver_state_unlock();
+      }
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_STARTED);
       RARCH_DBG("[Audio] Stopped audio driver \"%s\".\n", audio->ident);
    }

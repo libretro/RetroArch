@@ -928,6 +928,12 @@ struct audio_pipeline_stretch;
  * releases it while preserving the new native ring format. */
 bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_channels);
 void audio_driver_pipeline_transport_release(void);
+/* Consumer thread, or main thread with the wrapper parked; no worker locks
+ * held. Cancel owned transport/device output and reset DSP history, skipping
+ * exactly frames of queued native source. Zero preserves queued source.
+ * Invalid/oversized requests leave state untouched. Notify the producer when
+ * source space is released. This does not acknowledge a device underrun. */
+bool audio_driver_pipeline_transport_discard(size_t frames);
 /* Consumer-only bounded pass for a pitch-preserving transport session. Stage
  * must own this driver's native ring/metadata and separate output storage;
  * serial is caller-owned, initially zero. The caller owns source waits,

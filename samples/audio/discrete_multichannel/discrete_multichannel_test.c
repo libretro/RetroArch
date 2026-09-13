@@ -1741,6 +1741,84 @@ static void transport_owner_cases(void)
    printf("native transport ownership: 4 cases, %u failures\n", failures - before);
 }
 
+static void transport_discard_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned floating, wide, wet, before = failures;
+   for (floating = 0; floating < 2; floating++)
+      for (wide = 0; wide < 2; wide++)
+         for (wet = 0; wet < 2; wet++)
+         {
+            union { float f[34*11]; int16_t i[34*11]; } input;
+            struct audio_pipeline_stretch_block block;
+            size_t queued, tail;
+            uint32_t serial;
+            unsigned gen, j;
+            const void *pending;
+            CHECK(pipe_up(floating, floating), "discard stand-up");
+            if (!wide)
+            {
+               st->pipe_channels = 2;
+               st->pipe_frame_bytes = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+            }
+            CHECK(!audio_driver_pipeline_transport_discard(0), "discard absent transport");
+            CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "discard prepare");
+            if (wet)
+               CHECK(audio_pipeline_layout_publish_cutoff(&st->pipe_layouts, 0, 1000),
+                     "discard cutoff");
+            for (j = 0; j < 34 * st->pipe_channels; j++)
+               if (floating) input.f[j] = 0.25f; else input.i[j] = 8192;
+            CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 34, st->pipe_frame_bytes) == 34,
+                  "discard source");
+            CHECK(audio_pipeline_stretch_next(st->pipe_transport, 17, 17, &block)
+                  && block.frames == 17, "discard retained output");
+            serial = block.reset_serial;
+            pending = block.data;
+            st->pipe_pending = (const uint8_t*)pending;
+            st->pipe_pending_bytes = 17 * st->pipe_frame_bytes;
+            queued = retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes;
+            tail = retro_atomic_load_relaxed_size(&st->pipe_ring.tail);
+            gen = st->pipe_gen;
+            st->pipe_stalled = true;
+            CHECK(!audio_driver_pipeline_transport_discard(queued + 1), "oversized discard accepted");
+            CHECK(!audio_driver_pipeline_transport_discard((size_t)-1), "overflow discard accepted");
+            CHECK(retro_atomic_load_relaxed_size(&st->pipe_ring.tail) == tail
+                  && st->pipe_gen == gen && st->pipe_stalled
+                  && st->pipe_pending == pending && st->pipe_pending_bytes == 17 * st->pipe_frame_bytes,
+                  "failed discard changed driver state");
+            CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
+                  && block.frames == 17 && block.reset_serial == serial,
+                  "failed discard changed transport");
+            transport_allocations = transport_frees = 0; transport_track = true;
+            CHECK(audio_driver_pipeline_transport_discard(1), "exact discard failed");
+            transport_track = false;
+            CHECK(!transport_allocations && !transport_frees, "discard replaced storage");
+            CHECK(!st->pipe_pending && !st->pipe_pending_bytes
+                  && st->pipe_gen == gen + 1 && !st->pipe_stalled,
+                  "discard did not cancel output/notify progress");
+            CHECK(retro_spsc_read_avail(&st->pipe_ring) == (queued - 1) * st->pipe_frame_bytes,
+                  "discard released wrong source count");
+            CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
+                  && !block.frames && block.reset_serial == serial + 1,
+                  "discard retained output or epoch");
+            gen = st->pipe_gen;
+            CHECK(audio_driver_pipeline_transport_discard(0), "zero discard failed");
+            CHECK(st->pipe_gen == gen && retro_spsc_read_avail(&st->pipe_ring)
+                  == (queued - 1) * st->pipe_frame_bytes, "zero discard released source");
+            CHECK(audio_driver_pipeline_transport_discard(queued - 1), "remaining discard failed");
+            CHECK(!retro_spsc_read_avail(&st->pipe_ring), "discard did not empty source");
+            for (j = 0; j < 17 * st->pipe_channels; j++)
+               if (floating) input.f[j] = -0.25f; else input.i[j] = -8192;
+            CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 17, st->pipe_frame_bytes) == 17,
+                  "discard restart source");
+            CHECK(audio_pipeline_stretch_next(st->pipe_transport, 17, 17, &block)
+                  && block.frames == 17, "discard restart output");
+            CHECK(!memcmp(block.data, &input, 17 * st->pipe_frame_bytes), "discard retained history");
+            audio_driver_deinit_internal(true);
+         }
+   printf("native transport discard: 8 cases, %u failures\n", failures - before);
+}
+
 static void native_render_cases(void)
 {
    unsigned floating, wide, hq, before = failures;
@@ -1763,6 +1841,7 @@ int main(void)
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
    RUN("transportowner", transport_owner_cases());
+   RUN("transportdiscard", transport_discard_cases());
    RUN("nativerender", native_render_cases());
    RUN("srcreset", resampler_discontinuity_cases());
    RUN("suspended", suspended_multichannel_case(true, true));
