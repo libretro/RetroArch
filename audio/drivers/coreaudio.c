@@ -62,6 +62,16 @@
 #include <mach/task.h>
 #include <dlfcn.h>
 
+/* RTLD_DEFAULT is not always visible here. Apple's dlfcn.h defines it
+ * only when the full BSD namespace is - __DARWIN_C_FULL - and this
+ * file is compiled through griffin as C, where the iOS and tvOS
+ * targets do not get that, while every other dlsym(RTLD_DEFAULT, ...)
+ * in the tree is in an Objective-C file that does. The value is
+ * Apple's own, and this file builds nowhere else. */
+#ifndef RTLD_DEFAULT
+#define RTLD_DEFAULT ((void*)-2)
+#endif
+
 /* --- Runtime resolution of the component API ------------------------
  *
  * The output unit is opened through AudioComponentFindNext /
