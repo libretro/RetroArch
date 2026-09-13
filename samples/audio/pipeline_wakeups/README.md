@@ -34,5 +34,15 @@ The test does not compare rendered samples or test physical hardware. Existing
 native frontend sample-oracle and thread-handshake suites remain complementary.
 
 For manual runs: `WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch ./pipeline_wakeups_test 1`.
-Active stretch uses tempo 1x to retain nominal device duration. Speed-policy,
-settings activation, multichannel and non-1x wrapper validation remain separate.
+Stretch defaults to 1x. `TEMPO` accepts 0.25, 0.5, 1, 2, 4, 8, 16 or 32 with
+`TRANSPORT=stretch`. Source frames per video frame scale with tempo; the source
+ring and processing budgets stay fixed. Large publishes therefore exercise
+space waits before frame end. Restart stress submits enough extra source to
+prime the fixed ring at slow tempos too.
+
+`make check-tempo` runs both matching native lanes at all eight tempos, with
+0.25 seconds of source per setting followed by the restart checks. It verifies
+progress and conversion invariants, not exact duration, sound quality or
+steady-state throughput. Put it under an external timeout to catch lost wakes.
+Automatic speed-policy, settings activation and multichannel acceptance remain
+separate; the fixture explicitly publishes a fixed tempo before its source.

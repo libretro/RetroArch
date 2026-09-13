@@ -103,8 +103,14 @@ check-wrapper: $(TARGET)
 	WRAPPER=1 SOURCE_FLOAT=1 DEVICE_INT16=1 TRANSPORT=lpf ./$(TARGET) 1
 	WRAPPER=1 SOURCE_FLOAT=1 DEVICE_INT16=1 TRANSPORT=stretch ./$(TARGET) 1
 
+check-tempo: $(TARGET)
+	@for tempo in 0.25 0.5 1 2 4 8 16 32; do \
+		WRAPPER=1 DEVICE_INT16=1 TRANSPORT=stretch TEMPO=$$tempo ./$(TARGET) 0.25 || exit 1; \
+		WRAPPER=1 SOURCE_FLOAT=1 TRANSPORT=stretch TEMPO=$$tempo ./$(TARGET) 0.25 || exit 1; \
+	done
+
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport check-wrapper
+.PHONY: clean all check check-transport check-wrapper check-tempo

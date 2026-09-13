@@ -398,6 +398,8 @@ static unsigned transport_mode;
 static unsigned fixture_failures;
 static bool use_wrapper;
 static bool source_float;
+static double source_tempo = 1.0;
+static uint32_t tempo_q16 = 65536;
 static retro_atomic_int_t in_callback = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 bool audio_driver_callback(void)
@@ -424,8 +426,8 @@ static void *consumer(void *arg)
    return NULL;
 }
 
-static int16_t frame_audio[4096 * 2];
-static float frame_audio_float[4096 * 2];
+static int16_t frame_audio[32768 * 2];
+static float frame_audio_float[32768 * 2];
 
 /* --- fixture --------------------------------------------------------- */
 
@@ -526,7 +528,7 @@ static bool pipeline_up(unsigned latency_ms)
             false, false, &clocked_driver))
       return false;
    if (transport_mode && (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
-            || !audio_driver_pipeline_transport_request(65536,
+            || !audio_driver_pipeline_transport_request(tempo_q16,
                transport_mode == 3, false, transport_mode == 2 ? 1000 : 0)))
       return false;
    return true;
@@ -584,7 +586,7 @@ static void wrapper_restart(void)
       {
          audio_driver_pipeline_transport_release();
          if (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
-               || !audio_driver_pipeline_transport_request(65536,
+               || !audio_driver_pipeline_transport_request(tempo_q16,
                   transport_mode == 3, true, transport_mode == 2 ? 1000 : 0))
             fixture_failures++;
       }
@@ -592,7 +594,9 @@ static void wrapper_restart(void)
       before = retro_atomic_load_acquire_size(&cnt_writes);
       if (!st->current_audio->start(st->context_audio_data, false)) fixture_failures++;
       for (retry = 0; retry < 3; retry++)
-         submit_frame((size_t)(CORE_RATE / FPS), 1);
+         /* Prime the fixed-size source ring even below nominal tempo. */
+         submit_frame((size_t)(CORE_RATE / FPS *
+                  (source_tempo < 1.0 ? 1.0 : source_tempo)), 1);
       for (retry = 0; retry < 1000 && before ==
             retro_atomic_load_acquire_size(&cnt_writes); retry++) usleep(1000);
       if (before == retro_atomic_load_acquire_size(&cnt_writes)) fixture_failures++;
@@ -687,7 +691,7 @@ static void submit_frame(size_t per_frame, unsigned publishes)
 static void run_one(unsigned publishes, double seconds, bool backpressure)
 {
    pthread_t cons, dev;
-   size_t    per_frame = (size_t)(CORE_RATE / FPS);
+   size_t    per_frame = (size_t)(CORE_RATE / FPS * source_tempo);
    size_t    i, frames = (size_t)(seconds * FPS);
    struct timespec next;
    long      step_ns = (long)(1e9 / FPS);
@@ -813,6 +817,7 @@ int main(int argc, char **argv)
    static const unsigned sweep[] = { 1, 2, 4, 8, 16, 64, 262, 312 };
    double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
    const char *transport = getenv("TRANSPORT");
+   const char *tempo = getenv("TEMPO");
    size_t i;
    use_wrapper = getenv("WRAPPER") != NULL;
    source_float = getenv("SOURCE_FLOAT") != NULL;
@@ -827,12 +832,27 @@ int main(int argc, char **argv)
       else if (!strcmp(transport, "stretch")) transport_mode = 3;
       else { fprintf(stderr, "TRANSPORT must be dry, lpf or stretch\n"); return 1; }
    }
+   if (tempo)
+   {
+      char *end;
+      source_tempo = strtod(tempo, &end);
+      if (end == tempo || *end || transport_mode != 3
+            || (source_tempo != 0.25 && source_tempo != 0.5
+               && source_tempo != 1 && source_tempo != 2
+               && source_tempo != 4 && source_tempo != 8
+               && source_tempo != 16 && source_tempo != 32))
+      {
+         fprintf(stderr, "TEMPO requires stretch and one of 0.25, 0.5, 1, 2, 4, 8, 16, 32\n");
+         return 1;
+      }
+      tempo_q16 = (uint32_t)(source_tempo * 65536.0);
+   }
 
    lat_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t));
    if (!lat_us)
       return 1;
 
-   for (i = 0; i < 4096 * 2; i++)
+   for (i = 0; i < 32768 * 2; i++)
    {
       frame_audio[i] = (int16_t)(8000.0 * sin((double)i * 0.05));
       frame_audio_float[i] = frame_audio[i] / 32768.0f;
@@ -847,6 +867,8 @@ int main(int argc, char **argv)
    printf("consumer: %s\n", transport ? transport : "legacy");
    printf("source: %s\n", source_float ? "float" : "int16");
    printf("device: %s\n", device_int16 ? "int16" : "float");
+   printf("source tempo: %g; source frames/video frame: %u\n", source_tempo,
+         (unsigned)(CORE_RATE / FPS * source_tempo));
    if (use_wrapper) printf("real wrapper: restart/rebuild stress; not steady-state timing\n");
    printf("publishes %s\n", spread_publishes
          ? "paced across the frame (SPREAD) - a core whose retro_run fills its budget"

@@ -557,14 +557,13 @@ typedef struct
     * notifies pipe_data, and the consumer sleeps on it while the ring
     * holds less than it wants.
     *
-    * Once per frame, not once per publish, and that is the whole design
-    * rather than an optimisation of it. A core may hand over its audio
+    * Normally once per frame, not once per publish. A core may hand over its audio
     * a scanline at a time; a notify per retro_spsc_write() would turn
     * one frame into hundreds of consumer passes, each a scanline wide.
-    * The ring carries the data, so a publish needs no announcement -
-    * only the frame end does, and audio_driver_pipeline_signal() is the
-    * one place that makes it. Nothing else on the producer side may
-    * notify this. */
+    * The ring carries the data, so ordinary publishes need no announcement.
+    * A blocking full-ring wait must also wake the consumer: the producer
+    * cannot reach frame end until space is released. All producer data
+    * notifications go through audio_driver_pipeline_signal(). */
    retro_eventcount_t pipe_data;
    retro_atomic_int_t pipe_data_gen;
    /* Set by audio_driver_pipeline_wake() and cleared by the consumer

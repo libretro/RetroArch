@@ -3947,7 +3947,8 @@ static void audio_driver_pipeline_pass_done(audio_driver_state_t *audio_st,
  *
  * Main thread. Wakes the consumer once for everything published since
  * its last wake. Called at the frame end and from the per-frame
- * producers that run without one (menu audio, rewind reversal).
+ * producers that run without one (menu audio, rewind reversal), and before
+ * a full-ring space wait that would otherwise prevent the frame from ending.
  **/
 static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 {
@@ -4344,6 +4345,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
              * frontend sits here for multiples of it. */
             retro_time_t deadline = cpu_features_get_time_usec()
                   + AUDIO_PIPE_WAIT_MAX_US;
+            /* The frame-end signal cannot arrive while its producer waits
+             * here. Wake a consumer parked for data before waiting for space. */
+            audio_driver_pipeline_signal(audio_st);
             while (retro_atomic_load_acquire_int(&audio_st->pipe_gen) == gen)
             {
                retro_time_t now;
