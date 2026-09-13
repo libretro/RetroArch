@@ -172,6 +172,15 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
   }
 }
 
+/* gfx_widgets_draw_icon() reaches the display driver through this
+ * rather than through one of the helpers below, so it needs its own
+ * stub even though nothing here draws. */
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *data,
+      unsigned video_width, unsigned video_height)
+{ (void)dispctx; (void)draw; (void)data;
+  (void)video_width; (void)video_height; }
+
 void gfx_display_rotate_z(gfx_display_t *p_disp, math_matrix_4x4 *matrix,
       float cosine, float sine, void *data)
 { (void)p_disp; (void)matrix; (void)cosine; (void)sine; (void)data; }
