@@ -805,3 +805,8 @@ jobs:
           make obj-unix/release/audio/drivers/alsa.o \
                obj-unix/release/audio/common/alsa.o
           echo "[pass] both drivers in the one object, through configure"
+
+      - name: Build and run WSOLA kernel tests (C89, ASan + UBSan)
+        working-directory: samples/audio/wsola_search
+        run: |
+          make check SANITIZER=address,undefined

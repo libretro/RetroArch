@@ -33,19 +33,7 @@
 #include <retro_inline.h>
 #include <libretro_dspfilter.h>
 
-#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
-#include <emmintrin.h>
-#define WSOLA_HAVE_SSE2 1
-#else
-#define WSOLA_HAVE_SSE2 0
-#endif
-
-#if defined(__ARM_NEON) || defined(__ARM_NEON__)
-#include <arm_neon.h>
-#define WSOLA_HAVE_NEON 1
-#else
-#define WSOLA_HAVE_NEON 0
-#endif
+#include <audio/wsola_search.h>
 
 #define WSOLA_CH      2u
 #define WSOLA_PI      3.141592653589793238462643383279502884
@@ -64,13 +52,6 @@
  * is 256); resampler taps are Q15. */
 #define WSOLA_Q8_ONE  256
 #define WSOLA_Q15_ONE 32768
-
-enum wsola_simd
-{
-   WSOLA_SIMD_SCALAR = 0,
-   WSOLA_SIMD_SSE2,
-   WSOLA_SIMD_NEON
-};
 
 /* A frame position: whole frames plus a 32-bit fraction. Scheduling in
  * integers keeps both lanes making identical segment decisions. */
@@ -128,7 +109,7 @@ struct wsola
    unsigned seq, overlap, search, hs;
    unsigned out_prime;
    int bypass;
-   enum wsola_simd simd;
+   wsola_corr_func_t corr;
 };
 
 #define WSOLA_LANE_F 0
@@ -212,116 +193,6 @@ static INLINE int16_t wsola_sat16(int64_t v)
    if (v < -32768)
       return -32768;
    return (int16_t)v;
-}
-
-/* floor(sqrt(v)) for a 64-bit value, bit by bit. */
-static uint64_t wsola_isqrt64(uint64_t v)
-{
-   uint64_t r   = 0;
-   uint64_t bit = (uint64_t)1 << 62;
-   while (bit > v)
-      bit >>= 2;
-   while (bit)
-   {
-      if (v >= r + bit)
-      {
-         v -= r + bit;
-         r  = (r >> 1) + bit;
-      }
-      else
-         r >>= 1;
-      bit >>= 2;
-   }
-   return r;
-}
-
-static double wsola_corr_scalar(const float *a, const float *b,
-      unsigned n, double ae)
-{
-   unsigned i;
-   double dot = 0.0, be = 0.0;
-   for (i = 0; i < n; ++i)
-   {
-      double x = a[i], y = b[i];
-      dot     += x * y;
-      be      += y * y;
-   }
-   return dot / sqrt(ae * be + 1.0e-30);
-}
-
-#if WSOLA_HAVE_SSE2
-static double wsola_corr_sse2(const float *a, const float *b,
-      unsigned n, double ae)
-{
-   float td[4], te[4];
-   double dot, be;
-   unsigned i = 0;
-   __m128 vd  = _mm_setzero_ps();
-   __m128 ve  = _mm_setzero_ps();
-   for (; i + 4u <= n; i += 4u)
-   {
-      __m128 x = _mm_loadu_ps(a + i);
-      __m128 y = _mm_loadu_ps(b + i);
-      vd       = _mm_add_ps(vd, _mm_mul_ps(x, y));
-      ve       = _mm_add_ps(ve, _mm_mul_ps(y, y));
-   }
-   _mm_storeu_ps(td, vd);
-   _mm_storeu_ps(te, ve);
-   dot = (double)td[0] + td[1] + td[2] + td[3];
-   be  = (double)te[0] + te[1] + te[2] + te[3];
-   for (; i < n; ++i)
-   {
-      double x = a[i], y = b[i];
-      dot     += x * y;
-      be      += y * y;
-   }
-   return dot / sqrt(ae * be + 1.0e-30);
-}
-#endif
-
-#if WSOLA_HAVE_NEON
-static double wsola_corr_neon(const float *a, const float *b,
-      unsigned n, double ae)
-{
-   float td[4], te[4];
-   double dot, be;
-   unsigned i     = 0;
-   float32x4_t vd = vdupq_n_f32(0.0f);
-   float32x4_t ve = vdupq_n_f32(0.0f);
-   for (; i + 4u <= n; i += 4u)
-   {
-      float32x4_t x = vld1q_f32(a + i);
-      float32x4_t y = vld1q_f32(b + i);
-      vd            = vmlaq_f32(vd, x, y);
-      ve            = vmlaq_f32(ve, y, y);
-   }
-   vst1q_f32(td, vd);
-   vst1q_f32(te, ve);
-   dot = (double)td[0] + td[1] + td[2] + td[3];
-   be  = (double)te[0] + te[1] + te[2] + te[3];
-   for (; i < n; ++i)
-   {
-      double x = a[i], y = b[i];
-      dot     += x * y;
-      be      += y * y;
-   }
-   return dot / sqrt(ae * be + 1.0e-30);
-}
-#endif
-
-static double wsola_corr(const struct wsola *d, const float *a,
-      const float *b, unsigned n, double ae)
-{
-#if WSOLA_HAVE_SSE2
-   if (d->simd == WSOLA_SIMD_SSE2)
-      return wsola_corr_sse2(a, b, n, ae);
-#endif
-#if WSOLA_HAVE_NEON
-   if (d->simd == WSOLA_SIMD_NEON)
-      return wsola_corr_neon(a, b, n, ae);
-#endif
-   (void)d;
-   return wsola_corr_scalar(a, b, n, ae);
 }
 
 /* Per-lane sample work. The float lane's functions touch only floats,
@@ -581,7 +452,7 @@ static uint64_t wsola_best_candidate_f(const struct wsola *d,
    c = lo + ((8u - (lo & 7u)) & 7u);
    while (c <= hi)
    {
-      double s = wsola_corr(d, ref, mono + (size_t)(c - L->input_base),
+      double s = d->corr(ref, mono + (size_t)(c - L->input_base),
             d->overlap, ae);
       if (s > best_score)
       {
@@ -601,7 +472,7 @@ static uint64_t wsola_best_candidate_f(const struct wsola *d,
       rhi = hi;
    for (c = rlo; c <= rhi; ++c)
    {
-      double s = wsola_corr(d, ref, mono + (size_t)(c - L->input_base),
+      double s = d->corr(ref, mono + (size_t)(c - L->input_base),
             d->overlap, ae);
       if (s > best_score)
       {
@@ -697,23 +568,6 @@ static void wsola_build_reference_i(const struct wsola *d,
    /* Q8 left + right, back to the scale of the unhalved mono sum. */
    for (f = 0; f < d->overlap; ++f)
       ref[f] = (int32_t)wsola_rsh((int64_t)ola[f * 2u] + ola[f * 2u + 1u], 8);
-}
-
-/* The reference energy is common to every candidate, so candidates
- * rank by dot / sqrt(candidate energy), in Q16. */
-static int64_t wsola_corr_i(const int32_t *a, const int32_t *b, unsigned n)
-{
-   unsigned i;
-   int64_t dot  = 0;
-   uint64_t be  = 0;
-   uint64_t root;
-   for (i = 0; i < n; ++i)
-   {
-      dot += (int64_t)a[i] * b[i];
-      be  += (uint64_t)((int64_t)b[i] * b[i]);
-   }
-   root = wsola_isqrt64(be);
-   return (dot * 65536) / (int64_t)(root ? root : 1);
 }
 
 static uint64_t wsola_best_candidate_i(const struct wsola *d,
@@ -1051,7 +905,7 @@ static void *wsola_init_common(const struct dspfilter_info *info,
    pitch_st          = wsola_clampd(pitch, -12.0, 12.0);
    d->pitch_ratio    = pow(2.0, pitch_st / 12.0);
    d->bypass         = fabs(d->pitch_ratio - 1.0) < 1.0e-9;
-   d->simd           = simd;
+   d->corr           = wsola_corr_get(simd);
 
    /* 40 ms segments, 8 ms cross-fade, +/-12 ms search, 8-frame aligned. */
    rate       = (unsigned)(info->input_rate + 0.5f);
