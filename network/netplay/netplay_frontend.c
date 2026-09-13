@@ -10643,7 +10643,10 @@ static void gfx_widget_netplay_ping_iterate(void *user_data,
    netplay_t          *netplay  = net_st->data;
    settings_t         *settings = config_get_ptr();
 #ifdef HAVE_MENU
-   bool menu_open               = menu_state_get_ptr()->flags &
+   /* What the frame this iterate belongs to was built with: the menu's
+    * own flags are a read-modify-write on the main thread, and this
+    * runs on the thread that draws. */
+   bool menu_open               = dispwidget_get_ptr()->frame_menu_st_flags &
       MENU_ST_FLAG_ALIVE;
 #endif
    bool show_ping               = settings->bools.netplay_ping_show;

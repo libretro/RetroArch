@@ -335,6 +335,12 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
+
+   /* The menu state the frame being iterated was built with. A widget
+    * that wants to know whether the menu is open reads this rather
+    * than the menu's own flags: those are a read-modify-write on the
+    * main thread, and an iterate runs on the thread that draws. */
+   uint16_t frame_menu_st_flags;
 } dispgfx_widget_t;
 
 /* A widget */

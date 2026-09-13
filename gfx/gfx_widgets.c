@@ -2790,6 +2790,7 @@ void gfx_widgets_worker_step(void *data,
          video_info->width, video_info->height);
    /* What the frame carried, not the settings the main thread writes:
     * this runs on the video thread under the threaded wrapper. */
+   p_dispwidget->frame_menu_st_flags = (uint16_t)video_info->menu_st_flags;
    gfx_widgets_iterate_frame(
          video_info->width, video_info->height, video_info->fullscreen,
          video_info->widget_dir_assets,
