@@ -27,15 +27,20 @@ with tempfile.TemporaryDirectory(prefix="audio-baseline-", dir=args.work_dir) as
         ("wsolapitchtempo.c", "audio/dsp_filters/wsolapitchtempo.c",
          ["dspfilter_get_implementation=reference_implementation"]),
         ("sinc.c", "audio/resampler/drivers/sinc_resampler.c",
-         ["sinc_resampler=reference_sinc"]),
+         ["sinc_resampler=reference_sinc",
+          "sinc_resampler_init_hq=reference_f_init_hq"]),
         ("sinc_i.c", "audio/resampler/drivers/sinc_resampler_int16.c", [
             "sinc_resampler_int16_init=reference_i_init",
+            "sinc_resampler_int16_init_hq=reference_i_init_hq",
             "sinc_resampler_int16_process=reference_i_process",
             "sinc_resampler_int16_free=reference_i_free"]),
     ]
+    hq_reference = False
     for name, source, defines in original:
         contents = subprocess.check_output(
             ["git", "show", args.base + ":libretro-common/" + source], cwd=root)
+        if name == "sinc_i.c":
+            hq_reference = b"sinc_resampler_int16_init_hq(" in contents
         (tmp / name).write_bytes(contents)
         run([args.cc, *flags, "-I" + str(common / "include"),
              *("-D" + d for d in defines), "-c", tmp / name,
@@ -54,5 +59,6 @@ with tempfile.TemporaryDirectory(prefix="audio-baseline-", dir=args.work_dir) as
     for name, define, sources in jobs:
         executable = tmp / (name + ".exe")
         run([args.cc, *flags, "-I" + str(common / "include"), "-D" + define,
+             *(["-DSINC_REFERENCE_HQ"] if hq_reference else []),
              *sources, "-lm", "-o", executable])
         run([executable])

@@ -72,6 +72,10 @@ extern void reference_i_free(void *);
 #define reference_i_free sinc_resampler_int16_free
 #endif
 
+#ifdef SINC_REFERENCE_HQ
+extern void *reference_i_init_hq(double, enum sinc_int16_quality, int);
+#endif
+
 static size_t run(void *state, const retro_resampler_t *driver,
       float *out, double ratio, unsigned chunk)
 {
@@ -143,6 +147,9 @@ static void active(double ratio)
    void *simd = sinc_resampler_init_hq(ratio, RESAMPLER_QUALITY_NORMAL,
          TEST_SIMD, 1);
    void *integer = sinc_resampler_int16_init_hq(ratio, SINC_INT16_QUALITY_NORMAL, 1);
+#ifdef SINC_REFERENCE_HQ
+   void *baseline_i = reference_i_init_hq(ratio, SINC_INT16_QUALITY_NORMAL, 1);
+#endif
    size_t na, nb, ni, j;
    unsigned step;
    double max_error = 0.0;
@@ -150,11 +157,17 @@ static void active(double ratio)
    if (!c || !simd || !integer) exit(2);
    for (step = 0; step < 3; step++)
    {
-      double live_ratio = ratio * (1.0 + ((int)step - 1) * 0.0005);
+      double live_ratio = ratio * (step == 0 ? 1.0 : (step == 1 ? 0.9995 : 1.0005));
       na = run(c, &sinc_resampler, a, live_ratio, INPUT);
       nb = run(simd, &sinc_resampler, b, live_ratio, 127);
       ni = run_i(integer, ai, live_ratio, 127, sinc_resampler_int16_process);
       CHECK(na == nb && na == ni);
+#ifdef SINC_REFERENCE_HQ
+      CHECK(baseline_i != NULL);
+      if (!baseline_i) exit(2);
+      nb = run_i(baseline_i, bi, live_ratio, 127, reference_i_process);
+      CHECK(ni == nb && memcmp(ai, bi, ni * 2 * sizeof(int16_t)) == 0);
+#endif
       for (j = 0; j < na * 2; j++)
       {
          double error = fabs(a[j] - b[j]);
@@ -177,6 +190,9 @@ static void active(double ratio)
    printf("HQ ratio %.6f: scalar/SIMD max error %.9g\n", ratio, max_error);
    sinc_resampler.free(c); sinc_resampler.free(simd);
    sinc_resampler_int16_free(integer);
+#ifdef SINC_REFERENCE_HQ
+   reference_i_free(baseline_i);
+#endif
 }
 
 static void impulse(const char *prefix)

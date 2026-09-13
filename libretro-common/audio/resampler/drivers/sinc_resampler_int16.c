@@ -336,43 +336,55 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
             const int32_t *np = re->phase_table
                               + (((re->time + ratio) >> sb) & row_mask) * taps2;
 
-            /* Both halves of the next row: the delta half is read first. */
             SINC_I16_PREFETCH(np);
-            SINC_I16_PREFETCH(np + taps);
+            /* Exact table phases need neither delta reads nor interpolation. */
+            if (!dsub)
+            {
+               for (i = 0; i < taps; i++)
+               {
+                  sum_l += (int64_t)buffer_l[i] * pt[i];
+                  sum_r += (int64_t)buffer_r[i] * pt[i];
+               }
+            }
+            else
+            {
+               /* Both halves of the next row: the delta half is read first. */
+               SINC_I16_PREFETCH(np + taps);
 
 #ifdef SINC_I16_KAISER_FISSION
-            {
-               int32_t *cs = re->coef_scratch;
-               /* Interp pass: coeff = pt[i] + trunc(dsub*dt[i] / 2^sb).
-                * Adding (2^sb-1) to negative products before the arithmetic
-                * shift turns floor into truncate-toward-zero (branchless, so
-                * the following MAC pass auto-vectorizes; bit-exact). */
-               for (i = 0; i < taps; i++)
                {
-                  int64_t prod = (int64_t)dsub * dt[i];
-                  int64_t bias = (prod >> 63) & (((int64_t)1 << sb) - 1);
-                  cs[i]        = pt[i] + (int32_t)((prod + bias) >> sb);
+                  int32_t *cs = re->coef_scratch;
+                  /* Interp pass: coeff = pt[i] + trunc(dsub*dt[i] / 2^sb).
+                   * Adding (2^sb-1) to negative products before the arithmetic
+                   * shift turns floor into truncate-toward-zero (branchless, so
+                   * the following MAC pass auto-vectorizes; bit-exact). */
+                  for (i = 0; i < taps; i++)
+                  {
+                     int64_t prod = (int64_t)dsub * dt[i];
+                     int64_t bias = (prod >> 63) & (((int64_t)1 << sb) - 1);
+                     cs[i]        = pt[i] + (int32_t)((prod + bias) >> sb);
+                  }
+                  for (i = 0; i < taps; i++)
+                  {
+                     sum_l += (int64_t)buffer_l[i] * cs[i];
+                     sum_r += (int64_t)buffer_r[i] * cs[i];
+                  }
                }
-               for (i = 0; i < taps; i++)
-               {
-                  sum_l += (int64_t)buffer_l[i] * cs[i];
-                  sum_r += (int64_t)buffer_r[i] * cs[i];
-               }
-            }
 #else
-            for (i = 0; i < taps; i++)
-            {
-               /* coeff = pt[i] + trunc(dsub * dt[i] / 2^sb); dsub >= 0. */
-               int64_t prod = (int64_t)dsub * dt[i];
-               int32_t c;
-               if (prod >= 0)
-                  c = pt[i] + (int32_t)( prod >> sb);
-               else
-                  c = pt[i] - (int32_t)((-prod) >> sb);
-               sum_l += (int64_t)buffer_l[i] * c;
-               sum_r += (int64_t)buffer_r[i] * c;
-            }
+               for (i = 0; i < taps; i++)
+               {
+                  /* coeff = pt[i] + trunc(dsub * dt[i] / 2^sb); dsub >= 0. */
+                  int64_t prod = (int64_t)dsub * dt[i];
+                  int32_t c;
+                  if (prod >= 0)
+                     c = pt[i] + (int32_t)( prod >> sb);
+                  else
+                     c = pt[i] - (int32_t)((-prod) >> sb);
+                  sum_l += (int64_t)buffer_l[i] * c;
+                  sum_r += (int64_t)buffer_r[i] * c;
+               }
 #endif
+            }
 
             output[0] = sinc_i16_sat(sinc_i16_round_shift(sum_l));
             output[1] = sinc_i16_sat(sinc_i16_round_shift(sum_r));
