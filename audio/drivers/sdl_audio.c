@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <retro_spsc.h>
 #include <retro_inline.h>
 #include <retro_math.h>
@@ -75,8 +76,18 @@ static size_t sdl_ring_room(const retro_spsc_t *ring, size_t ring_size)
 typedef struct sdl_microphone_handle
 {
 #ifdef HAVE_THREADS
-   slock_t *lock;
-   scond_t *cond;
+   /* Only the bounded waits a short or full ring puts the other side
+    * into; the ring itself is a retro_spsc and carries the data on its
+    * own, so there is nothing here for a lock to guard.
+    *
+    * An eventcount rather than a lock and a condition variable because
+    * SDL's callback runs on the device's own thread and announced its
+    * work without taking the lock - which left a signal raised between
+    * the waiter's avail test and its wait with no waiter to reach it.
+    * prepare_wait registers before the re-check, so a notify from that
+    * point on either shows up in the re-check or ends the park at once,
+    * and the window cannot be missed. */
+   retro_eventcount_t park;
 #endif
 
    /**
@@ -135,8 +146,7 @@ static void sdl_microphone_close_mic(void *driver_context, void *mic_context)
          retro_spsc_free(&mic->ring);
 
 #ifdef HAVE_THREADS
-      slock_free(mic->lock);
-      scond_free(mic->cond);
+      retro_eventcount_free(&mic->park);
 #endif
 
       RARCH_LOG("[SDL audio] Freed microphone with former device ID %u.\n", mic->device_id);
@@ -162,7 +172,7 @@ static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
    /* If the sample buffer is almost full, just write as much as we can into it*/
    retro_spsc_write(&mic->ring, stream, read_size);
 #ifdef HAVE_THREADS
-   scond_signal(mic->cond);
+   retro_eventcount_notify(&mic->park);
 #endif
 }
 
@@ -269,8 +279,7 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
       *new_rate = mic->device_spec.freq;
 
 #ifdef HAVE_THREADS
-   mic->lock = slock_new();
-   mic->cond = scond_new();
+   retro_eventcount_init(&mic->park);
 #endif
 
    RARCH_LOG("[SDL audio] Requested %u ms latency for input device, received %d ms.\n",
@@ -305,18 +314,17 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
    return mic;
 
 error:
-   /* HAVE_THREADS may have init'd mic->lock and mic->cond between
-    * the SDL_OpenAudioDevice call and the retro_spsc_init below.
-    * slock_free/scond_free are NULL-tolerant so the earlier goto
-    * error site (device_id == 0) where these are still NULL is
-    * fine too.  'mic' is always non-NULL at this label because
-    * the calloc at the top of the function returns early on
-    * failure without goto'ing here. */
+   /* HAVE_THREADS may have init'd mic->park between the
+    * SDL_OpenAudioDevice call and the retro_spsc_init below.
+    * retro_eventcount_free is safe on a zeroed object, so the earlier
+    * goto error site (device_id == 0) where it has not been brought up
+    * is fine too.  'mic' is always non-NULL at this label because the
+    * calloc at the top of the function returns early on failure
+    * without goto'ing here. */
    if (mic->device_id > 0)
       SDL_CloseAudioDevice(mic->device_id);
 #ifdef HAVE_THREADS
-   slock_free(mic->lock);
-   scond_free(mic->cond);
+   retro_eventcount_free(&mic->park);
 #endif
    free(mic);
    return NULL;
@@ -403,9 +411,14 @@ static size_t sdl_microphone_wait_readable(void *driver_context,
       return avail;
 
 #ifdef HAVE_THREADS
-   slock_lock(mic->lock);
-   scond_wait_timeout(mic->cond, mic->lock, SDL_AUDIO_STALL_TIMEOUT_US);
-   slock_unlock(mic->lock);
+   {
+      int key = retro_eventcount_prepare_wait(&mic->park);
+      if (retro_spsc_read_avail(&mic->ring) >= len)
+         retro_eventcount_cancel_wait(&mic->park);
+      else
+         retro_eventcount_commit_wait_timeout(&mic->park, key,
+               SDL_AUDIO_STALL_TIMEOUT_US);
+   }
 #endif
 
    return retro_spsc_read_avail(&mic->ring);
@@ -447,16 +460,21 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv
             /* Wait for the SDL microphone thread to
              * push some incoming samples */
 #ifdef HAVE_THREADS
-            slock_lock(mic->lock);
-            /* Let *only* the SDL microphone thread access
-             * the incoming sample queue.  Bounded for the same reason
-             * as the playback path above: sdl_microphone_read_cb is
-             * the only thing that ever signals this condition, so once
-             * the capture device stops calling back an untimed wait
-             * here never returns. */
-            signalled = scond_wait_timeout(mic->cond, mic->lock,
-                  SDL_AUDIO_STALL_TIMEOUT_US);
-            slock_unlock(mic->lock);
+            /* Registered before the ring is read again, so a callback
+             * that lands from here on cannot be slept through.  Still
+             * bounded for the reason the playback path is: the capture
+             * callback is the only thing that ever notifies this, so
+             * once the device stops calling back an unbounded park
+             * would never return. */
+            int key  = retro_eventcount_prepare_wait(&mic->park);
+            if (retro_spsc_read_avail(&mic->ring))
+            {
+               retro_eventcount_cancel_wait(&mic->park);
+               signalled = true;
+            }
+            else
+               signalled = retro_eventcount_commit_wait_timeout(&mic->park,
+                     key, SDL_AUDIO_STALL_TIMEOUT_US);
             /* Allow this thread to access the incoming sample queue,
              * which we'll do next iteration */
             if (!signalled)
@@ -535,8 +553,18 @@ typedef Uint32 SDL_AudioDeviceID;
 typedef struct sdl_audio
 {
 #ifdef HAVE_THREADS
-   slock_t *lock;
-   scond_t *cond;
+   /* Only the bounded waits a short or full ring puts the other side
+    * into; the ring itself is a retro_spsc and carries the data on its
+    * own, so there is nothing here for a lock to guard.
+    *
+    * An eventcount rather than a lock and a condition variable because
+    * SDL's callback runs on the device's own thread and announced its
+    * work without taking the lock - which left a signal raised between
+    * the waiter's avail test and its wait with no waiter to reach it.
+    * prepare_wait registers before the re-check, so a notify from that
+    * point on either shows up in the re-check or ends the park at once,
+    * and the window cannot be missed. */
+   retro_eventcount_t park;
 #endif
    /**
     * The queue used to store outgoing samples to be played by the driver.
@@ -564,7 +592,7 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    sdl_audio_t  *sdl = (sdl_audio_t*)data;
    size_t       _len = retro_spsc_read(&sdl->speaker_ring, stream, (size_t)len);
 #ifdef HAVE_THREADS
-   scond_signal(sdl->cond);
+   retro_eventcount_notify(&sdl->park);
 #endif
    /* If underrun, fill rest with silence. */
    memset(stream + _len, 0, len - _len);
@@ -694,8 +722,7 @@ static void *sdl_audio_init(const char *device,
              SDL_AUDIO_ISBIGENDIAN(sdl->device_spec.format) ? "big" : "little");
 
 #ifdef HAVE_THREADS
-   sdl->lock                = slock_new();
-   sdl->cond                = scond_new();
+   retro_eventcount_init(&sdl->park);
 #endif
 
    /* The fifo in front of the device holds the latency setting, as the
@@ -777,16 +804,24 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
             /* Wait for the SDL speaker thread to play the enqueued samples,
              * which will free up space for us to write new ones. */
 #ifdef HAVE_THREADS
-            slock_lock(sdl->lock);
-            /* Bounded: sdl_audio_playback_cb signals without holding
-             * sdl->lock, so a signal raised between the avail test and
-             * this wait reaches no waiter.  Normally the next callback covers
-             * that.  If the device has stopped calling back at all there is no
-             * next one, and an untimed wait here parked the core's thread for
-             * good. */
-            signalled = scond_wait_timeout(sdl->cond, sdl->lock,
-                  SDL_AUDIO_STALL_TIMEOUT_US);
-            slock_unlock(sdl->lock);
+            /* Registered before the room is read again: a callback
+             * that pulls between the avail test above and this park
+             * either shows up in the re-check or ends the park at once.
+             * That window used to be open - the callback announces
+             * without a lock, so a signal raised inside it reached no
+             * waiter and the write waited out a whole device period it
+             * did not have to.  Still bounded, because a device that
+             * has stopped calling back has no next callback and an
+             * unbounded park here held the core's thread for good. */
+            int key   = retro_eventcount_prepare_wait(&sdl->park);
+            if (sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size))
+            {
+               retro_eventcount_cancel_wait(&sdl->park);
+               signalled = true;
+            }
+            else
+               signalled = retro_eventcount_commit_wait_timeout(&sdl->park,
+                     key, SDL_AUDIO_STALL_TIMEOUT_US);
             /* Now let this thread use the outgoing sample queue (which we'll do next iteration) */
             if (!signalled)
                break;   /* Report what we managed to enqueue */
@@ -855,8 +890,7 @@ static void sdl_audio_free(void *data)
          retro_spsc_free(&sdl->speaker_ring);
 
 #ifdef HAVE_THREADS
-      slock_free(sdl->lock);
-      scond_free(sdl->cond);
+      retro_eventcount_free(&sdl->park);
 #endif
 
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -920,10 +954,17 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
       if (avail >= len)
          return avail;
 #ifdef HAVE_THREADS
-      slock_lock(sdl->lock);
-      signalled = scond_wait_timeout(sdl->cond, sdl->lock,
-            SDL_AUDIO_STALL_TIMEOUT_US);
-      slock_unlock(sdl->lock);
+      {
+         int key = retro_eventcount_prepare_wait(&sdl->park);
+         if (sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size) >= len)
+         {
+            retro_eventcount_cancel_wait(&sdl->park);
+            signalled = true;
+         }
+         else
+            signalled = retro_eventcount_commit_wait_timeout(&sdl->park,
+                  key, SDL_AUDIO_STALL_TIMEOUT_US);
+      }
       if (!signalled)
          return 0;
 #else
