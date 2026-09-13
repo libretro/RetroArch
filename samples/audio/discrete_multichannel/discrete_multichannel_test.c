@@ -1108,6 +1108,7 @@ static void layout_epoch_pressure_case(bool floating)
 }
 
 static unsigned short_calls;
+static unsigned short_wait_calls;
 static bool short_zero, short_no_room, short_fail;
 static ssize_t short_device_write(void *data, const void *buffer, size_t bytes)
 {
@@ -1123,6 +1124,7 @@ static size_t short_device_wait(void *data, size_t bytes)
 {
    size_t limit = 17 * dev_channels * (dev_float ? sizeof(float) : sizeof(int16_t));
    (void)data;
+   short_wait_calls++;
    if (short_no_room) return 0;
    return bytes < limit ? bytes : limit;
 }
@@ -1774,10 +1776,16 @@ static void transport_scheduler_cases(void)
             st->pipe_frame_bytes = 2 * (floating ? sizeof(float) : sizeof(int16_t));
          }
          CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "scheduler prepare");
+         scripted_threaded.wait_writable = short_device_wait;
+         short_wait_calls = 0;
+         retro_atomic_store_release_int(&st->pipe_wake, 1);
+         CHECK(audio_driver_callback() && !retro_atomic_load_acquire_int(&st->pipe_wake) && !short_wait_calls,
+               "idle scheduler paced an empty pass before wrapper wake");
          st->pipe_pass_frames = 17;
          st->buffer_size = 0;
-         st->pipe_priming = st->pipe_wake = true;
-         CHECK(audio_driver_callback() && st->pipe_priming && !st->pipe_wake,
+         st->pipe_priming = true;
+         retro_atomic_store_release_int(&st->pipe_wake, 1);
+         CHECK(audio_driver_callback() && st->pipe_priming && !retro_atomic_load_acquire_int(&st->pipe_wake),
                "scheduler ignored startup wake");
          for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
             CHECK(audio_driver_pipeline_transport_request(65536, false, true, 1000),
@@ -1798,11 +1806,14 @@ static void transport_scheduler_cases(void)
          short_zero = true; short_fail = false;
          CHECK(audio_driver_callback() && st->pipe_pending_bytes,
                "scheduler did not retain short device output");
+         retro_atomic_store_release_int(&st->pipe_stalled, 1);
          retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
          cap_frames = 0;
          CHECK(audio_driver_callback() && !st->pipe_pending_bytes
                && !retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
                "scheduler pause replayed output or retained source");
+         CHECK(retro_atomic_load_acquire_int(&st->pipe_stalled),
+               "paused discard incorrectly reported device progress");
          retro_atomic_store_release_int(&st->runloop_snapshot, 0);
          CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 34, st->pipe_frame_bytes) == 34,
                "scheduler late source");
@@ -1849,9 +1860,9 @@ static void transport_request_cases(void)
          CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 1, st->pipe_frame_bytes) == 1,
                "request preceding source");
          position = retro_atomic_load_relaxed_size(&st->pipe_ring.head);
-         gen = st->pipe_data_gen;
+         gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
          CHECK(audio_driver_pipeline_transport_request(98304, true, true, 1000), "request publish");
-         CHECK(st->pipe_data_gen == gen + 1 && retro_atomic_load_relaxed_size(&q->head) == 1,
+         CHECK(retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen + 1 && retro_atomic_load_relaxed_size(&q->head) == 1,
                "request did not wake consumer");
          CHECK(q->events[0].position == position && q->events[0].layout == q->published_layout
                && q->events[0].control == (98304 | AUDIO_PIPELINE_STRETCH | AUDIO_PIPELINE_RESET)
@@ -1864,20 +1875,20 @@ static void transport_request_cases(void)
                && q->current_cutoff == 1000 && q->reset_serial == 1,
                "request boundary not retired coherently");
          head = retro_atomic_load_relaxed_size(&q->head);
-         gen = st->pipe_data_gen;
+         gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
          CHECK(audio_driver_pipeline_transport_request(98304, true, false, 1000), "unchanged request");
          CHECK(!audio_driver_pipeline_transport_request(16383, true, true, 2000)
                && !audio_driver_pipeline_transport_request(2097153, true, true, 2000),
                "invalid request tempo accepted");
-         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && st->pipe_data_gen == gen
+         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen
                && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
                "invalid/unchanged request mutated controls or woke consumer");
          for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
             CHECK(audio_driver_pipeline_transport_request(98304, true, true, 1000), "request pressure fill");
-         gen = st->pipe_data_gen;
+         gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
          head = retro_atomic_load_relaxed_size(&q->head);
          CHECK(!audio_driver_pipeline_transport_request(131072, true, true, 2000), "full request accepted");
-         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && st->pipe_data_gen == gen
+         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen
                && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
                "full request partially published");
          CHECK(audio_driver_pipeline_transport_request(98304, true, false, 1000), "full unchanged request");
@@ -1914,6 +1925,7 @@ static void transport_discard_cases(void)
             }
             CHECK(!audio_driver_pipeline_transport_discard(0), "discard absent transport");
             CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "discard prepare");
+            CHECK(audio_pipeline_stretch_needs_input(st->pipe_transport), "fresh stage has retained work");
             if (wet)
                CHECK(audio_pipeline_layout_publish_cutoff(&st->pipe_layouts, 0, 1000),
                      "discard cutoff");
@@ -1923,6 +1935,7 @@ static void transport_discard_cases(void)
                   "discard source");
             CHECK(audio_pipeline_stretch_next(st->pipe_transport, 17, 17, &block)
                   && block.frames == 17, "discard retained output");
+            CHECK(!audio_pipeline_stretch_needs_input(st->pipe_transport), "retained output may sleep");
             serial = block.reset_serial;
             pending = block.data;
             st->pipe_pending = (const uint8_t*)pending;
@@ -1943,6 +1956,7 @@ static void transport_discard_cases(void)
                   "failed discard changed transport");
             transport_allocations = transport_frees = 0; transport_track = true;
             CHECK(audio_driver_pipeline_transport_discard(1), "exact discard failed");
+            CHECK(audio_pipeline_stretch_needs_input(st->pipe_transport), "discard retained synthesis");
             transport_track = false;
             CHECK(!transport_allocations && !transport_frees, "discard replaced storage");
             CHECK(!st->pipe_pending && !st->pipe_pending_bytes

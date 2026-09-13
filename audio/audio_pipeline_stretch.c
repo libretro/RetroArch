@@ -57,6 +57,12 @@ void audio_pipeline_stretch_free(audio_pipeline_stretch_t *s)
    free(s);
 }
 
+bool audio_pipeline_stretch_needs_input(const audio_pipeline_stretch_t *s)
+{
+   return s && !s->direct_frames && !s->draining_layout
+      && audio_stretch_stream_quiescent(s->stream);
+}
+
 static void apstretch_offer(audio_pipeline_stretch_t *s,
       struct audio_pipeline_stretch_block *block, const void *data,
       size_t frames, size_t budget)

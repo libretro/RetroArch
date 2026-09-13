@@ -38,6 +38,10 @@ audio_pipeline_stretch_t *audio_pipeline_stretch_new(unsigned rate,
       retro_spsc_t *ring, audio_pipeline_layout_t *metadata,
       void *output, size_t output_frames);
 void audio_pipeline_stretch_free(audio_pipeline_stretch_t *state);
+/* Consumer only. True guarantees no retained output/synthesis can run without
+ * more source. Pending metadata must still be serviced before waiting.
+ * False is conservative: call next() to determine whether progress is possible. */
+bool audio_pipeline_stretch_needs_input(const audio_pipeline_stretch_t *state);
 
 /* Consumer only. One bounded processing step. Pending output is returned
  * before any new source/control is read. Input budget bounds new source work;
