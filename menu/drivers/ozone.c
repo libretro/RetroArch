@@ -3208,8 +3208,8 @@ static void ozone_draw_icon(
 
    if (draw.height > 0 && draw.width > 0)
    {
-      if (dispctx && dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            video_width, video_height);
    }
 }
 

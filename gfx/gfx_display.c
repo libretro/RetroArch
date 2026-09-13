@@ -537,6 +537,19 @@ void gfx_display_draw_bg(
             userdata);
 }
 
+/* The one way a caller outside this file reaches the display driver.
+ * Everything drawn while the menu is up passes through here or through
+ * the helpers above it, which is what lets this file know the order
+ * things are drawn in - and, when quads start being gathered rather
+ * than drawn one at a time, where the gathered ones have to go out. */
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *userdata,
+      unsigned video_width, unsigned video_height)
+{
+   if (dispctx && dispctx->draw && draw)
+      dispctx->draw(draw, userdata, video_width, video_height);
+}
+
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,

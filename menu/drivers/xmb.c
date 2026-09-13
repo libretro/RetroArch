@@ -1204,8 +1204,8 @@ static void xmb_draw_icon(
       }
 #endif
       if (draw.height > 0 && draw.width > 0)
-         if (dispctx && dispctx->draw)
-            dispctx->draw(&draw, userdata, video_width, video_height);
+         gfx_display_draw(dispctx, &draw, userdata,
+               video_width, video_height);
    }
 
    coords.color         = (const float*)color;
@@ -1220,8 +1220,8 @@ static void xmb_draw_icon(
    }
 #endif
    if (draw.height > 0 && draw.width > 0)
-      if (dispctx && dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            video_width, video_height);
 }
 
 static void xmb_draw_text(
@@ -8625,8 +8625,8 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_set_alpha(draw.color, coord_white[3]);
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, menu_wallpaper_opacity);
 
-      if (dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            video_width, video_height);
    }
    /* Draw empty color theme gradient */
    else
@@ -8637,8 +8637,8 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_set_alpha(draw.color, coord_white[3]);
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, alpha);
 
-      if (dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            video_width, video_height);
    }
 
 #ifdef HAVE_SHADERPIPELINE
@@ -8677,8 +8677,8 @@ XMB_NOINLINE static void xmb_draw_bg(
          dispctx->draw_pipeline(&draw, p_disp,
                userdata, video_width, video_height);
 
-      if (dispctx->draw)
-         dispctx->draw(&draw, userdata, video_width, video_height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            video_width, video_height);
    }
 #endif
 
@@ -8721,8 +8721,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
       dispctx->blend_begin(userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
    if (draw.height > 0 && draw.width > 0)
-      if (dispctx && dispctx->draw)
-         dispctx->draw(&draw, userdata, width, height);
+      gfx_display_draw(dispctx, &draw, userdata, width, height);
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }

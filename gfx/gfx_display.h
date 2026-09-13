@@ -269,6 +269,10 @@ void gfx_display_draw_bg(
       void *userdata,
       bool add_opacity, float opacity_override);
 
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *userdata,
+      unsigned video_width, unsigned video_height);
+
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,
