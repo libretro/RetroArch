@@ -984,13 +984,11 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED
                              | AUDIO_FLAG_STARTED);
 #ifdef HAVE_THREADS
-   if (audio_st->pipe_cond)
-      scond_free(audio_st->pipe_cond);
+   retro_eventcount_free(&audio_st->pipe_space);
    if (audio_st->pipe_data_cond)
       scond_free(audio_st->pipe_data_cond);
    if (audio_st->pipe_lock)
       slock_free(audio_st->pipe_lock);
-   audio_st->pipe_cond                = NULL;
    audio_st->pipe_data_cond           = NULL;
    audio_st->pipe_lock                = NULL;
    /* Last: everything above may have taken it, and audio->free() at
@@ -3475,19 +3473,17 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             return false;
          }
       }
-      audio_driver_st.pipe_gen            = 0;
-      audio_driver_st.pipe_stalled        = false;
+      retro_atomic_int_init(&audio_driver_st.pipe_gen, 0);
+      retro_atomic_int_init(&audio_driver_st.pipe_stalled, 0);
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
       if (!audio_driver_st.pipe_lock)
          audio_driver_st.pipe_lock        = slock_new();
-      if (!audio_driver_st.pipe_cond)
-         audio_driver_st.pipe_cond        = scond_new();
       if (!audio_driver_st.pipe_data_cond)
          audio_driver_st.pipe_data_cond   = scond_new();
       audio_driver_st.pipe_data_gen       = 0;
       audio_driver_st.pipe_wake           = false;
-      if (     !audio_driver_st.pipe_lock || !audio_driver_st.pipe_cond
-            || !audio_driver_st.pipe_data_cond)
+      if (     !audio_driver_st.pipe_lock || !audio_driver_st.pipe_data_cond
+            || !retro_eventcount_init(&audio_driver_st.pipe_space))
       {
          RARCH_ERR("[Audio] Cannot create the pipeline throttle. Exiting...\n");
          retro_spsc_free(&audio_driver_st.pipe_ring);
@@ -3917,6 +3913,35 @@ void audio_driver_publish_runloop(void)
    retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot, v);
 }
 
+#ifdef HAVE_THREADS
+/**
+ * audio_driver_pipeline_pass_done:
+ *
+ * Audio thread. Says that ring space has opened, and with @drained
+ * that the device is moving again if the producer had found it
+ * stalled - false where that is not what happened: a pass dropped
+ * while paused advances the generation so a waiting producer is not
+ * left hanging, but it has not shown the device draining, and a
+ * stop or reinit has not either.
+ *
+ * Exactly one of these per pass, which is the whole cadence of this
+ * channel: what the producer waits for is a pass completing, so there
+ * is nothing finer to report and nothing to batch. With no producer
+ * parked the notify is a read-modify-write and a load.
+ **/
+static void audio_driver_pipeline_pass_done(audio_driver_state_t *audio_st,
+      bool drained)
+{
+   /* Cleared before the generation it is read with: a producer woken by
+    * the notify below re-reads both, and must not find the new
+    * generation beside a stall that this pass has just disproved. */
+   if (drained)
+      retro_atomic_store_release_int(&audio_st->pipe_stalled, 0);
+   retro_atomic_fetch_add_int(&audio_st->pipe_gen, 1);
+   retro_eventcount_notify(&audio_st->pipe_space);
+}
+#endif
+
 /**
  * audio_driver_pipeline_signal:
  *
@@ -3975,10 +4000,12 @@ void audio_driver_pipeline_wake(void)
    slock_lock(audio_st->pipe_lock);
    audio_st->pipe_wake = true;
    audio_st->pipe_data_gen++;
-   audio_st->pipe_gen++;
    scond_signal(audio_st->pipe_data_cond);
-   scond_signal(audio_st->pipe_cond);
    slock_unlock(audio_st->pipe_lock);
+   /* Outside the lock, because the space channel does not take one.
+    * A stop or a reinit is not a pass, so the stall is left as it was:
+    * whether the device drains again is for a pass to say. */
+   audio_driver_pipeline_pass_done(audio_st, false);
 #endif
 }
 
@@ -4263,7 +4290,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
 
       while (len)
       {
-         unsigned gen;
+         int gen;
          size_t n = pc > 2
             ? retro_spsc_write_frames(&audio_st->pipe_ring, p,
                   len / audio_st->pipe_frame_bytes, audio_st->pipe_frame_bytes)
@@ -4300,28 +4327,48 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
           * if the device stops draining, and a stall found once is
           * not waited on again until a pass completes - otherwise a
           * device that never drains costs every frame the full wait. */
-         slock_lock(audio_st->pipe_lock);
-         gen = audio_st->pipe_gen;
-         if (audio_st->pipe_stalled)
-         {
-            slock_unlock(audio_st->pipe_lock);
+         gen = retro_atomic_load_acquire_int(&audio_st->pipe_gen);
+         if (retro_atomic_load_acquire_int(&audio_st->pipe_stalled))
             break;
-         }
          if (retro_spsc_write_avail(&audio_st->pipe_ring) < audio_st->pipe_frame_bytes)
          {
-            while (audio_st->pipe_gen == gen)
-               if (!scond_wait_timeout(audio_st->pipe_cond,
-                        audio_st->pipe_lock, AUDIO_PIPE_WAIT_MAX_US))
-                  break;
-            if (audio_st->pipe_gen == gen)
+            /* One deadline for the whole wait, not one per iteration.
+             * The eventcount reports a spurious return as a wake, as a
+             * condition variable does, so a bound applied per iteration
+             * would be a bound on nothing: enough of them and the
+             * frontend sits here for multiples of it. */
+            retro_time_t deadline = cpu_features_get_time_usec()
+                  + AUDIO_PIPE_WAIT_MAX_US;
+            while (retro_atomic_load_acquire_int(&audio_st->pipe_gen) == gen)
             {
-               audio_st->pipe_stalled = true;
-               slock_unlock(audio_st->pipe_lock);
+               retro_time_t now;
+               int key = retro_eventcount_prepare_wait(&audio_st->pipe_space);
+               /* Re-read inside the window: a pass that completed
+                * between the check above and the registration notifies
+                * an eventcount that now has a waiter on it, so this
+                * either sees the new generation or the commit below
+                * returns at once. Neither can be missed. */
+               if (retro_atomic_load_acquire_int(&audio_st->pipe_gen) != gen)
+               {
+                  retro_eventcount_cancel_wait(&audio_st->pipe_space);
+                  break;
+               }
+               now = cpu_features_get_time_usec();
+               if (now >= deadline)
+               {
+                  retro_eventcount_cancel_wait(&audio_st->pipe_space);
+                  break;
+               }
+               retro_eventcount_commit_wait_timeout(&audio_st->pipe_space,
+                     key, (int64_t)(deadline - now));
+            }
+            if (retro_atomic_load_acquire_int(&audio_st->pipe_gen) == gen)
+            {
+               retro_atomic_store_release_int(&audio_st->pipe_stalled, 1);
                RARCH_WARN("[Audio] Device stopped draining; dropping audio until it resumes.\n");
                break;
             }
          }
-         slock_unlock(audio_st->pipe_lock);
       }
       audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
       /* No wake here: the consumer is woken once per frame by
@@ -4503,11 +4550,7 @@ bool audio_driver_pipeline_transport_discard(size_t frames)
    audio_driver_state_unlock();
    if (frames)
    {
-      slock_lock(audio_st->pipe_lock);
-      audio_st->pipe_gen++;
-      audio_st->pipe_stalled = false;
-      scond_signal(audio_st->pipe_cond);
-      slock_unlock(audio_st->pipe_lock);
+      audio_driver_pipeline_pass_done(audio_st, true);
    }
    return true;
 }
@@ -4582,11 +4625,7 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
    }
    if (released)
    {
-      slock_lock(audio_st->pipe_lock);
-      audio_st->pipe_gen++;
-      audio_st->pipe_stalled = false;
-      scond_signal(audio_st->pipe_cond);
-      slock_unlock(audio_st->pipe_lock);
+      audio_driver_pipeline_pass_done(audio_st, true);
    }
    return true;
 }
@@ -4882,11 +4921,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       }
       if (!have)
       {
-         slock_lock(audio_st->pipe_lock);
-         audio_st->pipe_gen++;
-         audio_st->pipe_stalled = false;
-         scond_signal(audio_st->pipe_cond);
-         slock_unlock(audio_st->pipe_lock);
+         audio_driver_pipeline_pass_done(audio_st, true);
          return;
       }
    }
@@ -4902,10 +4937,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       audio_driver_state_lock();
       audio_driver_reset_resamplers(audio_st);
       audio_driver_state_unlock();
-      slock_lock(audio_st->pipe_lock);
-      audio_st->pipe_gen++;
-      scond_signal(audio_st->pipe_cond);
-      slock_unlock(audio_st->pipe_lock);
+      audio_driver_pipeline_pass_done(audio_st, false);
       return;
    }
 
@@ -4933,11 +4965,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 
    /* Let a throttled producer know ring space has opened - and that
     * the device is draining again, if it had been found stalled. */
-   slock_lock(audio_st->pipe_lock);
-   audio_st->pipe_gen++;
-   audio_st->pipe_stalled = false;
-   scond_signal(audio_st->pipe_cond);
-   slock_unlock(audio_st->pipe_lock);
+   audio_driver_pipeline_pass_done(audio_st, true);
 
    audio_driver_pipeline_render(audio_st, source,
          have, audio_st->pipe_layouts.current_layout, snap);

@@ -218,13 +218,13 @@ static bool pipe_up(bool core_float, bool float_dev)
    if (!retro_spsc_init(&st->pipe_ring, 1 << 22))
       return false;
    st->pipe_lock      = slock_new();
-   st->pipe_cond      = scond_new();
+   retro_eventcount_init(&st->pipe_space);
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
    st->pipe_priming   = false;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED);
-   return st->pipe_lock && st->pipe_cond && st->pipe_data_cond && st->state_lock;
+   return st->pipe_lock && st->pipe_data_cond && st->state_lock;
 }
 
 static void discrete_case(bool core_float, bool float_dev)
@@ -884,10 +884,10 @@ static void full_wide_ring_case(bool floating)
    }
    AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_NONBLOCK);
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
-   st->pipe_stalled = false;
+   retro_atomic_store_release_int(&st->pipe_stalled, 0);
    audio_driver_submit_width(st, 1.0f, &input, 8 * AUDIO_PIPE_CANON_CHANNELS,
          floating, false, false, AUDIO_PIPE_CANON_CHANNELS);
-   CHECK(st->pipe_stalled, "partial-frame room must enter the bounded wait");
+   CHECK(retro_atomic_load_acquire_int(&st->pipe_stalled), "partial-frame room must enter the bounded wait");
    CHECK(retro_spsc_read_avail(&st->pipe_ring) == (128 / bytes) * bytes,
          "blocking publish split a frame");
 
@@ -1933,12 +1933,13 @@ static void transport_discard_cases(void)
             st->pipe_pending_bytes = 17 * st->pipe_frame_bytes;
             queued = retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes;
             tail = retro_atomic_load_relaxed_size(&st->pipe_ring.tail);
-            gen = st->pipe_gen;
-            st->pipe_stalled = true;
+            gen = retro_atomic_load_acquire_int(&st->pipe_gen);
+            retro_atomic_store_release_int(&st->pipe_stalled, 1);
             CHECK(!audio_driver_pipeline_transport_discard(queued + 1), "oversized discard accepted");
             CHECK(!audio_driver_pipeline_transport_discard((size_t)-1), "overflow discard accepted");
             CHECK(retro_atomic_load_relaxed_size(&st->pipe_ring.tail) == tail
-                  && st->pipe_gen == gen && st->pipe_stalled
+                  && retro_atomic_load_acquire_int(&st->pipe_gen) == gen
+                  && retro_atomic_load_acquire_int(&st->pipe_stalled)
                   && st->pipe_pending == pending && st->pipe_pending_bytes == 17 * st->pipe_frame_bytes,
                   "failed discard changed driver state");
             CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
@@ -1949,16 +1950,17 @@ static void transport_discard_cases(void)
             transport_track = false;
             CHECK(!transport_allocations && !transport_frees, "discard replaced storage");
             CHECK(!st->pipe_pending && !st->pipe_pending_bytes
-                  && st->pipe_gen == gen + 1 && !st->pipe_stalled,
+                  && retro_atomic_load_acquire_int(&st->pipe_gen) == gen + 1
+                  && !retro_atomic_load_acquire_int(&st->pipe_stalled),
                   "discard did not cancel output/notify progress");
             CHECK(retro_spsc_read_avail(&st->pipe_ring) == (queued - 1) * st->pipe_frame_bytes,
                   "discard released wrong source count");
             CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
                   && !block.frames && block.reset_serial == serial + 1,
                   "discard retained output or epoch");
-            gen = st->pipe_gen;
+            gen = retro_atomic_load_acquire_int(&st->pipe_gen);
             CHECK(audio_driver_pipeline_transport_discard(0), "zero discard failed");
-            CHECK(st->pipe_gen == gen && retro_spsc_read_avail(&st->pipe_ring)
+            CHECK(retro_atomic_load_acquire_int(&st->pipe_gen) == gen && retro_spsc_read_avail(&st->pipe_ring)
                   == (queued - 1) * st->pipe_frame_bytes, "zero discard released source");
             CHECK(audio_driver_pipeline_transport_discard(queued - 1), "remaining discard failed");
             CHECK(!retro_spsc_read_avail(&st->pipe_ring), "discard did not empty source");

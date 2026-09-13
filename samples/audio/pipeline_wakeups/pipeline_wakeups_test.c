@@ -451,14 +451,14 @@ static bool pipeline_up(unsigned latency_ms)
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    st->pipe_lock      = slock_new();
-   st->pipe_cond      = scond_new();
+   retro_eventcount_init(&st->pipe_space);
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
    st->pipe_priming   = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
-   if (!st->pipe_lock || !st->pipe_cond || !st->pipe_data_cond
+   if (!st->pipe_lock || !st->pipe_data_cond
          || !st->state_lock || !st->output_samples_buf || !st->pipe_scratch
          || !st->input_data || !st->synth_buf || !dev_ring)
       return false;
@@ -476,7 +476,7 @@ static void pipeline_down(void)
    audio_driver_pipeline_transport_release();
    retro_spsc_free(&st->pipe_ring);
    slock_free(st->pipe_lock);
-   scond_free(st->pipe_cond);
+   retro_eventcount_free(&st->pipe_space);
    scond_free(st->pipe_data_cond);
    slock_free(st->state_lock);
    free(st->output_samples_buf);

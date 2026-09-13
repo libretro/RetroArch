@@ -318,7 +318,7 @@ static bool pipeline_up(size_t ring_bytes)
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    st->pipe_lock      = slock_new();
-   st->pipe_cond      = scond_new();
+   retro_eventcount_init(&st->pipe_space);
    st->pipe_data_cond = scond_new();
    st->state_lock     = slock_new();
    st->pipe_threaded  = true;
@@ -327,7 +327,7 @@ static bool pipeline_up(size_t ring_bytes)
          | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
    if (!sync_on)
       AUDIO_FLAGS_SET(st, AUDIO_FLAG_NONBLOCK);
-   return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
+   return st->pipe_lock && st->pipe_data_cond
       && st->state_lock && st->output_samples_buf && st->pipe_scratch;
 }
 

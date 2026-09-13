@@ -15,6 +15,7 @@ SOURCES_C := \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/audio_thread_wrapper.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \

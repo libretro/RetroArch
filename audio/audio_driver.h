@@ -26,6 +26,11 @@
 #include <retro_common_api.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
+/* Outside the HAVE_THREADS guard below: its struct is a value member of
+ * the state, needs only retro_atomic, and a build without threads never
+ * calls into it - so the type has to exist there even though nothing
+ * uses it. */
+#include <rthreads/retro_eventcount.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #else
@@ -526,10 +531,15 @@ typedef struct
     * bits. */
    volatile bool pipe_consumer_gone;
    /* Throttle channel for audio_sync without vsync: the consumer bumps
-    * pipe_gen under pipe_lock after every pass and signals pipe_cond;
-    * a producer that found the ring full waits for the generation to
-    * change. The ring itself is never touched under this lock; the lock
-    * only orders the two generation counters against their waits. */
+    * pipe_gen after every pass and notifies pipe_space; a producer that
+    * found the ring full waits for the generation to change. No lock:
+    * the generation is an atomic, the eventcount is only how the
+    * producer parks, and a pass that completes with nobody parked pays
+    * a read-modify-write and a load rather than a lock acquisition.
+    *
+    * Once per pass is the whole cadence. The consumer notifies where a
+    * pass ends and nowhere else, so the count of notifies is the count
+    * of passes however finely the producer publishes. */
    /**
     * Held across a pipeline pass, and by the main thread whenever it
     * changes something a pass reads: the DSP filter pointer and the
@@ -542,8 +552,8 @@ typedef struct
     */
    slock_t *state_lock;
    slock_t *pipe_lock;
-   scond_t *pipe_cond;
-   unsigned pipe_gen;
+   retro_eventcount_t pipe_space;
+   retro_atomic_int_t pipe_gen;
    /* Data channel the other way: the producer bumps pipe_data_gen and
     * signals pipe_data_cond after every publish; the consumer sleeps on
     * it while the ring is empty. */
@@ -553,12 +563,16 @@ typedef struct
     * the consumer when it acts on it. Sticky, unlike the signal, so a
     * wake raised before the consumer reaches its wait is not lost. */
    bool     pipe_wake;
-   /* Set by the producer under pipe_lock when a full ring did not drain
-    * within its bounded wait, cleared by the consumer when a pass
-    * completes. While set, the producer drops rather than waits, so a
-    * device that has stopped draining costs the frame nothing beyond
-    * the one wait that found it out. */
-   bool     pipe_stalled;
+   /* Set by the producer when a full ring did not drain within its
+    * bounded wait, cleared by the consumer when a pass completes. While
+    * set, the producer drops rather than waits, so a device that has
+    * stopped draining costs the frame nothing beyond the one wait that
+    * found it out.
+    *
+    * One writer each way and neither cares which of them won a race -
+    * a lost clear is one more frame of dropping, a lost set is one more
+    * bounded wait - so it is an atomic rather than lock-held state. */
+   retro_atomic_int_t pipe_stalled;
    /**
     * What the audio thread needs to know about the runloop and the
     * menu, published by the main thread with

@@ -175,7 +175,7 @@ static void test_producer_publishes_at_its_cadence(void)
       return;
    }
    audio_driver_st.pipe_lock = slock_new();
-   audio_driver_st.pipe_cond = scond_new();
+   retro_eventcount_init(&audio_driver_st.pipe_space);
    retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
 
    /* A 1.0x publish first, so the re-entry seed is armed. */
@@ -199,7 +199,7 @@ static void test_producer_publishes_at_its_cadence(void)
 
    retro_spsc_free(&audio_driver_st.pipe_ring);
    slock_free(audio_driver_st.pipe_lock);
-   scond_free(audio_driver_st.pipe_cond);
+   retro_eventcount_free(&audio_driver_st.pipe_space);
 }
 
 int main(void)
