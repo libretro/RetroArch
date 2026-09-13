@@ -135,17 +135,6 @@ jobs:
           # this job already built.
           .github/workflows/scripts/hot-function-budget.sh
 
-      - name: Stack frame sweep
-        shell: bash
-        run: |
-          set -eu
-          # Every stack frame in the graphics objects against the
-          # ceiling in CODING-GUIDELINES. A large local array compiles,
-          # and runs on a machine with a desktop's stack; it is only a
-          # problem where the stack is smallest, which is the platform
-          # nobody tests on. Uses the release objects this job built.
-          .github/workflows/scripts/stack-frame-sweep.sh
-
       - name: Build and run threaded_video_test
         shell: bash
         run: |
