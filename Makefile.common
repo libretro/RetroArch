@@ -346,16 +346,16 @@ DEFINES += -DHAVE_REWIND
 OBJ     += state_manager.o
 endif
 
+# retro_waitable_spsc parks on an eventcount, so retro_eventcount.o is
+# in this unconditional list rather than under HAVE_THREADS: a build
+# without threads still compiles the queue, and had nothing to link its
+# parking half against. The eventcount has no thread dependency of its
+# own - with no lock or condition variable it degrades to a spin.
 OBJ += \
        gfx/bitmapfont.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
-# retro_waitable_spsc parks on an eventcount, so the eventcount is in
-# the same unconditional list rather than under HAVE_THREADS: a build
-# without threads still compiles the queue, and had nothing to link its
-# parking half against. The eventcount has no thread dependency of its
-# own - with no lock or condition variable it degrades to a spin.
        $(LIBRETRO_COMM_DIR)/queues/fifo_queue.o \
        $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
        $(LIBRETRO_COMM_DIR)/queues/retro_waitable_spsc.o \
