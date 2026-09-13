@@ -279,7 +279,17 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
       *new_rate = mic->device_spec.freq;
 
 #ifdef HAVE_THREADS
-   retro_eventcount_init(&mic->park);
+   /* Checked, because it can fail. On the backends that park through a
+    * condition variable - Apple, the BSDs, the consoles, and Windows
+    * where no sleep tier resolved - init allocates a mutex and a cond,
+    * and either allocation can come back NULL. Nothing downstream
+    * tolerates that: commit_wait would hand scond_wait a NULL cond,
+    * which is a dereference and not a degraded wait. */
+   if (!retro_eventcount_init(&mic->park))
+   {
+      RARCH_ERR("[SDL audio] Could not create the microphone's park.\n");
+      goto error;
+   }
 #endif
 
    RARCH_LOG("[SDL audio] Requested %u ms latency for input device, received %d ms.\n",
@@ -722,7 +732,14 @@ static void *sdl_audio_init(const char *device,
              SDL_AUDIO_ISBIGENDIAN(sdl->device_spec.format) ? "big" : "little");
 
 #ifdef HAVE_THREADS
-   retro_eventcount_init(&sdl->park);
+   /* As on the microphone path above: a failed init is not a wait that
+    * degrades, it is a NULL condition variable handed to scond_wait. */
+   if (!retro_eventcount_init(&sdl->park))
+   {
+      RARCH_ERR("[SDL audio] Could not create the speaker's park.\n");
+      sdl_audio_free(sdl);
+      return NULL;
+   }
 #endif
 
    /* The fifo in front of the device holds the latency setting, as the
@@ -927,9 +944,9 @@ static size_t sdl_audio_buffer_size(void *data)
    return sdl->speaker_ring_size;
 }
 
-/* Sleep on the condition the speaker thread signals after every pull
- * until at least len bytes fit in the outgoing queue, capped at half
- * of it so the wait always ends. Returns the free space then, or 0
+/* Park on the eventcount the speaker callback notifies after every
+ * pull, until at least len bytes fit in the outgoing queue, capped at
+ * half of it so the wait always ends. Returns the free space then, or 0
  * when the thread has gone quiet for the stall timeout (device lost)
  * or there is no thread to wait on. */
 static size_t sdl_audio_wait_writable(void *data, size_t len)

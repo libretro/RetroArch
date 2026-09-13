@@ -353,7 +353,29 @@ static bool ec_sleep(struct ec_waiter *w, LARGE_INTEGER *timeout)
                 * clamped instead.  INFINITE is not a duration. */
                ms = (t >= (LONGLONG)INFINITE) ? INFINITE - 1 : (DWORD)t;
             }
-            return WaitForSingleObject(w->event, ms) != WAIT_TIMEOUT;
+            DWORD rc = WaitForSingleObject(w->event, ms);
+            if (rc == WAIT_TIMEOUT)
+               return false;
+            if (rc == WAIT_OBJECT_0)
+               return true;
+            /* Anything else is the handle being unusable, which since
+             * the TLS fallback was fixed should not be reachable: a
+             * CreateEvent that fails is answered in ec_win32_park
+             * before the block is ever listed.  Reported as a wake
+             * because the caller re-checks its own predicate and a
+             * false timeout would be a lie, but slept on first: a bad
+             * handle fails immediately, and without this the caller's
+             * loop turns into a spin on a core that has no work.  A
+             * millisecond of poll is the right shape for something
+             * that should not happen at all.
+             *
+             * There is nowhere to report it from - this is
+             * libretro-common and has no logger - so the poll is the
+             * whole mitigation.  This branch is not exercised by any
+             * test: no way to induce a failing wait on a valid handle
+             * was found. */
+            Sleep(1);
+            return true;
          }
    }
 }

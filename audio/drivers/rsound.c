@@ -109,7 +109,11 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
       goto error;
 
    retro_atomic_int_init(&rsd->has_error, 0);
-   retro_eventcount_init(&rsd->park);
+   /* Checked: on a backend that parks through a condition variable the
+    * init allocates, and a failure leaves an object whose commit_wait
+    * would hand scond_wait a NULL cond. */
+   if (!retro_eventcount_init(&rsd->park))
+      goto error;
 
    channels       = 2;
    format         = RSD_S16_NE;
@@ -169,7 +173,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
 
 error:
    /* Everything allocated so far: the ring (if its init got that far),
-    * the condition pair, librsound's handle (rsd_free is NULL-safe on
+    * the park, librsound's handle (rsd_free is NULL-safe on
     * the rsd_init-failed path) and the driver struct.  The old code
     * freed only the handle. */
    if (rsd->ring_init)
