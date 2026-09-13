@@ -1197,6 +1197,72 @@ static void stream_quiescence(void)
    }
 }
 
+static void stream_input_readiness(void)
+{
+   static const double tempos[] = { 0.25, 1.0, 1.5, 4.0, 32.0 };
+   static const unsigned rates[] = { 8000, 48000, 192000 };
+   unsigned native, rate, tempo, cases = 0;
+   CHECK(!audio_stretch_stream_needs_input(NULL));
+   for (native = 0; native < 2; native++)
+      for (rate = 0; rate < 3; rate++)
+         for (tempo = 0; tempo < 5; tempo++)
+         {
+            audio_stretch_stream_t *s = audio_stretch_stream_new(
+                  rates[rate], 8, native, 1);
+            const void *input = native ? (const void*)input_f : (const void*)input_i;
+            void *output = native ? (void*)output_f[0] : (void*)output_i[0];
+            size_t used = 0, count, taken, frame = 8 * (native ? sizeof(float) : sizeof(int16_t));
+            unsigned iteration = 0, starved = 0, retained = 0;
+            bool complete = false;
+            fill(8);
+            CHECK(s != NULL);
+            CHECK(audio_stretch_stream_bind(s, output, 17));
+            guarded = 1;
+            CHECK(audio_stretch_stream_needs_input(s));
+            while (used < FRAMES && iteration++ < 100000)
+            {
+               bool needs = audio_stretch_stream_needs_input(s);
+               /* Processing, rather than internal counters, is the oracle. */
+               CHECK(audio_stretch_stream_push(s, NULL, 0, &taken, tempos[tempo], true));
+               CHECK(!taken);
+               audio_stretch_stream_peek(s, &count);
+               CHECK(!needs || !count);
+               if (needs) starved++;
+               if (count)
+               {
+                  CHECK(!audio_stretch_stream_needs_input(s));
+                  retained++;
+                  CHECK(audio_stretch_stream_consume(s, count));
+               }
+               else
+               {
+                  size_t n = FRAMES - used;
+                  if (n > 71) n = 71;
+                  CHECK(audio_stretch_stream_push(s, (const char*)input + used * frame,
+                           n, &taken, tempos[tempo], true));
+                  used += taken;
+                  audio_stretch_stream_peek(s, &count);
+                  if (count) CHECK(!audio_stretch_stream_needs_input(s));
+                  CHECK(audio_stretch_stream_consume(s, count));
+               }
+            }
+            CHECK(iteration < 100000 && starved && retained);
+            while (!complete)
+            {
+               CHECK(audio_stretch_stream_finish(s, &complete));
+               CHECK(!audio_stretch_stream_needs_input(s));
+               audio_stretch_stream_peek(s, &count);
+               CHECK(audio_stretch_stream_consume(s, count));
+            }
+            audio_stretch_stream_reset(s);
+            CHECK(audio_stretch_stream_needs_input(s));
+            guarded = 0;
+            audio_stretch_stream_free(s);
+            cases++;
+         }
+   printf("stream input readiness: %u cases completed\n", cases);
+}
+
 int main(void)
 {
    contracts();
@@ -1217,6 +1283,7 @@ int main(void)
    adapter_direct_active();
    bound_budget_cases();
    stream_quiescence();
+   stream_input_readiness();
    CHECK(heap_calls == 0);
    printf("stretch: %u failures, %u processing/reset heap calls\n", failures, heap_calls);
    return failures != 0;

@@ -172,10 +172,42 @@ static void discard_filter(bool floating)
    audio_pipeline_stretch_free(s); retro_spsc_free(&ring);
 }
 
+static void readiness_controls(void)
+{
+   retro_spsc_t ring;
+   audio_pipeline_layout_t q;
+   audio_pipeline_stretch_t *s;
+   struct audio_pipeline_stretch_block block;
+   float output[32];
+   unsigned event;
+   CHECK(retro_spsc_init(&ring, 256));
+   audio_pipeline_layout_init(&q, 3);
+   s = audio_pipeline_stretch_new(48000, 2, true, 1, &ring, &q, output, 16);
+   if (!s) abort();
+   CHECK(audio_pipeline_stretch_needs_input(s));
+   guarded = 1;
+   for (event = 0; event < 4; event++)
+   {
+      /* Retired metadata can precede application to retained stream state. */
+      CHECK(audio_pipeline_layout_publish_processing(&q, 0,
+               event >= 2 ? 1 : 3, 131072, true, event == 3,
+               event >= 1 ? 1000 : 0));
+      audio_pipeline_layout_limit_transport(&q, 0, 0, ring.capacity);
+      CHECK(!audio_pipeline_stretch_needs_input(s));
+      CHECK(audio_pipeline_stretch_next(s, 0, 16, &block));
+      CHECK(!block.frames);
+      CHECK(audio_pipeline_stretch_needs_input(s));
+   }
+   guarded = 0;
+   audio_pipeline_stretch_free(s);
+   retro_spsc_free(&ring);
+}
+
 int main(void)
 {
    unsigned channels, mode, active, reset, capacity, j, cases = 0;
    metadata_contracts();
+   readiness_controls();
    discard_filter(false); discard_filter(true);
    for (channels = 2; channels <= 11; channels += 9)
    {

@@ -121,6 +121,9 @@ void audio_stretch_stream_reset(audio_stretch_stream_t *state);
 /* True only in raw state with no retained output. The owner may then bypass
  * the adapter until activation. NULL is quiescent. EOF requires reset first. */
 bool audio_stretch_stream_quiescent(const audio_stretch_stream_t *state);
+/* Consumer only, with the current processing request unchanged. True means
+ * no output can be produced without source; exit/EOF remain conservative. */
+bool audio_stretch_stream_needs_input(const audio_stretch_stream_t *state);
 bool audio_stretch_stream_process(audio_stretch_stream_t *state,
       struct audio_stretch_io *io, double tempo, bool active);
 bool audio_stretch_stream_flush(audio_stretch_stream_t *state,

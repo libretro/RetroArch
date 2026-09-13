@@ -59,8 +59,14 @@ void audio_pipeline_stretch_free(audio_pipeline_stretch_t *s)
 
 bool audio_pipeline_stretch_needs_input(const audio_pipeline_stretch_t *s)
 {
+   /* An event may be retired while its application waits for old output.
+    * Keep running until the stream has seen that processing request. */
    return s && !s->direct_frames && !s->draining_layout
-      && audio_stretch_stream_quiescent(s->stream);
+      && s->control == s->metadata->current_control
+      && s->cutoff == s->metadata->current_cutoff
+      && s->layout == s->metadata->current_layout
+      && s->seen_reset == s->metadata->reset_serial
+      && audio_stretch_stream_needs_input(s->stream);
 }
 
 static void apstretch_offer(audio_pipeline_stretch_t *s,

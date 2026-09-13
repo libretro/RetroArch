@@ -619,6 +619,22 @@ bool audio_stretch_stream_quiescent(const audio_stretch_stream_t *s)
          && !s->count && !s->eof);
 }
 
+bool audio_stretch_stream_needs_input(const audio_stretch_stream_t *s)
+{
+   const audio_stretch_t *engine;
+   unsigned needed;
+   if (!s || s->eof || s->bound_read < s->bound_count || s->read < s->count)
+      return false;
+   if (s->phase == ASTRETCH_STREAM_RAW) return true;
+   if (s->phase != ASTRETCH_STREAM_ACTIVE) return false;
+   engine = s->engine;
+   if (engine->pending || engine->draining) return false;
+   /* Dropping an exhausted search prefix reduces count and next equally. */
+   needed = (engine->started ? engine->next + engine->radius : 0)
+      + 2 * engine->hop;
+   return engine->count < needed;
+}
+
 static void astretch_stream_pump(audio_stretch_stream_t *s,
       struct audio_stretch_io *io, double tempo, bool active)
 {
