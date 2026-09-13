@@ -62,6 +62,11 @@ struct resampler_data_int16
 void *sinc_resampler_int16_init(double bandwidth_mod,
       enum sinc_int16_quality quality);
 
+/* Opt-in HQ tables at nominal output/input ratios >= 2; otherwise the
+ * selected quality is unchanged. No float conversion in process(). */
+void *sinc_resampler_int16_init_hq(double bandwidth_mod,
+      enum sinc_int16_quality quality, int hq_oversampling);
+
 /* Deterministic, integer-only.  Bit-identical across compilers/architectures. */
 void  sinc_resampler_int16_process(void *re,
       struct resampler_data_int16 *data);

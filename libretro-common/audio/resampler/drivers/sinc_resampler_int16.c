@@ -53,6 +53,7 @@
 #include <math.h>
 
 #include <audio/sinc_resampler_int16.h>
+#include <audio/sinc_resampler.h>
 
 /* On targets whose compiler can auto-vectorize an int16*int32->int64 MAC
  * (e.g. AArch64/NEON via smlal), splitting the Kaiser inner loop into a
@@ -458,8 +459,8 @@ void sinc_resampler_int16_free(void *re_)
    free(re);
 }
 
-void *sinc_resampler_int16_init(double bandwidth_mod,
-      enum sinc_int16_quality quality)
+void *sinc_resampler_int16_init_hq(double bandwidth_mod,
+      enum sinc_int16_quality quality, int hq_oversampling)
 {
    double   cutoff  = 0.0;
    unsigned sidelobes = 0;
@@ -516,6 +517,16 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
          break;
    }
 
+   if (hq_oversampling && bandwidth_mod >= 2.0)
+   {
+      cutoff            = SINC_HQ_CUTOFF;
+      sidelobes         = SINC_HQ_SIDELOBES;
+      re->phase_bits    = SINC_HQ_PHASE_BITS;
+      re->subphase_bits = SINC_HQ_SUBPHASE_BITS;
+      window            = SINC_I16_WINDOW_KAISER;
+      re->kaiser_beta   = SINC_HQ_KAISER_BETA;
+   }
+
    re->window        = (unsigned)window;
    re->subphase_mask = (1u << re->subphase_bits) - 1u;
    re->taps          = sidelobes * 2;
@@ -567,4 +578,10 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
 error:
    sinc_resampler_int16_free(re);
    return NULL;
+}
+
+void *sinc_resampler_int16_init(double bandwidth_mod,
+      enum sinc_int16_quality quality)
+{
+   return sinc_resampler_int16_init_hq(bandwidth_mod, quality, 0);
 }

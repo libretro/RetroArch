@@ -38,6 +38,7 @@
 #include <memalign.h>
 
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler.h>
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -822,9 +823,9 @@ static void sinc_init_table_lanczos(
    }
 }
 
-static void *resampler_sinc_new(const struct resampler_config *config,
-      double bandwidth_mod, enum resampler_quality quality,
-      resampler_simd_mask_t mask)
+void *sinc_resampler_init_hq(double bandwidth_mod,
+      enum resampler_quality quality, resampler_simd_mask_t mask,
+      int hq_oversampling)
 {
    double cutoff                  = 0.0;
    size_t phase_elems             = 0;
@@ -881,6 +882,17 @@ static void *resampler_sinc_new(const struct resampler_config *config,
          window_type       = SINC_WINDOW_KAISER;
          re->kaiser_beta   = 5.5;
          break;
+   }
+
+   if (hq_oversampling && bandwidth_mod >= 2.0)
+   {
+      cutoff            = SINC_HQ_CUTOFF;
+      sidelobes         = SINC_HQ_SIDELOBES;
+      re->phase_bits    = SINC_HQ_PHASE_BITS;
+      re->subphase_bits = SINC_HQ_SUBPHASE_BITS;
+      window_type       = SINC_WINDOW_KAISER;
+      re->kaiser_beta   = SINC_HQ_KAISER_BETA;
+      enable_avx        = 1;
    }
 
    re->subphase_mask = (1 << re->subphase_bits) - 1;
@@ -976,6 +988,14 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 error:
    resampler_sinc_free(re);
    return NULL;
+}
+
+static void *resampler_sinc_new(const struct resampler_config *config,
+      double bandwidth_mod, enum resampler_quality quality,
+      resampler_simd_mask_t mask)
+{
+   (void)config;
+   return sinc_resampler_init_hq(bandwidth_mod, quality, mask, 0);
 }
 
 /* Thin dispatcher: the vtable is shared across all live instances, so the
