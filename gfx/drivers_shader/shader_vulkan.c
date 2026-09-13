@@ -1871,6 +1871,18 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    unsigned i;
    size_t required_images = 0;
 
+   for (i = 0; i < chain->pass_count; i++)
+   {
+      size_t _y = chain->passes[i]->reflection.semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
+      required_images = MAX(required_images, _y);
+   }
+
+   /* Rebuilding for a new swapchain (e.g. a vsync toggle on
+    * fast-forward) must not blank the recorded frames. */
+   if (chain->num_history && chain->num_history + 1 == required_images)
+      return true;
+
    for (i = 0; i < chain->num_history; i++)
       slang_framebuffer_delete(&chain->original_history[i]);
    free(chain->original_history);
@@ -1879,13 +1891,6 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    texture_array_resize(&chain->common.original_history,
          &chain->common.num_original_history, 0);
    chain->history_ring_index = 0;
-
-   for (i = 0; i < chain->pass_count; i++)
-   {
-      size_t _y = chain->passes[i]->reflection.semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
-      required_images = MAX(required_images, _y);
-   }
 
    if (required_images < 2)
    {
@@ -1957,8 +1962,13 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
 
       if (use_feedback)
       {
-         if (!slang_pass_init_feedback(chain->passes[i]))
-            return false;
+         /* Kept across swapchain rebuilds; only a new buffer needs clearing. */
+         if (!chain->passes[i]->fb_feedback)
+         {
+            if (!slang_pass_init_feedback(chain->passes[i]))
+               return false;
+            chain->require_clear = true;
+         }
          RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
    }
@@ -1974,7 +1984,6 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
    if (!texture_array_resize(&chain->common.fb_feedback,
             &chain->common.num_fb_feedback, chain->pass_count - 1))
       return false;
-   chain->require_clear = true;
    return true;
 }
 
@@ -2175,7 +2184,6 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
          return false;
    }
 
-   chain->require_clear = false;
    if (!slang_chain_init_ubo(chain))
       return false;
    RARCH_DBG("[Vulkan] Chain UBO ready.\n");
@@ -2490,7 +2498,6 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       chain->alias_initialized = true;
    }
 
-   chain->require_clear = false;
    if (!slang_chain_init_ubo(chain))
       return false;
    if (!slang_chain_init_history(chain))
@@ -3473,7 +3480,6 @@ static bool slang_pass_build(struct slang_pass *pass)
       return false;
 
    slang_framebuffer_delete(&pass->framebuffer);
-   slang_framebuffer_delete(&pass->fb_feedback);
 
    if (!pass->final_pass)
    {
