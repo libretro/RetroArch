@@ -1479,7 +1479,17 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
       for (segment = 0; segment < 4; segment++)
       {
          uint32_t layout = wide ? layouts[segment] : AUDIO_LAYOUT_STEREO;
-         CHECK(audio_pipeline_layout_publish_processing(&st->pipe_layouts,
+         if (fragmented)
+         {
+            CHECK(audio_pipeline_layout_publish(&st->pipe_layouts,
+                     retro_atomic_load_relaxed_size(&st->pipe_ring.head), layout),
+                  "owned renderer layout");
+            CHECK(audio_driver_pipeline_transport_request(tempos[segment], segment != 0,
+                     segment == 2, filter && segment != 3 ? 800 + segment * 900 : 0),
+                  "owned renderer processing request");
+         }
+         else
+            CHECK(audio_pipeline_layout_publish_processing(&st->pipe_layouts,
                   segment * 512 * frame, layout, tempos[segment], segment != 0,
                   segment == 2, filter && segment != 3 ? 800 + segment * 900 : 0), "native renderer control publication");
          for (f = segment * 512; f < (segment + 1) * 512; f++)
@@ -1490,9 +1500,10 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
                if (floating) input.f[f * channels + c] = value / 32768.0f;
                else input.i[f * channels + c] = value;
             }
+         CHECK(retro_spsc_write_frames(&st->pipe_ring,
+                  (const uint8_t*)&input + segment * 512 * frame, 512, frame) == 512,
+               "native renderer source publication");
       }
-      CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 2048, frame) == 2048,
-            "native renderer source publication");
       if (fragmented)
       {
          scripted_threaded.write = short_device_write;
@@ -1741,6 +1752,75 @@ static void transport_owner_cases(void)
    printf("native transport ownership: 4 cases, %u failures\n", failures - before);
 }
 
+static void transport_request_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned floating, wide, before = failures;
+   for (floating = 0; floating < 2; floating++)
+      for (wide = 0; wide < 2; wide++)
+      {
+         union { float f[11]; int16_t i[11]; } input;
+         audio_pipeline_layout_t *q;
+         struct audio_pipeline_stretch_block block;
+         size_t position, head;
+         unsigned gen, i;
+         CHECK(pipe_up(floating, floating), "request stand-up");
+         if (!wide)
+         {
+            st->pipe_channels = 2;
+            st->pipe_frame_bytes = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+         }
+         q = &st->pipe_layouts;
+         CHECK(!audio_driver_pipeline_transport_request(65536, true, false, 1000),
+               "request without owned stage");
+         CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "request prepare");
+         memset(&input, 0, sizeof(input));
+         CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 1, st->pipe_frame_bytes) == 1,
+               "request preceding source");
+         position = retro_atomic_load_relaxed_size(&st->pipe_ring.head);
+         gen = st->pipe_data_gen;
+         CHECK(audio_driver_pipeline_transport_request(98304, true, true, 1000), "request publish");
+         CHECK(st->pipe_data_gen == gen + 1 && retro_atomic_load_relaxed_size(&q->head) == 1,
+               "request did not wake consumer");
+         CHECK(q->events[0].position == position && q->events[0].layout == q->published_layout
+               && q->events[0].control == (98304 | AUDIO_PIPELINE_STRETCH | AUDIO_PIPELINE_RESET)
+               && q->events[0].cutoff == 1000, "request split controls or used wrong boundary");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 1, 1, &block)
+               && block.frames == 1 && block.passthrough, "request affected preceding audio");
+         CHECK(audio_pipeline_stretch_consume(st->pipe_transport, 1), "request preceding release");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && q->current_control == (98304 | AUDIO_PIPELINE_STRETCH)
+               && q->current_cutoff == 1000 && q->reset_serial == 1,
+               "request boundary not retired coherently");
+         head = retro_atomic_load_relaxed_size(&q->head);
+         gen = st->pipe_data_gen;
+         CHECK(audio_driver_pipeline_transport_request(98304, true, false, 1000), "unchanged request");
+         CHECK(!audio_driver_pipeline_transport_request(16383, true, true, 2000)
+               && !audio_driver_pipeline_transport_request(2097153, true, true, 2000),
+               "invalid request tempo accepted");
+         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && st->pipe_data_gen == gen
+               && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
+               "invalid/unchanged request mutated controls or woke consumer");
+         for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
+            CHECK(audio_driver_pipeline_transport_request(98304, true, true, 1000), "request pressure fill");
+         gen = st->pipe_data_gen;
+         head = retro_atomic_load_relaxed_size(&q->head);
+         CHECK(!audio_driver_pipeline_transport_request(131072, true, true, 2000), "full request accepted");
+         CHECK(retro_atomic_load_relaxed_size(&q->head) == head && st->pipe_data_gen == gen
+               && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
+               "full request partially published");
+         CHECK(audio_driver_pipeline_transport_request(98304, true, false, 1000), "full unchanged request");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && q->reset_serial == 1 + AUDIO_PIPELINE_LAYOUT_CAPACITY, "request pressure retirement");
+         CHECK(audio_driver_pipeline_transport_request(0, false, false, 2000), "inactive request retry");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && q->current_control == 65536 && q->current_cutoff == 2000,
+               "inactive request did not preserve filter independence");
+         audio_driver_deinit_internal(true);
+      }
+   printf("native transport request: 4 cases, %u failures\n", failures - before);
+}
+
 static void transport_discard_cases(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
@@ -1842,6 +1922,7 @@ int main(void)
    printf("discrete multi-channel:\n");
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
+   RUN("transportrequest", transport_request_cases());
    RUN("nativerender", native_render_cases());
    RUN("srcreset", resampler_discontinuity_cases());
    RUN("suspended", suspended_multichannel_case(true, true));

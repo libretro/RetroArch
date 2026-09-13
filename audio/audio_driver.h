@@ -928,6 +928,14 @@ struct audio_pipeline_stretch;
  * releases it while preserving the new native ring format. */
 bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_channels);
 void audio_driver_pipeline_transport_release(void);
+/* Main source producer only, before publishing the affected audio. Tempo is
+ * source frames/output frame in Q16, 0.25..32 when active (ignored when inactive).
+ * cutoff is core-rate Hz, or zero to disable filtering. Preserve the current
+ * source layout; publish layout changes before this call at the same boundary.
+ * A missing session, invalid tempo or full queue returns false without changing
+ * the request. Retry before publishing affected audio. No mode activation. */
+bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff);
 /* Consumer thread, or main thread with the wrapper parked; no worker locks
  * held. Cancel owned transport/device output and reset DSP history, skipping
  * exactly frames of queued native source. Zero preserves queued source.

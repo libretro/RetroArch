@@ -4472,6 +4472,24 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
    audio_driver_state_unlock();
 }
 
+bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   audio_pipeline_layout_t *metadata = &audio_st->pipe_layouts;
+   size_t head;
+   bool result;
+   if (!audio_st->pipe_threaded || !audio_st->pipe_transport)
+      return false;
+   head = retro_atomic_load_relaxed_size(&metadata->head);
+   result = audio_pipeline_layout_publish_processing(metadata,
+         retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head),
+         metadata->published_layout, tempo_q16, active, reset, cutoff);
+   if (retro_atomic_load_relaxed_size(&metadata->head) != head)
+      audio_driver_pipeline_signal(audio_st);
+   return result;
+}
+
 bool audio_driver_pipeline_transport_discard(size_t frames)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
