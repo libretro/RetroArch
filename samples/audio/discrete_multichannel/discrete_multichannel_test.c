@@ -95,6 +95,7 @@ static ssize_t dev_write(void *d, const void *buf, size_t size)
    return (ssize_t)size;
 }
 static bool     dev_stop(void *d) { (void)d; return true; }
+static bool     dev_stop_fail(void *d) { (void)d; return false; }
 static bool     dev_start(void *d, bool s) { (void)d; (void)s; return true; }
 static bool     dev_alive(void *d) { (void)d; return true; }
 static void     dev_nonblock(void *d, bool s) { (void)d; (void)s; }
@@ -1691,6 +1692,33 @@ static void transport_owner_cases(void)
          CHECK(block.input_used == 17 && block.frames == 17 && block.data == st->pipe_transport_output,
                "rebound filter did not use owned storage");
          CHECK(!memcmp(block.data, &input, 17 * st->pipe_frame_bytes), "rebound native samples differ");
+         st->pipe_pending = (const uint8_t*)block.data;
+         st->pipe_pending_bytes = 17 * st->pipe_frame_bytes;
+         wrapper.stop = dev_stop_fail;
+         CHECK(!audio_driver_stop(), "failed stop accepted");
+         CHECK(st->pipe_pending == block.data && st->pipe_pending_bytes == 17 * st->pipe_frame_bytes,
+               "failed stop cancelled device output");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
+               && block.frames == 17, "failed stop cancelled transport output");
+         for (j = 0; j < 17 * st->pipe_channels; j++)
+            if (!floating) input.f[j] = -0.25f; else input.i[j] = -8192;
+         CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 17, st->pipe_frame_bytes) == 17,
+               "stop queued restart source");
+         wrapper.stop = dev_stop;
+         transport_allocations = transport_frees = 0; transport_track = true;
+         CHECK(audio_driver_stop(), "owned transport stop");
+         transport_track = false;
+         CHECK(!transport_allocations && !transport_frees, "stop replaced transport storage");
+         CHECK(!st->pipe_pending && !st->pipe_pending_bytes, "stop retained device output");
+         CHECK(retro_spsc_read_avail(&st->pipe_ring) == 17 * st->pipe_frame_bytes,
+               "stop discarded queued source");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 17, &block)
+               && !block.frames, "stop retained filtered output");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 17, 17, &block)
+               && block.frames == 17 && block.input_used == 17,
+               "stopped transport cannot resume queued source");
+         CHECK(!memcmp(block.data, &input, 17 * st->pipe_frame_bytes),
+               "stop retained filter history");
          st->pipe_pending = (const uint8_t*)block.data;
          st->pipe_pending_bytes = 17 * st->pipe_frame_bytes;
          transport_fail_stage = true;

@@ -6734,6 +6734,10 @@ bool audio_driver_stop(void)
    if (stopped)
    {
       /* The wrapper has parked the consumer before returning from stop. */
+#ifdef HAVE_THREADS
+      if (audio_st->pipe_transport)
+         audio_pipeline_stretch_discard(audio_st->pipe_transport, 0);
+#endif
       audio_st->pipe_pending = NULL;
       audio_st->pipe_pending_bytes = 0;
       audio_driver_state_lock();
