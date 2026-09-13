@@ -48,9 +48,18 @@
  * low latency settings rather than occasionally.
  *
  * Builds audio/drivers/sdl_audio.c itself and drives it through its own
- * audio_driver_t vtable, so the handshake under test is the shipping
- * one. SDL_AUDIODRIVER=dummy gives a device that calls back on a clock
- * without needing a sound card, which is what CI has.
+ * audio_driver_t and microphone_driver_t vtables, so the handshakes
+ * under test are the shipping ones. SDL_AUDIODRIVER=dummy gives a
+ * device that calls back on a clock without needing a sound card, which
+ * is what CI has - and it supports capture as well as playback, so the
+ * microphone half is exercised here too rather than left to a reading
+ * of the code.
+ *
+ * What the dummy device does not do is behave like any particular
+ * platform's real SDL backend. It establishes that the handshake is
+ * right; it says nothing about CoreAudio, PulseAudio, WASAPI or
+ * PipeWire underneath SDL, and a run here is not a substitute for one
+ * on hardware.
  */
 
 #include <stdio.h>
@@ -165,6 +174,97 @@ static void run_one(unsigned latency_ms, double seconds)
    drv->free(ctx);
 }
 
+/* --- the capture half ------------------------------------------------ */
+
+/* The same question on the microphone path: the capture callback
+ * notifies without a lock, the core's read parks when the ring is
+ * empty, and the bound is the same quarter second. The core is not
+ * handed a pattern it can check here - SDL's dummy capture device
+ * delivers silence - so the short-read count is what stands in for it:
+ * sdl_microphone_read() returns what it managed to capture, and
+ * anything less than what was asked for is a park that ran out. */
+static void run_capture(unsigned latency_ms, double seconds)
+{
+   const microphone_driver_t *drv = &microphone_sdl;
+   void        *ctx, *mic;
+   unsigned     out_rate  = OUT_RATE;
+   size_t       per_frame = (size_t)(OUT_RATE / FPS);
+   size_t       want      = per_frame * sizeof(int16_t);
+   size_t       i, frames = (size_t)(seconds * FPS);
+   size_t       parks = 0, timeouts = 0, short_reads = 0, missing = 0;
+   int16_t     *buf;
+   struct timespec next;
+   long         step_ns = (long)(1e9 / FPS);
+   double       p50 = 0.0, p99 = 0.0, worst = 0.0;
+
+   if (!(ctx = drv->init()))
+   {
+      printf("  %3u ms: capture driver would not init\n", latency_ms);
+      return;
+   }
+   if (!(mic = drv->open_mic(ctx, NULL, OUT_RATE, latency_ms, &out_rate)))
+   {
+      printf("  %3u ms: capture device would not open\n", latency_ms);
+      drv->free(ctx);
+      return;
+   }
+   drv->set_nonblock_state(ctx, false);
+   drv->start_mic(ctx, mic);
+
+   buf    = (int16_t*)calloc(per_frame, sizeof(int16_t));
+   wait_n = 0;
+
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   for (i = 0; i < frames; i++)
+   {
+      sdl_microphone_handle_t *h = (sdl_microphone_handle_t*)mic;
+      retro_time_t t0, t1;
+      size_t       before;
+      int          got;
+
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+
+      before = retro_spsc_read_avail(&h->ring);
+      t0     = cpu_features_get_time_usec();
+      got    = drv->read(ctx, mic, buf, want);
+      t1     = cpu_features_get_time_usec();
+
+      if (before < want)
+      {
+         parks++;
+         if (wait_n < MAX_SAMPLES)
+            wait_us[wait_n++] = (t1 > t0) ? t1 - t0 : 0;
+         if (t1 - t0 >= SDL_AUDIO_STALL_TIMEOUT_US * 3 / 4)
+            timeouts++;
+      }
+      if (got >= 0 && (size_t)got < want)
+      {
+         short_reads++;
+         missing += (want - (size_t)got) / sizeof(int16_t);
+      }
+   }
+
+   if (wait_n)
+   {
+      qsort(wait_us, wait_n, sizeof(wait_us[0]), cmp_time);
+      p50   = (double)wait_us[wait_n / 2];
+      p99   = (double)wait_us[(wait_n * 99) / 100];
+      worst = (double)wait_us[wait_n - 1];
+   }
+
+   printf("  %3u ms  %6u %6u %6u | %8u | %7.0f %7.0f %8.0f\n",
+         latency_ms, (unsigned)parks, (unsigned)timeouts,
+         (unsigned)short_reads, (unsigned)missing, p50, p99, worst);
+
+   free(buf);
+   drv->stop_mic(ctx, mic);
+   drv->close_mic(ctx, mic);
+   drv->free(ctx);
+}
+
 int main(int argc, char **argv)
 {
    double seconds = (argc > 1) ? atof(argv[1]) : 3.0;
@@ -180,9 +280,15 @@ int main(int argc, char **argv)
 
    printf("sdl_audio producer waits against SDL's dummy device,"
          " %.0f s per setting, %g fps\n", seconds, FPS);
+   printf("-- playback: the core writes, SDL's callback pulls --\n");
    printf("   lat     waits  t/out   room | dropped  |     p50     p99      max\n");
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
+
+   printf("\n-- capture: SDL's callback pushes, the core reads --\n");
+   printf("   lat     parks  t/out  short |  missing |     p50     p99      max\n");
+   for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
+      run_capture(sweep[i], seconds);
 
    free(wait_us);
    printf("sdl lost wakeup: run complete\n");

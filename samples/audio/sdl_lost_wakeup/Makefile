@@ -21,7 +21,7 @@ SOURCES_C := sdl_lost_wakeup_test.c \
 OBJS      := $(SOURCES_C:.c=.o)
 
 INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) $(shell pkg-config --cflags sdl2)
-CFLAGS   += -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_SDL2 -D_GNU_SOURCE -std=gnu99
+CFLAGS   += -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_SDL2 -DHAVE_MICROPHONE -D_GNU_SOURCE -std=gnu99
 LDFLAGS  += $(shell pkg-config --libs sdl2) -lpthread -lm
 
 ifneq ($(SAN),)
