@@ -1436,7 +1436,7 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
    unsigned fragmented;
    bool old_speedup = config_get_ptr()->bools.audio_fastforward_speedup;
    float old_slowmotion = config_get_ptr()->floats.slowmotion_ratio;
-   for (fragmented = 0; fragmented < 2; fragmented++)
+   for (fragmented = 0; fragmented < 3; fragmented++)
    {
       audio_pipeline_stretch_t *stage;
       struct audio_pipeline_stretch_block block;
@@ -1513,6 +1513,7 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
       short_zero = fragmented;
       short_fail = short_no_room = false;
       cap_frames = 0;
+      if (fragmented == 2) st->pipe_pass_frames = 37;
       while (!complete || st->pipe_pending_bytes)
       {
          size_t accepted, tail;
@@ -1549,8 +1550,11 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
             retro_atomic_store_release_int(&st->runloop_snapshot,
                   AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION);
             retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 3 * 65536);
-            CHECK(audio_driver_pipeline_transport_step(stage, &st->pipe_transport_serial, 71, 37,
-                     used == 2048, &complete), "paced native transport step");
+            if (fragmented == 2 && used != 2048)
+               CHECK(audio_driver_callback(), "scheduled native transport callback");
+            else
+               CHECK(audio_driver_pipeline_transport_step(stage, &st->pipe_transport_serial, 71, 37,
+                        used == 2048, &complete), "paced native transport step");
             if (pending)
                CHECK(tail == retro_atomic_load_relaxed_size(&st->pipe_ring.tail),
                      "transport retry consumed source");
@@ -1661,6 +1665,10 @@ static void transport_owner_cases(void)
          CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "owner prepare");
          stage = st->pipe_transport; output = st->pipe_transport_output;
          CHECK(stage && output && !((uintptr_t)output % 64), "owner storage/alignment");
+         wrapper.wait_writable = NULL;
+         CHECK(!audio_driver_pipeline_transport_prepare(48000, 1)
+               && st->pipe_transport == stage, "prepared scheduler without device pacing");
+         wrapper.wait_writable = saved->wait_writable;
          CHECK(!audio_driver_pipeline_transport_prepare(7999, 1), "invalid rate accepted");
          transport_allocations = transport_frees = 0; transport_track = true;
          transport_fail_stage = true;
@@ -1750,6 +1758,73 @@ static void transport_owner_cases(void)
                "driver teardown leaked transport");
       }
    printf("native transport ownership: 4 cases, %u failures\n", failures - before);
+}
+
+static void transport_scheduler_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned floating, wide, before = failures;
+   bool sync = config_get_ptr()->bools.audio_sync;
+   for (floating = 0; floating < 2; floating++)
+      for (wide = 0; wide < 2; wide++)
+      {
+         union { float f[34*11]; int16_t i[34*11]; } input;
+         unsigned i;
+         size_t tail;
+         CHECK(pipe_up(floating, floating), "scheduler stand-up");
+         if (!wide)
+         {
+            st->pipe_channels = 2;
+            st->pipe_frame_bytes = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+         }
+         CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "scheduler prepare");
+         st->pipe_pass_frames = 17;
+         st->buffer_size = 0;
+         st->pipe_priming = st->pipe_wake = true;
+         CHECK(audio_driver_callback() && st->pipe_priming && !st->pipe_wake,
+               "scheduler ignored startup wake");
+         for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
+            CHECK(audio_driver_pipeline_transport_request(65536, false, true, 1000),
+                  "scheduler startup metadata");
+         CHECK(audio_driver_callback() && !st->pipe_priming
+               && st->pipe_layouts.reset_serial == AUDIO_PIPELINE_LAYOUT_CAPACITY,
+               "scheduler metadata-only priming deadlock");
+         memset(&input, 0, sizeof(input));
+         CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 34, st->pipe_frame_bytes) == 34,
+               "scheduler source");
+         tail = retro_atomic_load_relaxed_size(&st->pipe_ring.tail);
+         scripted_threaded.wait_writable = short_device_wait;
+         short_no_room = true;
+         CHECK(audio_driver_callback() && retro_atomic_load_relaxed_size(&st->pipe_ring.tail) == tail,
+               "scheduler consumed source without device room");
+         short_no_room = false;
+         scripted_threaded.write = short_device_write;
+         short_zero = true; short_fail = false;
+         CHECK(audio_driver_callback() && st->pipe_pending_bytes,
+               "scheduler did not retain short device output");
+         retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+         cap_frames = 0;
+         CHECK(audio_driver_callback() && !st->pipe_pending_bytes
+               && !retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
+               "scheduler pause replayed output or retained source");
+         retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+         CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 34, st->pipe_frame_bytes) == 34,
+               "scheduler late source");
+         scripted_threaded.underruns = epoch_underrun;
+         st->pipe_underruns_seen = 0;
+         config_get_ptr()->bools.audio_sync = false;
+         short_zero = false;
+         CHECK(audio_driver_callback() && st->pipe_underruns_seen == 1
+               && !retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
+               "scheduler underrun replayed late source");
+         CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 17, st->pipe_frame_bytes) == 17,
+               "scheduler resumed source");
+         CHECK(audio_driver_callback() && !retro_spsc_read_avail(&st->pipe_ring) && cap_frames,
+               "scheduler did not resume after underrun");
+         audio_driver_deinit_internal(true);
+      }
+   config_get_ptr()->bools.audio_sync = sync;
+   printf("native transport scheduler: 4 cases, %u failures\n", failures - before);
 }
 
 static void transport_request_cases(void)
@@ -1910,7 +1985,7 @@ static void native_render_cases(void)
             size_t wet = native_render_case(floating, wide, hq, true);
             CHECK(dry == wet, "LPF changed transport duration");
          }
-   printf("native WSOLA frontend render: 32 runs, %u failures\n", failures - before);
+   printf("native WSOLA frontend render: 48 runs, %u failures\n", failures - before);
 }
 
 int main(void)
@@ -1923,6 +1998,7 @@ int main(void)
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
    RUN("transportrequest", transport_request_cases());
+   RUN("transportscheduler", transport_scheduler_cases());
    RUN("nativerender", native_render_cases());
    RUN("srcreset", resampler_discontinuity_cases());
    RUN("suspended", suspended_multichannel_case(true, true));

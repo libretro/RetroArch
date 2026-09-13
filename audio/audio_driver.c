@@ -4512,9 +4512,9 @@ bool audio_driver_pipeline_transport_discard(size_t frames)
    return true;
 }
 
-bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
+static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *stage,
       uint32_t *serial, size_t input_budget, size_t output_budget,
-      bool finishing, bool *complete)
+      bool finishing, bool *complete, bool *progress)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    const audio_driver_t *audio = audio_st->current_audio;
@@ -4522,6 +4522,7 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
    size_t frame_bytes, cap, released;
    double ratio;
    int snap;
+   *progress = false;
    if (!stage || !serial || !complete || !audio_st->pipe_threaded
          || !audio || !audio->wait_writable || !audio_st->context_audio_data)
       return false;
@@ -4537,6 +4538,7 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
    if (audio_st->pipe_pending_bytes)
    {
       audio_driver_pipeline_retry(audio_st);
+      *progress = true;
       return true;
    }
    /* Transport already owns duration; SRC retains only its rate/clock trim. */
@@ -4570,6 +4572,7 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
       *serial = block.reset_serial;
    }
    released = block.input_used;
+   *progress = released || block.frames;
    if (block.frames)
    {
       audio_driver_pipeline_render(audio_st, block.data, block.frames,
@@ -4586,6 +4589,89 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
       slock_unlock(audio_st->pipe_lock);
    }
    return true;
+}
+
+bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
+      uint32_t *serial, size_t input_budget, size_t output_budget,
+      bool finishing, bool *complete)
+{
+   bool progress;
+   return audio_driver_pipeline_transport_run(stage, serial, input_budget,
+         output_budget, finishing, complete, &progress);
+}
+
+static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
+      unsigned metadata_threshold)
+{
+   size_t events;
+   bool ready;
+   slock_lock(st->pipe_lock);
+   if (st->pipe_wake)
+   {
+      st->pipe_wake = false;
+      slock_unlock(st->pipe_lock);
+      return false;
+   }
+   events = retro_atomic_load_acquire_size(&st->pipe_layouts.head)
+      - retro_atomic_load_relaxed_size(&st->pipe_layouts.tail);
+   ready = retro_spsc_read_avail(&st->pipe_ring) >= need
+      || (metadata_threshold && events >= metadata_threshold);
+   if (!ready)
+      scond_wait_timeout(st->pipe_data_cond, st->pipe_lock, AUDIO_PIPE_WAIT_MAX_US);
+   slock_unlock(st->pipe_lock);
+   return ready;
+}
+
+static void audio_driver_transport_consume(audio_driver_state_t *st)
+{
+   const audio_driver_t *audio = st->current_audio;
+   size_t held = retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes;
+   int snap = retro_atomic_load_acquire_int(&st->runloop_snapshot);
+   bool complete, progress;
+   if ((snap & AUDIO_SNAP_PAUSED) || !(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_ACTIVE)
+         || !st->output_samples_buf)
+   {
+      if (held > st->pipe_pass_frames) held = st->pipe_pass_frames;
+      audio_driver_pipeline_transport_discard(held);
+      if (!held) audio_driver_transport_wait(st, st->pipe_frame_bytes, 0);
+      return;
+   }
+   if (audio->underruns && !config_get_ptr()->bools.audio_sync)
+   {
+      size_t seen = audio->underruns(st->context_audio_data);
+      if (seen != st->pipe_underruns_seen)
+      {
+         size_t target = audio_driver_pipe_target_frames(st);
+         if (!audio_driver_pipeline_transport_discard(held > target ? held - target : 0))
+            return;
+         st->pipe_underruns_seen = seen;
+      }
+   }
+   if (st->pipe_priming)
+   {
+      size_t target = audio_driver_pipe_target_frames(st);
+      size_t need = 1;
+      if (target)
+      {
+         size_t room = st->pipe_ring.capacity / st->pipe_frame_bytes;
+         size_t device = (size_t)((double)st->buffer_size
+               / audio_driver_dev_frame_bytes(st) / st->src_ratio_orig);
+         size_t limit = room > st->pipe_pass_frames ? room - st->pipe_pass_frames : 1;
+         need = target + device;
+         if (need > limit) need = limit;
+      }
+      if (!audio_driver_transport_wait(st, need * st->pipe_frame_bytes,
+               AUDIO_PIPELINE_LAYOUT_CAPACITY))
+         return;
+      st->pipe_priming = false;
+   }
+   if (!audio_driver_pipeline_transport_run(st->pipe_transport,
+            &st->pipe_transport_serial, st->pipe_pass_frames,
+            st->pipe_pass_frames, false, &complete, &progress))
+      return;
+   /* Drain retained synthesis before sleeping for more source. */
+   if (!progress && !st->pipe_pending_bytes)
+      audio_driver_transport_wait(st, st->pipe_frame_bytes, 1);
 }
 
 /**
@@ -6437,7 +6523,10 @@ bool audio_driver_callback(void)
    if (audio_driver_st.pipe_threaded)
    {
       (void)core_paused;
-      audio_driver_pipeline_consume(&audio_driver_st);
+      if (audio_driver_st.pipe_transport)
+         audio_driver_transport_consume(&audio_driver_st);
+      else
+         audio_driver_pipeline_consume(&audio_driver_st);
       return true;
    }
 #endif
@@ -6630,6 +6719,8 @@ static void audio_driver_transport_control(void *userdata)
       request->result = true;
    }
    else if (audio_st->pipe_threaded
+         && audio_st->current_audio && audio_st->current_audio->wait_writable
+         && audio_st->context_audio_data
          && !retro_spsc_read_avail(&audio_st->pipe_ring)
          && !audio_st->pipe_pending_bytes)
       request->result = audio_driver_transport_bind(audio_st,

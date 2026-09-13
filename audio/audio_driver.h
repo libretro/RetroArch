@@ -922,6 +922,8 @@ void audio_driver_pipeline_consumer_exit(void);
 struct audio_pipeline_stretch;
 /* Main producer thread, without worker locks held. Prepare on an empty source
  * ring with no pending device output; replacement starts a new DSP epoch.
+ * Prepared sessions are consumed by the audio callback. The caller supplies
+ * source-ordered controls; normal callbacks do not declare EOF.
  * Failure preserves an existing session. Release explicitly cancels retained
  * output/history. Both transactions park and restore the real wrapper.
  * Empty-ring format renegotiation rebuilds the session; allocation failure
