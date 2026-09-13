@@ -3477,8 +3477,15 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       if (     !retro_eventcount_init(&audio_driver_st.pipe_space)
             || !retro_eventcount_init(&audio_driver_st.pipe_data))
       {
-         RARCH_ERR("[Audio] Cannot create the pipeline throttle. Exiting...\n");
+         /* Both, because || stops at the first failure and the one
+          * before it is up. Free is safe on an object init never
+          * reached, so this needs no flag to say which got that far,
+          * and it makes the block hold whether or not the caller goes
+          * on to run the audio teardown that would also free them. */
+         retro_eventcount_free(&audio_driver_st.pipe_data);
+         retro_eventcount_free(&audio_driver_st.pipe_space);
          retro_spsc_free(&audio_driver_st.pipe_ring);
+         RARCH_ERR("[Audio] Cannot create the pipeline throttle. Exiting...\n");
          return false;
       }
       audio_driver_st.pipe_park_ready     = true;
@@ -4313,12 +4320,18 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
                || audio_st->pipe_consumer_gone)
             break;
          /* Sleep until the consumer has completed a pass. The
-          * generation is read under the lock before re-checking the
-          * ring, so a pass that finished between the failed write and
-          * the wait cannot be missed; the timed wait bounds the stall
-          * if the device stops draining, and a stall found once is
-          * not waited on again until a pass completes - otherwise a
-          * device that never drains costs every frame the full wait. */
+          * generation is taken first, then the wait window is opened
+          * on pipe_space, then the generation is read again inside it:
+          * a pass that finished anywhere across that window is either
+          * seen by the re-check or stops the commit from sleeping, so
+          * a pass between the failed write and the park cannot be
+          * missed. No lock is involved - the generation is an atomic
+          * and the eventcount only parks.
+          *
+          * The timed wait bounds the stall if the device stops
+          * draining, and a stall found once is not waited on again
+          * until a pass completes - otherwise a device that never
+          * drains costs every frame the full wait. */
          gen = retro_atomic_load_acquire_int(&audio_st->pipe_gen);
          if (retro_atomic_load_acquire_int(&audio_st->pipe_stalled))
             break;
@@ -4772,11 +4785,17 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       return;
    }
 
-   /* First wait: something to write. The producer signals after every
-    * publish; the generation is read under the lock before the ring is
-    * re-checked so a publish between the check and the wait cannot be
-    * missed. A timed wait is only a guard against a stopped producer:
-    * the wrapper parks this thread when the driver is stopped, so in
+   /* First wait: enough published audio for a pass. The producer
+    * advances pipe_data_gen and notifies once per frame, not once per
+    * publish - the paragraph on audio_driver_pipeline_consume() above
+    * says why, and this comment used to say the opposite of it.
+    *
+    * The wait window is opened on pipe_data before the ring and the
+    * generation are read again, so a frame published between the first
+    * test and the park cannot be slept through. No lock is involved.
+    *
+    * A timed wait is only a guard against a stopped producer: the
+    * wrapper parks this thread when the driver is stopped, so in
     * normal operation nothing here ever times out. */
    /* The first pass waits for the pipe's target and the device's
     * buffer, not just a frame: with a non-blocking writer the pipe is
