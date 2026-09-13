@@ -348,9 +348,6 @@ struct rarch_state
 
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
-#ifdef HAVE_THREAD_STORAGE
-   sthread_tls_t rarch_tls;               /* unsigned alignment */
-#endif
    unsigned perf_ptr_rarch;
    uint32_t flags;
 
@@ -375,10 +372,6 @@ void libnx_apply_overclock(void);
 #endif
 
 static struct rarch_state rarch_st        = {0};
-
-#ifdef HAVE_THREAD_STORAGE
-static const void *MAGIC_POINTER          = (void*)(uintptr_t)0x0DEFACED;
-#endif
 
 static access_state_t access_state_st     = {0};
 static struct global global_driver_st     = {0}; /* retro_time_t alignment */
@@ -6637,10 +6630,6 @@ int rarch_main(int argc, char *argv[], void *data)
    if (runloop_is_inited())
       driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
-#ifdef HAVE_THREAD_STORAGE
-   sthread_tls_create(&p_rarch->rarch_tls);
-   sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
-#endif
    video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
    AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
 
@@ -9193,9 +9182,6 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 
             runloop_is_inited_clear();
 
-#ifdef HAVE_THREAD_STORAGE
-            sthread_tls_delete(&p_rarch->rarch_tls);
-#endif
          }
          break;
 #ifdef HAVE_CONFIGFILE
