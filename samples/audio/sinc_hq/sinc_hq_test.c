@@ -18,6 +18,48 @@ static float input[INPUT * 2], a[CAP * 2], b[CAP * 2];
 static int16_t input_i[INPUT * 2], ai[CAP * 2], bi[CAP * 2];
 static unsigned failures;
 #define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n", __LINE__, #x); failures++; } } while (0)
+#ifdef SINC_TRACK_ALLOCATIONS
+static unsigned long allocator_calls;
+void *__real_malloc(size_t);
+void *__real_calloc(size_t, size_t);
+void *__real_realloc(void *, size_t);
+void __real_free(void *);
+void *__real_memalign_alloc(size_t, size_t);
+void __real_memalign_free(void *);
+void *__wrap_malloc(size_t n)
+{
+   allocator_calls++;
+   return __real_malloc(n);
+}
+void *__wrap_calloc(size_t n, size_t size)
+{
+   allocator_calls++;
+   return __real_calloc(n, size);
+}
+void *__wrap_realloc(void *p, size_t n)
+{
+   allocator_calls++;
+   return __real_realloc(p, n);
+}
+void __wrap_free(void *p)
+{
+   allocator_calls++;
+   __real_free(p);
+}
+void *__wrap_memalign_alloc(size_t alignment, size_t n)
+{
+   allocator_calls++;
+   return __real_memalign_alloc(alignment, n);
+}
+void __wrap_memalign_free(void *p)
+{
+   allocator_calls++;
+   __real_memalign_free(p);
+}
+#else
+#define allocator_calls 0ul
+#endif
+
 #ifdef SINC_REFERENCE
 extern retro_resampler_t reference_sinc;
 extern void *reference_i_init(double, enum sinc_int16_quality);
@@ -34,6 +76,7 @@ static size_t run(void *state, const retro_resampler_t *driver,
       float *out, double ratio, unsigned chunk)
 {
    size_t pos = 0, n = 0;
+   unsigned long calls_before = allocator_calls;
    while (pos < INPUT)
    {
       struct resampler_data d;
@@ -46,6 +89,7 @@ static size_t run(void *state, const retro_resampler_t *driver,
       pos += d.input_frames;
       n += d.output_frames;
    }
+   CHECK(allocator_calls == calls_before);
    CHECK(n < CAP);
    return n;
 }
@@ -54,6 +98,7 @@ static size_t run_i(void *state, int16_t *out, double ratio, unsigned chunk,
       void (*process)(void *, struct resampler_data_int16 *))
 {
    size_t pos = 0, n = 0;
+   unsigned long calls_before = allocator_calls;
    while (pos < INPUT)
    {
       struct resampler_data_int16 d;
@@ -66,6 +111,7 @@ static size_t run_i(void *state, int16_t *out, double ratio, unsigned chunk,
       pos += d.input_frames;
       n += d.output_frames;
    }
+   CHECK(allocator_calls == calls_before);
    CHECK(n < CAP);
    return n;
 }
@@ -118,8 +164,12 @@ static void active(double ratio)
       }
    }
    CHECK(max_error < 2e-6);
-   sinc_resampler.reset(c);
-   sinc_resampler.reset(simd);
+   {
+      unsigned long calls_before = allocator_calls;
+      sinc_resampler.reset(c);
+      sinc_resampler.reset(simd);
+      CHECK(allocator_calls == calls_before);
+   }
    na = run(c, &sinc_resampler, a, ratio, INPUT);
    nb = run(simd, &sinc_resampler, b, ratio, 1);
    CHECK(na == nb);
@@ -202,6 +252,10 @@ int main(int argc, char **argv)
       }
       if (ratios[r] >= 2.0) active(ratios[r]);
    }
+#ifdef SINC_TRACK_ALLOCATIONS
+   CHECK(allocator_calls > 0);
+   printf("Allocator guard enabled: initialization/free hooks verified\n");
+#endif
    if (argc == 2 && strcmp(argv[1], "--bench") == 0) benchmark();
    else if (argc == 2 && strlen(argv[1]) < 990) impulse(argv[1]);
    printf("Sinc HQ: %u failures\n", failures);

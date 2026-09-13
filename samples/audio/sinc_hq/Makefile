@@ -2,6 +2,12 @@ CC = gcc
 ROOT = ../../..
 COMMON = $(ROOT)/libretro-common
 CPPFLAGS += -I$(COMMON)/include
+# GNU ld wrappers catch allocation and deallocation on the processing path.
+ifneq ($(ALLOC_GUARD),0)
+CPPFLAGS += -DSINC_TRACK_ALLOCATIONS
+LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc \
+ -Wl,--wrap=free -Wl,--wrap=memalign_alloc -Wl,--wrap=memalign_free
+endif
 CFLAGS += -O2 -std=c89 -Wall -Wextra
 LDLIBS += -lm
 ifneq ($(SANITIZER),)
