@@ -1,0 +1,682 @@
+/* What the threaded audio pipeline's handshake costs, as publish
+ * granularity varies.
+ *
+ * The other pipeline harnesses answer correctness questions: does the
+ * consumer take only what it can deliver, does the producer drop once
+ * stalled, does a clocked device underrun. None of them can tell a
+ * handshake that wakes the consumer once a frame from one that wakes it
+ * once a publish, because both produce the same audio. The difference
+ * is a cost, and only a count of wakes can see it.
+ *
+ * The producer hands over one video frame's audio as N publishes and
+ * signals at the frame end - N = 1 is a core that calls audio_batch_cb
+ * once per retro_run, N = 262 is one that calls it per scanline. Every
+ * setting submits identical audio at an identical rate; only the
+ * granularity differs.
+ *
+ * Reported per setting:
+ *
+ *   wakes/frame    returns from audio_driver_pipeline_consume(). What
+ *                  the handshake costs the consumer thread.
+ *   writes/frame   calls that reached the device, as against wakes that
+ *                  found nothing.
+ *   wake latency   frame-end signal to the next device write, p50/p99.
+ *   producer       microseconds the main thread spent inside
+ *                  audio_driver_submit(), and how many frames it
+ *                  blocked in at all.
+ *   short pulls    the device's own count, so a cheaper handshake that
+ *                  buys its cheapness with underruns is visible here
+ *                  rather than only in pipeline_clocked.
+ *
+ * Three things had to be true at once before a per-publish notify cost
+ * anything measurable, which is worth knowing before reading a flat
+ * column as proof that nothing is wrong:
+ *
+ *   - the device must not be the pacer. With backpressure the consumer
+ *     parks inside wait_writable(), not on the data handshake, and
+ *     extra notifies land on a thread that is not asleep. That is the
+ *     steady state of Audio Sync against a real card, and a wake count
+ *     taken only there says nothing about the handshake at all. Both
+ *     regimes are run.
+ *   - the publishes must be spread across the frame. Emitted in a
+ *     burst, as a fast core's retro_run emits them, all N are in the
+ *     ring before the consumer finishes its first pass and it takes
+ *     the lot in one go - N notifies, one wake. SPREAD=1 paces them
+ *     across the frame, which is the slow core, and then every notify
+ *     finds an empty ring and a parked consumer.
+ *   - the notify must actually be per publish. NOTIFY_PER_PUBLISH=1.
+ *
+ * With all three: 3.0 wakes/frame becomes 211 at N = 312, and the
+ * producer's own cost goes up about sixteenfold with it. With any one
+ * of them missing the column stays flat. So the trap is real and it is
+ * narrower than "a core that batches per scanline" - it wants a core
+ * that batches per scanline and is slow enough to spread them, against
+ * a driver that is not applying backpressure.
+ *
+ * There is no pass/fail line. The numbers are a baseline to compare a
+ * changed handshake against, and the comparison is the test - run it
+ * before and after. It is a measurement, so expect the last digit to
+ * move between runs and run it on an idle machine.
+ *
+ * Includes audio/audio_driver.c so the shipping producer and consumer
+ * run, and reads none of their internals: every number is taken at the
+ * harness's own boundary - its consumer loop, its device, its calls
+ * into the producer. A change of primitive underneath does not change
+ * what is being counted, which is the point of measuring it from out
+ * here.
+ *
+ * The fixture is pipeline_clocked's: 48 kHz stereo float out, a ring of
+ * the latency setting, a device period of a quarter of it, Audio Sync
+ * on, rate control on.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+
+#include <boolean.h>
+#include <retro_atomic.h>
+
+#include "../../../audio/audio_driver.c"
+
+#define OUT_RATE      48000
+#define CORE_RATE     48000
+#define FPS           60.0
+#define CHANNELS      2
+#define LATENCY_MS    32
+#define MAX_SAMPLES   65536
+
+/* --- the device ------------------------------------------------------ */
+
+static float              *dev_ring;
+static size_t              dev_usable;
+static size_t              dev_capacity;
+static size_t              dev_period;
+static size_t              dev_write_ptr;
+static size_t              dev_read_ptr;
+static retro_atomic_size_t dev_filled;
+static retro_atomic_size_t dev_underruns;
+static retro_atomic_size_t dev_pulls;
+static retro_atomic_size_t dev_silent_samples;
+static pthread_mutex_t     dev_wake_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t      dev_wake_cond = PTHREAD_COND_INITIALIZER;
+static retro_atomic_int_t  dev_waiters   = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t  dev_running   = RETRO_ATOMIC_INT_INITIALIZER(1);
+
+/* --- the counters ---------------------------------------------------- */
+
+static retro_atomic_size_t cnt_wakes;      /* returns from consume()      */
+static retro_atomic_size_t cnt_writes;     /* calls that reached write()  */
+
+/* Frame-end signal, published by the main thread for the consumer's
+ * first write to time itself against. One writer and one reader, so the
+ * release store of the sequence after the timestamp and the acquire
+ * load of it before reading the timestamp are the whole protocol: a
+ * reader that sees the new sequence sees the timestamp that went with
+ * it. Zero means "already answered", so a pass that writes twice for
+ * one signal only records the first. */
+static retro_time_t        sig_us;
+static retro_atomic_size_t sig_seq;
+static size_t              sig_seen;       /* consumer thread only        */
+
+static retro_time_t       *lat_us;         /* one per answered signal     */
+static retro_atomic_size_t lat_count;
+
+/* Producer cost, main thread only - no atomics needed. */
+static retro_time_t        prod_total_us;
+static size_t              prod_blocked_frames;
+static retro_time_t        prod_worst_us;
+
+/* NOTIFY_PER_PUBLISH=1 in the environment. */
+static bool                notify_per_publish;
+
+/* The device as a pacer, or not. With backpressure the device's
+ * wait_writable() is what the consumer parks in, and the data handshake
+ * is almost never the thing holding it - which is the steady state of
+ * Audio Sync against a real card, and the reason a wake-count taken
+ * only there says nothing about the handshake. Without it the consumer
+ * parks on data alone and the handshake is the only pacer left. Both
+ * are run: the first is the configuration people use, the second is the
+ * one that can see the handshake at all. */
+static bool                dev_backpressure = true;
+
+/* Whether the frame's publishes arrive in a burst or spread across the
+ * frame. A core's retro_run emits the whole frame's audio inside one
+ * call, so a burst is the honest default - but how long that call takes
+ * decides whether the publishes land microseconds or milliseconds
+ * apart, and a notify only costs a wake when it finds the consumer
+ * parked. SPREAD=1 is the slow core: publishes paced across most of the
+ * frame period, every one of them arriving at an empty ring. */
+static bool                spread_publishes;
+
+static size_t dev_rb_write_avail(void)
+{
+   size_t filled = retro_atomic_load_acquire_size(&dev_filled);
+   return (filled < dev_usable) ? dev_usable - filled : 0;
+}
+
+static void dev_signal(void)
+{
+   if (retro_atomic_load_acquire_int(&dev_waiters))
+   {
+      pthread_mutex_lock(&dev_wake_lock);
+      pthread_cond_broadcast(&dev_wake_cond);
+      pthread_mutex_unlock(&dev_wake_lock);
+   }
+}
+
+static void dev_wait(size_t want, unsigned ms)
+{
+   struct timespec ts;
+   retro_atomic_fetch_add_int(&dev_waiters, 1);
+   pthread_mutex_lock(&dev_wake_lock);
+   if (dev_rb_write_avail() < want)
+   {
+      clock_gettime(CLOCK_REALTIME, &ts);
+      ts.tv_nsec += (long)ms * 1000000L;
+      ts.tv_sec  += ts.tv_nsec / 1000000000L;
+      ts.tv_nsec %= 1000000000L;
+      pthread_cond_timedwait(&dev_wake_cond, &dev_wake_lock, &ts);
+   }
+   pthread_mutex_unlock(&dev_wake_lock);
+   retro_atomic_fetch_sub_int(&dev_waiters, 1);
+}
+
+static void dev_render(void)
+{
+   size_t needed = dev_period * CHANNELS;
+   size_t avail  = retro_atomic_load_acquire_size(&dev_filled);
+   size_t take;
+
+   if (avail > needed)
+      avail = needed;
+   avail -= avail % CHANNELS;
+   take   = avail;
+
+   if (take)
+   {
+      dev_read_ptr = (dev_read_ptr + take) & (dev_capacity - 1);
+      retro_atomic_fetch_sub_size(&dev_filled, take);
+   }
+   if (take < needed)
+   {
+      retro_atomic_fetch_add_size(&dev_underruns, 1);
+      retro_atomic_fetch_add_size(&dev_silent_samples, needed - take);
+   }
+   retro_atomic_fetch_add_size(&dev_pulls, 1);
+   dev_signal();
+}
+
+static void *dev_thread(void *arg)
+{
+   struct timespec next;
+   long step_ns = (long)((double)dev_period * 1e9 / (double)OUT_RATE);
+   (void)arg;
+   while (retro_atomic_load_acquire_int(&dev_running)
+         && retro_atomic_load_acquire_size(&dev_filled) < dev_period * CHANNELS)
+      usleep(200);
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   while (retro_atomic_load_acquire_int(&dev_running))
+   {
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      dev_render();
+   }
+   return NULL;
+}
+
+/* --- the driver interface -------------------------------------------- */
+
+static void *cdev_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
+{
+   static int handle = 1;
+   (void)device; (void)latency;
+   if (new_rate) *new_rate = rate;
+   return &handle;
+}
+
+/* The only place the harness times the consumer: a write is the first
+ * point at which audio the producer signalled for has reached the
+ * device, so the gap from the signal to here is what the handshake's
+ * batching costs in delay. */
+static void note_write(void)
+{
+   size_t seq = retro_atomic_load_acquire_size(&sig_seq);
+   retro_atomic_fetch_add_size(&cnt_writes, 1);
+   if (seq != sig_seen)
+   {
+      retro_time_t at = sig_us;
+      size_t       n  = retro_atomic_load_relaxed_size(&lat_count);
+      sig_seen        = seq;
+      if (at && n < MAX_SAMPLES)
+      {
+         retro_time_t now = cpu_features_get_time_usec();
+         lat_us[n]        = (now > at) ? now - at : 0;
+         retro_atomic_store_release_size(&lat_count, n + 1);
+      }
+   }
+}
+
+static ssize_t cdev_write(void *data, const void *buf, size_t len)
+{
+   size_t samples = len / sizeof(float);
+   size_t written = 0;
+   int    laps    = 8;
+   (void)data; (void)buf;
+
+   note_write();
+
+   /* No backpressure: take it all, keep what the ring has room for and
+    * drop the rest. A driver that never makes the caller wait. */
+   if (!dev_backpressure)
+   {
+      size_t room = dev_rb_write_avail();
+      size_t take = (room < samples) ? room : samples;
+      take -= take % CHANNELS;
+      if (take)
+      {
+         dev_write_ptr = (dev_write_ptr + take) & (dev_capacity - 1);
+         retro_atomic_fetch_add_size(&dev_filled, take);
+      }
+      return (ssize_t)len;
+   }
+
+   while (samples > 0)
+   {
+      size_t avail    = dev_rb_write_avail();
+      size_t to_write = (avail < samples) ? avail : samples;
+      to_write       -= to_write % CHANNELS;
+      if (to_write > 0)
+      {
+         dev_write_ptr = (dev_write_ptr + to_write) & (dev_capacity - 1);
+         retro_atomic_fetch_add_size(&dev_filled, to_write);
+         written += to_write;
+         samples -= to_write;
+      }
+      if (samples > 0)
+      {
+         if (--laps < 0)
+            break;
+         dev_wait(1, 100);
+      }
+   }
+   return (ssize_t)(written * sizeof(float));
+}
+
+static size_t cdev_wait_writable(void *data, size_t len)
+{
+   size_t want = len / sizeof(float);
+   int    laps = 8;
+   (void)data;
+   if (want % CHANNELS)
+      want += CHANNELS - want % CHANNELS;
+   if (want > dev_usable)
+      want = dev_usable;
+   if (!dev_backpressure)
+      return len;
+   for (;;)
+   {
+      size_t avail = dev_rb_write_avail();
+      if (avail >= want)
+         return avail * sizeof(float);
+      if (--laps < 0)
+         break;
+      dev_wait(want, 100);
+   }
+   return 0;
+}
+
+static bool   cdev_stop(void *d)                { (void)d; return true; }
+static bool   cdev_start(void *d, bool s)       { (void)d; (void)s; return true; }
+static bool   cdev_alive(void *d)               { (void)d; return true; }
+static void   cdev_set_nonblock(void *d, bool s){ (void)d; (void)s; }
+static void   cdev_free(void *d)                { (void)d; }
+static bool   cdev_use_float(void *d)           { (void)d; return true; }
+static size_t cdev_write_avail(void *d)         { (void)d; return dev_rb_write_avail() * sizeof(float); }
+static size_t cdev_buffer_size(void *d)         { (void)d; return dev_usable * sizeof(float); }
+static size_t cdev_underruns(void *d)           { (void)d; return retro_atomic_load_acquire_size(&dev_underruns); }
+static size_t cdev_frames_consumed(void *d)
+{
+   (void)d;
+   return retro_atomic_load_acquire_size(&dev_pulls) * dev_period;
+}
+
+static audio_driver_t clocked_driver = {
+   cdev_init, cdev_write, cdev_stop, cdev_start, cdev_alive,
+   cdev_set_nonblock, cdev_free, cdev_use_float, "clocked", NULL, NULL,
+   cdev_write_avail, cdev_buffer_size, NULL /* write_raw */,
+   cdev_wait_writable, cdev_frames_consumed, cdev_underruns
+};
+
+/* --- threads --------------------------------------------------------- */
+
+static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
+
+/* Every return from consume() is one wake: the call either parked and
+ * came back, or found work without parking. Counting the loop rather
+ * than anything inside the driver is what keeps this number meaningful
+ * across a change of primitive. */
+static void *consumer(void *arg)
+{
+   (void)arg;
+   while (retro_atomic_load_acquire_int(&consumer_run))
+   {
+      audio_driver_pipeline_consume(&audio_driver_st);
+      retro_atomic_fetch_add_size(&cnt_wakes, 1);
+   }
+   return NULL;
+}
+
+static int16_t frame_audio[4096 * 2];
+
+/* --- fixture --------------------------------------------------------- */
+
+static bool pipeline_up(unsigned latency_ms)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t per_frame = (size_t)(CORE_RATE / FPS);
+   size_t ring_bytes;
+
+   dev_usable   = (size_t)((latency_ms * OUT_RATE) / 1000) * CHANNELS;
+   dev_period   = (size_t)((latency_ms * OUT_RATE) / 1000 / 4);
+   dev_capacity = 1;
+   while (dev_capacity < dev_usable)
+      dev_capacity <<= 1;
+   dev_ring      = (float*)calloc(dev_capacity, sizeof(float));
+   dev_write_ptr = dev_read_ptr = 0;
+   retro_atomic_size_init(&dev_filled, 0);
+   retro_atomic_size_init(&dev_underruns, 0);
+   retro_atomic_size_init(&dev_pulls, 0);
+   retro_atomic_size_init(&dev_silent_samples, 0);
+
+   retro_atomic_size_init(&cnt_wakes, 0);
+   retro_atomic_size_init(&cnt_writes, 0);
+   retro_atomic_size_init(&sig_seq, 0);
+   retro_atomic_size_init(&lat_count, 0);
+   sig_us              = 0;
+   sig_seen            = 0;
+   prod_total_us       = 0;
+   prod_blocked_frames = 0;
+   prod_worst_us       = 0;
+
+   memset(st, 0, sizeof(*st));
+   st->current_audio        = &clocked_driver;
+   st->context_audio_data   = clocked_driver.init(NULL, OUT_RATE, latency_ms, NULL);
+   st->input                = (double)CORE_RATE;
+   st->src_ratio_orig       = (double)OUT_RATE / (double)CORE_RATE;
+   st->src_ratio_curr       = st->src_ratio_orig;
+   st->cached_rate_adjust   = 1.0;
+   st->volume_gain          = 1.0f;
+   st->out_channels         = CHANNELS;
+   st->buffer_size          = clocked_driver.buffer_size(st->context_audio_data);
+   st->output_samples_buf   = (float*)malloc(1 << 20);
+   st->output_samples_buf_length = 1 << 20;
+   st->input_data           = (float*)malloc(1 << 20);
+   st->input_data_length    = 1 << 20;
+   st->synth_buf            = (float*)calloc(1, 1 << 20);
+   st->output_samples_int16 = (int16_t*)malloc(1 << 20);
+   st->output_samples_int16_length = 1 << 20;
+   st->pipe_scratch         = (uint8_t*)malloc(1 << 20);
+   st->pipe_conv            = (uint8_t*)malloc(1 << 20);
+   st->pipe_pass_frames     = per_frame;
+   st->pipe_float           = false;
+   st->pipe_frame_bytes     = CHANNELS * sizeof(int16_t);
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
+   strcpy(st->resampler_ident, "sinc");
+   st->resampler_quality    = RESAMPLER_QUALITY_NORMAL;
+   if (!retro_resampler_realloc(&st->resampler_data, &st->resampler,
+            st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
+      return false;
+   retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
+   st->rate_control_delta   = 0.005f;
+   st->drc_threshold_int16s = 1600;
+   st->sink_bias            = 1.0;
+   config_get_ptr()->bools.audio_sink_rate_estimation = true;
+   config_get_ptr()->uints.audio_output_sample_rate   = OUT_RATE;
+   config_get_ptr()->bools.audio_sync                 = true;
+
+   ring_bytes = per_frame * 3 * st->pipe_frame_bytes;
+   if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
+      return false;
+   st->pipe_lock      = slock_new();
+   st->pipe_cond      = scond_new();
+   st->pipe_data_cond = scond_new();
+   st->state_lock     = slock_new();
+   st->pipe_threaded  = true;
+   st->pipe_priming   = true;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
+         | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
+   return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
+      && st->state_lock && st->output_samples_buf && st->pipe_scratch
+      && st->input_data && st->synth_buf && dev_ring;
+}
+
+static void pipeline_down(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   retro_spsc_free(&st->pipe_ring);
+   slock_free(st->pipe_lock);
+   scond_free(st->pipe_cond);
+   scond_free(st->pipe_data_cond);
+   slock_free(st->state_lock);
+   free(st->output_samples_buf);
+   free(st->pipe_scratch);
+   free(st->pipe_conv);
+   free(st->input_data);
+   free(st->synth_buf);
+   free(st->output_samples_int16);
+   free(dev_ring);
+   dev_ring = NULL;
+}
+
+/* --- one run --------------------------------------------------------- */
+
+static int cmp_time(const void *a, const void *b)
+{
+   retro_time_t x = *(const retro_time_t*)a;
+   retro_time_t y = *(const retro_time_t*)b;
+   return (x > y) - (x < y);
+}
+
+/* One video frame's audio, handed over as @publishes calls. The split is
+ * by whole frames and the remainder goes with the last call, so every
+ * setting submits exactly the same samples at exactly the same rate and
+ * only the granularity differs. */
+static void submit_frame(size_t per_frame, unsigned publishes)
+{
+   size_t chunk = per_frame / publishes;
+   size_t done  = 0;
+   unsigned k;
+   retro_time_t t0, t1, slept = 0;
+
+   if (!chunk)
+      chunk = 1;
+
+   t0 = cpu_features_get_time_usec();
+   for (k = 0; k < publishes && done < per_frame; k++)
+   {
+      size_t n = (k + 1 == publishes) ? per_frame - done : chunk;
+      if (done + n > per_frame)
+         n = per_frame - done;
+      audio_driver_submit(&audio_driver_st, 1.0f, frame_audio, n * 2,
+            false, false, false);
+      done += n;
+      if (spread_publishes && publishes > 1 && k + 1 < publishes)
+      {
+         /* The model's own delay, not the producer's cost: timed and
+          * subtracted below, or the producer column in SPREAD mode
+          * would just be reporting these sleeps back. */
+         retro_time_t s0 = cpu_features_get_time_usec();
+         usleep((useconds_t)(1e6 / FPS * 0.8) / publishes);
+         slept += cpu_features_get_time_usec() - s0;
+      }
+      /* The failure mode this harness exists to catch, on demand. A
+       * conversion that turns each publish into a notify produces
+       * exactly this, and the audio it produces is identical - which is
+       * why no correctness harness can see it and the wake count here
+       * can. Kept as a mode rather than described in a comment so the
+       * bad column can be measured rather than imagined. */
+      if (notify_per_publish)
+         audio_driver_pipeline_signal(&audio_driver_st);
+   }
+   t1 = cpu_features_get_time_usec();
+
+   /* Publish the signal's timestamp before the sequence that advertises
+    * it, so a consumer that sees the sequence sees the time with it. */
+   sig_us = t1;
+   retro_atomic_store_release_size(&sig_seq,
+         retro_atomic_load_relaxed_size(&sig_seq) + 1);
+   audio_driver_pipeline_signal(&audio_driver_st);
+
+   if (t1 > t0 + slept)
+   {
+      retro_time_t spent = t1 - t0 - slept;
+      prod_total_us += spent;
+      /* A frame's audio is 16.7 ms of work for nobody; anything past a
+       * tenth of that is the producer waiting on the ring, not
+       * converting. */
+      if (spent > 1666)
+      {
+         prod_blocked_frames++;
+         if (spent > prod_worst_us)
+            prod_worst_us = spent;
+      }
+   }
+}
+
+static void run_one(unsigned publishes, double seconds, bool backpressure)
+{
+   pthread_t cons, dev;
+   size_t    per_frame = (size_t)(CORE_RATE / FPS);
+   size_t    i, frames = (size_t)(seconds * FPS);
+   struct timespec next;
+   long      step_ns = (long)(1e9 / FPS);
+   size_t    warm_frames = 0;
+   size_t    warm_wakes = 0, warm_writes = 0, warm_under = 0, warm_pulls = 0;
+   size_t    wakes, writes, under, pulls, nlat;
+   double    p50 = 0.0, p99 = 0.0, worst = 0.0;
+
+   dev_backpressure = backpressure;
+
+   if (!pipeline_up(LATENCY_MS))
+   {
+      printf("  %4u: fixture failed\n", publishes);
+      return;
+   }
+
+   retro_atomic_store_release_int(&dev_running, 1);
+   retro_atomic_store_release_int(&consumer_run, 1);
+   pthread_create(&dev,  NULL, dev_thread, NULL);
+   pthread_create(&cons, NULL, consumer,   NULL);
+
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   for (i = 0; i < frames; i++)
+   {
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      submit_frame(per_frame, publishes);
+      /* A second in, drop the startup transient: priming does not
+       * repeat, and averaging it into a steady-state rate hides what
+       * the steady state costs. */
+      if (i == (size_t)FPS)
+      {
+         warm_wakes  = retro_atomic_load_acquire_size(&cnt_wakes);
+         warm_writes = retro_atomic_load_acquire_size(&cnt_writes);
+         warm_under  = retro_atomic_load_acquire_size(&dev_underruns);
+         warm_pulls  = retro_atomic_load_acquire_size(&dev_pulls);
+         warm_frames = i;
+         prod_total_us       = 0;
+         prod_blocked_frames = 0;
+         prod_worst_us       = 0;
+         retro_atomic_store_release_size(&lat_count, 0);
+      }
+   }
+
+   usleep(50000);
+   retro_atomic_store_release_int(&consumer_run, 0);
+   retro_atomic_store_release_int(&dev_running, 0);
+   audio_driver_pipeline_wake();
+   dev_signal();
+   pthread_join(cons, NULL);
+   pthread_join(dev,  NULL);
+
+   wakes  = retro_atomic_load_acquire_size(&cnt_wakes)  - warm_wakes;
+   writes = retro_atomic_load_acquire_size(&cnt_writes) - warm_writes;
+   under  = retro_atomic_load_acquire_size(&dev_underruns) - warm_under;
+   pulls  = retro_atomic_load_acquire_size(&dev_pulls) - warm_pulls;
+   nlat   = retro_atomic_load_acquire_size(&lat_count);
+   frames = frames - warm_frames;
+
+   if (nlat)
+   {
+      qsort(lat_us, nlat, sizeof(lat_us[0]), cmp_time);
+      p50   = (double)lat_us[nlat / 2];
+      p99   = (double)lat_us[(nlat * 99) / 100];
+      worst = (double)lat_us[nlat - 1];
+   }
+
+   printf("  %4u  %8.2f  %8.2f | %7.0f %7.0f %7.0f | %8.1f %5u %7.0f | %5u %5u\n",
+         publishes,
+         frames ? (double)wakes  / (double)frames : 0.0,
+         frames ? (double)writes / (double)frames : 0.0,
+         p50, p99, worst,
+         frames ? (double)prod_total_us / (double)frames : 0.0,
+         (unsigned)prod_blocked_frames,
+         (double)prod_worst_us,
+         (unsigned)under, (unsigned)pulls);
+   pipeline_down();
+}
+
+int main(int argc, char **argv)
+{
+   /* 1 is a core that hands over a frame at a time. 262 is a scanline
+    * of an NTSC frame; 312 is PAL. The ones between are there so a
+    * handshake whose cost grows with N shows the growth rather than
+    * only its endpoints. */
+   static const unsigned sweep[] = { 1, 2, 4, 8, 16, 64, 262, 312 };
+   double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
+   size_t i;
+
+   lat_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t));
+   if (!lat_us)
+      return 1;
+
+   for (i = 0; i < 4096 * 2; i++)
+      frame_audio[i] = (int16_t)(8000.0 * sin((double)i * 0.05));
+
+   notify_per_publish = getenv("NOTIFY_PER_PUBLISH") ? true : false;
+   spread_publishes   = getenv("SPREAD")             ? true : false;
+
+   printf("threaded pipeline handshake cost, %.0f s per setting, %g fps core,"
+         " %u ms device\n", seconds, FPS, LATENCY_MS);
+   printf("publishes per frame swept; the audio submitted is identical at every setting\n");
+   printf("publishes %s\n", spread_publishes
+         ? "paced across the frame (SPREAD) - a core whose retro_run fills its budget"
+         : "in a burst, as one retro_run call emits them");
+   printf("signalling %s\n\n", notify_per_publish
+         ? "once per publish (NOTIFY_PER_PUBLISH) - the shape a mechanical conversion produces"
+         : "once per frame, as the tree does");
+   printf("-- device applies backpressure (Audio Sync against a real card) --\n");
+   printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
+   printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
+   for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
+      run_one(sweep[i], seconds, true);
+
+   printf("\n-- device applies none; the data handshake is the only pacer --\n");
+   printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
+   printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
+   for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
+      run_one(sweep[i], seconds, false);
+
+   free(lat_us);
+   return 0;
+}
