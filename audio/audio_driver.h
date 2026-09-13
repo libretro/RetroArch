@@ -551,18 +551,32 @@ typedef struct
     * Never held across a device write.
     */
    slock_t *state_lock;
-   slock_t *pipe_lock;
    retro_eventcount_t pipe_space;
    retro_atomic_int_t pipe_gen;
    /* Data channel the other way: the producer bumps pipe_data_gen and
-    * signals pipe_data_cond after every publish; the consumer sleeps on
-    * it while the ring is empty. */
-   scond_t *pipe_data_cond;
-   unsigned pipe_data_gen;
-   /* Set by audio_driver_pipeline_wake() under pipe_lock and cleared by
-    * the consumer when it acts on it. Sticky, unlike the signal, so a
-    * wake raised before the consumer reaches its wait is not lost. */
-   bool     pipe_wake;
+    * notifies pipe_data, and the consumer sleeps on it while the ring
+    * holds less than it wants.
+    *
+    * Once per frame, not once per publish, and that is the whole design
+    * rather than an optimisation of it. A core may hand over its audio
+    * a scanline at a time; a notify per retro_spsc_write() would turn
+    * one frame into hundreds of consumer passes, each a scanline wide.
+    * The ring carries the data, so a publish needs no announcement -
+    * only the frame end does, and audio_driver_pipeline_signal() is the
+    * one place that makes it. Nothing else on the producer side may
+    * notify this. */
+   retro_eventcount_t pipe_data;
+   retro_atomic_int_t pipe_data_gen;
+   /* Set by audio_driver_pipeline_wake() and cleared by the consumer
+    * when it acts on it. Sticky, unlike the notify beside it, so a wake
+    * raised before the consumer reaches its wait is not lost. One
+    * setter and one clearer, so an atomic is the whole of it. */
+   retro_atomic_int_t pipe_wake;
+   /* Whether the two parking objects above have been brought up.
+    * audio_driver_pipeline_wake() is reachable before they have been
+    * and must do nothing then; it used to ask whether pipe_lock had
+    * been created, and there is no lock left to ask about. */
+   bool     pipe_park_ready;
    /* Set by the producer when a full ring did not drain within its
     * bounded wait, cleared by the consumer when a pass completes. While
     * set, the producer drops rather than waits, so a device that has

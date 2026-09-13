@@ -181,24 +181,22 @@ static bool pipeline_up(size_t ring_bytes)
    st->pipe_frame_bytes   = 2 * sizeof(int16_t);
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
-   st->pipe_lock      = slock_new();
    retro_eventcount_init(&st->pipe_space);
-   st->pipe_data_cond = scond_new();
+   retro_eventcount_init(&st->pipe_data);
    st->state_lock     = slock_new();
+   st->pipe_park_ready = true;
    st->pipe_threaded  = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED);
-   return st->pipe_lock && st->pipe_data_cond
-      && st->state_lock && st->output_samples_buf && st->pipe_scratch;
+   return st->state_lock && st->output_samples_buf && st->pipe_scratch;
 }
 
 static void pipeline_down(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
    retro_spsc_free(&st->pipe_ring);
-   slock_free(st->pipe_lock);
    retro_eventcount_free(&st->pipe_space);
-   scond_free(st->pipe_data_cond);
+   retro_eventcount_free(&st->pipe_data);
    slock_free(st->state_lock);
    free(st->output_samples_buf);
    free(st->pipe_scratch);
@@ -210,9 +208,7 @@ static void pipeline_down(void)
 static bool stalled_now(void)
 {
    bool v;
-   slock_lock(audio_driver_st.pipe_lock);
    v = retro_atomic_load_acquire_int(&audio_driver_st.pipe_stalled) ? true : false;
-   slock_unlock(audio_driver_st.pipe_lock);
    return v;
 }
 

@@ -317,18 +317,17 @@ static bool pipeline_up(size_t ring_bytes)
    config_get_ptr()->bools.audio_sync                 = sync_on;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
-   st->pipe_lock      = slock_new();
    retro_eventcount_init(&st->pipe_space);
-   st->pipe_data_cond = scond_new();
+   retro_eventcount_init(&st->pipe_data);
    st->state_lock     = slock_new();
+   st->pipe_park_ready = true;
    st->pipe_threaded  = true;
    st->pipe_priming   = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_CONTROL);
    if (!sync_on)
       AUDIO_FLAGS_SET(st, AUDIO_FLAG_NONBLOCK);
-   return st->pipe_lock && st->pipe_data_cond
-      && st->state_lock && st->output_samples_buf && st->pipe_scratch;
+   return st->state_lock && st->output_samples_buf && st->pipe_scratch;
 }
 
 static int16_t frame_audio[800 * 2];

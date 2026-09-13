@@ -217,14 +217,14 @@ static bool pipe_up(bool core_float, bool float_dev)
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);
    if (!retro_spsc_init(&st->pipe_ring, 1 << 22))
       return false;
-   st->pipe_lock      = slock_new();
    retro_eventcount_init(&st->pipe_space);
-   st->pipe_data_cond = scond_new();
+   retro_eventcount_init(&st->pipe_data);
    st->state_lock     = slock_new();
+   st->pipe_park_ready = true;
    st->pipe_threaded  = true;
    st->pipe_priming   = false;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED);
-   return st->pipe_lock && st->pipe_data_cond && st->state_lock;
+   return st->state_lock != NULL;
 }
 
 static void discrete_case(bool core_float, bool float_dev)
@@ -313,9 +313,7 @@ static void threaded_case(bool core_float, bool float_dev)
    }
    usleep(200000);
    retro_atomic_store_release_int(&consumer_run, 0);
-   slock_lock(audio_driver_st.pipe_lock);
-   scond_signal(audio_driver_st.pipe_data_cond);
-   slock_unlock(audio_driver_st.pipe_lock);
+   audio_driver_pipeline_signal(&audio_driver_st);
    sthread_join(th);
    skip = 0;
    for (d = 0; d < 6 && cap_frames > skip; d++)
@@ -363,9 +361,7 @@ static void stereo_on_wide_ring_case(void)
    }
    usleep(200000);
    retro_atomic_store_release_int(&consumer_run, 0);
-   slock_lock(audio_driver_st.pipe_lock);
-   scond_signal(audio_driver_st.pipe_data_cond);
-   slock_unlock(audio_driver_st.pipe_lock);
+   audio_driver_pipeline_signal(&audio_driver_st);
    sthread_join(th);
    skip = cap_frames / 2;
    fl = tone_energy(cap + skip * 6, cap_frames - skip, 6, 0, tone_hz[0]);
@@ -419,7 +415,7 @@ static void record_case(void)
    audio_driver_sample_batch_multi_float(inf, frames, 6, AUDIO_LAYOUT_5POINT1);
    audio_driver_sample_batch_float(st, frames);
    retro_atomic_store_release_int(&consumer_run, 0);
-   slock_lock(audio_driver_st.pipe_lock); scond_signal(audio_driver_st.pipe_data_cond); slock_unlock(audio_driver_st.pipe_lock);
+   audio_driver_pipeline_signal(&audio_driver_st);
    sthread_join(th);
    CHECK(rec_frames == frames * 2, "the recorder got %u frames of %u", (unsigned)rec_frames, (unsigned)(frames * 2));
    if (rec_frames == frames * 2)
@@ -445,7 +441,7 @@ static void record_case(void)
    th = sthread_create(consumer, NULL);
    audio_driver_sample_batch_multi_float(inf, frames, 6, AUDIO_LAYOUT_5POINT1);
    retro_atomic_store_release_int(&consumer_run, 0);
-   slock_lock(audio_driver_st.pipe_lock); scond_signal(audio_driver_st.pipe_data_cond); slock_unlock(audio_driver_st.pipe_lock);
+   audio_driver_pipeline_signal(&audio_driver_st);
    sthread_join(th);
    CHECK(rec_frames == frames, "the stereo recorder got %u frames", (unsigned)rec_frames);
    if (rec_frames == frames)

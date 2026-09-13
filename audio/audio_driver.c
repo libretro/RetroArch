@@ -984,13 +984,9 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED
                              | AUDIO_FLAG_STARTED);
 #ifdef HAVE_THREADS
+   audio_st->pipe_park_ready          = false;
    retro_eventcount_free(&audio_st->pipe_space);
-   if (audio_st->pipe_data_cond)
-      scond_free(audio_st->pipe_data_cond);
-   if (audio_st->pipe_lock)
-      slock_free(audio_st->pipe_lock);
-   audio_st->pipe_data_cond           = NULL;
-   audio_st->pipe_lock                = NULL;
+   retro_eventcount_free(&audio_st->pipe_data);
    /* Last: everything above may have taken it, and audio->free() at
     * the top of this function joined the thread that contends for it.
     * Nothing that runs after this point may touch the mixer or the
@@ -3476,19 +3472,16 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_int_init(&audio_driver_st.pipe_gen, 0);
       retro_atomic_int_init(&audio_driver_st.pipe_stalled, 0);
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
-      if (!audio_driver_st.pipe_lock)
-         audio_driver_st.pipe_lock        = slock_new();
-      if (!audio_driver_st.pipe_data_cond)
-         audio_driver_st.pipe_data_cond   = scond_new();
-      audio_driver_st.pipe_data_gen       = 0;
-      audio_driver_st.pipe_wake           = false;
-      if (     !audio_driver_st.pipe_lock || !audio_driver_st.pipe_data_cond
-            || !retro_eventcount_init(&audio_driver_st.pipe_space))
+      retro_atomic_int_init(&audio_driver_st.pipe_data_gen, 0);
+      retro_atomic_int_init(&audio_driver_st.pipe_wake, 0);
+      if (     !retro_eventcount_init(&audio_driver_st.pipe_space)
+            || !retro_eventcount_init(&audio_driver_st.pipe_data))
       {
          RARCH_ERR("[Audio] Cannot create the pipeline throttle. Exiting...\n");
          retro_spsc_free(&audio_driver_st.pipe_ring);
          return false;
       }
+      audio_driver_st.pipe_park_ready     = true;
       AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
       audio_driver_st.pipe_threaded       = true;
       audio_driver_st.pipe_consumer_gone  = false;
@@ -3954,10 +3947,8 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 #ifdef HAVE_THREADS
    if (!audio_st->pipe_threaded)
       return;
-   slock_lock(audio_st->pipe_lock);
-   audio_st->pipe_data_gen++;
-   scond_signal(audio_st->pipe_data_cond);
-   slock_unlock(audio_st->pipe_lock);
+   retro_atomic_fetch_add_int(&audio_st->pipe_data_gen, 1);
+   retro_eventcount_notify(&audio_st->pipe_data);
 #else
    (void)audio_st;
 #endif
@@ -3995,13 +3986,14 @@ void audio_driver_pipeline_wake(void)
 {
 #ifdef HAVE_THREADS
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (!audio_st->pipe_lock)
+   if (!audio_st->pipe_park_ready)
       return;
-   slock_lock(audio_st->pipe_lock);
-   audio_st->pipe_wake = true;
-   audio_st->pipe_data_gen++;
-   scond_signal(audio_st->pipe_data_cond);
-   slock_unlock(audio_st->pipe_lock);
+   /* Sticky first, then the generation, then the notify: a consumer
+    * woken by it re-reads both and must not find the new generation
+    * beside a wake that has not been raised yet. */
+   retro_atomic_store_release_int(&audio_st->pipe_wake, 1);
+   retro_atomic_fetch_add_int(&audio_st->pipe_data_gen, 1);
+   retro_eventcount_notify(&audio_st->pipe_data);
    /* Outside the lock, because the space channel does not take one.
     * A stop or a reinit is not a pass, so the stall is left as it was:
     * whether the device drains again is for a pass to say. */
@@ -4435,10 +4427,15 @@ static void audio_driver_pipeline_retry(audio_driver_state_t *audio_st)
       if (!written)
       {
          /* A driver reporting room but accepting nothing must not spin. */
-         slock_lock(audio_st->pipe_lock);
-         if (!audio_st->pipe_wake)
-            scond_wait_timeout(audio_st->pipe_data_cond, audio_st->pipe_lock, 1000);
-         slock_unlock(audio_st->pipe_lock);
+         if (!retro_atomic_load_acquire_int(&audio_st->pipe_wake))
+         {
+            int key = retro_eventcount_prepare_wait(&audio_st->pipe_data);
+            if (retro_atomic_load_acquire_int(&audio_st->pipe_wake))
+               retro_eventcount_cancel_wait(&audio_st->pipe_data);
+            else
+               retro_eventcount_commit_wait_timeout(&audio_st->pipe_data,
+                     key, 1000);
+         }
       }
       return;
    }
@@ -4644,21 +4641,32 @@ static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
 {
    size_t events;
    bool ready;
-   slock_lock(st->pipe_lock);
-   if (st->pipe_wake)
+   int key;
+   if (retro_atomic_load_acquire_int(&st->pipe_wake))
    {
-      st->pipe_wake = false;
-      slock_unlock(st->pipe_lock);
+      retro_atomic_store_release_int(&st->pipe_wake, 0);
       return false;
    }
    events = retro_atomic_load_acquire_size(&st->pipe_layouts.head)
       - retro_atomic_load_relaxed_size(&st->pipe_layouts.tail);
    ready = retro_spsc_read_avail(&st->pipe_ring) >= need
       || (metadata_threshold && events >= metadata_threshold);
-   if (!ready)
-      scond_wait_timeout(st->pipe_data_cond, st->pipe_lock, AUDIO_PIPE_WAIT_MAX_US);
-   slock_unlock(st->pipe_lock);
-   return ready;
+   if (ready)
+      return true;
+   /* Registered before the conditions are read again, so a publish or a
+    * wake that lands from here on either shows up in the re-check or
+    * makes the commit below return at once. */
+   key    = retro_eventcount_prepare_wait(&st->pipe_data);
+   events = retro_atomic_load_acquire_size(&st->pipe_layouts.head)
+      - retro_atomic_load_relaxed_size(&st->pipe_layouts.tail);
+   if (    retro_spsc_read_avail(&st->pipe_ring) >= need
+        || (metadata_threshold && events >= metadata_threshold)
+        || retro_atomic_load_acquire_int(&st->pipe_wake))
+      retro_eventcount_cancel_wait(&st->pipe_data);
+   else
+      retro_eventcount_commit_wait_timeout(&st->pipe_data, key,
+            AUDIO_PIPE_WAIT_MAX_US);
+   return false;
 }
 
 static void audio_driver_transport_consume(audio_driver_state_t *st)
@@ -4720,17 +4728,17 @@ static void audio_driver_transport_consume(audio_driver_state_t *st)
  * thread's loop. Pulls up to one slice out of pipe_ring and runs the
  * pipeline on it; the write at the end goes to the real driver through
  * the wrapper and blocks when the device is full, which is what paces
- * this loop. With nothing to pull it waits on pipe_data_cond rather
- * than spin, with a timeout so a missed wake costs a millisecond
- * rather than the stream.
+ * this loop. With nothing to pull it parks on the pipe_data
+ * eventcount rather than spin, with a bound so a missed notify costs a
+ * millisecond rather than the stream.
  *
- * The producer does signal it - once per frame, from
- * audio_driver_pipeline_signal(), and not per publish. Some cores
- * hand over audio a scanline at a time, and waking the consumer on
- * every retro_spsc_write() would turn one frame's audio into hundreds
- * of tiny passes. This comment used to say the producer never signals
- * at all, which was true of an earlier shape and has not been for a
- * while.
+ * The producer does notify it - once per frame, from
+ * audio_driver_pipeline_signal(), and not per publish. Some cores hand
+ * over audio a scanline at a time, and notifying on every
+ * retro_spsc_write() would turn one frame's audio into hundreds of
+ * tiny passes; pipeline_wakeups measures exactly that, and measures
+ * 3.0 wakes a frame against 211 for the per-publish shape. The ring
+ * carries the data, so a publish needs no announcement.
  **/
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {
@@ -4774,17 +4782,15 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
             need = target * audio_st->pipe_frame_bytes;
          }
       }
-   slock_lock(audio_st->pipe_lock);
    while (retro_spsc_read_avail(&audio_st->pipe_ring) < need)
    {
-      unsigned gen;
+      int gen, key;
       /* A wake means the wrapper wants this thread back at its loop -
        * stop, free, or a reinit - not that there is data. Return so it
        * can see why. */
-      if (audio_st->pipe_wake)
+      if (retro_atomic_load_acquire_int(&audio_st->pipe_wake))
       {
-         audio_st->pipe_wake = false;
-         slock_unlock(audio_st->pipe_lock);
+         retro_atomic_store_release_int(&audio_st->pipe_wake, 0);
          return;
       }
       /* A full metadata queue must not deadlock startup priming. */
@@ -4799,18 +4805,27 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
                retro_atomic_load_relaxed_size(&audio_st->pipe_ring.tail),
                0, audio_st->pipe_ring.capacity);
       }
-      gen = audio_st->pipe_data_gen;
-      if (!scond_wait_timeout(audio_st->pipe_data_cond, audio_st->pipe_lock,
+      gen = retro_atomic_load_acquire_int(&audio_st->pipe_data_gen);
+      key = retro_eventcount_prepare_wait(&audio_st->pipe_data);
+      /* The re-check the condition variable used to get from holding
+       * the lock across it: a frame signalled between the ring test
+       * above and this registration cannot be slept through. */
+      if (    retro_spsc_read_avail(&audio_st->pipe_ring) >= need
+           || retro_atomic_load_acquire_int(&audio_st->pipe_wake)
+           || retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) != gen)
+      {
+         retro_eventcount_cancel_wait(&audio_st->pipe_data);
+         continue;
+      }
+      if (!retro_eventcount_commit_wait_timeout(&audio_st->pipe_data, key,
                AUDIO_PIPE_WAIT_MAX_US))
       {
-         if (audio_st->pipe_data_gen == gen)
-         {
-            slock_unlock(audio_st->pipe_lock);
+         /* Nothing came within the bound. A producer that has stopped
+          * is the wrapper's business, not this pass's. */
+         if (retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) == gen)
             return;
-         }
       }
    }
-   slock_unlock(audio_st->pipe_lock);
    audio_st->pipe_priming = false;
    }
 

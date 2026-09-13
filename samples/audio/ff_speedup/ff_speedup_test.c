@@ -174,8 +174,8 @@ static void test_producer_publishes_at_its_cadence(void)
       CHECK(false, "ring allocated");
       return;
    }
-   audio_driver_st.pipe_lock = slock_new();
    retro_eventcount_init(&audio_driver_st.pipe_space);
+   retro_eventcount_init(&audio_driver_st.pipe_data);
    retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
 
    /* A 1.0x publish first, so the re-entry seed is armed. */
@@ -198,8 +198,8 @@ static void test_producer_publishes_at_its_cadence(void)
          "a publish outside fast-forward re-arms the seed");
 
    retro_spsc_free(&audio_driver_st.pipe_ring);
-   slock_free(audio_driver_st.pipe_lock);
    retro_eventcount_free(&audio_driver_st.pipe_space);
+   retro_eventcount_free(&audio_driver_st.pipe_data);
 }
 
 int main(void)
