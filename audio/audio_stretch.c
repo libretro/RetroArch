@@ -47,6 +47,53 @@ static void astretch_copy(const audio_stretch_t *s, void *dst,
             (frames - first) * s->frame_bytes);
 }
 
+/* These gathered values are native int16, unlike the shared helper's
+ * wider stereo sums. Keep all accumulation and normalization exact. */
+static INLINE int64_t astretch_corr_i(const int32_t *a, const int32_t *b,
+      unsigned n)
+{
+#if WSOLA_HAVE_SSE2 && !defined(AUDIO_STRETCH_SCALAR)
+   unsigned i = 0;
+   int64_t dots[2], dot;
+   uint64_t energies[2], energy, root;
+   __m128i zero = _mm_setzero_si128();
+   __m128i overflow = _mm_set1_epi32(INT32_MIN);
+   __m128i sum = zero, squares = zero;
+   for (; i + 8 <= n; i += 8)
+   {
+      __m128i x = _mm_packs_epi32(
+            _mm_loadu_si128((const __m128i*)(a + i)),
+            _mm_loadu_si128((const __m128i*)(a + i + 4)));
+      __m128i y = _mm_packs_epi32(
+            _mm_loadu_si128((const __m128i*)(b + i)),
+            _mm_loadu_si128((const __m128i*)(b + i + 4)));
+      __m128i d = _mm_madd_epi16(x, y);
+      __m128i e = _mm_madd_epi16(y, y);
+      /* Two (-32768 * -32768) products yield +2^31. This is the only
+       * overflowing pair; its INT32_MIN encoding must zero-extend. */
+      __m128i sign = _mm_andnot_si128(_mm_cmpeq_epi32(d, overflow),
+            _mm_srai_epi32(d, 31));
+      sum = _mm_add_epi64(sum, _mm_unpacklo_epi32(d, sign));
+      sum = _mm_add_epi64(sum, _mm_unpackhi_epi32(d, sign));
+      squares = _mm_add_epi64(squares, _mm_unpacklo_epi32(e, zero));
+      squares = _mm_add_epi64(squares, _mm_unpackhi_epi32(e, zero));
+   }
+   _mm_storeu_si128((__m128i*)dots, sum);
+   _mm_storeu_si128((__m128i*)energies, squares);
+   dot = dots[0] + dots[1];
+   energy = energies[0] + energies[1];
+   for (; i < n; i++)
+   {
+      dot += (int64_t)a[i] * b[i];
+      energy += (uint64_t)((int64_t)b[i] * b[i]);
+   }
+   root = wsola_isqrt64(energy);
+   return (dot * 65536) / (int64_t)(root ? root : 1);
+#else
+   return wsola_corr_i(a, b, n);
+#endif
+}
+
 static unsigned astretch_search(audio_stretch_t *s)
 {
    unsigned c, f, selected = 0, begin, end, candidate, best, distance;
@@ -107,7 +154,7 @@ static unsigned astretch_search(audio_stretch_t *s)
       score_f = s->correlation((const float*)s->reference,
             (const float*)s->search + best - begin, s->hop, energy_f);
    else
-      score_i = wsola_corr_i((const int32_t*)s->reference,
+      score_i = astretch_corr_i((const int32_t*)s->reference,
             (const int32_t*)s->search + best - begin, s->hop);
    for (candidate = begin; candidate <= end; candidate++)
    {
@@ -122,7 +169,7 @@ static unsigned astretch_search(audio_stretch_t *s)
       }
       else
       {
-         int64_t score = wsola_corr_i((const int32_t*)s->reference,
+         int64_t score = astretch_corr_i((const int32_t*)s->reference,
                (const int32_t*)s->search + candidate - begin, s->hop);
          better = score > score_i || (score == score_i && d < distance);
          if (better) score_i = score;

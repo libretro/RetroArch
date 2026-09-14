@@ -87,11 +87,42 @@ static unsigned search_oracle(const audio_stretch_t *s)
    return best;
 }
 
+static void correlation_oracle(void)
+{
+   int32_t a[513], b[513];
+   unsigned pa, pb, i, n, offset, checked = 0, before = failures;
+   for (pa = 0; pa < 5; pa++)
+      for (pb = 0; pb < 5; pb++)
+      {
+         for (i = 0; i < 513; i++)
+         {
+            a[i] = sample_value(pa, i);
+            b[i] = sample_value(pb, i);
+         }
+         for (offset = 0; offset < 2; offset++)
+            for (n = 0; n <= 512; n++)
+            {
+               int64_t expected = wsola_corr_i(a + offset, b + offset, n);
+               int64_t actual = astretch_corr_i(a + offset, b + offset, n);
+               checked++;
+               if (expected != actual)
+               {
+                  if (failures < 10)
+                     printf("correlation mismatch: patterns=%u/%u offset=%u length=%u\n",
+                           pa, pb, offset, n);
+                  failures++;
+               }
+            }
+      }
+   printf("native correlation: %u score cases, %u failures\n", checked, failures - before);
+}
+
 int main(void)
 {
    static const unsigned rates[] = {8000, 11025, 32000, 44100, 48000, 96000, 192000};
    static const unsigned channels[] = {1, 2, 6, 8, 11};
    unsigned r, ch, lane, head, next, pattern, f, c;
+   correlation_oracle();
    for (r = 0; r < sizeof(rates) / sizeof(rates[0]); r++)
       for (ch = 0; ch < sizeof(channels) / sizeof(channels[0]); ch++)
          for (lane = 0; lane < 2; lane++)
