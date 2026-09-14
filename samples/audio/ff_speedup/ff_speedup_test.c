@@ -276,6 +276,56 @@ static void test_fragmented_frame_cadence(void)
    }
 }
 
+static bool lifecycle_stop_ok;
+static bool lifecycle_stop(void *data) { (void)data; return lifecycle_stop_ok; }
+static bool lifecycle_alive(void *data) { (void)data; return true; }
+static bool lifecycle_start(void *data, bool shutdown)
+{ (void)data; (void)shutdown; return true; }
+
+static void test_stop_excludes_idle_gap(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   audio_driver_t driver;
+   unsigned threaded, success;
+   memset(&driver, 0, sizeof(driver));
+   driver.stop = lifecycle_stop;
+   driver.start = lifecycle_start;
+   driver.alive = lifecycle_alive;
+   driver.ident = "cadence-lifecycle";
+   for (threaded = 0; threaded < 2; threaded++)
+      for (success = 0; success < 2; success++)
+      {
+         retro_time_t previous;
+         fresh();
+         st->pipe_threaded = threaded;
+         st->current_audio = &driver;
+         st->context_audio_data = &driver;
+         AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED);
+         audio_driver_fastforward_ratio_mult(st, FRAMES);
+         previous = st->last_flush_time;
+         st->pipe_ff_frames = FRAMES;
+         retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
+         lifecycle_stop_ok = success;
+         CHECK(audio_driver_stop() == (bool)success, "stop reports the device result");
+         if (!success)
+         {
+            CHECK(st->last_flush_time == previous && st->pipe_ff_frames == FRAMES
+                  && retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) == 16384,
+                  "failed stop preserves the running cadence");
+            continue;
+         }
+         CHECK(!st->last_flush_time && !st->pipe_ff_frames,
+               "successful stop discards the old source cadence");
+         CHECK(retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) == 65536,
+               "restart cannot consume an old speed multiplier");
+         fake_now += 60000000;
+         CHECK(audio_driver_start(false), "restart succeeds");
+         CHECK(audio_driver_fastforward_ratio_mult(st, FRAMES) == 1.0,
+               "first resumed source excludes the stopped interval");
+      }
+   fresh();
+}
+
 int main(void)
 {
    printf("fast-forward audio speedup:\n");
@@ -284,6 +334,7 @@ int main(void)
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();
    test_fragmented_frame_cadence();
+   test_stop_excludes_idle_gap();
 
    if (failures)
    {

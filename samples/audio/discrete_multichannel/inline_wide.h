@@ -238,7 +238,9 @@ static void inline_format_cases(void)
                CHECK(transport_allocations == allocations, "steady playback allocated an arena");
                transport_track = false;
             }
+            st->last_flush_time = 123;
             CHECK(audio_driver_stop() && audio_stretch_stream_quiescent(saved->stream), "rebound stop");
+            CHECK(!st->last_flush_time, "rebound stop retained speed cadence");
             CHECK(audio_driver_start(false), "rebound restart");
             transport_fail_output = true;
             audio_driver_set_core_float(!native);

@@ -7514,6 +7514,11 @@ bool audio_driver_stop(void)
 
    if (stopped)
    {
+      /* The stopped interval is not part of the source cadence. */
+      audio_driver_ff_mult_reset(audio_st);
+#ifdef HAVE_THREADS
+      retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16, 65536);
+#endif
       /* The wrapper has parked the consumer before returning from stop. */
 #ifdef HAVE_THREADS
       if (!audio_driver_pipeline_transport_discard(0))

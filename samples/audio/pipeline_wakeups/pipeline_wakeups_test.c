@@ -763,7 +763,13 @@ static void wrapper_restart(void)
       size_t before;
       unsigned retry;
       audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
-      if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
+      if (cycle & 1)
+      {
+         if (!audio_driver_stop() || st->last_flush_time || st->pipe_ff_frames
+               || retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) != 65536)
+         { fprintf(stderr, "frontend stop retained source cadence\n"); fixture_failures++; }
+      }
+      else if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
       before = retro_atomic_load_acquire_size(&cnt_wakes);
       audio_thread_apply_control(st->context_audio_data, discard_parked, NULL);
       if (transport_mode)
@@ -774,7 +780,11 @@ static void wrapper_restart(void)
       }
       if (before != retro_atomic_load_acquire_size(&cnt_wakes)) fixture_failures++;
       before = retro_atomic_load_acquire_size(&cnt_writes);
-      if (!st->current_audio->start(st->context_audio_data, false)) fixture_failures++;
+      if (cycle & 1)
+      {
+         if (!audio_driver_start(false)) fixture_failures++;
+      }
+      else if (!st->current_audio->start(st->context_audio_data, false)) fixture_failures++;
       for (retry = 0; retry < 3; retry++)
          /* Prime the fixed-size source ring even below nominal tempo. */
          submit_frame((size_t)(CORE_RATE / FPS *
