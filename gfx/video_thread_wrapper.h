@@ -294,6 +294,11 @@ typedef struct thread_video
     * last handoff returned. Both main-thread only. */
    retro_time_t render_time;
    retro_time_t core_time;
+   /* The last frame presented had queued behind another: the next
+    * hold runs a period longer to drain it. Video thread sets it,
+    * the hold takes it, both under 'lock'. */
+   unsigned drain_cooldown;
+   bool drain_pending;
    /* Fast-forward, from the frame info at the push: the hold stands
     * down for it. Distinct from nonblock, which vsync-off also sets. */
    bool fast_forward;

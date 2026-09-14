@@ -1088,6 +1088,156 @@ static void lane_display_pacing(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: display pacing must not latch behind a queued frame            */
+/*   A driver that presents like a vsynced two-deep swapchain: a frame  */
+/*   goes out on the next vblank after the one before it, and a third   */
+/*   frame in flight blocks until the first has gone out. Run the loop  */
+/*   unpaced for a moment so a frame queues behind another, then turn   */
+/*   the hold on: latency must come back under a period and a half and  */
+/*   stay there, and the reserve must not grow to a whole period.       */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t                vslane_driver;
+static const video_driver_t         *vslane_inner;
+static video_poke_interface_t        vslane_poke;
+static const video_poke_interface_t *vslane_inner_poke;
+static retro_time_t                  vslane_period;
+static retro_time_t                  vslane_base;      /* vblank grid */
+static retro_time_t                  vslane_next_slot; /* next free vblank */
+static retro_time_t                  vslane_last_out;  /* last vblank a frame went out on */
+static unsigned                      vslane_presents;
+
+static retro_time_t vslane_grid_after(retro_time_t t)
+{
+   retro_time_t k = (t - vslane_base) / vslane_period + 1;
+   return vslane_base + k * vslane_period;
+}
+
+static bool vslane_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_time_t now  = cpu_features_get_time_usec();
+   retro_time_t slot = vslane_grid_after(now);
+   if (slot < vslane_next_slot)
+      slot = vslane_next_slot;
+   /* Two in flight: this one waits until the earlier has gone out */
+   if (slot - now > vslane_period)
+   {
+      retro_sleep((unsigned)((slot - vslane_period - now) / 1000));
+      now = cpu_features_get_time_usec();
+      while (now < slot - vslane_period)
+         now = cpu_features_get_time_usec();
+   }
+   vslane_next_slot = slot + vslane_period;
+   vslane_last_out  = slot;
+   vslane_presents++;
+   return vslane_inner->frame(data, frame, width, height, frame_count,
+         pitch, msg, video_info);
+}
+
+static retro_time_t vslane_last_present(void *data)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   (void)data;
+   /* The last vblank that has passed */
+   return vslane_last_out <= now ? vslane_last_out
+      : vslane_last_out - vslane_period;
+}
+
+static void lane_pacing_queue_drain(void)
+{
+   unsigned had = failures;
+   settings_t *settings = config_get_ptr();
+   thread_video_t *thr;
+   bool  saved_pacing  = settings->bools.video_threaded_display_pacing;
+   bool  saved_ask     = settings->bools.video_present_timing_from_display;
+   float saved_refresh = settings->floats.video_refresh_rate;
+   retro_time_t avg, worst, render;
+   bool from_display;
+   unsigned latched = 0, settled = 0, i;
+
+   /* Display at the core's own 60 Hz: one content frame per vblank */
+   settings->floats.video_refresh_rate               = 60.0f;
+   settings->bools.video_present_timing_from_display = true;
+   settings->bools.video_threaded_display_pacing     = false;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "pacing-drain lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "pacing-drain lane: menu still up");
+   run_frames(3);
+   video_thread_wait_idle();
+
+   thr               = (thread_video_t*)video_state_get_ptr()->data;
+   vslane_period     = 1000000 / 60;
+   vslane_base       = cpu_features_get_time_usec();
+   vslane_next_slot  = vslane_base;
+   vslane_last_out   = vslane_base;
+   vslane_inner      = thr->driver;
+   vslane_driver     = *thr->driver;
+   vslane_driver.frame = vslane_frame;
+   vslane_inner_poke = thr->poke;
+   vslane_poke       = *thr->poke;
+   vslane_poke.get_last_present_time = vslane_last_present;
+   thr->driver       = &vslane_driver;
+   thr->poke         = &vslane_poke;
+
+   /* Unpaced, the loop runs ahead of the display and a frame queues
+    * behind another: every swap now waits a vblank. */
+   run_frames(12);
+   video_thread_wait_idle();
+
+   /* The hold comes on with the queue full. It must drain the queue
+    * and settle with the frame going out on its own vblank. */
+   settings->bools.video_threaded_display_pacing = true;
+   for (i = 0; i < 90; i++)
+   {
+      run_frames(1);
+      video_thread_latency_stats(&avg, &worst, &from_display);
+      slock_lock(thr->lock);
+      render = thr->render_time;
+      slock_unlock(thr->lock);
+      if (i >= 30)
+      {
+         if (avg >= vslane_period * 3 / 2)
+            latched++;
+         else
+            settled++;
+      }
+   }
+   video_thread_wait_idle();
+   video_thread_latency_stats(&avg, &worst, &from_display);
+   slock_lock(thr->lock);
+   render = thr->render_time;
+   slock_unlock(thr->lock);
+   CHECK(settled > latched,
+         "pacing-drain lane: latched behind the queued frame: %u of %u "
+         "frames at %.1f ms latency, render reserve %.1f ms",
+         latched, latched + settled, avg / 1000.0, render / 1000.0);
+   CHECK(vslane_presents >= 90,
+         "pacing-drain lane: the vsync driver saw only %u presents", vslane_presents);
+   CHECK(render < vslane_period / 2,
+         "pacing-drain lane: render reserve grew to %.1f ms of a %.1f ms period",
+         render / 1000.0, vslane_period / 1000.0);
+   fprintf(stderr, "   pacing drain: latency %.1f ms, render reserve %.1f ms, %u/%u settled, %u presents\n",
+         avg / 1000.0, render / 1000.0, settled, settled + latched, vslane_presents);
+
+   thr->driver = vslane_inner;
+   thr->poke   = vslane_inner_poke;
+   settings->bools.video_threaded_display_pacing     = saved_pacing;
+   settings->bools.video_present_timing_from_display = saved_ask;
+   settings->floats.video_refresh_rate               = saved_refresh;
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing-drain lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: zero-copy lends a slot and publishes it without a copy         */
 /*   The harness core asks for a framebuffer each frame; with the       */
 /*   setting on the wrapper should grant most asks and publish those    */
@@ -1687,6 +1837,7 @@ int main(int argc, char *argv[])
    lane_command_runs_once();
    lane_font_marshal();
    lane_display_pacing();
+   lane_pacing_queue_drain();
    lane_zero_copy();
    lane_waiter_call();
    lane_frame_path_heap();

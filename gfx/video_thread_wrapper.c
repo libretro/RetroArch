@@ -1709,16 +1709,19 @@ static void video_thread_loop(void *data)
             thr->present_group      = (unsigned)presents;
             thr->present_timing_ask = new_ask;
          }
-         /* Moving average, weighted to the recent; a swap that blocks
-          * on vblank makes this the render-plus-wait time, which is
-          * the right thing to reserve against. */
-         if (ret_frame)
-            thr->render_time = thr->render_time
-               ? (thr->render_time * 7 + render_took) / 8 : render_took;
          /* Under the lock: the phase it records is read by the overlay
           * from the main thread. */
          if (ret_frame)
          {
+            /* A frame handed over more than a period and a half before
+             * the vblank it went out on was queued behind another: its
+             * swap waited on that vblank, not on rendering. The wait is
+             * not render cost to reserve against - reserving it would
+             * release the core a period early and keep the queue full -
+             * and the frame behind is drained by holding the core one
+             * extra period, once. */
+            bool early = false;
+
             video_thread_schedule_next(thr);
             /* Latency: from the core's handover of this slot to the
              * present's end just recorded. Repeats present in their
@@ -1726,6 +1729,20 @@ static void video_thread_loop(void *data)
             if (thr->last_present_end > thr->frame.slot[slot].pushed_at)
             {
                retro_time_t lat = thr->last_present_end - thr->frame.slot[slot].pushed_at;
+               if (     thr->present_period > 0
+                     && lat >= thr->present_period * 3 / 2)
+               {
+                  early = true;
+                  /* Frames pushed before a drain still report the
+                   * queue they were in; one drain per few presents. */
+                  if (!thr->drain_cooldown)
+                  {
+                     thr->drain_pending  = true;
+                     thr->drain_cooldown = 4;
+                  }
+               }
+               if (thr->drain_cooldown)
+                  thr->drain_cooldown--;
                thr->latency_avg = thr->latency_avg
                   ? (thr->latency_avg * 7 + lat) / 8 : lat;
                /* The worst over the last couple of seconds, not since
@@ -1740,6 +1757,12 @@ static void video_thread_loop(void *data)
                }
                thr->latency_from_display = thr->phase_from_display;
             }
+            /* Moving average, weighted to the recent, of the render
+             * with its swap; a swap that only waited for a queued
+             * frame's vblank is left out. */
+            if (!early)
+               thr->render_time = thr->render_time
+                  ? (thr->render_time * 7 + render_took) / 8 : render_took;
          }
          thr->frame.busy    = false;
          scond_broadcast(thr->cond_ring);
@@ -2255,6 +2278,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       retro_time_t content;
       retro_time_t vblank;
       retro_time_t target;
+      bool drained         = false;
       double fps = video_state_get_ptr()->av_info.timing.fps;
       if (margin < 500)
          margin = 500;
@@ -2280,6 +2304,16 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->content_due = thr->next_present;
       else
          thr->content_due += content;
+      /* Once after a frame went out a period late for having queued
+       * behind another: skip a content period, so the queue drains and
+       * the frames after go out on their own vblank. The due time
+       * moves with it, or the cadence would catch straight back up. */
+      if (thr->drain_pending)
+      {
+         thr->drain_pending = false;
+         thr->content_due  += content;
+         drained            = true;
+      }
       if (thr->content_due < thr->next_present)
          thr->content_due = thr->next_present;
       vblank = thr->next_present;
@@ -2289,9 +2323,9 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       target = vblank - reserve - margin;
       /* Never hold longer than a content period: the estimate can be
-       * wrong. */
-      if (target > now + content)
-         target = now + content;
+       * wrong. A drain holds one longer. */
+      if (target > now + content * (drained ? 2 : 1))
+         target = now + content * (drained ? 2 : 1);
       while (now < target)
       {
          scond_wait_timeout(thr->cond_ring, thr->lock, target - now);
