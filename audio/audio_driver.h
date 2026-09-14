@@ -620,13 +620,11 @@ typedef struct
     * fixed width, so the ring is never switched under the consumer;
     * layout boundaries travel through pipe_layouts before audio publication.
     * pipe_wide is the consumer's bounce for a pass of the
-    * frame; pipe_canon the producer's staging for building it. */
+    * frame. Producers construct frames directly in writable ring spans. */
    unsigned pipe_channels;
    unsigned pipe_layout; /* producer-only requested layout */
    uint8_t *pipe_wide;
    size_t   pipe_wide_bytes;
-   uint8_t *pipe_canon;
-   size_t   pipe_canon_frames;
    bool     core_multi;   /* the multi-channel entry was negotiated */
    /* Whether the ring carries float frames - the core negotiated float
     * output - or int16. Decided before any audio flows: at pipe init

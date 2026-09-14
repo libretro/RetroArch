@@ -91,7 +91,7 @@ $(GEN): $(WASAPI_SRC)
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
-discrete_multichannel_test.o: inline_wide.h transport_quality.h ../../../audio/audio_driver.c ../../../audio/audio_driver.h ../../../audio/audio_pipeline_layout.h ../../../state_manager.h
+discrete_multichannel_test.o: producer_spans.h inline_wide.h transport_quality.h ../../../audio/audio_driver.c ../../../audio/audio_driver.h ../../../audio/audio_pipeline_layout.h ../../../state_manager.h
 
 ../../../state_manager.o: ../../../state_manager.h
 stubs_retroarch.o: ../../../state_manager.h ../../../core_info.h ../../../content.h

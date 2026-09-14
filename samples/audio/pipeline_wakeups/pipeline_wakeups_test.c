@@ -521,7 +521,6 @@ static bool pipeline_up(unsigned latency_ms)
       st->upmix_buf = (float*)malloc(st->upmix_frames * channels * sizeof(float));
       st->upmix_i16 = (int16_t*)malloc(st->upmix_frames * channels * sizeof(int16_t));
       if (!st->pipe_wide || !st->upmix_buf || !st->upmix_i16
-            || !audio_driver_pipe_prepare_canonical(st)
             || !audio_upmix_init(&st->upmix, source_layout, OUT_RATE))
          return false;
    }
@@ -592,7 +591,6 @@ static void pipeline_down(void)
    free(st->synth_buf);
    free(st->output_samples_int16);
    free(st->pipe_wide);
-   free(st->pipe_canon);
    free(st->upmix_buf);
    free(st->upmix_i16);
    free(dev_ring);

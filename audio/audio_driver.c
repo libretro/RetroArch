@@ -1008,9 +1008,6 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    free(audio_st->pipe_wide);
    audio_st->pipe_wide                = NULL;
    audio_st->pipe_wide_bytes          = 0;
-   free(audio_st->pipe_canon);
-   audio_st->pipe_canon               = NULL;
-   audio_st->pipe_canon_frames        = 0;
    audio_st->pipe_channels            = 2;
    free(audio_st->multi_fold);
    audio_st->multi_fold               = NULL;
@@ -2459,12 +2456,97 @@ static INLINE void audio_driver_retain_output(audio_driver_state_t *audio_st,
    }
 }
 
+/* Copy or sanitize in place without modifying borrowed core/ring input. */
+static void audio_driver_copy_clamp(float *buf, const float *input,
+      unsigned total_samples)
+{
+   unsigned i              = 0;
+
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
+   if (clamp_float_neon_enabled)
+   {
+      float32x4_t vpos1 = vdupq_n_f32( 1.0f);
+      float32x4_t vneg1 = vdupq_n_f32(-1.0f);
+      uint32x4_t  vabsm = vdupq_n_u32(0x7FFFFFFFu);
+      uint32x4_t  vinfb = vdupq_n_u32(0x7F800000u);
+      for (; i + 8 <= total_samples; i += 8)
+      {
+         float32x4_t v0 = vld1q_f32(input + i);
+         float32x4_t v1 = vld1q_f32(input + i + 4);
+         /* Squash NaN to silence first: vmin/vmax propagate a NaN
+          * rather than clamping it, so without this it would reach
+          * the driver untouched.
+          *
+          * The test is on the bit pattern (NaN iff the exponent is
+          * all ones and the mantissa is non-zero, i.e. the value
+          * masked of its sign exceeds the +inf encoding) rather
+          * than vceqq_f32(v, v): -Ofast (HAVE_C_A7A7) implies
+          * -ffinite-math-only, under which GCC folds the float
+          * compare to all-ones and drops the mask entirely.
+          * Integer compares are immune to that. */
+         {
+            uint32x4_t b0 = vreinterpretq_u32_f32(v0);
+            uint32x4_t b1 = vreinterpretq_u32_f32(v1);
+            v0 = vreinterpretq_f32_u32(vandq_u32(b0,
+                  vcleq_u32(vandq_u32(b0, vabsm), vinfb)));
+            v1 = vreinterpretq_f32_u32(vandq_u32(b1,
+                  vcleq_u32(vandq_u32(b1, vabsm), vinfb)));
+         }
+         v0             = vminq_f32(v0, vpos1);
+         v0             = vmaxq_f32(v0, vneg1);
+         v1             = vminq_f32(v1, vpos1);
+         v1             = vmaxq_f32(v1, vneg1);
+         vst1q_f32(buf + i,     v0);
+         vst1q_f32(buf + i + 4, v1);
+      }
+   }
+#elif defined(__SSE__)
+   {
+      __m128 vpos1 = _mm_set1_ps( 1.0f);
+      __m128 vneg1 = _mm_set1_ps(-1.0f);
+      for (; i + 4 <= total_samples; i += 4)
+      {
+         __m128 v = _mm_loadu_ps(input + i);
+         /* Squash NaN to silence first. _mm_min_ps/_mm_max_ps
+          * return their second operand when either input is NaN,
+          * which would silently turn a NaN into full scale here.
+          * _mm_cmpord_ps(v, v) is all-zero only for NaN lanes, and
+          * unlike a plain float compare it survives -ffast-math
+          * because it lowers to cmpordps directly. Kept as an SSE1
+          * op so the SSE-without-SSE2 build still compiles. */
+         v        = _mm_and_ps(v, _mm_cmpord_ps(v, v));
+         v        = _mm_min_ps(v, vpos1);
+         v        = _mm_max_ps(v, vneg1);
+         _mm_storeu_ps(buf + i, v);
+      }
+   }
+#endif
+   for (; i < total_samples; i++)
+   {
+      /* NaN fails both ordered comparisons below, so test for it
+       * explicitly. The test is done on the bit pattern rather than
+       * as (v != v) because -Ofast (HAVE_C_A7A7) implies -ffast-math,
+       * under which the compiler is entitled to fold that to false.
+       * Zero matches wav_to_s16's handling of non-finite input. */
+      uint32_t bits;
+      buf[i] = input[i];
+      memcpy(&bits, &buf[i], sizeof(bits));
+      if      ((bits & 0x7FFFFFFFu) > 0x7F800000u)
+         buf[i] =  0.0f;
+      else if (buf[i] >  1.0f)
+         buf[i] =  1.0f;
+      else if (buf[i] < -1.0f)
+         buf[i] = -1.0f;
+   }
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
+   bool output_sanitized = false;
    const audio_driver_t *audio    = audio_st->current_audio;
    float audio_volume_gain        =
          (audio_st->mute_enable || AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MUTED)
@@ -3111,8 +3193,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          && src_data.ratio == 1.0
          && !audio_st->resampler_hq)
    {
-      memcpy(audio_st->output_samples_buf, src_data.data_in,
-            src_data.input_frames * 2 * sizeof(float));
+      if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+#ifdef HAVE_AUDIOMIXER
+            && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+         )
+      {
+         audio_driver_copy_clamp(audio_st->output_samples_buf,
+               src_data.data_in, (unsigned)src_data.input_frames * 2);
+         output_sanitized = true;
+      }
+      else
+         memcpy(audio_st->output_samples_buf, src_data.data_in,
+               src_data.input_frames * 2 * sizeof(float));
       src_data.output_frames       = src_data.input_frames;
       audio_st->resampler_bypassed = true;
    }
@@ -3202,92 +3295,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * AltiVec vec_packs, PSP/Allegrex vi2s.q) uses a saturating narrow.
        * Skipping the float-clamp pass on the s16 path produces a
        * bit-identical result with one fewer touch of the buffer. */
-      if (
+      if (!output_sanitized &&
             (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
 #ifdef HAVE_AUDIOMIXER
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
 #endif
          )
       {
-         unsigned i              = 0;
-         unsigned total_samples  = output_frames * 2; /* stereo */
-         float *buf              = audio_st->output_samples_buf;
-
-#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
-         if (clamp_float_neon_enabled)
-         {
-            float32x4_t vpos1 = vdupq_n_f32( 1.0f);
-            float32x4_t vneg1 = vdupq_n_f32(-1.0f);
-            uint32x4_t  vabsm = vdupq_n_u32(0x7FFFFFFFu);
-            uint32x4_t  vinfb = vdupq_n_u32(0x7F800000u);
-            for (; i + 8 <= total_samples; i += 8)
-            {
-               float32x4_t v0 = vld1q_f32(buf + i);
-               float32x4_t v1 = vld1q_f32(buf + i + 4);
-               /* Squash NaN to silence first: vmin/vmax propagate a NaN
-                * rather than clamping it, so without this it would reach
-                * the driver untouched.
-                *
-                * The test is on the bit pattern (NaN iff the exponent is
-                * all ones and the mantissa is non-zero, i.e. the value
-                * masked of its sign exceeds the +inf encoding) rather
-                * than vceqq_f32(v, v): -Ofast (HAVE_C_A7A7) implies
-                * -ffinite-math-only, under which GCC folds the float
-                * compare to all-ones and drops the mask entirely.
-                * Integer compares are immune to that. */
-               {
-                  uint32x4_t b0 = vreinterpretq_u32_f32(v0);
-                  uint32x4_t b1 = vreinterpretq_u32_f32(v1);
-                  v0 = vreinterpretq_f32_u32(vandq_u32(b0,
-                        vcleq_u32(vandq_u32(b0, vabsm), vinfb)));
-                  v1 = vreinterpretq_f32_u32(vandq_u32(b1,
-                        vcleq_u32(vandq_u32(b1, vabsm), vinfb)));
-               }
-               v0             = vminq_f32(v0, vpos1);
-               v0             = vmaxq_f32(v0, vneg1);
-               v1             = vminq_f32(v1, vpos1);
-               v1             = vmaxq_f32(v1, vneg1);
-               vst1q_f32(buf + i,     v0);
-               vst1q_f32(buf + i + 4, v1);
-            }
-         }
-#elif defined(__SSE__)
-         {
-            __m128 vpos1 = _mm_set1_ps( 1.0f);
-            __m128 vneg1 = _mm_set1_ps(-1.0f);
-            for (; i + 4 <= total_samples; i += 4)
-            {
-               __m128 v = _mm_loadu_ps(buf + i);
-               /* Squash NaN to silence first. _mm_min_ps/_mm_max_ps
-                * return their second operand when either input is NaN,
-                * which would silently turn a NaN into full scale here.
-                * _mm_cmpord_ps(v, v) is all-zero only for NaN lanes, and
-                * unlike a plain float compare it survives -ffast-math
-                * because it lowers to cmpordps directly. Kept as an SSE1
-                * op so the SSE-without-SSE2 build still compiles. */
-               v        = _mm_and_ps(v, _mm_cmpord_ps(v, v));
-               v        = _mm_min_ps(v, vpos1);
-               v        = _mm_max_ps(v, vneg1);
-               _mm_storeu_ps(buf + i, v);
-            }
-         }
-#endif
-         for (; i < total_samples; i++)
-         {
-            /* NaN fails both ordered comparisons below, so test for it
-             * explicitly. The test is done on the bit pattern rather than
-             * as (v != v) because -Ofast (HAVE_C_A7A7) implies -ffast-math,
-             * under which the compiler is entitled to fold that to false.
-             * Zero matches wav_to_s16's handling of non-finite input. */
-            uint32_t bits;
-            memcpy(&bits, &buf[i], sizeof(bits));
-            if      ((bits & 0x7FFFFFFFu) > 0x7F800000u)
-               buf[i] =  0.0f;
-            else if (buf[i] >  1.0f)
-               buf[i] =  1.0f;
-            else if (buf[i] < -1.0f)
-               buf[i] = -1.0f;
-         }
+         audio_driver_copy_clamp(audio_st->output_samples_buf,
+               audio_st->output_samples_buf, output_frames * 2);
       }
 
       /* A float driver takes the float mix as it is; an int16 one gets
@@ -3579,21 +3595,6 @@ static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st,
    return true;
 }
 
-static bool audio_driver_pipe_prepare_canonical(audio_driver_state_t *audio_st)
-{
-   size_t frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
-   uint8_t *buffer;
-   if (audio_st->pipe_canon_frames >= frames)
-      return true;
-   buffer = (uint8_t*)realloc(audio_st->pipe_canon,
-         frames * AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
-   if (!buffer)
-      return false;
-   audio_st->pipe_canon = buffer;
-   audio_st->pipe_canon_frames = frames;
-   return true;
-}
-
 static bool audio_driver_transport_configure(const settings_t *settings);
 
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
@@ -3809,8 +3810,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             audio_driver_st.pipe_wide       = (uint8_t*)malloc(wide);
             audio_driver_st.pipe_wide_bytes = audio_driver_st.pipe_wide ? wide : 0;
          }
-         if (!audio_driver_st.pipe_wide
-               || !audio_driver_pipe_prepare_canonical(&audio_driver_st))
+         if (!audio_driver_st.pipe_wide)
          {
             RARCH_ERR("[Audio] Cannot allocate wide-frame storage. Exiting...\n");
             retro_spsc_free(&audio_driver_st.pipe_ring);
@@ -4514,12 +4514,112 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
       float slowmotion_ratio, const void *data, size_t samples, bool is_float,
       bool is_slowmotion, bool is_fastforward)
 {
+   if (audio_st->pipe_channels > 2)
+      audio_st->pipe_layout = AUDIO_LAYOUT_STEREO;
    audio_driver_submit_width(audio_st, slowmotion_ratio, data, samples, is_float,
          is_slowmotion, is_fastforward, 2);
 }
 
-/* A publish of frames canon_width samples wide: the ring's width,
- * or stereo to be widened onto a wide ring. */
+#ifdef HAVE_THREADS
+/* layout == 0 means already canonical. No input/output alias is permitted. */
+static void audio_driver_pipe_map(void *dst, const void *src, size_t frames,
+      unsigned channels, unsigned pc, unsigned layout, const unsigned *slots,
+      bool input_float, bool output_float)
+{
+   size_t f;
+   unsigned c;
+   size_t sample = output_float ? sizeof(float) : sizeof(int16_t);
+   if (!layout)
+   {
+      if (input_float == output_float)
+         memcpy(dst, src, frames * channels * sample);
+      else if (input_float)
+         convert_float_to_s16((int16_t*)dst, (const float*)src, frames * channels);
+      else
+         convert_s16_to_float((float*)dst, (const int16_t*)src, frames * channels, 1.0f);
+      return;
+   }
+   if (channels == 2 && layout == AUDIO_LAYOUT_STEREO)
+   {
+      audio_driver_pipe_widen_stereo(dst, src, frames, pc, input_float, output_float);
+      return;
+   }
+   if (input_float == output_float && audio_driver_pipe_widen_prefix(dst,
+            src, frames, channels, layout, input_float))
+      return;
+   memset(dst, 0, frames * pc * sample);
+   for (f = 0; f < frames; f++)
+      for (c = 0; c < channels; c++)
+      {
+         size_t in = f * channels + c, out = f * pc + slots[c];
+         if (output_float)
+            ((float*)dst)[out] = input_float ? ((const float*)src)[in]
+               : ((const int16_t*)src)[in] * (1.0f / 32768.0f);
+         else if (input_float)
+            ((int16_t*)dst)[out] = (int16_t)audio_float_to_s16_sat(((const float*)src)[in]);
+         else
+            ((int16_t*)dst)[out] = ((const int16_t*)src)[in];
+      }
+}
+
+static size_t audio_driver_pipe_write_mapped(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned channels, unsigned layout,
+      const unsigned *slots, bool floating)
+{
+   const unsigned pc = audio_st->pipe_channels ? audio_st->pipe_channels : 2;
+   const size_t fb = audio_st->pipe_frame_bytes;
+   const size_t input_fb = channels * (floating ? sizeof(float) : sizeof(int16_t));
+   size_t done = 0;
+   while (done < frames)
+   {
+      void *dst;
+      size_t span = retro_spsc_write_begin(&audio_st->pipe_ring, &dst);
+      size_t n = span / fb;
+      const uint8_t *src = (const uint8_t*)data + done * input_fb;
+      if (n > frames - done) n = frames - done;
+      if (n && !((uintptr_t)dst % (audio_st->pipe_float ? sizeof(float) : sizeof(int16_t))))
+      {
+         if (layout && floating != audio_st->pipe_float)
+         {
+            /* Keep the bulk SIMD converters on mixed-format sources. Only
+             * packed active channels enter scratch; canonical silence is
+             * written directly into the reservation, never converted. */
+            size_t cap = (AUDIO_PIPE_SLICE_INT16S / 2) * 2 / channels;
+            if (n > cap) n = cap;
+            if (floating)
+               convert_float_to_s16((int16_t*)audio_st->pipe_conv,
+                     (const float*)src, n * channels);
+            else
+               convert_s16_to_float((float*)audio_st->pipe_conv,
+                     (const int16_t*)src, n * channels, 1.0f);
+            audio_driver_pipe_map(dst, audio_st->pipe_conv, n, channels, pc,
+                  layout, slots, audio_st->pipe_float, audio_st->pipe_float);
+         }
+         else
+            audio_driver_pipe_map(dst, src, n, channels, pc, layout, slots,
+                  floating, audio_st->pipe_float);
+         retro_spsc_write_end(&audio_st->pipe_ring, n * fb);
+      }
+      else
+      {
+         union { float f[AUDIO_PIPE_CANON_CHANNELS]; int16_t i[AUDIO_PIPE_CANON_CHANNELS]; } frame;
+         retro_spsc_write_end(&audio_st->pipe_ring, 0);
+         if (retro_spsc_write_avail(&audio_st->pipe_ring) < fb) break;
+         /* A physical wrap can split a logical frame. Publish it atomically
+          * through the frame writer; never expose a partial frame. */
+         audio_driver_pipe_map(&frame, src, 1, channels, pc, layout, slots,
+               floating, audio_st->pipe_float);
+         n = retro_spsc_write_frames(&audio_st->pipe_ring, &frame, 1, fb);
+         if (!n) break;
+      }
+      done += n;
+   }
+   return done * fb;
+}
+#endif
+
+/* Publish native frames. A packed width smaller than the wide ring maps
+ * the producer layout into canonical slots; stereo always uses FL/FR. */
 static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       float slowmotion_ratio, const void *data, size_t samples, bool is_float,
       bool is_slowmotion, bool is_fastforward, unsigned canon_width)
@@ -4529,56 +4629,20 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
    {
       const uint8_t *p = (const uint8_t*)data;
       const unsigned pc = audio_st->pipe_channels ? audio_st->pipe_channels : 2;
-      size_t frames    = samples / pc;
+      size_t frames    = samples / canon_width;
       size_t len       = frames * audio_st->pipe_frame_bytes;
-
-      /* Stereo from the classic entries on a wide ring: widened into
-       * the canonical frame, the other slots zero, a pass at a time.
-       * The fronts are the frame's first two slots either way. */
-      if (canon_width == 2 && pc > 2)
+      size_t input_fb  = canon_width * (is_float ? sizeof(float) : sizeof(int16_t));
+      unsigned slots[AUDIO_PIPE_CANON_CHANNELS], bit, count = 0;
+      unsigned source_layout = canon_width != pc && pc > 2 ? audio_st->pipe_layout : 0;
+      bool mapped;
+      if (source_layout)
       {
-         size_t pass = (AUDIO_PIPE_SLICE_INT16S / 2) * 2 / pc;
-         size_t sample = is_float ? sizeof(float) : sizeof(int16_t);
-         size_t stereo_frames = samples >> 1;
-         audio_st->pipe_layout = AUDIO_LAYOUT_STEREO;
-         while (stereo_frames)
-         {
-            size_t n = stereo_frames > pass ? pass : stereo_frames;
-            uint8_t *dst = audio_st->pipe_conv;
-            audio_driver_pipe_widen_stereo(dst, data, n, pc, is_float, audio_st->pipe_float);
-            audio_driver_submit_width(audio_st, slowmotion_ratio, dst, n * pc, audio_st->pipe_float,
-                  is_slowmotion, is_fastforward, pc);
-            stereo_frames -= n;
-            data = (const uint8_t*)data + n * 2 * sample;
-         }
-         return;
+         for (bit = 0; bit < pc; bit++)
+            if (source_layout & (1u << bit)) slots[count++] = bit;
+         if (count != canon_width) return;
+         audio_st->pipe_layout = source_layout;
       }
-
-      /* Publishes in the ring's format go in as they are; the other
-       * format is converted into the staging area, a pass at a time,
-       * and published from there - a float core's publish never
-       * touches int16 on a float ring. */
-      if (is_float != audio_st->pipe_float)
-      {
-         size_t pass = (AUDIO_PIPE_SLICE_INT16S / 2) * 2 / pc;   /* the staging holds a pass of stereo float */
-         while (frames)
-         {
-            size_t n = frames > pass ? pass : frames;
-            if (is_float)
-               convert_float_to_s16((int16_t*)audio_st->pipe_conv,
-                     (const float*)data, n * pc);
-            else
-               convert_s16_to_float((float*)audio_st->pipe_conv,
-                     (const int16_t*)data, n * pc, 1.0f);
-            audio_driver_submit_width(audio_st, slowmotion_ratio,
-                  audio_st->pipe_conv, n * pc, audio_st->pipe_float,
-                  is_slowmotion, is_fastforward, pc);
-            frames -= n;
-            data    = is_float ? (const void*)((const float*)data + n * pc)
-                               : (const void*)((const int16_t*)data + n * pc);
-         }
-         return;
-      }
+      mapped = source_layout || is_float != audio_st->pipe_float;
 
       /* Rate control's fill, before this frame goes in; see
        * pipe_ctrl_avail. */
@@ -4643,8 +4707,10 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       while (len)
       {
          int gen;
-         size_t n = pc > 2
-            ? retro_spsc_write_frames(&audio_st->pipe_ring, p,
+         size_t n = mapped
+            ? audio_driver_pipe_write_mapped(audio_st, p,
+                  len / audio_st->pipe_frame_bytes, canon_width, source_layout, slots, is_float)
+            : pc > 2 ? retro_spsc_write_frames(&audio_st->pipe_ring, p,
                   len / audio_st->pipe_frame_bytes, audio_st->pipe_frame_bytes)
                   * audio_st->pipe_frame_bytes
             : retro_spsc_write(&audio_st->pipe_ring, p, len);
@@ -4654,7 +4720,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
           * neither the ring nor what it refused is in the measure. */
          audio_st->sink_offered += (double)(n / audio_st->pipe_frame_bytes)
                * audio_st->src_ratio_orig;
-         p       += n;
+         p       += (n / audio_st->pipe_frame_bytes) * input_fb;
          len     -= n;
          if (!len)
             break;
@@ -4822,7 +4888,7 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
    audio_driver_state_lock();
    if (audio_st->pipe_channels > 2)
    {
-      const unsigned pc = audio_st->pipe_channels;
+      const unsigned pc = audio_st->pipe_channels ? audio_st->pipe_channels : 2;
       uint32_t pos      = layout & ~AUDIO_LAYOUT_STEREO;
       unsigned ex       = audio_layout_channels(pos);
       unsigned slot[AUDIO_PIPE_CANON_CHANNELS];
@@ -5747,13 +5813,7 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
       const void *data, size_t frames, unsigned channels, unsigned layout, bool is_float)
 {
    uint32_t runloop_flags;
-   const unsigned pc = AUDIO_PIPE_CANON_CHANNELS;
-   size_t sample = is_float ? sizeof(float) : sizeof(int16_t);
-   unsigned slot[AUDIO_PIPE_CANON_CHANNELS], bit, n = 0, c;
-   size_t f, done = 0;
-   size_t capacity = frames > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)
-      ? (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) : frames;
-   if (!audio_st->pipe_threaded || audio_st->pipe_channels != pc)
+   if (!audio_st->pipe_threaded || audio_st->pipe_channels != AUDIO_PIPE_CANON_CHANNELS)
       return false;
 #ifdef HAVE_REWIND
    /* played in reverse, the frames go to the rewind buffer through
@@ -5761,45 +5821,22 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
    if (state_manager_frame_is_reversed())
       return false;
 #endif
-   /* Discarded publishes must not grow staging storage. */
+   /* Discard before recording or publishing source samples. */
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
       return true;
    if (audio_st->float_gate && audio_st->float_gate())
       return true;
-   if (capacity > audio_st->pipe_canon_frames
-         && !audio_driver_pipe_prepare_canonical(audio_st))
-      return false;
    runloop_flags = runloop_get_flags();
    audio_driver_record_push(audio_st, data, frames, channels, layout, is_float);
    if (      (runloop_flags & RUNLOOP_FLAG_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf)
       return true;
-   /* the canonical frame: each channel of the batch to its slot */
-   for (bit = 0; bit < pc; bit++)
-      if (layout & (1u << bit))
-         slot[n++] = bit;
    audio_st->pipe_layout = layout;
-   while (done < frames)
-   {
-      size_t take = frames - done;
-      if (take > capacity) take = capacity;
-      if (!audio_driver_pipe_widen_prefix(audio_st->pipe_canon,
-               (const uint8_t*)data + done * channels * sample,
-               take, channels, layout, is_float))
-      {
-         memset(audio_st->pipe_canon, 0, take * pc * sample);
-         for (f = 0; f < take; f++)
-            for (c = 0; c < channels && c < n; c++)
-               memcpy(audio_st->pipe_canon + (f * pc + slot[c]) * sample,
-                     (const uint8_t*)data + ((done + f) * channels + c) * sample, sample);
-      }
-      audio_driver_submit_width(audio_st, config_get_ptr()->floats.slowmotion_ratio,
-            audio_st->pipe_canon, take * pc, is_float,
-            (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-            (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false, pc);
-      done += take;
-   }
+   audio_driver_submit_width(audio_st, config_get_ptr()->floats.slowmotion_ratio,
+         data, frames * channels, is_float,
+         (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
+         (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false, channels);
    return true;
 }
 

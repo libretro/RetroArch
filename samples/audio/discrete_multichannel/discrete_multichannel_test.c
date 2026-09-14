@@ -785,11 +785,12 @@ static void bounded_canonical_case(bool floating)
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
    CHECK(audio_driver_multi_pipe(st, input, frames, 6, AUDIO_LAYOUT_5POINT1, floating),
          "suspended publish accepted");
-   CHECK(!st->pipe_canon && !st->pipe_canon_frames, "suspended publish allocated staging");
+   canonical_reallocations = 0; canonical_track = true;
    AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
    CHECK(audio_driver_multi_pipe(st, input, frames, 6, AUDIO_LAYOUT_5POINT1, floating),
          "canonical publish accepted");
-   CHECK(st->pipe_canon_frames <= chunk, "canonical staging exceeds one chunk");
+   canonical_track = false;
+   CHECK(!canonical_reallocations, "canonical publish allocated staging");
    CHECK(retro_spsc_read(&st->pipe_ring, actual, frames * st->pipe_frame_bytes)
          == frames * st->pipe_frame_bytes, "canonical publish lost frames");
    for (f = 0; f < frames; f++)
@@ -2311,27 +2312,10 @@ static void canonical_reserve_cases(void)
    for (floating = 0; floating < 2; floating++)
       for (wide = 0; wide < 2; wide++)
       {
-         uint8_t *original;
          size_t frames = 0;
-         CHECK(pipe_up(floating, floating), "canonical reserve stand-up");
-         canonical_fail = true;
-         CHECK(!audio_driver_pipe_prepare_canonical(st)
-               && !st->pipe_canon && !st->pipe_canon_frames, "failed canonical reserve changed state");
-         st->pipe_canon = (uint8_t*)malloc(AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
-         CHECK(st->pipe_canon != NULL, "canonical existing storage");
-         if (!st->pipe_canon) { canonical_fail = false; continue; }
-         st->pipe_canon_frames = 1;
-         original = st->pipe_canon;
-         memset(original, 0x5a, AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
-         CHECK(!audio_driver_pipe_prepare_canonical(st) && st->pipe_canon == original
-               && st->pipe_canon_frames == 1 && original[0] == 0x5a,
-               "failed canonical growth destroyed storage");
-         canonical_fail = false;
-         CHECK(audio_driver_pipe_prepare_canonical(st), "canonical startup reserve");
-         original = st->pipe_canon;
-         CHECK(original[0] == 0x5a, "canonical reserve lost existing bytes");
+         CHECK(pipe_up(floating, floating), "canonical direct stand-up");
          canonical_reallocations = 0; canonical_track = true;
-         CHECK(audio_driver_pipe_prepare_canonical(st), "canonical repeated reserve");
+         canonical_fail = true;
          for (n = 0; n < ARRAY_SIZE(batches); n++)
          {
             CHECK(audio_driver_multi_pipe(st, &input, batches[n], wide ? 8 : 6,
@@ -2339,16 +2323,13 @@ static void canonical_reserve_cases(void)
                   "canonical reserved publish");
             frames += batches[n];
          }
-         canonical_track = false;
-         CHECK(!canonical_reallocations && st->pipe_canon == original
-               && st->pipe_canon_frames == (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1),
-               "reserved callback grew canonical staging");
+         canonical_track = canonical_fail = false;
+         CHECK(!canonical_reallocations, "canonical direct publish allocated staging");
          CHECK(retro_spsc_read_avail(&st->pipe_ring) == frames * st->pipe_frame_bytes,
                "reserved callback lost source frames");
          audio_driver_deinit_internal(true);
-         CHECK(!st->pipe_canon && !st->pipe_canon_frames, "canonical teardown retained storage");
       }
-   printf("canonical startup reserve: 4 cases, %u failures\n", failures - before);
+   printf("canonical allocation-free publish: 4 cases, %u failures\n", failures - before);
 }
 
 #include "transport_quality.h"
@@ -2456,6 +2437,7 @@ static void inline_transport_cases(void)
 }
 
 #include "inline_wide.h"
+#include "producer_spans.h"
 
 int main(void)
 {
@@ -2471,6 +2453,8 @@ int main(void)
    RUN("statereverse", rewind_state_cases());
    RUN("independentlpf", independent_lpf_cases());
    RUN("rawspeed", raw_speed_cases());
+   RUN("producerspans", producer_span_cases());
+   RUN("unityclamp", unity_clamp_cases());
    RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());
