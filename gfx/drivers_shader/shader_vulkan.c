@@ -1971,6 +1971,16 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
          }
          RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
+      else if (chain->passes[i]->fb_feedback)
+      {
+         /* slang_pass_build() no longer deletes fb_feedback, so a pass
+          * that stops needing feedback would hold on to a buffer that
+          * slang_pass_end_frame() keeps swapping with the live
+          * framebuffer, while only the latter is ever resized or
+          * re-formatted. Drop it here so the invariant
+          * slang_pass_build() used to guarantee still holds. */
+         slang_framebuffer_delete(&chain->passes[i]->fb_feedback);
+      }
    }
 
    if (!use_feedbacks)
