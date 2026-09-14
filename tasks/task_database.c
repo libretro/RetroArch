@@ -505,6 +505,9 @@ static void task_database_cue_prune(struct string_list *list,
 
    while (cue_next_file(fd, name, path, sizeof(path)))
    {
+      /* A sheet naming itself would free the path being scanned. */
+      if (string_is_equal(path, name))
+         continue;
       /* change in filtering: start from 0 */
       for (i = 0; i < list->size; ++i)
       {
@@ -805,6 +808,9 @@ static void gdi_prune(struct string_list *list, const char *name)
 
    while (gdi_next_file(fd, name, path, sizeof(path)))
    {
+      /* A sheet naming itself would free the path being scanned. */
+      if (string_is_equal(path, name))
+         continue;
       /* change in filtering */
       for (i = 0; i < list->size; ++i)
       {
@@ -2783,6 +2789,15 @@ static bool manual_scan_begin_dir_list(retro_task_t *task,
       if (  (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
           && !manual_scan->handle)
       {
+         if (  !manual_scan->content_list
+             || manual_scan->content_list->size < 1)
+         {
+            const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            return true;
+         }
+
          /* cue, gdi prioritization in sorting */
          if (!(manual_scan->handle = database_info_dir_init_from_list(
                DATABASE_TYPE_ITERATE, manual_scan->content_list)))
@@ -3290,10 +3305,10 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             manual_scan->status = DATABASE_SCAN_ITERATE_START;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
          }
+         else if (manual_scan->m3u_list->size > 0)
+            manual_scan->status = MANUAL_SCAN_ITERATE_M3U;
          else
-         {
-            manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
-         }
+            manual_scan->status = MANUAL_SCAN_END;
          break;
 #endif
       case MANUAL_SCAN_ITERATE_CONTENT:

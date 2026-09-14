@@ -551,6 +551,47 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run database_scan_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # End-to-end oracle for tasks/task_database.c, built from the
+          # shipping translation units.  Alongside the database pairing
+          # and playlist assertions it already carries, three memory
+          # safety invariants of the manual scan state machine are
+          # pinned here:
+          #
+          #   - a content list whose entries exactly fill
+          #     string_list_new()'s initial capacity must leave
+          #     DATABASE_SCAN_ITERATE_NEXT at the M3U or the end state.
+          #     An exhausted index must never reach
+          #     MANUAL_SCAN_ITERATE_CONTENT, which reads its entry
+          #     before any bounds check;
+          #
+          #   - a content directory with nothing scannable in it must be
+          #     rejected as invalid content by the database branch of
+          #     manual_scan_begin_dir_list(), the same rule the
+          #     non-database branch applies, instead of iterating an
+          #     empty list;
+          #
+          #   - task_database_cue_prune() and gdi_prune() must leave the
+          #     entry being scanned alone when a cue or gdi sheet names
+          #     itself, because the serial lookup reads that path next.
+          #
+          # The first and third are bounds and lifetime properties that
+          # a plain build walks straight past, so this lane is sanitized
+          # only and LeakSanitizer decides the teardown as well.
+          make clean database_scan_test SANITIZER=address,undefined
+          test -x database_scan_test
+          scan_root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./database_scan_test "$scan_root"
+          rm -rf "$scan_root"
+          make clean
+          echo "[pass] database_scan_test (ASan)"
+
       - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/playlist_manager
