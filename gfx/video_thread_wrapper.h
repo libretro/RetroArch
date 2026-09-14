@@ -211,6 +211,26 @@ typedef struct video_thread_async_load
  * wraps with a mask. */
 #define VIDEO_THREAD_DEFERRED_MAX 128
 
+/* The main thread's cost of handing a frame to the video thread,
+ * counted in CPU cycles in video_thread_frame() while the statistics
+ * overlay is shown and shown as microseconds, over windows of 120
+ * pushed frames. Time deliberately spent waiting for a free slot is
+ * kept apart from the handoff itself. */
+typedef struct video_thread_handoff_stats
+{
+   uint64_t handoff_avg_x100; /* entry to signal, wait excluded, us */
+   uint64_t handoff_worst;
+   uint64_t copy_avg_x100;    /* the frame memcpy, us */
+   uint64_t copy_worst;
+   uint64_t wait_avg_x100;    /* slot wait, us */
+   uint64_t wait_worst;
+   uint64_t bytes_per_frame;  /* copied */
+   unsigned frames_copied;    /* of the window */
+   unsigned frames_zero_copy;
+   unsigned frames_hw;
+   unsigned waits;            /* pushes that waited for a slot */
+} video_thread_handoff_stats_t;
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -276,6 +296,18 @@ typedef struct thread_video
     * accumulated in the content's own period. Main thread. */
    retro_time_t content_due;
    retro_time_t run_start;
+   /* Handoff cost, this window and the last full one. Main thread. */
+   struct
+   {
+      uint64_t handoff_sum, handoff_max;   /* cycles */
+      uint64_t copy_sum, copy_max;
+      uint64_t wait_sum, wait_max;
+      uint64_t span_ticks, span_us;        /* the window's tick rate */
+      uint64_t bytes;
+      unsigned copied, zero_copy, hw, waits;
+      unsigned frames;
+      video_thread_handoff_stats_t last;
+   } handoff;
    bool display_pacing;
    bool present_repeat;
    /* A main-thread present_last() asks for one repeat at the next
@@ -633,6 +665,9 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
  * is installed; this reads it under the wrapper's lock. Without the
  * wrapper (or from the video thread) it is the plain value. */
 uint64_t video_thread_swap_count(void);
+
+/* False when the wrapper is not active. Main thread. */
+bool video_thread_get_handoff_stats(video_thread_handoff_stats_t *out);
 
 /* On the main thread, on Cocoa: run the trampoline mode briefly so a
  * job the video thread marshalled to the main thread can run. Anywhere

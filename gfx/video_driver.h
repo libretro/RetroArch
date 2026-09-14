@@ -1182,7 +1182,7 @@ typedef struct
    retro_atomic_int_t output_size_packed;
    /* Where the statistics overlay's text is built, for the frame
     * descriptor to point at (video_frame_info_t::stat_text) */
-   char stat_text[1280];
+   char stat_text[1536];
 #ifdef HAVE_OVERLAY
    /* The active overlay's viewport override, published by the main
     * thread whenever the active overlay changes

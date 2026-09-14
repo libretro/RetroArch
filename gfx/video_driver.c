@@ -6438,6 +6438,27 @@ void video_driver_frame(const void *data, unsigned width,
                video_st->frame_count,
                video_st->frame_drop_count);
 
+#ifdef HAVE_THREADS
+         {
+            /* What handing the frame to the video thread costs the
+             * runloop, with the slot wait - pacing, not handoff -
+             * on its own line. */
+            video_thread_handoff_stats_t ho;
+            if (video_thread_get_handoff_stats(&ho))
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                     " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                     " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
+                     " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                     " -Frames:  %u copied, %u zero-copy, %u hw, %u waited\n",
+                     ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
+                     ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
+                     ho.bytes_per_frame / 1024,
+                     ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
+                     ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
+                     ho.waits);
+         }
+#endif
+
 #ifdef HAVE_MENU
          if (menu_is_alive)
          {

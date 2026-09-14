@@ -1860,6 +1860,14 @@ static bool video_thread_frame(void *data, const void *frame_,
 #endif
    unsigned convert;
    retro_time_t now;
+   /* Handoff statistics, in cycles, only while the overlay shows them */
+   bool         timed  = video_info && video_info->statistics_show;
+   uint64_t     c_in   = 0;
+   uint64_t     c_now  = 0;
+   uint64_t     c_wait = 0;
+   uint64_t     c_copy = 0;
+   retro_time_t t_now  = 0;
+   size_t       copied = 0;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
@@ -1907,6 +1915,9 @@ static bool video_thread_frame(void *data, const void *frame_,
       return false;
    }
 
+   if (timed)
+      c_in = (uint64_t)cpu_features_get_perf_counter();
+
    slock_lock(thr->lock);
 
    /* One clock read for the handover. Everything below that wants
@@ -1915,6 +1926,12 @@ static bool video_thread_frame(void *data, const void *frame_,
     * which case it is read again once after. The clock is a syscall
     * on more than one console, and this is the paced path. */
    now = cpu_features_get_time_usec();
+   if (timed)
+   {
+      /* Paired with the clock read above: the window's tick rate */
+      c_now = (uint64_t)cpu_features_get_perf_counter();
+      t_now = now;
+   }
 
    /* Time since the last handoff returned: the core's frame plus the
     * runloop around it, which is what display pacing has to reserve. */
@@ -1956,7 +1973,11 @@ static bool video_thread_frame(void *data, const void *frame_,
    /* The push time and the hold's start are after the wait, if there
     * was one; otherwise the entry read still is now. */
    if (waited)
+   {
       now = cpu_features_get_time_usec();
+      if (timed)
+         c_wait = (uint64_t)cpu_features_get_perf_counter() - c_in;
+   }
 
    /* A hardware-rendered frame: there is no pixel data to copy, the
     * core's image lives in the HW ring. Publish the HW slot the core
@@ -2057,6 +2078,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       }
       else if (src)
       {
+         uint64_t c0 = timed ? (uint64_t)cpu_features_get_perf_counter() : 0;
          if (pitch == copy_stride)
             memcpy(dst, src, (size_t)height * copy_stride);
          else
@@ -2065,6 +2087,9 @@ static bool video_thread_frame(void *data, const void *frame_,
             for (i = 0; i < height; i++, src += pitch, dst += copy_stride)
                memcpy(dst, src, copy_stride);
          }
+         if (timed)
+            c_copy = (uint64_t)cpu_features_get_perf_counter() - c0;
+         copied = (size_t)height * copy_stride;
       }
 
       thr->frame.slot[slot].width  = width;
@@ -2146,6 +2171,29 @@ static bool video_thread_frame(void *data, const void *frame_,
    slock_lock(thr->lock);
    thr->frame.pending++;
    scond_signal(thr->cond_thread);
+
+   if (timed)
+   {
+      uint64_t handoff = (uint64_t)cpu_features_get_perf_counter() - c_in - c_wait;
+      thr->handoff.handoff_sum += handoff;
+      if (handoff > thr->handoff.handoff_max)
+         thr->handoff.handoff_max = handoff;
+      thr->handoff.copy_sum    += c_copy;
+      if (c_copy > thr->handoff.copy_max)
+         thr->handoff.copy_max    = c_copy;
+      thr->handoff.wait_sum    += c_wait;
+      if (c_wait > thr->handoff.wait_max)
+         thr->handoff.wait_max    = c_wait;
+      thr->handoff.bytes       += copied;
+      if (hw_slot >= 0)
+         thr->handoff.hw++;
+      else if (zero_copy)
+         thr->handoff.zero_copy++;
+      else if (copied)
+         thr->handoff.copied++;
+      if (waited)
+         thr->handoff.waits++;
+   }
 
 #ifdef HAVE_MENU
    if (thr->texture.enable)
@@ -2242,6 +2290,41 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    thr->last_time = cpu_features_get_time_usec();
    thr->run_start = thr->last_time;
+
+   if (timed)
+   {
+      /* The window's tick rate, from this frame's span between the two
+       * clock reads the push makes anyway; then the window itself. */
+      thr->handoff.span_ticks += (uint64_t)cpu_features_get_perf_counter() - c_now;
+      thr->handoff.span_us    += (uint64_t)(thr->last_time - t_now);
+      if (++thr->handoff.frames >= 120 && thr->handoff.span_ticks)
+      {
+         unsigned n    = thr->handoff.frames;
+         uint64_t tk   = thr->handoff.span_ticks;
+         uint64_t us   = thr->handoff.span_us;
+         video_thread_handoff_stats_t *l = &thr->handoff.last;
+         /* x100 microseconds = ticks * 100 * us / ticks-of-span */
+         l->handoff_avg_x100 = thr->handoff.handoff_sum * 100 * us / tk / n;
+         l->handoff_worst    = thr->handoff.handoff_max * us / tk;
+         l->copy_avg_x100    = thr->handoff.copy_sum * 100 * us / tk / n;
+         l->copy_worst       = thr->handoff.copy_max * us / tk;
+         l->wait_avg_x100    = thr->handoff.wait_sum * 100 * us / tk / n;
+         l->wait_worst       = thr->handoff.wait_max * us / tk;
+         l->bytes_per_frame  = thr->handoff.bytes / n;
+         l->frames_copied    = thr->handoff.copied;
+         l->frames_zero_copy = thr->handoff.zero_copy;
+         l->frames_hw        = thr->handoff.hw;
+         l->waits            = thr->handoff.waits;
+         thr->handoff.handoff_sum = thr->handoff.handoff_max = 0;
+         thr->handoff.copy_sum    = thr->handoff.copy_max    = 0;
+         thr->handoff.wait_sum    = thr->handoff.wait_max    = 0;
+         thr->handoff.span_ticks  = thr->handoff.span_us     = 0;
+         thr->handoff.bytes       = 0;
+         thr->handoff.copied      = thr->handoff.zero_copy   = 0;
+         thr->handoff.hw          = thr->handoff.waits       = 0;
+         thr->handoff.frames      = 0;
+      }
+   }
 
    return true;
 }
@@ -3483,6 +3566,18 @@ bool video_thread_pacing_stats(bool *display_pacing,
    *core_time      = thr->core_time;
    *render_time    = thr->render_time;
    slock_unlock(thr->lock);
+   return true;
+}
+
+bool video_thread_get_handoff_stats(video_thread_handoff_stats_t *out)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (!(thr = (thread_video_t*)video_st->data))
+      return false;
+   *out = thr->handoff.last;
    return true;
 }
 
