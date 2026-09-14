@@ -1231,27 +1231,49 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
 /* Staging command buffers submitted to the graphics queue without a
  * fence. Their work is ordered ahead of the frame being recorded by
  * queue submission order, so the frame can consume the result; the
- * buffer itself may only be returned to vk->staging_pool once that
- * frame's swapchain fence has been waited on. The list is owned by the
- * frame-recording thread: enqueue, tick and flush all run there, which
- * is also what keeps the externally synchronised pool on one thread. */
+ * buffer and any staging memory it reads may only be released once
+ * that frame's swapchain fence has been waited on. The list is owned
+ * by the frame-recording thread: enqueue, tick and flush all run
+ * there, which is also what keeps the externally synchronised pool on
+ * one thread. */
 struct vk_deferred_cmd
 {
+   struct vk_texture staging_tex;    /* uint64_t alignment; .memory
+                                        is VK_NULL_HANDLE when unused */
+   VkBuffer staging_buffer;          /* VK_NULL_HANDLE when unused */
+   VkDeviceMemory staging_memory;
    struct vk_deferred_cmd *next;
    VkCommandBuffer cmd;
    unsigned frames_left;
 };
 
-/* Submit a one-shot staging command buffer and park it for retirement.
- * Returns false if the node could not be allocated, in which case the
- * caller must fall back to a synchronous submit. */
-static bool vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd)
+static void vulkan_deferred_cmd_release(vk_t *vk,
+      struct vk_deferred_cmd *node)
+{
+   VkDevice device = vk->context->device;
+   vkFreeCommandBuffers(device, vk->staging_pool, 1, &node->cmd);
+   if (node->staging_tex.memory != VK_NULL_HANDLE)
+      vulkan_destroy_texture(device, &node->staging_tex);
+   if (node->staging_buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, node->staging_buffer, NULL);
+   if (node->staging_memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, node->staging_memory, NULL);
+   free(node);
+}
+
+/* Submit a one-shot staging command buffer. Ownership of the command
+ * buffer and of the optional staging texture / raw staging buffer
+ * passes to the deferred list, which releases them once the frame
+ * that consumed the upload has retired. If the node cannot be
+ * allocated the submission is drained synchronously and everything
+ * is released before returning. */
+static void vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *staging_tex,
+      VkBuffer staging_buffer, VkDeviceMemory staging_memory)
 {
    VkSubmitInfo submit_info;
    struct vk_deferred_cmd *node =
       (struct vk_deferred_cmd*)malloc(sizeof(*node));
-   if (!node)
-      return false;
 
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    submit_info.pNext                = NULL;
@@ -1267,18 +1289,38 @@ static bool vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd)
    slock_lock(vk->context->queue_lock);
 #endif
    vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
+   if (!node)
+      vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   node->cmd         = cmd;
-   node->frames_left = vk->context->num_swapchain_images + 1;
-   node->next        = vk->deferred_cmds;
-   vk->deferred_cmds = node;
-   return true;
+   if (!node)
+   {
+      VkDevice device = vk->context->device;
+      vkFreeCommandBuffers(device, vk->staging_pool, 1, &cmd);
+      if (staging_tex)
+         vulkan_destroy_texture(device, staging_tex);
+      if (staging_buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(device, staging_buffer, NULL);
+      if (staging_memory != VK_NULL_HANDLE)
+         vkFreeMemory(device, staging_memory, NULL);
+      return;
+   }
+
+   if (staging_tex)
+      node->staging_tex = *staging_tex;
+   else
+      node->staging_tex.memory = VK_NULL_HANDLE;
+   node->staging_buffer = staging_buffer;
+   node->staging_memory = staging_memory;
+   node->cmd            = cmd;
+   node->frames_left    = vk->context->num_swapchain_images + 1;
+   node->next           = vk->deferred_cmds;
+   vk->deferred_cmds    = node;
 }
 
-/* Free staging command buffers whose deferral window has elapsed.
+/* Release staging command buffers whose deferral window has elapsed.
  * Called once per submitted frame from the recording thread. */
 static void vulkan_deferred_cmds_tick(vk_t *vk)
 {
@@ -1294,15 +1336,14 @@ static void vulkan_deferred_cmds_tick(vk_t *vk)
       else
       {
          *cur = node->next;
-         vkFreeCommandBuffers(vk->context->device,
-               vk->staging_pool, 1, &node->cmd);
-         free(node);
+         vulkan_deferred_cmd_release(vk, node);
       }
    }
 }
 
-/* Free every deferred staging command buffer immediately. Callers must
- * guarantee the graphics queue is idle and no other thread is recording. */
+/* Release every deferred staging command buffer immediately. Callers
+ * must guarantee the graphics queue is idle and no other thread is
+ * recording. */
 static void vulkan_deferred_cmds_flush(vk_t *vk)
 {
    struct vk_deferred_cmd *node = vk->deferred_cmds;
@@ -1310,9 +1351,7 @@ static void vulkan_deferred_cmds_flush(vk_t *vk)
    while (node)
    {
       struct vk_deferred_cmd *next = node->next;
-      vkFreeCommandBuffers(vk->context->device,
-            vk->staging_pool, 1, &node->cmd);
-      free(node);
+      vulkan_deferred_cmd_release(vk, node);
       node = next;
    }
 }
@@ -1737,7 +1776,6 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             {
                VkBufferImageCopy region;
                VkCommandBuffer staging;
-               VkSubmitInfo submit_info;
                VkCommandBufferBeginInfo begin_info;
                VkCommandBufferAllocateInfo cmd_info;
                enum VkImageLayout layout_fmt =
@@ -1848,53 +1886,13 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
                vkEndCommandBuffer(staging);
-               submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-               submit_info.pNext                = NULL;
-               submit_info.waitSemaphoreCount   = 0;
-               submit_info.pWaitSemaphores      = NULL;
-               submit_info.pWaitDstStageMask    = NULL;
-               submit_info.commandBufferCount   = 1;
-               submit_info.pCommandBuffers      = &staging;
-               submit_info.signalSemaphoreCount = 0;
-               submit_info.pSignalSemaphores    = NULL;
 
-               {
-                  /* Wait only on this submission, not the entire
-                   * queue, and release queue_lock immediately after
-                   * submit so other threads can proceed in parallel
-                   * with the transfer. If fence creation fails, fall
-                   * back to a queue drain for correct synchronisation. */
-                  VkFence fence = VK_NULL_HANDLE;
-                  VkFenceCreateInfo fence_info;
-                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-                  fence_info.pNext = NULL;
-                  fence_info.flags = 0;
-                  vkCreateFence(vk->context->device,
-                        &fence_info, NULL, &fence);
-
-#ifdef HAVE_THREADS
-                  slock_lock(vk->context->queue_lock);
-#endif
-                  vkQueueSubmit(vk->context->queue,
-                        1, &submit_info, fence);
-                  if (fence == VK_NULL_HANDLE)
-                     vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-                  slock_unlock(vk->context->queue_lock);
-#endif
-
-                  if (fence != VK_NULL_HANDLE)
-                  {
-                     vkWaitForFences(vk->context->device,
-                           1, &fence, VK_TRUE, UINT64_MAX);
-                     vkDestroyFence(vk->context->device, fence, NULL);
-                  }
-               }
-
-               vkFreeCommandBuffers(vk->context->device,
-                     vk->staging_pool, 1, &staging);
-               vulkan_destroy_texture(
-                     vk->context->device, &tmp);
+               /* Queue order places the upload ahead of the frame
+                * that first samples the texture; the staging copy
+                * is released with the command buffer once that
+                * frame retires. */
+               vulkan_submit_deferred_cmd(vk, staging, &tmp,
+                     VK_NULL_HANDLE, VK_NULL_HANDLE);
                tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
             break;
@@ -3181,7 +3179,6 @@ static void vulkan_font_render_msg(
          if (dw > 0 && dh > 0)
          {
             VkCommandBuffer staging_cmd;
-            VkSubmitInfo submit_info;
             VkCommandBufferAllocateInfo cmd_info;
             VkCommandBufferBeginInfo begin_info;
             VkBufferImageCopy region;
@@ -3274,31 +3271,9 @@ static void vulkan_font_render_msg(
             /* The copy lands ahead of this frame's command buffer in
              * queue submission order and the trailing barrier makes it
              * visible to the fragment stage, so the glyphs drawn below
-             * sample the updated atlas without a CPU wait. The command
-             * buffer is returned to the pool once the frame retires. */
-            if (!vulkan_submit_deferred_cmd(vk, staging_cmd))
-            {
-               submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-               submit_info.pNext                = NULL;
-               submit_info.waitSemaphoreCount   = 0;
-               submit_info.pWaitSemaphores      = NULL;
-               submit_info.pWaitDstStageMask    = NULL;
-               submit_info.commandBufferCount   = 1;
-               submit_info.pCommandBuffers      = &staging_cmd;
-               submit_info.signalSemaphoreCount = 0;
-               submit_info.pSignalSemaphores    = NULL;
-#ifdef HAVE_THREADS
-               slock_lock(vk->context->queue_lock);
-#endif
-               vkQueueSubmit(vk->context->queue,
-                     1, &submit_info, VK_NULL_HANDLE);
-               vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-               slock_unlock(vk->context->queue_lock);
-#endif
-               vkFreeCommandBuffers(vk->context->device,
-                     vk->staging_pool, 1, &staging_cmd);
-            }
+             * sample the updated atlas without a CPU wait. */
+            vulkan_submit_deferred_cmd(vk, staging_cmd, NULL,
+                  VK_NULL_HANDLE, VK_NULL_HANDLE);
 
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -9202,7 +9177,6 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    VkBufferCreateInfo      buffer_info;
    VkCommandBufferAllocateInfo cmd_info;
    VkCommandBufferBeginInfo    begin_info;
-   VkSubmitInfo            submit_info;
    VkBufferImageCopy       regions[IMAGE_MAX_MIPS];
    VkBuffer                staging     = VK_NULL_HANDLE;
    VkDeviceMemory          staging_mem = VK_NULL_HANDLE;
@@ -9331,23 +9305,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
 
    vkEndCommandBuffer(cmd);
 
-   memset(&submit_info, 0, sizeof(submit_info));
-   submit_info.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-   submit_info.commandBufferCount = 1;
-   submit_info.pCommandBuffers    = &cmd;
-#ifdef HAVE_THREADS
-   if (vk->context->queue_lock)
-      slock_lock(vk->context->queue_lock);
-#endif
-   vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
-   vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-   if (vk->context->queue_lock)
-      slock_unlock(vk->context->queue_lock);
-#endif
-   vkFreeCommandBuffers(device, vk->staging_pool, 1, &cmd);
-   vkDestroyBuffer(device, staging, NULL);
-   vkFreeMemory(device, staging_mem, NULL);
+   vulkan_submit_deferred_cmd(vk, cmd, NULL, staging, staging_mem);
 
    memset(&view, 0, sizeof(view));
    view.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
