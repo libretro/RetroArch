@@ -44,8 +44,7 @@ prime the fixed ring at slow tempos too.
 0.25 seconds of source per setting followed by the restart checks. It verifies
 progress and conversion invariants, not exact duration, sound quality or
 steady-state throughput. Put it under an external timeout to catch lost wakes.
-Automatic speed-policy, settings activation and multichannel acceptance remain
-separate; the fixture explicitly publishes a fixed tempo before its source.
+This target explicitly publishes a fixed tempo before its source.
 
 `make check-live` tests all four source/device combinations with
 `LIVE_CONTROLS=1 WRAPPER=1 TRANSPORT=stretch`. Before the existing restart stress,
@@ -60,3 +59,13 @@ The ring and processing budgets remain fixed, and conversion invariants still
 apply. This checks live control progress and ordering, not sample continuity,
 pitch accuracy or waveform identity. Parking for observation preserves stream
 history, but this is not a physical-device uninterrupted-playback test.
+
+`make check-auto` enters through the settings activation helper used during
+audio initialization. It enables `audio_time_stretch` and
+`audio_time_stretch_lowpass`, then exercises producer speed updates, fallback
+and explicit restarts in all four source/device format combinations and with
+live source layouts. Both options default off and request audio reinitialization
+when changed through Settings > Audio > Synchronization (advanced settings).
+Threaded Pipeline must be enabled and supported by the driver. Core-owned audio
+callbacks keep their inline path. Unsupported speeds disable transport until
+audio reinitialization; this test explicitly restarts it after draining source.

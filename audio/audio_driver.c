@@ -3292,6 +3292,10 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 
 #endif
 
+#ifdef HAVE_THREADS
+static bool audio_driver_transport_configure(const settings_t *settings);
+#endif
+
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
@@ -3910,6 +3914,11 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
 #ifdef HAVE_AUDIOMIXER
    audio_mixer_init(settings->uints.audio_output_sample_rate);
+#endif
+
+#ifdef HAVE_THREADS
+   if (!audio_driver_transport_configure(settings))
+      RARCH_WARN("[Audio] Pitch-preserving playback unavailable; using ordinary playback.\n");
 #endif
 
    /* The wrapper thread is created parked and nothing restarts it after
@@ -8521,5 +8530,28 @@ bool microphone_driver_get_devices_list(void **data)
       return false;
    *ptr = mic_driver_st.devices_list;
    return true;
+}
+#endif
+
+#ifdef HAVE_THREADS
+/* Keep optional startup work out of the common initialization body. */
+#if defined(__GNUC__)
+__attribute__((noinline))
+#elif defined(_MSC_VER)
+__declspec(noinline)
+#endif
+static bool audio_driver_transport_configure(const settings_t *settings)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   uint32_t rate_bits;
+   if (!settings->bools.audio_time_stretch)
+      return true;
+   memcpy(&rate_bits, &audio_st->input, sizeof(rate_bits));
+   if (!audio_st->pipe_threaded || rate_bits >= UINT32_C(0x7f800000)
+         || audio_st->input < 8000.0f || audio_st->input > 192000.0f)
+      return false;
+   /* The front pair drives one shared search for every native channel. */
+   return audio_driver_pipeline_transport_start_runloop(
+         (unsigned)audio_st->input, 3, settings->bools.audio_time_stretch_lowpass);
 }
 #endif

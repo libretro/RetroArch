@@ -21,7 +21,7 @@ extra_capacity_test.o: extra_capacity_test.c $(ROOT)/audio/audio_driver.c $(ROOT
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fwhole-program -c $< -o $@
 extra_capacity_test: extra_capacity_test.o $(SOURCES)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $^ $(LDFLAGS) -Wl,--wrap=free $(LDLIBS) -o $@
-hq_settings_test: hq_settings_test.c $(ROOT)/configuration.c $(ROOT)/configuration.h $(ROOT)/settings/settings_def_audio_resampler_quality.h
+hq_settings_test: hq_settings_test.c $(ROOT)/configuration.c $(ROOT)/configuration.h $(ROOT)/settings/settings_def_audio_resampler_quality.h $(ROOT)/settings/settings_def_audio_sync.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fwhole-program $< $(LDFLAGS) $(LDLIBS) -o $@
 check: extra_capacity_test hq_settings_test
 	./extra_capacity_test

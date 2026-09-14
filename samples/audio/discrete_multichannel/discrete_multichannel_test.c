@@ -1632,6 +1632,68 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
    return reference_frames;
 }
 
+static void transport_settings_cases(void)
+{
+   extern unsigned transport_control_calls;
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned floating, wide, before = failures;
+   for (floating = 0; floating < 2; floating++)
+      for (wide = 0; wide < 2; wide++)
+      {
+         audio_driver_t wrapper;
+         const audio_driver_t *saved;
+         unsigned calls;
+         uint32_t nan_rate = UINT32_C(0x7fc00000);
+         CHECK(pipe_up(floating, floating), "settings stand-up");
+         if (!wide)
+         {
+            st->pipe_channels = 2;
+            st->pipe_frame_bytes = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+         }
+         saved = st->current_audio; wrapper = *saved; wrapper.ident = "audio-thread";
+         st->current_audio = &wrapper;
+         runloop_state_get_ptr()->flags = 0;
+         settings->bools.audio_time_stretch = false;
+         settings->bools.audio_time_stretch_lowpass = true;
+         calls = transport_control_calls;
+         CHECK(audio_driver_transport_configure(settings) && !st->pipe_transport
+               && transport_control_calls == calls, "disabled setting touched transport");
+         settings->bools.audio_time_stretch = true;
+         st->pipe_threaded = false;
+         CHECK(!audio_driver_transport_configure(settings), "inline activated transport");
+         st->pipe_threaded = true;
+         st->input = 7999;
+         CHECK(!audio_driver_transport_configure(settings), "low rate accepted");
+         st->input = 192001;
+         CHECK(!audio_driver_transport_configure(settings), "high rate accepted");
+         memcpy(&st->input, &nan_rate, sizeof(nan_rate));
+         CHECK(!audio_driver_transport_configure(settings)
+               && transport_control_calls == calls, "invalid rate parked worker");
+         st->input = 48000;
+         transport_fail_stage = true;
+         CHECK(!audio_driver_transport_configure(settings) && !st->pipe_transport,
+               "failed startup retained transport");
+         transport_fail_stage = false;
+         CHECK(audio_driver_transport_configure(settings) && st->pipe_transport
+               && st->pipe_transport_rate == 48000 && st->pipe_transport_search == 3
+               && (st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS),
+               "configured startup missing native automatic policy");
+         audio_driver_pipeline_transport_release();
+         settings->bools.audio_time_stretch_lowpass = false;
+         CHECK(audio_driver_transport_configure(settings) && st->pipe_transport
+               && !(st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS),
+               "disabled lowpass enabled effect");
+         st->current_audio = saved;
+         audio_driver_deinit_internal(true);
+         CHECK(!st->pipe_transport && !st->pipe_transport_follow,
+               "configured teardown retained transport");
+      }
+   settings->bools.audio_time_stretch = false;
+   settings->bools.audio_time_stretch_lowpass = false;
+   printf("native transport settings: 4 cases, %u failures\n", failures - before);
+}
+
 static void transport_owner_cases(void)
 {
    extern unsigned transport_control_calls;
@@ -2170,6 +2232,7 @@ int main(void)
    printf("discrete multi-channel:\n");
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
+   RUN("transportsettings", transport_settings_cases());
    RUN("transportrequest", transport_request_cases());
    RUN("transportscheduler", transport_scheduler_cases());
    RUN("nativerender", native_render_cases());

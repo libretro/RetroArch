@@ -9243,6 +9243,10 @@ unsigned menu_displaylist_build_list(
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,         PARSE_ONLY_BOOL,     true  },
+#ifdef HAVE_THREADS
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
+#endif
                {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,           PARSE_ONLY_BOOL,     true  },
 #ifdef HAVE_WASAPI
                /* Which way the thread's priority is asked for, so it

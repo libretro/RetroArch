@@ -442,7 +442,11 @@ static float frame_audio_float[32768 * 8];
 static bool prepare_transport(bool reset)
 {
    if (auto_runloop)
-      return audio_driver_pipeline_transport_start_runloop(CORE_RATE, 3, speed_lowpass);
+   {
+      config_get_ptr()->bools.audio_time_stretch = true;
+      config_get_ptr()->bools.audio_time_stretch_lowpass = speed_lowpass;
+      return audio_driver_transport_configure(config_get_ptr());
+   }
    if (runloop_policy)
       return audio_driver_pipeline_transport_prepare_runloop(CORE_RATE, 3, speed_lowpass);
    return audio_driver_pipeline_transport_prepare(CORE_RATE, 3)

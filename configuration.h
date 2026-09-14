@@ -1131,6 +1131,8 @@ typedef struct settings
 #ifdef HAVE_SMBCLIENT
       bool smb_client_enable;
 #endif
+      bool audio_time_stretch;
+      bool audio_time_stretch_lowpass;
    } bools;
 
    struct
