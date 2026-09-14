@@ -593,9 +593,19 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
    if (webdav_needs_reauth(data))
    {
       char *auth_header = webdav_get_auth_header("OPTIONS", webdav_st->url);
-      task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
-      free(auth_header);
-      return;
+
+      /* With no credentials configured there is nothing new to put in
+       * the retry, so repeating the request would meet the same
+       * challenge for as long as the server keeps issuing it. */
+      if (auth_header)
+      {
+         task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
+         free(auth_header);
+         return;
+      }
+
+      RARCH_ERR("[webdav] %s asks for authentication, but no username or password is configured.\n",
+            webdav_st->url);
    }
 
    if (!success && data)
@@ -672,19 +682,32 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    webdav_st->basic = true;
    auth_header      = webdav_get_auth_header(NULL, NULL);
 
-   if (auth_header)
    {
       webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
+
+      if (!webdav_cb_st)
+      {
+         free(auth_header);
+         return false;
+      }
+
       webdav_cb_st->cb        = cb;
       webdav_cb_st->user_data = user_data;
+
+      /* An endpoint that wants no credentials still has to be probed.
+       * The OPTIONS response is the only thing that establishes the
+       * server speaks WebDAV, and MKCOL's 405 on a collection that is
+       * already there (RFC 4918 9.3.1) is only forgiven once it has:
+       * skipping the probe leaves every upload into an existing
+       * directory failing on that 405. */
+      if (!auth_header)
+         RARCH_LOG("[webdav] No username or password configured for %s, continuing anonymously.\n",
+               webdav_st->url);
+
       task_push_webdav_stat(webdav_st->url, true, auth_header, webdav_stat_cb, webdav_cb_st);
       free(auth_header);
    }
-   else
-   {
-      RARCH_WARN("[webdav] No basic auth header, assuming no user, check username/password?\n");
-      cb(user_data, NULL, true, NULL);
-   }
+
    return true;
 }
 
