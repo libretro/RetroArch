@@ -1879,7 +1879,16 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    }
 
    /* Rebuilding for a new swapchain (e.g. a vsync toggle on
-    * fast-forward) must not blank the recorded frames. */
+    * fast-forward) must not blank the recorded frames.
+    *
+    * A matching count is enough to reuse the existing buffers: they are
+    * sized from chain->max_input_size_* and chain->original_format, both
+    * of which are set once in slang_chain_new() and never mutated, and
+    * slang_chain_update_history() re-sizes each one per frame against
+    * the live input texture anyway. Nothing here depends on the
+    * swapchain. The num_history test is load-bearing, not redundant:
+    * without it a fresh chain with required_images == 1 would take this
+    * return and skip the common.original_history reset below. */
    if (chain->num_history && chain->num_history + 1 == required_images)
       return true;
 
@@ -2194,6 +2203,13 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
          return false;
    }
 
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    RARCH_DBG("[Vulkan] Chain UBO ready.\n");
@@ -2508,6 +2524,13 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       chain->alias_initialized = true;
    }
 
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    if (!slang_chain_init_history(chain))
