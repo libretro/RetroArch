@@ -276,6 +276,54 @@ static void test_fragmented_frame_cadence(void)
    }
 }
 
+static unsigned silent_callbacks;
+static void silent_callback(void) { silent_callbacks++; }
+
+static void test_inline_silent_boundaries(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned callback, mode;
+   for (callback = 0; callback < 2; callback++)
+      for (mode = 0; mode < 3; mode++)
+      {
+         retro_time_t previous;
+         fresh();
+         silent_callbacks = 0;
+         if (callback) st->callback.callback = silent_callback;
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+         audio_driver_fastforward_ratio_mult(st, FRAMES);
+         previous = st->last_flush_time;
+         if (mode == 0) runloop_state_get_ptr()->flags = 0;
+         if (mode == 1) runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
+         fake_now += 60000000;
+         audio_driver_frame_end();
+         if (callback)
+         {
+            CHECK(st->last_flush_time == previous, "main frame leaves callback-owned cadence alone");
+            audio_driver_callback();
+            CHECK(silent_callbacks == (mode == 1 ? 0u : 1u), "paused callback does not run the core");
+         }
+         CHECK(mode == 2 ? st->last_flush_time == previous : st->last_flush_time == 0,
+               "silent boundaries reset released/paused cadence and preserve active batching");
+         if (mode != 2)
+            CHECK(audio_driver_fastforward_ratio_mult(st, FRAMES) == 1.0,
+                  "inline silent-gap reentry starts at unity");
+      }
+   fresh();
+   st->callback.callback = silent_callback;
+   audio_driver_fastforward_ratio_mult(st, FRAMES);
+   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_FASTMOTION
+         | AUDIO_SNAP_MENU_ALIVE | AUDIO_SNAP_MENU_PAUSES);
+   audio_driver_callback();
+   CHECK(st->last_flush_time != 0, "menu without pause permission preserves cadence");
+   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_FASTMOTION
+         | AUDIO_SNAP_MENU_ALIVE | AUDIO_SNAP_MENU_PAUSES | AUDIO_SNAP_ALLOW_PAUSE);
+   audio_driver_callback();
+   CHECK(!st->last_flush_time, "menu-paused callback discards idle cadence");
+   fresh();
+   runloop_state_get_ptr()->flags = 0;
+}
+
 static bool lifecycle_stop_ok;
 static bool lifecycle_stop(void *data) { (void)data; return lifecycle_stop_ok; }
 static bool lifecycle_alive(void *data) { (void)data; return true; }
@@ -335,6 +383,7 @@ int main(void)
    test_producer_publishes_at_its_cadence();
    test_fragmented_frame_cadence();
    test_stop_excludes_idle_gap();
+   test_inline_silent_boundaries();
 
    if (failures)
    {

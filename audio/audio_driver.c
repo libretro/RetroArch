@@ -1984,31 +1984,33 @@ static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
 #endif
 }
 
-#ifdef HAVE_THREADS
 static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
 {
-   size_t frames;
-   if (!audio_st->pipe_threaded) return;
-   if (audio_st->pipe_transport_follow)
-      audio_st->pipe_transport_follow |= AUDIO_TRANSPORT_UPDATE;
-   frames = audio_st->pipe_ff_frames;
-   if (!frames)
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
    {
-      /* Some cores deliver audio only every few video frames. Keep their
-       * interval while fast-forward runs, but exclude paused/released gaps. */
-      if (audio_st->last_flush_time)
+      size_t frames = audio_st->pipe_ff_frames;
+      if (audio_st->pipe_transport_follow)
+         audio_st->pipe_transport_follow |= AUDIO_TRANSPORT_UPDATE;
+      if (frames)
       {
-         int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
-         if (!(snap & AUDIO_SNAP_FASTMOTION) || (snap & AUDIO_SNAP_PAUSED))
-            audio_driver_ff_mult_reset(audio_st);
+         audio_st->pipe_ff_frames = 0;
+         retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+               (int)(audio_driver_fastforward_ratio_mult(audio_st, frames) * 65536.0));
+         return;
       }
-      return;
    }
-   audio_st->pipe_ff_frames = 0;
-   retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
-         (int)(audio_driver_fastforward_ratio_mult(audio_st, frames) * 65536.0));
-}
 #endif
+   /* Keep intervals across batched audio, but exclude released/paused gaps. */
+   if (audio_st->last_flush_time)
+   {
+      int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+      if (!(snap & AUDIO_SNAP_FASTMOTION) || (snap & AUDIO_SNAP_PAUSED)
+            || ((snap & AUDIO_SNAP_MENU_ALIVE) && (snap & AUDIO_SNAP_MENU_PAUSES)
+               && (snap & AUDIO_SNAP_ALLOW_PAUSE)))
+         audio_driver_ff_mult_reset(audio_st);
+   }
+}
 
 /* The speedup multiplier for a flush: measured here on the inline
  * pipeline, where the flush runs at the core's cadence; taken from the
@@ -5561,9 +5563,7 @@ void audio_driver_frame_end(void)
    if (audio_st->data_ptr)
       audio_driver_sample_accum_flush(audio_st);
 
-#ifdef HAVE_THREADS
    audio_driver_ff_frame_end(audio_st);
-#endif
    audio_driver_pipeline_signal(audio_st);
 }
 
@@ -7061,6 +7061,10 @@ bool audio_driver_callback(void)
    if (!audio_driver_st.callback.callback)
       return false;
 
+   /* This callback owns inline source timing; the main frame must not reset it. */
+   if (core_paused || !(snap & AUDIO_SNAP_FASTMOTION))
+      audio_driver_ff_mult_reset(&audio_driver_st);
+
    if (!core_paused && audio_driver_st.callback.callback)
    {
       audio_driver_st.callback.callback();
@@ -7760,9 +7764,7 @@ void audio_driver_menu_sample(void)
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
    /* This is the menu's frame; no frame end follows it. */
-#ifdef HAVE_THREADS
    audio_driver_ff_frame_end(audio_st);
-#endif
    audio_driver_pipeline_signal(audio_st);
 }
 #endif
