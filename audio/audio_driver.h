@@ -776,7 +776,14 @@ typedef struct
    unsigned sink_settled;              /* kept windows in a row, up to 2, after which the sums stand */
    unsigned sink_applied;              /* times the bias has been set */
    unsigned sink_discarded;            /* windows left out in a row */
-   unsigned sink_warned;               /* AUDIO_SINK_WARNED_* said once each */
+   /* AUDIO_SINK_WARNED_* said once each, in two words because the two
+    * sides run on different threads: on the threaded pipeline the
+    * estimator runs on the core's thread, from submit, and the flush
+    * on the audio thread, and |= is a read-modify-write. Each word is
+    * written only by the thread that owns it, and no flag lives in
+    * both. */
+   unsigned sink_warned;               /* the estimator's: sink_window(), sink_apply() */
+   unsigned sink_warned_flush;         /* the flush's: sink_refused() */
    double   sink_bias;                 /* multiplied into the ratio; 1.0 = none */
    /* The bias for the thread that resamples, in hundredths of a part
     * per million: on the threaded pipeline the estimate runs on the

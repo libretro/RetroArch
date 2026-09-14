@@ -1298,6 +1298,10 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 #define AUDIO_SINK_WINDOW_USEC      4000000
 #endif
 
+/* Said once each. IMPLAUSIBLE, TOO_SLOW and UNSETTLED are the
+ * estimator's and live in sink_warned; DROPPED is the flush's and
+ * lives in sink_warned_flush. The two run on different threads; see
+ * the note at their declaration. */
 enum
 {
    AUDIO_SINK_WARNED_IMPLAUSIBLE = 1 << 0,
@@ -1614,12 +1618,15 @@ static void audio_driver_sink_apply(audio_driver_state_t *audio_st,
 }
 
 /* Refused frames: the driver took less than was offered. Said once, on
- * the thread that writes, whose counts these are. */
+ * the thread that writes, whose counts these are and whose warn-once
+ * word sink_warned_flush is. The estimator keeps the other one: on the
+ * threaded pipeline it runs on the core's thread, and this runs on the
+ * audio thread. */
 static void audio_driver_sink_refused(audio_driver_state_t *audio_st)
 {
    uint64_t offered  = audio_st->sink_offered_raw;
    uint64_t accepted = audio_st->sink_accepted;
-   if (     (audio_st->sink_warned & AUDIO_SINK_WARNED_DROPPED)
+   if (     (audio_st->sink_warned_flush & AUDIO_SINK_WARNED_DROPPED)
          || !config_get_ptr()->bools.audio_sink_rate_estimation)
       return;
    if (audio_st->pipe_pending_bytes)
@@ -1629,7 +1636,7 @@ static void audio_driver_sink_refused(audio_driver_state_t *audio_st)
    }
    if (offered > 48000 * 30 && accepted < offered && (offered - accepted) * 1000 > offered)
    {
-      audio_st->sink_warned |= AUDIO_SINK_WARNED_DROPPED;
+      audio_st->sink_warned_flush |= AUDIO_SINK_WARNED_DROPPED;
       RARCH_WARN("[Audio] The driver refused %.2f%% of the audio offered: it is being dropped, most likely a buffer smaller than what the core delivers per frame with audio sync off.\n",
             100.0 * (double)(offered - accepted) / (double)offered);
    }
@@ -3781,6 +3788,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.sink_rate_hz        = 0.0;
    audio_driver_st.sink_source_hz      = 0.0;
    audio_driver_st.sink_warned         = 0;
+   audio_driver_st.sink_warned_flush   = 0;
 
    /* The driver's buffer, whether or not rate control will use it: it
     * is what the latency setting became, shown in the statistics

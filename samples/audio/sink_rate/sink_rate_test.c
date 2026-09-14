@@ -198,9 +198,9 @@ static void s_refused_frames(audio_driver_state_t *st)
    drop_fraction = 0.005;
    run_seconds(st, 300);
    printf("      bias %+.0f ppm, drop warning %s\n", bias_ppm(st),
-         (st->sink_warned & AUDIO_SINK_WARNED_DROPPED) ? "raised" : "not raised");
+         (st->sink_warned_flush & AUDIO_SINK_WARNED_DROPPED) ? "raised" : "not raised");
    CHECK(fabs(bias_ppm(st) - 120.0) < 40.0, "with refused frames the bias is %+.0f ppm, expected +120", bias_ppm(st));
-   CHECK(st->sink_warned & AUDIO_SINK_WARNED_DROPPED, "half a percent refused for five minutes and no warning");
+   CHECK(st->sink_warned_flush & AUDIO_SINK_WARNED_DROPPED, "half a percent refused for five minutes and no warning");
 }
 
 /* Too far off to be a crystal: refused, never clamped, and the rate is
