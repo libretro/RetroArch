@@ -28,6 +28,7 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "font_driver.h"
+#include "gfx_display.h"
 #include "video_thread_wrapper.h"
 #include <retro_atomic.h>
 
@@ -1148,6 +1149,9 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
    const font_renderer_t *renderer  = (font && msg && msg_len)
    ? font->renderer : NULL;
 
+   /* Quads asked for before this text have to land under it */
+   gfx_display_flush_batch(disp_get_ptr());
+
    if (renderer && renderer->render_msg)
    {
 #ifdef HAVE_LANGEXTRA
@@ -1224,6 +1228,8 @@ void font_flush(
 
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
+   /* Quads asked for before this text have to land under it */
+   gfx_display_flush_batch(disp_get_ptr());
    if (renderer && renderer->flush)
       renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;

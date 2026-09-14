@@ -344,6 +344,8 @@ void gfx_display_scissor_begin(
       int x, int y, unsigned width, unsigned height)
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_batch(disp_get_ptr());
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -417,6 +419,8 @@ static void gfx_display_draw_text_internal(
 {
    struct font_params params;
    video_driver_state_t *video_st = video_state_get_ptr();
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_batch(disp_get_ptr());
 
    /* NULL text is a no-op: ozone_draw_footer and similar menu code can
     * legitimately reach here with text==NULL for unset/optional fields,
@@ -537,6 +541,132 @@ void gfx_display_draw_bg(
             userdata);
 }
 
+/* How many quads may wait before the batch has to go out. One strip of
+ * them is six vertices a quad less the two the first does not need to
+ * be joined by, so this is what the three arrays below are sized for. */
+#define GFX_DISPLAY_BATCH_QUADS 96
+#define GFX_DISPLAY_BATCH_VERTS (GFX_DISPLAY_BATCH_QUADS * 6 - 2)
+
+/* Adds one quad to the batch, in the strip order the drivers draw in -
+ * bottom left, bottom right, top left, top right - joined to the quad
+ * before it by a vertex repeated at each end of the seam, which the
+ * rasteriser drops as zero-area. Returns false when the quad cannot
+ * join, and the caller draws it itself. */
+static bool gfx_display_batch_add(gfx_display_t *p_disp,
+      uintptr_t texture, const float *color, void *userdata,
+      unsigned video_width, unsigned video_height,
+      float x0, float x1, float y0, float y1)
+{
+   unsigned v, i;
+   float *vert, *tex, *col;
+
+   if (!p_disp)
+      return false;
+   /* A batch belongs to one texture and one frame's worth of state */
+   if (     p_disp->batch_quads
+         && (  p_disp->batch_texture     != texture
+            || p_disp->batch_userdata    != userdata
+            || p_disp->batch_video_width != video_width
+            || p_disp->batch_video_height != video_height))
+      gfx_display_flush_batch(p_disp);
+   if (p_disp->batch_quads >= GFX_DISPLAY_BATCH_QUADS)
+      gfx_display_flush_batch(p_disp);
+
+   if (!p_disp->batch_vertex)
+   {
+      p_disp->batch_vertex = (float*)malloc(sizeof(float) * 2 * GFX_DISPLAY_BATCH_VERTS);
+      p_disp->batch_tex    = (float*)malloc(sizeof(float) * 2 * GFX_DISPLAY_BATCH_VERTS);
+      p_disp->batch_color  = (float*)malloc(sizeof(float) * 4 * GFX_DISPLAY_BATCH_VERTS);
+      if (!p_disp->batch_vertex || !p_disp->batch_tex || !p_disp->batch_color)
+         return false;
+   }
+
+   vert = p_disp->batch_vertex;
+   tex  = p_disp->batch_tex;
+   col  = p_disp->batch_color;
+   v    = p_disp->batch_quads ? (p_disp->batch_quads * 6 - 2) : 0;
+
+   if (p_disp->batch_quads)
+   {
+      /* Seam: the quad before ends where this one starts */
+      vert[v * 2]     = vert[(v - 1) * 2];
+      vert[v * 2 + 1] = vert[(v - 1) * 2 + 1];
+      tex [v * 2]     = tex [(v - 1) * 2];
+      tex [v * 2 + 1] = tex [(v - 1) * 2 + 1];
+      for (i = 0; i < 4; i++)
+         col[v * 4 + i] = col[(v - 1) * 4 + i];
+      v++;
+      vert[v * 2]     = x0;
+      vert[v * 2 + 1] = y0;
+      tex [v * 2]     = 0.0f;
+      tex [v * 2 + 1] = 1.0f;
+      for (i = 0; i < 4; i++)
+         col[v * 4 + i] = color[i];
+      v++;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      unsigned c;
+      /* bottom left, bottom right, top left, top right */
+      vert[v * 2]     = (i & 1) ? x1   : x0;
+      vert[v * 2 + 1] = (i & 2) ? y1   : y0;
+      tex [v * 2]     = (i & 1) ? 1.0f : 0.0f;
+      tex [v * 2 + 1] = (i & 2) ? 0.0f : 1.0f;
+      for (c = 0; c < 4; c++)
+         col[v * 4 + c] = color[i * 4 + c];
+      v++;
+   }
+
+   p_disp->batch_quads++;
+   p_disp->batch_texture      = texture;
+   p_disp->batch_userdata     = userdata;
+   p_disp->batch_video_width  = video_width;
+   p_disp->batch_video_height = video_height;
+   return true;
+}
+
+/* Sends the quads that are waiting, as one strip, and empties the
+ * batch. Called before anything else draws, so that what was gathered
+ * lands under what comes after it, and at the end of a frame so that
+ * nothing is still waiting when the frame is over. */
+void gfx_display_flush_batch(gfx_display_t *p_disp)
+{
+   gfx_display_ctx_driver_t *dispctx;
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   if (!p_disp || !p_disp->batch_quads)
+      return;
+   dispctx                 = p_disp->dispctx;
+   coords.vertices         = p_disp->batch_quads * 6 - 2;
+   coords.vertex           = p_disp->batch_vertex;
+   coords.tex_coord        = p_disp->batch_tex;
+   coords.lut_tex_coord    = NULL;
+   coords.color            = p_disp->batch_color;
+   draw.x                  = 0;
+   draw.y                  = 0;
+   draw.width              = p_disp->batch_video_width;
+   draw.height             = p_disp->batch_video_height;
+   draw.coords             = &coords;
+   draw.matrix_data        = NULL;
+   draw.texture            = p_disp->batch_texture;
+   draw.pipeline_id        = 0;
+   draw.scale_factor       = 1.0f;
+   draw.rotation           = 0.0f;
+   p_disp->batch_quads     = 0;
+   if (dispctx)
+   {
+      if (dispctx->blend_begin)
+         dispctx->blend_begin(p_disp->batch_userdata);
+      if (dispctx->draw)
+         dispctx->draw(&draw, p_disp->batch_userdata,
+               p_disp->batch_video_width, p_disp->batch_video_height);
+      if (dispctx->blend_end)
+         dispctx->blend_end(p_disp->batch_userdata);
+   }
+}
+
 /* The one way a caller outside this file reaches the display driver.
  * Everything drawn while the menu is up passes through here or through
  * the helpers above it, which is what lets this file know the order
@@ -546,6 +676,7 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_width, unsigned video_height)
 {
+   gfx_display_flush_batch(disp_get_ptr());
    if (dispctx && dispctx->draw && draw)
       dispctx->draw(draw, userdata, video_width, video_height);
 }
@@ -589,6 +720,19 @@ void gfx_display_draw_quad(
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
+   /* Gathered rather than drawn, where the driver can be handed a
+    * strip of quads instead of one at a time. What is gathered goes
+    * out before anything else draws, so the order is unchanged. */
+   if (     dispctx->handles_vertex_strip
+         && gfx_display_batch_add(p_disp, draw.texture, color, data,
+            video_width, video_height,
+            (float)x / (float)width,
+            (float)(x + (int)w) / (float)width,
+            (float)draw.y / (float)height,
+            (float)(draw.y + (int)h) / (float)height))
+      return;
+
+   gfx_display_flush_batch(p_disp);
    if (dispctx->blend_begin)
       dispctx->blend_begin(data);
    if (dispctx->draw)
@@ -635,6 +779,9 @@ void gfx_display_draw_texture_slice(
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
+
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_batch(disp_get_ptr());
 
    /* Early-out: guard against division by zero from
     * zero display dimensions or zero texture dimensions */
@@ -866,6 +1013,8 @@ void gfx_display_draw_cursor(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_batch(disp_get_ptr());
 
    if (!dispctx)
       return;
@@ -1210,6 +1359,14 @@ void gfx_display_free(void)
 {
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
+
+   free(p_disp->batch_vertex);
+   free(p_disp->batch_tex);
+   free(p_disp->batch_color);
+   p_disp->batch_vertex        = NULL;
+   p_disp->batch_tex           = NULL;
+   p_disp->batch_color         = NULL;
+   p_disp->batch_quads         = 0;
 
    p_disp->flags               = 0;
    p_disp->header_height       = 0;

@@ -2296,6 +2296,9 @@ void gfx_widgets_frame(void *data)
    gfx_widgets_state_lock();
    gfx_widgets_frame_state(data);
    gfx_widgets_state_unlock();
+
+   /* Nothing gathered may still be waiting when the frame is over */
+   gfx_display_flush_batch(disp_get_ptr());
 }
 
 static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
