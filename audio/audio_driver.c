@@ -2550,8 +2550,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
           * by rate control's adjustment. sink_offered wants that with
           * the adjustment divided out, as the other write sites do, so
           * the bias measures the clocks and not rate control's own
-          * corrections. write_raw returns device frames accepted, so it
-          * goes straight into sink_accepted with no byte conversion.
+          * corrections. write_raw returns accepted input frames; scale
+          * those to output frames as well before comparing the counters.
           *
           * The bias reaches the driver only through the rate_adjust
           * above, which compute_rate_adjust() multiplies it into - so
@@ -2562,11 +2562,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          {
             double nominal = (double)frames * (double)out_rate
                   / (double)input_rate;
-            audio_st->sink_offered_raw += (uint64_t)(nominal * rate_adjust);
+            uint64_t offered = (uint64_t)(nominal * rate_adjust);
+            audio_st->sink_offered_raw += offered;
             if (!audio_st->pipe_threaded)
                audio_st->sink_offered  += nominal;
             if (w > 0)
-               audio_st->sink_accepted += (uint64_t)w;
+               /* Reuse the full-write count, including identical rounding. */
+               audio_st->sink_accepted += (size_t)w == frames ? offered
+                  : (uint64_t)((double)w * (double)out_rate
+                        / (double)input_rate * rate_adjust);
          }
       }
       audio_driver_sink_refused(audio_st);

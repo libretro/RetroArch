@@ -176,21 +176,21 @@ static ssize_t dev_write(void *data, const void *buf, size_t size)
 static ssize_t dev_write_raw(void *data, const int16_t *samples,
       size_t frames, unsigned input_rate, double rate_adjust, float gain)
 {
-   double want, room, put;
+   double room, put;
+   size_t accepted;
    (void)data; (void)samples; (void)input_rate; (void)gain;
    pthread_mutex_lock(&dev_lock);
    dev_drain_locked();
-   want = (double)frames * rate_adjust;
    room = DEV_CAPACITY - dev_fill;
-   put  = (want < room) ? want : room;
-   if (put < 0.0)
-      put = 0.0;
+   accepted = room > 0.0 ? (size_t)(room / rate_adjust) : 0;
+   if (accepted > frames) accepted = frames;
+   put = (double)accepted * rate_adjust;
    dev_fill       += put;
    dev_took       += put;
    dev_adjust_sum += rate_adjust;
    dev_adjust_n++;
    pthread_mutex_unlock(&dev_lock);
-   return (ssize_t)put;
+   return (ssize_t)accepted;
 }
 
 static size_t dev_write_avail(void *d)

@@ -138,7 +138,7 @@ typedef struct audio_driver
    /*
     * @data         : Pointer to audio data handle.
     * @buf          : Audio buffer data.
-    * @size         : Size of audio buffer.
+    * @size         : Size of audio buffer in bytes.
     *
     * Write samples to audio driver.
     *
@@ -152,13 +152,13 @@ typedef struct audio_driver
     * format will be used, with range [-1.0, 1.0].
     * If not, signed 16-bit samples in native byte ordering will be used.
     *
-    * This function returns the number of frames successfully written.
+    * This function returns the number of input bytes successfully written.
     * If an error occurs, -1 should be returned.
     * Note that non-blocking behavior that cannot write at this time
     * should return 0 as returning -1 will terminate the driver.
     *
     * Unless said otherwise with set_nonblock_state(), all writes
-    * are blocking, and it should block till it has written all frames.
+    * are blocking, and it should block till it has written all input bytes.
     */
    ssize_t (*write)(void *data, const void *s, size_t len);
 
@@ -282,6 +282,19 @@ typedef struct audio_driver
     * resampling. The driver is responsible for resampling from input_rate
     * to its output rate, applying the rate_adjust factor for A/V sync,
     * and applying the volume gain to the output.
+    * All frame counts here are input stereo frames, never output frames or
+    * bytes. Return 0..frames for the accepted prefix; return -1 only when
+    * an error occurs before accepting any input. A later error must return
+    * the accepted prefix. Zero frames is a no-op returning 0. The driver
+    * must consume or copy accepted samples before returning; it cannot
+    * retain the caller's pointer. Unaccepted input remains caller-owned.
+    * The frontend may discard that suffix under its nonblocking policy.
+    * Acceptance does not mean playback: conversion/device consumption may
+    * happen later. Output-frame accounting is a separate estimate.
+    * A nonempty request requires samples, a positive representable input
+    * rate, a finite positive rate_adjust and a finite nonnegative volume.
+    * Unsupported parameters or failed control changes must not silently
+    * accept input using stale settings.
     *
     * @param data        Driver context
     * @param samples     Interleaved int16 stereo samples (LRLRLR...)
@@ -289,7 +302,7 @@ typedef struct audio_driver
     * @param input_rate  Source sample rate in Hz
     * @param rate_adjust Output-duration multiplier for A/V sync and playback speed (1.0 = normal)
     * @param volume      Volume gain to apply (0.0 = muted, 1.0 = full volume)
-    * @return Number of frames written, or -1 on error
+    * @return Number of input frames accepted, or -1 on error
     */
    ssize_t (*write_raw)(void *data, const int16_t *samples, size_t frames,
          unsigned input_rate, double rate_adjust, float volume);

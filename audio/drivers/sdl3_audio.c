@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <float.h>
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
@@ -627,7 +629,7 @@ static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl)
 /**
  * Queues frame-aligned data up to the given cap.
  *
- * This will drops excess if nonblocking, or blocks until drained/timed out.
+ * Returns a short count if nonblocking, or waits until drained/timed out.
  *
  * @return The number of bytes queued, or -1 when the first write failed.
  */
@@ -647,10 +649,13 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
          break;
 
       queued = SDL_GetAudioStreamQueued(sdl->stream);
-      avail  = (queued < 0 || (size_t)queued >= cap)
+      if (queued < 0)
+         return size ? (ssize_t)size : -1;
+      avail  = ((size_t)queued >= cap)
             ? 0 : cap - (size_t)queued;
 
-      /* Only queue whole frames. */
+      /* SDL accepts an int byte count. Only queue whole input frames. */
+      if (avail > INT_MAX) avail = INT_MAX;
       avail -= avail % frame_size;
 
       if (avail == 0)
@@ -695,6 +700,22 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
    return (ssize_t)size;
 }
 
+/* Cache only controls SDL accepted, including partially successful changes. */
+static bool sdl3_audio_set_controls(sdl3_audio_t *sdl, float ratio, float gain)
+{
+   if (ratio != sdl->ratio)
+   {
+      if (!SDL_SetAudioStreamFrequencyRatio(sdl->stream, ratio)) return false;
+      sdl->ratio = ratio;
+   }
+   if (gain != sdl->gain)
+   {
+      if (!SDL_SetAudioStreamGain(sdl->stream, gain)) return false;
+      sdl->gain = gain;
+   }
+   return true;
+}
+
 static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
@@ -706,33 +727,43 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
     * write_raw. */
    if (sdl->raw_rate)
    {
+      if (!sdl3_audio_set_controls(sdl, 1.0f, 1.0f)) return -1;
       if (!SDL_SetAudioStreamFormat(sdl->stream, &sdl->spec, NULL))
       {
          RARCH_ERR("[SDL3 audio] Failed to restore stream format: %s.\n", SDL_GetError());
          return -1;
       }
-      SDL_SetAudioStreamFrequencyRatio(sdl->stream, 1.0f);
-      SDL_SetAudioStreamGain(sdl->stream, 1.0f);
       sdl->raw_rate = 0;
       sdl->in_cap = sdl->buffer_size;
       sdl->ratio = 1.0f;
       sdl->gain = 1.0f;
    }
 
-   return sdl3_audio_queue(sdl, s, len, sdl->buffer_size, 1);
+   return sdl3_audio_queue(sdl, s, len, sdl->buffer_size, SDL_AUDIO_FRAMESIZE(sdl->spec));
 }
 
 /**
  * Bypass RetroArch resampling, send int16 stereo directly to SDL.
+ * Returns input frames queued, not output frames produced or played.
  */
 static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
       size_t frames, unsigned input_rate, double rate_adjust, float volume)
 {
    ssize_t size;
+   float ratio;
    const size_t frame_size = 2 * sizeof(int16_t);
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
-   if (!sdl || !samples || input_rate == 0 || !sdl3_audio_stream_ok(sdl))
+   if (!frames) return 0;
+   if (!sdl || !samples || !input_rate || input_rate > INT_MAX
+         || frames > (size_t)PTRDIFF_MAX / frame_size
+         /* SDL supports a frequency ratio of 0.01..100. Check before
+          * inversion/narrowing, including NaN, infinity and tiny values. */
+         || !(rate_adjust >= 0.01 && rate_adjust <= 100.0)
+         || !(volume >= 0.0f && volume <= FLT_MAX))
+      return -1;
+   ratio = (float)(1.0 / rate_adjust);
+   if (!sdl3_audio_stream_ok(sdl))
       return -1;
 
    /* Set stream input to core-rate int16 stereo and reconfigure
@@ -755,23 +786,7 @@ static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
             * input_rate / (unsigned)sdl->spec.freq) * frame_size;
    }
 
-   /* Invert rate_adjust for SDL's resampler, if needed. */
-   if (rate_adjust > 0.0)
-   {
-      float ratio = (float)(1.0 / rate_adjust);
-      if (ratio != sdl->ratio)
-      {
-         SDL_SetAudioStreamFrequencyRatio(sdl->stream, ratio);
-         sdl->ratio = ratio;
-      }
-   }
-
-   /* Apply write_raw gain directly to stream output. */
-   if (volume != sdl->gain)
-   {
-      SDL_SetAudioStreamGain(sdl->stream, volume);
-      sdl->gain = volume;
-   }
+   if (!sdl3_audio_set_controls(sdl, ratio, volume)) return -1;
 
    size = sdl3_audio_queue(sdl, samples, frames * frame_size, sdl->in_cap, frame_size);
    if (size < 0)

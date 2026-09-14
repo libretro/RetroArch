@@ -155,3 +155,5 @@ boundary at normal speed, accelerated fast-forward, combined slow/fast motion,
 disabled speed-up and queued filter-only playback. The scripted driver verifies
 the composed duration multiplier and byte-exact native samples, including the
 independent LPF output. It does not instantiate a physical SDL3 audio device.
+The same cases check that raw input-frame acceptance is counted in output-frame
+units, including full, partial, zero and failed writes at non-unity SRC/speed.

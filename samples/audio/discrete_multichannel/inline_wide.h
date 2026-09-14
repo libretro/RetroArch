@@ -1,6 +1,7 @@
 /* Configured wide inline transport before native channel routing. */
 static double raw_speed_adjust;
 static unsigned raw_speed_calls;
+static ssize_t raw_speed_accepted;
 static int16_t raw_speed_samples[514];
 static ssize_t raw_speed_write(void *data, const int16_t *samples,
       size_t frames, unsigned rate, double adjust, float gain)
@@ -11,7 +12,7 @@ static ssize_t raw_speed_write(void *data, const int16_t *samples,
    if (frames == 257) memcpy(raw_speed_samples, samples, sizeof(raw_speed_samples));
    raw_speed_adjust = adjust;
    raw_speed_calls++;
-   return (ssize_t)frames;
+   return raw_speed_accepted;
 }
 
 static void raw_speed_cases(void)
@@ -36,6 +37,7 @@ static void raw_speed_cases(void)
       runloop_state_get_ptr()->flags = mode == 4 ? RUNLOOP_FLAG_FASTMOTION : 0;
       retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 32768);
       raw_speed_calls = 0;
+      raw_speed_accepted = 257;
       memcpy(expected, input, sizeof(input));
       if (mode == 4)
       {
@@ -61,6 +63,24 @@ static void raw_speed_cases(void)
             "raw speed multiplier: mode %u got %.8f", mode, raw_speed_adjust);
       CHECK(!memcmp(raw_speed_samples, expected, sizeof(expected)) && !st->stat_frontend_is_float,
             "raw speed changed native samples");
+      CHECK(st->sink_offered_raw == (uint64_t)(257.0*48000.0/44100.0*raw_speed_adjust)
+            && st->sink_accepted == st->sink_offered_raw,
+            "fully accepted raw write reported dropped output frames");
+      if (mode == 4)
+      {
+         static const ssize_t accepted[] = {128, 0, -1};
+         unsigned a;
+         for (a = 0; a < ARRAY_SIZE(accepted); a++)
+         {
+            st->sink_offered_raw = st->sink_accepted = 0;
+            raw_speed_accepted = accepted[a];
+            audio_driver_flush(st, 1.0f, input, 514, false, false, true);
+            CHECK(st->sink_offered_raw == (uint64_t)(257.0*48000.0/44100.0*0.5)
+                  && st->sink_accepted == (accepted[a] > 0
+                     ? (uint64_t)(accepted[a]*48000.0/44100.0*0.5) : 0),
+                  "partial/failed raw write counted the wrong output frames");
+         }
+      }
       audio_driver_deinit_internal(true);
    }
    settings->bools.audio_time_stretch_lowpass = settings->bools.audio_fastforward_speedup = false;
