@@ -51,9 +51,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <lists/string_list.h>
 #include <lists/file_list.h>
+#include <lists/dir_list.h>
 #include <string/stdstring.h>
 
 /* Stands in for the file-static list in save.c, which
@@ -181,10 +183,50 @@ static void test_manifest_key_lookup(void)
    file_list_free(manifest);
 }
 
+
+static void test_unlistable_directory_is_not_empty(void)
+{
+   struct string_list *list;
+   char                empty_dir[] = "/tmp/cs_empty_XXXXXX";
+
+   printf("directory listing\n");
+
+   /* The manifest builder acts on the difference between these two.
+    * An empty directory is a statement - every file that used to be
+    * here is gone - and the diff answers it by removing the server's
+    * copies. A directory that could not be read is not that statement,
+    * so it has to be distinguishable or the sync deletes data over a
+    * missing mount point or an unset path. */
+   list = dir_list_new("/tmp/cs_no_such_directory_here", NULL,
+         false, true, true, true);
+   check(list == NULL,
+         "a root that cannot be opened is reported as failure, not as empty");
+   if (list)
+      string_list_free(list);
+
+   if (!mkdtemp(empty_dir))
+   {
+      printf("  [FAIL] could not create a temporary directory\n");
+      failures++;
+      return;
+   }
+
+   list = dir_list_new(empty_dir, NULL, false, true, true, true);
+   check(list != NULL, "an empty directory lists successfully");
+   if (list)
+   {
+      check(list->size == 0, "an empty directory lists no entries");
+      string_list_free(list);
+   }
+
+   rmdir(empty_dir);
+}
+
 int main(void)
 {
    test_ownership_window();
    test_manifest_key_lookup();
+   test_unlistable_directory_is_not_empty();
 
    if (failures)
    {

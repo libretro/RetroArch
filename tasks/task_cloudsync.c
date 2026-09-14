@@ -365,7 +365,7 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
  * Adds all the files within the given directory to the provided
  * file list, with the exception of the ones that should be ignored
  */
-static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
+static bool task_cloud_sync_manifest_append_dir(file_list_t *manifest,
       const char *dir_fullpath, char *dir_name)
 {
    size_t i;
@@ -375,12 +375,22 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
    strlcpy(dir_fullpath_slash, dir_fullpath, sizeof(dir_fullpath_slash));
    fill_pathname_slash(dir_fullpath_slash, sizeof(dir_fullpath_slash));
 
-   dir_list = dir_list_new(dir_fullpath_slash, NULL, false, true, true, true);
+   /* A root that cannot be opened is what dir_list_new() reports NULL
+    * for, and it is not the same as an empty directory: an empty one
+    * says every file under it is gone, which is a statement the diff
+    * acts on by deleting the server's copies. A directory that could
+    * not be read says nothing at all, so the caller stops rather than
+    * letting the manifest claim a deletion that never happened. */
+   if (!(dir_list = dir_list_new(dir_fullpath_slash, NULL, false, true, true, true)))
+   {
+      RARCH_ERR(CSPFX "Could not read \"%s\".\n", dir_fullpath_slash);
+      return false;
+   }
 
    if (dir_list->size == 0)
    {
 	   string_list_free(dir_list);
-	   return;
+	   return true;
    }
 
    file_list_reserve(manifest, manifest->size + dir_list->size);
@@ -409,6 +419,8 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
    /* TODO Is this freed anywhere else? Am I missing something? The dir_list's contents are strdup'ed, so freeing this shouldn't break anything
     * Remove this comment once a decision has been taken*/
    string_list_free(dir_list);
+
+   return true;
 }
 
 /**
@@ -509,6 +521,12 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    struct string_list *dirlist = task_cloud_sync_directory_map();
    size_t i;
 
+   if (!dirlist)
+   {
+      task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+      return;
+   }
+
    if (!(sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
    {
       task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
@@ -530,8 +548,19 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    /* The userdata of the elements is actually the full path to the directory, while data is the name of the folder itself */
    /* The paths iterated here are not portable, because they are still used for iterating later on */
    for (i = 0; i < dirlist->size; i++)
-      task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
-            (const char*)dirlist->elems[i].userdata, dirlist->elems[i].data);
+   {
+      if (!task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
+               (const char*)dirlist->elems[i].userdata, dirlist->elems[i].data))
+      {
+         /* Half a picture of local state is worse than none: every file
+          * the unread directory holds would look deleted, and the diff
+          * would remove the server's copy of each one. */
+         RARCH_ERR(CSPFX "Not syncing, the current state of the disk could not be established.\n");
+         sync_state->failures = true;
+         task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+         return;
+      }
+   }
 
    file_list_sort_on_alt(sync_state->current_manifest);
    task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_DIFF);
@@ -860,7 +889,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    RARCH_LOG(CSPFX "Fetching %s.\n", key);
 
    filename[0] = '\0';
-   for (i = 0; i < dirlist->size; i++)
+   for (i = 0; dirlist && i < dirlist->size; i++)
    {
       if (!string_starts_with(key, dirlist->elems[i].data))
          continue;
@@ -1179,6 +1208,9 @@ static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
    struct string_list *dirlist = task_cloud_sync_directory_map();
    size_t i;
    bool found;
+
+   if (!dirlist)
+      return;
 
    if (sync_state->local_manifest)
    {
