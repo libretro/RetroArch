@@ -957,17 +957,21 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char reply[32];
-   char *endptr;
+   char *endptr  = NULL;
    size_t _len;
    bool ret      = true;
-   int64_t frame = strtoll(arg, &endptr, 10);
+   int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
-   if (!endptr)
+   /* strtoll always writes a valid pointer, so the end pointer is
+    * never NULL - an empty or non-numeric argument shows up as no
+    * characters consumed. */
+   if (!arg || endptr == arg)
       ret = false;
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
       ret = false;
 #ifdef HAVE_CHEEVOS
-   ret = !rcheevos_hardcore_active();
+   if (rcheevos_hardcore_active())
+      ret = false;
 #endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
