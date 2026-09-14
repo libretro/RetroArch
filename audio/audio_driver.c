@@ -6006,28 +6006,23 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
 #ifdef HAVE_REWIND
    /* While frames are being played in reverse, the int16 path swaps the
     * core callback to audio_driver_sample_batch_rewind(). A float core
-    * keeps the cached float pointer, so replicate that routing here:
-    * convert to int16 and store into the reverse buffer. */
+    * keeps the cached float pointer, so route it to the reverse buffer. */
    if (state_manager_frame_is_reversed())
    {
       size_t i;
-      size_t samples = frames << 1;
       /* A float core's reverse buffer is float: no conversion in, none
        * out when it plays back. */
       if (audio_st->core_float && audio_st->rewind_buf_f)
       {
-         for (i = 0; i < samples; i++)
+         for (i = 0; i < frames && audio_st->rewind_ptr >= 2; i++)
          {
-            if (audio_st->rewind_ptr < 1)
-               break;
-            audio_st->rewind_buf_f[--audio_st->rewind_ptr] = data[i];
+            audio_st->rewind_buf_f[--audio_st->rewind_ptr] = data[2*i+1];
+            audio_st->rewind_buf_f[--audio_st->rewind_ptr] = data[2*i];
          }
          return frames;
       }
-      for (i = 0; i < samples; i++)
+      for (i = 0; i < frames && audio_st->rewind_ptr >= 2; i++)
       {
-         if (audio_st->rewind_ptr < 1)
-            break;
          /* Inline saturating float->s16 to avoid an extra scratch copy.
           * Must round the same way convert_float_to_s16() does - half
           * away from zero - not truncate: the recording bridge lower in
@@ -6035,7 +6030,9 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
           * truncating variant here would quantise the rewind audio with
           * twice the error and a one-LSB dead band around silence. */
          audio_st->rewind_buf[--audio_st->rewind_ptr] =
-               (int16_t)audio_float_to_s16_sat(data[i]);
+               (int16_t)audio_float_to_s16_sat(data[2*i+1]);
+         audio_st->rewind_buf[--audio_st->rewind_ptr] =
+               (int16_t)audio_float_to_s16_sat(data[2*i]);
       }
       return frames;
    }
@@ -6106,7 +6103,7 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
 void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
    audio_driver_state_t *audio_st  = &audio_driver_st;
-   if (audio_st->rewind_ptr == 0)
+   if (audio_st->rewind_ptr < 2)
       return;
 
    audio_st->rewind_buf[--audio_st->rewind_ptr] = right;
@@ -6118,13 +6115,11 @@ size_t audio_driver_sample_batch_rewind(
 {
    size_t i;
    audio_driver_state_t *audio_st  = &audio_driver_st;
-   size_t              samples     = frames << 1;
 
-   for (i = 0; i < samples; i++)
+   for (i = 0; i < frames && audio_st->rewind_ptr >= 2; i++)
    {
-      if (audio_st->rewind_ptr < 1)
-         break;
-      audio_st->rewind_buf[--audio_st->rewind_ptr] = data[i];
+      audio_st->rewind_buf[--audio_st->rewind_ptr] = data[2*i+1];
+      audio_st->rewind_buf[--audio_st->rewind_ptr] = data[2*i];
    }
 
    return frames;

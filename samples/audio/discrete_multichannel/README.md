@@ -95,3 +95,11 @@ as progress even when WSOLA has not yet produced a device write; otherwise the
 wrapper's idle wait throttles valid synthesis. Empty, suspended and paused passes
 must still report idle. The fixture selects the duration scalar directly to avoid
 a wall-clock speed estimate; it does not benchmark core execution or device latency.
+
+`DM_ONLY=rewindframes ./discrete_multichannel_test` checks stereo frame reversal
+through single-sample int16, split int16 batches and native float batches. An
+independently reversed source must produce byte-identical device output through
+HQ SRC, including the return from ordinary rewind playback to inline WSOLA.
+Four buffer-bound checks cover clipping, incomplete-frame room and the existing
+float-to-int16 compatibility bridge. Native float samples retain their exact
+bits. This exercises audio entry points, not savestate or full runloop execution.

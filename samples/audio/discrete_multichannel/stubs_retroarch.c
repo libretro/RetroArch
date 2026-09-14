@@ -300,7 +300,8 @@ audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
  * in a harness reports one. */
 struct defaults g_defaults;
 
-bool state_manager_frame_is_reversed(void) { return false; }
+bool test_frame_reversed;
+bool state_manager_frame_is_reversed(void) { return test_frame_reversed; }
 
 /* These fixtures have no wrapper worker; control runs synchronously. */
 unsigned transport_control_calls;

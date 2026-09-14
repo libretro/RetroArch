@@ -1,4 +1,185 @@
 /* Configured wide inline transport before native channel routing. */
+extern bool test_frame_reversed;
+
+static void rewind_bounds_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   int16_t input[] = { 12000, -3000, 8000, -2000, 7000, -1000 };
+   float input_f[] = { 1.25f, -1.25f, 0.1234567f, -0.0312345f, 0.2f, -0.1f };
+   int16_t storage[6], expected[4], converted[6];
+   float storage_f[6], expected_f[4];
+   unsigned kind, i, before = failures;
+   convert_float_to_s16(converted, input_f, 6);
+   for (kind = 0; kind < 4; kind++)
+   {
+      const int16_t *src = kind == 3 ? converted : input;
+      for (i = 0; i < 6; i++) { storage[i] = 1234; storage_f[i] = 0.75f; }
+      for (i = 0; i < 2; i++)
+      {
+         expected[2*i] = src[2*(1-i)]; expected[2*i+1] = src[2*(1-i)+1];
+         expected_f[2*i] = input_f[2*(1-i)]; expected_f[2*i+1] = input_f[2*(1-i)+1];
+      }
+      st->core_float = kind == 2;
+      st->rewind_buf = storage + 1;
+      st->rewind_buf_f = kind == 2 ? storage_f + 1 : NULL;
+      st->rewind_ptr = st->rewind_size = 4;
+      test_frame_reversed = true;
+      if (kind >= 2) CHECK(audio_driver_sample_batch_float(input_f, 3) == 3, "float rewind accounting");
+      else if (kind) CHECK(audio_driver_sample_batch_rewind(input, 3) == 3, "int16 rewind accounting");
+      else for (i = 0; i < 3; i++) audio_driver_sample_rewind(input[2*i], input[2*i+1]);
+      CHECK(!st->rewind_ptr && (kind == 2
+               ? !memcmp(storage_f + 1, expected_f, sizeof(expected_f))
+               : !memcmp(storage + 1, expected, sizeof(expected))), "rewind bounds/order kind %u", kind);
+      CHECK(storage[0] == 1234 && storage[5] == 1234
+            && storage_f[0] == 0.75f && storage_f[5] == 0.75f, "rewind crossed buffer guard");
+      /* A partial frame of room cannot accept either channel. */
+      st->rewind_ptr = 1;
+      if (kind >= 2) audio_driver_sample_batch_float(input_f, 1);
+      else if (kind) audio_driver_sample_batch_rewind(input, 1);
+      else audio_driver_sample_rewind(input[0], input[1]);
+      CHECK(st->rewind_ptr == 1 && (kind == 2
+               ? !memcmp(storage_f + 1, expected_f, sizeof(expected_f))
+               : !memcmp(storage + 1, expected, sizeof(expected))), "rewind accepted a partial frame");
+   }
+   test_frame_reversed = false;
+   st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+   st->rewind_size = st->rewind_ptr = 0;
+   st->core_float = false;
+   printf("rewind frame bounds: 4 cases, %u failures\n", failures - before);
+}
+
+/* Independent frame reversal, then compare the complete playback path. */
+static void rewind_frame_cases(void)
+{
+   union { float f[514]; int16_t i[514]; } input, reverse, storage;
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned kind, capture, batch, f, before = failures;
+   float *reference = NULL;
+   size_t reference_frames = 0;
+   for (kind = 0; kind < 3; kind++)
+      for (capture = 0; capture < 2; capture++)
+      {
+         bool floating = kind == 2;
+         struct audio_inline_transport *saved;
+         unsigned allocations;
+         CHECK(up(floating, AUDIO_LAYOUT_STEREO, floating), "rewind stand-up");
+         free(cap); cap = NULL; cap_cap = cap_frames = 0;
+         st->resampler_hq = true;
+         st->src_ratio_orig = st->src_ratio_curr = 96000.0 / st->input;
+         settings->uints.audio_output_sample_rate = 96000;
+         CHECK(retro_resampler_realloc_hq(&st->resampler_data, &st->resampler,
+               "sinc", st->resampler_quality, st->src_ratio_orig, true), "rewind HQ SRC");
+         if (!floating)
+         {
+            settings->bools.audio_fastpath_s16 = true;
+            st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+            st->resampler_int16_process = sinc_resampler_int16_process;
+            st->resampler_int16_free = sinc_resampler_int16_free;
+            st->resampler_int16_reset = sinc_resampler_int16_reset;
+         }
+         settings->bools.audio_time_stretch = true;
+         settings->bools.audio_time_stretch_lowpass = false;
+         settings->floats.slowmotion_ratio = 2;
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         audio_driver_publish_runloop();
+         CHECK(audio_driver_transport_configure(settings), "rewind prepare");
+         saved = st->inline_transport;
+         CHECK(saved != NULL, "rewind transport missing");
+         if (!saved) exit(1);
+         st->rewind_buf = floating ? NULL : storage.i;
+         st->rewind_buf_f = floating ? storage.f : NULL;
+         st->rewind_size = 514;
+         transport_track = true;
+         allocations = transport_allocations;
+         for (batch = 0; batch < 16; batch++)
+         {
+            for (f = 0; f < 257; f++)
+            {
+               float v = 0.25f * sinf((float)(2 * M_PI * 440 * (batch*257+f) / 44100.0));
+               if (floating)
+               {
+                  input.f[2*f] = v;
+                  input.f[2*f+1] = v * -0.375f;
+                  reverse.f[2*(256-f)] = input.f[2*f];
+                  reverse.f[2*(256-f)+1] = input.f[2*f+1];
+               }
+               else
+               {
+                  input.i[2*f] = (int16_t)(v * 32767);
+                  input.i[2*f+1] = (int16_t)(v * -12287);
+                  reverse.i[2*(256-f)] = input.i[2*f];
+                  reverse.i[2*(256-f)+1] = input.i[2*f+1];
+               }
+            }
+            if (capture)
+            {
+               size_t frames = cap_frames;
+               audio_driver_setup_rewind();
+               test_frame_reversed = true;
+               if (floating)
+               {
+                  audio_driver_sample_batch_float(input.f, 113);
+                  audio_driver_sample_batch_float(input.f + 226, 144);
+               }
+               else if (kind)
+               {
+                  audio_driver_sample_batch_rewind(input.i, 113);
+                  audio_driver_sample_batch_rewind(input.i + 226, 144);
+               }
+               else
+                  for (f = 0; f < 257; f++)
+                     audio_driver_sample_rewind(input.i[2*f], input.i[2*f+1]);
+               CHECK(!st->rewind_ptr && cap_frames == frames,
+                     "rewind capture advanced device or lost frames");
+               CHECK(!memcmp(&storage, &reverse, 514 * (floating ? sizeof(float) : sizeof(int16_t))),
+                     "rewind kind %u changed stereo frame order", kind);
+               audio_driver_frame_is_reverse();
+               test_frame_reversed = false;
+            }
+            else
+            {
+               test_frame_reversed = true;
+               audio_driver_submit(st, 2.0f, &reverse, 514, floating, true, false);
+               test_frame_reversed = false;
+            }
+            audio_driver_frame_end();
+            CHECK(saved->bypassed, "rewind did not use ordinary playback");
+         }
+         if (floating) audio_driver_sample_batch_float(input.f, 257);
+         else audio_driver_sample_batch(input.i, 257);
+         audio_driver_frame_end();
+         transport_track = false;
+         CHECK(st->inline_transport == saved && !saved->bypassed
+               && allocations == transport_allocations, "rewind replaced prepared transport");
+         CHECK(cap_frames > 8192 && st->stat_core_is_float == floating
+               && st->stat_frontend_is_float == floating, "rewind lost duration or native lane");
+         if (!capture)
+         {
+            reference_frames = cap_frames;
+            reference = (float*)malloc(cap_frames * 2 * sizeof(float));
+            if (!reference) exit(1);
+            memcpy(reference, cap, cap_frames * 2 * sizeof(float));
+         }
+         else
+         {
+            CHECK(cap_frames == reference_frames
+                  && !memcmp(reference, cap, cap_frames * 2 * sizeof(float)),
+                  "rewind kind %u changed WSOLA/HQ playback", kind);
+            free(reference); reference = NULL;
+         }
+         st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+         st->rewind_size = st->rewind_ptr = 0;
+         audio_driver_deinit_internal(true);
+      }
+   settings->bools.audio_time_stretch = false;
+   settings->bools.audio_fastpath_s16 = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("native rewind frames: 3 cases, %u failures\n", failures - before);
+   rewind_bounds_cases();
+}
+
 static void inline_slot_order(void)
 {
    union { float f[3*8]; int16_t i[3*8]; } input;
