@@ -103,3 +103,10 @@ HQ SRC, including the return from ordinary rewind playback to inline WSOLA.
 Four buffer-bound checks cover clipping, incomplete-frame room and the existing
 float-to-int16 compatibility bridge. Native float samples retain their exact
 bits. This exercises audio entry points, not savestate or full runloop execution.
+
+`DM_ONLY=multireverse ./discrete_multichannel_test` checks cached int16/float
+multichannel callbacks during rewind in ordinary, inline-transport and queued
+configurations. Eighteen short cases cover stereo/5.1/7.1, split batches,
+suspension, bounded clipping and reserved fold storage. All source channels must
+contribute to the native stereo reverse buffer; capture must not write to the
+device, recorder, extra-channel staging or source ring before reverse playback.

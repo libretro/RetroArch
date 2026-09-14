@@ -1,6 +1,87 @@
 /* Configured wide inline transport before native channel routing. */
 extern bool test_frame_reversed;
 
+static void multi_rewind_cases(void)
+{
+   static const unsigned layouts[] = { AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1 };
+   union { float f[1057*8]; int16_t i[1057*8]; } input;
+   union { float f[1057*2]; int16_t i[1057*2]; } folded;
+   union { float f[1031*2+2]; int16_t i[1031*2+2]; } storage;
+   union { float f[1031*2]; int16_t i[1031*2]; } expected;
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   recording_state_t *rs = recording_state_get_ptr();
+   unsigned native, mode, l, before = failures;
+   for (native = 0; native < 2; native++)
+      for (mode = 0; mode < 3; mode++)
+         for (l = 0; l < 3; l++)
+         {
+            unsigned channels = audio_layout_channels(layouts[l]), c, allocations;
+            size_t f, sample = native ? sizeof(float) : sizeof(int16_t);
+            CHECK(mode == 2 ? pipe_up(native, native) : up(native, AUDIO_LAYOUT_7POINT1, native),
+                  "multi rewind stand-up");
+            free(cap); cap = NULL; cap_cap = cap_frames = 0;
+            st->core_multi = true;
+            if (mode == 1)
+            {
+               settings->bools.audio_time_stretch = true;
+               CHECK(audio_driver_transport_configure(settings), "multi rewind prepare");
+            }
+            CHECK(audio_driver_multi_fold_room(st, 1024, sample), "multi rewind fold reserve");
+            for (f = 0; f < 1057; f++)
+               for (c = 0; c < channels; c++)
+               {
+                  int16_t v = (int16_t)((int)((f * 127 + c * 733) % 10000) - 5000);
+                  if (native) input.f[f*channels+c] = v / 32768.0f + 0.000001f;
+                  else input.i[f*channels+c] = v;
+               }
+            if (native) audio_downmix_f32(folded.f, input.f, 1057, layouts[l], channels);
+            else audio_downmix_s16(folded.i, input.i, 1057, layouts[l], channels);
+            for (f = 0; f < 1031; f++)
+               memcpy((uint8_t*)&expected + f*2*sample,
+                     (const uint8_t*)&folded + (1030-f)*2*sample, 2*sample);
+            memset(&storage, 0x5a, sizeof(storage));
+            st->rewind_buf = native ? NULL : storage.i + 1;
+            st->rewind_buf_f = native ? storage.f + 1 : NULL;
+            st->rewind_size = 1031*2;
+            audio_driver_setup_rewind();
+            rs->driver = &rec_driver; rs->data = rs;
+            rs->layout = AUDIO_LAYOUT_STEREO; rs->channels = rec_channels = 2;
+            rec_frames = 0;
+            test_frame_reversed = true;
+            canonical_track = true; allocations = canonical_reallocations;
+            AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+            if (native) audio_driver_sample_batch_multi_float(input.f, 17, channels, layouts[l]);
+            else audio_driver_sample_batch_multi_int16(input.i, 17, channels, layouts[l]);
+            CHECK(st->rewind_ptr == st->rewind_size, "suspended multi rewind retained input");
+            AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+            CHECK((native ? audio_driver_sample_batch_multi_float(input.f, 113, channels, layouts[l])
+                  : audio_driver_sample_batch_multi_int16(input.i, 113, channels, layouts[l])) == 113,
+                  "multi rewind first batch accounting");
+            CHECK((native ? audio_driver_sample_batch_multi_float(input.f + 113*channels, 944, channels, layouts[l])
+                  : audio_driver_sample_batch_multi_int16(input.i + 113*channels, 944, channels, layouts[l])) == 944,
+                  "multi rewind clipped batch accounting");
+            canonical_track = false;
+            CHECK(!st->rewind_ptr && !memcmp((const uint8_t*)&storage + sample, &expected, 1031*2*sample),
+                  "multi rewind native %u mode %u layout %u lost folded reverse frames", native, mode, l);
+            for (f = 0; f < sample; f++)
+               CHECK(((const uint8_t*)&storage)[f] == 0x5a
+                     && ((const uint8_t*)&storage)[(1031*2+1)*sample+f] == 0x5a,
+                     "multi rewind buffer guard");
+            CHECK(!cap_frames && !rec_frames && !st->extra.pending
+                  && (mode != 2 || !retro_spsc_read_avail(&st->pipe_ring)),
+                  "multi rewind leaked forward playback/recording");
+            CHECK(canonical_reallocations == allocations, "multi rewind grew reserved staging");
+            test_frame_reversed = false;
+            rs->driver = NULL; rs->data = NULL;
+            st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+            st->rewind_size = st->rewind_ptr = 0;
+            audio_driver_deinit_internal(true);
+            settings->bools.audio_time_stretch = false;
+         }
+   printf("cached multichannel rewind: 18 cases, %u failures\n", failures - before);
+}
+
 static void rewind_bounds_cases(void)
 {
    audio_driver_state_t *st = &audio_driver_st;

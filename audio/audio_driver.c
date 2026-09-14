@@ -5855,6 +5855,45 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
    return true;
 }
 
+#ifdef HAVE_REWIND
+/* Cached multichannel callbacks cannot be swapped by the state manager. */
+static size_t audio_driver_multi_rewind(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned channels, unsigned layout,
+      bool floating)
+{
+   size_t done = 0;
+   size_t sample = floating ? sizeof(float) : sizeof(int16_t);
+   if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+         || (audio_st->float_gate && audio_st->float_gate()))
+      return frames;
+   if (layout == AUDIO_LAYOUT_STEREO)
+      return floating ? audio_driver_sample_batch_float((const float*)data, frames)
+         : audio_driver_sample_batch_rewind((const int16_t*)data, frames);
+   while (done < frames && audio_st->rewind_ptr >= 2)
+   {
+      size_t n = frames - done;
+      if (n > audio_st->rewind_ptr / 2) n = audio_st->rewind_ptr / 2;
+      if (n > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) n = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+      if (!audio_driver_multi_fold_room(audio_st, n, sample))
+         return done;
+      if (floating)
+      {
+         audio_downmix_f32((float*)audio_st->multi_fold,
+               (const float*)data + done * channels, n, layout, channels);
+         audio_driver_sample_batch_float((const float*)audio_st->multi_fold, n);
+      }
+      else
+      {
+         audio_downmix_s16((int16_t*)audio_st->multi_fold,
+               (const int16_t*)data + done * channels, n, layout, channels);
+         audio_driver_sample_batch_rewind((const int16_t*)audio_st->multi_fold, n);
+      }
+      done += n;
+   }
+   return frames;
+}
+#endif
+
 size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
       unsigned channels, unsigned layout)
 {
@@ -5862,6 +5901,10 @@ size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
    if (!data || !audio_driver_multi_layout_ok(channels, layout))
       return 0;
    audio_st->core_layout = layout;
+#ifdef HAVE_REWIND
+   if (state_manager_frame_is_reversed())
+      return audio_driver_multi_rewind(audio_st, data, frames, channels, layout, false);
+#endif
    if (layout == AUDIO_LAYOUT_STEREO)
       return audio_driver_sample_batch(data, frames);
    if (!frames)
@@ -5924,6 +5967,10 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
    if (!data || !audio_driver_multi_layout_ok(channels, layout))
       return 0;
    audio_st->core_layout = layout;
+#ifdef HAVE_REWIND
+   if (state_manager_frame_is_reversed())
+      return audio_driver_multi_rewind(audio_st, data, frames, channels, layout, true);
+#endif
    if (layout == AUDIO_LAYOUT_STEREO)
       return audio_driver_sample_batch_float(data, frames);
    if (!frames)

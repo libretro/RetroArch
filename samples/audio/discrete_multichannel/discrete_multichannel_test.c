@@ -2445,6 +2445,7 @@ int main(void)
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
    RUN("rewindframes", rewind_frame_cases());
+   RUN("multireverse", multi_rewind_cases());
    RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());
