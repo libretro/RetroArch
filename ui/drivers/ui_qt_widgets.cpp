@@ -2661,7 +2661,10 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
    /* The same one-line help the Win32 and Cocoa companions show for
-    * these rows, on both the label and the control. */
+    * these rows, on both the label and the control. The text is the
+    * menu's, and so is wrapped_tooltip() - a build without the menu
+    * has neither. */
+#ifdef HAVE_MENU
    {
       struct { QWidget *w; enum msg_hash_enums help; } tips[] = {
          { m_saveGeometryCheckBox,         MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY },
@@ -2683,6 +2686,7 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
             label->setToolTip(tip);
       }
    }
+#endif
 
    layout->addLayout(form);
 

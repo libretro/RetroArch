@@ -55,6 +55,12 @@ jobs:
           # Linux - the rest need SDKs that are not here - and treats a
           # mismatched function pointer as the error it is.
           #
+          # The names are matched with digits in them as well: a driver
+          # called sdl3 or v4l2 or ps2 is exactly as positional as one
+          # that spells itself in letters, and six of them were being
+          # walked past. The display drivers fill in a vtable of the
+          # same shape, so they are here too.
+          #
           # A static function nobody calls is in the same family and is
           # caught here too: it is what a call site that was meant to
           # be there and is not looks like from the compiler's side.
@@ -74,7 +80,7 @@ jobs:
           # an audio_driver_t and does not live under audio/drivers,
           # and so was not in the list this job first carried.
           files=$(grep -rl -E \
-             'audio_driver_t [a-z_]+ *=|camera_driver_t [a-z_]+ *=|record_driver_t [a-z_]+ *=|microphone_driver_t [a-z_]+ *=' \
+             'audio_driver_t [a-z_0-9]+ *=|camera_driver_t [a-z_0-9]+ *=|record_driver_t [a-z_0-9]+ *=|microphone_driver_t [a-z_0-9]+ *=|gfx_display_ctx_driver_t [a-z_0-9]+ *=' \
              --include='*.c' . | grep -v '^\./samples/' | sort)
           echo "$files" | sed 's/^/  /'
           echo
