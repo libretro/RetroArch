@@ -90,9 +90,11 @@ size_t retro_waitable_spsc_write(retro_waitable_spsc_t *q,
 {
    size_t n = retro_spsc_write(&q->queue, data, bytes);
 
-   /* Told even when nothing was written: a consumer parked on a queue
-    * this full is waiting on the producer, and a write that fitted
-    * nothing has not changed that, so the notify is skipped. */
+   /* Skipped when nothing was written: a write that fitted nothing
+    * leaves the queue exactly as the consumer last saw it, and a
+    * consumer only parks on a queue with nothing to read - which a
+    * queue too full to accept this write is not. There is no wake to
+    * lose. */
    if (n)
       retro_eventcount_notify(&q->readable);
 
