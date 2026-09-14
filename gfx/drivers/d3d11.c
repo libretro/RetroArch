@@ -1060,6 +1060,13 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void*                         font_data;
    struct font_atlas*            atlas;
+   /* Glyph sprites gathered while a raster block is bound, drawn as
+    * one batch by d3d11_font_flush_block(). */
+   d3d11_sprite_t*               acc;
+   video_font_raster_block_t*    block;
+   d3d11_video_t*                d3d11;
+   unsigned                      acc_count;
+   unsigned                      acc_cap;
 } d3d11_font_t;
 
 static void d3d11_font_update_atlas_region(
@@ -1090,6 +1097,7 @@ static void * d3d11_font_init(void* data, const char* font_path,
       return NULL;
    }
 
+   font->d3d11               = d3d11;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
    font->texture.desc.Width  = font->atlas->width;
@@ -1129,6 +1137,7 @@ static void d3d11_font_free(void* data, bool is_threaded)
    Release(font->texture.handle);
    Release(font->texture.staging);
    Release(font->texture.view);
+   free(font->acc);
    free(font);
 }
 
@@ -1213,6 +1222,9 @@ static void d3d11_font_update_atlas_region(
          ctx, (D3D11Resource)font->texture.handle, 0, x0, y0, 0,
          (D3D11Resource)font->texture.staging, 0, &box);
 }
+
+static void d3d11_font_draw_sprites(d3d11_video_t *d3d11,
+      d3d11_font_t *font, unsigned start_offset, unsigned total_count);
 
 static void d3d11_font_render_msg(
       void *userdata,
@@ -1349,23 +1361,45 @@ static void d3d11_font_render_msg(
          total_bytes++;
       }
       need = have_drop ? total_bytes * 2 : total_bytes;
-      if (d3d11->sprites.offset + need > (unsigned)d3d11->sprites.capacity)
+      if (font->block)
       {
-         d3d11->sprites.offset = 0;
-         map_type              = D3D11_MAP_WRITE_DISCARD;
+         /* Gather into the block; the draw happens at flush */
+         unsigned want = font->acc_count + (unsigned)need;
+         if (want > font->acc_cap)
+         {
+            unsigned cap = font->acc_cap ? font->acc_cap : 512;
+            d3d11_sprite_t *acc;
+            while (cap < want)
+               cap *= 2;
+            if (!(acc = (d3d11_sprite_t*)realloc(font->acc,
+                        cap * sizeof(*acc))))
+               return;
+            font->acc     = acc;
+            font->acc_cap = cap;
+         }
+         mapped_vbo.pData = font->acc;
+         start_offset     = font->acc_count;
+      }
+      else
+      {
+         if (d3d11->sprites.offset + need > (unsigned)d3d11->sprites.capacity)
+         {
+            d3d11->sprites.offset = 0;
+            map_type              = D3D11_MAP_WRITE_DISCARD;
+         }
+
+         /* Single Map for the entire message (all lines, shadow + foreground). */
+         hr = d3d11->context->lpVtbl->Map(
+               d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
+               0, map_type, 0, &mapped_vbo);
+
+         if (FAILED(hr))
+            return;
+         start_offset = d3d11->sprites.offset;
       }
    }
 
-   /* Single Map for the entire message (all lines, shadow + foreground). */
-   hr = d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
-         0, map_type, 0, &mapped_vbo);
-
-   if (FAILED(hr))
-      return;
-
-   v             = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
-   start_offset  = d3d11->sprites.offset;
+   v = (d3d11_sprite_t*)mapped_vbo.pData + start_offset;
 
    /* Prepare a sprite template for the constant fields.
     * params.scaling (1.0f) and params.rotation (0.0f) are identical for
@@ -1381,7 +1415,8 @@ static void d3d11_font_render_msg(
    {
       const char *line_start = msg;
       int lines              = 0;
-      int capacity           = d3d11->sprites.capacity;
+      int capacity           = font->block
+         ? (int)(font->acc_cap - start_offset) : d3d11->sprites.capacity;
       bool need_align        = (text_align == TEXT_ALIGN_RIGHT
                                  || text_align == TEXT_ALIGN_CENTER);
 
@@ -1549,13 +1584,6 @@ static void d3d11_font_render_msg(
    total_count = (unsigned)(v
          - ((d3d11_sprite_t*)mapped_vbo.pData + start_offset));
 
-   /* Single Unmap for the entire message. */
-   d3d11->context->lpVtbl->Unmap(
-         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
-
-   if (!total_count)
-      return;
-
    if (font->atlas->dirty)
    {
       if (font->texture.staging)
@@ -1565,6 +1593,28 @@ static void d3d11_font_render_msg(
       font->atlas->dirty = false;
    }
 
+   if (font->block)
+   {
+      font->acc_count                  += total_count;
+      font->block->carr.coords.vertices = font->acc_count;
+      return;
+   }
+
+   /* Single Unmap for the entire message. */
+   d3d11->context->lpVtbl->Unmap(
+         d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
+
+   if (!total_count)
+      return;
+
+   d3d11_font_draw_sprites(d3d11, font, start_offset, total_count);
+}
+
+/* Draws total_count glyph sprites already in the sprite ring at
+ * start_offset with the atlas bound. */
+static void d3d11_font_draw_sprites(d3d11_video_t *d3d11,
+      d3d11_font_t *font, unsigned start_offset, unsigned total_count)
+{
    {
       d3d11_texture_t *texture = (d3d11_texture_t*)&font->texture;
       d3d11->context->lpVtbl->PSSetShaderResources(
@@ -1592,6 +1642,54 @@ static void d3d11_font_render_msg(
          d3d11->context, d3d11_sprite_shader(d3d11)->ps, NULL, 0);
 
    d3d11->sprites.offset = start_offset + total_count;
+}
+
+static void d3d11_font_bind_block(void *data, void *userdata)
+{
+   d3d11_font_t *font = (d3d11_font_t*)data;
+   if (font)
+      font->block = (video_font_raster_block_t*)userdata;
+}
+
+static void d3d11_font_flush_block(unsigned width, unsigned height,
+      void *data)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   D3D11_MAP map_type  = D3D11_MAP_WRITE_NO_OVERWRITE;
+   d3d11_font_t *font  = (d3d11_font_t*)data;
+   d3d11_video_t *d3d11;
+   unsigned count, start_offset;
+
+   if (!font || !font->block || !font->acc_count)
+      return;
+   d3d11 = font->d3d11;
+   if (!d3d11 || !(d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
+   {
+      font->acc_count = 0;
+      return;
+   }
+
+   count = font->acc_count;
+   if (count > (unsigned)d3d11->sprites.capacity)
+      count = (unsigned)d3d11->sprites.capacity;
+   if (d3d11->sprites.offset + count > (unsigned)d3d11->sprites.capacity)
+   {
+      d3d11->sprites.offset = 0;
+      map_type              = D3D11_MAP_WRITE_DISCARD;
+   }
+   start_offset = d3d11->sprites.offset;
+
+   if (SUCCEEDED(d3d11->context->lpVtbl->Map(
+               d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
+               0, map_type, 0, &mapped_vbo)))
+   {
+      memcpy((d3d11_sprite_t*)mapped_vbo.pData + start_offset,
+            font->acc, count * sizeof(d3d11_sprite_t));
+      d3d11->context->lpVtbl->Unmap(
+            d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
+      d3d11_font_draw_sprites(d3d11, font, start_offset, count);
+   }
+   font->acc_count = 0;
 }
 
 static const struct font_glyph* d3d11_font_get_glyph(void *data, uint32_t code)
@@ -6535,8 +6633,8 @@ static font_renderer_t d3d11_font = {
    d3d11_font_render_msg,
    "d3d11",
    d3d11_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
+   d3d11_font_bind_block,
+   d3d11_font_flush_block,
    d3d11_font_get_message_width,
    d3d11_font_get_line_metrics
 };
