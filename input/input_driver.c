@@ -6447,6 +6447,14 @@ void input_overlay_set_visibility(int overlay_idx,
    input_driver_state_t *input_st = &input_driver_st;
    input_overlay_t      *ol       = input_st->overlay_ptr;
 
+   /* The index arrives from a caller's own mapping - the overlay LED
+    * driver passes settings->uints.led_map[], which is read from the
+    * config with no range of its own - so it is bounded here, where the
+    * array size is known, and on the same terms as
+    * input_overlay_get_visibility(). */
+   if (overlay_idx < 0 || overlay_idx >= MAX_VISIBILITY)
+      return;
+
    if (!input_st->overlay_visibility)
    {
       unsigned i;
@@ -6469,7 +6477,12 @@ void input_overlay_set_visibility(int overlay_idx,
 
    if (!ol)
       return;
-   if (vis == OVERLAY_VISIBILITY_HIDDEN)
+   /* set_alpha() indexes the driver's own per-image storage, which is
+    * sized by the images the active overlay loaded, so that is the
+    * bound it gets - the same one input_overlay_set_alpha_mod() walks. */
+   if (     vis == OVERLAY_VISIBILITY_HIDDEN
+         && ol->active
+         && (unsigned)overlay_idx < ol->active->load_images_size)
       ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
 }
 
