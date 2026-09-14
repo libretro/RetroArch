@@ -518,6 +518,12 @@ typedef struct
    void*                         font_data;
    struct font_atlas*            atlas;
    d3d12_video_t*                d3d12; /* For GPU sync on free */
+   /* Glyph sprites gathered while a raster block is bound, drawn as
+    * one batch by d3d12_font_flush_block(). */
+   d3d12_sprite_t*               acc;
+   video_font_raster_block_t*    block;
+   unsigned                      acc_count;
+   unsigned                      acc_cap;
    /* Pending atlas dirty rectangle, staged to the upload buffer on
     * the CPU and awaiting the boxed GPU copy at draw time */
    unsigned                      region_x0;
@@ -1522,6 +1528,7 @@ static void d3d12_font_free(void* data, bool is_threaded)
 
    d3d12_release_texture(&font->texture);
 
+   free(font->acc);
    free(font);
 }
 
@@ -1603,6 +1610,9 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
    font->region_pending = false;
 }
 
+static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
+      d3d12_font_t *font, unsigned total_count);
+
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
@@ -1620,7 +1630,6 @@ static void d3d12_font_render_msg(
    d3d12_font_t*             font   = (d3d12_font_t*)data;
    unsigned                  width;
    unsigned                  height;
-   D3D12GraphicsCommandList  cmd;
    D3D12_RANGE               range;
    d3d12_sprite_t           *vbo_start = NULL;
    d3d12_sprite_t           *v         = NULL;
@@ -1642,7 +1651,6 @@ static void d3d12_font_render_msg(
 
    width  = d3d12->vp.full_width;
    height = d3d12->vp.full_height;
-   cmd    = d3d12->queue.cmd;
 
    if (params)
    {
@@ -1733,14 +1741,36 @@ static void d3d12_font_render_msg(
    if (has_shadow)
       total_len *= 2;
 
-   if (d3d12->sprites.offset + total_len > (unsigned)d3d12->sprites.capacity)
-      d3d12->sprites.offset = 0;
+   if (font->block)
+   {
+      /* Gather into the block; the draw happens at flush */
+      unsigned want = font->acc_count + (unsigned)total_len;
+      if (want > font->acc_cap)
+      {
+         unsigned cap = font->acc_cap ? font->acc_cap : 512;
+         d3d12_sprite_t *acc;
+         while (cap < want)
+            cap *= 2;
+         if (!(acc = (d3d12_sprite_t*)realloc(font->acc,
+                     cap * sizeof(*acc))))
+            return;
+         font->acc     = acc;
+         font->acc_cap = cap;
+      }
+      vbo_start = font->acc;
+      v         = font->acc + font->acc_count;
+   }
+   else
+   {
+      if (d3d12->sprites.offset + total_len > (unsigned)d3d12->sprites.capacity)
+         d3d12->sprites.offset = 0;
 
-   range.Begin = 0;
-   range.End   = 0;
-   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+      range.Begin = 0;
+      range.End   = 0;
+      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
 
-   v              = vbo_start + d3d12->sprites.offset;
+      v           = vbo_start + d3d12->sprites.offset;
+   }
    v_batch_start  = v;
    range.Begin    = (uintptr_t)v - (uintptr_t)vbo_start;
 
@@ -1774,7 +1804,9 @@ static void d3d12_font_render_msg(
             ;
          line_len = (size_t)(p - line_start);
 
-         if (line_len > (size_t)d3d12->sprites.capacity)
+         if (line_len > (font->block
+                  ? (size_t)(font->acc_cap - font->acc_count)
+                  : (size_t)d3d12->sprites.capacity))
             goto next_line;
 
          lx          = xi;
@@ -1883,13 +1915,30 @@ next_line:
       }
    }
 
+   total_count = v - v_batch_start;
+
+   if (font->block)
+   {
+      font->acc_count                  += total_count;
+      font->block->carr.coords.vertices = font->acc_count;
+      return;
+   }
+
    range.End = (uintptr_t)v - (uintptr_t)vbo_start;
    D3D12Unmap(d3d12->sprites.vbo, 0, &range);
 
-   total_count = v - v_batch_start;
-
    if (!total_count)
       return;
+
+   d3d12_font_draw_sprites(d3d12, font, total_count);
+}
+
+/* Draws total_count glyph sprites already in the sprite ring at
+ * sprites.offset with the atlas bound, and advances the ring. */
+static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
+      d3d12_font_t *font, unsigned total_count)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
@@ -1912,6 +1961,52 @@ next_line:
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
 
    d3d12->sprites.offset += total_count;
+}
+
+static void d3d12_font_bind_block(void *data, void *userdata)
+{
+   d3d12_font_t *font = (d3d12_font_t*)data;
+   if (font)
+      font->block = (video_font_raster_block_t*)userdata;
+}
+
+static void d3d12_font_flush_block(unsigned width, unsigned height,
+      void *data)
+{
+   D3D12_RANGE range;
+   d3d12_sprite_t *vbo_start = NULL;
+   d3d12_font_t *font        = (d3d12_font_t*)data;
+   d3d12_video_t *d3d12;
+   unsigned count;
+
+   if (!font || !font->block || !font->acc_count)
+      return;
+   d3d12 = font->d3d12;
+   if (!d3d12 || !(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE))
+   {
+      font->acc_count = 0;
+      return;
+   }
+
+   count = font->acc_count;
+   if (count > (unsigned)d3d12->sprites.capacity)
+      count = (unsigned)d3d12->sprites.capacity;
+   if (d3d12->sprites.offset + count > (unsigned)d3d12->sprites.capacity)
+      d3d12->sprites.offset = 0;
+
+   range.Begin = 0;
+   range.End   = 0;
+   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+   if (vbo_start)
+   {
+      memcpy(vbo_start + d3d12->sprites.offset, font->acc,
+            count * sizeof(d3d12_sprite_t));
+      range.Begin = d3d12->sprites.offset * sizeof(d3d12_sprite_t);
+      range.End   = range.Begin + count * sizeof(d3d12_sprite_t);
+      D3D12Unmap(d3d12->sprites.vbo, 0, &range);
+      d3d12_font_draw_sprites(d3d12, font, count);
+   }
+   font->acc_count = 0;
 }
 
 static const struct font_glyph* d3d12_font_get_glyph(
@@ -8482,8 +8577,8 @@ static font_renderer_t d3d12_font = {
    d3d12_font_render_msg,
    "d3d12",
    d3d12_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
+   d3d12_font_bind_block,
+   d3d12_font_flush_block,
    d3d12_font_get_message_width,
    d3d12_font_get_line_metrics
 };
