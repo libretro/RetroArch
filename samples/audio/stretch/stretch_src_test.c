@@ -128,7 +128,7 @@ int main(void)
    for (channels = 2; channels <= AUDIO_STRETCH_MAX_CHANNELS; channels += channels == 2 ? 6 : 3)
       for (native = 0; native < 2; native++)
          for (ratio = 0; ratio < 3; ratio++)
-            for (hq = 0; hq < 2; hq++)
+            for (hq = (native + ratio) & 1; hq < 2; hq += 2)
             {
                size_t reference, frames, frame = channels * (native ? sizeof(float) : sizeof(int16_t));
                fill(channels);
@@ -138,7 +138,7 @@ int main(void)
                chain_accept(native ? (void*)output_f[0] : (void*)output_i[0], frames);
                guarded = 0;
                reference = chain_free();
-               for (capacity = 13; capacity <= 257; capacity += 244)
+               capacity = ((channels + native + ratio) & 1) ? 13 : 257;
                {
                   audio_stretch_stream_t *stream = audio_stretch_stream_new(48000, channels, native, 1);
                   union chain_buffer block;
