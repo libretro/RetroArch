@@ -2445,6 +2445,7 @@ int main(void)
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
    RUN("inlinewide", inline_wide_cases());
+   RUN("inlineformat", inline_format_cases());
    RUN("inline", inline_transport_cases());
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());

@@ -153,3 +153,111 @@ static void inline_wide_cases(void)
    runloop_state_get_ptr()->flags = 0;
    printf("wide inline native transport: %u cases, %u failures\n", cases, failures - before);
 }
+
+/* Negotiate on the source owner with an unfinished old-format window. */
+static void inline_format_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   union { float f[257*6]; int16_t i[257*6]; } input;
+   int16_t accum[AUDIO_SAMPLE_ACCUM_INT16S];
+   unsigned native, wide, hq, pass, cases = 0, before = failures;
+   for (native = 0; native < 2; native++)
+      for (wide = 0; wide < 2; wide++)
+         for (hq = 0; hq < 2; hq++)
+         {
+            struct audio_inline_transport *saved;
+            size_t f;
+            CHECK(up(native, AUDIO_LAYOUT_5POINT1, true), "format stand-up");
+            free(cap); cap = NULL; cap_cap = cap_frames = 0;
+            st->resampler_hq = hq;
+            CHECK(retro_resampler_realloc_hq(&st->resampler_data, &st->resampler,
+                  "sinc", st->resampler_quality, st->src_ratio_orig, hq), "format SRC");
+            settings->bools.audio_fastpath_s16 = true;
+            st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+            st->resampler_int16_process = sinc_resampler_int16_process;
+            st->resampler_int16_free = sinc_resampler_int16_free;
+            st->resampler_int16_reset = sinc_resampler_int16_reset;
+            audio_driver_set_core_multi(wide);
+            CHECK(!st->inline_transport, "negotiation enabled an unconfigured stage");
+            settings->bools.audio_time_stretch = true;
+            settings->bools.audio_time_stretch_lowpass = true;
+            settings->floats.slowmotion_ratio = 2;
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            CHECK(audio_driver_transport_configure(settings), "format configure");
+            saved = st->inline_transport;
+            st->sample_accum = accum;
+            CHECK(saved && saved->channels == (wide ? 11u : 2u), "initial format width");
+            for (f = 0; f < 17*2; f++)
+               if (native) input.f[f] = 0.3f;
+               else input.i[f] = 9830;
+            if (native) audio_driver_sample_batch_float(input.f, 17);
+            else audio_driver_sample_batch(input.i, 17);
+            CHECK(!audio_stretch_stream_quiescent(saved->stream), "missing old-format tail");
+            audio_driver_set_core_float(native);
+            audio_driver_set_core_multi(wide);
+            CHECK(st->inline_transport == saved && !audio_stretch_stream_quiescent(saved->stream),
+                  "repeated negotiation discarded history");
+            audio_driver_set_core_multi(true);
+            CHECK(st->inline_transport && st->inline_transport->channels == 11,
+                  "late wide negotiation retained stereo stage");
+            for (pass = 0; pass < 2; pass++)
+            {
+               bool floating = pass ? native : !native;
+               size_t start = cap_frames;
+               unsigned allocations;
+               if (!st->core_float)
+               {
+                  audio_driver_sample(0, 0);
+                  CHECK(st->data_ptr == 2, "missing single-sample input");
+               }
+               st->last_flush_time = st->avg_flush_delta = 123;
+               audio_driver_set_core_float(floating);
+               start = cap_frames; /* Accumulated old source was flushed before the boundary. */
+               saved = st->inline_transport;
+               CHECK(saved && saved->floating == floating && saved->channels == 11,
+                     "native format rebind failed");
+               CHECK(audio_stretch_stream_quiescent(saved->stream)
+                     && !st->last_flush_time && !st->avg_flush_delta && !st->extra.pending
+                     && !st->data_ptr,
+                     "format change retained old cadence or DSP history");
+               transport_track = true;
+               allocations = transport_allocations;
+               memset(&input, 0, sizeof(input));
+               for (f = 0; f < 32; f++)
+                  if (floating) audio_driver_sample_batch_multi_float(input.f, 257, 6, AUDIO_LAYOUT_5POINT1);
+                  else audio_driver_sample_batch_multi_int16(input.i, 257, 6, AUDIO_LAYOUT_5POINT1);
+               CHECK(!saved->bypassed && cap_frames > start + 8192,
+                     "rebound stage lost slow-motion duration");
+               for (f = start * dev_channels; f < cap_frames * dev_channels; f++)
+                  CHECK(cap[f] == 0.0f, "old-format tail leaked into silence");
+               audio_driver_set_core_multi(false);
+               CHECK(st->inline_transport == saved, "stereo return reallocated canonical arena");
+               audio_driver_set_core_multi(true);
+               CHECK(st->inline_transport == saved, "wide return reallocated canonical arena");
+               CHECK(transport_allocations == allocations, "steady playback allocated an arena");
+               transport_track = false;
+            }
+            CHECK(audio_driver_stop() && audio_stretch_stream_quiescent(saved->stream), "rebound stop");
+            CHECK(audio_driver_start(false), "rebound restart");
+            transport_fail_output = true;
+            audio_driver_set_core_float(!native);
+            transport_fail_output = false;
+            CHECK(!st->inline_transport && st->core_float == !native, "failed rebind retained stale stage");
+            runloop_state_get_ptr()->flags = 0;
+            f = cap_frames;
+            if (!native) audio_driver_sample_batch_multi_float(input.f, 257, 6, AUDIO_LAYOUT_5POINT1);
+            else audio_driver_sample_batch_multi_int16(input.i, 257, 6, AUDIO_LAYOUT_5POINT1);
+            CHECK(cap_frames > f, "failed rebind muted ordinary playback");
+            audio_driver_deinit_internal(true);
+            audio_driver_set_core_float(!native);
+            audio_driver_set_core_multi(false);
+            CHECK(!st->inline_transport, "negotiation resurrected deinitialized stage");
+            cases++;
+         }
+   settings->bools.audio_time_stretch = settings->bools.audio_time_stretch_lowpass = false;
+   settings->bools.audio_fastpath_s16 = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("inline format negotiation: %u cases, %u failures\n", cases, failures - before);
+}

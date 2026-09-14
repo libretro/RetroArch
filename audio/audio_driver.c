@@ -3525,16 +3525,16 @@ static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
          samples >> 1, floating, slowmotion, fastforward, AUDIO_LAYOUT_STEREO);
 }
 
-static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st)
+static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st,
+      bool floating, unsigned channels)
 {
    struct audio_inline_transport *t;
    size_t bytes, capacity = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
-   if (!audio_st->core_multi && audio_st->core_layout != AUDIO_LAYOUT_STEREO) return false;
    if (audio_st->inline_transport) return true;
    t = (struct audio_inline_transport*)calloc(1, sizeof(*t));
    if (!t) return false;
-   t->floating = audio_st->core_float;
-   t->channels = audio_st->core_multi ? AUDIO_PIPE_CANON_CHANNELS : 2;
+   t->floating = floating;
+   t->channels = channels;
    t->layout = AUDIO_LAYOUT_STEREO;
    t->stream = audio_stretch_stream_new((unsigned)audio_st->input, t->channels, t->floating, 3);
    bytes = capacity * t->channels * (t->floating ? sizeof(float) : sizeof(int16_t));
@@ -7167,8 +7167,35 @@ void audio_driver_set_float_gate(audio_driver_float_gate_t gate)
    audio_driver_st.float_gate = gate;
 }
 
+/* Negotiation runs on the source owner, between audio callbacks. */
+static void audio_driver_inline_set_format(audio_driver_state_t *audio_st,
+      bool floating, bool multi)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   unsigned channels;
+   if (audio_st->pipe_threaded || !t)
+      return;
+   /* Keep the canonical arena when returning to stereo. */
+   channels = multi ? AUDIO_PIPE_CANON_CHANNELS : t->channels;
+   if (t->floating == floating && t->channels == channels)
+      return;
+   if (audio_st->data_ptr)
+      audio_driver_sample_accum_flush(audio_st);
+   audio_driver_state_lock();
+   audio_driver_inline_free(audio_st);
+   audio_driver_reset_resamplers(audio_st);
+   audio_st->last_flush_time = 0;
+   audio_st->avg_flush_delta = 0;
+   /* A format boundary discards the old tail. Allocation failure leaves
+    * ordinary native playback available until audio reinitialization. */
+   audio_driver_inline_prepare(audio_st, floating, channels);
+   audio_driver_state_unlock();
+}
+
 void audio_driver_set_core_multi(bool core_multi)
 {
+   audio_driver_inline_set_format(&audio_driver_st,
+         audio_driver_st.core_float, core_multi);
    audio_driver_st.core_multi = core_multi;
 }
 
@@ -7398,6 +7425,7 @@ static void audio_driver_pipe_set_format(void *userdata)
 void audio_driver_set_core_float(bool core_float)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+   audio_driver_inline_set_format(audio_st, core_float, audio_st->core_multi);
    audio_st->core_float = core_float;
 #ifdef HAVE_THREADS
    if (audio_st->pipe_threaded && audio_st->pipe_float != core_float)
@@ -8944,7 +8972,9 @@ static bool audio_driver_transport_configure(const settings_t *settings)
          || audio_st->input < 8000.0f || audio_st->input > 192000.0f)
       return false;
    if (!audio_st->pipe_threaded)
-      return audio_driver_inline_prepare(audio_st);
+      return (audio_st->core_multi || audio_st->core_layout == AUDIO_LAYOUT_STEREO)
+         && audio_driver_inline_prepare(audio_st, audio_st->core_float,
+               audio_st->core_multi ? AUDIO_PIPE_CANON_CHANNELS : 2);
 #ifdef HAVE_THREADS
    /* The front pair drives one shared search for every native channel. */
    if (audio_driver_transport_runloop_tempo(&tempo))

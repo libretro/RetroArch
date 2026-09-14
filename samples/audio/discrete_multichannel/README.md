@@ -53,3 +53,13 @@ layout-dependent state on first use or layout changes; its input reservation
 covers the full bounded output block to avoid growth as batch sizes vary.
 Layout changes discard retained transport history and reset SRC; they are not
 seamless tail-preserving handoffs. Stereo-only cores retain their smaller arena.
+
+`DM_ONLY=inlineformat ./discrete_multichannel_test` covers late multichannel
+negotiation and both native format directions with normal/HQ SRC. It checks
+repeated negotiation, retained stereo/wide storage, stale-tail isolation,
+slow-motion duration, accumulator flushing, allocation failure, stop and
+negotiation after teardown. Negotiation runs
+between source callbacks; a changed format rebuilds optional transport storage
+and resets retained DSP history and cadence. Allocation failure uses ordinary
+playback until reinitialization. No transport allocation is added to sample
+processing. Returning to stereo retains the canonical arena.
