@@ -741,6 +741,12 @@ typedef CFTypeRef IOAVServiceRef;
 typedef IOAVServiceRef (*apple_avservice_create_t)(CFAllocatorRef, io_service_t);
 typedef IOReturn (*apple_avservice_copy_edid_t)(IOAVServiceRef, CFDataRef*);
 
+/* The plane argument is declared io_name_t, a char[128], so it is
+ * handed an object of that width: a bare string literal is a ten-byte
+ * object in a parameter that is read as 128, which GCC reports as an
+ * overread. */
+static const io_name_t apple_service_plane = kIOServicePlane;
+
 /* The block a proxy reports, if it is a whole number of 128-byte
  * blocks and at least one. Returns the length, or 0. */
 static size_t apple_dcp_service_edid(apple_avservice_copy_edid_t copy_edid,
@@ -817,7 +823,7 @@ static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
       /* Location is External on a connected display and Embedded on
        * the built-in panel, which has no EDID to read */
       CFStringRef location = (CFStringRef)IORegistryEntrySearchCFProperty(
-            svc, kIOServicePlane, CFSTR("Location"), kCFAllocatorDefault,
+            svc, apple_service_plane, CFSTR("Location"), kCFAllocatorDefault,
             kIORegistryIterateRecursively);
       bool external = location
          && CFGetTypeID(location) == CFStringGetTypeID()
