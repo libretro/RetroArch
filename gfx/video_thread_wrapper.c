@@ -1869,6 +1869,177 @@ static bool video_thread_has_windowed(void *data)
    return retro_atomic_load_acquire_int(&thr->has_windowed) != 0;
 }
 
+/* The handoff statistics, off the push's own path: a window starts,
+ * a push is accounted, a window is closed. Main thread. */
+static VIDEO_NOINLINE void video_thread_handoff_begin(thread_video_t *thr)
+{
+   /* The lend counts run whether or not the overlay is up; a window
+    * starts clean when it comes up */
+   thr->handoff.asked  = thr->handoff.lent   = 0;
+   thr->handoff.lapsed = 0;
+   thr->handoff.declined_ring = thr->handoff.declined_size = 0;
+}
+
+static VIDEO_NOINLINE void video_thread_handoff_account(thread_video_t *thr,
+      uint64_t handoff, uint64_t c_copy, uint64_t c_wait, size_t copied,
+      bool hw, bool zero_copy, bool waited, bool dropped)
+{
+   thr->handoff.handoff_sum += handoff;
+   if (handoff > thr->handoff.handoff_max)
+      thr->handoff.handoff_max = handoff;
+   thr->handoff.copy_sum    += c_copy;
+   if (c_copy > thr->handoff.copy_max)
+      thr->handoff.copy_max    = c_copy;
+   thr->handoff.wait_sum    += c_wait;
+   if (c_wait > thr->handoff.wait_max)
+      thr->handoff.wait_max    = c_wait;
+   thr->handoff.bytes       += copied;
+   if (hw)
+      thr->handoff.hw++;
+   else if (zero_copy)
+      thr->handoff.zero_copy++;
+   else if (copied)
+      thr->handoff.copied++;
+   if (waited)
+      thr->handoff.waits++;
+   if (dropped)
+      thr->handoff.dropped++;
+}
+
+/* The window's tick rate comes from this push's span between the two
+ * clock reads it makes anyway; after 120 pushes the window closes. */
+static VIDEO_NOINLINE void video_thread_handoff_latch(thread_video_t *thr,
+      uint64_t span_ticks, uint64_t span_us)
+{
+   thr->handoff.span_ticks += span_ticks;
+   thr->handoff.span_us    += span_us;
+   if (++thr->handoff.frames >= 120 && thr->handoff.span_ticks)
+   {
+      unsigned n    = thr->handoff.frames;
+      uint64_t tk   = thr->handoff.span_ticks;
+      uint64_t us   = thr->handoff.span_us;
+      video_thread_handoff_stats_t *l = &thr->handoff.last;
+      /* x100 microseconds = ticks * 100 * us / ticks-of-span */
+      l->handoff_avg_x100 = thr->handoff.handoff_sum * 100 * us / tk / n;
+      l->handoff_worst    = thr->handoff.handoff_max * us / tk;
+      l->copy_avg_x100    = thr->handoff.copy_sum * 100 * us / tk / n;
+      l->copy_worst       = thr->handoff.copy_max * us / tk;
+      l->wait_avg_x100    = thr->handoff.wait_sum * 100 * us / tk / n;
+      l->wait_worst       = thr->handoff.wait_max * us / tk;
+      l->bytes_per_frame  = thr->handoff.bytes / n;
+      l->frames_copied    = thr->handoff.copied;
+      l->frames_zero_copy = thr->handoff.zero_copy;
+      l->frames_hw        = thr->handoff.hw;
+      l->waits            = thr->handoff.waits;
+      l->dropped          = thr->handoff.dropped;
+      l->drains           = thr->handoff.drains;
+      l->asked            = thr->handoff.asked;
+      l->lent             = thr->handoff.lent;
+      l->lapsed           = thr->handoff.lapsed;
+      l->declined_ring    = thr->handoff.declined_ring;
+      l->declined_size    = thr->handoff.declined_size;
+      thr->handoff.handoff_sum = thr->handoff.handoff_max = 0;
+      thr->handoff.copy_sum    = thr->handoff.copy_max    = 0;
+      thr->handoff.wait_sum    = thr->handoff.wait_max    = 0;
+      thr->handoff.span_ticks  = thr->handoff.span_us     = 0;
+      thr->handoff.bytes       = 0;
+      thr->handoff.copied      = thr->handoff.zero_copy   = 0;
+      thr->handoff.hw          = thr->handoff.waits       = 0;
+      thr->handoff.asked       = thr->handoff.lent        = 0;
+      thr->handoff.lapsed      = 0;
+      thr->handoff.declined_ring = thr->handoff.declined_size = 0;
+      thr->handoff.dropped     = thr->handoff.drains      = 0;
+      thr->handoff.frames      = 0;
+   }
+}
+
+   /* Display pacing: hold the runloop here so the next core frame
+    * starts as late as its display slot allows. The frame just pushed
+    * is due at next_present; the one after it at next_present + period.
+    * Reserve the render time the video thread measures, the core time
+    * measured here, and a margin, and wait until then. A frame that
+    * still runs long is repeated by the presenter, not missed. Skipped
+    * in fast-forward only. In the menu it holds too, to the display's
+    * period rather than the content's: with the gap limiter standing
+    * aside for display pacing, nothing else paces the menu, and it ran
+    * unthrottled the moment the content stopped. Fast-forward, not the
+    * driver's nonblock state:
+    * that state is also set with vsync off, and a core paced to the
+    * display's vblank with a non-blocking present is the point - the
+    * frame goes out on the next scanout, and the core should have
+    * started as late as that allowed. With this on nonblock, vsync off
+    * silently turned display pacing off. */
+static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
+      retro_time_t now)
+{
+   if (     thr->display_pacing
+         && !thr->fast_forward
+         && thr->present_period > 0
+         && thr->next_present > 0)
+   {
+      retro_time_t reserve = thr->render_time + thr->core_time;
+      retro_time_t margin  = reserve / 8;
+      retro_time_t period  = thr->present_period;
+      retro_time_t content;
+      retro_time_t vblank;
+      retro_time_t target;
+      bool drained         = false;
+      double fps = video_state_get_ptr()->av_info.timing.fps;
+      if (margin < 500)
+         margin = 500;
+
+      /* The content's own period, not the display's: on a 120 Hz
+       * display a 60 fps core is due every other vblank, and a hold
+       * that released it every vblank ran it at four times speed. The
+       * due time accumulates in the content's period exactly, so the
+       * cadence is the content's over any stretch; each frame then
+       * goes out on the first vblank at or after its due time, which
+       * is where the target is measured from. After a stall the
+       * schedule restarts from the presenter's next vblank rather than
+       * carrying a backlog. */
+      content = (fps > 1.0) ? (retro_time_t)(1000000.0 / fps) : period;
+      /* With the core stopped - paused, or under a menu that pauses
+       * it - the frames are the menu's or a repeat, not content, and
+       * run at the display's rate. A core running under the menu keeps
+       * the content's period: the display's ran it at the display's
+       * rate, twice its speed on a 120 Hz panel. */
+      if (!thr->core_running)
+         content = period;
+      if (thr->content_due <= 0 || thr->content_due < now - content)
+         thr->content_due = thr->next_present;
+      else
+         thr->content_due += content;
+      /* Once after a frame went out a period late for having queued
+       * behind another: skip a content period, so the queue drains and
+       * the frames after go out on their own vblank. The due time
+       * moves with it, or the cadence would catch straight back up. */
+      if (thr->drain_pending)
+      {
+         thr->drain_pending = false;
+         thr->content_due  += content;
+         drained            = true;
+         thr->handoff.drains++;
+      }
+      if (thr->content_due < thr->next_present)
+         thr->content_due = thr->next_present;
+      vblank = thr->next_present;
+      if (period > 0)
+         while (vblank < thr->content_due)
+            vblank += period;
+
+      target = vblank - reserve - margin;
+      /* Never hold longer than a content period: the estimate can be
+       * wrong. A drain holds one longer. */
+      if (target > now + content * (drained ? 2 : 1))
+         target = now + content * (drained ? 2 : 1);
+      while (now < target)
+      {
+         scond_wait_timeout(thr->cond_ring, thr->lock, target - now);
+         now = cpu_features_get_time_usec();
+      }
+   }
+}
+
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -1941,14 +2112,8 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (timed)
    {
       c_in = (uint64_t)cpu_features_get_perf_counter();
-      /* The lend counts run whether or not the overlay is up; a window
-       * starts clean when it comes up */
       if (!thr->handoff.counting)
-      {
-         thr->handoff.asked  = thr->handoff.lent   = 0;
-         thr->handoff.lapsed = 0;
-         thr->handoff.declined_ring = thr->handoff.declined_size = 0;
-      }
+         video_thread_handoff_begin(thr);
    }
    thr->handoff.counting = timed;
 
@@ -2209,29 +2374,10 @@ static bool video_thread_frame(void *data, const void *frame_,
    scond_signal(thr->cond_thread);
 
    if (timed)
-   {
-      uint64_t handoff = (uint64_t)cpu_features_get_perf_counter() - c_in - c_wait;
-      thr->handoff.handoff_sum += handoff;
-      if (handoff > thr->handoff.handoff_max)
-         thr->handoff.handoff_max = handoff;
-      thr->handoff.copy_sum    += c_copy;
-      if (c_copy > thr->handoff.copy_max)
-         thr->handoff.copy_max    = c_copy;
-      thr->handoff.wait_sum    += c_wait;
-      if (c_wait > thr->handoff.wait_max)
-         thr->handoff.wait_max    = c_wait;
-      thr->handoff.bytes       += copied;
-      if (hw_slot >= 0)
-         thr->handoff.hw++;
-      else if (zero_copy)
-         thr->handoff.zero_copy++;
-      else if (copied)
-         thr->handoff.copied++;
-      if (waited)
-         thr->handoff.waits++;
-      if (dropped)
-         thr->handoff.dropped++;
-   }
+      video_thread_handoff_account(thr,
+            (uint64_t)cpu_features_get_perf_counter() - c_in - c_wait,
+            c_copy, c_wait, copied, hw_slot >= 0, zero_copy, waited,
+            dropped);
 
 #ifdef HAVE_MENU
    if (thr->texture.enable)
@@ -2253,88 +2399,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (!dropped)
       thr->hit_count++;
 
-   /* Display pacing: hold the runloop here so the next core frame
-    * starts as late as its display slot allows. The frame just pushed
-    * is due at next_present; the one after it at next_present + period.
-    * Reserve the render time the video thread measures, the core time
-    * measured here, and a margin, and wait until then. A frame that
-    * still runs long is repeated by the presenter, not missed. Skipped
-    * in fast-forward only. In the menu it holds too, to the display's
-    * period rather than the content's: with the gap limiter standing
-    * aside for display pacing, nothing else paces the menu, and it ran
-    * unthrottled the moment the content stopped. Fast-forward, not the
-    * driver's nonblock state:
-    * that state is also set with vsync off, and a core paced to the
-    * display's vblank with a non-blocking present is the point - the
-    * frame goes out on the next scanout, and the core should have
-    * started as late as that allowed. With this on nonblock, vsync off
-    * silently turned display pacing off. */
-   if (     thr->display_pacing
-         && !thr->fast_forward
-         && thr->present_period > 0
-         && thr->next_present > 0)
-   {
-      retro_time_t reserve = thr->render_time + thr->core_time;
-      retro_time_t margin  = reserve / 8;
-      retro_time_t period  = thr->present_period;
-      retro_time_t content;
-      retro_time_t vblank;
-      retro_time_t target;
-      bool drained         = false;
-      double fps = video_state_get_ptr()->av_info.timing.fps;
-      if (margin < 500)
-         margin = 500;
-
-      /* The content's own period, not the display's: on a 120 Hz
-       * display a 60 fps core is due every other vblank, and a hold
-       * that released it every vblank ran it at four times speed. The
-       * due time accumulates in the content's period exactly, so the
-       * cadence is the content's over any stretch; each frame then
-       * goes out on the first vblank at or after its due time, which
-       * is where the target is measured from. After a stall the
-       * schedule restarts from the presenter's next vblank rather than
-       * carrying a backlog. */
-      content = (fps > 1.0) ? (retro_time_t)(1000000.0 / fps) : period;
-      /* With the core stopped - paused, or under a menu that pauses
-       * it - the frames are the menu's or a repeat, not content, and
-       * run at the display's rate. A core running under the menu keeps
-       * the content's period: the display's ran it at the display's
-       * rate, twice its speed on a 120 Hz panel. */
-      if (!thr->core_running)
-         content = period;
-      if (thr->content_due <= 0 || thr->content_due < now - content)
-         thr->content_due = thr->next_present;
-      else
-         thr->content_due += content;
-      /* Once after a frame went out a period late for having queued
-       * behind another: skip a content period, so the queue drains and
-       * the frames after go out on their own vblank. The due time
-       * moves with it, or the cadence would catch straight back up. */
-      if (thr->drain_pending)
-      {
-         thr->drain_pending = false;
-         thr->content_due  += content;
-         drained            = true;
-         thr->handoff.drains++;
-      }
-      if (thr->content_due < thr->next_present)
-         thr->content_due = thr->next_present;
-      vblank = thr->next_present;
-      if (period > 0)
-         while (vblank < thr->content_due)
-            vblank += period;
-
-      target = vblank - reserve - margin;
-      /* Never hold longer than a content period: the estimate can be
-       * wrong. A drain holds one longer. */
-      if (target > now + content * (drained ? 2 : 1))
-         target = now + content * (drained ? 2 : 1);
-      while (now < target)
-      {
-         scond_wait_timeout(thr->cond_ring, thr->lock, target - now);
-         now = cpu_features_get_time_usec();
-      }
-   }
+   video_thread_pace_hold(thr, now);
 
    slock_unlock(thr->lock);
 
@@ -2342,50 +2407,9 @@ static bool video_thread_frame(void *data, const void *frame_,
    thr->run_start = thr->last_time;
 
    if (timed)
-   {
-      /* The window's tick rate, from this frame's span between the two
-       * clock reads the push makes anyway; then the window itself. */
-      thr->handoff.span_ticks += (uint64_t)cpu_features_get_perf_counter() - c_now;
-      thr->handoff.span_us    += (uint64_t)(thr->last_time - t_now);
-      if (++thr->handoff.frames >= 120 && thr->handoff.span_ticks)
-      {
-         unsigned n    = thr->handoff.frames;
-         uint64_t tk   = thr->handoff.span_ticks;
-         uint64_t us   = thr->handoff.span_us;
-         video_thread_handoff_stats_t *l = &thr->handoff.last;
-         /* x100 microseconds = ticks * 100 * us / ticks-of-span */
-         l->handoff_avg_x100 = thr->handoff.handoff_sum * 100 * us / tk / n;
-         l->handoff_worst    = thr->handoff.handoff_max * us / tk;
-         l->copy_avg_x100    = thr->handoff.copy_sum * 100 * us / tk / n;
-         l->copy_worst       = thr->handoff.copy_max * us / tk;
-         l->wait_avg_x100    = thr->handoff.wait_sum * 100 * us / tk / n;
-         l->wait_worst       = thr->handoff.wait_max * us / tk;
-         l->bytes_per_frame  = thr->handoff.bytes / n;
-         l->frames_copied    = thr->handoff.copied;
-         l->frames_zero_copy = thr->handoff.zero_copy;
-         l->frames_hw        = thr->handoff.hw;
-         l->waits            = thr->handoff.waits;
-         l->dropped          = thr->handoff.dropped;
-         l->drains           = thr->handoff.drains;
-         l->asked            = thr->handoff.asked;
-         l->lent             = thr->handoff.lent;
-         l->lapsed           = thr->handoff.lapsed;
-         l->declined_ring    = thr->handoff.declined_ring;
-         l->declined_size    = thr->handoff.declined_size;
-         thr->handoff.handoff_sum = thr->handoff.handoff_max = 0;
-         thr->handoff.copy_sum    = thr->handoff.copy_max    = 0;
-         thr->handoff.wait_sum    = thr->handoff.wait_max    = 0;
-         thr->handoff.span_ticks  = thr->handoff.span_us     = 0;
-         thr->handoff.bytes       = 0;
-         thr->handoff.copied      = thr->handoff.zero_copy   = 0;
-         thr->handoff.hw          = thr->handoff.waits       = 0;
-         thr->handoff.dropped     = thr->handoff.drains      = 0;
-         thr->handoff.asked       = thr->handoff.lent        = 0;
-         thr->handoff.lapsed      = 0;
-         thr->handoff.declined_ring = thr->handoff.declined_size = 0;
-         thr->handoff.frames      = 0;
-      }
-   }
+      video_thread_handoff_latch(thr,
+            (uint64_t)cpu_features_get_perf_counter() - c_now,
+            (uint64_t)(thr->last_time - t_now));
 
    return true;
 }

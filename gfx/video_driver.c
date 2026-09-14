@@ -85,27 +85,6 @@
 
 #define FRAME_DELAY_AUTO_DEBUG 0
 
-/* Force a helper out of line even though it has a single call site.
- * Follows the RXML_NOINLINE precedent in
- * libretro-common/formats/xml/rxml.c.
- *
- * video_driver_frame() is the hottest function outside the cores
- * themselves -- once per emulated frame, forever -- and the helpers it
- * calls exactly once get inlined straight back into it, so work that
- * is conditional on a pixel format, a scanline racing mode or a
- * per-frame toggle still occupies its fall-through path.  Under -Os
- * the compiler already optimises for size and the outlining only adds
- * call overhead, so it is disabled there. */
-#if defined(__OPTIMIZE_SIZE__)
-#define VIDEO_NOINLINE
-#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-#define VIDEO_NOINLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
-#define VIDEO_NOINLINE __declspec(noinline)
-#else
-#define VIDEO_NOINLINE
-#endif
-
 /* Forward declarations */
 VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
