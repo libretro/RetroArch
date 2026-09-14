@@ -253,18 +253,61 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
    return a - a_org;
 }
 
+/* Adds two sizes, or reports that the sum does not fit. */
+static bool state_manager_size_add(size_t a, size_t b, size_t *out)
+{
+   if (a > (size_t)-1 - b)
+      return false;
+   *out = a + b;
+   return true;
+}
+
+/* Multiplies two sizes, or reports that the product does not fit. */
+static bool state_manager_size_mul(size_t a, size_t b, size_t *out)
+{
+   if (b && a > (size_t)-1 / b)
+      return false;
+   *out = a * b;
+   return true;
+}
+
 /* Returns the maximum compressed size of a savestate.
- * It is very likely to compress to far less. */
+ * It is very likely to compress to far less.
+ *
+ * Every term derives from @uncomp, which reaches here from a core's
+ * retro_serialize_size(), so the roundings and the per-block overhead
+ * are added and multiplied under check. Returns 0 when the answer does
+ * not fit a size_t; a real answer always carries the three closing
+ * uint16_t and so is never 0. */
 static size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
-   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   const size_t maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   size_t uncomp16;
+   size_t maxcblks;
+   size_t overhead;
+   size_t total;
+
    /* uncompressed size, rounded to 16 bits */
-   size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   if (!state_manager_size_add(uncomp, sizeof(uint16_t) - 1, &uncomp16))
+      return 0;
+   uncomp16 &= -sizeof(uint16_t);
+
    /* number of blocks */
-   size_t maxcblks        = (uncomp + maxcblkcover - 1) / maxcblkcover;
-   return uncomp16 + maxcblks * sizeof(uint16_t) * 2 /* two u16 overhead per block */ + sizeof(uint16_t) *
-      3; /* three u16 to end it */
+   if (!state_manager_size_add(uncomp, maxcblkcover - 1, &maxcblks))
+      return 0;
+   maxcblks /= maxcblkcover;
+
+   /* two u16 overhead per block */
+   if (!state_manager_size_mul(maxcblks, sizeof(uint16_t) * 2, &overhead))
+      return 0;
+   if (!state_manager_size_add(uncomp16, overhead, &total))
+      return 0;
+   /* three u16 to end it */
+   if (!state_manager_size_add(total, sizeof(uint16_t) * 3, &total))
+      return 0;
+
+   return total;
 }
 
 /*
@@ -508,9 +551,23 @@ static state_manager_t *state_manager_new(
    if (!state)
       return NULL;
 
-   block_size         = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   /* state_size is whatever the core answered retro_serialize_size()
+    * with. The block layout, the sentinel positions and the two-block
+    * doubling all derive from it, and an unchecked derivation wraps to
+    * an allocation smaller than the offsets computed from the same
+    * numbers, so each step is taken under check and a size that cannot
+    * be laid out is refused. */
+   if (!state_manager_size_add(state_size, sizeof(uint16_t) - 1, &block_size))
+      goto error;
+   block_size        &= -sizeof(uint16_t);
+
    /* the compressed data is surrounded by pointers to the other side */
-   max_comp_size      = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
+   if (!(max_comp_size = state_manager_raw_maxsize(state_size)))
+      goto error;
+   if (!state_manager_size_add(max_comp_size, sizeof(size_t) * 2,
+            &max_comp_size))
+      goto error;
+
    state_data         = (uint8_t*)malloc(buffer_size);
 
    if (!state_data)
@@ -526,9 +583,12 @@ static state_manager_t *state_manager_new(
     * begin at that sentinel and read a full vector beyond it, so the tail
     * padding must be at least the widest load find_change can issue.
     * Keep the two in step: widening the scanner means widening this. */
-   single_block_alloc = block_size + sizeof(uint16_t) * 4
-      + STATE_MANAGER_SCAN_PAD;
-   alloc_size         = single_block_alloc * 2;
+   if (!state_manager_size_add(block_size,
+            sizeof(uint16_t) * 4 + STATE_MANAGER_SCAN_PAD,
+            &single_block_alloc))
+      goto error;
+   if (!state_manager_size_mul(single_block_alloc, 2, &alloc_size))
+      goto error;
    block_buf          = (uint8_t*)calloc(alloc_size, 1);
 
    if (!block_buf)
@@ -588,7 +648,11 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
       return false;
 
    start                        = read_size_t(state->head - sizeof(size_t));
-   if (start + sizeof(size_t) > state->capacity)
+   /* start comes out of the buffer itself, so it is checked by
+    * subtracting from the capacity rather than adding to it: the
+    * addition wraps on a corrupt value and lets the bound pass. */
+   if (     state->capacity < sizeof(size_t)
+         || start > state->capacity - sizeof(size_t))
       return false;
    compressed                   = state->data + start + sizeof(size_t);
    out                          = state->thisblock;

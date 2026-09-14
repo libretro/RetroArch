@@ -419,6 +419,67 @@ static void t_decompress_atomic(void)
    free(a); free(b); free(patch); free(work);
 }
 
+
+/* Every buffer dimension the rewind ring uses is derived from the size
+ * a core reports through retro_serialize_size(): the block rounding,
+ * the per-block compression overhead, the sentinel offsets and the
+ * doubling that puts thisblock and nextblock in one allocation. A size
+ * near the top of the range makes those derivations wrap, and a wrapped
+ * derivation allocates less than the offsets computed from the same
+ * numbers then index. Refusing the size is the only answer that keeps
+ * the layout consistent, so this pins that the refusal happens and that
+ * ordinary sizes are unaffected. */
+static void t_pathological_state_size(void)
+{
+   /* These wrap inside the compressed-size calculation itself. */
+   static const size_t wraps_in_maxsize[] = {
+      (size_t)-1,
+      (size_t)-1 - 1,
+      (size_t)-1 - 8
+   };
+   /* This one has a representable compressed size; what it cannot
+    * survive is the doubling that puts both working blocks in one
+    * allocation. The refusal has to come from the later check. */
+   static const size_t wraps_in_block_pair = ((size_t)-1) / 2 + 1;
+   size_t i;
+
+   for (i = 0; i < sizeof(wraps_in_maxsize) / sizeof(wraps_in_maxsize[0]); i++)
+   {
+      CHECK(state_manager_raw_maxsize(wraps_in_maxsize[i]) == 0,
+            "raw_maxsize reported a size for a state that cannot be laid out");
+      CHECK(state_manager_new(wraps_in_maxsize[i], 1 << 20) == NULL,
+            "state_manager_new accepted a state size whose layout wraps");
+   }
+
+   CHECK(state_manager_raw_maxsize(wraps_in_block_pair) != 0,
+         "raw_maxsize refused a compressed size that does fit");
+   CHECK(state_manager_new(wraps_in_block_pair, 1 << 20) == NULL,
+         "state_manager_new accepted a size whose two working blocks do not fit");
+
+   /* Ordinary sizes still answer, and still answer the same thing. */
+   {
+      size_t ss  = 4096;
+      size_t max = state_manager_raw_maxsize(ss);
+      state_manager_t *sm;
+
+      CHECK(max >= ss, "raw_maxsize came back under the uncompressed size");
+      CHECK(max == ((ss + 1) & ~(size_t)1)
+            + ((ss + 131069) / 131070) * 4 + 6,
+            "raw_maxsize changed its answer for an ordinary size");
+
+      sm = state_manager_new(ss, 1 << 20);
+      CHECK(sm != NULL, "an ordinary state size was refused");
+      if (sm)
+      {
+         /* state_manager_free() releases what the manager owns; the
+          * struct itself belongs to the caller, as rewind teardown
+          * does it. */
+         state_manager_free(sm);
+         free(sm);
+      }
+   }
+}
+
 int main(void)
 {
    printf("state_rewind:\n");
@@ -432,6 +493,7 @@ int main(void)
    t_wrap_near_end();
    t_drop_oldest();
    t_init_oom_guard();
+   t_pathological_state_size();
    t_decompress_oob();
    t_decompress_atomic();
    if (!entries_exact && entries_drift)

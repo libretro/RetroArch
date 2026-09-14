@@ -140,8 +140,17 @@ bool msg_queue_try_push(msg_queue_t *queue, const char *msg,
    {
       size_t msg_len   = msg   ? strlen(msg)   + 1 : 0;
       size_t title_len = title ? strlen(title) + 1 : 0;
-      char  *block     = (char*)malloc(sizeof(struct queue_elem) + msg_len + title_len);
-      if (!block)
+      size_t block_len = sizeof(struct queue_elem);
+      char  *block;
+      /* The three parts are summed under check: a wrapped total would
+       * allocate less than the copies below write. */
+      if (msg_len > ((size_t)-1) - block_len)
+         return false;
+      block_len       += msg_len;
+      if (title_len > ((size_t)-1) - block_len)
+         return false;
+      block_len       += title_len;
+      if (!(block = (char*)malloc(block_len)))
          return false;
       new_elem        = (struct queue_elem*)block;
       block          += sizeof(struct queue_elem);

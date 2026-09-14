@@ -1508,7 +1508,15 @@ bool config_file_stream_push(config_file_stream_t *stream,
       }
    }
 
-   /* Grow the window to hold tail + packet + NUL */
+   /* Grow the window to hold tail + packet + NUL. The total is checked
+    * before the capacity comparison: a sum that wrapped would compare
+    * small, pass, and leave the memcpy below writing len bytes into a
+    * window sized for the wrapped value. */
+   if (len > ((size_t)-1) - stream->len - 1)
+   {
+      stream->oom = true;
+      return false;
+   }
    need = stream->len + len + 1;
    if (need > stream->cap)
    {
