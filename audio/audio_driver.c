@@ -4574,11 +4574,10 @@ bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
             tempo_q16) : 0);
 }
 
-bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
+static bool audio_driver_transport_runloop_tempo(uint32_t *tempo)
 {
    settings_t *settings = config_get_ptr();
    uint32_t flags = runloop_get_flags();
-   uint32_t tempo;
    uint64_t bits;
    double duration = 1.0;
    if (!(flags & RUNLOOP_FLAG_PAUSED))
@@ -4595,7 +4594,14 @@ bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
    memcpy(&bits, &duration, sizeof(bits));
    if (bits >= UINT64_C(0x7ff0000000000000)
          || !(duration >= 1.0 / 32.0 && duration <= 4.0)) return false;
-   tempo = (uint32_t)(65536.0 / duration + 0.5);
+   *tempo = (uint32_t)(65536.0 / duration + 0.5);
+   return true;
+}
+
+bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
+{
+   uint32_t tempo;
+   if (!audio_driver_transport_runloop_tempo(&tempo)) return false;
    return audio_driver_pipeline_transport_request_speed(tempo,
          tempo != 65536, reset, lowpass);
 }
@@ -6859,7 +6865,7 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
 struct audio_transport_prepare
 {
    unsigned rate;
-   uint32_t search;
+   uint32_t search, control, cutoff;
    bool release, result;
 };
 
@@ -6877,8 +6883,16 @@ static void audio_driver_transport_control(void *userdata)
          && audio_st->context_audio_data
          && !retro_spsc_read_avail(&audio_st->pipe_ring)
          && !audio_st->pipe_pending_bytes)
+   {
       request->result = audio_driver_transport_bind(audio_st,
             request->rate, request->search, audio_st->pipe_float);
+      if (request->result && request->control)
+      {
+         audio_pipeline_layout_t *q = &audio_st->pipe_layouts;
+         q->published_control = q->current_control = request->control;
+         q->published_cutoff = q->current_cutoff = request->cutoff;
+      }
+   }
 }
 
 static void audio_driver_transport_transaction(struct audio_transport_prepare *request)
@@ -6896,6 +6910,21 @@ bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_chan
 {
    struct audio_transport_prepare request;
    request.rate = rate; request.search = search_channels;
+   request.control = request.cutoff = 0;
+   request.release = request.result = false;
+   audio_driver_transport_transaction(&request);
+   return request.result;
+}
+
+bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass)
+{
+   struct audio_transport_prepare request;
+   uint32_t tempo;
+   if (!audio_driver_transport_runloop_tempo(&tempo)) return false;
+   request.rate = rate; request.search = search_channels;
+   request.control = tempo == 65536 ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
+   request.cutoff = lowpass ? audio_speed_lpf_cutoff(rate, tempo) : 0;
    request.release = request.result = false;
    audio_driver_transport_transaction(&request);
    return request.result;
@@ -6905,6 +6934,7 @@ void audio_driver_pipeline_transport_release(void)
 {
    struct audio_transport_prepare request;
    request.rate = 0; request.search = 0;
+   request.control = request.cutoff = 0;
    request.release = true; request.result = false;
    audio_driver_transport_transaction(&request);
 }

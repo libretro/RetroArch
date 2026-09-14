@@ -438,6 +438,15 @@ static float frame_audio_float[32768 * 8];
 
 /* --- fixture --------------------------------------------------------- */
 
+static bool prepare_transport(bool reset)
+{
+   if (runloop_policy)
+      return audio_driver_pipeline_transport_prepare_runloop(CORE_RATE, 3, speed_lowpass);
+   return audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
+      && audio_driver_pipeline_transport_request(tempo_q16,
+            transport_mode == 3, reset, transport_mode == 2 ? 1000 : 0);
+}
+
 static bool pipeline_up(unsigned latency_ms)
 {
    audio_driver_state_t *st = &audio_driver_st;
@@ -549,9 +558,7 @@ static bool pipeline_up(unsigned latency_ms)
             &st->context_audio_data, NULL, OUT_RATE, NULL, latency_ms,
             false, false, &clocked_driver))
       return false;
-   if (transport_mode && (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
-            || !audio_driver_pipeline_transport_request(tempo_q16,
-               transport_mode == 3, false, transport_mode == 2 ? 1000 : 0)))
+   if (transport_mode && !prepare_transport(false))
       return false;
    return true;
 }
@@ -704,9 +711,7 @@ static void wrapper_restart(void)
       if (transport_mode)
       {
          audio_driver_pipeline_transport_release();
-         if (!audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
-               || !audio_driver_pipeline_transport_request(tempo_q16,
-                  transport_mode == 3, true, transport_mode == 2 ? 1000 : 0))
+         if (!prepare_transport(true))
             fixture_failures++;
       }
       if (before != retro_atomic_load_acquire_size(&cnt_wakes)) fixture_failures++;

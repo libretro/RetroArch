@@ -1665,6 +1665,41 @@ static void transport_owner_cases(void)
          CHECK(!st->pipe_transport && !st->pipe_transport_output, "failed prepare left state");
          CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "owner prepare");
          stage = st->pipe_transport; output = st->pipe_transport_output;
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         config_get_ptr()->floats.slowmotion_ratio = 8;
+         calls = transport_control_calls;
+         CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true)
+               && transport_control_calls == calls, "unsupported startup parked worker");
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+         config_get_ptr()->bools.audio_fastforward_speedup = true;
+         retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
+         transport_fail_stage = true;
+         CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true),
+               "failed runloop startup accepted");
+         transport_fail_stage = false;
+         CHECK(st->pipe_transport == stage && st->pipe_transport_output == output
+               && st->pipe_layouts.published_control == 65536
+               && st->pipe_layouts.published_cutoff == 0,
+               "failed runloop startup changed session");
+         calls = transport_control_calls;
+         CHECK(audio_driver_pipeline_transport_prepare_runloop(48000, 1, true)
+               && transport_control_calls == calls + 1, "runloop startup parking");
+         CHECK(st->pipe_layouts.current_control == (262144 | AUDIO_PIPELINE_STRETCH)
+               && st->pipe_layouts.published_control == st->pipe_layouts.current_control
+               && st->pipe_layouts.current_cutoff == 5400
+               && st->pipe_layouts.published_cutoff == 5400
+               && !retro_atomic_load_relaxed_size(&st->pipe_layouts.head),
+               "startup did not seed coherent speed controls");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && !block.frames && audio_pipeline_stretch_needs_input(st->pipe_transport),
+               "startup controls not ready before source");
+         runloop_state_get_ptr()->flags = 0;
+         config_get_ptr()->bools.audio_fastforward_speedup = false;
+         config_get_ptr()->floats.slowmotion_ratio = 1;
+         CHECK(audio_driver_pipeline_transport_prepare_runloop(48000, 1, false)
+               && st->pipe_layouts.current_control == 65536
+               && st->pipe_layouts.current_cutoff == 0, "normal startup was not dry");
+         stage = st->pipe_transport; output = st->pipe_transport_output;
          CHECK(stage && output && !((uintptr_t)output % 64), "owner storage/alignment");
          wrapper.wait_writable = NULL;
          CHECK(!audio_driver_pipeline_transport_prepare(48000, 1)
@@ -1682,6 +1717,8 @@ static void transport_owner_cases(void)
          bytes = st->pipe_frame_bytes;
          CHECK(retro_spsc_write(&st->pipe_ring, &input, bytes) == bytes, "queued owner source");
          CHECK(!audio_driver_pipeline_transport_prepare(48000, 1), "replaced queued owner");
+         CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true)
+               && st->pipe_transport == stage, "runloop startup replaced queued owner");
          audio_driver_set_core_float(!floating);
          CHECK(st->pipe_float == (floating != 0) && st->pipe_transport == stage,
                "queued format changed session");
@@ -1690,6 +1727,8 @@ static void transport_owner_cases(void)
                   retro_atomic_load_relaxed_size(&st->pipe_ring.head), 2000), "owner pending control");
          st->pipe_pending = (const uint8_t*)output; st->pipe_pending_bytes = bytes;
          CHECK(!audio_driver_pipeline_transport_prepare(48000, 1), "replaced pending device output");
+         CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true)
+               && st->pipe_transport == stage, "runloop startup replaced pending output");
          calls = transport_control_calls;
          audio_driver_set_core_float(!floating);
          CHECK(transport_control_calls == calls + 1, "native rebind bypassed parking");

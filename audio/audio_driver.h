@@ -965,6 +965,13 @@ struct audio_pipeline_stretch;
  * Empty-ring format renegotiation rebuilds the session; allocation failure
  * releases it while preserving the new native ring format. */
 bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_channels);
+
+/* Prepare and seed current runloop tempo/cutoff in one parked transaction.
+ * Empty source/no pending device output required. Failure preserves the old
+ * transport and metadata; unsupported speed is rejected before allocation.
+ * Explicit startup API: does not register an automatic update caller. */
+bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass);
 void audio_driver_pipeline_transport_release(void);
 /* Main source producer only, before publishing the affected audio. Tempo is
  * source frames/output frame in Q16, 0.25..32 when active (ignored when inactive).
