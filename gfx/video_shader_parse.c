@@ -3460,6 +3460,9 @@ void video_shader_dir_check_shader(
    /* Select previous shader in list */
    else if (pressed_prev)
    {
+      /* Leaving the folder takes a loaded entry to step back from,
+       * the same as next: with none loaded, prev wraps to this
+       * folder's last entry where next applies its first */
       if (dir_list->selection > 0)
          dir_list->selection--;
       else if (  !anchored
