@@ -1871,6 +1871,27 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    unsigned i;
    size_t required_images = 0;
 
+   for (i = 0; i < chain->pass_count; i++)
+   {
+      size_t _y = chain->passes[i]->reflection.semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
+      required_images = MAX(required_images, _y);
+   }
+
+   /* Rebuilding for a new swapchain (e.g. a vsync toggle on
+    * fast-forward) must not blank the recorded frames.
+    *
+    * A matching count is enough to reuse the existing buffers: they are
+    * sized from chain->max_input_size_* and chain->original_format, both
+    * of which are set once in slang_chain_new() and never mutated, and
+    * slang_chain_update_history() re-sizes each one per frame against
+    * the live input texture anyway. Nothing here depends on the
+    * swapchain. The num_history test is load-bearing, not redundant:
+    * without it a fresh chain with required_images == 1 would take this
+    * return and skip the common.original_history reset below. */
+   if (chain->num_history && chain->num_history + 1 == required_images)
+      return true;
+
    for (i = 0; i < chain->num_history; i++)
       slang_framebuffer_delete(&chain->original_history[i]);
    free(chain->original_history);
@@ -1879,13 +1900,6 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    texture_array_resize(&chain->common.original_history,
          &chain->common.num_original_history, 0);
    chain->history_ring_index = 0;
-
-   for (i = 0; i < chain->pass_count; i++)
-   {
-      size_t _y = chain->passes[i]->reflection.semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
-      required_images = MAX(required_images, _y);
-   }
 
    if (required_images < 2)
    {
@@ -1957,9 +1971,24 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
 
       if (use_feedback)
       {
-         if (!slang_pass_init_feedback(chain->passes[i]))
-            return false;
-         RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
+         /* Kept across swapchain rebuilds; only a new buffer needs clearing. */
+         if (!chain->passes[i]->fb_feedback)
+         {
+            if (!slang_pass_init_feedback(chain->passes[i]))
+               return false;
+            chain->require_clear = true;
+            RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
+         }
+      }
+      else if (chain->passes[i]->fb_feedback)
+      {
+         /* slang_pass_build() no longer deletes fb_feedback, so a pass
+          * that stops needing feedback would hold on to a buffer that
+          * slang_pass_end_frame() keeps swapping with the live
+          * framebuffer, while only the latter is ever resized or
+          * re-formatted. Drop it here so the invariant
+          * slang_pass_build() used to guarantee still holds. */
+         slang_framebuffer_delete(&chain->passes[i]->fb_feedback);
       }
    }
 
@@ -1974,7 +2003,6 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
    if (!texture_array_resize(&chain->common.fb_feedback,
             &chain->common.num_fb_feedback, chain->pass_count - 1))
       return false;
-   chain->require_clear = true;
    return true;
 }
 
@@ -2175,7 +2203,13 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
          return false;
    }
 
-   chain->require_clear = false;
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    RARCH_DBG("[Vulkan] Chain UBO ready.\n");
@@ -2490,7 +2524,13 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       chain->alias_initialized = true;
    }
 
-   chain->require_clear = false;
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    if (!slang_chain_init_history(chain))
@@ -3473,7 +3513,6 @@ static bool slang_pass_build(struct slang_pass *pass)
       return false;
 
    slang_framebuffer_delete(&pass->framebuffer);
-   slang_framebuffer_delete(&pass->fb_feedback);
 
    if (!pass->final_pass)
    {
