@@ -140,3 +140,18 @@ int task_image_png_probe(void *t) { (void)t; return -1; }
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+
+/* gfx_thumbnail_draw() reaches the display driver through this rather
+ * than through one of the helpers, so it needs its own stub even
+ * though nothing here draws.
+ *
+ * The two pointer parameters are void* rather than their real types.
+ * This file declares its own view of the frontend and including
+ * gfx_display.h to name them drags in a video_driver.h that conflicts
+ * with those declarations; C linkage does not carry parameter types,
+ * so the symbol matches what gfx_thumbnail.c calls either way. */
+void gfx_display_draw(void *dispctx, void *draw, void *data,
+      unsigned video_width, unsigned video_height)
+{ (void)dispctx; (void)draw; (void)data;
+  (void)video_width; (void)video_height; }
+
