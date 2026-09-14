@@ -267,6 +267,64 @@ static void inline_format_cases(void)
 static union { float f[257*2]; int16_t i[257*2]; } callback_pcm;
 static unsigned callback_calls;
 static bool callback_native;
+static slock_t *callback_lock;
+static scond_t *callback_cond;
+static bool callback_request, callback_ready, callback_release;
+static bool callback_done, callback_quit, callback_result;
+
+static void callback_wait(void)
+{
+   if (!scond_wait_timeout(callback_cond, callback_lock, 30000000))
+   {
+      fprintf(stderr, "callback rendezvous timed out\n");
+      exit(1);
+   }
+}
+
+static void callback_worker(void *unused)
+{
+   (void)unused;
+   slock_lock(callback_lock);
+   for (;;)
+   {
+      while (!callback_request && !callback_quit) callback_wait();
+      if (callback_quit) break;
+      callback_request = false;
+      slock_unlock(callback_lock);
+      callback_result = audio_driver_callback();
+      slock_lock(callback_lock);
+      callback_done = true;
+      scond_signal(callback_cond);
+   }
+   slock_unlock(callback_lock);
+}
+
+static bool callback_dispatch(void)
+{
+   bool result;
+   slock_lock(callback_lock);
+   callback_ready = callback_release = callback_done = false;
+   callback_request = true;
+   scond_signal(callback_cond);
+   while (!callback_ready && !callback_done) callback_wait();
+   if (callback_ready)
+   {
+      size_t pending = audio_driver_st.data_ptr;
+      CHECK(pending == (!callback_native
+               && !(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_SUSPENDED) ? 514u : 0u),
+            "callback rendezvous missed pending source input");
+      audio_driver_frame_end();
+      CHECK(audio_driver_st.data_ptr == pending,
+            "main frame touched callback-owned accumulator");
+      callback_release = true;
+      scond_signal(callback_cond);
+   }
+   while (!callback_done) callback_wait();
+   result = callback_result;
+   slock_unlock(callback_lock);
+   return result;
+}
+
 
 static void inline_source_callback(void)
 {
@@ -277,6 +335,12 @@ static void inline_source_callback(void)
    else
       for (f = 0; f < 257; f++)
          audio_driver_sample(callback_pcm.i[2*f], callback_pcm.i[2*f+1]);
+   /* Hold the source callback open while the main thread ends a frame. */
+   slock_lock(callback_lock);
+   callback_ready = true;
+   scond_signal(callback_cond);
+   while (!callback_release) callback_wait();
+   slock_unlock(callback_lock);
 }
 
 /* Compare callback delivery and discarded frames against uninterrupted audio. */
@@ -293,6 +357,7 @@ static void inline_callback_cases(void)
       {
          struct audio_inline_transport *saved;
          unsigned allocations;
+         sthread_t *worker = NULL;
          CHECK(up(native, AUDIO_LAYOUT_STEREO, native), "callback stand-up");
          free(cap); cap = NULL; cap_cap = cap_frames = 0;
          st->resampler_hq = native;
@@ -319,6 +384,16 @@ static void inline_callback_cases(void)
          callback_calls = 0;
          transport_track = true;
          allocations = transport_allocations;
+         if (callbacks)
+         {
+            callback_lock = slock_new();
+            callback_cond = scond_new();
+            if (!callback_lock || !callback_cond) exit(1);
+            callback_request = callback_ready = callback_release = false;
+            callback_done = callback_quit = callback_result = false;
+            worker = sthread_create(callback_worker, NULL);
+            if (!worker) exit(1);
+         }
          for (batch = 0; batch < 32; batch++)
          {
             for (f = 0; f < 257; f++)
@@ -335,18 +410,18 @@ static void inline_callback_cases(void)
                size_t frames = cap_frames;
                runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
                audio_driver_frame_end();
-               CHECK(audio_driver_callback() && callback_calls == calls
+               CHECK(callback_dispatch() && callback_calls == calls
                      && cap_frames == frames, "paused callback advanced source/output");
                runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
                AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
                audio_driver_frame_end();
-               CHECK(audio_driver_callback() && callback_calls == calls + 1
+               CHECK(callback_dispatch() && callback_calls == calls + 1
                      && !st->data_ptr && cap_frames == frames,
                      "suspended callback retained speculative audio");
                AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
             }
             if (callbacks)
-               CHECK(audio_driver_callback() && !st->data_ptr, "callback retained accumulator input");
+               CHECK(callback_dispatch() && !st->data_ptr, "callback retained accumulator input");
             else if (native) audio_driver_sample_batch_float(callback_pcm.f, 257);
             else audio_driver_sample_batch(callback_pcm.i, 257);
             audio_driver_frame_end();
@@ -369,6 +444,18 @@ static void inline_callback_cases(void)
                   && !memcmp(reference, cap, cap_frames * 2 * sizeof(float)),
                   "pause/suspension or callback delivery changed the audible stream");
             free(reference); reference = NULL;
+         }
+         if (worker)
+         {
+            slock_lock(callback_lock);
+            callback_quit = true;
+            scond_signal(callback_cond);
+            slock_unlock(callback_lock);
+            sthread_join(worker);
+            scond_free(callback_cond);
+            slock_free(callback_lock);
+            callback_cond = NULL;
+            callback_lock = NULL;
          }
          st->callback.callback = NULL;
          audio_driver_deinit_internal(true);

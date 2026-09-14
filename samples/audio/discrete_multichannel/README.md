@@ -71,5 +71,10 @@ accumulator with native SRC, through prepared slow-motion transport. Audible
 output must match byte for byte; paused callbacks cannot invoke the source,
 and suspended callbacks cannot retain speculative samples or advance output.
 The stage and its arena remain attached without new transport allocations.
-The source and callback boundaries are driven deterministically on the test
-thread; this is not a concurrent core or whole-runloop acceptance test.
+A persistent worker invokes callbacks. A condition-variable rendezvous holds
+each source callback open while the main thread ends a frame; pending int16
+samples must remain owned by the worker until the callback returns. Completion
+synchronizes capture reads and buffer reuse. Pause and suspension use the same
+worker, without added cases or sleep-based scheduling. Rendezvous waits have a
+30-second failure bound. This checks a controlled two-thread interleaving,
+not arbitrary real-core scheduling or whole-runloop acceptance.
