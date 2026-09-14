@@ -1,6 +1,84 @@
 /* Configured wide inline transport before native channel routing. */
 extern bool test_frame_reversed;
 
+static void rewind_mixed_cases(void)
+{
+   int16_t input[257*6], folded[514], storage_i[514];
+   float input_f[514], expected[514], storage_f[514];
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned kind, capture, f, c, before = failures;
+   float *reference = NULL;
+   size_t reference_frames = 0;
+   for (f = 0; f < 257; f++)
+   {
+      for (c = 0; c < 6; c++) input[f*6+c] = (int16_t)((int)((f*127+c*733)%10000)-5000);
+      input_f[2*f] = f * 0.000321f + 0.000001f;
+      input_f[2*f+1] = f * -0.000123f - 0.000002f;
+   }
+   audio_downmix_s16(folded, input, 257, AUDIO_LAYOUT_5POINT1, 6);
+   for (f = 0; f < 257; f++)
+      for (c = 0; c < 2; c++)
+         expected[2*(256-f)+c] = (f < 7 || (f >= 120 && f < 127))
+            ? input_f[2*f+c] : folded[2*f+c] / 32768.0f;
+   for (kind = 0; kind < 3; kind++)
+      for (capture = 0; capture < 2; capture++)
+      {
+         CHECK(up(true, AUDIO_LAYOUT_STEREO, true), "mixed rewind stand-up");
+         free(cap); cap = NULL; cap_cap = cap_frames = 0;
+         memset(storage_i, 0x5a, sizeof(storage_i));
+         memset(storage_f, 0, sizeof(storage_f));
+         st->rewind_buf = storage_i; st->rewind_buf_f = storage_f;
+         st->rewind_size = 514;
+         audio_driver_setup_rewind();
+         test_frame_reversed = true;
+         if (capture)
+         {
+            audio_driver_sample_batch_float(input_f, 7);
+            for (f = 7; f < 257; )
+            {
+               unsigned n = f == 7 ? 113 : 130;
+               if (!kind)
+                  for (c = 0; c < n; c++)
+                     audio_driver_sample_rewind(folded[2*(f+c)], folded[2*(f+c)+1]);
+               else if (kind == 1) audio_driver_sample_batch_rewind(folded + 2*f, n);
+               else audio_driver_sample_batch_multi_int16(input + 6*f, n, 6, AUDIO_LAYOUT_5POINT1);
+               f += n;
+               if (f == 120)
+               {
+                  audio_driver_sample_batch_float(input_f + 2*f, 7);
+                  f += 7;
+               }
+            }
+            CHECK(!st->rewind_ptr && !cap_frames, "mixed rewind lost frames or wrote early");
+            CHECK(!memcmp(storage_f, expected, sizeof(expected)), "mixed rewind kind %u split native history", kind);
+            for (f = 0; f < 514; f++)
+               if (storage_i[f] != 0x5a5a) break;
+            CHECK(f == 514, "mixed rewind wrote the inactive int16 arena");
+            audio_driver_frame_is_reverse();
+         }
+         else audio_driver_submit(st, 1.0f, expected, 514, true, false, false);
+         test_frame_reversed = false;
+         CHECK(cap_frames > 128, "mixed rewind produced no audible output");
+         if (!capture)
+         {
+            reference_frames = cap_frames;
+            reference = (float*)malloc(cap_frames * 2 * sizeof(float));
+            if (!reference) exit(1);
+            memcpy(reference, cap, cap_frames * 2 * sizeof(float));
+         }
+         else
+         {
+            CHECK(cap_frames == reference_frames
+                  && !memcmp(reference, cap, cap_frames * 2 * sizeof(float)), "mixed rewind playback mismatch");
+            free(reference); reference = NULL;
+         }
+         st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+         st->rewind_size = st->rewind_ptr = 0;
+         audio_driver_deinit_internal(true);
+      }
+   printf("mixed rewind format: 3 cases, %u failures\n", failures - before);
+}
+
 static void multi_rewind_cases(void)
 {
    static const unsigned layouts[] = { AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1 };

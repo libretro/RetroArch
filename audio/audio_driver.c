@@ -6153,6 +6153,12 @@ void audio_driver_sample_rewind(int16_t left, int16_t right)
    if (audio_st->rewind_ptr < 2)
       return;
 
+   if (audio_st->core_float && audio_st->rewind_buf_f)
+   {
+      audio_st->rewind_buf_f[--audio_st->rewind_ptr] = right * (1.0f / 32768.0f);
+      audio_st->rewind_buf_f[--audio_st->rewind_ptr] = left  * (1.0f / 32768.0f);
+      return;
+   }
    audio_st->rewind_buf[--audio_st->rewind_ptr] = right;
    audio_st->rewind_buf[--audio_st->rewind_ptr] = left;
 }
@@ -6163,6 +6169,16 @@ size_t audio_driver_sample_batch_rewind(
    size_t i;
    audio_driver_state_t *audio_st  = &audio_driver_st;
 
+   /* Match the arena selected by reverse playback, even for mixed callbacks. */
+   if (audio_st->core_float && audio_st->rewind_buf_f)
+   {
+      for (i = 0; i < frames && audio_st->rewind_ptr >= 2; i++)
+      {
+         audio_st->rewind_buf_f[--audio_st->rewind_ptr] = data[2*i+1] * (1.0f / 32768.0f);
+         audio_st->rewind_buf_f[--audio_st->rewind_ptr] = data[2*i]   * (1.0f / 32768.0f);
+      }
+      return frames;
+   }
    for (i = 0; i < frames && audio_st->rewind_ptr >= 2; i++)
    {
       audio_st->rewind_buf[--audio_st->rewind_ptr] = data[2*i+1];

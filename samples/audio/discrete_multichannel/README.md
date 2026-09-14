@@ -110,3 +110,10 @@ configurations. Eighteen short cases cover stereo/5.1/7.1, split batches,
 suspension, bounded clipping and reserved fold storage. All source channels must
 contribute to the native stereo reverse buffer; capture must not write to the
 device, recorder, extra-channel staging or source ring before reverse playback.
+
+`DM_ONLY=mixedreverse ./discrete_multichannel_test` interleaves native float and
+int16 callbacks after float negotiation. Single-sample, batched and multichannel
+int16 inputs must join the float reverse buffer selected for playback, with one
+conversion at capture. Checks preserve non-quantized float values, leave the
+inactive int16 arena untouched, and compare device output byte for byte against
+an independently constructed reversed float stream.
