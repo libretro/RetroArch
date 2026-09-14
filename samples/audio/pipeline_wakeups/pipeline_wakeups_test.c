@@ -65,9 +65,10 @@
  * what is being counted, which is the point of measuring it from out
  * here.
  *
- * The fixture is pipeline_clocked's: 48 kHz stereo float out, a ring of
+ * The fixture defaults to 48 kHz stereo float out, a ring of
  * the latency setting, a device period of a quarter of it, Audio Sync
- * on, rate control on.
+ * on, rate control on. LAYOUT=5.1 or 7.1 exercises the canonical wide
+ * source ring and discrete device output through the real wrapper.
  */
 
 #include <stdio.h>
@@ -119,7 +120,8 @@ static void counted_int16_src(void *state, struct resampler_data_int16 *data)
 #define OUT_RATE      48000
 #define CORE_RATE     48000
 #define FPS           60.0
-#define CHANNELS      2
+static unsigned channels = 2;
+static uint32_t source_layout = AUDIO_LAYOUT_STEREO;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -223,13 +225,13 @@ static void dev_wait(size_t want, unsigned ms)
 
 static void dev_render(void)
 {
-   size_t needed = dev_period * CHANNELS;
+   size_t needed = dev_period * channels;
    size_t avail  = retro_atomic_load_acquire_size(&dev_filled);
    size_t take;
 
    if (avail > needed)
       avail = needed;
-   avail -= avail % CHANNELS;
+   avail -= avail % channels;
    take   = avail;
 
    if (take)
@@ -252,7 +254,7 @@ static void *dev_thread(void *arg)
    long step_ns = (long)((double)dev_period * 1e9 / (double)OUT_RATE);
    (void)arg;
    while (retro_atomic_load_acquire_int(&dev_running)
-         && retro_atomic_load_acquire_size(&dev_filled) < dev_period * CHANNELS)
+         && retro_atomic_load_acquire_size(&dev_filled) < dev_period * channels)
       usleep(200);
    clock_gettime(CLOCK_MONOTONIC, &next);
    while (retro_atomic_load_acquire_int(&dev_running))
@@ -314,7 +316,7 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
    {
       size_t room = dev_rb_write_avail();
       size_t take = (room < samples) ? room : samples;
-      take -= take % CHANNELS;
+      take -= take % channels;
       if (take)
       {
          dev_write_ptr = (dev_write_ptr + take) & (dev_capacity - 1);
@@ -327,7 +329,7 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
    {
       size_t avail    = dev_rb_write_avail();
       size_t to_write = (avail < samples) ? avail : samples;
-      to_write       -= to_write % CHANNELS;
+      to_write       -= to_write % channels;
       if (to_write > 0)
       {
          dev_write_ptr = (dev_write_ptr + to_write) & (dev_capacity - 1);
@@ -350,8 +352,8 @@ static size_t cdev_wait_writable(void *data, size_t len)
    size_t want = len / device_sample_bytes;
    int    laps = 8;
    (void)data;
-   if (want % CHANNELS)
-      want += CHANNELS - want % CHANNELS;
+   if (want % channels)
+      want += channels - want % channels;
    if (want > dev_usable)
       want = dev_usable;
    if (!dev_backpressure)
@@ -427,8 +429,8 @@ static void *consumer(void *arg)
    return NULL;
 }
 
-static int16_t frame_audio[32768 * 2];
-static float frame_audio_float[32768 * 2];
+static int16_t frame_audio[32768 * 8];
+static float frame_audio_float[32768 * 8];
 
 /* --- fixture --------------------------------------------------------- */
 
@@ -438,7 +440,7 @@ static bool pipeline_up(unsigned latency_ms)
    size_t per_frame = (size_t)(CORE_RATE / FPS);
    size_t ring_bytes;
 
-   dev_usable   = (size_t)((latency_ms * OUT_RATE) / 1000) * CHANNELS;
+   dev_usable   = (size_t)((latency_ms * OUT_RATE) / 1000) * channels;
    dev_period   = (size_t)((latency_ms * OUT_RATE) / 1000 / 4);
    dev_capacity = 1;
    while (dev_capacity < dev_usable)
@@ -471,7 +473,7 @@ static bool pipeline_up(unsigned latency_ms)
    st->src_ratio_curr       = st->src_ratio_orig;
    st->cached_rate_adjust   = 1.0;
    st->volume_gain          = 1.0f;
-   st->out_channels         = CHANNELS;
+   st->out_channels         = channels;
    st->buffer_size          = clocked_driver.buffer_size(st->context_audio_data);
    st->output_samples_buf   = (float*)malloc(1 << 20);
    st->output_samples_buf_length = 1 << 20;
@@ -484,9 +486,21 @@ static bool pipeline_up(unsigned latency_ms)
    st->pipe_conv            = (uint8_t*)malloc(1 << 20);
    st->pipe_pass_frames     = per_frame;
    st->pipe_float           = source_float;
-   st->pipe_channels        = CHANNELS;
-   st->pipe_frame_bytes     = CHANNELS * (source_float ? sizeof(float) : sizeof(int16_t));
-   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   st->out_layout          = source_layout;
+   st->pipe_channels       = channels > 2 ? AUDIO_PIPE_CANON_CHANNELS : 2;
+   st->pipe_frame_bytes    = st->pipe_channels * (source_float ? sizeof(float) : sizeof(int16_t));
+   audio_pipeline_layout_init(&st->pipe_layouts, source_layout);
+   if (channels > 2)
+   {
+      st->pipe_wide_bytes = per_frame * AUDIO_PIPE_CANON_CHANNELS * sizeof(float);
+      st->pipe_wide = (uint8_t*)malloc(st->pipe_wide_bytes);
+      st->upmix_frames = (1 << 20) / (2 * sizeof(float));
+      st->upmix_buf = (float*)malloc(st->upmix_frames * channels * sizeof(float));
+      st->upmix_i16 = (int16_t*)malloc(st->upmix_frames * channels * sizeof(int16_t));
+      if (!st->pipe_wide || !st->upmix_buf || !st->upmix_i16
+            || !audio_upmix_init(&st->upmix, source_layout, OUT_RATE))
+         return false;
+   }
    if (!device_int16) AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
    strcpy(st->resampler_ident, "sinc");
    st->resampler_quality    = RESAMPLER_QUALITY_NORMAL;
@@ -540,6 +554,7 @@ static void pipeline_down(void)
    audio_driver_state_t *st = &audio_driver_st;
    /* Both worker threads have joined. */
    audio_driver_pipeline_transport_release();
+   audio_driver_extra_free(st);
    if (st->resampler && st->resampler_data)
       st->resampler->free(st->resampler_data);
    if (st->resampler_data_int16 && st->resampler_int16_free)
@@ -554,6 +569,10 @@ static void pipeline_down(void)
    free(st->input_data);
    free(st->synth_buf);
    free(st->output_samples_int16);
+   free(st->pipe_wide);
+   free(st->pipe_canon);
+   free(st->upmix_buf);
+   free(st->upmix_i16);
    free(dev_ring);
    dev_ring = NULL;
 }
@@ -690,7 +709,15 @@ static void submit_frame(size_t per_frame, unsigned publishes)
       size_t n = (k + 1 == publishes) ? per_frame - done : chunk;
       if (done + n > per_frame)
          n = per_frame - done;
-      audio_driver_submit(&audio_driver_st, 1.0f,
+      if (channels > 2)
+      {
+         if (!audio_driver_multi_pipe(&audio_driver_st,
+                  source_float ? (const void*)(frame_audio_float + done * channels)
+                               : (const void*)(frame_audio + done * channels),
+                  n, channels, source_layout, source_float))
+            fixture_failures++;
+      }
+      else audio_driver_submit(&audio_driver_st, 1.0f,
             source_float ? (const void*)(frame_audio_float + done * 2)
                          : (const void*)(frame_audio + done * 2), n * 2,
             source_float, false, false);
@@ -807,6 +834,13 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       if (live_controls) wrapper_live_controls(publishes);
       wrapper_restart();
       if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
+      if (channels > 2 && (st->extra.channels != channels - 2
+               || st->extra.positions != (source_layout & ~AUDIO_LAYOUT_STEREO)
+               || st->extra.res_int16 != (device_int16 && !source_float)))
+      {
+         fprintf(stderr, "wide transport lost native extra-channel state\n");
+         fixture_failures++;
+      }
       audio_driver_pipeline_transport_release();
       st->current_audio->free(st->context_audio_data);
       st->current_audio = &clocked_driver;
@@ -875,6 +909,7 @@ int main(int argc, char **argv)
    double seconds = (argc > 1) ? atof(argv[1]) : 4.0;
    const char *transport = getenv("TRANSPORT");
    const char *tempo = getenv("TEMPO");
+   const char *layout = getenv("LAYOUT");
    size_t i;
    use_wrapper = getenv("WRAPPER") != NULL;
    source_float = getenv("SOURCE_FLOAT") != NULL;
@@ -882,6 +917,13 @@ int main(int argc, char **argv)
    device_sample_bytes = device_int16 ? sizeof(int16_t) : sizeof(float);
    track_conversions = use_wrapper;
    live_controls = getenv("LIVE_CONTROLS") != NULL;
+   if (layout)
+   {
+      if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
+      else if (!strcmp(layout, "7.1")) source_layout = AUDIO_LAYOUT_7POINT1;
+      else { fprintf(stderr, "LAYOUT must be 5.1 or 7.1\n"); return 1; }
+      channels = audio_layout_channels(source_layout);
+   }
 
    if (transport)
    {
@@ -915,7 +957,7 @@ int main(int argc, char **argv)
    if (!lat_us)
       return 1;
 
-   for (i = 0; i < 32768 * 2; i++)
+   for (i = 0; i < 32768 * channels; i++)
    {
       frame_audio[i] = (int16_t)(8000.0 * sin((double)i * 0.05));
       frame_audio_float[i] = frame_audio[i] / 32768.0f;
@@ -929,6 +971,7 @@ int main(int argc, char **argv)
    printf("publishes per frame swept; the audio submitted is identical at every setting\n");
    printf("consumer: %s\n", transport ? transport : "legacy");
    printf("source: %s\n", source_float ? "float" : "int16");
+   printf("layout: %u channels\n", channels);
    printf("device: %s\n", device_int16 ? "int16" : "float");
    printf("source tempo: %g; source frames/video frame: %u\n", source_tempo,
          (unsigned)(CORE_RATE / FPS * source_tempo));

@@ -115,8 +115,19 @@ check-live: $(TARGET)
 	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch ./$(TARGET) 0.25
 	WRAPPER=1 LIVE_CONTROLS=1 TRANSPORT=stretch SOURCE_FLOAT=1 DEVICE_INT16=1 ./$(TARGET) 0.25
 
+check-wide: $(TARGET)
+	@for layout in 5.1 7.1; do \
+		for mode in dry lpf stretch; do \
+			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode DEVICE_INT16=1 ./$(TARGET) 0.25 || exit 1; \
+			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode SOURCE_FLOAT=1 ./$(TARGET) 0.25 || exit 1; \
+			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode ./$(TARGET) 0.25 || exit 1; \
+			LAYOUT=$$layout WRAPPER=1 TRANSPORT=$$mode SOURCE_FLOAT=1 DEVICE_INT16=1 ./$(TARGET) 0.25 || exit 1; \
+		done; \
+		LAYOUT=$$layout $(MAKE) check-live || exit 1; \
+	done
+
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport check-wrapper check-tempo check-live
+.PHONY: clean all check check-transport check-wrapper check-tempo check-live check-wide
