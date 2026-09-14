@@ -1669,10 +1669,15 @@ static void transport_settings_cases(void)
          st->current_audio = &wrapper;
          runloop_state_get_ptr()->flags = 0;
          settings->bools.audio_time_stretch = false;
-         settings->bools.audio_time_stretch_lowpass = true;
+         settings->bools.audio_time_stretch_lowpass = false;
          calls = transport_control_calls;
          CHECK(audio_driver_transport_configure(settings) && !st->pipe_transport
                && transport_control_calls == calls, "disabled setting touched transport");
+         settings->bools.audio_time_stretch_lowpass = true;
+         CHECK(audio_driver_transport_configure(settings) && st->pipe_transport
+               && st->transport_lpf_only, "independent lowpass startup");
+         audio_driver_pipeline_transport_release();
+         calls = transport_control_calls;
          settings->bools.audio_time_stretch = true;
          st->pipe_threaded = false;
          st->core_layout = AUDIO_LAYOUT_5POINT1;
@@ -1711,6 +1716,20 @@ static void transport_settings_cases(void)
          settings->floats.slowmotion_ratio = 1;
          CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
                && !st->pipe_transport_suspended, "configured startup recovery");
+         audio_driver_pipeline_transport_release();
+         settings->bools.audio_time_stretch = false;
+         settings->bools.audio_time_stretch_lowpass = true;
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         settings->floats.slowmotion_ratio = 8;
+         CHECK(audio_driver_transport_configure(settings) && st->pipe_transport_suspended,
+               "LPF-only unsupported startup");
+         settings->floats.slowmotion_ratio = 0.5f;
+         CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
+               && !st->pipe_transport_suspended
+               && !(st->pipe_layouts.published_control & AUDIO_PIPELINE_STRETCH)
+               && st->pipe_layouts.published_cutoff, "LPF-only recovery enabled stretch");
+         settings->floats.slowmotion_ratio = 1;
+         runloop_state_get_ptr()->flags = 0;
          st->current_audio = saved;
          audio_driver_deinit_internal(true);
          CHECK(!st->pipe_transport && !st->pipe_transport_follow,
@@ -2358,6 +2377,7 @@ static void inline_transport_cases(void)
             st->resampler_int16_reset = sinc_resampler_int16_reset;
          }
          settings->bools.audio_time_stretch = false;
+         settings->bools.audio_time_stretch_lowpass = false;
          CHECK(audio_driver_transport_configure(settings) && !st->inline_transport,
                "disabled inline allocated state");
          settings->bools.audio_time_stretch = true;
@@ -2449,6 +2469,7 @@ int main(void)
    RUN("mixedreverse", rewind_mixed_cases());
    RUN("reverseboundary", rewind_boundary_cases());
    RUN("statereverse", rewind_state_cases());
+   RUN("independentlpf", independent_lpf_cases());
    RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());

@@ -26,7 +26,7 @@ S_BOOL(audio_time_stretch_lowpass, AUDIO_TIME_STRETCH_LOWPASS,
       "audio_time_stretch_lowpass",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,
       "Speed-Linked Low-Pass Filter",
-      "Soften high frequencies during accelerated pitch-preserving playback. Requires Pitch-Preserving Speed Changes. This optional effect does not replace the resampler's anti-aliasing filter.")
+      "Soften high frequencies during accelerated playback, with or without Pitch-Preserving Speed Changes. Supports the same content rates and source formats. Adds processing and prepared memory while enabled; normal-speed playback is unfiltered. This optional effect does not replace the resampler's anti-aliasing filter.")
 
 S_BOOL(audio_thread_priority, AUDIO_THREAD_PRIORITY,
       "audio_thread_priority",

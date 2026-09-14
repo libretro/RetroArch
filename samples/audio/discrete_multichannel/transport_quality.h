@@ -1,7 +1,7 @@
 /* End-to-end oracle for configured native transport, SRC and short writes.
  * Included after the scripted frontend/device fixture. */
 static void transport_quality_case(bool floating, bool wide, bool hq,
-      uint32_t tempo_q16)
+      uint32_t tempo_q16, bool lpf_only)
 {
    union { float f[257 * 6]; int16_t i[257 * 6]; } input;
    audio_driver_state_t *st = &audio_driver_st;
@@ -35,8 +35,8 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
       st->resampler_int16_reset = sinc_resampler_int16_reset;
       CHECK(st->resampler_data_int16 != NULL, "quality native SRC");
    }
-   settings->bools.audio_time_stretch = true;
-   settings->bools.audio_time_stretch_lowpass = false;
+   settings->bools.audio_time_stretch = !lpf_only;
+   settings->bools.audio_time_stretch_lowpass = lpf_only;
    settings->bools.audio_fastforward_speedup = true;
    settings->bools.audio_sync = true;
    settings->floats.slowmotion_ratio = tempo < 1.0 ? (float)(1.0 / tempo) : 1.0f;
@@ -45,6 +45,9 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
    retro_atomic_store_release_int(&st->pipe_ff_mult_q16, (int)(65536.0 / tempo));
    CHECK(audio_driver_transport_configure(settings), "quality configured startup");
    if (!st->pipe_transport) return;
+   CHECK(!lpf_only || (st->transport_lpf_only
+         && !(st->pipe_layouts.published_control & AUDIO_PIPELINE_STRETCH)
+         && st->pipe_layouts.published_cutoff), "filter-only enabled WSOLA or omitted LPF");
    scripted_threaded.write = short_device_write;
    scripted_threaded.wait_writable = short_device_wait;
    short_calls = 0;
@@ -84,6 +87,9 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
       }
       retro_atomic_store_release_int(&st->runloop_snapshot, tempo < 1.0
             ? AUDIO_SNAP_SLOWMOTION : tempo > 1.0 ? AUDIO_SNAP_FASTMOTION : 0);
+      /* Wide publication updates the achieved-speed estimator. Keep the
+       * ordinary SRC's consumer-side multiplier deterministic as well. */
+      retro_atomic_store_release_int(&st->pipe_ff_mult_q16, (int)(65536.0 / tempo));
       if (st->pipe_pending_bytes) short_zero = false;
       CHECK(audio_driver_pipeline_transport_step(st->pipe_transport,
             &st->pipe_transport_serial, 257, iterations & 1 ? 97 : 257,
@@ -121,12 +127,14 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
          }
       }
       if (crossings > 1) hz = (crossings - 1) * output_rate / (last - first);
-      CHECK(fabs(hz - 440) < 8.8, "quality pitch: tempo %.2f ch%u %.2f Hz", tempo, c, hz);
+      CHECK(fabs(hz - 440 * (lpf_only ? tempo : 1)) < 8.8,
+            "quality pitch: tempo %.2f ch%u %.2f Hz", tempo, c, hz);
       CHECK(energy / (cap_frames - 2 * trim) > 0.03 && peak < 0.002,
             "quality energy/coherence: tempo %.2f ch%u error %.6f", tempo, c, peak);
    }
    audio_driver_deinit_internal(true);
    settings->bools.audio_time_stretch = settings->bools.audio_fastpath_s16 = false;
+   settings->bools.audio_time_stretch_lowpass = false;
    settings->bools.audio_fastforward_speedup = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
@@ -141,7 +149,7 @@ static void transport_quality_cases(void)
          for (hq = 0; hq < 2; hq++)
          {
             for (t = 0; t < ARRAY_SIZE(tempos); t++)
-               transport_quality_case(floating, wide, hq, tempos[t]);
+               transport_quality_case(floating, wide, hq, tempos[t], false);
             printf("   transport quality: %s %s %s complete\n", floating ? "float" : "int16",
                   wide ? "5.1" : "stereo", hq ? "HQ" : "normal");
             fflush(stdout);

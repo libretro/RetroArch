@@ -978,6 +978,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
    audio_driver_inline_free(audio_st);
+   audio_st->transport_lpf_only = false;
 
 #ifdef HAVE_THREADS
    audio_pipeline_stretch_free(audio_st->pipe_transport);
@@ -3490,7 +3491,8 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
       size_t used, frames;
       const void *output;
       if (!audio_stretch_stream_push_view_limit(t->stream, source, left,
-               &used, tempo / 65536.0, tempo != 65536,
+               &used, tempo / 65536.0,
+               !audio_st->transport_lpf_only && tempo != 65536,
                AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
          break;
       if (used) t->source_progress = true;
@@ -3503,8 +3505,12 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
             audio_speed_lpf_process_into(&t->lpf, output, t->output, frames);
             output = t->output;
          }
-         audio_driver_inline_render(audio_st, output, frames, layout, 1.0f,
-               false, fastforward && !settings->bools.audio_fastforward_speedup);
+         /* Filter-only retains ordinary pitch-changing SRC. The achieved
+          * fast-forward duration was already measured above, once per input. */
+         audio_driver_inline_render(audio_st, output, frames, layout,
+               audio_st->transport_lpf_only ? (float)duration : 1.0f,
+               audio_st->transport_lpf_only,
+               fastforward && !settings->bools.audio_fastforward_speedup);
          audio_stretch_stream_consume(t->stream, frames);
       }
       if (!used && !frames) break;
@@ -4908,7 +4914,7 @@ bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
    uint32_t tempo;
    if (!audio_driver_transport_runloop_tempo(&tempo)) return false;
    return audio_driver_pipeline_transport_request_speed(tempo,
-         tempo != 65536, reset, lowpass);
+         !audio_driver_st.transport_lpf_only && tempo != 65536, reset, lowpass);
 }
 
 static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st)
@@ -4931,7 +4937,8 @@ static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st
          return true;
       }
    }
-   if (!audio_driver_pipeline_transport_request_speed(tempo, tempo != 65536,
+   if (!audio_driver_pipeline_transport_request_speed(tempo,
+            !audio_st->transport_lpf_only && tempo != 65536,
             false, (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS) != 0))
       return false;
    audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
@@ -5008,8 +5015,20 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
       *progress = true;
       return true;
    }
-   /* Transport already owns duration; SRC retains only its rate/clock trim. */
-   ratio = audio_driver_effective_ratio(audio_st, false, 1.0f, 1.0);
+   /* WSOLA owns duration only when pitch preservation is selected. A
+    * filter-only pass keeps the ordinary SRC ratio and device-space bound. */
+   if (!audio_st->transport_lpf_only)
+   {
+      snap &= ~(AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION);
+      ratio = audio_driver_effective_ratio(audio_st, false, 1.0f, 1.0);
+   }
+   else
+      ratio = audio_driver_effective_ratio(audio_st,
+            (snap & AUDIO_SNAP_SLOWMOTION) != 0,
+            config_get_ptr()->floats.slowmotion_ratio,
+            ((snap & AUDIO_SNAP_FASTMOTION)
+             && config_get_ptr()->bools.audio_fastforward_speedup)
+               ? audio_driver_ff_mult(audio_st, input_budget) : 1.0);
    frame_bytes = audio_driver_dev_frame_bytes(audio_st);
    if (output_budget > audio_st->pipe_pass_frames)
       output_budget = audio_st->pipe_pass_frames;
@@ -5043,7 +5062,7 @@ static bool audio_driver_pipeline_transport_run(struct audio_pipeline_stretch *s
    if (block.frames)
    {
       audio_driver_pipeline_render(audio_st, block.data, block.frames,
-            block.layout, snap & ~(AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION));
+            block.layout, snap);
       if (!audio_pipeline_stretch_consume(stage, block.frames)) return false;
       if (block.passthrough) released += block.frames;
    }
@@ -7429,7 +7448,8 @@ static bool audio_driver_transport_recover(bool resume, uint32_t tempo)
    struct audio_transport_prepare request;
    audio_driver_state_t *audio_st = &audio_driver_st;
    request.rate = 0; request.search = 0;
-   request.control = tempo == 65536 ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
+   request.control = (tempo == 65536 || audio_st->transport_lpf_only)
+      ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
    request.cutoff = (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS)
       ? audio_speed_lpf_cutoff(audio_st->pipe_transport_rate, tempo) : 0;
    request.action = resume ? AUDIO_TRANSPORT_RESUME : AUDIO_TRANSPORT_SUSPEND;
@@ -7455,7 +7475,8 @@ bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
    uint32_t tempo;
    if (!audio_driver_transport_runloop_tempo(&tempo)) return false;
    request.rate = rate; request.search = search_channels;
-   request.control = tempo == 65536 ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
+   request.control = (tempo == 65536 || audio_driver_st.transport_lpf_only)
+      ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
    request.cutoff = lowpass ? audio_speed_lpf_cutoff(rate, tempo) : 0;
    request.action = AUDIO_TRANSPORT_PREPARE; request.result = false;
    audio_driver_transport_transaction(&request);
@@ -9072,7 +9093,9 @@ static bool audio_driver_transport_configure(const settings_t *settings)
 #ifdef HAVE_THREADS
    uint32_t tempo;
 #endif
-   if (!settings->bools.audio_time_stretch)
+   audio_st->transport_lpf_only = !settings->bools.audio_time_stretch
+      && settings->bools.audio_time_stretch_lowpass;
+   if (!settings->bools.audio_time_stretch && !audio_st->transport_lpf_only)
       return true;
    memcpy(&rate_bits, &audio_st->input, sizeof(rate_bits));
    if (rate_bits >= UINT32_C(0x7f800000)

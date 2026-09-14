@@ -902,6 +902,8 @@ typedef struct
    struct audio_pipeline_stretch *pipe_transport_suspended;
 #endif
    struct audio_inline_transport *inline_transport;
+   /* Frozen at audio reinitialization; SRC owns speed in filter-only mode. */
+   bool transport_lpf_only;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

@@ -141,3 +141,11 @@ capture, device output, transport reuse/recovery and teardown callback bindings.
 Savestate data and core metadata are stubbed; state-manager control flow, codec,
 ring and audio processing are real. This is not a full frontend runloop or
 physical-device test. It adds no standalone CI job or sanitizer matrix variant.
+
+`DM_ONLY=independentlpf ./discrete_multichannel_test` checks the independently
+enabled speed-linked filter with pitch preservation disabled. Six inline cases
+compare native output byte for byte with a separately composed native LPF and
+ordinary SRC at normal, accelerated and slow speeds. Dry playback matches the
+ordinary path, WSOLA stays quiescent, and prepared storage does not grow. Four
+queued cases check ordinary pitch/duration, stereo/5.1, native int16/float,
+HQ composition and short device writes. These use the existing frontend target.

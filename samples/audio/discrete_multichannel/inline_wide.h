@@ -1,4 +1,100 @@
 /* Configured wide inline transport before native channel routing. */
+static void independent_lpf_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned native, speed, mode, before = failures;
+   static const float durations[] = {1.0f, 0.5f, 2.0f};
+   union { float f[514]; int16_t i[514]; } input, filtered;
+   for (native = 0; native < 2; native++)
+   {
+      /* Real queued consumer, stereo/5.1 and short device writes. */
+      transport_quality_case(native, false, false, 131072, true);
+      transport_quality_case(native, true, true, 131072, true);
+      for (speed = 0; speed < ARRAY_SIZE(durations); speed++)
+      {
+         float *reference = NULL;
+         size_t reference_frames = 0;
+         for (mode = 0; mode < 2; mode++)
+         {
+            audio_speed_lpf_t lpf;
+            struct audio_inline_transport *saved;
+            unsigned chunk, allocations;
+            uint32_t tempo = (uint32_t)(65536.0 / durations[speed]);
+            uint32_t cutoff;
+            CHECK(up(native, AUDIO_LAYOUT_STEREO, native), "LPF-only stand-up");
+            free(cap); cap = NULL; cap_cap = cap_frames = 0;
+            if (!native)
+            {
+               settings->bools.audio_fastpath_s16 = true;
+               st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+               st->resampler_int16_process = sinc_resampler_int16_process;
+               st->resampler_int16_free = sinc_resampler_int16_free;
+               st->resampler_int16_reset = sinc_resampler_int16_reset;
+            }
+            settings->bools.audio_time_stretch = false;
+            settings->bools.audio_time_stretch_lowpass = mode != 0;
+            settings->floats.slowmotion_ratio = durations[speed];
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            CHECK(audio_driver_transport_configure(settings), "LPF-only configure");
+            saved = st->inline_transport;
+            CHECK((saved != NULL) == (mode != 0), "LPF-only preparation policy");
+            audio_speed_lpf_init(&lpf, (unsigned)st->input, 2, native);
+            cutoff = audio_speed_lpf_cutoff((unsigned)st->input, tempo);
+            if (cutoff) audio_speed_lpf_set(&lpf, true, cutoff);
+            allocations = transport_allocations; transport_track = true;
+            for (chunk = 0; chunk < 32; chunk++)
+            {
+               size_t f;
+               const void *source = &input;
+               for (f = 0; f < 257; f++)
+               {
+                  int16_t v = (int16_t)(12000 * sin(2*M_PI*8000*(chunk*257+f)/44100.0));
+                  if (native) { input.f[2*f] = v/32768.0f; input.f[2*f+1] = -v/32768.0f; }
+                  else { input.i[2*f] = v; input.i[2*f+1] = -v; }
+               }
+               /* Independent composition: native LPF followed by the
+                * ordinary frontend/SRC, with pitch preservation disabled. */
+               if (!mode && cutoff)
+               {
+                  CHECK(audio_speed_lpf_process_into(&lpf, &input, &filtered, 257), "reference LPF");
+                  source = &filtered;
+               }
+               CHECK((native ? audio_driver_sample_batch_float((const float*)source, 257)
+                        : audio_driver_sample_batch((const int16_t*)source, 257)) == 257,
+                     "LPF-only source accounting");
+            }
+            CHECK(st->stat_frontend_is_float == (bool)native && cap_frames > 2048,
+                  "LPF-only lost native output");
+            CHECK(allocations == transport_allocations, "LPF-only grew prepared storage");
+            transport_track = false;
+            if (!mode)
+            {
+               reference_frames = cap_frames;
+               reference = (float*)malloc(cap_frames*2*sizeof(float));
+               if (!reference) exit(1);
+               memcpy(reference, cap, cap_frames*2*sizeof(float));
+            }
+            else
+            {
+               CHECK(cap_frames == reference_frames
+                     && !memcmp(reference, cap, cap_frames*2*sizeof(float)),
+                     "LPF-only differs from native LPF plus ordinary SRC");
+               CHECK(saved && audio_stretch_stream_quiescent(saved->stream)
+                     && saved->cutoff == cutoff, "LPF-only retained WSOLA history");
+               CHECK(audio_driver_stop() && audio_driver_start(false), "LPF-only stop/restart");
+            }
+            audio_driver_deinit_internal(true);
+         }
+         free(reference);
+      }
+   }
+   settings->bools.audio_time_stretch_lowpass = settings->bools.audio_fastpath_s16 = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("independent native lowpass: 10 cases, %u failures\n", failures - before);
+}
+
 extern bool test_frame_reversed;
 extern struct state_manager_rewind_state *test_rewind_state;
 extern uint32_t test_rewind_core_frame;
