@@ -28,6 +28,7 @@
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <retro_dirent.h>
 #include <file/file_watch.h>
 #include <lrc_hash.h>
 #include <string/stdstring.h>
@@ -3060,6 +3061,47 @@ static bool video_shader_dir_in_pack(const char *dir)
    return false;
 }
 
+/* Whether @dir holds at least one preset the context can load, as a
+ * stop-at-first-hit walk of its entries: no list, no sort, no copies.
+ * The sibling and descent walks ask this before paying for a full
+ * listing of a folder, so the folders they pass over cost a readdir. */
+static bool video_shader_dir_has_preset(const char *dir,
+      bool show_hidden_files)
+{
+   gfx_ctx_flags_t flags;
+   struct RDIR *rdir = NULL;
+   bool ret          = false;
+
+   flags.flags       = 0;
+   video_context_driver_get_flags(&flags);
+
+   if (!(rdir = retro_opendir_include_hidden(dir, show_hidden_files)))
+      return false;
+
+   while (!ret && retro_readdir(rdir))
+   {
+      const char *name = retro_dirent_get_name(rdir);
+      enum rarch_shader_type type;
+      bool is_preset   = false;
+
+      if (!name || !*name)
+         continue;
+      if (name[0] == '.' && !show_hidden_files)
+         continue;
+
+      type = video_shader_get_type_from_ext(
+            path_get_extension(name), &is_preset);
+      if (!is_preset || retro_dirent_is_dir(rdir, NULL))
+         continue;
+
+      ret  = BIT32_GET(flags.flags,
+            video_shader_type_to_flag(type)) != 0;
+   }
+
+   retro_closedir(rdir);
+   return ret;
+}
+
 static bool video_shader_dir_init_sibling(
       struct rarch_dir_shader_list *dir_list,
       const char *anchor_path,
@@ -3130,6 +3172,9 @@ static bool video_shader_dir_init_sibling(
       strlcpy(sibling_dir, dirs->elems[j].data, sizeof(sibling_dir));
       fill_pathname_slash(sibling_dir, sizeof(sibling_dir));
 
+      if (!video_shader_dir_has_preset(sibling_dir, show_hidden_files))
+         continue;
+
       if (video_shader_dir_init_shader_internal(
                dir_list->remember_last_preset_dir, &sibling,
                sibling_dir, NULL, show_hidden_files))
@@ -3173,7 +3218,8 @@ static bool video_shader_dir_init_descend(
    strlcpy(slashed, dir, sizeof(slashed));
    fill_pathname_slash(slashed, sizeof(slashed));
 
-   if (video_shader_dir_init_shader_internal(remember_last_dir,
+   if (   video_shader_dir_has_preset(slashed, show_hidden_files)
+       && video_shader_dir_init_shader_internal(remember_last_dir,
             dir_list, slashed, NULL, show_hidden_files))
       return true;
 
