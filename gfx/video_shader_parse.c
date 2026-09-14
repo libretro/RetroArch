@@ -3008,6 +3008,63 @@ static bool video_shader_dir_init_sibling(
    return ret;
 }
 
+/* shaders/<pack>/<category>/ is as deep as a shader pack puts its
+ * presets below the Video Shaders directory */
+#define VIDEO_SHADER_DIR_DESCEND_MAX 3
+
+/* With no preset loaded there is no anchor, and the Video Shaders
+ * root itself holds no presets under the pack layout. Take the
+ * first folder below it that does, in listing order, so the hotkey
+ * has somewhere to start from. */
+static bool video_shader_dir_init_descend(
+      struct rarch_dir_shader_list *dir_list,
+      const char *dir,
+      bool remember_last_dir,
+      bool show_hidden_files,
+      unsigned depth)
+{
+   size_t i;
+   char slashed[DIR_MAX_LENGTH];
+   struct string_list *subdirs = NULL;
+   bool ret                    = false;
+
+   if (!dir || !*dir)
+      return false;
+
+   strlcpy(slashed, dir, sizeof(slashed));
+   fill_pathname_slash(slashed, sizeof(slashed));
+
+   if (video_shader_dir_init_shader_internal(remember_last_dir,
+            dir_list, slashed, NULL, show_hidden_files))
+      return true;
+
+   if (depth == 0)
+      return false;
+
+   if (!(subdirs = dir_list_new(slashed, NULL, true,
+               show_hidden_files, false, false)))
+      return false;
+
+   dir_list_sort(subdirs, false);
+
+   for (i = 0; i < subdirs->size; i++)
+   {
+      if (subdirs->elems[i].attr.i != RARCH_DIRECTORY)
+         continue;
+
+      if (video_shader_dir_init_descend(dir_list,
+               subdirs->elems[i].data, remember_last_dir,
+               show_hidden_files, depth - 1))
+      {
+         ret = true;
+         break;
+      }
+   }
+
+   dir_list_free(subdirs);
+   return ret;
+}
+
 /* Points the list at the folder the hotkey steps within, and @s at
  * the preset inside it the step starts from. Keeps the directory
  * scratch off the caller's frame, which also carries @s. */
@@ -3110,6 +3167,15 @@ void video_shader_dir_check_shader(
             dir_list);
       dir_list_initialised = true;
    }
+
+   /* Neither the anchor nor the configured roots turned up a
+    * preset: go looking for one below the Video Shaders directory */
+   if (!anchored && !dir_list->shader_list)
+      video_shader_dir_init_descend(dir_list,
+            settings->paths.directory_video_shader,
+            video_shader_remember_last_dir,
+            settings->bools.show_hidden_files,
+            VIDEO_SHADER_DIR_DESCEND_MAX);
 
    if (   !dir_list->shader_list
        || (dir_list->shader_list->size < 1))
