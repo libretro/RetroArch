@@ -2828,6 +2828,7 @@ static bool video_shader_dir_get_anchor(settings_t *settings,
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *preset_path     = runloop_st->runtime_shader_preset_path;
    const char *core_name       = runloop_st->system.info.library_name;
+   const char *base            = NULL;
    bool resolved               = false;
 
    if (!*preset_path)
@@ -2835,8 +2836,10 @@ static bool video_shader_dir_get_anchor(settings_t *settings,
 
    strlcpy(s, preset_path, len);
 
-   if (strncmp(path_basename_nocompression(preset_path),
-            "retroarch", STRLEN_CONST("retroarch")))
+   base = path_basename_nocompression(preset_path);
+
+   if (   strncmp(base, "retroarch", STRLEN_CONST("retroarch"))
+       || base[STRLEN_CONST("retroarch")] != '.')
    {
       if (   !core_name
           || !*core_name
