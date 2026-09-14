@@ -497,6 +497,11 @@ typedef struct vk
     * touch them. See vulkan_deferred_textures_tick(). */
    struct vk_deferred_texture *deferred_textures;
 
+   /* One-shot staging command buffers submitted without a CPU wait
+    * (glyph atlas uploads), freed once the frame that consumed them
+    * has retired. See vulkan_deferred_cmds_tick(). */
+   struct vk_deferred_cmd *deferred_cmds;
+
    struct
    {
       uint64_t dirty;
@@ -527,12 +532,6 @@ typedef struct
     * instead of the entire atlas texture. */
    unsigned dirty_x_min, dirty_y_min;
    unsigned dirty_x_max, dirty_y_max;
-
-   /* Recycled fence used by vulkan_raster_font_flush to scope
-    * the wait for the atlas upload submission. Lazy-created on
-    * first use; reset on subsequent uses to avoid per-frame
-    * vkCreateFence/vkDestroyFence churn. */
-   VkFence upload_fence;
 
    bool needs_update;
 } vulkan_raster_t;
@@ -1224,6 +1223,95 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
       struct vk_deferred_texture *next = node->next;
       vulkan_destroy_texture(vk->context->device, node->texture);
       free(node->texture);
+      free(node);
+      node = next;
+   }
+}
+
+/* Staging command buffers submitted to the graphics queue without a
+ * fence. Their work is ordered ahead of the frame being recorded by
+ * queue submission order, so the frame can consume the result; the
+ * buffer itself may only be returned to vk->staging_pool once that
+ * frame's swapchain fence has been waited on. The list is owned by the
+ * frame-recording thread: enqueue, tick and flush all run there, which
+ * is also what keeps the externally synchronised pool on one thread. */
+struct vk_deferred_cmd
+{
+   struct vk_deferred_cmd *next;
+   VkCommandBuffer cmd;
+   unsigned frames_left;
+};
+
+/* Submit a one-shot staging command buffer and park it for retirement.
+ * Returns false if the node could not be allocated, in which case the
+ * caller must fall back to a synchronous submit. */
+static bool vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd)
+{
+   VkSubmitInfo submit_info;
+   struct vk_deferred_cmd *node =
+      (struct vk_deferred_cmd*)malloc(sizeof(*node));
+   if (!node)
+      return false;
+
+   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                = NULL;
+   submit_info.waitSemaphoreCount   = 0;
+   submit_info.pWaitSemaphores      = NULL;
+   submit_info.pWaitDstStageMask    = NULL;
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &cmd;
+   submit_info.signalSemaphoreCount = 0;
+   submit_info.pSignalSemaphores    = NULL;
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   node->cmd         = cmd;
+   node->frames_left = vk->context->num_swapchain_images + 1;
+   node->next        = vk->deferred_cmds;
+   vk->deferred_cmds = node;
+   return true;
+}
+
+/* Free staging command buffers whose deferral window has elapsed.
+ * Called once per submitted frame from the recording thread. */
+static void vulkan_deferred_cmds_tick(vk_t *vk)
+{
+   struct vk_deferred_cmd **cur = &vk->deferred_cmds;
+   while (*cur)
+   {
+      struct vk_deferred_cmd *node = *cur;
+      if (node->frames_left > 1)
+      {
+         node->frames_left--;
+         cur = &node->next;
+      }
+      else
+      {
+         *cur = node->next;
+         vkFreeCommandBuffers(vk->context->device,
+               vk->staging_pool, 1, &node->cmd);
+         free(node);
+      }
+   }
+}
+
+/* Free every deferred staging command buffer immediately. Callers must
+ * guarantee the graphics queue is idle and no other thread is recording. */
+static void vulkan_deferred_cmds_flush(vk_t *vk)
+{
+   struct vk_deferred_cmd *node = vk->deferred_cmds;
+   vk->deferred_cmds            = NULL;
+   while (node)
+   {
+      struct vk_deferred_cmd *next = node->next;
+      vkFreeCommandBuffers(vk->context->device,
+            vk->staging_pool, 1, &node->cmd);
       free(node);
       node = next;
    }
@@ -2541,9 +2629,6 @@ static void vulkan_font_free(void *data, bool is_threaded)
    if (font->vk && font->vk->context && font->vk->context->device)
    {
       vkQueueWaitIdle(font->vk->context->queue);
-      if (font->upload_fence != VK_NULL_HANDLE)
-         vkDestroyFence(font->vk->context->device,
-               font->upload_fence, NULL);
       vulkan_destroy_texture(
             font->vk->context->device, &font->texture);
       vulkan_destroy_texture(
@@ -3186,25 +3271,13 @@ static void vulkan_font_render_msg(
 
             vkEndCommandBuffer(staging_cmd);
 
+            /* The copy lands ahead of this frame's command buffer in
+             * queue submission order and the trailing barrier makes it
+             * visible to the fragment stage, so the glyphs drawn below
+             * sample the updated atlas without a CPU wait. The command
+             * buffer is returned to the pool once the frame retires. */
+            if (!vulkan_submit_deferred_cmd(vk, staging_cmd))
             {
-               /* Lazy-create the recycled fence on first use;
-                * subsequent uses reset it. If creation has failed
-                * previously (or fails now), fall back to a queue
-                * drain so we still have correct synchronisation. */
-               VkFence fence = font->upload_fence;
-               if (fence == VK_NULL_HANDLE)
-               {
-                  VkFenceCreateInfo fence_info;
-                  fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-                  fence_info.pNext = NULL;
-                  fence_info.flags = 0;
-                  vkCreateFence(vk->context->device,
-                        &fence_info, NULL, &font->upload_fence);
-                  fence = font->upload_fence;
-               }
-               else
-                  vkResetFences(vk->context->device, 1, &fence);
-
                submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
                submit_info.pNext                = NULL;
                submit_info.waitSemaphoreCount   = 0;
@@ -3214,25 +3287,18 @@ static void vulkan_font_render_msg(
                submit_info.pCommandBuffers      = &staging_cmd;
                submit_info.signalSemaphoreCount = 0;
                submit_info.pSignalSemaphores    = NULL;
-
 #ifdef HAVE_THREADS
                slock_lock(vk->context->queue_lock);
 #endif
                vkQueueSubmit(vk->context->queue,
-                     1, &submit_info, fence);
-               if (fence == VK_NULL_HANDLE)
-                  vkQueueWaitIdle(vk->context->queue);
+                     1, &submit_info, VK_NULL_HANDLE);
+               vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
                slock_unlock(vk->context->queue_lock);
 #endif
-
-               if (fence != VK_NULL_HANDLE)
-                  vkWaitForFences(vk->context->device,
-                        1, &fence, VK_TRUE, UINT64_MAX);
+               vkFreeCommandBuffers(vk->context->device,
+                     vk->staging_pool, 1, &staging_cmd);
             }
-
-            vkFreeCommandBuffers(vk->context->device,
-                  vk->staging_pool, 1, &staging_cmd);
 
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -5260,6 +5326,7 @@ static void vulkan_free(void *data)
       slock_unlock(vk->context->queue_lock);
 #endif
       vulkan_deferred_textures_flush(vk);
+      vulkan_deferred_cmds_flush(vk);
       vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
       vulkan_deinit_descriptor_pool(vk);
@@ -5912,6 +5979,7 @@ static void vulkan_check_swapchain(vk_t *vk)
    /* Queue is idle and this thread owns recording: safe point to
     * destroy everything on the deferred list. */
    vulkan_deferred_textures_flush(vk);
+   vulkan_deferred_cmds_flush(vk);
    vulkan_deinit_pipelines(vk);
    vulkan_deinit_framebuffers(vk);
    vulkan_deinit_descriptor_pool(vk);
@@ -8415,6 +8483,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Retire unloaded textures whose deferral window has elapsed. */
    vulkan_deferred_textures_tick(vk);
+   vulkan_deferred_cmds_tick(vk);
 
    if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
    {
