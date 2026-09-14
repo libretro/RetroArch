@@ -3033,6 +3033,8 @@ void video_shader_dir_check_shader(
     * so keep stepping from the list instead of re-anchoring */
    if (   dir_list->failed_apply_loaded_path
        && dir_list->shader_list
+       && (dir_list->selection < dir_list->shader_list->size)
+       && dir_list->shader_list->elems[dir_list->selection].data
        && string_is_equal(dir_list->failed_apply_loaded_path,
             runloop_st->runtime_shader_preset_path))
    {
