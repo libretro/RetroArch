@@ -32,6 +32,8 @@
 
 #include "audio_driver.h"
 #include "../defaults.h"
+#include "audio_stretch.h"
+#include "audio_speed_lpf.h"
 
 #include <retro_assert.h>
 #include <string/stdstring.h>
@@ -64,7 +66,6 @@
 #ifdef HAVE_THREADS
 #include "audio_thread_wrapper.h"
 #include "audio_pipeline_stretch.h"
-#include "audio_speed_lpf.h"
 #define AUDIO_TRANSPORT_FOLLOW 1
 #define AUDIO_TRANSPORT_LOWPASS 2
 #define AUDIO_TRANSPORT_UPDATE 4
@@ -918,6 +919,34 @@ static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
    audio_st->extra.pending    = false;
 }
 
+struct audio_inline_transport
+{
+   audio_stretch_stream_t *stream;
+   void *output;
+   audio_speed_lpf_t lpf;
+   uint32_t cutoff;
+   bool floating, bypassed;
+};
+
+static void audio_driver_inline_reset(audio_driver_state_t *audio_st)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   if (!t) return;
+   audio_stretch_stream_reset(t->stream);
+   audio_speed_lpf_reset(&t->lpf);
+   t->bypassed = false;
+}
+
+static void audio_driver_inline_free(audio_driver_state_t *audio_st)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   if (!t) return;
+   audio_stretch_stream_free(t->stream);
+   memalign_free(t->output);
+   free(t);
+   audio_st->inline_transport = NULL;
+}
+
 static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -946,6 +975,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
+   audio_driver_inline_free(audio_st);
 
 #ifdef HAVE_THREADS
    audio_pipeline_stretch_free(audio_st->pipe_transport);
@@ -3295,6 +3325,119 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 
 #endif
 
+/* Called with the audio state lock, before SRC and device output. */
+#if defined(__GNUC__)
+__attribute__((noinline))
+#elif defined(_MSC_VER)
+__declspec(noinline)
+#endif
+static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
+      float slowmotion_ratio, const void *data, size_t samples, bool floating,
+      bool slowmotion, bool fastforward)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   settings_t *settings = config_get_ptr();
+   size_t left = samples >> 1;
+   size_t frame = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+   const uint8_t *source = (const uint8_t*)data;
+   retro_time_t old_time = audio_st->last_flush_time;
+   retro_time_t old_delta = audio_st->avg_flush_delta, source_time;
+   double duration = slowmotion ? slowmotion_ratio : 1.0;
+   uint64_t bits;
+   uint32_t tempo, cutoff;
+   bool supported;
+   if (!t) return false;
+   supported = floating == t->floating && !audio_st->extra.pending
+      && audio_st->core_layout == AUDIO_LAYOUT_STEREO;
+#ifdef HAVE_REWIND
+   supported = supported && !state_manager_frame_is_reversed();
+#endif
+   if (supported && fastforward && settings->bools.audio_fastforward_speedup)
+      duration *= audio_driver_fastforward_ratio_mult(audio_st, left);
+   memcpy(&bits, &duration, sizeof(bits));
+   supported = supported && bits < UINT64_C(0x7ff0000000000000)
+      && duration >= 1.0 / 32.0 && duration <= 4.0;
+   if (!supported)
+   {
+      audio_st->last_flush_time = old_time;
+      audio_st->avg_flush_delta = old_delta;
+      if (!t->bypassed)
+      {
+         bool pending = audio_st->extra.pending;
+         audio_driver_inline_reset(audio_st);
+         audio_driver_reset_resamplers(audio_st);
+         audio_st->extra.pending = pending;
+         t->bypassed = true;
+      }
+      return false;
+   }
+   if (t->bypassed)
+   {
+      audio_driver_inline_reset(audio_st);
+      audio_driver_reset_resamplers(audio_st);
+   }
+   source_time = fastforward ? audio_st->last_flush_time : 0;
+   tempo = (uint32_t)(65536.0 / duration + 0.5);
+   cutoff = settings->bools.audio_time_stretch_lowpass
+      ? audio_speed_lpf_cutoff(t->lpf.rate, tempo) : 0;
+   if (cutoff != t->cutoff)
+   {
+      audio_speed_lpf_set(&t->lpf, cutoff != 0,
+            cutoff ? cutoff : (t->cutoff ? t->cutoff : 20));
+      t->cutoff = cutoff;
+   }
+   do
+   {
+      size_t used, frames;
+      const void *output;
+      if (!audio_stretch_stream_push_view_limit(t->stream, source, left,
+               &used, tempo / 65536.0, tempo != 65536,
+               AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
+         break;
+      source += used * frame; left -= used;
+      output = audio_stretch_stream_peek(t->stream, &frames);
+      if (frames)
+      {
+         if (!audio_speed_lpf_quiescent(&t->lpf))
+         {
+            audio_speed_lpf_process_into(&t->lpf, output, t->output, frames);
+            output = t->output;
+         }
+         audio_driver_flush(audio_st, 1.0f, output, frames * 2, floating,
+               false, fastforward && !settings->bools.audio_fastforward_speedup);
+         audio_stretch_stream_consume(t->stream, frames);
+      }
+      if (!used && !frames) break;
+   } while (left || !audio_stretch_stream_needs_input(t->stream));
+   /* Flush cadence must not replace the core's source cadence. */
+   audio_st->last_flush_time = source_time;
+   return true;
+}
+
+static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st)
+{
+   struct audio_inline_transport *t;
+   if (audio_st->core_layout != AUDIO_LAYOUT_STEREO) return false;
+   if (audio_st->inline_transport) return true;
+   t = (struct audio_inline_transport*)calloc(1, sizeof(*t));
+   if (!t) return false;
+   t->floating = audio_st->core_float;
+   t->stream = audio_stretch_stream_new((unsigned)audio_st->input, 2, t->floating, 3);
+   t->output = memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING
+         * (t->floating ? sizeof(float) : sizeof(int16_t)));
+   if (!t->stream || !t->output || !audio_stretch_stream_bind(t->stream,
+            t->output, AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
+   {
+      audio_stretch_stream_free(t->stream);
+      if (t->output) memalign_free(t->output);
+      free(t);
+      return false;
+   }
+   audio_speed_lpf_init(&t->lpf, (unsigned)audio_st->input, 2, t->floating);
+   audio_st->inline_transport = t;
+   return true;
+}
+
 static bool audio_driver_pipe_prepare_canonical(audio_driver_state_t *audio_st)
 {
    size_t frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
@@ -3310,9 +3453,7 @@ static bool audio_driver_pipe_prepare_canonical(audio_driver_state_t *audio_st)
    return true;
 }
 
-#ifdef HAVE_THREADS
 static bool audio_driver_transport_configure(const settings_t *settings);
-#endif
 
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
@@ -3935,10 +4076,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_mixer_init(settings->uints.audio_output_sample_rate);
 #endif
 
-#ifdef HAVE_THREADS
    if (!audio_driver_transport_configure(settings))
       RARCH_WARN("[Audio] Pitch-preserving playback unavailable; using ordinary playback.\n");
-#endif
 
    /* The wrapper thread is created parked and nothing restarts it after
     * a mid-session reinit (SET_SYSTEM_AV_INFO) - the runloop only issues
@@ -4461,8 +4600,11 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
    }
 #endif
    audio_driver_state_lock();
-   audio_driver_flush(audio_st, slowmotion_ratio, data, samples, is_float,
-         is_slowmotion, is_fastforward);
+   if (!audio_st->inline_transport
+         || !audio_driver_inline_flush(audio_st, slowmotion_ratio, data, samples,
+            is_float, is_slowmotion, is_fastforward))
+      audio_driver_flush(audio_st, slowmotion_ratio, data, samples, is_float,
+            is_slowmotion, is_fastforward);
    audio_driver_state_unlock();
 }
 
@@ -5779,7 +5921,12 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
       if (flush_audio)
       {
          audio_driver_state_lock();
-         audio_driver_flush(audio_st, slowmotion_ratio, data,
+         if (!audio_st->inline_transport
+               || !audio_driver_inline_flush(audio_st, slowmotion_ratio, data,
+                  frames_to_write << 1, true,
+                  (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
+                  (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false))
+            audio_driver_flush(audio_st, slowmotion_ratio, data,
                frames_to_write << 1, true,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
@@ -7187,6 +7334,7 @@ bool audio_driver_stop(void)
          audio_st->pipe_pending = NULL;
          audio_st->pipe_pending_bytes = 0;
          audio_driver_state_lock();
+         audio_driver_inline_reset(audio_st);
          audio_driver_reset_resamplers(audio_st);
          audio_driver_state_unlock();
       }
@@ -8616,7 +8764,6 @@ bool microphone_driver_get_devices_list(void **data)
 }
 #endif
 
-#ifdef HAVE_THREADS
 /* Keep optional startup work out of the common initialization body. */
 #if defined(__GNUC__)
 __attribute__((noinline))
@@ -8626,13 +8773,19 @@ __declspec(noinline)
 static bool audio_driver_transport_configure(const settings_t *settings)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   uint32_t rate_bits, tempo;
+   uint32_t rate_bits;
+#ifdef HAVE_THREADS
+   uint32_t tempo;
+#endif
    if (!settings->bools.audio_time_stretch)
       return true;
    memcpy(&rate_bits, &audio_st->input, sizeof(rate_bits));
-   if (!audio_st->pipe_threaded || rate_bits >= UINT32_C(0x7f800000)
+   if (rate_bits >= UINT32_C(0x7f800000)
          || audio_st->input < 8000.0f || audio_st->input > 192000.0f)
       return false;
+   if (!audio_st->pipe_threaded)
+      return audio_driver_inline_prepare(audio_st);
+#ifdef HAVE_THREADS
    /* The front pair drives one shared search for every native channel. */
    if (audio_driver_transport_runloop_tempo(&tempo))
       return audio_driver_pipeline_transport_start_runloop(
@@ -8642,5 +8795,7 @@ static bool audio_driver_transport_configure(const settings_t *settings)
    audio_st->pipe_transport_follow = AUDIO_TRANSPORT_FOLLOW | AUDIO_TRANSPORT_UPDATE
       | (settings->bools.audio_time_stretch_lowpass ? AUDIO_TRANSPORT_LOWPASS : 0);
    return audio_driver_transport_recover(false, 65536);
-}
+#else
+   return false;
 #endif
+}

@@ -901,6 +901,7 @@ typedef struct
    /* Mutually exclusive with pipe_transport; shares its output storage. */
    struct audio_pipeline_stretch *pipe_transport_suspended;
 #endif
+   struct audio_inline_transport *inline_transport;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

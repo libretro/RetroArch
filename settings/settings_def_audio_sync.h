@@ -20,7 +20,7 @@ S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,
       "Pitch-Preserving Speed Changes",
-      "Preserve pitch during slow motion and accelerated fast-forward using the threaded audio pipeline. Adds processing cost, memory and buffering while enabled. Requires a supported audio driver and content rate of 8000-192000 Hz. Unsupported speeds use ordinary playback. Pitch preservation resumes when speed is supported and queued audio has drained.")
+      "Preserve pitch during slow motion and accelerated fast-forward. Supports the threaded audio pipeline and stereo sources with frame-synchronous playback. Adds processing cost, memory and buffering while enabled. Requires a content rate of 8000-192000 Hz. Unsupported speeds or source formats use ordinary playback. Threaded playback resumes pitch preservation after queued audio drains.")
 
 S_BOOL(audio_time_stretch_lowpass, AUDIO_TIME_STRETCH_LOWPASS,
       "audio_time_stretch_lowpass",

@@ -4,6 +4,15 @@
 the native transport quality checks. Run just those checks with
 `DM_ONLY=transportquality ./discrete_multichannel_test`.
 
+`DM_ONLY=inline ./discrete_multichannel_test` exercises configured inline
+stereo transport through the int16 and float batch entries. Ten cases cover
+tempo 0.25..32, pitch/duration, native SRC lanes, allocation failure,
+stop/restart, unsupported-speed/layout/format fallback, recovery and the LPF.
+Each callback must release every borrowed source view before returning.
+Storage is prepared before playback; the output block holds 1024 native stereo
+frames. Multichannel inline sources retain ordinary playback. Inline device
+writes retain their existing blocking/nonblocking and short-write behavior.
+
 `DM_ONLY=canonicalreserve ./discrete_multichannel_test` checks the producer's
 canonical staging reservation: initial/growth allocation failure preserves
 state, and repeated reservation plus varying 5.1/7.1 native batches do not

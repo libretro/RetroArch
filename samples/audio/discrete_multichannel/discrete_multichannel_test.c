@@ -1671,7 +1671,9 @@ static void transport_settings_cases(void)
                && transport_control_calls == calls, "disabled setting touched transport");
          settings->bools.audio_time_stretch = true;
          st->pipe_threaded = false;
-         CHECK(!audio_driver_transport_configure(settings), "inline activated transport");
+         st->core_layout = AUDIO_LAYOUT_5POINT1;
+         CHECK(!audio_driver_transport_configure(settings), "wide inline activated transport");
+         st->core_layout = AUDIO_LAYOUT_STEREO;
          st->pipe_threaded = true;
          st->input = 7999;
          CHECK(!audio_driver_transport_configure(settings), "low rate accepted");
@@ -2326,6 +2328,107 @@ static void canonical_reserve_cases(void)
 
 #include "transport_quality.h"
 
+static void inline_transport_cases(void)
+{
+   static const float durations[] = {4.0f, 2.0f, 1.0f, 0.5f, 0.03125f};
+   union { float f[257 * 2]; int16_t i[257 * 2]; } input;
+   unsigned floating, speed, before = failures;
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   for (floating = 0; floating < 2; floating++)
+      for (speed = 0; speed < 5; speed++)
+      {
+         size_t submitted = 0, f, count;
+         double duration = durations[speed], expected;
+         size_t total = (size_t)(16384 * (duration < 1 ? 1 / duration : 1));
+         struct audio_inline_transport *saved;
+         CHECK(up(floating, AUDIO_LAYOUT_STEREO, floating), "inline stand-up");
+         if (!floating)
+         {
+            settings->bools.audio_fastpath_s16 = true;
+            st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+            st->resampler_int16_process = sinc_resampler_int16_process;
+            st->resampler_int16_free = sinc_resampler_int16_free;
+            st->resampler_int16_reset = sinc_resampler_int16_reset;
+         }
+         settings->bools.audio_time_stretch = false;
+         CHECK(audio_driver_transport_configure(settings) && !st->inline_transport,
+               "disabled inline allocated state");
+         settings->bools.audio_time_stretch = true;
+         settings->bools.audio_time_stretch_lowpass = false;
+         transport_fail_output = true;
+         CHECK(!audio_driver_transport_configure(settings) && !st->inline_transport,
+               "failed inline allocation retained state");
+         transport_fail_output = false;
+         CHECK(audio_driver_transport_configure(settings) && st->inline_transport,
+               "inline configuration did not activate");
+         saved = st->inline_transport;
+         if (!saved) return;
+         settings->floats.slowmotion_ratio = durations[speed];
+         /* Controlled duration exercises both tempo directions independent of wall time. */
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         while (submitted < total)
+         {
+            size_t n = total - submitted;
+            if (n > 257) n = 257;
+            for (f = 0; f < n; f++)
+            {
+               int16_t v = (int16_t)(12000 * sin(2 * M_PI * 440 * (submitted + f) / 44100.0));
+               if (floating)
+               {
+                  input.f[2 * f] = v / 32768.0f;
+                  input.f[2 * f + 1] = -v / 32768.0f;
+               }
+               else { input.i[2 * f] = v; input.i[2 * f + 1] = -v; }
+            }
+            CHECK((floating ? audio_driver_sample_batch_float(input.f, n)
+                     : audio_driver_sample_batch(input.i, n)) == n, "inline source accounting");
+            CHECK(!audio_stretch_stream_peek(saved->stream, &count) && !count,
+                  "inline retained borrowed callback storage");
+            submitted += n;
+         }
+         expected = total * duration * st->src_ratio_orig;
+         CHECK(fabs((double)cap_frames - expected) < 1024 * (1 + duration) * st->src_ratio_orig,
+               "inline duration %.5f: %u expected %.1f", duration, (unsigned)cap_frames, expected);
+         CHECK(cap_frames > 8192, "inline capture too short");
+         if (cap_frames > 8192)
+         {
+            double own = tone_energy(cap + 2048, cap_frames - 2048, 2, 0, 440);
+            CHECK(own > 0.01 && own > 20 * tone_energy(cap + 2048, cap_frames - 2048, 2, 0, 660),
+                  "inline pitch changed at duration %.5f: %.6f", duration, own);
+         }
+         CHECK(st->stat_core_is_float == floating && st->stat_frontend_is_float == floating,
+               "inline native lane changed");
+         CHECK(audio_driver_stop() && audio_stretch_stream_quiescent(saved->stream), "inline stop retained tail");
+         CHECK(audio_driver_start(false), "inline restart");
+         CHECK(!audio_driver_inline_flush(st, 8.0f, &input, 34, floating, true, false)
+               && saved->bypassed, "unsupported inline duration did not fall back");
+         CHECK(audio_driver_inline_flush(st, 1.0f, &input, 34, floating, false, false)
+               && !saved->bypassed && st->inline_transport == saved, "inline fallback did not recover");
+         st->core_layout = AUDIO_LAYOUT_5POINT1;
+         st->extra.pending = true;
+         CHECK(!audio_driver_inline_flush(st, 1.0f, &input, 34, floating, false, false), "wide inline did not fall back");
+         CHECK(st->extra.pending, "inline fallback canceled prepared extra channels");
+         st->extra.pending = false;
+         st->core_layout = AUDIO_LAYOUT_STEREO;
+         CHECK(!audio_driver_inline_flush(st, 1.0f, &input, 34, !floating, false, false), "format mismatch did not fall back");
+         settings->bools.audio_fastforward_speedup = true;
+         settings->bools.audio_time_stretch_lowpass = true;
+         CHECK(audio_driver_inline_flush(st, 0.5f, &input, 34, floating, true, false)
+               && !audio_speed_lpf_quiescent(&saved->lpf), "inline speed LPF inactive");
+         st->last_flush_time = 0;
+         audio_driver_inline_flush(st, 1.0f, &input, 34, floating, false, true);
+         CHECK(st->last_flush_time > 0, "inline output reset source cadence");
+         audio_driver_deinit_internal(true);
+         CHECK(!st->inline_transport, "inline teardown retained state");
+      }
+   runloop_state_get_ptr()->flags = 0;
+   settings->floats.slowmotion_ratio = 1;
+   settings->bools.audio_time_stretch = settings->bools.audio_time_stretch_lowpass = false;
+   settings->bools.audio_fastforward_speedup = false;
+   printf("inline native transport: 10 cases, %u failures\n", failures - before);
+}
+
 int main(void)
 {
    /* One case at a time, for when a single one is being worked on:
@@ -2333,6 +2436,7 @@ int main(void)
    const char *only = getenv("DM_ONLY");
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
+   RUN("inline", inline_transport_cases());
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
