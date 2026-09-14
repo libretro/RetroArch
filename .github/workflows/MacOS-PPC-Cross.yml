@@ -17,6 +17,7 @@ name: CI macOS PowerPC (cross)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -29,9 +30,14 @@ env:
   TARGET: powerpc-apple-darwin8
   SDKROOT: /usr/local/MacOSX10.5.sdk
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     container:
       image: ghcr.io/variantxyz/gcc-powerpc-apple-darwin8:build-gcc-14.2-MacOSXSDK10.5
       options: --user root

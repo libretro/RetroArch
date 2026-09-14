@@ -14,6 +14,10 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   qt-companion-persist:
     # Builds a Qt-enabled RetroArch with the null video/audio/input
@@ -28,6 +32,7 @@ jobs:
     # core's shader accessors are compiled out). That is deliberate - it
     # is the one configuration the other jobs never build.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Dependencies
         timeout-minutes: 5

@@ -14,9 +14,14 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   linux-nomenu: # Smoketest build with no menu support compiled in
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Dependencies
         timeout-minutes: 5

@@ -49,6 +49,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   # glibc and Apple libc.  Both take the descriptor path, since
   # VFS_HAVE_FILE_MAPPING covers anything with mmap.
