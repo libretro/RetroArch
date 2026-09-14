@@ -133,6 +133,26 @@ static void gfx_widget_generic_message_reset(bool cancel_pending)
       state->message_updated = false;
 }
 
+/* Builds the fixed message with @skip leading characters of the name
+ * dropped, and returns how wide it comes out. */
+static int gfx_widget_generic_message_build_fixed(
+      gfx_widget_generic_message_state_t *state,
+      gfx_widget_font_data_t *font_msg_queue,
+      size_t skip)
+{
+   const char *name = utf8skip(state->name, skip);
+
+   strlcpy(state->message, state->prefix, sizeof(state->message));
+   if (skip)
+      strlcat(state->message, "...", sizeof(state->message));
+   strlcat(state->message, name,          sizeof(state->message));
+   strlcat(state->message, state->suffix, sizeof(state->message));
+   state->message_len = strlen(state->message);
+
+   return font_driver_get_message_width(font_msg_queue->font,
+         state->message, state->message_len, 1.0f);
+}
+
 /* Fixed layout: constant box, left-aligned message and a reserved
  * label slot, so the text stays put between shader messages. The
  * name is cut from the left until the message fits. */
@@ -141,8 +161,8 @@ static void gfx_widget_generic_message_layout_fixed(
       dispgfx_widget_t *p_dispwidget)
 {
    unsigned area;
+   int text_width;
    unsigned slot_width                    = 0;
-   const char *name                       = state->name;
    gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
    unsigned last_video_width              = p_dispwidget->last_video_width;
 
@@ -164,23 +184,29 @@ static void gfx_widget_generic_message_layout_fixed(
    area                  = state->bg_width - (state->text_padding * 2);
    area                  = (area > slot_width) ? area - slot_width : 0;
 
-   for (;;)
+   text_width            = gfx_widget_generic_message_build_fixed(
+         state, font_msg_queue, 0);
+
+   /* Past the widest fit the leading characters go. Binary searched,
+    * so a long path costs a handful of width measurements rather
+    * than one per character of it. */
+   if (text_width > (int)area && *state->name)
    {
-      int text_width;
+      size_t lo = 1;
+      size_t hi = utf8len(state->name);
 
-      strlcpy(state->message, state->prefix, sizeof(state->message));
-      if (name != state->name)
-         strlcat(state->message, "...", sizeof(state->message));
-      strlcat(state->message, name, sizeof(state->message));
-      strlcat(state->message, state->suffix, sizeof(state->message));
-      state->message_len = strlen(state->message);
+      while (lo < hi)
+      {
+         size_t mid = lo + ((hi - lo) >> 1);
 
-      text_width         = font_driver_get_message_width(
-            font_msg_queue->font, state->message,
-            state->message_len, 1.0f);
-      if (text_width <= (int)area || !*name)
-         break;
-      name               = utf8skip(name, 1);
+         if (gfx_widget_generic_message_build_fixed(
+                  state, font_msg_queue, mid) <= (int)area)
+            hi     = mid;
+         else
+            lo     = mid + 1;
+      }
+
+      gfx_widget_generic_message_build_fixed(state, font_msg_queue, lo);
    }
 }
 
