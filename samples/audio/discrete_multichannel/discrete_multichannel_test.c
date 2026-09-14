@@ -2446,6 +2446,7 @@ int main(void)
    printf("discrete multi-channel:\n");
    RUN("inlinewide", inline_wide_cases());
    RUN("inlineformat", inline_format_cases());
+   RUN("callbackcontinuity", inline_callback_cases());
    RUN("inline", inline_transport_cases());
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());

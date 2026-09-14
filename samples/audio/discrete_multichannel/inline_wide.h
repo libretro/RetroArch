@@ -263,3 +263,119 @@ static void inline_format_cases(void)
    runloop_state_get_ptr()->flags = 0;
    printf("inline format negotiation: %u cases, %u failures\n", cases, failures - before);
 }
+
+static union { float f[257*2]; int16_t i[257*2]; } callback_pcm;
+static unsigned callback_calls;
+static bool callback_native;
+
+static void inline_source_callback(void)
+{
+   unsigned f;
+   callback_calls++;
+   if (callback_native)
+      audio_driver_sample_batch_float(callback_pcm.f, 257);
+   else
+      for (f = 0; f < 257; f++)
+         audio_driver_sample(callback_pcm.i[2*f], callback_pcm.i[2*f+1]);
+}
+
+/* Compare callback delivery and discarded frames against uninterrupted audio. */
+static void inline_callback_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   int16_t accum[AUDIO_SAMPLE_ACCUM_INT16S];
+   unsigned native, callbacks, batch, f, before = failures;
+   float *reference = NULL;
+   size_t reference_frames = 0;
+   for (native = 0; native < 2; native++)
+      for (callbacks = 0; callbacks < 2; callbacks++)
+      {
+         struct audio_inline_transport *saved;
+         unsigned allocations;
+         CHECK(up(native, AUDIO_LAYOUT_STEREO, native), "callback stand-up");
+         free(cap); cap = NULL; cap_cap = cap_frames = 0;
+         st->resampler_hq = native;
+         CHECK(retro_resampler_realloc_hq(&st->resampler_data, &st->resampler,
+               "sinc", st->resampler_quality, st->src_ratio_orig, native), "callback SRC");
+         if (!native)
+         {
+            settings->bools.audio_fastpath_s16 = true;
+            st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+            st->resampler_int16_process = sinc_resampler_int16_process;
+            st->resampler_int16_free = sinc_resampler_int16_free;
+            st->resampler_int16_reset = sinc_resampler_int16_reset;
+         }
+         settings->bools.audio_time_stretch = true;
+         settings->bools.audio_time_stretch_lowpass = true;
+         settings->floats.slowmotion_ratio = 2;
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         audio_driver_publish_runloop();
+         CHECK(audio_driver_transport_configure(settings), "callback prepare");
+         saved = st->inline_transport;
+         st->sample_accum = accum;
+         st->callback.callback = callbacks ? inline_source_callback : NULL;
+         callback_native = native;
+         callback_calls = 0;
+         transport_track = true;
+         allocations = transport_allocations;
+         for (batch = 0; batch < 32; batch++)
+         {
+            for (f = 0; f < 257; f++)
+            {
+               float value = 0.3f * sinf((float)(2 * M_PI * 440 * (batch*257+f) / 44100.0));
+               if (native)
+               { callback_pcm.f[2*f] = value; callback_pcm.f[2*f+1] = -value; }
+               else
+               { callback_pcm.i[2*f] = (int16_t)(value * 32767); callback_pcm.i[2*f+1] = -callback_pcm.i[2*f]; }
+            }
+            if (callbacks && batch == 16)
+            {
+               unsigned calls = callback_calls;
+               size_t frames = cap_frames;
+               runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
+               audio_driver_frame_end();
+               CHECK(audio_driver_callback() && callback_calls == calls
+                     && cap_frames == frames, "paused callback advanced source/output");
+               runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
+               AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+               audio_driver_frame_end();
+               CHECK(audio_driver_callback() && callback_calls == calls + 1
+                     && !st->data_ptr && cap_frames == frames,
+                     "suspended callback retained speculative audio");
+               AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+            }
+            if (callbacks)
+               CHECK(audio_driver_callback() && !st->data_ptr, "callback retained accumulator input");
+            else if (native) audio_driver_sample_batch_float(callback_pcm.f, 257);
+            else audio_driver_sample_batch(callback_pcm.i, 257);
+            audio_driver_frame_end();
+         }
+         CHECK(st->inline_transport == saved && !saved->bypassed
+               && transport_allocations == allocations, "callback replaced or bypassed prepared transport");
+         transport_track = false;
+         CHECK(cap_frames > 8192, "callback lost stretched output duration");
+         if (!callbacks)
+         {
+            reference_frames = cap_frames;
+            reference = (float*)malloc(cap_frames * 2 * sizeof(float));
+            CHECK(reference != NULL, "callback reference allocation");
+            if (reference) memcpy(reference, cap, cap_frames * 2 * sizeof(float));
+         }
+         else
+         {
+            CHECK(callback_calls == 33, "unexpected source callback count");
+            CHECK(cap_frames == reference_frames && reference
+                  && !memcmp(reference, cap, cap_frames * 2 * sizeof(float)),
+                  "pause/suspension or callback delivery changed the audible stream");
+            free(reference); reference = NULL;
+         }
+         st->callback.callback = NULL;
+         audio_driver_deinit_internal(true);
+      }
+   settings->bools.audio_time_stretch = settings->bools.audio_time_stretch_lowpass = false;
+   settings->bools.audio_fastpath_s16 = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("inline callback continuity: 2 cases, %u failures\n", failures - before);
+}

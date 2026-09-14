@@ -63,3 +63,13 @@ between source callbacks; a changed format rebuilds optional transport storage
 and resets retained DSP history and cadence. Allocation failure uses ordinary
 playback until reinitialization. No transport allocation is added to sample
 processing. Returning to stereo retains the canonical arena.
+
+`DM_ONLY=callbackcontinuity ./discrete_multichannel_test` compares uninterrupted
+batch playback against callback delivery interrupted by pause and suspension.
+Two native cases cover float batches with HQ SRC and the int16 single-sample
+accumulator with native SRC, through prepared slow-motion transport. Audible
+output must match byte for byte; paused callbacks cannot invoke the source,
+and suspended callbacks cannot retain speculative samples or advance output.
+The stage and its arena remain attached without new transport allocations.
+The source and callback boundaries are driven deterministically on the test
+thread; this is not a concurrent core or whole-runloop acceptance test.
