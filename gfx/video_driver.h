@@ -1473,6 +1473,13 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport);
 
 uint64_t video_driver_presents_per_frame(const video_frame_info_t *video_info);
 
+/* Narrows an XRGB2101010 frame to XRGB8888 in the state's scratch
+ * buffer; returns it and its stride, or NULL if it could not grow */
+const void *video_driver_convert_xrgb2101010(
+      video_driver_state_t *video_st,
+      const void *data, unsigned width, unsigned height,
+      size_t in_pitch, size_t *out_pitch);
+
 /**
  * config_get_video_driver_options:
  *

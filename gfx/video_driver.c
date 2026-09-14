@@ -2355,6 +2355,10 @@ void video_driver_free_internal(void)
     * negotiation broke on core switch. Dead instances answer nothing. */
    video_st->poke = NULL;
 
+#ifdef HAVE_THREADS
+   /* The threaded video worker may be converting a frame with them */
+   video_thread_wait_idle();
+#endif
    if (video_st->scaler_ptr)
       video_driver_pixel_converter_free(video_st->scaler_ptr);
    video_st->scaler_ptr = NULL;
@@ -5576,7 +5580,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  * allocation failure (in which case the caller leaves the frame untouched).
  * The packed layout is bits [29:20]=R, [19:10]=G, [9:0]=B, 2 ignored high
  * bits; output is 0xFFRRGGBB (XRGB8888, native endian). */
-VIDEO_NOINLINE static const void *video_driver_convert_xrgb2101010(
+VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
       video_driver_state_t *video_st,
       const void *data, unsigned width, unsigned height,
       size_t in_pitch, size_t *out_pitch)
@@ -5652,6 +5656,25 @@ static bool video_driver_filter_on_worker(video_driver_state_t *video_st,
 }
 #endif
 
+#ifdef HAVE_THREADS
+/* Under the threaded video wrapper the worker converts a source pixel
+ * format the driver does not take, on the frame's way to it - unless
+ * the frame is being recorded from the CPU here, which reads the
+ * converted frame on this thread. True when the frame goes raw. */
+static bool video_driver_convert_on_worker(video_driver_state_t *video_st,
+      recording_state_t *recording_st, enum video_thread_convert kind)
+{
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (     recording_st->data
+         && recording_st->driver
+         && recording_st->driver->push_video)
+      return false;
+   video_thread_defer_convert(kind);
+   return true;
+}
+#endif
+
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -5715,6 +5738,10 @@ void video_driver_frame(const void *data, unsigned width,
          && data
          && (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_0RGB1555)
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
+#ifdef HAVE_THREADS
+         && !video_driver_convert_on_worker(video_st, recording_st,
+               VIDEO_THREAD_CONVERT_0RGB1555)
+#endif
       )
    {
       video_pixel_frame_scale(
@@ -5734,6 +5761,10 @@ void video_driver_frame(const void *data, unsigned width,
          && data
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
          && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE)
+#ifdef HAVE_THREADS
+         && !video_driver_convert_on_worker(video_st, recording_st,
+               VIDEO_THREAD_CONVERT_XRGB2101010)
+#endif
       )
    {
       size_t      conv_pitch = pitch;

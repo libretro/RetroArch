@@ -1422,6 +1422,118 @@ static void lane_zero_copy(void)
 
 
 /* ------------------------------------------------------------------ */
+/* Lane: 0RGB1555 conversion under the wrapper                         */
+/*   A 0RGB1555 core's frame reaches the driver as RGB565 whether the  */
+/*   main thread converts it (direct) or the video thread does         */
+/*   (threaded): the driver must never see the source format.         */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        cvlane_driver;
+static const video_driver_t *cvlane_inner;
+static retro_atomic_size_t   cvlane_frames;
+static retro_atomic_size_t   cvlane_bad;
+static retro_atomic_size_t   cvlane_pitch;
+static retro_atomic_size_t   cvlane_p0;
+static retro_atomic_size_t   cvlane_p1;
+
+static bool cvlane_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if (frame)
+   {
+      const uint16_t *px = (const uint16_t*)frame;
+      retro_atomic_store_release_size(&cvlane_pitch, pitch);
+      retro_atomic_store_release_size(&cvlane_p0, px[0]);
+      retro_atomic_store_release_size(&cvlane_p1, px[1]);
+      /* 0x7C1F -> 0xF81F, 0x03E0 -> 0x07E0 */
+      if (px[0] != 0xF81F || px[1] != 0x07E0)
+         retro_atomic_fetch_add_size(&cvlane_bad, 1);
+      retro_atomic_fetch_add_size(&cvlane_frames, 1);
+   }
+   return cvlane_inner->frame(data, frame, width, height, frame_count,
+         pitch, msg, video_info);
+}
+
+static void cvlane_run(bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr = NULL;
+
+   set_threaded_via_setting(threaded);
+   run_frames(3);
+   expect_wrapper(threaded, threaded ? "convert lane threaded"
+         : "convert lane direct");
+   if (threaded)
+   {
+      thr          = (thread_video_t*)video_st->data;
+      video_thread_wait_idle();
+      cvlane_inner = thr->driver;
+   }
+   else
+      cvlane_inner = video_st->current_video;
+
+   cvlane_driver       = *cvlane_inner;
+   cvlane_driver.frame = cvlane_frame;
+   if (threaded)
+      thr->driver             = &cvlane_driver;
+   else
+      video_st->current_video = &cvlane_driver;
+   retro_atomic_store_release_size(&cvlane_frames, 0);
+   retro_atomic_store_release_size(&cvlane_bad, 0);
+
+   run_frames(30);
+   if (threaded)
+      video_thread_wait_idle();
+
+   if (threaded)
+      thr->driver             = cvlane_inner;
+   else
+      video_st->current_video = (video_driver_t*)cvlane_inner;
+
+   CHECK(retro_atomic_load_acquire_size(&cvlane_frames) >= 10,
+         "%s: driver saw %u frames",
+         threaded ? "threaded" : "direct",
+         (unsigned)retro_atomic_load_acquire_size(&cvlane_frames));
+   CHECK(retro_atomic_load_acquire_size(&cvlane_bad) == 0,
+         "%s: %u frames reached the driver unconverted "
+         "(pixels %04x %04x, pitch %u)",
+         threaded ? "threaded" : "direct",
+         (unsigned)retro_atomic_load_acquire_size(&cvlane_bad),
+         (unsigned)retro_atomic_load_acquire_size(&cvlane_p0),
+         (unsigned)retro_atomic_load_acquire_size(&cvlane_p1),
+         (unsigned)retro_atomic_load_acquire_size(&cvlane_pitch));
+}
+
+static void lane_convert_0rgb1555(void)
+{
+   unsigned had = failures;
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*use_1555)(int) = lib
+      ? (void (*)(int))dylib_proc(lib, "harness_core_use_0rgb1555") : NULL;
+
+   CHECK(use_1555 != NULL, "harness core lacks the 0RGB1555 export");
+   if (!use_1555)
+      return;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   /* The scaler for the source format is built by the driver init, so
+    * the format change goes in before each reinit below. */
+   use_1555(1);
+   cvlane_run(false);
+   cvlane_run(true);
+   use_1555(0);
+   set_threaded_via_setting(false);
+   run_frames(3);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] 0RGB1555 conversion lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: asynchronous texture uploads                                  */
 /*   video_driver_texture_load_async() must return at once, upload on  */
 /*   the video thread, deliver done() on the main thread in post       */
@@ -1688,6 +1800,7 @@ int main(int argc, char *argv[])
    lane_font_marshal();
    lane_display_pacing();
    lane_zero_copy();
+   lane_convert_0rgb1555();
    lane_waiter_call();
    lane_frame_path_heap();
    lane_resize_under_wrapper();

@@ -1038,6 +1038,61 @@ static void video_thread_filter(const void **data,
    *pitch    = out_pitch;
 }
 
+/* Source pixel format conversion, on the thread that draws: a frame
+ * staged by video_thread_defer_convert() arrives in the core's format.
+ * The scaler and the narrowing scratch buffer hold still while frames
+ * are in flight; the video driver deinit waits this thread idle before
+ * freeing them. */
+static void video_thread_convert(unsigned kind, const void **data,
+      unsigned width, unsigned height, unsigned *pitch)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (!*data)
+      return;
+
+   switch (kind)
+   {
+      case VIDEO_THREAD_CONVERT_0RGB1555:
+         if (video_st->scaler_ptr)
+         {
+            video_pixel_frame_scale(
+                  video_st->scaler_ptr->scaler,
+                  video_st->scaler_ptr->scaler_out,
+                  *data, width, height, *pitch);
+            *data  = video_st->scaler_ptr->scaler_out;
+            *pitch = video_st->scaler_ptr->scaler->out_stride;
+         }
+         break;
+      case VIDEO_THREAD_CONVERT_XRGB2101010:
+         {
+            size_t      conv_pitch = *pitch;
+            const void *converted  = video_driver_convert_xrgb2101010(
+                  video_st, *data, width, height, *pitch, &conv_pitch);
+            if (converted)
+            {
+               *data  = converted;
+               *pitch = (unsigned)conv_pitch;
+            }
+         }
+         break;
+      default:
+         break;
+   }
+}
+
+void video_thread_defer_convert(enum video_thread_convert kind)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+
+   if (!video_st->thread_wrapper_active)
+      return;
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   thr->convert_next = (unsigned)kind;
+}
+
 void video_thread_defer_filter(unsigned in_bpp)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -1557,6 +1612,9 @@ static void video_thread_loop(void *data)
                   unsigned fwidth   = thr->frame.slot[slot].width;
                   unsigned fheight  = thr->frame.slot[slot].height;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
+                  if (thr->frame.slot[slot].convert)
+                     video_thread_convert(thr->frame.slot[slot].convert,
+                           &fdata, fwidth, fheight, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
                   if (thr->frame.slot[slot].filter_bpp)
                      video_thread_filter(&fdata, &fwidth, &fheight, &fpitch);
@@ -1800,18 +1858,21 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_VIDEO_FILTER
    unsigned filter_bpp = 0;
 #endif
+   unsigned convert;
    retro_time_t now;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
 
-#ifdef HAVE_VIDEO_FILTER
    /* Taken once, so a push that goes no further leaves nothing staged
     * for the next frame */
+#ifdef HAVE_VIDEO_FILTER
    filter_bpp          = thr->filter_next;
    thr->filter_next    = 0;
 #endif
+   convert             = thr->convert_next;
+   thr->convert_next   = 0;
 
    /* Asynchronous uploads that finished since the last frame reach
     * their owners before the frame that may draw with them. */
@@ -1833,6 +1894,8 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
+         if (convert)
+            video_thread_convert(convert, &frame_, width, height, &pitch);
 #ifdef HAVE_VIDEO_FILTER
          if (filter_bpp)
             video_thread_filter(&frame_, &width, &height, &pitch);
@@ -2070,6 +2133,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_VIDEO_FILTER
       thr->frame.slot[slot].filter_bpp = filter_bpp;
 #endif
+      thr->frame.slot[slot].convert    = convert;
 #ifdef HAVE_GFX_WIDGETS
       thr->frame.slot[slot].status_text_len = thr->status_text_len;
       if (thr->status_text_len)

@@ -324,6 +324,10 @@ typedef struct thread_video
     * filter; its bytes per pixel. Staged by video_thread_defer_filter() */
    unsigned filter_next;
 #endif
+   /* Main thread: the next frame pushed is in a source pixel format the
+    * driver does not take, for this thread to convert. One of
+    * enum video_thread_convert. Staged by video_thread_defer_convert() */
+   unsigned convert_next;
    /* cond_ring: ring progress (frame.pending / frame.busy changing),
     * broadcast by the video thread when it claims or completes a slot.
     * Any number of waiters, each re-testing its own predicate. */
@@ -441,6 +445,9 @@ typedef struct thread_video
           * on: its bytes per pixel, 0 for a frame ready to draw */
          unsigned filter_bpp;
 #endif
+         /* A frame still in the core's source pixel format, for this
+          * thread to convert before the filter and the driver */
+         unsigned convert;
          /* Built by the main thread in video_thread_frame() and handed
           * to the driver's frame call by pointer on the video thread.
           * video_driver_build_info() reads video_driver_st and
@@ -669,6 +676,18 @@ void video_thread_status_text(const char *s);
  * filter on it before drawing. */
 void video_thread_defer_filter(unsigned in_bpp);
 #endif
+
+/* Source pixel formats the video thread converts on the frame's way to
+ * the driver, in place of the main thread doing so before handover */
+enum video_thread_convert
+{
+   VIDEO_THREAD_CONVERT_NONE = 0,
+   VIDEO_THREAD_CONVERT_0RGB1555,    /* to RGB565 through the scaler */
+   VIDEO_THREAD_CONVERT_XRGB2101010  /* to XRGB8888 */
+};
+
+/* Stages the next frame pushed for conversion on the video thread */
+void video_thread_defer_convert(enum video_thread_convert kind);
 
 RETRO_END_DECLS
 
