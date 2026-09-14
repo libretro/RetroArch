@@ -1684,6 +1684,15 @@ static void transport_settings_cases(void)
          CHECK(audio_driver_transport_configure(settings) && st->pipe_transport
                && !(st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS),
                "disabled lowpass enabled effect");
+         audio_driver_pipeline_transport_release();
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         settings->floats.slowmotion_ratio = 8;
+         CHECK(audio_driver_transport_configure(settings) && !st->pipe_transport
+               && st->pipe_transport_suspended, "unsupported configured startup not recoverable");
+         runloop_state_get_ptr()->flags = 0;
+         settings->floats.slowmotion_ratio = 1;
+         CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
+               && !st->pipe_transport_suspended, "configured startup recovery");
          st->current_audio = saved;
          audio_driver_deinit_internal(true);
          CHECK(!st->pipe_transport && !st->pipe_transport_follow,
@@ -1949,6 +1958,7 @@ static void transport_request_cases(void)
          audio_pipeline_layout_t *q;
          struct audio_pipeline_stretch_block block;
          size_t position, head;
+         audio_pipeline_stretch_t *retained;
          unsigned gen, i;
          CHECK(pipe_up(floating, floating), "request stand-up");
          if (!wide)
@@ -2106,22 +2116,54 @@ static void transport_request_cases(void)
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
          position = retro_spsc_read_avail(&st->pipe_ring);
+         retained = st->pipe_transport;
+         transport_allocations = transport_frees = 0; transport_track = true;
          audio_driver_submit_width(st, 8.0f, &input, st->pipe_channels,
                floating, true, false, st->pipe_channels);
-         CHECK(!st->pipe_transport && !st->pipe_transport_follow
+         CHECK(!st->pipe_transport && st->pipe_transport_follow
+               && st->pipe_transport_suspended == retained
                && retro_spsc_read_avail(&st->pipe_ring) == position + st->pipe_frame_bytes,
                "automatic fallback lost queued source or stayed active");
          runloop_state_get_ptr()->flags = 0;
          config_get_ptr()->floats.slowmotion_ratio = 1;
          CHECK(!audio_driver_pipeline_transport_start_runloop(48000, 1, true),
                "automatic restart accepted queued source");
+         audio_driver_frame_end();
+         audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
+               floating, false, false, st->pipe_channels);
+         CHECK(!st->pipe_transport && st->pipe_transport_suspended == retained
+               && retro_spsc_read_avail(&st->pipe_ring) == position + 2 * st->pipe_frame_bytes,
+               "recovery replaced queued legacy source");
          retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
-         CHECK(audio_driver_pipeline_transport_start_runloop(48000, 1, true),
-               "automatic restart after fallback");
+         st->pipe_pending = (const uint8_t*)&input; st->pipe_pending_bytes = 1;
+         audio_driver_frame_end();
+         CHECK(audio_driver_transport_update_runloop(st) && !st->pipe_transport
+               && st->pipe_pending_bytes == 1, "recovery cancelled pending device output");
+         st->pipe_pending = NULL; st->pipe_pending_bytes = 0;
+         audio_driver_frame_end();
+         CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport == retained
+               && !st->pipe_transport_suspended && q->current_control == 65536
+               && q->current_cutoff == 0, "automatic drained recovery");
+         transport_track = false;
+         CHECK(!transport_allocations && !transport_frees, "fallback/recovery replaced storage");
          audio_driver_set_core_float(!floating);
          CHECK(st->pipe_transport && st->pipe_transport_follow
                && st->pipe_float == !floating, "native rebind lost automatic mode");
+         CHECK(audio_driver_transport_recover(false, 65536), "suspend before native rebind");
+         audio_driver_set_core_float(floating);
+         CHECK(!st->pipe_transport && st->pipe_transport_suspended
+               && st->pipe_float == floating, "suspended rebind lost native format");
+         CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
+               && !st->pipe_transport_suspended, "recovery after native rebind");
+         CHECK(audio_driver_transport_recover(false, 65536), "suspend before release");
+         audio_driver_pipeline_transport_release();
+         CHECK(!st->pipe_transport_suspended && !st->pipe_transport_output
+               && !st->pipe_transport_follow, "release retained suspended storage");
+         CHECK(audio_driver_pipeline_transport_start_runloop(48000, 1, true)
+               && audio_driver_transport_recover(false, 65536), "suspended teardown setup");
          audio_driver_deinit_internal(true);
+         CHECK(!st->pipe_transport_suspended && !st->pipe_transport_output,
+               "teardown retained suspended storage");
       }
    printf("native transport request: 4 cases, %u failures\n", failures - before);
 }

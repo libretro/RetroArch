@@ -62,10 +62,12 @@ history, but this is not a physical-device uninterrupted-playback test.
 
 `make check-auto` enters through the settings activation helper used during
 audio initialization. It enables `audio_time_stretch` and
-`audio_time_stretch_lowpass`, then exercises producer speed updates, fallback
-and explicit restarts in all four source/device format combinations and with
+`audio_time_stretch_lowpass`, then exercises producer speed updates, fallback,
+automatic recovery and explicit restarts in all four source/device formats and with
 live source layouts. Both options default off and request audio reinitialization
 when changed through Settings > Audio > Synchronization (advanced settings).
 Threaded Pipeline must be enabled and supported by the driver. Core-owned audio
-callbacks keep their inline path. Unsupported speeds disable transport until
-audio reinitialization; this test explicitly restarts it after draining source.
+callbacks keep their inline path. Unsupported speeds suspend transport;
+supported speeds resume it after source and device output drain, reusing its
+allocated storage. A continuously nonempty queue defers recovery until a
+natural drain or pause; recovery does not force a source drop.

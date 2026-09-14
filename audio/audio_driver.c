@@ -69,6 +69,7 @@
 #define AUDIO_TRANSPORT_LOWPASS 2
 #define AUDIO_TRANSPORT_UPDATE 4
 static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st);
+static bool audio_driver_transport_recover(bool resume, uint32_t tempo);
 #endif
 
 #ifdef HAVE_MENU
@@ -949,6 +950,8 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 #ifdef HAVE_THREADS
    audio_pipeline_stretch_free(audio_st->pipe_transport);
    audio_st->pipe_transport = NULL;
+   audio_pipeline_stretch_free(audio_st->pipe_transport_suspended);
+   audio_st->pipe_transport_suspended = NULL;
    if (audio_st->pipe_transport_output)
       memalign_free(audio_st->pipe_transport_output);
    audio_st->pipe_transport_output = NULL;
@@ -4630,8 +4633,20 @@ static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st
    uint32_t tempo;
    if (!audio_driver_transport_runloop_tempo(&tempo))
    {
-      audio_driver_pipeline_transport_release();
+      if (audio_st->pipe_transport && !audio_driver_transport_recover(false, 65536))
+         return false;
+      audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
       return true;
+   }
+   if (audio_st->pipe_transport_suspended)
+   {
+      /* Keep publishing legacy source until both queues can hand over. */
+      if (retro_spsc_read_avail(&audio_st->pipe_ring)
+            || !audio_driver_transport_recover(true, tempo))
+      {
+         audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
+         return true;
+      }
    }
    if (!audio_driver_pipeline_transport_request_speed(tempo, tempo != 65536,
             false, (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS) != 0))
@@ -6850,6 +6865,8 @@ static void audio_driver_transport_clear(audio_driver_state_t *audio_st)
    audio_driver_state_unlock();
    audio_pipeline_stretch_free(audio_st->pipe_transport);
    audio_st->pipe_transport = NULL;
+   audio_pipeline_stretch_free(audio_st->pipe_transport_suspended);
+   audio_st->pipe_transport_suspended = NULL;
    if (audio_st->pipe_transport_output)
       memalign_free(audio_st->pipe_transport_output);
    audio_st->pipe_transport_output = NULL;
@@ -6899,21 +6916,40 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
    return true;
 }
 
+enum audio_transport_action
+{
+   AUDIO_TRANSPORT_PREPARE,
+   AUDIO_TRANSPORT_RELEASE,
+   AUDIO_TRANSPORT_SUSPEND,
+   AUDIO_TRANSPORT_RESUME
+};
+
 struct audio_transport_prepare
 {
    unsigned rate;
    uint32_t search, control, cutoff;
-   bool release, result;
+   enum audio_transport_action action;
+   bool result;
 };
 
 static void audio_driver_transport_control(void *userdata)
 {
    struct audio_transport_prepare *request = (struct audio_transport_prepare*)userdata;
    audio_driver_state_t *audio_st = &audio_driver_st;
-   if (request->release)
+   if (request->action == AUDIO_TRANSPORT_RELEASE)
    {
-      if (audio_st->pipe_transport) audio_driver_transport_clear(audio_st);
+      if (audio_st->pipe_transport || audio_st->pipe_transport_suspended)
+         audio_driver_transport_clear(audio_st);
       request->result = true;
+   }
+   else if (request->action == AUDIO_TRANSPORT_SUSPEND)
+   {
+      request->result = audio_driver_transport_discard(0, false);
+      if (request->result)
+      {
+         audio_st->pipe_transport_suspended = audio_st->pipe_transport;
+         audio_st->pipe_transport = NULL;
+      }
    }
    else if (audio_st->pipe_threaded
          && audio_st->current_audio && audio_st->current_audio->wait_writable
@@ -6921,9 +6957,25 @@ static void audio_driver_transport_control(void *userdata)
          && !retro_spsc_read_avail(&audio_st->pipe_ring)
          && !audio_st->pipe_pending_bytes)
    {
-      request->result = audio_driver_transport_bind(audio_st,
-            request->rate, request->search, audio_st->pipe_float);
-      if (request->result) audio_st->pipe_transport_follow = 0;
+      if (request->action == AUDIO_TRANSPORT_RESUME)
+      {
+         request->result = audio_st->pipe_transport_suspended != NULL;
+         if (request->result)
+         {
+            audio_pipeline_layout_t *q = &audio_st->pipe_layouts;
+            retro_spsc_clear(&audio_st->pipe_ring);
+            audio_pipeline_layout_init(q, q->published_layout);
+            audio_st->pipe_transport = audio_st->pipe_transport_suspended;
+            audio_st->pipe_transport_suspended = NULL;
+            audio_pipeline_stretch_discard(audio_st->pipe_transport, 0);
+         }
+      }
+      else
+      {
+         request->result = audio_driver_transport_bind(audio_st,
+               request->rate, request->search, audio_st->pipe_float);
+         if (request->result) audio_st->pipe_transport_follow = 0;
+      }
       if (request->result && request->control)
       {
          audio_pipeline_layout_t *q = &audio_st->pipe_layouts;
@@ -6944,12 +6996,26 @@ static void audio_driver_transport_transaction(struct audio_transport_prepare *r
       audio_driver_transport_control(request);
 }
 
+static bool audio_driver_transport_recover(bool resume, uint32_t tempo)
+{
+   struct audio_transport_prepare request;
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   request.rate = 0; request.search = 0;
+   request.control = tempo == 65536 ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
+   request.cutoff = (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS)
+      ? audio_speed_lpf_cutoff(audio_st->pipe_transport_rate, tempo) : 0;
+   request.action = resume ? AUDIO_TRANSPORT_RESUME : AUDIO_TRANSPORT_SUSPEND;
+   request.result = false;
+   audio_driver_transport_transaction(&request);
+   return request.result;
+}
+
 bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_channels)
 {
    struct audio_transport_prepare request;
    request.rate = rate; request.search = search_channels;
    request.control = request.cutoff = 0;
-   request.release = request.result = false;
+   request.action = AUDIO_TRANSPORT_PREPARE; request.result = false;
    audio_driver_transport_transaction(&request);
    return request.result;
 }
@@ -6963,7 +7029,7 @@ bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
    request.rate = rate; request.search = search_channels;
    request.control = tempo == 65536 ? tempo : tempo | AUDIO_PIPELINE_STRETCH;
    request.cutoff = lowpass ? audio_speed_lpf_cutoff(rate, tempo) : 0;
-   request.release = request.result = false;
+   request.action = AUDIO_TRANSPORT_PREPARE; request.result = false;
    audio_driver_transport_transaction(&request);
    return request.result;
 }
@@ -6983,7 +7049,7 @@ void audio_driver_pipeline_transport_release(void)
    struct audio_transport_prepare request;
    request.rate = 0; request.search = 0;
    request.control = request.cutoff = 0;
-   request.release = true; request.result = false;
+   request.action = AUDIO_TRANSPORT_RELEASE; request.result = false;
    audio_driver_transport_transaction(&request);
 }
 
@@ -6993,11 +7059,17 @@ static void audio_driver_pipe_set_format(void *userdata)
    /* Empty source alone is not quiescence: the wrapper must also be parked. */
    if (!retro_spsc_read_avail(&audio_st->pipe_ring))
    {
-      if (audio_st->pipe_transport
+      bool suspended = audio_st->pipe_transport_suspended != NULL;
+      if ((audio_st->pipe_transport || suspended)
             && !audio_driver_transport_bind(audio_st, audio_st->pipe_transport_rate,
                audio_st->pipe_transport_search, audio_st->core_float))
          /* Keep the new source native even if optional state cannot be rebuilt. */
          audio_driver_transport_clear(audio_st);
+      if (suspended && audio_st->pipe_transport)
+      {
+         audio_st->pipe_transport_suspended = audio_st->pipe_transport;
+         audio_st->pipe_transport = NULL;
+      }
       audio_st->pipe_float = audio_st->core_float;
       audio_st->pipe_frame_bytes = (size_t)audio_st->pipe_channels
             * (audio_st->pipe_float ? sizeof(float) : sizeof(int16_t));
@@ -8543,7 +8615,7 @@ __declspec(noinline)
 static bool audio_driver_transport_configure(const settings_t *settings)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   uint32_t rate_bits;
+   uint32_t rate_bits, tempo;
    if (!settings->bools.audio_time_stretch)
       return true;
    memcpy(&rate_bits, &audio_st->input, sizeof(rate_bits));
@@ -8551,7 +8623,13 @@ static bool audio_driver_transport_configure(const settings_t *settings)
          || audio_st->input < 8000.0f || audio_st->input > 192000.0f)
       return false;
    /* The front pair drives one shared search for every native channel. */
-   return audio_driver_pipeline_transport_start_runloop(
-         (unsigned)audio_st->input, 3, settings->bools.audio_time_stretch_lowpass);
+   if (audio_driver_transport_runloop_tempo(&tempo))
+      return audio_driver_pipeline_transport_start_runloop(
+            (unsigned)audio_st->input, 3, settings->bools.audio_time_stretch_lowpass);
+   if (!audio_driver_pipeline_transport_prepare((unsigned)audio_st->input, 3))
+      return false;
+   audio_st->pipe_transport_follow = AUDIO_TRANSPORT_FOLLOW | AUDIO_TRANSPORT_UPDATE
+      | (settings->bools.audio_time_stretch_lowpass ? AUDIO_TRANSPORT_LOWPASS : 0);
+   return audio_driver_transport_recover(false, 65536);
 }
 #endif

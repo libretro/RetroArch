@@ -657,6 +657,8 @@ static void wrapper_live_controls(unsigned publishes)
       AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1 };
    audio_driver_state_t *st = &audio_driver_st;
    struct live_control_check check;
+   audio_pipeline_stretch_t *retained = st->pipe_transport;
+   void *retained_output = st->pipe_transport_output;
    unsigned step;
    check.initial = true;
    audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
@@ -721,7 +723,8 @@ static void wrapper_live_controls(unsigned publishes)
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
          submit_frame((size_t)(CORE_RATE / FPS), publishes);
-         if (st->pipe_transport || st->pipe_transport_follow) fixture_failures++;
+         if (st->pipe_transport || !st->pipe_transport_follow
+               || st->pipe_transport_suspended != retained) fixture_failures++;
       }
       runloop_state_get_ptr()->flags = 0;
       config_get_ptr()->floats.slowmotion_ratio = 1;
@@ -739,6 +742,13 @@ static void wrapper_live_controls(unsigned publishes)
          }
          if (!drained)
          { fprintf(stderr, "legacy fallback did not drain source/device output\n"); fixture_failures++; }
+         audio_driver_frame_end();
+         submit_frame((size_t)(CORE_RATE / FPS), publishes);
+         if (st->pipe_transport != retained || st->pipe_transport_suspended
+               || st->pipe_transport_output != retained_output
+               || st->pipe_layouts.published_control != 65536
+               || st->pipe_layouts.published_cutoff != 0)
+         { fprintf(stderr, "automatic recovery did not reuse native storage\n"); fixture_failures++; }
       }
    }
 }
@@ -1127,7 +1137,7 @@ int main(int argc, char **argv)
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
    if (speed_lowpass) printf("speed LPF: 128 coherent tempo/cutoff requests, %u failures\n", fixture_failures);
    if (runloop_policy) printf("runloop policy: 128 speed-state requests, %u failures\n", fixture_failures);
-   if (auto_runloop) printf("automatic transport: 128 producer updates, 16 fallbacks, %u failures\n", fixture_failures);
+   if (auto_runloop) printf("automatic transport: 128 producer updates, 16 fallbacks/recoveries, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }
