@@ -271,7 +271,7 @@ static void concurrent_direct(unsigned native)
    unsigned token = 0;
    size_t origin = SIZE_MAX - 127;
    s.frame = 11 * (native ? sizeof(float) : sizeof(int16_t));
-   CHECK(retro_spsc_init(&s.ring, 256));
+   CHECK(retro_spsc_init(&s.ring, 4096));
    audio_pipeline_layout_init(&s.metadata, 3);
    retro_atomic_size_init(&s.ring.head, origin);
    retro_atomic_size_init(&s.ring.tail, origin);
