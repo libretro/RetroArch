@@ -272,10 +272,14 @@ gfx/common/wayland/tearing-control-v1.c
 samples/**/*_test
 samples/audio/stretch/stretch_bench
 samples/**/*.o
+libretro-common/samples/**/*_test
 # Harness executables that are not named <dir>_test. This one had been
 # committed as a built binary, which made any make clean in that
 # directory show up as a deletion.
 samples/audio/embedded_alsa/abi_check
+samples/gfx/font_lifecycle/lifecycle
+samples/gfx/font_lifecycle/lifecycle-threaded
+samples/gfx/font_lifecycle/create
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

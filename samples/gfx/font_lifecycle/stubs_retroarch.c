@@ -73,6 +73,12 @@ int video_thread_font_init_calls = 0;
 
 bool video_driver_is_threaded(void) { return true; }
 
+/* font_driver.c asks this before routing a font call through the
+ * threaded wrapper. This sample drives that path deliberately - its
+ * whole subject is what the wrapper does to a font's lifetime - so it
+ * answers the same as video_driver_is_threaded() above. */
+bool video_driver_thread_wrapper_active(void) { return true; }
+
 uintptr_t video_thread_texture_handle(void *data,
       uintptr_t (*handle_get)(void *data))
 { return handle_get ? handle_get(data) : 0; }
