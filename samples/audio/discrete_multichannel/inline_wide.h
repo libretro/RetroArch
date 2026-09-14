@@ -34,6 +34,13 @@ static void rewind_mixed_cases(void)
          if (capture)
          {
             audio_driver_sample_batch_float(input_f, 7);
+            AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+            if (!kind) audio_driver_sample_rewind(32000, -32000);
+            else if (kind == 1)
+               CHECK(audio_driver_sample_batch_rewind(folded, 17) == 17, "suspended rewind accounting");
+            else audio_driver_sample_batch_multi_int16(input, 17, 6, AUDIO_LAYOUT_5POINT1);
+            CHECK(st->rewind_ptr == 500 && !cap_frames, "suspended mixed rewind retained speculative input");
+            AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
             for (f = 7; f < 257; )
             {
                unsigned n = f == 7 ? 113 : 130;
@@ -276,6 +283,17 @@ static void rewind_frame_cases(void)
                size_t frames = cap_frames;
                audio_driver_setup_rewind();
                test_frame_reversed = true;
+               if (batch == 8)
+               {
+                  AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+                  if (floating) audio_driver_sample_batch_float(input.f, 7);
+                  else if (kind)
+                     CHECK(audio_driver_sample_batch_rewind(input.i, 7) == 7, "suspended native rewind accounting");
+                  else for (f = 0; f < 7; f++) audio_driver_sample_rewind(32000, -32000);
+                  CHECK(st->rewind_ptr == st->rewind_size && cap_frames == frames,
+                        "suspended native rewind retained speculative input");
+                  AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+               }
                if (floating)
                {
                   audio_driver_sample_batch_float(input.f, 113);

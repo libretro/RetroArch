@@ -117,3 +117,9 @@ int16 inputs must join the float reverse buffer selected for playback, with one
 conversion at capture. Checks preserve non-quantized float values, leave the
 inactive int16 arena untouched, and compare device output byte for byte against
 an independently constructed reversed float stream.
+
+The existing `rewindframes` and `mixedreverse` cases also inject suspended
+callbacks before native capture and into partially captured mixed input. They
+must leave the reverse cursor/history unchanged, retain batch return counts and
+produce the same subsequent device output. This checks the audio suspension
+contract used by speculative execution; it does not run the full runahead loop.
