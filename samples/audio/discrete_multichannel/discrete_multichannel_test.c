@@ -2223,6 +2223,8 @@ static void native_render_cases(void)
    printf("native WSOLA frontend render: 48 runs, %u failures\n", failures - before);
 }
 
+#include "transport_quality.h"
+
 int main(void)
 {
    /* One case at a time, for when a single one is being worked on:
@@ -2232,6 +2234,7 @@ int main(void)
    printf("discrete multi-channel:\n");
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
+   RUN("transportquality", transport_quality_cases());
    RUN("transportsettings", transport_settings_cases());
    RUN("transportrequest", transport_request_cases());
    RUN("transportscheduler", transport_scheduler_cases());

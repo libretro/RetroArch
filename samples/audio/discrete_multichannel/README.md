@@ -1,0 +1,25 @@
+# Shipping frontend audio checks
+
+`make check` exercises `audio_driver.c` with scripted audio devices, including
+the native transport quality checks. Run just those checks with
+`DM_ONLY=transportquality ./discrete_multichannel_test`.
+
+The 48 quality cases cover int16/float, stereo/5.1, normal sinc at 48 → 44.1 kHz
+and HQ sinc at 48 → 96 kHz, and tempos 0.25, 0.5, 1, 2, 8 and 32. They activate
+transport through the configured startup helper, publish through the frontend,
+and use bounded consumer steps with zero/partial device writes and EOF drain.
+Known achieved-speed estimates avoid depending on the test host's wall clock.
+
+The device captures a 440 Hz signal with alternating channel polarity. Checks
+require pitch within 2%, non-silent bounded samples, channel coherence within
+0.002, and exact source publication/drain accounting. Duration must be within
+two output frames at unity; active transport allows
+`512 * (1 + 1 / tempo) * output_rate / input_rate` output frames for finite-stream
+window/overlap edges. Pitch and energy omit the first and last eighth of the
+capture to exclude startup/end transients. These are independent output
+oracles, not comparisons against another execution of the same renderer.
+
+The existing samples/audio CI runs this target plain and under ASan/UBSan.
+These tests do not measure CPU throughput or physical-device latency and do
+not establish perceptual quality for arbitrary content. Live transition,
+LPF, routing, and threaded-wrapper stress have separate fixtures.
