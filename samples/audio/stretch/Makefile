@@ -28,15 +28,15 @@ stretch_bench: stretch_bench.c $(ROOT)/audio/audio_stretch.c $(ROOT)/audio/audio
 	$(CC) $(CPPFLAGS) $(CFLAGS) stretch_bench.c $(ROOT)/audio/audio_stretch.c $(LDFLAGS) $(LDLIBS) -o $@
 bench: stretch_bench
 	./stretch_bench
-check: stretch_filter_test stretch_test stretch_src_test stretch_search_test stretch_canonical_test stretch_epoch_test stretch_pipeline_test resampler_reset_test
-	./stretch_filter_test
-	./stretch_test
-	./stretch_src_test
-	./stretch_search_test
-	./stretch_canonical_test
-	./stretch_epoch_test
-	./stretch_pipeline_test
-	./resampler_reset_test
+TESTS = stretch_filter_test stretch_test stretch_src_test stretch_search_test stretch_canonical_test stretch_epoch_test stretch_pipeline_test resampler_reset_test
+# Override with an empty TIMEOUT on hosts that lack coreutils timeout.
+TIMEOUT ?= timeout 600
+
+check: $(TESTS:%=run-%)
+
+run-%: %
+	@echo "=== $* ==="
+	$(TIMEOUT) ./$*
 stretch_filter_test: stretch_filter_test.c $(ROOT)/audio/audio_pipeline_stretch.c $(ROOT)/audio/audio_stretch.c $(ROOT)/audio/audio_speed_lpf.c $(ROOT)/audio/audio_pipeline_stretch.h $(ROOT)/audio/audio_pipeline_layout.h $(ROOT)/audio/audio_speed_lpf.h $(ROOT)/audio/audio_stretch.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) stretch_filter_test.c $(ROOT)/audio/audio_pipeline_stretch.c $(ROOT)/audio/audio_stretch.c $(ROOT)/audio/audio_speed_lpf.c $(ROOT)/libretro-common/queues/retro_spsc.c $(LDFLAGS) $(WRAP_LDFLAGS) $(LDLIBS) -o $@
 clean:

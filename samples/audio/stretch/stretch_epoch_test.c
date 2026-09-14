@@ -179,6 +179,9 @@ int main(void)
                      CHECK(memcmp(native ? (void*)sink_f[0] : (void*)sink_i[0],
                               native ? (void*)sink_f[1] : (void*)sink_i[1], a * frame) == 0);
                      cases++;
+                     printf("  case %u/64 channels=%u native=%u hq=%u cap=%u discard=%u ratio=%u\n",
+                           cases, channels, native, hq, cap, discard, ratio);
+                     fflush(stdout);
                   }
    CHECK(heap_calls == 0);
    printf("queued stretch + sinc: %u cases, %u failures, %u guarded heap calls\n", cases, failures, heap_calls);

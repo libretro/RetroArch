@@ -831,14 +831,14 @@ jobs:
       - name: Build and run stretch and native SRC chain (C89, ASan + UBSan)
         working-directory: samples/audio/stretch
         run: |
-          make check SANITIZER=address,undefined
+          make -j$(nproc) check SANITIZER=address,undefined
           make clean
-          make check CC="gcc -DAUDIO_STRETCH_SCALAR" SANITIZER=address,undefined
+          make -j$(nproc) check CC="gcc -DAUDIO_STRETCH_SCALAR" SANITIZER=address,undefined
 
       - name: Build and run WSOLA kernel tests (C89, ASan + UBSan)
         working-directory: samples/audio/wsola_search
         run: |
-          make check SANITIZER=address,undefined
+          make -j$(nproc) check SANITIZER=address,undefined
 
       - name: Build and run native speed LPF tests (C89, ASan + UBSan)
         working-directory: samples/audio/speed_lpf
@@ -847,14 +847,14 @@ jobs:
       - name: Build and run experimental sinc HQ tests (C89, ASan + UBSan)
         working-directory: samples/audio/sinc_hq
         run: |
-          make check SANITIZER=address,undefined
+          make -j$(nproc) check SANITIZER=address,undefined
 
       - name: Build and run sinc AVX tests (C89, ASan + UBSan)
         working-directory: samples/audio/sinc_hq
         run: |
           if grep -qw avx /proc/cpuinfo; then
             make clean
-            make check CC="gcc -mavx" SANITIZER=address,undefined
+            make -j$(nproc) check CC="gcc -mavx" SANITIZER=address,undefined
           else
             echo "AVX unavailable on this runner; scalar/SSE tests ran above."
           fi
@@ -862,11 +862,11 @@ jobs:
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |
-          make check SANITIZER=address,undefined
+          make -j$(nproc) check SANITIZER=address,undefined
           make clean
-          make check SIMD_MASK=RESAMPLER_SIMD_SSE SANITIZER=address,undefined
+          make -j$(nproc) check SIMD_MASK=RESAMPLER_SIMD_SSE SANITIZER=address,undefined
 
       - name: Build and run resampler option tests (C89, ASan + UBSan)
         working-directory: samples/audio/resampler_options
         run: |
-          make check SANITIZER=address,undefined
+          make -j$(nproc) check SANITIZER=address,undefined
