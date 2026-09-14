@@ -498,9 +498,11 @@ typedef struct vk
    struct vk_deferred_texture *deferred_textures;
 
    /* One-shot staging command buffers submitted without a CPU wait
-    * (glyph atlas uploads), freed once the frame that consumed them
-    * has retired. See vulkan_deferred_cmds_tick(). */
+    * (texture and glyph atlas uploads), each released once its own
+    * fence signals, plus the pool those fences return to. See
+    * vulkan_deferred_cmds_tick(). */
    struct vk_deferred_cmd *deferred_cmds;
+   struct vk_deferred_fence *deferred_fences;
 
    struct
    {
@@ -1228,24 +1230,70 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
    }
 }
 
-/* Staging command buffers submitted to the graphics queue without a
- * fence. Their work is ordered ahead of the frame being recorded by
- * queue submission order, so the frame can consume the result; the
- * buffer and any staging memory it reads may only be released once
- * that frame's swapchain fence has been waited on. The list is owned
- * by the frame-recording thread: enqueue, tick and flush all run
- * there, which is also what keeps the externally synchronised pool on
- * one thread. */
+/* One-shot staging command buffers, each submitted with its own fence
+ * and released once that fence has signalled. Nothing here depends on
+ * the swapchain: an upload made before a swapchain exists, or across
+ * a swapchain recreation, retires on its own completion like any
+ * other. Queue submission order still places the upload ahead of the
+ * frame being recorded, so the frame can consume the result. The
+ * list and the fence pool are owned by the frame-recording thread:
+ * enqueue, tick and flush all run there, which is also what keeps
+ * the externally synchronised staging pool on one thread. */
 struct vk_deferred_cmd
 {
    struct vk_texture staging_tex;    /* uint64_t alignment; .memory
                                         is VK_NULL_HANDLE when unused */
    VkBuffer staging_buffer;          /* VK_NULL_HANDLE when unused */
    VkDeviceMemory staging_memory;
+   VkFence fence;
    struct vk_deferred_cmd *next;
    VkCommandBuffer cmd;
-   unsigned frames_left;
 };
+
+/* Signalled fences go back here for the next upload. */
+struct vk_deferred_fence
+{
+   struct vk_deferred_fence *next;
+   VkFence fence;
+};
+
+static VkFence vulkan_deferred_fence_acquire(vk_t *vk)
+{
+   VkFence fence = VK_NULL_HANDLE;
+   struct vk_deferred_fence *pool = vk->deferred_fences;
+   if (pool)
+   {
+      vk->deferred_fences = pool->next;
+      fence               = pool->fence;
+      free(pool);
+      vkResetFences(vk->context->device, 1, &fence);
+   }
+   else
+   {
+      VkFenceCreateInfo fence_info;
+      fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      fence_info.pNext = NULL;
+      fence_info.flags = 0;
+      if (vkCreateFence(vk->context->device,
+               &fence_info, NULL, &fence) != VK_SUCCESS)
+         fence = VK_NULL_HANDLE;
+   }
+   return fence;
+}
+
+static void vulkan_deferred_fence_recycle(vk_t *vk, VkFence fence)
+{
+   struct vk_deferred_fence *pool =
+      (struct vk_deferred_fence*)malloc(sizeof(*pool));
+   if (!pool)
+   {
+      vkDestroyFence(vk->context->device, fence, NULL);
+      return;
+   }
+   pool->fence         = fence;
+   pool->next          = vk->deferred_fences;
+   vk->deferred_fences = pool;
+}
 
 static void vulkan_deferred_cmd_release(vk_t *vk,
       struct vk_deferred_cmd *node)
@@ -1258,22 +1306,33 @@ static void vulkan_deferred_cmd_release(vk_t *vk,
       vkDestroyBuffer(device, node->staging_buffer, NULL);
    if (node->staging_memory != VK_NULL_HANDLE)
       vkFreeMemory(device, node->staging_memory, NULL);
+   vulkan_deferred_fence_recycle(vk, node->fence);
    free(node);
 }
 
 /* Submit a one-shot staging command buffer. Ownership of the command
  * buffer and of the optional staging texture / raw staging buffer
- * passes to the deferred list, which releases them once the frame
- * that consumed the upload has retired. If the node cannot be
- * allocated the submission is drained synchronously and everything
- * is released before returning. */
+ * passes to the deferred list, which releases them once the upload's
+ * fence has signalled. If a node or fence cannot be obtained the
+ * submission is drained synchronously and everything is released
+ * before returning. */
 static void vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *staging_tex,
       VkBuffer staging_buffer, VkDeviceMemory staging_memory)
 {
    VkSubmitInfo submit_info;
+   VkFence fence               = VK_NULL_HANDLE;
    struct vk_deferred_cmd *node =
       (struct vk_deferred_cmd*)malloc(sizeof(*node));
+
+   if (node)
+   {
+      if ((fence = vulkan_deferred_fence_acquire(vk)) == VK_NULL_HANDLE)
+      {
+         free(node);
+         node = NULL;
+      }
+   }
 
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    submit_info.pNext                = NULL;
@@ -1288,7 +1347,7 @@ static void vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd,
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
+   vkQueueSubmit(vk->context->queue, 1, &submit_info, fence);
    if (!node)
       vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
@@ -1314,30 +1373,28 @@ static void vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd,
       node->staging_tex.memory = VK_NULL_HANDLE;
    node->staging_buffer = staging_buffer;
    node->staging_memory = staging_memory;
+   node->fence          = fence;
    node->cmd            = cmd;
-   node->frames_left    = vk->context->num_swapchain_images + 1;
    node->next           = vk->deferred_cmds;
    vk->deferred_cmds    = node;
 }
 
-/* Release staging command buffers whose deferral window has elapsed.
- * Called once per submitted frame from the recording thread. */
+/* Release staging command buffers whose fence has signalled. Called
+ * once per submitted frame from the recording thread; never waits. */
 static void vulkan_deferred_cmds_tick(vk_t *vk)
 {
    struct vk_deferred_cmd **cur = &vk->deferred_cmds;
    while (*cur)
    {
       struct vk_deferred_cmd *node = *cur;
-      if (node->frames_left > 1)
-      {
-         node->frames_left--;
-         cur = &node->next;
-      }
-      else
+      if (vkGetFenceStatus(vk->context->device, node->fence)
+            == VK_SUCCESS)
       {
          *cur = node->next;
          vulkan_deferred_cmd_release(vk, node);
       }
+      else
+         cur = &node->next;
    }
 }
 
@@ -1353,6 +1410,20 @@ static void vulkan_deferred_cmds_flush(vk_t *vk)
       struct vk_deferred_cmd *next = node->next;
       vulkan_deferred_cmd_release(vk, node);
       node = next;
+   }
+}
+
+/* Destroy the fence pool. Only at driver teardown, after a flush. */
+static void vulkan_deferred_fences_free(vk_t *vk)
+{
+   struct vk_deferred_fence *pool = vk->deferred_fences;
+   vk->deferred_fences            = NULL;
+   while (pool)
+   {
+      struct vk_deferred_fence *next = pool->next;
+      vkDestroyFence(vk->context->device, pool->fence, NULL);
+      free(pool);
+      pool = next;
    }
 }
 
@@ -5213,6 +5284,7 @@ static void vulkan_deinit_static_resources(vk_t *vk)
    vulkan_deinit_quad_ibo(vk);
    vulkan_deinit_ribbon_vbo(vk);
 
+   vulkan_deferred_fences_free(vk);
    vkDestroyCommandPool(vk->context->device,
          vk->staging_pool, NULL);
    free(vk->hw.cmd);
