@@ -229,6 +229,14 @@ typedef struct video_thread_handoff_stats
    unsigned frames_zero_copy;
    unsigned frames_hw;
    unsigned waits;            /* pushes that waited for a slot */
+   /* The core's software-framebuffer asks in the window: granted a
+    * slot, granted but pushed from elsewhere, declined because both
+    * slots were taken, declined because the frame would not fit */
+   unsigned asked;
+   unsigned lent;
+   unsigned lapsed;
+   unsigned declined_ring;
+   unsigned declined_size;
 } video_thread_handoff_stats_t;
 
 typedef struct thread_video
@@ -305,7 +313,9 @@ typedef struct thread_video
       uint64_t span_ticks, span_us;        /* the window's tick rate */
       uint64_t bytes;
       unsigned copied, zero_copy, hw, waits;
+      unsigned asked, lent, lapsed, declined_ring, declined_size;
       unsigned frames;
+      bool counting;                       /* overlay was up last push */
       video_thread_handoff_stats_t last;
    } handoff;
    bool display_pacing;

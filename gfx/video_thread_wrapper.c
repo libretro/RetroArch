@@ -1916,7 +1916,18 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
 
    if (timed)
+   {
       c_in = (uint64_t)cpu_features_get_perf_counter();
+      /* The lend counts run whether or not the overlay is up; a window
+       * starts clean when it comes up */
+      if (!thr->handoff.counting)
+      {
+         thr->handoff.asked  = thr->handoff.lent   = 0;
+         thr->handoff.lapsed = 0;
+         thr->handoff.declined_ring = thr->handoff.declined_size = 0;
+      }
+   }
+   thr->handoff.counting = timed;
 
    slock_lock(thr->lock);
 
@@ -2005,6 +2016,8 @@ static bool video_thread_frame(void *data, const void *frame_,
          zero_copy = true;
          slot      = l;
       }
+      else
+         thr->handoff.lapsed++;
    }
 
    /* Pick the slot to fill. The worker renders tail ^ 1 while busy and
@@ -2315,6 +2328,11 @@ static bool video_thread_frame(void *data, const void *frame_,
          l->frames_zero_copy = thr->handoff.zero_copy;
          l->frames_hw        = thr->handoff.hw;
          l->waits            = thr->handoff.waits;
+         l->asked            = thr->handoff.asked;
+         l->lent             = thr->handoff.lent;
+         l->lapsed           = thr->handoff.lapsed;
+         l->declined_ring    = thr->handoff.declined_ring;
+         l->declined_size    = thr->handoff.declined_size;
          thr->handoff.handoff_sum = thr->handoff.handoff_max = 0;
          thr->handoff.copy_sum    = thr->handoff.copy_max    = 0;
          thr->handoff.wait_sum    = thr->handoff.wait_max    = 0;
@@ -2322,6 +2340,9 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->handoff.bytes       = 0;
          thr->handoff.copied      = thr->handoff.zero_copy   = 0;
          thr->handoff.hw          = thr->handoff.waits       = 0;
+         thr->handoff.asked       = thr->handoff.lent        = 0;
+         thr->handoff.lapsed      = 0;
+         thr->handoff.declined_ring = thr->handoff.declined_size = 0;
          thr->handoff.frames      = 0;
       }
    }
@@ -2984,10 +3005,14 @@ static bool thread_get_current_software_framebuffer(void *data,
    if (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
       return false;
 
+   thr->handoff.asked++;
    bpp  = thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    need = (size_t)fb->width * bpp * fb->height;
    if (!fb->width || !fb->height || need > thr->frame.buffer_size)
+   {
+      thr->handoff.declined_size++;
       return false;
+   }
 
    slock_lock(thr->lock);
    if (!thr->frame.pending)
@@ -2997,10 +3022,12 @@ static bool thread_get_current_software_framebuffer(void *data,
    else
    {
       slock_unlock(thr->lock);
+      thr->handoff.declined_ring++;
       return false;
    }
    thr->frame.lent        = (int)slot;
    slock_unlock(thr->lock);
+   thr->handoff.lent++;
 
    fb->data         = thr->frame.slot[slot].buffer;
    fb->pitch        = (size_t)fb->width * bpp;
