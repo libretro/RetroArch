@@ -2796,6 +2796,12 @@ void video_shader_dir_free_shader(
       dir_list->directory = NULL;
    }
 
+   if (dir_list->failed_apply_loaded_path)
+   {
+      free(dir_list->failed_apply_loaded_path);
+      dir_list->failed_apply_loaded_path = NULL;
+   }
+
    dir_list->selection                = 0;
    dir_list->shader_loaded            = false;
    dir_list->remember_last_preset_dir = shader_remember_last_dir;
@@ -2829,6 +2835,7 @@ static bool video_shader_dir_init_shader_internal(
    dir_list->directory                = strdup(shader_dir);
    dir_list->selection                = 0;
    dir_list->shader_loaded            = false;
+   dir_list->failed_apply_loaded_path = NULL;
    dir_list->remember_last_preset_dir = shader_remember_last_dir;
 
    if (search_file_name)
@@ -2944,6 +2951,309 @@ static void video_shader_dir_init_shader(
    }
 }
 
+static size_t video_shader_load_auto_shader_preset(
+      const char *video_shader_directory,
+      const char *menu_config_directory,
+      const char *core_name,
+      char *s, size_t len);
+
+/* The preset the next/prev hotkeys step from: the loaded preset,
+ * or what the 'retroarch' or auto-preset wrapper around it references */
+static bool video_shader_dir_get_anchor(settings_t *settings,
+      char *s, size_t len)
+{
+   config_file_t *conf         = NULL;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *preset_path     = runloop_st->runtime_shader_preset_path;
+   const char *core_name       = runloop_st->system.info.library_name;
+   const char *base            = NULL;
+   bool resolved               = false;
+
+   if (!*preset_path)
+      return false;
+
+   base = path_basename_nocompression(preset_path);
+
+   if (   strncmp(base, "retroarch", STRLEN_CONST("retroarch"))
+       || base[STRLEN_CONST("retroarch")] != '.')
+   {
+      /* @s doubles as the scratch the auto preset path is built in:
+       * it is overwritten either way before this returns, and
+       * @preset_path points at the runloop's own copy. */
+      if (   !core_name
+          || !*core_name
+          || !video_shader_load_auto_shader_preset(
+               settings->paths.directory_video_shader,
+               settings->paths.directory_menu_config,
+               core_name, s, len)
+          || !string_is_equal(s, preset_path))
+      {
+         strlcpy(s, preset_path, len);
+         return true;
+      }
+   }
+
+   strlcpy(s, preset_path, len);
+
+   if ((conf = config_file_new_from_path_to_string(preset_path)))
+   {
+      if (conf->references)
+      {
+         fill_pathname_expanded_and_absolute(s, len,
+               conf->path, conf->references->path);
+         video_shader_replace_wildcards(s, len, conf->path);
+         resolved = true;
+      }
+      config_file_free(conf);
+   }
+
+   return resolved;
+}
+
+static bool video_shader_dir_select_file(
+      struct rarch_dir_shader_list *dir_list,
+      const char *file_name)
+{
+   size_t i;
+
+   for (i = 0; i < dir_list->shader_list->size; i++)
+   {
+      const char *file_path = dir_list->shader_list->elems[i].data;
+
+      if (   file_path
+          && string_is_equal(path_basename_nocompression(file_path),
+               file_name))
+      {
+         dir_list->selection = i;
+         return true;
+      }
+   }
+
+   dir_list->selection = 0;
+   return false;
+}
+
+static bool video_shader_dir_in_pack(const char *dir)
+{
+   const char *s = dir;
+
+   while (*s)
+   {
+      size_t _len = 0;
+
+      while (s[_len] && !PATH_CHAR_IS_SLASH(s[_len]))
+         _len++;
+
+      if (   (_len == STRLEN_CONST("shaders_slang")
+               && !strncmp(s, "shaders_slang", _len))
+          || (_len == STRLEN_CONST("shaders_glsl")
+               && !strncmp(s, "shaders_glsl", _len))
+          || (_len == STRLEN_CONST("shaders_cg")
+               && !strncmp(s, "shaders_cg", _len)))
+         return true;
+
+      s += _len;
+      if (*s)
+         s++;
+   }
+
+   return false;
+}
+
+static bool video_shader_dir_init_sibling(
+      struct rarch_dir_shader_list *dir_list,
+      const char *anchor_path,
+      const char *shader_dir,
+      bool show_hidden_files,
+      bool next)
+{
+   size_t i;
+   char parent_dir[DIR_MAX_LENGTH];
+   char current_name[NAME_MAX_LENGTH];
+   struct rarch_dir_shader_list sibling;
+   struct string_list *dirs = NULL;
+   size_t current           = 0;
+   bool found               = false;
+   bool ret                 = false;
+
+   if (!fill_pathname_parent_dir_name(current_name, anchor_path,
+            sizeof(current_name)))
+      return false;
+
+   fill_pathname_basedir(parent_dir, anchor_path, sizeof(parent_dir));
+   if (!fill_pathname_parent_dir(parent_dir, parent_dir, sizeof(parent_dir)))
+      return false;
+
+   /* Stay inside the shader directory or an installed shader pack */
+   pathname_conform_slashes_to_os(parent_dir);
+   if (!video_shader_dir_in_pack(parent_dir))
+   {
+      char shader_root[DIR_MAX_LENGTH];
+
+      if (!shader_dir || !*shader_dir)
+         return false;
+      strlcpy(shader_root, shader_dir, sizeof(shader_root));
+      fill_pathname_slash(shader_root, sizeof(shader_root));
+      pathname_conform_slashes_to_os(shader_root);
+      if (!string_starts_with(parent_dir, shader_root))
+         return false;
+   }
+
+   if (!(dirs = dir_list_new(parent_dir, NULL, true,
+               show_hidden_files, false, false)))
+      return false;
+
+   dir_list_sort(dirs, false);
+
+   for (i = 0; i < dirs->size; i++)
+   {
+      if (   dirs->elems[i].attr.i == RARCH_DIRECTORY
+          && string_is_equal(path_basename_nocompression(
+               dirs->elems[i].data), current_name))
+      {
+         current = i;
+         found   = true;
+         break;
+      }
+   }
+
+   for (i = 1; found && i < dirs->size; i++)
+   {
+      char sibling_dir[DIR_MAX_LENGTH];
+      size_t j = next
+            ? (current + i) % dirs->size
+            : (current + dirs->size - i) % dirs->size;
+
+      if (dirs->elems[j].attr.i != RARCH_DIRECTORY)
+         continue;
+
+      strlcpy(sibling_dir, dirs->elems[j].data, sizeof(sibling_dir));
+      fill_pathname_slash(sibling_dir, sizeof(sibling_dir));
+
+      if (video_shader_dir_init_shader_internal(
+               dir_list->remember_last_preset_dir, &sibling,
+               sibling_dir, NULL, show_hidden_files))
+      {
+         video_shader_dir_free_shader(dir_list,
+               dir_list->remember_last_preset_dir);
+         *dir_list           = sibling;
+         dir_list->selection = next ? 0 : dir_list->shader_list->size - 1;
+         ret                 = true;
+         break;
+      }
+   }
+
+   dir_list_free(dirs);
+   return ret;
+}
+
+/* shaders/<pack>/<category>/ is as deep as a shader pack puts its
+ * presets below the Video Shaders directory */
+#define VIDEO_SHADER_DIR_DESCEND_MAX 3
+
+/* With no preset loaded there is no anchor, and the Video Shaders
+ * root itself holds no presets under the pack layout. Take the
+ * first folder below it that does, in listing order, so the hotkey
+ * has somewhere to start from. */
+static bool video_shader_dir_init_descend(
+      struct rarch_dir_shader_list *dir_list,
+      const char *dir,
+      bool remember_last_dir,
+      bool show_hidden_files,
+      unsigned depth)
+{
+   size_t i;
+   char slashed[DIR_MAX_LENGTH];
+   struct string_list *subdirs = NULL;
+   bool ret                    = false;
+
+   if (!dir || !*dir)
+      return false;
+
+   strlcpy(slashed, dir, sizeof(slashed));
+   fill_pathname_slash(slashed, sizeof(slashed));
+
+   if (video_shader_dir_init_shader_internal(remember_last_dir,
+            dir_list, slashed, NULL, show_hidden_files))
+      return true;
+
+   if (depth == 0)
+      return false;
+
+   if (!(subdirs = dir_list_new(slashed, NULL, true,
+               show_hidden_files, false, false)))
+      return false;
+
+   dir_list_sort(subdirs, false);
+
+   for (i = 0; i < subdirs->size; i++)
+   {
+      if (subdirs->elems[i].attr.i != RARCH_DIRECTORY)
+         continue;
+
+      if (video_shader_dir_init_descend(dir_list,
+               subdirs->elems[i].data, remember_last_dir,
+               show_hidden_files, depth - 1))
+      {
+         ret = true;
+         break;
+      }
+   }
+
+   dir_list_free(subdirs);
+   return ret;
+}
+
+/* Points the list at the folder the hotkey steps within, and @s at
+ * the preset inside it the step starts from. Keeps the directory
+ * scratch off the caller's frame, which also carries @s. */
+static bool video_shader_dir_anchor(settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool video_shader_remember_last_dir,
+      char *s, size_t len)
+{
+   char anchor_dir[DIR_MAX_LENGTH];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool anchored               = false;
+
+   /* A failed apply left the previous preset as the loaded one,
+    * so keep stepping from the list instead of re-anchoring */
+   if (   dir_list->failed_apply_loaded_path
+       && dir_list->shader_list
+       && (dir_list->selection < dir_list->shader_list->size)
+       && dir_list->shader_list->elems[dir_list->selection].data
+       && string_is_equal(dir_list->failed_apply_loaded_path,
+            runloop_st->runtime_shader_preset_path))
+   {
+      strlcpy(s, dir_list->shader_list->elems[dir_list->selection].data,
+            len);
+      return true;
+   }
+
+   if (!video_shader_dir_get_anchor(settings, s, len))
+      return false;
+
+   fill_pathname_basedir(anchor_dir, s, sizeof(anchor_dir));
+
+   if (   dir_list->shader_list
+       && string_is_equal(dir_list->directory, anchor_dir))
+      anchored = true;
+   else
+   {
+      video_shader_dir_free_shader(dir_list,
+            video_shader_remember_last_dir);
+      anchored = video_shader_dir_init_shader_internal(
+            video_shader_remember_last_dir, dir_list,
+            anchor_dir, NULL, settings->bools.show_hidden_files);
+   }
+
+   if (anchored)
+      dir_list->shader_loaded = video_shader_dir_select_file(
+            dir_list, path_basename_nocompression(s));
+
+   return anchored;
+}
+
 void video_shader_dir_check_shader(
       void *menu_driver_data_,
       settings_t *settings,
@@ -2951,11 +3261,14 @@ void video_shader_dir_check_shader(
       bool pressed_next,
       bool pressed_prev)
 {
+   char anchor_path[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st                    = runloop_state_get_ptr();
    bool video_shader_remember_last_dir            = settings->bools.video_shader_remember_last_dir;
    const char *last_shader_preset_dir             = NULL;
    const char *last_shader_preset_file_name       = NULL;
    const char *set_shader_path                    = NULL;
    bool dir_list_initialised                      = false;
+   bool anchored                                  = false;
    enum rarch_shader_type last_shader_preset_type = RARCH_SHADER_NONE;
 #if defined(HAVE_MENU)
    void *menu_ptr                                 = menu_driver_data_;
@@ -2968,12 +3281,16 @@ void video_shader_dir_check_shader(
    void *menu_ptr                                 = NULL;
 #endif
 
+   anchored = video_shader_dir_anchor(settings, dir_list,
+         video_shader_remember_last_dir, anchor_path, sizeof(anchor_path));
+
    /* Check whether shader list needs to be (re)initialised */
-   if (   !dir_list->shader_list
-       || (dir_list->remember_last_preset_dir != video_shader_remember_last_dir)
-       || (video_shader_remember_last_dir
-       && (last_shader_preset_type != RARCH_SHADER_NONE)
-       && !string_is_equal(dir_list->directory, last_shader_preset_dir)))
+   if (   !anchored
+       && (   !dir_list->shader_list
+           || (dir_list->remember_last_preset_dir != video_shader_remember_last_dir)
+           || (video_shader_remember_last_dir
+           && (last_shader_preset_type != RARCH_SHADER_NONE)
+           && !string_is_equal(dir_list->directory, last_shader_preset_dir))))
    {
       const char *directory_video_shader          = settings->paths.directory_video_shader;
       const char *directory_menu_config           = settings->paths.directory_menu_config;
@@ -2990,6 +3307,15 @@ void video_shader_dir_check_shader(
       dir_list_initialised = true;
    }
 
+   /* Neither the anchor nor the configured roots turned up a
+    * preset: go looking for one below the Video Shaders directory */
+   if (!anchored && !dir_list->shader_list)
+      video_shader_dir_init_descend(dir_list,
+            settings->paths.directory_video_shader,
+            video_shader_remember_last_dir,
+            settings->bools.show_hidden_files,
+            VIDEO_SHADER_DIR_DESCEND_MAX);
+
    if (   !dir_list->shader_list
        || (dir_list->shader_list->size < 1))
       return;
@@ -3001,7 +3327,8 @@ void video_shader_dir_check_shader(
     *   twice. This is wasteful, but we cannot safely cache
     *   the first result since video_shader_dir_init_shader() is called
     *   in-between the two invocations... */
-   if (    video_shader_remember_last_dir
+   if (   !anchored
+       && video_shader_remember_last_dir
        && (last_shader_preset_type != RARCH_SHADER_NONE)
        && string_is_equal(dir_list->directory, last_shader_preset_dir)
        && (last_shader_preset_file_name && *last_shader_preset_file_name))
@@ -3077,7 +3404,10 @@ void video_shader_dir_check_shader(
       {
          if (dir_list->selection < dir_list->shader_list->size - 1)
             dir_list->selection++;
-         else
+         else if (  !anchored
+                 || !video_shader_dir_init_sibling(dir_list, anchor_path,
+                       settings->paths.directory_video_shader,
+                       settings->bools.show_hidden_files, true))
             dir_list->selection = 0;
       }
    }
@@ -3086,7 +3416,11 @@ void video_shader_dir_check_shader(
    {
       if (dir_list->selection > 0)
          dir_list->selection--;
-      else
+      else if (  !anchored
+              || !dir_list->shader_loaded
+              || !video_shader_dir_init_sibling(dir_list, anchor_path,
+                    settings->paths.directory_video_shader,
+                    settings->bools.show_hidden_files, false))
          dir_list->selection = dir_list->shader_list->size - 1;
    }
    else
@@ -3096,7 +3430,15 @@ void video_shader_dir_check_shader(
 #if defined(HAVE_MENU)
    menu_driver_set_last_shader_preset_path(set_shader_path);
 #endif
-   command_set_shader(NULL, set_shader_path);
+   if (dir_list->failed_apply_loaded_path)
+   {
+      free(dir_list->failed_apply_loaded_path);
+      dir_list->failed_apply_loaded_path = NULL;
+   }
+   if (   !command_set_shader(NULL, set_shader_path)
+       && *runloop_st->runtime_shader_preset_path)
+      dir_list->failed_apply_loaded_path = strdup(
+            runloop_st->runtime_shader_preset_path);
    dir_list->shader_loaded = true;
 }
 
@@ -3332,6 +3674,28 @@ bool video_shader_combine_preset_and_apply(
    return ret;
 }
 
+const char *video_shader_get_display_name(const char *preset_path,
+      const char *shader_dir)
+{
+   size_t _len;
+
+   if (!preset_path || !*preset_path)
+      return NULL;
+
+   if (shader_dir && (_len = strlen(shader_dir)) > 0)
+   {
+      if (PATH_CHAR_IS_SLASH(shader_dir[_len - 1]))
+         _len--;
+      if (   _len > 0
+          && !strncmp(preset_path, shader_dir, _len)
+          && PATH_CHAR_IS_SLASH(preset_path[_len])
+          && preset_path[_len + 1])
+         return preset_path + _len + 1;
+   }
+
+   return path_basename_nocompression(preset_path);
+}
+
 /* Sets and loads the preset in the video driver */
 /* Applies the preset to the menu */
 bool video_shader_apply_shader(
@@ -3354,7 +3718,8 @@ bool video_shader_apply_shader(
       return false;
 
    if (preset_path && *preset_path)
-      preset_file = path_basename_nocompression(preset_path);
+      preset_file = video_shader_get_display_name(preset_path,
+            settings->paths.directory_video_shader);
 
    /* ---- Deferred (per-frame) path ----
     * Skip when threaded video is active: the tick runs on the main
@@ -3405,17 +3770,25 @@ bool video_shader_apply_shader(
                   preset_path,
                   sizeof(runloop_st->runtime_shader_preset_path));
 
+#ifdef HAVE_GFX_WIDGETS
+         if (message && dispwidget_get_ptr()->active)
+         {
+            char slot[32];
+            snprintf(msg, sizeof(msg), "%s: \"",
+                  msg_hash_to_str(MSG_SHADER));
+            snprintf(slot, sizeof(slot), "%s 000/000",
+                  msg_hash_to_str(MSG_LOADING));
+            gfx_widget_set_generic_message_fixed(msg, preset_file,
+                  "\"", slot, 2000);
+         }
+         else
+#endif
          if (message)
          {
             size_t _len = strlcpy_lit(msg, "Loading shader...", sizeof(msg));
-#ifdef HAVE_GFX_WIDGETS
-            if (dispwidget_get_ptr()->active)
-               gfx_widget_set_generic_message(msg, 2000);
-            else
-#endif
-               runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
          RARCH_LOG("[Shaders] Deferred load started: \"%s\".\n",
@@ -3464,6 +3837,8 @@ bool video_shader_apply_shader(
                msg[++_len]         = '\0';
                _len               += strlcpy(msg + _len,
                      preset_file,    sizeof(msg) - _len);
+               if (_len > sizeof(msg) - 2)
+                  _len             = sizeof(msg) - 2;
                msg[  _len]         = '"';
                msg[++_len]         = '\0';
             }
@@ -3477,7 +3852,19 @@ bool video_shader_apply_shader(
 
 #ifdef HAVE_GFX_WIDGETS
             if (dispwidget_get_ptr()->active)
-               gfx_widget_set_generic_message(msg, 2000);
+            {
+               char prefix[64];
+
+               if (preset_file)
+               {
+                  snprintf(prefix, sizeof(prefix), "%s: \"", msg_shader);
+                  gfx_widget_set_generic_message_fixed(prefix, preset_file,
+                        "\"", NULL, 2000);
+               }
+               else
+                  gfx_widget_set_generic_message_fixed(msg, NULL, NULL,
+                        NULL, 2000);
+            }
             else
 #endif
                runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
@@ -3502,6 +3889,9 @@ bool video_shader_apply_shader(
       size_t _len = snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
             preset_file ? preset_file : "null");
+
+      if (_len >= sizeof(msg))
+         _len = sizeof(msg) - 1;
 
       runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
