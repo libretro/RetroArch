@@ -1090,6 +1090,16 @@ void audio_driver_publish_runloop(void);
  **/
 void audio_driver_frame_end(void);
 
+/**
+ * audio_driver_callback:
+ *
+ * One pass of the audio thread: the threaded pipeline's consumer, or a
+ * core's audio callback. Returns true when the pass made a device
+ * write, which is what paces the thread. False means there was
+ * nothing to write - the core is paused behind the menu, suspended,
+ * or its callback pushed nothing - and the caller parks before asking
+ * again rather than spinning against the main thread.
+ **/
 bool audio_driver_callback(void);
 
 bool audio_driver_has_callback(void);

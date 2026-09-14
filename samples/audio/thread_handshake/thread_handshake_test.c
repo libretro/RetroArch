@@ -178,9 +178,20 @@ static audio_driver_t fake_driver = {
 static const audio_driver_t *wrapper_drv = NULL;
 static void                 *wrapper_ctx = NULL;
 
+/* When set, the callback stands in for a core paused behind the menu
+ * or one whose callback pushed nothing: it reports idle and does not
+ * touch the device. idle_calls counts how often the loop asked. */
+static retro_atomic_int_t idle       = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t idle_calls = RETRO_ATOMIC_INT_INITIALIZER(0);
+
 bool audio_driver_callback(void)
 {
    char buf[64];
+   if (retro_atomic_load_acquire_int(&idle))
+   {
+      retro_atomic_fetch_add_int(&idle_calls, 1);
+      return false;
+   }
    memset(buf, 0, sizeof(buf));
    if (wrapper_drv && wrapper_drv->wait_writable)
    {
@@ -333,7 +344,38 @@ int main(void)
    CHECK(!retro_atomic_load_acquire_int(&format_errors), "format changed during native processing");
    printf("audio control handoff: 2003 transactions, native passes protected\n");
 
-   /* 5. Teardown joins the thread. */
+   /* 5. An idle callback parks the thread instead of spinning it.
+    * The loop asks once per idle interval, so the count over the
+    * window is bounded; a spinning loop asks millions of times. A
+    * stop landing in the park has to come back promptly, and the
+    * loop has to resume real passes once the callback has work. */
+   STAGE(21);
+   retro_atomic_store_release_int(&idle_calls, 0);
+   retro_atomic_store_release_int(&idle, 1);
+   sleep_us(200 * 1000);
+   {
+      int calls = retro_atomic_load_acquire_int(&idle_calls);
+      CHECK(calls > 0, "idle callback never asked");
+      CHECK(calls < 2000,
+            "idle callback asked %d times in 200 ms: the loop is spinning",
+            calls);
+   }
+   t0 = now_ms();
+   CHECK(drv && drv->stop(data), "stop failed against an idle callback");
+   t1 = now_ms();
+   CHECK(t1 - t0 < 100.0, "stop against an idle callback took %f ms", t1 - t0);
+   retro_atomic_store_release_int(&idle, 0);
+   CHECK(drv && drv->start(data, false), "start failed after idle");
+   {
+      int before = retro_atomic_load_acquire_int(&writes);
+      sleep_us(50 * 1000);
+      CHECK(retro_atomic_load_acquire_int(&writes) > before,
+            "no passes after the callback came back from idle");
+   }
+   printf("idle callback: parked, %d asks in 200 ms, stop and resume prompt\n",
+         retro_atomic_load_acquire_int(&idle_calls));
+
+   /* 6. Teardown joins the thread. */
    STAGE(22);
    if (drv)
       drv->free(data);

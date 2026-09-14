@@ -35,6 +35,14 @@
  * on without audio rather than never returning from drivers_init(). */
 #define AUDIO_THREAD_HANDSHAKE_GIVEUP_US (30 * 1000 * 1000)
 
+/* How long the loop parks when audio_driver_callback() had nothing to
+ * render or consume - a core paused behind the menu, or a callback
+ * that pushed no samples. There is no device write to pace on in that
+ * case, so this is the poll interval for the core coming back, and
+ * the bound on how late the first samples after it come out. A stop
+ * request signals the condition and cuts the wait short. */
+#define AUDIO_THREAD_IDLE_WAIT_US 1000
+
 typedef struct audio_thread
 {
    const audio_driver_t *driver;
@@ -180,7 +188,15 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      audio_driver_callback();
+
+      if (!audio_driver_callback())
+      {
+         slock_lock(thr->lock);
+         if (thr->alive && !thr->stopped)
+            scond_wait_timeout(thr->cond, thr->lock,
+                  AUDIO_THREAD_IDLE_WAIT_US);
+         slock_unlock(thr->lock);
+      }
    }
 
    audio_driver_pipeline_consumer_exit();

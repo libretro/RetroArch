@@ -410,12 +410,12 @@ static void inline_callback_cases(void)
                size_t frames = cap_frames;
                runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
                audio_driver_frame_end();
-               CHECK(callback_dispatch() && callback_calls == calls
+               CHECK(!callback_dispatch() && callback_calls == calls
                      && cap_frames == frames, "paused callback advanced source/output");
                runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
                AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
                audio_driver_frame_end();
-               CHECK(callback_dispatch() && callback_calls == calls + 1
+               CHECK(!callback_dispatch() && callback_calls == calls + 1
                      && !st->data_ptr && cap_frames == frames,
                      "suspended callback retained speculative audio");
                AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);

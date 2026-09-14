@@ -7065,16 +7065,27 @@ bool audio_driver_callback(void)
    if (core_paused || !(snap & AUDIO_SNAP_FASTMOTION))
       audio_driver_ff_mult_reset(&audio_driver_st);
 
-   if (!core_paused && audio_driver_st.callback.callback)
+   if (!core_paused)
    {
+      /* Counted at every device write this thread makes, whichever
+       * route the core's samples take to it. */
+      uint64_t offered = audio_driver_st.sink_offered_raw;
+
       audio_driver_st.callback.callback();
       /* The core rendered on this (audio) thread; deliver it now rather
        * than holding a partial chunk across callbacks. */
       if (audio_driver_st.data_ptr)
          audio_driver_sample_accum_flush(&audio_driver_st);
+
+      /* A device write is what paces this thread. */
+      if (audio_driver_st.sink_offered_raw != offered)
+         return true;
    }
 
-   return true;
+   /* Paused behind the menu, suspended, or the callback pushed nothing
+    * that reached the device: there was no write to pace on, so the
+    * caller parks before asking again. */
+   return false;
 }
 
 bool audio_driver_has_callback(void)
