@@ -34,6 +34,11 @@ S_BOOL(video_statistics_show, STATISTICS_SHOW,
       DEFAULT_STATISTICS_SHOW, SD_FLAG_NONE, 0, 0,
       "Display Statistics",
       "Display on-screen technical statistics.")
+S_BOOL(video_statistics_hide_in_menu, STATISTICS_HIDE_IN_MENU,
+      "statistics_hide_in_menu",
+      DEFAULT_STATISTICS_HIDE_IN_MENU, SD_FLAG_NONE, 0, 0,
+      "Hide Statistics In Menu",
+      "Do not draw the statistics while the menu is open.")
 S_BOOL(video_framecount_show, FRAMECOUNT_SHOW,
       "framecount_show",
       DEFAULT_FRAMECOUNT_SHOW, SD_FLAG_NONE, 0, 0,

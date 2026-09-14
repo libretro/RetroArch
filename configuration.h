@@ -614,6 +614,7 @@ typedef struct settings
       bool video_force_srgb_disable;
       bool video_fps_show;
       bool video_statistics_show;
+      bool video_statistics_hide_in_menu;
       bool video_framecount_show;
       bool video_memory_show;
       bool video_msg_bgcolor_enable;

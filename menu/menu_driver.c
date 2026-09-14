@@ -4553,6 +4553,14 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
       /* Nothing the menu gathered may still be waiting when the frame
        * it belongs to is over */
       gfx_display_flush_batch(p_disp);
+      /* The statistics overlay, on top of the menu when it is not
+       * hidden here; drivers only draw it themselves without a menu. */
+      if (     video_info->statistics_show
+            && !video_info->statistics_hide_in_menu
+            && video_info->stat_text_len)
+         font_driver_render_msg(video_info->userdata,
+               video_info->stat_text, video_info->stat_text_len,
+               (const struct font_params*)&video_info->osd_stat_params, NULL);
       gfx_display_stats_latch(p_disp);
    }
 }

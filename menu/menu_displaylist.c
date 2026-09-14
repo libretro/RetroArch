@@ -12316,6 +12316,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,                     PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,                         PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_STATISTICS_SHOW,                         PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                             PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,                  PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_TIME_SHOW,                               PARSE_ONLY_UINT,  false },
@@ -12363,6 +12364,10 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_STATISTICS_SHOW:
                      build_list[i].checked = notifications_active && video_font_enable;
+                     break;
+                  case MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU:
+                     build_list[i].checked = notifications_active && video_font_enable
+                        && settings->bools.video_statistics_show;
                      break;
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_NETWORKING

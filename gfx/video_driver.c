@@ -4492,6 +4492,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->filter_enable               = settings->bools.video_filter_enable;
    video_info->memory_show                 = settings->bools.video_memory_show;
    video_info->statistics_show             = settings->bools.video_statistics_show;
+   video_info->statistics_hide_in_menu     = settings->bools.video_statistics_hide_in_menu;
    /* Empty until the statistics block below fills it, so a driver that
     * tests the text finds nothing rather than the last frame's */
    video_st->stat_text[0]                  = '\0';

@@ -1460,6 +1460,7 @@
 
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
+#define DEFAULT_STATISTICS_HIDE_IN_MENU true
 
 /* Enables displaying the current netplay room ping. */
 #define DEFAULT_NETPLAY_PING_SHOW false

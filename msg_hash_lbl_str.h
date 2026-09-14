@@ -1571,6 +1571,7 @@
 #define MENU_ENUM_LABEL_START_NET_RETROPAD_STR "menu_start_net_retropad"
 #define MENU_ENUM_LABEL_START_VIDEO_PROCESSOR_STR "menu_start_video_processor"
 #define MENU_ENUM_LABEL_STATE_SLOT_STR "state_slot"
+#define MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU_STR "statistics_hide_in_menu"
 #define MENU_ENUM_LABEL_STATISTICS_SHOW_STR "statistics_show"
 #define MENU_ENUM_LABEL_STDIN_CMD_ENABLE_STR "stdin_commands"
 #define MENU_ENUM_LABEL_STEAM_RICH_PRESENCE_ENABLE_STR "steam_rich_presence_enable"

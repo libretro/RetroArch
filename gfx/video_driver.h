@@ -559,6 +559,7 @@ typedef struct video_frame_info
    bool filter_enable;
    bool memory_show;
    bool statistics_show;
+   bool statistics_hide_in_menu;
    bool framecount_show;
    bool core_status_msg_show;
    bool post_filter_record;

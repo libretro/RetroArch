@@ -101,6 +101,7 @@ bool	input_overlay_pointer_enable	1	1
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
@@ -759,6 +760,7 @@ bool	input_overlay_pointer_enable	1	0
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
@@ -1414,6 +1416,7 @@ bool	input_overlay_pointer_enable	1	0
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
