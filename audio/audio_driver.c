@@ -1506,6 +1506,7 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
 
    if (kept)
    {
+      audio_st->sink_discarded = 0;
       if (audio_st->sink_settled < 2)
          audio_st->sink_settled++;
       /* The windows left out since the last kept one come in with
@@ -1539,6 +1540,7 @@ static void audio_driver_sink_window(audio_driver_state_t *audio_st,
    }
    else
    {
+      audio_st->sink_discarded++;
       /* Before the sums stand, a left-out window restarts them: a slow
        * start is not to be in them. After, it is just left out. */
       if (audio_st->sink_settled < 2)
@@ -1727,6 +1729,7 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       audio_st->sink_window_at = now_usec + AUDIO_SINK_WINDOW_USEC;
       audio_st->sink_apply_at  = now_usec + AUDIO_SINK_BASELINE_USEC;
       audio_st->sink_settled   = 0;
+      audio_st->sink_discarded = 0;
       memset(&audio_st->sink_kept,    0, sizeof(audio_st->sink_kept));
       memset(&audio_st->sink_pending, 0, sizeof(audio_st->sink_pending));
       audio_st->sink_pending_broken = false;

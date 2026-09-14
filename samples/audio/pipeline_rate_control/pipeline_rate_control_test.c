@@ -525,11 +525,13 @@ steady_skipped:
     * about nothing. Closed on the consumer it never settled - a window
     * held a fraction of a burst, thousands of ppm of phase noise - and
     * the bias stayed at zero for the session. */
-   printf("   sink estimate: applied %u time(s), bias %+.0f ppm, source shown at %+.0f ppm; %.0f s summed, settled %u, %u left out in a row\n",
+   /* No consecutive-discard count here any more: sink_discarded was
+    * removed from the audio state as write-only, and it was - this
+    * line printed it and nothing asserted on it. */
+   printf("   sink estimate: applied %u time(s), bias %+.0f ppm, source shown at %+.0f ppm; %.0f s summed, settled %u\n",
          audio_driver_st.sink_applied, (audio_driver_st.sink_bias - 1.0) * 1e6,
          (audio_driver_st.sink_source_hz / 48000.0 - 1.0) * 1e6,
-         (double)audio_driver_st.sink_kept.usec / 1e6, audio_driver_st.sink_settled,
-         audio_driver_st.sink_discarded);
+         (double)audio_driver_st.sink_kept.usec / 1e6, audio_driver_st.sink_settled);
    /* A dry spell discards audio and the estimate's sum starts over,
     * by design; whether it then reaches the baseline again before the
     * run ends is the run's length, not the estimate. Settling is

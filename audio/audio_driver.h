@@ -769,6 +769,12 @@ typedef struct
     * measures the clocks and summed; the bias is the summed ratio.
     * See audio_driver_sink_update(). */
    int64_t  sink_started;              /* usec; 0 = not started */
+   /* Windows left out in a row. Not read by the frontend - it is read
+    * by samples/audio/sink_rate, which asserts that a stalled device
+    * leaves its window out rather than folding a frozen clock into the
+    * estimate. That is a behaviour with no other observable, so the
+    * counter is what makes it testable. */
+   unsigned sink_discarded;
    int64_t  sink_window_at;            /* usec; when the open window closes */
    double   sink_alt_ppm;              /* the driver's own approximation against its clock, ppm */
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
