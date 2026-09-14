@@ -83,3 +83,8 @@ The callback continuity cases also insert a source callback that emits no sample
 It must report no device progress, allowing the wrapper to park, without changing
 subsequent audible output. Normal callback results are checked against captured
 device output rather than assuming every source call produces an immediate write.
+
+`DM_ONLY=menutiming ./discrete_multichannel_test` checks invalid menu timing
+without a device write: zero, negative, infinite, NaN and unrepresentable frame
+counts must not reach the recorder. Valid 48 kHz / 60 Hz and / 120 Hz timing
+still records 800 and 400 frames. The guard is on menu synthesis only.

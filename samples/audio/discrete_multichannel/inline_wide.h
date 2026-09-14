@@ -479,3 +479,53 @@ static void inline_callback_cases(void)
    runloop_state_get_ptr()->flags = 0;
    printf("inline callback continuity: 2 cases, %u failures\n", failures - before);
 }
+
+static size_t menu_recorded_frames;
+static unsigned menu_recorded_calls;
+static bool menu_timing_record(void *unused, const struct record_audio_data *data)
+{
+   (void)unused;
+   menu_recorded_frames += data->frames;
+   menu_recorded_calls++;
+   return true;
+}
+
+static void menu_timing_cases(void)
+{
+   static const double rates[] = {0, -1, 48000, 48000, 1.0e300, 48000, 48000, 48000};
+   static const double fps[] = {60, 60, 0, -1, 1, 60, 120, 96000};
+   struct retro_system_timing saved = video_state_get_ptr()->av_info.timing;
+   recording_state_t *record = recording_state_get_ptr();
+   record_driver_t driver;
+   uint64_t invalid[] = {UINT64_C(0x7ff0000000000000), UINT64_C(0x7ff8000000000001)};
+   unsigned i, before = failures;
+   memset(&driver, 0, sizeof(driver));
+   driver.push_audio = menu_timing_record;
+   CHECK(up(false, AUDIO_LAYOUT_STEREO, false), "menu timing stand-up");
+   AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_ACTIVE);
+   record->data = &driver; record->driver = &driver;
+   for (i = 0; i < sizeof(rates)/sizeof(rates[0]); i++)
+   {
+      size_t expected = i == 5 ? 800 : i == 6 ? 400 : 0;
+      video_state_get_ptr()->av_info.timing.sample_rate = rates[i];
+      video_state_get_ptr()->av_info.timing.fps = fps[i];
+      menu_recorded_frames = menu_recorded_calls = 0;
+      audio_driver_menu_sample();
+      CHECK(menu_recorded_frames == expected && (i >= 5 ? menu_recorded_calls != 0 : menu_recorded_calls == 0),
+            "invalid menu timing emitted audio, or valid timing changed");
+   }
+   for (i = 0; i < 4; i++)
+   {
+      video_state_get_ptr()->av_info.timing.sample_rate = 48000;
+      video_state_get_ptr()->av_info.timing.fps = 60;
+      memcpy(i < 2 ? &video_state_get_ptr()->av_info.timing.sample_rate
+            : &video_state_get_ptr()->av_info.timing.fps, &invalid[i & 1], sizeof(double));
+      menu_recorded_frames = menu_recorded_calls = 0;
+      audio_driver_menu_sample();
+      CHECK(!menu_recorded_calls, "nonfinite menu timing reached recorder");
+   }
+   record->data = NULL; record->driver = NULL;
+   video_state_get_ptr()->av_info.timing = saved;
+   audio_driver_deinit_internal(true);
+   printf("menu timing bounds: 12 cases, %u failures\n", failures - before);
+}

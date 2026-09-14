@@ -18,6 +18,7 @@
  *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#include <limits.h>
 #include <math.h>
 #include <memalign.h>
 
@@ -7723,11 +7724,25 @@ void audio_driver_menu_sample(void)
    struct retro_system_av_info *av_info   = &video_st->av_info;
    const struct retro_system_timing *info =
       (const struct retro_system_timing*)&av_info->timing;
-   unsigned sample_count                  = floor(info->sample_rate / info->fps) * 2;
+   unsigned sample_count;
+   double frames;
+   uint64_t rate_bits, fps_bits;
    audio_driver_state_t *audio_st         = &audio_driver_st;
    bool check_flush                       = !(
             !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf);
+
+   memcpy(&rate_bits, &info->sample_rate, sizeof(rate_bits));
+   memcpy(&fps_bits, &info->fps, sizeof(fps_bits));
+   if (rate_bits >= UINT64_C(0x7ff0000000000000)
+         || fps_bits >= UINT64_C(0x7ff0000000000000)
+         || info->sample_rate <= 0.0 || info->fps <= 0.0)
+      return;
+   frames = floor(info->sample_rate / info->fps);
+   /* Validate before conversion and the stereo sample-count multiply. */
+   if (!(frames >= 0.0 && frames <= UINT_MAX / 2))
+      return;
+   sample_count = (unsigned)frames * 2;
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
       check_flush                         = false;
