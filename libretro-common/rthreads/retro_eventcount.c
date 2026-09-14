@@ -356,6 +356,7 @@ static bool ec_sleep(struct ec_waiter *w, LARGE_INTEGER *timeout)
       default:
          {
             DWORD ms = INFINITE;
+            DWORD rc;
             if (timeout)
             {
                LONGLONG t = (-timeout->QuadPart + 9999) / 10000;
@@ -364,7 +365,7 @@ static bool ec_sleep(struct ec_waiter *w, LARGE_INTEGER *timeout)
                 * clamped instead.  INFINITE is not a duration. */
                ms = (t >= (LONGLONG)INFINITE) ? INFINITE - 1 : (DWORD)t;
             }
-            DWORD rc = WaitForSingleObject(w->event, ms);
+            rc = WaitForSingleObject(w->event, ms);
             if (rc == WAIT_TIMEOUT)
                return false;
             if (rc == WAIT_OBJECT_0)
