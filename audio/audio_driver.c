@@ -64,6 +64,7 @@
 #ifdef HAVE_THREADS
 #include "audio_thread_wrapper.h"
 #include "audio_pipeline_stretch.h"
+#include "audio_speed_lpf.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -4563,6 +4564,14 @@ static INLINE void audio_driver_pipeline_render(audio_driver_state_t *audio_st,
          (snap & AUDIO_SNAP_FASTMOTION) ? true : false);
    audio_st->extra.pending = false;
    audio_driver_state_unlock();
+}
+
+bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
+      bool active, bool reset, bool lowpass)
+{
+   return audio_driver_pipeline_transport_request(tempo_q16, active, reset,
+         lowpass ? audio_speed_lpf_cutoff(audio_driver_st.pipe_transport_rate,
+            tempo_q16) : 0);
 }
 
 bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,

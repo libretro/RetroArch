@@ -8,6 +8,15 @@
 #define SPEED_LPF_ONE UINT32_C(1073741824)
 #define SPEED_LPF_WET UINT32_C(65536)
 
+uint32_t audio_speed_lpf_cutoff(unsigned rate, uint32_t speed_q16)
+{
+   uint32_t cutoff;
+   if (rate < 8000 || rate > 192000 || speed_q16 <= 65536) return 0;
+   cutoff = (uint32_t)(((uint64_t)rate * 9 * 65536)
+         / ((uint64_t)speed_q16 * 20));
+   return cutoff < 20 ? 20 : cutoff;
+}
+
 static int64_t speed_lpf_round(int64_t value, int64_t divisor)
 {
    return value < 0 ? -((-value + divisor / 2) / divisor)

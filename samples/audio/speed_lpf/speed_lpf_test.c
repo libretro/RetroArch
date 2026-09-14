@@ -264,12 +264,40 @@ static void separate_output(void)
    }
 }
 
+static void cutoff_policy(void)
+{
+   static const unsigned rates[] = {8000, 44100, 48000, 96000, 192000};
+   unsigned r, step;
+   CHECK(audio_speed_lpf_cutoff(7999, 131072) == 0);
+   CHECK(audio_speed_lpf_cutoff(192001, 131072) == 0);
+   for (r = 0; r < sizeof(rates) / sizeof(rates[0]); r++)
+   {
+      uint32_t previous = rates[r];
+      CHECK(audio_speed_lpf_cutoff(rates[r], 0) == 0);
+      CHECK(audio_speed_lpf_cutoff(rates[r], 16384) == 0);
+      CHECK(audio_speed_lpf_cutoff(rates[r], 65536) == 0);
+      CHECK(audio_speed_lpf_cutoff(rates[r], UINT32_MAX) == 20);
+      for (step = 1; step <= 4096; step++)
+      {
+         uint32_t speed = 65536 + step * 496;
+         uint32_t got = audio_speed_lpf_cutoff(rates[r], speed);
+         double exact = rates[r] * 0.45 / (speed / 65536.0);
+         CHECK(got >= 20 && got <= previous);
+         CHECK(got <= exact + 1e-8 && exact - got < 1.00000001);
+         previous = got;
+      }
+      cases++;
+   }
+   CHECK(audio_speed_lpf_cutoff(48000, 131072) == 10800);
+   CHECK(audio_speed_lpf_cutoff(48000, 2097152) == 675);
+}
+
 int main(void)
 {
    static const unsigned rates[] = {8000, 44100, 48000, 96000, 192000};
    unsigned r, c;
    guarded = 1;
-   contracts(); response(); reset_cases(); separate_output();
+   contracts(); response(); reset_cases(); separate_output(); cutoff_policy();
    for (r = 0; r < sizeof(rates)/sizeof(rates[0]); r++)
       for (c = 1; c <= 11; c++) native_cases(rates[r], c);
    guarded = 0;

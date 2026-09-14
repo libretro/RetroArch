@@ -974,6 +974,13 @@ void audio_driver_pipeline_transport_release(void);
  * the request. Retry before publishing affected audio. No mode activation. */
 bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
       bool active, bool reset, uint32_t cutoff);
+
+/* Same transaction, with optional speed-linked low-pass coloration.
+ * The cutoff uses the prepared core rate and requested Q16 speed; unity
+ * and slow motion are dry. Filtering is independent of active (WSOLA).
+ * On failure retry before publishing source. */
+bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
+      bool active, bool reset, bool lowpass);
 /* Consumer thread, or main thread with the wrapper parked; no worker locks
  * held. Cancel owned transport/device output and reset DSP history, skipping
  * exactly frames of queued native source. Zero preserves queued source.

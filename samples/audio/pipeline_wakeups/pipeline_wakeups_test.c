@@ -124,6 +124,7 @@ static unsigned channels = 2;
 static unsigned source_channels = 2;
 static uint32_t source_layout = AUDIO_LAYOUT_STEREO;
 static bool live_layouts;
+static bool speed_lowpass;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -622,6 +623,7 @@ static void check_live_control(void *userdata)
 static void wrapper_live_controls(unsigned publishes)
 {
    static const double tempos[] = { 0.25, 1, 32, 0.5, 1, 16, 2, 4 };
+   static const uint32_t cutoffs[] = { 0, 0, 675, 0, 0, 1350, 10800, 5400 };
    static const uint32_t layouts[] = { AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1,
       AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_7POINT1,
       AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1 };
@@ -638,14 +640,16 @@ static void wrapper_live_controls(unsigned publishes)
       unsigned retry;
       uint32_t tempo = (uint32_t)(tempos[step] * 65536.0);
       check.control = active ? tempo | AUDIO_PIPELINE_STRETCH : 65536;
-      check.cutoff = step & 1 ? 1000 : 0;
+      check.cutoff = speed_lowpass ? cutoffs[step] : step & 1 ? 1000 : 0;
       if (live_layouts)
       {
          source_layout = layouts[step];
          source_channels = audio_layout_channels(source_layout);
       }
       check.layout = source_layout;
-      if (!audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff))
+      if (!(speed_lowpass
+               ? audio_driver_pipeline_transport_request_speed(tempo, active, false, true)
+               : audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff)))
       {
          fixture_failures++;
          return;
@@ -940,6 +944,7 @@ int main(int argc, char **argv)
    track_conversions = use_wrapper;
    live_controls = getenv("LIVE_CONTROLS") != NULL;
    live_layouts = getenv("LIVE_LAYOUTS") != NULL;
+   speed_lowpass = getenv("SPEED_LPF") != NULL;
    if (layout)
    {
       if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
@@ -978,6 +983,11 @@ int main(int argc, char **argv)
    if (live_layouts && (!live_controls || channels != 8))
    {
       fprintf(stderr, "LIVE_LAYOUTS requires LIVE_CONTROLS and LAYOUT=7.1\n");
+      return 1;
+   }
+   if (speed_lowpass && !live_controls)
+   {
+      fprintf(stderr, "SPEED_LPF requires LIVE_CONTROLS\n");
       return 1;
    }
 
@@ -1032,6 +1042,7 @@ int main(int argc, char **argv)
    if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
    if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
+   if (speed_lowpass) printf("speed LPF: 128 coherent tempo/cutoff requests, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }

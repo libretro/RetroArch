@@ -1858,6 +1858,8 @@ static void transport_request_cases(void)
          q = &st->pipe_layouts;
          CHECK(!audio_driver_pipeline_transport_request(65536, true, false, 1000),
                "request without owned stage");
+         CHECK(!audio_driver_pipeline_transport_request_speed(131072, true, false, true),
+               "speed request without owned stage");
          CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "request prepare");
          memset(&input, 0, sizeof(input));
          CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 1, st->pipe_frame_bytes) == 1,
@@ -1891,6 +1893,8 @@ static void transport_request_cases(void)
          gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
          head = retro_atomic_load_relaxed_size(&q->head);
          CHECK(!audio_driver_pipeline_transport_request(131072, true, true, 2000), "full request accepted");
+         CHECK(!audio_driver_pipeline_transport_request_speed(131072, true, true, true),
+               "full speed request accepted");
          CHECK(retro_atomic_load_relaxed_size(&q->head) == head && retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen
                && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
                "full request partially published");
@@ -1901,6 +1905,16 @@ static void transport_request_cases(void)
          CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
                && q->current_control == 65536 && q->current_cutoff == 2000,
                "inactive request did not preserve filter independence");
+         CHECK(audio_driver_pipeline_transport_request_speed(131072, false, false, true),
+               "speed request retry");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && q->current_control == 65536 && q->current_cutoff == 10800,
+               "speed cutoff depended on WSOLA activation");
+         CHECK(audio_driver_pipeline_transport_request_speed(131072, true, false, false),
+               "speed request disable LPF");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+               && q->current_control == (131072 | AUDIO_PIPELINE_STRETCH)
+               && q->current_cutoff == 0, "disabled speed LPF was not dry");
          audio_driver_deinit_internal(true);
       }
    printf("native transport request: 4 cases, %u failures\n", failures - before);

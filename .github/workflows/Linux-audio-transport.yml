@@ -41,3 +41,9 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: make check-layout SANITIZER='${{ matrix.sanitizer }}'
+      - name: Speed-linked low-pass control requests
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-speed-lpf SANITIZER='${{ matrix.sanitizer }}'

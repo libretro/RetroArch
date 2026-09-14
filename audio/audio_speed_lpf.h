@@ -32,6 +32,11 @@ typedef struct audio_speed_lpf
 bool audio_speed_lpf_init(audio_speed_lpf_t *state, unsigned rate,
       unsigned channels, bool is_float);
 
+/* Optional fast-forward coloration: floor(0.45 * rate / speed), at least
+ * 20 Hz. Q16 speeds at or below unity are dry (zero). Invalid rates are dry.
+ * This is a target policy, not an anti-aliasing replacement for the SRC. */
+uint32_t audio_speed_lpf_cutoff(unsigned rate, uint32_t speed_q16);
+
 /* Finite positive cutoff in core-rate Hz, clamped to 20..0.45*rate.
  * The cascaded poles have their combined -3 dB point at this frequency.
  * Coefficient and wet/dry changes take 50 ms of processed source frames.
