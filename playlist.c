@@ -1110,6 +1110,34 @@ void playlist_dedup_free(playlist_dedup_t *dedup)
    free(dedup);
 }
 
+/**
+ * playlist_entry_replace_str:
+ * @dst              : field holding the string the entry currently owns
+ * @src              : replacement, copied
+ *
+ * Replaces an entry's string with a copy of @src, keeping what was
+ * there if the copy cannot be made. Freeing first and assigning the
+ * result of strdup() gets the order backwards: under memory pressure
+ * the field is left NULL and the entry is marked modified, so a
+ * complete entry becomes an incomplete one and the next write puts that
+ * on disk.
+ *
+ * Returns: true when the field now holds a copy of @src.
+ **/
+static bool playlist_entry_replace_str(char **dst, const char *src)
+{
+   char *replacement = strdup(src);
+
+   if (!replacement)
+      return false;
+
+   if (*dst)
+      free(*dst);
+   *dst = replacement;
+
+   return true;
+}
+
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry)
 {
@@ -1122,57 +1150,49 @@ void playlist_update(playlist_t *playlist, size_t idx,
 
    if (update_entry->path && (update_entry->path != entry->path))
    {
-      if (entry->path)
-         free(entry->path);
-      entry->path        = strdup(update_entry->path);
-
-      if (entry->path_id)
+      if (playlist_entry_replace_str(&entry->path, update_entry->path))
       {
-         playlist_path_id_free(entry->path_id);
-         entry->path_id  = NULL;
-      }
+         /* The id describes the path that was just replaced. It is
+          * dropped only where the replacement landed; a path left as it
+          * was keeps the id that matches it. */
+         if (entry->path_id)
+         {
+            playlist_path_id_free(entry->path_id);
+            entry->path_id  = NULL;
+         }
 
-      playlist->flags |= CNT_PLAYLIST_FLG_MOD;
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
+      }
    }
 
    if (update_entry->label && (update_entry->label != entry->label))
    {
-      if (entry->label)
-         free(entry->label);
-      entry->label       = strdup(update_entry->label);
-      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      if (playlist_entry_replace_str(&entry->label, update_entry->label))
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
-      if (entry->core_path)
-         free(entry->core_path);
-      entry->core_path   = strdup(update_entry->core_path);
-      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      if (playlist_entry_replace_str(&entry->core_path, update_entry->core_path))
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->core_name && (update_entry->core_name != entry->core_name))
    {
-      if (entry->core_name)
-         free(entry->core_name);
-      entry->core_name   = strdup(update_entry->core_name);
-      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      if (playlist_entry_replace_str(&entry->core_name, update_entry->core_name))
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->db_name && (update_entry->db_name != entry->db_name))
    {
-      if (entry->db_name)
-         free(entry->db_name);
-      entry->db_name     = strdup(update_entry->db_name);
-      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      if (playlist_entry_replace_str(&entry->db_name, update_entry->db_name))
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->crc32 && (update_entry->crc32 != entry->crc32))
    {
-      if (entry->crc32)
-         free(entry->crc32);
-      entry->crc32       = strdup(update_entry->crc32);
-      playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      if (playlist_entry_replace_str(&entry->crc32, update_entry->crc32))
+         playlist->flags |= CNT_PLAYLIST_FLG_MOD;
    }
 }
 
@@ -1189,26 +1209,23 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->path && (update_entry->path != entry->path))
    {
-      if (entry->path)
-         free(entry->path);
-      entry->path        = strdup(update_entry->path);
-
-      if (entry->path_id)
+      if (playlist_entry_replace_str(&entry->path, update_entry->path))
       {
-         playlist_path_id_free(entry->path_id);
-         entry->path_id  = NULL;
-      }
+         if (entry->path_id)
+         {
+            playlist_path_id_free(entry->path_id);
+            entry->path_id  = NULL;
+         }
 
-      if (register_update)
-         playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+         if (register_update)
+            playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+      }
    }
 
    if (update_entry->core_path && (update_entry->core_path != entry->core_path))
    {
-      if (entry->core_path)
-         free(entry->core_path);
-      entry->core_path      = strdup(update_entry->core_path);
-      if (register_update)
+      if (playlist_entry_replace_str(&entry->core_path, update_entry->core_path)
+            && register_update)
          playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
@@ -1284,20 +1301,16 @@ void playlist_update_runtime(playlist_t *playlist, size_t idx,
 
    if (update_entry->runtime_str && (update_entry->runtime_str != entry->runtime_str))
    {
-      if (entry->runtime_str)
-         free(entry->runtime_str);
-      entry->runtime_str    = strdup(update_entry->runtime_str);
-      if (register_update)
+      if (playlist_entry_replace_str(&entry->runtime_str, update_entry->runtime_str)
+            && register_update)
          playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
    }
 
    if (update_entry->last_played_str && (update_entry->last_played_str != entry->last_played_str))
    {
-      if (entry->last_played_str)
-         free(entry->last_played_str);
-      entry->last_played_str = NULL;
-      entry->last_played_str = strdup(update_entry->last_played_str);
-      if (register_update)
+      if (playlist_entry_replace_str(&entry->last_played_str,
+               update_entry->last_played_str)
+            && register_update)
          playlist->flags    |= CNT_PLAYLIST_FLG_MOD;
    }
 }
@@ -3601,8 +3614,11 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
                playlist->config.base_content_directory, p->newref_len,
                sizeof(tmp_entry_path));
 
-         free(entry->path);
-         entry->path = strdup(tmp_entry_path);
+         /* A path that cannot be replaced keeps the one it had. The
+          * entry stays usable under its old base directory, which is
+          * better than losing the path it was found by. */
+         if (!playlist_entry_replace_str(&entry->path, tmp_entry_path))
+            continue;
 
          /* Fix subsystem roms paths*/
          if (     (entry->subsystem_roms)
@@ -3655,8 +3671,8 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
                   playlist->config.base_content_directory, p->newref_len,
                   sizeof(tmp_entry_path));
 
-            free(playlist->scan_record.content_dir);
-            playlist->scan_record.content_dir = strdup(tmp_entry_path);
+            playlist_entry_replace_str(&playlist->scan_record.content_dir,
+                  tmp_entry_path);
          }
 
          /* Fix scan record arcade DAT file */
@@ -3670,8 +3686,8 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
                   playlist->config.base_content_directory, p->newref_len,
                   sizeof(tmp_entry_path));
 
-            free(playlist->scan_record.dat_file_path);
-            playlist->scan_record.dat_file_path = strdup(tmp_entry_path);
+            playlist_entry_replace_str(&playlist->scan_record.dat_file_path,
+                  tmp_entry_path);
          }
       }
    }

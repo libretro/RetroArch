@@ -1389,6 +1389,94 @@ static void lane_rebuild_reuses_deferred_install(void)
             frames);
 }
 
+
+/* --- a copy that cannot be made must not take the old value with it -- */
+
+/* strdup() is wrapped so the failure is produced on demand. Only the
+ * copies playlist.c makes while replacing an entry field are denied;
+ * everything else the harness needs keeps working. */
+static bool deny_strdup;
+
+char *__real_strdup(const char *s);
+
+char *__wrap_strdup(const char *s)
+{
+   if (deny_strdup)
+      return NULL;
+   return __real_strdup(s);
+}
+
+/* playlist_update() used to free an entry's string and then assign the
+ * result of strdup(). With no memory to copy into, the field was left
+ * NULL and the entry marked modified, so a complete entry became an
+ * incomplete one and the next write put that on disk. The update has to
+ * leave the entry exactly as it found it instead. */
+static void lane_update_survives_failed_copy(void)
+{
+   unsigned had = failures;
+   playlist_config_t cfg;
+   playlist_t *pl;
+   struct playlist_entry push;
+   struct playlist_entry upd;
+   const struct playlist_entry *got = NULL;
+   char path[512];
+
+   memset(&cfg, 0, sizeof(cfg));
+   snprintf(path, sizeof(path), "%s/oom.lpl", fixture_dir);
+   strlcpy(cfg.path, path, sizeof(cfg.path));
+   cfg.capacity = 16;
+
+   if (!(pl = playlist_init(&cfg)))
+   {
+      CHECK(false, "playlist_init failed");
+      return;
+   }
+
+   memset(&push, 0, sizeof(push));
+   push.path      = (char*)"/games/game.bin";
+   push.label     = (char*)"Original Label";
+   push.core_path = (char*)"/cores/core.so";
+   push.core_name = (char*)"Original Core";
+   playlist_push(pl, &push);
+
+   CHECK(playlist_size(pl) == 1, "the entry was not pushed");
+   playlist_get_index(pl, 0, &got);
+   CHECK(got && got->label && !strcmp(got->label, "Original Label"),
+         "the pushed label is not what was pushed");
+
+   memset(&upd, 0, sizeof(upd));
+   upd.label     = (char*)"Replacement Label";
+   upd.core_name = (char*)"Replacement Core";
+
+   deny_strdup = true;
+   playlist_update(pl, 0, &upd);
+   deny_strdup = false;
+
+   playlist_get_index(pl, 0, &got);
+   CHECK(got != NULL, "the entry disappeared");
+   if (got)
+   {
+      CHECK(got->label != NULL,
+            "a failed copy left the label NULL instead of keeping it");
+      CHECK(got->label && !strcmp(got->label, "Original Label"),
+            "a failed copy did not keep the label that was there");
+      CHECK(got->core_name != NULL,
+            "a failed copy left the core name NULL instead of keeping it");
+      CHECK(got->path && !strcmp(got->path, "/games/game.bin"),
+            "a failed copy disturbed a field it was not replacing");
+   }
+   /* With memory again, the same update lands. */
+   playlist_update(pl, 0, &upd);
+   playlist_get_index(pl, 0, &got);
+   CHECK(got && got->label && !strcmp(got->label, "Replacement Label"),
+         "the update did not land once the copy could be made");
+
+   playlist_free(pl);
+
+   if (failures == had)
+      fprintf(stderr, "  [pass] a failed copy keeps the entry it could not replace\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1423,6 +1511,7 @@ int main(int argc, char *argv[])
    lane_saf_slow_reads();
    lane_pump_completes_without_input();
    lane_rebuild_reuses_deferred_install();
+   lane_update_survives_failed_copy();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }
