@@ -66,19 +66,6 @@ static unsigned harness_fb_granted;
 void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
 unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 
-/* When on, frames are 0RGB1555 with a fixed pattern: pixel 0 is pure
- * red+blue (0x7C1F), pixel 1 pure green (0x03E0), so the harness can
- * check what the driver receives against the RGB565 they become. */
-static int harness_use_1555;
-
-void harness_core_use_0rgb1555(int on)
-{
-   enum retro_pixel_format fmt = on
-      ? RETRO_PIXEL_FORMAT_0RGB1555 : RETRO_PIXEL_FORMAT_RGB565;
-   harness_use_1555 = on;
-   environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
-}
-
 void retro_run(void)
 {
    unsigned h = (runs % 61 == 60) ? H_OVERSIZE : H;
@@ -103,16 +90,8 @@ void retro_run(void)
       }
    }
 
-   if (harness_use_1555)
-   {
-      for (i = 0; i < W * h; i++)
-         dst[i] = (i & 1) ? 0x03E0 : 0x7C1F;
-   }
-   else
-   {
-      for (i = 0; i < W * h; i++)
-         dst[i] = (uint16_t)(runs + i);
-   }
+   for (i = 0; i < W * h; i++)
+      dst[i] = (uint16_t)(runs + i);
    if (runs % 3 == 0)
       video_cb(NULL, W, h, pitch);
    else

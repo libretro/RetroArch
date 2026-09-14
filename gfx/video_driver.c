@@ -5777,24 +5777,7 @@ void video_driver_frame(const void *data, unsigned width,
       }
    }
 
-   {
-      retro_time_t t0 = cpu_features_get_time_usec();
-      uint64_t us;
-      video_driver_build_info(&video_info);
-      us = (uint64_t)(cpu_features_get_time_usec() - t0);
-      video_st->info_build_us_sum += us;
-      if (us > video_st->info_build_us_max)
-         video_st->info_build_us_max = us;
-      if (++video_st->info_build_frames >= 120)
-      {
-         video_st->info_build_us_avg_x100 =
-            video_st->info_build_us_sum * 100 / video_st->info_build_frames;
-         video_st->info_build_us_worst    = video_st->info_build_us_max;
-         video_st->info_build_us_sum      = 0;
-         video_st->info_build_us_max      = 0;
-         video_st->info_build_frames      = 0;
-      }
-   }
+   video_driver_build_info(&video_info);
 
 #ifdef HAVE_MENU
    menu_is_alive = (video_info.menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -6426,7 +6409,6 @@ void video_driver_frame(const void *data, unsigned width,
                " -Deviation:%6.2f %%\n"
                " Frames:  %8" PRIu64"\n"
                " -Dropped:  %6u\n"
-               " Info build: %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
                ,
                cache_width,
                cache_height,
@@ -6454,10 +6436,7 @@ void video_driver_frame(const void *data, unsigned width,
                video_st->frame_time_from_display ? "display" : "loop",
                100.0f * stddev,
                video_st->frame_count,
-               video_st->frame_drop_count,
-               video_st->info_build_us_avg_x100 / 100,
-               video_st->info_build_us_avg_x100 % 100,
-               video_st->info_build_us_worst);
+               video_st->frame_drop_count);
 
 #ifdef HAVE_MENU
          if (menu_is_alive)

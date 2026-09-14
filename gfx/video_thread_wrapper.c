@@ -1008,36 +1008,6 @@ void video_thread_async_poll(void)
    video_thread_async_deliver(thr);
 }
 
-#ifdef HAVE_VIDEO_FILTER
-/* The software filter, on the thread that draws: a frame staged by
- * video_thread_defer_filter() arrives raw, in the core's format. The
- * filter and its output buffer hold still while frames are in flight;
- * video_driver_init_filter() and video_driver_filter_free() wait this
- * thread idle first. */
-static void video_thread_filter(const void **data,
-      unsigned *width, unsigned *height, unsigned *pitch)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   unsigned out_width             = 0;
-   unsigned out_height            = 0;
-   unsigned out_pitch;
-
-   if (!*data || !video_st->state_filter || !video_st->state_buffer)
-      return;
-
-   rarch_softfilter_get_output_size(video_st->state_filter,
-         &out_width, &out_height, *width, *height);
-   out_pitch = out_width * video_st->state_out_bpp;
-   rarch_softfilter_process(video_st->state_filter,
-         video_st->state_buffer, out_pitch,
-         *data, *width, *height, *pitch);
-
-   *data     = video_st->state_buffer;
-   *width    = out_width;
-   *height   = out_height;
-   *pitch    = out_pitch;
-}
-
 /* Source pixel format conversion, on the thread that draws: a frame
  * staged by video_thread_defer_convert() arrives in the core's format.
  * The scaler and the narrowing scratch buffer hold still while frames
@@ -1091,6 +1061,36 @@ void video_thread_defer_convert(enum video_thread_convert kind)
    if (!(thr = (thread_video_t*)video_st->data))
       return;
    thr->convert_next = (unsigned)kind;
+}
+
+#ifdef HAVE_VIDEO_FILTER
+/* The software filter, on the thread that draws: a frame staged by
+ * video_thread_defer_filter() arrives raw, in the core's format. The
+ * filter and its output buffer hold still while frames are in flight;
+ * video_driver_init_filter() and video_driver_filter_free() wait this
+ * thread idle first. */
+static void video_thread_filter(const void **data,
+      unsigned *width, unsigned *height, unsigned *pitch)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned out_width             = 0;
+   unsigned out_height            = 0;
+   unsigned out_pitch;
+
+   if (!*data || !video_st->state_filter || !video_st->state_buffer)
+      return;
+
+   rarch_softfilter_get_output_size(video_st->state_filter,
+         &out_width, &out_height, *width, *height);
+   out_pitch = out_width * video_st->state_out_bpp;
+   rarch_softfilter_process(video_st->state_filter,
+         video_st->state_buffer, out_pitch,
+         *data, *width, *height, *pitch);
+
+   *data     = video_st->state_buffer;
+   *width    = out_width;
+   *height   = out_height;
+   *pitch    = out_pitch;
 }
 
 void video_thread_defer_filter(unsigned in_bpp)

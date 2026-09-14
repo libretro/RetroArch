@@ -1095,15 +1095,6 @@ typedef struct
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
    uint64_t frame_time_count;
    uint64_t frame_count;
-   /* Runloop-thread cost of video_driver_build_info(), in
-    * microseconds, over a window of frames: the sum and the worst of
-    * the window still being filled, and what the last full window
-    * came to, for the statistics overlay. */
-   uint64_t info_build_us_sum;
-   uint64_t info_build_us_max;
-   uint64_t info_build_us_avg_x100;
-   uint64_t info_build_us_worst;
-   unsigned info_build_frames;
    /* See video_frame_info_t::swap_count. */
    uint64_t swap_count;
    /* Display timestamp of the previous present, when the refresh-rate
