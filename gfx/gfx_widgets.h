@@ -489,6 +489,10 @@ void gfx_widget_set_cheevos_set_loading(bool visible);
 /* TODO/FIXME/WARNING: Not thread safe! */
 void gfx_widget_set_generic_message(
       const char *message, unsigned duration);
+void gfx_widget_set_generic_message_fixed(const char *prefix,
+      const char *name, const char *suffix, const char *slot,
+      unsigned duration);
+void gfx_widget_set_generic_message_progress(const char *label);
 void gfx_widget_set_libretro_message(
       const char *message, unsigned duration);
 void gfx_widget_set_progress_message(

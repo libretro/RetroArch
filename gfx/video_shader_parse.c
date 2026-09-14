@@ -3442,6 +3442,28 @@ bool video_shader_combine_preset_and_apply(
    return ret;
 }
 
+const char *video_shader_get_display_name(const char *preset_path,
+      const char *shader_dir)
+{
+   size_t _len;
+
+   if (!preset_path || !*preset_path)
+      return NULL;
+
+   if (shader_dir && (_len = strlen(shader_dir)) > 0)
+   {
+      if (PATH_CHAR_IS_SLASH(shader_dir[_len - 1]))
+         _len--;
+      if (   _len > 0
+          && !strncmp(preset_path, shader_dir, _len)
+          && PATH_CHAR_IS_SLASH(preset_path[_len])
+          && preset_path[_len + 1])
+         return preset_path + _len + 1;
+   }
+
+   return path_basename_nocompression(preset_path);
+}
+
 /* Sets and loads the preset in the video driver */
 /* Applies the preset to the menu */
 bool video_shader_apply_shader(
@@ -3464,7 +3486,8 @@ bool video_shader_apply_shader(
       return false;
 
    if (preset_path && *preset_path)
-      preset_file = path_basename_nocompression(preset_path);
+      preset_file = video_shader_get_display_name(preset_path,
+            settings->paths.directory_video_shader);
 
    /* ---- Deferred (per-frame) path ----
     * Skip when threaded video is active: the tick runs on the main
@@ -3515,17 +3538,26 @@ bool video_shader_apply_shader(
                   preset_path,
                   sizeof(runloop_st->runtime_shader_preset_path));
 
+#ifdef HAVE_GFX_WIDGETS
+         /* Even without message: the done tick shows no name */
+         if (dispwidget_get_ptr()->active)
+         {
+            char slot[32];
+            snprintf(msg, sizeof(msg), "%s: \"",
+                  msg_hash_to_str(MSG_SHADER));
+            snprintf(slot, sizeof(slot), "%s 000/000",
+                  msg_hash_to_str(MSG_LOADING));
+            gfx_widget_set_generic_message_fixed(msg, preset_file,
+                  "\"", slot, 2000);
+         }
+         else
+#endif
          if (message)
          {
             size_t _len = strlcpy_lit(msg, "Loading shader...", sizeof(msg));
-#ifdef HAVE_GFX_WIDGETS
-            if (dispwidget_get_ptr()->active)
-               gfx_widget_set_generic_message(msg, 2000);
-            else
-#endif
-               runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
          RARCH_LOG("[Shaders] Deferred load started: \"%s\".\n",
@@ -3574,6 +3606,8 @@ bool video_shader_apply_shader(
                msg[++_len]         = '\0';
                _len               += strlcpy(msg + _len,
                      preset_file,    sizeof(msg) - _len);
+               if (_len > sizeof(msg) - 2)
+                  _len             = sizeof(msg) - 2;
                msg[  _len]         = '"';
                msg[++_len]         = '\0';
             }
@@ -3587,7 +3621,19 @@ bool video_shader_apply_shader(
 
 #ifdef HAVE_GFX_WIDGETS
             if (dispwidget_get_ptr()->active)
-               gfx_widget_set_generic_message(msg, 2000);
+            {
+               char prefix[64];
+
+               if (preset_file)
+               {
+                  snprintf(prefix, sizeof(prefix), "%s: \"", msg_shader);
+                  gfx_widget_set_generic_message_fixed(prefix, preset_file,
+                        "\"", NULL, 2000);
+               }
+               else
+                  gfx_widget_set_generic_message_fixed(msg, NULL, NULL,
+                        NULL, 2000);
+            }
             else
 #endif
                runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
@@ -3612,6 +3658,9 @@ bool video_shader_apply_shader(
       size_t _len = snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_APPLY_SHADER_PRESET),
             preset_file ? preset_file : "null");
+
+      if (_len >= sizeof(msg))
+         _len = sizeof(msg) - 1;
 
       runloop_msg_queue_push(msg, _len, 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);

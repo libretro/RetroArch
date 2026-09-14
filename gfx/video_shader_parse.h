@@ -285,6 +285,17 @@ bool video_shader_combine_preset_and_apply(
       bool prepend,
       bool message);
 
+/**
+ * video_shader_get_display_name:
+ * @preset_path          : Path to a shader preset
+ * @shader_dir           : Video shaders directory
+ *
+ * Returns: path of @preset_path relative to @shader_dir if it lies
+ * inside it, otherwise its file name, or NULL if @preset_path is empty.
+ **/
+const char *video_shader_get_display_name(const char *preset_path,
+      const char *shader_dir);
+
 bool video_shader_apply_shader(
       settings_t *settings,
       enum rarch_shader_type type,

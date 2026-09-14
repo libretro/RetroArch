@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <compat/strl.h>
+#include <encodings/utf.h>
 #include <string/stdstring.h>
 
 #include "../gfx_widgets.h"
@@ -64,6 +65,12 @@ struct gfx_widget_generic_message_state
    enum gfx_widget_generic_message_status status;
 
    char message[512];
+   char progress[32];
+   char slot[32];
+   char prefix[64];
+   char name[PATH_MAX_LENGTH];
+   char suffix[8];
+   bool fixed;
    bool message_updated;
 };
 
@@ -99,6 +106,12 @@ static gfx_widget_generic_message_state_t p_w_generic_message_st = {
    GFX_WIDGET_GENERIC_MESSAGE_IDLE,    /* status */
 
    {'\0'},                             /* message */
+   {'\0'},                             /* progress */
+   {'\0'},                             /* slot */
+   {'\0'},                             /* prefix */
+   {'\0'},                             /* name */
+   {'\0'},                             /* suffix */
+   false,                              /* fixed */
    false                               /* message_updated */
 };
 
@@ -118,6 +131,57 @@ static void gfx_widget_generic_message_reset(bool cancel_pending)
    state->status             = GFX_WIDGET_GENERIC_MESSAGE_IDLE;
    if (cancel_pending)
       state->message_updated = false;
+}
+
+/* Fixed layout: constant box, left-aligned message and a reserved
+ * label slot, so the text stays put between shader messages. The
+ * name is cut from the left until the message fits. */
+static void gfx_widget_generic_message_layout_fixed(
+      gfx_widget_generic_message_state_t *state,
+      dispgfx_widget_t *p_dispwidget)
+{
+   unsigned area;
+   unsigned slot_width                    = 0;
+   const char *name                       = state->name;
+   gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;
+   unsigned last_video_width              = p_dispwidget->last_video_width;
+
+   if (*state->slot)
+   {
+      int width = font_driver_get_message_width(font_msg_queue->font,
+            state->slot, strlen(state->slot), 1.0f);
+      if (width > 0)
+         slot_width      = (unsigned)width + state->text_padding;
+   }
+
+   state->bg_width       = state->bg_min_width;
+   if (!state->bg_width || state->bg_width > last_video_width)
+      state->bg_width    = last_video_width;
+   state->bg_x           = ((float)last_video_width
+         - (float)state->bg_width) * 0.5f;
+   state->text_x         = state->bg_x + (float)state->text_padding;
+
+   area                  = state->bg_width - (state->text_padding * 2);
+   area                  = (area > slot_width) ? area - slot_width : 0;
+
+   for (;;)
+   {
+      int text_width;
+
+      strlcpy(state->message, state->prefix, sizeof(state->message));
+      if (name != state->name)
+         strlcat(state->message, "...", sizeof(state->message));
+      strlcat(state->message, name, sizeof(state->message));
+      strlcat(state->message, state->suffix, sizeof(state->message));
+      state->message_len = strlen(state->message);
+
+      text_width         = font_driver_get_message_width(
+            font_msg_queue->font, state->message,
+            state->message_len, 1.0f);
+      if (text_width <= (int)area || !*name)
+         break;
+      name               = utf8skip(name, 1);
+   }
 }
 
 /* Callbacks */
@@ -180,6 +244,8 @@ static void gfx_widget_set_generic_message_state(
    state->message_len      = strlcpy(state->message,
          msg, sizeof(state->message));
    state->message_duration = duration;
+   state->progress[0]      = '\0';
+   state->fixed            = false;
 
    /* Get background width */
    text_width         = font_driver_get_message_width(
@@ -236,6 +302,55 @@ void gfx_widget_set_generic_message(
 {
    gfx_widgets_state_lock();
    gfx_widget_set_generic_message_state(msg, duration);
+   gfx_widgets_state_unlock();
+}
+
+void gfx_widget_set_generic_message_fixed(const char *prefix,
+      const char *name, const char *suffix, const char *slot,
+      unsigned duration)
+{
+   gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
+
+   if (!prefix || !*prefix)
+      return;
+
+   gfx_widgets_state_lock();
+
+   strlcpy(state->prefix, prefix, sizeof(state->prefix));
+   strlcpy(state->name,   name   ? name   : "", sizeof(state->name));
+   strlcpy(state->suffix, suffix ? suffix : "", sizeof(state->suffix));
+   strlcpy(state->slot,   slot   ? slot   : "", sizeof(state->slot));
+   state->message_duration = duration;
+   state->progress[0]      = '\0';
+   state->fixed            = true;
+
+   gfx_widget_generic_message_layout_fixed(state, dispwidget_get_ptr());
+
+   /* Same deferred animation handling as gfx_widget_set_generic_message() */
+   if (state->status != GFX_WIDGET_GENERIC_MESSAGE_SLIDE_IN)
+      state->message_updated = true;
+
+   gfx_widgets_state_unlock();
+}
+
+void gfx_widget_set_generic_message_progress(const char *label)
+{
+   gfx_widget_generic_message_state_t *state = &p_w_generic_message_st;
+
+   gfx_widgets_state_lock();
+
+   /* Only a message that reserved a slot takes a label */
+   if (state->fixed && *state->slot)
+   {
+      strlcpy(state->progress, label ? label : "",
+            sizeof(state->progress));
+
+      /* Restart the wait timer so the box stays up while loading;
+       * a pending slide-in picks up the change by itself */
+      if (state->status != GFX_WIDGET_GENERIC_MESSAGE_SLIDE_IN)
+         state->message_updated = true;
+   }
+
    gfx_widgets_state_unlock();
 }
 
@@ -322,6 +437,9 @@ static void gfx_widget_generic_message_layout(
    state->text_y_end      = state->bg_y_end + 
       ((float)state->bg_height * 0.5f) +
       (float)font_msg_queue->line_centre_offset;
+
+   if (state->fixed)
+      gfx_widget_generic_message_layout_fixed(state, p_dispwidget);
 }
 
 /* Widget iterate() */
@@ -548,6 +666,20 @@ static void gfx_widget_generic_message_frame(void *data, void *user_data)
                text_color,
                TEXT_ALIGN_LEFT,
                true);
+
+         if (*state->progress)
+            gfx_widgets_draw_text(
+                  font_msg_queue,
+                  state->progress,
+                  state->bg_x + (float)state->bg_width
+                        - (float)state->text_padding,
+                  text_y,
+                  video_width,
+                  video_height,
+                  COLOR_TEXT_ALPHA(state->text_color,
+                        (unsigned)(widget_alpha * 128.0f)),
+                  TEXT_ALIGN_RIGHT,
+                  true);
 
          /* If the message queue is active, must flush the
           * text here to avoid overlaps */

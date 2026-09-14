@@ -779,21 +779,25 @@ void video_driver_shader_deferred_tick(void)
 #endif
          }
 
+#ifdef HAVE_GFX_WIDGETS
+         /* Widgets keep the name and last label up */
+         if (!dispwidget_get_ptr()->active)
+#endif
          {
             char msg[256];
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+            const char *preset_file = video_shader_get_display_name(
+                  d->preset_path, settings->paths.directory_video_shader);
+#else
             const char *preset_file = path_basename_nocompression(
                   d->preset_path);
+#endif
             snprintf(msg, sizeof(msg), "Shader: \"%s\"",
                   preset_file ? preset_file : "N/A");
-#ifdef HAVE_GFX_WIDGETS
-            if (dispwidget_get_ptr()->active)
-               gfx_widget_set_generic_message(msg, 2000);
-            else
-#endif
-               runloop_msg_queue_push(msg, strlen(msg),
-                     1, 120, true, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
+            runloop_msg_queue_push(msg, strlen(msg),
+                  1, 120, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_INFO);
          }
 
          RARCH_LOG("[Shaders] Deferred load complete: \"%s\".\n",
@@ -805,8 +809,8 @@ void video_driver_shader_deferred_tick(void)
          RARCH_ERR("[Shaders] Deferred shader load failed.\n");
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
-            gfx_widget_set_generic_message(
-                  "Shader preset failed to load.", 2000);
+            gfx_widget_set_generic_message_fixed(
+                  "Shader preset failed to load.", NULL, NULL, NULL, 2000);
          else
 #endif
             runloop_msg_queue_push(
@@ -822,20 +826,14 @@ void video_driver_shader_deferred_tick(void)
       d->driver_data = NULL;
    }
 #ifdef HAVE_GFX_WIDGETS
-   else
+   /* Still compiling */
+   else if (dispwidget_get_ptr()->active && d->total_passes > 0)
    {
-      /* Still compiling — show progress widget */
-      dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-      if (p_dispwidget->active && d->total_passes > 0)
-      {
-         char msg[64];
-         int8_t progress = (int8_t)(
-               (d->current_pass * 100) / d->total_passes);
-         snprintf(msg, sizeof(msg), "Loading shader %u/%u...",
-               d->current_pass, d->total_passes);
-         gfx_widget_set_progress_message(
-               msg, 200, 0, progress);
-      }
+      char label[32];
+      snprintf(label, sizeof(label), "%s %u/%u",
+            msg_hash_to_str(MSG_LOADING),
+            d->current_pass, d->total_passes);
+      gfx_widget_set_generic_message_progress(label);
    }
 #endif
 }
