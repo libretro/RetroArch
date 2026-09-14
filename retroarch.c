@@ -9000,6 +9000,10 @@ void retroarch_init_task_queue(void)
 #endif
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
 #ifdef HAVE_THREADS
+   /* The queue falls back to running tasks on the caller's thread when
+    * its worker or synchronisation primitives could not be created. */
+   if (threaded_enable && !task_queue_is_threaded())
+      RARCH_ERR("[Task] Threaded tasks were requested but could not be started; running tasks inline.\n");
    /* The main thread runs the emulation loop; on a mixed-core part
     * keep it off the slow cluster when asked. */
    if (settings->bools.thread_prefer_fast_cores)

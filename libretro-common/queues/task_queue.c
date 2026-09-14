@@ -59,7 +59,7 @@ struct retro_task_impl
    void (*gather)(void);
    bool (*find)(retro_task_finder_t, void*);
    void (*retrieve)(task_retriever_data_t *data);
-   void (*init)(void);
+   bool (*init)(void);
    void (*deinit)(void);
 };
 
@@ -349,7 +349,7 @@ static void retro_task_regular_reset(void)
       task->flags |= RETRO_TASK_FLG_CANCELLED;
 }
 
-static void retro_task_regular_init(void) { }
+static bool retro_task_regular_init(void) { return true; }
 static void retro_task_regular_deinit(void) { }
 
 static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
@@ -836,7 +836,31 @@ static void threaded_worker(void *userdata)
    }
 }
 
-static void retro_task_threaded_init(void)
+/* Releases whatever the shared setup managed to create.  Separate from
+ * the deinit hooks because those join a worker, and the failure paths
+ * below run before there is one. */
+static void retro_task_sync_primitives_free(void)
+{
+   scond_free(worker_cond);
+   scond_free(finished_cond);
+   slock_free(running_lock);
+   slock_free(finished_lock);
+   slock_free(property_lock);
+   slock_free(queue_lock);
+
+   worker_cond     = NULL;
+   finished_cond   = NULL;
+   running_lock    = NULL;
+   finished_lock   = NULL;
+   property_lock   = NULL;
+   queue_lock      = NULL;
+}
+
+/* slock_new() and scond_new() return NULL when the allocation or the
+ * platform primitive fails.  slock_lock() tolerates NULL but
+ * scond_signal() does not, so a partially built set has to be taken
+ * back rather than left for the first task to run into. */
+static bool retro_task_sync_primitives_new(void)
 {
    running_lock    = slock_new();
    finished_lock   = slock_new();
@@ -845,11 +869,37 @@ static void retro_task_threaded_init(void)
    worker_cond     = scond_new();
    finished_cond   = scond_new();
 
+   if (     running_lock
+         && finished_lock
+         && property_lock
+         && queue_lock
+         && worker_cond
+         && finished_cond)
+      return true;
+
+   retro_task_sync_primitives_free();
+   return false;
+}
+
+static bool retro_task_threaded_init(void)
+{
+   if (!retro_task_sync_primitives_new())
+      return false;
+
    slock_lock(running_lock);
    worker_continue = true;
    slock_unlock(running_lock);
 
-   worker_thread   = sthread_create(threaded_worker, NULL);
+   /* The worker reads the globals above, so they are in place before it
+    * starts.  Without a worker there is nobody to run what gets queued,
+    * which is why this reports failure rather than leaving the queue
+    * pointed at an implementation that cannot service it. */
+   if ((worker_thread = sthread_create(threaded_worker, NULL)))
+      return true;
+
+   worker_continue = false;
+   retro_task_sync_primitives_free();
+   return false;
 }
 
 static void retro_task_threaded_deinit(void)
@@ -996,16 +1046,12 @@ static void retro_task_gcd_wait(retro_task_condition_fn_t cond, void* data)
    } while (wait && (!cond || cond(data)));
 }
 
-static void retro_task_gcd_init(void)
+static bool retro_task_gcd_init(void)
 {
    retro_task_t *task = NULL;
 
-   running_lock    = slock_new();
-   finished_lock   = slock_new();
-   property_lock   = slock_new();
-   queue_lock      = slock_new();
-   worker_cond     = scond_new();
-   finished_cond   = scond_new();
+   if (!retro_task_sync_primitives_new())
+      return false;
 
    slock_lock(running_lock);
    worker_continue = true;
@@ -1016,6 +1062,8 @@ static void retro_task_gcd_init(void)
                      ^{ gcd_worker(task); });
    };
    slock_unlock(running_lock);
+
+   return true;
 }
 
 static void retro_task_gcd_deinit(void)
@@ -1085,7 +1133,20 @@ void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push)
    msg_push_bak            = msg_push;
 
    impl_current->msg_push  = msg_push;
+
+   if (impl_current->init())
+      return;
+
+#ifdef HAVE_THREADS
+   /* Nothing services a threaded queue without its primitives and its
+    * worker, so run the tasks on the caller's thread instead of
+    * accepting work that would never be picked up.  Callers see the
+    * outcome through task_queue_is_threaded(). */
+   task_threaded_enable    = false;
+   impl_current            = &impl_regular;
+   impl_current->msg_push  = msg_push;
    impl_current->init();
+#endif
 }
 
 void task_queue_set_threaded(void)
