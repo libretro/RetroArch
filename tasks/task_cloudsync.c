@@ -681,7 +681,11 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
 }
 
 /* don't pass a server/local item_file to this, only current has ->path set */
-static void task_cloud_sync_backup_file(struct item_file *file)
+/* Returns false when the local file is still where it was, which leaves
+ * the caller holding a file it must not replace or remove: non-destructive
+ * mode promises a local copy of anything it displaces, and without the
+ * backup there is nothing to fall back on. */
+static bool task_cloud_sync_backup_file(struct item_file *file)
 {
    struct tm   tm_;
    size_t      len;
@@ -703,8 +707,47 @@ static void task_cloud_sync_backup_file(struct item_file *file)
    strftime(new_path + len, sizeof(new_path) - len, "-%y%m%d-%H%M%S", &tm_);
    pathname_conform_slashes_to_os(new_path);
    fill_pathname_basedir(new_dir, new_path, sizeof(new_dir));
-   path_mkdir(new_dir);
-   filestream_rename(file->path, new_path);
+
+   if (!path_mkdir(new_dir))
+   {
+      RARCH_ERR(CSPFX "Could not create backup directory \"%s\".\n", new_dir);
+      return false;
+   }
+
+   if (filestream_rename(file->path, new_path) != 0)
+   {
+      RARCH_ERR(CSPFX "Could not back \"%s\" up to \"%s\".\n",
+            file->path, new_path);
+      return false;
+   }
+
+   return true;
+}
+
+/**
+ * task_cloud_sync_carry_manifests_forward:
+ * @sync_state       : sync state
+ * @key              : portable manifest key for the file
+ * @server_hash      : hash the server manifest holds for @key
+ *
+ * Records what both manifests already hold for @key, for the cases where
+ * this sync leaves the local file exactly as it found it. The server side
+ * keeps the hash the server reported and the local side keeps the hash the
+ * last sync recorded, so the next sync sees the same difference between the
+ * two and acts on it rather than treating the skipped work as done.
+ **/
+static void task_cloud_sync_carry_manifests_forward(
+      task_cloud_sync_state_t *sync_state,
+      const char *key,
+      char *server_hash)
+{
+   size_t idx;
+
+   task_cloud_sync_add_to_updated_manifest(sync_state, key, server_hash, true);
+
+   if (file_list_search(sync_state->local_manifest, key, &idx))
+      task_cloud_sync_add_to_updated_manifest(sync_state, key,
+            CS_FILE_HASH(&sync_state->local_manifest->list[idx]), false);
 }
 
 /**
@@ -715,14 +758,12 @@ static void task_cloud_sync_backup_file(struct item_file *file)
  * @server_hash      : hash the server manifest holds for @key
  *
  * A loaded core holds its save RAM in memory and writes it back over
- * @local_path when the content closes, so a file this sync puts there
- * in the meantime is overwritten from that memory and then uploaded in
- * place of the server's copy. Where @local_path belongs to the running
- * core, leave the file alone and carry both manifests forward as they
- * stand: the server side keeps the hash it already has, the local side
- * keeps the hash the last sync recorded, and the next sync - which runs
- * once the core has written its save RAM out - sees the real difference
- * and resolves it, raising a conflict if both sides moved.
+ * @local_path when the content closes, so a file this sync puts there in
+ * the meantime is overwritten from that memory and then uploaded in place
+ * of the server's copy. Where @local_path belongs to the running core,
+ * leave the file alone. The next sync runs once the core has written its
+ * save RAM out, sees the real difference and resolves it, raising a
+ * conflict where both sides moved.
  *
  * Returns: true when the operation was deferred.
  **/
@@ -732,19 +773,11 @@ static bool task_cloud_sync_defer_live_savefile(
       const char *local_path,
       char *server_hash)
 {
-   size_t idx;
-
    if (!content_savefile_is_live(local_path))
       return false;
 
    RARCH_LOG(CSPFX "Deferring \"%s\", the running core owns it.\n", key);
-
-   task_cloud_sync_add_to_updated_manifest(sync_state, key, server_hash, true);
-
-   if (     sync_state->local_manifest
-         && file_list_search(sync_state->local_manifest, key, &idx))
-      task_cloud_sync_add_to_updated_manifest(sync_state, key,
-            CS_FILE_HASH(&sync_state->local_manifest->list[idx]), false);
+   task_cloud_sync_carry_manifests_forward(sync_state, key, server_hash);
 
    return true;
 }
@@ -853,8 +886,14 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    if (!settings->bools.cloud_sync_destructive && path_is_valid(filename))
    {
       size_t idx;
-      if (file_list_search(sync_state->current_manifest, path, &idx))
-         task_cloud_sync_backup_file(&sync_state->current_manifest->list[idx]);
+      if (     file_list_search(sync_state->current_manifest, key, &idx)
+            && !task_cloud_sync_backup_file(&sync_state->current_manifest->list[idx]))
+      {
+         RARCH_ERR(CSPFX "Not fetching \"%s\", the local file could not be backed up.\n", key);
+         task_cloud_sync_carry_manifests_forward(sync_state, key, CS_FILE_HASH(server_file));
+         sync_state->failures = true;
+         return;
+      }
    }
 
    fill_pathname_basedir(directory, filename, sizeof(directory));
@@ -998,9 +1037,9 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
  * caller must not record the delete as sync'd. */
 static bool task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_state)
 {
-   struct item_file *item      = &sync_state->current_manifest->list[sync_state->current_idx];
+   struct item_file *item        = &sync_state->current_manifest->list[sync_state->current_idx];
    struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
-   bool cloud_sync_destructive = config_get_ptr()->bools.cloud_sync_destructive;
+   bool cloud_sync_destructive   = config_get_ptr()->bools.cloud_sync_destructive;
 
    if (task_cloud_sync_defer_live_savefile(sync_state, CS_FILE_KEY(item),
             item->path, CS_FILE_HASH(server_file)))
@@ -1008,10 +1047,17 @@ static bool task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_st
 
    RARCH_WARN(CSPFX "Server has deleted \"%s\", so shall we.\n", CS_FILE_KEY(item));
 
-   if (cloud_sync_destructive)
-      filestream_delete(item->path);
-   else
-      task_cloud_sync_backup_file(item);
+   if (cloud_sync_destructive
+         ? (filestream_delete(item->path) != 0)
+         : !task_cloud_sync_backup_file(item))
+   {
+      RARCH_ERR(CSPFX "Keeping \"%s\", the local file could not be removed.\n",
+            CS_FILE_KEY(item));
+      task_cloud_sync_carry_manifests_forward(sync_state, CS_FILE_KEY(item),
+            CS_FILE_HASH(server_file));
+      sync_state->failures = true;
+      return false;
+   }
 
    return true;
 }
