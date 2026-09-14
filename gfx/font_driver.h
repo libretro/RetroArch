@@ -127,6 +127,8 @@ typedef struct font_data
    char *lang_pkg_dir;
    char *lang_default_path;
    bool is_threaded;
+   /* A raster block is bound: text is gathered and drawn at flush */
+   bool block_bound;
    /* The threading_hint font_driver_init_first() was called with, so
     * a rebuild reaches the backend on the same thread as creation. */
    bool threading_hint;

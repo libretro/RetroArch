@@ -208,6 +208,7 @@ enum gfx_display_stat
    GFX_DISPLAY_STAT_BATCH_MAX,   /* quads in the largest strip */
    GFX_DISPLAY_STAT_TEXT_CALLS,  /* strings handed to the font driver */
    GFX_DISPLAY_STAT_TEXT_BYTES,  /* bytes of text in them */
+   GFX_DISPLAY_STAT_FONT_DRAWS,  /* draws the font renderers issued */
    GFX_DISPLAY_STAT_FLUSH,       /* one per enum gfx_display_flush_reason */
    GFX_DISPLAY_STAT_LAST = GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_LAST
 };

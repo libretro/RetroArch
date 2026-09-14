@@ -1149,8 +1149,10 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
    const font_renderer_t *renderer  = (font && msg && msg_len)
    ? font->renderer : NULL;
 
+   gfx_display_t *p_disp            = disp_get_ptr();
+
    /* Quads asked for before this text have to land under it */
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_batch(p_disp);
 
    if (renderer && renderer->render_msg)
    {
@@ -1165,6 +1167,10 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       char         *new_msg         = (char*)msg;
       size_t        new_msg_len     = msg_len;
 #endif
+      /* Without a block the backend draws this string on its own;
+       * with one, the draw is counted when the block is flushed */
+      if (p_disp && !(font->block_bound && renderer->bind_block))
+         p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
       renderer->render_msg(data,
             font->renderer_data, new_msg, new_msg_len, params);
    }
@@ -1175,7 +1181,10 @@ void font_driver_bind_block(void *font_data, void *block)
    font_data_t *font               = (font_data_t*)font_data;
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->bind_block)
+   {
       renderer->bind_block(font->renderer_data, block);
+      font->block_bound = (block != NULL);
+   }
 }
 
 /* Flushing is slow - only do it if font has actually been used */
@@ -1228,8 +1237,13 @@ void font_flush(
 
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
-   /* Quads asked for before this text have to land under it */
-   gfx_display_flush_batch(disp_get_ptr());
+   {
+      gfx_display_t *p_disp = disp_get_ptr();
+      /* Quads asked for before this text have to land under it */
+      gfx_display_flush_batch(p_disp);
+      if (p_disp && renderer && renderer->flush)
+         p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
+   }
    if (renderer && renderer->flush)
       renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;

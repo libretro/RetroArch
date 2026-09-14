@@ -6419,7 +6419,7 @@ void video_driver_frame(const void *data, unsigned width,
                   "MENU UI\n"
                   " Quads:   %5u in %u strips (max %u)\n"
                   " Ended by text %u tex %u blend %u sciss %u draw %u full %u end %u\n"
-                  " Text:    %5u calls, %u bytes\n"
+                  " Text:    %5u calls, %u bytes, %u font draws\n"
                   ,
                   ui.v[GFX_DISPLAY_STAT_QUADS],
                   ui.v[GFX_DISPLAY_STAT_BATCHES],
@@ -6432,7 +6432,8 @@ void video_driver_frame(const void *data, unsigned width,
                   ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_CAPACITY],
                   ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT],
                   ui.v[GFX_DISPLAY_STAT_TEXT_CALLS],
-                  ui.v[GFX_DISPLAY_STAT_TEXT_BYTES]);
+                  ui.v[GFX_DISPLAY_STAT_TEXT_BYTES],
+                  ui.v[GFX_DISPLAY_STAT_FONT_DRAWS]);
          }
 #endif
 
