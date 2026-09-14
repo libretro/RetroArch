@@ -125,6 +125,7 @@ static unsigned source_channels = 2;
 static uint32_t source_layout = AUDIO_LAYOUT_STEREO;
 static bool live_layouts;
 static bool speed_lowpass;
+static bool runloop_policy;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -647,7 +648,18 @@ static void wrapper_live_controls(unsigned publishes)
          source_channels = audio_layout_channels(source_layout);
       }
       check.layout = source_layout;
-      if (!(speed_lowpass
+      if (runloop_policy)
+      {
+         runloop_state_get_ptr()->flags = tempos[step] < 1 ? RUNLOOP_FLAG_SLOWMOTION
+            : tempos[step] > 1 ? RUNLOOP_FLAG_FASTMOTION : 0;
+         config_get_ptr()->floats.slowmotion_ratio = (float)(1.0 / tempos[step]);
+         config_get_ptr()->bools.audio_fastforward_speedup = true;
+         retro_atomic_store_release_int(&st->pipe_ff_mult_q16,
+               (int)(65536.0 / tempos[step]));
+      }
+      if (!(runloop_policy
+               ? audio_driver_pipeline_transport_request_runloop(false, true)
+               : speed_lowpass
                ? audio_driver_pipeline_transport_request_speed(tempo, active, false, true)
                : audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff)))
       {
@@ -668,6 +680,12 @@ static void wrapper_live_controls(unsigned publishes)
       if (retry == 2000) fixture_failures++;
       /* Observe consumer-owned metadata only while the real worker is parked. */
       audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
+   }
+   if (runloop_policy)
+   {
+      runloop_state_get_ptr()->flags = 0;
+      config_get_ptr()->floats.slowmotion_ratio = 1;
+      config_get_ptr()->bools.audio_fastforward_speedup = false;
    }
 }
 
@@ -945,6 +963,7 @@ int main(int argc, char **argv)
    live_controls = getenv("LIVE_CONTROLS") != NULL;
    live_layouts = getenv("LIVE_LAYOUTS") != NULL;
    speed_lowpass = getenv("SPEED_LPF") != NULL;
+   runloop_policy = getenv("RUNLOOP_POLICY") != NULL;
    if (layout)
    {
       if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
@@ -988,6 +1007,11 @@ int main(int argc, char **argv)
    if (speed_lowpass && !live_controls)
    {
       fprintf(stderr, "SPEED_LPF requires LIVE_CONTROLS\n");
+      return 1;
+   }
+   if (runloop_policy && !speed_lowpass)
+   {
+      fprintf(stderr, "RUNLOOP_POLICY requires SPEED_LPF\n");
       return 1;
    }
 
@@ -1043,6 +1067,7 @@ int main(int argc, char **argv)
    if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
    if (speed_lowpass) printf("speed LPF: 128 coherent tempo/cutoff requests, %u failures\n", fixture_failures);
+   if (runloop_policy) printf("runloop policy: 128 speed-state requests, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }

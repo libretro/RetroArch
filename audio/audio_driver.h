@@ -981,6 +981,13 @@ bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
  * On failure retry before publishing source. */
 bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
       bool active, bool reset, bool lowpass);
+
+/* Producer-only, before publishing the next source block. Compose current
+ * runloop slow motion and the last frame's fast-forward estimate, respecting
+ * audio_fastforward_speedup. Paused/normal playback requests unity. Reject
+ * unsupported speeds (outside 0.25..32) without changing queued controls.
+ * Does not prepare a transport or select a fallback on failure. */
+bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass);
 /* Consumer thread, or main thread with the wrapper parked; no worker locks
  * held. Cancel owned transport/device output and reset DSP history, skipping
  * exactly frames of queued native source. Zero preserves queued source.

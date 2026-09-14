@@ -4574,6 +4574,32 @@ bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
             tempo_q16) : 0);
 }
 
+bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
+{
+   settings_t *settings = config_get_ptr();
+   uint32_t flags = runloop_get_flags();
+   uint32_t tempo;
+   uint64_t bits;
+   double duration = 1.0;
+   if (!(flags & RUNLOOP_FLAG_PAUSED))
+   {
+      if (flags & RUNLOOP_FLAG_SLOWMOTION)
+         duration *= settings->floats.slowmotion_ratio;
+      if ((flags & RUNLOOP_FLAG_FASTMOTION)
+            && settings->bools.audio_fastforward_speedup)
+         duration *= retro_atomic_load_acquire_int(
+               &audio_driver_st.pipe_ff_mult_q16) / 65536.0;
+   }
+   /* Check before converting: also rejects NaN, infinities and an unseeded
+    * fast-forward estimate. Unsupported duration needs caller fallback. */
+   memcpy(&bits, &duration, sizeof(bits));
+   if (bits >= UINT64_C(0x7ff0000000000000)
+         || !(duration >= 1.0 / 32.0 && duration <= 4.0)) return false;
+   tempo = (uint32_t)(65536.0 / duration + 0.5);
+   return audio_driver_pipeline_transport_request_speed(tempo,
+         tempo != 65536, reset, lowpass);
+}
+
 bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
       bool active, bool reset, uint32_t cutoff)
 {

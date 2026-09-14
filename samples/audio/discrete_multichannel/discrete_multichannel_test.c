@@ -1860,6 +1860,8 @@ static void transport_request_cases(void)
                "request without owned stage");
          CHECK(!audio_driver_pipeline_transport_request_speed(131072, true, false, true),
                "speed request without owned stage");
+         CHECK(!audio_driver_pipeline_transport_request_runloop(false, true),
+               "runloop request without owned stage");
          CHECK(audio_driver_pipeline_transport_prepare(48000, 1), "request prepare");
          memset(&input, 0, sizeof(input));
          CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 1, st->pipe_frame_bytes) == 1,
@@ -1895,6 +1897,8 @@ static void transport_request_cases(void)
          CHECK(!audio_driver_pipeline_transport_request(131072, true, true, 2000), "full request accepted");
          CHECK(!audio_driver_pipeline_transport_request_speed(131072, true, true, true),
                "full speed request accepted");
+         CHECK(!audio_driver_pipeline_transport_request_runloop(true, true),
+               "full runloop request accepted");
          CHECK(retro_atomic_load_relaxed_size(&q->head) == head && retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen
                && q->published_cutoff == 1000 && q->published_control == (98304 | AUDIO_PIPELINE_STRETCH),
                "full request partially published");
@@ -1915,6 +1919,60 @@ static void transport_request_cases(void)
          CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
                && q->current_control == (131072 | AUDIO_PIPELINE_STRETCH)
                && q->current_cutoff == 0, "disabled speed LPF was not dry");
+         {
+            static const struct {
+               uint32_t flags, tempo, cutoff;
+               float slow;
+               int mult;
+               bool speedup;
+            } modes[] = {
+               {0, 65536, 0, 2, 16384, true},
+               {RUNLOOP_FLAG_SLOWMOTION, 32768, 0, 2, 16384, true},
+               {RUNLOOP_FLAG_SLOWMOTION, 16384, 0, 4, 16384, true},
+               {RUNLOOP_FLAG_FASTMOTION, 262144, 5400, 2, 16384, true},
+               {RUNLOOP_FLAG_FASTMOTION, 2097152, 675, 2, 2048, true},
+               {RUNLOOP_FLAG_FASTMOTION, 65536, 0, 2, 0, false},
+               {RUNLOOP_FLAG_FASTMOTION | RUNLOOP_FLAG_SLOWMOTION,
+                  131072, 10800, 2, 16384, true},
+               {RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_FASTMOTION,
+                  65536, 0, 2, 0, true}
+            };
+            unsigned m;
+            for (m = 0; m < sizeof(modes) / sizeof(modes[0]); m++)
+            {
+               runloop_state_get_ptr()->flags = modes[m].flags;
+               config_get_ptr()->floats.slowmotion_ratio = modes[m].slow;
+               config_get_ptr()->bools.audio_fastforward_speedup = modes[m].speedup;
+               retro_atomic_store_release_int(&st->pipe_ff_mult_q16, modes[m].mult);
+               CHECK(audio_driver_pipeline_transport_request_runloop(false, true),
+                     "runloop request publish");
+               CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
+                     && q->current_control == (modes[m].tempo == 65536 ? 65536
+                        : modes[m].tempo | AUDIO_PIPELINE_STRETCH)
+                     && q->current_cutoff == modes[m].cutoff,
+                     "runloop request speed/cutoff composition");
+            }
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            head = retro_atomic_load_relaxed_size(&q->head);
+            gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
+            config_get_ptr()->floats.slowmotion_ratio = 8;
+            CHECK(!audio_driver_pipeline_transport_request_runloop(true, true),
+                  "unsupported slow motion accepted");
+            config_get_ptr()->floats.slowmotion_ratio = NAN;
+            CHECK(!audio_driver_pipeline_transport_request_runloop(true, true),
+                  "nonfinite slow motion accepted");
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+            retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 0);
+            CHECK(!audio_driver_pipeline_transport_request_runloop(true, true),
+                  "unseeded fast-forward accepted");
+            CHECK(retro_atomic_load_relaxed_size(&q->head) == head
+                  && retro_atomic_load_acquire_int(&st->pipe_data_gen) == gen
+                  && q->published_control == 65536 && q->published_cutoff == 0,
+                  "rejected runloop request changed queued state");
+            runloop_state_get_ptr()->flags = 0;
+            config_get_ptr()->floats.slowmotion_ratio = 1;
+            config_get_ptr()->bools.audio_fastforward_speedup = false;
+         }
          audio_driver_deinit_internal(true);
       }
    printf("native transport request: 4 cases, %u failures\n", failures - before);
