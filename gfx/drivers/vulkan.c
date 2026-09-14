@@ -523,10 +523,16 @@ typedef struct
    struct font_atlas *atlas;
    const font_renderer_driver_t *font_driver;
    struct vk_vertex *pv;
+   /* Glyph quads gathered while a raster block is bound, drawn as one
+    * batch by vulkan_font_flush_block(). */
+   struct vk_vertex *acc;
+   video_font_raster_block_t *block;
    struct vk_texture texture;
    struct vk_texture texture_optimal;
    struct vk_buffer_range range;
    unsigned vertices;
+   unsigned acc_count;
+   unsigned acc_cap;
 
    /* Dirty rectangle for partial atlas uploads.
     * Tracks the bounding box of modified glyphs so that
@@ -2704,6 +2710,7 @@ static void vulkan_font_free(void *data, bool is_threaded)
             font->vk->context->device, &font->texture_optimal);
    }
 
+   free(font->acc);
    free(font);
 }
 
@@ -2865,6 +2872,8 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
+static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font);
+
 static void vulkan_font_render_msg(
       void *userdata,
       void *data,
@@ -2959,13 +2968,32 @@ static void vulkan_font_render_msg(
       if (drop_x || drop_y)
          max_glyphs *= 2;
 
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+      if (font->block)
+      {
+         /* Gather into the block; the draw happens at flush */
+         unsigned need = font->acc_count + (unsigned)(4 * max_glyphs);
+         if (need > font->acc_cap)
+         {
+            unsigned cap = font->acc_cap ? font->acc_cap : 1024;
+            struct vk_vertex *acc;
+            while (cap < need)
+               cap *= 2;
+            if (!(acc = (struct vk_vertex*)realloc(font->acc,
+                        cap * sizeof(*acc))))
+               return;
+            font->acc     = acc;
+            font->acc_cap = cap;
+         }
+         font->pv = font->acc + font->acc_count;
+      }
+      else if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
             4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
          return;
+      else
+         font->pv = (struct vk_vertex*)font->range.data;
    }
 
    font->vertices   = 0;
-   font->pv         = (struct vk_vertex*)font->range.data;
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
 
@@ -3170,12 +3198,9 @@ static void vulkan_font_render_msg(
     *   - the null-check on texture->image (always valid for fonts)
     */
 
-   /* Upload dirty atlas region to the GPU before the draw.
-    * Use a dedicated staging command buffer with a recycled
-    * per-submit fence to guarantee the transfer is complete
-    * before the fragment shader samples the atlas in the main
-    * command buffer, without serialising the entire queue or
-    * holding queue_lock across the wait. */
+   /* Upload the dirty atlas region on a one-shot staging command
+    * buffer, submitted ahead of the frame in queue order so the
+    * draw that samples it - now or at block flush - sees it. */
    if (font->needs_update)
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
@@ -3361,6 +3386,22 @@ static void vulkan_font_render_msg(
       }
    }
 
+   if (font->block)
+   {
+      font->acc_count               += font->vertices;
+      font->block->carr.coords.vertices = font->acc_count;
+      font->block->fullscreen        = full_screen;
+      return;
+   }
+
+   vulkan_font_draw_range(vk, font);
+}
+
+/* Draws font->vertices glyph vertices from font->range with the atlas
+ * bound; viewport and dynamic state are taken from vk as set by the
+ * caller. */
+static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
+{
    /* Transition the font atlas texture for shader reads.
     * The font texture_optimal is always a valid VkImage. */
    if (font->texture_optimal.image)
@@ -3460,21 +3501,53 @@ static void vulkan_font_render_msg(
 
    if (vk->quad_ibo.buffer != VK_NULL_HANDLE)
    {
-      unsigned num_quads   = font->vertices / 4;
-      /* Guard against exceeding IBO capacity
-       * (VUID-vkCmdDrawIndexed-indexSize-00463). */
-      if (num_quads <= vk->quad_ibo.num_quads)
+      unsigned num_quads = font->vertices / 4;
+      unsigned base      = 0;
+      vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+            0, VK_INDEX_TYPE_UINT16);
+      /* The shared IBO indexes vk->quad_ibo.num_quads quads; a batch
+       * beyond that is drawn in slices through the vertex offset. */
+      while (base < num_quads)
       {
-         unsigned index_count = num_quads * 6;
-         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
-               0, VK_INDEX_TYPE_UINT16);
-         vkCmdDrawIndexed(vk->cmd, index_count, 1, 0, 0, 0);
+         unsigned n = num_quads - base;
+         if (n > vk->quad_ibo.num_quads)
+            n = vk->quad_ibo.num_quads;
+         vkCmdDrawIndexed(vk->cmd, n * 6, 1, 0, (int32_t)(base * 4), 0);
+         base += n;
       }
-      else
-         vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
    }
    else
       vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
+}
+
+static void vulkan_font_bind_block(void *data, void *userdata)
+{
+   vulkan_raster_t *font = (vulkan_raster_t*)data;
+   if (font)
+      font->block = (video_font_raster_block_t*)userdata;
+}
+
+static void vulkan_font_flush_block(unsigned width, unsigned height,
+      void *data)
+{
+   vulkan_raster_t *font = (vulkan_raster_t*)data;
+   vk_t *vk;
+
+   if (!font || !font->block || !font->acc_count || !font->vk)
+      return;
+   vk = font->vk;
+
+   vulkan_set_viewport(vk, width, height, font->block->fullscreen, false);
+
+   if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            font->acc_count * sizeof(struct vk_vertex), &font->range))
+   {
+      memcpy(font->range.data, font->acc,
+            font->acc_count * sizeof(struct vk_vertex));
+      font->vertices = font->acc_count;
+      vulkan_font_draw_range(vk, font);
+   }
+   font->acc_count = 0;
 }
 
 static const struct font_glyph *vulkan_font_get_glyph(
@@ -10558,8 +10631,8 @@ static font_renderer_t vulkan_raster_font = {
    vulkan_font_render_msg,
    "vulkan",
    vulkan_font_get_glyph,
-   NULL,                            /* bind_block */
-   NULL,                            /* flush_block */
+   vulkan_font_bind_block,
+   vulkan_font_flush_block,
    vulkan_font_get_message_width,
    vulkan_font_get_line_metrics
 };
