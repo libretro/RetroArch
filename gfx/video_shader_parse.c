@@ -3544,8 +3544,7 @@ bool video_shader_apply_shader(
                   sizeof(runloop_st->runtime_shader_preset_path));
 
 #ifdef HAVE_GFX_WIDGETS
-         /* Even without message: the done tick shows no name */
-         if (dispwidget_get_ptr()->active)
+         if (message && dispwidget_get_ptr()->active)
          {
             char slot[32];
             snprintf(msg, sizeof(msg), "%s: \"",
