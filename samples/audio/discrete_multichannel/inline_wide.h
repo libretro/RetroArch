@@ -529,3 +529,77 @@ static void menu_timing_cases(void)
    audio_driver_deinit_internal(true);
    printf("menu timing bounds: 12 cases, %u failures\n", failures - before);
 }
+
+
+static union { float f[257*2]; int16_t i[257*2]; } progress_pcm;
+static bool progress_float, progress_empty;
+static unsigned progress_calls;
+static void progress_source(void)
+{
+   progress_calls++;
+   if (progress_empty) return;
+   if (progress_float) audio_driver_sample_batch_float(progress_pcm.f, 257);
+   else audio_driver_sample_batch(progress_pcm.i, 257);
+}
+
+static void callback_buffering_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned native, i, before = failures;
+   for (native = 0; native < 2; native++)
+   {
+      unsigned idle = 0, writes = 0, calls;
+      size_t output;
+      CHECK(up(native, AUDIO_LAYOUT_STEREO, native), "buffering callback stand-up");
+      free(cap); cap = NULL; cap_cap = cap_frames = 0;
+      if (!native)
+      {
+         settings->bools.audio_fastpath_s16 = true;
+         st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+         st->resampler_int16_process = sinc_resampler_int16_process;
+         st->resampler_int16_free = sinc_resampler_int16_free;
+         st->resampler_int16_reset = sinc_resampler_int16_reset;
+      }
+      settings->bools.audio_time_stretch = true;
+      settings->bools.audio_time_stretch_lowpass = false;
+      /* Exercise supported 32x tempo without wall-clock estimation. */
+      settings->floats.slowmotion_ratio = 1.0f / 32.0f;
+      runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+      audio_driver_publish_runloop();
+      CHECK(audio_driver_transport_configure(settings), "buffering callback prepare");
+      st->callback.callback = progress_source;
+      progress_float = native; progress_empty = false; progress_calls = 0;
+      for (i = 0; i < 256; i++)
+      {
+         size_t previous = cap_frames;
+         if (!audio_driver_callback()) idle++;
+         if (cap_frames != previous) writes++;
+      }
+      printf("buffering callback native=%u: %u idle passes, %u writes, %lu output frames\n",
+            native, idle, writes, (unsigned long)cap_frames);
+      CHECK(writes && writes < 256, "buffering probe did not exercise output-free passes");
+      CHECK(!idle, "accepted transport input was mistaken for an idle callback");
+      CHECK(!st->inline_transport->bypassed, "buffering probe bypassed transport");
+      output = cap_frames;
+      progress_empty = true;
+      for (i = 0; i < 4; i++)
+         CHECK(!audio_driver_callback(), "empty callback reused prior transport progress");
+      progress_empty = false;
+      AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
+      CHECK(!audio_driver_callback(), "suspended callback reported transport progress");
+      AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+      calls = progress_calls;
+      runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
+      audio_driver_publish_runloop();
+      CHECK(!audio_driver_callback() && progress_calls == calls,
+            "paused callback ran the source or reported progress");
+      CHECK(cap_frames == output, "idle callbacks changed device output");
+      st->callback.callback = NULL;
+      audio_driver_deinit_internal(true);
+   }
+   settings->bools.audio_fastpath_s16 = settings->bools.audio_time_stretch = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("callback transport progress: 2 cases, %u failures\n", failures - before);
+}

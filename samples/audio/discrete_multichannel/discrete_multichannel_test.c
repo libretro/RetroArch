@@ -2444,6 +2444,7 @@ int main(void)
    const char *only = getenv("DM_ONLY");
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
+   RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());
    RUN("inlineformat", inline_format_cases());

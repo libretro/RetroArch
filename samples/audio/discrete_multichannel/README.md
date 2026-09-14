@@ -81,10 +81,17 @@ not arbitrary real-core scheduling or whole-runloop acceptance.
 
 The callback continuity cases also insert a source callback that emits no samples.
 It must report no device progress, allowing the wrapper to park, without changing
-subsequent audible output. Normal callback results are checked against captured
-device output rather than assuming every source call produces an immediate write.
+subsequent audible output. Normal slow-motion callback results are checked against captured device output.
+The high-tempo probe below separately covers input consumed before any write.
 
 `DM_ONLY=menutiming ./discrete_multichannel_test` checks invalid menu timing
 without a device write: zero, negative, infinite, NaN and unrepresentable frame
 counts must not reach the recorder. Valid 48 kHz / 60 Hz and / 120 Hz timing
 still records 800 and 400 frames. The guard is on menu synthesis only.
+
+`DM_ONLY=bufferingcallback ./discrete_multichannel_test` drives bounded inline
+transport at 32x tempo in both native formats. Source-consuming passes must count
+as progress even when WSOLA has not yet produced a device write; otherwise the
+wrapper's idle wait throttles valid synthesis. Empty, suspended and paused passes
+must still report idle. The fixture selects the duration scalar directly to avoid
+a wall-clock speed estimate; it does not benchmark core execution or device latency.

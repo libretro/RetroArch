@@ -927,7 +927,7 @@ struct audio_inline_transport
    unsigned channels, layout;
    audio_speed_lpf_t lpf;
    uint32_t cutoff;
-   bool floating, bypassed;
+   bool floating, bypassed, source_progress;
 };
 
 static void audio_driver_inline_reset(audio_driver_state_t *audio_st)
@@ -3492,6 +3492,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
                &used, tempo / 65536.0, tempo != 65536,
                AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
          break;
+      if (used) t->source_progress = true;
       source += used * frame; left -= used;
       output = audio_stretch_stream_peek(t->stream, &frames);
       if (frames)
@@ -7071,6 +7072,8 @@ bool audio_driver_callback(void)
       /* Counted at every device write this thread makes, whichever
        * route the core's samples take to it. */
       uint64_t offered = audio_driver_st.sink_offered_raw;
+      if (audio_driver_st.inline_transport)
+         audio_driver_st.inline_transport->source_progress = false;
 
       audio_driver_st.callback.callback();
       /* The core rendered on this (audio) thread; deliver it now rather
@@ -7078,14 +7081,14 @@ bool audio_driver_callback(void)
       if (audio_driver_st.data_ptr)
          audio_driver_sample_accum_flush(&audio_driver_st);
 
-      /* A device write is what paces this thread. */
-      if (audio_driver_st.sink_offered_raw != offered)
+      /* Bounded stretch lookahead may consume several batches before a write. */
+      if (audio_driver_st.sink_offered_raw != offered
+            || (audio_driver_st.inline_transport
+               && audio_driver_st.inline_transport->source_progress))
          return true;
    }
 
-   /* Paused behind the menu, suspended, or the callback pushed nothing
-    * that reached the device: there was no write to pace on, so the
-    * caller parks before asking again. */
+   /* No device write or bounded transport input: park before asking again. */
    return false;
 }
 
