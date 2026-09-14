@@ -1,5 +1,113 @@
 /* Configured wide inline transport before native channel routing. */
 extern bool test_frame_reversed;
+extern struct state_manager_rewind_state *test_rewind_state;
+extern uint32_t test_rewind_core_frame;
+extern unsigned test_rewind_restores;
+static retro_audio_sample_t rewind_core_sample;
+static retro_audio_sample_batch_t rewind_core_batch;
+static void rewind_set_sample(retro_audio_sample_t cb) { rewind_core_sample = cb; }
+static void rewind_set_batch(retro_audio_sample_batch_t cb) { rewind_core_batch = cb; }
+
+static void rewind_state_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned native, tick, before = failures;
+   union { float f[257*6]; int16_t i[514]; } input;
+   union { float f[514]; int16_t i[514]; } storage, fold, expected;
+   for (native = 0; native < 2; native++)
+   {
+      struct state_manager_rewind_state rewind_st;
+      struct retro_core_t core;
+      struct audio_inline_transport *saved;
+      char message[64];
+      unsigned duration = 0, allocations;
+      memset(&rewind_st, 0, sizeof(rewind_st));
+      memset(&core, 0, sizeof(core));
+      core.retro_set_audio_sample = rewind_set_sample;
+      core.retro_set_audio_sample_batch = rewind_set_batch;
+      rewind_core_sample = audio_driver_sample;
+      rewind_core_batch = audio_driver_sample_batch;
+      CHECK(up(native, AUDIO_LAYOUT_STEREO, native), "state rewind stand-up");
+      free(cap); cap = NULL; cap_cap = cap_frames = 0;
+      if (!native)
+      {
+         settings->bools.audio_fastpath_s16 = true;
+         st->resampler_data_int16 = audio_driver_int16_resampler_new(st);
+         st->resampler_int16_process = sinc_resampler_int16_process;
+         st->resampler_int16_free = sinc_resampler_int16_free;
+         st->resampler_int16_reset = sinc_resampler_int16_reset;
+      }
+      st->core_multi = native;
+      settings->bools.audio_time_stretch = true;
+      settings->floats.slowmotion_ratio = 2;
+      runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+      CHECK(audio_driver_transport_configure(settings), "state rewind transport");
+      saved = st->inline_transport;
+      if (!saved) exit(1);
+      st->rewind_buf = native ? NULL : storage.i;
+      st->rewind_buf_f = native ? storage.f : NULL;
+      st->rewind_size = 514; st->rewind_ptr = 514;
+      test_rewind_state = &rewind_st;
+      test_rewind_core_frame = test_rewind_restores = 0;
+      state_manager_event_init(&rewind_st, 4096);
+      CHECK(rewind_st.state != NULL, "real state manager initialization");
+      if (!rewind_st.state) exit(1);
+      allocations = transport_allocations; transport_track = true;
+      for (tick = 0; tick < 9; tick++)
+      {
+         bool reverse = tick >= 6;
+         size_t f, c, sample = native ? sizeof(float) : sizeof(int16_t);
+         state_manager_check_rewind(&rewind_st, &core, reverse, 1, false,
+               message, sizeof(message), &duration);
+         CHECK(state_manager_frame_is_reversed() == reverse, "state manager reversal flag");
+         CHECK(rewind_core_batch == (reverse ? audio_driver_sample_batch_rewind : audio_driver_sample_batch)
+               && rewind_core_sample == (reverse ? audio_driver_sample_rewind : audio_driver_sample),
+               "state manager callback binding");
+         CHECK(test_rewind_core_frame == (reverse ? 11-tick : tick), "savestate restored wrong source frame");
+         for (f = 0; f < 257; f++)
+            for (c = 0; c < (native ? 6u : 2u); c++)
+            {
+               int16_t v = (int16_t)((int)((test_rewind_core_frame*719 + f*127 + c*733)%12000)-6000);
+               if (native) input.f[f*6+c] = v / 32768.0f + 0.000001f;
+               else input.i[f*2+c] = v;
+            }
+         if (native) audio_downmix_f32(fold.f, input.f, 257, AUDIO_LAYOUT_5POINT1, 6);
+         else memcpy(&fold, &input, 514*sample);
+         for (f = 0; f < 257; f++)
+            memcpy((uint8_t*)&expected + 2*f*sample, (uint8_t*)&fold + 2*(256-f)*sample, 2*sample);
+         if (native) audio_driver_sample_batch_multi_float(input.f, 257, 6, AUDIO_LAYOUT_5POINT1);
+         else rewind_core_batch(input.i, 257);
+         if (reverse)
+            CHECK(!st->rewind_ptr && !memcmp(&storage, &expected, 514*sample),
+                  "restored core produced wrong native reverse capture");
+         test_rewind_core_frame++;
+         audio_driver_frame_end();
+      }
+      state_manager_check_rewind(&rewind_st, &core, false, 1, false,
+            message, sizeof(message), &duration);
+      CHECK(!state_manager_frame_is_reversed() && test_rewind_restores == 3
+            && rewind_core_batch == audio_driver_sample_batch, "rewind release did not restore forward audio");
+      if (native) audio_driver_sample_batch_multi_float(input.f, 257, 6, AUDIO_LAYOUT_5POINT1);
+      else rewind_core_batch(input.i, 257);
+      audio_driver_frame_end();
+      CHECK(cap_frames > 2048 && st->stat_frontend_is_float == (bool)native,
+            "state rewind lost native device output");
+      CHECK(st->inline_transport == saved && !saved->bypassed
+            && allocations == transport_allocations, "state rewind did not recover prepared transport");
+      transport_track = false;
+      state_manager_event_deinit(&rewind_st, &core);
+      CHECK(!rewind_st.state && rewind_core_sample == audio_driver_sample
+            && rewind_core_batch == audio_driver_sample_batch, "state manager teardown binding");
+      test_rewind_state = NULL;
+      st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+      audio_driver_deinit_internal(true);
+      settings->bools.audio_time_stretch = settings->bools.audio_fastpath_s16 = false;
+      settings->floats.slowmotion_ratio = 1;
+      runloop_state_get_ptr()->flags = 0;
+   }
+   printf("state manager native audio: 2 cases, %u failures\n", failures - before);
+}
 
 static void rewind_boundary_cases(void)
 {

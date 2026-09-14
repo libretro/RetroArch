@@ -2448,6 +2448,7 @@ int main(void)
    RUN("multireverse", multi_rewind_cases());
    RUN("mixedreverse", rewind_mixed_cases());
    RUN("reverseboundary", rewind_boundary_cases());
+   RUN("statereverse", rewind_state_cases());
    RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());

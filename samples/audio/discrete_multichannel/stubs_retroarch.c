@@ -24,6 +24,9 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../command.h"
+#include "../../../core_info.h"
+#include "../../../content.h"
+#include "../../../retroarch.h"
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
@@ -301,7 +304,37 @@ audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
 struct defaults g_defaults;
 
 bool test_frame_reversed;
-bool state_manager_frame_is_reversed(void) { return test_frame_reversed; }
+struct state_manager_rewind_state *test_rewind_state;
+bool state_manager_frame_is_reversed(void)
+{
+   return test_frame_reversed || (test_rewind_state
+         && (test_rewind_state->flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED));
+}
+
+uint32_t test_rewind_core_frame;
+unsigned test_rewind_restores;
+bool core_info_get_current_core(core_info_t **core)
+{ static core_info_t info; *core = &info; return true; }
+bool core_info_current_supports_rewind(void) { return true; }
+size_t content_get_serialized_size_rewind(void) { return sizeof(test_rewind_core_frame); }
+bool content_serialize_state_rewind(void *data, size_t size)
+{
+   if (size != sizeof(test_rewind_core_frame)) return false;
+   memcpy(data, &test_rewind_core_frame, size);
+   return true;
+}
+bool content_deserialize_state(const void *data, size_t size)
+{
+   if (!data || size != sizeof(test_rewind_core_frame)) return false;
+   memcpy(&test_rewind_core_frame, data, size);
+   test_rewind_restores++;
+   return true;
+}
+bool retroarch_ctl(enum rarch_ctl_state state, void *data)
+{ (void)state; (void)data; return false; }
+void runloop_msg_queue_push(const char *msg, size_t len, unsigned prio, unsigned duration,
+      bool flush, char *title, enum message_queue_icon icon, enum message_queue_category category)
+{ (void)msg; (void)len; (void)prio; (void)duration; (void)flush; (void)title; (void)icon; (void)category; }
 
 /* These fixtures have no wrapper worker; control runs synchronously. */
 unsigned transport_control_calls;

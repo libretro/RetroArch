@@ -131,3 +131,13 @@ captured history; changing format discards it before selecting the other arena.
 The allocation checks use audio-disabled initialization to avoid opening a device.
 The same cases issue empty reverse playback after a format boundary: it must
 produce no device/queued output and leave prepared inline transport untouched.
+
+`DM_ONLY=statereverse ./discrete_multichannel_test` links the real state manager
+to the shipping audio frontend. A deterministic fake core advances six frames,
+rewinds three saved states and returns to forward playback. Two cases cover
+classic int16 callback rebinding and cached 5.1 float input through prepared
+inline WSOLA. Checks verify restored frame identities, exact native reverse
+capture, device output, transport reuse/recovery and teardown callback bindings.
+Savestate data and core metadata are stubbed; state-manager control flow, codec,
+ring and audio processing are real. This is not a full frontend runloop or
+physical-device test. It adds no standalone CI job or sanitizer matrix variant.
