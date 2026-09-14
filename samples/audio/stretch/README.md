@@ -1,5 +1,21 @@
 # Bounded native transport stretcher
 
+## Borrowed source spans for inline owners
+
+`audio_stretch_stream_push_view_limit` reuses the bound stream adapter while
+exposing inactive, quiescent source spans without copying. The owner must keep
+the accepted source prefix alive and unchanged until `consume` or reset; the
+returned view is read-only. Active processing and exit transitions still use
+the bound output buffer. No source ring, allocation or format conversion is
+added. This API alone does not activate inline frontend time stretching.
+
+`stretch_test` compares copied and borrowed output bit for bit across native
+int16/float stereo, 5.1, 7.1 and 11-channel spans. It checks alternating active
+and inactive requests, fragmented budgets, partial acknowledgement, stable
+pending views, EOF/reset, untouched dry output storage and guarded heap calls.
+
+## Engine
+
 This is an engine foundation, not an enabled frontend transport mode. The existing
 WSOLA pitch DSP is unchanged. Normal playback does not call or feed this engine.
 

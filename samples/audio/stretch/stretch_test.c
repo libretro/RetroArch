@@ -1263,6 +1263,117 @@ static void stream_input_readiness(void)
    printf("stream input readiness: %u cases completed\n", cases);
 }
 
+static void stream_source_views(void)
+{
+   static const unsigned channels[] = {2, 6, 8, 11};
+   unsigned native, layout, cases = 0;
+   for (native = 0; native < 2; native++)
+      for (layout = 0; layout < 4; layout++)
+      {
+         unsigned ch = channels[layout], segment;
+         size_t frame = ch * (native ? sizeof(float) : sizeof(int16_t));
+         const void *input = native ? (const void*)input_f : (const void*)input_i;
+         void *output = native ? (void*)output_f[0] : (void*)output_i[0];
+         void *reference = native ? (void*)output_f[1] : (void*)output_i[1];
+         audio_stretch_stream_t *s = audio_stretch_stream_new(48000, ch, native, 1);
+         audio_stretch_stream_t *r = audio_stretch_stream_new(48000, ch, native, 1);
+         size_t used, count, other, offset, iteration = 0, borrowed = 0;
+         const void *view, *oracle;
+         bool complete = false, done = false;
+         fill(ch);
+         CHECK(s && r);
+         if (!s || !r) abort();
+         CHECK(audio_stretch_stream_bind(s, output, 71));
+         CHECK(audio_stretch_stream_bind(r, reference, 71));
+         guarded = 1;
+         CHECK(!audio_stretch_stream_push_view_limit(s, NULL, 1, &used, 1.0, false, 17));
+         CHECK(!used && audio_stretch_stream_quiescent(s));
+         CHECK(!audio_stretch_stream_push_view_limit(s, input, 1, &used, 0.0, false, 17));
+         CHECK(audio_stretch_stream_push_view_limit(s, input, 1, &used, 1.0, false, 0));
+         CHECK(!used && audio_stretch_stream_quiescent(s));
+         memset(output, 0xa5, 71 * frame);
+         CHECK(audio_stretch_stream_push_view_limit(s, input, 71, &used, 1.0, false, 17));
+         CHECK(used == 17);
+         for (offset = 0; offset < 71 * frame; offset++)
+            CHECK(((const unsigned char*)output)[offset] == 0xa5);
+         CHECK(audio_stretch_stream_push(s, input, 71, &used, 2.0, true));
+         CHECK(!used && audio_stretch_stream_peek(s, &count) == input && count == 17);
+         CHECK(audio_stretch_stream_consume(s, 17));
+         CHECK(audio_stretch_stream_quiescent(s));
+         for (segment = 0; segment < 5; segment++)
+         {
+            bool active = segment == 1 || segment == 3;
+            double tempo = segment == 1 ? 0.5 : 2.0;
+            offset = 0;
+            while (offset < FRAMES && iteration++ < 1000000)
+            {
+               size_t n = FRAMES - offset, taken, limit = iteration % 2 ? 17 : 257;
+               bool direct = !active && audio_stretch_stream_quiescent(s);
+               const void *source = (const char*)input + offset * frame;
+               if (n > 113) n = 113;
+               CHECK(audio_stretch_stream_push_view_limit(s, source, n, &used, tempo, active, limit));
+               CHECK(audio_stretch_stream_push_limit(r, source, n, &other, tempo, active, limit));
+               CHECK(used == other);
+               offset += used;
+               view = audio_stretch_stream_peek(s, &count);
+               oracle = audio_stretch_stream_peek(r, &other);
+               CHECK(count == other);
+               if (direct && count) { CHECK(view == source); borrowed++; }
+               if (count)
+               {
+                  CHECK(!memcmp(view, oracle, count * frame));
+                  CHECK(!audio_stretch_stream_bind(s, output, 71));
+                  CHECK(!audio_stretch_stream_consume(s, count + 1));
+                  CHECK(audio_stretch_stream_push_view_limit(s, source, n, &used, tempo, active, 17));
+                  CHECK(!used && audio_stretch_stream_peek(s, &other) == view && other == count);
+                  taken = count > 1 ? 1 : count;
+                  CHECK(audio_stretch_stream_consume(s, taken));
+                  CHECK(audio_stretch_stream_consume(r, taken));
+                  view = audio_stretch_stream_peek(s, &other);
+                  CHECK(other == count - taken);
+                  if (other) CHECK(!memcmp(view, (const char*)oracle + taken * frame, other * frame));
+                  CHECK(audio_stretch_stream_consume(s, other));
+                  CHECK(audio_stretch_stream_consume(r, other));
+               }
+            }
+            CHECK(offset == FRAMES && iteration < 1000000);
+         }
+         while (!complete && iteration++ < 1000000)
+         {
+            CHECK(audio_stretch_stream_finish_limit(s, &complete, 17));
+            CHECK(audio_stretch_stream_finish_limit(r, &done, 17));
+            CHECK(complete == done);
+            view = audio_stretch_stream_peek(s, &count);
+            oracle = audio_stretch_stream_peek(r, &other);
+            CHECK(count == other);
+            if (count) CHECK(!memcmp(view, oracle, count * frame));
+            CHECK(audio_stretch_stream_consume(s, count));
+            CHECK(audio_stretch_stream_consume(r, count));
+         }
+         CHECK(complete && borrowed);
+         audio_stretch_stream_reset(s);
+         CHECK(audio_stretch_stream_push_view_limit(s, input, 71, &used, 1.0, false, 17));
+         CHECK(used == 17);
+         CHECK(audio_stretch_stream_finish(s, &complete) && !complete);
+         CHECK(audio_stretch_stream_peek(s, &count) == input && count == 17);
+         CHECK(!audio_stretch_stream_push_view_limit(s, input, 1, &used, 1.0, false, 17));
+         CHECK(audio_stretch_stream_consume(s, 17));
+         CHECK(audio_stretch_stream_finish(s, &complete) && complete);
+         audio_stretch_stream_reset(s);
+         CHECK(audio_stretch_stream_push_view_limit(s, input, 71, &used, 1.0, false, 257));
+         CHECK(used == 71);
+         audio_stretch_stream_reset(s);
+         CHECK(!audio_stretch_stream_peek(s, &count) && !count);
+         CHECK(audio_stretch_stream_push(s, input, 1, &used, 1.0, false));
+         CHECK(audio_stretch_stream_peek(s, &count) == output && count == 1);
+         guarded = 0;
+         audio_stretch_stream_free(s);
+         audio_stretch_stream_free(r);
+         cases++;
+      }
+   printf("stream source views: %u cases completed\n", cases);
+}
+
 int main(void)
 {
    contracts();
@@ -1284,6 +1395,7 @@ int main(void)
    bound_budget_cases();
    stream_quiescence();
    stream_input_readiness();
+   stream_source_views();
    CHECK(heap_calls == 0);
    printf("stretch: %u failures, %u processing/reset heap calls\n", failures, heap_calls);
    return failures != 0;

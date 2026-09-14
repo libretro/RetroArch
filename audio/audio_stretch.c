@@ -569,6 +569,7 @@ struct audio_stretch_stream
    audio_stretch_transition_t *transition;
    size_t frame_bytes, count, read, gap;
    void *bound_output;
+   const void *bound_source;
    size_t bound_capacity, bound_count, bound_read;
    unsigned hop;
    enum astretch_stream_phase phase;
@@ -611,6 +612,7 @@ void audio_stretch_stream_reset(audio_stretch_stream_t *s)
    s->count = s->read = 0; s->gap = (size_t)-1;
    s->phase = ASTRETCH_STREAM_RAW; s->eof = false;
    s->bound_count = s->bound_read = 0;
+   s->bound_source = NULL;
 }
 
 bool audio_stretch_stream_quiescent(const audio_stretch_stream_t *s)
@@ -796,14 +798,19 @@ const void *audio_stretch_stream_peek(const audio_stretch_stream_t *s,
 {
    if (!frames) return NULL;
    *frames = s ? s->bound_count - s->bound_read : 0;
-   return *frames ? (const char*)s->bound_output + s->bound_read * s->frame_bytes : NULL;
+   return *frames ? (const char*)(s->bound_source ? s->bound_source : s->bound_output)
+      + s->bound_read * s->frame_bytes : NULL;
 }
 
 bool audio_stretch_stream_consume(audio_stretch_stream_t *s, size_t frames)
 {
    if (!s || !s->bound_output || frames > s->bound_count - s->bound_read) return false;
    s->bound_read += frames;
-   if (s->bound_read == s->bound_count) s->bound_read = s->bound_count = 0;
+   if (s->bound_read == s->bound_count)
+   {
+      s->bound_read = s->bound_count = 0;
+      s->bound_source = NULL;
+   }
    return true;
 }
 
@@ -832,6 +839,29 @@ bool audio_stretch_stream_push(audio_stretch_stream_t *s,
 {
    return audio_stretch_stream_push_limit(s, input, frames, used, tempo, active,
          (size_t)-1);
+}
+
+bool audio_stretch_stream_push_view_limit(audio_stretch_stream_t *s,
+      const void *input, size_t frames, size_t *used, double tempo, bool active,
+      size_t limit)
+{
+   struct audio_stretch_io io;
+   if (active || !audio_stretch_stream_quiescent(s) || !limit)
+      return audio_stretch_stream_push_limit(s, input, frames, used,
+            tempo, active, limit);
+   if (!used) return false;
+   *used = 0;
+   if (!s || !s->bound_output) return false;
+   /* Validate without copying or changing transport state. */
+   io.input = input; io.input_frames = frames;
+   io.output = s->bound_output; io.output_capacity = 0;
+   if (!astretch_stream_process(s, &io, tempo, active)) return false;
+   if (frames > limit) frames = limit;
+   if (frames > s->bound_capacity) frames = s->bound_capacity;
+   s->bound_source = frames ? input : NULL;
+   s->bound_count = frames;
+   *used = frames;
+   return true;
 }
 
 bool audio_stretch_stream_finish_limit(audio_stretch_stream_t *s,

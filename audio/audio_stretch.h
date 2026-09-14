@@ -145,6 +145,16 @@ bool audio_stretch_stream_push(audio_stretch_stream_t *state,
 bool audio_stretch_stream_push_limit(audio_stretch_stream_t *state,
       const void *input, size_t frames, size_t *used, double tempo, bool active,
       size_t limit);
+/* Inline owners may lend aligned native source storage while fully inactive.
+ * Same budgets/counts as push_limit; dry quiescent spans are exposed by peek
+ * without copying. The accepted source prefix must remain alive and unchanged
+ * until consumed or reset, even though used reports it as accepted immediately.
+ * Active/transition output uses the bound buffer. Peeked data is read-only.
+ * Pending views survive pushes, partial consumption and finish requests.
+ * Never lend source that overlaps the bound output buffer. */
+bool audio_stretch_stream_push_view_limit(audio_stretch_stream_t *state,
+      const void *input, size_t frames, size_t *used, double tempo, bool active,
+      size_t limit);
 const void *audio_stretch_stream_peek(const audio_stretch_stream_t *state,
       size_t *frames);
 bool audio_stretch_stream_consume(audio_stretch_stream_t *state, size_t frames);
