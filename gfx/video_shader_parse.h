@@ -138,6 +138,7 @@ struct rarch_dir_shader_list
 {
    struct string_list *shader_list;
    char *directory;
+   char *failed_apply_loaded_path;
    size_t selection;
    bool shader_loaded;
    bool remember_last_preset_dir;

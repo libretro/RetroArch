@@ -2279,28 +2279,20 @@ struct string_list *dir_list_new_special(const char *input_dir,
             video_context_driver_get_flags(&flags);
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-            {
                _len    += strlcpy_lit(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
-            }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
             {
                if (_len > 0)
                   _len += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
                _len    += strlcpy_lit(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             {
                if (_len > 0)
                   _len += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               strlcpy_lit(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
+               strlcpy_lit(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
             }
 
             exts = ext_shaders;

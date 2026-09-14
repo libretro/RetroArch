@@ -11921,7 +11921,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Loads and applies the next shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the next shader preset in the folder of the current preset. After the last one, moves on to the next folder at the same level."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -11929,7 +11929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Loads and applies the previous shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the previous shader preset in the folder of the current preset. Before the first one, moves back to the previous folder at the same level."
    )
 
 MSG_HASH(
