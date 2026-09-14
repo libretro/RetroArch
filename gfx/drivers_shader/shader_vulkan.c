@@ -1977,8 +1977,8 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
             if (!slang_pass_init_feedback(chain->passes[i]))
                return false;
             chain->require_clear = true;
+            RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
          }
-         RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
       else if (chain->passes[i]->fb_feedback)
       {
