@@ -10,7 +10,7 @@ tempo 0.25..32, pitch/duration, native SRC lanes, allocation failure,
 stop/restart, unsupported-speed/layout/format fallback, recovery and the LPF.
 Each callback must release every borrowed source view before returning.
 Storage is prepared before playback; the output block holds 1024 native stereo
-frames. Multichannel inline sources retain ordinary playback. Inline device
+frames. Negotiated multichannel cores use canonical native storage. Inline device
 writes retain their existing blocking/nonblocking and short-write behavior.
 
 `DM_ONLY=canonicalreserve ./discrete_multichannel_test` checks the producer's
@@ -39,3 +39,17 @@ The existing samples/audio CI runs this target plain and under ASan/UBSan.
 These tests do not measure CPU throughput or physical-device latency and do
 not establish perceptual quality for arbitrary content. Live transition,
 LPF, routing, and threaded-wrapper stress have separate fixtures.
+
+`DM_ONLY=inlinewide ./discrete_multichannel_test` adds 32 native quad/5.1/
+side-5.1/7.1 cases through discrete and downmix sinks, normal and HQ SRC,
+slow and accelerated tempo, channel gain/polarity coherence, pitch/duration,
+layout handoff, fallback/recovery and teardown. Slot-order checks cover the
+shared 7.1 packer: side channels occupy slots 9 and 10, not 6 and 7.
+
+Multichannel transport prepares one 48 KiB int16 or 96 KiB float arena for
+canonical source/output and stereo scratch. It does not allocate transport
+storage on layout changes. The existing extra-channel SRC path still prepares
+layout-dependent state on first use or layout changes; its input reservation
+covers the full bounded output block to avoid growth as batch sizes vary.
+Layout changes discard retained transport history and reset SRC; they are not
+seamless tail-preserving handoffs. Stereo-only cores retain their smaller arena.

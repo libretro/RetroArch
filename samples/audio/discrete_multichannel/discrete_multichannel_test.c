@@ -1305,9 +1305,13 @@ static void canonical_prefix_case(void)
             for (f = 0; f < frames; f++)
             {
                size_t offset = 1 + f * AUDIO_PIPE_CANON_CHANNELS * sample;
-               CHECK(!memcmp(output + offset, input + 1 + f * channels * sample, channels * sample),
+               CHECK(!memcmp(output + offset, input + 1 + f * channels * sample, 6 * sample),
                      "canonical prefix changed source bits");
-               for (i = channels * sample; i < AUDIO_PIPE_CANON_CHANNELS * sample; i++)
+               if (channels == 8)
+                  CHECK(!memcmp(output + offset + 9 * sample,
+                           input + 1 + (f * channels + 6) * sample, 2 * sample),
+                        "canonical side channels changed source bits");
+               for (i = 6 * sample; i < (channels == 8 ? 9 : AUDIO_PIPE_CANON_CHANNELS) * sample; i++)
                   CHECK(output[offset + i] == 0, "canonical absent position is not silent");
             }
             CHECK(output[0] == 0xa5, "canonical prefix underflow");
@@ -1672,7 +1676,9 @@ static void transport_settings_cases(void)
          settings->bools.audio_time_stretch = true;
          st->pipe_threaded = false;
          st->core_layout = AUDIO_LAYOUT_5POINT1;
-         CHECK(!audio_driver_transport_configure(settings), "wide inline activated transport");
+         CHECK(audio_driver_transport_configure(settings) && st->inline_transport
+               && st->inline_transport->channels == AUDIO_PIPE_CANON_CHANNELS, "wide inline startup failed");
+         audio_driver_inline_free(st);
          st->core_layout = AUDIO_LAYOUT_STEREO;
          st->pipe_threaded = true;
          st->input = 7999;
@@ -2429,6 +2435,8 @@ static void inline_transport_cases(void)
    printf("inline native transport: 10 cases, %u failures\n", failures - before);
 }
 
+#include "inline_wide.h"
+
 int main(void)
 {
    /* One case at a time, for when a single one is being worked on:
@@ -2436,6 +2444,7 @@ int main(void)
    const char *only = getenv("DM_ONLY");
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
+   RUN("inlinewide", inline_wide_cases());
    RUN("inline", inline_transport_cases());
    RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());

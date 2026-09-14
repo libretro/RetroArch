@@ -922,7 +922,8 @@ static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
 struct audio_inline_transport
 {
    audio_stretch_stream_t *stream;
-   void *output;
+   void *output, *source, *front;
+   unsigned channels, layout;
    audio_speed_lpf_t lpf;
    uint32_t cutoff;
    bool floating, bypassed;
@@ -3325,20 +3326,111 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 
 #endif
 
+static bool audio_driver_multi_discrete(audio_driver_state_t *audio_st, unsigned layout);
+static INLINE bool audio_driver_pipe_widen_prefix(void *output, const void *input,
+      size_t frames, unsigned channels, unsigned layout, bool floating);
+
+static void audio_driver_inline_pack(struct audio_inline_transport *t,
+      const void *data, size_t frames, unsigned channels, unsigned layout)
+{
+   unsigned bit, count = 0, c, slots[AUDIO_PIPE_CANON_CHANNELS];
+   size_t f, sample = t->floating ? sizeof(float) : sizeof(int16_t);
+   if (audio_driver_pipe_widen_prefix(t->source, data, frames, channels, layout, t->floating))
+      return;
+   for (bit = 0; bit < t->channels; bit++)
+      if (layout & (1u << bit)) slots[count++] = bit;
+   memset(t->source, 0, frames * t->channels * sample);
+   if (t->floating)
+   {
+      float *dst = (float*)t->source;
+      const float *src = (const float*)data;
+      for (f = 0; f < frames; f++)
+         for (c = 0; c < count; c++)
+            dst[f*t->channels+slots[c]] = src[f*channels+c];
+   }
+   else
+   {
+      int16_t *dst = (int16_t*)t->source;
+      const int16_t *src = (const int16_t*)data;
+      for (f = 0; f < frames; f++)
+         for (c = 0; c < count; c++)
+            dst[f*t->channels+slots[c]] = src[f*channels+c];
+   }
+}
+
+static void audio_driver_inline_render(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned layout, float slowmotion_ratio,
+      bool slowmotion, bool fastforward)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   const void *front = data;
+   if (t->channels > 2)
+   {
+      unsigned positions = layout & ~AUDIO_LAYOUT_STEREO;
+      unsigned ex = audio_layout_channels(positions), bit, c = 0;
+      unsigned slots[AUDIO_PIPE_CANON_CHANNELS];
+      size_t f;
+      bool discrete = ex && audio_driver_multi_discrete(audio_st, layout)
+         && audio_driver_extra_prepare(audio_st, ex, positions, AUDIO_CHUNK_SIZE_NONBLOCKING >> 1,
+               t->floating, audio_driver_mixer_use_s16(t->floating));
+      if (discrete) audio_st->extra.in_frames = frames;
+      for (bit = 2; bit < t->channels; bit++)
+         if (positions & (1u << bit)) slots[c++] = bit;
+      if (discrete || layout == AUDIO_LAYOUT_STEREO)
+      {
+         if (t->floating)
+         {
+            const float *src = (const float*)data;
+            float *dst = (float*)t->front;
+            for (f = 0; f < frames; f++)
+            {
+               dst[2*f] = src[f*t->channels]; dst[2*f+1] = src[f*t->channels+1];
+               if (discrete)
+                  for (c = 0; c < ex; c++)
+                     audio_st->extra.in_f[f*ex+c] = src[f*t->channels+slots[c]];
+            }
+         }
+         else
+         {
+            const int16_t *src = (const int16_t*)data;
+            int16_t *dst = (int16_t*)t->front;
+            for (f = 0; f < frames; f++)
+            {
+               dst[2*f] = src[f*t->channels]; dst[2*f+1] = src[f*t->channels+1];
+               if (discrete)
+                  for (c = 0; c < ex; c++)
+                     audio_st->extra.in_i[f*ex+c] = src[f*t->channels+slots[c]];
+            }
+         }
+         audio_st->extra.pending = discrete;
+      }
+      else if (t->floating)
+         audio_downmix_f32((float*)t->front, (const float*)data, frames,
+               (1u << AUDIO_PIPE_CANON_CHANNELS) - 1, t->channels);
+      else
+         audio_downmix_s16((int16_t*)t->front, (const int16_t*)data, frames,
+               (1u << AUDIO_PIPE_CANON_CHANNELS) - 1, t->channels);
+      front = t->front;
+   }
+   audio_driver_flush(audio_st, slowmotion_ratio, front, frames * 2,
+         t->floating, slowmotion, fastforward);
+   audio_st->extra.pending = false;
+}
+
 /* Called with the audio state lock, before SRC and device output. */
 #if defined(__GNUC__)
 __attribute__((noinline))
 #elif defined(_MSC_VER)
 __declspec(noinline)
 #endif
-static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
-      float slowmotion_ratio, const void *data, size_t samples, bool floating,
-      bool slowmotion, bool fastforward)
+static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
+      float slowmotion_ratio, const void *data, size_t frames, bool floating,
+      bool slowmotion, bool fastforward, unsigned layout)
 {
    struct audio_inline_transport *t = audio_st->inline_transport;
    settings_t *settings = config_get_ptr();
-   size_t left = samples >> 1;
-   size_t frame = 2 * (floating ? sizeof(float) : sizeof(int16_t));
+   size_t left = frames;
+   size_t frame;
    const uint8_t *source = (const uint8_t*)data;
    retro_time_t old_time = audio_st->last_flush_time;
    retro_time_t old_delta = audio_st->avg_flush_delta, source_time;
@@ -3347,8 +3439,10 @@ static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
    uint32_t tempo, cutoff;
    bool supported;
    if (!t) return false;
+   frame = t->channels * (floating ? sizeof(float) : sizeof(int16_t));
    supported = floating == t->floating && !audio_st->extra.pending
-      && audio_st->core_layout == AUDIO_LAYOUT_STEREO;
+      && audio_st->core_layout == layout
+      && (layout & AUDIO_LAYOUT_STEREO) == AUDIO_LAYOUT_STEREO;
 #ifdef HAVE_REWIND
    supported = supported && !state_manager_frame_is_reversed();
 #endif
@@ -3371,11 +3465,12 @@ static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
       }
       return false;
    }
-   if (t->bypassed)
+   if (t->bypassed || t->layout != layout)
    {
       audio_driver_inline_reset(audio_st);
       audio_driver_reset_resamplers(audio_st);
    }
+   t->layout = layout;
    source_time = fastforward ? audio_st->last_flush_time : 0;
    tempo = (uint32_t)(65536.0 / duration + 0.5);
    cutoff = settings->bools.audio_time_stretch_lowpass
@@ -3403,7 +3498,7 @@ static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
             audio_speed_lpf_process_into(&t->lpf, output, t->output, frames);
             output = t->output;
          }
-         audio_driver_flush(audio_st, 1.0f, output, frames * 2, floating,
+         audio_driver_inline_render(audio_st, output, frames, layout, 1.0f,
                false, fastforward && !settings->bools.audio_fastforward_speedup);
          audio_stretch_stream_consume(t->stream, frames);
       }
@@ -3414,17 +3509,36 @@ static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
    return true;
 }
 
+static bool audio_driver_inline_flush(audio_driver_state_t *audio_st,
+      float slowmotion_ratio, const void *data, size_t samples, bool floating,
+      bool slowmotion, bool fastforward)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   if (!t) return false;
+   if (t->channels > 2 && floating == t->floating)
+   {
+      if (samples > AUDIO_CHUNK_SIZE_NONBLOCKING) return false;
+      audio_driver_inline_pack(t, data, samples >> 1, 2, AUDIO_LAYOUT_STEREO);
+      data = t->source;
+   }
+   return audio_driver_inline_process(audio_st, slowmotion_ratio, data,
+         samples >> 1, floating, slowmotion, fastforward, AUDIO_LAYOUT_STEREO);
+}
+
 static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st)
 {
    struct audio_inline_transport *t;
-   if (audio_st->core_layout != AUDIO_LAYOUT_STEREO) return false;
+   size_t bytes, capacity = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+   if (!audio_st->core_multi && audio_st->core_layout != AUDIO_LAYOUT_STEREO) return false;
    if (audio_st->inline_transport) return true;
    t = (struct audio_inline_transport*)calloc(1, sizeof(*t));
    if (!t) return false;
    t->floating = audio_st->core_float;
-   t->stream = audio_stretch_stream_new((unsigned)audio_st->input, 2, t->floating, 3);
-   t->output = memalign_alloc(64, AUDIO_CHUNK_SIZE_NONBLOCKING
-         * (t->floating ? sizeof(float) : sizeof(int16_t)));
+   t->channels = audio_st->core_multi ? AUDIO_PIPE_CANON_CHANNELS : 2;
+   t->layout = AUDIO_LAYOUT_STEREO;
+   t->stream = audio_stretch_stream_new((unsigned)audio_st->input, t->channels, t->floating, 3);
+   bytes = capacity * t->channels * (t->floating ? sizeof(float) : sizeof(int16_t));
+   t->output = memalign_alloc(64, t->channels > 2 ? bytes * 2 + bytes * 2 / t->channels : bytes);
    if (!t->stream || !t->output || !audio_stretch_stream_bind(t->stream,
             t->output, AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
    {
@@ -3433,7 +3547,12 @@ static bool audio_driver_inline_prepare(audio_driver_state_t *audio_st)
       free(t);
       return false;
    }
-   audio_speed_lpf_init(&t->lpf, (unsigned)audio_st->input, 2, t->floating);
+   if (t->channels > 2)
+   {
+      t->source = (uint8_t*)t->output + bytes;
+      t->front = (uint8_t*)t->source + bytes;
+   }
+   audio_speed_lpf_init(&t->lpf, (unsigned)audio_st->input, t->channels, t->floating);
    audio_st->inline_transport = t;
    return true;
 }
@@ -5546,8 +5665,7 @@ static bool audio_driver_multi_discrete(audio_driver_state_t *audio_st, unsigned
  * built into it - a slot per speaker bit, FL and FR first, the rest
  * zero - and published, with its layout beside it for the consumer.
  * Returns true when the batch was taken; false to fold it instead. */
-/* Common layouts occupy a canonical prefix. Write each destination sample
- * once: copying the source prefix and clearing only absent positions. */
+/* Common layouts share the first six canonical positions. */
 static INLINE bool audio_driver_pipe_widen_prefix(void *output, const void *input,
       size_t frames, unsigned channels, unsigned layout, bool floating)
 {
@@ -5567,8 +5685,9 @@ static INLINE bool audio_driver_pipe_widen_prefix(void *output, const void *inpu
       else
          for (f = 0; f < frames; f++)
          {
-            memcpy(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(float), src + f * 8 * sizeof(float), 8 * sizeof(float));
-            memset(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(float) + 8 * sizeof(float), 0, 3 * sizeof(float));
+            memcpy(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(float), src + f * 8 * sizeof(float), 6 * sizeof(float));
+            memset(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(float) + 6 * sizeof(float), 0, 3 * sizeof(float));
+            memcpy(dst + (f * AUDIO_PIPE_CANON_CHANNELS + 9) * sizeof(float), src + (f * 8 + 6) * sizeof(float), 2 * sizeof(float));
          }
    }
    else
@@ -5582,8 +5701,9 @@ static INLINE bool audio_driver_pipe_widen_prefix(void *output, const void *inpu
       else
          for (f = 0; f < frames; f++)
          {
-            memcpy(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(int16_t), src + f * 8 * sizeof(int16_t), 8 * sizeof(int16_t));
-            memset(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(int16_t) + 8 * sizeof(int16_t), 0, 3 * sizeof(int16_t));
+            memcpy(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(int16_t), src + f * 8 * sizeof(int16_t), 6 * sizeof(int16_t));
+            memset(dst + f * AUDIO_PIPE_CANON_CHANNELS * sizeof(int16_t) + 6 * sizeof(int16_t), 0, 3 * sizeof(int16_t));
+            memcpy(dst + (f * AUDIO_PIPE_CANON_CHANNELS + 9) * sizeof(int16_t), src + (f * 8 + 6) * sizeof(int16_t), 2 * sizeof(int16_t));
          }
    }
    return true;
@@ -5699,6 +5819,40 @@ static bool audio_driver_multi_split_s16(audio_driver_state_t *audio_st,
    return true;
 }
 
+static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
+      const void *data, size_t frames, unsigned channels, unsigned layout, bool floating)
+{
+   struct audio_inline_transport *t = audio_st->inline_transport;
+   uint32_t flags;
+   size_t done = 0, frame = channels * (floating ? sizeof(float) : sizeof(int16_t));
+   float ratio = config_get_ptr()->floats.slowmotion_ratio;
+   if (audio_st->pipe_threaded || !t || t->channels <= 2 || floating != t->floating
+         || (layout & AUDIO_LAYOUT_STEREO) != AUDIO_LAYOUT_STEREO)
+      return false;
+#ifdef HAVE_REWIND
+   if (state_manager_frame_is_reversed()) return false;
+#endif
+   if (audio_st->float_gate && audio_st->float_gate()) return true;
+   audio_driver_record_push(audio_st, data, frames, channels, layout, floating);
+   flags = runloop_get_flags();
+   if ((flags & RUNLOOP_FLAG_PAUSED) || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         || !audio_st->output_samples_buf) return true;
+   audio_driver_state_lock();
+   while (done < frames)
+   {
+      size_t n = frames - done;
+      bool slow = (flags & RUNLOOP_FLAG_SLOWMOTION) != 0;
+      bool fast = (flags & RUNLOOP_FLAG_FASTMOTION) != 0;
+      if (n > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) n = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+      audio_driver_inline_pack(t, (const uint8_t*)data + done * frame, n, channels, layout);
+      if (!audio_driver_inline_process(audio_st, ratio, t->source, n, floating, slow, fast, layout))
+         audio_driver_inline_render(audio_st, t->source, n, layout, ratio, slow, fast);
+      done += n;
+   }
+   audio_driver_state_unlock();
+   return true;
+}
+
 size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
       unsigned channels, unsigned layout)
 {
@@ -5711,6 +5865,9 @@ size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames,
    if (!frames)
       return 0;
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+      return frames;
+   if (audio_st->inline_transport
+         && audio_driver_inline_multi(audio_st, data, frames, channels, layout, false))
       return frames;
    if (audio_driver_multi_discrete(audio_st, layout))
    {
@@ -5770,6 +5927,9 @@ size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames,
    if (!frames)
       return 0;
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+      return frames;
+   if (audio_st->inline_transport
+         && audio_driver_inline_multi(audio_st, data, frames, channels, layout, true))
       return frames;
    if (audio_driver_multi_discrete(audio_st, layout))
    {
