@@ -2872,6 +2872,198 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
+/* Uploads the atlas rectangle dirtied since the last upload, on a
+ * one-shot staging command buffer submitted ahead of the frame in
+ * queue order, so the draw that samples it - now or at block flush -
+ * sees it. No-op when nothing is dirty. */
+static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
+{
+   if (font->needs_update)
+   {
+      struct vk_texture *dynamic_tex = &font->texture_optimal;
+      struct vk_texture *staging_tex = &font->texture;
+      /* Bytes per texel of the atlas: R8_UNORM normally, R16_UNORM
+       * for the A16 atlas an HDR swapchain asks for. The mapped-range
+       * flush and the buffer-image copy must agree on this, or the
+       * flushed span does not cover the bytes the copy reads. */
+      unsigned bpp                   = vulkan_format_to_bpp(
+            staging_tex->format);
+
+      if (!bpp)
+         bpp                         = 1;
+
+      if (  (staging_tex->flags
+               & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+            && staging_tex->memory != VK_NULL_HANDLE)
+      {
+         VkMappedMemoryRange mem_range;
+         VkDeviceSize flush_size;
+         /* Use nonCoherentAtomSize for alignment;
+          * fall back to 256 (common minimum) if unavailable. */
+         VkDeviceSize atom_size    = 256;
+
+         /* Compute tight flush range from dirty rectangle
+          * instead of flushing the entire allocation.
+          * Aligns offset down and size up to nonCoherentAtomSize
+          * as required by the spec (§12.1). */
+         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min
+                      * staging_tex->stride
+                      + (VkDeviceSize)font->dirty_x_min * bpp;
+         VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
+                      ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
+                      + (VkDeviceSize)font->dirty_x_max * bpp;
+         if (flush_end <= flush_offset)
+            flush_end = flush_offset + 1;
+         flush_size   = flush_end - flush_offset;
+
+         /* Align to nonCoherentAtomSize boundaries. */
+         flush_size   = flush_size + (flush_offset & (atom_size - 1));
+         flush_offset = flush_offset & ~(atom_size - 1);
+         flush_size   = (flush_size + atom_size - 1) & ~(atom_size - 1);
+
+         /* Clamp to allocation size. */
+         if (flush_offset + flush_size > staging_tex->size)
+            flush_size = VK_WHOLE_SIZE;
+
+         mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+         mem_range.pNext  = NULL;
+         mem_range.memory = staging_tex->memory;
+         mem_range.offset = flush_offset;
+         mem_range.size   = flush_size;
+         vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
+      }
+
+      {
+         unsigned dx = font->dirty_x_min;
+         unsigned dy = font->dirty_y_min;
+         unsigned dw = font->dirty_x_max - dx;
+         unsigned dh = font->dirty_y_max - dy;
+
+         if (dx >= staging_tex->width || dy >= staging_tex->height)
+            dw = dh = 0;
+         else
+         {
+            if (dx + dw > staging_tex->width)
+               dw = staging_tex->width - dx;
+            if (dy + dh > staging_tex->height)
+               dh = staging_tex->height - dy;
+         }
+
+         if (dw > 0 && dh > 0)
+         {
+            VkCommandBuffer staging_cmd;
+            VkCommandBufferAllocateInfo cmd_info;
+            VkCommandBufferBeginInfo begin_info;
+            VkBufferImageCopy region;
+            /* UNDEFINED as oldLayout lets the implementation discard
+             * the whole image. That is only sound when the copy
+             * rewrites every texel - the initial full-atlas upload.
+             * Later uploads are incremental rects covering a single
+             * glyph, and must preserve what lies outside them. */
+            bool full_copy              = (   dx == 0
+                                           && dy == 0
+                                           && dw == dynamic_tex->width
+                                           && dh == dynamic_tex->height);
+            VkImageLayout old_layout    = full_copy
+               ? VK_IMAGE_LAYOUT_UNDEFINED
+               : dynamic_tex->layout;
+
+            cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            cmd_info.pNext              = NULL;
+            cmd_info.commandPool        = vk->staging_pool;
+            cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            cmd_info.commandBufferCount = 1;
+            vkAllocateCommandBuffers(vk->context->device,
+                  &cmd_info, &staging_cmd);
+
+            begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            begin_info.pNext            = NULL;
+            begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            begin_info.pInheritanceInfo = NULL;
+            vkBeginCommandBuffer(staging_cmd, &begin_info);
+
+            /* Naming the real source scope also gives this barrier a
+             * non-empty first synchronisation scope, which covers
+             * commands submitted earlier to the same queue and so
+             * orders the transfer against frames still in flight that
+             * are sampling the atlas. TOP_OF_PIPE ordered nothing. */
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  staging_cmd,
+                  dynamic_tex->image,
+                  old_layout,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? 0
+                     : VK_ACCESS_SHADER_READ_BIT,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+                     : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+            /* bufferOffset is in bytes; bufferRowLength is in
+             * TEXELS. For R8 the two coincide with the byte stride,
+             * for R16 they do not. */
+            region.bufferOffset                    =
+               (VkDeviceSize)dy * staging_tex->stride
+                  + (VkDeviceSize)dx * bpp;
+            region.bufferRowLength                 =
+               (uint32_t)(staging_tex->stride / bpp);
+            region.bufferImageHeight               = 0;
+            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel       = 0;
+            region.imageSubresource.baseArrayLayer = 0;
+            region.imageSubresource.layerCount     = 1;
+            region.imageOffset.x                   = (int32_t)dx;
+            region.imageOffset.y                   = (int32_t)dy;
+            region.imageOffset.z                   = 0;
+            region.imageExtent.width               = dw;
+            region.imageExtent.height              = dh;
+            region.imageExtent.depth               = 1;
+
+            vkCmdCopyBufferToImage(
+                  staging_cmd,
+                  staging_tex->buffer,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  1,
+                  &region);
+
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  staging_cmd,
+                  dynamic_tex->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_ACCESS_SHADER_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+            vkEndCommandBuffer(staging_cmd);
+
+            /* The copy lands ahead of this frame's command buffer in
+             * queue submission order and the trailing barrier makes it
+             * visible to the fragment stage, so the glyphs drawn below
+             * sample the updated atlas without a CPU wait. */
+            vulkan_submit_deferred_cmd(vk, staging_cmd, NULL,
+                  VK_NULL_HANDLE, VK_NULL_HANDLE);
+
+            dynamic_tex->layout =
+               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            /* Reset only on a real upload. Clearing the dirty box
+             * after a rect that clamped away stranded that glyph's
+             * staging write permanently. */
+            font->dirty_x_min  = font->atlas->width;
+            font->dirty_y_min  = font->atlas->height;
+            font->dirty_x_max  = 0;
+            font->dirty_y_max  = 0;
+            font->needs_update = false;
+         }
+      }
+   }
+}
+
 static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font);
 
 static void vulkan_font_render_msg(
@@ -3198,193 +3390,10 @@ static void vulkan_font_render_msg(
     *   - the null-check on texture->image (always valid for fonts)
     */
 
-   /* Upload the dirty atlas region on a one-shot staging command
-    * buffer, submitted ahead of the frame in queue order so the
-    * draw that samples it - now or at block flush - sees it. */
-   if (font->needs_update)
-   {
-      struct vk_texture *dynamic_tex = &font->texture_optimal;
-      struct vk_texture *staging_tex = &font->texture;
-      /* Bytes per texel of the atlas: R8_UNORM normally, R16_UNORM
-       * for the A16 atlas an HDR swapchain asks for. The mapped-range
-       * flush and the buffer-image copy must agree on this, or the
-       * flushed span does not cover the bytes the copy reads. */
-      unsigned bpp                   = vulkan_format_to_bpp(
-            staging_tex->format);
-
-      if (!bpp)
-         bpp                         = 1;
-
-      if (  (staging_tex->flags
-               & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
-            && staging_tex->memory != VK_NULL_HANDLE)
-      {
-         VkMappedMemoryRange mem_range;
-         VkDeviceSize flush_size;
-         /* Use nonCoherentAtomSize for alignment;
-          * fall back to 256 (common minimum) if unavailable. */
-         VkDeviceSize atom_size    = 256;
-
-         /* Compute tight flush range from dirty rectangle
-          * instead of flushing the entire allocation.
-          * Aligns offset down and size up to nonCoherentAtomSize
-          * as required by the spec (§12.1). */
-         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min
-                      * staging_tex->stride
-                      + (VkDeviceSize)font->dirty_x_min * bpp;
-         VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
-                      ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
-                      + (VkDeviceSize)font->dirty_x_max * bpp;
-         if (flush_end <= flush_offset)
-            flush_end = flush_offset + 1;
-         flush_size   = flush_end - flush_offset;
-
-         /* Align to nonCoherentAtomSize boundaries. */
-         flush_size   = flush_size + (flush_offset & (atom_size - 1));
-         flush_offset = flush_offset & ~(atom_size - 1);
-         flush_size   = (flush_size + atom_size - 1) & ~(atom_size - 1);
-
-         /* Clamp to allocation size. */
-         if (flush_offset + flush_size > staging_tex->size)
-            flush_size = VK_WHOLE_SIZE;
-
-         mem_range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-         mem_range.pNext  = NULL;
-         mem_range.memory = staging_tex->memory;
-         mem_range.offset = flush_offset;
-         mem_range.size   = flush_size;
-         vkFlushMappedMemoryRanges(vk->context->device, 1, &mem_range);
-      }
-
-      {
-         unsigned dx = font->dirty_x_min;
-         unsigned dy = font->dirty_y_min;
-         unsigned dw = font->dirty_x_max - dx;
-         unsigned dh = font->dirty_y_max - dy;
-
-         if (dx >= staging_tex->width || dy >= staging_tex->height)
-            dw = dh = 0;
-         else
-         {
-            if (dx + dw > staging_tex->width)
-               dw = staging_tex->width - dx;
-            if (dy + dh > staging_tex->height)
-               dh = staging_tex->height - dy;
-         }
-
-         if (dw > 0 && dh > 0)
-         {
-            VkCommandBuffer staging_cmd;
-            VkCommandBufferAllocateInfo cmd_info;
-            VkCommandBufferBeginInfo begin_info;
-            VkBufferImageCopy region;
-            /* UNDEFINED as oldLayout lets the implementation discard
-             * the whole image. That is only sound when the copy
-             * rewrites every texel - the initial full-atlas upload.
-             * Later uploads are incremental rects covering a single
-             * glyph, and must preserve what lies outside them. */
-            bool full_copy              = (   dx == 0
-                                           && dy == 0
-                                           && dw == dynamic_tex->width
-                                           && dh == dynamic_tex->height);
-            VkImageLayout old_layout    = full_copy
-               ? VK_IMAGE_LAYOUT_UNDEFINED
-               : dynamic_tex->layout;
-
-            cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmd_info.pNext              = NULL;
-            cmd_info.commandPool        = vk->staging_pool;
-            cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmd_info.commandBufferCount = 1;
-            vkAllocateCommandBuffers(vk->context->device,
-                  &cmd_info, &staging_cmd);
-
-            begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.pNext            = NULL;
-            begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            begin_info.pInheritanceInfo = NULL;
-            vkBeginCommandBuffer(staging_cmd, &begin_info);
-
-            /* Naming the real source scope also gives this barrier a
-             * non-empty first synchronisation scope, which covers
-             * commands submitted earlier to the same queue and so
-             * orders the transfer against frames still in flight that
-             * are sampling the atlas. TOP_OF_PIPE ordered nothing. */
-            VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  staging_cmd,
-                  dynamic_tex->image,
-                  old_layout,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
-                     ? 0
-                     : VK_ACCESS_SHADER_READ_BIT,
-                  VK_ACCESS_TRANSFER_WRITE_BIT,
-                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
-                     ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-                     : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-            /* bufferOffset is in bytes; bufferRowLength is in
-             * TEXELS. For R8 the two coincide with the byte stride,
-             * for R16 they do not. */
-            region.bufferOffset                    =
-               (VkDeviceSize)dy * staging_tex->stride
-                  + (VkDeviceSize)dx * bpp;
-            region.bufferRowLength                 =
-               (uint32_t)(staging_tex->stride / bpp);
-            region.bufferImageHeight               = 0;
-            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            region.imageSubresource.mipLevel       = 0;
-            region.imageSubresource.baseArrayLayer = 0;
-            region.imageSubresource.layerCount     = 1;
-            region.imageOffset.x                   = (int32_t)dx;
-            region.imageOffset.y                   = (int32_t)dy;
-            region.imageOffset.z                   = 0;
-            region.imageExtent.width               = dw;
-            region.imageExtent.height              = dh;
-            region.imageExtent.depth               = 1;
-
-            vkCmdCopyBufferToImage(
-                  staging_cmd,
-                  staging_tex->buffer,
-                  dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  1,
-                  &region);
-
-            VULKAN_IMAGE_LAYOUT_TRANSITION(
-                  staging_cmd,
-                  dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                  VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_ACCESS_SHADER_READ_BIT,
-                  VK_PIPELINE_STAGE_TRANSFER_BIT,
-                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-
-            vkEndCommandBuffer(staging_cmd);
-
-            /* The copy lands ahead of this frame's command buffer in
-             * queue submission order and the trailing barrier makes it
-             * visible to the fragment stage, so the glyphs drawn below
-             * sample the updated atlas without a CPU wait. */
-            vulkan_submit_deferred_cmd(vk, staging_cmd, NULL,
-                  VK_NULL_HANDLE, VK_NULL_HANDLE);
-
-            dynamic_tex->layout =
-               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-            /* Reset only on a real upload. Clearing the dirty box
-             * after a rect that clamped away stranded that glyph's
-             * staging write permanently. */
-            font->dirty_x_min  = font->atlas->width;
-            font->dirty_y_min  = font->atlas->height;
-            font->dirty_x_max  = 0;
-            font->dirty_y_max  = 0;
-            font->needs_update = false;
-         }
-      }
-   }
+   /* With a block bound the atlas goes up once, at flush, for every
+    * glyph the block's strings discovered */
+   if (!font->block)
+      vulkan_font_upload_atlas(vk, font);
 
    if (font->block)
    {
@@ -3538,6 +3547,7 @@ static void vulkan_font_flush_block(unsigned width, unsigned height,
    vk = font->vk;
 
    vulkan_set_viewport(vk, width, height, font->block->fullscreen, false);
+   vulkan_font_upload_atlas(vk, font);
 
    if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
             font->acc_count * sizeof(struct vk_vertex), &font->range))

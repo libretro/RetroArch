@@ -1225,6 +1225,8 @@ static void d3d11_font_update_atlas_region(
 
 static void d3d11_font_draw_sprites(d3d11_video_t *d3d11,
       d3d11_font_t *font, unsigned start_offset, unsigned total_count);
+static void d3d11_font_upload_atlas(d3d11_video_t *d3d11,
+      d3d11_font_t *font);
 
 static void d3d11_font_render_msg(
       void *userdata,
@@ -1584,21 +1586,16 @@ static void d3d11_font_render_msg(
    total_count = (unsigned)(v
          - ((d3d11_sprite_t*)mapped_vbo.pData + start_offset));
 
-   if (font->atlas->dirty)
-   {
-      if (font->texture.staging)
-         d3d11_font_update_atlas_region(d3d11->context, font,
-               font->atlas->dirty_x0, font->atlas->dirty_y0,
-               font->atlas->dirty_x1, font->atlas->dirty_y1);
-      font->atlas->dirty = false;
-   }
-
    if (font->block)
    {
+      /* The atlas goes up once, at flush, for every glyph the block's
+       * strings discovered; the renderer keeps merging the rectangle */
       font->acc_count                  += total_count;
       font->block->carr.coords.vertices = font->acc_count;
       return;
    }
+
+   d3d11_font_upload_atlas(d3d11, font);
 
    /* Single Unmap for the entire message. */
    d3d11->context->lpVtbl->Unmap(
@@ -1608,6 +1605,21 @@ static void d3d11_font_render_msg(
       return;
 
    d3d11_font_draw_sprites(d3d11, font, start_offset, total_count);
+}
+
+/* Uploads the atlas rectangle dirtied since the last upload. No-op
+ * when nothing is dirty. */
+static void d3d11_font_upload_atlas(d3d11_video_t *d3d11,
+      d3d11_font_t *font)
+{
+   if (font->atlas->dirty)
+   {
+      if (font->texture.staging)
+         d3d11_font_update_atlas_region(d3d11->context, font,
+               font->atlas->dirty_x0, font->atlas->dirty_y0,
+               font->atlas->dirty_x1, font->atlas->dirty_y1);
+      font->atlas->dirty = false;
+   }
 }
 
 /* Draws total_count glyph sprites already in the sprite ring at
@@ -1687,6 +1699,7 @@ static void d3d11_font_flush_block(unsigned width, unsigned height,
             font->acc, count * sizeof(d3d11_sprite_t));
       d3d11->context->lpVtbl->Unmap(
             d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0);
+      d3d11_font_upload_atlas(d3d11, font);
       d3d11_font_draw_sprites(d3d11, font, start_offset, count);
    }
    font->acc_count = 0;
