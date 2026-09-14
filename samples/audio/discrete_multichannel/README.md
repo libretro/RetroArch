@@ -123,3 +123,9 @@ callbacks before native capture and into partially captured mixed input. They
 must leave the reverse cursor/history unchanged, retain batch return counts and
 produce the same subsequent device output. This checks the audio suspension
 contract used by speculative execution; it does not run the full runahead loop.
+
+`DM_ONLY=reverseboundary ./discrete_multichannel_test` checks empty capture state
+after actual arena initialization and teardown, plus both source-format changes
+in ordinary, inline and queued configurations. A repeated format query retains
+captured history; changing format discards it before selecting the other arena.
+The allocation checks use audio-disabled initialization to avoid opening a device.

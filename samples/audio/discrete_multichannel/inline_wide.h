@@ -1,6 +1,61 @@
 /* Configured wide inline transport before native channel routing. */
 extern bool test_frame_reversed;
 
+static void rewind_boundary_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   int16_t storage_i[32];
+   float storage_f[32];
+   unsigned native, mode, before = failures;
+   bool enabled = settings->bools.audio_enable;
+   for (native = 0; native < 2; native++)
+      for (mode = 0; mode < 3; mode++)
+      {
+         CHECK(mode == 2 ? pipe_up(native, native) : up(native, AUDIO_LAYOUT_STEREO, native),
+               "rewind boundary stand-up");
+         if (mode == 1)
+         {
+            settings->bools.audio_time_stretch = true;
+            CHECK(audio_driver_transport_configure(settings), "rewind boundary transport");
+         }
+         memset(storage_i, 0x5a, sizeof(storage_i));
+         memset(storage_f, 0, sizeof(storage_f));
+         st->rewind_buf = storage_i; st->rewind_buf_f = storage_f;
+         st->rewind_size = 32;
+         audio_driver_setup_rewind();
+         audio_driver_sample_rewind(1234, -4321);
+         audio_driver_set_core_float(native);
+         CHECK(st->rewind_ptr == 30, "unchanged format discarded captured rewind");
+         audio_driver_set_core_float(!native);
+         CHECK(st->rewind_ptr == st->rewind_size, "changed format reinterpreted captured rewind");
+         audio_driver_sample_rewind(2345, -5432);
+         audio_driver_set_core_float(!native);
+         CHECK(st->rewind_ptr == 30 && (native
+                  ? storage_i[30] == 2345 && storage_i[31] == -5432
+                  : storage_f[30] == 2345 / 32768.0f && storage_f[31] == -5432 / 32768.0f),
+               "new rewind format retained stale prefix");
+         st->rewind_buf = NULL; st->rewind_buf_f = NULL;
+         audio_driver_deinit_internal(true);
+         CHECK(!st->rewind_ptr && !st->rewind_size, "rewind teardown retained a cursor");
+         settings->bools.audio_time_stretch = false;
+      }
+   /* Exercise actual arena allocation without opening a physical device. */
+   settings->bools.audio_enable = false;
+   for (native = 0; native < 2; native++)
+   {
+      st->core_float = native;
+      st->rewind_ptr = 14;
+      CHECK(!audio_driver_init_internal(settings, false), "disabled audio unexpectedly started");
+      CHECK(st->rewind_buf && st->rewind_buf_f && st->rewind_size
+            && st->rewind_ptr == st->rewind_size, "new rewind arena is not empty");
+      audio_driver_deinit_internal(true);
+      CHECK(!st->rewind_ptr && !st->rewind_size, "allocated rewind teardown retained a cursor");
+   }
+   settings->bools.audio_enable = enabled;
+   printf("rewind lifecycle boundaries: 8 cases, %u failures\n", failures - before);
+}
+
 static void rewind_mixed_cases(void)
 {
    int16_t input[257*6], folded[514], storage_i[514];

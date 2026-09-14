@@ -1043,6 +1043,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->rewind_buf               = NULL;
    audio_st->rewind_buf_f             = NULL;
    audio_st->rewind_size              = 0;
+   audio_st->rewind_ptr               = 0;
 #endif
 
    if (audio_st->arena_float)
@@ -3675,6 +3676,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 #ifdef HAVE_REWIND
    audio_driver_st.rewind_buf                  = arena_int16 + i16_rewind;
    audio_driver_st.rewind_size                 = max_buffer_samples;
+   audio_driver_st.rewind_ptr                  = max_buffer_samples;
 #endif
    /* Set now so a return before the driver starts (audio disabled)
     * leaves the float output region reachable through its pointer. */
@@ -7507,6 +7509,11 @@ void audio_driver_set_core_float(bool core_float)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    audio_driver_inline_set_format(audio_st, core_float, audio_st->core_multi);
+#ifdef HAVE_REWIND
+   /* Captured samples belong to the previous native arena. */
+   if (audio_st->core_float != core_float)
+      audio_st->rewind_ptr = audio_st->rewind_size;
+#endif
    audio_st->core_float = core_float;
 #ifdef HAVE_THREADS
    if (audio_st->pipe_threaded && audio_st->pipe_float != core_float)
