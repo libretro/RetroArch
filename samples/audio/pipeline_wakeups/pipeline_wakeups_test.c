@@ -126,6 +126,7 @@ static uint32_t source_layout = AUDIO_LAYOUT_STEREO;
 static bool live_layouts;
 static bool speed_lowpass;
 static bool runloop_policy;
+static bool auto_runloop;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -440,6 +441,8 @@ static float frame_audio_float[32768 * 8];
 
 static bool prepare_transport(bool reset)
 {
+   if (auto_runloop)
+      return audio_driver_pipeline_transport_start_runloop(CORE_RATE, 3, speed_lowpass);
    if (runloop_policy)
       return audio_driver_pipeline_transport_prepare_runloop(CORE_RATE, 3, speed_lowpass);
    return audio_driver_pipeline_transport_prepare(CORE_RATE, 3)
@@ -597,7 +600,7 @@ static void discard_parked(void *userdata)
    audio_driver_state_t *st = &audio_driver_st;
    (void)userdata;
    if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
-   if (transport_mode && !audio_driver_pipeline_transport_discard(
+   if (st->pipe_transport && !audio_driver_pipeline_transport_discard(
             retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes))
       fixture_failures++;
 }
@@ -617,7 +620,13 @@ static void check_live_control(void *userdata)
    if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
    if (check->initial) check->serial = q->reset_serial;
    else if (q->reset_serial != check->serial || q->current_control != check->control
-         || q->current_cutoff != check->cutoff) fixture_failures++;
+         || q->current_cutoff != check->cutoff)
+   {
+      fprintf(stderr, "control mismatch: reset %u/%u, control %u/%u, cutoff %u/%u\n",
+            q->reset_serial, check->serial, q->current_control, check->control,
+            q->current_cutoff, check->cutoff);
+      fixture_failures++;
+   }
    if (!check->initial && live_layouts)
    {
       unsigned extras = audio_layout_channels(check->layout & ~AUDIO_LAYOUT_STEREO);
@@ -626,6 +635,13 @@ static void check_live_control(void *userdata)
                   || audio_driver_st.extra.positions != (check->layout & ~AUDIO_LAYOUT_STEREO))))
          fixture_failures++;
    }
+}
+
+static void check_fallback_drained(void *userdata)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
+   *(bool*)userdata = !retro_spsc_read_avail(&st->pipe_ring) && !st->pipe_pending_bytes;
 }
 
 static void wrapper_live_controls(unsigned publishes)
@@ -664,18 +680,23 @@ static void wrapper_live_controls(unsigned publishes)
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16,
                (int)(65536.0 / tempos[step]));
       }
-      if (!(runloop_policy
+      if (!(auto_runloop || (runloop_policy
                ? audio_driver_pipeline_transport_request_runloop(false, true)
                : speed_lowpass
                ? audio_driver_pipeline_transport_request_speed(tempo, active, false, true)
-               : audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff)))
+               : audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff))))
       {
          fixture_failures++;
          return;
       }
       for (retry = 0; retry < 3; retry++)
+      {
+         if (auto_runloop)
+            retro_atomic_store_release_int(&st->pipe_ff_mult_q16,
+                  (int)(65536.0 / tempos[step]));
          submit_frame((size_t)(CORE_RATE / FPS *
                   (tempos[step] < 1 ? 1 : tempos[step])), publishes);
+      }
       boundary = retro_atomic_load_relaxed_size(&st->pipe_layouts.head);
       for (retry = 0; retry < 2000; retry++)
       {
@@ -684,15 +705,37 @@ static void wrapper_live_controls(unsigned publishes)
                && retro_atomic_load_acquire_size(&cnt_writes) != before) break;
          usleep(1000);
       }
-      if (retry == 2000) fixture_failures++;
+      if (retry == 2000)
+      { fprintf(stderr, "control drain timed out at step %u\n", step); fixture_failures++; }
       /* Observe consumer-owned metadata only while the real worker is parked. */
       audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
    }
    if (runloop_policy)
    {
+      if (auto_runloop)
+      {
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         config_get_ptr()->floats.slowmotion_ratio = 8;
+         submit_frame((size_t)(CORE_RATE / FPS), publishes);
+         if (st->pipe_transport || st->pipe_transport_follow) fixture_failures++;
+      }
       runloop_state_get_ptr()->flags = 0;
       config_get_ptr()->floats.slowmotion_ratio = 1;
       config_get_ptr()->bools.audio_fastforward_speedup = false;
+      if (auto_runloop)
+      {
+         bool drained = false;
+         audio_driver_frame_end();
+         for (step = 0; step < 2000; step++)
+         {
+            if (!retro_spsc_read_avail(&st->pipe_ring))
+               audio_thread_apply_control(st->context_audio_data, check_fallback_drained, &drained);
+            if (drained) break;
+            usleep(1000);
+         }
+         if (!drained)
+         { fprintf(stderr, "legacy fallback did not drain source/device output\n"); fixture_failures++; }
+      }
    }
 }
 
@@ -712,7 +755,7 @@ static void wrapper_restart(void)
       {
          audio_driver_pipeline_transport_release();
          if (!prepare_transport(true))
-            fixture_failures++;
+         { fprintf(stderr, "restart preparation failed\n"); fixture_failures++; }
       }
       if (before != retro_atomic_load_acquire_size(&cnt_wakes)) fixture_failures++;
       before = retro_atomic_load_acquire_size(&cnt_writes);
@@ -802,7 +845,8 @@ static void submit_frame(size_t per_frame, unsigned publishes)
    sig_us = t1;
    retro_atomic_store_release_size(&sig_seq,
          retro_atomic_load_relaxed_size(&sig_seq) + 1);
-   audio_driver_pipeline_signal(&audio_driver_st);
+   if (auto_runloop) audio_driver_frame_end();
+   else audio_driver_pipeline_signal(&audio_driver_st);
 
    if (t1 > t0 + slept)
    {
@@ -969,6 +1013,7 @@ int main(int argc, char **argv)
    live_layouts = getenv("LIVE_LAYOUTS") != NULL;
    speed_lowpass = getenv("SPEED_LPF") != NULL;
    runloop_policy = getenv("RUNLOOP_POLICY") != NULL;
+   auto_runloop = getenv("AUTO_RUNLOOP") != NULL;
    if (layout)
    {
       if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
@@ -1017,6 +1062,11 @@ int main(int argc, char **argv)
    if (runloop_policy && !speed_lowpass)
    {
       fprintf(stderr, "RUNLOOP_POLICY requires SPEED_LPF\n");
+      return 1;
+   }
+   if (auto_runloop && !runloop_policy)
+   {
+      fprintf(stderr, "AUTO_RUNLOOP requires RUNLOOP_POLICY\n");
       return 1;
    }
 
@@ -1073,6 +1123,7 @@ int main(int argc, char **argv)
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
    if (speed_lowpass) printf("speed LPF: 128 coherent tempo/cutoff requests, %u failures\n", fixture_failures);
    if (runloop_policy) printf("runloop policy: 128 speed-state requests, %u failures\n", fixture_failures);
+   if (auto_runloop) printf("automatic transport: 128 producer updates, 16 fallbacks, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }

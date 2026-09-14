@@ -2012,6 +2012,53 @@ static void transport_request_cases(void)
             config_get_ptr()->floats.slowmotion_ratio = 1;
             config_get_ptr()->bools.audio_fastforward_speedup = false;
          }
+         CHECK(audio_driver_pipeline_transport_start_runloop(48000, 1, true),
+               "automatic producer start");
+         for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
+            CHECK(audio_driver_pipeline_transport_request(65536, false, true, 0),
+                  "automatic pressure fill");
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+         config_get_ptr()->bools.audio_fastforward_speedup = true;
+         retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
+         audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
+               floating, false, true, st->pipe_channels);
+         CHECK(!retro_spsc_read_avail(&st->pipe_ring)
+               && (st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
+               && q->published_control == 65536 && q->published_cutoff == 0,
+               "automatic pressure published source or partial controls");
+         CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block),
+               "automatic pressure retirement");
+         audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
+               floating, false, true, st->pipe_channels);
+         CHECK(retro_spsc_read_avail(&st->pipe_ring) == st->pipe_frame_bytes
+               && !(st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
+               && q->published_control == (262144 | AUDIO_PIPELINE_STRETCH)
+               && q->published_cutoff == 5400, "automatic producer retry");
+         head = retro_atomic_load_relaxed_size(&q->head);
+         config_get_ptr()->bools.audio_fastforward_speedup = false;
+         audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
+               floating, false, false, st->pipe_channels);
+         CHECK(retro_atomic_load_relaxed_size(&q->head) == head,
+               "automatic producer updated twice in one frame");
+         audio_driver_frame_end();
+         runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         config_get_ptr()->floats.slowmotion_ratio = 8;
+         position = retro_spsc_read_avail(&st->pipe_ring);
+         audio_driver_submit_width(st, 8.0f, &input, st->pipe_channels,
+               floating, true, false, st->pipe_channels);
+         CHECK(!st->pipe_transport && !st->pipe_transport_follow
+               && retro_spsc_read_avail(&st->pipe_ring) == position + st->pipe_frame_bytes,
+               "automatic fallback lost queued source or stayed active");
+         runloop_state_get_ptr()->flags = 0;
+         config_get_ptr()->floats.slowmotion_ratio = 1;
+         CHECK(!audio_driver_pipeline_transport_start_runloop(48000, 1, true),
+               "automatic restart accepted queued source");
+         retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+         CHECK(audio_driver_pipeline_transport_start_runloop(48000, 1, true),
+               "automatic restart after fallback");
+         audio_driver_set_core_float(!floating);
+         CHECK(st->pipe_transport && st->pipe_transport_follow
+               && st->pipe_float == !floating, "native rebind lost automatic mode");
          audio_driver_deinit_internal(true);
       }
    printf("native transport request: 4 cases, %u failures\n", failures - before);

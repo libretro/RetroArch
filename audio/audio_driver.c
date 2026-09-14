@@ -65,6 +65,10 @@
 #include "audio_thread_wrapper.h"
 #include "audio_pipeline_stretch.h"
 #include "audio_speed_lpf.h"
+#define AUDIO_TRANSPORT_FOLLOW 1
+#define AUDIO_TRANSPORT_LOWPASS 2
+#define AUDIO_TRANSPORT_UPDATE 4
+static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st);
 #endif
 
 #ifdef HAVE_MENU
@@ -950,6 +954,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_transport_output = NULL;
    audio_st->pipe_transport_serial = audio_st->pipe_transport_search = 0;
    audio_st->pipe_transport_rate = 0;
+   audio_st->pipe_transport_follow = 0;
 #endif
 
    /* All scratch buffers live in the two arenas; the named pointers are
@@ -1950,6 +1955,8 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
 {
    size_t frames;
    if (!audio_st->pipe_threaded) return;
+   if (audio_st->pipe_transport_follow)
+      audio_st->pipe_transport_follow |= AUDIO_TRANSPORT_UPDATE;
    frames = audio_st->pipe_ff_frames;
    if (!frames)
    {
@@ -4315,6 +4322,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
             ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
       else
          audio_driver_ff_mult_reset(audio_st);
+      if (len && (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
+            && !audio_driver_transport_update_runloop(audio_st))
+         len = 0;
       /* Never publish samples without their preceding layout boundary. */
       if (pc > 2 && len && !audio_pipeline_layout_publish(&audio_st->pipe_layouts,
                retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head),
@@ -4604,6 +4614,21 @@ bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
    if (!audio_driver_transport_runloop_tempo(&tempo)) return false;
    return audio_driver_pipeline_transport_request_speed(tempo,
          tempo != 65536, reset, lowpass);
+}
+
+static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st)
+{
+   uint32_t tempo;
+   if (!audio_driver_transport_runloop_tempo(&tempo))
+   {
+      audio_driver_pipeline_transport_release();
+      return true;
+   }
+   if (!audio_driver_pipeline_transport_request_speed(tempo, tempo != 65536,
+            false, (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS) != 0))
+      return false;
+   audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
+   return true;
 }
 
 bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
@@ -6808,6 +6833,7 @@ void audio_driver_set_core_multi(bool core_multi)
 #ifdef HAVE_THREADS
 static void audio_driver_transport_clear(audio_driver_state_t *audio_st)
 {
+   audio_st->pipe_transport_follow = 0;
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
    audio_driver_state_lock();
@@ -6827,6 +6853,7 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
 {
    audio_pipeline_stretch_t *stage;
    void *output;
+   uint8_t follow = audio_st->pipe_transport_follow;
    size_t frame = audio_st->pipe_channels * (floating ? sizeof(float) : sizeof(int16_t));
    size_t frames = audio_st->pipe_pass_frames;
    if (rate < 8000 || rate > 192000 || !audio_st->pipe_channels
@@ -6856,6 +6883,7 @@ static bool audio_driver_transport_bind(audio_driver_state_t *audio_st,
       metadata->published_cutoff = metadata->current_cutoff = cutoff;
    }
    audio_st->pipe_transport = stage;
+   audio_st->pipe_transport_follow = follow;
    audio_st->pipe_transport_output = output;
    audio_st->pipe_transport_rate = rate;
    audio_st->pipe_transport_search = search_channels;
@@ -6886,6 +6914,7 @@ static void audio_driver_transport_control(void *userdata)
    {
       request->result = audio_driver_transport_bind(audio_st,
             request->rate, request->search, audio_st->pipe_float);
+      if (request->result) audio_st->pipe_transport_follow = 0;
       if (request->result && request->control)
       {
          audio_pipeline_layout_t *q = &audio_st->pipe_layouts;
@@ -6928,6 +6957,16 @@ bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
    request.release = request.result = false;
    audio_driver_transport_transaction(&request);
    return request.result;
+}
+
+bool audio_driver_pipeline_transport_start_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass)
+{
+   if (!audio_driver_pipeline_transport_prepare_runloop(rate, search_channels, lowpass))
+      return false;
+   audio_driver_st.pipe_transport_follow = AUDIO_TRANSPORT_FOLLOW | AUDIO_TRANSPORT_UPDATE
+      | (lowpass ? AUDIO_TRANSPORT_LOWPASS : 0);
+   return true;
 }
 
 void audio_driver_pipeline_transport_release(void)

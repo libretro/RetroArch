@@ -897,6 +897,7 @@ typedef struct
    unsigned pipe_transport_rate;
    /* Producer-owned source count for the current fast-forward frame. */
    size_t pipe_ff_frames;
+   uint8_t pipe_transport_follow;
 #endif
 } audio_driver_state_t;
 
@@ -971,6 +972,13 @@ bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_chan
  * transport and metadata; unsupported speed is rejected before allocation.
  * Explicit startup API: does not register an automatic update caller. */
 bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass);
+
+/* Opt in to producer updates before the first publish of each frame.
+ * Unsupported speed cancels retained DSP/device output and returns to the
+ * legacy pipeline until explicitly started again. Metadata pressure drops
+ * that publish and retries at the next one. Same preparation preconditions. */
+bool audio_driver_pipeline_transport_start_runloop(unsigned rate,
       uint32_t search_channels, bool lowpass);
 void audio_driver_pipeline_transport_release(void);
 /* Main source producer only, before publishing the affected audio. Tempo is

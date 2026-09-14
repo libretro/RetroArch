@@ -125,6 +125,9 @@ check-speed-lpf: $(TARGET)
 check-runloop: $(TARGET)
 	RUNLOOP_POLICY=1 $(MAKE) check-speed-lpf
 
+check-auto: $(TARGET)
+	AUTO_RUNLOOP=1 $(MAKE) check-runloop
+
 check-wide: $(TARGET)
 	@for layout in 5.1 7.1; do \
 		for mode in dry lpf stretch; do \
@@ -140,4 +143,4 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport check-wrapper check-tempo check-live check-wide check-layout check-speed-lpf check-runloop
+.PHONY: clean all check check-transport check-wrapper check-tempo check-live check-wide check-layout check-speed-lpf check-runloop check-auto
