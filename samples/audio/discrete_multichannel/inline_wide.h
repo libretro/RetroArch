@@ -29,6 +29,14 @@ static void rewind_boundary_cases(void)
          CHECK(st->rewind_ptr == 30, "unchanged format discarded captured rewind");
          audio_driver_set_core_float(!native);
          CHECK(st->rewind_ptr == st->rewind_size, "changed format reinterpreted captured rewind");
+         test_frame_reversed = true;
+         audio_driver_frame_is_reverse();
+         test_frame_reversed = false;
+         CHECK(!cap_frames && !st->extra.pending
+               && (mode != 2 || !retro_spsc_read_avail(&st->pipe_ring)),
+               "empty rewind produced device or queued output");
+         CHECK(mode != 1 || (st->inline_transport && !st->inline_transport->bypassed),
+               "empty rewind reset prepared transport");
          audio_driver_sample_rewind(2345, -5432);
          audio_driver_set_core_float(!native);
          CHECK(st->rewind_ptr == 30 && (native

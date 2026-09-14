@@ -129,3 +129,5 @@ after actual arena initialization and teardown, plus both source-format changes
 in ordinary, inline and queued configurations. A repeated format query retains
 captured history; changing format discards it before selecting the other arena.
 The allocation checks use audio-disabled initialization to avoid opening a device.
+The same cases issue empty reverse playback after a format boundary: it must
+produce no device/queued output and leave prepared inline transport untouched.

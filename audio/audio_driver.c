@@ -7634,13 +7634,15 @@ void audio_driver_frame_is_reverse(void)
 
    bool  rewind_float = audio_st->core_float && audio_st->rewind_buf_f;
 
-   if (audio_st->rewind_size > audio_st->rewind_ptr
-         && (rewind_float || audio_st->rewind_buf))
-      audio_driver_record_push(audio_st,
-            rewind_float ? (const void*)(audio_st->rewind_buf_f + audio_st->rewind_ptr)
-                         : (const void*)(audio_st->rewind_buf + audio_st->rewind_ptr),
-            (audio_st->rewind_size - audio_st->rewind_ptr) / 2,
-            2, AUDIO_LAYOUT_STEREO, rewind_float);
+   if (audio_st->rewind_ptr >= audio_st->rewind_size
+         || (!rewind_float && !audio_st->rewind_buf))
+      return;
+
+   audio_driver_record_push(audio_st,
+         rewind_float ? (const void*)(audio_st->rewind_buf_f + audio_st->rewind_ptr)
+                      : (const void*)(audio_st->rewind_buf + audio_st->rewind_ptr),
+         (audio_st->rewind_size - audio_st->rewind_ptr) / 2,
+         2, AUDIO_LAYOUT_STEREO, rewind_float);
 
    if (!(
              (runloop_flags & RUNLOOP_FLAG_PAUSED)
