@@ -1067,10 +1067,16 @@ static int x11_display_server_modeline_enum(void *data,
          mode->doublescan = (pxmode->modeFlags & RR_DoubleScan) ? 1 : 0;
          mode->hsync      = (pxmode->modeFlags & RR_HSyncPositive) ? 1 : 0;
          mode->vsync      = (pxmode->modeFlags & RR_VSyncPositive) ? 1 : 0;
-         /* Whole hertz for the line rate, the label the list uses */
-         mode->hfreq      = (double)(mode->pclock / (uint64_t)mode->htotal);
-         mode->vfreq      = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
-         mode->refresh    = (int)mode->vfreq;
+         /* Whole hertz for the line rate, the label the list uses. A
+          * virtual or headless server lists its mode with the timing
+          * left at zero; the mode is real, its rate is unknown, and
+          * dividing by the totals is what crashed. Left at zero. */
+         if (mode->htotal && mode->vtotal)
+         {
+            mode->hfreq   = (double)(mode->pclock / (uint64_t)mode->htotal);
+            mode->vfreq   = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
+            mode->refresh = (int)mode->vfreq;
+         }
          mode->width      = pxmode->width;
          mode->height     = pxmode->height;
          mode->type      |= ml->crtc_flags;
