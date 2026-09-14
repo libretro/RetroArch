@@ -1408,7 +1408,6 @@ static bool runahead_savestate_info_init(
 {
    retro_ctx_serialize_info_t *info       = &runloop_st->runahead_savestate_info;
 
-   runloop_st->runahead_save_state_size   = save_state_size;
    runloop_st->flags                     |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
 
    /* Free any previous buffer so callers can safely re-init.  The
@@ -1514,7 +1513,6 @@ static void runahead_err(runloop_state_t *runloop_st)
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
    runahead_savestate_info_free(runloop_st);
    runahead_remove_hooks(runloop_st);
-   runloop_st->runahead_save_state_size       = 0;
    runloop_st->flags                         |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
 }
 
@@ -2242,7 +2240,6 @@ error:
 void runahead_clear_variables(void *data)
 {
    runloop_state_t *runloop_st            = (runloop_state_t*)data;
-   runloop_st->runahead_save_state_size   = 0;
    runloop_st->flags                     &= ~RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
    video_driver_modify_disp_flags(VIDEO_FLAG_RUNAHEAD_IS_ACTIVE, 0);
    runloop_st->flags                     |= RUNLOOP_FLAG_RUNAHEAD_AVAILABLE

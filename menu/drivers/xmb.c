@@ -2226,7 +2226,6 @@ static bool gfx_thumbnail_set_icon_playlist(
 
    /* 'Reset' path_data content strings */
    path_data->content_path[0]         = '\0';
-   path_data->content_label_len       = 0;
    path_data->content_label[0]        = '\0';
    path_data->content_core_name[0]    = '\0';
    path_data->content_db_name[0]      = '\0';
@@ -2272,10 +2271,10 @@ static bool gfx_thumbnail_set_icon_playlist(
 
    /* Get content label */
    if (content_label && *content_label)
-      path_data->content_label_len = strlcpy(path_data->content_label,
+      strlcpy(path_data->content_label,
             content_label, sizeof(path_data->content_label));
    else
-      path_data->content_label_len = fill_pathname(
+      fill_pathname(
             path_data->content_label,
             path_basename(content_path),
             "", sizeof(path_data->content_label));
@@ -8599,7 +8598,6 @@ XMB_NOINLINE static void xmb_draw_bg(
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.pipeline_id          = 0;
-   draw.pipeline_active      = (menu_shader_pipeline == XMB_SHADER_PIPELINE_WALLPAPER) ? false : true;
 
    if (!video_width || !video_height)
       return;
@@ -8705,7 +8703,6 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    draw.vertex_count    = 4;
    draw.texture         = 0;
    draw.pipeline_id     = 0;
-   draw.pipeline_active = false;
 
    gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));

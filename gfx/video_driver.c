@@ -6090,7 +6090,6 @@ void video_driver_frame(const void *data, unsigned width,
                   sizeof(video_st->window_title) - __len);
          }
 
-         video_st->window_title_len = __len;
          retro_atomic_store_release_int(&video_st->window_title_update, 1);
          VIDEO_TITLE_UNLOCK(video_st);
 
@@ -6102,7 +6101,7 @@ void video_driver_frame(const void *data, unsigned width,
       curr_time = fps_time = new_time;
 
       VIDEO_TITLE_LOCK(video_st);
-      video_st->window_title_len = strlcpy(
+      strlcpy(
             video_st->window_title,
             video_st->title_buf,
             sizeof(video_st->window_title));
@@ -7172,7 +7171,6 @@ static void video_frame_delay_auto(video_driver_state_t *video_st, video_frame_d
       count_pos_avg = 0;
    }
 
-   vfda->frame_time_avg    = frame_time_avg;
    vfda->frame_time_target = frame_time_target;
 
 #if FRAME_DELAY_AUTO_DEBUG

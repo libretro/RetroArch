@@ -190,8 +190,6 @@ typedef struct disp_widget_msg
 
    uint16_t flags;
    int8_t task_progress;
-   /* How many tasks have used this notification? */
-   uint8_t task_count;
    bool alternative_look;
 } disp_widget_msg_t;
 
@@ -287,7 +285,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
    unsigned msg_queue_default_rect_width;
-   unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
    unsigned divider_width_1px;

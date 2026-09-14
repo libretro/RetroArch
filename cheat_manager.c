@@ -411,7 +411,6 @@ static void cheat_manager_free(void)
    cheat_st->num_memory_buffers        = 0;
    cheat_st->total_memory_size         = 0;
    cheat_st->memory_initialized        = false;
-   cheat_st->memory_search_initialized = false;
 }
 
 static void cheat_manager_new(unsigned size)
@@ -1067,8 +1066,6 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
          runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
-
-      cheat_st->memory_search_initialized = true;
    }
 
    cheat_st->memory_initialized = true;

@@ -167,7 +167,6 @@ struct gfx_display_ctx_draw
    float y;
    float rotation;
    float scale_factor;
-   bool pipeline_active;
 };
 
 typedef struct gfx_display_ctx_coord_draw

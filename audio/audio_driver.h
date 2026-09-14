@@ -786,7 +786,6 @@ typedef struct
    bool              sink_pending_broken; /* a dry spell is in it: shown, never merged into the kept sums */
    unsigned sink_settled;              /* kept windows in a row, up to 2, after which the sums stand */
    unsigned sink_applied;              /* times the bias has been set */
-   unsigned sink_discarded;            /* windows left out in a row */
    /* AUDIO_SINK_WARNED_* said once each, in two words because the two
     * sides run on different threads: on the threaded pipeline the
     * estimator runs on the core's thread, from submit, and the flush

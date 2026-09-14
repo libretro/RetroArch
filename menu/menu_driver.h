@@ -531,7 +531,6 @@ struct menu_state
    } scroll;
 
    /* unsigned alignment */
-   unsigned input_dialog_kb_type;
    unsigned input_dialog_kb_idx;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;

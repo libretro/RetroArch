@@ -67,7 +67,6 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
    size_t system_len;
-   size_t content_label_len;
    char content_label[NAME_MAX_LENGTH];
    char content_core_name[NAME_MAX_LENGTH];
    char system[NAME_MAX_LENGTH];

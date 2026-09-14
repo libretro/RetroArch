@@ -189,7 +189,6 @@ struct cheat_manager
    char *working_code;
    bool big_endian;
    bool memory_initialized;
-   bool memory_search_initialized;
 };
 
 typedef struct cheat_manager cheat_manager_t;

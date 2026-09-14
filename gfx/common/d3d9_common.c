@@ -226,13 +226,10 @@ static void d3d9_get_video_size(d3d9_video_t *d3d,
    *width                       = video_mode.dwDisplayWidth;
    *height                      = video_mode.dwDisplayHeight;
 
-   d3d->resolution_hd_enable    = false;
-
    if (video_mode.fIsHiDef)
    {
       *width                    = 1280;
       *height                   = 720;
-      d3d->resolution_hd_enable = true;
    }
    else
    {

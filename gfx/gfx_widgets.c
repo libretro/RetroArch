@@ -63,11 +63,6 @@ static void gfx_widgets_update_icon_layout(dispgfx_widget_t *p_dispwidget)
    bool has_icons = !!(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS);
 
    if (has_icons)
-      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding / 2;
-   else
-      p_dispwidget->msg_queue_regular_padding_x   = p_dispwidget->simple_widget_padding;
-
-   if (has_icons)
    {
       p_dispwidget->msg_queue_icon_size_y         = p_dispwidget->msg_queue_height;
       p_dispwidget->msg_queue_icon_size_x         = p_dispwidget->msg_queue_icon_size_y;
@@ -428,7 +423,6 @@ static void gfx_widgets_msg_queue_push_state(
          msg_widget->expiration_timer           = 0;
 
          msg_widget->task_ptr                   = task;
-         msg_widget->task_count                 = 0;
 
          msg_widget->task_progress              = 0;
          msg_widget->task_ident                 = 0;
@@ -471,7 +465,6 @@ static void gfx_widgets_msg_queue_push_state(
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
             msg_widget->task_progress           = task->progress;
             msg_widget->task_ident              = task->ident;
-            msg_widget->task_count              = 1;
 
             if (task->style == TASK_STYLE_POSITIVE)
                msg_widget->flags               |= DISPWIDG_FLAG_POSITIVE;
@@ -609,8 +602,6 @@ static void gfx_widgets_msg_queue_push_state(
             }
             else
                msg_widget_msg_transition_animation_done(msg_widget);
-
-            msg_widget->task_count++;
 
             msg_widget->width = new_width;
          }

@@ -4625,7 +4625,6 @@ static void menu_input_key_event(bool down, unsigned keycode,
 void menu_input_dialog_end(void)
 {
    struct menu_state *menu_st                 = &menu_driver_state;
-   menu_st->input_dialog_kb_type              = 0;
    menu_st->input_dialog_kb_idx               = 0;
    menu_st->input_dialog_kb_text_type         = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
@@ -8582,7 +8581,6 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             line->label_setting,
             sizeof(menu_st->input_dialog_kb_label_setting));
 
-   menu_st->input_dialog_kb_type      = line->type;
    menu_st->input_dialog_kb_idx       = line->idx;
    menu_st->input_dialog_kb_text_type = line->text_type;
 

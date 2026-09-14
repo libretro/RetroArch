@@ -289,7 +289,6 @@ struct runloop
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    dylib_t secondary_lib_handle;                         /* ptr alignment */
 #endif
-   size_t runahead_save_state_size;
 #endif
    size_t msg_queue_size;
 

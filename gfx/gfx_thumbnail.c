@@ -2907,7 +2907,6 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    path_data->system_len           = 0;
    path_data->system[0]            = '\0';
    path_data->content_path[0]      = '\0';
-   path_data->content_label_len    = 0;
    path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
@@ -3096,7 +3095,6 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
 
    /* 'Reset' path_data content strings */
    path_data->content_path[0]      = '\0';
-   path_data->content_label_len    = 0;
    path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
@@ -3113,7 +3111,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
       return false;
 
    /* Cache content label */
-   path_data->content_label_len = strlcpy(path_data->content_label,
+   strlcpy(path_data->content_label,
          label, sizeof(path_data->content_label));
 
    /* Determine content image name */
@@ -3148,7 +3146,6 @@ bool gfx_thumbnail_set_content_image(
 
    /* 'Reset' path_data content strings */
    path_data->content_path[0]      = '\0';
-   path_data->content_label_len    = 0;
    path_data->content_label[0]     = '\0';
    path_data->content_core_name[0] = '\0';
    path_data->content_db_name[0]   = '\0';
@@ -3176,7 +3173,7 @@ bool gfx_thumbnail_set_content_image(
    strlcpy(path_data->content_img,
             img_name, sizeof(path_data->content_img));
 
-   path_data->content_label_len = fill_pathname(
+   fill_pathname(
          path_data->content_label,
          path_data->content_img, "",
          sizeof(path_data->content_label));
@@ -3226,7 +3223,6 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* 'Reset' path_data content strings */
    path_data->content_path[0]         = '\0';
-   path_data->content_label_len       = 0;
    path_data->content_label[0]        = '\0';
    path_data->content_core_name[0]    = '\0';
    path_data->content_db_name[0]      = '\0';
@@ -3273,10 +3269,10 @@ bool gfx_thumbnail_set_content_playlist(
 
    /* Get content label */
    if (content_label && *content_label)
-      path_data->content_label_len = strlcpy(path_data->content_label,
+      strlcpy(path_data->content_label,
             content_label, sizeof(path_data->content_label));
    else
-      path_data->content_label_len = fill_pathname(path_data->content_label,
+      fill_pathname(path_data->content_label,
             path_basename(content_path),
             "", sizeof(path_data->content_label));
 

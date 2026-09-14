@@ -6798,7 +6798,6 @@ MUI_NOINLINE static void materialui_render_background(
    draw.tex_coord             = NULL;
    draw.vertex_count          = 4;
    draw.pipeline_id           = 0;
-   draw.pipeline_active       = false;
    draw.backend_data          = NULL;
    draw.color                 = draw_color;
    draw.texture               = 0;

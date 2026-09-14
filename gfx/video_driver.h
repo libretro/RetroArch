@@ -1174,8 +1174,6 @@ typedef struct
    uintptr_t display;
    uintptr_t window;
 
-   size_t window_title_len;
-
    uint32_t flags;
    /* Display state only the main thread writes and reads - the
     * VIDEO_FLAG_WIDGETS_* bits and VIDEO_FLAG_ACTIVE, several of them
@@ -1296,7 +1294,6 @@ typedef struct video_frame_delay_auto
 {
    float refresh_rate;
    uint16_t frame_time_target;
-   uint16_t frame_time_avg;
    uint8_t frame_time_interval;
    uint8_t delay_decrease;
 } video_frame_delay_auto_t;
