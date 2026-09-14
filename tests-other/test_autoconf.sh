@@ -90,6 +90,14 @@ run() {
 
 index_hash() { md5sum "$INDEX" 2>/dev/null | cut -d' ' -f1; }
 
+# Point the next run at a different .ratst without touching the
+# profile directory, so a phase can build an index with one device and
+# then connect a different one against it.
+use_ratst() {
+   sed -i "s#^test_input_file_joypad = .*#test_input_file_joypad = \"$RATST_DIR/$1\"#" \
+      "$HOME_DIR/.config/retroarch/retroarch.cfg"
+}
+
 say "== autoconf regression suite: $RETROARCH"
 [ -x "$RETROARCH" ] || { say "binary not found/executable"; exit 1; }
 
@@ -173,6 +181,81 @@ assert_seen 'not configured'                  "P6 unknown device unconfigured on
 [ -n "$H6" ] && [ "$H6" = "$(index_hash)" ] \
    && pass "P6 identical index not rewritten for a no-match device" \
    || fail "P6 index churned on an unrecognised device"
+
+# ---------------------------------------------------------------
+say "-- P7: input_phys ranking - matching phys outranks a bogus one"
+# TestpadP_phys and TestpadQ_physbogus carry identical vendor/product
+# ids and an identical input_device, so they differ only in
+# input_phys: 60 for the match against 40 for the mismatch.  Q sorts
+# after P here, so the run is repeated below with the order reversed -
+# ranking must not depend on which file the walk reaches first.
+setup test_input_autoconf_phys.ratst
+run
+assert_seen 'phys match configured in port 1'      "P7 matching phys wins on a fresh scan"
+assert_absent 'phys mismatch configured'           "P7 bogus phys not selected"
+run
+assert_seen 'phys match configured in port 1'      "P7 matching phys wins via the index"
+
+setup test_input_autoconf_phys.ratst
+mv "$AUTOCONF/TestpadP_phys.cfg" "$AUTOCONF/AA_phys.cfg"
+run
+assert_seen 'phys match configured in port 1'      "P7 matching phys wins when it sorts first"
+assert_absent 'phys mismatch configured'           "P7 bogus phys not selected when it sorts last"
+
+# ---------------------------------------------------------------
+say "-- P8: in-place edit promoting a non-winner - index must not hide it"
+# The regression behind #19540.  The index re-scores only its winner,
+# so an entry it *understates* never gets re-read: before the
+# directory fingerprint, a rival whose own claim was honest verified
+# cleanly and was configured, at its own lower affinity, without the
+# directory ever being scanned.
+#
+# Both edits below are size-preserving, so only the modification times
+# separate the edited directory from the indexed one - which is
+# exactly the case a *.cfg count could never catch.
+setup test_input_autoconf_unknown.ratst
+# Demote TestpadP below TestpadQ *before* the index is built: with a
+# wrong device name and a wrong phys it scores 20, against Q's honest
+# 40.  Both edits are size-preserving, here and below.
+sed -i -e 's#Test joypad device P#Test joypad device X#' \
+       -e 's#usb-0000:00:14.0-3/input0#usb-0000:00:77.7-7/input7#' \
+   "$AUTOCONF/TestpadP_phys.cfg"
+# Build the index with a device nothing matches: a connect that scored
+# 60 would take the scan's early exit and discard the index build, so
+# the phys device itself cannot be the one that writes it.
+run
+[ -s "$INDEX" ] || fail "P8 no index to go stale"
+# Now promote P back to a 60 while the index still records it at 20.
+# Q is untouched, so Q's recorded 40 stays honest - and an honest
+# claim is what verification checks.  The index therefore ranks Q top,
+# re-scores only Q, finds 40 as promised and configures it, never
+# reading the profile that now scores 60.  That is #19540.
+sleep 1
+sed -i -e 's#Test joypad device X#Test joypad device P#' \
+       -e 's#usb-0000:00:77.7-7/input7#usb-0000:00:14.0-3/input0#' \
+   "$AUTOCONF/TestpadP_phys.cfg"
+use_ratst test_input_autoconf_phys.ratst
+run
+assert_seen 'phys match configured in port 1' \
+   "P8 promoted profile selected after a size-preserving edit"
+assert_absent 'phys mismatch configured' \
+   "P8 understated index does not hide the true winner"
+
+# Same edit, but with no sleep: the index and the edit can land in the
+# same whole second, which the stored timestamp alone cannot separate.
+setup test_input_autoconf_unknown.ratst
+sed -i -e 's#Test joypad device P#Test joypad device X#' \
+       -e 's#usb-0000:00:14.0-3/input0#usb-0000:00:77.7-7/input7#' \
+   "$AUTOCONF/TestpadP_phys.cfg"
+run
+[ -s "$INDEX" ] || fail "P8 no index for the same-second case"
+sed -i -e 's#Test joypad device X#Test joypad device P#' \
+       -e 's#usb-0000:00:77.7-7/input7#usb-0000:00:14.0-3/input0#' \
+   "$AUTOCONF/TestpadP_phys.cfg"
+use_ratst test_input_autoconf_phys.ratst
+run
+assert_seen 'phys match configured in port 1' \
+   "P8 same-second edit still rescanned"
 
 # ---------------------------------------------------------------
 rm -rf "$WORK"

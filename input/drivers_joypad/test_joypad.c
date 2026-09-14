@@ -285,14 +285,33 @@ end:
 /* Test input file handling end */
 /********************************/
 
+static char test_joypad_name_buf[MAX_USERS][256];
+
 static const char *test_joypad_name(unsigned pad)
 {
+   const char *n;
+   char *at;
    if (pad >= MAX_USERS || (!test_joypads[pad].name
        || !*test_joypads[pad].name))
       return NULL;
    if (strstr(test_joypads[pad].name, ") "))
-      return strstr(test_joypads[pad].name, ") ") + 2;
-   return test_joypads[pad].name;
+      n = strstr(test_joypads[pad].name, ") ") + 2;
+   else
+      n = test_joypads[pad].name;
+   strlcpy(test_joypad_name_buf[pad], n, sizeof(test_joypad_name_buf[pad]));
+   if ((at = strstr(test_joypad_name_buf[pad], "@@")))
+      *at = '\0';
+   return test_joypad_name_buf[pad];
+}
+
+static const char *test_joypad_phys(unsigned pad)
+{
+   const char *at;
+   if (pad >= MAX_USERS || !test_joypads[pad].name)
+      return NULL;
+   if ((at = strstr(test_joypads[pad].name, "@@")))
+      return at + 2;
+   return NULL;
 }
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
@@ -314,7 +333,7 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
 
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
-         NULL, NULL,
+         NULL, test_joypad_phys(autoconf_pad),
          "test",
          autoconf_pad,
          vid,
