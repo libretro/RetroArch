@@ -73,6 +73,7 @@
 
 #if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
+#include "../libretro-common/compat/compat_strtoll.c"
 #endif
 
 #include "../verbosity.c"
