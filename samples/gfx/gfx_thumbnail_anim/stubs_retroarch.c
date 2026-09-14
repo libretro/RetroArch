@@ -155,3 +155,9 @@ void gfx_display_draw(void *dispctx, void *draw, void *data,
 { (void)dispctx; (void)draw; (void)data;
   (void)video_width; (void)video_height; }
 
+/* Blending goes through gfx_display now, on the same terms as the
+ * draw above: void* for the same reason, and nothing to do here. */
+void gfx_display_blend_begin(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+void gfx_display_blend_end(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }

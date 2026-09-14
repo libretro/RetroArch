@@ -70,6 +70,13 @@ void gfx_animation_push(void *entry)
    (void)entry;
    hp.fade_pushes++;
 }
+
+/* Blending goes through gfx_display now, on the same terms as the
+ * draw above: void* for the same reason, and nothing to do here. */
+void gfx_display_blend_begin(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+void gfx_display_blend_end(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }
 bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
 
 /* ---- task queue ---- */

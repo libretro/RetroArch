@@ -155,3 +155,9 @@ void slock_free(slock_t *l)
 void slock_lock(slock_t *l)   { pthread_mutex_lock((pthread_mutex_t*)l); }
 void slock_unlock(slock_t *l) { pthread_mutex_unlock((pthread_mutex_t*)l); }
 #endif
+
+/* font_driver.c sends gfx_display's batch out before it draws text,
+ * so that quads asked for first land under it. There is no batch
+ * here; the pointer is a blob for the symbol to return. */
+void *disp_get_ptr(void) { static char b[8192]; return b; }
+void gfx_display_flush_batch(void *p_disp) { (void)p_disp; }
