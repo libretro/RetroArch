@@ -813,15 +813,21 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
          || (vertex_count > d3d11->sprites.capacity))
       return;
 
-   if (d3d11->sprites.offset + vertex_count > d3d11->sprites.capacity)
-      d3d11->sprites.offset = 0;
-
    {
       D3D11_MAPPED_SUBRESOURCE mapped_vbo;
       d3d11_sprite_t*          sprite = NULL;
+      /* Rewinding the ring is where the GPU may still be reading:
+       * DISCARD renames the buffer, so in-flight draws keep theirs. */
+      D3D11_MAP map_type = D3D11_MAP_WRITE_NO_OVERWRITE;
+
+      if (d3d11->sprites.offset + vertex_count > d3d11->sprites.capacity)
+      {
+         d3d11->sprites.offset = 0;
+         map_type              = D3D11_MAP_WRITE_DISCARD;
+      }
 
       d3d11->context->lpVtbl->Map(
-            d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+            d3d11->context, (D3D11Resource)d3d11->sprites.vbo, 0, map_type, 0, &mapped_vbo);
 
       sprite = (d3d11_sprite_t*)mapped_vbo.pData + d3d11->sprites.offset;
 
@@ -1225,6 +1231,7 @@ static void d3d11_font_render_msg(
    unsigned total_count;
    unsigned start_offset;
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   D3D11_MAP map_type = D3D11_MAP_WRITE_NO_OVERWRITE;
    HRESULT hr;
    d3d11_sprite_t *v                = NULL;
    d3d11_font_t *font               = (d3d11_font_t*)data;
@@ -1343,13 +1350,16 @@ static void d3d11_font_render_msg(
       }
       need = have_drop ? total_bytes * 2 : total_bytes;
       if (d3d11->sprites.offset + need > (unsigned)d3d11->sprites.capacity)
+      {
          d3d11->sprites.offset = 0;
+         map_type              = D3D11_MAP_WRITE_DISCARD;
+      }
    }
 
    /* Single Map for the entire message (all lines, shadow + foreground). */
    hr = d3d11->context->lpVtbl->Map(
          d3d11->context, (D3D11Resource)d3d11->sprites.vbo,
-         0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
+         0, map_type, 0, &mapped_vbo);
 
    if (FAILED(hr))
       return;
