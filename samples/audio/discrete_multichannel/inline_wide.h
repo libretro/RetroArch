@@ -1,4 +1,74 @@
 /* Configured wide inline transport before native channel routing. */
+static double raw_speed_adjust;
+static unsigned raw_speed_calls;
+static int16_t raw_speed_samples[514];
+static ssize_t raw_speed_write(void *data, const int16_t *samples,
+      size_t frames, unsigned rate, double adjust, float gain)
+{
+   (void)data;
+   CHECK(frames == 257 && rate == 44100 && gain == 1.0f,
+         "raw speed changed native block metadata");
+   if (frames == 257) memcpy(raw_speed_samples, samples, sizeof(raw_speed_samples));
+   raw_speed_adjust = adjust;
+   raw_speed_calls++;
+   return (ssize_t)frames;
+}
+
+static void raw_speed_cases(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings = config_get_ptr();
+   unsigned mode, f, before = failures;
+   int16_t input[514], expected[514];
+   for (f = 0; f < 514; f++) input[f] = (int16_t)((int)(f*719%12000)-6000);
+   for (mode = 0; mode < 5; mode++)
+   {
+      bool complete = false;
+      CHECK(pipe_up(false, false), "raw speed stand-up");
+      dev_channels = st->out_channels = st->pipe_channels = 2;
+      dev_layout = st->out_layout = AUDIO_LAYOUT_STEREO;
+      st->pipe_frame_bytes = 2*sizeof(int16_t);
+      scripted_threaded.write_raw = raw_speed_write;
+      settings->bools.audio_fastforward_speedup = mode != 3;
+      settings->bools.audio_time_stretch = false;
+      settings->bools.audio_time_stretch_lowpass = mode == 4;
+      settings->floats.slowmotion_ratio = 2;
+      runloop_state_get_ptr()->flags = mode == 4 ? RUNLOOP_FLAG_FASTMOTION : 0;
+      retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 32768);
+      raw_speed_calls = 0;
+      memcpy(expected, input, sizeof(input));
+      if (mode == 4)
+      {
+         audio_speed_lpf_t lpf;
+         CHECK(audio_driver_transport_configure(settings) && st->pipe_transport,
+               "raw filter-only preparation");
+         audio_speed_lpf_init(&lpf, 44100, 2, false);
+         audio_speed_lpf_set(&lpf, true, audio_speed_lpf_cutoff(44100, 131072));
+         audio_speed_lpf_process(&lpf, expected, 257);
+         audio_driver_submit(st, 1.0f, input, 514, false, false, true);
+         retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_FASTMOTION);
+         CHECK(audio_driver_pipeline_transport_step(st->pipe_transport,
+               &st->pipe_transport_serial, 257, 257, false, &complete), "raw filter-only step");
+      }
+      else
+      {
+         if (!mode) { st->pipe_threaded = false; st->last_flush_time = 123; }
+         audio_driver_flush(st, 2.0f, input, 514, false, mode == 2, mode != 0);
+         CHECK(mode || !st->last_flush_time, "raw speed release retained cadence");
+         st->pipe_threaded = true;
+      }
+      CHECK(raw_speed_calls == 1 && raw_speed_adjust == ((mode == 1 || mode == 4) ? 0.5 : 1.0),
+            "raw speed multiplier: mode %u got %.8f", mode, raw_speed_adjust);
+      CHECK(!memcmp(raw_speed_samples, expected, sizeof(expected)) && !st->stat_frontend_is_float,
+            "raw speed changed native samples");
+      audio_driver_deinit_internal(true);
+   }
+   settings->bools.audio_time_stretch_lowpass = settings->bools.audio_fastforward_speedup = false;
+   settings->floats.slowmotion_ratio = 1;
+   runloop_state_get_ptr()->flags = 0;
+   printf("raw native speed: 5 cases, %u failures\n", failures - before);
+}
+
 static void independent_lpf_cases(void)
 {
    audio_driver_state_t *st = &audio_driver_st;

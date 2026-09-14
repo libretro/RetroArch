@@ -287,7 +287,7 @@ typedef struct audio_driver
     * @param samples     Interleaved int16 stereo samples (LRLRLR...)
     * @param frames      Number of frames (pairs of samples)
     * @param input_rate  Source sample rate in Hz
-    * @param rate_adjust Rate adjustment multiplier for A/V sync (1.0 = normal)
+    * @param rate_adjust Output-duration multiplier for A/V sync and playback speed (1.0 = normal)
     * @param volume      Volume gain to apply (0.0 = muted, 1.0 = full volume)
     * @return Number of frames written, or -1 on error
     */

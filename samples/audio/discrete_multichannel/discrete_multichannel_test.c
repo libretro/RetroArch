@@ -2470,6 +2470,7 @@ int main(void)
    RUN("reverseboundary", rewind_boundary_cases());
    RUN("statereverse", rewind_state_cases());
    RUN("independentlpf", independent_lpf_cases());
+   RUN("rawspeed", raw_speed_cases());
    RUN("bufferingcallback", callback_buffering_case());
    RUN("menutiming", menu_timing_cases());
    RUN("inlinewide", inline_wide_cases());

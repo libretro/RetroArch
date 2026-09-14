@@ -149,3 +149,9 @@ ordinary SRC at normal, accelerated and slow speeds. Dry playback matches the
 ordinary path, WSOLA stays quiescent, and prepared storage does not grow. Four
 queued cases check ordinary pitch/duration, stereo/5.1, native int16/float,
 HQ composition and short device writes. These use the existing frontend target.
+
+`DM_ONLY=rawspeed ./discrete_multichannel_test` checks the raw-int16 driver
+boundary at normal speed, accelerated fast-forward, combined slow/fast motion,
+disabled speed-up and queued filter-only playback. The scripted driver verifies
+the composed duration multiplier and byte-exact native samples, including the
+independent LPF output. It does not instantiate a physical SDL3 audio device.

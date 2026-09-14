@@ -2524,6 +2524,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (is_slowmotion)
          rate_adjust                *= slowmotion_ratio;
 
+      /* Driver-side SRC needs the same speed multiplier as software SRC.
+       * In the threaded path this reads the producer's cadence estimate. */
+      if (!is_fastforward && !audio_st->pipe_threaded)
+         audio_driver_ff_mult_reset(audio_st);
+      if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+         rate_adjust *= audio_driver_ff_mult(audio_st, frames);
+
       /* Note: mute/volume is not applied here.  Per the write_raw
        * contract in audio_driver.h the driver MUST apply the passed
        * gain (0.0 when muted) to its output - a driver that drops it
