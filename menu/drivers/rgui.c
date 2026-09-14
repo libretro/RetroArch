@@ -8542,16 +8542,16 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    rgui_t *rgui                        = (rgui_t*)data;
    settings_t *settings                = config_get_ptr();
    struct menu_state *menu_st          = menu_state_get_ptr();
-   bool bg_filler_thickness_enable     = settings->bools.menu_rgui_background_filler_thickness_enable;
-   bool border_filler_thickness_enable = settings->bools.menu_rgui_border_filler_thickness_enable;
+   bool bg_filler_thickness_enable     = video_info->menu.rgui_background_filler_thickness_enable;
+   bool border_filler_thickness_enable = video_info->menu.rgui_border_filler_thickness_enable;
 #if defined(DINGUX)
    unsigned aspect_ratio               = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock          = RGUI_ASPECT_RATIO_LOCK_NONE;
 #else
-   unsigned aspect_ratio               = settings->uints.menu_rgui_aspect_ratio;
-   unsigned aspect_ratio_lock          = settings->uints.menu_rgui_aspect_ratio_lock;
+   unsigned aspect_ratio               = video_info->menu.rgui_aspect_ratio;
+   unsigned aspect_ratio_lock          = video_info->menu.rgui_aspect_ratio_lock;
 #endif
-   bool border_filler_enable           = settings->bools.menu_rgui_border_filler_enable;
+   bool border_filler_enable           = video_info->menu.rgui_border_filler_enable;
    unsigned video_width                = video_info->width;
    unsigned video_height               = video_info->height;
    gfx_display_t *p_disp               = disp_get_ptr();
@@ -8586,24 +8586,24 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui->flags        &= ~RGUI_FLAG_BORDER_ENABLE;
    }
 
-   if (settings->bools.menu_rgui_shadows != ((rgui->flags & RGUI_FLAG_SHADOW_ENABLE) > 0))
+   if (video_info->menu.rgui_shadows != ((rgui->flags & RGUI_FLAG_SHADOW_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
-            settings->bools.menu_rgui_shadows,
-            settings->bools.menu_rgui_extended_ascii);
+            video_info->menu.rgui_shadows,
+            video_info->menu.rgui_extended_ascii);
 
       rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
                              |  RGUI_FLAG_FORCE_REDRAW;
-      if (settings->bools.menu_rgui_shadows)
+      if (video_info->menu.rgui_shadows)
          rgui->flags        |=  RGUI_FLAG_SHADOW_ENABLE;
       else
          rgui->flags        &= ~RGUI_FLAG_SHADOW_ENABLE;
    }
 
-   if (settings->uints.menu_rgui_particle_effect != rgui->particle_effect)
+   if (video_info->menu.rgui_particle_effect != rgui->particle_effect)
    {
-      rgui->particle_effect  = settings->uints.menu_rgui_particle_effect;
+      rgui->particle_effect  = video_info->menu.rgui_particle_effect;
 
       if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
          rgui_init_particle_effect(rgui, p_disp);
@@ -8613,59 +8613,59 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (    (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
         && (     (!(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER))
-              || (settings->bools.menu_rgui_particle_effect_screensaver)))
+              || (video_info->menu.rgui_particle_effect_screensaver)))
       rgui->flags           |= RGUI_FLAG_FORCE_REDRAW;
 
-   if (settings->bools.menu_rgui_extended_ascii != ((rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE) > 0))
+   if (video_info->menu.rgui_extended_ascii != ((rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
-            settings->bools.menu_rgui_shadows,
-            settings->bools.menu_rgui_extended_ascii);
+            video_info->menu.rgui_shadows,
+            video_info->menu.rgui_extended_ascii);
 
       rgui->flags                |=  RGUI_FLAG_FORCE_REDRAW;
-      if (settings->bools.menu_rgui_extended_ascii)
+      if (video_info->menu.rgui_extended_ascii)
          rgui->flags             |=  RGUI_FLAG_EXTENDED_ASCII_ENABLE;
       else
          rgui->flags             &= ~RGUI_FLAG_EXTENDED_ASCII_ENABLE;
    }
 
-   if (     (settings->uints.menu_rgui_color_theme != rgui->color_theme)
+   if (     (video_info->menu.rgui_color_theme != rgui->color_theme)
          || (  (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
-            && (settings->bools.menu_rgui_transparency !=
+            && (video_info->menu.rgui_transparency !=
                ((rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE) > 0))))
    {
-      if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+      if (video_info->menu.rgui_color_theme == RGUI_THEME_DYNAMIC)
          rgui_update_dynamic_theme_path(rgui,
-               settings->paths.directory_dynamic_wallpapers);
+               video_info->menu.dynamic_wallpapers_dir);
 
       rgui_prepare_colors(rgui,
-            settings->uints.menu_rgui_color_theme,
-            settings->paths.path_rgui_theme_preset,
-            settings->bools.menu_rgui_transparency,
-            settings->uints.menu_rgui_aspect_ratio
+            video_info->menu.rgui_color_theme,
+            video_info->menu.rgui_theme_preset,
+            video_info->menu.rgui_transparency,
+            video_info->menu.rgui_aspect_ratio
             );
    }
-   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_CUSTOM)
+   else if (video_info->menu.rgui_color_theme == RGUI_THEME_CUSTOM)
    {
-      if (!string_is_equal(settings->paths.path_rgui_theme_preset,
+      if (!string_is_equal(video_info->menu.rgui_theme_preset,
             rgui->theme_preset_path))
          rgui_prepare_colors(rgui,
-               settings->uints.menu_rgui_color_theme,
-               settings->paths.path_rgui_theme_preset,
-               settings->bools.menu_rgui_transparency,
-               settings->uints.menu_rgui_aspect_ratio
+               video_info->menu.rgui_color_theme,
+               video_info->menu.rgui_theme_preset,
+               video_info->menu.rgui_transparency,
+               video_info->menu.rgui_aspect_ratio
                );
    }
-   else if (settings->uints.menu_rgui_color_theme == RGUI_THEME_DYNAMIC)
+   else if (video_info->menu.rgui_color_theme == RGUI_THEME_DYNAMIC)
    {
       if (!string_is_equal(rgui->last_theme_dynamic_path,
             rgui->theme_dynamic_path))
          rgui_prepare_colors(rgui,
-               settings->uints.menu_rgui_color_theme,
-               settings->paths.path_rgui_theme_preset,
-               settings->bools.menu_rgui_transparency,
-               settings->uints.menu_rgui_aspect_ratio
+               video_info->menu.rgui_color_theme,
+               video_info->menu.rgui_theme_preset,
+               video_info->menu.rgui_transparency,
+               video_info->menu.rgui_aspect_ratio
                );
    }
 
@@ -8715,7 +8715,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
           * after visiting the video scaling settings menu, resize
           * events should be monitored again */
          rgui->flags               &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
-         rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
+         rgui_update_menu_viewport(rgui, p_disp, video_info->menu.rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
       }
 
@@ -8781,7 +8781,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       if (     (aspect_ratio_lock != RGUI_ASPECT_RATIO_LOCK_NONE)
             && (!(rgui->flags & RGUI_FLAG_IGNORE_RESIZE_EVENTS)))
       {
-         rgui_update_menu_viewport(rgui, p_disp, settings->uints.menu_rgui_aspect_ratio_lock);
+         rgui_update_menu_viewport(rgui, p_disp, video_info->menu.rgui_aspect_ratio_lock);
          rgui_set_video_config(rgui, settings, &rgui->menu_video_settings, true);
       }
 
@@ -8797,16 +8797,16 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
        * since the flicker when switching between playlist view and
        * fullscreen thumbnail view is incredibly jarring...) */
       if ((menu_driver_get_current_time() - rgui->thumbnail_load_trigger_time) >=
-            (settings->uints.menu_rgui_thumbnail_delay * 1000 * ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+            (video_info->menu.rgui_thumbnail_delay * 1000 * ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                   ? 1.5f
                   : 1.0f)))
          rgui_load_current_thumbnails(rgui, menu_st,
-               settings->bools.network_on_demand_thumbnails);
+               video_info->menu.network_on_demand_thumbnails);
    }
 
    /* Read pointer input */
-   if (     settings->bools.menu_mouse_enable
-         || settings->bools.menu_pointer_enable)
+   if (     video_info->menu.mouse_enable
+         || video_info->menu.pointer_enable)
    {
       menu_input_get_pointer_state(&rgui->pointer);
 

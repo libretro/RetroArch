@@ -1350,6 +1350,22 @@ static void video_thread_slot_widget_paths(
 
    s->video_info.widget_dir_assets = s->widget_dir_assets;
    s->video_info.widget_path_font  = s->widget_path_font;
+
+   {
+      /* The menu's two, on the same terms */
+      const char *preset = video_info->menu.rgui_theme_preset
+         ? video_info->menu.rgui_theme_preset      : "";
+      const char *wall   = video_info->menu.dynamic_wallpapers_dir
+         ? video_info->menu.dynamic_wallpapers_dir : "";
+      if (strcmp(s->menu_rgui_theme_preset, preset) != 0)
+         strlcpy(s->menu_rgui_theme_preset, preset,
+               sizeof(s->menu_rgui_theme_preset));
+      if (strcmp(s->menu_dynamic_wallpapers_dir, wall) != 0)
+         strlcpy(s->menu_dynamic_wallpapers_dir, wall,
+               sizeof(s->menu_dynamic_wallpapers_dir));
+      s->video_info.menu.rgui_theme_preset      = s->menu_rgui_theme_preset;
+      s->video_info.menu.dynamic_wallpapers_dir = s->menu_dynamic_wallpapers_dir;
+   }
 }
 #endif
 

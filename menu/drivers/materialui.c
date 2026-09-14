@@ -8509,8 +8509,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    size_t selection               = menu_st->selection_ptr;
    unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
-      menu_ticker_type            = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   bool menu_ticker_smooth        = settings->bools.menu_ticker_smooth;
+      menu_ticker_type            = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
+   bool menu_ticker_smooth        = video_info->menu.ticker_smooth;
    bool libretro_running          = video_info->libretro_running;
    float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
    float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;

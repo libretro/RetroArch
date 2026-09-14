@@ -9222,12 +9222,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float pseudo_font_length            = 0.0f;
    xmb_handle_t *xmb                   = (xmb_handle_t*)data;
    settings_t *settings                = config_get_ptr();
-   float thumbnail_scale_factor        = (float)settings->uints.menu_xmb_thumbnail_scale_factor / 100.0f;
-   bool menu_core_enable               = settings->bools.menu_core_enable;
-   bool show_title_header              = settings->bools.menu_xmb_show_title_header;
-   bool vertical_thumbnails            = settings->bools.menu_xmb_vertical_thumbnails;
-   unsigned vertical_fade_factor       = settings->uints.menu_xmb_vertical_fade_factor;
-   unsigned current_menu_icon          = settings->uints.menu_xmb_current_menu_icon;
+   float thumbnail_scale_factor        = (float)video_info->menu.xmb_thumbnail_scale_factor / 100.0f;
+   bool menu_core_enable               = video_info->menu.core_enable;
+   bool show_title_header              = video_info->menu.xmb_show_title_header;
+   bool vertical_thumbnails            = video_info->menu.xmb_vertical_thumbnails;
+   unsigned vertical_fade_factor       = video_info->menu.xmb_vertical_fade_factor;
+   unsigned current_menu_icon          = video_info->menu.xmb_current_menu_icon;
    void *userdata                      = video_info->userdata;
    unsigned video_width                = video_info->width;
    unsigned video_height               = video_info->height;
@@ -9352,8 +9352,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    left_thumbnail_margin_x                 = xmb->icon_size / 4.0f;
    right_thumbnail_margin_x                = (float)video_width - left_thumbnail_margin_x
                                            - right_thumbnail_margin_width;
-   xmb->margins_title                      = (float)settings->ints.menu_xmb_title_margin * 10.0f;
-   xmb->margins_title_horizontal_offset    = (float)settings->ints.menu_xmb_title_margin_horizontal_offset * 10.0f;
+   xmb->margins_title                      = (float)video_info->menu.xmb_title_margin * 10.0f;
+   xmb->margins_title_horizontal_offset    = (float)video_info->menu.xmb_title_margin_horizontal_offset * 10.0f;
 
    /* Configure shadow effect */
    if (shadows_enable)
@@ -9455,7 +9455,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Show icon thumbnail instead if enabled */
    if (     (xmb->is_quick_menu || xmb->is_playlist)
-         && settings->uints.menu_icon_thumbnails)
+         && video_info->menu.icon_thumbnails)
    {
       gfx_thumbnail_t *icon_thumbnail = &xmb->thumbnails.icon;
       bool show_icon_thumbnail        =
@@ -9740,7 +9740,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (     (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
             || (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING))
       {
-         if (settings->bools.menu_thumbnail_background_enable)
+         if (video_info->menu.thumbnail_background_enable)
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
@@ -9809,7 +9809,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             0.0f, 0.0f, 0.0f, 1.0f,
             0.0f, 0.0f, 0.0f, 1.0f,
       };
-      bool thumbnail_background = settings->bools.menu_thumbnail_background_enable;
+      bool thumbnail_background = video_info->menu.thumbnail_background_enable;
       bool show_right_thumbnail =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
             && xmb->show_thumbnails
@@ -9990,8 +9990,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             /* Left thumbnail, left side */
             if (show_left_thumbnail)
             {
-               bool icon_thumbnails      = settings->uints.menu_icon_thumbnails;
-               uint8_t current_menu_icon = settings->uints.menu_xmb_current_menu_icon;
+               bool icon_thumbnails      = video_info->menu.icon_thumbnails;
+               uint8_t current_menu_icon = video_info->menu.xmb_current_menu_icon;
                float margins_title_min   = -(xmb->icon_size / 5.0f);
                float margins_title       = (xmb->margins_title_bottom < margins_title_min)
                      ? margins_title_min : xmb->margins_title_bottom;
@@ -10044,8 +10044,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
        *   (if available) */
       else if (show_right_thumbnail || show_left_thumbnail)
       {
-         bool icon_thumbnails      = settings->uints.menu_icon_thumbnails;
-         uint8_t current_menu_icon = settings->uints.menu_xmb_current_menu_icon;
+         bool icon_thumbnails      = video_info->menu.icon_thumbnails;
+         uint8_t current_menu_icon = video_info->menu.xmb_current_menu_icon;
          float margins_title_min   = -(xmb->icon_size / 5.0f);
          float margins_title       = (xmb->margins_title_bottom < margins_title_min)
                ? margins_title_min : xmb->margins_title_bottom;
@@ -10210,8 +10210,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_blend_end(dispctx, userdata);
       }
 
-      datetime.time_mode      = settings->uints.menu_timedate_style;
-      datetime.date_separator = settings->uints.menu_timedate_date_separator;
+      datetime.time_mode      = video_info->menu.timedate_style;
+      datetime.date_separator = video_info->menu.timedate_date_separator;
       _len = menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
       title_header_max_width = x_pos + font_driver_get_message_width(
@@ -10246,7 +10246,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char tmp[NAME_MAX_LENGTH];
       size_t icon_len                =
             (  !xmb->assets_missing
-            && settings->uints.menu_xmb_current_menu_icon == XMB_CURRENT_MENU_ICON_TITLE)
+            && video_info->menu.xmb_current_menu_icon == XMB_CURRENT_MENU_ICON_TITLE)
                   ? xmb->icon_size / 2.5f : 0;
       size_t tmp_len                 = (video_width
                                      - xmb->margins_title_left
@@ -10254,9 +10254,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                      - icon_len
                                      - title_header_max_width);
       unsigned ticker_x_offset       = 0;
-      bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
+      bool use_smooth_ticker         = video_info->menu.ticker_smooth;
       enum gfx_animation_ticker_type menu_ticker_type
-                                     = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+                                     = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
 
       tmp[0] = '\0';
 

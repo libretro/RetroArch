@@ -12761,8 +12761,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool ozone_last_use_preferred_system_color_theme;
    ozone_handle_t* ozone                  = (ozone_handle_t*)data;
    settings_t  *settings                  = config_get_ptr();
-   unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
-   bool use_preferred_system_color_theme  = settings->bools.menu_use_preferred_system_color_theme;
+   unsigned color_theme                   = video_info->menu.ozone_color_theme;
+   bool use_preferred_system_color_theme  = video_info->menu.use_preferred_system_color_theme;
    uintptr_t messagebox_tag               = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
    static bool draw_osk_old               = false;
@@ -12840,7 +12840,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
 
       /* If ozone_render() hasn't run yet (which is the case at
-       * startup when settings->uints.menu_startup_page != Main Menu —
+       * startup when video_info->menu.startup_page != Main Menu —
        * the runloop's PENDING_STARTUP_PAGE branch handles the list
        * swap and doesn't fall through to menu_driver_iterate()),
        * NEED_COMPUTE is still set and entry node positions are
@@ -12851,8 +12851,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       {
          file_list_t *fl_compute = MENU_LIST_GET_SELECTION(menu_list, 0);
          ozone_compute_entries_position(ozone,
-               settings->bools.savestate_thumbnail_enable,
-               settings->bools.menu_show_sublabels,
+               video_info->menu.savestate_thumbnail_enable,
+               video_info->menu.show_sublabels,
                fl_compute ? fl_compute->size : 0);
          ozone->flags &= ~OZONE_FLAG_NEED_COMPUTE;
       }
@@ -12882,7 +12882,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       {
          color_theme                           = ozone_get_system_theme();
          configuration_set_uint(settings,
-               settings->uints.menu_ozone_color_theme, color_theme);
+               video_info->menu.ozone_color_theme, color_theme);
       }
 
       ozone_set_color_theme(ozone, color_theme);
@@ -13029,8 +13029,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             tab_tex,
             p_disp,
             p_anim,
-            settings->bools.menu_ticker_smooth,
-            (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type,
+            video_info->menu.ticker_smooth,
+            (enum gfx_animation_ticker_type)video_info->menu.ticker_type,
             userdata,
             video_width,
             video_height,

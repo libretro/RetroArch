@@ -431,6 +431,9 @@ typedef struct thread_video
           * it may write them again while this frame is drawn. */
          char widget_dir_assets[PATH_MAX_LENGTH];
          char widget_path_font[PATH_MAX_LENGTH];
+         /* And the two the menu's frame() watches for a change */
+         char menu_rgui_theme_preset[PATH_MAX_LENGTH];
+         char menu_dynamic_wallpapers_dir[PATH_MAX_LENGTH];
          size_t status_text_len;
 #endif
 #ifdef HAVE_VIDEO_FILTER

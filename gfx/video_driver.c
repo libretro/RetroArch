@@ -4595,6 +4595,45 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->xmb_alpha_factor         = settings->uints.menu_xmb_alpha_factor;
       video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
       video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
+      /* And what the menu drivers' frame() reads, for the same reason */
+      video_info->menu.rgui_theme_preset                      = settings->paths.path_rgui_theme_preset;
+      video_info->menu.dynamic_wallpapers_dir                 = settings->paths.directory_dynamic_wallpapers;
+      video_info->menu.rgui_color_theme                       = settings->uints.menu_rgui_color_theme;
+      video_info->menu.rgui_aspect_ratio                      = settings->uints.menu_rgui_aspect_ratio;
+      video_info->menu.rgui_aspect_ratio_lock                 = settings->uints.menu_rgui_aspect_ratio_lock;
+      video_info->menu.rgui_particle_effect                   = settings->uints.menu_rgui_particle_effect;
+      video_info->menu.rgui_thumbnail_delay                   = settings->uints.menu_rgui_thumbnail_delay;
+      video_info->menu.xmb_current_menu_icon                  = settings->uints.menu_xmb_current_menu_icon;
+      video_info->menu.icon_thumbnails                        = settings->uints.menu_icon_thumbnails;
+      video_info->menu.xmb_thumbnail_scale_factor             = settings->uints.menu_xmb_thumbnail_scale_factor;
+      video_info->menu.xmb_vertical_fade_factor               = settings->uints.menu_xmb_vertical_fade_factor;
+      video_info->menu.timedate_style                         = settings->uints.menu_timedate_style;
+      video_info->menu.timedate_date_separator                = settings->uints.menu_timedate_date_separator;
+      video_info->menu.ticker_type                            = settings->uints.menu_ticker_type;
+      video_info->menu.ozone_color_theme                      = settings->uints.menu_ozone_color_theme;
+      video_info->menu.startup_page                           = settings->uints.menu_startup_page;
+#ifdef HAVE_XMB
+      video_info->menu.xmb_title_margin                       = settings->ints.menu_xmb_title_margin;
+      video_info->menu.xmb_title_margin_horizontal_offset     = settings->ints.menu_xmb_title_margin_horizontal_offset;
+#endif
+      video_info->menu.rgui_shadows                           = settings->bools.menu_rgui_shadows;
+      video_info->menu.rgui_extended_ascii                    = settings->bools.menu_rgui_extended_ascii;
+      video_info->menu.rgui_transparency                      = settings->bools.menu_rgui_transparency;
+      video_info->menu.rgui_background_filler_thickness_enable = settings->bools.menu_rgui_background_filler_thickness_enable;
+      video_info->menu.rgui_border_filler_thickness_enable    = settings->bools.menu_rgui_border_filler_thickness_enable;
+      video_info->menu.rgui_border_filler_enable              = settings->bools.menu_rgui_border_filler_enable;
+      video_info->menu.rgui_particle_effect_screensaver       = settings->bools.menu_rgui_particle_effect_screensaver;
+      video_info->menu.network_on_demand_thumbnails           = settings->bools.network_on_demand_thumbnails;
+      video_info->menu.mouse_enable                           = settings->bools.menu_mouse_enable;
+      video_info->menu.pointer_enable                         = settings->bools.menu_pointer_enable;
+      video_info->menu.thumbnail_background_enable            = settings->bools.menu_thumbnail_background_enable;
+      video_info->menu.core_enable                            = settings->bools.menu_core_enable;
+      video_info->menu.xmb_show_title_header                  = settings->bools.menu_xmb_show_title_header;
+      video_info->menu.xmb_vertical_thumbnails                = settings->bools.menu_xmb_vertical_thumbnails;
+      video_info->menu.ticker_smooth                          = settings->bools.menu_ticker_smooth;
+      video_info->menu.use_preferred_system_color_theme       = settings->bools.menu_use_preferred_system_color_theme;
+      video_info->menu.savestate_thumbnail_enable             = settings->bools.savestate_thumbnail_enable;
+      video_info->menu.show_sublabels                         = settings->bools.menu_show_sublabels;
    }
    else
 #endif
@@ -4604,6 +4643,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->xmb_color_theme          = 0;
       video_info->timedate_enable          = false;
       video_info->battery_level_enable     = false;
+      memset(&video_info->menu, 0, sizeof(video_info->menu));
       video_info->xmb_shadows_enable       = false;
       video_info->xmb_alpha_factor         = 0.0f;
       video_info->menu_framebuffer_opacity = 0.0f;

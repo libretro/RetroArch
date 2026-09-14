@@ -392,6 +392,54 @@ typedef struct video_info
    bool font_enable;
 } video_info_t;
 
+/* What the menu drivers read from the settings while they draw. The
+ * draw runs on the video thread under the threaded wrapper; the
+ * settings are written on the main thread, by the menu itself. So they
+ * are taken here, on the main thread, as the frame is built, and the
+ * driver reads the frame's copy. The two paths are pointers into the
+ * settings for a caller on the main thread, and into the frame's own
+ * copies for one on the video thread - the wrapper repoints them as
+ * it hands the frame over, as it does the widget paths. */
+typedef struct video_frame_menu_settings
+{
+   const char *rgui_theme_preset;
+   const char *dynamic_wallpapers_dir;
+   unsigned rgui_color_theme;
+   unsigned rgui_aspect_ratio;
+   unsigned rgui_aspect_ratio_lock;
+   unsigned rgui_particle_effect;
+   unsigned rgui_thumbnail_delay;
+   unsigned xmb_current_menu_icon;
+   unsigned icon_thumbnails;
+   unsigned xmb_thumbnail_scale_factor;
+   unsigned xmb_vertical_fade_factor;
+   unsigned timedate_style;
+   unsigned timedate_date_separator;
+   unsigned ticker_type;
+   unsigned ozone_color_theme;
+   unsigned startup_page;
+   int      xmb_title_margin;
+   int      xmb_title_margin_horizontal_offset;
+   bool     rgui_shadows;
+   bool     rgui_extended_ascii;
+   bool     rgui_transparency;
+   bool     rgui_background_filler_thickness_enable;
+   bool     rgui_border_filler_thickness_enable;
+   bool     rgui_border_filler_enable;
+   bool     rgui_particle_effect_screensaver;
+   bool     network_on_demand_thumbnails;
+   bool     mouse_enable;
+   bool     pointer_enable;
+   bool     thumbnail_background_enable;
+   bool     core_enable;
+   bool     xmb_show_title_header;
+   bool     xmb_vertical_thumbnails;
+   bool     ticker_smooth;
+   bool     use_preferred_system_color_theme;
+   bool     savestate_thumbnail_enable;
+   bool     show_sublabels;
+} video_frame_menu_settings_t;
+
 typedef struct video_frame_info
 {
    /* Presents the display had seen before this frame's first one.
@@ -526,6 +574,8 @@ typedef struct video_frame_info
     * frame over, as it does the statistics text. */
    const char *widget_dir_assets;
    const char *widget_path_font;
+   /* Read by the menu driver's frame(), on the video thread */
+   video_frame_menu_settings_t menu;
    float menu_ticker_speed;
    /* Read by a driver answering set_aspect_ratio(), which the threaded
     * wrapper runs on the video thread */
