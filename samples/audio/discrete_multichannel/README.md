@@ -4,6 +4,13 @@
 the native transport quality checks. Run just those checks with
 `DM_ONLY=transportquality ./discrete_multichannel_test`.
 
+`DM_ONLY=canonicalreserve ./discrete_multichannel_test` checks the producer's
+canonical staging reservation: initial/growth allocation failure preserves
+state, and repeated reservation plus varying 5.1/7.1 native batches do not
+reallocate. Pipeline initialization reserves the bounded maximum before the
+worker starts (1024 canonical float frames, 44 KiB). This moves the existing
+maximum staging cost to startup; the stereo pipeline does not reserve it.
+
 The 48 quality cases cover int16/float, stereo/5.1, normal sinc at 48 → 44.1 kHz
 and HQ sinc at 48 → 96 kHz, and tempos 0.25, 0.5, 1, 2, 8 and 32. They activate
 transport through the configured startup helper, publish through the frontend,

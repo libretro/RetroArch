@@ -28,6 +28,14 @@
 #include "../../../audio/audio_pipeline_stretch.h"
 static bool transport_fail_output, transport_fail_stage, transport_track;
 static unsigned transport_allocations, transport_frees;
+static bool canonical_fail, canonical_track;
+static unsigned canonical_reallocations;
+static void *canonical_test_realloc(void *ptr, size_t bytes)
+{
+   if (canonical_track) canonical_reallocations++;
+   if (canonical_fail) return NULL;
+   return realloc(ptr, bytes);
+}
 static void *transport_test_alloc(size_t alignment, size_t size)
 {
    void *p;
@@ -53,7 +61,9 @@ static audio_pipeline_stretch_t *transport_test_new(unsigned rate,
 #define memalign_alloc transport_test_alloc
 #define memalign_free transport_test_free
 #define audio_pipeline_stretch_new transport_test_new
+#define realloc canonical_test_realloc
 #include "../../../audio/audio_driver.c"
+#undef realloc
 #undef memalign_alloc
 #undef memalign_free
 #undef audio_pipeline_stretch_new
@@ -2265,6 +2275,55 @@ static void native_render_cases(void)
    printf("native WSOLA frontend render: 48 runs, %u failures\n", failures - before);
 }
 
+static void canonical_reserve_cases(void)
+{
+   static union { float f[4097 * 8]; int16_t i[4097 * 8]; } input;
+   static const size_t batches[] = {1, 17, 1024, 4097};
+   audio_driver_state_t *st = &audio_driver_st;
+   unsigned floating, wide, n, before = failures;
+   for (floating = 0; floating < 2; floating++)
+      for (wide = 0; wide < 2; wide++)
+      {
+         uint8_t *original;
+         size_t frames = 0;
+         CHECK(pipe_up(floating, floating), "canonical reserve stand-up");
+         canonical_fail = true;
+         CHECK(!audio_driver_pipe_prepare_canonical(st)
+               && !st->pipe_canon && !st->pipe_canon_frames, "failed canonical reserve changed state");
+         st->pipe_canon = (uint8_t*)malloc(AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
+         CHECK(st->pipe_canon != NULL, "canonical existing storage");
+         if (!st->pipe_canon) { canonical_fail = false; continue; }
+         st->pipe_canon_frames = 1;
+         original = st->pipe_canon;
+         memset(original, 0x5a, AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
+         CHECK(!audio_driver_pipe_prepare_canonical(st) && st->pipe_canon == original
+               && st->pipe_canon_frames == 1 && original[0] == 0x5a,
+               "failed canonical growth destroyed storage");
+         canonical_fail = false;
+         CHECK(audio_driver_pipe_prepare_canonical(st), "canonical startup reserve");
+         original = st->pipe_canon;
+         CHECK(original[0] == 0x5a, "canonical reserve lost existing bytes");
+         canonical_reallocations = 0; canonical_track = true;
+         CHECK(audio_driver_pipe_prepare_canonical(st), "canonical repeated reserve");
+         for (n = 0; n < ARRAY_SIZE(batches); n++)
+         {
+            CHECK(audio_driver_multi_pipe(st, &input, batches[n], wide ? 8 : 6,
+                  wide ? AUDIO_LAYOUT_7POINT1 : AUDIO_LAYOUT_5POINT1, floating),
+                  "canonical reserved publish");
+            frames += batches[n];
+         }
+         canonical_track = false;
+         CHECK(!canonical_reallocations && st->pipe_canon == original
+               && st->pipe_canon_frames == (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1),
+               "reserved callback grew canonical staging");
+         CHECK(retro_spsc_read_avail(&st->pipe_ring) == frames * st->pipe_frame_bytes,
+               "reserved callback lost source frames");
+         audio_driver_deinit_internal(true);
+         CHECK(!st->pipe_canon && !st->pipe_canon_frames, "canonical teardown retained storage");
+      }
+   printf("canonical startup reserve: 4 cases, %u failures\n", failures - before);
+}
+
 #include "transport_quality.h"
 
 int main(void)
@@ -2274,6 +2333,7 @@ int main(void)
    const char *only = getenv("DM_ONLY");
 #define RUN(tag, call) do { if (!only || strstr(only, tag)) { call; } } while (0)
    printf("discrete multi-channel:\n");
+   RUN("canonicalreserve", canonical_reserve_cases());
    RUN("transportowner", transport_owner_cases());
    RUN("transportdiscard", transport_discard_cases());
    RUN("transportquality", transport_quality_cases());

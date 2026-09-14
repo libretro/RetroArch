@@ -3295,6 +3295,21 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 
 #endif
 
+static bool audio_driver_pipe_prepare_canonical(audio_driver_state_t *audio_st)
+{
+   size_t frames = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
+   uint8_t *buffer;
+   if (audio_st->pipe_canon_frames >= frames)
+      return true;
+   buffer = (uint8_t*)realloc(audio_st->pipe_canon,
+         frames * AUDIO_PIPE_CANON_CHANNELS * sizeof(float));
+   if (!buffer)
+      return false;
+   audio_st->pipe_canon = buffer;
+   audio_st->pipe_canon_frames = frames;
+   return true;
+}
+
 #ifdef HAVE_THREADS
 static bool audio_driver_transport_configure(const settings_t *settings);
 #endif
@@ -3511,9 +3526,10 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             audio_driver_st.pipe_wide       = (uint8_t*)malloc(wide);
             audio_driver_st.pipe_wide_bytes = audio_driver_st.pipe_wide ? wide : 0;
          }
-         if (!audio_driver_st.pipe_wide)
+         if (!audio_driver_st.pipe_wide
+               || !audio_driver_pipe_prepare_canonical(&audio_driver_st))
          {
-            RARCH_ERR("[Audio] Cannot allocate the wide-frame bounce. Exiting...\n");
+            RARCH_ERR("[Audio] Cannot allocate wide-frame storage. Exiting...\n");
             retro_spsc_free(&audio_driver_st.pipe_ring);
             return false;
          }
@@ -5454,14 +5470,9 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
       return true;
    if (audio_st->float_gate && audio_st->float_gate())
       return true;
-   if (capacity > audio_st->pipe_canon_frames)
-   {
-      uint8_t *nb = (uint8_t*)realloc(audio_st->pipe_canon, capacity * pc * sizeof(float));
-      if (!nb)
-         return false;
-      audio_st->pipe_canon        = nb;
-      audio_st->pipe_canon_frames = capacity;
-   }
+   if (capacity > audio_st->pipe_canon_frames
+         && !audio_driver_pipe_prepare_canonical(audio_st))
+      return false;
    runloop_flags = runloop_get_flags();
    audio_driver_record_push(audio_st, data, frames, channels, layout, is_float);
    if (      (runloop_flags & RUNLOOP_FLAG_PAUSED)
