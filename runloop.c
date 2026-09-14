@@ -8068,6 +8068,7 @@ end:
 int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
+   retro_time_t pace_now;
    int64_t      pace_limit_ns;
    runloop_pace_facts_t  pace_facts;
    input_driver_state_t         *input_st = input_state_get_ptr();
@@ -8474,39 +8475,38 @@ end:
     * the top of the iteration: the overlay reads it from inside
     * video_driver_frame(), which runs between the top and here, and a
     * reset there made it read NONE on every frame. Paths that return
-    * before this block set it themselves. */
-   /* Computed at the end of the iteration and read by the overlay during
-    * the next one - one frame stale by design; see runloop_state_t::pace.
-    * Paths that return before this block set it themselves, through the
-    * same function. */
+    * before this block set it themselves, through the same function. */
    /* How long the last iteration actually took, smoothed. One clock
     * read on a path that already takes several, and the only way to
     * tell a source that is holding the loop from one that merely says
     * it is - headless SDL2 with no vblank sets the vsync bit and
-    * blocks on nothing. */
+    * blocks on nothing.
+    *
+    * The reading stands for the whole block below: the pace gather and
+    * the decision between here and the limiter are flag tests, so the
+    * frame's end is this instant and the limiter schedules against it
+    * rather than taking the clock a second time. */
+   pace_now = cpu_features_get_time_usec();
+   if (runloop_st->pace_iter_last)
    {
-      retro_time_t now = cpu_features_get_time_usec();
-      if (runloop_st->pace_iter_last)
+      retro_time_t delta = pace_now - runloop_st->pace_iter_last;
+      /* Samples longer than a quarter second are not pacing, they
+       * are a stall - a state load, a shader rebuild, a menu that
+       * blocked - and one of them dragged an eight-sample average
+       * from 60 fps to 8 in testing, taking several frames to
+       * recover. Nothing that is really holding the loop runs
+       * slower than 4 fps, so they are dropped rather than
+       * smoothed. */
+      if (runloop_pace_sample_usable(delta))
       {
-         retro_time_t delta = now - runloop_st->pace_iter_last;
-         /* Samples longer than a quarter second are not pacing, they
-          * are a stall - a state load, a shader rebuild, a menu that
-          * blocked - and one of them dragged an eight-sample average
-          * from 60 fps to 8 in testing, taking several frames to
-          * recover. Nothing that is really holding the loop runs
-          * slower than 4 fps, so they are dropped rather than
-          * smoothed. */
-         if (runloop_pace_sample_usable(delta))
-         {
-            if (runloop_st->pace_period_usec)
-               runloop_st->pace_period_usec +=
-                     (delta - runloop_st->pace_period_usec) / 8;
-            else
-               runloop_st->pace_period_usec = delta;
-         }
+         if (runloop_st->pace_period_usec)
+            runloop_st->pace_period_usec +=
+                  (delta - runloop_st->pace_period_usec) / 8;
+         else
+            runloop_st->pace_period_usec = delta;
       }
-      runloop_st->pace_iter_last = now;
    }
+   runloop_st->pace_iter_last = pace_now;
    /* What the frame limiter below will pace to. Normally the
     * fast-forward limit; replaced by the content frame time when
     * nothing else is pacing at all (see below). */
@@ -8569,7 +8569,7 @@ end:
       retro_time_t frame_limit_min = pace_limit_min;
       if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
-         const retro_time_t end_frame_time = cpu_features_get_time_usec();
+         const retro_time_t end_frame_time = pace_now;
 
          const retro_time_t to_sleep_us = runloop_pace_schedule(
                &runloop_st->frame_limit_anchor_ns,
