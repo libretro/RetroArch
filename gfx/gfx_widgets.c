@@ -1428,8 +1428,7 @@ static int gfx_widgets_draw_indicator(
 
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
@@ -1444,8 +1443,7 @@ static int gfx_widgets_draw_indicator(
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             p_dispwidget->pure_white
             );
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
    else
    {
@@ -1612,8 +1610,7 @@ static void gfx_widgets_draw_task_msg(
    }
 
    /* Icon */
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
    {
       float radians = 0.0f; /* rad                        */
       float cosine  = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
@@ -1666,8 +1663,7 @@ static void gfx_widgets_draw_task_msg(
             sine,
             color);
    }
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 
    /* Text */
    text_y_base = rect_y
@@ -1840,8 +1836,7 @@ static void gfx_widgets_draw_regular_msg(
       float cosine  = cosf(radians);
       float sine    = sinf(radians);
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       gfx_widgets_draw_icon(
             userdata,
@@ -1859,8 +1854,7 @@ static void gfx_widgets_draw_regular_msg(
             sine,
             msg_queue_info);
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
@@ -2027,8 +2021,7 @@ static void gfx_widgets_frame_state(void *data)
 
       if (p_dispwidget->ai_service_overlay_texture)
       {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
+         gfx_display_blend_begin(dispctx, userdata);
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
@@ -2044,8 +2037,7 @@ static void gfx_widgets_frame_state(void *data)
                0.0f, /* sine(rad)  = sine(0) = 0.0f */
                p_dispwidget->pure_white
                );
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         gfx_display_blend_end(dispctx, userdata);
       }
 
       /* top line */

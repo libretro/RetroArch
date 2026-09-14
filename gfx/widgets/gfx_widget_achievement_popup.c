@@ -244,8 +244,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          /* Icon */
          if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(video_info->userdata);
+            gfx_display_blend_begin(dispctx, video_info->userdata);
 
             gfx_widgets_draw_icon(
                video_info->userdata,
@@ -263,8 +262,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                0.0f, /* sine(rad)  = sine(0) = 0.0f */
                pure_white);
 
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(video_info->userdata);
+            gfx_display_blend_end(dispctx, video_info->userdata);
          }
       }
       /* Badge */
@@ -285,8 +283,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             p_dispwidget->backdrop_orig,
             NULL);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(video_info->userdata);
+         gfx_display_blend_begin(dispctx, video_info->userdata);
 
          gfx_widgets_draw_icon(
             video_info->userdata,
@@ -303,8 +300,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             0.0f, /* sine(rad)  = sine(0) = 0.0f */
             pure_white);
 
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(video_info->userdata);
+         gfx_display_blend_end(dispctx, video_info->userdata);
       }
 
       if (is_folding)

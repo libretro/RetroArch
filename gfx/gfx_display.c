@@ -543,8 +543,11 @@ void gfx_display_draw_bg(
 
 /* How many quads may wait before the batch has to go out. One strip of
  * them is six vertices a quad less the two the first does not need to
- * be joined by, so this is what the three arrays below are sized for. */
-#define GFX_DISPLAY_BATCH_QUADS 96
+ * be joined by, which is what the block below is sized for: 32 quads
+ * is 190 vertices, six kilobytes for the lot. A run of quads between
+ * two things that are not quads measured three or four, so this is
+ * room to spare; going over it costs a draw, not a correction. */
+#define GFX_DISPLAY_BATCH_QUADS 32
 #define GFX_DISPLAY_BATCH_VERTS (GFX_DISPLAY_BATCH_QUADS * 6 - 2)
 
 /* Adds one quad to the batch, in the strip order the drivers draw in -
@@ -555,7 +558,8 @@ void gfx_display_draw_bg(
 static bool gfx_display_batch_add(gfx_display_t *p_disp,
       uintptr_t texture, const float *color, void *userdata,
       unsigned video_width, unsigned video_height,
-      float x0, float x1, float y0, float y1)
+      float x0, float x1, float y0, float y1,
+      int px, int py, unsigned pw, unsigned ph)
 {
    unsigned v, i;
    float *vert, *tex, *col;
@@ -572,13 +576,16 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
    if (p_disp->batch_quads >= GFX_DISPLAY_BATCH_QUADS)
       gfx_display_flush_batch(p_disp);
 
-   if (!p_disp->batch_vertex)
+   if (!p_disp->batch_mem)
    {
-      p_disp->batch_vertex = (float*)malloc(sizeof(float) * 2 * GFX_DISPLAY_BATCH_VERTS);
-      p_disp->batch_tex    = (float*)malloc(sizeof(float) * 2 * GFX_DISPLAY_BATCH_VERTS);
-      p_disp->batch_color  = (float*)malloc(sizeof(float) * 4 * GFX_DISPLAY_BATCH_VERTS);
-      if (!p_disp->batch_vertex || !p_disp->batch_tex || !p_disp->batch_color)
+      /* 2 + 2 + 4 floats a vertex, in one block: they are filled
+       * together and read together, so they are kept together. */
+      if (!(p_disp->batch_mem = (float*)malloc(
+                  sizeof(float) * 8 * GFX_DISPLAY_BATCH_VERTS)))
          return false;
+      p_disp->batch_vertex = p_disp->batch_mem;
+      p_disp->batch_tex    = p_disp->batch_mem + 2 * GFX_DISPLAY_BATCH_VERTS;
+      p_disp->batch_color  = p_disp->batch_mem + 4 * GFX_DISPLAY_BATCH_VERTS;
    }
 
    vert = p_disp->batch_vertex;
@@ -618,6 +625,13 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
       v++;
    }
 
+   if (p_disp->batch_quads == 0)
+   {
+      p_disp->batch_first_x   = px;
+      p_disp->batch_first_y   = py;
+      p_disp->batch_first_w   = pw;
+      p_disp->batch_first_h   = ph;
+   }
    p_disp->batch_quads++;
    p_disp->batch_texture      = texture;
    p_disp->batch_userdata     = userdata;
@@ -639,15 +653,30 @@ void gfx_display_flush_batch(gfx_display_t *p_disp)
    if (!p_disp || !p_disp->batch_quads)
       return;
    dispctx                 = p_disp->dispctx;
-   coords.vertices         = p_disp->batch_quads * 6 - 2;
-   coords.vertex           = p_disp->batch_vertex;
-   coords.tex_coord        = p_disp->batch_tex;
    coords.lut_tex_coord    = NULL;
-   coords.color            = p_disp->batch_color;
-   draw.x                  = 0;
-   draw.y                  = 0;
-   draw.width              = p_disp->batch_video_width;
-   draw.height             = p_disp->batch_video_height;
+   if (p_disp->batch_quads == 1)
+   {
+      /* One quad: hand it over as a quad */
+      coords.vertices      = 4;
+      coords.vertex        = NULL;
+      coords.tex_coord     = NULL;
+      coords.color         = p_disp->batch_color;
+      draw.x               = p_disp->batch_first_x;
+      draw.y               = p_disp->batch_first_y;
+      draw.width           = p_disp->batch_first_w;
+      draw.height          = p_disp->batch_first_h;
+   }
+   else
+   {
+      coords.vertices      = p_disp->batch_quads * 6 - 2;
+      coords.vertex        = p_disp->batch_vertex;
+      coords.tex_coord     = p_disp->batch_tex;
+      coords.color         = p_disp->batch_color;
+      draw.x               = 0;
+      draw.y               = 0;
+      draw.width           = p_disp->batch_video_width;
+      draw.height          = p_disp->batch_video_height;
+   }
    draw.coords             = &coords;
    draw.matrix_data        = NULL;
    draw.texture            = p_disp->batch_texture;
@@ -657,13 +686,43 @@ void gfx_display_flush_batch(gfx_display_t *p_disp)
    p_disp->batch_quads     = 0;
    if (dispctx)
    {
-      if (dispctx->blend_begin)
+      /* Inside a caller's group blending is already on and stays on:
+       * turning it off here would end the group early. */
+      bool own_blend = !p_disp->blend_on;
+      if (own_blend && dispctx->blend_begin)
          dispctx->blend_begin(p_disp->batch_userdata);
       if (dispctx->draw)
          dispctx->draw(&draw, p_disp->batch_userdata,
                p_disp->batch_video_width, p_disp->batch_video_height);
-      if (dispctx->blend_end)
+      if (own_blend && dispctx->blend_end)
          dispctx->blend_end(p_disp->batch_userdata);
+   }
+}
+
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
+      void *userdata)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   /* What was gathered outside this group goes out under the state it
+    * was gathered under */
+   gfx_display_flush_batch(p_disp);
+   if (dispctx && dispctx->blend_begin)
+   {
+      dispctx->blend_begin(userdata);
+      p_disp->blend_on = true;
+   }
+}
+
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
+      void *userdata)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   /* And what was gathered inside it goes out while it is still on */
+   gfx_display_flush_batch(p_disp);
+   if (dispctx && dispctx->blend_end)
+   {
+      dispctx->blend_end(userdata);
+      p_disp->blend_on = false;
    }
 }
 
@@ -729,7 +788,8 @@ void gfx_display_draw_quad(
             (float)x / (float)width,
             (float)(x + (int)w) / (float)width,
             (float)draw.y / (float)height,
-            (float)(draw.y + (int)h) / (float)height))
+            (float)(draw.y + (int)h) / (float)height,
+            draw.x, draw.y, draw.width, draw.height))
       return;
 
    gfx_display_flush_batch(p_disp);
@@ -1360,13 +1420,13 @@ void gfx_display_free(void)
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
-   free(p_disp->batch_vertex);
-   free(p_disp->batch_tex);
-   free(p_disp->batch_color);
+   free(p_disp->batch_mem);
+   p_disp->batch_mem           = NULL;
    p_disp->batch_vertex        = NULL;
    p_disp->batch_tex           = NULL;
    p_disp->batch_color         = NULL;
    p_disp->batch_quads         = 0;
+   p_disp->blend_on            = false;
 
    p_disp->flags               = 0;
    p_disp->header_height       = 0;

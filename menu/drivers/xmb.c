@@ -1452,8 +1452,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    {
       int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       gfx_display_draw_texture_slice(
             p_disp,
@@ -1474,14 +1473,12 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             mymat);
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (!xmb->assets_missing)
    {
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       gfx_display_draw_texture_slice(
             p_disp,
@@ -1502,8 +1499,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE],
             mymat);
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
    else
    {
@@ -1635,8 +1631,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       else
          menu_st->dialog_st.confirm_hover_back = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       xmb_draw_icon(
             userdata,
@@ -1675,8 +1670,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             1.0f,
             false);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
 
       /* OK */
       icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - xmb->margins_dialog - str_ok_width;
@@ -1708,8 +1702,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       else
          menu_st->dialog_st.confirm_hover_ok = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       xmb_draw_icon(
             userdata,
@@ -1748,8 +1741,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             1.0f,
             false);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
@@ -8612,8 +8604,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    if (!video_width || !video_height)
       return;
 
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    /* Draw background wallpaper */
    if (     draw.texture
@@ -8682,8 +8673,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    }
 #endif
 
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 }
 
 XMB_NOINLINE static void xmb_draw_dark_layer(
@@ -8717,13 +8707,11 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    draw.pipeline_id     = 0;
    draw.pipeline_active = false;
 
-   if (dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
    if (draw.height > 0 && draw.width > 0)
       gfx_display_draw(dispctx, &draw, userdata, width, height);
-   if (dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 }
 
 static void xmb_draw_no_thumbnail_available(
@@ -8757,8 +8745,7 @@ static void xmb_draw_no_thumbnail_available(
    {
       gfx_display_set_alpha(color, xmb->alpha * 0.20f);
 
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       if (dispctx->draw)
          xmb_draw_icon(
                userdata,
@@ -8780,8 +8767,7 @@ static void xmb_draw_no_thumbnail_available(
                &color[0],
                xmb->shadow_offset / 2,
                mymat);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (!draw_text)
@@ -9447,8 +9433,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
    }
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    /* List icons */
    xmb_draw_items(
@@ -9533,11 +9518,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    /* Current menu icon + arrow */
    gfx_display_set_alpha(xmb_item_color, xmb->alpha * xmb->alpha_list);
@@ -9625,11 +9608,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    /* Horizontal tab icons */
    if (!xmb->assets_missing && xmb->show_horizontal_list)
@@ -10111,8 +10092,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 
    /**************************/
    /* Draw thumbnails: END   */
@@ -10139,8 +10119,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          {
             float margin_offset = -(icon_size / 2) - (7 * xmb->last_scale_factor);
 
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
             xmb_draw_icon(
                   userdata,
                   p_disp,
@@ -10168,8 +10147,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   &xmb_item_color[0],
                   xmb->shadow_offset,
                   &mymat);
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
 
          percent_width = (unsigned)
@@ -10208,8 +10186,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       {
          float margin_offset = -(icon_size / 2) - (7 * xmb->last_scale_factor);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
+         gfx_display_blend_begin(dispctx, userdata);
          xmb_draw_icon(
                userdata,
                p_disp,
@@ -10230,8 +10207,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                &xmb_item_color[0],
                xmb->shadow_offset,
                &mymat);
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         gfx_display_blend_end(dispctx, userdata);
       }
 
       datetime.time_mode      = settings->uints.menu_timedate_style;

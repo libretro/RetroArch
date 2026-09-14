@@ -931,8 +931,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          if (state->icon_texture)
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
 
             gfx_widgets_draw_icon(
                   userdata,
@@ -949,8 +948,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   0.0f, /* sine(rad)  = sine(0) = 0.0f */
                   icon_color);
 
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
          /* If there is no icon, draw a placeholder
           * (otherwise layout will look terrible...) */

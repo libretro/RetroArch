@@ -3288,8 +3288,7 @@ static void ozone_draw_cursor_slice(
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_alpha, alpha);
    gfx_display_set_alpha(ozone->theme_dynamic.cursor_border, alpha);
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    /* Cursor without border */
    gfx_display_draw_texture_slice(
@@ -3333,8 +3332,7 @@ static void ozone_draw_cursor_slice(
          mymat
          );
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 }
 
 static void ozone_draw_cursor_fallback(
@@ -3764,8 +3762,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
 
    /* Menu tabs */
    y = ozone->dimensions.header_height + ozone->dimensions.spacer_1px + ozone->dimensions.sidebar_padding_vertical;
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    text_alpha   *= ozone->animations.alpha;
    text_alpha_f *= ozone->animations.alpha;
@@ -3887,8 +3884,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
 
-   if (dispctx && dispctx->blend_end)
-      dispctx->blend_end(userdata);
+   gfx_display_blend_end(dispctx, userdata);
 
    /* Console tabs */
    if (horizontal_list_size > 0)
@@ -3909,8 +3905,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
 
       y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       for (i = 0; i < horizontal_list_size; i++)
       {
@@ -4049,8 +4044,7 @@ console_iterate:
          y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
       }
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    font_flush(video_width, video_height, &ozone->fonts.sidebar);
@@ -5599,8 +5593,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
    if (entry->flags & MENU_ENTRY_FLAG_CHECKED)
    {
       float *col = ozone->theme_dynamic.entries_checkmark;
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       ozone_draw_icon(
             p_disp,
             userdata,
@@ -5619,8 +5612,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
             1.0f,
             col,
             mymat);
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
       return;
    }
    else if (!value || !*value)
@@ -5726,8 +5718,7 @@ static void ozone_draw_no_thumbnail_available(
    {
       gfx_display_set_alpha(col, 0.20f);
 
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       if (dispctx->draw)
          ozone_draw_icon(
                p_disp,
@@ -5745,8 +5736,7 @@ static void ozone_draw_no_thumbnail_available(
                1.0f,
                col,
                mymat);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    if (!draw_text)
@@ -6639,8 +6629,7 @@ border_iterate:
 
          if (dispctx)
          {
-            if (dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
@@ -6664,8 +6653,7 @@ border_iterate:
                      1.0f,
                      icon_color,
                      mymat);
-            if (dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
 
          if (icon_color == ozone->pure_white)
@@ -7437,8 +7425,7 @@ static void ozone_draw_thumbnail_bar(
          {
             /* Draw icon in the bottom right corner of
              * the thumbnail bar */
-            if (dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
@@ -7456,8 +7443,7 @@ static void ozone_draw_thumbnail_bar(
                      1.0f,
                      col,
                      mymat);
-            if (dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
       }
    }
@@ -7938,8 +7924,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       height                = slice_new_h;
       margin                = slice_margin;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       gfx_display_draw_texture_slice(
             p_disp,
@@ -7961,8 +7946,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             mymat
             );
 
-      if (dispctx && dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    for (i = 0; i < line_count; i++)
@@ -8027,8 +8011,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       else
          menu_st->dialog_st.confirm_hover_back = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       ozone_draw_icon(
             p_disp,
@@ -8063,8 +8046,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             1.0f,
             false);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
 
       /* OK */
       icon_x  += width - (icon_size * 2) - (icon_padding * 8) - margin - ozone->footer_labels.ok.width;
@@ -8095,8 +8077,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       else
          menu_st->dialog_st.confirm_hover_ok = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       ozone_draw_icon(
             p_disp,
@@ -8131,8 +8112,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             1.0f,
             false);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
@@ -11679,8 +11659,7 @@ OZONE_NOINLINE static void ozone_draw_header(
    /* Icon */
    if (dispctx && logo_icon_size)
    {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       if (dispctx->draw)
       {
          ozone_draw_icon(
@@ -11700,8 +11679,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                col,
                mymat);
       }
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    /* Battery */
@@ -11736,8 +11714,7 @@ OZONE_NOINLINE static void ozone_draw_header(
 
          if (dispctx)
          {
-            if (dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
             if (dispctx->draw)
                ozone_draw_icon(
                      p_disp,
@@ -11761,8 +11738,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                      1.0f,
                      col,
                      mymat);
-            if (dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
       }
    }
@@ -11799,8 +11775,7 @@ OZONE_NOINLINE static void ozone_draw_header(
 
       if (dispctx)
       {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
+         gfx_display_blend_begin(dispctx, userdata);
          if (dispctx->draw)
             ozone_draw_icon(
                   p_disp,
@@ -11818,8 +11793,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                   1.0f,
                   col,
                   mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         gfx_display_blend_end(dispctx, userdata);
       }
 
       status_row_size += 240 * scale_factor;
@@ -12066,8 +12040,7 @@ static void ozone_draw_footer(
    /* Draw icons */
    if (dispctx)
    {
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       gfx_display_set_alpha(col, 0.5f);
 
@@ -12325,8 +12298,7 @@ static void ozone_draw_footer(
                   mymat);
       }
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 
    /* Draw labels */
@@ -12623,8 +12595,7 @@ static void ozone_draw_footer(
    {
       if (dispctx)
       {
-         if (dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
+         gfx_display_blend_begin(dispctx, userdata);
          if (dispctx->draw)
             ozone_draw_icon(
                   p_disp,
@@ -12642,8 +12613,7 @@ static void ozone_draw_footer(
                   1.0f,
                   ozone->pure_white,
                   mymat);
-         if (dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         gfx_display_blend_end(dispctx, userdata);
       }
    }
 #endif

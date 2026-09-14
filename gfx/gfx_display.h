@@ -206,14 +206,32 @@ struct gfx_display
     * batch holds quads of the same texture joins it; anything else
     * sends what is held first, so what is drawn stays in the order it
     * was asked for. Allocated when the first quad is gathered. */
+   /* One allocation, carved into the three the coords want: they are
+    * filled together and read together, so they are kept together. */
+   float    *batch_mem;
    float    *batch_vertex;
    float    *batch_tex;
    float    *batch_color;
    unsigned  batch_quads;
    uintptr_t batch_texture;
+   /* The first quad's own rectangle. A batch that never grew past it
+    * goes out the way it would have without gathering: a driver that
+    * ends in a blit rounds a rectangle and a strip differently, and
+    * one quad is not worth a difference. */
+   int       batch_first_x;
+   int       batch_first_y;
+   unsigned  batch_first_w;
+   unsigned  batch_first_h;
    void     *batch_userdata;
    unsigned  batch_video_width;
    unsigned  batch_video_height;
+   /* Whether a caller has blending on right now. A quad drawn on its
+    * own turns blending on and off around itself; one gathered while
+    * a caller has it on must leave it on, or the caller's group ends
+    * with the batch instead of with the group. Mirrors the driver
+    * rather than counting, so a path that returns between a begin and
+    * its end leaves this no worse than the driver itself. */
+   bool      blend_on;
 
    uint8_t flags;
 };
@@ -287,6 +305,14 @@ void gfx_display_draw_bg(
  * text, above all - calls this first, or it lands underneath quads
  * that were asked for before it. */
 void gfx_display_flush_batch(gfx_display_t *p_disp);
+
+/* Blending, counted, so that what is gathered knows whether it is
+ * inside a group that has already turned blending on. Every caller
+ * goes through these rather than the driver's own. */
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
+      void *userdata);
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
+      void *userdata);
 
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,

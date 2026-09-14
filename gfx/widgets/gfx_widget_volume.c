@@ -194,8 +194,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       {
          gfx_display_set_alpha(pure_white, state->text_alpha);
 
-         if (dispctx && dispctx->blend_begin)
-            dispctx->blend_begin(userdata);
+         gfx_display_blend_begin(dispctx, userdata);
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
@@ -210,8 +209,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                0.0f, /* sine(rad)  = sine(0) = 0.0f */
                pure_white
                );
-         if (dispctx && dispctx->blend_end)
-            dispctx->blend_end(userdata);
+         gfx_display_blend_end(dispctx, userdata);
       }
 
       if (state->mute)

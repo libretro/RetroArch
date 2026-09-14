@@ -2680,8 +2680,7 @@ static void materialui_draw_icon(
    if (!texture)
       return;
 
-   if (dispctx && dispctx->blend_begin)
-      dispctx->blend_begin(userdata);
+   gfx_display_blend_begin(dispctx, userdata);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -2706,8 +2705,7 @@ static void materialui_draw_icon(
          if (draw.height > 0 && draw.width > 0)
             gfx_display_draw(dispctx, &draw, userdata,
                   video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
@@ -3148,8 +3146,7 @@ static void materialui_render_messagebox(
       else
          menu_st->dialog_st.confirm_hover_back = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       materialui_draw_icon(
             userdata, p_disp,
@@ -3178,8 +3175,7 @@ static void materialui_render_messagebox(
             1.0f,
             false);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
 
       /* OK */
       icon_x  += slice_w - (icon_size * 2) - (icon_padding * 8) - mui->margin - str_ok_width;
@@ -3211,8 +3207,7 @@ static void materialui_render_messagebox(
       else
          menu_st->dialog_st.confirm_hover_ok = false;
 
-      if (dispctx && dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       materialui_draw_icon(
             userdata, p_disp,
@@ -3243,8 +3238,7 @@ static void materialui_render_messagebox(
 
       gfx_display_set_alpha(mui->colors.list_icon, mui->transition_alpha);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
@@ -6837,16 +6831,14 @@ MUI_NOINLINE static void materialui_render_background(
    if (dispctx)
    {
       struct video_coords coords;
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata,
             add_opacity, opacity_override);
       if (dispctx->draw)
          if (draw.height > 0 && draw.width > 0)
             gfx_display_draw(dispctx, &draw, userdata,
                   video_width, video_height);
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 

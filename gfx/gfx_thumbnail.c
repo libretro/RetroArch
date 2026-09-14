@@ -2662,8 +2662,7 @@ void gfx_thumbnail_draw(
                &draw_width, &draw_height);
       }
 
-      if (dispctx->blend_begin)
-         dispctx->blend_begin(userdata);
+      gfx_display_blend_begin(dispctx, userdata);
 
       if (!dispctx->handles_transform)
       {
@@ -2802,8 +2801,7 @@ void gfx_thumbnail_draw(
          gfx_display_draw(dispctx, &draw, userdata,
                video_width, video_height);
 
-      if (dispctx->blend_end)
-         dispctx->blend_end(userdata);
+      gfx_display_blend_end(dispctx, userdata);
    }
 }
 
