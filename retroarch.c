@@ -2145,12 +2145,12 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                   && runloop_st->current_core_type == CORE_TYPE_DUMMY)
                video_st->av_info.timing.fps = *hz;
 
-            /* Sets audio monitor rate to new value. */
+            driver_adjust_system_rates(runloop_st, video_st, settings);
+
+            /* Use the input rate adjusted for the new display timing. */
             audio_st->src_ratio_orig   =
             audio_st->src_ratio_curr   =
             (double)audio_output_sample_rate / audio_st->input;
-
-            driver_adjust_system_rates(runloop_st, video_st, settings);
 
             /* driver_adjust_system_rates may have updated audio_st->input
              * for the new refresh rate; recompute the DRC threshold so
