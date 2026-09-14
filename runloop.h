@@ -184,7 +184,6 @@ struct runloop
    retro_time_t core_runtime_usec;
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
-   retro_time_t frame_limit_last_time;
    /* The same period and anchor in nanoseconds, for the gap limiter's
     * schedule: a period rounded to whole microseconds is 21 ppm off
     * at 59.94 Hz, which the schedule would carry into every frame. */

@@ -5430,8 +5430,8 @@ bool runloop_event_init_core(
       return false;
 
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
-   runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
-   runloop_st->frame_limit_anchor_ns    = (int64_t)runloop_st->frame_limit_last_time * 1000;
+   runloop_st->frame_limit_anchor_ns    = (int64_t)cpu_features_get_time_usec()
+      * 1000;
 
    /* Init runtime log and read current state slot */
    runloop_runtime_log_init(runloop_st);
@@ -8225,7 +8225,6 @@ int runloop_iterate(void)
             netplay_allow_timeskip))
    {
       case RUNLOOP_STATE_QUIT:
-         runloop_st->frame_limit_last_time = 0.0;
          runloop_st->frame_limit_anchor_ns = 0;
          runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
@@ -8576,7 +8575,6 @@ end:
                &runloop_st->frame_limit_anchor_ns,
                pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
                end_frame_time);
-         runloop_st->frame_limit_last_time = runloop_st->frame_limit_anchor_ns / 1000;
          if (to_sleep_us > 0)
          {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
