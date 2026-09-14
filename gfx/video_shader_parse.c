@@ -2823,7 +2823,6 @@ static size_t video_shader_load_auto_shader_preset(
 static bool video_shader_dir_get_anchor(settings_t *settings,
       char *s, size_t len)
 {
-   char auto_path[PATH_MAX_LENGTH];
    config_file_t *conf         = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *preset_path     = runloop_st->runtime_shader_preset_path;
@@ -2834,22 +2833,28 @@ static bool video_shader_dir_get_anchor(settings_t *settings,
    if (!*preset_path)
       return false;
 
-   strlcpy(s, preset_path, len);
-
    base = path_basename_nocompression(preset_path);
 
    if (   strncmp(base, "retroarch", STRLEN_CONST("retroarch"))
        || base[STRLEN_CONST("retroarch")] != '.')
    {
+      /* @s doubles as the scratch the auto preset path is built in:
+       * it is overwritten either way before this returns, and
+       * @preset_path points at the runloop's own copy. */
       if (   !core_name
           || !*core_name
           || !video_shader_load_auto_shader_preset(
                settings->paths.directory_video_shader,
                settings->paths.directory_menu_config,
-               core_name, auto_path, sizeof(auto_path))
-          || !string_is_equal(auto_path, preset_path))
+               core_name, s, len)
+          || !string_is_equal(s, preset_path))
+      {
+         strlcpy(s, preset_path, len);
          return true;
+      }
    }
+
+   strlcpy(s, preset_path, len);
 
    if ((conf = config_file_new_from_path_to_string(preset_path)))
    {
@@ -2925,7 +2930,6 @@ static bool video_shader_dir_init_sibling(
 {
    size_t i;
    char parent_dir[DIR_MAX_LENGTH];
-   char shader_root[DIR_MAX_LENGTH];
    char current_name[NAME_MAX_LENGTH];
    struct rarch_dir_shader_list sibling;
    struct string_list *dirs = NULL;
@@ -2945,6 +2949,8 @@ static bool video_shader_dir_init_sibling(
    pathname_conform_slashes_to_os(parent_dir);
    if (!video_shader_dir_in_pack(parent_dir))
    {
+      char shader_root[DIR_MAX_LENGTH];
+
       if (!shader_dir || !*shader_dir)
          return false;
       strlcpy(shader_root, shader_dir, sizeof(shader_root));
@@ -3002,6 +3008,56 @@ static bool video_shader_dir_init_sibling(
    return ret;
 }
 
+/* Points the list at the folder the hotkey steps within, and @s at
+ * the preset inside it the step starts from. Keeps the directory
+ * scratch off the caller's frame, which also carries @s. */
+static bool video_shader_dir_anchor(settings_t *settings,
+      struct rarch_dir_shader_list *dir_list,
+      bool video_shader_remember_last_dir,
+      char *s, size_t len)
+{
+   char anchor_dir[DIR_MAX_LENGTH];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool anchored               = false;
+
+   /* A failed apply left the previous preset as the loaded one,
+    * so keep stepping from the list instead of re-anchoring */
+   if (   dir_list->failed_apply_loaded_path
+       && dir_list->shader_list
+       && (dir_list->selection < dir_list->shader_list->size)
+       && dir_list->shader_list->elems[dir_list->selection].data
+       && string_is_equal(dir_list->failed_apply_loaded_path,
+            runloop_st->runtime_shader_preset_path))
+   {
+      strlcpy(s, dir_list->shader_list->elems[dir_list->selection].data,
+            len);
+      return true;
+   }
+
+   if (!video_shader_dir_get_anchor(settings, s, len))
+      return false;
+
+   fill_pathname_basedir(anchor_dir, s, sizeof(anchor_dir));
+
+   if (   dir_list->shader_list
+       && string_is_equal(dir_list->directory, anchor_dir))
+      anchored = true;
+   else
+   {
+      video_shader_dir_free_shader(dir_list,
+            video_shader_remember_last_dir);
+      anchored = video_shader_dir_init_shader_internal(
+            video_shader_remember_last_dir, dir_list,
+            anchor_dir, NULL, settings->bools.show_hidden_files);
+   }
+
+   if (anchored)
+      dir_list->shader_loaded = video_shader_dir_select_file(
+            dir_list, path_basename_nocompression(s));
+
+   return anchored;
+}
+
 void video_shader_dir_check_shader(
       void *menu_driver_data_,
       settings_t *settings,
@@ -3029,42 +3085,8 @@ void video_shader_dir_check_shader(
    void *menu_ptr                                 = NULL;
 #endif
 
-   /* A failed apply left the previous preset as the loaded one,
-    * so keep stepping from the list instead of re-anchoring */
-   if (   dir_list->failed_apply_loaded_path
-       && dir_list->shader_list
-       && (dir_list->selection < dir_list->shader_list->size)
-       && dir_list->shader_list->elems[dir_list->selection].data
-       && string_is_equal(dir_list->failed_apply_loaded_path,
-            runloop_st->runtime_shader_preset_path))
-   {
-      strlcpy(anchor_path,
-            dir_list->shader_list->elems[dir_list->selection].data,
-            sizeof(anchor_path));
-      anchored = true;
-   }
-   else if (video_shader_dir_get_anchor(settings,
-            anchor_path, sizeof(anchor_path)))
-   {
-      char anchor_dir[DIR_MAX_LENGTH];
-      fill_pathname_basedir(anchor_dir, anchor_path, sizeof(anchor_dir));
-
-      if (   dir_list->shader_list
-          && string_is_equal(dir_list->directory, anchor_dir))
-         anchored = true;
-      else
-      {
-         video_shader_dir_free_shader(dir_list,
-               video_shader_remember_last_dir);
-         anchored = video_shader_dir_init_shader_internal(
-               video_shader_remember_last_dir, dir_list,
-               anchor_dir, NULL, settings->bools.show_hidden_files);
-      }
-
-      if (anchored)
-         dir_list->shader_loaded = video_shader_dir_select_file(
-               dir_list, path_basename_nocompression(anchor_path));
-   }
+   anchored = video_shader_dir_anchor(settings, dir_list,
+         video_shader_remember_last_dir, anchor_path, sizeof(anchor_path));
 
    /* Check whether shader list needs to be (re)initialised */
    if (   !anchored
