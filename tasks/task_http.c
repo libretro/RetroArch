@@ -23,11 +23,18 @@
 #include <file/file_path.h>
 #include <net/net_compat.h>
 #include <streams/file_stream.h>
-#include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
+
+/* How long a threaded transfer will wait on its socket before coming
+ * back to check whether the task was cancelled. The task queue runs
+ * handlers one at a time, so this is also how long every other queued
+ * task can be held up behind a transfer with nothing to do - which is
+ * why it stays at the millisecond the old fixed sleep cost, rather
+ * than being raised to save wakeups. */
+#define HTTP_TRANSFER_WAIT_MS 1
 
 enum http_status_enum
 {
@@ -196,9 +203,14 @@ static int task_http_iterate_transfer(retro_task_t *task)
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
 
-   /* FIXME: This wouldn't be needed if we could wait for a timeout */
+   /* Driven from a task thread there is nothing to pace this loop, so
+    * it used to sleep a millisecond a pass whether or not the peer had
+    * answered - paid in full even when the bytes were already there.
+    * Waiting on the socket instead costs the same millisecond when
+    * nothing arrives and returns the moment something does. The
+    * unthreaded queue is paced by the frame and waits for nothing. */
    if (task_queue_is_threaded())
-      retro_sleep(1);
+      net_http_wait(http->handle, HTTP_TRANSFER_WAIT_MS);
 
    if (!net_http_update(http->handle, &pos, &tot))
    {

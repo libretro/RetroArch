@@ -180,6 +180,12 @@ struct http_t
    struct conn_pool_entry *conn;
    bool ssl;
    bool request_sent;
+   /* The last net_http_update() stopped because the transport had
+    * nothing more to give, rather than stopping on its own drain
+    * budget with bytes still buffered. Only then is there anything for
+    * net_http_wait() to wait on; stopping on the budget means the next
+    * call has work waiting for it already. */
+   bool blocked;
    /* conn came out of the pool rather than being opened for this
     * request; such a connection may have been closed by the peer
     * while idle. */
@@ -2164,6 +2170,49 @@ void net_http_deinit(void)
  * @return true if it's done, or if something broke.
  * @total will be 0 if it's not known.
  **/
+/**
+ * net_http_wait:
+ * @state            : transfer handle
+ * @timeout_ms       : longest time to wait, in milliseconds
+ *
+ * Waits until @state's transport can make progress again, for callers
+ * that drive a transfer from a thread of their own rather than once per
+ * frame. Such a caller has nothing to pace it, and a fixed sleep
+ * between passes costs its full duration whether the answer arrived in
+ * a microsecond or not at all.
+ *
+ * Returns immediately when there is nothing to wait for: before a
+ * socket exists, after an error, and - importantly - when the last pass
+ * stopped on its own drain budget, which leaves bytes already buffered
+ * for the next one.
+ *
+ * The wait is for writability while connecting or sending and for
+ * readability once the request is out.
+ *
+ * Returns: true when the transport reported itself ready or no wait was
+ * needed, false when @timeout_ms elapsed first.
+ **/
+bool net_http_wait(struct http_t *state, int timeout_ms)
+{
+   bool rd = false;
+   bool wr = false;
+
+   if (!state || state->err || !state->blocked)
+      return true;
+   if (!state->conn || state->conn->fd < 0)
+      return true;
+
+   if (state->conn->connected && state->request_sent)
+      rd = true;
+   else
+      wr = true;
+
+   if (!socket_wait(state->conn->fd, &rd, &wr, timeout_ms))
+      return false;
+
+   return rd || wr;
+}
+
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    struct response *response;
@@ -2171,6 +2220,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (!state || state->err)
       return true;
+
+   /* Re-established below wherever the pass ends without progress. */
+   state->blocked = false;
 
    if (!state->conn)
    {
@@ -2191,6 +2243,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (!net_http_connect(state))
          state->err = true;
+      state->blocked = !state->err;
       return state->err;
    }
 
@@ -2198,6 +2251,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (net_http_send_request(state) && net_http_retry_fresh(state))
          return false;
+      state->blocked = !state->err && !state->request_sent;
       return state->err;
    }
 
@@ -2345,9 +2399,18 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          /* _len == 0 is EAGAIN: the socket is drained for now.
           * _len < 0 past the header stage is a close, which the body
           * parser above has already turned into P_DONE for T_FULL and
-          * into an error otherwise; either way we are finished here. */
+          * into an error otherwise; either way we are finished here.
+          *
+          * This is the one exit that leaves nothing buffered anywhere,
+          * including inside the TLS layer: the SSL read reports EAGAIN
+          * only once it has handed over every decrypted byte it holds.
+          * Breaking on the budget below leaves bytes waiting, so only
+          * this exit marks the transfer as blocked. */
          if (_len <= 0)
+         {
+            state->blocked = (_len == 0);
             break;
+         }
 
          drained += (size_t)_len;
          if (     drained >= NET_HTTP_DRAIN_BUDGET
