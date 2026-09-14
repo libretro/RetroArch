@@ -121,7 +121,9 @@ static void counted_int16_src(void *state, struct resampler_data_int16 *data)
 #define CORE_RATE     48000
 #define FPS           60.0
 static unsigned channels = 2;
+static unsigned source_channels = 2;
 static uint32_t source_layout = AUDIO_LAYOUT_STEREO;
+static bool live_layouts;
 #define LATENCY_MS    32
 #define MAX_SAMPLES   65536
 
@@ -439,6 +441,9 @@ static bool pipeline_up(unsigned latency_ms)
    audio_driver_state_t *st = &audio_driver_st;
    size_t per_frame = (size_t)(CORE_RATE / FPS);
    size_t ring_bytes;
+   source_layout = channels == 8 ? AUDIO_LAYOUT_7POINT1
+      : channels == 6 ? AUDIO_LAYOUT_5POINT1 : AUDIO_LAYOUT_STEREO;
+   source_channels = channels;
 
    dev_usable   = (size_t)((latency_ms * OUT_RATE) / 1000) * channels;
    dev_period   = (size_t)((latency_ms * OUT_RATE) / 1000 / 4);
@@ -592,7 +597,7 @@ static void submit_frame(size_t per_frame, unsigned publishes);
 
 struct live_control_check
 {
-   uint32_t serial, control, cutoff;
+   uint32_t serial, control, cutoff, layout;
    bool initial;
 };
 
@@ -604,11 +609,22 @@ static void check_live_control(void *userdata)
    if (check->initial) check->serial = q->reset_serial;
    else if (q->reset_serial != check->serial || q->current_control != check->control
          || q->current_cutoff != check->cutoff) fixture_failures++;
+   if (!check->initial && live_layouts)
+   {
+      unsigned extras = audio_layout_channels(check->layout & ~AUDIO_LAYOUT_STEREO);
+      if (q->current_layout != check->layout
+            || (extras && (audio_driver_st.extra.channels != extras
+                  || audio_driver_st.extra.positions != (check->layout & ~AUDIO_LAYOUT_STEREO))))
+         fixture_failures++;
+   }
 }
 
 static void wrapper_live_controls(unsigned publishes)
 {
    static const double tempos[] = { 0.25, 1, 32, 0.5, 1, 16, 2, 4 };
+   static const uint32_t layouts[] = { AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1,
+      AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1_SURROUND, AUDIO_LAYOUT_7POINT1,
+      AUDIO_LAYOUT_STEREO, AUDIO_LAYOUT_5POINT1, AUDIO_LAYOUT_7POINT1 };
    audio_driver_state_t *st = &audio_driver_st;
    struct live_control_check check;
    unsigned step;
@@ -623,15 +639,21 @@ static void wrapper_live_controls(unsigned publishes)
       uint32_t tempo = (uint32_t)(tempos[step] * 65536.0);
       check.control = active ? tempo | AUDIO_PIPELINE_STRETCH : 65536;
       check.cutoff = step & 1 ? 1000 : 0;
+      if (live_layouts)
+      {
+         source_layout = layouts[step];
+         source_channels = audio_layout_channels(source_layout);
+      }
+      check.layout = source_layout;
       if (!audio_driver_pipeline_transport_request(tempo, active, false, check.cutoff))
       {
          fixture_failures++;
          return;
       }
-      boundary = retro_atomic_load_relaxed_size(&st->pipe_layouts.head);
       for (retry = 0; retry < 3; retry++)
          submit_frame((size_t)(CORE_RATE / FPS *
                   (tempos[step] < 1 ? 1 : tempos[step])), publishes);
+      boundary = retro_atomic_load_relaxed_size(&st->pipe_layouts.head);
       for (retry = 0; retry < 2000; retry++)
       {
          if (retro_spsc_read_avail(&st->pipe_ring) == 0
@@ -712,9 +734,9 @@ static void submit_frame(size_t per_frame, unsigned publishes)
       if (channels > 2)
       {
          if (!audio_driver_multi_pipe(&audio_driver_st,
-                  source_float ? (const void*)(frame_audio_float + done * channels)
-                               : (const void*)(frame_audio + done * channels),
-                  n, channels, source_layout, source_float))
+                  source_float ? (const void*)(frame_audio_float + done * source_channels)
+                               : (const void*)(frame_audio + done * source_channels),
+                  n, source_channels, source_layout, source_float))
             fixture_failures++;
       }
       else audio_driver_submit(&audio_driver_st, 1.0f,
@@ -917,6 +939,7 @@ int main(int argc, char **argv)
    device_sample_bytes = device_int16 ? sizeof(int16_t) : sizeof(float);
    track_conversions = use_wrapper;
    live_controls = getenv("LIVE_CONTROLS") != NULL;
+   live_layouts = getenv("LIVE_LAYOUTS") != NULL;
    if (layout)
    {
       if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
@@ -950,6 +973,11 @@ int main(int argc, char **argv)
    if (live_controls && (!use_wrapper || transport_mode != 3))
    {
       fprintf(stderr, "LIVE_CONTROLS requires WRAPPER and TRANSPORT=stretch\n");
+      return 1;
+   }
+   if (live_layouts && (!live_controls || channels != 8))
+   {
+      fprintf(stderr, "LIVE_LAYOUTS requires LIVE_CONTROLS and LAYOUT=7.1\n");
       return 1;
    }
 
@@ -1003,6 +1031,7 @@ int main(int argc, char **argv)
    free(lat_us);
    if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
    if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
+   if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
    return fixture_failures ? 1 : 0;
 }
