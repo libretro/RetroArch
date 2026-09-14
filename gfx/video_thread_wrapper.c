@@ -3002,9 +3002,9 @@ static bool thread_get_current_software_framebuffer(void *data,
 
    if (!thr || !fb)
       return false;
-   if (fb->access_flags & RETRO_MEMORY_ACCESS_READ)
-      return false;
 
+   /* The slots are ordinary cached host memory, so a core that wants
+    * to read its frame back - a wipe, a screenshot - can have it */
    thr->handoff.asked++;
    bpp  = thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    need = (size_t)fb->width * bpp * fb->height;
@@ -3033,7 +3033,7 @@ static bool thread_get_current_software_framebuffer(void *data,
    fb->pitch        = (size_t)fb->width * bpp;
    fb->format       = thr->info.rgb32
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   fb->memory_flags = 0;
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
    return true;
 }
 

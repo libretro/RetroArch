@@ -80,7 +80,10 @@ void retro_run(void)
       memset(&fb, 0, sizeof(fb));
       fb.width        = W;
       fb.height       = H;
-      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+      /* Read as well as write, as a core that snapshots its frame
+       * for a wipe asks: the lend must not be refused for it. */
+      fb.access_flags = RETRO_MEMORY_ACCESS_WRITE
+                      | RETRO_MEMORY_ACCESS_READ;
       if (     environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
             && fb.format == RETRO_PIXEL_FORMAT_RGB565)
       {
