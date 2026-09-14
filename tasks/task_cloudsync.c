@@ -707,6 +707,48 @@ static void task_cloud_sync_backup_file(struct item_file *file)
    filestream_rename(file->path, new_path);
 }
 
+/**
+ * task_cloud_sync_defer_live_savefile:
+ * @sync_state       : sync state
+ * @key              : portable manifest key for the file
+ * @local_path       : absolute path the operation would write or remove
+ * @server_hash      : hash the server manifest holds for @key
+ *
+ * A loaded core holds its save RAM in memory and writes it back over
+ * @local_path when the content closes, so a file this sync puts there
+ * in the meantime is overwritten from that memory and then uploaded in
+ * place of the server's copy. Where @local_path belongs to the running
+ * core, leave the file alone and carry both manifests forward as they
+ * stand: the server side keeps the hash it already has, the local side
+ * keeps the hash the last sync recorded, and the next sync - which runs
+ * once the core has written its save RAM out - sees the real difference
+ * and resolves it, raising a conflict if both sides moved.
+ *
+ * Returns: true when the operation was deferred.
+ **/
+static bool task_cloud_sync_defer_live_savefile(
+      task_cloud_sync_state_t *sync_state,
+      const char *key,
+      const char *local_path,
+      char *server_hash)
+{
+   size_t idx;
+
+   if (!content_savefile_is_live(local_path))
+      return false;
+
+   RARCH_LOG(CSPFX "Deferring \"%s\", the running core owns it.\n", key);
+
+   task_cloud_sync_add_to_updated_manifest(sync_state, key, server_hash, true);
+
+   if (     sync_state->local_manifest
+         && file_list_search(sync_state->local_manifest, key, &idx))
+      task_cloud_sync_add_to_updated_manifest(sync_state, key,
+            CS_FILE_HASH(&sync_state->local_manifest->list[idx]), false);
+
+   return true;
+}
+
 typedef struct
 {
    task_cloud_sync_state_t *sync_state;
@@ -803,6 +845,10 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
             key, CS_FILE_HASH(server_file), true);
       return;
    }
+
+   if (task_cloud_sync_defer_live_savefile(sync_state, key, filename,
+            CS_FILE_HASH(server_file)))
+      return;
 
    if (!settings->bools.cloud_sync_destructive && path_is_valid(filename))
    {
@@ -948,10 +994,17 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
    }
 }
 
-static void task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_state)
+/* Returns false when the local file was left in place, in which case the
+ * caller must not record the delete as sync'd. */
+static bool task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_state)
 {
    struct item_file *item      = &sync_state->current_manifest->list[sync_state->current_idx];
+   struct item_file *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    bool cloud_sync_destructive = config_get_ptr()->bools.cloud_sync_destructive;
+
+   if (task_cloud_sync_defer_live_savefile(sync_state, CS_FILE_KEY(item),
+            item->path, CS_FILE_HASH(server_file)))
+      return false;
 
    RARCH_WARN(CSPFX "Server has deleted \"%s\", so shall we.\n", CS_FILE_KEY(item));
 
@@ -959,6 +1012,8 @@ static void task_cloud_sync_delete_current_file(task_cloud_sync_state_t *sync_st
       filestream_delete(item->path);
    else
       task_cloud_sync_backup_file(item);
+
+   return true;
 }
 
 static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_state, bool include_local)
@@ -1008,11 +1063,8 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
       task_cloud_sync_upload_current_file(sync_state);
    else if (!string_is_empty(CS_FILE_HASH(server_file)))
       task_cloud_sync_fetch_server_file(sync_state);
-   else
-   {
-      task_cloud_sync_delete_current_file(sync_state);
+   else if (task_cloud_sync_delete_current_file(sync_state))
       task_cloud_sync_add_to_updated_manifest(sync_state, CS_FILE_KEY(server_file), CS_FILE_HASH(server_file), false);
-   }
 }
 
 static void task_cloud_sync_delete_cb(void *user_data, const char *path, bool success, RFILE *file)
