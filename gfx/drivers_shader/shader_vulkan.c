@@ -966,7 +966,24 @@ struct vulkan_filter_chain
    bool alias_initialized;
    bool emits_hdr_colorspace;
    bool emits_hdr16_output;
+
+   /* See vulkan_filter_chain_create_info. */
+   void *queue_lock_handle;
+   void (*lock_queue)(void *handle);
+   void (*unlock_queue)(void *handle);
 };
+
+static INLINE void slang_chain_lock_queue(struct vulkan_filter_chain *chain)
+{
+   if (chain->lock_queue)
+      chain->lock_queue(chain->queue_lock_handle);
+}
+
+static INLINE void slang_chain_unlock_queue(struct vulkan_filter_chain *chain)
+{
+   if (chain->unlock_queue)
+      chain->unlock_queue(chain->queue_lock_handle);
+}
 
 static struct vulkan_filter_chain *slang_chain_new(
       const vulkan_filter_chain_create_info *info);
@@ -1483,12 +1500,22 @@ static bool vulkan_filter_chain_load_luts(
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
+      if (info->lock_queue)
+         info->lock_queue(info->queue_lock_handle);
       if (vkQueueSubmit(info->queue, 1, &submit_info, fence) != VK_SUCCESS)
       {
+         if (info->unlock_queue)
+            info->unlock_queue(info->queue_lock_handle);
          vkDestroyFence(info->device, fence, NULL);
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
+      /* Dropped before the wait on purpose: vkQueuePresentKHR takes the
+       * same lock, and stalling it across a fence wait is what the TDR
+       * note in vulkan_common.c warns about. The submit itself is the
+       * only part that needs the queue externally synchronised. */
+      if (info->unlock_queue)
+         info->unlock_queue(info->queue_lock_handle);
       vkWaitForFences(info->device, 1, &fence, VK_TRUE, UINT64_MAX);
       vkDestroyFence(info->device, fence, NULL);
    }
@@ -1510,6 +1537,9 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->memory_properties = *info->memory_properties;
    chain->cache             = info->pipeline_cache;
    chain->original_format   = info->original_format;
+   chain->queue_lock_handle = info->queue_lock_handle;
+   chain->lock_queue        = info->lock_queue;
+   chain->unlock_queue      = info->unlock_queue;
    common_resources_init(&chain->common, info->device,
          info->memory_properties);
    chain->max_input_size_width  = info->max_input_size.width;
@@ -1624,7 +1654,16 @@ static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain)
 
 static void slang_chain_flush(struct vulkan_filter_chain *chain)
 {
+   /* vkDeviceWaitIdle is specified as vkQueueWaitIdle on every queue,
+    * and so needs the same external synchronisation a submit does.
+    * Nothing weaker than holding the lock across the wait satisfies
+    * that, which does mean vkQueuePresentKHR blocks for the duration
+    * (see the TDR note in vulkan_common.c) -- acceptable here because
+    * every caller is a chain teardown or rebuild, never a per-frame
+    * path. */
+   slang_chain_lock_queue(chain);
    vkDeviceWaitIdle(chain->device);
+   slang_chain_unlock_queue(chain);
    slang_chain_execute_deferred(chain);
 }
 

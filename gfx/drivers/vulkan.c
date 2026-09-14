@@ -1958,6 +1958,9 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 static void vulkan_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate);
 
+static void vulkan_lock_queue(void *handle);
+static void vulkan_unlock_queue(void *handle);
+
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
 static void vulkan_render_overlay(vk_t *vk, unsigned width, unsigned height);
@@ -4721,6 +4724,9 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
+   info.queue_lock_handle     = vk;
+   info.lock_queue            = vulkan_lock_queue;
+   info.unlock_queue          = vulkan_unlock_queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
@@ -4826,6 +4832,9 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.queue                 = vk->context->queue;
+   info.queue_lock_handle     = vk;
+   info.lock_queue            = vulkan_lock_queue;
+   info.unlock_queue          = vulkan_unlock_queue;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
@@ -6137,6 +6146,9 @@ static bool vulkan_shader_load_begin(void *data,
       info.memory_properties     = &vk->context->memory_properties;
       info.pipeline_cache        = vk->pipelines.cache;
       info.queue                 = vk->context->queue;
+      info.queue_lock_handle     = vk;
+      info.lock_queue            = vulkan_lock_queue;
+      info.unlock_queue          = vulkan_unlock_queue;
       info.command_pool          = vk->swapchain[
          vk->context->current_frame_index].cmd_pool;
       info.num_passes            = 0;

@@ -80,6 +80,16 @@ struct vulkan_filter_chain_create_info
    const VkPhysicalDeviceMemoryProperties *memory_properties;
    VkPipelineCache pipeline_cache;
    VkQueue queue;
+   /* Guards host access to `queue`. The same VkQueue is submitted to by
+    * Vulkan HW-render cores out of retro_run(), through the
+    * lock_queue/unlock_queue pair in retro_hw_render_interface_vulkan,
+    * on a different thread from the one that owns the filter chain when
+    * threaded video is on. Function pointers rather than an slock_t* so
+    * this header stays clear of rthreads and of HAVE_THREADS. Both may
+    * be NULL, in which case no locking is done. */
+   void *queue_lock_handle;
+   void (*lock_queue)(void *handle);
+   void (*unlock_queue)(void *handle);
    VkCommandPool command_pool;
    unsigned num_passes;
 
