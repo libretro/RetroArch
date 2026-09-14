@@ -4548,10 +4548,12 @@ void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)
    struct menu_state    *menu_st = &menu_driver_state;
    if (menu_is_alive && menu_st->driver_ctx->frame)
    {
+      gfx_display_t *p_disp = disp_get_ptr();
       menu_st->driver_ctx->frame(menu_st->userdata, video_info);
       /* Nothing the menu gathered may still be waiting when the frame
        * it belongs to is over */
-      gfx_display_flush_batch(disp_get_ptr());
+      gfx_display_flush_batch(p_disp);
+      gfx_display_stats_latch(p_disp);
    }
 }
 

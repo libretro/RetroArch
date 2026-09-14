@@ -6406,6 +6406,35 @@ void video_driver_frame(const void *data, unsigned width,
                video_st->frame_count,
                video_st->frame_drop_count);
 
+#ifdef HAVE_MENU
+         if (menu_is_alive)
+         {
+            /* What the menu's quad batching did in the last menu
+             * frame drawn: how many strips its quads went out in,
+             * and what ended each strip. */
+            gfx_display_stats_t ui;
+            gfx_display_stats_get(&ui);
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  "MENU UI\n"
+                  " Quads:   %5u in %u strips (max %u)\n"
+                  " Ended by text %u tex %u blend %u sciss %u draw %u full %u end %u\n"
+                  " Text:    %5u calls, %u bytes\n"
+                  ,
+                  ui.v[GFX_DISPLAY_STAT_QUADS],
+                  ui.v[GFX_DISPLAY_STAT_BATCHES],
+                  ui.v[GFX_DISPLAY_STAT_BATCH_MAX],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXT],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXTURE],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_BLEND],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_SCISSOR],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_DRAW],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_CAPACITY],
+                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT],
+                  ui.v[GFX_DISPLAY_STAT_TEXT_CALLS],
+                  ui.v[GFX_DISPLAY_STAT_TEXT_BYTES]);
+         }
+#endif
+
          /* Split from the block above: a single concatenated format
           * literal exceeded the 509-byte minimum ISO C90 guarantees
           * (-Werror=overlength-strings in the C89 lane). */

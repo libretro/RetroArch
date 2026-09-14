@@ -27,6 +27,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
+#include <retro_atomic.h>
 
 #include "../retroarch.h"
 #include "../gfx/font_driver.h"
@@ -187,6 +188,35 @@ typedef struct gfx_display_ctx_powerstate
    bool charging;
 } gfx_display_ctx_powerstate_t;
 
+/* Why a gathered batch of quads had to go out. */
+enum gfx_display_flush_reason
+{
+   GFX_DISPLAY_FLUSH_TEXT = 0, /* text drawn */
+   GFX_DISPLAY_FLUSH_TEXTURE,  /* quad with another texture or frame */
+   GFX_DISPLAY_FLUSH_BLEND,    /* blend group begun or ended */
+   GFX_DISPLAY_FLUSH_SCISSOR,  /* scissor begun or ended */
+   GFX_DISPLAY_FLUSH_DRAW,     /* a draw that does not gather */
+   GFX_DISPLAY_FLUSH_CAPACITY, /* batch full */
+   GFX_DISPLAY_FLUSH_EXPLICIT, /* gfx_display_flush_batch() from outside */
+   GFX_DISPLAY_FLUSH_LAST
+};
+
+enum gfx_display_stat
+{
+   GFX_DISPLAY_STAT_QUADS = 0,   /* quads gathered */
+   GFX_DISPLAY_STAT_BATCHES,     /* strips sent out */
+   GFX_DISPLAY_STAT_BATCH_MAX,   /* quads in the largest strip */
+   GFX_DISPLAY_STAT_TEXT_CALLS,  /* strings handed to the font driver */
+   GFX_DISPLAY_STAT_TEXT_BYTES,  /* bytes of text in them */
+   GFX_DISPLAY_STAT_FLUSH,       /* one per enum gfx_display_flush_reason */
+   GFX_DISPLAY_STAT_LAST = GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_LAST
+};
+
+typedef struct gfx_display_stats
+{
+   unsigned v[GFX_DISPLAY_STAT_LAST];
+} gfx_display_stats_t;
+
 struct gfx_display
 {
    gfx_display_ctx_driver_t *dispctx;
@@ -234,6 +264,14 @@ struct gfx_display
    bool      blend_on;
 
    uint8_t flags;
+
+   /* What the batch did during the menu frame being drawn, counted
+    * where it happens on the drawing thread and published as a whole
+    * by gfx_display_stats_latch() once the frame is over. The
+    * statistics overlay reads the published copy from the main
+    * thread, so that copy is atomic and the live one is not. */
+   gfx_display_stats_t stats;
+   retro_atomic_int_t  stats_pub[GFX_DISPLAY_STAT_LAST];
 };
 
 void gfx_display_free(void);
@@ -305,6 +343,13 @@ void gfx_display_draw_bg(
  * text, above all - calls this first, or it lands underneath quads
  * that were asked for before it. */
 void gfx_display_flush_batch(gfx_display_t *p_disp);
+
+/* Publishes the counts of the menu frame just drawn and starts the
+ * next; called by the drawing thread once the menu frame is over. */
+void gfx_display_stats_latch(gfx_display_t *p_disp);
+
+/* The counts of the last published menu frame, safe from any thread. */
+void gfx_display_stats_get(gfx_display_stats_t *out);
 
 /* Blending, counted, so that what is gathered knows whether it is
  * inside a group that has already turned blending on. Every caller

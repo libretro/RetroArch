@@ -335,6 +335,17 @@ float gfx_display_get_dpi_scale(
    return adjusted_scale;
 }
 
+static void gfx_display_flush_impl(gfx_display_t *p_disp);
+
+/* Sends what is gathered and records why it had to go */
+static void gfx_display_flush_as(gfx_display_t *p_disp,
+      enum gfx_display_flush_reason reason)
+{
+   if (p_disp && p_disp->batch_quads)
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + reason]++;
+   gfx_display_flush_impl(p_disp);
+}
+
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
@@ -345,7 +356,7 @@ void gfx_display_scissor_begin(
 {
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* What is gathered goes out before this draws */
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_SCISSOR);
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -417,10 +428,12 @@ static void gfx_display_draw_text_internal(
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
+   size_t _len;
    struct font_params params;
+   gfx_display_t *p_disp          = disp_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    /* What is gathered goes out before this draws */
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_TEXT);
 
    /* NULL text is a no-op: ozone_draw_footer and similar menu code can
     * legitimately reach here with text==NULL for unset/optional fields,
@@ -459,9 +472,13 @@ static void gfx_display_draw_text_internal(
       params.drop_alpha  = GFX_SHADOW_ALPHA;
    }
 
+   _len = strlen(text);
+   p_disp->stats.v[GFX_DISPLAY_STAT_TEXT_CALLS]++;
+   p_disp->stats.v[GFX_DISPLAY_STAT_TEXT_BYTES] += (unsigned)_len;
+
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
-            text, strlen(text), &params, (void*)font);
+            text, _len, &params, (void*)font);
 }
 
 void gfx_display_draw_text(
@@ -572,9 +589,9 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
             || p_disp->batch_userdata    != userdata
             || p_disp->batch_video_width != video_width
             || p_disp->batch_video_height != video_height))
-      gfx_display_flush_batch(p_disp);
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_TEXTURE);
    if (p_disp->batch_quads >= GFX_DISPLAY_BATCH_QUADS)
-      gfx_display_flush_batch(p_disp);
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_CAPACITY);
 
    if (!p_disp->batch_mem)
    {
@@ -633,6 +650,7 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
       p_disp->batch_first_h   = ph;
    }
    p_disp->batch_quads++;
+   p_disp->stats.v[GFX_DISPLAY_STAT_QUADS]++;
    p_disp->batch_texture      = texture;
    p_disp->batch_userdata     = userdata;
    p_disp->batch_video_width  = video_width;
@@ -644,7 +662,7 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
  * batch. Called before anything else draws, so that what was gathered
  * lands under what comes after it, and at the end of a frame so that
  * nothing is still waiting when the frame is over. */
-void gfx_display_flush_batch(gfx_display_t *p_disp)
+static void gfx_display_flush_impl(gfx_display_t *p_disp)
 {
    gfx_display_ctx_driver_t *dispctx;
    gfx_display_ctx_draw_t draw;
@@ -653,6 +671,9 @@ void gfx_display_flush_batch(gfx_display_t *p_disp)
    if (!p_disp || !p_disp->batch_quads)
       return;
    dispctx                 = p_disp->dispctx;
+   p_disp->stats.v[GFX_DISPLAY_STAT_BATCHES]++;
+   if (p_disp->batch_quads > p_disp->stats.v[GFX_DISPLAY_STAT_BATCH_MAX])
+      p_disp->stats.v[GFX_DISPLAY_STAT_BATCH_MAX] = p_disp->batch_quads;
    coords.lut_tex_coord    = NULL;
    if (p_disp->batch_quads == 1)
    {
@@ -699,13 +720,42 @@ void gfx_display_flush_batch(gfx_display_t *p_disp)
    }
 }
 
+void gfx_display_flush_batch(gfx_display_t *p_disp)
+{
+   if (p_disp && p_disp->batch_quads)
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT]++;
+   gfx_display_flush_impl(p_disp);
+}
+
+void gfx_display_stats_latch(gfx_display_t *p_disp)
+{
+   unsigned i;
+   if (!p_disp)
+      return;
+   for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+   {
+      retro_atomic_store_relaxed_int(&p_disp->stats_pub[i],
+            (int)p_disp->stats.v[i]);
+      p_disp->stats.v[i] = 0;
+   }
+}
+
+void gfx_display_stats_get(gfx_display_stats_t *out)
+{
+   unsigned i;
+   gfx_display_t *p_disp = disp_get_ptr();
+   for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+      out->v[i] = (unsigned)retro_atomic_load_relaxed_int(
+            &p_disp->stats_pub[i]);
+}
+
 void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
       void *userdata)
 {
    gfx_display_t *p_disp = disp_get_ptr();
    /* What was gathered outside this group goes out under the state it
     * was gathered under */
-   gfx_display_flush_batch(p_disp);
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_BLEND);
    if (dispctx && dispctx->blend_begin)
    {
       dispctx->blend_begin(userdata);
@@ -718,7 +768,7 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
 {
    gfx_display_t *p_disp = disp_get_ptr();
    /* And what was gathered inside it goes out while it is still on */
-   gfx_display_flush_batch(p_disp);
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_BLEND);
    if (dispctx && dispctx->blend_end)
    {
       dispctx->blend_end(userdata);
@@ -735,7 +785,7 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_width, unsigned video_height)
 {
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
    if (dispctx && dispctx->draw && draw)
       dispctx->draw(draw, userdata, video_width, video_height);
 }
@@ -792,7 +842,7 @@ void gfx_display_draw_quad(
             draw.x, draw.y, draw.width, draw.height))
       return;
 
-   gfx_display_flush_batch(p_disp);
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
    if (dispctx->blend_begin)
       dispctx->blend_begin(data);
    if (dispctx->draw)
@@ -841,7 +891,7 @@ void gfx_display_draw_texture_slice(
    };
 
    /* What is gathered goes out before this draws */
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
 
    /* Early-out: guard against division by zero from
     * zero display dimensions or zero texture dimensions */
@@ -1074,7 +1124,7 @@ void gfx_display_draw_cursor(
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* What is gathered goes out before this draws */
-   gfx_display_flush_batch(disp_get_ptr());
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
 
    if (!dispctx)
       return;
@@ -1447,6 +1497,11 @@ void gfx_display_init(void)
    else
       p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
    p_dispca->allocated           =  0;
+   {
+      unsigned i;
+      for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+         retro_atomic_int_init(&p_disp->stats_pub[i], 0);
+   }
 }
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
