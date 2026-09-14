@@ -4740,6 +4740,15 @@ static bool d3d11_gfx_frame(
 
    if (d3d11->shader_preset && video_info->shader_active)
    {
+      /* Loop-invariant for the whole chain: every pass of one frame
+       * sees the same frame. Gathered once rather than once per pass. */
+      uint32_t pass_frame_time_delta;
+      uint32_t pass_rotation;
+      int32_t  pass_frame_direction;
+      float    pass_original_fps;
+      float    pass_core_aspect;
+      float    pass_core_aspect_rot;
+
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
          if (d3d11->shader_preset->pass[i].feedback)
@@ -4749,6 +4758,21 @@ static bool d3d11_gfx_frame(
             d3d11->pass[i].rt       = tmp;
          }
       }
+
+      pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+      pass_original_fps     = video_driver_get_original_fps();
+      pass_rotation         = retroarch_get_rotation();
+      pass_core_aspect      = video_driver_get_core_aspect();
+      pass_core_aspect_rot  = pass_core_aspect;
+#ifdef HAVE_REWIND
+      pass_frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+      pass_frame_direction  = 1;
+#endif
+      /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
+      if (     pass_rotation == VIDEO_ROTATION_90_DEG
+            || pass_rotation == VIDEO_ROTATION_270_DEG)
+         pass_core_aspect_rot = 1 / pass_core_aspect_rot;
 
       for (i = 0; i < d3d11->shader_preset->passes; i++)
       {
@@ -4767,20 +4791,12 @@ static bool d3d11_gfx_frame(
          else
             d3d11->pass[i].frame_count = frame_count;
 
-#ifdef HAVE_REWIND
-         d3d11->pass[i].frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
-#else
-         d3d11->pass[i].frame_direction  = 1;
-#endif
-         d3d11->pass[i].frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
-         d3d11->pass[i].original_fps     = video_driver_get_original_fps();
-         d3d11->pass[i].rotation         = retroarch_get_rotation();
-         d3d11->pass[i].core_aspect      = video_driver_get_core_aspect();
-         /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-         d3d11->pass[i].core_aspect_rot  = d3d11->pass[i].core_aspect;
-         if (     d3d11->pass[i].rotation == VIDEO_ROTATION_90_DEG
-               || d3d11->pass[i].rotation == VIDEO_ROTATION_270_DEG)
-            d3d11->pass[i].core_aspect_rot = 1 / d3d11->pass[i].core_aspect_rot;
+         d3d11->pass[i].frame_direction  = pass_frame_direction;
+         d3d11->pass[i].frame_time_delta = pass_frame_time_delta;
+         d3d11->pass[i].original_fps     = pass_original_fps;
+         d3d11->pass[i].rotation         = pass_rotation;
+         d3d11->pass[i].core_aspect      = pass_core_aspect;
+         d3d11->pass[i].core_aspect_rot  = pass_core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */

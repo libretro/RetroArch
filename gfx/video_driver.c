@@ -2644,14 +2644,13 @@ void video_driver_unset_stub_frame(void)
    video_st->frame_bak            = NULL;
 }
 
-/* Get time diff between frames in usec (microseconds) */
+/* Time between the last two frames in usec (microseconds), as the
+ * shader chains' FrameTimeDelta. One value for the whole chain: a
+ * multi-pass preset asks per pass, and every pass of one frame is the
+ * same frame. Published by video_driver_frame(). */
 retro_time_t video_driver_get_frame_time_delta_usec(void)
 {
-   static retro_time_t last_time;
-   retro_time_t now_time   = cpu_features_get_time_usec();
-   retro_time_t delta_time = now_time - last_time;
-   last_time               = now_time;
-   return delta_time;
+   return (retro_time_t)video_driver_st.frame_time_delta_us;
 }
 
 /* Get original FPS (core FPS) */
@@ -5661,6 +5660,7 @@ void video_driver_frame(const void *data, unsigned width,
    settings_t *settings = config_get_ptr();
    static char video_driver_msg[256];
    static retro_time_t last_time;
+   static retro_time_t last_render_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
@@ -5833,6 +5833,18 @@ void video_driver_frame(const void *data, unsigned width,
    {
       nonblock_active        = 0;
       frame_time_accumulator = 0;
+   }
+
+   /* What the shader chains read as FrameTimeDelta, from the reading
+    * taken at the top of this function. Measured between the frames
+    * the driver is handed, so a frame dropped by fast-forward
+    * frameskip does not shorten it, and zero until there is a
+    * previous one to measure against. */
+   if (render_frame)
+   {
+      video_st->frame_time_delta_us = last_render_time
+         ? (unsigned)(new_time - last_render_time) : 0;
+      last_render_time              = new_time;
    }
 
    last_time        = new_time;

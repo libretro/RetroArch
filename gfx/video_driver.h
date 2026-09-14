@@ -1218,6 +1218,13 @@ typedef struct
 #endif
    unsigned scale_width;
    unsigned scale_height;
+   /* Microseconds between the last two frames handed to the video
+    * driver, for the shader chains' FrameTimeDelta. Written once per
+    * frame in video_driver_frame() from the reading that path already
+    * takes, and read by every pass of every chain; 32 bits so the
+    * store stays single-word for the video thread that reads it under
+    * the threaded wrapper. */
+   unsigned frame_time_delta_us;
 
    float core_hz;
    /* The bits of the aspect ratio, not the float: the main thread
