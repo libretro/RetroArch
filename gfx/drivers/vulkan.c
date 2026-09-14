@@ -313,7 +313,16 @@ typedef struct vk
     * fallback (see vulkan_pick_10bit_sampled_format). */
    VkComponentMapping tex_swizzle;
    math_matrix_4x4 mvp, mvp_no_rot, mvp_menu; /* float alignment */
+   /* Dynamic state for command recording. gfx_display_vk_draw()
+    * rewrites this for every element it draws, so after a menu or
+    * widget pass it holds the last quad, not the video viewport. */
    VkViewport vk_vp;
+   /* The viewport the emulated frame is presented in. Written only by
+    * vulkan_set_viewport(), never by a draw call, so it stays valid for
+    * everything that outlives command recording -- in particular the
+    * slang filter chain, whose SCALE_VIEWPORT passes size their
+    * framebuffers from it. */
+   VkViewport video_vp;
    VkRenderPass render_pass;
    VkRenderPass sdr_render_pass;
    VkRenderPass keep_render_pass;
@@ -2318,6 +2327,8 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    use_default_tc    = (tex_coord == vk_tex_coords);
    use_default_color = (color     == vk_colors);
 
+   /* Per-element dynamic state, not the video viewport. Anything that
+    * outlives this draw wants vk->video_vp. */
    vk->vk_vp.x                    = draw->x;
    vk->vk_vp.y                    = vk->context->swapchain_height - draw->y - draw->height;
    vk->vk_vp.width                = draw->width;
@@ -4732,7 +4743,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
-   info.swapchain.vp          = vk->vk_vp;
+   info.swapchain.vp          = vk->video_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
@@ -4840,7 +4851,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
    info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
-   info.swapchain.vp          = vk->vk_vp;
+   info.swapchain.vp          = vk->video_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
@@ -4894,7 +4905,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
             vulkan_set_hdr10(vk, vk->filter_chain, false);
             {
                struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.vp          = vk->video_vp;
                sdr_swapchain.format      = vk->context->swapchain_format;
                sdr_swapchain.render_pass = vk->sdr_render_pass;
                sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -4910,7 +4921,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
             vulkan_set_hdr10(vk, vk->filter_chain, false);
             {
                struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.vp          = vk->video_vp;
                sdr_swapchain.format      = vk->context->swapchain_format;
                sdr_swapchain.render_pass = vk->sdr_render_pass;
                sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -4939,7 +4950,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
             vulkan_set_hdr10(vk, vk->filter_chain, true);
             {
                struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.vp          = vk->video_vp;
                sdr_swapchain.format      = vk->context->swapchain_format;
                sdr_swapchain.render_pass = vk->sdr_render_pass;
                sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -5975,7 +5986,7 @@ static void vulkan_check_swapchain(vk_t *vk)
    }
    vk->context->flags              &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
 
-   filter_info.vp                   = vk->vk_vp;
+   filter_info.vp                   = vk->video_vp;
    filter_info.format               = vk->context->swapchain_format;
    filter_info.render_pass          = vk->render_pass;
    filter_info.num_indices          = vk->context->num_swapchain_images;
@@ -6155,7 +6166,7 @@ static bool vulkan_shader_load_begin(void *data,
       info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
       info.max_input_size.width  = vk->tex_w;
       info.max_input_size.height = vk->tex_h;
-      info.swapchain.vp          = vk->vk_vp;
+      info.swapchain.vp          = vk->video_vp;
       info.swapchain.format      = vk->context->swapchain_format;
       info.swapchain.render_pass = vk->render_pass;
       info.swapchain.num_indices = vk->context->num_swapchain_images;
@@ -6272,7 +6283,7 @@ static bool vulkan_shader_load_step(void *data,
             if (!emits_hdr16 && !emits_hdr10)
             {
                struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.vp          = vk->video_vp;
                sdr_swapchain.format      = vk->context->swapchain_format;
                sdr_swapchain.render_pass = vk->sdr_render_pass;
                sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -6282,7 +6293,7 @@ static bool vulkan_shader_load_step(void *data,
             else if (emits_hdr10)
             {
                struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-               sdr_swapchain.vp          = vk->vk_vp;
+               sdr_swapchain.vp          = vk->video_vp;
                sdr_swapchain.format      = vk->context->swapchain_format;
                sdr_swapchain.render_pass = vk->sdr_render_pass;
                sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -6306,7 +6317,7 @@ static bool vulkan_shader_load_step(void *data,
                vulkan_set_hdr10(vk, vk->filter_chain, true);
                {
                   struct vulkan_filter_chain_swapchain_info sdr_swapchain;
-                  sdr_swapchain.vp          = vk->vk_vp;
+                  sdr_swapchain.vp          = vk->video_vp;
                   sdr_swapchain.format      = vk->context->swapchain_format;
                   sdr_swapchain.render_pass = vk->sdr_render_pass;
                   sdr_swapchain.num_indices = vk->context->num_swapchain_images;
@@ -6475,12 +6486,13 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
       vk->out_vp_height = vk->vp.height;
    }
 
-   vk->vk_vp.x          = (float)vk->vp.x;
-   vk->vk_vp.y          = (float)vk->vp.y;
-   vk->vk_vp.width      = (float)vk->vp.width;
-   vk->vk_vp.height     = (float)vk->vp.height;
-   vk->vk_vp.minDepth   = 0.0f;
-   vk->vk_vp.maxDepth   = 1.0f;
+   vk->video_vp.x        = (float)vk->vp.x;
+   vk->video_vp.y        = (float)vk->vp.y;
+   vk->video_vp.width    = (float)vk->vp.width;
+   vk->video_vp.height   = (float)vk->vp.height;
+   vk->video_vp.minDepth = 0.0f;
+   vk->video_vp.maxDepth = 1.0f;
+   vk->vk_vp             = vk->video_vp;
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
@@ -7863,7 +7875,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    vulkan_filter_chain_build_offscreen_passes(
          (vulkan_filter_chain_t*)filter_chain,
-         vk->cmd, &vk->vk_vp);
+         vk->cmd, &vk->video_vp);
 
 #if defined(HAVE_MENU)
    /* Upload menu texture. */
@@ -7944,7 +7956,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vulkan_filter_chain_build_viewport_pass(
             (vulkan_filter_chain_t*)filter_chain, vk->cmd,
-            &vk->vk_vp, vk->mvp.data);
+            &vk->video_vp, vk->mvp.data);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       end_pass      = true;
