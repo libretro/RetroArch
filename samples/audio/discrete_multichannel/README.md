@@ -78,3 +78,8 @@ synchronizes capture reads and buffer reuse. Pause and suspension use the same
 worker, without added cases or sleep-based scheduling. Rendezvous waits have a
 30-second failure bound. This checks a controlled two-thread interleaving,
 not arbitrary real-core scheduling or whole-runloop acceptance.
+
+The callback continuity cases also insert a source callback that emits no samples.
+It must report no device progress, allowing the wrapper to park, without changing
+subsequent audible output. Normal callback results are checked against captured
+device output rather than assuming every source call produces an immediate write.

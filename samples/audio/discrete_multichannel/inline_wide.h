@@ -266,7 +266,7 @@ static void inline_format_cases(void)
 
 static union { float f[257*2]; int16_t i[257*2]; } callback_pcm;
 static unsigned callback_calls;
-static bool callback_native;
+static bool callback_native, callback_empty;
 static slock_t *callback_lock;
 static scond_t *callback_cond;
 static bool callback_request, callback_ready, callback_release;
@@ -330,6 +330,7 @@ static void inline_source_callback(void)
 {
    unsigned f;
    callback_calls++;
+   if (callback_empty) return;
    if (callback_native)
       audio_driver_sample_batch_float(callback_pcm.f, 257);
    else
@@ -382,6 +383,7 @@ static void inline_callback_cases(void)
          st->callback.callback = callbacks ? inline_source_callback : NULL;
          callback_native = native;
          callback_calls = 0;
+         callback_empty = false;
          transport_track = true;
          allocations = transport_allocations;
          if (callbacks)
@@ -419,9 +421,20 @@ static void inline_callback_cases(void)
                      && !st->data_ptr && cap_frames == frames,
                      "suspended callback retained speculative audio");
                AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_SUSPENDED);
+               callback_empty = true;
+               CHECK(!callback_dispatch() && callback_calls == calls + 2
+                     && !st->data_ptr && cap_frames == frames,
+                     "empty callback reported device progress or changed output");
+               callback_empty = false;
             }
             if (callbacks)
-               CHECK(callback_dispatch() && !st->data_ptr, "callback retained accumulator input");
+            {
+               size_t frames = cap_frames;
+               bool progress = callback_dispatch();
+               CHECK(progress == (cap_frames != frames),
+                     "callback progress disagrees with device writes");
+               CHECK(!st->data_ptr, "callback retained accumulator input");
+            }
             else if (native) audio_driver_sample_batch_float(callback_pcm.f, 257);
             else audio_driver_sample_batch(callback_pcm.i, 257);
             audio_driver_frame_end();
@@ -439,7 +452,7 @@ static void inline_callback_cases(void)
          }
          else
          {
-            CHECK(callback_calls == 33, "unexpected source callback count");
+            CHECK(callback_calls == 34, "unexpected source callback count");
             CHECK(cap_frames == reference_frames && reference
                   && !memcmp(reference, cap, cap_frames * 2 * sizeof(float)),
                   "pause/suspension or callback delivery changed the audible stream");
