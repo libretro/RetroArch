@@ -162,6 +162,29 @@ jobs:
           timeout 60 ./video_shader_wildcard_test
           echo "[pass] video_shader_wildcard_test"
 
+      - name: Build and run cloudsync_savefile_owner_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # Regression test for the save-data rollback cloud sync could
+          # cause at startup.  A core holds its save RAM in memory and
+          # writes it back when content closes, so a sync that replaces
+          # the file in between has its work overwritten and the stale
+          # result uploaded over the server's copy.
+          # save.c::content_savefile_is_live() is the ownership check
+          # tasks/task_cloudsync.c consults before it touches a local
+          # file; the test pins that predicate and the manifest key
+          # lookup the carry-forward uses to recover the hash the last
+          # sync recorded.  Build under AddressSanitizer so a regression
+          # in the list walk is caught at the bounds level.  If save.c
+          # amends the predicate, the verbatim copy in
+          # cloudsync_savefile_owner_test.c must follow.
+          make clean all SANITIZER=address
+          test -x cloudsync_savefile_owner_test
+          timeout 60 ./cloudsync_savefile_owner_test
+          echo "[pass] cloudsync_savefile_owner_test"
+
       - name: Build and run input_remap_bounds_test (ASan)
         shell: bash
         working-directory: samples/tasks/input_remap
