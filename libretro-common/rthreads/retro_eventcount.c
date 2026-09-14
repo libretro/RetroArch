@@ -22,9 +22,20 @@
 
 /* struct timespec and syscall() are POSIX/glibc surface that a strict
  * C89 compile does not expose by default; libretro-common builds as
- * C89, and rthreads.c asks for the same baseline for the same reason. */
+ * C89, and rthreads.c asks for the same baseline for the same reason.
+ *
+ * Guarded the way rthreads.c guards its own, and not only for symmetry.
+ * Darwin does not need it - the surface is visible there by default -
+ * and asking for it does harm: _POSIX_C_SOURCE lowers
+ * __DARWIN_C_LEVEL, which hides the BSD names. In a normal build that
+ * would stop at the end of this file, but griffin is one translation
+ * unit, so a define made here applies to every file included after it.
+ * IFF_UP in net/if.h and RTLD_DEFAULT in dlfcn.h are two that then
+ * vanish, in files that never asked for any of this. */
+#if defined(__unix__) && !defined(__APPLE__) && !defined(__sun__)
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309
+#endif
 #endif
 #if defined(__linux__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
