@@ -6449,14 +6449,14 @@ void video_driver_frame(const void *data, unsigned width,
                      " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
                      " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
                      " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                     " -Frames:  %u copied, %u zero-copy, %u hw, %u waited\n"
+                     " -Frames:  %u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
                      " -Lend:    %u asked, %u lent, %u lapsed, %u ring, %u size\n",
                      ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
                      ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
                      ho.bytes_per_frame / 1024,
                      ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
                      ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
-                     ho.waits, ho.asked, ho.lent, ho.lapsed,
+                     ho.waits, ho.dropped, ho.drains, ho.asked, ho.lent, ho.lapsed,
                      ho.declined_ring, ho.declined_size);
          }
 #endif

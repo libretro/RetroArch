@@ -2229,6 +2229,8 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->handoff.copied++;
       if (waited)
          thr->handoff.waits++;
+      if (dropped)
+         thr->handoff.dropped++;
    }
 
 #ifdef HAVE_MENU
@@ -2313,6 +2315,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->drain_pending = false;
          thr->content_due  += content;
          drained            = true;
+         thr->handoff.drains++;
       }
       if (thr->content_due < thr->next_present)
          thr->content_due = thr->next_present;
@@ -2362,6 +2365,8 @@ static bool video_thread_frame(void *data, const void *frame_,
          l->frames_zero_copy = thr->handoff.zero_copy;
          l->frames_hw        = thr->handoff.hw;
          l->waits            = thr->handoff.waits;
+         l->dropped          = thr->handoff.dropped;
+         l->drains           = thr->handoff.drains;
          l->asked            = thr->handoff.asked;
          l->lent             = thr->handoff.lent;
          l->lapsed           = thr->handoff.lapsed;
@@ -2374,6 +2379,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->handoff.bytes       = 0;
          thr->handoff.copied      = thr->handoff.zero_copy   = 0;
          thr->handoff.hw          = thr->handoff.waits       = 0;
+         thr->handoff.dropped     = thr->handoff.drains      = 0;
          thr->handoff.asked       = thr->handoff.lent        = 0;
          thr->handoff.lapsed      = 0;
          thr->handoff.declined_ring = thr->handoff.declined_size = 0;
