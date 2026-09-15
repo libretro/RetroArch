@@ -11814,7 +11814,15 @@ static int materialui_pointer_up(void *userdata,
 
    if (mui->scroll_y != scroll_y_target)
    {
-      mui->overscroll_velocity    = -mui->pointer.y_accel * 60.0f;
+      gfx_animation_t *p_anim     = anim_get_ptr();
+      /* y_accel is measured per frame; the overscroll spring
+       * integrates px/s, so convert with the measured frame
+       * time (fall back to 16.667 ms when no delta is known
+       * yet, i.e. on the very first frame) */
+      float frame_ms              = (p_anim->delta_time > 0.01f)
+            ? p_anim->delta_time : 16.667f;
+      mui->overscroll_velocity    = -mui->pointer.y_accel
+            * (1000.0f / frame_ms);
       mui->overscroll_target      = scroll_y_target;
       menu_input->pointer.y_accel = 0.0f;
       mui->flags                 |= MUI_FLAG_OVERSCROLL_ACTIVE;
