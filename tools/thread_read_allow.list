@@ -1,0 +1,5 @@
+# Owner-domain reads: a subsystem's own thread reading its own
+# pointer-stable singleton. The video thread and ra-video's state is
+# the design; the audit holds everything else to published snapshots,
+# latched fields, or arguments captured when the work was posted.
+video_thread_loop|video_state_get_ptr
