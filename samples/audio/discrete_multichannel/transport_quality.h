@@ -45,6 +45,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
    runloop_state_get_ptr()->flags = tempo < 1.0 ? RUNLOOP_FLAG_SLOWMOTION
       : tempo > 1.0 ? RUNLOOP_FLAG_FASTMOTION : 0;
    retro_atomic_store_release_int(&st->pipe_ff_mult_q16, (int)(65536.0 / tempo));
+   audio_driver_publish_runloop();
    CHECK(audio_driver_transport_configure(settings), "quality configured startup");
    if (!st->pipe_transport) return;
    CHECK(!lpf_only || (st->transport_lpf_only
@@ -139,6 +140,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
    settings->bools.audio_fastforward_speedup = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
 }
 
 static void transport_quality_cases(void)

@@ -1179,8 +1179,10 @@ static void layout_epoch_pressure_case(bool floating)
    {
       bool speedup = config_get_ptr()->bools.audio_fastforward_speedup;
       config_get_ptr()->bools.audio_fastforward_speedup = true;
+      audio_driver_publish_runloop();
       audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, true, 11);
       config_get_ptr()->bools.audio_fastforward_speedup = speedup;
+      audio_driver_publish_runloop();
       CHECK(st->pipe_ff_frames == 1, "metadata pressure skipped source cadence accounting");
       audio_driver_frame_end();
       CHECK(st->last_flush_time > 0 && !st->pipe_ff_frames,
@@ -1770,6 +1772,7 @@ static void transport_settings_cases(void)
          runloop_state_get_ptr()->flags = 0;
          settings->bools.audio_time_stretch = false;
          settings->bools.audio_time_stretch_lowpass = false;
+         audio_driver_publish_runloop();
          calls = transport_control_calls;
          CHECK(audio_driver_transport_configure(settings) && !st->pipe_transport
                && transport_control_calls == calls, "disabled setting touched transport");
@@ -1810,10 +1813,12 @@ static void transport_settings_cases(void)
          audio_driver_pipeline_transport_release();
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          settings->floats.slowmotion_ratio = 8;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_transport_configure(settings) && !st->pipe_transport
                && st->pipe_transport_suspended, "unsupported configured startup not recoverable");
          runloop_state_get_ptr()->flags = 0;
          settings->floats.slowmotion_ratio = 1;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
                && !st->pipe_transport_suspended, "configured startup recovery");
          audio_driver_pipeline_transport_release();
@@ -1821,15 +1826,18 @@ static void transport_settings_cases(void)
          settings->bools.audio_time_stretch_lowpass = true;
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          settings->floats.slowmotion_ratio = 8;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_transport_configure(settings) && st->pipe_transport_suspended,
                "LPF-only unsupported startup");
          settings->floats.slowmotion_ratio = 0.5f;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_transport_update_runloop(st) && st->pipe_transport
                && !st->pipe_transport_suspended
                && !(st->pipe_layouts.published_control & AUDIO_PIPELINE_STRETCH)
                && st->pipe_layouts.published_cutoff, "LPF-only recovery enabled stretch");
          settings->floats.slowmotion_ratio = 1;
          runloop_state_get_ptr()->flags = 0;
+         audio_driver_publish_runloop();
          st->current_audio = saved;
          audio_driver_deinit_internal(true);
          CHECK(!st->pipe_transport && !st->pipe_transport_follow,
@@ -1875,12 +1883,14 @@ static void transport_owner_cases(void)
          stage = st->pipe_transport; output = st->pipe_transport_output;
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
+         audio_driver_publish_runloop();
          calls = transport_control_calls;
          CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true)
                && transport_control_calls == calls, "unsupported startup parked worker");
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
          config_get_ptr()->bools.audio_fastforward_speedup = true;
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
+         audio_driver_publish_runloop();
          transport_fail_stage = true;
          CHECK(!audio_driver_pipeline_transport_prepare_runloop(48000, 1, true),
                "failed runloop startup accepted");
@@ -1904,6 +1914,7 @@ static void transport_owner_cases(void)
          runloop_state_get_ptr()->flags = 0;
          config_get_ptr()->bools.audio_fastforward_speedup = false;
          config_get_ptr()->floats.slowmotion_ratio = 1;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_pipeline_transport_prepare_runloop(48000, 1, false)
                && st->pipe_layouts.current_control == 65536
                && st->pipe_layouts.current_cutoff == 0, "normal startup was not dry");
@@ -2194,6 +2205,7 @@ static void transport_request_cases(void)
                config_get_ptr()->floats.slowmotion_ratio = modes[m].slow;
                config_get_ptr()->bools.audio_fastforward_speedup = modes[m].speedup;
                retro_atomic_store_release_int(&st->pipe_ff_mult_q16, modes[m].mult);
+               audio_driver_publish_runloop();
                CHECK(audio_driver_pipeline_transport_request_runloop(false, true),
                      "runloop request publish");
                CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block)
@@ -2203,6 +2215,7 @@ static void transport_request_cases(void)
                      "runloop request speed/cutoff composition");
             }
             runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            audio_driver_publish_runloop();
             head = retro_atomic_load_relaxed_size(&q->head);
             gen = retro_atomic_load_acquire_int(&st->pipe_data_gen);
             config_get_ptr()->floats.slowmotion_ratio = 8;
@@ -2213,6 +2226,7 @@ static void transport_request_cases(void)
                   "nonfinite slow motion accepted");
             runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
             retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 0);
+            audio_driver_publish_runloop();
             CHECK(!audio_driver_pipeline_transport_request_runloop(true, true),
                   "unseeded fast-forward accepted");
             CHECK(retro_atomic_load_relaxed_size(&q->head) == head
@@ -2222,6 +2236,7 @@ static void transport_request_cases(void)
             runloop_state_get_ptr()->flags = 0;
             config_get_ptr()->floats.slowmotion_ratio = 1;
             config_get_ptr()->bools.audio_fastforward_speedup = false;
+            audio_driver_publish_runloop();
          }
          CHECK(audio_driver_pipeline_transport_start_runloop(48000, 1, true),
                "automatic producer start");
@@ -2231,6 +2246,7 @@ static void transport_request_cases(void)
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
          config_get_ptr()->bools.audio_fastforward_speedup = true;
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
+         audio_driver_publish_runloop();
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
                floating, false, true, st->pipe_channels);
          CHECK(!retro_spsc_read_avail(&st->pipe_ring)
@@ -2247,6 +2263,7 @@ static void transport_request_cases(void)
                && q->published_cutoff == 5400, "automatic producer retry");
          head = retro_atomic_load_relaxed_size(&q->head);
          config_get_ptr()->bools.audio_fastforward_speedup = false;
+         audio_driver_publish_runloop();
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
                floating, false, false, st->pipe_channels);
          CHECK(retro_atomic_load_relaxed_size(&q->head) == head,
@@ -2254,6 +2271,7 @@ static void transport_request_cases(void)
          audio_driver_frame_end();
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
+         audio_driver_publish_runloop();
          position = retro_spsc_read_avail(&st->pipe_ring);
          retained = st->pipe_transport;
          transport_allocations = transport_frees = 0; transport_track = true;
@@ -2265,6 +2283,7 @@ static void transport_request_cases(void)
                "automatic fallback lost queued source or stayed active");
          runloop_state_get_ptr()->flags = 0;
          config_get_ptr()->floats.slowmotion_ratio = 1;
+         audio_driver_publish_runloop();
          CHECK(!audio_driver_pipeline_transport_start_runloop(48000, 1, true),
                "automatic restart accepted queued source");
          audio_driver_frame_end();
@@ -2476,6 +2495,7 @@ static void inline_transport_cases(void)
          settings->floats.slowmotion_ratio = durations[speed];
          /* Controlled duration exercises both tempo directions independent of wall time. */
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+         audio_driver_publish_runloop();
          while (submitted < total)
          {
             size_t n = total - submitted;
@@ -2523,6 +2543,7 @@ static void inline_transport_cases(void)
          CHECK(!audio_driver_inline_flush(st, 1.0f, &input, 34, !floating, false, false), "format mismatch did not fall back");
          settings->bools.audio_fastforward_speedup = true;
          settings->bools.audio_time_stretch_lowpass = true;
+         audio_driver_publish_runloop();
          CHECK(audio_driver_inline_flush(st, 0.5f, &input, 34, floating, true, false)
                && !audio_speed_lpf_quiescent(&saved->lpf), "inline speed LPF inactive");
          st->last_flush_time = 0;
@@ -2535,6 +2556,7 @@ static void inline_transport_cases(void)
    settings->floats.slowmotion_ratio = 1;
    settings->bools.audio_time_stretch = settings->bools.audio_time_stretch_lowpass = false;
    settings->bools.audio_fastforward_speedup = false;
+   audio_driver_publish_runloop();
    printf("inline native transport: 10 cases, %u failures\n", failures - before);
 }
 

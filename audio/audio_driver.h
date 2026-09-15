@@ -1101,7 +1101,8 @@ enum audio_runloop_snapshot_bits
    AUDIO_SNAP_SYNC        = (1 << 6),
    AUDIO_SNAP_FF_SPEEDUP  = (1 << 7),
    AUDIO_SNAP_SINK_EST    = (1 << 8),
-   AUDIO_SNAP_FASTPATH_S16 = (1 << 9)
+   AUDIO_SNAP_FASTPATH_S16 = (1 << 9),
+   AUDIO_SNAP_STRETCH_LPF = (1 << 10)
 };
 
 /**

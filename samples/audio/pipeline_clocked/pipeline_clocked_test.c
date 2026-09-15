@@ -296,6 +296,7 @@ static bool pipeline_up(unsigned latency_ms)
    st->sink_bias            = 1.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = OUT_RATE;
+   st->out_rate = OUT_RATE;
    config_get_ptr()->bools.audio_sync                 = true;
    audio_driver_publish_runloop();
 

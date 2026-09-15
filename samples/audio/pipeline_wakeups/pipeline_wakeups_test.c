@@ -700,6 +700,7 @@ static void wrapper_live_controls(unsigned publishes)
          config_get_ptr()->bools.audio_fastforward_speedup = true;
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16,
                (int)(65536.0 / tempos[step]));
+         audio_driver_publish_runloop();
       }
       if (!(auto_runloop || (runloop_policy
                ? audio_driver_pipeline_transport_request_runloop(false, true)
@@ -737,6 +738,7 @@ static void wrapper_live_controls(unsigned publishes)
       {
          runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
          config_get_ptr()->floats.slowmotion_ratio = 8;
+         audio_driver_publish_runloop();
          submit_frame((size_t)(CORE_RATE / FPS), publishes);
          if (st->pipe_transport || !st->pipe_transport_follow
                || st->pipe_transport_suspended != retained) fixture_failures++;
@@ -744,6 +746,7 @@ static void wrapper_live_controls(unsigned publishes)
       runloop_state_get_ptr()->flags = 0;
       config_get_ptr()->floats.slowmotion_ratio = 1;
       config_get_ptr()->bools.audio_fastforward_speedup = false;
+      audio_driver_publish_runloop();
       if (auto_runloop)
       {
          bool drained = false;

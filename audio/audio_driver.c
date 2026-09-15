@@ -1697,10 +1697,10 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
    uint64_t consumed;
    uint64_t consumed_alt;
    const audio_driver_t *audio = audio_st->current_audio;
-   settings_t *settings        = config_get_ptr();
-   unsigned rate = settings->uints.audio_output_sample_rate;
+   unsigned rate = audio_st->out_rate;
 
-   if (!settings->bools.audio_sink_rate_estimation)
+   if (!(retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_SINK_EST))
    {
       /* Off means no bias, and no baseline: turning it back on
        * measures afresh. The overlay draws the rates while one is
@@ -3479,7 +3479,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
       bool slowmotion, bool fastforward, unsigned layout)
 {
    struct audio_inline_transport *t = audio_st->inline_transport;
-   settings_t *settings = config_get_ptr();
+   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
    size_t left = frames;
    size_t frame;
    const uint8_t *source = (const uint8_t*)data;
@@ -3497,7 +3497,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
 #ifdef HAVE_REWIND
    supported = supported && !state_manager_frame_is_reversed();
 #endif
-   if (supported && fastforward && settings->bools.audio_fastforward_speedup)
+   if (supported && fastforward && (snap & AUDIO_SNAP_FF_SPEEDUP))
       duration *= audio_driver_fastforward_ratio_mult(audio_st, left);
    memcpy(&bits, &duration, sizeof(bits));
    supported = supported && bits < UINT64_C(0x7ff0000000000000)
@@ -3524,7 +3524,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    t->layout = layout;
    source_time = fastforward ? audio_st->last_flush_time : 0;
    tempo = (uint32_t)(65536.0 / duration + 0.5);
-   cutoff = settings->bools.audio_time_stretch_lowpass
+   cutoff = (snap & AUDIO_SNAP_STRETCH_LPF)
       ? audio_speed_lpf_cutoff(t->lpf.rate, tempo) : 0;
    if (cutoff != t->cutoff)
    {
@@ -3556,7 +3556,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
          audio_driver_inline_render(audio_st, output, frames, layout,
                audio_st->transport_lpf_only ? (float)duration : 1.0f,
                audio_st->transport_lpf_only,
-               fastforward && !settings->bools.audio_fastforward_speedup);
+               fastforward && !(snap & AUDIO_SNAP_FF_SPEEDUP));
          audio_stretch_stream_consume(t->stream, frames);
       }
       if (!used && !frames) break;
@@ -4282,6 +4282,8 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_SINK_EST;
    if (settings->bools.audio_fastpath_s16)
       v |= AUDIO_SNAP_FASTPATH_S16;
+   if (settings->bools.audio_time_stretch_lowpass)
+      v |= AUDIO_SNAP_STRETCH_LPF;
    ratio = settings->floats.slowmotion_ratio;
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(
@@ -4726,7 +4728,8 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       }
       /* Count before the ring write so dropped source still contributes.
        * Measure once at frame end, independently of publish granularity. */
-      if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+      if (is_fastforward && (retro_atomic_load_acquire_int(
+                  &audio_st->runloop_snapshot) & AUDIO_SNAP_FF_SPEEDUP))
          audio_st->pipe_ff_frames = frames > SIZE_MAX - audio_st->pipe_ff_frames
             ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
       else
@@ -5022,6 +5025,30 @@ static bool audio_driver_transport_runloop_tempo(uint32_t *tempo)
    return true;
 }
 
+/* The submit path's variant: the tempo from the published snapshot,
+ * so a callback core's audio thread never reads the runloop or
+ * settings. Configure-time callers keep the live derivation above. */
+static bool audio_driver_transport_snapshot_tempo(uint32_t *tempo)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   uint64_t bits;
+   double duration = 1.0;
+   if (!(snap & AUDIO_SNAP_PAUSED))
+   {
+      if (snap & AUDIO_SNAP_SLOWMOTION)
+         duration *= audio_driver_snapshot_slowmotion(audio_st);
+      if ((snap & AUDIO_SNAP_FASTMOTION) && (snap & AUDIO_SNAP_FF_SPEEDUP))
+         duration *= retro_atomic_load_acquire_int(
+               &audio_st->pipe_ff_mult_q16) / 65536.0;
+   }
+   memcpy(&bits, &duration, sizeof(bits));
+   if (bits >= UINT64_C(0x7ff0000000000000)
+         || !(duration >= 1.0 / 32.0 && duration <= 4.0)) return false;
+   *tempo = (uint32_t)(65536.0 / duration + 0.5);
+   return true;
+}
+
 bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
 {
    uint32_t tempo;
@@ -5033,7 +5060,7 @@ bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass)
 static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st)
 {
    uint32_t tempo;
-   if (!audio_driver_transport_runloop_tempo(&tempo))
+   if (!audio_driver_transport_snapshot_tempo(&tempo))
    {
       if (audio_st->pipe_transport && !audio_driver_transport_recover(false, 65536))
          return false;
@@ -5712,13 +5739,14 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
    size_t frames_remaining        = frames;
    recording_state_t *record_st   = recording_state_get_ptr();
    audio_driver_state_t *audio_st = &audio_driver_st;
-   float slowmotion_ratio         = config_get_ptr()->floats.slowmotion_ratio;
+   float slowmotion_ratio         = audio_driver_snapshot_slowmotion(&audio_driver_st);
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED) || (frames < 1))
       return frames;
 
-   runloop_flags                  = runloop_get_flags();
-   flush_audio                    = !((runloop_flags & RUNLOOP_FLAG_PAUSED)
+   runloop_flags                  = (uint32_t)retro_atomic_load_acquire_int(
+         &audio_st->runloop_snapshot);
+   flush_audio                    = !((runloop_flags & AUDIO_SNAP_PAUSED)
             || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf));
    recording_push_audio           = record_st->data
@@ -5745,8 +5773,8 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
       if (flush_audio)
          audio_driver_submit(audio_st, slowmotion_ratio, data,
                frames_to_write << 1, false,
-               (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+               (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+               (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
 
       frames_remaining -= frames_to_write;
       data             += frames_to_write << 1;
@@ -5863,17 +5891,18 @@ static bool audio_driver_multi_pipe(audio_driver_state_t *audio_st,
       return true;
    if (audio_st->float_gate && audio_st->float_gate())
       return true;
-   runloop_flags = runloop_get_flags();
+   runloop_flags = (uint32_t)retro_atomic_load_acquire_int(
+         &audio_st->runloop_snapshot);
    audio_driver_record_push(audio_st, data, frames, channels, layout, is_float);
-   if (      (runloop_flags & RUNLOOP_FLAG_PAUSED)
+   if (      (runloop_flags & AUDIO_SNAP_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf)
       return true;
    audio_st->pipe_layout = layout;
-   audio_driver_submit_width(audio_st, config_get_ptr()->floats.slowmotion_ratio,
+   audio_driver_submit_width(audio_st, audio_driver_snapshot_slowmotion(audio_st),
          data, frames * channels, is_float,
-         (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-         (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false, channels);
+         (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+         (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false, channels);
    return true;
 }
 
@@ -5933,7 +5962,7 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
    struct audio_inline_transport *t = audio_st->inline_transport;
    uint32_t flags;
    size_t done = 0, frame = channels * (floating ? sizeof(float) : sizeof(int16_t));
-   float ratio = config_get_ptr()->floats.slowmotion_ratio;
+   float ratio = audio_driver_snapshot_slowmotion(audio_st);
    if (audio_st->pipe_threaded || !t || t->channels <= 2 || floating != t->floating
          || (layout & AUDIO_LAYOUT_STEREO) != AUDIO_LAYOUT_STEREO)
       return false;
@@ -5942,15 +5971,15 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
 #endif
    if (audio_st->float_gate && audio_st->float_gate()) return true;
    audio_driver_record_push(audio_st, data, frames, channels, layout, floating);
-   flags = runloop_get_flags();
-   if ((flags & RUNLOOP_FLAG_PAUSED) || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+   flags = (uint32_t)retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   if ((flags & AUDIO_SNAP_PAUSED) || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf) return true;
    audio_driver_state_lock();
    while (done < frames)
    {
       size_t n = frames - done;
-      bool slow = (flags & RUNLOOP_FLAG_SLOWMOTION) != 0;
-      bool fast = (flags & RUNLOOP_FLAG_FASTMOTION) != 0;
+      bool slow = (flags & AUDIO_SNAP_SLOWMOTION) != 0;
+      bool fast = (flags & AUDIO_SNAP_FASTMOTION) != 0;
       if (n > (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)) n = AUDIO_CHUNK_SIZE_NONBLOCKING >> 1;
       audio_driver_inline_pack(t, (const uint8_t*)data + done * frame, n, channels, layout);
       if (!audio_driver_inline_process(audio_st, ratio, t->source, n, floating, slow, fast, layout))
@@ -6148,7 +6177,7 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
    size_t frames_remaining        = frames;
    recording_state_t *record_st   = recording_state_get_ptr();
    audio_driver_state_t *audio_st = &audio_driver_st;
-   float slowmotion_ratio         = config_get_ptr()->floats.slowmotion_ratio;
+   float slowmotion_ratio         = audio_driver_snapshot_slowmotion(&audio_driver_st);
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED) || (frames < 1))
       return frames;
@@ -6191,8 +6220,9 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
    }
 #endif
 
-   runloop_flags                  = runloop_get_flags();
-   flush_audio                    = !((runloop_flags & RUNLOOP_FLAG_PAUSED)
+   runloop_flags                  = (uint32_t)retro_atomic_load_acquire_int(
+         &audio_st->runloop_snapshot);
+   flush_audio                    = !((runloop_flags & AUDIO_SNAP_PAUSED)
             || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf));
    recording_push_audio           = record_st->data
@@ -6220,8 +6250,8 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
          if (flush_audio)
             audio_driver_submit(audio_st, slowmotion_ratio,
                   data, frames_to_write << 1, true,
-                  (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-                  (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+                  (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+                  (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
          frames_remaining -= frames_to_write;
          data             += frames_to_write << 1;
          continue;
@@ -6236,12 +6266,12 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
          if (!audio_st->inline_transport
                || !audio_driver_inline_flush(audio_st, slowmotion_ratio, data,
                   frames_to_write << 1, true,
-                  (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-                  (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false))
+                  (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+                  (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false))
             audio_driver_flush(audio_st, slowmotion_ratio, data,
                frames_to_write << 1, true,
-               (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+               (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+               (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
          audio_driver_state_unlock();
       }
 
@@ -7736,7 +7766,8 @@ bool audio_driver_stop(void)
 void audio_driver_frame_is_reverse(void)
 {
    audio_driver_state_t *audio_st  = &audio_driver_st;
-   uint32_t runloop_flags          = runloop_get_flags();
+   uint32_t runloop_flags          = (uint32_t)retro_atomic_load_acquire_int(
+         &audio_st->runloop_snapshot);
 
    bool  rewind_float = audio_st->core_float && audio_st->rewind_buf_f;
 
@@ -7751,18 +7782,18 @@ void audio_driver_frame_is_reverse(void)
          2, AUDIO_LAYOUT_STEREO, rewind_float);
 
    if (!(
-             (runloop_flags & RUNLOOP_FLAG_PAUSED)
+             (runloop_flags & AUDIO_SNAP_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !(audio_st->output_samples_buf)))
       if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
          audio_driver_submit(audio_st,
-               config_get_ptr()->floats.slowmotion_ratio,
+               audio_driver_snapshot_slowmotion(audio_st),
                rewind_float
                   ? (const void*)(audio_st->rewind_buf_f + audio_st->rewind_ptr)
                   : (const void*)(audio_st->rewind_buf   + audio_st->rewind_ptr),
                audio_st->rewind_size - audio_st->rewind_ptr, rewind_float,
-               (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+               (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+               (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
 
    /* A reversed frame is published here, before the frame end that
     * follows it, which will wake the consumer for it. */
@@ -7946,8 +7977,8 @@ void audio_driver_menu_sample(void)
                slowmotion_ratio,
                samples_buf,
                1024, false,
-               (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+               (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+               (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
       sample_count -= 1024;
    }
 
@@ -7966,8 +7997,8 @@ void audio_driver_menu_sample(void)
 
    if (check_flush)
       audio_driver_submit(audio_st, slowmotion_ratio, samples_buf, sample_count, false,
-            (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-            (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+            (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
+            (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
 
    /* This is the menu's frame; no frame end follows it. */
    audio_driver_ff_frame_end(audio_st);

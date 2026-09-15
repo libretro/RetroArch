@@ -87,6 +87,7 @@ static void raw_speed_cases(void)
    settings->bools.audio_time_stretch_lowpass = settings->bools.audio_fastforward_speedup = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("raw native speed: 5 cases, %u failures\n", failures - before);
 }
 
@@ -185,6 +186,7 @@ static void independent_lpf_cases(void)
    settings->bools.audio_time_stretch_lowpass = settings->bools.audio_fastpath_s16 = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("independent native lowpass: 10 cases, %u failures\n", failures - before);
 }
 
@@ -232,6 +234,7 @@ static void rewind_state_cases(void)
       settings->bools.audio_time_stretch = true;
       settings->floats.slowmotion_ratio = 2;
       runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+      audio_driver_publish_runloop();
       CHECK(audio_driver_transport_configure(settings), "state rewind transport");
       saved = st->inline_transport;
       if (!saved) exit(1);
@@ -295,6 +298,7 @@ static void rewind_state_cases(void)
       settings->bools.audio_time_stretch = settings->bools.audio_fastpath_s16 = false;
       settings->floats.slowmotion_ratio = 1;
       runloop_state_get_ptr()->flags = 0;
+      audio_driver_publish_runloop();
    }
    printf("state manager native audio: 2 cases, %u failures\n", failures - before);
 }
@@ -715,6 +719,7 @@ static void rewind_frame_cases(void)
    settings->bools.audio_fastpath_s16 = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("native rewind frames: 3 cases, %u failures\n", failures - before);
    rewind_bounds_cases();
 }
@@ -786,6 +791,7 @@ static void inline_wide_cases(void)
                settings->bools.audio_fastforward_speedup = false;
                settings->floats.slowmotion_ratio = (float)duration;
                runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+               audio_driver_publish_runloop();
                CHECK(audio_driver_transport_configure(settings), "wide inline prepare");
                saved = st->inline_transport;
                CHECK(saved && saved->channels == AUDIO_PIPE_CANON_CHANNELS, "wide inline storage missing");
@@ -851,11 +857,13 @@ static void inline_wide_cases(void)
                         "active layout handoff emitted an old tail");
                }
                settings->floats.slowmotion_ratio = 8;
+               audio_driver_publish_runloop();
                if (native) audio_driver_sample_batch_multi_float(input.f, 17, channels, layouts[l]);
                else audio_driver_sample_batch_multi_int16(input.i, 17, channels, layouts[l]);
                CHECK(saved->bypassed, "wide inline unsupported speed did not fall back");
                runloop_state_get_ptr()->flags = 0;
                settings->floats.slowmotion_ratio = 1;
+               audio_driver_publish_runloop();
                if (native) audio_driver_sample_batch_multi_float(input.f, 17, 2, AUDIO_LAYOUT_STEREO);
                else audio_driver_sample_batch_multi_int16(input.i, 17, 2, AUDIO_LAYOUT_STEREO);
                CHECK(!saved->bypassed && saved->layout == AUDIO_LAYOUT_STEREO && saved == st->inline_transport,
@@ -872,6 +880,7 @@ static void inline_wide_cases(void)
    settings->bools.audio_time_stretch = settings->bools.audio_fastpath_s16 = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("wide inline native transport: %u cases, %u failures\n", cases, failures - before);
 }
 
@@ -906,6 +915,7 @@ static void inline_format_cases(void)
             settings->bools.audio_time_stretch_lowpass = true;
             settings->floats.slowmotion_ratio = 2;
             runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            audio_driver_publish_runloop();
             CHECK(audio_driver_transport_configure(settings), "format configure");
             saved = st->inline_transport;
             st->sample_accum = accum;
@@ -969,6 +979,7 @@ static void inline_format_cases(void)
             transport_fail_output = false;
             CHECK(!st->inline_transport && st->core_float == !native, "failed rebind retained stale stage");
             runloop_state_get_ptr()->flags = 0;
+            audio_driver_publish_runloop();
             f = cap_frames;
             if (!native) audio_driver_sample_batch_multi_float(input.f, 257, 6, AUDIO_LAYOUT_5POINT1);
             else audio_driver_sample_batch_multi_int16(input.i, 257, 6, AUDIO_LAYOUT_5POINT1);
@@ -983,6 +994,7 @@ static void inline_format_cases(void)
    settings->bools.audio_fastpath_s16 = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("inline format negotiation: %u cases, %u failures\n", cases, failures - before);
 }
 
@@ -1134,10 +1146,12 @@ static void inline_callback_cases(void)
                unsigned calls = callback_calls;
                size_t frames = cap_frames;
                runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_PAUSED;
+               audio_driver_publish_runloop();
                audio_driver_frame_end();
                CHECK(!callback_dispatch() && callback_calls == calls
                      && cap_frames == frames, "paused callback advanced source/output");
                runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
+               audio_driver_publish_runloop();
                AUDIO_FLAGS_SET(st, AUDIO_FLAG_SUSPENDED);
                audio_driver_frame_end();
                CHECK(!callback_dispatch() && callback_calls == calls + 1
@@ -1200,6 +1214,7 @@ static void inline_callback_cases(void)
    settings->bools.audio_fastpath_s16 = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("inline callback continuity: 2 cases, %u failures\n", failures - before);
 }
 
@@ -1325,5 +1340,6 @@ static void callback_buffering_case(void)
    settings->bools.audio_fastpath_s16 = settings->bools.audio_time_stretch = false;
    settings->floats.slowmotion_ratio = 1;
    runloop_state_get_ptr()->flags = 0;
+   audio_driver_publish_runloop();
    printf("callback transport progress: 2 cases, %u failures\n", failures - before);
 }

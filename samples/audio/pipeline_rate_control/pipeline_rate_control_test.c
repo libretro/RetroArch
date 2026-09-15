@@ -314,6 +314,7 @@ static bool pipeline_up(size_t ring_bytes)
    st->sink_bias            = 1.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = 48000;
+   st->out_rate = 48000;
    config_get_ptr()->bools.audio_sync                 = sync_on;
    audio_driver_publish_runloop();
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))

@@ -119,6 +119,7 @@ static void reset(audio_driver_state_t *st, bool control)
    core_pause_sec = 0.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = 48000;
+   st->out_rate = 48000;
    audio_driver_publish_runloop();
    audio_driver_sink_update(st, clock_usec); /* opens the baseline */
 }

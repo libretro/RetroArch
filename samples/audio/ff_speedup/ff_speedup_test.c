@@ -166,6 +166,7 @@ static void test_producer_publishes_at_its_cadence(void)
    fresh();
    memset(block, 0, sizeof(block));
    settings->bools.audio_fastforward_speedup = true;
+   audio_driver_publish_runloop();
    audio_driver_st.pipe_threaded    = true;
    audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
    audio_driver_st.pipe_pass_frames = FRAMES;
@@ -216,6 +217,7 @@ static void test_fragmented_frame_cadence(void)
       fresh();
       runloop_state_get_ptr()->flags |= RUNLOOP_FLAG_FASTMOTION;
       config_get_ptr()->bools.audio_fastforward_speedup = true;
+      audio_driver_publish_runloop();
       audio_driver_st.pipe_threaded = true;
       audio_driver_st.pipe_channels = 2;
       audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
@@ -259,6 +261,7 @@ static void test_fragmented_frame_cadence(void)
       fake_now += 60000000;
       audio_driver_frame_end();
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
+      audio_driver_publish_runloop();
       audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
       audio_driver_frame_end();
       CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
