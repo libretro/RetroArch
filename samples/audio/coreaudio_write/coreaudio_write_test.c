@@ -10,7 +10,18 @@
 typedef unsigned UInt32;
 typedef int OSStatus;
 typedef unsigned AudioUnitRenderActionFlags;
-typedef int AudioTimeStamp;
+
+#define kAudioTimeStampSampleTimeValid 1u
+#define kAudioTimeStampHostTimeValid   2u
+#define kAudioTimeStampRateScalarValid 4u
+
+typedef struct
+{
+   double   mSampleTime;
+   unsigned long long mHostTime;
+   double   mRateScalar;
+   UInt32   mFlags;
+} AudioTimeStamp;
 typedef long long retro_time_t;
 typedef struct { unsigned tv_sec, tv_nsec; } mach_timespec_t;
 typedef struct { void *mData; size_t mDataByteSize; } AudioBuffer;
@@ -19,10 +30,16 @@ typedef struct coreaudio
 {
    float *buffer;
    size_t capacity, usable, read_ptr, write_ptr, period_pull, max_pull_frames;
-   unsigned channels;
+   unsigned channels, output_rate;
    retro_atomic_size_t filled, consumed, underruns, max_pull_observed;
    retro_atomic_size_t oversized_pulls, format_errors, worst_short, worst_short_avail;
    retro_atomic_int_t waiters;
+   double   ct_ns_per_tick;
+   double   ct_anchor_sample;
+   unsigned long long ct_anchor_host;
+   int      ct_have_anchor;
+   double   ct_sx, ct_sy, ct_sxx, ct_sxy, ct_n;
+   retro_atomic_int_t ct_ppm, ct_valid, ct_scalar_ppm, ct_scalar_valid;
    bool want_running, unit_running, is_paused, nonblock;
    struct coreaudio *dev, *sema;
 } coreaudio_t;
