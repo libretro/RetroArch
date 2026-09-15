@@ -198,11 +198,9 @@ typedef struct dispgfx_widget
 #ifdef HAVE_THREADS
    /* Serialises producer and consumer access to msg_queue.
     * Producers (gfx_widgets_msg_queue_push) can be called from
-    * any thread -- the threaded task system at libretro-common/
-    * queues/task_queue.c runs a worker thread, and several call
-    * paths reach the producer without holding any other lock
-    * (notably gfx/video_driver.c::video_driver_frame, which
-    * releases RUNLOOP_MSG_QUEUE_LOCK before the call).  The
+    * any thread, and no caller holds any other lock across the
+    * call (the runloop message queue is main-thread state with no
+    * lock at all; its off-main producers ride a deferral).  The
     * consumer is whichever thread owns the widgets: the threaded
     * video worker when it draws them, the main thread otherwise.
     * msg_queue_lock guards the pending ring (msg_queue[] /

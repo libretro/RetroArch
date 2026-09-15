@@ -413,6 +413,44 @@ static void runloop_game_ai_think_cb(void *userdata,
 
 static runloop_state_t runloop_state      = {0};
 
+/* Defined here, before its first user: the SET_MESSAGE_EXT STATUS
+ * path in the environment callback defers through this machinery,
+ * and it sits far above the message-queue code where the rest of
+ * the deferral lives. */
+struct runloop_deferred_msg
+{
+   mpsc_stack_node_t link; /* first: the stack's, from push to drain */
+   char *msg;
+   char *title;
+   size_t len;
+   unsigned prio;
+   unsigned duration;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+   bool flush;
+   /* A deferred RETRO_MESSAGE_TYPE_STATUS: drained into
+    * core_status_msg under its priority-overwrite rule rather than
+    * pushed onto the message queue. Raised only by a core calling
+    * SET_MESSAGE_EXT off the main thread, which the libretro API
+    * does not allow but rogue cores do. */
+   bool core_status;
+};
+
+/* True when the caller is not the thread the message queue belongs
+ * to; such a caller hands its message to the deferral stack and the
+ * main thread replays it at the top of the next iterate. */
+static bool runloop_msg_queue_off_main(runloop_state_t *runloop_st)
+{
+#ifdef HAVE_THREADS
+   return    runloop_st->msg_queue_main_id
+          && sthread_get_current_thread_id()
+                != runloop_st->msg_queue_main_id;
+#else
+   return false;
+#endif
+}
+
+
 /* GLOBAL POINTER GETTERS */
 runloop_state_t *runloop_state_get_ptr(void)
 {
@@ -1894,16 +1932,36 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                /* Handle 'status' messages */
                case RETRO_MESSAGE_TYPE_STATUS:
 
-                  /* Note: We need to lock a mutex here. Strictly
-                   * speaking, 'core_status_msg' is not part
-                   * of the message queue, but:
-                   * - It may be implemented as a queue in the future
-                   * - It seems unnecessary to create a new slock_t
-                   *   object for this type of message when
-                   *   _runloop_msg_queue_lock is already available
-                   * We therefore just call runloop_msg_queue_lock()/
-                   * runloop_msg_queue_unlock() in this case */
-                  RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+                  /* core_status_msg belongs to the main thread, like
+                   * the message queue: every writer and reader runs
+                   * there. The libretro API has environment calls
+                   * come from retro_run's thread, but a rogue core
+                   * calling from its own worker is a thing that
+                   * happens, so that case rides the same deferral as
+                   * off-main message pushes and is applied by the
+                   * drain at the top of the next iterate. */
+#ifdef HAVE_THREADS
+                  if (runloop_msg_queue_off_main(runloop_st))
+                  {
+                     struct runloop_deferred_msg *node =
+                           (struct runloop_deferred_msg *)
+                           malloc(sizeof(*node));
+                     if (!node)
+                        break;
+                     node->core_status = true;
+                     node->msg      = msg->msg ? strdup(msg->msg) : NULL;
+                     node->title    = NULL;
+                     node->len      = 0;
+                     node->prio     = msg->priority;
+                     node->duration = msg->duration;
+                     node->icon     = MESSAGE_QUEUE_ICON_DEFAULT;
+                     node->category = MESSAGE_QUEUE_CATEGORY_INFO;
+                     node->flush    = false;
+                     mpsc_stack_push(&runloop_st->msg_queue_deferred,
+                           &node->link);
+                     break;
+                  }
+#endif
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -1929,8 +1987,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         runloop_st->core_status_msg.set      = false;
                      }
                   }
-
-                  RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -6023,19 +6079,6 @@ void core_options_flush(void)
          MESSAGE_QUEUE_ICON_DEFAULT, category);
 }
 
-struct runloop_deferred_msg
-{
-   mpsc_stack_node_t link; /* first: the stack's, from push to drain */
-   char *msg;
-   char *title;
-   size_t len;
-   unsigned prio;
-   unsigned duration;
-   enum message_queue_icon icon;
-   enum message_queue_category category;
-   bool flush;
-};
-
 void runloop_msg_queue_push(
       const char *msg,
       size_t len,
@@ -6063,14 +6106,13 @@ void runloop_msg_queue_push(
     * that work belongs to the main thread, and the drain at the top
     * of the iterate replays the message there, a frame late at most
     * - the cadence the message queue shows things at anyway. */
-   if (   runloop_st->msg_queue_main_id
-       && sthread_get_current_thread_id()
-             != runloop_st->msg_queue_main_id)
+   if (runloop_msg_queue_off_main(runloop_st))
    {
       struct runloop_deferred_msg *node = (struct runloop_deferred_msg *)
             malloc(sizeof(*node));
       if (!node)
          return;
+      node->core_status = false;
       node->msg      = strdup(msg);
       node->title    = title ? strdup(title) : NULL;
       node->len      = len;
@@ -6095,7 +6137,6 @@ void runloop_msg_queue_push(
    access_st      = access_state_get_ptr();
 #endif
 
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
@@ -6143,7 +6184,6 @@ void runloop_msg_queue_push(
    ui_companion_driver_msg_queue_push(
          msg, prio, duration, flush);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
 
 #ifdef HAVE_MENU
@@ -8726,14 +8766,10 @@ void runloop_msg_queue_deinit(void)
       }
    }
 #endif
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
    msg_queue_deinitialize(&runloop_st->msg_queue);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 #ifdef HAVE_THREADS
-   slock_free(runloop_st->msg_queue_lock);
-   runloop_st->msg_queue_lock = NULL;
 #endif
 
    runloop_st->msg_queue_size = 0;
@@ -8756,7 +8792,36 @@ void runloop_msg_queue_drain_deferred(void)
       struct runloop_deferred_msg *node =
             (struct runloop_deferred_msg *)link;
       link = link->next;
-      if (node->msg)
+      if (node->core_status)
+      {
+         /* The STATUS slot's own rule, applied here on the main
+          * thread: overwrite only at the same or higher priority. */
+         if (   !runloop_st->core_status_msg.set
+             || (runloop_st->core_status_msg.priority <= node->prio))
+         {
+            if (node->msg && *node->msg)
+            {
+               /* Deliberately no priority store, mirroring the
+                * direct path above: it too only zeroes priority on
+                * clear, so the stored value is always 0 and the
+                * guard admits every message. Kept identical here so
+                * this change is threading only; whether that guard
+                * should ever bite is a separate question. */
+               strlcpy(runloop_st->core_status_msg.str, node->msg,
+                     sizeof(runloop_st->core_status_msg.str));
+               runloop_st->core_status_msg.duration = (float)node->duration;
+               runloop_st->core_status_msg.set      = true;
+            }
+            else
+            {
+               runloop_st->core_status_msg.str[0]   = '\0';
+               runloop_st->core_status_msg.priority = 0;
+               runloop_st->core_status_msg.duration = 0.0f;
+               runloop_st->core_status_msg.set      = false;
+            }
+         }
+      }
+      else if (node->msg)
          runloop_msg_queue_push(node->msg, node->len, node->prio,
                node->duration, node->flush, node->title,
                node->icon, node->category);
@@ -8778,9 +8843,6 @@ void runloop_msg_queue_init(void)
    runloop_st->msg_queue_main_id = sthread_get_current_thread_id();
 #endif
 
-#ifdef HAVE_THREADS
-   runloop_st->msg_queue_lock   = slock_new();
-#endif
 }
 
 void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
@@ -8802,8 +8864,7 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
 
    if (widgets_active && task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-      ui_companion_driver_msg_queue_push(msg,
+         ui_companion_driver_msg_queue_push(msg,
             prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
       if (is_accessibility_enabled(
@@ -8830,8 +8891,7 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
             false
 #endif
             );
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-   }
+      }
    else
 #endif
       runloop_msg_queue_push(msg, strlen(msg), prio, duration, flush, NULL,

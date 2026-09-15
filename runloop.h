@@ -53,13 +53,13 @@
 /* Arbitrary 10 roms for each subsystem limit */
 #define SUBSYSTEM_MAX_SUBSYSTEM_ROMS 10
 
-#ifdef HAVE_THREADS
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) slock_lock((runloop_st)->msg_queue_lock)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) slock_unlock((runloop_st)->msg_queue_lock)
-#else
-#define RUNLOOP_MSG_QUEUE_LOCK(runloop_st) (void)(runloop_st)
-#define RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st) (void)(runloop_st)
-#endif
+/* The message queue and core_status_msg belong to the main thread:
+ * every push, pull and decay runs there. A producer on any other
+ * thread hands its message to msg_queue_deferred (a lock-free MPSC
+ * stack) and the main thread replays it at the top of the next
+ * iterate - runloop_msg_queue_push and the SET_MESSAGE_EXT STATUS
+ * path both defer themselves. There is no lock, because there is
+ * nothing left for one to serialize. */
 
 #ifdef HAVE_BSV_MOVIE
 #define BSV_MOVIE_IS_EOF() || (((input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END) && (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_EOF_EXIT)))
@@ -273,7 +273,6 @@ struct runloop
 #endif
 #endif
 #ifdef HAVE_THREADS
-   slock_t *msg_queue_lock;
 #endif
 
    content_state_t            content_st;                /* ptr alignment */

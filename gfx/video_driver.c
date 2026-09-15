@@ -6191,16 +6191,9 @@ void video_driver_frame(const void *data, unsigned width,
    /* Add core status message to status text */
    if (video_info.core_status_msg_show)
    {
-      /* Note: We need to lock a mutex here. Strictly
-       * speaking, runloop_core_status_msg is not part
-       * of the message queue, but:
-       * - It may be implemented as a queue in the future
-       * - It seems unnecessary to create a new slock_t
-       *   object for this type of message when
-       *   _runloop_msg_queue_lock is already available
-       * We therefore just call runloop_msg_queue_lock()/
-       * runloop_msg_queue_unlock() in this case */
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+      /* core_status_msg is main-thread state, like the message
+       * queue: this decay, the SET_MESSAGE_EXT writer and the
+       * off-main deferral's drain all run here. */
 
       /* Check whether duration timer has elapsed */
       runloop_st->core_status_msg.duration -= anim_get_ptr()->delta_time;
@@ -6234,7 +6227,6 @@ void video_driver_frame(const void *data, unsigned width,
                   sizeof(status_text));
       }
 
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
    }
 
    if (video_info.time_show)
@@ -6367,12 +6359,10 @@ void video_driver_frame(const void *data, unsigned width,
          msg_queue_entry_t msg_entry;
          bool msg_found                  = false;
 
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-         msg_found                       = msg_queue_extract(
+            msg_found                       = msg_queue_extract(
                &runloop_st->msg_queue, &msg_entry);
          runloop_st->msg_queue_size      = msg_queue_size(
                &runloop_st->msg_queue);
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 
          if (msg_found)
             gfx_widgets_msg_queue_push(
@@ -6396,14 +6386,12 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       {
          const char *msg                 = NULL;
-         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-         msg                             = msg_queue_pull(&runloop_st->msg_queue);
+            msg                             = msg_queue_pull(&runloop_st->msg_queue);
          runloop_st->msg_queue_size      = msg_queue_size(&runloop_st->msg_queue);
 
          if (msg)
             strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
-         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-      }
+         }
    }
 
    if (render_frame && video_info.statistics_show)
