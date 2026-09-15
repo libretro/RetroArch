@@ -161,7 +161,10 @@ static retro_atomic_size_t cnt_writes;     /* calls that reached write()  */
  * reader that sees the new sequence sees the timestamp that went with
  * it. Zero means "already answered", so a pass that writes twice for
  * one signal only records the first. */
-static retro_time_t        sig_us;
+static retro_atomic_size_t sig_us;   /* retro_time_t as size_t: the
+                                      * overwrite for the next signal
+                                      * must not race the read of the
+                                      * last one */
 static retro_atomic_size_t sig_seq;
 static size_t              sig_seen;       /* consumer thread only        */
 
@@ -294,7 +297,7 @@ static void note_write(void)
    retro_atomic_fetch_add_size(&cnt_writes, 1);
    if (seq != sig_seen)
    {
-      retro_time_t at = sig_us;
+      retro_time_t at = (retro_time_t)retro_atomic_load_relaxed_size(&sig_us);
       size_t       n  = retro_atomic_load_relaxed_size(&lat_count);
       sig_seen        = seq;
       if (at && n < MAX_SAMPLES)
@@ -482,7 +485,7 @@ static bool pipeline_up(unsigned latency_ms)
    retro_atomic_size_init(&cnt_writes, 0);
    retro_atomic_size_init(&sig_seq, 0);
    retro_atomic_size_init(&lat_count, 0);
-   sig_us              = 0;
+   retro_atomic_size_init(&sig_us, 0);
    sig_seen            = 0;
    prod_total_us       = 0;
    prod_blocked_frames = 0;
@@ -865,7 +868,7 @@ static void submit_frame(size_t per_frame, unsigned publishes)
 
    /* Publish the signal's timestamp before the sequence that advertises
     * it, so a consumer that sees the sequence sees the time with it. */
-   sig_us = t1;
+   retro_atomic_store_release_size(&sig_us, (size_t)t1);
    retro_atomic_store_release_size(&sig_seq,
          retro_atomic_load_relaxed_size(&sig_seq) + 1);
    if (auto_runloop) audio_driver_frame_end();
