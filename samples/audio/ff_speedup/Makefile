@@ -63,6 +63,10 @@ OBJS := $(SOURCES_C:.c=.o)
 
 all: $(TARGET)
 
+# The test includes the driver whole; without the dependency an edited
+# audio_driver.c leaves a stale binary that silently keeps passing.
+ff_speedup_test.o: ../../../audio/audio_driver.c ../../../audio/audio_driver.h
+
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
