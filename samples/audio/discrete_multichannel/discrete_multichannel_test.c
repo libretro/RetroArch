@@ -120,11 +120,39 @@ static audio_driver_t scripted = {
    dev_buffer_size, NULL, NULL, NULL, NULL, dev_layout_hook
 };
 
+/* Buffers the harness owns.
+ *
+ * In the frontend these six are slices of arena_int16, arena_float and
+ * pipe_arena: audio_driver_deinit_internal() frees the arenas as units
+ * and then only NULLs the named pointers, because none of them is a
+ * separate allocation there. A stand-up below hands the state plain
+ * malloc()s instead, so teardown clears the pointers with nothing
+ * released - and since each stand-up deinits and memsets before it
+ * installs its own, the previous case's blocks are unreachable by
+ * then. That leaked a set per case: 466 MB over a full run, enough
+ * that the test cannot be run under LeakSanitizer.
+ *
+ * The buffers the frontend really does free - upmix_buf, upmix_i16,
+ * pipe_wide, multi_fold, record_remap - are not here, and must not be:
+ * deinit frees them and this would double it. */
+static void *owned[6];
+
+static void owned_free(void)
+{
+   size_t i;
+   for (i = 0; i < sizeof(owned) / sizeof(owned[0]); i++)
+   {
+      free(owned[i]);
+      owned[i] = NULL;
+   }
+}
+
 /* the frontend's stand-up, as audio_driver_init does it, for the
  * non-threaded pipeline with a wide device */
 static bool up(bool core_float, uint32_t layout, bool float_dev)
 {
    audio_driver_state_t *st = &audio_driver_st;
+   owned_free();
    audio_driver_deinit_internal(true);
    memset(st, 0, sizeof(*st));
    dev_layout   = layout;
@@ -145,6 +173,10 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
    st->output_samples_int16   = (int16_t*)malloc(st->output_samples_int16_length);
    st->input_data             = (float*)malloc(1 << 18);
    st->input_data_int16       = (int16_t*)malloc(1 << 17);
+   owned[0]                   = st->output_samples_buf;
+   owned[1]                   = st->output_samples_int16;
+   owned[2]                   = st->input_data;
+   owned[3]                   = st->input_data_int16;
    st->core_float             = core_float;
    st->sink_bias              = 1.0;
    strcpy(st->resampler_ident, "sinc");
@@ -213,6 +245,8 @@ static bool pipe_up(bool core_float, bool float_dev)
    st->current_audio     = &scripted_threaded;
    st->pipe_scratch      = (uint8_t*)malloc(65536);
    st->pipe_conv         = (uint8_t*)malloc(65536);
+   owned[4]              = st->pipe_scratch;
+   owned[5]              = st->pipe_conv;
    st->pipe_pass_frames  = 800;
    st->pipe_float        = float_dev;
    /* the core negotiated before the driver came up: the canonical
@@ -490,6 +524,7 @@ static void ac3_bitstream_case(void)
    rac3_decoder_t *dec;
 
    printf("   5.1 core to a device that decodes Dolby Digital: the bursts carry the core's channels\n");
+   owned_free();
    audio_driver_deinit_internal(true);
    memset(st, 0, sizeof(*st));
    fake_device_configure_engine(0, 0);
@@ -517,6 +552,10 @@ static void ac3_bitstream_case(void)
    st->output_samples_int16 = (int16_t*)malloc(st->output_samples_int16_length);
    st->input_data           = (float*)malloc(1 << 18);
    st->input_data_int16     = (int16_t*)malloc(1 << 17);
+   owned[0]                 = st->output_samples_buf;
+   owned[1]                 = st->output_samples_int16;
+   owned[2]                 = st->input_data;
+   owned[3]                 = st->input_data_int16;
    st->core_float           = true;
    st->sink_bias            = 1.0;
    st->core_layout          = AUDIO_LAYOUT_STEREO;
@@ -2565,6 +2604,7 @@ int main(void)
    RUN("fold",     large_inline_batch_case(true, true));
    RUN("fold",     large_inline_batch_case(false, true));
    audio_driver_deinit_internal(true);
+   owned_free();
    free(cap); free(rec_cap);
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("discrete multi-channel: a core's channels reach their speakers as they are\n");
