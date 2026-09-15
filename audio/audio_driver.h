@@ -870,6 +870,13 @@ typedef struct
       uint32_t  positions;       /* their mask, without FL and FR */
       unsigned  nres;            /* resampler instances: (channels + 1) / 2 */
       void     *res[4];          /* float: resampler_data; int16: resampler_data_int16 */
+      /* The driver res[] was made with, on the float path. Kept here
+       * rather than reached for through audio_st->resampler at the
+       * free: these are this struct's own allocations, and the main
+       * resampler is a different object that need not still be there
+       * - when it was not, res[] was leaked. NULL on the int16 path,
+       * which frees through resampler_int16_free. */
+      const retro_resampler_t *res_drv;
       bool      res_int16;       /* which kind res[] holds */
       bool      bypassed;
       float    *in_f;            /* frames * channels, interleaved, this batch */

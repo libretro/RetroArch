@@ -607,8 +607,8 @@ static void audio_driver_extra_free(audio_driver_state_t *audio_st)
          if (audio_st->resampler_int16_free)
             audio_st->resampler_int16_free(audio_st->extra.res[i]);
       }
-      else if (audio_st->resampler)
-         audio_st->resampler->free(audio_st->extra.res[i]);
+      else if (audio_st->extra.res_drv)
+         audio_st->extra.res_drv->free(audio_st->extra.res[i]);
       audio_st->extra.res[i] = NULL;
    }
    free(audio_st->extra.in_f);
@@ -676,6 +676,7 @@ static bool audio_driver_extra_prepare(audio_driver_state_t *audio_st,
             retro_resampler_realloc_hq(&audio_st->extra.res[i], &drv,
                   audio_st->resampler_ident, audio_st->resampler_quality,
                   audio_st->src_ratio_orig, audio_st->resampler_hq);
+            audio_st->extra.res_drv = drv;
          }
          if (!audio_st->extra.res[i])
          {
