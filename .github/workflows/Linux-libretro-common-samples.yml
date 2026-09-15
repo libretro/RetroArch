@@ -146,6 +146,7 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
+            task_queue_init_failure_test
             tpool_wait_test
             data_transfer_pool_scrub_test
             retro_atomic_test
