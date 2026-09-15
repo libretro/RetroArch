@@ -48,6 +48,6 @@ jobs:
         echo "tarball=$TARBALL" >> $GITHUB_OUTPUT
 
     - name: upload tarball
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ steps.archive.outputs.tarball }}
