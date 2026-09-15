@@ -48,6 +48,8 @@ typedef struct mpsc_stack_node
    struct mpsc_stack_node *next;
 } mpsc_stack_node_t;
 
+#if defined(RETRO_ATOMIC_HAS_PTR)
+
 typedef struct mpsc_stack
 {
    retro_atomic_ptr_t head;
@@ -84,6 +86,44 @@ static INLINE mpsc_stack_node_t *mpsc_stack_drain(mpsc_stack_t *stack)
    return (mpsc_stack_node_t *)
          retro_atomic_exchange_ptr(&stack->head, NULL);
 }
+
+#else
+
+/* The volatile fallback backend offers no pointer atomics by design:
+ * it serves single-context targets where plain access is all the
+ * platform has. The stack keeps its shape with plain operations, and
+ * its guarantees follow the backend's - none beyond what the target
+ * itself provides, exactly as with every retro_atomic op there. */
+typedef struct mpsc_stack
+{
+   mpsc_stack_node_t * volatile head;
+} mpsc_stack_t;
+
+static INLINE void mpsc_stack_init(mpsc_stack_t *stack)
+{
+   stack->head = NULL;
+}
+
+static INLINE void mpsc_stack_push(mpsc_stack_t *stack,
+      mpsc_stack_node_t *node)
+{
+   node->next  = stack->head;
+   stack->head = node;
+}
+
+static INLINE bool mpsc_stack_empty(mpsc_stack_t *stack)
+{
+   return !stack->head;
+}
+
+static INLINE mpsc_stack_node_t *mpsc_stack_drain(mpsc_stack_t *stack)
+{
+   mpsc_stack_node_t *node = stack->head;
+   stack->head = NULL;
+   return node;
+}
+
+#endif
 
 /* The drained chain, oldest-first. */
 static INLINE mpsc_stack_node_t *mpsc_stack_reverse(mpsc_stack_node_t *node)

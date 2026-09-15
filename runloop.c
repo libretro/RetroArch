@@ -6045,16 +6045,27 @@ void runloop_msg_queue_push(
       enum message_queue_icon icon,
       enum message_queue_category category)
 {
+#if defined(HAVE_GFX_WIDGETS)
+   dispgfx_widget_t *p_dispwidget;
+   bool widgets_active;
+#endif
+#ifdef HAVE_ACCESSIBILITY
+   settings_t *settings;
+   bool accessibility_enable;
+   unsigned accessibility_narrator_speech_speed;
+   access_state_t *access_st;
+#endif
+   runloop_state_t *runloop_st    = &runloop_state;
+
 #ifdef HAVE_THREADS
-   /* A worker's message crosses to the main thread here, whole: the
-    * push renders widgets, measures text and reads the settings, all
-    * of which belong to the main thread. The drain at the top of the
-    * iterate replays it there, a frame late at most - the cadence the
-    * message queue shows things at anyway. */
-   runloop_state_t *runloop_check_st = &runloop_state;
-   if (   runloop_check_st->msg_queue_main_id
+   /* A worker's message crosses to the main thread here, whole,
+    * before anything below reads the settings or touches a widget:
+    * that work belongs to the main thread, and the drain at the top
+    * of the iterate replays the message there, a frame late at most
+    * - the cadence the message queue shows things at anyway. */
+   if (   runloop_st->msg_queue_main_id
        && sthread_get_current_thread_id()
-             != runloop_check_st->msg_queue_main_id)
+             != runloop_st->msg_queue_main_id)
    {
       struct runloop_deferred_msg *node = (struct runloop_deferred_msg *)
             malloc(sizeof(*node));
@@ -6068,21 +6079,21 @@ void runloop_msg_queue_push(
       node->icon     = icon;
       node->category = category;
       node->flush    = flush;
-      mpsc_stack_push(&runloop_check_st->msg_queue_deferred, &node->link);
+      mpsc_stack_push(&runloop_st->msg_queue_deferred, &node->link);
       return;
    }
 #endif
+
 #if defined(HAVE_GFX_WIDGETS)
-   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-   bool widgets_active            = p_dispwidget->active;
+   p_dispwidget   = dispwidget_get_ptr();
+   widgets_active = p_dispwidget->active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings           = config_get_ptr();
-   bool accessibility_enable      = settings->bools.accessibility_enable;
-   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st      = access_state_get_ptr();
+   settings       = config_get_ptr();
+   accessibility_enable = settings->bools.accessibility_enable;
+   accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_st      = access_state_get_ptr();
 #endif
-   runloop_state_t *runloop_st    = &runloop_state;
 
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 #ifdef HAVE_ACCESSIBILITY
@@ -8124,7 +8135,6 @@ end:
  **/
 int runloop_iterate(void)
 {
-   runloop_msg_queue_drain_deferred();
    retro_time_t pace_limit_min;
    retro_time_t pace_now;
    int64_t      pace_limit_ns;
@@ -8165,7 +8175,11 @@ int runloop_iterate(void)
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 #ifdef HAVE_DISCORD
    discord_state_t *discord_st            = discord_state_get_ptr();
+#endif
 
+   runloop_msg_queue_drain_deferred();
+
+#ifdef HAVE_DISCORD
    if (discord_st->inited)
    {
       Discord_RunCallbacks();
@@ -8695,11 +8709,12 @@ end:
 
 void runloop_msg_queue_deinit(void)
 {
+   runloop_state_t *runloop_st = &runloop_state;
+
 #ifdef HAVE_THREADS
    {
-      runloop_state_t *st    = &runloop_state;
       mpsc_stack_node_t *link =
-            mpsc_stack_drain(&st->msg_queue_deferred);
+            mpsc_stack_drain(&runloop_st->msg_queue_deferred);
       while (link)
       {
          struct runloop_deferred_msg *node =
@@ -8711,7 +8726,6 @@ void runloop_msg_queue_deinit(void)
       }
    }
 #endif
-   runloop_state_t *runloop_st = &runloop_state;
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
    msg_queue_deinitialize(&runloop_st->msg_queue);
