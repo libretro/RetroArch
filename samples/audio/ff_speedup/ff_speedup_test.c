@@ -87,6 +87,247 @@ static void test_inline_measures_speed(void)
    CHECK(near(m, 2.0), "and follow a core slower than realtime to 2.0");
 }
 
+/* N64 cores publish 185-551 frame batches at a steady cadence. A per-batch
+ * figure swings with the batch size, and pitch-preserving playback run at
+ * those figures falls short of real time. */
+static void test_inline_uneven_batches(void)
+{
+   static const size_t sizes[2] = { 185, 551 };
+   const retro_time_t step      = (retro_time_t)(
+         (sizes[0] + sizes[1]) / 2 * 1000000.0 / RATE) / 4;
+   int i;
+   bool steady                  = true;
+
+   fresh();
+   audio_driver_fastforward_ratio_mult(&audio_driver_st, sizes[0]);
+   for (i = 1; i < 256; i++)
+   {
+      double m;
+      fake_now += step;
+      m         = audio_driver_fastforward_ratio_mult(&audio_driver_st, sizes[i & 1]);
+      if (i >= 128 && !near(m, 0.25))
+         steady = false;
+   }
+   CHECK(steady, "uneven batches at 4x hold a 0.25 multiplier, not one per batch size");
+}
+
+/* The first flush of a hold starts at the configured ratio, not at 1.0:
+ * the limiter has the core there within a frame, and the average would
+ * otherwise spend the whole of a short hold catching up while the
+ * non-blocking device overfills. */
+static void test_inline_seeds_at_ratio(void)
+{
+   double m;
+
+   fresh();
+   config_get_ptr()->floats.fastforward_ratio = 3.0f;
+   audio_driver_publish_runloop();
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0 / 3.0), "the first flush of a hold starts at the configured ratio");
+   fake_now += ONE_X / 3;
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0 / 3.0), "and a core at that speed holds it from the first interval");
+   config_get_ptr()->floats.fastforward_ratio = 0.0f;
+   fresh();
+   audio_driver_publish_runloop();
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0), "an uncapped ratio still starts at 1.0");
+}
+
+
+/* --- the pause tail and the resume ramp ---------------------------- */
+
+/* A capturing float device for the fade fixtures: pause_fade() writes
+ * the tail straight to the device, so the capture is the tail. */
+#define PAUSE_CAP_MAX 4096
+static float  pause_cap[PAUSE_CAP_MAX * 2];
+static size_t pause_cap_frames;
+static size_t pause_dev_room = PAUSE_CAP_MAX;
+
+static ssize_t pause_dev_write(void *data, const void *buf, size_t len)
+{
+   size_t frames = len / (2 * sizeof(float));
+   (void)data;
+   if (frames > PAUSE_CAP_MAX - pause_cap_frames)
+      frames = PAUSE_CAP_MAX - pause_cap_frames;
+   memcpy(pause_cap + pause_cap_frames * 2, buf,
+         frames * 2 * sizeof(float));
+   pause_cap_frames += frames;
+   return (ssize_t)len;
+}
+static size_t pause_dev_write_avail(void *data)
+{
+   (void)data;
+   return pause_dev_room * 2 * sizeof(float);
+}
+static audio_driver_t pause_cap_driver;
+
+#define PAUSE_SINE_HZ     200.0
+#define PAUSE_SINE_AMP    0.5f
+#define PAUSE_SINE_PERIOD 240 /* 48000 / 200 */
+
+static void pause_up(void)
+{
+   unsigned i;
+   fresh();
+   memset(&pause_cap_driver, 0, sizeof(pause_cap_driver));
+   pause_cap_driver.write       = pause_dev_write;
+   pause_cap_driver.write_avail = pause_dev_write_avail;
+   pause_cap_driver.ident       = "pause-cap";
+   audio_driver_st.current_audio      = &pause_cap_driver;
+   audio_driver_st.context_audio_data = (void*)&pause_cap_driver;
+   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_USE_FLOAT);
+   pause_cap_frames = 0;
+   pause_dev_room   = PAUSE_CAP_MAX;
+   /* A device that has been playing a 200 Hz tone: the history a real
+    * session accumulates through audio_driver_pause_track(). */
+   for (i = 0; i < AUDIO_PAUSE_HIST_FRAMES; i++)
+   {
+      float v = PAUSE_SINE_AMP * (float)sin(2.0 * M_PI * PAUSE_SINE_HZ
+            * (double)i / RATE);
+      /* The last half period sits 0.3 above the cycles before it, the
+       * way real content moves: the period the search picks continues
+       * the older cycle, and only the join correction can carry the
+       * level the stream actually stopped at. */
+      if (i >= AUDIO_PAUSE_HIST_FRAMES - PAUSE_SINE_PERIOD / 2)
+         v += 0.3f;
+      audio_driver_st.pause_hist[(i * 2) + 0] = v;
+      audio_driver_st.pause_hist[(i * 2) + 1] = v;
+   }
+   audio_driver_st.pause_hist_pos  = 0; /* next slot: i==HIST-1 is newest */
+   audio_driver_st.pause_hist_fill = AUDIO_PAUSE_HIST_FRAMES;
+   audio_driver_st.last_out[0] =
+         audio_driver_st.pause_hist[(AUDIO_PAUSE_HIST_FRAMES - 1) * 2];
+   audio_driver_st.last_out[1] = audio_driver_st.last_out[0];
+}
+
+static double pause_rms(const float *buf, size_t frames)
+{
+   double acc = 0.0;
+   size_t i;
+   for (i = 0; i < frames * 2; i++)
+      acc += (double)buf[i] * (double)buf[i];
+   return frames ? sqrt(acc / (double)(frames * 2)) : 0.0;
+}
+
+static void test_pause_tail_continues_the_waveform(void)
+{
+   unsigned crossings = 0;
+   size_t i;
+   double head, mid, tail_rms, hz;
+
+   pause_up();
+   audio_driver_pause_fade(true);
+
+   CHECK(pause_cap_frames > 0 && pause_cap_frames <= AUDIO_PAUSE_TAIL_FRAMES,
+         "the pause writes one tail, at most the tail length");
+
+   CHECK(fabs((double)pause_cap[0] - (double)audio_driver_st.pause_hist[
+            (AUDIO_PAUSE_HIST_FRAMES - 1) * 2]) < 0.3 * PAUSE_SINE_AMP,
+         "the tail opens where the stream stopped, not at a level of its own");
+   head = pause_rms(pause_cap, 32);
+   mid  = pause_rms(pause_cap + (pause_cap_frames / 2) * 2, 32);
+   tail_rms = pause_rms(pause_cap + (pause_cap_frames - 32) * 2, 32);
+   CHECK(head > mid && mid > tail_rms,
+         "the envelope only decays");
+   CHECK(tail_rms < 0.05 * head,
+         "and reaches silence by the end");
+   for (i = 1; i < pause_cap_frames; i++)
+      if ((pause_cap[(i - 1) * 2] <= 0.0f) != (pause_cap[i * 2] <= 0.0f))
+         crossings++;
+   hz = (double)crossings * 0.5 * RATE / (double)pause_cap_frames;
+   CHECK(hz > PAUSE_SINE_HZ * 0.7 && hz < PAUSE_SINE_HZ * 1.3,
+         "the tail keeps the waveform's own pitch, as concealment should");
+   CHECK(audio_driver_st.pause_mute_frames == AUDIO_PAUSE_MUTE_FRAMES,
+         "the pipeline's leftovers behind the tail are marked for dropping");
+   CHECK(audio_driver_core_silenced(),
+         "the core's audio is gated between the tail and the resume");
+   CHECK(audio_driver_st.last_out[0] == 0.0f,
+         "the stream ends at silence for the next tail to continue from");
+}
+
+static void test_pause_tail_fits_the_room_left(void)
+{
+   pause_up();
+   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_NONBLOCK);
+   pause_dev_room = 64;
+   audio_driver_pause_fade(true);
+   CHECK(pause_cap_frames > 0 && pause_cap_frames <= 64,
+         "a full non-blocking device gets a tail cut to the room left");
+   CHECK(fabs((double)pause_cap[(pause_cap_frames - 1) * 2]) < 0.05,
+         "which still reaches silence");
+}
+
+static void test_resume_ramp_waits_for_core_audio(void)
+{
+   float buf[AUDIO_PAUSE_TAIL_FRAMES * 2];
+   size_t i;
+   unsigned muted;
+
+   pause_up();
+   audio_driver_pause_fade(true);
+   pause_cap_frames = 0;
+
+   /* What the resampler still held comes out behind the tail: dropped. */
+   for (i = 0; i < AUDIO_PAUSE_TAIL_FRAMES * 2; i++) buf[i] = 1.0f;
+   audio_driver_pause_track(&audio_driver_st, buf, AUDIO_PAUSE_MUTE_FRAMES / 2, true);
+   CHECK(buf[0] == 0.0f && buf[AUDIO_PAUSE_MUTE_FRAMES - 2] == 0.0f,
+         "leftover frames after the tail are muted");
+   muted = audio_driver_st.pause_mute_frames;
+   CHECK(muted == AUDIO_PAUSE_MUTE_FRAMES / 2,
+         "half the mute is spent on half the frames");
+
+   audio_driver_pause_fade(false);
+   CHECK(!audio_driver_core_silenced(), "a resume ungates the core's audio");
+   CHECK(audio_driver_st.fade_in_pending && audio_driver_st.resume_topup_pending,
+         "and owes a ramp and a top-up to the first core audio");
+   CHECK(audio_driver_st.pause_mute_frames == 0,
+         "but nothing of the old pipeline is dropped from it");
+
+   /* The menu's silence in between must not spend the ramp. */
+   for (i = 0; i < 64 * 2; i++) buf[i] = 0.0f;
+   audio_driver_pause_track(&audio_driver_st, buf, 64, true);
+   CHECK(audio_driver_st.fade_in_pending && !audio_driver_st.fade_in_frames,
+         "the menu's own silence does not spend the resume ramp");
+
+   /* The core's first audio does. */
+   audio_driver_arm_resume(&audio_driver_st);
+   CHECK(!audio_driver_st.fade_in_pending
+         && audio_driver_st.fade_in_frames == AUDIO_PAUSE_TAIL_FRAMES,
+         "the core's first audio arms the ramp");
+   for (i = 0; i < AUDIO_PAUSE_TAIL_FRAMES * 2; i++) buf[i] = 1.0f;
+   audio_driver_pause_track(&audio_driver_st, buf, AUDIO_PAUSE_TAIL_FRAMES, true);
+   CHECK(buf[0] < 0.05f, "the ramp opens from silence");
+   CHECK(buf[(AUDIO_PAUSE_TAIL_FRAMES / 2) * 2] > 0.3f
+         && buf[(AUDIO_PAUSE_TAIL_FRAMES / 2) * 2] < 0.7f,
+         "stands halfway at its middle");
+   CHECK(buf[(AUDIO_PAUSE_TAIL_FRAMES - 1) * 2] > 0.99f,
+         "and hands the stream over at full level");
+   CHECK(audio_driver_st.fade_in_frames == 0, "spent in full");
+
+   /* A resume that never had a pause ramps nothing: the audio never
+    * stopped, and a ramp would be a dip in the middle of it. */
+   audio_driver_pause_fade(false);
+   CHECK(!audio_driver_st.fade_in_pending,
+         "a resume without its pause owes no ramp");
+}
+
+static void test_jump_bracket_leaves_a_down_stream_down(void)
+{
+   bool ramped;
+   pause_up();
+   ramped = audio_driver_jump_fade_begin();
+   CHECK(ramped, "the first bracket takes the stream down itself");
+   CHECK(!audio_driver_jump_fade_begin(),
+         "a bracket inside a pause leaves the stream to what took it down");
+   audio_driver_jump_fade_end(false);
+   CHECK(audio_driver_core_silenced(),
+         "and its end does not bring the stream back up");
+   audio_driver_jump_fade_end(ramped);
+   CHECK(!audio_driver_core_silenced() && audio_driver_st.fade_in_pending,
+         "the owning bracket's end does, on the core's next audio");
+}
+
 /* --- release and re-entry ------------------------------------------ */
 
 static void test_reentry_ignores_idle_gap(void)
@@ -181,14 +422,14 @@ static void test_producer_publishes_at_its_cadence(void)
    retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
 
    /* A 1.0x publish first, so the re-entry seed is armed. */
-   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false);
+   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false, true);
 
    /* Then fast-forward at 4x, with nobody draining the ring: every
     * block past the first is dropped, and still counts. */
    for (i = 0; i < 64; i++)
    {
       fake_now += ONE_X / 4;
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
    }
    got = (double)retro_atomic_load_acquire_int(
@@ -196,7 +437,7 @@ static void test_producer_publishes_at_its_cadence(void)
    CHECK(near(got, 0.25), "producer at 4x into a full ring publishes 0.25");
 
    /* Released: a 1.0x publish re-arms the seed. */
-   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false);
+   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false, true);
    CHECK(audio_driver_st.last_flush_time == 0,
          "a publish outside fast-forward re-arms the seed");
 
@@ -236,7 +477,7 @@ static void test_fragmented_frame_cadence(void)
          {
             size_t n = part + 1 == batches[b] ? FRAMES - used : FRAMES / batches[b];
             audio_driver_submit(&audio_driver_st, 1.0f, block + used * 2,
-                  n * 2, false, false, true);
+                  n * 2, false, false, true, true);
             used += n;
          }
          audio_driver_frame_end();
@@ -252,7 +493,7 @@ static void test_fragmented_frame_cadence(void)
          fake_now += ONE_X / 4;
          if (frame & 1)
             audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 4,
-                  false, false, true);
+                  false, false, true, true);
          audio_driver_frame_end();
       }
       CHECK(near(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16)
@@ -262,14 +503,14 @@ static void test_fragmented_frame_cadence(void)
       audio_driver_frame_end();
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
       audio_driver_publish_runloop();
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
       CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
             "paused fast-forward resumes from unity");
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;
       fake_now += 10000000;
       audio_driver_frame_end(); /* silent frames re-arm the seed */
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
       CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
             "source resumes from unity after an empty frame outside fast-forward");
@@ -381,6 +622,12 @@ int main(void)
 {
    printf("fast-forward audio speedup:\n");
    test_inline_measures_speed();
+   test_inline_uneven_batches();
+   test_inline_seeds_at_ratio();
+   test_pause_tail_continues_the_waveform();
+   test_pause_tail_fits_the_room_left();
+   test_resume_ramp_waits_for_core_audio();
+   test_jump_bracket_leaves_a_down_stream_down();
    test_reentry_ignores_idle_gap();
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();

@@ -48,7 +48,7 @@ static void raw_speed_cases(void)
          audio_speed_lpf_init(&lpf, 44100, 2, false);
          audio_speed_lpf_set(&lpf, true, audio_speed_lpf_cutoff(44100, 131072));
          audio_speed_lpf_process(&lpf, expected, 257);
-         audio_driver_submit(st, 1.0f, input, 514, false, false, true);
+         audio_driver_submit(st, 1.0f, input, 514, false, false, true, true);
          audio_driver_publish_runloop();
          CHECK(audio_driver_pipeline_transport_step(st->pipe_transport,
                &st->pipe_transport_serial, 257, 257, false, &complete), "raw filter-only step");
@@ -428,7 +428,7 @@ static void rewind_mixed_cases(void)
             CHECK(f == 514, "mixed rewind wrote the inactive int16 arena");
             audio_driver_frame_is_reverse();
          }
-         else audio_driver_submit(st, 1.0f, expected, 514, true, false, false);
+         else audio_driver_submit(st, 1.0f, expected, 514, true, false, false, true);
          test_frame_reversed = false;
          CHECK(cap_frames > 128, "mixed rewind produced no audible output");
          if (!capture)
@@ -683,7 +683,7 @@ static void rewind_frame_cases(void)
             else
             {
                test_frame_reversed = true;
-               audio_driver_submit(st, 2.0f, &reverse, 514, floating, true, false);
+               audio_driver_submit(st, 2.0f, &reverse, 514, floating, true, false, true);
                test_frame_reversed = false;
             }
             audio_driver_frame_end();
@@ -1168,7 +1168,8 @@ static void inline_callback_cases(void)
             {
                size_t frames = cap_frames;
                bool progress = callback_dispatch();
-               CHECK(progress == (cap_frames != frames),
+               CHECK(progress == (cap_frames != frames
+                        || (st->inline_transport && st->inline_transport->source_progress)),
                      "callback progress disagrees with device writes");
                CHECK(!st->data_ptr, "callback retained accumulator input");
             }

@@ -300,6 +300,8 @@ runloop_state_t *runloop_state_get_ptr(void) { return &stub_runloop; }
 video_driver_state_t *video_state_get_ptr(void) { return &stub_video; }
 bool video_driver_cached_frame_is_hw_render(void) { return false; }
 void *savefile_ptr_get(void) { return NULL; }
+bool audio_driver_jump_fade_begin(void) { return false; }
+void audio_driver_jump_fade_end(bool ramped) { (void)ramped; }
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot)
 {

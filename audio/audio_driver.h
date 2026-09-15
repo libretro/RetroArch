@@ -61,6 +61,11 @@ typedef struct scond scond_t;
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 
+/* Output frames of played audio kept for the pause tail. Must hold the
+ * longest period the tail search may pick plus the window it is matched
+ * over, which at 48kHz is about 21ms and 3ms respectively. */
+#define AUDIO_PAUSE_HIST_FRAMES         2048
+
 RETRO_BEGIN_DECLS
 
 #ifdef HAVE_AUDIOMIXER
@@ -615,6 +620,10 @@ typedef struct
     * Meaningful only when AUDIO_SNAP_SLOWMOTION is set, like the
     * setting itself. */
    retro_atomic_int_t runloop_slowmotion_bits;
+   /* The fast-forward ratio the main thread last published, override
+    * already resolved against the setting; the seed of the speed
+    * estimate reads it on the submit path. Bit pattern of a float. */
+   retro_atomic_int_t runloop_ffratio_bits;
    /* The ring's unit: bytes per stereo frame of what the core
     * published - int16 or, for a float core, float. Every count on
     * the pipe is in frames; bytes appear only at the ring's edge. */
@@ -740,8 +749,10 @@ typedef struct
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
-   /* Exponential moving average */
+   /* Exponential moving averages of the flush interval and of the
+    * interval its audio takes at 1.0x */
    retro_time_t avg_flush_delta;
+   double avg_expected_delta;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -846,6 +857,35 @@ typedef struct
    bool     resampler_bypassed;
    bool     resampler_hq; /* resolved software HQ policy for this audio instance */
 
+   /* Last stereo frame handed to the device, and how many frames of the
+    * next flush still have the resume ramp to apply. See
+    * audio_driver_pause_fade(). */
+   float                 last_out[2];
+   unsigned              fade_in_frames;
+   /* A resume ramp owed to the core's first audio after the pause; the
+    * menu's silence in between must not spend it. */
+   bool                  fade_in_pending;
+   /* Rolling copy of the most recent output frames, and how much of it is
+    * valid. A copy of what has already gone to the device, never a delay
+    * line, so it costs nothing on the fast-forward path. Lets a pause be
+    * concealed with a continuation of the waveform rather than a decaying
+    * DC level. See audio_driver_pause_fade(). */
+   float                 pause_hist[AUDIO_PAUSE_HIST_FRAMES * 2];
+   unsigned              pause_hist_pos;
+   unsigned              pause_hist_fill;
+   /* Output frames still to be dropped after a pause tail has been written.
+    * The tail goes straight to the device, ahead of whatever the resampler
+    * still holds, so without this its leftovers are spliced in behind it. */
+   unsigned              pause_mute_frames;
+   /* Non-zero between the pause tail and the resume ramp. Read from
+    * whichever thread the core hands its audio over on, hence atomic. See
+    * audio_driver_core_silenced(). */
+   retro_atomic_int_t    core_silenced;
+   /* Set by a resume in audio_driver_pause_fade(); the first flush after it
+    * fills the device with silence before writing. See
+    * audio_driver_resume_topup(). */
+   bool                  resume_topup_pending;
+
    /* The layout the device was opened with - AUDIO_LAYOUT_STEREO
     * unless the driver reports a wider one - its channel count, and
     * the stage that widens the stereo mix to it at the last step
@@ -932,6 +972,21 @@ typedef struct
    unsigned pipe_transport_rate;
    /* Producer-owned source count for the current fast-forward frame. */
    size_t pipe_ff_frames;
+   /* A pause and a resume as ring positions, in the ring's own byte
+    * count, published by the main thread and read by the consumer. What
+    * the ring held at a pause is stale behind its tail: the consumer
+    * takes it out unplayed up to pipe_discard_to, and pipe_discard_gen
+    * against pipe_discard_seen, the consumer's own record, says a pause
+    * has been published since. The core's first audio after a resume
+    * starts at pipe_fade_in_at: the consumer never takes a chunk across
+    * it and arms the resume ramp on reaching it, through pipe_arm_fade,
+    * consumer thread only. */
+   retro_atomic_size_t pipe_discard_to;
+   retro_atomic_int_t  pipe_discard_gen;
+   int                 pipe_discard_seen;
+   retro_atomic_size_t pipe_fade_in_at;
+   retro_atomic_int_t  pipe_fade_in_set;
+   bool                pipe_arm_fade;
    uint8_t pipe_transport_follow;
    /* Mutually exclusive with pipe_transport; shares its output storage. */
    struct audio_pipeline_stretch *pipe_transport_suspended;
@@ -985,6 +1040,45 @@ void audio_driver_setup_rewind(void);
  * directly goes through here.
  **/
 void audio_driver_set_nonblock_state(bool nonblock);
+
+/**
+ * audio_driver_pause_fade:
+ * @paused : true when the runloop has just paused, false when it has just
+ *           resumed.
+ *
+ * Ramps the audio down when the core stops and back up when it starts,
+ * instead of ending and restarting the stream mid-waveform. The ramp down
+ * is written onto audio already at the device; the ramp up is applied by
+ * audio_driver_flush() to the first frames the core produces afterwards.
+ **/
+void audio_driver_pause_fade(bool paused);
+
+/**
+ * audio_driver_core_silenced:
+ *
+ * True between the pause tail and the resume ramp, while the frontend has
+ * deliberately ended the core's audio. Lets a caller that would ramp out for
+ * its own reasons - a state load - leave an already-down stream alone rather
+ * than bring it back up on the way out.
+ **/
+bool audio_driver_core_silenced(void);
+
+/**
+ * audio_driver_jump_fade_begin:
+ * audio_driver_jump_fade_end:
+ * @ramped : what _begin returned.
+ *
+ * Bracket a jump the frontend makes in the game's state - a state load, an
+ * undo, a core reset - with the pause tail and the resume ramp, so both the
+ * splice and whatever gap the work leaves behind land in silence.
+ *
+ * A stream already down - the jump was made from the menu, or while paused -
+ * is left alone: _begin returns false and _end then does nothing, so the ramp
+ * back up stays with whatever took the stream down.
+ **/
+bool audio_driver_jump_fade_begin(void);
+
+void audio_driver_jump_fade_end(bool ramped);
 
 /**
  * audio_driver_pipeline_consumer_exit:

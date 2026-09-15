@@ -309,14 +309,58 @@ static void note_write(void)
    }
 }
 
+/* Content tap for the pause-boundary fixture: what actually reaches the
+ * device, as magnitudes. tap_stale counts samples at the stale content's
+ * level arriving after the pause; tap_head keeps the first samples after
+ * the resume, where the ramp must be. */
+#define TAP_HEAD_MAX 512
+static retro_atomic_int_t  tap_on;
+static retro_atomic_int_t  tap_record;
+static retro_atomic_int_t  tap_stale;
+static float               tap_head[TAP_HEAD_MAX];
+static retro_atomic_size_t tap_head_n;
+
+static void tap_samples(const void *buf, size_t samples)
+{
+   int on  = retro_atomic_load_acquire_int(&tap_on);
+   int rec = retro_atomic_load_acquire_int(&tap_record);
+   size_t i;
+   if (!on && !rec)
+      return;
+   for (i = 0; i < samples; i++)
+   {
+      float m = (device_sample_bytes == sizeof(int16_t))
+            ? (float)((const int16_t*)buf)[i] / 32768.0f
+            : ((const float*)buf)[i];
+      if (m < 0.0f) m = -m;
+      if (on && m > 0.6f)
+         retro_atomic_fetch_add_int(&tap_stale, 1);
+      if (rec)
+      {
+         size_t n = retro_atomic_load_relaxed_size(&tap_head_n);
+         /* The resume top-up writes the device full of silence first;
+          * the ramp is on the stream behind it, so the window opens at
+          * the first audible sample. */
+         if (!n && m < 0.005f)
+            continue;
+         if (n < TAP_HEAD_MAX)
+         {
+            tap_head[n] = m;
+            retro_atomic_store_release_size(&tap_head_n, n + 1);
+         }
+      }
+   }
+}
+
 static ssize_t cdev_write(void *data, const void *buf, size_t len)
 {
    size_t samples = len / device_sample_bytes;
    size_t written = 0;
    int    laps    = 8;
-   (void)data; (void)buf;
+   (void)data;
 
    note_write();
+   tap_samples(buf, samples);
 
    /* No backpressure: take it all, keep what the ring has room for and
     * drop the rest. A driver that never makes the caller wait. */
@@ -625,6 +669,8 @@ static void discard_parked(void *userdata)
 }
 
 static void submit_frame(size_t per_frame, unsigned publishes);
+static void pause_boundary_run(void);
+static bool pause_boundary_mode;
 
 struct live_control_check
 {
@@ -854,7 +900,7 @@ static void submit_frame(size_t per_frame, unsigned publishes)
       else audio_driver_submit(&audio_driver_st, 1.0f,
             source_float ? (const void*)(frame_audio_float + done * 2)
                          : (const void*)(frame_audio + done * 2), n * 2,
-            source_float, false, false);
+            source_float, false, false, true);
       done += n;
       if (spread_publishes && publishes > 1 && k + 1 < publishes)
       {
@@ -937,6 +983,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    }
    else pthread_create(&cons, NULL, consumer, NULL);
 
+   if (pause_boundary_mode)
+   {
+      pause_boundary_run();
+      frames = 0;
+   }
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
@@ -966,8 +1017,8 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    if (use_wrapper)
    {
       audio_driver_state_t *st = &audio_driver_st;
-      if (live_controls) wrapper_live_controls(publishes);
-      wrapper_restart();
+      if (live_controls && !pause_boundary_mode) wrapper_live_controls(publishes);
+      if (!pause_boundary_mode) wrapper_restart();
       if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
       if (channels > 2 && (st->extra.channels != channels - 2
                || st->extra.positions != (source_layout & ~AUDIO_LAYOUT_STEREO)
@@ -993,12 +1044,15 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    under  = retro_atomic_load_acquire_size(&dev_underruns) - warm_under;
    pulls  = retro_atomic_load_acquire_size(&dev_pulls) - warm_pulls;
    if (use_wrapper && (!writes || !wakes)) fixture_failures++;
-   if (use_wrapper)
+   if (use_wrapper && !pause_boundary_mode)
    {
       size_t f = retro_atomic_load_acquire_size(&to_float);
       size_t n = retro_atomic_load_acquire_size(&to_int16);
       size_t native_frames = retro_atomic_load_acquire_size(&int16_src_frames);
-      /* Matching lanes stay native; mixed lanes convert only toward the sink. */
+      /* Matching lanes stay native; mixed lanes convert only toward the
+       * sink. A conversion-volume invariant of the load sweep: the
+       * boundary scenario's few frames mostly leave through the discard
+       * and prove nothing about lane purity either way. */
       if (source_float == !device_int16)
       {
          if (f || n) fixture_failures++;
@@ -1034,6 +1088,122 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    pipeline_down();
 }
 
+
+/* --- the pause boundary on the ring -------------------------------- */
+
+/* What audio_driver_pause_fade() promises the threaded pipeline: the
+ * frames the ring held at a pause are stale behind the tail and are
+ * never played, and the core's first audio after the resume comes up
+ * under the ramp. Sequenced through the wrapper's parked control
+ * transactions, so the pause lands with the consumer provably not
+ * mid-callback and the ring provably holding unplayed source. */
+
+static void pause_boundary_fill(float amp)
+{
+   size_t i;
+   for (i = 0; i < 32768u * channels; i++)
+   {
+      frame_audio[i]       = (int16_t)(amp * 32767.0f);
+      frame_audio_float[i] = amp;
+   }
+}
+
+static void pause_boundary_pause_parked(void *userdata)
+{
+   (void)userdata;
+   /* Content the consumer has provably not touched: the submit lands
+    * with the callback parked, or drops against a ring already full of
+    * the same stale level - unplayed source either way. */
+   submit_frame((size_t)(CORE_RATE / FPS), 1);
+   audio_driver_pause_fade(true);
+   /* The tail just written is the stream's own; everything at the
+    * stale level from here on is a protocol failure. */
+   retro_atomic_store_release_int(&tap_stale, 0);
+   retro_atomic_store_release_int(&tap_on, 1);
+}
+
+static void pause_boundary_resume_parked(void *userdata)
+{
+   (void)userdata;
+   retro_atomic_store_release_int(&tap_on, 0);
+   audio_driver_pause_fade(false);
+   retro_atomic_store_release_size(&tap_head_n, 0);
+   retro_atomic_store_release_int(&tap_record, 1);
+}
+
+static void pause_boundary_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t per_frame = (size_t)(CORE_RATE / FPS);
+   unsigned frame, waited;
+   double head_mean = 0.0, tail_mean = 0.0;
+   size_t n, i;
+
+   /* Played audio at the stale level, so the history and the device are
+    * primed the way a session's would be. */
+   pause_boundary_fill(0.9f);
+   for (frame = 0; frame < 8; frame++)
+      submit_frame(per_frame, 1);
+
+   audio_thread_apply_control(st->context_audio_data,
+         pause_boundary_pause_parked, NULL);
+
+   /* The consumer takes the stale frames out unplayed. */
+   for (waited = 0; waited < 2000; waited++)
+   {
+      if (!retro_spsc_read_avail(&st->pipe_ring))
+         break;
+      audio_driver_pipeline_wake();
+      usleep(1000);
+   }
+   if (retro_spsc_read_avail(&st->pipe_ring))
+      fixture_failures++;
+   if (retro_atomic_load_acquire_int(&tap_stale))
+      fixture_failures++;
+
+   audio_thread_apply_control(st->context_audio_data,
+         pause_boundary_resume_parked, NULL);
+
+   /* The core's first audio after the resume. */
+   for (frame = 0; frame < 8 && retro_atomic_load_relaxed_size(&tap_head_n)
+         < TAP_HEAD_MAX; frame++)
+      submit_frame(per_frame, 1);
+   for (waited = 0; waited < 2000
+         && retro_atomic_load_relaxed_size(&tap_head_n) < TAP_HEAD_MAX;
+         waited++)
+      usleep(1000);
+   retro_atomic_store_release_int(&tap_record, 0);
+
+   /* Acquire pairs with the release that published each element. */
+   n = retro_atomic_load_acquire_size(&tap_head_n);
+   if (n < TAP_HEAD_MAX)
+   {
+      fixture_failures++;
+      return;
+   }
+   for (i = 0; i < 64; i++)
+   {
+      head_mean += tap_head[i];
+      tail_mean += tap_head[n - 64 + i];
+   }
+   head_mean /= 64.0;
+   tail_mean /= 64.0;
+   /* The ramp: the resumed stream opens well below its level and is
+    * climbing by the end of the window. */
+   if (!(head_mean < 0.12))
+      fixture_failures++;
+   if (!(tail_mean > head_mean * 3.0 + 0.02))
+      fixture_failures++;
+}
+
+static void pause_boundary_run(void)
+{
+   unsigned f0 = fixture_failures;
+   pause_boundary_case();
+   printf("pause boundary: stale ring discarded, resume under the ramp, %u failures\n",
+         fixture_failures - f0);
+}
+
 int main(int argc, char **argv)
 {
    /* 1 is a core that hands over a frame at a time. 262 is a scanline
@@ -1056,6 +1226,12 @@ int main(int argc, char **argv)
    speed_lowpass = getenv("SPEED_LPF") != NULL;
    runloop_policy = getenv("RUNLOOP_POLICY") != NULL;
    auto_runloop = getenv("AUTO_RUNLOOP") != NULL;
+   pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
+   if (pause_boundary_mode && (!use_wrapper || !transport))
+   {
+      fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");
+      return 1;
+   }
    if (layout)
    {
       if (!strcmp(layout, "5.1")) source_layout = AUDIO_LAYOUT_5POINT1;
@@ -1147,8 +1323,11 @@ int main(int argc, char **argv)
    printf("  pubs     wakes/f  writes/f |   wake latency us     |  producer us/frame   | short  pulls\n");
    printf("                             |    p50     p99     max |   mean  blkd   worst |\n");
    }
-   for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
+   for (i = 0; i < (pause_boundary_mode
+            ? 1 : sizeof(sweep) / sizeof(sweep[0])); i++)
       run_one(sweep[i], seconds, true);
+   if (pause_boundary_mode)
+      goto report;
 
    printf("\n-- device applies none; the data handshake is the only pacer --\n");
    if (!use_wrapper)
@@ -1159,6 +1338,7 @@ int main(int argc, char **argv)
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds, false);
 
+report:
    free(lat_us);
    {
       size_t reads = retro_atomic_load_acquire_size(&consumer_settings_reads);
