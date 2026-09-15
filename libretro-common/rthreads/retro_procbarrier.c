@@ -111,11 +111,20 @@ static int                s_signum;
 #if defined(PB_WINDOWS)
 typedef VOID (WINAPI *pb_fpwb_t)(VOID);
 static pb_fpwb_t s_fpwb;
+#endif
+
+/* Page-flip storage: only where the tier exists, so a console build is
+ * not left with variables nothing references. The gate is defined below
+ * with the tier; forward the condition here. */
+#if defined(PB_X86) && (defined(PB_WINDOWS) || defined(PB_LINUX) \
+   || defined(PB_FREEBSD) || defined(PB_DARWIN))
+#if defined(PB_WINDOWS)
 static void     *s_page;
 static SIZE_T    s_page_size;
 #else
 static void     *s_page;
 static size_t    s_page_size;
+#endif
 #endif
 
 #if defined(PB_LINUX) || defined(PB_DARWIN)
@@ -132,9 +141,17 @@ static unsigned pb_num_cpus(void)
    SYSTEM_INFO si;
    GetSystemInfo(&si);
    return (unsigned)si.dwNumberOfProcessors;
-#elif defined(_SC_NPROCESSORS_ONLN)
+#elif defined(PB_LINUX) || defined(PB_FREEBSD) || defined(PB_DARWIN)
+   /* Only on the platforms this file otherwise handles. Keying on
+    * _SC_NPROCESSORS_ONLN being defined is not enough: PSP's newlib
+    * defines the constant and has no sysconf, and the link fails. */
    long n = sysconf(_SC_NPROCESSORS_ONLN);
    return (n > 0) ? (unsigned)n : 1u;
+#elif defined(PSP) || defined(VITA_UP) || defined(PS2) || defined(GEKKO) \
+   || defined(DJGPP) || defined(__DJGPP__)
+   /* Single-core consoles: nothing to fence against. Naming them here
+    * is what lets the barrier be free there rather than NONE. */
+   return 1u;
 #else
    return 2u;   /* unknown: assume SMP, which is the safe direction */
 #endif
@@ -218,7 +235,15 @@ static int pb_fpwb_try(void)
 /* Tier: page flip                                                     */
 /* ------------------------------------------------------------------ */
 
-#if defined(PB_X86)
+/* The page flip needs mmap/mprotect (or the Win32 equivalents), so it
+ * exists only on the platforms this file handles, not merely on x86: an
+ * x86 console has neither. */
+#if defined(PB_X86) && (defined(PB_WINDOWS) || defined(PB_LINUX) \
+   || defined(PB_FREEBSD) || defined(PB_DARWIN))
+#define PB_HAVE_PAGEFLIP 1
+#endif
+
+#if defined(PB_HAVE_PAGEFLIP)
 static int pb_pageflip_try(void)
 {
 #if defined(PB_WINDOWS)
@@ -465,7 +490,7 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
          if (!strcmp(force, "fpwb") && pb_fpwb_try())
          { t = RETRO_PROCBARRIER_FLUSHWRITEBUFFERS; goto done; }
 #endif
-#if defined(PB_X86)
+#if defined(PB_HAVE_PAGEFLIP)
          if (!strcmp(force, "pageflip") && pb_pageflip_try())
          { t = RETRO_PROCBARRIER_PAGEFLIP; goto done; }
 #endif
@@ -501,7 +526,7 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
    }
 #endif
 
-#if defined(PB_X86)
+#if defined(PB_HAVE_PAGEFLIP)
    /* x86 only, by the #if: the shootdown is not an IPI elsewhere. On
     * Windows this is the whole pre-Vista story. */
    if (pb_pageflip_try())
@@ -573,7 +598,7 @@ int retro_procbarrier(void)
          return 1;
 #endif
 
-#if defined(PB_X86)
+#if defined(PB_HAVE_PAGEFLIP)
       case RETRO_PROCBARRIER_PAGEFLIP:
          pb_pageflip();
          return 1;
