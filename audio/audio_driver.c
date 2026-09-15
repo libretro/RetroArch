@@ -1968,6 +1968,19 @@ static INLINE float audio_driver_snapshot_slowmotion(
    return ratio;
 }
 
+/* The fast-forward ratio the main thread last published, the
+ * override's when one is active. Safe on any thread; the estimate's
+ * seed must not read the runloop or the settings mid-submit. */
+static INLINE float audio_driver_snapshot_ffratio(
+      audio_driver_state_t *audio_st)
+{
+   float ratio;
+   int   bits = retro_atomic_load_acquire_int(
+         &audio_st->runloop_ffratio_bits);
+   memcpy(&ratio, &bits, sizeof(ratio));
+   return ratio;
+}
+
 static INLINE double audio_driver_effective_ratio(
       const audio_driver_state_t *audio_st, bool is_slowmotion,
       float slowmotion_ratio, double ff_mult)
@@ -2038,11 +2051,10 @@ static double audio_driver_fastforward_ratio_mult(
    {
       /* Seed at the configured ratio. The limiter has the core there
        * within a frame, and the average would take some fifty flushes
-       * to follow it, overfilling the non-blocking device meanwhile. */
-      const struct retro_fastforwarding_override *o =
-            &runloop_state_get_ptr()->fastmotion_override.current;
-      double ratio = (o->fastforward && o->ratio >= 0.0f)
-            ? o->ratio : config_get_ptr()->floats.fastforward_ratio;
+       * to follow it, overfilling the non-blocking device meanwhile.
+       * The ratio comes published: this runs mid-submit, on the audio
+       * thread when the core owns its audio callback. */
+      double ratio = audio_driver_snapshot_ffratio(audio_st);
       if (ratio > 1.0)
          mult = 1.0 / ratio;
       else
@@ -4570,6 +4582,19 @@ void audio_driver_publish_runloop(void)
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(
          &audio_driver_st.runloop_slowmotion_bits, ratio_bits);
+   {
+      /* The seed of the fast-forward estimate wants the ratio the
+       * limiter runs the core at: the override's while one is
+       * active, the setting's otherwise, resolved here where both
+       * are the main thread's to read. */
+      const struct retro_fastforwarding_override *o =
+            &runloop_state_get_ptr()->fastmotion_override.current;
+      ratio = (o->fastforward && o->ratio >= 0.0f)
+            ? o->ratio : settings->floats.fastforward_ratio;
+      memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
+      retro_atomic_store_release_int(
+            &audio_driver_st.runloop_ffratio_bits, ratio_bits);
+   }
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       v |= AUDIO_SNAP_MENU_ALIVE;

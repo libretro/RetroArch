@@ -121,6 +121,7 @@ static void test_inline_seeds_at_ratio(void)
 
    fresh();
    config_get_ptr()->floats.fastforward_ratio = 3.0f;
+   audio_driver_publish_runloop();
    m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
    CHECK(near(m, 1.0 / 3.0), "the first flush of a hold starts at the configured ratio");
    fake_now += ONE_X / 3;
@@ -128,6 +129,7 @@ static void test_inline_seeds_at_ratio(void)
    CHECK(near(m, 1.0 / 3.0), "and a core at that speed holds it from the first interval");
    config_get_ptr()->floats.fastforward_ratio = 0.0f;
    fresh();
+   audio_driver_publish_runloop();
    m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
    CHECK(near(m, 1.0), "an uncapped ratio still starts at 1.0");
 }

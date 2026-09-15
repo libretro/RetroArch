@@ -620,6 +620,10 @@ typedef struct
     * Meaningful only when AUDIO_SNAP_SLOWMOTION is set, like the
     * setting itself. */
    retro_atomic_int_t runloop_slowmotion_bits;
+   /* The fast-forward ratio the main thread last published, override
+    * already resolved against the setting; the seed of the speed
+    * estimate reads it on the submit path. Bit pattern of a float. */
+   retro_atomic_int_t runloop_ffratio_bits;
    /* The ring's unit: bytes per stereo frame of what the core
     * published - int16 or, for a float core, float. Every count on
     * the pipe is in frames; bytes appear only at the ring's edge. */
