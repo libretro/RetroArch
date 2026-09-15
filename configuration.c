@@ -7641,7 +7641,23 @@ bool config_unload_override(void)
          settings->flags |= SETTINGS_FLG_SKIP_WINDOW_POSITIONS;
 
       if (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
-         command_event(CMD_EVENT_REINIT, NULL);
+      {
+         /* With the video driver down (core deinit) the next
+          * drivers_init() applies the restored mode, and would orphan
+          * an instance created here. Drop the grab the reinit's game
+          * focus reapply would have released. */
+         if (video_driver_get_ptr())
+            command_event(CMD_EVENT_REINIT, NULL);
+         else
+         {
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (     !settings->bools.video_fullscreen
+                  && !(video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN)
+                  && !settings->bools.input_auto_mouse_grab
+                  && !input_st->game_focus_state.enabled)
+               input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
+         }
+      }
    }
 
    /* Turbo fire settings must be reloaded from remap */
