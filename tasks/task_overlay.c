@@ -65,6 +65,92 @@ struct overlay_loader
    uint8_t flags;
 };
 
+static bool task_overlay_parse_analog_axis(
+      config_file_t *conf,
+      const char *overlay_desc_key,
+      struct overlay_desc *desc)
+{
+   size_t _len;
+   char conf_key[256];
+   char axis[16];
+
+   desc->analog_axis = OVERLAY_ANALOG_AXIS_BOTH;
+   desc->analog_flags = 0;
+
+   if (   desc->type == OVERLAY_TYPE_ANALOG_L2
+       || desc->type == OVERLAY_TYPE_ANALOG_R2)
+      desc->analog_axis = OVERLAY_ANALOG_AXIS_VERTICAL;
+
+   _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
+   strlcpy_lit(conf_key + _len, "_axis", sizeof(conf_key) - _len);
+
+   if (!config_get_array(conf, conf_key, axis, sizeof(axis)))
+      return true;
+
+   if (string_is_equal(axis, "horizontal") || string_is_equal(axis, "x"))
+      desc->analog_axis = OVERLAY_ANALOG_AXIS_HORIZONTAL;
+   else if (string_is_equal(axis, "horizontal_invert")
+         || string_is_equal(axis, "horizontal_inverted")
+         || string_is_equal(axis, "x_invert")
+         || string_is_equal(axis, "x_inverted"))
+   {
+      desc->analog_axis   = OVERLAY_ANALOG_AXIS_HORIZONTAL;
+      desc->analog_flags |= OVERLAY_ANALOG_FLAG_INVERT;
+   }
+   else if (string_is_equal(axis, "vertical") || string_is_equal(axis, "y"))
+      desc->analog_axis = OVERLAY_ANALOG_AXIS_VERTICAL;
+   else if (string_is_equal(axis, "vertical_invert")
+         || string_is_equal(axis, "vertical_inverted")
+         || string_is_equal(axis, "y_invert")
+         || string_is_equal(axis, "y_inverted"))
+   {
+      desc->analog_axis   = OVERLAY_ANALOG_AXIS_VERTICAL;
+      desc->analog_flags |= OVERLAY_ANALOG_FLAG_INVERT;
+   }
+   else if (string_is_equal(axis, "both") || string_is_equal(axis, "xy"))
+      desc->analog_axis = OVERLAY_ANALOG_AXIS_BOTH;
+   else if (string_is_equal(axis, "both_invert")
+         || string_is_equal(axis, "both_inverted")
+         || string_is_equal(axis, "xy_invert")
+         || string_is_equal(axis, "xy_inverted"))
+   {
+      desc->analog_axis   = OVERLAY_ANALOG_AXIS_BOTH;
+      desc->analog_flags |= OVERLAY_ANALOG_FLAG_INVERT;
+   }
+   else
+   {
+      RARCH_ERR("[Overlay] Analog axis type (%s) is invalid. Use \"horizontal\", \"vertical\", \"x\", \"y\", \"both\", \"xy\", or their \"*_invert\"/\"*_inverted\" variants.\n",
+            axis);
+      return false;
+   }
+
+   if (   desc->analog_axis == OVERLAY_ANALOG_AXIS_BOTH
+       && (  desc->type == OVERLAY_TYPE_ANALOG_L2
+          || desc->type == OVERLAY_TYPE_ANALOG_R2))
+   {
+      RARCH_ERR("[Overlay] Analog trigger descriptors must use a single axis.\n");
+      return false;
+   }
+
+   return true;
+}
+
+static void task_overlay_parse_analog_sticky(
+      config_file_t *conf,
+      const char *overlay_desc_key,
+      struct overlay_desc *desc)
+{
+   bool tmp_bool = false;
+   size_t _len;
+   char conf_key[256];
+
+   _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
+   strlcpy_lit(conf_key + _len, "_sticky", sizeof(conf_key) - _len);
+
+   if (config_get_bool(conf, conf_key, &tmp_bool) && tmp_bool)
+      desc->analog_flags |= OVERLAY_ANALOG_FLAG_STICKY;
+}
+
 /* Normalize an archive member name in place: collapse repeated
  * separators and resolve '.' and '..' segments lexically.
  *
@@ -609,6 +695,10 @@ static bool task_overlay_load_desc(
       desc->type          = OVERLAY_TYPE_ANALOG_LEFT;
    else if (memcmp(elems[0], "analog_right", 12) == 0)
       desc->type          = OVERLAY_TYPE_ANALOG_RIGHT;
+   else if (memcmp(elems[0], "analog_l2", 9) == 0)
+      desc->type          = OVERLAY_TYPE_ANALOG_L2;
+   else if (memcmp(elems[0], "analog_r2", 9) == 0)
+      desc->type          = OVERLAY_TYPE_ANALOG_R2;
    else if (memcmp(elems[0], "dpad_area", 9) == 0)
       desc->type          = OVERLAY_TYPE_DPAD_AREA;
    else if (memcmp(elems[0], "abxy_area", 9) == 0)
@@ -693,6 +783,8 @@ static bool task_overlay_load_desc(
    {
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
+      case OVERLAY_TYPE_ANALOG_L2:
+      case OVERLAY_TYPE_ANALOG_R2:
          if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
          {
             RARCH_ERR("[Overlay] Analog hitbox type must be \"radial\".\n");
@@ -706,6 +798,10 @@ static bool task_overlay_load_desc(
             desc->analog_saturate_pct = tmp_float;
          else
             desc->analog_saturate_pct = 1.0f;
+
+         if (!task_overlay_parse_analog_axis(conf, overlay_desc_key, desc))
+           return false;
+         task_overlay_parse_analog_sticky(conf, overlay_desc_key, desc);
          break;
       case OVERLAY_TYPE_DPAD_AREA:
       case OVERLAY_TYPE_ABXY_AREA:
