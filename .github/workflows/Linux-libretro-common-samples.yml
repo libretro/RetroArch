@@ -158,6 +158,11 @@ jobs:
             retro_spsc_test
             retro_waitable_spsc_test
             retro_eventcount_test
+            # Runs its natural tier only here; Makefile.test's
+            # threads-samples forces each tier in turn.  On the
+            # runner's cores the fence check is load-bearing, which
+            # this box cannot make it.
+            retro_procbarrier_test
             msg_fifo_queue_test
             audio_mixer_loop_test
             audio_mixer_rate_guard_test

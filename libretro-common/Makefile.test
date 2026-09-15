@@ -285,7 +285,11 @@ threads-samples-tsan:
 # check it gets.
 CONSOLE_LIBC_SOURCES   := rthreads/retro_procbarrier.c rthreads/retro_eventcount.c
 # __PS3__ alone is how rthreads.c selects the PS3 backend; __PSL1GHT__ is
-# the SDK. The lane sets both, as Makefile.psl1ght does.
+# the SDK. The lane sets both, as Makefile.psl1ght does.  The PS4 entry
+# also sets __FreeBSD__: the Orbis clang defines it, since the PS4 is a
+# FreeBSD fork, and that is exactly what made retro_procbarrier reach for
+# FreeBSD 14.1's <sys/membarrier.h> on a console that has none.  A lane
+# that sets only ORBIS cannot see that, and did not.
 CONSOLE_LIBC_PLATFORMS := PSP GEKKO VITA WIIU _3DS __SWITCH__ ORBIS DJGPP __PS3__
 
 console-libc-check:
@@ -295,11 +299,20 @@ console-libc-check:
 	@# fails to link.  Define the constant here so that branch is taken and
 	@# the forbidden symbol shows up in nm rather than being skipped over.
 	@printf '#ifndef _SC_NPROCESSORS_ONLN\n#define _SC_NPROCESSORS_ONLN 84\n#endif\n#ifndef _SC_PAGESIZE\n#define _SC_PAGESIZE 8\n#endif\nlong __forbid_sysconf(int);\n' >> /tmp/console_forbid.h
+	@# The PS4 toolchain defines __FreeBSD__.  It cannot be set with -D on
+	@# a Linux runner -- glibc's own headers then look for FreeBSD's -- so
+	@# it is set after every libc header the rthreads sources use has been
+	@# pulled in.  Their include guards make the sources' own includes
+	@# no-ops, and only a header not in this list, one the console lacks,
+	@# still fails.  <sys/membarrier.h> is the one that broke the PS4.
+	@printf '#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <errno.h>\n#include <unistd.h>\n#include <signal.h>\n#include <pthread.h>\n#include <sys/mman.h>\n#include <sys/types.h>\n#include <sys/param.h>\n#include <sys/time.h>\n#include <time.h>\n#include <fcntl.h>\n#include <dirent.h>\n#include <sys/syscall.h>\n#define __FreeBSD__ 1\n' > /tmp/console_bsd.h
 	@fail=0; \
 	for plat in $(CONSOLE_LIBC_PLATFORMS); do \
 	   for src in $(CONSOLE_LIBC_SOURCES); do \
 	      obj=/tmp/console_libc_$$(basename $$src .c)_$$plat.o; \
-	      extra=""; [ "$$plat" = "__PS3__" ] && extra="-D__PSL1GHT__"; \
+	      extra=""; \
+	      [ "$$plat" = "__PS3__" ] && extra="-D__PSL1GHT__"; \
+	      [ "$$plat" = "ORBIS" ]   && extra="-D__ORBIS__ -D__PS4__ -include /tmp/console_bsd.h"; \
 	      if ! $(CC) -std=c89 -pedantic -DHAVE_THREADS -D$$plat $$extra -U__linux__ -U__unix__ -U__unix \
 	            -include /tmp/console_forbid.h -Iinclude -c -o $$obj $$src 2>/tmp/console_libc.err; then \
 	         echo "console-libc-check: $$src does not compile with -D$$plat"; \
@@ -311,7 +324,7 @@ console-libc-check:
 	      fi; \
 	   done; \
 	done; \
-	rm -f /tmp/console_libc_*.o /tmp/console_forbid.h /tmp/console_libc.err; \
+	rm -f /tmp/console_libc_*.o /tmp/console_forbid.h /tmp/console_bsd.h /tmp/console_libc.err; \
 	if [ $$fail -ne 0 ]; then exit 1; fi; \
 	echo "console-libc-check: $(CONSOLE_LIBC_SOURCES) reference nothing the console ports lack"
 

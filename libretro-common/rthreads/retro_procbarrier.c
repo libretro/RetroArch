@@ -65,7 +65,11 @@
 #define PB_DARWIN 1
 #elif defined(__linux__) || defined(__ANDROID__)
 #define PB_LINUX 1
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) && !defined(__ORBIS__) && !defined(ORBIS)
+/* The PS4 is FreeBSD underneath and its toolchain defines __FreeBSD__,
+ * but Sony's kernel is a 9-era fork with none of the 14.1 membarrier
+ * and no process-barrier API of its own. It is a multi-core console and
+ * resolves to NONE like the others. */
 #define PB_FREEBSD 1
 #endif
 
@@ -77,7 +81,7 @@
 #include <windows.h>
 #endif
 
-#if defined(PB_LINUX) || defined(PB_FREEBSD) || defined(PB_DARWIN)
+#if defined(PB_LINUX) || defined(PB_FREEBSD_MEMBARRIER) || defined(PB_DARWIN)
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
@@ -92,7 +96,14 @@
 #endif
 
 #if defined(PB_FREEBSD)
+#include <sys/param.h>
+/* membarrier(2) arrived in FreeBSD 14.1, and so did its header; on
+ * anything older the include would fail and the tier is simply absent,
+ * leaving the x86 page flip. */
+#if defined(__FreeBSD_version) && __FreeBSD_version >= 1401000
 #include <sys/membarrier.h>
+#define PB_FREEBSD_MEMBARRIER 1
+#endif
 #endif
 
 #if defined(PB_DARWIN)
@@ -204,7 +215,7 @@ static void pb_membarrier(void)
 }
 #endif
 
-#if defined(PB_FREEBSD)
+#if defined(PB_FREEBSD_MEMBARRIER)
 static int pb_membarrier_try(void)
 {
    int q = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
@@ -493,7 +504,7 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
       const char *force = getenv("RETRO_PROCBARRIER");
       if (force && *force)
       {
-#if defined(PB_LINUX) || defined(PB_FREEBSD)
+#if defined(PB_LINUX) || defined(PB_FREEBSD_MEMBARRIER)
          if (!strcmp(force, "membarrier") && pb_membarrier_try())
          { t = RETRO_PROCBARRIER_MEMBARRIER; goto done; }
 #endif
@@ -521,7 +532,7 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
       goto done;
    }
 
-#if defined(PB_LINUX) || defined(PB_FREEBSD)
+#if defined(PB_LINUX) || defined(PB_FREEBSD_MEMBARRIER)
    if (pb_membarrier_try())
    {
       t = RETRO_PROCBARRIER_MEMBARRIER;
@@ -604,7 +615,7 @@ int retro_procbarrier(void)
          retro_atomic_thread_fence_seq_cst();
          return 1;
 
-#if defined(PB_LINUX) || defined(PB_FREEBSD)
+#if defined(PB_LINUX) || defined(PB_FREEBSD_MEMBARRIER)
       case RETRO_PROCBARRIER_MEMBARRIER:
          pb_membarrier();
          return 1;
