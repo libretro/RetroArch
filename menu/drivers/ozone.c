@@ -10945,6 +10945,7 @@ static void ozone_render(void *data,
    volatile float font_scale_factor_sublabel;
    volatile float font_scale_factor_time;
    volatile float font_scale_factor_footer;
+   float pointer_y_accel_norm         = 0.0f;
    struct menu_state *menu_st         = menu_state_get_ptr();
    menu_input_t *menu_input           = &menu_st->input_state;
    menu_list_t *menu_list             = menu_st->entries.list;
@@ -11057,6 +11058,14 @@ static void ozone_render(void *data,
 
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
+
+   /* y_accel is measured per frame; normalise it to px per
+    * 16.667 ms with the measured frame delta so velocity
+    * thresholds mean the same physical speed at every
+    * refresh rate */
+   pointer_y_accel_norm = (p_anim->delta_time > 0.01f)
+         ? (ozone->pointer.y_accel * (16.667f / p_anim->delta_time))
+         : ozone->pointer.y_accel;
 
    /* If menu screensaver is active, update
     * screensaver and return */
@@ -11378,8 +11387,8 @@ static void ozone_render(void *data,
                    * drops below a 'sensible' level... */
                   if (     (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
                         && (i != ozone->selection)
-                        && (ozone->pointer.y_accel < ozone->last_scale_factor)
-                        && (ozone->pointer.y_accel > -ozone->last_scale_factor))
+                        && (pointer_y_accel_norm < ozone->last_scale_factor)
+                        && (pointer_y_accel_norm > -ozone->last_scale_factor))
                   {
                      menu_st->selection_ptr = i;
 
