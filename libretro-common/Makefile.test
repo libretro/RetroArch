@@ -243,6 +243,11 @@ threads-samples:
 	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
 	$(MAKE) -C samples/rthreads/retro_procbarrier_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
+	# the eventcount built on the barrier, in both its modes, under each
+	# barrier tier the platform has
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test clean
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
@@ -283,7 +288,7 @@ threads-samples-tsan:
 # its define makes retro_atomic.h include <kernel.h>, which only the PS2
 # SDK has, so it cannot be compiled here at all and its lane is the only
 # check it gets.
-CONSOLE_LIBC_SOURCES   := rthreads/retro_procbarrier.c rthreads/retro_eventcount.c
+CONSOLE_LIBC_SOURCES   := rthreads/retro_procbarrier.c rthreads/retro_eventcount.c rthreads/retro_asym_eventcount.c
 # __PS3__ alone is how rthreads.c selects the PS3 backend; __PSL1GHT__ is
 # the SDK. The lane sets both, as Makefile.psl1ght does.  The PS4 entry
 # also sets __FreeBSD__: the Orbis clang defines it, since the PS4 is a

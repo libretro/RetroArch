@@ -1216,6 +1216,7 @@ ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o \
           $(LIBRETRO_COMM_DIR)/rthreads/retro_procbarrier.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/retro_asym_eventcount.o \
           $(LIBRETRO_COMM_DIR)/queues/retro_waitable_spsc.o \
           gfx/video_thread_wrapper.o \
           gfx/video_thread_hw.o \

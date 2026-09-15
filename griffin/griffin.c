@@ -929,6 +929,7 @@ FIFO BUFFER
 #include "../libretro-common/queues/retro_waitable_spsc.c"
 #include "../libretro-common/rthreads/retro_eventcount.c"
 #include "../libretro-common/rthreads/retro_procbarrier.c"
+#include "../libretro-common/rthreads/retro_asym_eventcount.c"
 #endif
 
 /*============================================================
