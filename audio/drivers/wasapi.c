@@ -204,6 +204,10 @@ typedef struct
     * mask (WAVEFORMATEXTENSIBLE's bits): what the device took, which
     * for a shared-mode stream is the engine's mix format's mask. */
    uint32_t layout;
+   /* Captured at wasapi_init on the main thread: the pump thread's
+    * MMCSS/priority decisions read these, never the live settings. */
+   bool mmcss_enable;
+   bool thread_priority;
 } wasapi_t;
 
 static void wasapi_imm_stop_thread(wasapi_t *w)
@@ -229,9 +233,11 @@ static bool wasapi_imm_start_thread(wasapi_t *w)
    if (!w->imm_thread)
    {
 #ifdef HAVE_THREADS
-      w->imm_thread = sthread_create(mmdevice_thread, w);
+      w->imm_thread = sthread_create(mmdevice_thread,
+            &audio_state_get_ptr()->reinit_request);
 #else
-      w->imm_thread = CreateThread(NULL, 0, mmdevice_thread, w, 0, NULL);
+      w->imm_thread = CreateThread(NULL, 0, mmdevice_thread,
+            &audio_state_get_ptr()->reinit_request, 0, NULL);
 #endif
       if (!w->imm_thread)
          return false;
@@ -1708,6 +1714,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
    bool audio_sync           = settings->bools.audio_sync;
+   bool mmcss_enable         = settings->bools.audio_wasapi_mmcss;
+   bool thread_priority      = settings->bools.audio_thread_priority;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
    bool low_latency          = false;
    uint32_t layout           = AUDIO_LAYOUT_STEREO;
@@ -1718,6 +1726,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       return NULL;
 
    retro_atomic_size_init(&w->underruns, 0);
+   w->mmcss_enable    = mmcss_enable;
+   w->thread_priority = thread_priority;
    if (mmdevice_com_init())
       w->flags              |= WASAPI_FLG_COM;
    w->device                 = (IMMDevice*)mmdevice_init_device(dev_id, 0 /* eRender */);
@@ -2187,13 +2197,12 @@ static bool wasapi_push_sh(wasapi_t *w);
 typedef HANDLE (WINAPI *wasapi_av_set_t)(LPCWSTR, LPDWORD);
 typedef BOOL   (WINAPI *wasapi_av_revert_t)(HANDLE);
 
-static HANDLE wasapi_pump_mmcss_begin(HMODULE *avrt)
+static HANDLE wasapi_pump_mmcss_begin(HMODULE *avrt,
+      bool mmcss_enable, bool thread_priority)
 {
    wasapi_av_set_t set;
    HANDLE          task = NULL;
    DWORD           idx  = 0;
-
-   settings_t *settings = config_get_ptr();
 
    *avrt = NULL;
    /* Off unless asked for. It is not reliably the better of the two:
@@ -2201,9 +2210,9 @@ static HANDLE wasapi_pump_mmcss_begin(HMODULE *avrt)
     * lowering it, which is the number that matters at a period of a
     * few milliseconds. The setting says which to ask for and the
     * summary at teardown says how each did. */
-   if (!settings || !settings->bools.audio_wasapi_mmcss)
+   if (!mmcss_enable)
       return NULL;
-   if (!settings->bools.audio_thread_priority)
+   if (!thread_priority)
       return NULL;
    if (!(*avrt = LoadLibraryA("avrt.dll")))
       return NULL;
@@ -2235,7 +2244,8 @@ static void wasapi_pump_thread(void *data)
 {
    wasapi_t *w         = (wasapi_t*)data;
    HMODULE   avrt      = NULL;
-   HANDLE    mmtask    = wasapi_pump_mmcss_begin(&avrt);
+   HANDLE    mmtask    = wasapi_pump_mmcss_begin(&avrt,
+         w->mmcss_enable, w->thread_priority);
    int64_t   due_usec  = 0;
    int64_t   period_us = 0;
 

@@ -218,7 +218,10 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
    HRESULT hr;
    IMMDeviceEnumerator *enumerator = NULL;
    MyNotificationClient *client    = NULL;
-   audio_driver_state_t *audio_st  = audio_state_get_ptr();
+   /* The one thing this watcher raises, handed in at spawn on the
+    * main thread: this thread reads no singleton. */
+   retro_atomic_int_t *reinit_request =
+         (retro_atomic_int_t *)data;
 
    hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
    if (FAILED(hr))
@@ -270,7 +273,7 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
             {
                case WM_AUDIO_DEVICE_STATE_CHANGED:
                case WM_AUDIO_DEFAULT_CHANGED:
-                  retro_atomic_store_release_int(&audio_st->reinit_request, 1);
+                  retro_atomic_store_release_int(reinit_request, 1);
                   goto done;
                case WM_QUIT:
                   goto done;

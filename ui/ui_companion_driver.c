@@ -217,6 +217,10 @@ void ui_companion_driver_toggle(
       bool force)
 {
    uico_driver_state_t *uico_st    = &uico_driver_st;
+   /* The caller read the live setting on the main thread; latch it
+    * for the cross-thread readers (see the field's comment). */
+   retro_atomic_store_relaxed_int(&uico_st->desktop_menu_enable,
+         desktop_menu_enable ? 1 : 0);
    if (uico_st && uico_st->drv && uico_st->drv->toggle)
       uico_st->drv->toggle(uico_st->data, false);
 
@@ -278,6 +282,8 @@ void ui_companion_driver_init_first(
       )
 {
    uico_driver_state_t *uico_st        = &uico_driver_st;
+   retro_atomic_store_relaxed_int(&uico_st->desktop_menu_enable,
+         desktop_menu_enable ? 1 : 0);
 #ifdef HAVE_COMPANION_WIMP
    uico_st->wimp                       = ui_companion_wimp_select();
    /* Defer desktop companion initialization until the desktop menu
@@ -313,7 +319,7 @@ void ui_companion_driver_notify_refresh(void)
       ui->notify_refresh(uico_st->data);
 
 #ifdef HAVE_COMPANION_WIMP
-   if (config_get_ptr()->bools.desktop_menu_enable)
+   if (retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
       if (     (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
             && uico_st->wimp && uico_st->wimp->notify_refresh)
          uico_st->wimp->notify_refresh(uico_st->wimp_data);
@@ -358,7 +364,7 @@ void ui_companion_driver_msg_queue_push(
       ui->msg_queue_push(uico_st->data, msg, priority, duration, flush);
 
 #ifdef HAVE_COMPANION_WIMP
-   if (config_get_ptr()->bools.desktop_menu_enable)
+   if (retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
       if (     (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
             && uico_st->wimp && uico_st->wimp->msg_queue_push)
          uico_st->wimp->msg_queue_push(
@@ -390,8 +396,7 @@ bool ui_companion_driver_log_active(void)
 #ifdef HAVE_COMPANION_WIMP
    uico_driver_state_t *uico_st    = &uico_driver_st;
    const ui_companion_driver_t *ui = uico_st->wimp;
-   settings_t *settings            = config_get_ptr();
-   if (!settings || !settings->bools.desktop_menu_enable)
+   if (!retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
       return false;
    return ui && ui->log_msg && uico_st->wimp_data
       && (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)

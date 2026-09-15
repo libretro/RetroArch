@@ -2476,6 +2476,12 @@ static void cb_task_manual_content_scan(
       return;
 #endif
 
+   /* Moved out of the handler: this runs at retrieval on the main
+    * thread, where the companion belongs. The handler's call ran on
+    * the worker and read the settings through
+    * ui_companion_driver_notify_refresh. */
+   ui_companion_driver_notify_refresh();
+
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
    {
 #if defined(HAVE_MENU)
@@ -3509,7 +3515,6 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             task_free_title(task);
             task_set_title(task, strdup(msg));
             task_set_progress(task, 100);
-            ui_companion_driver_notify_refresh();
             RARCH_LOG("[Scanner] %s\n", msg);
             if (manual_scan->task_config->cli_scan_output)
                printf("%s\n", msg);
