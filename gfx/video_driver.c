@@ -2630,6 +2630,16 @@ void video_driver_lock_new(void)
       video_st->display_lock = slock_new();
    if (!video_st->context_lock)
       video_st->context_lock = slock_new();
+#ifdef VIDEO_TITLE_MAILBOX
+   /* Runs before the video thread exists; drop anything stale from a
+    * previous driver's life and start empty. */
+   {
+      char *stale = (char*)retro_atomic_exchange_ptr(
+            &video_st->window_title_pending, NULL);
+      if (stale)
+         free(stale);
+   }
+#endif
 #endif
 }
 
@@ -4331,16 +4341,43 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
-/* window_title is written on the main thread and read on the video
- * thread, so both sides use display_lock around it; window_title_update
- * says there is a new one. No-ops in a build without threads, where
- * there is no second reader. */
-#ifdef HAVE_THREADS
+/* The window title crosses from the main thread, which builds it, to
+ * the video thread, which applies it. Where the atomics have pointer
+ * ops it crosses as an immutable heap copy through a one-slot atomic
+ * mailbox (see video_driver.h): exchange in, exchange out, no lock
+ * and no possible torn copy - a copy either is not published yet or
+ * is complete, because nothing writes it after publication. The
+ * exchange-in frees whatever title was never taken, so a slow reader
+ * costs a superseded title, never a leak. On the one backend without
+ * pointer ops (and in a build without threads, where there is no
+ * second thread) the old display_lock protocol stands below,
+ * unchanged. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define VIDEO_TITLE_MAILBOX 1
+#endif
+#if defined(HAVE_THREADS) && !defined(VIDEO_TITLE_MAILBOX)
 #define VIDEO_TITLE_LOCK(st)   do { if ((st)->display_lock) slock_lock((st)->display_lock); } while (0)
 #define VIDEO_TITLE_UNLOCK(st) do { if ((st)->display_lock) slock_unlock((st)->display_lock); } while (0)
 #else
 #define VIDEO_TITLE_LOCK(st)   ((void)0)
 #define VIDEO_TITLE_UNLOCK(st) ((void)0)
+#endif
+
+#ifdef VIDEO_TITLE_MAILBOX
+/* Publish window_title (main-thread scratch here) as the pending
+ * title. Failure to allocate skips one title update - the next fps
+ * interval brings another. */
+static void video_title_publish(video_driver_state_t *video_st)
+{
+   char *copy = strdup(video_st->window_title);
+   if (copy)
+   {
+      char *stale = (char*)retro_atomic_exchange_ptr(
+            &video_st->window_title_pending, copy);
+      if (stale)
+         free(stale);
+   }
+}
 #endif
 
 /* Hands the pending window title to the caller and clears the pending
@@ -4362,6 +4399,20 @@ size_t video_driver_get_window_title(char *s, size_t len)
    if (!s)
       return 0;
 
+#ifdef VIDEO_TITLE_MAILBOX
+   /* Nearly every frame has no new title */
+   if (!retro_atomic_load_acquire_ptr(&video_st->window_title_pending))
+      return 0;
+   {
+      char *taken = (char*)retro_atomic_exchange_ptr(
+            &video_st->window_title_pending, NULL);
+      if (taken)
+      {
+         n = strlcpy(s, taken, len);
+         free(taken);
+      }
+   }
+#else
    /* Nearly every frame has no new title */
    if (!retro_atomic_load_acquire_int(&video_st->window_title_update))
       return 0;
@@ -4373,6 +4424,7 @@ size_t video_driver_get_window_title(char *s, size_t len)
       retro_atomic_store_release_int(&video_st->window_title_update, 0);
    }
    VIDEO_TITLE_UNLOCK(video_st);
+#endif
 
    if (!n)
       return 0;
@@ -6077,9 +6129,11 @@ void video_driver_frame(const void *data, unsigned width,
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
-         /* Built under display_lock, and the pending bit set inside
-          * it, so the video thread's video_driver_get_window_title()
-          * cannot copy a title halfway through being assembled. */
+         /* Under the mailbox, window_title is this thread's scratch
+          * and publishing is the exchange in video_title_publish();
+          * under the lock protocol the assembly runs inside
+          * display_lock so the video thread cannot copy a title
+          * halfway through being assembled. */
          VIDEO_TITLE_LOCK(video_st);
          __len = strlcpy(video_st->window_title, video_st->title_buf,
                sizeof(video_st->window_title));
@@ -6097,7 +6151,11 @@ void video_driver_frame(const void *data, unsigned width,
                   sizeof(video_st->window_title) - __len);
          }
 
+#ifdef VIDEO_TITLE_MAILBOX
+         video_title_publish(video_st);
+#else
          retro_atomic_store_release_int(&video_st->window_title_update, 1);
+#endif
          VIDEO_TITLE_UNLOCK(video_st);
 
          curr_time                  = new_time;
@@ -6112,7 +6170,11 @@ void video_driver_frame(const void *data, unsigned width,
             video_st->window_title,
             video_st->title_buf,
             sizeof(video_st->window_title));
+#ifdef VIDEO_TITLE_MAILBOX
+      video_title_publish(video_st);
+#else
       retro_atomic_store_release_int(&video_st->window_title_update, 1);
+#endif
       VIDEO_TITLE_UNLOCK(video_st);
 
       status_text[0] = '\0';

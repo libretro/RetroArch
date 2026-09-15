@@ -1251,10 +1251,20 @@ typedef struct
    char cli_shader_path[PATH_MAX_LENGTH];
    char window_title[512];
    char window_title_prev[512];
-   /* A new window_title waits for the thread that draws: raised with
-    * the title, under display_lock, and taken with it by
-    * video_driver_get_window_title(), which reads this first so a frame
+   /* A new window title waits for the thread that draws. Where the
+    * atomics have pointer ops (RETRO_ATOMIC_HAS_PTR) it waits as an
+    * immutable heap copy in window_title_pending - a one-slot atomic
+    * mailbox: the main thread exchanges a fresh copy in (freeing any
+    * title never taken), video_driver_get_window_title() exchanges it
+    * out. No tearing is possible and neither side takes a lock;
+    * window_title is then main-thread scratch. On the one backend
+    * without pointer ops the old protocol stands: window_title is
+    * shared, rewritten and copied under display_lock, with
+    * window_title_update as the pending bit read first so a frame
     * with no new title takes no lock. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+   retro_atomic_ptr_t window_title_pending;
+#endif
    retro_atomic_int_t window_title_update;
    char gpu_api_version_string[128];
    char title_buf[64];
