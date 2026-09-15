@@ -65,7 +65,13 @@ RETRO_BEGIN_DECLS
  * pointer down event is detected */
 #define MENU_INPUT_Y_ACCEL_RESET_DELAY 50000         /* 50 ms */
 
+/* Kinetic scroll deceleration: y_accel is multiplied by
+ * MENU_INPUT_Y_ACCEL_DECAY_FACTOR once per elapsed
+ * MENU_INPUT_Y_ACCEL_DECAY_PERIOD us of real time, with
+ * the remainder carried between frames, so flick travel
+ * distance is the same at every refresh rate */
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
+#define MENU_INPUT_Y_ACCEL_DECAY_PERIOD 16667        /* us */
 
 /* Pointer is considered stationary if dx/dy remain
  * below (display DPI) * MENU_INPUT_DPI_THRESHOLD_DRAG */
