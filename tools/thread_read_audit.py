@@ -166,7 +166,7 @@ def load_allow(path):
     return allow, boundaries
 
 
-def run(binary, root, allow_path):
+def run(binary, root, allow_path, list_unaudited=False):
     entries = source_entries(root)
     try:
         out = subprocess.run(["objdump", "-d", binary],
@@ -186,6 +186,14 @@ def run(binary, root, allow_path):
         print("tools/thread_read_allow.list.")
         for entry, fn, reader in findings:
             print("%s -> %s calls %s" % (entry, fn, reader))
+    if list_unaudited:
+        absent = sorted(e for e in entries if e not in defined)
+        print("%d source entr%s absent from this binary - compiled out"
+              % (len(absent), "y" if len(absent) == 1 else "ies"))
+        print("here, so nothing this run says covers them. Audit them")
+        print("from a build of their platform or configuration:")
+        for e in absent:
+            print("  %s  (%s)" % (e, entries[e]))
     print("thread read audit: %d entr%s in binary, %d finding(s), "
           "%d allowlisted pair(s), %d boundar%s"
           % (audited, "y" if audited == 1 else "ies",
@@ -221,6 +229,12 @@ def selftest():
         binp = os.path.join(td, "fix")
         with open(src, "w") as f:
             f.write(FIXTURE)
+        # A source entry with no definition in the binary: the shape
+        # --list-unaudited reports. Not compiled, only discovered.
+        with open(os.path.join(td, "ghost.c"), "w") as f:
+            f.write("void *ghost_worker(void *p);\n"
+                    "void ghost_spawn(void *t)\n"
+                    "{ pthread_create(t, 0, ghost_worker, 0); }\n")
         if subprocess.run(["gcc", "-O0", src, "-o", binp,
                            "-lpthread"]).returncode:
             print("selftest: fixture build failed")
@@ -234,7 +248,9 @@ def selftest():
               and any(e == "bad_worker" and r == "config_get_ptr"
                       for e, _, r in findings)
               and any(e == "deferring_worker" for e, _, _ in findings)
-              and not any(e == "good_worker" for e, _, _ in findings))
+              and not any(e == "good_worker" for e, _, _ in findings)
+              and "ghost_worker" in entries
+              and "ghost_worker" not in defined)
         if not ok:
             print("selftest: FAIL entries=%d findings=%r"
                   % (audited, findings))
@@ -255,12 +271,16 @@ def main():
     ap.add_argument("--root", default=".")
     ap.add_argument("--allow", default="tools/thread_read_allow.list")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--list-unaudited", action="store_true",
+                    help="also list source entry points absent from "
+                         "this binary (compiled out on this build)")
     args = ap.parse_args()
     if args.selftest:
         sys.exit(selftest())
     if not args.binary:
         ap.error("--binary is required (or --selftest)")
-    sys.exit(run(args.binary, args.root, args.allow))
+    sys.exit(run(args.binary, args.root, args.allow,
+                 args.list_unaudited))
 
 
 if __name__ == "__main__":
