@@ -3570,9 +3570,15 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    {
       size_t used, frames;
       const void *output;
+      /* Once active, the engine stays active at unity rather than
+       * exiting to raw: the exit would drain the lookahead its search
+       * kept as one burst onto a device the hold left full, and the
+       * next engage would pause output to fill it again. The cost is
+       * that lookahead as holdback after the first speed change. */
       if (!audio_stretch_stream_push_view_limit(t->stream, source, left,
                &used, tempo / 65536.0,
-               !audio_st->transport_lpf_only && tempo != 65536,
+               !audio_st->transport_lpf_only && (tempo != 65536
+                  || !audio_stretch_stream_quiescent(t->stream)),
                AUDIO_CHUNK_SIZE_NONBLOCKING >> 1))
          break;
       if (used) t->source_progress = true;
