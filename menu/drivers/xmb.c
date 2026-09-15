@@ -97,6 +97,10 @@
 
 #define XMB_DELAY (166.66667f)
 
+/* How long (us) xmb_render() keeps retrying xmb_set_title()
+ * while an async-loaded icon handle is still unresolved */
+#define XMB_ICON_RETRY_TIMEOUT 1000000
+
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
 #define XMB_EASING_XY    EASING_OUT_QUAD
 
@@ -362,6 +366,11 @@ typedef struct xmb_handle
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time; /* uint64_t alignment */
    retro_time_t draw_entry_hold_until;
+   /* Deadline (us) until which xmb_render() retries
+    * xmb_set_title() after a context reset left an
+    * async-loaded sidebar / db-node icon unresolved; zero
+    * when no retry is pending */
+   retro_time_t current_menu_icon_retry_until;
 
    char *box_message;
    char *bg_file_path;
@@ -498,11 +507,6 @@ typedef struct xmb_handle
 
    uint8_t system_tab_end;
    uint8_t tabs[XMB_SYSTEM_TAB_MAX_LENGTH];
-   /* Frames remaining to retry xmb_set_title() after a context reset
-    * left an async-loaded sidebar / db-node icon unresolved. Capped
-    * so that a permanently-missing icon asset doesn't cause a
-    * perpetual retry loop. */
-   uint8_t current_menu_icon_retry;
 
    char title_name[NAME_MAX_LENGTH];
    char title_name_alt[NAME_MAX_LENGTH];
@@ -2900,6 +2904,19 @@ static enum msg_hash_enums xmb_search_enum(const char *label)
    return enum_idx;
 }
 
+/* Missing-icon retry: a fresh miss opens a window of
+ * XMB_ICON_RETRY_TIMEOUT us against the menu's frame-sampled
+ * clock; a miss inside the window keeps it, and a miss after
+ * it has passed gives up, so a permanently-missing asset
+ * cannot cause a perpetual retry loop */
+static retro_time_t xmb_icon_retry_next(retro_time_t prev)
+{
+   retro_time_t now = menu_driver_get_current_time();
+   if (!prev)
+      return now + XMB_ICON_RETRY_TIMEOUT;
+   return (now < prev) ? prev : 0;
+}
+
 static void xmb_set_title(xmb_handle_t *xmb)
 {
    char *scrub_char_ptr   = NULL;
@@ -2965,14 +2982,11 @@ static void xmb_set_title(xmb_handle_t *xmb)
       uintptr_t texture            = xmb->textures.list[XMB_TEXTURE_QUICKMENU];
       bool search                  = true;
 
-      /* Preserve and decrement any in-flight retry countdown from
-       * xmb_render(). Fresh fallback (prev_retry == 0) (re)arms to
-       * ~1s @ 60fps; ongoing retry counts down one frame at a time
-       * so a permanently-missing asset can't spin forever. Cleared
-       * unconditionally first — any fallback branch below will set
-       * the next value. */
-      uint8_t prev_retry           = xmb->current_menu_icon_retry;
-      xmb->current_menu_icon_retry = 0;
+      /* Preserve any in-flight retry deadline. Cleared
+       * unconditionally first — a fallback branch below sets
+       * the next value via xmb_icon_retry_next() */
+      retro_time_t prev_retry      = xmb->current_menu_icon_retry_until;
+      xmb->current_menu_icon_retry_until = 0;
 
       menu_entries_get_last_stack(&path, &label, &type, &enum_idx, &entry_idx);
       label_original               = label;
@@ -3132,7 +3146,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
                    * ask xmb_render() to retry. Fresh trigger arms to
                    * 60 frames (~1s); ongoing retry decrements one
                    * step so a missing asset terminates the loop. */
-                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
+                  xmb->current_menu_icon_retry_until = xmb_icon_retry_next(prev_retry);
             }
 
             /* Playlists entries */
@@ -3157,7 +3171,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
                if (db_icon)
                   texture = db_icon;
                else
-                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
+                  xmb->current_menu_icon_retry_until = xmb_icon_retry_next(prev_retry);
             }
             else
             {
@@ -3170,7 +3184,7 @@ static void xmb_set_title(xmb_handle_t *xmb)
                 * xmb_render() calls back in and the icon resolves
                 * once the parse lands. */
                if (!pl_config)
-                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
+                  xmb->current_menu_icon_retry_until = xmb_icon_retry_next(prev_retry);
                else if (string_ends_with(pl_config->path, FILE_PATH_CONTENT_IMAGE_HISTORY))
                   texture = xmb->textures.list[XMB_TEXTURE_IMAGE];
                else if (string_ends_with(pl_config->path, FILE_PATH_CONTENT_MUSIC_HISTORY))
@@ -8069,9 +8083,10 @@ static void xmb_render(void *data,
     * (typically the one invoked from xmb_context_reset_internal() after
     * a fullscreen toggle) could not resolve the icon because an
     * async-loaded sidebar or db-node icon handle was still 0.
-    * xmb_set_title() decrements the counter on each retry and clears
-    * it on success, so the loop terminates either way. */
-   if (xmb->current_menu_icon_retry > 0)
+    * xmb_set_title() clears the deadline on success and lets it
+    * lapse via xmb_icon_retry_next() otherwise, so the loop
+    * terminates either way. */
+   if (xmb->current_menu_icon_retry_until)
       xmb_set_title(xmb);
 
    use_ps3_layout                 = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
