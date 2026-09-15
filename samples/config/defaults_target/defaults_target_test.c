@@ -30,7 +30,20 @@ bool path_set(enum rarch_path_type type, const char *path) { (void)type; (void)p
 size_t fill_pathname_expand_special(char *out, const char *in, size_t size)
 { return strlcpy(out, in, size); }
 size_t fill_pathname_join(char *out, const char *dir, const char *path, size_t size)
-{ size_t n = strlcpy(out, dir, size); if (n < size) n += strlcpy(out + n, path, size - n); return n; }
+{
+   /* Alias-safe like the real helper: @out may be @dir. */
+   size_t n = strlen(dir);
+   if (size)
+   {
+      if (n > size - 1)
+         n = size - 1;
+      memmove(out, dir, n);
+      out[n] = '\0';
+   }
+   else
+      n = 0;
+   return n + strlcpy(out + n, path, size ? size - n : 0);
+}
 void input_config_reset(void) { }
 void input_config_set_device(unsigned port, unsigned id) { (void)port; (void)id; }
 void input_remapping_deinit(bool save) { (void)save; }

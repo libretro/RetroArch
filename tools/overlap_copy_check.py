@@ -224,8 +224,12 @@ def direct_findings(text, rel):
 
 
 def collect_helpers(files_text):
-    """{name: set((dst_idx, src_idx))} for UNGUARDED param->param
-    copy helpers."""
+    """{name: set((dst_idx, src_idx, scope))} for UNGUARDED
+    param->param copy helpers.  scope is None for a tree-wide
+    definition; for a definition inside a standalone harness
+    (samples/...) it is that harness directory, and the pair only
+    applies to call sites under it: a sample's simplified stub of a
+    tree helper must not flag the tree's calls of the real one."""
     helpers = {}
     for rel, text in files_text.items():
         for dm in DEF_RE.finditer(text):
@@ -260,8 +264,10 @@ def collect_helpers(files_text):
                                re.escape(s), re.escape(d)), body)
                         if guard:
                             continue
+                        scope = (os.path.dirname(rel)
+                                 if rel.startswith("samples/") else None)
                         helpers.setdefault(fname, set()).add(
-                            (pnames.index(d), pnames.index(s)))
+                            (pnames.index(d), pnames.index(s), scope))
     return helpers
 
 
@@ -283,7 +289,10 @@ def helper_findings(files_text, helpers):
                     r"^(const\s|char\b|void\b|unsigned\b|size_t\b)",
                     args[0]):
                 continue  # definition/prototype
-            for di, si in helpers[fname]:
+            for di, si, scope in helpers[fname]:
+                if scope is not None and not rel.startswith(scope + "/") \
+                        and rel != scope:
+                    continue
                 if di >= len(args) or si >= len(args):
                     continue
                 a, b = args[di], args[si]
@@ -409,6 +418,25 @@ void caller(void)
 }
 """
 
+FIXTURE_SAMPLE_STUB = """
+size_t samp_join(char *out, const char *dir, size_t n)
+{
+   return strlcpy(out, dir, n);
+}
+void same_dir_caller(char *buf)
+{
+   samp_join(buf, buf, 64);
+}
+"""
+
+FIXTURE_TREE_CALLER = """
+extern size_t samp_join(char *out, const char *dir, size_t n);
+void tree_caller(char *buf)
+{
+   samp_join(buf, buf, 64);
+}
+"""
+
 FIXTURE_ALLOWED = """
 void lz(unsigned char *to, unsigned long have)
 {
@@ -423,7 +451,9 @@ def selftest():
               forbid_substrings):
         with tempfile.TemporaryDirectory() as td:
             for fn, content in sources.items():
-                with open(os.path.join(td, fn), "w") as f:
+                dest = os.path.join(td, fn)
+                os.makedirs(os.path.dirname(dest) or td, exist_ok=True)
+                with open(dest, "w") as f:
                     f.write(content)
             allow_path = None
             if allow_lines:
@@ -470,6 +500,10 @@ def selftest():
     ok &= check("unguarded helper aliased call flagged, guarded not",
                 {"a.c": FIXTURE_HELPER}, None,
                 ["wrap_like", "[helper-aliased]"], ["join_guarded"])
+    ok &= check("a sample's stub stays local to its harness",
+                {"samples/x/stub.c": FIXTURE_SAMPLE_STUB,
+                 "tree.c": FIXTURE_TREE_CALLER}, None,
+                ["samples/x/stub.c", "[helper-aliased]"], ["tree.c"])
     ok &= check("allowlist suppresses same-base",
                 {"a.c": FIXTURE_ALLOWED},
                 ["a.c|memcpy|to|to"],
