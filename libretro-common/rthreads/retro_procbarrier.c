@@ -110,6 +110,7 @@
 #include <mach/mach.h>
 #include <mach/thread_info.h>
 #include <mach/thread_act.h>
+#include <mach/task.h>
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -145,7 +146,7 @@ static size_t    s_page_size;
 #endif
 #endif
 
-#if defined(PB_LINUX) || defined(PB_DARWIN)
+#if defined(PB_LINUX)
 static retro_atomic_int_t s_acks;
 #endif
 
@@ -311,6 +312,7 @@ static void pb_pageflip(void)
 
 #if defined(PB_LINUX) || defined(PB_DARWIN)
 
+#if defined(PB_LINUX)
 static void pb_ack_handler(int sig)
 {
    (void)sig;
@@ -319,17 +321,12 @@ static void pb_ack_handler(int sig)
     * are ordered before its acknowledgement. */
    retro_atomic_fetch_add_int(&s_acks, 1);
 }
+#endif
 
 static int pb_signal_try(int signum)
 {
-   struct sigaction sa;
-   memset(&sa, 0, sizeof(sa));
-   sa.sa_handler = pb_ack_handler;
-   sa.sa_flags   = SA_RESTART;
-   sigemptyset(&sa.sa_mask);
-   if (sigaction(signum, &sa, NULL) != 0)
-      return 0;
 #if defined(PB_DARWIN)
+   (void)signum;   /* no signal on Darwin; see pb_signal_barrier */
    {
       /* Prove task_threads is permitted here; sandboxes can deny it. */
       thread_act_array_t list;
@@ -346,9 +343,17 @@ static int pb_signal_try(int signum)
    }
 #else
    {
+      struct sigaction sa;
+      DIR *d;
+      memset(&sa, 0, sizeof(sa));
+      sa.sa_handler = pb_ack_handler;
+      sa.sa_flags   = SA_RESTART;
+      sigemptyset(&sa.sa_mask);
+      if (sigaction(signum, &sa, NULL) != 0)
+         return 0;
       /* And that /proc/self/task is readable; hidepid exempts self but
        * a hardened container may not. */
-      DIR *d = opendir("/proc/self/task");
+      d = opendir("/proc/self/task");
       if (!d)
          return 0;
       closedir(d);
@@ -424,14 +429,30 @@ static void pb_signal_barrier(void)
 #endif
 
 #if defined(PB_DARWIN)
+/* Darwin does not deliver the signal here at all. thread_suspend on a
+ * Mach port is already a synchronous barrier: XNU's thread_wait loops
+ * while the target's state has TH_RUN, and blocks while it is the active
+ * thread on any processor, so thread_suspend does not return until the
+ * target has been switched off its CPU -- and a context switch drains
+ * its store buffer. Checked in the current tree and in xnu-1228, the
+ * last PowerPC kernel. thread_resume then puts it back.
+ *
+ * This is why no pthread_t is needed. The earlier version converted
+ * each port with pthread_from_mach_thread_np and sent a signal, and that
+ * function is 10.6 and later; RetroArch's PowerPC floor is 10.4. The
+ * function itself is a walk of libpthread's private thread list under
+ * its private lock, so there is nothing to reimplement against an older
+ * libpthread that would not be a layout guess.
+ *
+ * Nothing is called between the suspend and the resume. A suspended
+ * thread may hold any lock, including malloc's, and the window has to
+ * be one in which this thread needs none of them. */
 static void pb_signal_barrier(void)
 {
    thread_act_array_t list;
    mach_msg_type_number_t n, i;
    thread_t self = mach_thread_self();
-   int sent = 0;
 
-   retro_atomic_store_relaxed_int(&s_acks, 0);
    if (task_threads(mach_task_self(), &list, &n) != KERN_SUCCESS)
    {
       mach_port_deallocate(mach_task_self(), self);
@@ -441,27 +462,24 @@ static void pb_signal_barrier(void)
    {
       thread_basic_info_data_t info;
       mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
-      pthread_t pt;
 
       if (list[i] == self)
          continue;
       if (thread_info(list[i], THREAD_BASIC_INFO,
                (thread_info_t)&info, &count) != KERN_SUCCESS)
          continue;
+      /* Only a thread on a CPU has anything to drain; one that is
+       * already off was drained by the switch that took it off. */
       if (info.run_state != TH_STATE_RUNNING)
          continue;
-      pt = pthread_from_mach_thread_np(list[i]);
-      if (pt && pthread_kill(pt, s_signum) == 0)
-         sent++;
+      if (thread_suspend(list[i]) == KERN_SUCCESS)
+         thread_resume(list[i]);
    }
    for (i = 0; i < n; i++)
       mach_port_deallocate(mach_task_self(), list[i]);
    vm_deallocate(mach_task_self(), (vm_address_t)list,
                  n * sizeof(thread_act_t));
    mach_port_deallocate(mach_task_self(), self);
-
-   while (retro_atomic_load_acquire_int(&s_acks) < sent)
-      ;
 }
 #endif
 

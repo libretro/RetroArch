@@ -333,6 +333,52 @@ console-libc-check:
 	if [ $$fail -ne 0 ]; then exit 1; fi; \
 	echo "console-libc-check: $(CONSOLE_LIBC_SOURCES) reference nothing the console ports lack"
 
+# --- Darwin import floor check --------------------------------------------
+#
+# RetroArch's PowerPC build targets 10.4, and the MacOS-PPC-Cross lane
+# audits every import of the finished binary against the 10.4u SDK's
+# libraries.  That is thorough and it is also the last step of a
+# cross-build; retro_procbarrier's first Darwin tier reached for
+# pthread_from_mach_thread_np, a 10.6 symbol, and the lane said so an
+# hour after the push.
+#
+# This is the cheap version.  It strips each source's comments, pulls out
+# every function *called* -- an identifier followed by a parenthesis --
+# in the Darwin-only paths, and checks each name appears in the 10.4u
+# SDK's libSystem export strings.  Comments are stripped first because a
+# note explaining why a symbol is not used must not read as a use of it.  No cross-compiler: a Mach-O export table
+# keeps its names as plain strings, which is enough to answer "is this
+# symbol in 10.4".  The SDK tarball is fetched once and cached.
+#
+# It cannot compile the Darwin path -- the Mach headers are Apple's --
+# so it answers only whether the imports exist there, not whether the
+# code is right.  The PPC lane remains the authority on the build.
+DARWIN_FLOOR_SDK_URL := https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.4u.sdk.tar.xz
+DARWIN_FLOOR_LIB     := /tmp/MacOSX10.4u.sdk/usr/lib/libSystem.B.dylib
+DARWIN_FLOOR_SOURCES := rthreads/retro_procbarrier.c
+
+darwin-floor-check:
+	@if [ ! -f $(DARWIN_FLOOR_LIB) ]; then \
+	   ( cd /tmp && wget -q $(DARWIN_FLOOR_SDK_URL) && tar xJf MacOSX10.4u.sdk.tar.xz MacOSX10.4u.sdk/usr/lib/libSystem.B.dylib && rm -f MacOSX10.4u.sdk.tar.xz ) \
+	   || { echo "darwin-floor-check: could not fetch the 10.4u SDK; skipping"; exit 0; }; \
+	fi
+	@strings $(DARWIN_FLOOR_LIB) | grep '^_' | sort -u > /tmp/darwin_floor_exports.txt
+	@fail=0; \
+	for src in $(DARWIN_FLOOR_SOURCES); do \
+	   $(CC) -fpreprocessed -dD -E -P $$src 2>/dev/null \
+	     | sed -n '/#if defined(PB_DARWIN)/,/#endif/p' \
+	     | grep -oE '\b(task_threads|thread_[a-z_]+|mach_[a-z_]+|vm_[a-z_]+|pthread_[a-z_]+|sysconf|mmap|mprotect|mlock|sigaction)\(' \
+	     | tr -d '(' | sort -u > /tmp/darwin_floor_calls.txt; \
+	   while read -r fn; do \
+	      if ! grep -qx "_$$fn" /tmp/darwin_floor_exports.txt; then \
+	         echo "darwin-floor-check: $$src calls $$fn, which is not in the 10.4u SDK's libSystem"; fail=1; \
+	      fi; \
+	   done < /tmp/darwin_floor_calls.txt; \
+	done; \
+	rm -f /tmp/darwin_floor_calls.txt; \
+	if [ $$fail -ne 0 ]; then exit 1; fi; \
+	echo "darwin-floor-check: every Darwin-path call in $(DARWIN_FLOOR_SOURCES) exists in the 10.4u SDK"
+
 unit-tests:
 	# Build and execute tests in order, to avoid coverage file collision
 	# string
@@ -384,7 +430,7 @@ unit-tests:
 	# rwebm audio
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
 	$(TEST_RWEBM_AUDIO)
-all: unit-tests console-libc-check
+all: unit-tests console-libc-check darwin-floor-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
