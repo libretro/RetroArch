@@ -253,6 +253,11 @@ struct runloop
    struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
+   /* Messages pushed off the main thread wait here, under the message
+    * queue lock, until the main thread's iterate drains them: the push
+    * itself renders widgets and reads settings, which are the main
+    * thread's. */
+   void *msg_queue_deferred;                             /* ptr alignment */
    retro_input_poll_t input_poll_callback_original;      /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
 #ifdef HAVE_RUNAHEAD
@@ -291,6 +296,9 @@ struct runloop
 #endif
 #endif
    size_t msg_queue_size;
+   /* The thread runloop_msg_queue_init() ran on: everything else is a
+    * worker to the message push. */
+   uintptr_t msg_queue_main_id;
 
 #if defined(HAVE_RUNAHEAD)
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
@@ -625,6 +633,10 @@ static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
 
 
 typedef struct runloop runloop_state_t;
+
+/* Runs deferred off-main message pushes; the main thread, once per
+ * iterate. */
+void runloop_msg_queue_drain_deferred(void);
 
 RETRO_BEGIN_DECLS
 

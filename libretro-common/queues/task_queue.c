@@ -322,10 +322,12 @@ static void retro_task_regular_gather(void)
          }
          else
             task->handler(task);
-
-         task_queue_push_progress(task);
       }
 
+      /* No progress push here: the gather on the main thread pushes
+       * for every running task each check, and retirement pushes the
+       * final state. The push renders text and touches widget state,
+       * which is the main thread's, not this worker's. */
       if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
          task_queue_put(&tasks_finished, task);
       else

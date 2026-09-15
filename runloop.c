@@ -6023,6 +6023,19 @@ void core_options_flush(void)
          MESSAGE_QUEUE_ICON_DEFAULT, category);
 }
 
+struct runloop_deferred_msg
+{
+   struct runloop_deferred_msg *next;
+   char *msg;
+   char *title;
+   size_t len;
+   unsigned prio;
+   unsigned duration;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+   bool flush;
+};
+
 void runloop_msg_queue_push(
       const char *msg,
       size_t len,
@@ -6032,6 +6045,37 @@ void runloop_msg_queue_push(
       enum message_queue_icon icon,
       enum message_queue_category category)
 {
+#ifdef HAVE_THREADS
+   /* A worker's message crosses to the main thread here, whole: the
+    * push renders widgets, measures text and reads the settings, all
+    * of which belong to the main thread. The drain at the top of the
+    * iterate replays it there, a frame late at most - the cadence the
+    * message queue shows things at anyway. */
+   runloop_state_t *runloop_check_st = &runloop_state;
+   if (   runloop_check_st->msg_queue_main_id
+       && sthread_get_current_thread_id()
+             != runloop_check_st->msg_queue_main_id)
+   {
+      struct runloop_deferred_msg *node = (struct runloop_deferred_msg *)
+            malloc(sizeof(*node));
+      if (!node)
+         return;
+      node->msg      = strdup(msg);
+      node->title    = title ? strdup(title) : NULL;
+      node->len      = len;
+      node->prio     = prio;
+      node->duration = duration;
+      node->icon     = icon;
+      node->category = category;
+      node->flush    = flush;
+      RUNLOOP_MSG_QUEUE_LOCK(runloop_check_st);
+      node->next     = (struct runloop_deferred_msg *)
+            runloop_check_st->msg_queue_deferred;
+      runloop_check_st->msg_queue_deferred = node;
+      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_check_st);
+      return;
+   }
+#endif
 #if defined(HAVE_GFX_WIDGETS)
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
@@ -8084,6 +8128,7 @@ end:
  **/
 int runloop_iterate(void)
 {
+   runloop_msg_queue_drain_deferred();
    retro_time_t pace_limit_min;
    retro_time_t pace_now;
    int64_t      pace_limit_ns;
@@ -8654,6 +8699,22 @@ end:
 
 void runloop_msg_queue_deinit(void)
 {
+#ifdef HAVE_THREADS
+   {
+      runloop_state_t *st = &runloop_state;
+      struct runloop_deferred_msg *node =
+            (struct runloop_deferred_msg *)st->msg_queue_deferred;
+      st->msg_queue_deferred = NULL;
+      while (node)
+      {
+         struct runloop_deferred_msg *next = node->next;
+         free(node->msg);
+         free(node->title);
+         free(node);
+         node = next;
+      }
+   }
+#endif
    runloop_state_t *runloop_st = &runloop_state;
    RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
 
@@ -8668,12 +8729,53 @@ void runloop_msg_queue_deinit(void)
    runloop_st->msg_queue_size = 0;
 }
 
+void runloop_msg_queue_drain_deferred(void)
+{
+#ifdef HAVE_THREADS
+   runloop_state_t *runloop_st        = &runloop_state;
+   struct runloop_deferred_msg *node  = NULL;
+   struct runloop_deferred_msg *chain = NULL;
+
+   if (!runloop_st->msg_queue_deferred)
+      return;
+
+   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+   node = (struct runloop_deferred_msg *)runloop_st->msg_queue_deferred;
+   runloop_st->msg_queue_deferred = NULL;
+   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
+
+   /* The list stacks newest-first; replay oldest-first. */
+   while (node)
+   {
+      struct runloop_deferred_msg *next = node->next;
+      node->next = chain;
+      chain      = node;
+      node       = next;
+   }
+   while (chain)
+   {
+      struct runloop_deferred_msg *next = chain->next;
+      if (chain->msg)
+         runloop_msg_queue_push(chain->msg, chain->len, chain->prio,
+               chain->duration, chain->flush, chain->title,
+               chain->icon, chain->category);
+      free(chain->msg);
+      free(chain->title);
+      free(chain);
+      chain = next;
+   }
+#endif
+}
+
 void runloop_msg_queue_init(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
 
    runloop_msg_queue_deinit();
    msg_queue_initialize(&runloop_st->msg_queue, 8);
+#ifdef HAVE_THREADS
+   runloop_st->msg_queue_main_id = sthread_get_current_thread_id();
+#endif
 
 #ifdef HAVE_THREADS
    runloop_st->msg_queue_lock   = slock_new();

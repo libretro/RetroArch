@@ -15,6 +15,15 @@ thread may read its own pointer-stable singleton (the video thread and
 video_state_get_ptr()).  Those pairs live in
 tools/thread_read_allow.list as `entry|reader` lines.
 
+A boundary function crosses to the main thread itself - it defers
+off-main callers before any singleton is touched, the way
+runloop_msg_queue_push() queues a worker's message for the main
+thread's drain - and is declared as an `@boundary name` line.  The
+walk does not descend into a boundary, and the boundary's own reads
+are not charged to its workers: the off-main prefix that makes this
+true is what code review holds, so a boundary declaration is a claim
+about that function, reviewed like the allowlist pairs.
+
 Entries are found in the source (sthread_create/pthread_create argument
 symbols, task->handler assignments, task_set_handler calls) so a new
 thread or handler is audited the day it lands; the call graph comes
@@ -108,7 +117,7 @@ def call_graph(disasm_lines):
     return calls, defined
 
 
-def audit(calls, defined, entries, allow):
+def audit(calls, defined, entries, allow, boundaries=frozenset()):
     findings = []
     audited = 0
     for entry in sorted(entries):
@@ -122,8 +131,12 @@ def audit(calls, defined, entries, allow):
             if f in seen:
                 continue
             seen.add(f)
+            if f in boundaries and f != entry:
+                continue
             stack.extend(calls.get(f, ()))
         for f in sorted(seen):
+            if f in boundaries and f != entry:
+                continue
             hit = calls.get(f, set()) & set(READERS)
             for r in sorted(hit):
                 if (entry, r) in allow:
@@ -134,17 +147,23 @@ def audit(calls, defined, entries, allow):
 
 def load_allow(path):
     allow = set()
+    boundaries = set()
     if not path or not os.path.exists(path):
-        return allow
+        return allow, boundaries
     with open(path) as f:
         for raw in f:
             raw = raw.strip()
             if not raw or raw.startswith("#"):
                 continue
+            if raw.startswith("@boundary"):
+                parts = raw.split()
+                if len(parts) == 2:
+                    boundaries.add(parts[1])
+                continue
             parts = raw.split("|")
             if len(parts) == 2:
                 allow.add((parts[0], parts[1]))
-    return allow
+    return allow, boundaries
 
 
 def run(binary, root, allow_path):
@@ -156,8 +175,8 @@ def run(binary, root, allow_path):
         print("objdump failed: %s" % e, file=sys.stderr)
         return 2
     calls, defined = call_graph(out.stdout.splitlines())
-    allow = load_allow(allow_path)
-    findings, audited = audit(calls, defined, entries, allow)
+    allow, boundaries = load_allow(allow_path)
+    findings, audited = audit(calls, defined, entries, allow, boundaries)
     if findings:
         print("%d worker-thread singleton read(s). A worker takes its"
               % len(findings))
@@ -168,9 +187,11 @@ def run(binary, root, allow_path):
         for entry, fn, reader in findings:
             print("%s -> %s calls %s" % (entry, fn, reader))
     print("thread read audit: %d entr%s in binary, %d finding(s), "
-          "%d allowlisted pair(s)"
+          "%d allowlisted pair(s), %d boundar%s"
           % (audited, "y" if audited == 1 else "ies",
-             len(findings), len(allow)), file=sys.stderr)
+             len(findings), len(allow),
+             len(boundaries), "y" if len(boundaries) == 1 else "ies"),
+          file=sys.stderr)
     return 1 if findings else 0
 
 
@@ -179,13 +200,16 @@ FIXTURE = """
 void *config_get_ptr(void) { static int s; return &s; }
 static void leaf_reads(void) { config_get_ptr(); }
 static void *bad_worker(void *p) { leaf_reads(); return p; }
+static void crossing(void) { leaf_reads(); }
+static void *deferring_worker(void *p) { crossing(); return p; }
 static void *good_worker(void *p) { return p; }
 int main(void)
 {
-   pthread_t a, b;
+   pthread_t a, b, c;
    pthread_create(&a, 0, bad_worker, 0);
    pthread_create(&b, 0, good_worker, 0);
-   pthread_join(a, 0); pthread_join(b, 0);
+   pthread_create(&c, 0, deferring_worker, 0);
+   pthread_join(a, 0); pthread_join(b, 0); pthread_join(c, 0);
    return 0;
 }
 """
@@ -206,18 +230,20 @@ def selftest():
                              capture_output=True, text=True, check=True)
         calls, defined = call_graph(out.stdout.splitlines())
         findings, audited = audit(calls, defined, entries, set())
-        ok = (audited == 2
+        ok = (audited == 3
               and any(e == "bad_worker" and r == "config_get_ptr"
                       for e, _, r in findings)
+              and any(e == "deferring_worker" for e, _, _ in findings)
               and not any(e == "good_worker" for e, _, _ in findings))
         if not ok:
             print("selftest: FAIL entries=%d findings=%r"
                   % (audited, findings))
             return 1
         allow = {("bad_worker", "config_get_ptr")}
-        findings, _ = audit(calls, defined, entries, allow)
+        findings, _ = audit(calls, defined, entries, allow,
+                            {"crossing"})
         if findings:
-            print("selftest: FAIL allowlist did not clear the finding")
+            print("selftest: FAIL allowlist/boundary did not clear")
             return 1
         print("selftest: OK")
         return 0
