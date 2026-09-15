@@ -41,7 +41,7 @@ jobs:
       id: slug
       run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
 
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: RetroArch-${{ steps.slug.outputs.sha8 }}
         path: |
