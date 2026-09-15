@@ -2192,7 +2192,7 @@ static void transport_request_cases(void)
                {RUNLOOP_FLAG_SLOWMOTION, 16384, 0, 4, 16384, true},
                {RUNLOOP_FLAG_FASTMOTION, 262144, 5400, 2, 16384, true},
                {RUNLOOP_FLAG_FASTMOTION, 2097152, 675, 2, 2048, true},
-               {RUNLOOP_FLAG_FASTMOTION, 65536, 0, 2, 0, false},
+               {RUNLOOP_FLAG_FASTMOTION, 262144, 5400, 2, 16384, false},
                {RUNLOOP_FLAG_FASTMOTION | RUNLOOP_FLAG_SLOWMOTION,
                   131072, 10800, 2, 16384, true},
                {RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_FASTMOTION,

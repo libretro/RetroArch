@@ -2043,6 +2043,21 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
    }
 }
 
+/* Whether fast-forward audio follows the measured speed: Speedup asks
+ * for it outright, and pitch preservation needs it to hold pitch. The
+ * filter-only transport keeps the ordinary Speedup or discard handling. */
+static INLINE bool audio_driver_ff_follows(const audio_driver_state_t *audio_st,
+      bool speedup)
+{
+   if (speedup)
+      return true;
+#ifdef HAVE_THREADS
+   if (audio_st->pipe_threaded)
+      return audio_st->pipe_transport && !audio_st->transport_lpf_only;
+#endif
+   return audio_st->inline_transport && !audio_st->transport_lpf_only;
+}
+
 /* The speedup multiplier for a flush: measured here on the inline
  * pipeline, where the flush runs at the core's cadence; taken from the
  * producer's measurement on the threaded one. */
@@ -3505,8 +3520,9 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    double duration = slowmotion ? slowmotion_ratio : 1.0;
    uint64_t bits;
    uint32_t tempo, cutoff;
-   bool supported;
+   bool supported, follow;
    if (!t) return false;
+   follow = audio_driver_ff_follows(audio_st, (snap & AUDIO_SNAP_FF_SPEEDUP) != 0);
    frame = t->channels * (floating ? sizeof(float) : sizeof(int16_t));
    supported = floating == t->floating && !audio_st->extra.pending
       && audio_st->core_layout == layout
@@ -3514,7 +3530,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
 #ifdef HAVE_REWIND
    supported = supported && !state_manager_frame_is_reversed();
 #endif
-   if (supported && fastforward && (snap & AUDIO_SNAP_FF_SPEEDUP))
+   if (supported && fastforward && follow)
       duration *= audio_driver_fastforward_ratio_mult(audio_st, left);
    memcpy(&bits, &duration, sizeof(bits));
    supported = supported && bits < UINT64_C(0x7ff0000000000000)
@@ -3573,8 +3589,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
           * fast-forward duration was already measured above, once per input. */
          audio_driver_inline_render(audio_st, output, frames, layout,
                audio_st->transport_lpf_only ? (float)duration : 1.0f,
-               audio_st->transport_lpf_only,
-               fastforward && !(snap & AUDIO_SNAP_FF_SPEEDUP));
+               audio_st->transport_lpf_only, fastforward && !follow);
          audio_stretch_stream_consume(t->stream, frames);
       }
       if (!used && !frames) break;
@@ -4746,8 +4761,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       }
       /* Count before the ring write so dropped source still contributes.
        * Measure once at frame end, independently of publish granularity. */
-      if (is_fastforward && (retro_atomic_load_acquire_int(
-                  &audio_st->runloop_snapshot) & AUDIO_SNAP_FF_SPEEDUP))
+      if (is_fastforward && audio_driver_ff_follows(audio_st,
+               (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+                & AUDIO_SNAP_FF_SPEEDUP) != 0))
          audio_st->pipe_ff_frames = frames > SIZE_MAX - audio_st->pipe_ff_frames
             ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
       else
@@ -5030,7 +5046,8 @@ static bool audio_driver_transport_runloop_tempo(uint32_t *tempo)
       if (flags & RUNLOOP_FLAG_SLOWMOTION)
          duration *= settings->floats.slowmotion_ratio;
       if ((flags & RUNLOOP_FLAG_FASTMOTION)
-            && settings->bools.audio_fastforward_speedup)
+            && audio_driver_ff_follows(&audio_driver_st,
+               settings->bools.audio_fastforward_speedup))
          duration *= retro_atomic_load_acquire_int(
                &audio_driver_st.pipe_ff_mult_q16) / 65536.0;
    }
@@ -5056,7 +5073,8 @@ static bool audio_driver_transport_snapshot_tempo(uint32_t *tempo)
    {
       if (snap & AUDIO_SNAP_SLOWMOTION)
          duration *= audio_driver_snapshot_slowmotion(audio_st);
-      if ((snap & AUDIO_SNAP_FASTMOTION) && (snap & AUDIO_SNAP_FF_SPEEDUP))
+      if ((snap & AUDIO_SNAP_FASTMOTION) && audio_driver_ff_follows(audio_st,
+               (snap & AUDIO_SNAP_FF_SPEEDUP) != 0))
          duration *= retro_atomic_load_acquire_int(
                &audio_st->pipe_ff_mult_q16) / 65536.0;
    }
