@@ -758,8 +758,14 @@ void video_driver_shader_deferred_tick(void)
    if (d->state != SHADER_LOAD_COMPILING)
       return;
 
+   /* Same pairing as the frame call: the handle goes away while the
+    * vtable stays installed, and shader_load_step() dereferences it.
+    * A compile whose driver has gone has nothing left to build
+    * against, so it ends here rather than stepping into a freed
+    * instance. */
    if (  !video_st->current_video
-      || !video_st->current_video->shader_load_step)
+      || !video_st->current_video->shader_load_step
+      || !video_st->data)
    {
       d->state = SHADER_LOAD_FAILED;
       return;
@@ -6672,7 +6678,19 @@ void video_driver_frame(const void *data, unsigned width,
       video_driver_scanline_before_frame(video_st,
             video_info.refresh_rate, video_info.frame_time_target, runloop_st->core_run_time);
 
-   if (render_frame && vid && vid->frame)
+   /* The vtable and the handle have independent lifetimes:
+    * driver_uninit() releases video_st->data and leaves
+    * current_video installed, and VIDEO_FLAG_ACTIVE is raised before
+    * any video driver exists - retroarch_main_init() sets it, loads
+    * the core through CMD_EVENT_CORE_INIT, and only reaches
+    * drivers_init() after that. A frame produced anywhere inside
+    * that window arrives here with no driver behind it, and every
+    * driver's frame() dereferences its handle on entry, so the
+    * handle is checked alongside the vtable and such a frame is
+    * dropped instead of presented. VIDEO_FLAG_ACTIVE keeps its value
+    * across the drop: no driver is a gap, not a failing driver, and
+    * the next frame after drivers_init() presents normally. */
+   if (render_frame && vid && vid->frame && video_st->data)
    {
       video_info.current_subframe = 0;
 #ifdef HAVE_THREADS
