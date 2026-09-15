@@ -928,6 +928,7 @@ FIFO BUFFER
 #if defined(HAVE_THREADS)
 #include "../libretro-common/queues/retro_waitable_spsc.c"
 #include "../libretro-common/rthreads/retro_eventcount.c"
+#include "../libretro-common/rthreads/retro_procbarrier.c"
 #endif
 
 /*============================================================
