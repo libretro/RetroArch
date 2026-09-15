@@ -23,7 +23,7 @@ jobs:
       matrix:
         sanitizer: ['', 'address,undefined']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Build the shipping frontend and real audio wrapper fixture
         working-directory: samples/audio/pipeline_wakeups
         run: make clean all SANITIZER='${{ matrix.sanitizer }}'
