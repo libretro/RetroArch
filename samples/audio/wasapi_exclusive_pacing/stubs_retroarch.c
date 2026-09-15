@@ -8,6 +8,7 @@
 
 #include "../../../configuration.h"
 #include "../../../defaults.h"
+#include "../../../audio/audio_driver.h"
 
 /* audio/common/alsa.c reads one field - audio_format_negotiation -
  * during hw-params setup; zero is AUTO, which lets the null PCM pick
@@ -16,6 +17,17 @@ settings_t *config_get_ptr(void)
 {
    static settings_t settings;
    return &settings;
+}
+
+/* wasapi.c's mmdevice-watcher spawn hands the thread a pointer to
+ * audio_state_get_ptr()->reinit_request - the capture happens at the
+ * spawn site inside wasapi.c, so this sim needs the getter the real
+ * frontend provides. The scenarios never spawn the watcher, but the
+ * linker wants the symbol either way. */
+audio_driver_state_t *audio_state_get_ptr(void)
+{
+   static audio_driver_state_t audio_st;
+   return &audio_st;
 }
 
 void RARCH_LOG(const char *fmt, ...)
