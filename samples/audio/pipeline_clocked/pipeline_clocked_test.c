@@ -297,6 +297,7 @@ static bool pipeline_up(unsigned latency_ms)
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = OUT_RATE;
    config_get_ptr()->bools.audio_sync                 = true;
+   audio_driver_publish_runloop();
 
    ring_bytes = per_frame * 3 * st->pipe_frame_bytes;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))

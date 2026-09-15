@@ -609,6 +609,12 @@ typedef struct
     * racing read of the runloop's flag word is not.
     */
    retro_atomic_int_t runloop_snapshot;
+   /* The slowmotion ratio setting, published alongside
+    * runloop_snapshot as the float's bit pattern, so the value the
+    * consumer applies is bit-for-bit the one the main thread read.
+    * Meaningful only when AUDIO_SNAP_SLOWMOTION is set, like the
+    * setting itself. */
+   retro_atomic_int_t runloop_slowmotion_bits;
    /* The ring's unit: bytes per stereo frame of what the core
     * published - int16 or, for a float core, float. Every count on
     * the pipe is in frames; bytes appear only at the ring's edge. */
@@ -623,6 +629,12 @@ typedef struct
     * frame. Producers construct frames directly in writable ring spans. */
    unsigned pipe_channels;
    unsigned pipe_layout; /* producer-only requested layout */
+   /* The output rate setting as of the driver's init - what the device
+    * was asked to open at. The flush's sink accounting divides by it,
+    * and the flush runs on the pipeline consumer, so it is latched
+    * here rather than read from settings there; a changed setting
+    * reaches it through the reinit that makes it real. */
+   unsigned out_rate;
    uint8_t *pipe_wide;
    size_t   pipe_wide_bytes;
    bool     core_multi;   /* the multi-channel entry was negotiated */
@@ -1082,7 +1094,13 @@ enum audio_runloop_snapshot_bits
    AUDIO_SNAP_FASTMOTION  = (1 << 2),
    AUDIO_SNAP_MENU_ALIVE  = (1 << 3),
    AUDIO_SNAP_MENU_PAUSES = (1 << 4),
-   AUDIO_SNAP_ALLOW_PAUSE = (1 << 5)
+   AUDIO_SNAP_ALLOW_PAUSE = (1 << 5),
+   /* Settings the pipeline consumer and the flush consult, published
+    * with the rest so they are never read from settings off the main
+    * thread: Audio Sync, and Fast-Forward Frameskip's audio speedup. */
+   AUDIO_SNAP_SYNC        = (1 << 6),
+   AUDIO_SNAP_FF_SPEEDUP  = (1 << 7),
+   AUDIO_SNAP_SINK_EST    = (1 << 8)
 };
 
 /**

@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <audio/audio_mixer.h>
 
 #include "../../../configuration.h"
@@ -41,9 +42,16 @@ void RARCH_ERR(const char *fmt, ...)
 
 bool verbosity_is_enabled(void) { return false; }
 
+/* Armed by the test's audio_driver_callback() around the shipping
+ * consumer; see the declaration there. */
+__thread int consumer_context;
+retro_atomic_size_t consumer_settings_reads;
+
 settings_t *config_get_ptr(void)
 {
    static settings_t settings;
+   if (consumer_context)
+      retro_atomic_fetch_add_size(&consumer_settings_reads, 1);
    return &settings;
 }
 

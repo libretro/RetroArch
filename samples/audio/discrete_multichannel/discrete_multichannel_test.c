@@ -185,6 +185,7 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
             st->resampler_ident, st->resampler_quality, st->src_ratio_orig))
       return false;
    config_get_ptr()->uints.audio_output_sample_rate = 48000;
+   st->out_rate               = 48000;
    config_get_ptr()->bools.audio_fastpath_s16 = false;
    if (float_dev)
       AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
@@ -1645,8 +1646,15 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
             if (pending) short_zero = false;
             config_get_ptr()->bools.audio_fastforward_speedup = true;
             config_get_ptr()->floats.slowmotion_ratio = 3.0f;
+            {
+               float ratio = 3.0f;
+               int   bits;
+               memcpy(&bits, &ratio, sizeof(bits));
+               retro_atomic_store_release_int(&st->runloop_slowmotion_bits, bits);
+            }
             retro_atomic_store_release_int(&st->runloop_snapshot,
-                  AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION);
+                  AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION
+                  | AUDIO_SNAP_SYNC | AUDIO_SNAP_FF_SPEEDUP);
             retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 3 * 65536);
             if (fragmented == 2 && used != 2048)
                CHECK(audio_driver_callback(), "scheduled native transport callback");

@@ -36,6 +36,7 @@ static void raw_speed_cases(void)
       settings->floats.slowmotion_ratio = 2;
       runloop_state_get_ptr()->flags = mode == 4 ? RUNLOOP_FLAG_FASTMOTION : 0;
       retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 32768);
+      audio_driver_publish_runloop();
       raw_speed_calls = 0;
       raw_speed_accepted = 257;
       memcpy(expected, input, sizeof(input));
@@ -48,7 +49,8 @@ static void raw_speed_cases(void)
          audio_speed_lpf_set(&lpf, true, audio_speed_lpf_cutoff(44100, 131072));
          audio_speed_lpf_process(&lpf, expected, 257);
          audio_driver_submit(st, 1.0f, input, 514, false, false, true);
-         retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_FASTMOTION);
+         retro_atomic_store_release_int(&st->runloop_snapshot,
+               AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP);
          CHECK(audio_driver_pipeline_transport_step(st->pipe_transport,
                &st->pipe_transport_serial, 257, 257, false, &complete), "raw filter-only step");
       }

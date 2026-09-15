@@ -413,11 +413,21 @@ static double source_tempo = 1.0;
 static uint32_t tempo_q16 = 65536;
 static retro_atomic_int_t in_callback = RETRO_ATOMIC_INT_INITIALIZER(0);
 
+/* The consumer must take everything it consults from the published
+ * snapshot; a settings read inside the callback is a read of main-owned
+ * state from the audio thread. The config_get_ptr() stub counts calls
+ * made while this flag is up, whichever thread runs the callback, and
+ * the count is a fixture failure. */
+extern __thread int   consumer_context;
+extern retro_atomic_size_t consumer_settings_reads;
+
 bool audio_driver_callback(void)
 {
    bool result;
    if (use_wrapper) retro_atomic_store_release_int(&in_callback, 1);
+   consumer_context = 1;
    result = pipeline_callback_impl();
+   consumer_context = 0;
    retro_atomic_fetch_add_size(&cnt_wakes, 1);
    if (use_wrapper) retro_atomic_store_release_int(&in_callback, 0);
    return result;
@@ -546,9 +556,12 @@ static bool pipeline_up(unsigned latency_ms)
    st->rate_control_delta   = 0.005f;
    st->drc_threshold_int16s = 1600;
    st->sink_bias            = 1.0;
+   st->out_rate             = OUT_RATE;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = OUT_RATE;
    config_get_ptr()->bools.audio_sync                 = true;
+   config_get_ptr()->floats.slowmotion_ratio          = 1;
+   audio_driver_publish_runloop();
 
    ring_bytes = per_frame * 3 * st->pipe_frame_bytes;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
@@ -1144,6 +1157,14 @@ int main(int argc, char **argv)
       run_one(sweep[i], seconds, false);
 
    free(lat_us);
+   {
+      size_t reads = retro_atomic_load_acquire_size(&consumer_settings_reads);
+      if (reads)
+      {
+         fprintf(stderr, "consumer read settings %u times\n", (unsigned)reads);
+         fixture_failures++;
+      }
+   }
    if (use_wrapper) printf("native wrapper: 16 runs, 128 restart transactions, %u failures\n", fixture_failures);
    if (live_controls) printf("live transport: 128 processing changes without metadata reset, %u failures\n", fixture_failures);
    if (live_layouts) printf("live layouts: 128 source layout changes on a fixed 7.1 device, %u failures\n", fixture_failures);

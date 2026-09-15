@@ -22,6 +22,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
    }
    st->input = 48000;
    settings->uints.audio_output_sample_rate = output_rate;
+   st->out_rate = output_rate;
    st->src_ratio_orig = st->src_ratio_curr = output_rate / 48000.0;
    st->resampler_hq = hq;
    CHECK(retro_resampler_realloc_hq(&st->resampler_data, &st->resampler,
@@ -85,8 +86,9 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
          submitted += n;
          audio_driver_frame_end();
       }
-      retro_atomic_store_release_int(&st->runloop_snapshot, tempo < 1.0
-            ? AUDIO_SNAP_SLOWMOTION : tempo > 1.0 ? AUDIO_SNAP_FASTMOTION : 0);
+      retro_atomic_store_release_int(&st->runloop_snapshot, (tempo < 1.0
+            ? AUDIO_SNAP_SLOWMOTION : tempo > 1.0 ? AUDIO_SNAP_FASTMOTION : 0)
+            | AUDIO_SNAP_SYNC | AUDIO_SNAP_FF_SPEEDUP);
       /* Wide publication updates the achieved-speed estimator. Keep the
        * ordinary SRC's consumer-side multiplier deterministic as well. */
       retro_atomic_store_release_int(&st->pipe_ff_mult_q16, (int)(65536.0 / tempo));
