@@ -798,6 +798,7 @@ static void task_save_handler(retro_task_t *task)
       captured.replay_size  = state->fe_replay_size;
       captured.cheevos      = state->fe_cheevos;
       captured.cheevos_size = state->fe_cheevos_size;
+      state->size = 0;
       if ((_len = content_get_rastate_size_captured(&size, &captured)) > 0)
       {
          if ((state->data = malloc(_len)))
@@ -808,9 +809,14 @@ static void task_save_handler(retro_task_t *task)
                free(state->data);
                state->data = NULL;
             }
+            else
+               /* Only here is size necessarily filled: the sizing
+                * call above succeeded. Assigning in the other arms
+                * read it uninitialized as far as the compiler could
+                * prove, and it warned. */
+               state->size = (ssize_t)size.total_size;
          }
       }
-      state->size = state->data ? (ssize_t)size.total_size : 0;
 
       /* A failed serialize used to leave data NULL and size 0, and
        * every test below then read as success: remaining was 0, so
