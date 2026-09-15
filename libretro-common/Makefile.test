@@ -284,7 +284,9 @@ threads-samples-tsan:
 # SDK has, so it cannot be compiled here at all and its lane is the only
 # check it gets.
 CONSOLE_LIBC_SOURCES   := rthreads/retro_procbarrier.c rthreads/retro_eventcount.c
-CONSOLE_LIBC_PLATFORMS := PSP GEKKO VITA WIIU _3DS __SWITCH__ ORBIS DJGPP
+# __PS3__ alone is how rthreads.c selects the PS3 backend; __PSL1GHT__ is
+# the SDK. The lane sets both, as Makefile.psl1ght does.
+CONSOLE_LIBC_PLATFORMS := PSP GEKKO VITA WIIU _3DS __SWITCH__ ORBIS DJGPP __PS3__
 
 console-libc-check:
 	@printf '#define sysconf __forbid_sysconf\n#define mmap __forbid_mmap\n#define mprotect __forbid_mprotect\n#define mlock __forbid_mlock\n#define sigaction __forbid_sigaction\n#define opendir __forbid_opendir\n#define syscall __forbid_syscall\n' > /tmp/console_forbid.h
@@ -297,7 +299,8 @@ console-libc-check:
 	for plat in $(CONSOLE_LIBC_PLATFORMS); do \
 	   for src in $(CONSOLE_LIBC_SOURCES); do \
 	      obj=/tmp/console_libc_$$(basename $$src .c)_$$plat.o; \
-	      if ! $(CC) -std=c89 -pedantic -DHAVE_THREADS -D$$plat -U__linux__ -U__unix__ -U__unix \
+	      extra=""; [ "$$plat" = "__PS3__" ] && extra="-D__PSL1GHT__"; \
+	      if ! $(CC) -std=c89 -pedantic -DHAVE_THREADS -D$$plat $$extra -U__linux__ -U__unix__ -U__unix \
 	            -include /tmp/console_forbid.h -Iinclude -c -o $$obj $$src 2>/tmp/console_libc.err; then \
 	         echo "console-libc-check: $$src does not compile with -D$$plat"; \
 	         head -5 /tmp/console_libc.err; fail=1; continue; \
