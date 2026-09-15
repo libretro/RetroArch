@@ -224,6 +224,8 @@ struct android_app
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
    jmethodID setWindowSettings;
+   jmethodID setCheevosSettings;
+   jmethodID getCheevosOverride;
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
@@ -541,6 +543,15 @@ bool is_screen_reader_enabled(void);
  * activity, so the Java side never reads them from the config file. */
 void android_app_set_window_settings(bool notch_write_over,
       bool auto_mouse_grab);
+
+/* Hands the live achievement settings to the activity, and takes back
+ * the values the host override receiver wants applied on top of the
+ * loaded config, so the receiver needs no config file of its own. */
+void android_app_set_cheevos_settings(const char *host,
+      bool hardcore_enabled);
+
+bool android_app_get_cheevos_override(char *s, size_t len,
+      bool *hardcore_enabled);
 
 #ifdef HAVE_SAF
 struct retro_vfs_authorized_locations;
