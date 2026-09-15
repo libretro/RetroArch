@@ -7970,10 +7970,22 @@ bool audio_driver_disable_callback(void)
 bool audio_driver_callback(void)
 {
    /* Runs on the audio thread: read the main thread's published
-    * snapshot, not the runloop, menu or settings themselves. */
+    * snapshot, not the runloop, menu or settings themselves.
+    *
+    * The snapshot alone is not enough here: it is republished around
+    * retro_run and driver start and stop, and a pause is exactly when
+    * retro_run stops being called, so the pause it announces is the
+    * one state the snapshot cannot be trusted to carry. core_silenced
+    * is stored by audio_driver_pause_fade() on every pause, resume and
+    * menu transition, so it is current when the snapshot is not.
+    * Without it this loop kept invoking the core's callback behind the
+    * menu, rendering audio for the delivery gates to drop against the
+    * same core_silenced word, and asked again at the idle interval for
+    * as long as the menu stayed open. */
    int  snap        = retro_atomic_load_acquire_int(
          &audio_driver_st.runloop_snapshot);
-   bool core_paused = (snap & AUDIO_SNAP_PAUSED)
+   bool core_paused = audio_driver_core_silenced()
+      || (snap & AUDIO_SNAP_PAUSED)
       || (   (snap & AUDIO_SNAP_MENU_PAUSES)
           && (snap & AUDIO_SNAP_MENU_ALIVE)
           && (snap & AUDIO_SNAP_ALLOW_PAUSE));
