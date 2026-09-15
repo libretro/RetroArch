@@ -111,6 +111,27 @@ static void test_inline_uneven_batches(void)
    CHECK(steady, "uneven batches at 4x hold a 0.25 multiplier, not one per batch size");
 }
 
+/* The first flush of a hold starts at the configured ratio, not at 1.0:
+ * the limiter has the core there within a frame, and the average would
+ * otherwise spend the whole of a short hold catching up while the
+ * non-blocking device overfills. */
+static void test_inline_seeds_at_ratio(void)
+{
+   double m;
+
+   fresh();
+   config_get_ptr()->floats.fastforward_ratio = 3.0f;
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0 / 3.0), "the first flush of a hold starts at the configured ratio");
+   fake_now += ONE_X / 3;
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0 / 3.0), "and a core at that speed holds it from the first interval");
+   config_get_ptr()->floats.fastforward_ratio = 0.0f;
+   fresh();
+   m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0), "an uncapped ratio still starts at 1.0");
+}
+
 /* --- release and re-entry ------------------------------------------ */
 
 static void test_reentry_ignores_idle_gap(void)
@@ -406,6 +427,7 @@ int main(void)
    printf("fast-forward audio speedup:\n");
    test_inline_measures_speed();
    test_inline_uneven_batches();
+   test_inline_seeds_at_ratio();
    test_reentry_ignores_idle_gap();
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();

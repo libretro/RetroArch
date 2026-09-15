@@ -1834,12 +1834,11 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average.
  *
  * The state (last_flush_time, avg_flush_delta, avg_expected_delta) lives on
- * audio_st and the
- * arithmetic is identical regardless of caller, so it is float/int16
- * agnostic: a session may move between the two paths mid-fast-forward and the
- * wall-clock series stays continuous.  The first flush of a fast-forward
- * seeds the averages at the 1.0x delta and returns 1.0, so the
- * multiplier starts from unity and follows the measured speed from
+ * audio_st and the arithmetic is identical regardless of caller, so it is
+ * float/int16 agnostic: a session may move between the two paths
+ * mid-fast-forward and the wall-clock series stays continuous.  The first
+ * flush of a fast-forward seeds the averages at the configured fast-forward
+ * ratio and returns its multiplier, and the measured speed takes over from
  * there; audio_driver_ff_mult_reset() arms that seed again once
  * fast-forward is released, so the idle time between two fast-forwards
  * is never read as one enormous flush interval.
@@ -1989,7 +1988,18 @@ static double audio_driver_fastforward_ratio_mult(
    }
    else
    {
-      audio_st->avg_flush_delta    = (retro_time_t)expected_flush_delta;
+      /* Seed at the configured ratio. The limiter has the core there
+       * within a frame, and the average would take some fifty flushes
+       * to follow it, overfilling the non-blocking device meanwhile. */
+      const struct retro_fastforwarding_override *o =
+            &runloop_state_get_ptr()->fastmotion_override.current;
+      double ratio = (o->fastforward && o->ratio >= 0.0f)
+            ? o->ratio : config_get_ptr()->floats.fastforward_ratio;
+      if (ratio > 1.0)
+         mult = 1.0 / ratio;
+      else
+         ratio = 1.0;
+      audio_st->avg_flush_delta    = (retro_time_t)(expected_flush_delta / ratio);
       audio_st->avg_expected_delta = expected_flush_delta;
    }
 
