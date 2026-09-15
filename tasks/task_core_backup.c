@@ -201,6 +201,21 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
 /* Forward declarations, required for task_core_backup_finder() */
 static void task_core_backup_handler(retro_task_t *task);
 
+/* The backup task's callback: the main thread, at retrieval - where
+ * menu flags are written. The handler used to OR these in from the
+ * worker, a read-modify-write racing every other writer. */
+static void cb_task_core_backup(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+   if (menu_st)
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                      | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
+}
+
 static void task_core_restore_handler(retro_task_t *task);
 
 static bool task_core_backup_finder(retro_task_t *task, void *user_data)
@@ -669,16 +684,8 @@ static void task_core_backup_handler(retro_task_t *task)
    return;
 
 task_finished:
-#ifdef HAVE_MENU
-   {
-      /* Refresh menu */
-      struct menu_state *menu_st       = menu_state_get_ptr();
-      if (menu_st)
-         menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                       | MENU_ST_FLAG_PREVENT_POPULATE;
-   }
-#endif
-
+   /* Menu refresh moves to the task's callback: the main thread,
+    * where menu flags are written. */
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -778,6 +785,7 @@ void *task_push_core_backup(
 
    /* Configure task */
    task->handler          = task_core_backup_handler;
+   task->callback         = cb_task_core_backup;
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;

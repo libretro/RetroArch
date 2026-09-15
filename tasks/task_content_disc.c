@@ -90,6 +90,10 @@ typedef struct
    char drive_letter[2];
    char cdrom_path[64];
    char title[NAME_MAX_LENGTH];
+   /* Captured on the main thread at push: the handler runs on the
+    * threaded task queue's worker and writes dumps under this, never
+    * under a live settings read. */
+   char dir_core_assets[DIR_MAX_LENGTH];
    bool next;
 } task_cdrom_dump_state_t;
 
@@ -141,9 +145,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
          {
             char output_file[PATH_MAX_LENGTH];
             char cue_filename[PATH_MAX_LENGTH];
-            settings_t              *settings = config_get_ptr();
-            const char *directory_core_assets = settings
-               ? settings->paths.directory_core_assets : NULL;
+            const char *directory_core_assets = state->dir_core_assets;
             /* write cuesheet to a file */
             int64_t cue_size     = filestream_get_size(state->file);
             char *cue_data       = (char*)calloc(1, cue_size);
@@ -260,9 +262,7 @@ static void task_cdrom_dump_handler(retro_task_t *task)
             {
                char output_path[PATH_MAX_LENGTH];
                char track_filename[PATH_MAX_LENGTH];
-               settings_t              *settings = config_get_ptr();
-               const char *directory_core_assets = settings
-                  ? settings->paths.directory_core_assets : NULL;
+               const char *directory_core_assets = state->dir_core_assets;
 
                track_filename[0] = '\0';
 
@@ -367,6 +367,9 @@ void task_push_cdrom_dump(const char *drive)
    state->next                    = true;
    state->cur_track               = 0;
    state->state                   = DUMP_STATE_TOC_PENDING;
+   strlcpy(state->dir_core_assets,
+         config_get_ptr()->paths.directory_core_assets,
+         sizeof(state->dir_core_assets));
 
    fill_str_dated_filename(state->title, "cdrom", NULL, sizeof(state->title));
 

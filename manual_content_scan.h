@@ -127,6 +127,11 @@ typedef struct
    bool target_is_single_determined_playlist;
    enum manual_content_scan_db_usage db_usage;
    enum manual_content_scan_db_selection db_selection;
+   /* Captured when the config is built, on the main thread: the scan
+    * handler runs on the threaded task queue's worker and reads these
+    * from its config, never from the live settings or runloop. */
+   bool cli_scan_output;
+   bool scan_serial_and_crc;
 } manual_content_scan_task_config_t;
 
 /*****************/

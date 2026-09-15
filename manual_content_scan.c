@@ -37,6 +37,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "manual_content_scan.h"
+#include "retroarch.h"
 
 /* Holds all configuration parameters associated
  * with a manual content scan */
@@ -1595,6 +1596,14 @@ bool manual_content_scan_get_task_config(
    task_config->omit_db_reference  = scan_settings.omit_db_ref;
    task_config->db_usage           = scan_settings.db_usage;
    task_config->db_selection       = scan_settings.db_selection;
+
+   /* Captured here, on the main thread, for the worker the scan's
+    * handler runs on. The CLI-scan flag is fixed at process start and
+    * the serial/CRC toggle is a settings read. */
+   task_config->cli_scan_output = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+   task_config->scan_serial_and_crc =
+         config_get_ptr()->bools.scan_serial_and_crc;
 
    return true;
 }

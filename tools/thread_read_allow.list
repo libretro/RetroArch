@@ -9,3 +9,9 @@ video_thread_loop|video_state_get_ptr
 # accessibility and settings work therefore happens on the main
 # thread for every caller.
 @boundary runloop_msg_queue_push
+# task_load_handler polls video frame_count once per tick to hold the
+# load until the core has rendered (Dolphin CLI): a single benign
+# read of a monotonic counter, documented at the site - the old code
+# spun on it, which the comment there explains. No settings coherence
+# is at stake and no progress depends on observing it promptly.
+task_load_handler|video_state_get_ptr

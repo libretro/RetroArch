@@ -141,6 +141,24 @@ bool gfx_thumbnail_set_content_playlist(gfx_thumbnail_path_data_t *path_data, pl
  * Returns true if generated path is valid */
 bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_thumbnail_id thumbnail_id);
 
+/* The settings gfx_thumbnail_update_path() consults, as a value: a
+ * worker captures these on the main thread when its task is pushed
+ * and calls the _cfg variant, which reads no live settings at all.
+ * Main-thread callers keep the plain variant, which reads live. */
+typedef struct gfx_thumbnail_dir_config
+{
+   char dir_thumbnails[DIR_MAX_LENGTH];
+   bool playlist_allow_non_png;
+   unsigned gfx_thumbnails;
+   unsigned menu_left_thumbnails;
+   unsigned menu_icon_thumbnails;
+} gfx_thumbnail_dir_config_t;
+
+void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg);
+bool gfx_thumbnail_update_path_cfg(gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      const gfx_thumbnail_dir_config_t *cfg);
+
 /* Getters */
 
 /* Fetches current content directory.

@@ -2956,16 +2956,18 @@ gfx_thumbnail_path_data_t *gfx_thumbnail_path_init(void)
 
 /* Returns true if specified thumbnail is enabled
  * (i.e. if 'type' is not equal to MENU_ENUM_LABEL_VALUE_OFF) */
-bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
-      enum gfx_thumbnail_id thumbnail_id)
+/* The decision with the three mode settings as values: the live
+ * wrapper reads them, the _cfg path passes its capture, and this
+ * reads nothing. */
+static bool gfx_thumbnail_is_enabled_values(
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      unsigned gfx_thumbnails,
+      unsigned menu_left_thumbnails,
+      unsigned menu_icon_thumbnails)
 {
    if (path_data)
    {
-      settings_t          *settings = config_get_ptr();
-      unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
-      unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
-      unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
-
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
@@ -2989,6 +2991,16 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
    }
 
    return false;
+}
+
+bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id)
+{
+   settings_t *settings = config_get_ptr();
+   return gfx_thumbnail_is_enabled_values(path_data, thumbnail_id,
+         settings->uints.gfx_thumbnails,
+         settings->uints.menu_left_thumbnails,
+         settings->uints.menu_icon_thumbnails);
 }
 
 /* Setters */
@@ -3356,19 +3368,39 @@ bool gfx_thumbnail_set_content_playlist(
  * ...and before:
  * - gfx_thumbnail_get_path()
  * Returns true if generated path is valid */
+void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
+{
+   settings_t *settings        = config_get_ptr();
+   strlcpy(cfg->dir_thumbnails, settings->paths.directory_thumbnails,
+         sizeof(cfg->dir_thumbnails));
+   cfg->playlist_allow_non_png = settings->bools.playlist_allow_non_png;
+   cfg->gfx_thumbnails         = settings->uints.gfx_thumbnails;
+   cfg->menu_left_thumbnails   = settings->uints.menu_left_thumbnails;
+   cfg->menu_icon_thumbnails   = settings->uints.menu_icon_thumbnails;
+}
+
 bool gfx_thumbnail_update_path(
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id)
 {
+   gfx_thumbnail_dir_config_t cfg;
+   gfx_thumbnail_dir_config_capture(&cfg);
+   return gfx_thumbnail_update_path_cfg(path_data, thumbnail_id, &cfg);
+}
+
+bool gfx_thumbnail_update_path_cfg(
+      gfx_thumbnail_path_data_t *path_data,
+      enum gfx_thumbnail_id thumbnail_id,
+      const gfx_thumbnail_dir_config_t *cfg)
+{
    char content_dir[DIR_MAX_LENGTH];
-   settings_t *settings          = config_get_ptr();
    const char *system_name       = NULL;
    char *thumbnail_path          = NULL;
-   const char *dir_thumbnails    = settings->paths.directory_thumbnails;
-   bool playlist_allow_non_png   = settings->bools.playlist_allow_non_png;
-   unsigned gfx_thumbnails       = settings->uints.gfx_thumbnails;
-   unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
-   unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
+   const char *dir_thumbnails    = cfg->dir_thumbnails;
+   bool playlist_allow_non_png   = cfg->playlist_allow_non_png;
+   unsigned gfx_thumbnails       = cfg->gfx_thumbnails;
+   unsigned menu_left_thumbnails = cfg->menu_left_thumbnails;
+   unsigned menu_icon_thumbnails = cfg->menu_icon_thumbnails;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga",
 #ifdef HAVE_RWEBP
@@ -3411,7 +3443,9 @@ bool gfx_thumbnail_update_path(
    if (!dir_thumbnails || !*dir_thumbnails)
       return false;
 
-   if (!gfx_thumbnail_is_enabled(path_data, thumbnail_id))
+   if (!gfx_thumbnail_is_enabled_values(path_data, thumbnail_id,
+         cfg->gfx_thumbnails, cfg->menu_left_thumbnails,
+         cfg->menu_icon_thumbnails))
       return false;
 
    /* Generate new path */

@@ -481,7 +481,7 @@ static enum scan_verdict task_database_iterate_start(retro_task_t *task,
                roundf((float)manual_scan->content_list_index /
                   ((float)manual_scan->content_list->size / 100.0f)));
       RARCH_LOG("[Scanner] %s", msg);
-      if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      if (manual_scan->task_config->cli_scan_output)
          printf("%s", msg);
    }
 
@@ -1018,8 +1018,7 @@ static enum scan_verdict database_info_list_iterate_end_no_match(
    bool archive_added = false;
    /* Reached end of database list,
     * CRC match probably didn't succeed. */
-   if (retroarch_override_setting_is_set(
-       RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+   if (_db->task_config->cli_scan_output)
       task_database_scan_console_output(path, NULL, false);
 
    /* If this was a compressed file and no match in the database
@@ -1686,10 +1685,12 @@ static int task_database_iterate_playlist_lutro(
 }
 
 static bool task_database_check_serial_and_crc(
-      database_state_handle_t *db_state)
+      database_state_handle_t *db_state, bool scan_serial_and_crc)
 {
    const char *db_name;
-   if (!config_get_ptr()->bools.scan_serial_and_crc)
+   /* The toggle comes captured from the task's config: this runs on
+    * the threaded task queue's worker. */
+   if (!scan_serial_and_crc)
        return false;
    /* database_info_get_current_name() can return NULL (missing
     * handle/list, or a NULL element). Guard it before it reaches
@@ -1897,7 +1898,8 @@ serial_query_done:
          {
             if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
-               if (task_database_check_serial_and_crc(db_state))
+               if (task_database_check_serial_and_crc(db_state,
+                     _db->task_config->scan_serial_and_crc))
                {
                   if (db_state->crc == 0)
                   {
@@ -2235,12 +2237,12 @@ static bool manual_scan_end_flush_tick(
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
 
-         if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+         if (manual_scan->task_config->cli_scan_output)
             task_database_scan_console_output(result->entry_label,
                   db_name_noext, true);
       }
       /* Entry already exists - output duplicate indicator for CLI scans */
-      else if (manual_scan->flush_playlist && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      else if (manual_scan->flush_playlist && manual_scan->task_config->cli_scan_output)
          task_database_scan_console_output(result->entry_label,
                db_name_noext, false);
 
@@ -2711,7 +2713,7 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          }
 
          RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
-         if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+         if (manual_scan->task_config->cli_scan_output)
             printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
       }
    }
@@ -3509,7 +3511,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             task_set_progress(task, 100);
             ui_companion_driver_notify_refresh();
             RARCH_LOG("[Scanner] %s\n", msg);
-            if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+            if (manual_scan->task_config->cli_scan_output)
                printf("%s\n", msg);
 
             RARCH_DBG("[Scanner] Scan settings were:\n");
