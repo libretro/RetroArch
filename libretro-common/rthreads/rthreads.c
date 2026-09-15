@@ -332,12 +332,17 @@ typedef sys_lwcond_attribute_t rthreads_ps3_lwcond_attr_t;
 #include <unistd.h>
 #endif
 
-/* Android: scond goes straight to the futex. Bionic's condvar issues
- * the wake syscall on every signal whether or not anyone is waiting,
- * so a waiter count in front of it makes the common empty signal
- * free. The constants are spelled out here because they are ABI
- * facts, not header facts: the same values from 2.6-era kernels on. */
-#if defined(__ANDROID__) && !defined(USE_WIN32_THREADS)
+/* Linux: scond goes straight to the futex. The case for it on Android
+ * is that Bionic's condvar issues the wake syscall on every signal
+ * whether or not anyone is waiting, so a waiter count in front of it
+ * makes the common empty signal free. glibc already skips that syscall,
+ * but its condvar still takes its internal lock on the way to finding
+ * out: measured on one core, an empty scond_signal costs 3.6 ns through
+ * pthread_cond and 1.5 ns through the futex path, so the gate is widened
+ * to every Linux build rather than Bionic alone. The constants are
+ * spelled out here because they are ABI facts, not header facts: the
+ * same values from 2.6-era kernels on. */
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
 #include <sys/syscall.h>
 #include <errno.h>
 #define RTHREADS_FUTEX_SCOND 1
