@@ -26,7 +26,14 @@ jobs:
       options: --user root
 
     steps:
-    - uses: actions/checkout@v7
+    - name: Checkout
+      run: |
+        apk add git
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git init -q .
+        git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+        git fetch -q --depth=1 --no-tags origin "$GITHUB_SHA"
+        git checkout -q FETCH_HEAD
 
     - name: Install dependencies
       run: |
