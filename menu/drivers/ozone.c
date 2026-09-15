@@ -126,8 +126,10 @@
 #define CURSOR_SIZE                   64
 /* Cursor becomes active when it moves more
  * than CURSOR_ACTIVE_DELTA pixels (adjusted
- * by current scale factor) */
+ * by current scale factor) within
+ * CURSOR_ACTIVE_WINDOW microseconds */
 #define CURSOR_ACTIVE_DELTA           3
+#define CURSOR_ACTIVE_WINDOW          100000
 
 #define INTERVAL_OSK_CURSOR           (0.5f * 1000000)
 
@@ -531,6 +533,7 @@ enum ozone_handle_flags2
 struct ozone_handle
 {
    menu_input_pointer_t pointer; /* retro_time_t alignment */
+   retro_time_t cursor_old_time;
 
    ozone_theme_t *theme;
    ozone_theme_t *default_theme;
@@ -11100,8 +11103,17 @@ static void ozone_render(void *data,
       }
    }
 
-   ozone->cursor_x_old = ozone->pointer.x;
-   ozone->cursor_y_old = ozone->pointer.y;
+   /* With cursor mode off, movement is measured over a window rather
+    * than one frame: slow movement wakes the pointer at any refresh
+    * rate, while drift and stray bumps do not add up. */
+   if (     (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+         || (menu_driver_get_current_time() - ozone->cursor_old_time
+            > CURSOR_ACTIVE_WINDOW))
+   {
+      ozone->cursor_x_old    = ozone->pointer.x;
+      ozone->cursor_y_old    = ozone->pointer.y;
+      ozone->cursor_old_time = menu_driver_get_current_time();
+   }
 
    /* Pointer is disabled when:
     * - Showing fullscreen thumbnails
