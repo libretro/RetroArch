@@ -101,7 +101,7 @@ jobs:
 
       - name: Cache SDL2 prebuilt
         id: sdl2-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/sdl2-prebuilt
           key: sdl2-prebuilt-${{ steps.sdl2.outputs.name }}
