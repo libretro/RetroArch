@@ -36,7 +36,7 @@ jobs:
             libopenal-dev libpipewire-0.3-dev libsdl2-dev
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Compile each driver against its interface
         shell: bash

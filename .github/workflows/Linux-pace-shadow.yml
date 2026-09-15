@@ -57,7 +57,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Configure
         # Non-Qt, as the harness requires (with Qt, main() lives in

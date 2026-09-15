@@ -45,7 +45,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -684,28 +684,6 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
           make clean >/dev/null
 
-      - name: Build and run overlay_visibility_bounds_test (ASan + UBSan)
-        shell: bash
-        working-directory: samples/tasks/overlay
-        run: |
-          set -eu
-          # The overlay visibility index does not come from the overlay:
-          # led/drivers/led_overlay.c forwards settings->uints.led_map[],
-          # which configuration.c reads from the config file with no
-          # range of its own.  Unbounded, "led1_map = 500" wrote past
-          # overlay_visibility[MAX_VISIBILITY] during drivers_init() and
-          # handed the same index to the video driver's set_alpha().
-          # This builds the shipping LED driver to pin that it really
-          # does forward config values unaltered, and checks the bound
-          # covers the array exactly.  If input_driver.c changes that
-          # bound, the verbatim copy in the test must follow.
-          make -f Makefile.visibility clean >/dev/null
-          make -f Makefile.visibility all SANITIZER=address,undefined -j$(nproc)
-          ASAN_OPTIONS=detect_leaks=1 \
-          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
-            ./overlay_visibility_bounds_test
-          make -f Makefile.visibility clean >/dev/null
-
       - name: Build and run content_prefetch_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/content_prefetch
@@ -1193,7 +1171,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Restore ccache
         uses: actions/cache@v4

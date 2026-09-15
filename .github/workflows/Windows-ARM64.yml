@@ -28,10 +28,10 @@ jobs:
         platform: [ARM64]
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v5
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v3
+        uses: microsoft/setup-msbuild@v1
 
       - name: Compile RA
         working-directory: "${{ github.workspace }}/pkg/msvc"

@@ -4,9 +4,3 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      # Actions that bump their declared node runtime break the jobs which
-      # run inside our older build containers, where the runner has to exec
-      # its own node binary. Hold checkout where it is and move it by hand.
-      - dependency-name: "actions/checkout"
-        versions: [">=8"]

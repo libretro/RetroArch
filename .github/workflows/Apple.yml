@@ -60,7 +60,7 @@ jobs:
     timeout-minutes: 60
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v6
 
     # Source-level checks. These need no toolchain and give a precise
     # message when the wiring, rather than the code, is what broke.
@@ -138,7 +138,7 @@ jobs:
     continue-on-error: true
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v6
 
     - name: Compile RA (tvOS)
       run: |

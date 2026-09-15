@@ -52,7 +52,7 @@ jobs:
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             $pkgs
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
       - name: Configure
         run: |
           ./configure --enable-qt --disable-x11 --disable-wayland \

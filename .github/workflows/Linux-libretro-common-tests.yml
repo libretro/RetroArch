@@ -64,7 +64,7 @@ jobs:
           # contributor's local run is not blocked.
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Restore ccache
         uses: actions/cache@v4
