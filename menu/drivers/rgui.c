@@ -295,6 +295,7 @@ enum rgui_flags
 typedef struct
 {
    retro_time_t thumbnail_load_trigger_time; /* uint64_t */
+   retro_time_t draw_entry_hold_until;
 
    struct
    {
@@ -346,7 +347,6 @@ typedef struct
    unsigned menu_aspect_ratio;
    unsigned menu_aspect_ratio_lock;
    unsigned language;
-   unsigned draw_entry_delay;
 
    rgui_term_layout_t term_layout;
 
@@ -8670,14 +8670,13 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Single-click playlist button hold delay */
-   if (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP && rgui->draw_entry_delay)
+   if (     rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP
+         && rgui->draw_entry_hold_until
+         && menu_driver_get_current_time() >= rgui->draw_entry_hold_until)
    {
-      rgui->draw_entry_delay--;
-      if (!rgui->draw_entry_delay)
-      {
-         rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
-         rgui->flags |=  RGUI_FLAG_FORCE_REDRAW;
-      }
+      rgui->draw_entry_hold_until = 0;
+      rgui->flags &= ~RGUI_FLAG_DRAW_ENTRY_SKIP;
+      rgui->flags |=  RGUI_FLAG_FORCE_REDRAW;
    }
 
    /* Note: both rgui_set_aspect_ratio() and rgui_set_video_config()
@@ -9023,7 +9022,8 @@ static enum menu_action rgui_parse_menu_entry_action(
 #endif
             }
             rgui->flags |= RGUI_FLAG_DRAW_ENTRY_SKIP;
-            rgui->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
+            rgui->draw_entry_hold_until = menu_driver_get_current_time()
+                  + MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:

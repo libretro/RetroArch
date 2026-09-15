@@ -152,7 +152,7 @@
 
 /* Thumbnail stream delay when performing standard
  * menu navigation */
-#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT (16.66667f * 3)
+#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT (50.0f) /* ms */
 /* Thumbnail stream delay when performing 'fast'
  * navigation by dragging the scrollbar
  * > Must increase stream delay, otherwise it's
@@ -630,6 +630,7 @@ typedef struct materialui_handle
    /* Keeps track of the last time tabs were switched
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time;  /* uint64_t alignment */
+   retro_time_t draw_entry_hold_until;
 
    playlist_t *playlist;            /* ptr alignment */
 
@@ -698,7 +699,6 @@ typedef struct materialui_handle
 
    unsigned ticker_x_offset;
    unsigned ticker_str_width;
-   unsigned draw_entry_delay;
 
    /* Touch feedback animation parameters */
    unsigned touch_feedback_selection;
@@ -8579,11 +8579,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->font_data.hint.raster_block.carr.coords.vertices = 0;
 
    /* Single-click playlist button hold delay */
-   if (mui->transition_alpha_lock && mui->draw_entry_delay)
+   if (     mui->transition_alpha_lock
+         && mui->draw_entry_hold_until
+         && menu_driver_get_current_time() >= mui->draw_entry_hold_until)
    {
-      mui->draw_entry_delay--;
-      if (!mui->draw_entry_delay)
-         materialui_animation_list_alpha(mui, true);
+      mui->draw_entry_hold_until = 0;
+      materialui_animation_list_alpha(mui, true);
    }
 
    /* Update theme colours, if required */
@@ -11344,7 +11345,8 @@ static enum menu_action materialui_parse_menu_entry_action(
 #endif
             }
             mui->transition_alpha_lock = true;
-            mui->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
+            mui->draw_entry_hold_until = menu_driver_get_current_time()
+                  + MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -11814,7 +11816,15 @@ static int materialui_pointer_up(void *userdata,
 
    if (mui->scroll_y != scroll_y_target)
    {
-      mui->overscroll_velocity    = -mui->pointer.y_accel * 60.0f;
+      gfx_animation_t *p_anim     = anim_get_ptr();
+      /* y_accel is measured per frame; the overscroll spring
+       * integrates px/s, so convert with the measured frame
+       * time (fall back to 16.667 ms when no delta is known
+       * yet, i.e. on the very first frame) */
+      float frame_ms              = (p_anim->delta_time > 0.01f)
+            ? p_anim->delta_time : 16.667f;
+      mui->overscroll_velocity    = -mui->pointer.y_accel
+            * (1000.0f / frame_ms);
       mui->overscroll_target      = scroll_y_target;
       menu_input->pointer.y_accel = 0.0f;
       mui->flags                 |= MUI_FLAG_OVERSCROLL_ACTIVE;

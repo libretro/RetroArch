@@ -28,6 +28,9 @@
 #include "gfx_animation.h"
 #include "../performance_counters.h"
 
+/* Stepped (non-smooth) slow ticker: one character step per
+ * TICKER_SLOW_SPEED us of real time (divided by the user's
+ * ticker speed setting) */
 #define TICKER_SLOW_SPEED  1666666
 
 static gfx_animation_t anim_st = {

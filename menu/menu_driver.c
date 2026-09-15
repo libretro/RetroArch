@@ -6060,6 +6060,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
    static retro_time_t last_left_action_time       = 0;
    static retro_time_t last_right_action_time      = 0;
    static retro_time_t last_press_direction_time   = 0;
+   static retro_time_t y_accel_decay_time          = 0;
+   static retro_time_t y_accel_decay_carry         = 0;
    bool attenuate_y_accel                          = true;
    bool osk_active                                 = menu_input_dialog_get_display_kb();
    bool messagebox_active                          = false;
@@ -6556,9 +6558,30 @@ MENU_NOINLINE static int menu_input_post_iterate(
 
    /* Adjust acceleration
     * > If acceleration has not been set on this frame,
-    *   apply normal attenuation */
+    *   apply normal attenuation
+    * > Decay steps run on elapsed time, one factor per
+    *   MENU_INPUT_Y_ACCEL_DECAY_PERIOD us with the remainder
+    *   carried, so a flick travels the same distance at
+    *   every refresh rate */
    if (attenuate_y_accel)
-      menu_input->pointer.y_accel *= MENU_INPUT_Y_ACCEL_DECAY_FACTOR;
+   {
+      retro_time_t elapsed = (current_time - y_accel_decay_time)
+            + y_accel_decay_carry;
+      /* Cap the step count so a long gap (menu closed,
+       * dropped frames) costs bounded work; the residual
+       * acceleration after 64 steps is already negligible */
+      if (elapsed > (retro_time_t)MENU_INPUT_Y_ACCEL_DECAY_PERIOD * 64)
+         elapsed = (retro_time_t)MENU_INPUT_Y_ACCEL_DECAY_PERIOD * 64;
+      while (elapsed >= MENU_INPUT_Y_ACCEL_DECAY_PERIOD)
+      {
+         menu_input->pointer.y_accel *= MENU_INPUT_Y_ACCEL_DECAY_FACTOR;
+         elapsed                     -= MENU_INPUT_Y_ACCEL_DECAY_PERIOD;
+      }
+      y_accel_decay_carry = elapsed;
+   }
+   else
+      y_accel_decay_carry = 0;
+   y_accel_decay_time = current_time;
 
    /* If select has been released, disable any existing
     * select inhibit */
