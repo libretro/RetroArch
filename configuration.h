@@ -1531,7 +1531,7 @@ bool config_overlay_enable_default(void);
 bool config_metal_arg_buffers_default(void);
 #endif
 
-void config_set_defaults(void *data);
+void config_set_defaults(void *data, settings_t *target);
 
 void config_load(void *data);
 
