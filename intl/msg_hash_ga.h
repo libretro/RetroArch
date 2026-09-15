@@ -282,6 +282,7 @@ static const struct
    char s_734f5242[42];
    char s_f08d700c[33];
    char s_792e0069[18];
+   char s_9908b98a[27];
    char s_a9d2227f[22];
    char s_76e73138[22];
    char s_c82d0aee[12];
@@ -293,6 +294,7 @@ static const struct
    char s_fb84857a[7];
    char s_3943c7ae[33];
    char s_5b2d8d2f[21];
+   char s_6fd9b032[35];
    char s_affd948c[26];
    char s_d2d4c381[21];
    char s_a95aa0fc[28];
@@ -307,9 +309,12 @@ static const struct
    char s_30acd6fb[12];
    char s_35dcde4f[22];
    char s_ce7da552[35];
+   char s_6b5e88c4[41];
+   char s_79fff0ec[46];
    char s_04b30c51[24];
    char s_e5aeacf9[20];
    char s_24976a5b[23];
+   char s_59512220[34];
    char s_5209cc72[33];
    char s_e2eedfe1[14];
    char s_9f1f3534[51];
@@ -2566,6 +2571,8 @@ static const struct
    char s_330be970_1[55];
    char s_014d553a[381];
    char s_98b02857[254];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[111];
    char s_6c3c586d[219];
    char s_950e7a66[32];
    char s_ce113b1c[39];
@@ -2577,6 +2584,7 @@ static const struct
    char s_bdeebb68[35];
    char s_f9005edc[206];
    char s_6ade80dd[45];
+   char s_ec7aa7a0[487];
    char s_b5ccfdfa[202];
    char s_8a24406f[44];
    char s_8c6b0fea[70];
@@ -2587,9 +2595,12 @@ static const struct
    char s_3c3598a9[42];
    char s_3bac47bd[393];
    char s_90e7db40[492];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[74];
    char s_4b78ee7f[95];
    char s_aed11d67[146];
    char s_dbe6e749[106];
+   char s_9e6f6ece[477];
    char s_ed8a1060[102];
    char s_822fa422[88];
    char s_a8d552a7[54];
@@ -2926,8 +2937,8 @@ static const struct
    char s_d9153542[68];
    char s_8e48ec69[39];
    char s_cd43c108[96];
-   char s_cd46e260[133];
-   char s_cd482ffe[131];
+   char s_cd46e260[237];
+   char s_cd482ffe[260];
    char s_49336383[63];
    char s_e92351d4[126];
    char s_8e22cdce[43];
@@ -2988,6 +2999,9 @@ static const struct
    char s_dda608b5[374];
    char s_6f5a032a[51];
    char s_9530e802[121];
+#ifdef HAVE_SDL3
+   char s_5b9036af[308];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[80];
 #endif
@@ -4949,6 +4963,7 @@ static const struct
    "Idirbhearta\303\255ocht Form\303\241ide Fuaime (Leid)",
    "Timpeallacht F\303\255or\303\272il Cluas\303\241in",
    "Moill Fuaime (ms)",
+   "Folaigh Fuaime \303\215osta (ms)",
    "Uasmh\303\251id Sceabha Ama",
    "Meascth\303\263ir Balbhaigh",
    "Meascth\303\263ir",
@@ -4960,6 +4975,7 @@ static const struct
    "Aschur",
    "Rial\303\272 R\303\241ta Fuaime Dinimici\303\272il",
    "Athshampl\303\263ir Fuaime",
+   "R\303\263shampl\303\241il Sinc Ardchaighde\303\241in",
    "C\303\241il\303\255ocht Athshampl\303\241la",
    "Meas ar Mh\303\263d Ci\303\272in",
    "Athchasadh Fuaime Balbhaigh",
@@ -4974,9 +4990,12 @@ static const struct
    "Sioncr\303\263n\303\272",
    "P\303\255bl\303\255ne Sn\303\241ithithe",
    "Ardaigh Tosa\303\255ocht Sn\303\241ithe Fuaime",
+   "Athruithe Luais a Chaomhna\303\255onn an Airde",
+   "Scagaire Pas-\303\215seal at\303\241 Nasctha leis an Luas",
    "Gn\303\263thachan Toirte (dB)",
    "M\303\263d Eisiach WASAPI",
    "Form\303\241id Sn\303\241mh WASAPI",
+   "Is fearr le Sceideal\303\272 Fuaime Pro",
    "Fad Maol\303\241in Chomhroinnte WASAPI",
    "Uathoibr\303\255och",
    "S\303\241bh\303\241il Comhad: Eatramh Uathsh\303\241bh\303\241ilte SaveRAM",
@@ -7325,6 +7344,16 @@ static const struct
    "\303\241na\303\255 an moille iarbh\303\255r a choinne\303\241il ag 50% den luach seo. B\342\200"
    "\231fh\303\251idir nach nd\303\251anfar \303\251 a chomhl\303\255onadh mura f\303\251idir leis a"
    "n tiom\303\241na\303\255 fuaime an moille shonraithe a shol\303\241thar.",
+   "An latency fuaime is \303\255sle a iarrfaidh RetroArch ar thiom\303\241na\303\255. Ocht milleaso"
+   "icind\303\255 de r\303\251ir r\303\251amhshocraithe, agus is \303\251 sin an m\303\251id a socra"
+   "\303\255odh air le fada an l\303\241: su\303\255omh nialas a \303\272s\303\241idtear chun na tio"
+   "m\303\241naithe a bhaint amach agus l\303\241imhse\303\241il siad \303\251 go neamhr\303\251irea"
+   "ch. Is minic gur f\303\251idir le tiom\303\241naithe a labhra\303\255onn leis an bhfeiste go d"
+   "\303\255reach - WASAPI i m\303\263d eisiach, ASIO, WDM-KS - tr\303\251imhse n\303\255os giorra n"
+   "\303\241 sin a chaibidil, agus mar sin ligeann s\303\251 seo iad a \303\255sli\303\272. N\303"
+   "\255 dh\303\251anfa",
+   "idh tiom\303\241na\303\255 nach f\303\251idir leis dul n\303\255os \303\255sle; coinn\303\255onn"
+   " s\303\251 a url\303\241r crua-earra\303\255 f\303\251in ceachtar bealach.",
    "An t-athr\303\272 uasta ar an r\303\241ta ionchuir fuaime. M\303\241 mh\303\251ada\303\255tear a"
    "n r\303\241ta seo, is f\303\251idir athruithe an-mh\303\263ra a dh\303\251anamh ar an am ar chos"
    "tas p\303\241irc fuaime m\303\255chruinn (m.sh. cro\303\255the PAL a rith ar thaispe\303\241ntai"
@@ -7352,6 +7381,14 @@ static const struct
    "f\303\241il, go bhfuil s\303\251 beagnach dodh\303\251anta sioncr\303\263n\303\272 ceart a bhain"
    "t amach.",
    "Tiom\303\241na\303\255 athshampl\303\241la fuaime le h\303\272s\303\241id.",
+   "\303\232s\303\241id scagaire sinc n\303\255os faide nuair a bh\303\255onn an r\303\241ta aschuir"
+   " cumraithe dh\303\241 oiread an r\303\241ta \303\241bhair ar a laghad. S\303\241ra\303\255onn s"
+   "\303\251 C\303\241il\303\255ocht Athshampl\303\241la le haghaidh sinc amh\303\241in. M\303\251ad"
+   "a\303\255onn s\303\251 \303\272s\303\241id LAP, moill chuimhne agus scagaire, go h\303\241irithe"
+   " le ilchain\303\251il. \303\232s\303\241ideann s\303\251 athshampl\303\241il bogearra\303\255 in"
+   " ionad athshampl\303\241il tiom\303\241na\303\255 agus \303\251 gn\303\255omhach. \303\211il\303"
+   "\255onn s\303\251 r\303\241ta aschuir ard; is f\303\251idir le luasgh\303\251ar\303\272 ar aghai"
+   "dh an c\303\263imheas athshampl\303\241la iarbh\303\255r a laghd\303\272.",
    "\303\215sligh an luach seo chun feidhm\303\255ocht/moill n\303\255os \303\255sle a chur chun cin"
    "n thar ch\303\241il\303\255ocht fuaime, m\303\251adaigh \303\251 chun c\303\241il\303\255ocht fu"
    "aime n\303\255os fearr a fh\303\241il ar chostas feidhm\303\255ochta/moill n\303\255os \303\255s"
@@ -7386,6 +7423,16 @@ static const struct
    "agus n\303\255 athra\303\255onn aon rud eile. Baineann s\303\251 seo leis an sn\303\241ithe fuai"
    "me a ritheann an P\303\255bl\303\255ne Sn\303\241ithithe agus na glaonna ais fuaime l\303\241rna"
    "cha air.",
+   "Coinnigh an ph\303\241irc le linn gluaiseachta mall agus luasgh\303\251araithe ar aghaidh. Taca"
+   "\303\255onn s\303\251 le hathsheinm sn\303\241ithithe agus sioncr\303\263nach fr\303\241ma, lena"
+   " n-\303\241ir\303\255tear fuaim ilchain\303\251il chaibidlithe. Cuireann s\303\251 costas pr\303"
+   "\263ise\303\241la, cuimhne agus maol\303\241n\303\272 leis agus \303\251 cumasaithe. \303\211il"
+   "\303\255onn s\303\251 r\303\241ta \303\241bhair de 8000-192000 Hz. \303\232s\303\241ideann luasa"
+   "nna n\303\263 form\303\241id\303\255 foinse nach dtaca\303\255tear leo athsheinm gn\303\241th. A"
+   "thshocra\303\255onn athruithe ar leagan amach inl\303\255ne fuaim mhaol\303\241naithe. Leanann a"
+   "thsheinm sn\303\241ith",
+   "ithe ar aghaidh ag caomhn\303\272 na p\303\241irce tar \303\251is draen\303\241il fuaime scuaine"
+   ".",
    "Toirt fuaime (i dB). Is gn\303\241th-thoirt \303\251 0 dB, agus n\303\255 chuirtear aon ghn\303"
    "\263thachan i bhfeidhm.",
    "Lig don tiom\303\241na\303\255 WASAPI smacht eisiach a ghlacadh ar an ngl\303\251as fuaime. M"
@@ -7393,6 +7440,14 @@ static const struct
    "comhroinnte ina ionad.",
    "Bain \303\272s\303\241id as an bhform\303\241id sn\303\241mhphointe don tiom\303\241na\303\255 W"
    "ASAPI, m\303\241 thaca\303\255onn do ghl\303\251as fuaime leis.",
+   "Tabhair sn\303\241ithe feiste WASAPI do sceideal\303\263ir ranga ilmhe\303\241n Windows seachas "
+   "a thosa\303\255ocht a ard\303\272 go d\303\255reach. I gceist le socruithe an-\303\255seal Laten"
+   "cy Fuaime; n\303\255 bh\303\255onn s\303\251 i gc\303\263na\303\255 mar is fearr den d\303\241 c"
+   "heann, agus i roinnt c\303\263ras d\303\251anann s\303\251 an fr\303\241ma is measa n\303\255os "
+   "measa, mar sin beidh s\303\251 as oifig mura nd\303\251antar \303\251 a thomhas. Tuairisc\303"
+   "\255onn an tiom\303\241na\303\255 c\303\251 chomh d\303\251anach agus a dh\303\272isigh s\303"
+   "\251, leis an sceideal\303\272 a d\342\200\231\303\272s\303\241id s\303\251, nuair a str\303\263"
+   "ictear an fhuaim.",
    "An fad maol\303\241in idirmhe\303\241nach (i bhfr\303\241ma\303\255) agus an tiom\303\241na\303"
    "\255 WASAPI in \303\272s\303\241id i m\303\263d comhroinnte.",
    "S\303\241bh\303\241il an SaveRAM neamh-luaineach go huathoibr\303\255och ag eatramh rialta (i so"
@@ -7983,10 +8038,14 @@ static const struct
    "Gabhann s\303\251 \303\255omh\303\241 den \303\241bhar reatha.",
    "Coinn\303\255onn s\303\251 an sc\303\241thl\303\241n at\303\241 roghnaithe faoi l\303\241thair a"
    "r si\303\272l/as agus an eochair br\303\272ite.",
-   "Luchta\303\255onn agus cuireann s\303\251 an ch\303\251ad chomhad r\303\251amhshocraithe sc\303"
-   "\241thaithe eile i bhfr\303\251amh an eolaire 'Video Shaders' i bhfeidhm.",
-   "Luchta\303\255onn agus cuireann s\303\251 an comhad r\303\251amhshocraithe sc\303\241thaithe roi"
-   "mhe seo i bhfr\303\251amh an eolaire 'Video Shaders' i bhfeidhm.",
+   "L\303\263d\303\241lann agus cuireann s\303\251 i bhfeidhm an ch\303\251ad r\303\251amhshocr\303"
+   "\272 sc\303\241thaitheora eile i bhfillte\303\241n an r\303\251amhshocraithe reatha. Tar \303"
+   "\251is an chinn dheireanaigh, bogann s\303\251 ar aghaidh chuig an gc\303\251ad fhillte\303\241n"
+   " eile ar an leibh\303\251al c\303\251anna.",
+   "L\303\263d\303\241lann agus cuireann s\303\251 i bhfeidhm an r\303\251amhshocr\303\272 sc\303"
+   "\241th\303\263ra (shader preset) roimhe seo at\303\241 sa bhfillte\303\241n ina bhfuil an r\303"
+   "\251amhshocr\303\272 reatha. Sula sroichtear an ch\303\251ad cheann, bogann s\303\251 ar ais go "
+   "dt\303\255 an fillte\303\241n roimhe sin ar an leibh\303\251al c\303\251anna.",
    "Casann s\303\251 an sc\303\241thl\303\241n at\303\241 roghnaithe faoi l\303\241thair air/as.",
    "Cumasa\303\255onn s\303\251 gluaiseacht mhall nuair a choime\303\241dtar \303\251. Ritheann an t"
    "-\303\241bhar ar luas gn\303\241th nuair a scaoiltear an eochair.",
@@ -8102,6 +8161,14 @@ static const struct
    "Sonraigh m\303\251id na n-\303\251ifeachta\303\255 aiseolais haptic.",
    "S\303\241bh\303\241il comhad uathchumra\303\255ochta a chuirfear i bhfeidhm go huathoibr\303\255"
    "och aon uair a bhraitear an rialt\303\263ir seo ar\303\255s.",
+#ifdef HAVE_SDL3
+   "\303\232s\303\241id m\303\251archl\303\241r sc\303\241ile\303\241in an ghl\303\251is chun t\303"
+   "\251acs roghchl\303\241ir a chur isteach in ionad an mh\303\251archl\303\241ir ionsuite ar an sc"
+   "\303\241ile\303\241n. N\303\255 bhaineann s\303\251 ach nuair a shol\303\241thra\303\255onn an c"
+   "\303\263ras m\303\251archl\303\241r sc\303\241ile\303\241in. Teasta\303\255onn sc\303\241ile\303"
+   "\241n tadhaill n\303\263 modh ionchuir ar f\303\251idir \303\251 a nasclean\303\272int le gamepa"
+   "d.",
+#endif
 #ifdef ANDROID
    "Bain \303\272s\303\241id as an ngl\303\251as seo mar mh\303\251archl\303\241r fisiceach agus n"
    "\303\255 mar gamepad.",
@@ -10318,7 +10385,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (217179u
+      (sizeof(msg_hash_ga_blob) == (219744u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10573,6 +10640,9 @@ typedef char msg_hash_ga_blob_check[
 #endif
 #if defined(ANDROID)
        + 170u
+#endif
+#ifdef HAVE_SDL3
+       + 308u
 #endif
 #ifdef ANDROID
        + 80u
@@ -11001,6 +11071,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -11012,6 +11083,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
@@ -11026,9 +11098,12 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -13282,6 +13357,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
@@ -13292,6 +13368,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -13301,9 +13378,11 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -13702,6 +13781,9 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif

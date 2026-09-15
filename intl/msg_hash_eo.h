@@ -2789,8 +2789,6 @@ static const struct
    char s_d9153542[47];
    char s_8e48ec69[35];
    char s_cd43c108[88];
-   char s_cd46e260[116];
-   char s_cd482ffe[118];
    char s_49336383[44];
    char s_e92351d4[98];
    char s_8e22cdce[58];
@@ -7283,10 +7281,6 @@ static const struct
    "Kapti bildon de la kuranta enhavo.",
    "Tenas la kurante elektitan ombrigilon \305\235altita a\305\255 mal\305\235altita dum klavon esta"
    "s tenata.",
-   "\305\234argas kaj aplikas la sekvan anta\305\255agordan dosieron deo mbrigilo en la radiko de la"
-   " dosierujo \"Videaj ombrigiloj\".",
-   "\305\234argas kaj aplikas la anta\305\255an anta\305\255agordan dosieron de ombrigilo en la radi"
-   "ko de la dosierujo \"Videaj ombrigiloj\".",
    "Inter\305\235altas la kurante elektita ombrigilo.",
    "Ebligas malrapidpluigo kiam tenate. Enhavo rulas je normala rapido kiam la klavo estas maltenata"
    ".",
@@ -9067,7 +9061,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172462u
+      (sizeof(msg_hash_eo_blob) == (172228u
 #ifdef ANDROID
        + 312u
 #endif
@@ -12245,8 +12239,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

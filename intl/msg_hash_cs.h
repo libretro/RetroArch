@@ -2491,8 +2491,6 @@ static const struct
    char s_16ee5cf4[36];
    char s_d9153542[47];
    char s_8e48ec69[39];
-   char s_cd46e260[94];
-   char s_cd482ffe[98];
    char s_49336383[40];
    char s_e92351d4[104];
    char s_8e22cdce[61];
@@ -6821,10 +6819,6 @@ static const struct
    "Zapnut\303\255/vypnut\303\255 funkce Run-Ahead.",
    "Ulo\305\276\303\255 pozici do aktu\303\241ln\304\233 vybran\303\251ho slotu.",
    "Zachyt\303\255 obr\303\241zek aktu\303\241ln\303\255ho obsahu.",
-   "Na\304\215te a pou\305\276ije dal\305\241\303\255 soubor p\305\231edvolby shaderu v ko\305\231en"
-   "ov\303\251m adres\303\241\305\231i 'Video Shadery'.",
-   "Na\304\215te a pou\305\276ije p\305\231edchoz\303\255 soubor p\305\231edvolby shaderu v ko\305"
-   "\231enov\303\251m adres\303\241\305\231i 'Video Shadery'.",
    "Zapne/vypne aktu\303\241ln\304\233 vybran\303\275 shader.",
    "Povol\303\255 zpomalen\303\275 pohyb p\305\231i podr\305\276en\303\255. Po uvoln\304\233n\303"
    "\255 tla\304\215\303\255tka b\304\233\305\276\303\255 obsah norm\303\241ln\303\255 rychlost\303"
@@ -8809,7 +8803,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162976u
+      (sizeof(msg_hash_cs_blob) == (162784u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11649,8 +11643,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

@@ -2613,8 +2613,6 @@ static const struct
    char s_d9153542[38];
    char s_8e48ec69[48];
    char s_cd43c108[87];
-   char s_cd46e260[114];
-   char s_cd482ffe[111];
    char s_49336383[47];
    char s_e92351d4[109];
    char s_8e22cdce[54];
@@ -7126,10 +7124,6 @@ static const struct
    "Mevcut i\303\247eri\304\237in bir g\303\266r\303\274nt\303\274s\303\274n\303\274 yakalar.",
    "Tu\305\237a bas\304\261l\304\261 tutuldu\304\237u s\303\274rece se\303\247ili olan g\303\266lgel"
    "endiriciyi a\303\247\304\261k/kapal\304\261 tutar.",
-   "'Video G\303\266lgelendirici' dizininin k\303\266k\303\274ndeki sonraki g\303\266lgelendirici ha"
-   "z\304\261r ayar dosyas\304\261n\304\261 y\303\274kler ve uygular.",
-   "\303\226nceki g\303\266lgelendirici \303\266n ayar dosyas\304\261n\304\261 'Video G\303\266lgele"
-   "ndiriciler' dizininin k\303\266k\303\274ne y\303\274kler ve uygular.",
    "Se\303\247ili olan g\303\266lgelendiriciyi a\303\247ar/kapat\304\261r.",
    "Bas\304\261l\304\261 tutuldu\304\237unda a\304\237\304\261r \303\247ekim sa\304\237lar. Anahtar "
    "b\304\261rak\304\261ld\304\261\304\237\304\261nda i\303\247erik normal h\304\261zda \303\247al"
@@ -9186,7 +9180,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170816u
+      (sizeof(msg_hash_tr_blob) == (170591u
 #ifdef ANDROID
        + 340u
 #endif
@@ -12157,8 +12151,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

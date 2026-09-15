@@ -281,6 +281,7 @@ static const struct
    char s_55404857[10];
    char s_f08d700c[40];
    char s_792e0069[23];
+   char s_9908b98a[31];
    char s_a9d2227f[42];
    char s_76e73138[29];
    char s_c82d0aee[10];
@@ -292,6 +293,7 @@ static const struct
    char s_fb84857a[7];
    char s_3943c7ae[41];
    char s_5b2d8d2f[20];
+   char s_6fd9b032[35];
    char s_affd948c[22];
    char s_d2d4c381[29];
    char s_a95aa0fc[38];
@@ -305,6 +307,8 @@ static const struct
    char s_30acd6fb[16];
    char s_35dcde4f[24];
    char s_ce7da552[37];
+   char s_6b5e88c4[40];
+   char s_79fff0ec[45];
    char s_04b30c51[25];
    char s_e5aeacf9[22];
    char s_24976a5b[32];
@@ -2552,6 +2556,8 @@ static const struct
    char s_330be970_1[143];
    char s_014d553a[402];
    char s_98b02857[235];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[107];
    char s_6c3c586d[209];
    char s_950e7a66[32];
    char s_ce113b1c[43];
@@ -2563,6 +2569,8 @@ static const struct
    char s_bdeebb68[42];
    char s_f9005edc[155];
    char s_6ade80dd[68];
+   char s_ec7aa7a0_0[500];
+   char s_ec7aa7a0_1[18];
    char s_b5ccfdfa[168];
    char s_8a24406f[62];
    char s_8c6b0fea[74];
@@ -2573,6 +2581,8 @@ static const struct
    char s_3c3598a9[48];
    char s_3bac47bd[444];
    char s_90e7db40[499];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[155];
    char s_4b78ee7f[87];
    char s_aed11d67[145];
    char s_dbe6e749[106];
@@ -2912,8 +2922,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[41];
    char s_cd43c108[76];
-   char s_cd46e260[115];
-   char s_cd482ffe[114];
+   char s_cd46e260[164];
+   char s_cd482ffe[161];
    char s_49336383[43];
    char s_e92351d4[115];
    char s_8e22cdce[53];
@@ -4846,6 +4856,7 @@ static const struct
    "\302\253Float\302\273",
    "Sonido surround virtual con auriculares",
    "Latencia de audio (ms)",
+   "Latencia m\303\255nima de audio (ms)",
    "Variaci\303\263n m\303\241xima de sincron\303\255a de audio",
    "Silenciar mezclador de audio",
    "Mezclador",
@@ -4857,6 +4868,7 @@ static const struct
    "Salida",
    "Control din\303\241mico de frecuencia de audio",
    "Remuestreo de audio",
+   "Sobremuestreo sinc de alta calidad",
    "Calidad de remuestreo",
    "Respetar el modo en silencio",
    "Silenciar audio durante el rebobinado",
@@ -4870,6 +4882,8 @@ static const struct
    "Sincronizaci\303\263n",
    "Canalizaci\303\263n multihilo",
    "Aumentar prioridad del hilo de audio",
+   "Cambios de velocidad con tono constante",
+   "Filtro de paso bajo vinculado a la velocidad",
    "Ganancia de volumen (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de coma flotante",
@@ -7177,6 +7191,14 @@ static const struct
    "Establece la latencia m\303\241xima del audio en milisegundos. El controlador intentar\303\241 m"
    "antener la latencia real en un 50\302\240% de este valor. Puede que este no se respete si el con"
    "trolador de audio no puede producir la latencia establecida.",
+   "Establece el m\303\255nimo de latencia de audio que solicitar\303\241 RetroArch a un controlador"
+   ". El valor predeterminado es de 8 milisegundos, motivo por el que no se pod\303\255a modificar d"
+   "esde hace mucho tiempo: cuando se enviaba un valor de 0 a los controladores, lo gestionaban de f"
+   "orma inconsistente. Los controladores que hablan directamente con el dispositivo (WASAPI en modo"
+   " exclusivo, ASIO, WDM-KS...) a menudo pueden negociar un periodo m\303\241s corto y bajar este v"
+   "alor les permite dicha negociaci\303\263n. Un cont",
+   "rolador que no pueda bajar este valor no lo bajar\303\241, manteni\303\251ndose en el m\303\255n"
+   "imo absoluto de su hardware.",
    "Ajusta la variaci\303\263n m\303\241xima en la velocidad de entrada de audio. Un valor alto perm"
    "ite grandes cambios de cadencia a costa de alterar el tono del audio (p. ej.: ejecutar un n\303"
    "\272cleo PAL en una pantalla NTSC).",
@@ -7199,6 +7221,13 @@ static const struct
    "Suaviza las imperfecciones de ritmo al sincronizar audio y v\303\255deo. Cuidado: Si se desactiv"
    "a esta opci\303\263n, es casi imposible tener una sincron\303\255a correcta.",
    "Selecciona el controlador de remuestreo de audio que se utilizar\303\241.",
+   "Utiliza un filtro sinc de mayor duraci\303\263n cuando la frecuencia de salida configurada sea d"
+   "e, al menos, el doble de la frecuencia del contenido. Ignorar\303\241 la opci\303\263n Calidad d"
+   "e remuestreo solo en el modo sinc. Aumenta el uso de la CPU, de memoria y el retraso de los filt"
+   "ros, sobre todo con varios canales. Al activar esta opci\303\263n se utilizar\303\241 el remuest"
+   "reo por software en vez del que tiene del controlador. Es necesaria una frecuencia de salida alt"
+   "a, el avance r\303\241pido puede reducir la relaci\303\263n re",
+   "al de remuestreo.",
    "Reduce este valor para favorecer el rendimiento y la latencia a costa de perder calidad del audi"
    "o o aum\303\251ntalo para mejorarla a costa de perder rendimiento y latencia.",
    "Silencia todo el audio si el modo en silencio est\303\241 activado.",
@@ -7226,6 +7255,14 @@ static const struct
    "ue lo permitan, si un sistema lo rechaza, la prioridad sigue siendo la predeterminada sin m\303"
    "\241s cambios. Esta opci\303\263n se aplica al hilo de audio en el que se ejecutan la canalizaci"
    "\303\263n multihilo y las llamadas al n\303\272cleo de audio.",
+   "Conserva el tono al aplicar los modos de c\303\241mara lenta y avance r\303\241pido. Esta opci"
+   "\303\263n es compatible con la reproducci\303\263n multihilo y con la sincronizada a fotogramas,"
+   " as\303\255 como con el audio multicanal negociado. Activar esta opci\303\263n aumenta los coste"
+   "s de procesamiento, memoria y de los b\303\272feres. Es necesaria una frecuencia de 8000-192000"
+   "\302\240Hz en el contenido. Toda velocidad o formato de origen no compatibles utilizar\303\241n "
+   "la reproducci\303\263n ordinaria. Los cambios insertados en la disposici\303\263n reinici",
+   "ar\303\241n el audio guardado en el b\303\272fer. La reproducci\303\263n multihilo reanudar\303"
+   "\241 la preservaci\303\263n de tono al terminar de reproducir el audio que est\303\251 en cola.",
    "Amplifica el volumen de audio (en dB). 0 dB es el volumen normal, sin ganancia alguna.",
    "Permite que el controlador WASAPI tome el control exclusivo del dispositivo de audio. Si se desa"
    "ctiva esta opci\303\263n se usar\303\241 el modo compartido.",
@@ -7739,10 +7776,10 @@ static const struct
    "Genera un guardado r\303\241pido en la posici\303\263n seleccionada.",
    "Captura una imagen del contenido actual.",
    "Mantiene activado o desactivado el shader seleccionado al pulsar el bot\303\263n.",
-   "Carga y aplica el siguiente preajuste de shaders que se encuentre en la ra\303\255z del director"
-   "io de shaders de v\303\255deo.",
-   "Carga y aplica el preajuste de shaders anterior que se encuentre en la ra\303\255z del directori"
-   "o de shaders de v\303\255deo.",
+   "Carga y aplica el siguiente preajuste de shaders de la carpeta del preajuste actual. Si es el "
+   "\303\272ltimo preajuste, se pasar\303\241 a la siguiente carpeta del mismo nivel.",
+   "Carga y aplica el preajuste de shaders anterior de la carpeta del preajuste actual. Si es el pri"
+   "mer preajuste, se pasar\303\241 a la carpeta anterior del mismo nivel.",
    "Activa o desactiva el shader seleccionado.",
    "Activa la c\303\241mara lenta al mantener pulsado el bot\303\263n. Al soltarlo, el contenido se "
    "ejecutar\303\241 a velocidad normal.",
@@ -9821,7 +9858,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (223464u
+      (sizeof(msg_hash_es_blob) == (225491u
 #ifdef ANDROID
        + 329u
 #endif
@@ -10509,6 +10546,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -10520,6 +10558,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
@@ -10533,6 +10572,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12777,6 +12818,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
@@ -12787,6 +12829,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -12796,6 +12839,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

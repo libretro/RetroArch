@@ -2703,8 +2703,6 @@ static const struct
    char s_d9153542[60];
    char s_8e48ec69[47];
    char s_cd43c108[78];
-   char s_cd46e260[107];
-   char s_cd482ffe[104];
    char s_49336383[38];
    char s_e92351d4[97];
    char s_8e22cdce[53];
@@ -7456,10 +7454,6 @@ static const struct
    "K\303\251sz\303\255t egy k\303\251pet az aktu\303\241lis tartalomr\303\263l.",
    "Az \303\251ppen kiv\303\241lasztott shader ki/be kapcsol\303\241sa, am\303\255g a gomb le van ny"
    "omva.",
-   "A \"Videoshaderek\" k\303\266nyvt\303\241r gy\303\266ker\303\251b\305\221l a k\303\266vetkez\305"
-   "\221 shader preset f\303\241jl bet\303\266lt\303\251se \303\251s alkalmaz\303\241sa.",
-   "A \"Videoshaderek\" k\303\266nyvt\303\241r gy\303\266ker\303\251b\305\221l az el\305\221z\305"
-   "\221 shader preset f\303\241jl bet\303\266lt\303\251se \303\251s alkalmaz\303\241sa.",
    "Az aktu\303\241lis shadert be/ki kapcsolja.",
    "Am\303\255g a gomb le van nyomva, a lass\303\255t\303\241s akt\303\255v. Felengedve a tartalom n"
    "orm\303\241l sebess\303\251ggel fut.",
@@ -9724,7 +9718,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188883u
+      (sizeof(msg_hash_hu_blob) == (188672u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12814,8 +12808,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

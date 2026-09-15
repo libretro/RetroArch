@@ -2790,8 +2790,6 @@ static const struct
    char s_d9153542[61];
    char s_8e48ec69[47];
    char s_cd43c108[56];
-   char s_cd46e260[89];
-   char s_cd482ffe[95];
    char s_49336383[49];
    char s_e92351d4[114];
    char s_8e22cdce[49];
@@ -7499,10 +7497,6 @@ static const struct
    "Sparar tillst\303\245ndet till den f\303\266r n\303\244rvarande valda platsen.",
    "Tar en sk\303\244rmdump av det aktuella inneh\303\245llet.",
    "H\303\245ller den valda shadern p\303\245/av vid nedtryckt tangent.",
-   "L\303\244ser in och till\303\244mpar n\303\244sta shader-f\303\266rvalsfil i roten av katalogen "
-   "'Video Shaders'.",
-   "L\303\244ser in och till\303\244mpar f\303\266reg\303\245ende shader-f\303\266rvalsfil i roten a"
-   "v katalogen 'Video Shaders'.",
    "Sl\303\245r p\303\245/av den f\303\266r n\303\244rvarande valda shadern.",
    "Till\303\244mpar 'Slow motion' n\303\244r den h\303\245lls nedtryckt. Inneh\303\245ll \303\245te"
    "rg\303\245r till normal hastighet n\303\244r knapp sl\303\244pps.",
@@ -9546,7 +9540,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (190566u
+      (sizeof(msg_hash_sv_blob) == (190382u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12736,8 +12730,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

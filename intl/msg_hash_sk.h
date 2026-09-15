@@ -519,7 +519,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    char s_8dc1bc3e[10];
 #endif
-   char s_881efe76[18];
+   char s_881efe76[20];
    char s_1e4264a1[7];
    char s_58072ab5[25];
    char s_babee9c1[11];
@@ -618,7 +618,7 @@ static const struct
    char s_bf21615a[7];
    char s_15f24ff4[13];
    char s_ec7e8026[7];
-   char s_5d29b870[18];
+   char s_5d29b870[20];
    char s_6996339b[5];
    char s_08e9410c[22];
    char s_d95824aa[22];
@@ -2036,7 +2036,7 @@ static const struct
    char s_6b80a1bc[35];
    char s_eb0d7f1d[25];
    char s_99a77122[22];
-   char s_51cbf8f0[34];
+   char s_51cbf8f0[35];
    char s_4a5b7672[23];
    char s_8fa79de5[27];
    char s_5eee10e5[34];
@@ -2690,8 +2690,6 @@ static const struct
    char s_d9153542[44];
    char s_8e48ec69[35];
    char s_cd43c108[80];
-   char s_cd46e260[92];
-   char s_cd482ffe[100];
    char s_49336383[39];
    char s_e92351d4[104];
    char s_8e22cdce[62];
@@ -4853,7 +4851,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    "Hern\303\251 AI",
 #endif
-   "Inform\303\241cie Jadra",
+   "Inform\303\241cie o jadre",
    "Autori",
    "Cache info s\303\272borov core",
    "Kateg\303\263rie",
@@ -4955,7 +4953,7 @@ static const struct
    "V menu",
    "Pozastaven\303\251",
    "Hranie",
-   "Inform\303\241cie disku",
+   "Inform\303\241cie o disku",
    "Zvuk",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
@@ -6388,7 +6386,7 @@ static const struct
    "Aktualiz\303\241cia Profilov Ovl\303\241da\304\215ov",
    "Aktualiz\303\241cia Cg Shaders",
    "Aktualiz\303\241cia Cheatov",
-   "Aktualiz\303\241cia Info S\305\257borov Jadra",
+   "Aktualiz\303\241cia info s\303\272borov jadier",
    "Aktualiz\303\241cia Datab\303\241z",
    "Aktualiz\303\241cia GLSL Shaders",
    "Aktualiz\303\241cia Stiahnut\303\275ch Jadier",
@@ -7323,10 +7321,6 @@ static const struct
    "Zachyt\303\255 obraz aktu\303\241lneho obsahu.",
    "Dr\305\276\303\255 aktu\303\241lne vybran\303\275 shader zapnut\303\275/vypnut\303\275 po\304"
    "\215as stl\303\241\304\215ania kl\303\241vesy.",
-   "Na\304\215\303\255ta a aplikuje \304\217al\305\241\303\255 s\303\272bor predvo\304\276by shadero"
-   "v v koreni adres\303\241ra 'Video Shadery'.",
-   "Na\304\215\303\255ta a aplikuje predch\303\241dzaj\303\272ci s\303\272bor predvo\304\276by shade"
-   "rov v koreni adres\303\241ra 'Video Shadery'.",
    "Zapne/vypne aktu\303\241lne vybran\303\275 shader.",
    "Povol\303\255 spomalen\303\275 pohyb po\304\215as dr\305\276ania. Obsah be\305\276\303\255 norm"
    "\303\241lnou r\303\275chlos\305\245ou pri uvo\304\276nen\303\255 kl\303\241vesy.",
@@ -9424,7 +9418,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179242u
+      (sizeof(msg_hash_sk_blob) == (179055u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12514,8 +12508,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

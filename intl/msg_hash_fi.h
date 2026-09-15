@@ -2365,8 +2365,6 @@ static const struct
    char s_16ee5cf4[35];
    char s_d9153542[51];
    char s_8e48ec69[39];
-   char s_cd46e260[97];
-   char s_cd482ffe[96];
    char s_e92351d4[125];
    char s_8e22cdce[53];
    char s_86477a78[55];
@@ -5982,10 +5980,6 @@ static const struct
    "Vaihtaa edell\303\244ajon p\303\244\303\244lle/pois.",
    "Tallenna tila t\303\244ll\303\244 hetkell\303\244 valittuun lohkoon.",
    "Ottaa kuvan nykyisest\303\244 sis\303\244ll\303\266st\303\244.",
-   "Lataa ja k\303\244yt\303\244 seuraavaa varjostimen esiasetetustiedostoa \"Videovarjostimet\"-kan"
-   "sion juuressa.",
-   "Lataa ja k\303\244yt\303\244 edellist\303\244 varjostimen esiasetustiedostoa \"Videovarjostimet"
-   "\"-kansion juuressa.",
    "Ottaa hidastuksen k\303\244ytt\303\266\303\266n, kun pidet\303\244\303\244n pohjassa. Sis\303"
    "\244lt\303\266 py\303\266rii normaalilla nopeudella, kun n\303\244pp\303\244in vapautetaan.",
    "Vaihtaa hidastuksen ja normaalin nopeuden v\303\244lill\303\244.",
@@ -7465,7 +7459,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124162u
+      (sizeof(msg_hash_fi_blob) == (123969u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -10120,8 +10114,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,

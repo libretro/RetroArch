@@ -286,6 +286,7 @@ static const struct
    char s_fb84857a[8];
    char s_3943c7ae[31];
    char s_5b2d8d2f[25];
+   char s_6fd9b032[31];
    char s_affd948c[26];
    char s_d2d4c381[27];
    char s_a95aa0fc[27];
@@ -298,6 +299,8 @@ static const struct
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
    char s_ce7da552[38];
+   char s_6b5e88c4[55];
+   char s_79fff0ec[43];
    char s_04b30c51[26];
    char s_e5aeacf9[24];
    char s_24976a5b[25];
@@ -2471,6 +2474,8 @@ static const struct
    char s_bdeebb68[36];
    char s_f9005edc[142];
    char s_6ade80dd[42];
+   char s_ec7aa7a0_0[500];
+   char s_ec7aa7a0_1[6];
    char s_b5ccfdfa[173];
    char s_8a24406f[45];
    char s_8c6b0fea[52];
@@ -2481,6 +2486,8 @@ static const struct
    char s_3c3598a9[44];
    char s_3bac47bd[447];
    char s_90e7db40[465];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[101];
    char s_4b78ee7f[62];
    char s_aed11d67[151];
    char s_dbe6e749[94];
@@ -2821,8 +2828,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[43];
    char s_cd43c108[81];
-   char s_cd46e260[84];
-   char s_cd482ffe[85];
+   char s_cd46e260[193];
+   char s_cd482ffe[204];
    char s_49336383[51];
    char s_e92351d4[113];
    char s_8e22cdce[54];
@@ -4741,6 +4748,7 @@ static const struct
    "Ausgabe",
    "Dynamische Audioratensteuerung",
    "Audio-Resampling-Treiber",
+   "Hochwertiges Sinc-Oversampling",
    "Audio-Resampler-Qualit\303\244t",
    "Lautlos-Modus respektieren",
    "Auto-stumm bei R\303\274ckspulen",
@@ -4753,6 +4761,8 @@ static const struct
    "Synchronisation",
    "Synchronisation",
    "Priorit\303\244t des Audio-Threads erh\303\266hen",
+   "Geschwindigkeits\303\244nderungen ohne Tonh\303\266henver\303\244nderung",
+   "Geschwindigkeitsabh\303\244ngiger Tiefpassfilter",
    "Lautst\303\244rkeanpassung (dB)",
    "Exklusiver WASAPI-Modus",
    "WASAPI-Gleitkomma-Format",
@@ -6995,6 +7005,13 @@ static const struct
    "Hilft, Fehler bei der Audio- und Videosynchronisierung auszub\303\274geln. Wenn deaktiviert, ist"
    " eine brauchbare Synchronisation nahezu unm\303\266glich.",
    "Zu verwendender Audio-Resampling-Treiber.",
+   "Einen l\303\244ngeren Sinc-Filter verwenden, wenn die konfigurierte Ausgaberate mindestens doppe"
+   "lt so hoch ist wie die Inhaltsrate. \303\234berschreibt die Resampler-Qualit\303\244t ausschlie"
+   "\303\237lich f\303\274r Sinc. Erh\303\266ht die CPU-Auslastung, den Speicherbedarf und die Filte"
+   "rverz\303\266gerung, insbesondere bei mehreren Kan\303\244len. Verwendet w\303\244hrend der Akti"
+   "vierung Software-Resampling anstelle von Treiber-Resampling. Erfordert eine hohe Ausgaberate; be"
+   "im Schnellvorlauf kann sich das tats\303\244chliche Resampling-Verh\303\244ltnis verrin",
+   "gern.",
    "Diesen Wert verkleinern, f\303\274r bessere Leistung/kleinere Latenz zu Lasten der Audioqualit"
    "\303\244t; erh\303\266hen, f\303\274r bessere Audioqualit\303\244t auf Kosten der Leistung/klein"
    "erer Latenz.",
@@ -7022,6 +7039,14 @@ static const struct
    " beh\303\244lt die Standardpriorit\303\244t bei, und es \303\244ndert sich nichts weiter. Dies g"
    "ilt f\303\274r den Audiothread, auf dem die Threaded Pipeline und die Core-Audio-Callbacks ausge"
    "f\303\274hrt werden.",
+   "Die Tonh\303\266he bei Zeitlupe und beschleunigtem Vorlauf beibehalten. Unterst\303\274tzt Threa"
+   "d-basierte und framesynchrone Wiedergabe, einschlie\303\237lich ausgehandeltem Mehrkanal-Audio. "
+   "Erh\303\266ht bei Aktivierung den Rechenaufwand sowie den Speicher- und Pufferbedarf. Erfordert "
+   "eine Inhaltsrate von 8000\342\200\223192000\302\240Hz. Nicht unterst\303\274tzte Geschwindigkeit"
+   "en oder Quellformate verwenden die normale Wiedergabe. Inline-Layout\303\244nderungen setzen den"
+   " gepufferten Ton zur\303\274ck. Bei der Thread-basierten Wiedergabe wird die ",
+   "Tonh\303\266henbeibehaltung fortgesetzt, sobald der in der Warteschlange befindliche Ton abgearb"
+   "eitet ist.",
    "Lautst\303\244rkeanpassung in dB. 0 dB ist die normale Lautst\303\244rke.",
    "Dem WASAPI-Treiber erlauben, die vollst\303\244ndige Kontrolle \303\274ber das Audio-Ger\303\244"
    "t zu \303\274bernehmen. Wenn deaktiviert, wird der gemeinsame Modus verwendet.",
@@ -7504,8 +7529,12 @@ static const struct
    "Fertigt ein Foto des aktuellen Inhalts an.",
    "H\303\244lt den aktuell ausgew\303\244hlten Shader an/aus, solange die Taste gedr\303\274ckt wir"
    "d.",
-   "L\303\244dt und wendet die n\303\244chste Shader-Preset-Datei im 'Video-Shader'-Verzeichnis an.",
-   "L\303\244dt und wendet die vorherige Shader-Preset-Datei im 'Video-Shader'-Verzeichnis an.",
+   "L\303\244dt und wendet die n\303\244chste Shader-Voreinstellung aus dem Ordner der aktuellen Vor"
+   "einstellung an. Nach der letzten Voreinstellung wird zum n\303\244chsten Ordner auf derselben Eb"
+   "ene \303\274bergegangen.",
+   "L\303\244dt und wendet die vorherige Shader-Voreinstellung aus dem Ordner der aktuellen Voreinst"
+   "ellung an. Vor der ersten Voreinstellung wechselt das Programm zum vorherigen Ordner auf derselb"
+   "en Ebene zur\303\274ck.",
    "Schaltet den aktuell ausgew\303\244hlten Shader ein/aus.",
    "Aktiviert Zeitlupe, solange gedr\303\274ckt. Inhalte laufen mit normaler Geschwindigkeit, wenn T"
    "aste losgelassen wird.",
@@ -9476,7 +9505,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (206391u
+      (sizeof(msg_hash_de_blob) == (207855u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10174,6 +10203,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
@@ -10186,6 +10216,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12354,6 +12386,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -12363,6 +12396,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

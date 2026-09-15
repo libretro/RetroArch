@@ -206,6 +206,7 @@ static const struct
    char s_9834febe[501];
    char s_93805cc8_0[500];
    char s_93805cc8_1[157];
+   char s_b495662b[485];
    char s_9953f4e2[290];
    char s_de76d2dc[36];
    char s_79e212bd[5];
@@ -279,6 +280,7 @@ static const struct
    char s_55404857[8];
    char s_f08d700c[32];
    char s_792e0069[27];
+   char s_9908b98a[32];
    char s_a9d2227f[38];
    char s_76e73138[22];
    char s_c82d0aee[10];
@@ -290,6 +292,7 @@ static const struct
    char s_fb84857a[8];
    char s_3943c7ae[42];
    char s_5b2d8d2f[20];
+   char s_6fd9b032[39];
    char s_affd948c[25];
    char s_d2d4c381[28];
    char s_a95aa0fc[31];
@@ -304,9 +307,12 @@ static const struct
    char s_30acd6fb[16];
    char s_35dcde4f[23];
    char s_ce7da552[37];
+   char s_6b5e88c4[36];
+   char s_79fff0ec[41];
    char s_04b30c51[20];
    char s_e5aeacf9[21];
    char s_24976a5b[30];
+   char s_59512220[50];
    char s_5209cc72[53];
    char s_e2eedfe1[11];
    char s_9f1f3534[57];
@@ -698,6 +704,7 @@ static const struct
    char s_dfa3c8c3[8];
    char s_52dea05d[17];
    char s_7ec63ffc[38];
+   char s_7f004a36[153];
    char s_a3825f18[13];
    char s_ef2d0a03[19];
    char s_ad17a194[12];
@@ -2515,16 +2522,22 @@ static const struct
    char s_c9235dab[60];
    char s_330be970_0[500];
    char s_330be970_1[43];
+   char s_014d553a[407];
    char s_98b02857[216];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[126];
    char s_6c3c586d[196];
    char s_950e7a66[33];
    char s_ce113b1c[44];
    char s_272471c3[92];
    char s_cb649822[19];
+   char s_f0838a35_0[500];
+   char s_f0838a35_1[100];
    char s_95821d83[49];
    char s_bdeebb68[43];
    char s_f9005edc[177];
    char s_6ade80dd[56];
+   char s_ec7aa7a0[482];
    char s_b5ccfdfa[184];
    char s_8a24406f[49];
    char s_8c6b0fea[65];
@@ -2535,9 +2548,12 @@ static const struct
    char s_3c3598a9[51];
    char s_3bac47bd[425];
    char s_90e7db40[450];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[80];
    char s_4b78ee7f[72];
    char s_aed11d67[146];
    char s_dbe6e749[97];
+   char s_9e6f6ece[497];
    char s_ed8a1060[102];
    char s_822fa422[77];
    char s_a8d552a7[53];
@@ -2713,6 +2729,7 @@ static const struct
    char s_a68d6d11[58];
    char s_74022c02[111];
    char s_8abad013[82];
+   char s_0a53120f[456];
    char s_a39ca959[82];
    char s_16b9856e[30];
    char s_0ef5e125[27];
@@ -2740,6 +2757,7 @@ static const struct
    char s_aa6534cc[30];
    char s_51d334ea[33];
    char s_95de8c94[34];
+   char s_f43bec66[120];
    char s_d814ec71[88];
    char s_f2a19576[62];
    char s_b2a8d230[51];
@@ -2872,8 +2890,8 @@ static const struct
    char s_d9153542[53];
    char s_8e48ec69[41];
    char s_cd43c108[79];
-   char s_cd46e260[108];
-   char s_cd482ffe[107];
+   char s_cd46e260[163];
+   char s_cd482ffe[151];
    char s_49336383[42];
    char s_e92351d4[106];
    char s_8e22cdce[47];
@@ -2934,6 +2952,9 @@ static const struct
    char s_dda608b5[312];
    char s_6f5a032a[58];
    char s_9530e802[111];
+#ifdef HAVE_SDL3
+   char s_5b9036af[292];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[75];
 #endif
@@ -3294,11 +3315,15 @@ static const struct
    char s_bbc238b8[119];
    char s_a71a2320[75];
    char s_3a5444c9[79];
+   char s_e24628cd[122];
    char s_5587ebcb[84];
    char s_992f7725[43];
    char s_d17500b1[75];
    char s_bd5d9b57[133];
    char s_f373722c[77];
+   char s_00544646[127];
+   char s_8594f008[118];
+   char s_72a5ea43[133];
    char s_b4bf3f71[58];
    char s_b91e9f23[44];
    char s_66664762[55];
@@ -3409,6 +3434,7 @@ static const struct
    char s_98d47f8f[325];
    char s_9385fbef[38];
    char s_efb7504d[76];
+   char s_6b4a7333[436];
    char s_70d6077c[47];
    char s_31124733[193];
    char s_2d24a503[163];
@@ -3536,6 +3562,7 @@ static const struct
    char s_f77f7a41[83];
 #endif
    char s_e7cb5685[46];
+   char s_8bb367a2[116];
    char s_2beab583[42];
    char s_a1c071eb[86];
    char s_0d9ceefa[74];
@@ -3595,6 +3622,8 @@ static const struct
    char s_fc2d67bb[173];
    char s_43946ee5[97];
    char s_5492b73d[56];
+   char s_15cad80e_0[500];
+   char s_15cad80e_1[52];
    char s_01e5fbea[389];
    char s_0653bf6a[472];
    char s_123f401f[138];
@@ -3632,6 +3661,8 @@ static const struct
    char s_1eebf4f8[153];
    char s_2f2ca2b6[153];
    char s_2c9be635[133];
+   char s_c8fb9e1c[391];
+   char s_05ec12e6[219];
    char s_b5a603de[72];
    char s_d9c2db25[77];
 #ifdef HAVE_ODROIDGO2
@@ -3644,6 +3675,7 @@ static const struct
    char s_7968f59d[44];
    char s_8cee3615[163];
    char s_58c80718[313];
+   char s_894ecb9a[416];
    char s_67d549fd[41];
    char s_afac733c[40];
    char s_3aaf6bf1[147];
@@ -3674,6 +3706,10 @@ static const struct
    char s_d62ed5dc[331];
    char s_2e69508b[424];
    char s_7e96b5ce[49];
+   char s_3547866d_0[500];
+   char s_3547866d_1[132];
+   char s_d73ccef3[417];
+   char s_81163acd[470];
    char s_c2314d30[278];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[167];
@@ -4695,6 +4731,12 @@ static const struct
    "e fotogrames del contingut exacta. Es pot deixar activada l'opci\303\263 de VRR (freq\303\274"
    "\303\250ncia d'actualitzaci\303\263 variable) del sistema, per\303\262 no amb aquella opci\303"
    "\263.",
+   "Executa el controlador de v\303\255deo en un fil d'execuci\303\263 propi. La visualitzaci\303"
+   "\263 mant\303\251 la cad\303\250ncia quan el nucli pateix interrupcions, i el nucli processa el "
+   "fotograma seg\303\274ent mentre l'anterior passa per la cadena de *shaders* i es presenta a la p"
+   "antalla. Amb la funci\303\263 \302\253Threaded Video Display Pacing\302\273, el nucli comen\303"
+   "\247a tan tard com permet la seg\303\274ent actualitzaci\303\263 de pantalla, la qual cosa mant"
+   "\303\251 la lat\303\250ncia al nivell que proporciona el retard de fotograma (*Frame Delay*).",
    "Sincronitzaci\303\263 a la velocitat de fotogrames del contingut exacta. Aquesta opci\303\263 "
    "\303\251s l'equivalent a for\303\247ar una velocitat de x1 permetent alhora l'avan\303\247ament "
    "r\303\240pid. No produeix alteracions en la velocitat d'actualitzaci\303\263 sol\302\267licitada"
@@ -4771,6 +4813,7 @@ static const struct
    "Decimal",
    "Surround virtual per auriculars",
    "Lat\303\250ncia de l'\303\240udio (ms)",
+   "Lat\303\250ncia m\303\255nima d'\303\240udio (ms)",
    "Desviaci\303\263 m\303\240xima de sincronitzaci\303\263",
    "Silencia el mesclador",
    "Mesclador",
@@ -4782,6 +4825,7 @@ static const struct
    "Sortida",
    "Control din\303\240mic de freq\303\274\303\250ncia d'\303\240udio",
    "Remostreig d'\303\240udio",
+   "Sobremostreig d'\303\240udio d'alta qualitat",
    "Qualitat del re-sampleig",
    "Respecta el mode silenci\303\263s",
    "Silencia l'\303\240udio en rebobinar",
@@ -4796,9 +4840,12 @@ static const struct
    "Sincronitzaci\303\263",
    "Canalitzaci\303\263 multifil",
    "Augmenta la priotat del fil d'\303\240udio",
+   "Canvis de velocitat amb to constant",
+   "Filtre passabaix vinculat a la velocitat",
    "Guany de volum (dB)",
    "Mode WASAPI exclusiu",
    "Format WASAPI de coma flotant",
+   "Prefer\303\250ncia de programaci\303\263 d'\303\240udio profesional",
    "Mida de la mem\303\262ria interm\303\250dia compartida de WASAPI",
    "Autom\303\240tic",
    "Fitxer de desat: Interval de desat autom\303\240tic de SaveRAM",
@@ -5191,6 +5238,8 @@ static const struct
    "Lectura",
    "Temps est\303\240ndard",
    "Nom\303\251s es pot llegir una part de EDID",
+   "Un panell integrat de port\303\240til o d'ordinador \302\253tot en un\302\273 no disposa d'EDID."
+   " En canvi, una pantalla externa connectada mitjan\303\247ant DDC s\303\255 que en t\303\251.",
    "Versi\303\263 EDID",
    "Mostra informaci\303\263",
    "Orientaci\303\263",
@@ -7061,9 +7110,23 @@ static const struct
    "lador canviar\303\240 de format si el dispositiu rebutja el format seleccionat. 'Int16' hauria d"
    "'anar acompanyada de 'Remostrejar a un enter fix' per mantenir",
    " la ruta d'\303\240udio dins dels valors enters.",
+   "En un dispositiu est\303\250reo, amplia la mescla a un 5.1 virtual i renderitza-la per a dues or"
+   "elles tal com un cap sentiria aquests altaveus: el parell posterior darrere de l'oient i una lle"
+   "ugera alimentaci\303\263 creuada (*crossfeed*) entre els altaveus frontals. Est\303\240 pensat p"
+   "er a auriculars; en altaveus, nom\303\251s estreny l'est\303\250reo. No t\303\251 cap efecte qua"
+   "n el dispositiu s'obre amb una configuraci\303\263 m\303\251s \303\240mplia.",
    "Lat\303\250ncia m\303\240xima d'\303\240udio en mil\302\267lisegons. El controlador intentar\303"
    "\240 mantenir la lat\303\250ncia real en un 50% d'aquest valor. Aquesta opci\303\263 no es compl"
    "ir\303\240 si el controlador d'\303\240udio no pot produir aquesta lat\303\250ncia.",
+   "\303\211s la lat\303\250ncia d'\303\240udio m\303\255nima que RetroArch sol\302\267licita a un c"
+   "ontrolador. Per defecte \303\251s de vuit mil\302\267lisegons, el valor fix que es va utilitzar "
+   "durant molt de temps; anteriorment, s'enviava un valor de zero als controladors i aquests el ges"
+   "tionaven de manera inconsistent. Els controladors que es comuniquen directament amb el dispositi"
+   "u \342\200\224com ara WASAPI en mode exclusiu, ASIO o WDM-KS\342\200\224 sovint poden negociar u"
+   "n per\303\255ode m\303\251s curt, de manera que reduir aquest par\303\240metre els ho permet. Un"
+   " c",
+   "ontrolador que no pugui baixar d'aquest l\303\255mit no ho far\303\240; en qualsevol cas, mant"
+   "\303\251 el seu propi l\303\255mit m\303\255nim de maquinari.",
    "El canvi m\303\240xim en la freq\303\274\303\250ncia d'entrada d'\303\240udio. Augmentar aix\303"
    "\262 activa canvis molt grans en la sincronitzaci\303\263 a cost d'un to d'\303\240udio imprec"
    "\303\255s (ex. executar nuclis PAL a pantalles NTSC).",
@@ -7072,12 +7135,26 @@ static const struct
    "Volum del mesclador global de so (en dB). 0 dB \303\251s el volum normal, sense cap guany afegit"
    ".",
    "Silencia l'\303\240udio.",
+   "Disposici\303\263 dels altaveus per obrir el dispositiu de sortida. \"Est\303\250reo\" \303\251s"
+   " el pipeline com sempre ha estat. Les disposicions m\303\251s amples obren un dispositiu m\303"
+   "\251s ampli on el controlador pot, i la mescla est\303\250reo es barreja a aquest en l'\303\272l"
+   "tim pas: els frontals tal com s\303\263n, un centre des de la suma, el parell posterior a -3 dB,"
+   " els greus a l'LFE. \"5.1\" col\302\267loca el parell posterior a la part posterior, \"5.1 Surro"
+   "und\" als costats; un dispositiu que els controla des de l'altra posici\303\263 ho infor",
+   "ma i es tracta tal com \303\251s. Els controladors que no poden obrir m\303\251s que est\303\250"
+   "reo romanen est\303\250reo.",
    "Freq\303\274\303\250ncia de mostreig de la sortida d'\303\240udio.",
    "Canvia les opcions de sortida de l'\303\240udio.",
    "Ajuda a mitigar imperfeccions en la sincronitzaci\303\263 de l'\303\240udio i v\303\255deo. Teni"
    "u en compte que si es desactiva \303\251s pr\303\240cticament impossible obtenir una sincronitza"
    "ci\303\263 correcta.",
    "Controlador de remostreig d'\303\240udio que es far\303\240 servir.",
+   "Utilitzeu un filtre sinc m\303\251s llarg quan la velocitat de sortida configurada sigui com a m"
+   "\303\255nim el doble de la velocitat de contingut. Anul\302\267la la qualitat del remostreig nom"
+   "\303\251s per a sinc. Augmenta l'\303\272s de la CPU, la mem\303\262ria i el retard del filtre, "
+   "especialment amb diversos canals. Utilitza el remostreig de programari en lloc del remostreig de"
+   "l controlador mentre est\303\240 actiu. Requereix una velocitat de sortida alta; l'avan\303\247 "
+   "r\303\240pid pot reduir la relaci\303\263 de remostreig real.",
    "Baixeu aquest valor per a afavorir el rendiment/baixa lat\303\250ncia sobre la qualitat de l'"
    "\303\240udio, augmenteu-lo per a una millor qualitat d'\303\240udio a expenses de rendiment/baix"
    "a lat\303\250ncia.",
@@ -7105,11 +7182,26 @@ static const struct
    "eixen; un sistema que la rebutja mant\303\251 la prioritat per defecte i res m\303\251s canvia. "
    "S'aplica al fil d'\303\240udio en qu\303\250 s'executen el Threaded Pipeline i les callbacks d'"
    "\303\240udio principals.",
+   "Conserva el to durant la c\303\240mera lenta i l'avan\303\247 r\303\240pid accelerat. Admet la r"
+   "eproducci\303\263 per fils i fotograma a fotograma, incl\303\262s l'\303\240udio multicanal nego"
+   "ciat. Afegeix cost de processament, mem\303\262ria i emmagatzematge intermedi mentre est\303\240"
+   " activat. Requereix una velocitat de contingut de 8000-192000 Hz. Les velocitats o formats d'ori"
+   "gen no compatibles utilitzen la reproducci\303\263 normal. Els canvis de disseny en l\303\255nia"
+   " restableixen l'\303\240udio emmagatzemat a la mem\303\262ria interm\303\250dia. La reproducci"
+   "\303\263 p",
+   "er fils repr\303\250n la conservaci\303\263 del to despr\303\251s que l'\303\240udio a la cua s'"
+   "esgoti.",
    "Volum del so (en dB). 0 dB \303\251s el volum normal, sense cap guany afegit.",
    "Permet al controlador WASAPI prendre el control exclusiu del dispositiu d\342\200\231\303\240udi"
    "o. Si es desactiva aquesta opci\303\263, ser\303\240 usat en mode compartit.",
    "Usa el format de coma flotant per al controlador WASAPI si \303\251s adm\303\250s pel dispositiu"
    " d\342\200\231\303\240udio.",
+   "Cedeix el fil del dispositiu WASAPI al planificador de classes multim\303\250dia de Windows en l"
+   "loc d'augmentar-ne la prioritat directament. Est\303\240 pensat per a configuracions de lat\303"
+   "\250ncia d'\303\240udio molt baixa; no sempre \303\251s la millor opci\303\263 i, en alguns sist"
+   "emes, empitjora el pitjor fotograma, per la qual cosa est\303\240 desactivat tret que s'hagi ver"
+   "ificat el rendiment. Quan es tanca la sessi\303\263 d'\303\240udio, el controlador informa de qu"
+   "ant s'ha retardat l'activaci\303\263 del fil amb la planificaci\303\263 utilitzada.",
    "Mida (en fotogrames) de la mem\303\262ria interm\303\250dia quan s\342\200\231usa el controlador"
    " WASAPI en mode compartit.",
    "Desa autom\303\240ticament la SaveRAM no vol\303\240til a intervals marcats (en segons).",
@@ -7357,6 +7449,12 @@ static const struct
    "Utilitza, si cal, una freq\303\274\303\250ncia d'actualitzaci\303\263 personalitzada especificad"
    "a en el fitxer de configuraci\303\263.",
    "Rota entre aquestes opcions si la imatge no se centra correctament a la pantalla.",
+   "Escriu un bloc EDID que descriu la preconfiguraci\303\263 de CRT seleccionada al directori de co"
+   "nfiguraci\303\263. En carregar-lo com a EDID de microprogramari a Linux (drm.edid_firmware) o co"
+   "m a substituci\303\263 d'EDID a Windows, permet que una pantalla sense DDC comuniqui els seus l"
+   "\303\255mits de sincronitzaci\303\263, de manera que el sistema arrenca amb una freq\303\274\303"
+   "\250ncia que el CRT pot mostrar. No s'instal\302\267la res; el registre indica on es troba el fi"
+   "txer i com utilitzar-lo.",
    "Rota entre aquestes opcions si la imatge no se centra correctament a la pantalla.",
    "Mostra les cerques anteriors.",
    "Mostra les bases de dades.",
@@ -7392,6 +7490,8 @@ static const struct
    "Gesti\303\263 de la imatge de disc.",
    "Obre la safata del disc virtual.",
    "Tanca la safata del disc virtual.",
+   "Visualitzeu l'EDID que comunica la pantalla en \303\272s: identitat, capacitats, temporitzacions"
+   " admeses i blocs d'extensi\303\263.",
    "Mostra el servidor de pantalla, sortida, mode i mida real del monitor que es fa servir.",
    "Baixa i instal\302\267la un nucli des de l'actualitzador en l\303\255nia.",
    "Baixa contingut gratu\303\257t per al nucli seleccionat.",
@@ -7583,10 +7683,11 @@ static const struct
    "Desa un estat a la posici\303\263 actualment seleccionada.",
    "Captura una imatge del contingut actual.",
    "Mant\303\251 el shader seleccionat activat o desactivat mentre la tecla \303\251s clicada.",
-   "Carrega i aplica el seg\303\274ent fitxer predefinit de shader dins l'arrel del directori de 'Sh"
-   "aders de V\303\255deo'.",
-   "Carrega i aplica l'anterior fitxer predefinit de shader dins l'arrel del directori de 'Shaders d"
-   "e V\303\255deo'.",
+   "Carrega i aplica la seg\303\274ent configuraci\303\263 de shaders de la carpeta actual. Si \303"
+   "\251s la \303\272ltima configuraci\303\263, es canviar\303\240 a la seg\303\274ent carpeta del m"
+   "ateix nivell.",
+   "Carrega i aplica la configuraci\303\263 anterior de shaders de la carpeta actual. Abans de la pr"
+   "imera, es canviar\303\240 a la carpeta anterior del mateix nivell.",
    "Activa o desactiva el shader seleccionat.",
    "Activa la c\303\240mera lenta quan es mant\303\251. El contingut s'executa a velocitat normal qu"
    "an s'amolla la tecla.",
@@ -7682,6 +7783,12 @@ static const struct
    "Especifica la magnitud dels efectes de resposta h\303\240ptica.",
    "Desa un fitxer d'autoconfiguraci\303\263 que s'aplicar\303\240 autom\303\240ticament cada cop qu"
    "e es detecti aquest controlador.",
+#ifdef HAVE_SDL3
+   "Utilitza el teclat en pantalla del dispositiu per introduir text als men\303\272s, en lloc del t"
+   "eclat en pantalla integrat. Nom\303\251s s'aplica quan el sistema proporciona un teclat en panta"
+   "lla. Requereix una pantalla t\303\240ctil o un m\303\250tode d'entrada que permeti la navegaci"
+   "\303\263 amb un comandament de joc.",
+#endif
 #ifdef ANDROID
    "Fes servir aquest dispositiu per un teclat f\303\255sic i no per un controlador.",
 #endif
@@ -8282,12 +8389,20 @@ static const struct
    "totes les llistes de reproducci\303\263.",
    "Fitxer d'estil que es fa servir quan el tema est\303\240 fixat en personalitzat.",
    "Color que es fa servir per resaltar una fila seleccionada, escrit com #rrggbb.",
+   "Restaura la finestra del men\303\272 d'escriptori a la posici\303\263 i mida que tenia quan s'ha"
+   " tancat RetroArch per \303\272ltima vegada.",
    "Obre el navegador a la pestanya que estava seleccionada quan s'ha tancat RetroArch.",
    "Mostra un missatge quan acabi un escaneig.",
    "Mostra el nombre de fitxers i carpetes ocultes en el navegador de fitxers.",
    "Llistes de reproducci\303\263 que es mostraran quan s'obre el men\303\272 d'escriptori. Si deixe"
    "s buida aquesta opci\303\263, es mostrar\303\240 la primera.",
    "Quan es carrega un nucli, s'ofereix en primera opci\303\263 en carregar contingut.",
+   "Tema de color pel men\303\272 d'escriptori: el mateix tema que el sistema, fer servir el tema fo"
+   "sc o carrega un estil personalitzat.",
+   "Mem\303\262ria per descodificar miniatures, en megabits. Valors alts fan que les llistes grans e"
+   "s moguin amb m\303\251s suavitat.",
+   "Amplada m\303\240xima, en p\303\255xels, d'una imatge arrossegada sobre una miniatura \303\251s "
+   "escalada abans de desar-la. 0 mant\303\251 la mida original.",
    "Opcions per definir excepcions a la configuraci\303\263 global.",
    "Mostra l\342\200\231opci\303\263 \302\253Afegeix als favorits\302\273.",
    "Mostra l'opci\303\263 'Afegir a una llista de reproducci\303\263'.",
@@ -8453,6 +8568,12 @@ static const struct
    "\2530\302\273 significa que es crearan desats r\303\240pids sense l\303\255mit.",
    "Mostra miniatures dels estats desats.",
    "Desa la configuraci\303\263 actual com el fitxer de configuraci\303\263 predeterminada.",
+   "El c\303\262dec amb qu\303\250 s'escriu cada fitxer comprimit, incloent-hi els fitxers desats, e"
+   "ls estats desats, les llistes de reproducci\303\263, les c\303\262pies de seguretat del nucli i "
+   "la mem\303\262ria cau d'informaci\303\263 del nucli. Zstandard carrega diverses vegades m\303"
+   "\251s r\303\240pid que Deflate i desa una mica m\303\251s r\303\240pid, per a fitxers una mica m"
+   "\303\251s grans. Els fitxers escrits amb qualsevol dels dos c\303\262decs es tornen a llegir; no"
+   "m\303\251s canvien els fitxers nous.",
    "Sobreescriu el fitxer de configuraci\303\263 actual.",
    "Desa un fitxer de configuraci\303\263 d\342\200\231excepcions que s\342\200\231aplicar\303\240 a"
    " tot el contingut carregat des de la mateixa carpeta que el fitxer actual. Tindr\303\240 priorit"
@@ -8626,6 +8747,8 @@ static const struct
    "\303\263.",
 #endif
    "Mostra el temps actual en el format preferit.",
+   "Selecciona el controlador d'escriptori que es far\303\240 servir quan el men\303\272 d'escriptor"
+   "i estigui actiu (Cal reiniciar)",
    "Mostra la barra del men\303\272 de la finestra.",
    "Si s'ha carregat un estat desat, el contingut tornar\303\240 a l'estat previ a la c\303\240rrega"
    ".",
@@ -8729,6 +8852,14 @@ static const struct
    "Redueix la lat\303\250ncia a canvi d'augmentar la probabilitat que es produeixen estrebades de v"
    "\303\255deo.",
    "Ajusta el retard de fotogrames real de forma din\303\240mica.",
+   "Obt\303\251 la \302\253freq\303\274\303\250ncia d'actualitzaci\303\263 de la pantalla estimada"
+   "\302\273 a partir de l'informe de la pr\303\262pia pantalla sobre quan hi arriba cada fotograma,"
+   " en lloc de mesurar el temps del bucle de fotogrames del *frontend*. Nom\303\251s canvia la dada"
+   " mostrada: deixa d'estar distorsionada per la taxa de fotogrames del nucli i pel soroll de tempo"
+   "ritzaci\303\263 del bucle. No afecta la cad\303\250ncia ni la presentaci\303\263 dels fotogrames"
+   ". S'aplica quan el controlador de v\303\255deo pot proporcionar aquesta informaci\303\263; en ca"
+   "s co",
+   "ntrari, es mesura el temps del bucle de fotogrames.",
    "Restringeix el mostreig de la \"Freq\303\274\303\250ncia d'actualitzaci\303\263 de pantalla esti"
    "mada\" als fotogrames on el contingut s'executa correctament (no \303\251s de men\303\272, no es"
    "t\303\240 en pausa, no s'avan\303\247a r\303\240pidament, el temps del fotograma est\303\240 din"
@@ -8811,6 +8942,14 @@ static const struct
    "art superior de la pantalla). Pot provocar defectes d'escalat.",
    "Captura la imatge despr\303\251s d'aplicar els filtres (per\303\262 no els shaders). El v\303"
    "\255deo es veur\303\240 tan elegant com el veieu a la pantalla.",
+   "Repeteix fotogrames basant-se en el moment en qu\303\250 la pantalla indica que hi ha arribat un"
+   "a imatge real, en lloc de fer-ho a partir del rellotge del propi *frontend*. Aquesta opci\303"
+   "\263 s'aplica quan el controlador de v\303\255deo pot proporcionar aquesta informaci\303\263; en"
+   " cas contrari, o si la informaci\303\263 queda desactualitzada, s'utilitza el rellotge. Desactiv"
+   "eu-la per utilitzar sempre el rellotge.",
+   "Taxa de refresc vertical de la teva pantalla. Es fa servir per calcular la taxa d'entrada d'\303"
+   "\240udio i a mesura que avan\303\247a el per\303\255ode de visualitzaci\303\263 de \"Threaded Vi"
+   "deo\", en qu\303\250 el conductor no en pot notificar cap.",
    "La freq\303\274\303\250ncia d'actualitzaci\303\263 precisa estimada de la pantalla en Hz.",
    "La freq\303\274\303\250ncia d'actualitzaci\303\263 que notifica el controlador de la pantalla.",
 #ifdef HAVE_ODROIDGO2
@@ -8831,6 +8970,12 @@ static const struct
    "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
    "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
    "l i renderitzant cada part d'acord amb quants subfotogrames hi ha.",
+   "Permet que la finestra de l'SDL alterni entre els modes de visualitzaci\303\263 que llista. L'op"
+   "ci\303\263 \302\253Auto\302\273 nom\303\251s ho fa servir quan el servidor de visualitzaci\303"
+   "\263 natiu no pot canviar de mode. L'opci\303\263 \302\253Always\302\273 anul\302\267la el servi"
+   "dor natiu: aleshores, CRT SwitchRes selecciona un mode de la llista \342\200\224inclosos els que"
+   " no tenen temporitzacions conegudes\342\200\224 i les temporitzacions CRT personalitzades no est"
+   "an disponibles.",
    "Canvia les opcions de sortida de v\303\255deo.",
    "Activa el proc\303\251s de shaders de v\303\255deo.",
    "Retarda la c\303\240rrega autom\303\240tica de l'ombreig (en ms). Pot resoldre algunes errades g"
@@ -8882,6 +9027,26 @@ static const struct
    "\200\231executa un contingut a 30 fps en una pantalla a 60 Hz o un contingut a 60 fps en una pan"
    "talla a 120 Hz.",
    "Canvia les opcions de sincronitzaci\303\263 de v\303\255deo.",
+   "Executa el nucli i el controlador de v\303\255deo en fils separats, de manera que la visualitzac"
+   "i\303\263 mantingui el ritme quan el nucli pateixi interrupcions i se superposi amb la cadena de"
+   " shaders i el proc\303\251s de presentaci\303\263. Amb l'opci\303\263 \302\253Threaded Video Dis"
+   "play Pacing\302\273, el nucli comen\303\247a tan tard com permet la seg\303\274ent actualitzaci"
+   "\303\263 de pantalla, ajustant-se a la lat\303\250ncia de la funci\303\263 \302\253Frame Delay"
+   "\302\273. Els nuclis que renderitzen a la GPU s'executen en fils separats amb els controladors V"
+   "ulkan, Dire",
+   "ct3D 11, Direct3D 12 i gl; amb altres controladors, s'executen sense fils separats, independentm"
+   "ent de la configuraci\303\263 establerta.",
+   "Amb el v\303\255deo en fils, inicia cada fotograma principal tan tard com ho permeti la seg\303"
+   "\274ent actualitzaci\303\263 de la pantalla, a partir dels temps de renderitzaci\303\263 i del n"
+   "ucli mesurats, en lloc d'un temporitzador fix. Redueix la lat\303\250ncia al que arriba el retar"
+   "d de fotograma en un v\303\255deo sense fils, i un fotograma que dura molt de temps es repeteix "
+   "en lloc de perdre's. Desactivat: el temporitzador avan\303\247a, com abans.",
+   "Amb Threaded Video, es continua mostrant l'\303\272ltim fotograma a la freq\303\274\303\250ncia "
+   "d'actualitzaci\303\263 de la pantalla mentre el nucli es retarda, en lloc de deixar l'anterior a"
+   " la pantalla. Mant\303\251 estables la inserci\303\263 de fotogrames negres (Black Frame Inserti"
+   "on) i els efectes d'shader basats en la freq\303\274\303\250ncia d'actualitzaci\303\263, fins i "
+   "tot si el nucli pateix microtalls. S'aplica quan el controlador de v\303\255deo pot repetir un f"
+   "otograma; no s'aplica amb subfotogrames d'shader.",
    "Pots provar d'augmentar el rendiment si fas servir la mem\303\262ria interm\303\250dia pels argu"
    "ments de Metal. Alguns nuclis necessiten tenir aquesta opci\303\263 activada. Aquesta opci\303"
    "\263 pot fer malb\303\251 alguns shaders, sobretot en maquinari m\303\251s antic o versions del "
@@ -9572,7 +9737,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (207116u
+      (sizeof(msg_hash_ca_blob) == (215968u
 #ifdef ANDROID
        + 281u
 #endif
@@ -9827,6 +9992,9 @@ typedef char msg_hash_ca_blob_check[
 #endif
 #if defined(ANDROID)
        + 160u
+#endif
+#ifdef HAVE_SDL3
+       + 292u
 #endif
 #ifdef ANDROID
        + 75u
@@ -10182,6 +10350,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -10255,6 +10424,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
@@ -10266,6 +10436,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
@@ -10280,9 +10451,12 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
@@ -10674,6 +10848,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -12488,16 +12663,20 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -12507,9 +12686,11 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -12685,6 +12866,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
@@ -12712,6 +12894,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
@@ -12906,6 +13089,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -13266,11 +13452,15 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
    (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
@@ -13381,6 +13571,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -13508,6 +13699,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -13567,6 +13759,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -13604,6 +13797,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13616,6 +13811,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -13646,6 +13842,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

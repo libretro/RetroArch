@@ -2722,8 +2722,6 @@ static const struct
    char s_d9153542[52];
    char s_8e48ec69[38];
    char s_cd43c108[91];
-   char s_cd46e260[112];
-   char s_cd482ffe[110];
    char s_49336383[56];
    char s_e92351d4[109];
    char s_8e22cdce[52];
@@ -7216,10 +7214,6 @@ static const struct
    "Captura unha imaxe do contido actual.",
    "Mant\303\251n o sombreado seleccionado activado/desactivado mentres se mante\303\261a a tecla pu"
    "lsada.",
-   "Carga e aplica o seguinte ficheiro predefinido de sombreadores na ra\303\255z do directorio \"So"
-   "mbreadores de v\303\255deo\".",
-   "Carga e aplica o ficheiro predefinido do sombreador anterior na ra\303\255z do directorio \"Somb"
-   "readores de v\303\255deo\".",
    "Activa/desactiva o sombreador seleccionado actualmente.",
    "Permite a c\303\241mara lenta cando se mante\303\261a. O contido exec\303\272tase \303\241 veloc"
    "idade normal cando se solta a tecla.",
@@ -9097,7 +9091,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (193783u
+      (sizeof(msg_hash_gl_blob) == (193561u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12196,8 +12190,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

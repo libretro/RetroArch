@@ -2757,8 +2757,6 @@ static const struct
    char s_d9153542[52];
    char s_8e48ec69[37];
    char s_cd43c108[86];
-   char s_cd46e260[106];
-   char s_cd482ffe[106];
    char s_49336383[50];
    char s_e92351d4[132];
    char s_8e22cdce[49];
@@ -7333,10 +7331,6 @@ static const struct
    "Salva um save state no slot atualmente selecionado.",
    "Salva uma imagem do conte\303\272do atual.",
    "Mant\303\251m o shader selecionado ativado/desativado enquanto a tecla estiver pressionada.",
-   "Carrega e aplica o arquivo de predefini\303\247\303\243o do shader anterior na raiz do diret\303"
-   "\263rio \"Shader de v\303\255deo\".",
-   "Carrega e aplica o arquivo de predefini\303\247\303\243o do shader anterior na raiz do diret\303"
-   "\263rio \"Shader de v\303\255deo\".",
    "Liga/desliga o sombreador atualmente selecionado.",
    "Habilita a c\303\242mera lenta enquanto a tecla \303\251 pressionada. O conte\303\272do \303\251"
    " executado na velocidade normal quando a tecla \303\251 liberada.",
@@ -9293,7 +9287,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194720u
+      (sizeof(msg_hash_pt_br_blob) == (194508u
 #ifdef ANDROID
        + 352u
 #endif
@@ -12457,8 +12451,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,

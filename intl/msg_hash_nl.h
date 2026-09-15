@@ -2630,8 +2630,6 @@ static const struct
    char s_d9153542[53];
    char s_8e48ec69[44];
    char s_cd43c108[77];
-   char s_cd46e260[96];
-   char s_cd482ffe[94];
    char s_49336383[49];
    char s_e92351d4[142];
    char s_8e22cdce[49];
@@ -6884,8 +6882,6 @@ static const struct
    "Slaat de staat op in het huidige geselecteerde slot.",
    "Maakt een afbeelding van de huidige inhoud.",
    "Houdt de huidige geselecteerde shader aan/uit wanneer toets wordt ingedrukt.",
-   "Laadt en past het volgende shader preset-bestand toe in de hoofdmap van de map 'Video Shaders'.",
-   "Laadt en past het vorige shader preset-bestand toe in de hoofdmap van de map 'Video Shaders'.",
    "Schakelt de huidig geselecteerde shader aan/uit.",
    "Maakt slow-motion mogelijk wanneer het knop is vastgehouden. Inhoud wordt op normale snelheid ui"
    "tgevoerd wanneer de sleutel wordt losgelaten.",
@@ -8575,7 +8571,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174222u
+      (sizeof(msg_hash_nl_blob) == (174032u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11597,8 +11593,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
