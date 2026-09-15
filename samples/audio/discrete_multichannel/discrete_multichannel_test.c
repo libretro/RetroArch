@@ -624,16 +624,19 @@ static void ac3_bitstream_case(void)
       /* Against what the device received, not against what was fed.
        * Those differ: the feed's last partial block is still in the
        * encoder, so it was never a burst at all, and the check used to
-       * demand it.
-       *
-       * One burst of slack, because the capture need not begin on a
-       * burst boundary: the loop above seeks the first sync word, and
-       * whatever preceded it is a partial burst the decode cannot use,
-       * which costs the last whole one for want of room. Anything
-       * beyond that is a burst that arrived and would not decode,
-       * which is a real failure and still caught. */
+       * demand it. */
       {
+         /* Capture length alone does not say how many bursts arrived.
+          * The device's pump plays on after the content ends, so the
+          * tail of the capture is silence, and how much of it there is
+          * depends only on how long the drain ran - a TSan build
+          * captures half again what a plain one does from the same
+          * feed. Bounded by what the encoder could have produced, so
+          * the number means bursts either way. */
          unsigned arrived = (unsigned)(bur_len / IEC61937_AC3_BURST_BYTES);
+         unsigned encoded = (unsigned)(frames / 1536);
+         if (arrived > encoded)
+            arrived = encoded;
          /* Two bursts of slack, one for each end of the capture.
           *
           * The capture does not begin or end on a burst boundary: the

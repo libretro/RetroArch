@@ -115,6 +115,15 @@ void fake_device_configure_drift(double ppm)
  * that wants to look at the bytes and not just count them. */
 static uint8_t *g_cap      = NULL;
 static size_t   g_cap_len  = 0, g_cap_cap = 0;
+/* What fake_device_captured() hands out. The append buffer grows by
+ * realloc from the device thread, so its address is not the caller's
+ * to hold: a harness that reads the bytes after the call - which is
+ * the point of the call - would be reading a block the writer had
+ * already moved. This one is written only inside that function, under
+ * the lock, so the pointer it returns stays put until the harness asks
+ * again. */
+static uint8_t *g_snap     = NULL;
+static size_t   g_snap_cap = 0;
 static bool     g_capture  = false;
 static pthread_mutex_t g_cap_lock = PTHREAD_MUTEX_INITIALIZER;   /* the harness sets, the device thread appends */
 
@@ -137,8 +146,21 @@ size_t fake_device_captured(const uint8_t **buf)
 {
    size_t n;
    pthread_mutex_lock(&g_cap_lock);
-   *buf = g_cap;
-   n    = g_cap_len;
+   n = g_cap_len;
+   if (n > g_snap_cap)
+   {
+      uint8_t *grown = (uint8_t*)realloc(g_snap, n);
+      if (grown)
+      {
+         g_snap     = grown;
+         g_snap_cap = n;
+      }
+      else
+         n = g_snap_cap;
+   }
+   if (n)
+      memcpy(g_snap, g_cap, n);
+   *buf = g_snap;
    pthread_mutex_unlock(&g_cap_lock);
    return n;
 }
@@ -519,11 +541,24 @@ static HRESULT r_releasebuffer(IAudioRenderClient *t, UINT32 n, DWORD flags)
       size_t bytes = (size_t)n * c->frame_bytes;
       if (g_cap_len + bytes > g_cap_cap)
       {
-         g_cap_cap = (g_cap_len + bytes) * 2;
-         g_cap     = (uint8_t*)realloc(g_cap, g_cap_cap);
+         size_t   want  = (g_cap_len + bytes) * 2;
+         uint8_t *grown = (uint8_t*)realloc(g_cap, want);
+         /* Out of room is not this sim's failure to report, and the
+          * old block is still good; drop the release rather than
+          * write past it. */
+         if (grown)
+         {
+            g_cap     = grown;
+            g_cap_cap = want;
+         }
+         else
+            bytes = 0;
       }
-      memcpy(g_cap + g_cap_len, c->buffer, bytes);
-      g_cap_len += bytes;
+      if (bytes)
+      {
+         memcpy(g_cap + g_cap_len, c->buffer, bytes);
+         g_cap_len += bytes;
+      }
    }
    pthread_mutex_unlock(&g_cap_lock);
    if (c->mode == AUDCLNT_SHAREMODE_EXCLUSIVE) c->released = true;
