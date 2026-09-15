@@ -9227,6 +9227,9 @@ void core_run(void)
     * a NULL retro_run — that is an immediate SIGSEGV. */
    if (current_core->retro_run)
    {
+      /* The flags this iteration's checks flipped, fast-forward above
+       * all, reach the frame's own audio rather than the next frame's. */
+      audio_driver_publish_runloop();
       current_core->retro_run();
       audio_driver_frame_end();
    }
