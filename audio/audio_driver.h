@@ -740,8 +740,10 @@ typedef struct
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
-   /* Exponential moving average */
+   /* Exponential moving averages of the flush interval and of the
+    * interval its audio takes at 1.0x */
    retro_time_t avg_flush_delta;
+   double avg_expected_delta;
 
    /* Rate-limit state for the DRC compute.
     *

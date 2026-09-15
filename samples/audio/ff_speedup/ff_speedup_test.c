@@ -87,6 +87,30 @@ static void test_inline_measures_speed(void)
    CHECK(near(m, 2.0), "and follow a core slower than realtime to 2.0");
 }
 
+/* N64 cores publish 185-551 frame batches at a steady cadence. A per-batch
+ * figure swings with the batch size, and pitch-preserving playback run at
+ * those figures falls short of real time. */
+static void test_inline_uneven_batches(void)
+{
+   static const size_t sizes[2] = { 185, 551 };
+   const retro_time_t step      = (retro_time_t)(
+         (sizes[0] + sizes[1]) / 2 * 1000000.0 / RATE) / 4;
+   int i;
+   bool steady                  = true;
+
+   fresh();
+   audio_driver_fastforward_ratio_mult(&audio_driver_st, sizes[0]);
+   for (i = 1; i < 256; i++)
+   {
+      double m;
+      fake_now += step;
+      m         = audio_driver_fastforward_ratio_mult(&audio_driver_st, sizes[i & 1]);
+      if (i >= 128 && !near(m, 0.25))
+         steady = false;
+   }
+   CHECK(steady, "uneven batches at 4x hold a 0.25 multiplier, not one per batch size");
+}
+
 /* --- release and re-entry ------------------------------------------ */
 
 static void test_reentry_ignores_idle_gap(void)
@@ -381,6 +405,7 @@ int main(void)
 {
    printf("fast-forward audio speedup:\n");
    test_inline_measures_speed();
+   test_inline_uneven_batches();
    test_reentry_ignores_idle_gap();
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();

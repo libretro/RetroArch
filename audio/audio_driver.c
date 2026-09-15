@@ -1828,16 +1828,17 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * AUDIO_FF_EXP_AVG_SAMPLES flushes, and returns a multiplier for the
  * resampler ratio so the audio time-stretches to track the actual output
  * speed rather than crackling or being muted.  The EMA smooths the estimate
- * so pitches stay recognizable (it is not needed to avoid crackling -- the
- * generated waves are continuous either way -- but it avoids time
- * compression/decompression every frame; see
- * https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average).
+ * so pitches stay recognizable and avoids time compression/decompression
+ * every frame. The 1.0x interval is averaged too: batch sizes vary, and a
+ * per-batch figure leaves pitch-preserving playback short of real time; see
+ * https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average.
  *
- * The state (last_flush_time, avg_flush_delta) lives on audio_st and the
+ * The state (last_flush_time, avg_flush_delta, avg_expected_delta) lives on
+ * audio_st and the
  * arithmetic is identical regardless of caller, so it is float/int16
  * agnostic: a session may move between the two paths mid-fast-forward and the
  * wall-clock series stays continuous.  The first flush of a fast-forward
- * seeds the average at the 1.0x delta and returns 1.0, so the
+ * seeds the averages at the 1.0x delta and returns 1.0, so the
  * multiplier starts from unity and follows the measured speed from
  * there; audio_driver_ff_mult_reset() arms that seed again once
  * fast-forward is released, so the idle time between two fast-forwards
@@ -1978,14 +1979,19 @@ static double audio_driver_fastforward_ratio_mult(
       const retro_time_t n      = AUDIO_FF_EXP_AVG_SAMPLES;
       audio_st->avg_flush_delta = audio_st->avg_flush_delta * (n - 1) / n +
             (flush_time - audio_st->last_flush_time) / n;
+      audio_st->avg_expected_delta = audio_st->avg_expected_delta * (n - 1) / n
+            + expected_flush_delta / n;
 
       /* How much does avg_flush_delta deviate from the 1.0x delta? */
       mult = MAX(AUDIO_MIN_RATIO,
             MIN(AUDIO_MAX_RATIO,
-               audio_st->avg_flush_delta / expected_flush_delta));
+               audio_st->avg_flush_delta / audio_st->avg_expected_delta));
    }
    else
-      audio_st->avg_flush_delta = (retro_time_t)expected_flush_delta;
+   {
+      audio_st->avg_flush_delta    = (retro_time_t)expected_flush_delta;
+      audio_st->avg_expected_delta = expected_flush_delta;
+   }
 
    audio_st->last_flush_time = flush_time;
    return mult;
@@ -3485,6 +3491,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    const uint8_t *source = (const uint8_t*)data;
    retro_time_t old_time = audio_st->last_flush_time;
    retro_time_t old_delta = audio_st->avg_flush_delta, source_time;
+   double old_expected = audio_st->avg_expected_delta;
    double duration = slowmotion ? slowmotion_ratio : 1.0;
    uint64_t bits;
    uint32_t tempo, cutoff;
@@ -3506,6 +3513,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    {
       audio_st->last_flush_time = old_time;
       audio_st->avg_flush_delta = old_delta;
+      audio_st->avg_expected_delta = old_expected;
       if (!t->bypassed)
       {
          bool pending = audio_st->extra.pending;
@@ -7403,6 +7411,7 @@ static void audio_driver_inline_set_format(audio_driver_state_t *audio_st,
    audio_driver_reset_resamplers(audio_st);
    audio_st->last_flush_time = 0;
    audio_st->avg_flush_delta = 0;
+   audio_st->avg_expected_delta = 0;
    /* A format boundary discards the old tail. Allocation failure leaves
     * ordinary native playback available until audio reinitialization. */
    audio_driver_inline_prepare(audio_st, floating, channels);
