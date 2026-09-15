@@ -156,6 +156,7 @@ jobs:
             # <kernel.h>: the PS2 CI lane compiles it, this runs it.
             retro_atomic_ps2_backend_test
             retro_spsc_test
+            mpsc_stack_test
             retro_waitable_spsc_test
             retro_eventcount_test
             # Runs its natural tier only here; Makefile.test's
@@ -459,6 +460,27 @@ jobs:
           CC=clang make all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
+
+      - name: Run mpsc_stack_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/queues/mpsc_stack_test
+        run: |
+          # mpsc_stack.h is the lock-free many-producer single-consumer
+          # stack the runloop's deferred messages ride.  Its contract is
+          # the push's compare-exchange publishing the node against the
+          # drain's exchange; a weakened push loses nodes under
+          # contention, observable as a drained-count mismatch AND as a
+          # TSan-reported race.  The default ASan/UBSan pass above
+          # catches neither reliably - the race needs TSan's scheduling
+          # to manifest - so this lane is the one that holds the
+          # contract.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./mpsc_stack_test
 
       - name: Run retro_spsc_test under Clang + ThreadSanitizer
         shell: bash

@@ -117,7 +117,18 @@ static void producer(void *arg)
 static int consumer_round(int last_seen, int *seen_out)
 {
    int s;
-   retro_atomic_store_relaxed_int(&g_parked, 1);
+   /* Arithmetic, never a blind store: the producer's stale-claim
+    * un-claim is a -1/+1 transient on this counter, and a store of 1
+    * landing between those two halves left g_parked at 2 - a value
+    * from which fetch_add(-1) never returns 1, so no claim could
+    * succeed and no post could come while the producer demonstrably
+    * published millions of sequence steps. That is the 'lost wake at
+    * round N' CI failure, three in five thousand rounds, self-healing
+    * on the next round's store: a wake the harness lost itself, not
+    * the barrier. The increment composes with every transient - the
+    * counter is conserved, and a producer that steals the fresh park
+    * through a stale read just produces a post this round absorbs. */
+   retro_atomic_fetch_add_int(&g_parked, 1);
    retro_procbarrier();
    s = retro_atomic_load_acquire_int(&g_seq);
    if (s != last_seen)
