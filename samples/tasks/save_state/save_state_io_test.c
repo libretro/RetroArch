@@ -239,8 +239,11 @@ static int ser_dest_calls = 0;
 static void ser_dest_reset(void) { ser_dest_calls = 0; }
 static void ser_dest_note(void *p) { (void)p; ser_dest_calls++; }
 
+static unsigned core_ser_calls;
+
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
+   core_ser_calls++;
    if (core_ser_fails || !info || info->size < core_len)
       return false;
    ser_dest_note((void*)info->data);
@@ -511,6 +514,45 @@ static void test_serialize_failure(void)
    if (file_size(path) == 0)
       printf("       (a zero-byte state file was left in the slot)\n");
 
+   filestream_delete(path);
+}
+
+/* -----------------------------------------------------------------
+ * A background save defers only the core's serialize to the handler
+ * - that deferral is the whole point of the core's
+ * SET_SAVE_STATE_IN_BACKGROUND request - and a foreground save pays
+ * it at push. Where the serialize runs is the contract the thread
+ * audit holds from the other side: the handler's path reads no live
+ * frontend state, so the core call is the only work left in it.
+ * ----------------------------------------------------------------- */
+static void test_background_serialize_timing(void)
+{
+   const char *path = "sst_bg_timing.state";
+   unsigned before;
+
+   frontend_reset();
+   core_fill(128 * 1024);
+   filestream_delete(path);
+
+   set_save_state_in_background(true);
+   before = core_ser_calls;
+   content_save_state(path, true);
+   okf(core_ser_calls == before,
+       "a background push serializes nothing at push");
+   pump(1000);
+   okf(core_ser_calls == before + 1,
+       "the handler serializes the core exactly once");
+   okf(file_size(path) > 0, "and the state landed");
+   set_save_state_in_background(false);
+   filestream_delete(path);
+
+   before = core_ser_calls;
+   content_save_state(path, true);
+   okf(core_ser_calls == before + 1,
+       "a foreground push serializes at push");
+   pump(1000);
+   okf(core_ser_calls == before + 1,
+       "and the handler only writes what the push made");
    filestream_delete(path);
 }
 
@@ -1055,6 +1097,7 @@ static int run_default_lane(void)
          "round-trip is byte-exact at one quantum per tick");
    test_close_waits_for_save();
    test_serialize_failure();
+   test_background_serialize_timing();
    test_open_failure();
    test_truncated_state();
    test_short_file();

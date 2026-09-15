@@ -145,6 +145,15 @@ typedef struct
    ssize_t bytes_read;
    int state_slot;
    uint8_t flags;
+   /* Frontend rastate blocks, captured on the main thread at push for
+    * the background path: SET_SAVE_STATE_IN_BACKGROUND is the core's
+    * promise about its own serialize, not about the frontend's replay
+    * or achievement state, so the worker serializes only the core and
+    * writes these as captured. */
+   void  *fe_replay;
+   size_t fe_replay_size;
+   void  *fe_cheevos;
+   size_t fe_cheevos_size;
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
 
@@ -441,6 +450,8 @@ static void task_save_handler_finished(retro_task_t *task,
       free(state->data);
       state->data = NULL;
    }
+   free(state->fe_replay);
+   free(state->fe_cheevos);
 
    free(state);
 }
@@ -459,6 +470,16 @@ static void task_save_handler_finished(retro_task_t *task,
       if (_pad > 0)                                               \
          memset((output) + (unaligned_size), 0, _pad);            \
    } while (0)
+
+/* Frontend blocks pre-captured on the main thread; NULL means read
+ * them live, which is only the main thread's to do. */
+typedef struct rastate_captured
+{
+   const void *replay;
+   size_t      replay_size;
+   const void *cheevos;
+   size_t      cheevos_size;
+} rastate_captured_t;
 
 static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
@@ -484,6 +505,31 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
    else
       size->replay_size = 0;
 #endif
+   return size->total_size;
+}
+
+/* The worker's sizing: the core live - its serialize is what the
+ * core's background request vouches for - and the frontend's blocks
+ * from the capture, with no live frontend read on this path at all. */
+static size_t content_get_rastate_size_captured(rastate_size_info_t* size,
+      const rastate_captured_t *captured)
+{
+   size_t info_size = core_serialize_size();
+   if (!info_size)
+      return 0;
+   size->coremem_size = info_size;
+   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
+#ifdef HAVE_CHEEVOS
+   size->cheevos_size = captured->cheevos_size;
+   if (size->cheevos_size > 0)
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
+#endif
+#ifdef HAVE_BSV_MOVIE
+   size->replay_size = captured->replay_size;
+   if (size->replay_size > 0)
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
+#endif
+   (void)captured;
    return size->total_size;
 }
 
@@ -573,6 +619,54 @@ static bool content_write_serialized_state(void* buffer,
 
    content_write_block_header(output, RASTATE_END_BLOCK, 0);
 
+   return true;
+}
+
+/* The worker's writer: the frontend blocks come from the push-time
+ * capture and the core serializes live. No live frontend read exists
+ * on this path - the split is what the thread audit holds. */
+static bool content_write_serialized_state_captured(void* buffer,
+      rastate_size_info_t* size, const rastate_captured_t *captured)
+{
+   retro_ctx_serialize_info_t serial_info;
+   unsigned char* output = (unsigned char*)buffer;
+
+   memcpy(output, "RASTATE", 7);
+   output[7] = RASTATE_VERSION;
+   output   += 8;
+
+#ifdef HAVE_BSV_MOVIE
+   if (captured->replay && size->replay_size > 0)
+   {
+      content_write_block_header(output,
+            RASTATE_REPLAY_BLOCK, size->replay_size);
+      memcpy(output + 8, captured->replay, size->replay_size);
+      CONTENT_ZERO_PADDING(output + 8, size->replay_size);
+      output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+   }
+#endif
+
+   content_write_block_header(output, RASTATE_MEM_BLOCK, size->coremem_size);
+   output += 8;
+   serial_info.size = size->coremem_size;
+   serial_info.data = (void*)output;
+   if (!core_serialize(&serial_info))
+      return false;
+   CONTENT_ZERO_PADDING(output, size->coremem_size);
+   output += CONTENT_ALIGN_SIZE(size->coremem_size);
+
+#ifdef HAVE_CHEEVOS
+   if (captured->cheevos && size->cheevos_size > 0)
+   {
+      content_write_block_header(output,
+            RASTATE_CHEEVOS_BLOCK, size->cheevos_size);
+      memcpy(output + 8, captured->cheevos, size->cheevos_size);
+      CONTENT_ZERO_PADDING(output + 8, size->cheevos_size);
+      output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
+   }
+#endif
+
+   content_write_block_header(output, RASTATE_END_BLOCK, 0);
    return true;
 }
 
@@ -698,8 +792,25 @@ static void task_save_handler(retro_task_t *task)
    if (!state->data)
    {
       size_t _len = 0;
-      state->data = content_get_serialized_data(&_len);
-      state->size = (ssize_t)_len;
+      rastate_size_info_t size;
+      rastate_captured_t captured;
+      captured.replay       = state->fe_replay;
+      captured.replay_size  = state->fe_replay_size;
+      captured.cheevos      = state->fe_cheevos;
+      captured.cheevos_size = state->fe_cheevos_size;
+      if ((_len = content_get_rastate_size_captured(&size, &captured)) > 0)
+      {
+         if ((state->data = malloc(_len)))
+         {
+            if (!content_write_serialized_state_captured(state->data,
+                     &size, &captured))
+            {
+               free(state->data);
+               state->data = NULL;
+            }
+         }
+      }
+      state->size = state->data ? (ssize_t)size.total_size : 0;
 
       /* A failed serialize used to leave data NULL and size 0, and
        * every test below then read as success: remaining was 0, so
@@ -1509,6 +1620,57 @@ static void save_state_cb(retro_task_t *task,
    free(state);
 }
 
+#if defined(HAVE_BSV_MOVIE) || defined(HAVE_CHEEVOS)
+/* The frontend's rastate blocks, captured where they belong: the main
+ * thread, when the background save is pushed. The worker then
+ * serializes only the core - which is what the core's
+ * SET_SAVE_STATE_IN_BACKGROUND request vouches for. */
+static void content_capture_frontend_blocks(save_task_state_t *state)
+{
+#ifdef HAVE_BSV_MOVIE
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_REWIND
+      bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+      bool frame_is_reversed = false;
+#endif
+      if (   (input_st->bsv_movie_state.flags
+               & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+          && !frame_is_reversed)
+      {
+         size_t _len = replay_get_serialize_size();
+         if (_len > 0 && (state->fe_replay = malloc(_len)))
+         {
+            if (replay_get_serialized_data(state->fe_replay))
+               state->fe_replay_size = _len;
+            else
+            {
+               free(state->fe_replay);
+               state->fe_replay = NULL;
+            }
+         }
+      }
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   {
+      size_t _len = rcheevos_get_serialize_size();
+      if (_len > 0 && (state->fe_cheevos = malloc(_len)))
+      {
+         if (rcheevos_get_serialized_data(state->fe_cheevos))
+            state->fe_cheevos_size = _len;
+         else
+         {
+            free(state->fe_cheevos);
+            state->fe_cheevos = NULL;
+         }
+      }
+   }
+#endif
+}
+#endif
+
 /**
  * task_push_save_state:
  * @path : file path of the save state
@@ -1529,6 +1691,13 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    strlcpy(state->path, path, sizeof(state->path));
    state->data                   = data;
    state->size                   = len;
+#if defined(HAVE_BSV_MOVIE) || defined(HAVE_CHEEVOS)
+   /* A background save arrives without data: the worker serializes
+    * the core, and the frontend's blocks are captured here, on the
+    * main thread. */
+   if (!data)
+      content_capture_frontend_blocks(state);
+#endif
    /* Don't show OSD messages if we are auto-saving */
    if (autosave)
       state->flags              |= (  SAVE_TASK_FLAG_AUTOSAVE
