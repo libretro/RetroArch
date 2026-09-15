@@ -360,9 +360,14 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
    bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);
    if (__len > len)
       __len = len;
-   memcpy(data_, bear_data, __len);
+   /* recvapp_buf returns NULL when it has nothing; memcpy() declares
+    * its pointers nonnull even for a zero length, so the copy has to
+    * sit under the same guard as the ack. */
    if (__len)
+   {
+      memcpy(data_, bear_data, __len);
       br_ssl_engine_recvapp_ack(&state->sc.eng, __len);
+   }
    return __len;
 }
 
@@ -381,9 +386,13 @@ int ssl_socket_receive_all_blocking(void *state_data,
       bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);
       if (__len > len)
          __len = len;
-      memcpy(data, bear_data, __len);
+      /* Same as the nonblocking path: bear_data is NULL when the
+       * engine has no plaintext ready, so only copy under the guard. */
       if (__len)
+      {
+         memcpy(data, bear_data, __len);
          br_ssl_engine_recvapp_ack(&state->sc.eng, __len);
+      }
       data += __len;
       len -= __len;
 
