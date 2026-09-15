@@ -940,7 +940,7 @@ static void stereo_ring_format_case(bool source_float, bool ring_float)
    else if (ring_float) convert_s16_to_float((float*)expected, ini, frames * 2, 1.0f);
    else convert_float_to_s16((int16_t*)expected, inf, frames * 2);
    audio_driver_submit(st, 1.0f, source_float ? (const void*)inf : (const void*)ini,
-         frames * 2, source_float, false, false);
+         frames * 2, source_float, false, false, true);
    CHECK(retro_spsc_read(&st->pipe_ring, actual, frames * st->pipe_frame_bytes)
          == frames * st->pipe_frame_bytes, "stereo ring lost frames");
    for (f = 0; f < frames; f++)
@@ -975,7 +975,7 @@ static void full_wide_ring_case(bool floating)
          else input.i[i] = (int16_t)(round * 100 + i);
       }
       audio_driver_submit_width(st, 1.0f, &input, 8 * AUDIO_PIPE_CANON_CHANNELS,
-            floating, false, false, AUDIO_PIPE_CANON_CHANNELS);
+            floating, false, false, true, AUDIO_PIPE_CANON_CHANNELS);
       n = retro_spsc_read_avail(&st->pipe_ring);
       CHECK(n == (128 / bytes) * bytes, "wide ring published a partial frame");
       CHECK(retro_spsc_read(&st->pipe_ring, &output, n) == n, "wide ring drain");
@@ -985,7 +985,7 @@ static void full_wide_ring_case(bool floating)
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
    retro_atomic_store_release_int(&st->pipe_stalled, 0);
    audio_driver_submit_width(st, 1.0f, &input, 8 * AUDIO_PIPE_CANON_CHANNELS,
-         floating, false, false, AUDIO_PIPE_CANON_CHANNELS);
+         floating, false, false, true, AUDIO_PIPE_CANON_CHANNELS);
    CHECK(retro_atomic_load_acquire_int(&st->pipe_stalled), "partial-frame room must enter the bounded wait");
    CHECK(retro_spsc_read_avail(&st->pipe_ring) == (128 / bytes) * bytes,
          "blocking publish split a frame");
@@ -1125,7 +1125,7 @@ static void layout_epoch_case(bool floating, bool wrapped)
             else input.i[f] = v;
          }
          if (channels == 2)
-            audio_driver_submit(st, 1.0f, &input, 256, floating, false, false);
+            audio_driver_submit(st, 1.0f, &input, 256, floating, false, false, true);
          else
             CHECK(audio_driver_multi_pipe(st, &input, 128, channels, layouts[block], floating),
                   "layout epoch input publish");
@@ -1170,7 +1170,7 @@ static void layout_epoch_pressure_case(bool floating)
    for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY; i++)
    {
       st->pipe_layout = i & 1 ? AUDIO_LAYOUT_7POINT1 : AUDIO_LAYOUT_5POINT1;
-      audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, 11);
+      audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, true, 11);
    }
    held = retro_spsc_read_avail(&st->pipe_ring);
    CHECK(held == AUDIO_PIPELINE_LAYOUT_CAPACITY * st->pipe_frame_bytes,
@@ -1180,7 +1180,7 @@ static void layout_epoch_pressure_case(bool floating)
       bool speedup = config_get_ptr()->bools.audio_fastforward_speedup;
       config_get_ptr()->bools.audio_fastforward_speedup = true;
       audio_driver_publish_runloop();
-      audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, true, 11);
+      audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, true, true, 11);
       config_get_ptr()->bools.audio_fastforward_speedup = speedup;
       audio_driver_publish_runloop();
       CHECK(st->pipe_ff_frames == 1, "metadata pressure skipped source cadence accounting");
@@ -1200,9 +1200,9 @@ static void layout_epoch_pressure_case(bool floating)
    CHECK(!retro_spsc_read_avail(&st->pipe_ring), "pause did not drain epoch audio");
    /* Underrun discard crosses all outstanding boundaries and releases space. */
    snap_pause(false);
-   audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, 11);
+   audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, true, 11);
    st->pipe_layout = AUDIO_LAYOUT_5POINT1;
-   audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, 11);
+   audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, true, 11);
    scripted_threaded.underruns = epoch_underrun;
    st->buffer_size = 0;
    config_get_ptr()->bools.audio_sync = false;
@@ -2248,7 +2248,7 @@ static void transport_request_cases(void)
          retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 16384);
          audio_driver_publish_runloop();
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
-               floating, false, true, st->pipe_channels);
+               floating, false, true, true, st->pipe_channels);
          CHECK(!retro_spsc_read_avail(&st->pipe_ring)
                && (st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
                && q->published_control == 65536 && q->published_cutoff == 0,
@@ -2256,7 +2256,7 @@ static void transport_request_cases(void)
          CHECK(audio_pipeline_stretch_next(st->pipe_transport, 0, 1, &block),
                "automatic pressure retirement");
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
-               floating, false, true, st->pipe_channels);
+               floating, false, true, true, st->pipe_channels);
          CHECK(retro_spsc_read_avail(&st->pipe_ring) == st->pipe_frame_bytes
                && !(st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
                && q->published_control == (262144 | AUDIO_PIPELINE_STRETCH)
@@ -2265,7 +2265,7 @@ static void transport_request_cases(void)
          config_get_ptr()->bools.audio_fastforward_speedup = false;
          audio_driver_publish_runloop();
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
-               floating, false, false, st->pipe_channels);
+               floating, false, false, true, st->pipe_channels);
          CHECK(retro_atomic_load_relaxed_size(&q->head) == head,
                "automatic producer updated twice in one frame");
          audio_driver_frame_end();
@@ -2276,7 +2276,7 @@ static void transport_request_cases(void)
          retained = st->pipe_transport;
          transport_allocations = transport_frees = 0; transport_track = true;
          audio_driver_submit_width(st, 8.0f, &input, st->pipe_channels,
-               floating, true, false, st->pipe_channels);
+               floating, true, false, true, st->pipe_channels);
          CHECK(!st->pipe_transport && st->pipe_transport_follow
                && st->pipe_transport_suspended == retained
                && retro_spsc_read_avail(&st->pipe_ring) == position + st->pipe_frame_bytes,
@@ -2288,7 +2288,7 @@ static void transport_request_cases(void)
                "automatic restart accepted queued source");
          audio_driver_frame_end();
          audio_driver_submit_width(st, 1.0f, &input, st->pipe_channels,
-               floating, false, false, st->pipe_channels);
+               floating, false, false, true, st->pipe_channels);
          CHECK(!st->pipe_transport && st->pipe_transport_suspended == retained
                && retro_spsc_read_avail(&st->pipe_ring) == position + 2 * st->pipe_frame_bytes,
                "recovery replaced queued legacy source");

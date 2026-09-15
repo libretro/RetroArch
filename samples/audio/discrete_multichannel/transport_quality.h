@@ -84,7 +84,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
             CHECK(audio_driver_multi_pipe(st, &input, n, channels,
                   AUDIO_LAYOUT_5POINT1, floating), "quality wide publish");
          else
-            audio_driver_submit(st, 1.0f, &input, n * 2, floating, false, false);
+            audio_driver_submit(st, 1.0f, &input, n * 2, floating, false, false, true);
          submitted += n;
          audio_driver_frame_end();
       }

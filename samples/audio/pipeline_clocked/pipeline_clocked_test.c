@@ -363,7 +363,7 @@ static void run_one(unsigned latency_ms, double seconds)
       next.tv_nsec %= 1000000000L;
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
       audio_driver_submit(&audio_driver_st, 1.0f, frame_audio,
-            per_frame * 2, false, false, false);
+            per_frame * 2, false, false, false, true);
       audio_driver_pipeline_signal(&audio_driver_st);
       /* One second in, take the startup transient out of the count so
        * what remains is steady state. */

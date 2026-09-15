@@ -226,14 +226,14 @@ static void test_producer_publishes_at_its_cadence(void)
    retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
 
    /* A 1.0x publish first, so the re-entry seed is armed. */
-   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false);
+   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false, true);
 
    /* Then fast-forward at 4x, with nobody draining the ring: every
     * block past the first is dropped, and still counts. */
    for (i = 0; i < 64; i++)
    {
       fake_now += ONE_X / 4;
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
    }
    got = (double)retro_atomic_load_acquire_int(
@@ -241,7 +241,7 @@ static void test_producer_publishes_at_its_cadence(void)
    CHECK(near(got, 0.25), "producer at 4x into a full ring publishes 0.25");
 
    /* Released: a 1.0x publish re-arms the seed. */
-   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false);
+   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, false, true);
    CHECK(audio_driver_st.last_flush_time == 0,
          "a publish outside fast-forward re-arms the seed");
 
@@ -281,7 +281,7 @@ static void test_fragmented_frame_cadence(void)
          {
             size_t n = part + 1 == batches[b] ? FRAMES - used : FRAMES / batches[b];
             audio_driver_submit(&audio_driver_st, 1.0f, block + used * 2,
-                  n * 2, false, false, true);
+                  n * 2, false, false, true, true);
             used += n;
          }
          audio_driver_frame_end();
@@ -297,7 +297,7 @@ static void test_fragmented_frame_cadence(void)
          fake_now += ONE_X / 4;
          if (frame & 1)
             audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 4,
-                  false, false, true);
+                  false, false, true, true);
          audio_driver_frame_end();
       }
       CHECK(near(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16)
@@ -307,14 +307,14 @@ static void test_fragmented_frame_cadence(void)
       audio_driver_frame_end();
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_PAUSED;
       audio_driver_publish_runloop();
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
       CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
             "paused fast-forward resumes from unity");
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;
       fake_now += 10000000;
       audio_driver_frame_end(); /* silent frames re-arm the seed */
-      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true);
+      audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
       audio_driver_frame_end();
       CHECK(retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16) == 65536,
             "source resumes from unity after an empty frame outside fast-forward");

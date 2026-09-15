@@ -854,7 +854,7 @@ static void submit_frame(size_t per_frame, unsigned publishes)
       else audio_driver_submit(&audio_driver_st, 1.0f,
             source_float ? (const void*)(frame_audio_float + done * 2)
                          : (const void*)(frame_audio + done * 2), n * 2,
-            source_float, false, false);
+            source_float, false, false, true);
       done += n;
       if (spread_publishes && publishes > 1 && k + 1 < publishes)
       {
