@@ -36,6 +36,17 @@
 #include "../config.def.h"
 
 #include "video_driver.h"
+
+/* Decided here, at the top: the first user of this gate is
+ * video_driver_lock_new()'s mailbox drain, far above the title
+ * protocol block where the rest of the machinery lives - and an
+ * #ifdef on a macro defined later in the file is silently false,
+ * which is exactly what happened to that drain. The protocol and
+ * the fallback macros stay with the title code; see the comment
+ * there. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define VIDEO_TITLE_MAILBOX 1
+#endif
 #include "video_filter.h"
 #include "video_display_server.h"
 #include "modeline/modeline_list.h"
@@ -4352,9 +4363,6 @@ bool video_driver_has_focus(void)
  * pointer ops (and in a build without threads, where there is no
  * second thread) the old display_lock protocol stands below,
  * unchanged. */
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
-#define VIDEO_TITLE_MAILBOX 1
-#endif
 #if defined(HAVE_THREADS) && !defined(VIDEO_TITLE_MAILBOX)
 #define VIDEO_TITLE_LOCK(st)   do { if ((st)->display_lock) slock_lock((st)->display_lock); } while (0)
 #define VIDEO_TITLE_UNLOCK(st) do { if ((st)->display_lock) slock_unlock((st)->display_lock); } while (0)
