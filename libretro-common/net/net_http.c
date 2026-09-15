@@ -286,6 +286,10 @@ static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s 
 static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
 static slock_t *dns_cache_lock = NULL;
+/* Signalled by net_http_resolve() once an entry carries a result, so
+ * that a caller with nothing else to wait on can wait for the lookup
+ * rather than spin over it.  See net_http_wait_dns(). */
+static scond_t *dns_cache_cond = NULL;
 #define LOCK_DNS_CACHE() slock_lock(dns_cache_lock)
 #define UNLOCK_DNS_CACHE() slock_unlock(dns_cache_lock)
 #else
@@ -1069,6 +1073,10 @@ static void net_http_resolve(void *data)
       LOCK_DNS_CACHE();
       entry->valid = true;
       entry->addr = NULL;
+#ifdef HAVE_THREADS
+      if (dns_cache_cond)
+         scond_broadcast(dns_cache_cond);
+#endif
       UNLOCK_DNS_CACHE();
       free(domain);
       return;
@@ -1082,6 +1090,10 @@ static void net_http_resolve(void *data)
    LOCK_DNS_CACHE();
    entry->valid = true;
    entry->addr = addr;
+#ifdef HAVE_THREADS
+   if (dns_cache_cond)
+      scond_broadcast(dns_cache_cond);
+#endif
    UNLOCK_DNS_CACHE();
 }
 
@@ -1093,6 +1105,8 @@ static bool net_http_new_socket(struct http_t *state)
 #ifdef HAVE_THREADS
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
+   if (!dns_cache_cond)
+      dns_cache_cond = scond_new();
    LOCK_DNS_CACHE();
 
    /* need some place to create this, I guess */
@@ -2096,6 +2110,8 @@ void net_http_init(void)
 #ifdef HAVE_THREADS
    if (!dns_cache_lock)
       dns_cache_lock = slock_new();
+   if (!dns_cache_cond)
+      dns_cache_cond = scond_new();
    if (!conn_pool_lock)
       conn_pool_lock = slock_new();
 #endif
@@ -2134,6 +2150,13 @@ void net_http_deinit(void)
    LOCK_DNS_CACHE();
    entries   = dns_cache;
    dns_cache = NULL;
+#ifdef HAVE_THREADS
+   /* A waiter in net_http_wait_dns() re-reads the list on wake, so
+    * emptying it is what releases it; broadcast under the lock so it
+    * cannot miss the wake between the unlink and the wait. */
+   if (dns_cache_cond)
+      scond_broadcast(dns_cache_cond);
+#endif
    UNLOCK_DNS_CACHE();
 
    while (entries)
@@ -2151,6 +2174,11 @@ void net_http_deinit(void)
    }
 
 #ifdef HAVE_THREADS
+   if (dns_cache_cond)
+   {
+      scond_free(dns_cache_cond);
+      dns_cache_cond = NULL;
+   }
    if (dns_cache_lock)
    {
       slock_free(dns_cache_lock);
@@ -2192,6 +2220,67 @@ void net_http_deinit(void)
  * Returns: true when the transport reported itself ready or no wait was
  * needed, false when @timeout_ms elapsed first.
  **/
+#ifdef HAVE_THREADS
+/* Is a lookup for @domain:@port still outstanding? Caller holds the
+ * DNS cache lock. */
+static bool net_http_dns_pending(const char *domain, int port)
+{
+   struct dns_cache_entry *entry;
+
+   for (entry = dns_cache; entry; entry = entry->next)
+   {
+      if (port == entry->port && strcmp(entry->domain, domain) == 0)
+         return !entry->valid;
+   }
+   return false;
+}
+
+/* The wait for a transfer that has no socket yet because its name is
+ * still being resolved. There is nothing to select() on in that state,
+ * so the wait is on the cache signal instead: the resolver publishes
+ * its result under the cache lock and broadcasts, and until that lands
+ * the caller costs nothing. Without it a threaded caller, which has
+ * nothing else pacing it, spins between here and net_http_update() for
+ * the whole lookup. */
+static bool net_http_wait_dns(struct http_t *state, int timeout_ms)
+{
+   retro_time_t deadline;
+   bool pending;
+
+   if (!dns_cache_lock || !dns_cache_cond)
+      return true;
+
+   deadline = cpu_features_get_time_usec() + (retro_time_t)timeout_ms * 1000;
+
+   LOCK_DNS_CACHE();
+
+   for (;;)
+   {
+      retro_time_t now;
+
+      /* Re-read rather than hold an entry across the wait: the lock is
+       * released while waiting, and net_http_deinit() unlinks and frees
+       * every entry in that window. An emptied cache reads as not
+       * pending, which is the right answer - there is no lookup left to
+       * wait for. */
+      pending = net_http_dns_pending(state->request.domain,
+            state->request.port);
+      if (!pending)
+         break;
+
+      now = cpu_features_get_time_usec();
+      if (now >= deadline)
+         break;
+
+      scond_wait_timeout(dns_cache_cond, dns_cache_lock, deadline - now);
+   }
+
+   UNLOCK_DNS_CACHE();
+
+   return !pending;
+}
+#endif
+
 bool net_http_wait(struct http_t *state, int timeout_ms)
 {
    bool rd = false;
@@ -2199,7 +2288,16 @@ bool net_http_wait(struct http_t *state, int timeout_ms)
 
    if (!state || state->err || !state->blocked)
       return true;
-   if (!state->conn || state->conn->fd < 0)
+   if (!state->conn)
+   {
+#ifdef HAVE_THREADS
+      return net_http_wait_dns(state, timeout_ms);
+#else
+      /* Resolution runs inline, so the result is already published. */
+      return true;
+#endif
+   }
+   if (state->conn->fd < 0)
       return true;
 
    if (state->conn->connected && state->request_sent)
@@ -2235,6 +2333,10 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       {
          if (!net_http_new_socket(state))
             state->err = true;
+         /* No progress this pass: either the resolver is still
+          * running or the socket has only just been created. Both
+          * are states net_http_wait() waits out. */
+         state->blocked = !state->err;
          return state->err;
       }
    }
