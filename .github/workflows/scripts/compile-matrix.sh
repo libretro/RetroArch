@@ -229,6 +229,35 @@ check_nothreads "no threads: widget state lock stand-ins" \
    "$GLINC -DHAVE_GFX_WIDGETS" \
    gfx/gfx_widgets.c gfx/widgets/gfx_widget_volume.c gfx/video_driver.c runloop.c
 
+# The menu and the on-screen widgets are switched separately, so the
+# frontend translation units have to hold for all four combinations of
+# the two. Every lane above builds with HAVE_MENU, and the shipping jobs
+# all enable one or the other, so a declaration that reaches a caller
+# only through menu_driver.h or gfx_widgets.h is green everywhere and
+# absent from a build with both off.
+echo
+echo "== menu and widget gates =="
+NOMENU=$(echo "$BASE" | sed 's/-DHAVE_MENU//')
+check_gates() {
+   name="$1"; shift
+   defs="$1"; shift
+   for tu in "$@"; do
+      if ! out=$($CC $WARN $INC $NOMENU $defs -fsyntax-only "$tu" 2>&1); then
+         echo "FAIL  $name"
+         echo "      $tu"
+         echo "$out" | sed 's/^/      /' | head -12
+         fail=1
+      fi
+   done
+   [ "$fail" = 1 ] || echo "ok    $name"
+}
+UITU="retroarch.c runloop.c gfx/video_driver.c gfx/gfx_display.c"
+UIDEFS="$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD"
+check_gates "gates: menu + widgets" "$UIDEFS -DHAVE_MENU -DHAVE_GFX_WIDGETS" $UITU
+check_gates "gates: menu only"      "$UIDEFS -DHAVE_MENU"                    $UITU
+check_gates "gates: widgets only"   "$UIDEFS -DHAVE_GFX_WIDGETS"             $UITU
+check_gates "gates: neither"        "$UIDEFS"                                $UITU
+
 # The builtin DSP filters are compiled only by console builds, through
 # griffin, and no other job compiles them as C. Each is checked on its
 # own, as the consoles build it, in the C89 lane: once with the C99 math

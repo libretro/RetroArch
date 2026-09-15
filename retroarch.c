@@ -151,6 +151,8 @@
 
 #include "audio/audio_driver.h"
 
+#include "gfx/gfx_display.h"
+
 #ifdef HAVE_GFX_WIDGETS
 #include "gfx/gfx_widgets.h"
 #endif

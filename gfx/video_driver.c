@@ -41,6 +41,7 @@
 #include "modeline/modeline_list.h"
 
 #include "gfx_animation.h"
+#include "gfx_display.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "gfx_widgets.h"
 #endif
