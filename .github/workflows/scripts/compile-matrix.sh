@@ -26,15 +26,16 @@ fail=0
 check() {
    name="$1"; shift
    defs="$1"; shift
+   bad=0
    for tu in "$@"; do
       if ! out=$($CC $WARN $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
          echo "$out" | sed 's/^/      /' | head -12
-         fail=1
+         fail=1; bad=1
       fi
    done
-   [ "$fail" = 1 ] || echo "ok    $name"
+   [ "$bad" = 1 ] || echo "ok    $name"
 }
 
 AUDIO="libretro-common/formats/audio_transfer.c libretro-common/audio/audio_mixer.c"
@@ -210,15 +211,16 @@ NOTHREADS=$(echo "$BASE" | sed 's/-DHAVE_THREADS//')
 check_nothreads() {
    name="$1"; shift
    defs="$1"; shift
+   bad=0
    for tu in "$@"; do
       if ! out=$($CC $WARN $INC $NOTHREADS $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
          echo "$out" | sed 's/^/      /' | head -12
-         fail=1
+         fail=1; bad=1
       fi
    done
-   [ "$fail" = 1 ] || echo "ok    $name"
+   [ "$bad" = 1 ] || echo "ok    $name"
 }
 check_nothreads "no threads: gl2"          "$GLDEFS $GLINC"       gfx/drivers/gl2.c
 check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driver.c
@@ -228,6 +230,19 @@ check_nothreads "no threads: linux input"  "$GLINC"               input/common/l
 check_nothreads "no threads: widget state lock stand-ins" \
    "$GLINC -DHAVE_GFX_WIDGETS" \
    gfx/gfx_widgets.c gfx/widgets/gfx_widget_volume.c gfx/video_driver.c runloop.c
+
+# The networking files carry threaded machinery of their own - the HTTP
+# DNS cache's lock and condition, the task queue's - beside code that is
+# compiled either way, so a broadcast or a wait written outside the
+# guard is green in every job here and breaks a threadless build. That
+# has happened: a DNS cache signal added to net_http_resolve(), which is
+# not itself guarded, was caught by a sample rather than by this matrix.
+NETDEFS="-DHAVE_NETWORKING $GLINC"
+check_nothreads "no threads: net_http"   "$NETDEFS"                 libretro-common/net/net_http.c
+check_nothreads "no threads: net_socket" "$NETDEFS"                 libretro-common/net/net_socket.c
+check_nothreads "no threads: task_http"  "$NETDEFS"                 tasks/task_http.c
+check_nothreads "no threads: cloud sync" "$NETDEFS -DHAVE_CLOUDSYNC" \
+   tasks/task_cloudsync.c network/cloud_sync/webdav.c
 
 # The menu and the on-screen widgets are switched separately, so the
 # frontend translation units have to hold for all four combinations of
@@ -241,15 +256,16 @@ NOMENU=$(echo "$BASE" | sed 's/-DHAVE_MENU//')
 check_gates() {
    name="$1"; shift
    defs="$1"; shift
+   bad=0
    for tu in "$@"; do
       if ! out=$($CC $WARN $INC $NOMENU $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
          echo "$out" | sed 's/^/      /' | head -12
-         fail=1
+         fail=1; bad=1
       fi
    done
-   [ "$fail" = 1 ] || echo "ok    $name"
+   [ "$bad" = 1 ] || echo "ok    $name"
 }
 UITU="retroarch.c runloop.c gfx/video_driver.c gfx/gfx_display.c"
 UIDEFS="$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD"
