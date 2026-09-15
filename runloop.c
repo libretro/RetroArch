@@ -1974,6 +1974,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         strlcpy(runloop_st->core_status_msg.str, msg->msg,
                               sizeof(runloop_st->core_status_msg.str));
 
+                        /* Stored so the guard above actually bites:
+                         * a status holds its priority for its
+                         * lifetime, and lower-priority updates -
+                         * clears included - bounce until it expires
+                         * or a same-or-higher write lands. Every
+                         * clear path zeroes this again. */
+                        runloop_st->core_status_msg.priority = msg->priority;
                         runloop_st->core_status_msg.duration = (float)msg->duration;
                         runloop_st->core_status_msg.set      = true;
                      }
@@ -8801,14 +8808,11 @@ void runloop_msg_queue_drain_deferred(void)
          {
             if (node->msg && *node->msg)
             {
-               /* Deliberately no priority store, mirroring the
-                * direct path above: it too only zeroes priority on
-                * clear, so the stored value is always 0 and the
-                * guard admits every message. Kept identical here so
-                * this change is threading only; whether that guard
-                * should ever bite is a separate question. */
+               /* The same store the direct path makes, for the same
+                * reason: the guard bites on the held priority. */
                strlcpy(runloop_st->core_status_msg.str, node->msg,
                      sizeof(runloop_st->core_status_msg.str));
+               runloop_st->core_status_msg.priority = node->prio;
                runloop_st->core_status_msg.duration = (float)node->duration;
                runloop_st->core_status_msg.set      = true;
             }

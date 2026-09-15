@@ -15,9 +15,9 @@
  *   2. The drain's rule matches the direct path's, byte for byte in
  *      effect: an oracle applies the direct path's rule to the same
  *      sequence and the final status must agree - including empty
- *      messages, which clear the slot, and including the quirk that
- *      the stored priority is only ever zeroed, so the guard admits
- *      every message (kept deliberately; see runloop.c).
+ *      messages, which clear the slot, and including the guard,
+ *      which now bites: a held status keeps its priority for its
+ *      lifetime, and lower-priority updates and clears bounce.
  *   3. Every node and copy is freed exactly once (ASan holds this).
  *
  * Paced with short sleeps so a single-processor machine interleaves
@@ -69,6 +69,7 @@ static void status_apply(struct status_slot *s, const char *msg,
       if (msg && *msg)
       {
          strlcpy(s->str, msg, sizeof(s->str));
+         s->priority = prio;
          s->duration = (float)duration;
          s->set      = 1;
       }
@@ -186,6 +187,29 @@ int main(void)
       char *m = post_make(i, prio);
       status_apply(&oracle, m, prio, 60);
       free(m);
+   }
+
+   /* The guard, by hand: scripted updates whose outcome under a
+    * biting guard differs from admit-everything at every step. */
+   {
+      struct status_slot g;
+      int guard_ok;
+      memset(&g, 0, sizeof(g));
+      status_apply(&g, "urgent", 3, 60);    /* lands on empty       */
+      status_apply(&g, "chatter", 1, 60);   /* bounces: 1 < 3       */
+      status_apply(&g, "", 1, 60);          /* low clear bounces    */
+      guard_ok =    g.set && g.priority == 3
+                 && !strcmp(g.str, "urgent");
+      status_apply(&g, "", 3, 60);          /* equal clear lands    */
+      guard_ok = guard_ok && !g.set && g.priority == 0;
+      status_apply(&g, "quiet", 0, 60);     /* lands on empty       */
+      guard_ok = guard_ok && g.set && !strcmp(g.str, "quiet");
+      if (!guard_ok)
+      {
+         printf("core_status_defer: FAILED (the priority guard "
+                "does not bite as specified)\n");
+         return 1;
+      }
    }
 
    printf("core_status_defer: %d posted, %d applied, last seq %d\n",
