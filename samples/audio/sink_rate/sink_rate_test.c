@@ -119,6 +119,7 @@ static void reset(audio_driver_state_t *st, bool control)
    core_pause_sec = 0.0;
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
    config_get_ptr()->uints.audio_output_sample_rate   = 48000;
+   audio_driver_publish_runloop();
    audio_driver_sink_update(st, clock_usec); /* opens the baseline */
 }
 
@@ -413,6 +414,7 @@ static void s_disabled_and_toggled(audio_driver_state_t *st)
 {
    reset(st, false);
    config_get_ptr()->bools.audio_sink_rate_estimation = false;
+   audio_driver_publish_runloop();
    dev_ppm = 120.0;
    run_seconds(st, 60);
    CHECK(st->sink_bias == 1.0 && st->sink_applied == 0, "disabled, yet the bias moved");
@@ -423,9 +425,11 @@ static void s_disabled_and_toggled(audio_driver_state_t *st)
    run_seconds(st, 120);
    CHECK(st->sink_bias != 1.0, "no bias to drop");
    config_get_ptr()->bools.audio_sink_rate_estimation = false;
+   audio_driver_publish_runloop();
    run_second(st);
    CHECK(st->sink_bias == 1.0 && audio_driver_sink_bias(st) == 1.0, "turned off, the bias stayed");
    config_get_ptr()->bools.audio_sink_rate_estimation = true;
+   audio_driver_publish_runloop();
    run_seconds(st, 120);
    printf("      off then on: bias %+.0f ppm\n", bias_ppm(st));
    CHECK(fabs(bias_ppm(st) - 120.0) < 60.0, "turned back on, the bias is %+.0f, expected +120 afresh", bias_ppm(st));
