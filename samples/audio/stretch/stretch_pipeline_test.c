@@ -2,6 +2,34 @@
 #include "stretch_epoch_test.c"
 #include "../../../audio/audio_pipeline_stretch.h"
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
+
+/* Yield inside the spin waits.
+ *
+ * The waits below are pure busy loops.  On a machine with more than
+ * one core that is what is wanted - the point is to hammer the
+ * producer/consumer handoff, not to test a scheduler - but on a
+ * uniprocessor it is a livelock: the spinning thread holds the CPU for
+ * its whole quantum while the thread it waits on never runs, so
+ * progress comes only from preemption and the stress loops take
+ * effectively forever.  Single-core CI runners and containers are
+ * common enough to matter; this test used to hang on them.
+ *
+ * Spin a short while first and only then yield: on a multi-core host
+ * the other thread is normally already running and the wait resolves
+ * inside the spin budget, so the yield costs nothing there, while on a
+ * uniprocessor the loop still hands the CPU over instead of holding
+ * it.  retro_sleep(0) is a yield on every platform rthreads supports. */
+#define STRESS_SPIN_BUDGET 64
+
+#define STRESS_YIELD(counter) \
+   do { \
+      if (++(counter) >= STRESS_SPIN_BUDGET) \
+      { \
+         (counter) = 0; \
+         retro_sleep(0); \
+      } \
+   } while (0)
 
 static size_t pipeline_run(unsigned channels, unsigned native, double ratio,
       unsigned hq, unsigned capacity, unsigned discard)
@@ -250,14 +278,17 @@ static void pipeline_produce(void *arg)
    struct pipeline_stress *s = (struct pipeline_stress*)arg;
    uint8_t frame[44];
    unsigned token;
+   unsigned spin = 0;
    size_t c;
    for (token = 0; token < 100000; token++)
    {
       for (c = 0; c < s->frame; c++) frame[c] = (uint8_t)(token * 13 + c);
       while (!audio_pipeline_layout_publish_transport(&s->metadata,
                retro_atomic_load_relaxed_size(&s->ring.head), stress_layout(token),
-               65536, false, false)) { }
-      while (!retro_spsc_write_frames(&s->ring, frame, 1, s->frame)) { }
+               65536, false, false))
+         STRESS_YIELD(spin);
+      while (!retro_spsc_write_frames(&s->ring, frame, 1, s->frame))
+         STRESS_YIELD(spin);
    }
 }
 
@@ -269,6 +300,7 @@ static void concurrent_direct(unsigned native)
    union chain_buffer output;
    sthread_t *producer;
    unsigned token = 0;
+   unsigned spin  = 0;
    size_t origin = SIZE_MAX - 127;
    s.frame = 11 * (native ? sizeof(float) : sizeof(int16_t));
    CHECK(retro_spsc_init(&s.ring, 4096));
@@ -288,6 +320,7 @@ static void concurrent_direct(unsigned native)
       CHECK(audio_pipeline_stretch_next(stage, 71, 13, &block));
       CHECK(!block.input_used && (!block.frames || block.passthrough));
       take = block.frames > 3 ? 3 : block.frames;
+      if (!take) STRESS_YIELD(spin);
       for (f = 0; f < take; f++, token++)
       {
          CHECK(block.layout == stress_layout(token));

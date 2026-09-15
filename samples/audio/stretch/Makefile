@@ -1,7 +1,10 @@
 CC = gcc
 ROOT = ../../..
 CPPFLAGS += -I$(ROOT)/libretro-common/include
-CFLAGS += -O2 -std=c89 -Wall -Wextra
+# -std=c89 is deliberate: the pipeline headers have to stay C89-clean.
+# _POSIX_C_SOURCE is what lets retro_timers.h still see struct timespec
+# and nanosleep under it, for the yield in the spin waits.
+CFLAGS += -O2 -std=c89 -Wall -Wextra -D_POSIX_C_SOURCE=199309L
 WRAP_LDFLAGS = -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc -Wl,--wrap=free
 LDLIBS += -lm
 ifneq ($(SANITIZER),)

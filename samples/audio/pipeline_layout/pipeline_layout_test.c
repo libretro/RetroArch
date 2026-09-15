@@ -3,7 +3,38 @@
 #include <string.h>
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include "../../../audio/audio_pipeline_layout.h"
+
+/* Yield inside the spin waits.
+ *
+ * The four waits below are pure busy loops.  On a machine with more
+ * than one core that is what is wanted - the point is to hammer the
+ * producer/consumer handoff, not to test a scheduler - but on a
+ * uniprocessor it is a livelock: the spinning thread holds the CPU for
+ * its whole quantum while the thread it waits on never runs, so
+ * progress comes only from preemption and 600000 frames take
+ * effectively forever.  Single-core CI runners and containers are
+ * common enough to matter; this test used to hang on them, and hung
+ * longer the narrower the ring got in frames - width 44 leaves five
+ * frames in a 256 byte ring against eleven at width 22, so twice the
+ * handoffs and twice the quanta to spend.
+ *
+ * Spin a short while first and only then yield: on a multi-core host
+ * the other thread is normally already running and the wait resolves
+ * inside the spin budget, so the yield costs nothing there, while on a
+ * uniprocessor the loop still hands the CPU over instead of holding
+ * it.  retro_sleep(0) is a yield on every platform rthreads supports. */
+#define STRESS_SPIN_BUDGET 64
+
+#define STRESS_YIELD(counter) \
+   do { \
+      if (++(counter) >= STRESS_SPIN_BUDGET) \
+      { \
+         (counter) = 0; \
+         retro_sleep(0); \
+      } \
+   } while (0)
 
 #define REQUIRE(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); return 1; } } while (0)
 
@@ -121,12 +152,13 @@ static void consume(void *arg)
 {
    stress_t *s = (stress_t*)arg;
    unsigned token = 0;
+   unsigned spin  = 0;
    uint8_t data[256];
    while (token < 100000)
    {
       size_t bytes = retro_spsc_read_avail(&s->audio);
       size_t f, i;
-      if (!bytes) continue;
+      if (!bytes) { STRESS_YIELD(spin); continue; }
       bytes = s->transport
          ? audio_pipeline_layout_limit_transport(&s->layout,
                retro_atomic_load_relaxed_size(&s->audio.tail), bytes, s->audio.capacity)
@@ -150,6 +182,7 @@ static int stress(size_t width, bool transport)
    stress_t s;
    sthread_t *thread;
    unsigned token;
+   unsigned spin = 0;
    size_t i, origin = SIZE_MAX - 127;
    uint8_t frame[44];
    REQUIRE(retro_spsc_init(&s.audio, 256));
@@ -171,11 +204,14 @@ static int stress(size_t width, bool transport)
          while (!audio_pipeline_layout_publish_transport(&s.layout,
                   retro_atomic_load_relaxed_size(&s.audio.head), token_layout(token),
                   control & AUDIO_PIPELINE_TEMPO_MASK,
-                  (control & AUDIO_PIPELINE_STRETCH) != 0, token % 17 == 0)) ;
+                  (control & AUDIO_PIPELINE_STRETCH) != 0, token % 17 == 0))
+            STRESS_YIELD(spin);
       }
       else while (!audio_pipeline_layout_publish(&s.layout,
-               retro_atomic_load_relaxed_size(&s.audio.head), token_layout(token))) ;
-      while (!retro_spsc_write_frames(&s.audio, frame, 1, width)) ;
+               retro_atomic_load_relaxed_size(&s.audio.head), token_layout(token)))
+         STRESS_YIELD(spin);
+      while (!retro_spsc_write_frames(&s.audio, frame, 1, width))
+         STRESS_YIELD(spin);
    }
    sthread_join(thread);
    REQUIRE(!s.failures);

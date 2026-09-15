@@ -1,6 +1,11 @@
 CC = gcc
 COMMON = ../../../libretro-common
-CFLAGS += -O2 -Wall -Wextra -std=c89 -pedantic -DHAVE_THREADS -I$(COMMON)/include
+# -std=c89 -pedantic is the point of this harness: audio_pipeline_layout.h
+# has to stay C89-clean.  _POSIX_C_SOURCE is what lets retro_timers.h
+# still see struct timespec and nanosleep under it, for the yield in the
+# spin waits.
+CFLAGS += -O2 -Wall -Wextra -std=c89 -pedantic -D_POSIX_C_SOURCE=199309L \
+          -DHAVE_THREADS -I$(COMMON)/include
 LDFLAGS += -lpthread
 ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -g -fno-omit-frame-pointer
